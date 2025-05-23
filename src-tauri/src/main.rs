@@ -1295,6 +1295,7 @@ fn main() {
             commands::set_monerod_config,
             commands::set_tari_address,
             commands::confirm_exchange_address,
+            commands::user_selected_exchange,
             commands::set_p2pool_enabled,
             commands::set_show_experimental_settings,
             commands::set_should_always_use_system_language,
@@ -1361,6 +1362,11 @@ fn main() {
             info!(target: LOG_TARGET, "RunEvent Ready");
             let handle_clone = app_handle.clone();
             tauri::async_runtime::spawn(async move {
+                let clone2 = handle_clone.clone();
+                let state = clone2.state::<UniverseAppState>();
+                info!(target: LOG_TARGET, "[DEBUG UNIVERSA EXCHANGE] inside event loop");
+                let memory_config = state.in_memory_config.read().await;
+                info!(target: LOG_TARGET, "[DEBUG UNIVERSA EXCHANGE] inside event loop memory config: {:?}", &memory_config);
                 SetupManager::get_instance().start_setup(handle_clone.clone()).await;
                 SetupManager::spawn_sleep_mode_handler(handle_clone.clone()).await;
             });

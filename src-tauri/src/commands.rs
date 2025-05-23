@@ -34,6 +34,7 @@ use crate::configs::trait_config::ConfigImpl;
 use crate::credential_manager::{CredentialError, CredentialManager};
 use crate::events_emitter::EventsEmitter;
 use crate::events_manager::EventsManager;
+use crate::exchange_miner::ExchangeMiner;
 use crate::external_dependencies::{
     ExternalDependencies, ExternalDependency, RequiredExternalDependency,
 };
@@ -52,7 +53,7 @@ use crate::utils::app_flow_utils::FrontendReadyChannel;
 use crate::wallet_adapter::TransactionInfo;
 use crate::wallet_manager::WalletManagerError;
 use crate::websocket_manager::WebsocketManagerStatusMessage;
-use crate::{airdrop, UniverseAppState, APPLICATION_FOLDER_ID};
+use crate::{airdrop, exchange_miner, UniverseAppState, APPLICATION_FOLDER_ID};
 
 use base64::prelude::*;
 use keyring::Entry;
@@ -193,8 +194,14 @@ pub async fn close_splashscreen(app: tauri::AppHandle) {
 }
 
 #[tauri::command]
-pub async fn user_selected_exchange() -> Result<(), anyhow::Error> {
-    todo!()
+pub async fn user_selected_exchange(
+    app_handle: tauri::AppHandle,
+    exchange_miner: ExchangeMiner,
+) -> Result<(), String> {
+    info!("[DEBUG UNIVERSAL] running command selected exchange");
+    SetupManager::get_instance()
+        .select_exchange_miner(exchange_miner, app_handle)
+        .await
 }
 
 #[tauri::command]

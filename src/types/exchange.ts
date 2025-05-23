@@ -16,3 +16,9 @@ export interface ExchangeContent {
     logo_img_small_url?: string;
     reward_percentage: number;
 }
+
+export interface ExchangeMiner {
+    id: string;
+    name: string;
+    slug: string;
+}

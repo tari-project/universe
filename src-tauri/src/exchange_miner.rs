@@ -20,10 +20,13 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use serde::{Deserialize, Serialize};
+
+#[derive(Default, Serialize, Deserialize, Clone, Debug)]
 pub struct ExchangeMiner {
-    id: String,
-    name: String,
-    slug: String,
+    pub id: String,
+    pub name: String,
+    pub slug: String,
 }
 
 pub struct ExchangeMinerManager {

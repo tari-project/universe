@@ -7,7 +7,7 @@ import { Wrapper } from './styles.ts';
 
 export default function EXModal() {
     const data = useExchangeStore((s) => s.content);
-    const showModal = useExchangeStore((s) => s.showModal);
+    const showModal = useExchangeStore((s) => s.showClassicModal);
 
     if (!data) return null;
     return (

@@ -54,7 +54,7 @@ export const handleWalletUpdate = async (addressPayload: WalletAddress) => {
 
     if (xcID) {
         const currentID = useExchangeStore.getState().content?.exchange_id;
-        const canFetchXCContent = xcID && currentID !== xcID && xcID !== 'universal';
+        const canFetchXCContent = xcID && currentID !== xcID && xcID !== 'classic';
         if (canFetchXCContent) {
             await fetchExchangeContent(xcID);
         }

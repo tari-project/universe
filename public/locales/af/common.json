@@ -23,6 +23,7 @@
   "resources": "Hulpbronne",
   "restart": "Herbegin",
   "seconds": "Sekondes",
+  "select": "Select",
   "send-logs": "Stuur Logs",
   "sent": "Gestuur",
   "shutting-down": "Afskakel..",

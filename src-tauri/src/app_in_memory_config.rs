@@ -146,22 +146,42 @@ impl AppInMemoryConfig {
     }
 }
 
+#[derive(Debug)]
 pub enum MinerType {
     Classic,
     Universal,
     ExchangeMode,
 }
+#[derive(Debug)]
 pub struct DynamicMemoryConfig {
     in_memory_config: AppInMemoryConfig,
     miner_type: MinerType,
 }
 
+fn get_telemetry_by_exchange_id(exchange_id: &str) -> String {
+    format!("{}/{}", "test-telemetry-url", exchange_id)
+}
+
 impl DynamicMemoryConfig {
     pub fn init() -> Self {
-        todo!();
+        Self {
+            in_memory_config: AppInMemoryConfig::init(),
+            miner_type: MinerType::Classic,
+        }
     }
-    pub fn init_universal(exchange_miner: ExchangeMiner) -> Self {
-        todo!();
+    pub fn init_universal(exchange_miner: &ExchangeMiner) -> Self {
+        Self {
+            miner_type: MinerType::Universal,
+            in_memory_config: AppInMemoryConfig {
+                telemetry_api_url: get_telemetry_by_exchange_id(&exchange_miner.id),
+                exchange_id: exchange_miner.id.clone(),
+                ..AppInMemoryConfig::init()
+            },
+            ..Self::init()
+        }
+    }
+    pub fn is_universal_miner(&self) -> bool {
+        matches!(self.miner_type, MinerType::Universal)
     }
 }
 

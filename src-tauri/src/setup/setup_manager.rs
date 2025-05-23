@@ -33,7 +33,7 @@ use crate::{
     },
     events::{ConnectionStatusPayload, ProgressEvents},
     events_manager::EventsManager,
-    exchange_miner::{ExchangeMiner, ExchangeMinerManager},
+    exchange_miner::ExchangeMiner,
     initialize_frontend_updates,
     internal_wallet::InternalWallet,
     release_notes::ReleaseNotes,
@@ -52,7 +52,7 @@ use std::{
 use tauri::{AppHandle, Listener, Manager};
 use tokio::{
     select,
-    sync::{watch::Sender, Mutex, RwLock},
+    sync::{watch::Sender, Mutex},
 };
 use tokio_util::sync::CancellationToken;
 
@@ -180,6 +180,7 @@ pub struct SetupManager {
     wallet_phase_status: Sender<PhaseStatus>,
     unknown_phase_status: Sender<PhaseStatus>,
     exchange_modal_status: Sender<ExchangeModalStatus>,
+    universal_modal_status: Sender<ExchangeMiner>,
     is_app_unlocked: Mutex<bool>,
     is_wallet_unlocked: Mutex<bool>,
     is_mining_unlocked: Mutex<bool>,
@@ -644,7 +645,7 @@ impl SetupManager {
     }
 
     pub async fn start_setup(&self, app_handle: AppHandle) {
-        self.select_exchange_miner(app_handle.clone()).await;
+        self.await_selected_exchange_miner(app_handle.clone()).await;
         self.pre_setup(app_handle.clone()).await;
         *self.app_handle.lock().await = Some(app_handle.clone());
 
@@ -657,16 +658,32 @@ impl SetupManager {
         self.setup_unknown_phase(app_handle.clone()).await;
     }
 
-    pub async fn user_selected_exchange(&self) -> ExchangeMiner {
-        todo!()
+    async fn await_selected_exchange_miner(&self, app_handle: AppHandle) {
+        let state = app_handle.state::<UniverseAppState>();
+        info!(target: LOG_TARGET, "[DEBUG UNIVERSA EXCHANGE] before read memory");
+        let memory_config = state.in_memory_config.read().await;
+        if !memory_config.is_universal_miner() {
+            return;
+        }
+        info!(target: LOG_TARGET, "[DEBUG UNIVERSA EXCHANGE] awaiting universal modal");
+        let _unused = self.universal_modal_status.subscribe().changed().await;
+        info!(target: LOG_TARGET, "[DEBUG UNIVERSA EXCHANGE] input received");
     }
-
-    pub async fn select_exchange_miner(&self, app_handle: AppHandle) {
-        let selected_miner = self.user_selected_exchange().await;
+    pub async fn select_exchange_miner(
+        &self,
+        selected_miner: ExchangeMiner,
+        app_handle: AppHandle,
+    ) -> Result<(), String> {
+        info!(target: LOG_TARGET, "[DEBUG UNIVERSA EXCHANGE] selected exchange miner: {:?}", selected_miner);
+        self.universal_modal_status
+            .send(selected_miner.clone())
+            .map_err(|e| e.to_string())?;
         let state = app_handle.state::<UniverseAppState>();
         let mut config = state.in_memory_config.write().await;
-        let new_config = DynamicMemoryConfig::init_universal(selected_miner);
+        let new_config = DynamicMemoryConfig::init_universal(&selected_miner);
         *config = new_config;
+        info!("[DEBUG UNIVERSA EXCHANGE] exchange set");
+        Ok(())
     }
 
     pub async fn handle_switch_to_local_node(&self) {

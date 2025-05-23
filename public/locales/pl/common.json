@@ -23,6 +23,7 @@
   "resources": "Zasoby",
   "restart": "Uruchom ponownie",
   "seconds": "sekundy",
+  "select": "Select",
   "send-logs": "Wyślij logi",
   "sent": "Wysłano",
   "shutting-down": "Wyłączanie..",
