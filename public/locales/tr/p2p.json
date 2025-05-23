@@ -14,9 +14,9 @@
   "randomx-stats": "RandomX İstatistikleri",
   "sha3-stats": "SHA3 İstatistikleri",
   "stats": {
-    "tile-heading": "Earnings in Progress",
+    "tile-heading": "Rewards in Progress",
     "tile-loading": "Pool is warming up",
-    "tooltip-copy": "Earnings are “In Progress” until you earn a minimum of <strong>{{amount}}</strong> and <strong>{{duration}}</strong> have passed.",
+    "tooltip-copy": "Rewards are “In Progress” until you earn a minimum of <strong>{{amount}}</strong> and <strong>{{duration}}</strong> have passed.",
     "tooltip-tile-heading": "Rewards threshold"
   },
   "tribe": "Kabile"
