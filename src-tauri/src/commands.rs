@@ -1439,30 +1439,23 @@ pub async fn set_airdrop_tokens<'r>(
     Ok(())
 }
 
-#[allow(clippy::too_many_lines)]
 #[tauri::command]
-pub async fn start_mining<'r>(
+pub async fn start_cpu_mining<'r>(
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
     let timer = Instant::now();
+<<<<<<< Updated upstream
     let _lock = state.stop_start_mutex.lock().await;
     let mut timestamp_lock = state.stop_start_timestamp_mutex.lock().await;
     *timestamp_lock = SystemTime::now();
+=======
+    let _lock = state.cpu_miner_stop_start_mutex.lock().await;
+>>>>>>> Stashed changes
 
     let cpu_mining_enabled = *ConfigMining::content().await.cpu_mining_enabled();
-    let gpu_mining_enabled = *ConfigMining::content().await.gpu_mining_enabled();
     let mode = *ConfigMining::content().await.mode();
     let custom_cpu_usage = *ConfigMining::content().await.custom_max_cpu_usage();
-    let custom_gpu_usage = ConfigMining::content().await.custom_max_gpu_usage().clone();
-    let p2pool_enabled = *ConfigCore::content().await.is_p2pool_enabled();
-
-    let mut telemetry_id = state
-        .telemetry_manager
-        .read()
-        .await
-        .get_unique_string()
-        .await;
 
     let cpu_miner = state.cpu_miner.read().await;
     let cpu_miner_running = cpu_miner.is_running().await;
@@ -1516,6 +1509,30 @@ pub async fn start_mining<'r>(
             return Err(e.to_string());
         }
     }
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "start_mining took too long: {:?}", timer.elapsed());
+    }
+    Ok(())
+}
+#[tauri::command]
+pub async fn start_gpu_mining<'r>(
+    state: tauri::State<'_, UniverseAppState>,
+    app: tauri::AppHandle,
+) -> Result<(), String> {
+    let timer = Instant::now();
+    let _lock = state.gpu_miner_stop_start_mutex.lock().await;
+
+    let gpu_mining_enabled = *ConfigMining::content().await.gpu_mining_enabled();
+    let mode = *ConfigMining::content().await.mode();
+    let custom_gpu_usage = ConfigMining::content().await.custom_max_gpu_usage().clone();
+    let p2pool_enabled = *ConfigCore::content().await.is_p2pool_enabled();
+
+    let mut telemetry_id = state
+        .telemetry_manager
+        .read()
+        .await
+        .get_unique_string()
+        .await;
 
     let gpu_miner = state.gpu_miner.read().await;
     let gpu_miner_running = gpu_miner.is_running().await;
@@ -1589,12 +1606,17 @@ pub async fn start_mining<'r>(
 }
 
 #[tauri::command]
+<<<<<<< Updated upstream
 pub async fn stop_mining<'r>(
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
     let _lock = state.stop_start_mutex.lock().await;
 
+=======
+pub async fn stop_cpu_mining<'r>(state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
+    let _lock = state.cpu_miner_stop_start_mutex.lock().await;
+>>>>>>> Stashed changes
     let timer = Instant::now();
     state
         .cpu_miner
@@ -1632,6 +1654,25 @@ pub async fn stop_mining<'r>(
         ConfigMining::update_field(ConfigMiningContent::set_mining_time, mining_time).await;
     EventsEmitter::emit_mining_time_update(&app, mining_time).await;
 
+    Ok(())
+}
+#[tauri::command]
+pub async fn stop_gpu_mining<'r>(state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
+    let _lock = state.gpu_miner_stop_start_mutex.lock().await;
+    let timer = Instant::now();
+
+    state
+        .gpu_miner
+        .write()
+        .await
+        .stop()
+        .await
+        .map_err(|e| e.to_string())?;
+    info!(target:LOG_TARGET, "gpu miner stopped");
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "stop_mining took too long: {:?}", timer.elapsed());
+    }
     Ok(())
 }
 

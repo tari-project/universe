@@ -60,13 +60,21 @@ export const handleWalletUpdate = async (addressPayload: WalletAddress) => {
         }
     }
 };
-export const handleMiningUnlocked = async () => {
-    useSetupStore.setState({ miningUnlocked: true });
+export const handleCpuMiningUnlocked = async () => {
+    useSetupStore.setState({ cpuMiningUnlocked: true });
     // Proceed with auto mining when enabled
     const mine_on_app_start = useConfigMiningStore.getState().mine_on_app_start;
     const cpu_mining_enabled = useConfigMiningStore.getState().cpu_mining_enabled;
+    if (mine_on_app_start && cpu_mining_enabled) {
+        await startMining();
+    }
+};
+export const handleMiningUnlocked = async () => {
+    useSetupStore.setState({ gpuMiningUnlocked: true });
+    // Proceed with auto mining when enabled
+    const mine_on_app_start = useConfigMiningStore.getState().mine_on_app_start;
     const gpu_mining_enabled = useConfigMiningStore.getState().gpu_mining_enabled;
-    if (mine_on_app_start && (cpu_mining_enabled || gpu_mining_enabled)) {
+    if (mine_on_app_start && gpu_mining_enabled) {
         await startMining();
     }
 };
@@ -75,14 +83,24 @@ export const handleWalletLocked = () => {
     useSetupStore.setState({ walletUnlocked: false });
 };
 
-export const handleMiningLocked = async () => {
-    useSetupStore.setState({ miningUnlocked: false });
+export const handleCpuMiningLocked = async () => {
+    useSetupStore.setState({ cpuMiningUnlocked: false });
     const isMiningInitiated = useMiningStore.getState().miningInitiated;
 
     if (isMiningInitiated) {
         await stopMining();
     }
 };
+
+export const handleGpuMiningLocked = async () => {
+    useSetupStore.setState({ gpuMiningUnlocked: false });
+    const isMiningInitiated = useMiningStore.getState().miningInitiated;
+
+    if (isMiningInitiated) {
+        await stopMining();
+    }
+};
+
 export const handleHardwarePhaseFinished = async () => {
     useSetupStore.setState({ hardwarePhaseFinished: true });
 };

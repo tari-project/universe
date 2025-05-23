@@ -259,15 +259,21 @@ impl EventsManager {
         EventsEmitter::emit_unlock_wallet(app).await;
     }
 
-    pub async fn handle_unlock_mining(app: &AppHandle) {
-        EventsEmitter::emit_unlock_mining(app).await;
+    pub async fn handle_unlock_cpu_mining(app: &AppHandle) {
+        EventsEmitter::emit_unlock_cpu_mining(app).await;
+    }
+    pub async fn handle_unlock_gpu_mining(app: &AppHandle) {
+        EventsEmitter::emit_unlock_gpu_mining(app).await;
     }
     pub async fn handle_lock_wallet(app: &AppHandle) {
         EventsEmitter::emit_lock_wallet(app).await;
     }
 
-    pub async fn handle_lock_mining(app: &AppHandle) {
-        EventsEmitter::emit_lock_mining(app).await;
+    pub async fn handle_lock_cpu_mining(app: &AppHandle) {
+        EventsEmitter::emit_lock_cpu_mining(app).await;
+    }
+    pub async fn handle_lock_gpu_mining(app: &AppHandle) {
+        EventsEmitter::emit_lock_gpu_mining(app).await;
     }
 
     pub async fn handle_node_type_update(app: &AppHandle) {
