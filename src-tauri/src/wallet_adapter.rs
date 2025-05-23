@@ -153,7 +153,7 @@ impl WalletAdapter {
                 excess_sig: tx.excess_sig,
                 fee: tx.fee,
                 timestamp: tx.timestamp,
-                payment_id: PaymentId::from_bytes(&tx.payment_id).user_data_as_string(),
+                payment_id: PaymentId::from_bytes(&tx.user_payment_id).user_data_as_string(),
                 mined_in_block_height: tx.mined_in_block_height,
             });
             if let Some(limit) = limit {
@@ -221,7 +221,7 @@ impl WalletAdapter {
                 excess_sig: tx.excess_sig,
                 fee: tx.fee,
                 timestamp: tx.timestamp,
-                payment_id: PaymentId::from_bytes(&tx.payment_id).user_data_as_string(),
+                payment_id: PaymentId::from_bytes(&tx.user_payment_id).user_data_as_string(),
                 mined_in_block_height: tx.mined_in_block_height,
             });
             if let Some(limit) = limit {
