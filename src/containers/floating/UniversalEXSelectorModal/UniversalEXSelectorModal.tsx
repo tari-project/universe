@@ -3,11 +3,10 @@ import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.ts
 import { Button } from '@app/components/AdminUI/styles';
 import { invoke } from '@tauri-apps/api/core';
 import { ExchangeMiner } from '@app/types/exchange';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-export default function UniversalExchangeSelectorModal() {
-    const data = useExchangeStore((s) => s.content);
+export default function UniversalEXSelectorModal() {
     const { t } = useTranslation('common', { useSuspense: false });
     const showModal = useExchangeStore((s) => s.showUniversalModal);
     const exchangeMiners = useExchangeStore((s) => s.exchangeMiners);
@@ -15,16 +14,9 @@ export default function UniversalExchangeSelectorModal() {
 
     const confirmExchangeMiner = async () => {
         if (!selectedExchangeMiner) return;
-        console.info('selected exchange: ', selectedExchangeMiner);
         await invoke('user_selected_exchange', { exchangeMiner: selectedExchangeMiner });
     };
-    useEffect(() => {
-        console.info('showModal', showModal);
-        console.info('exchangeMiners', exchangeMiners);
-        console.info('selectedExchangeMiner', selectedExchangeMiner);
-    }, [showModal, exchangeMiners, selectedExchangeMiner]);
 
-    if (!data) return null;
     return (
         <Dialog open={!!showModal} disableClose>
             <DialogContent $disableOverflow $borderRadius="40px">
