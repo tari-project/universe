@@ -24,16 +24,24 @@ use std::path::PathBuf;
 
 use anyhow::Error;
 use async_trait::async_trait;
-use log::error;
+use log::{error, info};
+use regex::Regex;
 use tari_common::configuration::Network;
 
-use crate::APPLICATION_FOLDER_ID;
+use crate::{
+    binaries::binaries_resolver::{VersionAsset, VersionDownloadInfo},
+    APPLICATION_FOLDER_ID,
+};
 
 use super::tapplets_resolver::TappletApiAdapter;
 
 const LOG_TARGET: &str = "tari::universe::tapplet_bridge";
 
-pub struct BridgeTappletAdapter {}
+pub struct BridgeTappletAdapter {
+    pub repo: String,
+    pub owner: String,
+    pub specific_name: Option<Regex>,
+}
 
 #[async_trait]
 impl TappletApiAdapter for BridgeTappletAdapter {
@@ -58,5 +66,48 @@ impl TappletApiAdapter for BridgeTappletAdapter {
         };
 
         Ok(tapplet_folder_path)
+    }
+    fn find_version_for_platform(
+        &self,
+        version: &VersionDownloadInfo,
+    ) -> Result<VersionAsset, Error> {
+        let mut name_suffix = "";
+        // TODO: add platform specific logic
+        if cfg!(target_os = "windows") {
+            name_suffix = r"windows-x64.*\.zip";
+        }
+
+        if cfg!(target_os = "macos") && cfg!(target_arch = "x86_64") {
+            name_suffix = r"macos-x86_64.*\.zip";
+        }
+
+        if cfg!(target_os = "macos") && cfg!(target_arch = "aarch64") {
+            name_suffix = r"macos-arm64.*\.zip";
+        }
+        if cfg!(target_os = "linux") {
+            name_suffix = r"linux-x86_64.*\.zip";
+        }
+        if name_suffix.is_empty() {
+            panic!("Unsupported OS");
+        }
+
+        info!(target: LOG_TARGET, "Looking for platform with suffix: {}", name_suffix);
+
+        let name_sufix_regex = Regex::new(name_suffix)
+            .map_err(|error| anyhow::anyhow!("Failed to create regex: {}", error))?;
+
+        let platform = version
+            .assets
+            .iter()
+            .find(|a| {
+                if let Some(ref specific) = self.specific_name {
+                    specific.is_match(&a.name) && name_sufix_regex.is_match(&a.name)
+                } else {
+                    name_sufix_regex.is_match(&a.name)
+                }
+            })
+            .ok_or(anyhow::anyhow!("Failed to get platform asset"))?;
+        info!(target: LOG_TARGET, "Found platform: {:?}", platform);
+        Ok(platform.clone())
     }
 }

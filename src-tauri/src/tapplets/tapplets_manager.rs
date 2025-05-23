@@ -43,14 +43,19 @@ pub struct TappletVersionsJsonContent {
 }
 pub(crate) struct TappletManager {
     tapplet_name: String,
+    network_prerelease_prefix: Option<String>,
     adapter: Box<dyn TappletApiAdapter>,
 }
 
 impl TappletManager {
-    pub fn new(tapplet_name: String, adapter: Box<dyn TappletApiAdapter>) -> Self {
+    pub fn new(
+        tapplet_name: String,
+        network_prerelease_prefix: Option<String>,
+        adapter: Box<dyn TappletApiAdapter>,
+    ) -> Self {
         Self {
             tapplet_name: tapplet_name.clone(),
-
+            network_prerelease_prefix,
             adapter,
         }
     }
@@ -147,9 +152,10 @@ impl TappletManager {
         let in_progress_dir = self
             .create_in_progress_folder_for_selected_version(version.clone())
             .map_err(|e| anyhow!("Error creating in progress folder. Error: {:?}", e))?;
-        let tapp_archieve = format!("{}.{}", self.tapplet_name, "tgz");
-        let in_progress_file_zip = in_progress_dir.join(tapp_archieve);
+        // let tapp_archieve = format!("{}.{}", self.tapplet_name, "zip");
+        let in_progress_file_zip = in_progress_dir.join(self.tapplet_name.to_string());
 
+        info!(target: LOG_TARGET, "Downloading tapplet to folder: {:?}", &in_progress_file_zip);
         let download_url = TAPP_REGISTRY_URL; //TODO temporary hardcoded
         let fallback_url = TAPP_REGISTRY_FALLBACK_URL;
 
@@ -289,7 +295,7 @@ impl TappletManager {
         debug!(target: LOG_TARGET,"Selecting highest local version for tapplet: {:?}", self.tapplet_name);
 
         // TODO implement the same solution as for binaries
-        let selected_local_version = Some(Version::new(0, 1, 1));
+        let selected_local_version = Some(Version::new(0, 1, 2));
 
         debug!(target: LOG_TARGET,"Selected local version: {:?}", selected_local_version);
         selected_local_version.clone()

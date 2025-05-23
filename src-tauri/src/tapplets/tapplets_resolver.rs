@@ -20,14 +20,17 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::binaries::binaries_resolver::{VersionAsset, VersionDownloadInfo};
 use crate::ProgressTracker;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use log::error;
+use regex::Regex;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::LazyLock;
 use std::time::Duration;
+use tari_common::configuration::Network;
 use tauri_plugin_sentry::sentry;
 use tokio::sync::watch::Receiver;
 use tokio::sync::{Mutex, RwLock};
@@ -44,6 +47,10 @@ static INSTANCE: LazyLock<RwLock<TappletResolver>> =
 #[async_trait]
 pub trait TappletApiAdapter: Send + Sync + 'static {
     fn get_tapplet_dest_dir(&self) -> Result<PathBuf, Error>;
+    fn find_version_for_platform(
+        &self,
+        version: &VersionDownloadInfo,
+    ) -> Result<VersionAsset, Error>;
 }
 
 pub struct TappletResolver {
@@ -55,11 +62,36 @@ impl TappletResolver {
     pub fn new() -> Self {
         let mut tapplet_manager = HashMap::<Tapplets, Mutex<TappletManager>>::new();
 
+        let mut bridge_nextnet_regex = Regex::new(r"tapplet.*nextnet").ok();
+        let mut bridge_testnet_regex = Regex::new(r"tapplet.*testnet").ok();
+        let mut bridge_mainnet_regex = Regex::new(r"tapplet.*mainnet").ok();
+
+        if cfg!(target_os = "macos") && cfg!(target_arch = "aarch64") {
+            bridge_nextnet_regex = Regex::new(r"combined.*nextnet").ok();
+            bridge_testnet_regex = Regex::new(r"combined.*testnet").ok();
+            bridge_mainnet_regex = Regex::new(r"combined.*mainnet").ok();
+        }
+
+        let (tari_prerelease_prefix, bridge_specific_name) =
+            match Network::get_current_or_user_setting_or_default() {
+                Network::MainNet => ("", bridge_mainnet_regex),
+                Network::StageNet => ("", bridge_nextnet_regex),
+                Network::NextNet => ("rc", bridge_nextnet_regex),
+                Network::Esmeralda => ("pre", bridge_testnet_regex),
+                Network::Igor => ("pre", bridge_testnet_regex),
+                Network::LocalNet => ("pre", bridge_testnet_regex),
+            };
+
         tapplet_manager.insert(
             Tapplets::Bridge,
             Mutex::new(TappletManager::new(
                 Tapplets::Bridge.name().to_string(),
-                Box::new(BridgeTappletAdapter {}),
+                Some(tari_prerelease_prefix.to_string()),
+                Box::new(BridgeTappletAdapter {
+                    repo: "wxtm-bridge-frontend".to_string(),
+                    owner: "tari-project".to_string(),
+                    specific_name: bridge_specific_name,
+                }),
             )),
         );
 
@@ -96,10 +128,10 @@ impl TappletResolver {
             .ok_or_else(|| anyhow!("No version found for tapplet {}", tapplet.name()))?;
 
         // should return /.cache/com.tari.universe.alpha/tapplets/bridge/<network>/<ver>/package/out
-        let tapp_path = dest_dir
-            .join(ver.to_string())
-            .join("package")
-            .join(TAPPLET_SOURCE_DIR);
+        let tapp_path = dest_dir.join(ver.to_string());
+        // TODO download zip
+        // .join("package");
+        // .join(TAPPLET_SOURCE_DIR);
 
         Ok(tapp_path)
     }

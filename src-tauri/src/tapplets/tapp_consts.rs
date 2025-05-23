@@ -24,4 +24,5 @@ pub const TAPPLET_SOURCE_DIR: &str = "out";
 //TODO set correct url
 pub const TAPP_REGISTRY_URL: &str =
     "https://registry.npmjs.org/dev-tapp-bridge/-/dev-tapp-bridge-0.1.1.tgz";
+// pub const TAPP_REGISTRY_URL: &str = "https://github.com/tari-project/wxtm-bridge-frontend/actions/runs/15209263624/artifacts/3184755715";
 pub const TAPP_REGISTRY_FALLBACK_URL: Option<String> = None;
