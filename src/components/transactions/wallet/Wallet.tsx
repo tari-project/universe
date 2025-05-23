@@ -25,6 +25,8 @@ import { useTariBalance } from '@app/hooks/wallet/useTariBalance.ts';
 import ArrowRight from './ArrowRight.tsx';
 import { Swap } from './Swap/Swap.tsx';
 import { AnimatePresence, m } from 'motion/react';
+import { useTappletsStore } from '@app/store/useTappletsStore.ts';
+import BridgeButton from '../bridge/BridgeButton.tsx';
 
 interface Props {
     section: string;
@@ -42,7 +44,7 @@ const Wallet = memo(function Wallet({ section, setSection }: Props) {
     const swapUiEnabled = useConfigCoreStore((s) => s.swaps_enabled);
 
     const [swapUiVisible, setSwapUiVisible] = useState(false);
-
+    const { uiBridgeSwapsEnabled } = useTappletsStore();
     const { isWalletScanning, formattedAvailableBalance } = useTariBalance();
 
     const memoSwap = useMemo(() => {
@@ -75,6 +77,7 @@ const Wallet = memo(function Wallet({ section, setSection }: Props) {
 
                 <HistoryList />
 
+                {uiBridgeSwapsEnabled && <BridgeButton />}
                 {uiSendRecvEnabled ? (
                     <>
                         {swapUiEnabled ? (
@@ -131,6 +134,7 @@ const Wallet = memo(function Wallet({ section, setSection }: Props) {
         setShowPaperWalletModal,
         swapUiEnabled,
         t,
+        uiBridgeSwapsEnabled,
         uiSendRecvEnabled,
         walletAddress,
     ]);
