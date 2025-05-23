@@ -134,6 +134,10 @@ impl CpuMiner {
         mode: MiningMode,
         custom_cpu_threads: Option<u32>,
     ) -> Result<(), anyhow::Error> {
+        let tari_address = InternalWallet::load_or_create(config_path.clone())
+            .await?
+            .get_tari_address()
+            .to_base58();
         let (xmrig_node_connection, pool_watcher) = match cpu_miner_config.node_connection {
             CpuMinerConnection::BuiltInProxy => (
                 XmrigNodeConnection::LocalMmproxy {
@@ -156,7 +160,7 @@ impl CpuMiner {
 
                 let status_watch = cpu_miner_config.pool_status_url.as_ref().map(|url| {
                     PoolStatusWatcher::new(
-                        url.replace("%MONERO_ADDRESS%", &cpu_miner_config.monero_address),
+                        url.replace("%TARI_ADDRESS%", &tari_address),
                         SupportXmrStyleAdapter {},
                     )
                 });
@@ -182,7 +186,7 @@ impl CpuMiner {
                     };
                 let status_watch = cpu_miner_config.pool_status_url.as_ref().map(|url| {
                     PoolStatusWatcher::new(
-                        url.replace("%MONERO_ADDRESS%", &cpu_miner_config.monero_address),
+                        url.replace("%TARI_ADDRESS%", &tari_address),
                         SupportXmrStyleAdapter {},
                     )
                 });
