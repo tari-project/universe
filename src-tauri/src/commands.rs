@@ -1628,7 +1628,8 @@ pub async fn stop_mining<'r>(
         .as_millis();
 
     let mining_time = current_mining_time_ms + mining_time_duration;
-    let _ = ConfigMining::update_field(ConfigMiningContent::set_mining_time, mining_time).await;
+    let _unused =
+        ConfigMining::update_field(ConfigMiningContent::set_mining_time, mining_time).await;
     EventsEmitter::emit_mining_time_update(&app, mining_time).await;
 
     Ok(())
