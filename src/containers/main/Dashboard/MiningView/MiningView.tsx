@@ -15,8 +15,7 @@ export default function MiningView() {
             <BlockHeightAccent />
             <Ruler />
             <Earnings />
-            <BlockTime />
-            {blockBubblesEnabled && <BlockExplorerMini />}
+            {blockBubblesEnabled ? <BlockExplorerMini /> : <BlockTime />}
         </MiningViewContainer>
     );
 }

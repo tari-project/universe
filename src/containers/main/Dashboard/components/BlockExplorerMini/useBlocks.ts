@@ -1,7 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
+import { isStagenet, isTestnet } from '@app/utils/network.ts';
 
 export const BLOCKS_KEY = ['blocks'];
-const address = 'https://textexplore.tari.com';
+// TODO: make nice helper in utils
+const EXPLORER_URL_ID_ESME = `-esmeralda`;
+const EXPLORER_URL_ID_NEXTNET = `-nextnet`;
+const EXPLORER_URL_ID = isTestnet() ? EXPLORER_URL_ID_ESME : isStagenet() ? EXPLORER_URL_ID_NEXTNET : '';
+const address = `https://textexplore${EXPLORER_URL_ID}.tari.com`;
 
 interface Blocks {
     height: string;
