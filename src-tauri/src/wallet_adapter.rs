@@ -33,7 +33,7 @@ use log::{info, warn};
 use minotari_node_grpc_client::grpc::wallet_client::WalletClient;
 use minotari_node_grpc_client::grpc::{
     GetBalanceResponse, GetCompletedTransactionsRequest, GetCompletedTransactionsResponse,
-    GetStateRequest, NetworkStatusResponse,
+    GetStateRequest, ImportTransactionsRequest, NetworkStatusResponse,
 };
 use serde::Serialize;
 use std::fs;
@@ -97,30 +97,69 @@ impl WalletAdapter {
         self.connect_with_local_node = connect_with_local_node;
     }
 
+    pub async fn import_transaction(&self, tx_output_file: PathBuf) -> Result<(), anyhow::Error> {
+        let tx_json = fs::read_to_string(&tx_output_file).map_err(|e| {
+            log::error!(
+                "[import_transaction] Failed to read transaction output file: {}, output_file:\n{:?}",
+                e,
+                tx_output_file
+            );
+            anyhow::anyhow!("Failed to read transaction output file: {}", e)
+        })?;
+
+        let mut client = WalletClient::connect(self.wallet_grpc_address())
+            .await
+            .map_err(|e| {
+                log::error!(
+                    "[import_transaction] Failed to connect to wallet client: {}",
+                    e
+                );
+                anyhow::anyhow!("Failed to connect to wallet client")
+            })?;
+
+        client
+            .import_transactions(ImportTransactionsRequest {
+                txs: format!("[{}]", tx_json.trim()),
+            })
+            .await
+            .map_err(|e| {
+                log::error!(
+                    "[import_transaction] Failed to import transactions: {:?}",
+                    e
+                );
+                anyhow::anyhow!("Failed to import transactions: {:?}", e)
+            })?;
+
+        Ok(())
+    }
+
     pub async fn get_transactions_history(
         &self,
         continuation: bool,
         limit: Option<u32>,
     ) -> Result<Vec<TransactionInfo>, WalletStatusMonitorError> {
         // TODO: Implement starting point instead of continuation
-        let mut stream = if continuation
-            && self.completed_transactions_stream.lock().await.is_some()
-        {
-            self.completed_transactions_stream
-                .lock()
-                .await
-                .take()
-                .expect("completed_transactions_stream not found")
-        } else {
-            let mut client = WalletClient::connect(self.wallet_grpc_address())
-                .await
-                .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
-            let res = client
-                .get_completed_transactions(GetCompletedTransactionsRequest { payment_id: None })
-                .await
-                .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?;
-            res.into_inner()
-        };
+        let mut stream =
+            if continuation && self.completed_transactions_stream.lock().await.is_some() {
+                self.completed_transactions_stream
+                    .lock()
+                    .await
+                    .take()
+                    .expect("completed_transactions_stream not found")
+            } else {
+                let mut client = WalletClient::connect(self.wallet_grpc_address())
+                    .await
+                    .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
+                let res = client
+                    .get_completed_transactions(GetCompletedTransactionsRequest {
+                        payment_id: None,
+                        block_hash: None,
+                        block_height: None,
+                    })
+                    .await
+                    .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?;
+                res.into_inner()
+            };
 
         let mut transactions: Vec<TransactionInfo> = Vec::new();
 
@@ -150,7 +189,7 @@ impl WalletAdapter {
                 excess_sig: tx.excess_sig,
                 fee: tx.fee,
                 timestamp: tx.timestamp,
-                payment_id: PaymentId::from_bytes(&tx.payment_id).user_data_as_string(),
+                payment_id: PaymentId::from_bytes(&tx.user_payment_id).user_data_as_string(),
                 mined_in_block_height: tx.mined_in_block_height,
             });
             if let Some(limit) = limit {
@@ -185,7 +224,11 @@ impl WalletAdapter {
                 .await
                 .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
             let res = client
-                .get_completed_transactions(GetCompletedTransactionsRequest { payment_id: None })
+                .get_completed_transactions(GetCompletedTransactionsRequest {
+                    payment_id: None,
+                    block_hash: None,
+                    block_height: None,
+                })
                 .await
                 .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?;
             res.into_inner()
@@ -214,7 +257,7 @@ impl WalletAdapter {
                 excess_sig: tx.excess_sig,
                 fee: tx.fee,
                 timestamp: tx.timestamp,
-                payment_id: PaymentId::from_bytes(&tx.payment_id).user_data_as_string(),
+                payment_id: PaymentId::from_bytes(&tx.user_payment_id).user_data_as_string(),
                 mined_in_block_height: tx.mined_in_block_height,
             });
             if let Some(limit) = limit {
