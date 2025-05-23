@@ -1,14 +1,13 @@
 import { MiningTimeVariant, MiniWrapper, TimerDot, Wrapper } from './styles.ts';
-import { useMiningStore } from '@app/store';
+import { useMiningTime } from '@app/hooks/mining/useMiningTime.ts';
 
 interface MiningTimeProps {
     variant?: MiningTimeVariant;
 }
 export const MiningTime = ({ variant = 'primary' }: MiningTimeProps) => {
-    const miningTime = useMiningStore((s) => s.miningTime);
+    const { daysString, hoursString, minutes, seconds } = useMiningTime();
 
-    const date = new Date(miningTime || 0);
-    const formated = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const formated = `${daysString} ${hoursString} ${minutes}:${seconds}`;
 
     const markup = <div>{formated}</div>;
     if (variant === 'mini') {

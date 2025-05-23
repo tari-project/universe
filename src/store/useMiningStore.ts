@@ -9,7 +9,7 @@ interface MiningStoreState {
     isChangingMode: boolean;
     isExcludingGpuDevices: boolean;
     counter: number;
-    miningTime?: number;
+    miningTime: number;
     customLevelsDialogOpen: boolean;
     maxAvailableThreads?: MaxConsumptionLevels;
     network?: Network;
