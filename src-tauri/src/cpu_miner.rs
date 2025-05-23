@@ -34,11 +34,11 @@ use crate::xmrig::http_api::models::Summary;
 use crate::xmrig_adapter::{XmrigAdapter, XmrigNodeConnection};
 use crate::{mm_proxy_manager, BaseNodeStatus, PoolStatusWatcher};
 use log::{debug, error, warn};
-use tari_common_types::tari_address::{self, TariAddress};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
+use tari_common_types::tari_address::{self, TariAddress};
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::ShutdownSignal;
 use tokio::select;
@@ -134,7 +134,7 @@ impl CpuMiner {
         log_dir: PathBuf,
         mode: MiningMode,
         custom_cpu_threads: Option<u32>,
-        tari_address : &TariAddress
+        tari_address: &TariAddress,
     ) -> Result<(), anyhow::Error> {
         let (xmrig_node_connection, pool_watcher) = match cpu_miner_config.node_connection {
             CpuMinerConnection::BuiltInProxy => (
@@ -158,7 +158,8 @@ impl CpuMiner {
 
                 let status_watch = cpu_miner_config.pool_status_url.as_ref().map(|url| {
                     PoolStatusWatcher::new(
-                        url.replace("%MONERO_ADDRESS%", &cpu_miner_config.monero_address).replace("%TARI_ADDRESS%", &tari_address.to_base58()),
+                        url.replace("%MONERO_ADDRESS%", &cpu_miner_config.monero_address)
+                            .replace("%TARI_ADDRESS%", &tari_address.to_base58()),
                         SupportXmrStyleAdapter {},
                     )
                 });
@@ -167,7 +168,7 @@ impl CpuMiner {
                     XmrigNodeConnection::Pool {
                         host_name: pool_address,
                         port,
-                        tari_address: tari_address.to_base58()
+                        tari_address: tari_address.to_base58(),
                     },
                     status_watch,
                 )
@@ -190,7 +191,8 @@ impl CpuMiner {
                     )
                 });
 
-                (    XmrigNodeConnection::MergeMinedPool {
+                (
+                    XmrigNodeConnection::MergeMinedPool {
                         host_name: pool_address,
                         port,
                         monero_address: cpu_miner_config.monero_address.clone(),
