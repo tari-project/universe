@@ -1,7 +1,6 @@
-import { PublicClient, WalletClient } from 'viem';
+import { PublicClient, WalletClient, formatUnits as viemFormatUnits } from 'viem';
 import { BrowserProvider, Signer as EthersSigner } from 'ethers';
-import { formatUnits as viemFormatUnits } from 'viem';
-import { ChainId } from '@uniswap/sdk-core';
+import { ChainId, CurrencyAmount, Token, NativeCurrency } from '@uniswap/sdk-core';
 
 export async function walletClientToSigner(walletClient: WalletClient): Promise<EthersSigner | null> {
     const { account, chain, transport } = walletClient;
@@ -27,14 +26,27 @@ export async function walletClientToSigner(walletClient: WalletClient): Promise<
     }
 }
 
-export const formatNativeGasFee = (gasAmountWei: bigint | undefined): string | null => {
-    const nativeDecimals = 18;
-    const nativeSymbol = 'ETH';
+export const formatNativeGasFee = (
+    gasAmountWei: bigint | undefined,
+    nativeDecimalsParam?: number,
+    nativeSymbolParam?: string,
+    minFractionDigits = 2 // Default minimum fraction digits
+): string | null => {
+    const nativeDecimals = nativeDecimalsParam ?? 18;
+    const nativeSymbol = nativeSymbolParam ?? 'ETH'; // Default to ETH if not provided
     if (gasAmountWei === undefined) return null;
     try {
-        console.info('Gas amount wei:', gasAmountWei.toString());
         const formatted = viemFormatUnits(gasAmountWei, nativeDecimals);
-        return `${formatted} ${nativeSymbol}`;
+        // Use Intl.NumberFormat for better formatting control
+        const numericValue = parseFloat(formatted);
+        if (isNaN(numericValue)) return `${formatted} ${nativeSymbol}`; // Fallback
+
+        const formatter = new Intl.NumberFormat(undefined, {
+            // Use user's locale
+            minimumFractionDigits: minFractionDigits,
+            maximumFractionDigits: Math.max(minFractionDigits, 8), // Show more precision if needed, up to 8
+        });
+        return `${formatter.format(numericValue)} ${nativeSymbol}`;
     } catch {
         return null;
     }
@@ -190,8 +202,6 @@ export async function retryAsync<T>(
         }
     }
 }
-
-import { CurrencyAmount, Token, NativeCurrency } from '@uniswap/sdk-core'; // Ensure this import is available
 
 /**
  * Formats a CurrencyAmount for display with different precision based on its value.

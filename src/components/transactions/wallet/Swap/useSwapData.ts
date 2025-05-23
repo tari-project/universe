@@ -1,12 +1,7 @@
 import { useAccount, useBalance, useReadContracts } from 'wagmi';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useToastStore } from '@app/components/ToastStack/useToastStore';
-import {
-    formatUnits as viemFormatUnits,
-    parseUnits as viemParseUnits,
-    erc20Abi as viemErc20Abi,
-    formatUnits,
-} from 'viem';
+import { formatUnits as viemFormatUnits, parseUnits as viemParseUnits, erc20Abi as viemErc20Abi } from 'viem';
 import { Token, NativeCurrency, WETH9, Ether } from '@uniswap/sdk-core';
 import {
     ENABLED_TOKEN_ADDRESSES,
@@ -14,11 +9,17 @@ import {
     TOKEN_DEFINITIONS,
     XTM_SDK_TOKEN,
 } from '@app/hooks/swap/lib/constants';
-import { SwapField, TradeDetails } from '@app/hooks/swap/lib/types';
+import { SwapField, SwapTransaction, TradeDetails } from '@app/hooks/swap/lib/types';
 import { useUniswapV2Interactions } from '@app/hooks/swap/useSwapV2';
 import { useConfigCoreStore } from '@app/store';
-import { fetchTokenPriceUSD, formatAmountSmartly, formatDisplayBalanceForSelectable } from '@app/hooks/swap/lib/utils';
+import {
+    fetchTokenPriceUSD,
+    formatAmountSmartly,
+    formatDisplayBalanceForSelectable,
+    formatNativeGasFee as utilFormatNativeGasFee,
+} from '@app/hooks/swap/lib/utils';
 import { useTokenDisplayInfo } from './helpers/useTokenInfo';
+import { TransactionReceipt as EthersTransactionReceipt } from 'ethers';
 
 export type TokenSymbol = EnabledTokensEnum;
 export interface SelectableTokenInfo {
@@ -52,11 +53,14 @@ export const useSwapData = () => {
 
     const [priceImpact, setPriceImpact] = useState<string | null>(null);
     const [networkFee, setNetworkFee] = useState<string | null>(null);
-    const [slippage, setSlippage] = useState<string | null>(null);
+    const [slippage, setSlippage] = useState<string | null>(null); // This seems to be set to priceImpact, consider if it should be different
     const [transactionId, setTransactionId] = useState<string | null>(null);
-    const [paidTransactionFee, setPaidTransactionFee] = useState<string | null>(null);
+    const [paidTransactionFeeApproval, setPaidTransactionFeeApproval] = useState<string | null>(null);
+    const [paidTransactionFeeSwap, setPaidTransactionFeeSwap] = useState<string | null>(null);
     const [txBlockHash, setTxBlockHash] = useState<`0x${string}` | null>(null);
     const [swapError, setSwapError] = useState<string | null>(null);
+    const [minimumReceivedDisplay, setMinimumReceivedDisplay] = useState<string | null>(null);
+    const [executionPriceDisplay, setExecutionPriceDisplay] = useState<string | null>(null);
 
     const [tradeDetails, setTradeDetails] = useState<TradeDetails | null>(null);
     const defaultChainId = useConfigCoreStore((s) => s.default_chain);
@@ -93,7 +97,7 @@ export const useSwapData = () => {
         refetch: refetchFromToken,
     } = useTokenDisplayInfo({
         uiTokenDefinition: fromUiTokenDefinition as Token,
-        chainId: currentChainId,
+        chainId: currentChainId || defaultChainId,
         accountAddress: connectedAccount.address,
         fallbackDefinition: currentChainId ? WETH9[currentChainId] : undefined,
     });
@@ -104,7 +108,7 @@ export const useSwapData = () => {
         refetch: refetchToToken,
     } = useTokenDisplayInfo({
         uiTokenDefinition: toUiTokenDefinition as Token,
-        chainId: currentChainId,
+        chainId: currentChainId || defaultChainId,
         accountAddress: connectedAccount.address,
         fallbackDefinition: currentChainId ? XTM_SDK_TOKEN[currentChainId] : undefined,
     });
@@ -154,7 +158,7 @@ export const useSwapData = () => {
             if (token) {
                 tokens.push({
                     label: token.name || 'Token',
-                    symbol: token.symbol,
+                    symbol: token.symbol as TokenSymbol,
                     address: token.address as `0x${string}`,
                     iconSymbol: token.symbol?.toLowerCase() || token.address.toLowerCase(),
                     definition: token,
@@ -197,7 +201,7 @@ export const useSwapData = () => {
                 if (!tokens.find((t) => t.definition.equals(tokenDefinitionFromEnum))) {
                     tokens.push({
                         label: tokenDefinitionFromEnum.name || tokenKey,
-                        symbol: tokenDefinitionFromEnum.symbol || tokenKey,
+                        symbol: (tokenDefinitionFromEnum.symbol || tokenKey) as TokenSymbol,
                         address: tokenDefinitionFromEnum.address as `0x${string}`,
                         iconSymbol: tokenDefinitionFromEnum.symbol?.toLowerCase() || tokenKey.toLowerCase(),
                         definition: tokenDefinitionFromEnum,
@@ -319,9 +323,15 @@ export const useSwapData = () => {
         setPriceImpact(null);
         setNetworkFee(null);
         setSlippage(null);
+        setMinimumReceivedDisplay(null);
+        setExecutionPriceDisplay(null);
         setTxBlockHash(null);
         setTransactionId(null);
-        setPaidTransactionFee(null);
+        setPaidTransactionFeeApproval(null);
+        setPaidTransactionFeeSwap(null);
+        setPaidTransactionFeeApproval(null);
+        setPaidTransactionFeeSwap(null);
+
         setSwapSuccess(false);
         setIsProcessingApproval(false);
         setIsProcessingSwap(false);
@@ -338,6 +348,8 @@ export const useSwapData = () => {
     const calcRef = useRef<NodeJS.Timeout | null>(null);
 
     const calcAmounts = useCallback(async () => {
+        if (!shouldCalculate.current) return;
+        shouldCalculate.current = false;
         let amountTypedByUserStr: string;
         let tokenUsedForParsingAmount: Token | NativeCurrency | undefined;
         let amountTypeForGetTradeDetails: SwapField = 'wxtmField';
@@ -367,13 +379,6 @@ export const useSwapData = () => {
             !tradeInputTokenSDK ||
             !tradeOutputTokenSDK
         ) {
-            console.warn('Invalid values provided', {
-                tokenUsedForParsingAmount,
-                amountTypedByUserStr,
-                tradeInputTokenSDK,
-                tradeOutputTokenSDK,
-                isNaN: Number.isNaN(Number(amountTypedByUserStr)),
-            });
             clearCalculatedDetails();
             setIsLoading(false);
             return;
@@ -386,52 +391,71 @@ export const useSwapData = () => {
             setTradeDetails(details);
 
             if (details.trade) {
-                setPriceImpact(details.trade.priceImpact.toSignificant(2) + '%');
-                const networkFee = details.estimatedGasFeeNative || details.estimatedGasFeeUSD;
-                if (networkFee) setNetworkFee(networkFee);
-                setSlippage(details.trade.priceImpact.toSignificant(2) + '% (Price Impact)'); // Consider actual slippage setting
+                setPriceImpact(details.priceImpactPercent ? `${details.priceImpactPercent}%` : null);
+                setSlippage(details.priceImpactPercent ? `${details.priceImpactPercent}% (Price Impact)` : null); // Consider actual slippage setting
+                setNetworkFee(details.estimatedGasFeeNative || null);
 
-                if (shouldCalculate.current) {
-                    if (lastUpdatedField === 'ethTokenField') {
-                        if (direction === 'toXtm') {
-                            if (details.outputAmount) {
-                                setWxtmAmount(formatAmountSmartly(details.outputAmount));
-                            } else if (wxtmAmount !== '') {
-                                setWxtmAmount('');
-                            }
-                        } else {
-                            if (details.inputAmount) {
-                                setWxtmAmount(formatAmountSmartly(details.inputAmount));
-                            } else if (wxtmAmount !== '') {
-                                setWxtmAmount('');
-                            }
+                if (details.minimumReceived && details.minimumReceived.currency.symbol) {
+                    setMinimumReceivedDisplay(
+                        `${formatAmountSmartly(details.minimumReceived)} ${details.minimumReceived.currency.symbol}`
+                    );
+                } else {
+                    setMinimumReceivedDisplay(null);
+                }
+
+                if (details.executionPrice) {
+                    const baseToken = details.executionPrice.baseCurrency;
+                    const quoteToken = details.executionPrice.quoteCurrency;
+                    if (baseToken.symbol && quoteToken.symbol) {
+                        setExecutionPriceDisplay(
+                            `1 ${baseToken.symbol} = ${details.executionPrice.toSignificant(6)} ${quoteToken.symbol}`
+                        );
+                    } else {
+                        setExecutionPriceDisplay(null);
+                    }
+                } else {
+                    setExecutionPriceDisplay(null);
+                }
+
+                if (lastUpdatedField === 'ethTokenField') {
+                    if (direction === 'toXtm') {
+                        if (details.outputAmount) {
+                            setWxtmAmount(formatAmountSmartly(details.outputAmount));
+                        } else if (wxtmAmount !== '') {
+                            setWxtmAmount('');
                         }
                     } else {
-                        // lastUpdatedField === 'wxtmField'
-                        if (direction === 'toXtm') {
-                            if (details.inputAmount) {
-                                setEthTokenAmount(formatAmountSmartly(details.inputAmount));
-                            } else if (ethTokenAmount !== '') {
-                                setEthTokenAmount('');
-                            }
-                        } else {
-                            if (details.outputAmount) {
-                                setEthTokenAmount(formatAmountSmartly(details.outputAmount));
-                            } else if (ethTokenAmount !== '') {
-                                setEthTokenAmount('');
-                            }
+                        if (details.inputAmount) {
+                            setWxtmAmount(formatAmountSmartly(details.inputAmount));
+                        } else if (wxtmAmount !== '') {
+                            setWxtmAmount('');
                         }
                     }
-
-                    setNetworkFee(details.estimatedGasFeeNative || null);
+                } else {
+                    // lastUpdatedField === 'wxtmField'
+                    if (direction === 'toXtm') {
+                        if (details.inputAmount) {
+                            setEthTokenAmount(formatAmountSmartly(details.inputAmount));
+                        } else if (ethTokenAmount !== '') {
+                            setEthTokenAmount('');
+                        }
+                    } else {
+                        if (details.outputAmount) {
+                            setEthTokenAmount(formatAmountSmartly(details.outputAmount));
+                        } else if (ethTokenAmount !== '') {
+                            setEthTokenAmount('');
+                        }
+                    }
                 }
-            } // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } else {
+                clearCalculatedDetails();
+            }
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (e: any) {
-            setIsLoading(false);
             addToast({ title: 'Calculation Error', text: e.message || 'Failed to get quote.', type: 'error' });
+            clearCalculatedDetails();
         } finally {
             setIsLoading(false);
-            shouldCalculate.current = false;
         }
     }, [
         sdkToken0,
@@ -481,9 +505,7 @@ export const useSwapData = () => {
             }
             setLastUpdatedField(field);
             shouldCalculate.current = false;
-            setTradeDetails(null);
-            setPriceImpact(null);
-            setNetworkFee(null);
+            clearCalculatedDetails();
             setIsLoading(false);
             if (calcRef.current) clearTimeout(calcRef.current);
             return;
@@ -507,37 +529,17 @@ export const useSwapData = () => {
         const newUiDirection = direction === 'toXtm' ? 'fromXtm' : 'toXtm';
         setSwapEngineDirection(newUiDirection);
         clearCalculatedDetails();
-        //     shouldCalculate.current = true;
-        //
-        // if (lastUpdatedField === 'ethTokenField' && ethTokenAmount && Number(ethTokenAmount) > 0) {
-        //     setIsLoading(true);
-        // } else if (lastUpdatedField === 'wxtmField' && wxtmAmount && Number(wxtmAmount) > 0) {
-        //     setIsLoading(true);
-        // } else if (ethTokenAmount && Number(ethTokenAmount) > 0) {
-        //     setLastUpdatedField('ethTokenField');
-        //     shouldCalculate.current = true;
-        //     setIsLoading(true);
-        // } else if (wxtmAmount && Number(wxtmAmount) > 0) {
-        //     // Fallback
-        //     setLastUpdatedField('wxtmField');
-        //     shouldCalculate.current = true;
-        //     setIsLoading(true);
-        // } else {
-        //     shouldCalculate.current = false;
-        //     setTradeDetails(null);
-        //     setPriceImpact(null);
-        //     setNetworkFee(null);
-        //     setSlippage(null);
-        //     if (!(ethTokenAmount && Number(ethTokenAmount) > 0) && !(wxtmAmount && Number(wxtmAmount) > 0)) {
-        //         setIsLoading(false);
-        //     }
-        // }
+        shouldCalculate.current = true;
     }, [direction, setSwapEngineDirection, clearCalculatedDetails]);
 
-    const handleConfirm = () => {
+    const handleConfirm = async () => {
         setTransactionId(null);
         setSwapSuccess(false);
-        if (!tradeDetails?.trade) {
+        setPaidTransactionFeeApproval(null);
+        setPaidTransactionFeeSwap(null);
+        setTxBlockHash(null);
+
+        if (!tradeDetails?.trade || !sdkToken0) {
             addToast({ title: 'Error', text: 'No valid trade. Refresh quote.', type: 'error' });
             return;
         }
@@ -551,92 +553,73 @@ export const useSwapData = () => {
         setIsProcessingApproval(true);
         setProcessingOpen(true);
         setReviewSwap(false);
-        checkAndRequestApproval(swapEngineInputToken as Token, amountInWeiString)
-            .then((approved) => {
-                setIsProcessingApproval(false);
-                if (!approved) {
-                    setProcessingOpen(false);
-                    addToast({ title: 'Approval Required', text: 'Approval failed.', type: 'warning' });
-                    return;
-                }
-                setIsProcessingSwap(true);
-                executeSwap(tradeDetails.trade!)
-                    .then((result) => {
-                        setIsProcessingSwap(false);
-                        if (!result) {
-                            setProcessingOpen(false);
-                            addToast({ title: 'Swap Failed', text: 'Transaction failed.', type: 'error' });
-                            return;
-                        }
-                        setSwapSuccess(true);
-                        setTransactionId(result.hash);
-                        setTxBlockHash(result.blockHash as `0x${string}`);
-                        console.info('-------------------------Swap transaction:', result);
-                        try {
-                            const gasUsed = formatUnits(result.gasPrice, 18);
-                            console.info(
-                                '-------------------------Swap transaction gas used:',
-                                result.gasPrice.toString()
-                            );
-                            setPaidTransactionFee(gasUsed);
-                        } catch (e) {
-                            console.error('Error calculating gas used:', e);
-                        }
-                    })
-                    .then(() => {
-                        setTimeout(() => {
-                            handleRefetchBalances();
-                        }, 2000);
-                    })
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    .catch((e: any) => {
-                        setIsProcessingSwap(false);
-                        setProcessingOpen(false);
-                        addToast({ title: 'Swap Error', text: e.message || 'Swap execution failed.', type: 'error' });
-                    });
-            })
+
+        let approvalTxFeeString = '';
+        let swapTxFeeString = '';
+
+        try {
+            const approvalReceipt: EthersTransactionReceipt | null = (await checkAndRequestApproval(
+                sdkToken0 as Token,
+                amountInWeiString
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            )) as any;
+            setIsProcessingApproval(false);
+
+            if (approvalReceipt && approvalReceipt.gasUsed && approvalReceipt.gasPrice && connectedAccount.chain) {
+                const approvalFee = approvalReceipt.gasUsed * approvalReceipt.gasPrice;
+                approvalTxFeeString = `${utilFormatNativeGasFee(approvalFee, connectedAccount.chain.nativeCurrency.decimals, connectedAccount.chain.nativeCurrency.symbol)}`;
+            }
+
+            setIsProcessingSwap(true);
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            .catch((e: any) => {
-                setIsProcessingApproval(false);
+            const swapResult = (await executeSwap(tradeDetails.trade!)) as any;
+            setIsProcessingSwap(false);
+
+            if (!swapResult || !swapResult.receipt || swapResult.receipt.status !== 1) {
+                // Ethers uses 1 for success
                 setProcessingOpen(false);
-                addToast({ title: 'Approval Error', text: e.message || 'Approval process failed.', type: 'error' });
-            });
+                addToast({ title: 'Swap Failed', text: 'Transaction failed.', type: 'error' });
+                return;
+            }
+
+            setSwapSuccess(true);
+            setTransactionId(swapResult.response.hash);
+            setTxBlockHash(swapResult.receipt.blockHash as `0x${string}`);
+
+            if (swapResult.receipt.gasUsed && swapResult.receipt.gasPrice && connectedAccount.chain) {
+                const swapFee = swapResult.receipt.gasUsed * swapResult.receipt.gasPrice;
+                swapTxFeeString = `${utilFormatNativeGasFee(BigInt(swapFee), connectedAccount.chain.nativeCurrency.decimals, connectedAccount.chain.nativeCurrency.symbol)}`;
+            }
+
+            setPaidTransactionFeeApproval(approvalTxFeeString);
+            setPaidTransactionFeeSwap(swapTxFeeString);
+
+            setTimeout(() => {
+                handleRefetchBalances();
+            }, 3000);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } catch (e: any) {
+            setIsProcessingApproval(false);
+            setIsProcessingSwap(false);
+            setProcessingOpen(false);
+            addToast({ title: 'Error', text: e.message || 'An error occurred.', type: 'error' });
+        }
     };
 
-    const displayPrice = useMemo(() => {
-        if (!tradeDetails?.midPrice) return null;
-
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        let price: any;
-        if (direction === 'toXtm') {
-            price = tradeDetails?.midPrice;
-        } else {
-            try {
-                price = tradeDetails?.midPrice?.invert();
-            } catch (e) {
-                console.error('Error inverting price:', e);
-                return null; // Cannot invert price
-            }
-        }
-
-        const baseTokenSymbol = price?.baseToken?.symbol;
-        const quoteTokenSymbol = price?.quoteToken?.symbol;
-        const priceValue = price.toSignificant(6);
-
-        return `1 ${baseTokenSymbol} = ${priceValue} ${quoteTokenSymbol}`;
-    }, [tradeDetails?.midPrice, direction]);
-
-    const transactionForDisplay = useMemo(
+    const transactionForDisplay: SwapTransaction = useMemo(
         () => ({
-            amount: direction === 'toXtm' ? ethTokenAmount : wxtmAmount, // Amount user gives
-            targetAmount: direction === 'toXtm' ? wxtmAmount : ethTokenAmount, // Amount user gets
+            amount: direction === 'toXtm' ? ethTokenAmount : wxtmAmount,
+            targetAmount: direction === 'toXtm' ? wxtmAmount : ethTokenAmount,
             direction: direction,
             slippage,
             networkFee,
             priceImpact,
+            minimumReceived: minimumReceivedDisplay,
+            executionPrice: executionPriceDisplay,
             transactionId,
             txBlockHash,
-            paidTransactionFee,
+            paidTransactionFeeApproval,
+            paidTransactionFeeSwap,
         }),
         [
             direction,
@@ -645,15 +628,19 @@ export const useSwapData = () => {
             slippage,
             networkFee,
             priceImpact,
+            minimumReceivedDisplay,
+            executionPriceDisplay,
             transactionId,
             txBlockHash,
-            paidTransactionFee,
+            paidTransactionFeeApproval,
+            paidTransactionFeeSwap,
         ]
     );
 
     const handleSelectFromToken = useCallback(
         (selectedToken: SelectableTokenInfo) => {
             setPairTokenAddress(selectedToken.address);
+            setLastUpdatedField('ethTokenField');
             shouldCalculate.current = true;
             setTokenSelectOpen(false);
         },
@@ -690,7 +677,6 @@ export const useSwapData = () => {
         selectableFromTokens,
         tokenSelectOpen,
         setTokenSelectOpen,
-        displayPrice,
         handleToggleUiDirection,
         clearCalculatedDetails,
         insufficientLiquidity,

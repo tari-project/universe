@@ -74,11 +74,15 @@ export const SwapDirection = styled.div`
     z-index: 2;
 `;
 
-export const SwapAmountInput = styled.input<{ $error?: boolean; $loading?: boolean }>`
+export const SwapAmountInput = styled.input<{
+    $error?: boolean;
+    $loading?: boolean;
+    $dynamicFontSize?: number; // Prop for dynamic font size
+}>`
     color: ${({ theme }) => theme.palette.text.primary};
     font-family: Poppins, sans-serif;
     font-weight: 500;
-    font-size: 28px;
+    font-size: ${({ $dynamicFontSize }) => ($dynamicFontSize ? `${$dynamicFontSize}px` : '28px')};
     line-height: 100%;
     width: 100%;
     background: transparent;
