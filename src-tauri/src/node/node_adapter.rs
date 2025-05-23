@@ -100,7 +100,8 @@ impl NodeAdapterService {
 
         Ok(BaseNodeStatus {
             sha_network_hashrate: res.sha3x_estimated_hash_rate,
-            randomx_network_hashrate: res.monero_randomx_estimated_hash_rate,
+            tari_randomx_network_hashrate: res.tari_randomx_estimated_hash_rate,
+            monero_randomx_network_hashrate: res.monero_randomx_estimated_hash_rate,
             block_reward: MicroMinotari(res.reward),
             block_height: metadata.best_block_height,
             block_time: metadata.timestamp,
@@ -476,7 +477,8 @@ pub struct NodeIdentity {
 #[derive(Clone, Copy, Debug, Serialize)]
 pub(crate) struct BaseNodeStatus {
     pub sha_network_hashrate: u64,
-    pub randomx_network_hashrate: u64,
+    pub monero_randomx_network_hashrate: u64,
+    pub tari_randomx_network_hashrate: u64,
     pub block_reward: MicroMinotari,
     pub block_height: u64,
     pub block_time: u64,
@@ -488,7 +490,8 @@ impl Default for BaseNodeStatus {
     fn default() -> Self {
         Self {
             sha_network_hashrate: 0,
-            randomx_network_hashrate: 0,
+            monero_randomx_network_hashrate: 0,
+            tari_randomx_network_hashrate: 0,
             block_reward: MicroMinotari(0),
             block_height: 0,
             block_time: 0,
