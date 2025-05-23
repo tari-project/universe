@@ -177,4 +177,8 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'ShowStageSecurityModal';
           payload: undefined;
+      }
+    | {
+          event_type: 'MiningTime';
+          payload: number;
       };

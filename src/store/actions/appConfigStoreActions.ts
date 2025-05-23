@@ -50,6 +50,12 @@ export const handleConfigUILoaded = async (uiConfig: ConfigUI) => {
 };
 export const handleConfigMiningLoaded = (miningConfig: ConfigMining) => {
     useConfigMiningStore.setState(miningConfig);
+    useMiningStore.setState({ miningTime: miningConfig.mining_time });
+};
+
+export const handleMiningTimeUpdate = (miningTime: number) => {
+    useConfigMiningStore.setState({ mining_time: miningTime });
+    useMiningStore.setState({ miningTime });
 };
 
 export const setAirdropTokensInConfig = (

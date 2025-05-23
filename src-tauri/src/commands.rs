@@ -1423,7 +1423,7 @@ pub async fn set_airdrop_tokens<'r>(
         };
 
         if currently_mining {
-            stop_mining(state.clone())
+            stop_mining(state.clone(), app.clone())
                 .await
                 .map_err(|e| e.to_string())?;
 
@@ -1447,6 +1447,8 @@ pub async fn start_mining<'r>(
 ) -> Result<(), String> {
     let timer = Instant::now();
     let _lock = state.stop_start_mutex.lock().await;
+    let mut timestamp_lock = state.stop_start_timestamp_mutex.lock().await;
+    *timestamp_lock = SystemTime::now();
 
     let cpu_mining_enabled = *ConfigMining::content().await.cpu_mining_enabled();
     let gpu_mining_enabled = *ConfigMining::content().await.gpu_mining_enabled();
@@ -1580,12 +1582,19 @@ pub async fn start_mining<'r>(
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "start_mining took too long: {:?}", timer.elapsed());
     }
+
+    let mining_time = *ConfigMining::content().await.mining_time();
+    EventsEmitter::emit_mining_time_update(&app, mining_time).await;
     Ok(())
 }
 
 #[tauri::command]
-pub async fn stop_mining<'r>(state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
+pub async fn stop_mining<'r>(
+    state: tauri::State<'_, UniverseAppState>,
+    app: tauri::AppHandle,
+) -> Result<(), String> {
     let _lock = state.stop_start_mutex.lock().await;
+
     let timer = Instant::now();
     state
         .cpu_miner
@@ -1608,6 +1617,20 @@ pub async fn stop_mining<'r>(state: tauri::State<'_, UniverseAppState>) -> Resul
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "stop_mining took too long: {:?}", timer.elapsed());
     }
+
+    let timestamp_lock = state.stop_start_timestamp_mutex.lock().await;
+    let current_mining_time_ms = *ConfigMining::content().await.mining_time();
+
+    let now = SystemTime::now();
+    let mining_time_duration = now
+        .duration_since(*timestamp_lock)
+        .unwrap_or_default()
+        .as_millis();
+
+    let mining_time = current_mining_time_ms + mining_time_duration;
+    let _ = ConfigMining::update_field(ConfigMiningContent::set_mining_time, mining_time).await;
+    EventsEmitter::emit_mining_time_update(&app, mining_time).await;
+
     Ok(())
 }
 

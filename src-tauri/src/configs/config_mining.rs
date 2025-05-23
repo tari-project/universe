@@ -83,6 +83,7 @@ pub struct ConfigMiningContent {
     cpu_mining_pool_url: Option<String>,
     cpu_mining_pool_status_url: Option<String>,
     gpu_mining_pool_url: Option<String>,
+    mining_time: u128,
 }
 
 impl Default for ConfigMiningContent {
@@ -108,6 +109,7 @@ impl Default for ConfigMiningContent {
                 "https://www.supportxmr.com/api/miner/%MONERO_ADDRESS%/stats".to_string(),
             ),
             gpu_mining_pool_url: None,
+            mining_time: 0,
         }
     }
 }
