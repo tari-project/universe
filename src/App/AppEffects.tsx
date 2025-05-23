@@ -18,8 +18,11 @@ import { fetchExchangeMiners, setShowUniversalModal } from '@app/store/useExchan
 setupLogger();
 
 export default function AppEffects() {
+    console.info('AppEffects');
     useEffect(() => {
+        console.info('AppEffects useEffect');
         async function initialize() {
+            console.info('AppEffects useEffect initialize');
             await fetchBackendInMemoryConfig();
             await setMiningNetwork();
             await airdropSetup();

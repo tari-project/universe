@@ -3,7 +3,7 @@ import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.ts
 import { Button } from '@app/components/AdminUI/styles';
 import { invoke } from '@tauri-apps/api/core';
 import { ExchangeMiner } from '@app/types/exchange';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 export default function UniversalExchangeSelectorModal() {
@@ -18,6 +18,11 @@ export default function UniversalExchangeSelectorModal() {
         console.info('selected exchange: ', selectedExchangeMiner);
         await invoke('user_selected_exchange', { exchangeMiner: selectedExchangeMiner });
     };
+    useEffect(() => {
+        console.info('showModal', showModal);
+        console.info('exchangeMiners', exchangeMiners);
+        console.info('selectedExchangeMiner', selectedExchangeMiner);
+    }, [showModal, exchangeMiners, selectedExchangeMiner]);
 
     if (!data) return null;
     return (

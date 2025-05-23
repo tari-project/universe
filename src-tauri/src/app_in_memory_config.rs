@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::ops::Deref;
+use std::{ops::Deref, str::FromStr};
 
 use anyhow::anyhow;
 use der::{self, asn1::BitString, oid::ObjectIdentifier, Encode};
@@ -152,6 +152,15 @@ pub enum MinerType {
     Universal,
     ExchangeMode,
 }
+impl MinerType {
+    fn from_str(s: &str) -> Self {
+        match s {
+            UNIVERSAL_EXCHANGE_ID => MinerType::Universal,
+            DEFAULT_EXCHANGE_ID => MinerType::Classic,
+            _ => MinerType::ExchangeMode,
+        }
+    }
+}
 #[derive(Debug)]
 pub struct DynamicMemoryConfig {
     in_memory_config: AppInMemoryConfig,
@@ -164,9 +173,11 @@ fn get_telemetry_by_exchange_id(exchange_id: &str) -> String {
 
 impl DynamicMemoryConfig {
     pub fn init() -> Self {
+        let in_memory_config = AppInMemoryConfig::init();
+        let miner_type = MinerType::from_str(&in_memory_config.exchange_id);
         Self {
-            in_memory_config: AppInMemoryConfig::init(),
-            miner_type: MinerType::Classic,
+            in_memory_config,
+            miner_type,
         }
     }
     pub fn init_universal(exchange_miner: &ExchangeMiner) -> Self {
