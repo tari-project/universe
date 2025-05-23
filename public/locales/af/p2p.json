@@ -13,5 +13,11 @@
   "pending": "Hangende",
   "randomx-stats": "RandomX Statistieke",
   "sha3-stats": "SHA3 Statistieke",
+  "stats": {
+    "tile-heading": "Earnings in Progress",
+    "tile-loading": "Pool is warming up",
+    "tooltip-copy": "Earnings are “In Progress” until you earn a minimum of <strong>{{amount}}</strong> and <strong>{{duration}}</strong> have passed.",
+    "tooltip-tile-heading": "Rewards threshold"
+  },
   "tribe": "Stam"
 }

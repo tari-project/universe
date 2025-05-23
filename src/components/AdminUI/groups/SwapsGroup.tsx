@@ -23,7 +23,7 @@ export function SwapsGroup() {
         } else {
             setDefaultChain(ChainId.MAINNET);
         }
-        console.log('setDefaultChain', defaultChain);
+        console.info('setDefaultChain', defaultChain);
     };
 
     const isValidNumber = (val: string) => {

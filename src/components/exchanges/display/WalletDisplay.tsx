@@ -21,7 +21,7 @@ export default function WalletDisplay() {
 
     const displayAddress = truncateMiddle(address, 6);
 
-    return data?.exchange_id ? (
+    return data?.id ? (
         <WalletDisplayWrapper>
             <HeaderSection>
                 <XCInfo>
