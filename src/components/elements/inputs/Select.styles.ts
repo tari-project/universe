@@ -15,6 +15,7 @@ interface StyleProps {
 export const Wrapper = styled.div`
     display: flex;
     flex-direction: column;
+
     position: relative;
     width: 100%;
 `;
@@ -26,7 +27,7 @@ export const TriggerWrapper = styled.div<StyleProps>`
     justify-content: space-between;
     cursor: pointer;
     img {
-        width: 14px;
+        width: 12px;
         display: flex;
     }
 
@@ -39,11 +40,7 @@ export const TriggerWrapper = styled.div<StyleProps>`
             padding: 0 15px;
         `}
 
-    ${({ $variant }) =>
-        $variant === 'primary' &&
-        css`
-            padding: 0 15px 0 0;
-        `}
+    ${({ $variant }) => $variant === 'primary' && css``}
     ${({ $disabled }) =>
         $disabled &&
         css`
@@ -82,7 +79,7 @@ export const SelectedOption = styled.div<StyleProps>`
     align-items: center;
     gap: 5px;
 
-    font-size: ${({ $isBordered }) => ($isBordered ? '14px' : '18px')};
+    font-size: ${({ $isBordered }) => ($isBordered ? '14px' : '14px')};
     font-weight: 500;
 
     width: 100%;

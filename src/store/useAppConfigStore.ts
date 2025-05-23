@@ -45,6 +45,7 @@ const configMininigInitialState: ConfigMining = {
     ludicrous_mode_cpu_options: [],
     mine_on_app_start: false,
     mode: 'Eco',
+    mining_time: 0,
 };
 
 const configUIInitialState: UIConfigStoreState = {

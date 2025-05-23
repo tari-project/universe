@@ -33,6 +33,7 @@ use node::local_node_adapter::LocalNodeAdapter;
 use node::node_adapter::BaseNodeStatus;
 use node::node_manager::NodeType;
 use p2pool::models::Connections;
+use pool_status_watcher::{PoolStatus, PoolStatusWatcher};
 use process_stats_collector::ProcessStatsCollectorBuilder;
 
 use node::remote_node_adapter::RemoteNodeAdapter;
@@ -40,14 +41,13 @@ use node::remote_node_adapter::RemoteNodeAdapter;
 use setup::setup_manager::SetupManager;
 use std::fs::{remove_dir_all, remove_file};
 use std::path::Path;
-use systemtray_manager::{SystemTrayData, SystemTrayManager};
+use systemtray_manager::SystemTrayManager;
 use tasks_tracker::TasksTrackers;
 use tauri_plugin_cli::CliExt;
 use telemetry_service::TelemetryService;
 use tokio::sync::watch::{self};
 use tor_control_client::TorStatus;
 use updates_manager::UpdatesManager;
-use utils::locks_utils::try_write_with_retry;
 use utils::system_status::SystemStatus;
 use wallet_adapter::WalletState;
 use websocket_events_manager::WebsocketEventsManager;
@@ -57,7 +57,7 @@ use log4rs::config::RawConfig;
 use std::fs;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, SystemTime};
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tauri::async_runtime::block_on;
@@ -120,6 +120,7 @@ mod node;
 mod p2pool;
 mod p2pool_adapter;
 mod p2pool_manager;
+mod pool_status_watcher;
 mod port_allocator;
 mod process_adapter;
 mod process_killer;
@@ -174,8 +175,6 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
         let app_state = move_app.state::<UniverseAppState>().clone();
 
         let mut node_status_watch_rx = (*app_state.node_status_watch_rx).clone();
-        let mut gpu_status_watch_rx = (*app_state.gpu_latest_status).clone();
-        let mut cpu_miner_status_watch_rx = (*app_state.cpu_miner_status_watch_rx).clone();
         let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
 
         let init_node_status = *node_status_watch_rx.borrow();
@@ -199,34 +198,6 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
                         latest_updated_block_height = node_status.block_height;
                     }
                 },
-                _ = gpu_status_watch_rx.changed() => {
-                    let gpu_status: GpuMinerStatus = gpu_status_watch_rx.borrow().clone();
-
-                    let _ = EventsManager::handle_gpu_mining_update(&move_app, gpu_status).await;
-                },
-                _ = cpu_miner_status_watch_rx.changed() => {
-                    let cpu_status = cpu_miner_status_watch_rx.borrow().clone();
-                    let _ = EventsManager::handle_cpu_mining_update(&move_app, cpu_status.clone()).await;
-
-                    // Update systemtray data
-                    let gpu_status: GpuMinerStatus = gpu_status_watch_rx.borrow().clone();
-                    let systray_data = SystemTrayData {
-                        cpu_hashrate: cpu_status.hash_rate,
-                        gpu_hashrate: gpu_status.hash_rate,
-                        estimated_earning: (cpu_status.estimated_earnings
-                            + gpu_status.estimated_earnings) as f64,
-                    };
-
-                    match try_write_with_retry(&app_state.systemtray_manager, 6).await {
-                        Ok(mut sm) => {
-                            sm.update_tray(systray_data);
-                        },
-                        Err(e) => {
-                            let err_msg = format!("Failed to acquire systemtray_manager write lock: {}", e);
-                            error!(target: LOG_TARGET, "{}", err_msg);
-                        }
-                    }
-                }
                 _ = shutdown_signal.wait() => {
                     break;
                 },
@@ -267,6 +238,7 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
 #[derive(Clone)]
 struct UniverseAppState {
     stop_start_mutex: Arc<Mutex<()>>,
+    stop_start_timestamp_mutex: Arc<Mutex<SystemTime>>,
     node_status_watch_rx: Arc<watch::Receiver<BaseNodeStatus>>,
     #[allow(dead_code)]
     wallet_state_watch_rx: Arc<watch::Receiver<Option<WalletState>>>,
@@ -379,6 +351,10 @@ fn main() {
         custom_mode_xmrig_options: vec![],
         eco_mode_cpu_percentage: None,
         ludicrous_mode_cpu_percentage: None,
+        pool_host_name: None,
+        pool_port: None,
+        monero_address: "".to_string(),
+        pool_status_url: None,
     }));
 
     let app_in_memory_config =
@@ -444,6 +420,7 @@ fn main() {
     );
     let app_state = UniverseAppState {
         stop_start_mutex: Arc::new(Mutex::new(())),
+        stop_start_timestamp_mutex: Arc::new(Mutex::new(SystemTime::now())),
         is_getting_p2pool_connections: Arc::new(AtomicBool::new(false)),
         node_status_watch_rx: Arc::new(base_node_watch_rx),
         wallet_state_watch_rx: Arc::new(wallet_state_watch_rx.clone()),
