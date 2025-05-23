@@ -451,6 +451,17 @@ impl EventsEmitter {
         }
     }
 
+    pub async fn emit_initial_setup_finished(app_handle: &AppHandle) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::InitialSetupFinished,
+            payload: (),
+        };
+        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+            error!(target: LOG_TARGET, "Failed to emit SetupFinished event: {:?}", e);
+        }
+    }
+
     pub async fn emit_unlock_app(app_handle: &AppHandle) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
