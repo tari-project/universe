@@ -100,7 +100,7 @@ impl NodeAdapterService {
 
         Ok(BaseNodeStatus {
             sha_network_hashrate: res.sha3x_estimated_hash_rate,
-            randomx_network_hashrate: res.randomx_estimated_hash_rate,
+            randomx_network_hashrate: res.monero_randomx_estimated_hash_rate,
             block_reward: MicroMinotari(res.reward),
             block_height: metadata.best_block_height,
             block_time: metadata.timestamp,

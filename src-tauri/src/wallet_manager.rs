@@ -186,6 +186,19 @@ impl WalletManager {
             })
     }
 
+    pub async fn import_transaction(&self, tx_output_file: PathBuf) -> Result<(), anyhow::Error> {
+        let process_watcher = self.watcher.read().await;
+        if !process_watcher.is_running() {
+            return Err(anyhow::Error::msg("Wallet not started"));
+        }
+
+        process_watcher
+            .adapter
+            .import_transaction(tx_output_file)
+            .await
+            .map_err(anyhow::Error::from)
+    }
+
     pub async fn get_coinbase_transactions(
         &self,
         continuation: bool,

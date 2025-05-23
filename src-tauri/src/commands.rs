@@ -1878,7 +1878,7 @@ pub async fn send_one_sided_to_stealth_address(
     info!(target: LOG_TARGET, "[send_one_sided_to_stealth_address] called with args: (amount: {:?}, destination: {:?}, payment_id: {:?})", amount, destination, payment_id);
     let mut spend_wallet_manager = state.spend_wallet_manager.write().await;
     spend_wallet_manager
-        .send_one_sided_to_stealth_address(amount, destination, payment_id)
+        .send_one_sided_to_stealth_address(amount, destination, payment_id, &state.wallet_manager)
         .await
         .map_err(|e| e.to_string())?;
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
