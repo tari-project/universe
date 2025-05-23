@@ -9,6 +9,10 @@ import {
     Values,
     ExpandedWrapper,
     TriggerWrapper,
+    TooltipChip,
+    TooltipChipWrapper,
+    TooltipChipHeading,
+    TooltipChipText,
 } from './styles';
 import { Trans, useTranslation } from 'react-i18next';
 import { Typography } from '@app/components/elements/Typography.tsx';
@@ -28,7 +32,7 @@ const variants = {
         opacity: 1,
     },
 };
-
+const REWARD_THRESHOLD = `2 XTM`;
 export const PoolStatsTile = () => {
     const { t } = useTranslation('p2p');
     const { daysString, hoursString, minutes, seconds } = useMiningTime();
@@ -36,9 +40,9 @@ export const PoolStatsTile = () => {
     const loading = !!pool_status && !pool_status?.balance && !pool_status?.unpaid;
     const balanceFMT = formatNumber(pool_status?.balance || 0, FormatPreset.XTM_COMPACT);
 
-    const [expanded, setExpanded] = useState(true);
+    const [expanded, setExpanded] = useState(false);
     const { refs, context, floatingStyles } = useFloating({
-        open: true,
+        open: expanded,
         onOpenChange: setExpanded,
         placement: 'right',
         middleware: [offset({ mainAxis: 30 })],
@@ -82,11 +86,19 @@ export const PoolStatsTile = () => {
                                         <Trans
                                             i18nKey="stats.tooltip-copy"
                                             ns="p2p"
-                                            values={{ amount: `2 XTM`, duration: `~6 hrs` }}
+                                            values={{ amount: REWARD_THRESHOLD, duration: `~6 hrs` }}
                                             components={{ strong: <strong /> }}
                                         />
                                     </Typography>
-                                    <MiningTime timing={{ daysString, hoursString, minutes, seconds }} />
+                                    <TooltipChipWrapper>
+                                        <TooltipChip>
+                                            <MiningTime timing={{ daysString, hoursString, minutes, seconds }} />
+                                        </TooltipChip>
+                                        <TooltipChip>
+                                            <TooltipChipHeading>{`Rewards threshold`}</TooltipChipHeading>
+                                            <TooltipChipText>{REWARD_THRESHOLD}</TooltipChipText>
+                                        </TooltipChip>
+                                    </TooltipChipWrapper>
                                 </ExpandedWrapper>
                             )}
                         </AnimatePresence>

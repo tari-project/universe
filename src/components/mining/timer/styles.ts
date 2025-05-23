@@ -5,13 +5,12 @@ export type MiningTimeVariant = 'primary' | 'mini';
 
 export const Wrapper = styled.div`
     display: flex;
-    color: ${({ theme }) => theme.palette.text.contrast};
-    background-color: ${({ theme }) => theme.palette.contrast};
+    //color: ${({ theme }) => theme.palette.text.contrast};
+    // background-color: ${({ theme }) => theme.palette.contrast};
     flex-direction: column;
     justify-content: space-between;
     border-radius: 10px;
-    padding: 15px;
-    width: 50%;
+    //padding: 15px;
 `;
 
 export const HeadingSection = styled.div`
@@ -22,6 +21,7 @@ export const HeadingSection = styled.div`
 export const Heading = styled(Typography).attrs({ variant: 'p' })`
     color: ${({ theme }) => theme.palette.text.secondary};
     font-weight: 500;
+    white-space: nowrap;
 `;
 
 export const MiniWrapper = styled.div`

@@ -73,12 +73,43 @@ export const ExpandedWrapper = styled(m.div)`
     border-radius: ${({ theme }) => theme.shape.borderRadius.app};
     box-shadow: 2px 8px 8px 0 rgba(0, 0, 0, 0.04);
     flex-direction: column;
-    gap: 8px;
-    width: 300px;
+    gap: 6px;
+    width: 360px;
     padding: 20px;
 
     h5,
     strong {
+        margin: 0;
         color: ${({ theme }) => theme.palette.text.primary};
     }
+`;
+
+export const TooltipChipWrapper = styled.div`
+    display: flex;
+    padding: 4px 0 0;
+    flex-direction: row;
+    gap: 6px;
+`;
+export const TooltipChip = styled.div`
+    display: flex;
+    color: ${({ theme }) => theme.palette.text.contrast};
+    background-color: ${({ theme }) => theme.palette.contrast};
+    flex-direction: column;
+    justify-content: space-between;
+    border-radius: 10px;
+    padding: 15px;
+    flex-shrink: 1;
+    flex-grow: 1;
+    width: 100%;
+`;
+
+export const TooltipChipHeading = styled(Typography).attrs({ variant: 'p' })`
+    white-space: nowrap;
+    color: ${({ theme }) => theme.palette.text.secondary};
+    font-weight: 500;
+`;
+export const TooltipChipText = styled(Typography).attrs({ variant: 'p' })`
+    color: ${({ theme }) => theme.palette.text.contrast};
+    font-size: 18px;
+    font-weight: 500;
 `;
