@@ -71,6 +71,7 @@ pub enum EventType {
     InitWalletScanningProgress,
     ConnectionStatus,
     ShowStageSecurityModal,
+    MiningTime,
 }
 
 #[derive(Clone, Debug, Serialize)]

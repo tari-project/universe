@@ -83,6 +83,7 @@ pub struct ConfigMiningContent {
     cpu_mining_pool_url: Option<String>,
     cpu_mining_pool_status_url: Option<String>,
     gpu_mining_pool_url: Option<String>,
+    mining_time: u128,
 }
 
 impl Default for ConfigMiningContent {
@@ -108,6 +109,7 @@ impl Default for ConfigMiningContent {
                 "http://104.161.20.146:1338/api/miner/%TARI_ADDRESS%/stats".to_string(),
             ),
             gpu_mining_pool_url: None,
+            mining_time: 0,
         }
     }
 }

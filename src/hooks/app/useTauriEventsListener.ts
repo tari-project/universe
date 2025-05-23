@@ -46,6 +46,7 @@ import {
     handleConfigMiningLoaded,
     handleConfigUILoaded,
     handleConfigWalletLoaded,
+    handleMiningTimeUpdate,
 } from '@app/store/actions/appConfigStoreActions';
 import { invoke } from '@tauri-apps/api/core';
 import { handleShowStagedSecurityModal } from '@app/store/actions/stagedSecurityActions';
@@ -199,6 +200,9 @@ const useTauriEventsListener = () => {
                             break;
                         case 'ShowStageSecurityModal':
                             handleShowStagedSecurityModal();
+                            break;
+                        case 'MiningTime':
+                            handleMiningTimeUpdate(event.payload);
                             break;
                         default:
                             console.warn('Unknown event', JSON.stringify(event));

@@ -53,11 +53,12 @@ use wallet_adapter::WalletState;
 use websocket_events_manager::WebsocketEventsManager;
 use websocket_manager::{WebsocketManager, WebsocketManagerStatusMessage, WebsocketMessage};
 
+use chrono::Utc;
 use log4rs::config::RawConfig;
 use std::fs;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, SystemTime};
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tauri::async_runtime::block_on;
@@ -237,6 +238,7 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
 #[derive(Clone)]
 struct UniverseAppState {
     stop_start_mutex: Arc<Mutex<()>>,
+    stop_start_timestamp_mutex: Arc<Mutex<SystemTime>>,
     node_status_watch_rx: Arc<watch::Receiver<BaseNodeStatus>>,
     #[allow(dead_code)]
     wallet_state_watch_rx: Arc<watch::Receiver<Option<WalletState>>>,
@@ -418,6 +420,7 @@ fn main() {
     );
     let app_state = UniverseAppState {
         stop_start_mutex: Arc::new(Mutex::new(())),
+        stop_start_timestamp_mutex: Arc::new(Mutex::new(SystemTime::now())),
         is_getting_p2pool_connections: Arc::new(AtomicBool::new(false)),
         node_status_watch_rx: Arc::new(base_node_watch_rx),
         wallet_state_watch_rx: Arc::new(wallet_state_watch_rx.clone()),
@@ -630,7 +633,7 @@ fn main() {
             commands::validate_minotari_amount,
             commands::trigger_phases_restart,
             commands::set_node_type,
-            commands::set_warmup_seen
+            commands::set_warmup_seen,
         ])
         .build(tauri::generate_context!())
         .inspect_err(
