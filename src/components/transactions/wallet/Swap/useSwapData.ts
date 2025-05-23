@@ -342,7 +342,7 @@ export const useSwapData = () => {
         if (!processingOpen) {
             clearCalculatedDetails();
         }
-    }, [clearCalculatedDetails, processingOpen, swapSuccess]);
+    }, [clearCalculatedDetails, processingOpen, swapSuccess, currentChainId]);
 
     const shouldCalculate = useRef(true);
     const calcRef = useRef<NodeJS.Timeout | null>(null);
