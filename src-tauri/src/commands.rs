@@ -1465,6 +1465,16 @@ pub async fn start_mining<'r>(
     let cpu_miner = state.cpu_miner.read().await;
     let cpu_miner_running = cpu_miner.is_running().await;
     drop(cpu_miner);
+           let cpu_miner_config = state.cpu_miner_config.read().await;
+        let config_path = app
+            .path()
+            .app_config_dir()
+            .expect("Could not get config dir");
+        let tari_address = InternalWallet::load_or_create(config_path)
+            .await
+            .map_err(|e| e.to_string())?
+            .get_tari_address();
+        drop(cpu_miner_config);
 
     if cpu_mining_enabled && !cpu_miner_running {
         let cpu_miner_config = state.cpu_miner_config.read().await;
@@ -1484,6 +1494,7 @@ pub async fn start_mining<'r>(
                 app.path().app_log_dir().expect("Could not get log dir"),
                 mode,
                 custom_cpu_usage,
+                &tari_address
             )
             .await;
         drop(cpu_miner_config);
@@ -1535,16 +1546,7 @@ pub async fn start_mining<'r>(
 
         info!(target: LOG_TARGET, "3. Starting gpu miner");
 
-        let cpu_miner_config = state.cpu_miner_config.read().await;
-        let config_path = app
-            .path()
-            .app_config_dir()
-            .expect("Could not get config dir");
-        let tari_address = InternalWallet::load_or_create(config_path)
-            .await
-            .map_err(|e| e.to_string())?
-            .get_tari_address();
-        drop(cpu_miner_config);
+ 
 
         let mut gpu_miner = state.gpu_miner.write().await;
         let res = gpu_miner
