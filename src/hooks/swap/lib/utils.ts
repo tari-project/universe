@@ -74,5 +74,50 @@ export const formatDisplayBalanceForSelectable = (
     symbol: string
 ): string => {
     if (rawBalance === undefined) return '0.000';
-    return `${parseFloat(viemFormatUnits(rawBalance, decimals)).toFixed(Math.min(decimals, 5))} ${symbol}`;
+    const balance = parseFloat(viemFormatUnits(rawBalance, decimals)).toFixed(Math.min(decimals, 5));
+    return `${parseFloat(balance)} ${symbol}`;
 };
+
+// ========== RETRY HELPER FUNCTION ==========
+/**
+ * Retries an async function a specified number of times with a delay.
+ * @param fnContext A string for logging context.
+ * @param asyncFn The async function to retry.
+ * @param maxAttempts Total number of attempts (e.g., 3 for 1 initial + 2 retries).
+ * @param delayMs Delay between retries in milliseconds.
+ * @param onRetry Optional callback executed on each retry attempt.
+ * @returns Promise<T> The result of the async function if successful.
+ * @throws The error from the last attempt if all attempts fail.
+ */
+export async function retryAsync<T>(
+    fnContext: string,
+    asyncFn: () => Promise<T>,
+    maxAttempts = 3, // Default to 1 initial attempt + 2 retries
+    delayMs = 1000, // Default to 1 second delay
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    onRetry?: (context: string, error: any, attempt: number, maxAttempts: number) => void
+): Promise<T> {
+    let attempts = 0;
+    while (true) {
+        attempts++;
+        try {
+            if (attempts > 1) console.info(`[RetryAsync][${fnContext}] Attempt ${attempts}/${maxAttempts}...`);
+            return await asyncFn();
+        } catch (error) {
+            if (onRetry) {
+                onRetry(fnContext, error, attempts, maxAttempts);
+            }
+            if (attempts >= maxAttempts) {
+                console.error(
+                    `[RetryAsync][${fnContext}] Function failed after ${maxAttempts} attempts. Last error:`,
+                    error
+                );
+                throw error; // Re-throw the last error
+            }
+            // Wait before retrying, but not after the last failed attempt
+            if (delayMs > 0) {
+                await new Promise((resolve) => setTimeout(resolve, delayMs));
+            }
+        }
+    }
+}

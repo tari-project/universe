@@ -34,6 +34,7 @@ import { WalletContents } from '@app/containers/floating/SwapDialogs/sections/Wa
 import { SignApprovalMessage } from '@app/containers/floating/SwapDialogs/sections/SignMessage/SignApprovalMessage';
 import { useTranslation } from 'react-i18next';
 import { setIsSwapping } from '@app/store/actions/walletStoreActions';
+import { EnabledTokensEnum } from '@app/hooks/swap/lib/constants';
 
 export const Swap = () => {
     const [openWallet, setOpenWallet] = useState(false);
@@ -59,6 +60,7 @@ export const Swap = () => {
         error,
         useSwapError,
         insufficientLiquidity,
+        lastUpdatedField,
         setProcessingOpen,
         setFromAmount,
         setTargetAmount,
@@ -95,7 +97,7 @@ export const Swap = () => {
                 {fromTokenDisplay && connectedAccount.address ? (
                     <ConnectedWalletWrapper onClick={() => setOpenWallet(true)}>
                         <>
-                            {getCurrencyIcon({ symbol: fromTokenDisplay.symbol || 'ETH', width: 20 })}
+                            {getCurrencyIcon({ symbol: EnabledTokensEnum.ETH, width: 20 })}
                             {truncateMiddle((connectedAccount?.address as `0x${string}`) || '', 6)}
                         </>
                     </ConnectedWalletWrapper>
@@ -108,13 +110,14 @@ export const Swap = () => {
                     <SwapAmountInput
                         type="text"
                         $error={uiDirection === 'toXtm' ? notEnoughBalance : false}
+                        $loading={isLoading && lastUpdatedField === 'wxtmField'}
                         inputMode="decimal"
                         placeholder="0.00"
                         onChange={(e) => setFromAmount(e.target.value)}
                         value={ethTokenAmount}
                     />
                     <SwapOptionCurrency $clickable={true} onClick={() => setTokenSelectOpen(true)}>
-                        {getCurrencyIcon({ symbol: fromTokenDisplay?.symbol || 'ETH', width: 25 })}
+                        {getCurrencyIcon({ symbol: fromTokenDisplay?.symbol || EnabledTokensEnum.ETH, width: 25 })}
                         <span>{fromTokenDisplay?.symbol || 'ETH'}</span>
                         <ChevronSVG width={18} />
                     </SwapOptionCurrency>
@@ -134,13 +137,14 @@ export const Swap = () => {
                     <SwapAmountInput
                         type="text"
                         $error={uiDirection === 'fromXtm' ? notEnoughBalance : false}
+                        $loading={isLoading && lastUpdatedField === 'ethTokenField'}
                         inputMode="decimal"
                         placeholder="0.00"
                         onChange={(e) => setTargetAmount(e.target.value)}
                         value={wxtmAmount}
                     />
                     <SwapOptionCurrency>
-                        {getCurrencyIcon({ symbol: 'XTM', width: 25 })}
+                        {getCurrencyIcon({ symbol: EnabledTokensEnum.WXTM, width: 25 })}
                         <span>{'wXTM'}</span>
                     </SwapOptionCurrency>
                 </SwapOptionAmount>

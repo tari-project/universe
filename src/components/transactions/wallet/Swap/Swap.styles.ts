@@ -69,7 +69,7 @@ export const SwapDirection = styled.div`
     z-index: 2;
 `;
 
-export const SwapAmountInput = styled.input<{ $error?: boolean }>`
+export const SwapAmountInput = styled.input<{ $error?: boolean; $loading?: boolean }>`
     color: ${({ theme }) => theme.palette.text.primary};
     font-family: Poppins, sans-serif;
     font-weight: 500;
@@ -94,6 +94,12 @@ export const SwapAmountInput = styled.input<{ $error?: boolean }>`
         $error &&
         css`
             color: ${({ theme }) => theme.palette.error.main};
+        `}
+
+    ${({ $loading }) =>
+        $loading &&
+        css`
+            opacity: 0.5;
         `}
 `;
 

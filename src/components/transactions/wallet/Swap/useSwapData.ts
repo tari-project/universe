@@ -20,7 +20,7 @@ import { useConfigCoreStore } from '@app/store';
 import { fetchTokenPriceUSD, formatDisplayBalanceForSelectable } from '@app/hooks/swap/lib/utils';
 import { useTokenDisplayInfo } from './helpers/useTokenInfo';
 
-export type TokenSymbol = 'POL' | 'XTM' | 'WXTM' | 'DAI' | 'ETH' | 'USDC';
+export type TokenSymbol = EnabledTokensEnum;
 export interface SelectableTokenInfo {
     label: string;
     symbol: TokenSymbol;
@@ -86,12 +86,6 @@ export const useSwapData = () => {
         () => (direction === 'toXtm' ? swapEngineOutputToken : swapEngineInputToken),
         [direction, swapEngineInputToken, swapEngineOutputToken]
     );
-
-    // const { data: rawFromTokenBalanceData, isLoading: isLoadingFromBalance } = useBalance({
-    //     address: connectedAccount.address,
-    //     token: fromUiTokenDefinition?.isNative ? undefined : (fromUiTokenDefinition?.address as `0x${string}`),
-    //     chainId: currentChainId,
-    // });
 
     const {
         tokenDisplayInfo: fromTokenDisplay,
@@ -645,8 +639,7 @@ export const useSwapData = () => {
     const handleSelectFromToken = useCallback(
         (selectedToken: SelectableTokenInfo) => {
             setPairTokenAddress(selectedToken.address);
-            setLastUpdatedField('ethTokenField');
-            shouldCalculate.current = false;
+            shouldCalculate.current = true;
             setTokenSelectOpen(false);
         },
         [setPairTokenAddress]
@@ -687,6 +680,7 @@ export const useSwapData = () => {
         clearCalculatedDetails,
         insufficientLiquidity,
         handleRefetchBalances,
+        lastUpdatedField,
         error: swapError,
         setFromAmount: (val: string) => handleNumberInput(val, 'ethTokenField'),
         setTargetAmount: (val: string) => handleNumberInput(val, 'wxtmField'),

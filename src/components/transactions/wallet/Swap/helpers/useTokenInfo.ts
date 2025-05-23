@@ -45,6 +45,8 @@ export function useTokenDisplayInfo({
         chainId: chainId,
     });
 
+    console.log('uiTokenDefinition', uiTokenDefinition);
+
     const fetchPrice = useCallback(async () => {
         if (uiTokenDefinition?.symbol && chainId) {
             setIsFetchingPrice(true);
