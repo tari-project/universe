@@ -12,6 +12,7 @@ import { setVisualMode } from '@app/store/index.ts';
 import { BridgeOutlineSVG } from '@app/assets/icons/bridge-outline.tsx';
 import { useTappletsStore } from '@app/store/useTappletsStore.ts';
 import { BRIDGE_TAPPLET_ID } from '@app/store/consts.ts';
+import { useTariBalance } from '@app/hooks/wallet/useTariBalance.ts';
 
 interface NavButtonProps {
     children: ReactNode;
@@ -22,6 +23,7 @@ interface NavButtonProps {
 const NavButton = memo(function NavButton({ children, isActive, onClick }: NavButtonProps) {
     const sidebarOpen = useUIStore((s) => s.sidebarOpen);
     const [showArrow, setShowArrow] = useState(false);
+    const { isWalletScanning } = useTariBalance();
 
     const scaleX = sidebarOpen ? -1 : 1;
 
@@ -33,6 +35,7 @@ const NavButton = memo(function NavButton({ children, isActive, onClick }: NavBu
             aria-label={isActive ? 'Active sidebar section' : 'Inactive sidebar section'}
             onMouseEnter={() => setShowArrow(true)}
             onMouseLeave={() => setShowArrow(false)}
+            disabled={isWalletScanning}
         >
             <AnimatePresence mode="popLayout">
                 {showArrow ? (

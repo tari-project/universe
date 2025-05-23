@@ -136,10 +136,6 @@ impl TappletManager {
             .map_err(|e| anyhow!("Error getting tapplet folder: {:?}", e))?;
 
         // This is a safety check to ensure that the destination directory is empty
-        // Its special case for tari repo, where zip will inclue mutliple binaries
-        // So when one of them is deleted, and we need to download it again
-        // We in fact will download zip with multiple binaries, and when other binaries are present in destination dir
-        // extract will fail, so we need to remove all files from destination dir
         let destination_dir = tapplet_dir.join(version.to_string());
 
         self.ensure_empty_directory(destination_dir.clone())?;
