@@ -117,7 +117,7 @@ impl WalletAdapter {
                 anyhow::anyhow!("Failed to connect to wallet client")
             })?;
 
-        client
+        let res = client
             .import_transactions(ImportTransactionsRequest {
                 txs: format!("[{}]", tx_json.trim()),
             })
@@ -129,6 +129,12 @@ impl WalletAdapter {
                 );
                 anyhow::anyhow!("Failed to import transactions: {:?}", e)
             })?;
+
+        info!(
+            target: LOG_TARGET,
+            "Transaction imported to the view wallet successfully, tx_id: {:?}",
+            res.into_inner().tx_ids.first()
+        );
 
         Ok(())
     }
