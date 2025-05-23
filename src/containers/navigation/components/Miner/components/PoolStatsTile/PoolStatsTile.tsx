@@ -1,4 +1,4 @@
-import { useMiningMetricsStore, useMiningStore } from '@app/store';
+import { useMiningMetricsStore } from '@app/store';
 import { formatNumber, FormatPreset } from '@app/utils';
 import {
     LeftContent,
@@ -7,8 +7,6 @@ import {
     Title,
     BalanceVal,
     Values,
-    Timer,
-    TimerDot,
     ExpandedWrapper,
     TriggerWrapper,
 } from './styles';
@@ -19,6 +17,7 @@ import { useState } from 'react';
 import { offset, safePolygon, useFloating, useHover, useInteractions } from '@floating-ui/react';
 
 import { AnimatePresence } from 'motion/react';
+import { MiningTime } from '@app/components/mining/timer/MiningTime.tsx';
 
 const variants = {
     hidden: {
@@ -31,7 +30,7 @@ const variants = {
 
 export const PoolStatsTile = () => {
     const { t } = useTranslation('p2p');
-    const miningTime = useMiningStore((s) => s.miningTime);
+
     const pool_status = useMiningMetricsStore((s) => s.cpu_mining_status.pool_status);
     const loading = !!pool_status && !pool_status?.balance && !pool_status?.unpaid;
     const balanceFMT = formatNumber(pool_status?.balance || 0, FormatPreset.XTM_COMPACT);
@@ -65,14 +64,7 @@ export const PoolStatsTile = () => {
                         <TriggerWrapper ref={refs.setReference} {...getReferenceProps()}>
                             <QuestionMarkSvg />
                         </TriggerWrapper>
-                        {miningTime ? (
-                            <Timer>
-                                <TimerDot />
-                                <Typography>{miningTime}</Typography>
-                            </Timer>
-                        ) : (
-                            <div />
-                        )}
+                        <MiningTime variant="mini" />
                         <AnimatePresence mode="sync">
                             {expanded && (
                                 <ExpandedWrapper
