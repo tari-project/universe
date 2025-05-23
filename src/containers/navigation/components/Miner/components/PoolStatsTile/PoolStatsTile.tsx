@@ -39,8 +39,8 @@ export const PoolStatsTile = () => {
     const { refs, context, floatingStyles } = useFloating({
         open: expanded,
         onOpenChange: setExpanded,
-        placement: 'right-start',
-        middleware: [offset({ mainAxis: 5 })],
+        placement: 'right',
+        middleware: [offset({ mainAxis: 30 })],
     });
 
     const hover = useHover(context, {

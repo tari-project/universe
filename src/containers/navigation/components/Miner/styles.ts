@@ -26,7 +26,7 @@ export const TileItem = styled.div<{ $unpadded?: boolean }>`
     flex-grow: 1;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: space-between;
     gap: 3px;
     height: 60px;
     color: ${({ theme }) => theme.palette.text.accent};
@@ -46,7 +46,7 @@ export const StatWrapper = styled.div<{ $useLowerCase?: boolean }>`
     color: ${({ theme }) => theme.palette.text.primary};
     min-height: 18px;
 
-    font-size: 18px;
+    font-size: 14px;
     font-style: normal;
     font-weight: 500;
     line-height: 100%;

@@ -7,7 +7,6 @@ const bg = '#188750';
 const bg_loading = '#CC7A1C';
 export const Wrapper = styled.div<{ $isLoading?: boolean }>`
     height: 60px;
-    padding: 0 15px;
     width: 100%;
     display: flex;
     align-items: center;
@@ -22,11 +21,12 @@ export const Wrapper = styled.div<{ $isLoading?: boolean }>`
     font-weight: 500;
     flex-shrink: 0;
     flex-grow: 6;
+    padding: 7px 10px;
 `;
 
 export const LeftContent = styled.div`
     display: flex;
-    gap: 4px;
+    height: 100%;
     justify-content: space-between;
     flex-direction: column;
 `;
@@ -35,7 +35,7 @@ export const RightContent = styled.div`
     flex-direction: column;
     justify-content: space-between;
     align-items: end;
-    gap: 4px;
+    height: 100%;
     position: relative;
 `;
 
