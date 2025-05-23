@@ -40,7 +40,6 @@ export const PoolStatsTile = () => {
     const isMining = useMiningMetricsStore((s) => s.cpu_mining_status.is_mining || s.gpu_mining_status.is_mining);
     const loading = isMining && !pool_status;
     const balanceFMT = formatNumber(pool_status?.balance || 0, FormatPreset.XTM_COMPACT);
-    console.debug(pool_status);
     const [expanded, setExpanded] = useState(false);
     const { refs, context, floatingStyles } = useFloating({
         open: expanded,
