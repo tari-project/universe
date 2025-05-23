@@ -58,6 +58,7 @@ export interface ConfigMining {
     gpu_mining_enabled: boolean;
     cpu_mining_enabled: boolean;
     gpu_engine: string;
+    mining_time: number;
 }
 
 export interface ConfigBackendInMemory {

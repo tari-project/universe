@@ -4,6 +4,7 @@ export interface SetupState {
     miningUnlocked: boolean;
     walletUnlocked: boolean;
     hardwarePhaseFinished: boolean;
+    isInitialSetupFinished: boolean;
     appUnlocked: boolean;
     core_phase_setup_payload?: ProgressTrackerUpdatePayload;
     hardware_phase_setup_payload?: ProgressTrackerUpdatePayload;

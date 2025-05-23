@@ -178,6 +178,14 @@ export interface CpuMinerStatus {
     hash_rate: number;
     estimated_earnings: number;
     connection: CpuMinerConnectionStatus;
+    pool_status?: PoolStatus;
+}
+
+export interface PoolStatus {
+    accepted_shares: number;
+    unpaid: number;
+    balance: number;
+    min_payout: number;
 }
 
 interface CpuMinerConnectionStatus {
