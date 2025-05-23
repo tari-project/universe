@@ -47,7 +47,7 @@ pub enum XmrigNodeConnection {
     Pool {
         host_name: String,
         port: u16,
-        monero_address: String,
+        tari_address: String,
     },
     MergeMinedPool {
         host_name: String,
@@ -80,7 +80,7 @@ impl XmrigNodeConnection {
             XmrigNodeConnection::Pool {
                 host_name,
                 port,
-                monero_address,
+                tari_address: monero_address,
             } => {
                 vec![
                     "--url".to_string(),
