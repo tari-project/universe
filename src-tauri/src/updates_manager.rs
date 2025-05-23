@@ -215,14 +215,13 @@ impl UpdatesManager {
         } else {
             "latest"
         };
-
-        let update_url_string = match EXCHANGE_ID.ne(DEFAULT_EXCHANGE_ID) {
-            true => {
-                format!("https://cdn-universe.tari.com/tari-project/universe/exchanges/{}/latest-{}.json", EXCHANGE_ID, EXCHANGE_ID)
-            }
-            false => {
-                format!("https://raw.githubusercontent.com/tari-project/universe/main/.updater/{updater_filename}.json")
-            }
+        let update_url_string = if EXCHANGE_ID.ne(DEFAULT_EXCHANGE_ID) {
+            format!(
+                "https://cdn-universe.tari.com/tari-project/universe/exchanges/{}/latest-{}.json",
+                EXCHANGE_ID, EXCHANGE_ID
+            )
+        } else {
+            format!("https://raw.githubusercontent.com/tari-project/universe/main/.updater/{updater_filename}.json")
         };
         Url::parse(&update_url_string).expect("Failed to parse update URL")
     }
