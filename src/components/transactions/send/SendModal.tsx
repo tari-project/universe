@@ -7,7 +7,7 @@ import { SendForm } from './SendForm.tsx';
 import { SendReview } from './SendReview/SendReview.tsx';
 import { StyledForm, Wrapper } from './Send.styles.ts';
 import { invoke } from '@tauri-apps/api/core';
-import { addPendingTransaction, setError as setStoreError } from '@app/store';
+import { refreshTransactions, setError as setStoreError } from '@app/store';
 
 interface SendModalProps {
     section: string;
@@ -72,7 +72,7 @@ export default function SendModal({ section, setSection }: SendModalProps) {
                     ...payload,
                     amount: payload.amount.toString(),
                 });
-                addPendingTransaction(payload);
+                await refreshTransactions();
                 setStatus('completed');
             } catch (error) {
                 setStoreError(`Error sending transaction: ${error}`);

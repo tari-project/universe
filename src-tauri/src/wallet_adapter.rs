@@ -33,7 +33,7 @@ use log::{info, warn};
 use minotari_node_grpc_client::grpc::wallet_client::WalletClient;
 use minotari_node_grpc_client::grpc::{
     GetBalanceResponse, GetCompletedTransactionsRequest, GetCompletedTransactionsResponse,
-    GetStateRequest, NetworkStatusResponse,
+    GetStateRequest, ImportTransactionsRequest, NetworkStatusResponse,
 };
 use serde::Serialize;
 use std::fs;
@@ -97,6 +97,48 @@ impl WalletAdapter {
         self.connect_with_local_node = connect_with_local_node;
     }
 
+    pub async fn import_transaction(&self, tx_output_file: PathBuf) -> Result<(), anyhow::Error> {
+        let tx_json = fs::read_to_string(&tx_output_file).map_err(|e| {
+            log::error!(
+                "[import_transaction] Failed to read transaction output file: {}, output_file:\n{:?}",
+                e,
+                tx_output_file
+            );
+            anyhow::anyhow!("Failed to read transaction output file: {}", e)
+        })?;
+
+        let mut client = WalletClient::connect(self.wallet_grpc_address())
+            .await
+            .map_err(|e| {
+                log::error!(
+                    "[import_transaction] Failed to connect to wallet client: {}",
+                    e
+                );
+                anyhow::anyhow!("Failed to connect to wallet client")
+            })?;
+
+        let res = client
+            .import_transactions(ImportTransactionsRequest {
+                txs: format!("[{}]", tx_json.trim()),
+            })
+            .await
+            .map_err(|e| {
+                log::error!(
+                    "[import_transaction] Failed to import transactions: {:?}",
+                    e
+                );
+                anyhow::anyhow!("Failed to import transactions: {:?}", e)
+            })?;
+
+        info!(
+            target: LOG_TARGET,
+            "Transaction imported to the view wallet successfully, tx_id: {:?}",
+            res.into_inner().tx_ids.first()
+        );
+
+        Ok(())
+    }
+
     pub async fn get_transactions_history(
         &self,
         continuation: bool,
@@ -153,7 +195,7 @@ impl WalletAdapter {
                 excess_sig: tx.excess_sig,
                 fee: tx.fee,
                 timestamp: tx.timestamp,
-                payment_id: PaymentId::from_bytes(&tx.user_payment_id).user_data_as_string(),
+                payment_id: PaymentId::stringify_bytes(&tx.user_payment_id),
                 mined_in_block_height: tx.mined_in_block_height,
             });
             if let Some(limit) = limit {
@@ -221,7 +263,7 @@ impl WalletAdapter {
                 excess_sig: tx.excess_sig,
                 fee: tx.fee,
                 timestamp: tx.timestamp,
-                payment_id: PaymentId::from_bytes(&tx.user_payment_id).user_data_as_string(),
+                payment_id: PaymentId::stringify_bytes(&tx.user_payment_id),
                 mined_in_block_height: tx.mined_in_block_height,
             });
             if let Some(limit) = limit {
@@ -265,7 +307,7 @@ impl WalletAdapter {
                             if let Some(network) = &state.network {
                                 if matches!(network.status, ConnectivityStatus::Online(3..)) {
                                     zero_scanned_height_count += 1;
-                                    if zero_scanned_height_count >= 10 {
+                                    if zero_scanned_height_count >= 5 {
                                         warn!(target: LOG_TARGET, "Wallet scanned before gRPC service started");
                                         return Ok(state);
                                     }

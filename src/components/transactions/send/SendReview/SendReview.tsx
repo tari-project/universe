@@ -35,15 +35,6 @@ export function SendReview({
     handleClose,
 }: Props) {
     const { t } = useTranslation('wallet');
-    const latestPendingTx = useWalletStore((s) => s.pending_transactions?.[0]);
-    const latestTx = useWalletStore((s) => s.transactions?.[0]);
-
-    useEffect(() => {
-        if (status !== 'processing' || !latestTx || !latestPendingTx) return;
-        if (latestTx.timestamp === latestPendingTx?.timestamp) {
-            setStatus('completed');
-        }
-    }, [status, setStatus, latestTx, latestPendingTx]);
 
     const formattedAmount = formatNumber((amount || 0) * 1_000_000, FormatPreset.XTM_LONG);
     const formattedAddress = truncateMiddle(address, 5);
@@ -71,7 +62,7 @@ export function SendReview({
     const statusEntries: StatusListEntry[] = [
         {
             label: t('send.status'),
-            value: status === 'processing' ? t('send.processing') : t('send.completed'),
+            value: status === 'processing' ? t('send.processing') : t('send.broadcast'),
             status,
         },
         // {

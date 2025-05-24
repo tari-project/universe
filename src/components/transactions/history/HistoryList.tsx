@@ -8,25 +8,20 @@ import { fetchTransactionsHistory } from '@app/store';
 import { useTranslation } from 'react-i18next';
 import { TransactionInfo } from '@app/types/app-status.ts';
 import ListLoadingAnimation from '@app/containers/navigation/components/Wallet/ListLoadingAnimation/ListLoadingAnimation.tsx';
-import ItemExpand from './ExpandedItem.tsx';
+
 import { PlaceholderItem } from './ListItem.styles.ts';
 import { LoadingText } from '@app/containers/navigation/components/Wallet/ListLoadingAnimation/styles.ts';
+import { TransactionDetails } from '@app/components/transactions/history/details/TransactionDetails.tsx';
 
 const HistoryList = memo(function HistoryList() {
     const { t } = useTranslation('wallet');
     const is_transactions_history_loading = useWalletStore((s) => s.is_transactions_history_loading);
     const newestTxIdOnInitialFetch = useWalletStore((s) => s.newestTxIdOnInitialFetch);
-    const pendingTransactions = useWalletStore((s) => s.pending_transactions);
     const walletScanning = useWalletStore((s) => s.wallet_scanning);
     const hasMore = useWalletStore((s) => s.has_more_transactions);
     const transactions = useWalletStore((s) => s.transactions);
 
     const [detailsItem, setDetailsItem] = useState<TransactionInfo | null>(null);
-
-    const combinedTransactions = useMemo(
-        () => [...pendingTransactions, ...transactions] as TransactionInfo[],
-        [pendingTransactions, transactions]
-    );
 
     const handleNext = useCallback(async () => {
         if (!is_transactions_history_loading) {
@@ -35,12 +30,12 @@ const HistoryList = memo(function HistoryList() {
     }, [is_transactions_history_loading]);
 
     const listMarkup = useMemo(() => {
-        const latestTxId = combinedTransactions?.[0]?.tx_id;
+        const latestTxId = transactions?.[0]?.tx_id;
         const hasNewTx = latestTxId ? newestTxIdOnInitialFetch !== latestTxId : false;
-        const initialTxTime = combinedTransactions?.find((tx) => tx.tx_id === newestTxIdOnInitialFetch)?.timestamp;
+        const initialTxTime = transactions?.find((tx) => tx.tx_id === newestTxIdOnInitialFetch)?.timestamp;
 
         // Calculate how many placeholder items we need to add
-        const transactionsCount = combinedTransactions?.length || 0;
+        const transactionsCount = transactions?.length || 0;
         const placeholdersNeeded = Math.max(0, 5 - transactionsCount);
 
         return (
@@ -52,7 +47,7 @@ const HistoryList = memo(function HistoryList() {
                 scrollableTarget="list"
             >
                 <ListItemWrapper>
-                    {combinedTransactions?.map((tx, i) => {
+                    {transactions?.map((tx, i) => {
                         // only show "new" badge under these conditions:
                         // there are new txs is general
                         // it's only of the latest 3
@@ -79,7 +74,7 @@ const HistoryList = memo(function HistoryList() {
                 </ListItemWrapper>
             </InfiniteScroll>
         );
-    }, [combinedTransactions, handleNext, hasMore, newestTxIdOnInitialFetch]);
+    }, [transactions, handleNext, hasMore, newestTxIdOnInitialFetch]);
 
     const baseMarkup = walletScanning.is_scanning ? (
         <ListLoadingAnimation
@@ -97,7 +92,7 @@ const HistoryList = memo(function HistoryList() {
         listMarkup
     );
 
-    const isEmpty = !walletScanning.is_scanning && !combinedTransactions?.length;
+    const isEmpty = !walletScanning.is_scanning && !transactions?.length;
     const emptyMarkup = isEmpty ? <LoadingText>{t('empty-tx')}</LoadingText> : null;
 
     return (
@@ -108,7 +103,7 @@ const HistoryList = memo(function HistoryList() {
             </ListWrapper>
 
             {detailsItem && (
-                <ItemExpand
+                <TransactionDetails
                     item={detailsItem}
                     expanded={Boolean(detailsItem)}
                     handleClose={() => setDetailsItem(null)}

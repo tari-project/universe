@@ -1,4 +1,5 @@
 import { TransactionInfo } from '@app/types/app-status.ts';
+import { TransactionDirection } from '@app/types/transactions.ts';
 
 export type TransationType = 'mined' | 'sent' | 'received' | 'unknown';
 
@@ -11,7 +12,7 @@ export interface HistoryListItemProps {
 
 export interface BaseItemProps {
     title: string;
-    type: TransationType;
+    direction: TransactionDirection;
     time: string;
     value: string;
     chip?: string;

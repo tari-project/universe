@@ -20,9 +20,10 @@
   },
   "send": {
     "balance": "Balans",
+    "broadcast": "Broadcasting",
     "completed": "Voltooi",
     "completed-amount-sent": "is gestuur na",
-    "completed-text": "Jou oordrag is nou voltooi.",
+    "completed-text": "Your transfer submission is now complete and will be broadcast.",
     "completed-title": "Jy is Klaar!",
     "cta-confirm": "Bevestig",
     "cta-review": "Hersien",

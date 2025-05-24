@@ -1,16 +1,6 @@
 import { create } from './create';
 import { TransactionInfo, WalletBalance } from '../types/app-status.ts';
-import { refreshTransactions, setWalletBalance } from './actions/walletStoreActions.ts';
-
-interface PendingTransaction {
-    tx_id: number;
-    amount: number;
-    dest_address: string;
-    payment_id: string;
-    direction: number;
-    status: number;
-    timestamp: number;
-}
+import { refreshTransactions } from './actions/walletStoreActions.ts';
 
 interface WalletStoreState {
     tari_address_base58: string;
@@ -20,7 +10,6 @@ interface WalletStoreState {
     calculated_balance?: number;
     coinbase_transactions: TransactionInfo[];
     transactions: TransactionInfo[];
-    pending_transactions: PendingTransaction[];
     is_reward_history_loading: boolean;
     has_more_coinbase_transactions: boolean;
     has_more_transactions: boolean;
@@ -41,7 +30,6 @@ const initialState: WalletStoreState = {
     is_tari_address_generated: null,
     coinbase_transactions: [],
     transactions: [],
-    pending_transactions: [],
     has_more_coinbase_transactions: true,
     has_more_transactions: true,
     is_reward_history_loading: false,
@@ -59,27 +47,6 @@ export const useWalletStore = create<WalletStoreState>()(() => ({
     ...initialState,
 }));
 
-// Temporary solution until we use excess_sig to track pending transactions
-export const addPendingTransaction = (payload: { amount: number; destination: string; paymentId: string }) => {
-    const transaction: PendingTransaction = {
-        tx_id: Date.now(),
-        amount: Number(payload.amount) * 1_000_000,
-        dest_address: payload.destination,
-        payment_id: payload.paymentId,
-        direction: 2,
-        status: 1,
-        timestamp: Math.floor(Date.now() / 1000),
-    };
-
-    useWalletStore.setState((state) => ({
-        pending_transactions: [transaction, ...state.pending_transactions],
-    }));
-    const balance = useWalletStore.getState().balance;
-    if (balance) {
-        setWalletBalance(balance);
-    }
-};
-
 export const updateWalletScanningProgress = (payload: {
     scanned_height: number;
     total_height: number;
@@ -96,20 +63,4 @@ export const updateWalletScanningProgress = (payload: {
     if (!is_scanning) {
         refreshTransactions();
     }
-};
-
-export const refreshPendingTransactions = () => {
-    useWalletStore.setState((state) => {
-        // Filter out pending transactions that have matching confirmed transactions
-        const updatedPendingTransactions = state.pending_transactions.filter((pending) => {
-            const isConfirmed = state.transactions.some(
-                (tx) => tx.amount === pending.amount && tx.payment_id === pending.payment_id
-            );
-            return !isConfirmed;
-        });
-
-        return {
-            pending_transactions: updatedPendingTransactions,
-        };
-    });
 };
