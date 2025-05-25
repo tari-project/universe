@@ -23,11 +23,6 @@ The goal is to create a new opportunity for Tari-focused miners to earn more rew
 _May 15, 2025_
 
 Hey everyone,
-Happy day 9 of Tari mainnet! The "Waves of Resolve" hotfix improves p2pool stability and networking reliability. P2pool ftw! 💜🐢I UNIVERSE v1.0.10: Waves of Resolve
-
-_May 15, 2025_
-
-Hey everyone,
 Happy day 9 of Tari mainnet! The “Waves of Resolve” hotfix improves p2pool stability and networking reliability. P2pool ftw! 💜🐢
 
 ✨ WHAT’S NEW
