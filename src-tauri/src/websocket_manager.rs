@@ -49,6 +49,7 @@ use tungstenite::Utf8Bytes;
 use urlencoding::encode;
 
 use crate::app_in_memory_config::DynamicMemoryConfig;
+use crate::app_in_memory_config::UNIVERSAL_EXCHANGE_ID;
 use crate::configs::config_core::ConfigCore;
 use crate::configs::trait_config::ConfigImpl;
 use crate::tasks_tracker::TasksTrackers;
@@ -239,6 +240,10 @@ impl WebsocketManager {
             loop {
                 tokio::select! {
                     _ = async {
+                        if config_cloned.read().await.exchange_id.eq(UNIVERSAL_EXCHANGE_ID) {
+                            info!(target:LOG_TARGET,"waiting for 5 seconds before connecting to websocket. User hasn't yet chosen an exchange");
+                            sleep(Duration::from_millis(5000)).await;
+                        }
                         let connection_res = WebsocketManager::connect_to_url(&config_cloned).await.inspect_err(|e|{
                             error!(target:LOG_TARGET,"failed to connect to websocket due to {}",e.to_string())});
 
