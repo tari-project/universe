@@ -18,6 +18,7 @@ import { GpuThreads } from '@app/types/app-status.ts';
 import { displayMode, modeType } from '../types';
 import { ConfigCore, ConfigMining, ConfigUI, ConfigWallet } from '@app/types/configs.ts';
 import { NodeType, updateNodeType as updateNodeTypeForNodeStore } from '../useNodeStore.ts';
+import { setShowUniversalModal } from '../useExchangeStore.ts';
 
 interface SetModeProps {
     mode: modeType;
@@ -312,6 +313,9 @@ export const fetchBackendInMemoryConfig = async () => {
         const res = await invoke('get_app_in_memory_config');
         if (res) {
             useConfigBEInMemoryStore.setState({ ...res });
+            if (res.exchangeId === 'universal') {
+                setShowUniversalModal(true);
+            }
         }
     } catch (e) {
         console.error('Could not fetch backend in memory config', e);

@@ -31,7 +31,7 @@ use tokio::sync::{
 use tokio_util::sync::CancellationToken;
 
 use crate::{
-    app_in_memory_config::DynamicMemoryConfig,
+    app_in_memory_config::{DynamicMemoryConfig, UNIVERSAL_EXCHANGE_ID},
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
     hardware::hardware_status_monitor::HardwareStatusMonitor,
     process_utils::retry_with_backoff,
@@ -192,6 +192,10 @@ async fn send_telemetry_data(
     app_id: String,
     exchange_id: String,
 ) -> Result<(), TelemetryServiceError> {
+    if exchange_id.eq(UNIVERSAL_EXCHANGE_ID) {
+        info!("TelemetryService::send_telemetry_data skipping telemetry, user hasn't yet chosen an exchange");
+        return Ok(());
+    }
     let request = reqwest::Client::new();
 
     let hardware = HardwareStatusMonitor::current();

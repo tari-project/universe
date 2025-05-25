@@ -22,7 +22,7 @@
 
 use crate::app_config::{AirdropTokens, DisplayMode, GpuThreads, MiningMode};
 use crate::app_in_memory_config::{
-    get_der_encode_pub_key, get_websocket_key, AirdropInMemoryConfig,
+    get_der_encode_pub_key, get_websocket_key, AirdropInMemoryConfig, ExchangeMiner,
 };
 use crate::auto_launcher::AutoLauncher;
 use crate::binaries::{Binaries, BinaryResolver};
@@ -34,7 +34,6 @@ use crate::configs::trait_config::ConfigImpl;
 use crate::credential_manager::{CredentialError, CredentialManager};
 use crate::events_emitter::EventsEmitter;
 use crate::events_manager::EventsManager;
-use crate::exchange_miner::ExchangeMiner;
 use crate::external_dependencies::{
     ExternalDependencies, ExternalDependency, RequiredExternalDependency,
 };
@@ -53,7 +52,7 @@ use crate::utils::app_flow_utils::FrontendReadyChannel;
 use crate::wallet_adapter::TransactionInfo;
 use crate::wallet_manager::WalletManagerError;
 use crate::websocket_manager::WebsocketManagerStatusMessage;
-use crate::{airdrop, exchange_miner, UniverseAppState, APPLICATION_FOLDER_ID};
+use crate::{airdrop, UniverseAppState, APPLICATION_FOLDER_ID};
 
 use base64::prelude::*;
 use keyring::Entry;

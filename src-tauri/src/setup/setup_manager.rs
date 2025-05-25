@@ -26,14 +26,13 @@ use super::{
     trait_setup_phase::SetupPhaseImpl, utils::phase_builder::PhaseBuilder,
 };
 use crate::{
-    app_in_memory_config::{DynamicMemoryConfig, DEFAULT_EXCHANGE_ID},
+    app_in_memory_config::{DynamicMemoryConfig, ExchangeMiner, DEFAULT_EXCHANGE_ID},
     configs::{
         config_core::ConfigCore, config_mining::ConfigMining, config_ui::ConfigUI,
         config_wallet::ConfigWallet, trait_config::ConfigImpl,
     },
     events::{ConnectionStatusPayload, ProgressEvents},
     events_manager::EventsManager,
-    exchange_miner::ExchangeMiner,
     initialize_frontend_updates,
     internal_wallet::InternalWallet,
     release_notes::ReleaseNotes,

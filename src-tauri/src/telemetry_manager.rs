@@ -24,6 +24,7 @@ use crate::airdrop;
 use crate::airdrop::get_wallet_view_key_hashed;
 use crate::app_config::MiningMode;
 use crate::app_in_memory_config::DynamicMemoryConfig;
+use crate::app_in_memory_config::UNIVERSAL_EXCHANGE_ID;
 use crate::commands::CpuMinerStatus;
 use crate::configs::config_core::ConfigCore;
 use crate::configs::config_mining::ConfigMining;
@@ -322,6 +323,10 @@ impl TelemetryManager {
 
                 tokio::select! {
                     _ = interval.tick() => {
+                        if in_memory_config_cloned.read().await.exchange_id.eq(UNIVERSAL_EXCHANGE_ID) {
+                            info!("TelemetryManager::start_telemetry_process skipping telemetry, user hasn't yet chosen an exchange");
+                            return
+                        }
                         debug!(target: LOG_TARGET, "TelemetryManager::start_telemetry_process has  been started");
                         let airdrop_access_token = airdrop_tokens.map(|tokens| tokens.token);
                         if allow_telemetry {

@@ -20,15 +20,13 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::{ops::Deref, str::FromStr};
+use std::ops::Deref;
 
 use anyhow::anyhow;
 use der::{self, asn1::BitString, oid::ObjectIdentifier, Encode};
 use ring::signature::{Ed25519KeyPair, KeyPair};
 use ring_compat::pkcs8::{spki::AlgorithmIdentifier, SubjectPublicKeyInfo};
 use serde::{Deserialize, Serialize};
-
-use crate::exchange_miner::ExchangeMiner;
 
 #[cfg(feature = "airdrop-env")]
 const AIRDROP_BASE_URL: &str =
@@ -168,7 +166,16 @@ pub struct DynamicMemoryConfig {
 }
 
 fn get_telemetry_by_exchange_id(exchange_id: &str) -> String {
-    format!("{}/{}", "test-telemetry-url", exchange_id)
+    match exchange_id {
+        _ => "exchange-telemetry-url".to_string(), // TODO fill with actual URL per exchange
+    }
+}
+
+#[derive(Default, Serialize, Deserialize, Clone, Debug)]
+pub struct ExchangeMiner {
+    pub id: String,
+    pub name: String,
+    pub slug: String,
 }
 
 impl DynamicMemoryConfig {

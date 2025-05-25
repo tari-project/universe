@@ -10,7 +10,7 @@ import { useDisableRefresh } from '../hooks/app/useDisableRefresh';
 import { useDetectMode } from '../hooks/helpers/useDetectMode';
 import { useProgressEventsListener } from '@app/hooks/app/useProgressEventsListener';
 import { fetchBackendInMemoryConfig } from '@app/store/actions/appConfigStoreActions.ts';
-import { fetchExchangeMiners, setShowUniversalModal } from '@app/store/useExchangeStore';
+import { fetchExchangeMiners } from '@app/store/useExchangeStore';
 
 // This component is used to initialise the app and listen for any events that need to be listened to
 // Created as a separate component to avoid cluttering the main App component and unwanted re-renders
@@ -18,16 +18,12 @@ import { fetchExchangeMiners, setShowUniversalModal } from '@app/store/useExchan
 setupLogger();
 
 export default function AppEffects() {
-    console.info('AppEffects');
     useEffect(() => {
-        console.info('AppEffects useEffect');
         async function initialize() {
-            console.info('AppEffects useEffect initialize');
             await fetchBackendInMemoryConfig();
             await setMiningNetwork();
             await airdropSetup();
             await fetchExchangeMiners();
-            setShowUniversalModal(true);
         }
         void initialize();
     }, []);

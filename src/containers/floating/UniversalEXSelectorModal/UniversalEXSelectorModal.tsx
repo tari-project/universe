@@ -1,10 +1,13 @@
-import { useExchangeStore } from '@app/store/useExchangeStore.ts';
+import { setShowUniversalModal, useExchangeStore } from '@app/store/useExchangeStore.ts';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
-import { Button } from '@app/components/AdminUI/styles';
+
 import { invoke } from '@tauri-apps/api/core';
 import { ExchangeMiner } from '@app/types/exchange';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { fetchBackendInMemoryConfig } from '@app/store/actions/appConfigStoreActions';
+import { EXMiner, EXMinerList } from './styles';
+import { SquaredButton } from '@app/components/elements/buttons/SquaredButton';
 
 export default function UniversalEXSelectorModal() {
     const { t } = useTranslation('common', { useSuspense: false });
@@ -14,18 +17,33 @@ export default function UniversalEXSelectorModal() {
 
     const confirmExchangeMiner = async () => {
         if (!selectedExchangeMiner) return;
+        setShowUniversalModal(false); // TODO make it last statement in this function after done with testing
         await invoke('user_selected_exchange', { exchangeMiner: selectedExchangeMiner });
+        await fetchBackendInMemoryConfig();
     };
 
     return (
         <Dialog open={!!showModal} disableClose>
             <DialogContent $disableOverflow $borderRadius="40px">
-                {exchangeMiners?.map((miner) => (
-                    <div key={miner.id} onClick={() => setSelectedExchangeMiner(miner)}>
-                        {miner.name}
-                    </div>
-                ))}
-                <Button onClick={confirmExchangeMiner}>{t('select')}</Button>
+                <EXMinerList>
+                    {exchangeMiners?.map((miner) => (
+                        <EXMiner
+                            selected={miner === selectedExchangeMiner}
+                            onClick={() => setSelectedExchangeMiner(miner)}
+                            key={miner.id}
+                        >
+                            {miner.name}
+                        </EXMiner>
+                    ))}
+                </EXMinerList>
+                <SquaredButton
+                    color="brightGreen"
+                    size="medium"
+                    onClick={confirmExchangeMiner}
+                    disabled={!selectedExchangeMiner}
+                >
+                    {t('select')}
+                </SquaredButton>
             </DialogContent>
         </Dialog>
     );

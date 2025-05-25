@@ -106,7 +106,6 @@ mod download_utils;
 mod events;
 mod events_emitter;
 mod events_manager;
-mod exchange_miner;
 mod external_dependencies;
 mod feedback;
 mod github;
