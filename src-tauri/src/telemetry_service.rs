@@ -193,7 +193,7 @@ async fn send_telemetry_data(
     exchange_id: String,
 ) -> Result<(), TelemetryServiceError> {
     if exchange_id.eq(UNIVERSAL_EXCHANGE_ID) {
-        info!("TelemetryService::send_telemetry_data skipping telemetry, user hasn't yet chosen an exchange");
+        info!("[DEBUG UNIVERSAL EXCHANGE] TelemetryService::send_telemetry_data skipping telemetry, user hasn't yet chosen an exchange");
         return Ok(());
     }
     let request = reqwest::Client::new();

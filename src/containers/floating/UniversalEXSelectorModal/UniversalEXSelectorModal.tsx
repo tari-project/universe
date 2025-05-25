@@ -1,4 +1,4 @@
-import { setShowUniversalModal, useExchangeStore } from '@app/store/useExchangeStore.ts';
+import { setShowExchangeModal, setShowUniversalModal, useExchangeStore } from '@app/store/useExchangeStore.ts';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 
 import { invoke } from '@tauri-apps/api/core';
@@ -17,9 +17,10 @@ export default function UniversalEXSelectorModal() {
 
     const confirmExchangeMiner = async () => {
         if (!selectedExchangeMiner) return;
-        setShowUniversalModal(false); // TODO make it last statement in this function after done with testing
+        setShowUniversalModal(false); // TODO make it last statement in this function after being done with testing
         await invoke('user_selected_exchange', { exchangeMiner: selectedExchangeMiner });
         await fetchBackendInMemoryConfig();
+        setShowExchangeModal(true);
     };
 
     return (

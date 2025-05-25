@@ -241,7 +241,7 @@ impl WebsocketManager {
                 tokio::select! {
                     _ = async {
                         if config_cloned.read().await.exchange_id.eq(UNIVERSAL_EXCHANGE_ID) {
-                            info!(target:LOG_TARGET,"waiting for 5 seconds before connecting to websocket. User hasn't yet chosen an exchange");
+                            info!(target:LOG_TARGET,"[DEBUG UNIVERSAL EXCHANGE] waiting for 5 seconds before connecting to websocket. User hasn't yet chosen an exchange");
                             sleep(Duration::from_millis(5000)).await;
                         }
                         let connection_res = WebsocketManager::connect_to_url(&config_cloned).await.inspect_err(|e|{

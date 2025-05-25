@@ -324,7 +324,7 @@ impl TelemetryManager {
                 tokio::select! {
                     _ = interval.tick() => {
                         if in_memory_config_cloned.read().await.exchange_id.eq(UNIVERSAL_EXCHANGE_ID) {
-                            info!("TelemetryManager::start_telemetry_process skipping telemetry, user hasn't yet chosen an exchange");
+                            info!("[DEBUG UNIVERSAL EXCHANGE] TelemetryManager::start_telemetry_process skipping telemetry, user hasn't yet chosen an exchange");
                             return
                         }
                         debug!(target: LOG_TARGET, "TelemetryManager::start_telemetry_process has  been started");
