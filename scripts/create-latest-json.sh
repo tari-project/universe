@@ -190,7 +190,7 @@ echo "Signature file found: $signature_file"
 
   # Read the signature
   echo "Reading signature..."
-  local signature=$(cat "$signature_file" | base64 -w 0)
+  local signature=$(cat "$signature_file")
 
 echo "Signature read: $signature"
   # Update the JSON

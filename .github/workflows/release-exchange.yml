@@ -61,12 +61,12 @@ jobs:
       matrix:
         exchange: ${{ fromJson(needs.read-exchanges.outputs.EXCHANGES_NAMES) }}
         platforms:
-          - platform: 'ubuntu-22.04'
-            args: '--bundles deb,appimage'
-            extra: '-x64'
-          - platform: 'ubuntu-24.04-arm'
-            args: '--bundles deb,appimage'
-            best_effort: true
+          # - platform: 'ubuntu-22.04'
+          #   args: '--bundles deb,appimage'
+          #   extra: '-x64'
+          # - platform: 'ubuntu-24.04-arm'
+          #   args: '--bundles deb,appimage'
+          #   best_effort: true
           # - platform: 'ubuntu-22.04'
           #   args: '--bundles rpm'
           #   extra: '-x64-rpm'
@@ -77,8 +77,8 @@ jobs:
           #   best_effort: true
           - platform: 'windows-latest'
             args: '--bundles msi'
-          - platform: 'macos-latest'
-            args: '--target universal-apple-darwin'
+          # - platform: 'macos-latest'
+          #   args: '--target universal-apple-darwin'
     runs-on: ${{ matrix.platforms.platform }}
     steps:
       - uses: actions/checkout@v4
@@ -654,10 +654,10 @@ jobs:
           BASE_PATH: 'https://${{ secrets.BASE_TLD }}/${{ secrets.BASE_URL }}/exchanges/${{ matrix.exchange.id }}/${{ needs.builds.outputs.APP_VERSION }}'
         shell: bash
         run: |
-          echo "MSI_URL=${{env.BASE_PATH}}/Tari%20Universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_x64_en-US.msi" >> $GITHUB_ENV
+          echo "MSI_URL=${{env.BASE_PATH}}/Tari Universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_x64_en-US.msi" >> $GITHUB_ENV
           echo "AMD64_URL=${{env.BASE_PATH}}/tari_universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_amd64.AppImage" >> $GITHUB_ENV
           echo "AARCH64_URL=${{env.BASE_PATH}}/tari_universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_aarch64.AppImage" >> $GITHUB_ENV
-          echo "TAR_URL=${{env.BASE_PATH}}/Tari%20Universe-${{matrix.exchange.name}}.app.tar.gz" >> $GITHUB_ENV
+          echo "TAR_URL=${{env.BASE_PATH}}/Tari Universe-${{matrix.exchange.name}}.app.tar.gz" >> $GITHUB_ENV
       - name: Install unzip if missing
         run: |
           sudo apt-get update && sudo apt-get install -y unzip
