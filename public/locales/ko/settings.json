@@ -160,6 +160,7 @@
     "title": "Tari Universe 자동 업데이트"
   },
   "use-dynamic-fail-data": "동적 실패 데이터 사용",
+  "use-p2p": "Use P2pool",
   "use-random-control-port": "랜덤 제어 포트 사용",
   "use-random-port": "임의의 포트 사용",
   "use-tor": "Tor 사용하기",
