@@ -1,3 +1,12 @@
+🚀 TARI UNIVERSE v1.0.12: The Shell Eternal
+
+_May 26, 2025_
+
+Hey everyone,
+In preparation for the hard fork at block 15,000 today, contributors have prepared one more hotfix: "The Shell Eternal." Please update Tari Universe to this new version ASAP to help prepare the network for the hard fork. Thank you for being Tari OGs! 💜🐢
+
+---
+
 🚀 TARI UNIVERSE v1.0.11: The Shell Ascendant
 
 _May 25, 2025_
