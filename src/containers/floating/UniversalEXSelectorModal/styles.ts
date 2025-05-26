@@ -5,6 +5,7 @@ export const Wrapper = styled.div`
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: space-between;
     height: min(400px, 80vh);
     width: max(200px, 40vw);
 `;
@@ -14,17 +15,19 @@ export const EXMinerList = styled.div`
     flex-direction: column;
     gap: 12px;
     margin-bottom: 24px;
+    border-radius: 24px;
+    background-color: ${({ theme }) => theme.palette.background.paper};
+    width: 100%;
+    padding: 20px;
 `;
 
-export const EXMiner = styled.div<{ selected: boolean }>`
+export const EXMiner = styled.div`
     cursor: pointer;
     padding: 14px 20px;
     border-radius: 16px;
-    border: ${({ selected, theme }) =>
-        selected ? `2px solid ${theme.palette.primary.main}` : '2px solid transparent'};
-    background: ${({ selected, theme }) => (selected ? theme.palette.primary.light : theme.palette.background.paper)};
+    background: ${({ theme }) => theme.palette.background.paper};
     color: ${({ theme }) => theme.palette.text.primary};
-    font-weight: ${({ selected }) => (selected ? 600 : 400)};
+    font-weight: 600;
     transition:
         background 0.15s,
         border 0.15s;

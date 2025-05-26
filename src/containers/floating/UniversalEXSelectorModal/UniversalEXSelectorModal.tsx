@@ -1,13 +1,13 @@
 import { setShowExchangeModal, setShowUniversalModal, useExchangeStore } from '@app/store/useExchangeStore.ts';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
-
 import { invoke } from '@tauri-apps/api/core';
 import { ExchangeMiner } from '@app/types/exchange';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { fetchBackendInMemoryConfig } from '@app/store/actions/appConfigStoreActions';
-import { SquaredButton } from '@app/components/elements/buttons/SquaredButton';
 import { EXMiner, EXMinerList, HeaderSection, Heading, Wrapper } from './styles';
+import { XCOption } from '@app/components/exchanges/universal/option/XCOption.tsx';
+import { XCOptions } from '@app/components/exchanges/universal/options/Options.tsx';
 
 export default function UniversalEXSelectorModal() {
     const { t } = useTranslation(['exchange', 'common'], { useSuspense: false });
@@ -31,25 +31,7 @@ export default function UniversalEXSelectorModal() {
                     <HeaderSection>
                         <Heading>{t('select.modal-title')}</Heading>
                     </HeaderSection>
-                    <EXMinerList>
-                        {exchangeMiners?.map((miner) => (
-                            <EXMiner
-                                selected={miner === selectedExchangeMiner}
-                                onClick={() => setSelectedExchangeMiner(miner)}
-                                key={miner.id}
-                            >
-                                {miner.name}
-                            </EXMiner>
-                        ))}
-                    </EXMinerList>
-                    <SquaredButton
-                        color="brightGreen"
-                        size="medium"
-                        onClick={confirmExchangeMiner}
-                        disabled={!selectedExchangeMiner}
-                    >
-                        {t('common:select')}
-                    </SquaredButton>
+                    <XCOptions />
                 </Wrapper>
             </DialogContent>
         </Dialog>
