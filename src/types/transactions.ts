@@ -4,11 +4,11 @@ export enum TransactionStatus {
     // This transaction has been broadcast to the base layer network and is currently in one or more base node mempools.
     // Broadcast = 1,
     /// This transaction is mined and confirmed at the current base node's height
-    MinedConfirmed = 6,
+    // MinedConfirmed = 6,
     /// This is faux transaction mainly for one-sided transaction outputs or wallet recovery outputs have been found
-    OneSidedUnconfirmed = 8,
+    // OneSidedUnconfirmed = 8,
     /// All Imported and FauxUnconfirmed transactions will end up with this status when the outputs have been confirmed
-    OneSidedConfirmed = 9,
+    // OneSidedConfirmed = 9,
     /// This is Coinbase transaction that is detected from chain
     CoinbaseUnconfirmed = 12,
     /// This is Coinbase transaction that is detected from chain
@@ -16,6 +16,6 @@ export enum TransactionStatus {
 }
 
 export enum TransactionDirection {
-    Inbound = 1,
+    // Inbound = 1,
     Outbound = 2,
 }
