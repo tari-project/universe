@@ -55,13 +55,13 @@ const P2PoolStats = () => {
 
     return (
         <SettingsGroupWrapper>
-            <SettingsGroupTitle style={{ alignItems: 'baseline' }}>
+            <SettingsGroupTitle style={{ alignItems: 'baseline', padding: `0 0 10px` }}>
                 <Typography variant="h6">{t('p2pool-stats')}</Typography>
                 {connectedSince ? (
                     <Typography variant="p">{`${t('connected-since')}: ${timeAgo(+connectedSince)}`}</Typography>
                 ) : null}
             </SettingsGroupTitle>
-            <Divider />
+
             <P2PConnectionData />
             <Divider />
             {displayPeers?.length ? (
