@@ -1,19 +1,29 @@
-import { useExchangeStore } from '@app/store/useExchangeStore.ts';
+import { setShowExchangeModal, useExchangeStore } from '@app/store/useExchangeStore.ts';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import Hero from './components/Hero.tsx';
 import Content from './components/Content.tsx';
 
-import { Wrapper } from './styles.ts';
+import { BackWrapper, Wrapper } from './styles.ts';
+import { useConfigBEInMemoryStore } from '@app/store';
+import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
+import { IoArrowBack } from 'react-icons/io5';
 
 export default function EXModal() {
     const data = useExchangeStore((s) => s.content);
     const showModal = useExchangeStore((s) => s.showClassicModal);
-
+    const isUniversal = useConfigBEInMemoryStore((s) => s.exchangeId === 'universal');
     if (!data) return null;
     return (
-        <Dialog open={!!showModal} disableClose>
+        <Dialog open={!!showModal} disableClose={!isUniversal} onOpenChange={setShowExchangeModal}>
             <DialogContent $disableOverflow $borderRadius="40px">
                 <Wrapper>
+                    {isUniversal && (
+                        <BackWrapper>
+                            <IconButton onClick={() => setShowExchangeModal(false)}>
+                                <IoArrowBack size={18} />
+                            </IconButton>
+                        </BackWrapper>
+                    )}
                     <Hero
                         heroImgUrl={data.hero_img_url}
                         primaryCol={data.primary_colour}

@@ -18,7 +18,7 @@ import { GpuThreads } from '@app/types/app-status.ts';
 import { displayMode, modeType } from '../types';
 import { ConfigCore, ConfigMining, ConfigUI, ConfigWallet } from '@app/types/configs.ts';
 import { NodeType, updateNodeType as updateNodeTypeForNodeStore } from '../useNodeStore.ts';
-import { setShowUniversalModal } from '../useExchangeStore.ts';
+import { fetchExchangeContent, fetchExchangeMiners, setShowUniversalModal } from '../useExchangeStore.ts';
 import { ChainId } from '@uniswap/sdk-core';
 
 interface SetModeProps {
@@ -315,7 +315,11 @@ export const fetchBackendInMemoryConfig = async () => {
             console.info('[DEBUG UNIVERSAL EXCHANGE] memory config: ', res);
             useConfigBEInMemoryStore.setState({ ...res });
             if (res.exchangeId === 'universal') {
+                await fetchExchangeMiners();
                 setShowUniversalModal(true);
+            }
+            if (res.exchangeId && res.exchangeId !== 'universal' && res.exchangeId !== 'classic') {
+                await fetchExchangeContent(res.exchangeId);
             }
         }
     } catch (e) {

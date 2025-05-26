@@ -1,37 +1,47 @@
-import { useState } from 'react';
 import { ContentWrapper, Heading, Wrapper, XCContent } from '@app/components/exchanges/universal/option/styles.ts';
-import { ExchangeContent } from '@app/types/exchange.ts';
-import { AddressWrapper, ImgWrapper, OpenButton } from '../../commonStyles.ts';
+import { ExchangeMinerAssets } from '@app/types/exchange.ts';
+import { ImgWrapper, OpenButton } from '../../commonStyles.ts';
 import { ChevronSVG } from '@app/assets/icons/chevron.tsx';
+import { setShowUniversalModal } from '@app/store/useExchangeStore.ts';
+import { invoke } from '@tauri-apps/api/core';
+import { fetchBackendInMemoryConfig } from '@app/store/actions/appConfigStoreActions.ts';
 
 interface XCOptionProps {
-    content: Partial<ExchangeContent>;
+    content: Partial<ExchangeMinerAssets>;
     isCurrent?: boolean;
 }
 export const XCOption = ({ content, isCurrent = false }: XCOptionProps) => {
-    const [open, setOpen] = useState(false);
+    const confirmExchangeMiner = async () => {
+        const selectedExchangeMiner = {
+            id: content.id,
+            slug: content.slug,
+            name: content.name,
+        };
+        await invoke('user_selected_exchange', { exchangeMiner: selectedExchangeMiner });
+        await fetchBackendInMemoryConfig();
+        console.info('[DEBUG UNIVERSAL EXCHANGE] Fetched backend in memory config');
+        setShowUniversalModal(false);
+    };
 
     return (
         <Wrapper $isCurrent={isCurrent}>
             <ContentWrapper>
                 <XCContent>
-                    {content.logo_img_url && (
+                    {content.logoImgUrl && (
                         <ImgWrapper $isLogo>
-                            <img src={content.logo_img_url} alt={content.name} />
+                            <img src={content.logoImgUrl} alt={content.name} />
                         </ImgWrapper>
                     )}
                     <Heading>{content.name}</Heading>
                 </XCContent>
-                <OpenButton onClick={() => setOpen(!open)} $isOpen={open}>
-                    <ImgWrapper $border>
-                        <ChevronSVG />
-                    </ImgWrapper>
-                </OpenButton>
+                {content.id && (
+                    <OpenButton onClick={() => confirmExchangeMiner()}>
+                        <ImgWrapper $border>
+                            <ChevronSVG />
+                        </ImgWrapper>
+                    </OpenButton>
+                )}
             </ContentWrapper>
-
-            <AddressWrapper $isOpen={open} animate={{ height: open ? 'auto' : 0 }} initial={false}>
-                <div>{`hi!`}</div>
-            </AddressWrapper>
         </Wrapper>
     );
 };

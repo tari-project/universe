@@ -6,7 +6,6 @@ export const Wrapper = styled.div`
     flex-direction: column;
     align-items: center;
     justify-content: space-between;
-    height: min(400px, 80vh);
     width: max(200px, 40vw);
 `;
 export const HeaderSection = styled.div`

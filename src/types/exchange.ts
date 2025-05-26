@@ -23,3 +23,8 @@ export interface ExchangeMiner {
     name: string;
     slug: string;
 }
+
+export interface ExchangeMinerAssets extends ExchangeMiner {
+    logoImgUrl?: string;
+    logoImgUrlSmall?: string;
+}

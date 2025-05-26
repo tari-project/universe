@@ -19,6 +19,10 @@ export const LogoContainer = styled.div`
     gap: 8px;
     font-size: 30px;
     font-weight: 700;
+    img {
+        width: 100%;
+        max-width: 100px;
+    }
 `;
 export const LogoImg = styled.img`
     max-width: 100%;

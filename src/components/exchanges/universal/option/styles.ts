@@ -12,6 +12,7 @@ export const Wrapper = styled.div<{ $isCurrent?: boolean }>`
         $isCurrent ? convertHexToRGBA(theme.colors.green[400], 0.1) : theme.palette.background.paper};
     padding: 15px;
     gap: 14px;
+    overflow: hidden;
 `;
 
 export const Heading = styled(Typography).attrs({ variant: 'h5' })`
@@ -30,4 +31,5 @@ export const XCContent = styled.div`
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 8px;
 `;

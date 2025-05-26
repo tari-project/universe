@@ -5,7 +5,6 @@ import { Divider } from '@app/components/elements/Divider.tsx';
 
 export const XCOptions = () => {
     const exchangeMiners = useExchangeStore((s) => s.exchangeMiners);
-
     const listItems = exchangeMiners?.map((item) => {
         return <XCOption key={item.id} content={item} />;
     });

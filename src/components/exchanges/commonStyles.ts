@@ -53,8 +53,6 @@ export const ImgWrapper = styled.div<{ $isLogo?: boolean; $border?: boolean }>`
 `;
 
 export const AddressWrapper = styled(m.div)<{ $isOpen: boolean }>`
-    display: flex;
-    width: 100%;
     overflow: hidden;
 `;
 
@@ -65,7 +63,7 @@ export const AddressDisplay = styled.div`
     background-color: ${({ theme }) => theme.palette.background.default};
     letter-spacing: 0.1rem;
     padding: 10px 0;
-    margin: 10px 0 15px;
+    margin: 0 0 15px 0;
     align-items: center;
     justify-content: center;
     display: flex;
