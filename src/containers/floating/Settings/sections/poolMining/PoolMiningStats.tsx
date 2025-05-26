@@ -9,10 +9,15 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 import { useMiningMetricsStore } from '@app/store';
 import { Stack } from '@app/components/elements/Stack';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
+import { formatNumber, FormatPreset } from '@app/utils';
 
 export function PoolMiningStats() {
     const { t } = useTranslation(['mining-view', 'settings'], { useSuspense: false });
     const pool_status = useMiningMetricsStore((s) => s.cpu_mining_status.pool_status);
+
+    const unpaidFMT = formatNumber(pool_status?.unpaid || 0, FormatPreset.XTM_DECIMALS);
+    const balanceFMT = formatNumber(pool_status?.balance || 0, FormatPreset.XTM_DECIMALS);
+    const acceptedFMT = formatNumber(pool_status?.accepted_shares || 0, FormatPreset.XTM_DECIMALS);
     return (
         <SettingsGroupWrapper>
             <SettingsGroup>
@@ -22,20 +27,15 @@ export function PoolMiningStats() {
                     </SettingsGroupTitle>
                     {pool_status ? (
                         <Stack direction="row" justifyContent="flex-start">
-                            <Stack style={{ width: '50%' }}>
+                            <Stack>
                                 <Typography variant="p">
-                                    {t('pool.accepted_shares')}: <strong>{pool_status?.accepted_shares ?? `-`}</strong>
+                                    {t('pool.accepted_shares')}: <strong>{acceptedFMT}</strong>
                                 </Typography>
                                 <Typography variant="p">
-                                    {t('pool.min_payout')}: <strong>{pool_status?.min_payout ?? `-`}</strong>
-                                </Typography>
-                            </Stack>
-                            <Stack style={{ width: '50%' }}>
-                                <Typography variant="p">
-                                    {t('pool.unpaid')}: <strong>{pool_status?.unpaid ?? `-`}</strong>
+                                    {t('pool.unpaid')}: <strong>{unpaidFMT}</strong>
                                 </Typography>
                                 <Typography variant="p">
-                                    {t('pool.balance')}: <strong>{pool_status?.balance ?? `-`}</strong>
+                                    {t('pool.balance')}: <strong>{balanceFMT}</strong>
                                 </Typography>
                             </Stack>
                         </Stack>
