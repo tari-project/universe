@@ -1,11 +1,11 @@
-import { AddressDisplay, AddressWrapper, HeaderSection, WalletDisplayWrapper, XCInfo } from './wallet.styles.ts';
+import { HeaderSection, WalletDisplayWrapper, XCInfo } from './wallet.styles.ts';
 import { useState } from 'react';
 import { useExchangeStore } from '@app/store/useExchangeStore.ts';
 import { useWalletStore } from '@app/store';
 import { truncateMiddle } from '@app/utils';
 import { ChevronSVG } from '@app/assets/icons/chevron.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
-import { ImgWrapper, OpenButton } from '../commonStyles.ts';
+import { AddressDisplay, AddressWrapper, ImgWrapper, OpenButton } from '../commonStyles.ts';
 
 export default function WalletDisplay() {
     const data = useExchangeStore((s) => s.content);

@@ -13,7 +13,7 @@ export const XCOptions = () => {
     return (
         <ListWrapper>
             <XCOption isCurrent content={{ name: 'Tari Universe' }} />
-            <Divider />
+            {exchangeMiners?.length ? <Divider /> : null}
             {listItems}
         </ListWrapper>
     );

@@ -33,11 +33,17 @@ export const setExchangeMiners = (exchangeMiners?: ExchangeMiner[]) => {
 };
 
 export async function fetchExchangeMiners() {
-    const mocked_list = [
-        { id: '1ff0f0a96-52db-42d8-a84e-b781ad0c7614', name: 'TariXC', slug: 'TXC' },
-        { id: '1eff0ada-8358-4511-99f8-9ec2820aa37e', name: 'test', slug: 'test' },
-    ];
-    setExchangeMiners(mocked_list);
+    const apiUrl = useConfigBEInMemoryStore.getState().airdropApiUrl;
+    const endpoint = `${apiUrl}/miner/exchanges?includeLogo=true`;
+    try {
+        const res = await fetch(`${endpoint}`);
+        if (res.ok) {
+            const list = (await res.json()) as ExchangeMiner[];
+            setExchangeMiners(list || []);
+        }
+    } catch (e) {
+        console.error('Could not fetch exchange miners', e);
+    }
 }
 
 export async function fetchExchangeContent(exchangeId: string) {
