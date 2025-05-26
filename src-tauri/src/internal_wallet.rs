@@ -80,6 +80,8 @@ impl InternalWallet {
             match serde_json::from_str::<WalletConfig>(&config) {
                 Ok(mut config) => {
                     config.config_path = Some(file_parent.to_path_buf());
+                    config.is_tari_address_generated =
+                        Some(config.is_tari_address_generated.unwrap_or(true));
 
                     let cm = CredentialManager::default_with_dir(config_path.clone());
                     if let Err(e) = cm.migrate().await {
@@ -129,7 +131,9 @@ impl InternalWallet {
         self.tari_address.clone()
     }
     pub fn get_is_tari_address_generated(&self) -> bool {
-        self.config.is_tari_address_generated
+        self.config
+            .is_tari_address_generated
+            .expect("Failed to get is_tari_address_generated")
     }
 
     pub async fn set_tari_address(
@@ -143,7 +147,7 @@ impl InternalWallet {
         let tari_address = TariAddress::from_str(&address).map_err(|e| e.to_string())?;
         let file = config_path.join(network).join("wallet_config.json");
         self.tari_address = tari_address.clone();
-        self.config.is_tari_address_generated = false;
+        self.config.is_tari_address_generated = Some(false);
         self.config.tari_address_base58 = tari_address.to_base58();
 
         let config = serde_json::to_string(&self.config).map_err(|e| e.to_string())?;
@@ -209,7 +213,7 @@ impl InternalWallet {
             spend_public_key_hex: "".to_string(),
             config_path: Some(path.to_path_buf()),
             passphrase: None,
-            is_tari_address_generated: true,
+            is_tari_address_generated: Some(true),
         };
 
         let cm = CredentialManager::default_with_dir(path);
@@ -368,7 +372,7 @@ pub struct WalletConfig {
     // TODO: "This is for Universe users < v0.5.x who wouldn't be migrated yet. Once we're confident that all users have been migrated, we can remove this."
     pub(crate) passphrase: Option<SafePassword>,
     config_path: Option<PathBuf>,
-    is_tari_address_generated: bool,
+    is_tari_address_generated: Option<bool>,
 }
 
 #[derive(Debug, Serialize, Clone)]
