@@ -54,7 +54,7 @@ use crate::utils::app_flow_utils::FrontendReadyChannel;
 use crate::wallet_adapter::{TransactionInfo, WalletBalance};
 use crate::wallet_manager::WalletManagerError;
 use crate::websocket_manager::WebsocketManagerStatusMessage;
-use crate::{airdrop, UniverseAppState, APPLICATION_FOLDER_ID};
+use crate::{airdrop, PoolStatus, UniverseAppState, APPLICATION_FOLDER_ID};
 
 use base64::prelude::*;
 use keyring::Entry;
@@ -88,6 +88,9 @@ pub struct MaxUsageLevels {
 
 pub enum CpuMinerConnection {
     BuiltInProxy,
+    Pool,
+    #[allow(dead_code)]
+    MergeMinedPool,
 }
 
 #[derive(Debug, Serialize)]
@@ -121,6 +124,7 @@ pub struct CpuMinerStatus {
     pub hash_rate: f64,
     pub estimated_earnings: u64,
     pub connection: CpuMinerConnectionStatus,
+    pub pool_status: Option<PoolStatus>,
 }
 
 impl Default for CpuMinerStatus {
@@ -132,6 +136,7 @@ impl Default for CpuMinerStatus {
             connection: CpuMinerConnectionStatus {
                 is_connected: false,
             },
+            pool_status: None,
         }
     }
 }
@@ -1421,7 +1426,7 @@ pub async fn set_airdrop_tokens<'r>(
         };
 
         if currently_mining {
-            stop_mining(state.clone())
+            stop_mining(state.clone(), app.clone())
                 .await
                 .map_err(|e| e.to_string())?;
 
@@ -1445,6 +1450,8 @@ pub async fn start_mining<'r>(
 ) -> Result<(), String> {
     let timer = Instant::now();
     let _lock = state.stop_start_mutex.lock().await;
+    let mut timestamp_lock = state.stop_start_timestamp_mutex.lock().await;
+    *timestamp_lock = SystemTime::now();
 
     let cpu_mining_enabled = *ConfigMining::content().await.cpu_mining_enabled();
     let gpu_mining_enabled = *ConfigMining::content().await.gpu_mining_enabled();
@@ -1452,7 +1459,6 @@ pub async fn start_mining<'r>(
     let custom_cpu_usage = *ConfigMining::content().await.custom_max_cpu_usage();
     let custom_gpu_usage = ConfigMining::content().await.custom_max_gpu_usage().clone();
     let p2pool_enabled = *ConfigCore::content().await.is_p2pool_enabled();
-    let monero_address = ConfigWallet::content().await.monero_address().clone();
 
     let mut telemetry_id = state
         .telemetry_manager
@@ -1464,50 +1470,53 @@ pub async fn start_mining<'r>(
     let cpu_miner = state.cpu_miner.read().await;
     let cpu_miner_running = cpu_miner.is_running().await;
     drop(cpu_miner);
+    let cpu_miner_config = state.cpu_miner_config.read().await;
+    let config_path = app
+        .path()
+        .app_config_dir()
+        .expect("Could not get config dir");
+    let tari_address = InternalWallet::load_or_create(config_path)
+        .await
+        .map_err(|e| e.to_string())?
+        .get_tari_address();
+    drop(cpu_miner_config);
 
     if cpu_mining_enabled && !cpu_miner_running {
-        let mm_proxy_port = state
-            .mm_proxy_manager
-            .get_monero_port()
-            .await
-            .map_err(|e| e.to_string())?;
+        let cpu_miner_config = state.cpu_miner_config.read().await;
+        let mmproxy_manager = &state.mm_proxy_manager;
+        let mut cpu_miner = state.cpu_miner.write().await;
+        let res = cpu_miner
+            .start(
+                TasksTrackers::current().hardware_phase.get_signal().await,
+                &cpu_miner_config,
+                mmproxy_manager,
+                app.path()
+                    .app_local_data_dir()
+                    .expect("Could not get data dir"),
+                app.path()
+                    .app_config_dir()
+                    .expect("Could not get config dir"),
+                app.path().app_log_dir().expect("Could not get log dir"),
+                mode,
+                custom_cpu_usage,
+                &tari_address,
+            )
+            .await;
+        drop(cpu_miner_config);
 
-        {
-            let cpu_miner_config = state.cpu_miner_config.read().await;
-            let mut cpu_miner = state.cpu_miner.write().await;
-            let res = cpu_miner
-                .start(
-                    TasksTrackers::current().hardware_phase.get_signal().await,
-                    &cpu_miner_config,
-                    monero_address.to_string(),
-                    mm_proxy_port,
-                    app.path()
-                        .app_local_data_dir()
-                        .expect("Could not get data dir"),
-                    app.path()
-                        .app_config_dir()
-                        .expect("Could not get config dir"),
-                    app.path().app_log_dir().expect("Could not get log dir"),
-                    mode,
-                    custom_cpu_usage,
-                )
-                .await;
-            drop(cpu_miner_config);
-
-            if let Err(e) = res {
-                let err_msg = format!("Could not start CPU mining: {}", e);
-                error!(target: LOG_TARGET, "{}", err_msg);
-                sentry::capture_message(&err_msg, sentry::Level::Error);
-                cpu_miner
-                    .stop()
-                    .await
-                    .inspect_err(|e| {
-                        let stop_err = format!("Error stopping CPU miner: {}", e);
-                        error!(target: LOG_TARGET, "{}", stop_err);
-                    })
-                    .ok();
-                return Err(e.to_string());
-            }
+        if let Err(e) = res {
+            let err_msg = format!("Could not start CPU mining: {}", e);
+            error!(target: LOG_TARGET, "{}", err_msg);
+            sentry::capture_message(&err_msg, sentry::Level::Error);
+            cpu_miner
+                .stop()
+                .await
+                .inspect_err(|e| {
+                    let stop_err = format!("Error stopping CPU miner: {}", e);
+                    error!(target: LOG_TARGET, "{}", stop_err);
+                })
+                .ok();
+            return Err(e.to_string());
         }
     }
 
@@ -1541,17 +1550,6 @@ pub async fn start_mining<'r>(
         }
 
         info!(target: LOG_TARGET, "3. Starting gpu miner");
-
-        let cpu_miner_config = state.cpu_miner_config.read().await;
-        let config_path = app
-            .path()
-            .app_config_dir()
-            .expect("Could not get config dir");
-        let tari_address = InternalWallet::load_or_create(config_path)
-            .await
-            .map_err(|e| e.to_string())?
-            .get_tari_address();
-        drop(cpu_miner_config);
 
         let mut gpu_miner = state.gpu_miner.write().await;
         let res = gpu_miner
@@ -1587,12 +1585,19 @@ pub async fn start_mining<'r>(
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "start_mining took too long: {:?}", timer.elapsed());
     }
+
+    let mining_time = *ConfigMining::content().await.mining_time();
+    EventsEmitter::emit_mining_time_update(&app, mining_time).await;
     Ok(())
 }
 
 #[tauri::command]
-pub async fn stop_mining<'r>(state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
+pub async fn stop_mining<'r>(
+    state: tauri::State<'_, UniverseAppState>,
+    app: tauri::AppHandle,
+) -> Result<(), String> {
     let _lock = state.stop_start_mutex.lock().await;
+
     let timer = Instant::now();
     state
         .cpu_miner
@@ -1615,6 +1620,21 @@ pub async fn stop_mining<'r>(state: tauri::State<'_, UniverseAppState>) -> Resul
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "stop_mining took too long: {:?}", timer.elapsed());
     }
+
+    let timestamp_lock = state.stop_start_timestamp_mutex.lock().await;
+    let current_mining_time_ms = *ConfigMining::content().await.mining_time();
+
+    let now = SystemTime::now();
+    let mining_time_duration = now
+        .duration_since(*timestamp_lock)
+        .unwrap_or_default()
+        .as_millis();
+
+    let mining_time = current_mining_time_ms + mining_time_duration;
+    let _unused =
+        ConfigMining::update_field(ConfigMiningContent::set_mining_time, mining_time).await;
+    EventsEmitter::emit_mining_time_update(&app, mining_time).await;
+
     Ok(())
 }
 

@@ -24,6 +24,7 @@ use crate::{events_manager::EventsManager, gpu_miner::EngineType, UniverseAppSta
 use std::{sync::LazyLock, time::SystemTime};
 
 use getset::{Getters, Setters};
+use log::warn;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
 use tokio::sync::RwLock;
@@ -79,6 +80,10 @@ pub struct ConfigMiningContent {
     cpu_mining_enabled: bool,
     gpu_engine: EngineType,
     squad_override: Option<String>,
+    cpu_mining_pool_url: Option<String>,
+    cpu_mining_pool_status_url: Option<String>,
+    gpu_mining_pool_url: Option<String>,
+    mining_time: u128,
 }
 
 impl Default for ConfigMiningContent {
@@ -99,6 +104,12 @@ impl Default for ConfigMiningContent {
             cpu_mining_enabled: true,
             gpu_engine: EngineType::OpenCL,
             squad_override: None,
+            cpu_mining_pool_url: Some("pool-global.tari.snipanet.com:3333".to_string()),
+            cpu_mining_pool_status_url: Some(
+                "https://pool.rxt.tari.jagtech.io/api/miner/%TARI_ADDRESS%/stats".to_string(),
+            ),
+            gpu_mining_pool_url: None,
+            mining_time: 0,
         }
     }
 }
@@ -114,11 +125,51 @@ impl ConfigMining {
         let state = app_handle.state::<UniverseAppState>();
         let mut config = Self::current().write().await;
         config.load_app_handle(app_handle.clone()).await;
-        state
-            .cpu_miner_config
-            .write()
-            .await
-            .load_from_config_mining(config._get_content());
+
+        // TODO: Remove this when the migration is done
+        // Can be removed before merging to main
+        let old_cpu_mining_pool_url: Option<String> = Some("pool.supportxmr.com:3333".to_string());
+        let old_cpu_mining_pool_status_url: Option<String> =
+            Some("https://www.supportxmr.com/api/miner/%MONERO_ADDRESS%/stats".to_string());
+
+        // force the default values for the pool urls in case they are not set
+        let is_cpu_mining_pool_url_not_set = config.content.cpu_mining_pool_url.is_none();
+        let is_old_cpu_mining_pool_url = config
+            .content
+            .cpu_mining_pool_url
+            .eq(&old_cpu_mining_pool_url);
+        if is_cpu_mining_pool_url_not_set || is_old_cpu_mining_pool_url {
+            config.content.cpu_mining_pool_url = ConfigMiningContent::default().cpu_mining_pool_url;
+        }
+
+        // force the default values for the pool urls in case they are not set
+        let is_cpu_mining_pool_status_url_not_set =
+            config.content.cpu_mining_pool_status_url.is_none();
+        let is_old_cpu_mining_pool_status_url = config
+            .content
+            .cpu_mining_pool_status_url
+            .eq(&old_cpu_mining_pool_status_url);
+
+        if is_cpu_mining_pool_status_url_not_set || is_old_cpu_mining_pool_status_url {
+            config.content.cpu_mining_pool_status_url =
+                ConfigMiningContent::default().cpu_mining_pool_status_url;
+        }
+        // update json file to reflect the default values
+        if is_cpu_mining_pool_url_not_set
+            || is_cpu_mining_pool_status_url_not_set
+            || is_old_cpu_mining_pool_url
+            || is_old_cpu_mining_pool_status_url
+        {
+            let _unused = ConfigMining::_save_config(config.content.clone()).inspect_err(
+            |error| {
+                warn!(target: crate::LOG_TARGET, "[{}] [save_config] error: {:?}", Self::_get_name(), error);
+            },
+        );
+        }
+
+        let mut cpu_config = state.cpu_miner_config.write().await;
+        cpu_config.load_from_config_mining(config._get_content());
+        drop(cpu_config);
 
         EventsManager::handle_config_mining_loaded(&app_handle, config.content.clone()).await;
     }

@@ -39,14 +39,33 @@ use crate::xmrig::http_api::XmrigHttpApiClient;
 const LOG_TARGET: &str = "tari::universe::xmrig_adapter";
 
 pub enum XmrigNodeConnection {
-    LocalMmproxy { host_name: String, port: u16 },
+    LocalMmproxy {
+        host_name: String,
+        port: u16,
+        monero_address: String,
+    },
+    Pool {
+        host_name: String,
+        port: u16,
+        tari_address: String,
+    },
+    MergeMinedPool {
+        host_name: String,
+        port: u16,
+        monero_address: String,
+        tari_address: String,
+    },
     Benchmark,
 }
 
 impl XmrigNodeConnection {
     pub fn generate_args(&self) -> Vec<String> {
         match self {
-            XmrigNodeConnection::LocalMmproxy { host_name, port } => {
+            XmrigNodeConnection::LocalMmproxy {
+                host_name,
+                port,
+                monero_address,
+            } => {
                 vec![
                     "--daemon".to_string(),
                     format!("--url={}:{}", host_name, port),
@@ -54,6 +73,35 @@ impl XmrigNodeConnection {
                     "--coin=monero".to_string(),
                     // We are using a local daemon, so retry as soon as possible
                     "--retry-pause=1".to_string(),
+                    "--user".to_string(),
+                    format!("{}", monero_address),
+                ]
+            }
+            XmrigNodeConnection::Pool {
+                host_name,
+                port,
+                tari_address: monero_address,
+            } => {
+                vec![
+                    "--url".to_string(),
+                    format!("{}:{}", host_name, port),
+                    "--coin=monero".to_string(),
+                    "--user".to_string(),
+                    format!("{}", monero_address),
+                ]
+            }
+            XmrigNodeConnection::MergeMinedPool {
+                host_name,
+                port,
+                monero_address,
+                tari_address,
+            } => {
+                vec![
+                    "--url".to_string(),
+                    format!("{}:{}", host_name, port),
+                    "--coin=monero".to_string(),
+                    "--user".to_string(),
+                    format!("{}:{}", monero_address, tari_address),
                 ]
             }
             XmrigNodeConnection::Benchmark => {
@@ -65,7 +113,7 @@ impl XmrigNodeConnection {
 
 pub struct XmrigAdapter {
     pub node_connection: Option<XmrigNodeConnection>,
-    pub monero_address: Option<String>,
+    // pub monero_address: Option<String>,
     pub http_api_token: String,
     pub http_api_port: u16,
     pub cpu_threads: Option<Option<u32>>,
@@ -79,7 +127,7 @@ impl XmrigAdapter {
         let http_api_token = "pass".to_string();
         Self {
             node_connection: None,
-            monero_address: None,
+            // monero_address: None,
             http_api_token: http_api_token.clone(),
             http_api_port,
             cpu_threads: None,
@@ -135,12 +183,7 @@ impl ProcessAdapter for XmrigAdapter {
         args.push(format!("--http-port={}", self.http_api_port));
         args.push(format!("--http-access-token={}", self.http_api_token));
         args.push("--donate-level=1".to_string());
-        args.push(format!(
-            "--user={}",
-            self.monero_address
-                .as_ref()
-                .ok_or(anyhow::anyhow!("Monero address not set"))?
-        ));
+
         // don't specify threads for ludicrous mode
         if let Some(Some(cpu_threads)) = self.cpu_threads {
             args.push(format!("--threads={}", cpu_threads));

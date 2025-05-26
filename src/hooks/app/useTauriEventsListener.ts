@@ -38,6 +38,7 @@ import {
     handleWalletLocked,
     handleWalletUnlocked,
     handleWalletUpdate,
+    setInitialSetupFinished,
 } from '@app/store/actions/setupStoreActions';
 import { setBackgroundNodeState, setNodeStoreState } from '@app/store/useNodeStore';
 import {
@@ -45,11 +46,19 @@ import {
     handleConfigMiningLoaded,
     handleConfigUILoaded,
     handleConfigWalletLoaded,
+    handleMiningTimeUpdate,
 } from '@app/store/actions/appConfigStoreActions';
 import { invoke } from '@tauri-apps/api/core';
 import { handleShowStagedSecurityModal } from '@app/store/actions/stagedSecurityActions';
 
-const LOG_EVENT_TYPES = ['LockMining', 'LockWallet', 'UnlockMining', 'UnlockWallet', 'WalletAddressUpdate'];
+const LOG_EVENT_TYPES = [
+    'LockMining',
+    'LockWallet',
+    'UnlockMining',
+    'UnlockWallet',
+    'CpuMiningUpdate',
+    'WalletAddressUpdate',
+];
 
 const useTauriEventsListener = () => {
     const eventRef = useRef<BackendStateUpdateEvent | null>(null);
@@ -81,7 +90,9 @@ const useTauriEventsListener = () => {
                             break;
                         case 'WalletPhaseFinished':
                             break;
-
+                        case 'InitialSetupFinished':
+                            setInitialSetupFinished(true);
+                            break;
                         case 'UnlockApp':
                             await handleAppUnlocked();
                             break;
@@ -189,6 +200,9 @@ const useTauriEventsListener = () => {
                             break;
                         case 'ShowStageSecurityModal':
                             handleShowStagedSecurityModal();
+                            break;
+                        case 'MiningTime':
+                            handleMiningTimeUpdate(event.payload);
                             break;
                         default:
                             console.warn('Unknown event', JSON.stringify(event));

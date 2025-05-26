@@ -13,5 +13,11 @@
   "pending": "В ожидании",
   "randomx-stats": "RandomX Статистика",
   "sha3-stats": "SHA3 Статистика",
+  "stats": {
+    "tile-heading": "Rewards in Progress",
+    "tile-loading": "Pool is warming up",
+    "tooltip-copy": "Rewards are “In Progress” until you earn a minimum of <strong>{{amount}}</strong> and <strong>{{duration}}</strong> have passed.",
+    "tooltip-tile-heading": "Rewards threshold"
+  },
   "tribe": "Команда"
 }
