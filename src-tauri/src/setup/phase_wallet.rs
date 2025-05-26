@@ -52,7 +52,7 @@ use tokio::{
 };
 
 use super::{
-    setup_manager::PhaseStatus,
+    setup_manager::{PhaseStatus, SetupFeaturesList},
     trait_setup_phase::{SetupConfiguration, SetupPhaseImpl},
 };
 
@@ -74,6 +74,8 @@ pub struct WalletSetupPhase {
     app_configuration: WalletSetupPhaseAppConfiguration,
     setup_configuration: SetupConfiguration,
     status_sender: Sender<PhaseStatus>,
+    #[allow(dead_code)]
+    setup_features: SetupFeaturesList,
 }
 
 impl SetupPhaseImpl for WalletSetupPhase {
@@ -83,6 +85,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
         app_handle: AppHandle,
         status_sender: Sender<PhaseStatus>,
         configuration: SetupConfiguration,
+        setup_features: SetupFeaturesList,
     ) -> Self {
         Self {
             app_handle: app_handle.clone(),
@@ -90,6 +93,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
             app_configuration: Self::load_app_configuration().await.unwrap_or_default(),
             setup_configuration: configuration,
             status_sender,
+            setup_features,
         }
     }
 
@@ -141,7 +145,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
                         error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Wallet);
                         let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::Wallet);
                         sentry::capture_message(&error_message, sentry::Level::Error);
-                        EventsManager::handle_critical_problem(&self.app_handle, Some(SetupPhase::Wallet.get_critical_problem_title()), Some(SetupPhase::Wallet.get_critical_problem_description()))
+                        EventsManager::handle_critical_problem(&self.app_handle, Some(SetupPhase::Wallet.get_critical_problem_title()), Some(SetupPhase::Wallet.get_critical_problem_description()),Some(error_message))
                         .await;
                     }
                 }
@@ -156,7 +160,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
                             let error_message = format!("[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Wallet,error);
                             sentry::capture_message(&error_message, sentry::Level::Error);
                             EventsManager
-                                ::handle_critical_problem(&self.app_handle, Some(SetupPhase::Wallet.get_critical_problem_title()), Some(SetupPhase::Wallet.get_critical_problem_description()))
+                                ::handle_critical_problem(&self.app_handle, Some(SetupPhase::Wallet.get_critical_problem_title()), Some(SetupPhase::Wallet.get_critical_problem_description()),Some(error_message))
                                 .await;
                         }
                     }

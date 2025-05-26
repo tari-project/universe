@@ -17,6 +17,7 @@
   "giftReferralCode": "Verdien {{gems}} edelstene vir elke vriend wat u na Tari Heelal nooi. Sodra hulle hul rekening koppel, sal u u edelstene ontvang.",
   "giftReferralCodeHeader": "Eis u verwysingskode <span>{{gems}}<image src=\"/assets/images/gem.png\" alt=\"\"/></span> edelstene.",
   "invite": "Nooi",
+  "invite-friends-gems": "Vir elke vriend wat jou uitnodigingskakel gebruik, ontvang jy 5,000 edelstene.",
   "inviteFriends": "Nooi Vriende",
   "inviteFriendsText": "Kopieer skakel en deel dit",
   "invitedAmount": "U het <span>{{count}}</span> vriende genooi",
@@ -27,13 +28,13 @@
   "live": "lewendig",
   "logged-in-as": "Aangemeld as <strong>@{{twitter}}</strong>",
   "loggedInTitle": "Airdrop Belonings",
-  "loggedOutTitle": "Invite Friends to Earn Gems",
+  "loggedOutTitle": "Nooi Vriende om Edelstene te Verdien",
   "loginButton": "Meld aan om edelstene te eis",
   "logout": "Teken uit",
   "nextTierBonus": "Nooi <strong>{{count}} vriende</strong> & verdien {{bonusGems}} bonus edelstene",
   "permission": {
     "setup": "Tari Universe wil graag analise gebruik om <strong>jou ervaring te verbeter.</strong>",
-    "text": "Tari Universe would like to use analytics to improve your experience and reward you with gems for inviting friends.",
+    "text": "Tari Universe wil analise gebruik om jou ervaring te verbeter en jou met edelstene te beloon vir die uitnodiging van vriende.",
     "title": "Verdien Edelstene & maak Tari Heelal beter"
   },
   "permissionNoGems": {

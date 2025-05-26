@@ -1,11 +1,11 @@
 {
-  "auto-reconnect": "Attempting to reconnect in:",
-  "connect-now": "Connect Now",
-  "disconnect-severe-subtitle": "We’ll keep trying to connect you to the Tari network. You can also try restarting your miner, or reaching out for support on Telegram if the issue persists.",
-  "disconnect-severe-title": "We’re having trouble getting you connected",
-  "disconnect-subtitle": "Hang tight while we attempt to reconnect you to the network.",
-  "disconnect-title": "Uh oh, you're not connected to the Tari network",
-  "go-to-telegram": "Get Help on Telegram",
-  "reconnect-in-progress": "Reconnecting...",
-  "restart-app": "Restart Tari Universe"
+  "auto-reconnect": "Yeniden bağlanmaya çalışılıyor:",
+  "connect-now": "Şimdi Bağlan",
+  "disconnect-severe-subtitle": "Sizi Tari ağına bağlamaya çalışmaya devam edeceğiz. Sorun devam ederse madencinizi yeniden başlatmayı veya Telegram\"da destek almayı deneyebilirsiniz.",
+  "disconnect-severe-title": "Bağlanmanızda sorun yaşıyoruz",
+  "disconnect-subtitle": "Ağa yeniden bağlanmaya çalışırken sabırlı olun.",
+  "disconnect-title": "Ah oh, Tari ağına bağlı değilsiniz",
+  "go-to-telegram": "Telegram\"da Yardım Al",
+  "reconnect-in-progress": "Yeniden bağlanılıyor...",
+  "restart-app": "Tari Universe\"i Yeniden Başlat"
 }

@@ -17,6 +17,7 @@
   "giftReferralCode": "Dapatkan {{gems}} permata untuk setiap teman yang Anda undang ke Tari Universe. Setelah mereka menghubungkan akun mereka, Anda akan mendapatkan permata Anda.",
   "giftReferralCodeHeader": "Klaim kode referensi Anda <span>{{gems}}<image src=\"/assets/images/gem.png\" alt=\"\"/></span> permata.",
   "invite": "Undang",
+  "invite-friends-gems": "Untuk setiap teman yang menggunakan tautan undangan Anda, Anda menerima 5.000 permata.",
   "inviteFriends": "Undang Teman",
   "inviteFriendsText": "Salin tautan dan bagikan",
   "invitedAmount": "Anda telah mengundang <span>{{count}}</span> teman",
@@ -27,13 +28,13 @@
   "live": "langsung",
   "logged-in-as": "Masuk sebagai <strong>@{{twitter}}</strong>",
   "loggedInTitle": "Hadiah Airdrop",
-  "loggedOutTitle": "Invite Friends to Earn Gems",
+  "loggedOutTitle": "Undang Teman untuk Mendapatkan Permata",
   "loginButton": "Masuk untuk mengklaim permata",
   "logout": "Keluar",
   "nextTierBonus": "Undang <strong>{{count}} teman</strong> & dapatkan {{bonusGems}} permata bonus",
   "permission": {
     "setup": "Tari Universe ingin menggunakan analitik untuk <strong>meningkatkan pengalaman Anda.</strong>",
-    "text": "Tari Universe would like to use analytics to improve your experience and reward you with gems for inviting friends.",
+    "text": "Tari Universe ingin menggunakan analitik untuk meningkatkan pengalaman Anda dan memberi Anda hadiah permata untuk mengundang teman.",
     "title": "Dapatkan Permata & buat Tari Universe lebih baik"
   },
   "permissionNoGems": {

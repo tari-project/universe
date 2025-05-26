@@ -7,6 +7,7 @@ const initialState: SetupState = {
     miningUnlocked: false,
     walletUnlocked: false,
     hardwarePhaseFinished: false,
+    isInitialSetupFinished: false,
     appUnlocked: false,
     core_phase_setup_payload: undefined,
     hardware_phase_setup_payload: undefined,

@@ -30,7 +30,7 @@ use tokio::sync::RwLock;
 
 use crate::{
     events_emitter::EventsEmitter, events_manager::EventsManager, internal_wallet::InternalWallet,
-    utils::wallet_utils::create_monereo_address, AppConfig, UniverseAppState,
+    utils::wallet_utils::create_monereo_address, UniverseAppState,
 };
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
@@ -92,7 +92,7 @@ pub struct ConfigWallet {
 }
 
 impl ConfigWallet {
-    pub async fn initialize(app_handle: AppHandle, old_config: Option<AppConfig>) {
+    pub async fn initialize(app_handle: AppHandle) {
         let mut config = Self::current().write().await;
         let state = app_handle.state::<UniverseAppState>();
         let old_config_path = app_handle
@@ -100,7 +100,6 @@ impl ConfigWallet {
             .app_config_dir()
             .expect("Could not get config dir");
 
-        config.handle_old_config_migration(old_config);
         config.load_app_handle(app_handle.clone()).await;
         drop(config);
 
@@ -115,10 +114,13 @@ impl ConfigWallet {
                 .await;
             }
         }
+        {
+            let mut cpu_config = state.cpu_miner_config.write().await;
+            cpu_config.load_from_config_wallet(&ConfigWallet::content().await);
+        }
 
         match InternalWallet::load_or_create(old_config_path.clone()).await {
             Ok(wallet) => {
-                state.cpu_miner_config.write().await.tari_address = wallet.get_tari_address();
                 state
                     .wallet_manager
                     .set_view_private_key_and_spend_key(
@@ -128,7 +130,12 @@ impl ConfigWallet {
                     .await;
                 let tari_address = wallet.get_tari_address();
                 *state.tari_address.write().await = tari_address.clone();
-                EventsEmitter::emit_wallet_address_update(&app_handle, tari_address).await;
+                EventsEmitter::emit_wallet_address_update(
+                    &app_handle,
+                    tari_address,
+                    wallet.get_is_tari_address_generated(),
+                )
+                .await;
             }
             Err(e) => {
                 error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);
@@ -145,7 +152,6 @@ impl ConfigWallet {
 
 impl ConfigImpl for ConfigWallet {
     type Config = ConfigWalletContent;
-    type OldConfig = AppConfig;
 
     fn current() -> &'static RwLock<Self> {
         &INSTANCE
@@ -176,25 +182,5 @@ impl ConfigImpl for ConfigWallet {
 
     fn _get_content_mut(&mut self) -> &mut Self::Config {
         &mut self.content
-    }
-
-    fn handle_old_config_migration(&mut self, old_config: Option<Self::OldConfig>) {
-        if self.content.was_config_migrated {
-            return;
-        }
-
-        if old_config.is_some() {
-            let old_config = old_config.expect("Old config should be present");
-            self.content = ConfigWalletContent {
-                was_config_migrated: true,
-                created_at: SystemTime::now(),
-                keyring_accessed: old_config.keyring_accessed(),
-                monero_address: old_config.monero_address().to_string(),
-                monero_address_is_generated: old_config.monero_address_is_generated(),
-            };
-            let _unused = Self::_save_config(self.content.clone());
-        } else {
-            self.content.set_was_config_migrated(true);
-        }
     }
 }

@@ -1,6 +1,7 @@
 {
-  "connections": "connections",
-  "established": "Established",
+  "connected-since": "Connected since",
+  "connections": "कनेक्शन",
+  "established": "स्थापित",
   "listener-addresses": "श्रोता पते",
   "miners": "माइनर्स",
   "network-info": "नेटवर्क जानकारी",
@@ -9,9 +10,15 @@
   "p2pool-connection-info": "कनेक्शन",
   "p2pool-connection-info-more": "कनेक्शन विवरण",
   "p2pool-peers": "P2pool सहकर्मी",
-  "p2pool-stats": "पूल माइनिंग आँकड़े",
-  "pending": "Pending",
+  "p2pool-stats": "P2pool stats",
+  "pending": "लंबित",
   "randomx-stats": "RandomX सांख्यिकी",
   "sha3-stats": "SHA3 सांख्यिकी",
+  "stats": {
+    "tile-heading": "Rewards in Progress",
+    "tile-loading": "Pool is warming up",
+    "tooltip-copy": "Rewards are “In Progress” until you earn a minimum of <strong>{{amount}}</strong> and <strong>{{duration}}</strong> have passed. After you reach both thresholds, in progress rewards will be automatically sent to your Tari Universe wallet. It may take a further 2 hours for them to arrive.",
+    "tooltip-tile-heading": "Rewards threshold"
+  },
   "tribe": "जनजाति"
 }

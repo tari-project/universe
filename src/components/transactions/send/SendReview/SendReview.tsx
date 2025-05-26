@@ -6,7 +6,7 @@ import { formatNumber, FormatPreset, truncateMiddle } from '@app/utils';
 
 import ProcessingIcon from './icons/ProcessingIcon';
 import CompletedIcon from './icons/CompletedIcon';
-import LoadingDots from './icons/LoadingDots';
+
 import { useEffect } from 'react';
 import { SendStatus } from '@app/components/transactions/send/SendModal.tsx';
 import { useWalletStore } from '@app/store';
@@ -86,10 +86,10 @@ export function SendReview({
             label: t('send.transaction-description'),
             value: message,
         },
-        {
-            label: t('send.transaction-id'),
-            value: status === 'processing' ? <LoadingDots /> : latestTx?.tx_id,
-        },
+        // {
+        //     label: t('send.transaction-id'),
+        //     value: status === 'processing' ? <LoadingDots /> : latestTx?.tx_id,
+        // },
         // {
         //     label: t('send.tari-txn'),
         //     value: status === 'processing' ? <LoadingDots /> : `0x12345..12789`,
