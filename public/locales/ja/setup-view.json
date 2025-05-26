@@ -1,4 +1,11 @@
 {
+  "actions": {
+    "earn-gems": "ジェムを獲得",
+    "earn-gems-copy": "友達を招待してジェムを獲得するためにソーシャルアカウントを接続",
+    "earn-gems-cta": "Xアカウントを接続",
+    "mode": "モードをカスタマイズ",
+    "mode-copy": "マシンのマイニングの強度をカスタマイズできることをご存知ですか？"
+  },
   "could-not-auto-update": "マシンがロックされているかスリープモード中にTari Universeを{{version}}に自動更新できませんでした。",
   "dont-worry": "心配しないでください、次回はそれほど時間がかかりません",
   "installing-latest-version": "Tari Universeの{{version}}バージョンをインストール中",
@@ -6,8 +13,8 @@
   "no": "いいえ",
   "setting-up": "Tariトゥルースマシンを設定中...",
   "sync": {
-    "header": "Connecting to the Tari network",
-    "subheader": "Syncing with the Tari network"
+    "header": "Tariネットワークに接続中",
+    "subheader": "Tariネットワークと同期中"
   },
   "this-might-take-a-few-minutes": "数分かかる場合があります",
   "title": {

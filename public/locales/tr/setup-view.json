@@ -1,4 +1,11 @@
 {
+  "actions": {
+    "earn-gems": "Mücevher kazan",
+    "earn-gems-copy": "Arkadaşlarınızı davet ederek mücevher kazanmak için sosyal hesabınızı bağlayın",
+    "earn-gems-cta": "X Hesabını Bağla",
+    "mode": "Modu Özelleştir",
+    "mode-copy": "Makinenizin ne kadar zor madencilik yapmasını istediğinizi özelleştirebileceğinizi biliyor muydunuz?"
+  },
   "could-not-auto-update": "Makine kilitli veya uyku modundayken Tari Universe\"i {{version}} sürümüne otomatik olarak güncelleyemedik.",
   "dont-worry": "Merak etmeyin, bir dahaki sefere bu kadar uzun sürmeyecek",
   "installing-latest-version": "Tari Universe\"in {{version}} sürümü yükleniyor",
@@ -6,8 +13,8 @@
   "no": "Hayır",
   "setting-up": "Tari doğruluk makinesi kuruluyor...",
   "sync": {
-    "header": "Connecting to the Tari network",
-    "subheader": "Syncing with the Tari network"
+    "header": "Tari ağına bağlanılıyor",
+    "subheader": "Tari ağı ile senkronize ediliyor"
   },
   "this-might-take-a-few-minutes": "Bu birkaç dakika sürebilir",
   "title": {

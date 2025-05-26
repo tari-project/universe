@@ -11,7 +11,6 @@ import AdminUI from '@app/components/AdminUI/AdminUI.tsx';
 import ToastStack from '@app/components/ToastStack/ToastStack.tsx';
 import CriticalProblemDialog from './CriticalProblemDialog/CriticalProblemDialog.tsx';
 import ShellOfSecrets from '../main/ShellOfSecrets/ShellOfSecrets.tsx';
-// eslint-disable-next-line
 import ReleaseNotesDialog from './ReleaseNotesDialog/ReleaseNotesDialog.tsx';
 import LudicrousCofirmationDialog from './LudicrousCofirmationDialog/LudicrousCofirmationDialog.tsx';
 import { memo } from 'react';
@@ -19,6 +18,7 @@ import ResumeApplicationModal from './ResumeApplicationModal/ResumeApplicationMo
 import XSpaceEventBanner from './XSpaceBanner/XSpaceBanner.tsx';
 import { CustomPowerLevelsDialogContainer } from '@app/containers/navigation/components/Miner/components/CustomPowerLevels/CustomPowerLevelsDialogContainer.tsx';
 import WarmupDialog from './Warmup/WarmupDialog.tsx';
+import EXModal from '@app/containers/floating/EXModal/EXModal.tsx';
 
 const environment = import.meta.env.MODE;
 
@@ -36,12 +36,13 @@ const FloatingElements = memo(function FloatingElements() {
             <ShellOfSecrets />
             <ToastStack />
             <CriticalProblemDialog />
-            {/*<ReleaseNotesDialog />*/}
+            <ReleaseNotesDialog />
             <ResumeApplicationModal />
             <XSpaceEventBanner />
             <CustomPowerLevelsDialogContainer />
             {environment === 'development' && <AdminUI />}
             <WarmupDialog />
+            <EXModal />
         </FloatingTree>
     );
 });

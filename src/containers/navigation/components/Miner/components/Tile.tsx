@@ -4,7 +4,7 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 import { Chip } from '@app/components/elements/Chip.tsx';
 import { colorsAll } from '@app/theme/palettes/colors.ts';
 import { formatNumber, FormatPreset } from '@app/utils/formatters';
-import LoadingDots from '@app/components/transactions/send/SendReview/icons/LoadingDots';
+import LoadingDots from '@app/components/elements/loaders/LoadingDots';
 
 interface TileProps {
     title: string;

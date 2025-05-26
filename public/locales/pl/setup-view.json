@@ -1,4 +1,11 @@
 {
+  "actions": {
+    "earn-gems": "Zarabiaj klejnoty",
+    "earn-gems-copy": "Połącz swoje konto społecznościowe, aby zdobywać klejnoty za zapraszanie znajomych",
+    "earn-gems-cta": "Połącz konto X",
+    "mode": "Dostosuj tryb",
+    "mode-copy": "Czy wiesz, że możesz dostosować, jak intensywnie chcesz, aby Twoja maszyna kopała?"
+  },
   "could-not-auto-update": "Nie mogliśmy automatycznie zaktualizować Tari Universe do wersji {{version}}, gdy maszyna była zablokowana lub w trybie uśpienia.",
   "dont-worry": "Nie martw się, następnym razem nie zajmie to tak długo",
   "installing-latest-version": "Instalowanie wersji {{version}} Tari Universe",
@@ -6,8 +13,8 @@
   "no": "Nie",
   "setting-up": "Konfiguracja Tari truth machine...",
   "sync": {
-    "header": "Connecting to the Tari network",
-    "subheader": "Syncing with the Tari network"
+    "header": "Łączenie z siecią Tari",
+    "subheader": "Synchronizacja z siecią Tari"
   },
   "this-might-take-a-few-minutes": "To może zająć kilka minut",
   "title": {

@@ -104,12 +104,8 @@ impl MiningStatusManager {
         let cpu_miner_status_watch_rx = self.cpu_miner_status_watch_rx.clone();
         let gpu_latest_miner_stats = self.gpu_latest_miner_stats.clone();
         let node_latest_status = self.node_latest_status.clone();
-        let app_version = self
-            .app
-            .clone()
-            .map(|handle| handle.package_info().version.clone())
-            .expect("no app version present in WebsocketEventsManager")
-            .to_string();
+        let app_cloned = self.app.clone();
+
         let close_channel_tx = self.close_channel_tx.clone();
         let app_in_config_memory = self.app_in_memory_config.clone();
         let app_id = ConfigCore::content().await.anon_id().clone();
@@ -123,6 +119,10 @@ impl MiningStatusManager {
 
             tokio::spawn(async move {
                 loop {
+                    let app_version_option = app_cloned
+                        .clone()
+                        .map(|handle| handle.package_info().version.clone().to_string());
+
                     let jwt_token = ConfigCore::content()
                         .await
                         .airdrop_tokens()
@@ -132,7 +132,7 @@ impl MiningStatusManager {
 
                     tokio::select! {
                             _ = interval.tick() => {
-                            if let Some(jwt) = jwt_token {
+                            if let (Some(jwt), Some(app_version))= (jwt_token, app_version_option){
                                 if let Some(message) = MiningStatusManager::assemble_mining_status(cpu_miner_status_watch_rx.clone(),gpu_latest_miner_stats.clone(),node_latest_status.clone(),app_id.clone(),app_version.clone(),jwt.clone(),).await {
                                     let client = reqwest::Client::new();
                                     let url = format!("{}/miner/mining-status",base_url);
@@ -177,11 +177,7 @@ impl MiningStatusManager {
 
         let cpu_miner_status = cpu_miner_status_watch_rx.borrow().clone();
         let gpu_status = gpu_latest_miner_stats.borrow().clone();
-        let network = match Network::get_current_or_user_setting_or_default() {
-            Network::Esmeralda => "esmeralda".to_owned(),
-            Network::NextNet => "nextnet".to_owned(),
-            _ => "unknown".to_owned(),
-        };
+        let network = Network::get_current_or_user_setting_or_default().as_key_str();
         let is_mining_active = cpu_miner_status.hash_rate > 0.0 || gpu_status.hash_rate > 0.0;
 
         if let Some(claims) = decode_jwt_claims_without_exp(&jwt_token) {

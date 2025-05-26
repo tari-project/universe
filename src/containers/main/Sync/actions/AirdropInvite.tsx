@@ -24,10 +24,6 @@ export default function AirdropInvite() {
     );
 
     return referralCode ? (
-        <SyncActionCard
-            action={action}
-            title={'Invite Friends'}
-            subtitle={'For every friend that uses your invite link, you receive 5,000 gems.'}
-        />
+        <SyncActionCard action={action} title={t('inviteFriends')} subtitle={t('invite-friends-gems')} />
     ) : null;
 }

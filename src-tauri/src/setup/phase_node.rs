@@ -51,7 +51,7 @@ use tokio::{
 };
 
 use super::{
-    setup_manager::PhaseStatus,
+    setup_manager::{PhaseStatus, SetupFeaturesList},
     trait_setup_phase::{SetupConfiguration, SetupPhaseImpl},
 };
 
@@ -72,6 +72,8 @@ pub struct NodeSetupPhase {
     app_configuration: NodeSetupPhaseAppConfiguration,
     setup_configuration: SetupConfiguration,
     status_sender: Sender<PhaseStatus>,
+    #[allow(dead_code)]
+    setup_features: SetupFeaturesList,
 }
 
 impl SetupPhaseImpl for NodeSetupPhase {
@@ -81,6 +83,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
         app_handle: AppHandle,
         status_sender: Sender<PhaseStatus>,
         configuration: SetupConfiguration,
+        setup_features: SetupFeaturesList,
     ) -> Self {
         Self {
             app_handle: app_handle.clone(),
@@ -88,6 +91,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
             app_configuration: Self::load_app_configuration().await.unwrap_or_default(),
             setup_configuration: configuration,
             status_sender,
+            setup_features,
         }
     }
 
@@ -147,7 +151,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
                         error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Node);
                         let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::Node);
                         sentry::capture_message(&error_message, sentry::Level::Error);
-                        EventsManager::handle_critical_problem(&self.app_handle, Some(SetupPhase::Node.get_critical_problem_title()), Some(SetupPhase::Node.get_critical_problem_description()))
+                        EventsManager::handle_critical_problem(&self.app_handle, Some(SetupPhase::Node.get_critical_problem_title()), Some(SetupPhase::Node.get_critical_problem_description()),Some(error_message))
                         .await;
                     }
                 }
@@ -162,7 +166,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
                             let error_message = format!("[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Node,error);
                             sentry::capture_message(&error_message, sentry::Level::Error);
                             EventsManager
-                                ::handle_critical_problem(&self.app_handle, Some(SetupPhase::Node.get_critical_problem_title()), Some(SetupPhase::Node.get_critical_problem_description()))
+                                ::handle_critical_problem(&self.app_handle, Some(SetupPhase::Node.get_critical_problem_title()), Some(SetupPhase::Node.get_critical_problem_description()),Some(error_message))
                                 .await;
                         }
                     }

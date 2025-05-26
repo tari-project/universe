@@ -20,17 +20,18 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::app_config::MiningMode;
 use crate::binaries::Binaries;
 use crate::commands::{CpuMinerConnection, CpuMinerConnectionStatus, CpuMinerStatus};
-use crate::configs::config_mining::ConfigMiningContent;
+use crate::configs::config_mining::{ConfigMiningContent, MiningMode};
+use crate::configs::config_wallet::ConfigWalletContent;
+use crate::pool_status_watcher::SupportXmrStyleAdapter;
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
 use crate::tasks_tracker::TasksTrackers;
 use crate::utils::math_utils::estimate_earning;
 use crate::xmrig::http_api::models::Summary;
 use crate::xmrig_adapter::{XmrigAdapter, XmrigNodeConnection};
-use crate::BaseNodeStatus;
+use crate::{mm_proxy_manager, BaseNodeStatus, PoolStatusWatcher};
 use log::{debug, error, warn};
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -41,19 +42,22 @@ use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::ShutdownSignal;
 use tokio::select;
 use tokio::sync::{watch, RwLock};
-use tokio::time::{sleep, timeout};
+use tokio::time::{interval, sleep, timeout};
 
 const LOG_TARGET: &str = "tari::universe::cpu_miner";
 const ECO_MODE_CPU_USAGE: u32 = 30;
 
 pub struct CpuMinerConfig {
     pub node_connection: CpuMinerConnection,
-    pub tari_address: TariAddress,
     pub eco_mode_xmrig_options: Vec<String>,
     pub ludicrous_mode_xmrig_options: Vec<String>,
     pub custom_mode_xmrig_options: Vec<String>,
     pub eco_mode_cpu_percentage: Option<u32>,
     pub ludicrous_mode_cpu_percentage: Option<u32>,
+    pub monero_address: String,
+    pub pool_host_name: Option<String>,
+    pub pool_port: Option<u16>,
+    pub pool_status_url: Option<String>,
 }
 
 impl CpuMinerConfig {
@@ -64,6 +68,28 @@ impl CpuMinerConfig {
         self.eco_mode_xmrig_options = config_mining_content.eco_mode_cpu_options().clone();
         self.ludicrous_mode_xmrig_options =
             config_mining_content.ludicrous_mode_cpu_options().clone();
+        if let Some(ref pool_url) = config_mining_content.cpu_mining_pool_url() {
+            let parts = pool_url.split(':').collect::<Vec<_>>();
+            if parts.len() == 2 {
+                if let Ok(port) = parts[1].parse::<u16>() {
+                    self.pool_port = Some(port);
+                } else {
+                    error!(target: LOG_TARGET, "Invalid port number in pool URL: {}", pool_url);
+                }
+                self.pool_host_name = Some(parts[0].to_string());
+            } else {
+                error!(target: LOG_TARGET, "Invalid pool URL format: {}", pool_url);
+            }
+            self.node_connection = CpuMinerConnection::Pool;
+        } else {
+            self.pool_host_name = None;
+        }
+
+        self.pool_status_url = config_mining_content.cpu_mining_pool_status_url().clone();
+    }
+
+    pub fn load_from_config_wallet(&mut self, config_wallet_content: &ConfigWalletContent) {
+        self.monero_address = config_wallet_content.monero_address().to_string();
     }
 }
 
@@ -73,6 +99,7 @@ pub(crate) struct CpuMiner {
     summary_watch_rx: watch::Receiver<Option<Summary>>,
     node_status_watch_rx: watch::Receiver<BaseNodeStatus>,
     pub benchmarked_hashrate: u64,
+    pool_status_watcher: Option<PoolStatusWatcher<SupportXmrStyleAdapter>>,
 }
 
 impl CpuMiner {
@@ -90,32 +117,91 @@ impl CpuMiner {
             summary_watch_rx,
             node_status_watch_rx,
             benchmarked_hashrate: 0,
+            pool_status_watcher: None,
         }
     }
 
     #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_lines)]
     pub async fn start(
         &mut self,
         app_shutdown: ShutdownSignal,
         cpu_miner_config: &CpuMinerConfig,
-        monero_address: String,
-        monero_port: u16,
+        mm_proxy_manager: &mm_proxy_manager::MmProxyManager,
         base_path: PathBuf,
         config_path: PathBuf,
         log_dir: PathBuf,
         mode: MiningMode,
         custom_cpu_threads: Option<u32>,
+        tari_address: &TariAddress,
     ) -> Result<(), anyhow::Error> {
-        let xmrig_node_connection = match cpu_miner_config.node_connection {
-            CpuMinerConnection::BuiltInProxy => {
+        let (xmrig_node_connection, pool_watcher) = match cpu_miner_config.node_connection {
+            CpuMinerConnection::BuiltInProxy => (
                 XmrigNodeConnection::LocalMmproxy {
                     host_name: "127.0.0.1".to_string(),
-                    // port: local_mm_proxy.try_get_listening_port().await?
-                    // TODO: Replace with actual port
-                    port: monero_port,
-                }
+                    port: mm_proxy_manager.get_monero_port().await?,
+                    monero_address: cpu_miner_config.monero_address.clone(),
+                },
+                None,
+            ),
+            CpuMinerConnection::Pool { .. } => {
+                let (pool_address, port) =
+                    match (&cpu_miner_config.pool_host_name, cpu_miner_config.pool_port) {
+                        (Some(ref host_name), Some(port)) => (host_name.clone(), port),
+                        _ => {
+                            return Err(anyhow::anyhow!(
+                                "Pool host name and port must be provided for Pool connection"
+                            ));
+                        }
+                    };
+
+                let status_watch = cpu_miner_config.pool_status_url.as_ref().map(|url| {
+                    PoolStatusWatcher::new(
+                        url.replace("%MONERO_ADDRESS%", &cpu_miner_config.monero_address)
+                            .replace("%TARI_ADDRESS%", &tari_address.to_base58()),
+                        SupportXmrStyleAdapter {},
+                    )
+                });
+
+                (
+                    XmrigNodeConnection::Pool {
+                        host_name: pool_address,
+                        port,
+                        tari_address: tari_address.to_base58(),
+                    },
+                    status_watch,
+                )
+            }
+            CpuMinerConnection::MergeMinedPool { .. } => {
+                let (pool_address, port) =
+                    match (&cpu_miner_config.pool_host_name, cpu_miner_config.pool_port) {
+                        (Some(ref host_name), Some(port)) => (host_name.clone(), port),
+                        _ => {
+                            return Err(anyhow::anyhow!(
+                            "Pool host name and port must be provided for MergeMinedPool connection"
+                        ));
+                        }
+                    };
+                let status_watch = cpu_miner_config.pool_status_url.as_ref().map(|url| {
+                    PoolStatusWatcher::new(
+                        url.replace("%MONERO_ADDRESS%", &cpu_miner_config.monero_address)
+                            .replace("%TARI_ADDRESS%", &tari_address.to_base58()),
+                        SupportXmrStyleAdapter {},
+                    )
+                });
+
+                (
+                    XmrigNodeConnection::MergeMinedPool {
+                        host_name: pool_address,
+                        port,
+                        monero_address: cpu_miner_config.monero_address.clone(),
+                        tari_address: tari_address.to_base58(),
+                    },
+                    status_watch,
+                )
             }
         };
+        self.pool_status_watcher = pool_watcher;
         let max_cpu_available = thread::available_parallelism();
         let max_cpu_available = match max_cpu_available {
             Ok(available_cpus) => {
@@ -145,8 +231,8 @@ impl CpuMiner {
         };
         {
             let mut lock = self.watcher.write().await;
+
             lock.adapter.node_connection = Some(xmrig_node_connection);
-            lock.adapter.monero_address = Some(monero_address.clone());
             lock.adapter.cpu_threads = Some(cpu_max_percentage);
             lock.adapter.extra_options = match mode {
                 MiningMode::Eco => cpu_miner_config.eco_mode_xmrig_options.clone(),
@@ -198,7 +284,6 @@ impl CpuMiner {
         {
             let mut lock = self.watcher.write().await;
             lock.adapter.node_connection = Some(XmrigNodeConnection::Benchmark);
-            lock.adapter.monero_address = Some("44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A".to_string());
             lock.adapter.cpu_threads = Some(Some(1));
             lock.adapter.extra_options = vec![];
 
@@ -298,10 +383,29 @@ impl CpuMiner {
         let cpu_miner_status_watch_tx = self.cpu_miner_status_watch_tx.clone();
         let mut summary_watch_rx = self.summary_watch_rx.clone();
         let node_status_watch_rx = self.node_status_watch_rx.clone();
+        let pool_status_watcher = self.pool_status_watcher.clone();
+        let mut pool_status_check = interval(Duration::from_secs(20));
+        pool_status_check.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
 
         TasksTrackers::current().hardware_phase.get_task_tracker().await.spawn(async move {
+            let mut last_pool_status = None;
             loop {
                 select! {
+                    _ = pool_status_check.tick() => {
+                        last_pool_status = match pool_status_watcher {
+                            Some(ref watcher) => {
+                                match watcher.get_pool_status().await {
+                                    Ok(status) => Some(status),
+                                    Err(e) => {
+                                        error!(target: LOG_TARGET, "Error fetching pool status: {}", e);
+                                        None
+                                    }
+                                }
+                            },
+                            None => None,
+                        };
+
+                    }
                     _ = summary_watch_rx.changed() => {
                         let node_status = *node_status_watch_rx.borrow();
                         let xmrig_summary = summary_watch_rx.borrow().clone();
@@ -310,7 +414,7 @@ impl CpuMiner {
                             Some(xmrig_status) => {
                                 let hash_rate = xmrig_status.hashrate.total[0].unwrap_or_default();
                                 let estimated_earnings =
-                                    estimate_earning(node_status.randomx_network_hashrate, hash_rate, node_status.block_reward);
+                                    estimate_earning(node_status.monero_randomx_network_hashrate, hash_rate, node_status.block_reward);
 
                                 // // UNUSED, commented for now
                                 // let hasrate_sum = xmrig_status
@@ -319,12 +423,15 @@ impl CpuMiner {
                                 //     .iter()
                                 //     .fold(0.0, |acc, x| acc + x.unwrap_or(0.0));
                                 let is_connected = xmrig_status.connection.uptime > 0;
+                                // dbg!(&last_pool_status);
+
 
                                 CpuMinerStatus {
                                     is_mining: true,
                                     hash_rate,
                                     estimated_earnings: MicroMinotari(estimated_earnings).as_u64(),
                                     connection: CpuMinerConnectionStatus { is_connected },
+                                    pool_status: last_pool_status.clone(),
                                 }
                             }
                             None => {

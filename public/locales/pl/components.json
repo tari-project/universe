@@ -1,8 +1,8 @@
 {
   "banner": {
-    "body-copy": "You may experience forks and hash rate fluctuations as the network settles over the next ~15 days.",
-    "body-copy-highlight": "Tari is brand new!",
-    "is-live": "is live"
+    "body-copy": "Możesz doświadczyć forków i wahań hash rate, gdy sieć ustabilizuje się w ciągu następnych ~15 dni.",
+    "body-copy-highlight": "Tari jest zupełnie nowe!",
+    "is-live": "jest na żywo"
   },
   "field-error-message": {
     "integers-only": "Dozwolone są tylko liczby całkowite",
@@ -36,9 +36,9 @@
     "title": "Wznawianie Tari Universe"
   },
   "warmupDialog": {
-    "copy": "The birth of a proof-of-work network is special. In the early days, the network needs time to stabilize and find its rhythm. We call this the \"warm-up phase.\"\nContributors and early supporters of the Tari network (like exchanges and infrastructure partners) expect the warm-up phase to last about 15 days. After that, the network will transition to a more stable state.\nDuring the warm-up phase, some quirks are normal. You might see block time fluctuations, temporary disconnections, syncing delays, or even short-lived forks that require your node to reconnect to the main chain.\nThe warm-up phase is a great time to mine because rewards are highest per block. We hope the early days of the Tari network are rewarding for you.\nLet the games begin. May the blocks be forever in your favor!",
-    "subtitle": "What does this mean exactly?",
-    "tag-line": "Welcome to Tari Mainnet",
-    "title": "Warm up phase"
+    "copy": "Narodziny sieci proof-of-work są wyjątkowe. W początkowych dniach sieć potrzebuje czasu na stabilizację i znalezienie swojego rytmu. Nazywamy to \"fazą rozgrzewki\".\nWspółtwórcy i wczesni zwolennicy sieci Tari (jak giełdy i partnerzy infrastrukturalni) oczekują, że faza rozgrzewki potrwa około 15 dni. Po tym czasie sieć przejdzie do bardziej stabilnego stanu.\nPodczas fazy rozgrzewki pewne dziwactwa są normalne. Możesz zauważyć wahania czasu bloków, tymczasowe rozłączenia, opóźnienia w synchronizacji, a nawet krótkotrwałe forki, które wymagają ponownego połączenia węzła z głównym łańcuchem.\nFaza rozgrzewki to świetny czas na kopanie, ponieważ nagrody są najwyższe na blok. Mamy nadzieję, że wczesne dni sieci Tari będą dla Ciebie satysfakcjonujące.\nNiech gry się rozpoczną. Niech bloki będą zawsze na Twoją korzyść!",
+    "subtitle": "Co to dokładnie oznacza?",
+    "tag-line": "Witamy w Tari Mainnet",
+    "title": "Faza rozgrzewki"
   }
 }

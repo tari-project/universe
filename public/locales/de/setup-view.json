@@ -1,4 +1,11 @@
 {
+  "actions": {
+    "earn-gems": "Edelsteine verdienen",
+    "earn-gems-copy": "Verbinden Sie Ihr soziales Konto, um Edelsteine für das Einladen von Freunden zu verdienen",
+    "earn-gems-cta": "X-Konto verbinden",
+    "mode": "Modus anpassen",
+    "mode-copy": "Wussten Sie, dass Sie anpassen können, wie stark Ihre Maschine minen soll?"
+  },
   "could-not-auto-update": "Wir konnten Tari Universe nicht auf {{version}} aktualisieren, während die Maschine gesperrt oder im Ruhezustand war.",
   "dont-worry": "Mach dir keine Sorgen, beim nächsten Mal dauert es nicht so lange",
   "installing-latest-version": "Installation der {{version}}-Version des Tari-Universums",
@@ -6,8 +13,8 @@
   "no": "Nein",
   "setting-up": "Einrichten der Tari Wahrheitsmaschine...",
   "sync": {
-    "header": "Connecting to the Tari network",
-    "subheader": "Syncing with the Tari network"
+    "header": "Verbindung zum Tari-Netzwerk herstellen",
+    "subheader": "Synchronisierung mit dem Tari-Netzwerk"
   },
   "this-might-take-a-few-minutes": "Das könnte ein paar Minuten dauern",
   "title": {

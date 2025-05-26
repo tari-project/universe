@@ -91,7 +91,7 @@
   "paper-wallet": {
     "connect-wallet-to-phone": "Track your XTM balance on your phone",
     "do-not-share-this-code": "Don&apos;t share this code with anyone",
-    "link-tari-aurora": "Link Tari Aurora",
+    "link-tari-aurora": "Link Tari Universe Mobile",
     "load-qr-code": "Load QR code",
     "passphrase": "Passphrase"
   },
@@ -160,6 +160,7 @@
     "title": "Update Tari Universe automatically"
   },
   "use-dynamic-fail-data": "Use dynamic fail data",
+  "use-p2p": "Use P2pool",
   "use-random-control-port": "Use random control port",
   "use-random-port": "Use random port",
   "use-tor": "Use Tor",
