@@ -104,9 +104,9 @@ impl Default for ConfigMiningContent {
             cpu_mining_enabled: true,
             gpu_engine: EngineType::OpenCL,
             squad_override: None,
-            cpu_mining_pool_url: Some("104.161.20.146:1337".to_string()),
+            cpu_mining_pool_url: Some("pool-global.tari.snipanet.com:3333".to_string()),
             cpu_mining_pool_status_url: Some(
-                "http://104.161.20.146:1338/api/miner/%TARI_ADDRESS%/stats".to_string(),
+                "https://pool.rxt.tari.jagtech.io/api/miner/%TARI_ADDRESS%/stats".to_string(),
             ),
             gpu_mining_pool_url: None,
             mining_time: 0,
