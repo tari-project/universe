@@ -24,7 +24,6 @@ use crate::{events_manager::EventsManager, gpu_miner::EngineType, UniverseAppSta
 use std::{sync::LazyLock, time::SystemTime};
 
 use getset::{Getters, Setters};
-use log::warn;
 use serde::{Deserialize, Serialize};
 use tari_common::configuration::Network;
 use tauri::{AppHandle, Manager};

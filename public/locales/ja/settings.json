@@ -160,6 +160,7 @@
     "title": "Tari Universeを自動更新"
   },
   "use-dynamic-fail-data": "動的フェイルデータを使用",
+  "use-p2p": "Use P2pool",
   "use-random-control-port": "ランダムな制御ポートを使用",
   "use-random-port": "ランダムポートを使用",
   "use-tor": "Torを使用する",

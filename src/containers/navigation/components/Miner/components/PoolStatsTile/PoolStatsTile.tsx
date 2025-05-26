@@ -86,7 +86,7 @@ export const PoolStatsTile = () => {
                                         <Trans
                                             i18nKey="stats.tooltip-copy"
                                             ns="p2p"
-                                            values={{ amount: REWARD_THRESHOLD, duration: `~6 hrs` }}
+                                            values={{ amount: REWARD_THRESHOLD, duration: `~6 hours` }}
                                             components={{ strong: <strong /> }}
                                         />
                                     </Typography>
