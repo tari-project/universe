@@ -27,6 +27,7 @@ use tari_core::transactions::tari_amount::MicroMinotari;
 use tauri::{AppHandle, Manager};
 
 use crate::airdrop::send_new_block_mined;
+use crate::app_in_memory_config::DEFAULT_EXCHANGE_ID;
 use crate::configs::config_core::ConfigCore;
 use crate::configs::config_mining::ConfigMiningContent;
 use crate::configs::config_wallet::ConfigWalletContent;
@@ -54,8 +55,13 @@ pub struct EventsManager;
 
 impl EventsManager {
     pub async fn handle_new_block_height(app: &AppHandle, block_height: u64) {
+        let state = app.state::<UniverseAppState>();
+        let in_memoery_config = state.in_memory_config.read().await;
+        if in_memoery_config.exchange_id.ne(DEFAULT_EXCHANGE_ID) {
+            return;
+        }
         let app_clone = app.clone();
-        let wallet_manager = app.state::<UniverseAppState>().wallet_manager.clone();
+        let wallet_manager = state.wallet_manager.clone();
 
         TasksTrackers::current().wallet_phase.get_task_tracker().await.spawn(async move {
             // Use a short timeout for processing new blocks
@@ -243,6 +249,11 @@ impl EventsManager {
     pub async fn handle_unknown_phase_finished(app: &AppHandle, status: bool) {
         EventsEmitter::emit_unknown_phase_finished(app, status).await;
     }
+
+    pub async fn handle_initial_setup_finished(app: &AppHandle) {
+        EventsEmitter::emit_initial_setup_finished(app).await;
+    }
+
     pub async fn handle_unlock_app(app: &AppHandle) {
         EventsEmitter::emit_unlock_app(app).await;
     }

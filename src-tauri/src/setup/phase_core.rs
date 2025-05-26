@@ -43,7 +43,7 @@ use crate::{
 };
 
 use super::{
-    setup_manager::PhaseStatus,
+    setup_manager::{PhaseStatus, SetupFeaturesList},
     trait_setup_phase::{SetupConfiguration, SetupPhaseImpl},
 };
 
@@ -63,6 +63,8 @@ pub struct CoreSetupPhase {
     app_configuration: CoreSetupPhaseAppConfiguration,
     setup_configuration: SetupConfiguration,
     status_sender: Sender<PhaseStatus>,
+    #[allow(dead_code)]
+    setup_features: SetupFeaturesList,
 }
 
 impl SetupPhaseImpl for CoreSetupPhase {
@@ -72,6 +74,7 @@ impl SetupPhaseImpl for CoreSetupPhase {
         app_handle: AppHandle,
         status_sender: Sender<PhaseStatus>,
         configuration: SetupConfiguration,
+        setup_features: SetupFeaturesList,
     ) -> Self {
         Self {
             app_handle: app_handle.clone(),
@@ -81,6 +84,7 @@ impl SetupPhaseImpl for CoreSetupPhase {
                 .unwrap_or_default(),
             setup_configuration: configuration,
             status_sender,
+            setup_features,
         }
     }
 

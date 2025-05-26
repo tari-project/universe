@@ -22,11 +22,11 @@
 
 use crate::airdrop;
 use crate::airdrop::get_wallet_view_key_hashed;
-use crate::app_config::MiningMode;
 use crate::app_in_memory_config::AppInMemoryConfig;
 use crate::commands::CpuMinerStatus;
 use crate::configs::config_core::ConfigCore;
 use crate::configs::config_mining::ConfigMining;
+use crate::configs::config_mining::MiningMode;
 use crate::configs::trait_config::ConfigImpl;
 use crate::gpu_miner_adapter::GpuMinerStatus;
 use crate::hardware::hardware_status_monitor::HardwareStatusMonitor;
@@ -201,6 +201,7 @@ pub struct TelemetryData {
     pub upload_speed: f64,
     pub latency: f64,
     pub wallet_view_key_hashed: String,
+    pub exchange_id: String,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -352,8 +353,10 @@ impl TelemetryManager {
                         info!(target: LOG_TARGET, "TelemetryManager::start_telemetry_process has  been started");
                         let airdrop_access_token = airdrop_tokens.map(|tokens| tokens.token);
                         let airdrop_access_token_validated = airdrop::validate_jwt(airdrop_access_token).await;
+                        let memory_config = in_memory_config_cloned.read().await;
+                        let exchange_id = memory_config.exchange_id.clone();
                         let telemetry_data = cancellable_get_telemetry_data(app_handle.clone(),&cpu_miner_status_watch_rx, &gpu_status, &node_status, &p2pool_status,
-                            &tor_status, network, uptime, &stats_collector, &node_manager, &mut (shutdown_signal.clone())).await;
+                            &tor_status, network, exchange_id, uptime, &stats_collector, &node_manager, &mut (shutdown_signal.clone())).await;
                         let airdrop_api_url = in_memory_config_cloned.read().await.airdrop_api_url.clone();
                         handle_data(telemetry_data, airdrop_api_url, airdrop_access_token_validated, app_handle.clone(), &mut (shutdown_signal.clone()), allow_telemetry, allow_notifications).await;
 
@@ -378,12 +381,13 @@ async fn cancellable_get_telemetry_data(
     p2pool_latest_status: &watch::Receiver<Option<P2poolStats>>,
     tor_latest_status: &watch::Receiver<TorStatus>,
     network: Option<Network>,
+    exchange_id: String,
     started: Instant,
     stats_collector: &ProcessStatsCollector,
     node_manager: &NodeManager,
     shutdown_signal: &mut ShutdownSignal,
 ) -> Result<TelemetryData, TelemetryManagerError> {
-    tokio::select! {result = get_telemetry_data(app_handle.clone(),cpu_miner_status_watch_rx, gpu_latest_miner_stats, node_latest_status, p2pool_latest_status, tor_latest_status, network, started, stats_collector, node_manager) => {
+    tokio::select! {result = get_telemetry_data_inner(app_handle.clone(),cpu_miner_status_watch_rx, gpu_latest_miner_stats, node_latest_status, p2pool_latest_status, tor_latest_status, network, started, stats_collector, node_manager, exchange_id) => {
             result
         }
         _ = shutdown_signal.wait() => {
@@ -394,7 +398,7 @@ async fn cancellable_get_telemetry_data(
 }
 #[allow(clippy::too_many_lines)]
 #[allow(clippy::too_many_arguments)]
-async fn get_telemetry_data(
+async fn get_telemetry_data_inner(
     app_handle: tauri::AppHandle,
     cpu_miner_status_watch_rx: &watch::Receiver<CpuMinerStatus>,
     gpu_latest_miner_stats: &watch::Receiver<GpuMinerStatus>,
@@ -405,6 +409,7 @@ async fn get_telemetry_data(
     started: Instant,
     stats_collector: &ProcessStatsCollector,
     node_manager: &NodeManager,
+    exchange_id: String,
 ) -> Result<TelemetryData, TelemetryManagerError> {
     let BaseNodeStatus {
         block_height,
@@ -655,6 +660,7 @@ async fn get_telemetry_data(
     );
     extra_data.insert("upload_speed".to_string(), upload_speed.round().to_string());
     extra_data.insert("network_latency".to_string(), latency.round().to_string());
+    extra_data.insert("exchange_id".to_string(), exchange_id.to_string());
 
     let disks = Disks::new_with_refreshed_list();
     for (i, disk) in disks.list().iter().enumerate() {
@@ -709,6 +715,7 @@ async fn get_telemetry_data(
         upload_speed,
         latency,
         wallet_view_key_hashed,
+        exchange_id,
     };
     Ok(data)
 }

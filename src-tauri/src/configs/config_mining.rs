@@ -20,25 +20,43 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::{
-    app_config::{GpuThreads, MiningMode},
-    events_manager::EventsManager,
-    gpu_miner::EngineType,
-    UniverseAppState,
-};
+use crate::{events_manager::EventsManager, gpu_miner::EngineType, UniverseAppState};
 use std::{sync::LazyLock, time::SystemTime};
 
 use getset::{Getters, Setters};
+use log::warn;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
 use tokio::sync::RwLock;
-
-use crate::AppConfig;
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
 
 static INSTANCE: LazyLock<RwLock<ConfigMining>> =
     LazyLock::new(|| RwLock::new(ConfigMining::new()));
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+pub enum MiningMode {
+    Eco,
+    Ludicrous,
+    Custom,
+}
+
+impl MiningMode {
+    pub fn from_str(s: &str) -> Option<MiningMode> {
+        match s {
+            "Eco" => Some(MiningMode::Eco),
+            "Ludicrous" => Some(MiningMode::Ludicrous),
+            "Custom" => Some(MiningMode::Custom),
+            _ => None,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct GpuThreads {
+    pub gpu_name: String,
+    pub max_gpu_threads: u32,
+}
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "snake_case")]
@@ -62,6 +80,10 @@ pub struct ConfigMiningContent {
     cpu_mining_enabled: bool,
     gpu_engine: EngineType,
     squad_override: Option<String>,
+    cpu_mining_pool_url: Option<String>,
+    cpu_mining_pool_status_url: Option<String>,
+    gpu_mining_pool_url: Option<String>,
+    mining_time: u128,
 }
 
 impl Default for ConfigMiningContent {
@@ -82,6 +104,12 @@ impl Default for ConfigMiningContent {
             cpu_mining_enabled: true,
             gpu_engine: EngineType::OpenCL,
             squad_override: None,
+            cpu_mining_pool_url: Some("104.161.20.146:1337".to_string()),
+            cpu_mining_pool_status_url: Some(
+                "http://104.161.20.146:1338/api/miner/%TARI_ADDRESS%/stats".to_string(),
+            ),
+            gpu_mining_pool_url: None,
+            mining_time: 0,
         }
     }
 }
@@ -93,16 +121,55 @@ pub struct ConfigMining {
 }
 
 impl ConfigMining {
-    pub async fn initialize(app_handle: AppHandle, old_config: Option<AppConfig>) {
+    pub async fn initialize(app_handle: AppHandle) {
         let state = app_handle.state::<UniverseAppState>();
         let mut config = Self::current().write().await;
         config.load_app_handle(app_handle.clone()).await;
-        config.handle_old_config_migration(old_config);
-        state
-            .cpu_miner_config
-            .write()
-            .await
-            .load_from_config_mining(config._get_content());
+
+        // TODO: Remove this when the migration is done
+        // Can be removed before merging to main
+        let old_cpu_mining_pool_url: Option<String> = Some("pool.supportxmr.com:3333".to_string());
+        let old_cpu_mining_pool_status_url: Option<String> =
+            Some("https://www.supportxmr.com/api/miner/%MONERO_ADDRESS%/stats".to_string());
+
+        // force the default values for the pool urls in case they are not set
+        let is_cpu_mining_pool_url_not_set = config.content.cpu_mining_pool_url.is_none();
+        let is_old_cpu_mining_pool_url = config
+            .content
+            .cpu_mining_pool_url
+            .eq(&old_cpu_mining_pool_url);
+        if is_cpu_mining_pool_url_not_set || is_old_cpu_mining_pool_url {
+            config.content.cpu_mining_pool_url = ConfigMiningContent::default().cpu_mining_pool_url;
+        }
+
+        // force the default values for the pool urls in case they are not set
+        let is_cpu_mining_pool_status_url_not_set =
+            config.content.cpu_mining_pool_status_url.is_none();
+        let is_old_cpu_mining_pool_status_url = config
+            .content
+            .cpu_mining_pool_status_url
+            .eq(&old_cpu_mining_pool_status_url);
+
+        if is_cpu_mining_pool_status_url_not_set || is_old_cpu_mining_pool_status_url {
+            config.content.cpu_mining_pool_status_url =
+                ConfigMiningContent::default().cpu_mining_pool_status_url;
+        }
+        // update json file to reflect the default values
+        if is_cpu_mining_pool_url_not_set
+            || is_cpu_mining_pool_status_url_not_set
+            || is_old_cpu_mining_pool_url
+            || is_old_cpu_mining_pool_status_url
+        {
+            let _unused = ConfigMining::_save_config(config.content.clone()).inspect_err(
+            |error| {
+                warn!(target: crate::LOG_TARGET, "[{}] [save_config] error: {:?}", Self::_get_name(), error);
+            },
+        );
+        }
+
+        let mut cpu_config = state.cpu_miner_config.write().await;
+        cpu_config.load_from_config_mining(config._get_content());
+        drop(cpu_config);
 
         EventsManager::handle_config_mining_loaded(&app_handle, config.content.clone()).await;
     }
@@ -110,7 +177,6 @@ impl ConfigMining {
 
 impl ConfigImpl for ConfigMining {
     type Config = ConfigMiningContent;
-    type OldConfig = AppConfig;
 
     fn current() -> &'static RwLock<Self> {
         &INSTANCE
@@ -141,35 +207,5 @@ impl ConfigImpl for ConfigMining {
 
     fn _get_content_mut(&mut self) -> &mut Self::Config {
         &mut self.content
-    }
-
-    fn handle_old_config_migration(&mut self, old_config: Option<Self::OldConfig>) {
-        if self.content.was_config_migrated {
-            return;
-        }
-
-        if old_config.is_some() {
-            let old_config = old_config.expect("Old config should be present");
-            self.content = ConfigMiningContent {
-                was_config_migrated: true,
-                created_at: SystemTime::now(),
-                mode: old_config.mode(),
-                custom_max_cpu_usage: old_config.custom_cpu_usage(),
-                custom_max_gpu_usage: old_config.custom_gpu_usage(),
-                mine_on_app_start: old_config.mine_on_app_start(),
-                custom_mode_cpu_options: old_config.custom_mode_cpu_options().clone(),
-                eco_mode_cpu_options: old_config.eco_mode_cpu_options().clone(),
-                eco_mode_cpu_threads: old_config.eco_mode_cpu_threads(),
-                gpu_engine: old_config.gpu_engine(),
-                ludicrous_mode_cpu_options: old_config.ludicrous_mode_cpu_options().clone(),
-                gpu_mining_enabled: old_config.gpu_mining_enabled(),
-                cpu_mining_enabled: old_config.cpu_mining_enabled(),
-                ludicrous_mode_cpu_threads: old_config.ludicrous_mode_cpu_threads(),
-                ..Default::default()
-            };
-            let _unused = Self::_save_config(self.content.clone());
-        } else {
-            self.content.set_was_config_migrated(true);
-        }
     }
 }

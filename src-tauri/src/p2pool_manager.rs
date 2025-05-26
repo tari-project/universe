@@ -47,6 +47,7 @@ pub struct P2poolConfig {
     pub base_node_address: String,
     pub cpu_benchmark_hashrate: Option<u64>,
     pub squad_override: Option<String>,
+    pub randomx_disabled: bool,
 }
 
 pub struct P2poolConfigBuilder {
@@ -78,6 +79,11 @@ impl P2poolConfigBuilder {
         self
     }
 
+    pub fn with_randomx_disabled(&mut self, randomx_disabled: bool) -> &mut Self {
+        self.config.randomx_disabled = randomx_disabled;
+        self
+    }
+
     pub fn with_cpu_benchmark_hashrate(
         &mut self,
         cpu_benchmark_hashrate: Option<u64>,
@@ -95,6 +101,7 @@ impl P2poolConfigBuilder {
             base_node_address: self.config.base_node_address.clone(),
             cpu_benchmark_hashrate: self.config.cpu_benchmark_hashrate,
             squad_override: self.config.squad_override.clone(),
+            randomx_disabled: self.config.randomx_disabled,
         })
     }
 }
@@ -113,6 +120,7 @@ impl Default for P2poolConfig {
             base_node_address: String::from("http://127.0.0.1:18142"),
             cpu_benchmark_hashrate: None,
             squad_override: None,
+            randomx_disabled: false,
         }
     }
 }

@@ -1,4 +1,12 @@
-export default function calculateTimeSince(earlier: number, later: number) {
+export interface TimeSince {
+    days: number;
+    daysString: string;
+    hours: number;
+    hoursString: string;
+    minutes: string;
+    seconds: string;
+}
+export default function calculateTimeSince(earlier: number, later: number): TimeSince {
     const past: Date = new Date(earlier * 1000); // Convert seconds to milliseconds
     const diff: number = later - past.getTime();
 
