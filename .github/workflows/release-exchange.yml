@@ -45,7 +45,6 @@ jobs:
         run: |
           ALL_EXCHANGES_NAMES=$(echo ${ALL_EXCHANGES_NAMES} | jq -r fromjson)
           EXCHANGES_NAMES=$(echo "${ALL_EXCHANGES_NAMES}" | jq -c .exchanges)
-          EXCHANGES_NAMES=$(echo "${ALL_EXCHANGES_NAMES}" | jq -c .exchanges)
           echo "EXCHANGES_NAMES=${EXCHANGES_NAMES}" >> $GITHUB_OUTPUT
 
   builds:
@@ -68,14 +67,14 @@ jobs:
           - platform: 'ubuntu-24.04-arm'
             args: '--bundles deb,appimage'
             best_effort: true
-          - platform: 'ubuntu-22.04'
-            args: '--bundles rpm'
-            extra: '-x64-rpm'
-            best_effort: true
-          - platform: 'ubuntu-24.04-arm'
-            args: '--bundles rpm'
-            extra: '-rpm'
-            best_effort: true
+          # - platform: 'ubuntu-22.04'
+          #   args: '--bundles rpm'
+          #   extra: '-x64-rpm'
+          #   best_effort: true
+          # - platform: 'ubuntu-24.04-arm'
+          #   args: '--bundles rpm'
+          #   extra: '-rpm'
+          #   best_effort: true
           - platform: 'windows-latest'
             args: '--bundles msi'
           - platform: 'macos-latest'
