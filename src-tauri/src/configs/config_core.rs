@@ -109,7 +109,7 @@ impl Default for ConfigCoreContent {
             is_p2pool_enabled: true,
             use_tor: true,
             allow_telemetry: true,
-            allow_notifications: true,
+            allow_notifications: false,
             last_binaries_update_timestamp: SystemTime::now(),
             anon_id,
             ab_group: ab_test_selector,
