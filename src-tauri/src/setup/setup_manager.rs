@@ -25,6 +25,7 @@ use super::{
     phase_unknown::UnknownSetupPhase, phase_wallet::WalletSetupPhase,
     trait_setup_phase::SetupPhaseImpl, utils::phase_builder::PhaseBuilder,
 };
+use crate::app_in_memory_config::EXCHANGE_ID;
 use crate::{
     app_in_memory_config::{DynamicMemoryConfig, ExchangeMiner, DEFAULT_EXCHANGE_ID},
     configs::{
@@ -670,7 +671,7 @@ impl SetupManager {
                         _ = wallet_phase_status_subscriber.changed() => { continue; }
                         _ = unknown_phase_status_subscriber.changed() => { continue; }
                         _ = exchange_modal_status_subscriber.changed() => { continue; }
-                    };
+                    }
                 }
             });
     }

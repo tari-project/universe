@@ -68,7 +68,6 @@ use tokio::sync::{Mutex, RwLock};
 use tokio::time;
 use utils::logging_utils::setup_logging;
 
-use app_config::AppConfig;
 use app_in_memory_config::DynamicMemoryConfig;
 #[cfg(all(feature = "exchange-ci", not(feature = "release-ci")))]
 use app_in_memory_config::EXCHANGE_ID;
@@ -250,7 +249,6 @@ struct UniverseAppState {
     is_getting_coinbase_history: Arc<AtomicBool>,
     #[allow(dead_code)]
     is_setup_finished: Arc<RwLock<bool>>,
-    config: Arc<RwLock<AppConfig>>,
     in_memory_config: Arc<RwLock<DynamicMemoryConfig>>,
     tari_address: Arc<RwLock<TariAddress>>,
     cpu_miner: Arc<RwLock<CpuMiner>>,

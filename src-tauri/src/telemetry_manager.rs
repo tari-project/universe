@@ -22,7 +22,6 @@
 
 use crate::airdrop;
 use crate::airdrop::get_wallet_view_key_hashed;
-use crate::app_config::MiningMode;
 use crate::app_in_memory_config::DynamicMemoryConfig;
 use crate::app_in_memory_config::UNIVERSAL_EXCHANGE_ID;
 use crate::commands::CpuMinerStatus;

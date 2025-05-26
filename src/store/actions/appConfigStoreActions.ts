@@ -312,17 +312,6 @@ export const fetchBackendInMemoryConfig = async () => {
     try {
         const res = await invoke('get_app_in_memory_config');
         if (res) {
-            useConfigBEInMemoryStore.setState({ ...res });
-        }
-    } catch (e) {
-        console.error('Could not fetch backend in memory config', e);
-    }
-};
-
-export const fetchBackendInMemoryConfig = async () => {
-    try {
-        const res = await invoke('get_app_in_memory_config');
-        if (res) {
             console.info('[DEBUG UNIVERSAL EXCHANGE] memory config: ', res);
             useConfigBEInMemoryStore.setState({ ...res });
             if (res.exchangeId === 'universal') {
