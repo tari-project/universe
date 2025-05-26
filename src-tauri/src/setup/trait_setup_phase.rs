@@ -28,7 +28,7 @@ use tokio::sync::watch::{Receiver, Sender};
 
 use crate::progress_trackers::ProgressStepper;
 
-use super::setup_manager::PhaseStatus;
+use super::setup_manager::{PhaseStatus, SetupFeaturesList};
 
 #[derive(Clone, Default)]
 pub struct SetupConfiguration {
@@ -43,6 +43,7 @@ pub trait SetupPhaseImpl {
         app_handle: AppHandle,
         status_sender: Sender<PhaseStatus>,
         configuration: SetupConfiguration,
+        setup_features: SetupFeaturesList,
     ) -> Self;
     fn create_progress_stepper(app_handle: AppHandle) -> ProgressStepper;
     async fn load_app_configuration() -> Result<Self::AppConfiguration, Error>;

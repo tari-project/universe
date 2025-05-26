@@ -22,6 +22,8 @@ export interface ConfigCore {
     };
     remote_base_node_address: string;
     node_type?: NodeType;
+    swaps_enabled?: boolean;
+    default_chain: number;
 }
 export interface ConfigWallet {
     created_at: string;
@@ -56,6 +58,14 @@ export interface ConfigMining {
     gpu_mining_enabled: boolean;
     cpu_mining_enabled: boolean;
     gpu_engine: string;
+    mining_time: number;
+}
+
+export interface ConfigBackendInMemory {
+    airdropUrl: string;
+    airdropApiUrl: string;
+    airdropTwitterAuthUrl: string;
+    exchangeId?: string;
 }
 
 export interface ConfigBackendInMemory {

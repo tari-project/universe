@@ -120,6 +120,10 @@ impl ProcessAdapter for P2poolAdapter {
             args.push(squad_override);
         }
 
+        if config.randomx_disabled {
+            args.push("--randomx-disabled".to_string());
+        }
+
         args.push("--squad-prefix".to_string());
         let squad_prefix = "default";
         args.push(squad_prefix.to_string());
