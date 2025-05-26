@@ -26,6 +26,12 @@
     "step_5": "Coba nonaktifkan Tor (di Pengaturan)",
     "step_6": "Coba atur ulang aplikasi (di Pengaturan)"
   },
+  "pool": {
+    "accepted_shares": "Accepted shares",
+    "balance": "Balance",
+    "min_payout": "Minimum payout",
+    "unpaid": "Unpaid"
+  },
   "you-earn-rewards-separately": "Anda mendapatkan hadiah untuk menambang CPU dan GPU secara terpisah",
   "you-won-block": "Anda adalah pemenang dari <span>blok #{{ blockHeight }}</span>",
   "you-won-while-away": "<span>Anda memenangkan {{ blocks }}</span> saat Anda pergi",

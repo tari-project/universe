@@ -16,8 +16,12 @@ const ResumeApplicationModal = memo(function ResumeApplicationModal() {
     const nodePhaseInfoPayload = useSetupStore((state) => state.node_phase_setup_payload);
     const unknownPhaseInfoPayload = useSetupStore((state) => state.unknown_phase_setup_payload);
     const walletPhaseInfoPayload = useSetupStore((state) => state.wallet_phase_setup_payload);
-
-    const showModal = useUIStore((state) => state.showResumeAppModal) && connectionStatus === 'connected';
+    const isAppUnlocked = useSetupStore((state) => state.appUnlocked);
+    const isSetupFinished = useSetupStore((state) => state.isInitialSetupFinished);
+    const shouldShowModal = useUIStore((state) => state.showResumeAppModal);
+    const shouldShowModalForInitialSetup = isAppUnlocked && !isSetupFinished;
+    const shouldShowModalForResume = shouldShowModal && connectionStatus === 'connected';
+    const showModal = shouldShowModalForResume || shouldShowModalForInitialSetup;
 
     const currentPhaseToShow = useMemo(() => {
         if (walletPhaseInfoPayload?.is_complete && Boolean(unknownPhaseInfoPayload)) {

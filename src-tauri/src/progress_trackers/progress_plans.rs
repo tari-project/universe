@@ -49,7 +49,7 @@ impl ProgressEvent for ProgressPlanEventPayload {
         self.title.clone()
     }
 }
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum ProgressSetupCorePlan {
     PlatformPrequisites,
     InitializeApplicationModules,
@@ -93,7 +93,7 @@ impl ProgressStep for ProgressSetupCorePlan {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum ProgressSetupNodePlan {
     BinariesTor,
     BinariesNode,
@@ -146,7 +146,7 @@ impl ProgressStep for ProgressSetupNodePlan {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum ProgressSetupHardwarePlan {
     BinariesCpuMiner,
     BinariesGpuMiner,
@@ -190,7 +190,7 @@ impl ProgressStep for ProgressSetupHardwarePlan {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum ProgressSetupWalletPlan {
     BinariesWallet,
     StartWallet,
@@ -233,7 +233,7 @@ impl ProgressStep for ProgressSetupWalletPlan {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum ProgressSetupUnknownPlan {
     BinariesP2pool,
     BinariesMergeMiningProxy,
@@ -280,7 +280,7 @@ impl ProgressStep for ProgressSetupUnknownPlan {
 }
 
 #[allow(dead_code)]
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum ProgressPlans {
     Core(ProgressSetupCorePlan),
     Node(ProgressSetupNodePlan),

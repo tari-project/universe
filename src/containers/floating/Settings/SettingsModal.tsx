@@ -17,7 +17,6 @@ import {
     ExperimentalSettings,
     GeneralSettings,
     MiningSettings,
-    PoolMiningSettings,
     WalletSettings,
     ReleaseNotes,
 } from './sections';
@@ -25,6 +24,7 @@ import {
 import { Container, ContentContainer, EndContainer, HeaderContainer, SectionWrapper } from './SettingsModal.styles.ts';
 import { setIsSettingsOpen } from '@app/store';
 import VersionChip from '@app/containers/navigation/components/VersionChip/VersionChip.tsx';
+import { PoolMiningSettings } from './sections/poolMining/PoolMiningSettings.tsx';
 
 const SettingsModal = memo(function SettingsModal() {
     const { t } = useTranslation(['settings'], { useSuspense: false });

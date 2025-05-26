@@ -16,7 +16,8 @@ name: Release
 concurrency:
   # https://docs.github.com/en/actions/examples/using-concurrency-expressions-and-a-test-matrix
   group: '${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}'
-  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/v') || github.ref != 'refs/heads/main' || github.ref != 'refs/heads/release' }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/release' }}
+
 permissions: {}
 
 env:
@@ -74,6 +75,7 @@ jobs:
           AIRDROP_BASE_URL: ${{ secrets.BETA_AIRDROP_BASE_URL }}
           AIRDROP_API_BASE_URL: ${{ secrets.BETA_AIRDROP_API_BASE_URL }}
           TELEMETRY_API_URL: ${{ secrets.BETA_TELEMETRY_API_URL }}
+          EXCHANGE_ID: universal
           AIRDROP_WEBSOCKET_CRYPTO_KEY: ${{ secrets.DEV_AIRDROP_WEBSOCKET_CRYPTO_KEY }}
           # Used for linux formatting
           OS_BINARY_NAME: ${{ runner.os == 'Linux' && 'tari_universe' || 'Tari Universe' }}
@@ -87,6 +89,7 @@ jobs:
           echo "AIRDROP_BASE_URL=${{ env.AIRDROP_BASE_URL }}" >> $GITHUB_ENV
           echo "AIRDROP_API_BASE_URL=${{ env.AIRDROP_API_BASE_URL }}" >> $GITHUB_ENV
           echo "TELEMETRY_API_URL=${{ env.TELEMETRY_API_URL }}" >> $GITHUB_ENV
+          echo "EXCHANGE_ID=universal" >> $GITHUB_ENV
           echo "AIRDROP_WEBSOCKET_CRYPTO_KEY=${{ env.AIRDROP_WEBSOCKET_CRYPTO_KEY }}" >> $GITHUB_ENV
           # GitHub Actions does not expand environment variables dynamically in envs
           if [ "$RUNNER_OS" == "Linux" ]; then

@@ -7,6 +7,7 @@ import { DialogsGroup } from './groups/DialogsGroup';
 import { GreenModalsGroup } from './groups/GreenModalsGroup';
 import { OtherUIGroup } from './groups/OtherUIGroup';
 import { AnimatePresence } from 'motion/react';
+import { SwapsGroup } from './groups/SwapsGroup';
 
 const AdminUI = memo(function AdminUI() {
     const [isOpen, setIsOpen] = useState(false);
@@ -38,6 +39,7 @@ const AdminUI = memo(function AdminUI() {
                             <ThemeGroup />
                             <DialogsGroup />
                             <GreenModalsGroup />
+                            <SwapsGroup />
                             <OtherUIGroup />
                         </MenuContent>
                     </MenuWrapper>
