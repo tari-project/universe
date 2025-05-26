@@ -32,8 +32,9 @@ use async_trait::async_trait;
 use log::{info, warn};
 use minotari_node_grpc_client::grpc::wallet_client::WalletClient;
 use minotari_node_grpc_client::grpc::{
-    GetBalanceResponse, GetCompletedTransactionsRequest, GetCompletedTransactionsResponse,
-    GetStateRequest, ImportTransactionsRequest, NetworkStatusResponse,
+    GetBalanceRequest, GetBalanceResponse, GetCompletedTransactionsRequest,
+    GetCompletedTransactionsResponse, GetStateRequest, ImportTransactionsRequest,
+    NetworkStatusResponse,
 };
 use serde::Serialize;
 use std::fs;
@@ -95,6 +96,18 @@ impl WalletAdapter {
 
     pub fn connect_with_local_node(&mut self, connect_with_local_node: bool) {
         self.connect_with_local_node = connect_with_local_node;
+    }
+
+    pub async fn get_balance(&self) -> Result<WalletBalance, anyhow::Error> {
+        let mut client = WalletClient::connect(self.wallet_grpc_address())
+            .await
+            .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
+        let res = client
+            .get_balance(GetBalanceRequest { payment_id: None })
+            .await?;
+        let balance = res.into_inner();
+
+        Ok(WalletBalance::from_response(balance))
     }
 
     pub async fn import_transaction(&self, tx_output_file: PathBuf) -> Result<(), anyhow::Error> {
@@ -606,7 +619,7 @@ impl WalletStatusMonitor {
 
         Ok(WalletState {
             scanned_height: status.scanned_height,
-            balance: WalletBalance::from(status.balance),
+            balance: WalletBalance::from_option(status.balance),
             network: NetworkStatus::from(status.network),
         })
     }
@@ -701,13 +714,17 @@ pub struct WalletBalance {
 }
 
 impl WalletBalance {
-    pub fn from(res: Option<GetBalanceResponse>) -> Option<Self> {
-        res.map(|balance| Self {
-            available_balance: MicroMinotari(balance.available_balance),
-            timelocked_balance: MicroMinotari(balance.timelocked_balance),
-            pending_incoming_balance: MicroMinotari(balance.pending_incoming_balance),
-            pending_outgoing_balance: MicroMinotari(balance.pending_outgoing_balance),
-        })
+    pub fn from_response(res: GetBalanceResponse) -> Self {
+        Self {
+            available_balance: MicroMinotari(res.available_balance),
+            timelocked_balance: MicroMinotari(res.timelocked_balance),
+            pending_incoming_balance: MicroMinotari(res.pending_incoming_balance),
+            pending_outgoing_balance: MicroMinotari(res.pending_outgoing_balance),
+        }
+    }
+
+    pub fn from_option(res: Option<GetBalanceResponse>) -> Option<Self> {
+        res.map(Self::from_response)
     }
 }
 

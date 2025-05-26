@@ -72,7 +72,6 @@ export default function SendModal({ section, setSection }: SendModalProps) {
                     ...payload,
                     amount: payload.amount.toString(),
                 });
-                await refreshTransactions();
                 setStatus('completed');
             } catch (error) {
                 setStoreError(`Error sending transaction: ${error}`);

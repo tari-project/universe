@@ -1889,6 +1889,7 @@ pub async fn reconnect(app_handle: tauri::AppHandle) -> Result<(), String> {
 
 #[tauri::command]
 pub async fn send_one_sided_to_stealth_address(
+    app_handle: tauri::AppHandle,
     state: tauri::State<'_, UniverseAppState>,
     amount: String,
     destination: String,
@@ -1901,6 +1902,12 @@ pub async fn send_one_sided_to_stealth_address(
         .send_one_sided_to_stealth_address(amount, destination, payment_id, &state.wallet_manager)
         .await
         .map_err(|e| e.to_string())?;
+
+    let balance = state.wallet_manager.get_balance().await;
+    if let Ok(balance) = balance {
+        EventsEmitter::emit_wallet_balance_update(&app_handle, balance).await;
+    }
+
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "send_one_sided_to_stealth_address took too long: {:?}", timer.elapsed());
     }

@@ -21,10 +21,17 @@ const txStates = {
         TransactionStatus.Broadcast,
         TransactionStatus.Coinbase,
         TransactionStatus.Queued,
-        TransactionStatus.OneSidedUnconfirmed,
     ],
     failed: [TransactionStatus.Rejected, TransactionStatus.NotFound, TransactionStatus.CoinbaseNotInBlockChain],
-    complete: [TransactionStatus.Imported, TransactionStatus.OneSidedConfirmed, ...txTypes.mined],
+    complete: [
+        TransactionStatus.Imported,
+        TransactionStatus.OneSidedUnconfirmed,
+        TransactionStatus.OneSidedConfirmed,
+        TransactionStatus.MinedConfirmed,
+        TransactionStatus.MinedUnconfirmed,
+        TransactionStatus.CoinbaseConfirmed,
+        TransactionStatus.CoinbaseUnconfirmed,
+    ],
 };
 
 export function getTxTypeByStatus(transaction: TransactionInfo): TransationType {
