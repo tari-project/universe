@@ -1,4 +1,5 @@
 {
+  "connected-since": "Connected since",
   "connections": "verbindings",
   "established": "Gevestig",
   "listener-addresses": "Luisteraaradresse",
@@ -9,7 +10,7 @@
   "p2pool-connection-info": "Verbinding",
   "p2pool-connection-info-more": "Verbindingsbesonderhede",
   "p2pool-peers": "P2pool eweknieë",
-  "p2pool-stats": "Poel mynbou statistieke",
+  "p2pool-stats": "P2pool stats",
   "pending": "Hangende",
   "randomx-stats": "RandomX Statistieke",
   "sha3-stats": "SHA3 Statistieke",

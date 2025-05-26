@@ -1,4 +1,5 @@
 {
+  "connected-since": "Connected since",
   "connections": "연결",
   "established": "설립됨",
   "listener-addresses": "리스너 주소",
@@ -9,7 +10,7 @@
   "p2pool-connection-info": "연결",
   "p2pool-connection-info-more": "연결 세부 정보",
   "p2pool-peers": "P2pool 피어",
-  "p2pool-stats": "풀 채굴 통계",
+  "p2pool-stats": "P2pool stats",
   "pending": "대기 중",
   "randomx-stats": "RandomX 통계",
   "sha3-stats": "SHA3 통계",

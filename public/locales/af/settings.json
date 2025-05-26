@@ -160,6 +160,7 @@
     "title": "Werk Tari Universe outomaties op"
   },
   "use-dynamic-fail-data": "Gebruik dinamiese mislukdata",
+  "use-p2p": "Use P2pool",
   "use-random-control-port": "Gebruik ewekansige beheerpoort",
   "use-random-port": "Gebruik ewekansige poort",
   "use-tor": "Gebruik Tor",

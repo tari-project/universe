@@ -1,4 +1,5 @@
 {
+  "connected-since": "Connected since",
   "connections": "koneksi",
   "established": "Ditetapkan",
   "listener-addresses": "Alamat pendengar",
@@ -9,7 +10,7 @@
   "p2pool-connection-info": "Koneksi",
   "p2pool-connection-info-more": "Detail koneksi",
   "p2pool-peers": "Rekan P2pool",
-  "p2pool-stats": "Statistik penambangan pool",
+  "p2pool-stats": "P2pool stats",
   "pending": "Tertunda",
   "randomx-stats": "Statistik RandomX",
   "sha3-stats": "Statistik SHA3",

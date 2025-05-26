@@ -1,4 +1,5 @@
 {
+  "connected-since": "Connected since",
   "connections": "połączenia",
   "established": "Ustanowione",
   "listener-addresses": "Adresy nasłuchujące",
@@ -9,7 +10,7 @@
   "p2pool-connection-info": "Połączenie",
   "p2pool-connection-info-more": "Szczegóły połączenia",
   "p2pool-peers": "Rówieśnicy P2pool",
-  "p2pool-stats": "Statystyki kopania w puli",
+  "p2pool-stats": "P2pool stats",
   "pending": "Oczekujące",
   "randomx-stats": "Statystyki RandomX",
   "sha3-stats": "Statystyki SHA3",

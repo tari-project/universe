@@ -20,7 +20,7 @@ export type ConnectedPeerInfoExtended = ConnectedPeerInfo & {
 };
 
 const P2PoolStats = () => {
-    const { t } = useTranslation('p2p', { useSuspense: false });
+    const { t } = useTranslation(['p2p', 'settings'], { useSuspense: false });
     const connectedSince = useP2poolStatsStore((s) => s?.connected_since);
     const sha3Stats = useP2poolStatsStore((s) => s?.sha3x_stats);
     const randomXStats = useP2poolStatsStore((s) => s?.randomx_stats);
@@ -58,7 +58,7 @@ const P2PoolStats = () => {
             <SettingsGroupTitle style={{ alignItems: 'baseline' }}>
                 <Typography variant="h6">{t('p2pool-stats')}</Typography>
                 {connectedSince ? (
-                    <Typography variant="p">{`Connected since: ${timeAgo(+connectedSince)}`}</Typography>
+                    <Typography variant="p">{`${t('connected-since')}: ${timeAgo(+connectedSince)}`}</Typography>
                 ) : null}
             </SettingsGroupTitle>
             <Divider />
@@ -67,7 +67,7 @@ const P2PoolStats = () => {
             {displayPeers?.length ? (
                 <>
                     <SettingsGroupTitle>
-                        <Typography variant="h6">{`Connected Peers: ${displayPeers?.length}`}</Typography>
+                        <Typography variant="h6">{`${t('settings:connected-peers')}: ${displayPeers?.length}`}</Typography>
                     </SettingsGroupTitle>
                     {displayPeers ? <PeerTable peers={displayPeers} /> : null}
                 </>
