@@ -5,17 +5,16 @@ import { ExchangeMiner } from '@app/types/exchange';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { fetchBackendInMemoryConfig } from '@app/store/actions/appConfigStoreActions';
-import { EXMiner, EXMinerList, HeaderSection, Heading, Wrapper } from './styles';
-import { XCOption } from '@app/components/exchanges/universal/option/XCOption.tsx';
+import { HeaderSection, Heading, Wrapper } from './styles';
 import { XCOptions } from '@app/components/exchanges/universal/options/Options.tsx';
 
 export default function UniversalEXSelectorModal() {
     const { t } = useTranslation(['exchange', 'common'], { useSuspense: false });
     const showModal = useExchangeStore((s) => s.showUniversalModal);
-    const exchangeMiners = useExchangeStore((s) => s.exchangeMiners);
+
     const [selectedExchangeMiner, setSelectedExchangeMiner] = useState<ExchangeMiner | undefined>(undefined);
 
-    const confirmExchangeMiner = async () => {
+    const _confirmExchangeMiner = async () => {
         if (!selectedExchangeMiner) return;
         setShowUniversalModal(false); // TODO make it last statement in this function after being done with testing
         await invoke('user_selected_exchange', { exchangeMiner: selectedExchangeMiner });

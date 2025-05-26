@@ -7,12 +7,12 @@ export const XCOptions = () => {
     const exchangeMiners = useExchangeStore((s) => s.exchangeMiners);
 
     const listItems = exchangeMiners?.map((item) => {
-        return <XCOption key={item.id} title={item.name} />;
+        return <XCOption key={item.id} content={item} />;
     });
 
     return (
         <ListWrapper>
-            <XCOption title="Tari Universe" isCurrent />
+            <XCOption isCurrent content={{ name: 'Tari Universe' }} />
             <Divider />
             {listItems}
         </ListWrapper>
