@@ -15,9 +15,9 @@ export function PoolMiningStats() {
     const { t } = useTranslation(['mining-view', 'settings'], { useSuspense: false });
     const pool_status = useMiningMetricsStore((s) => s.cpu_mining_status.pool_status);
 
-    const unpaidFMT = formatNumber(pool_status?.unpaid || 0, FormatPreset.XTM_DECIMALS);
-    const balanceFMT = formatNumber(pool_status?.balance || 0, FormatPreset.XTM_DECIMALS);
-    const acceptedFMT = formatNumber(pool_status?.accepted_shares || 0, FormatPreset.XTM_DECIMALS);
+    const unpaidFMT = formatNumber(pool_status?.unpaid || 0, FormatPreset.XTM_LONG_DEC);
+    const balanceFMT = formatNumber(pool_status?.balance || 0, FormatPreset.XTM_LONG_DEC);
+
     return (
         <SettingsGroupWrapper>
             <SettingsGroup>
@@ -32,10 +32,18 @@ export function PoolMiningStats() {
                                     {t('pool.accepted_shares')}: <strong>{pool_status?.accepted_shares ?? `-`}</strong>
                                 </Typography>
                                 <Typography variant="p">
-                                    {t('pool.unpaid')}: <strong>{unpaidFMT}</strong>
+                                    {t('pool.unpaid')}:{' '}
+                                    <strong>
+                                        {unpaidFMT}
+                                        {` XTM`}
+                                    </strong>
                                 </Typography>
                                 <Typography variant="p">
-                                    {t('pool.balance')}: <strong>{balanceFMT}</strong>
+                                    {t('pool.balance')}:{' '}
+                                    <strong>
+                                        {balanceFMT}
+                                        {` XTM`}
+                                    </strong>
                                 </Typography>
                             </Stack>
                         </Stack>
