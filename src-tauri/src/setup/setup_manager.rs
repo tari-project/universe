@@ -26,7 +26,7 @@ use super::{
     trait_setup_phase::SetupPhaseImpl, utils::phase_builder::PhaseBuilder,
 };
 use crate::{
-    app_in_memory_config::DEFAULT_EXCHANGE_ID,
+    app_in_memory_config::{DEFAULT_EXCHANGE_ID, EXCHANGE_ID},
     configs::{
         config_core::ConfigCore, config_mining::ConfigMining, config_ui::ConfigUI,
         config_wallet::ConfigWallet, trait_config::ConfigImpl,
@@ -51,13 +51,51 @@ use std::{
 use tauri::{AppHandle, Listener, Manager};
 use tokio::{
     select,
-    sync::{watch::Sender, Mutex},
+    sync::{watch::Sender, Mutex, RwLock},
 };
 use tokio_util::sync::CancellationToken;
 
 static LOG_TARGET: &str = "tari::universe::setup_manager";
 
 static INSTANCE: LazyLock<SetupManager> = LazyLock::new(SetupManager::new);
+
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum SetupFeature {
+    ExchangeMiner,
+    CentralizedPool,
+}
+
+impl Display for SetupFeature {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            SetupFeature::ExchangeMiner => write!(f, "Exchange Miner"),
+            SetupFeature::CentralizedPool => write!(f, "Centralized Pool"),
+        }
+    }
+}
+
+#[derive(Clone, Default, PartialEq, Eq, Debug)]
+pub struct SetupFeaturesList(Vec<SetupFeature>);
+
+impl SetupFeaturesList {
+    pub fn add_feature(&mut self, feature: SetupFeature) {
+        if !self.0.contains(&feature) {
+            self.0.push(feature);
+        }
+    }
+
+    pub fn get_features(&self) -> Vec<SetupFeature> {
+        self.0.clone()
+    }
+
+    pub fn is_feature_enabled(&self, feature: SetupFeature) -> bool {
+        self.0.contains(&feature)
+    }
+
+    pub fn is_feature_disabled(&self, feature: SetupFeature) -> bool {
+        !self.0.contains(&feature)
+    }
+}
 
 #[derive(Clone, Default)]
 pub enum ExchangeModalStatus {
@@ -173,6 +211,7 @@ impl PhaseStatus {
 
 #[derive(Default)]
 pub struct SetupManager {
+    features: RwLock<SetupFeaturesList>,
     core_phase_status: Sender<PhaseStatus>,
     hardware_phase_status: Sender<PhaseStatus>,
     node_phase_status: Sender<PhaseStatus>,
@@ -291,23 +330,51 @@ impl SetupManager {
         info!(target: LOG_TARGET, "Pre Setup Finished");
     }
 
+    pub async fn resolve_setup_features(&self) -> Result<(), anyhow::Error> {
+        let mut features = self.features.write().await;
+        let cpu_mining_pool_url = ConfigMining::content().await.cpu_mining_pool_url().clone();
+        let cpu_mining_pool_status_url = ConfigMining::content()
+            .await
+            .cpu_mining_pool_status_url()
+            .clone();
+
+        if cpu_mining_pool_url.is_some() && cpu_mining_pool_status_url.is_some() {
+            features.add_feature(SetupFeature::CentralizedPool);
+        }
+        if EXCHANGE_ID.ne(DEFAULT_EXCHANGE_ID) {
+            features.add_feature(SetupFeature::ExchangeMiner);
+        }
+        Ok(())
+    }
+
     async fn setup_core_phase(&self, app_handle: AppHandle) {
+        let setup_features = self.features.read().await.clone();
         let core_phase_setup = PhaseBuilder::new()
             .with_setup_timeout_duration(Duration::from_secs(60 * 10)) // 10 minutes
-            .build::<CoreSetupPhase>(app_handle.clone(), self.core_phase_status.clone())
+            .build::<CoreSetupPhase>(
+                app_handle.clone(),
+                self.core_phase_status.clone(),
+                setup_features,
+            )
             .await;
         core_phase_setup.setup().await;
     }
 
     async fn setup_hardware_phase(&self, app_handle: AppHandle) {
+        let setup_features = self.features.read().await.clone();
         let hardware_phase_setup = PhaseBuilder::new()
             .with_setup_timeout_duration(Duration::from_secs(60 * 10)) // 10 minutes
-            .build::<HardwareSetupPhase>(app_handle.clone(), self.hardware_phase_status.clone())
+            .build::<HardwareSetupPhase>(
+                app_handle.clone(),
+                self.hardware_phase_status.clone(),
+                setup_features,
+            )
             .await;
         hardware_phase_setup.setup().await;
     }
 
     async fn setup_node_phase(&self, app_handle: AppHandle) {
+        let setup_features = self.features.read().await.clone();
         let state = app_handle.state::<UniverseAppState>();
         let is_local_node = state.node_manager.is_local_current().await.unwrap_or(true);
         let timeout_duration = if is_local_node {
@@ -318,13 +385,19 @@ impl SetupManager {
 
         let node_phase_setup = PhaseBuilder::new()
             .with_setup_timeout_duration(timeout_duration)
-            .build::<NodeSetupPhase>(app_handle.clone(), self.node_phase_status.clone())
+            .build::<NodeSetupPhase>(
+                app_handle.clone(),
+                self.node_phase_status.clone(),
+                setup_features,
+            )
             .await;
         node_phase_setup.setup().await;
     }
 
     async fn setup_wallet_phase(&self, app_handle: AppHandle) {
+        let setup_features = self.features.read().await.clone();
         let state = app_handle.state::<UniverseAppState>();
+        // TODO: Add option to disable specific phases and handle it properly on frontend
         let in_memory_config = state.in_memory_config.clone();
         if in_memory_config.read().await.exchange_id != DEFAULT_EXCHANGE_ID {
             self.unlock_wallet(app_handle.clone()).await;
@@ -344,19 +417,28 @@ impl SetupManager {
         let wallet_phase_setup = PhaseBuilder::new()
             .with_setup_timeout_duration(Duration::from_secs(60 * 10)) // 10 minutes
             .with_listeners_for_required_phases_statuses(vec![self.node_phase_status.subscribe()])
-            .build::<WalletSetupPhase>(app_handle.clone(), self.wallet_phase_status.clone())
+            .build::<WalletSetupPhase>(
+                app_handle.clone(),
+                self.wallet_phase_status.clone(),
+                setup_features,
+            )
             .await;
         wallet_phase_setup.setup().await;
     }
 
     async fn setup_unknown_phase(&self, app_handle: AppHandle) {
+        let setup_features = self.features.read().await.clone();
         let unknown_phase_setup = PhaseBuilder::new()
             .with_setup_timeout_duration(Duration::from_secs(60 * 10)) // 10 minutes
             .with_listeners_for_required_phases_statuses(vec![
                 self.node_phase_status.subscribe(),
                 self.hardware_phase_status.subscribe(),
             ])
-            .build::<UnknownSetupPhase>(app_handle.clone(), self.unknown_phase_status.clone())
+            .build::<UnknownSetupPhase>(
+                app_handle.clone(),
+                self.unknown_phase_status.clone(),
+                setup_features,
+            )
             .await;
         unknown_phase_setup.setup().await;
     }
@@ -377,6 +459,8 @@ impl SetupManager {
         let mut exchange_modal_status_subscriber = self.exchange_modal_status.subscribe();
 
         let cacellation_token = self.cancellation_token.lock().await.clone();
+        let setup_features = self.features.read().await.clone();
+        info!(target: LOG_TARGET, "Features: {:?}", setup_features.get_features());
 
         TasksTrackers::current()
             .common
@@ -407,12 +491,81 @@ impl SetupManager {
                     let is_mining_unlocked =
                         *SetupManager::get_instance().is_mining_unlocked.lock().await;
 
+                    // ============= DEFAULT UNLOCK CONDITIONS =============
+
+                    if is_core_phase_succeeded
+                        && is_hardware_phase_succeeded
+                        && is_node_phase_succeeded
+                        && is_unknown_phase_succeeded
+                        && !is_app_unlocked
+                        && setup_features.is_feature_disabled(SetupFeature::CentralizedPool)
+                        && setup_features.is_feature_disabled(SetupFeature::ExchangeMiner)
+                    {
+                        SetupManager::get_instance()
+                            .unlock_app(app_handle.clone())
+                            .await;
+                    }
+
+                    if is_hardware_phase_succeeded
+                        && is_node_phase_succeeded
+                        && is_unknown_phase_succeeded
+                        && !is_mining_unlocked
+                        && setup_features.is_feature_disabled(SetupFeature::CentralizedPool)
+                        && setup_features.is_feature_disabled(SetupFeature::ExchangeMiner)
+                    {
+                        SetupManager::get_instance()
+                            .unlock_mining(app_handle.clone())
+                            .await;
+                    }
+
+                    if is_node_phase_succeeded
+                        && is_wallet_phase_succeeded
+                        && !is_wallet_unlocked
+                        && setup_features.is_feature_disabled(SetupFeature::CentralizedPool)
+                        && setup_features.is_feature_disabled(SetupFeature::ExchangeMiner)
+                    {
+                        SetupManager::get_instance()
+                            .unlock_wallet(app_handle.clone())
+                            .await;
+                    }
+
+                    // ============= ######################### =============
+
+                    // ============= EXCHANGE MINER UNLOCK CONDITIONS =============
+
                     if is_core_phase_succeeded
                         && is_hardware_phase_succeeded
                         && is_node_phase_succeeded
                         && is_unknown_phase_succeeded
                         && is_exchange_modal_completed
                         && !is_app_unlocked
+                        && setup_features.is_feature_disabled(SetupFeature::CentralizedPool)
+                        && setup_features.is_feature_enabled(SetupFeature::ExchangeMiner)
+                    {
+                        SetupManager::get_instance()
+                            .unlock_app(app_handle.clone())
+                            .await;
+                    }
+
+                    if is_hardware_phase_succeeded
+                        && is_node_phase_succeeded
+                        && is_unknown_phase_succeeded
+                        && !is_mining_unlocked
+                        && setup_features.is_feature_disabled(SetupFeature::CentralizedPool)
+                        && setup_features.is_feature_enabled(SetupFeature::ExchangeMiner)
+                    {
+                        SetupManager::get_instance()
+                            .unlock_mining(app_handle.clone())
+                            .await;
+                    }
+
+                    // ============= CENTRALIZED POOL UNLOCK CONDITIONS =============
+
+                    if is_core_phase_succeeded
+                        && is_hardware_phase_succeeded
+                        && !is_app_unlocked
+                        && setup_features.is_feature_enabled(SetupFeature::CentralizedPool)
+                        && setup_features.is_feature_disabled(SetupFeature::ExchangeMiner)
                     {
                         SetupManager::get_instance()
                             .unlock_app(app_handle.clone())
@@ -421,25 +574,55 @@ impl SetupManager {
 
                     if is_core_phase_succeeded
                         && is_hardware_phase_succeeded
-                        && is_node_phase_succeeded
-                        && is_unknown_phase_succeeded
                         && !is_mining_unlocked
+                        && setup_features.is_feature_enabled(SetupFeature::CentralizedPool)
+                        && setup_features.is_feature_disabled(SetupFeature::ExchangeMiner)
                     {
                         SetupManager::get_instance()
                             .unlock_mining(app_handle.clone())
                             .await;
                     }
 
-                    if is_core_phase_succeeded
-                        && is_node_phase_succeeded
+                    if is_node_phase_succeeded
                         && is_wallet_phase_succeeded
-                        && is_unknown_phase_succeeded
                         && !is_wallet_unlocked
+                        && setup_features.is_feature_enabled(SetupFeature::CentralizedPool)
+                        && setup_features.is_feature_disabled(SetupFeature::ExchangeMiner)
                     {
                         SetupManager::get_instance()
                             .unlock_wallet(app_handle.clone())
                             .await;
                     }
+
+                    // ============= ######################### =============
+
+                    // ============= CENTRALIZED POOL AND EXCHANGE MINER UNLOCK CONDITIONS =============
+
+                    if is_core_phase_succeeded
+                        && is_hardware_phase_succeeded
+                        && is_exchange_modal_completed
+                        && !is_app_unlocked
+                        && setup_features.is_feature_enabled(SetupFeature::CentralizedPool)
+                        && setup_features.is_feature_enabled(SetupFeature::ExchangeMiner)
+                    {
+                        SetupManager::get_instance()
+                            .unlock_app(app_handle.clone())
+                            .await;
+                    }
+
+                    if is_core_phase_succeeded
+                        && is_hardware_phase_succeeded
+                        && !is_mining_unlocked
+                        && setup_features.is_feature_enabled(SetupFeature::CentralizedPool)
+                        && setup_features.is_feature_enabled(SetupFeature::ExchangeMiner)
+                    {
+                        SetupManager::get_instance()
+                            .unlock_mining(app_handle.clone())
+                            .await;
+                    }
+
+                    // ============= ######################### =============
+
 
                     let is_app_unlocked =
                         *SetupManager::get_instance().is_app_unlocked.lock().await;
@@ -453,7 +636,8 @@ impl SetupManager {
                         .await;
 
                     if is_app_unlocked
-                        && is_wallet_unlocked
+                        // Exchange miner won't have wallet unlocked as we are not using the wallet 
+                        && (is_wallet_unlocked || setup_features.is_feature_enabled(SetupFeature::ExchangeMiner))
                         && is_mining_unlocked
                         && !is_initial_setup_finished
                     {
@@ -493,12 +677,11 @@ impl SetupManager {
         // We are cancelling the wait_for_unlock_conditions listener to avoid it from triggering
         // As we are shutting down the phases one by one which could lead to unwanted unlocks
         self.cancellation_token.lock().await.cancel();
+        let features = self.features.read().await.clone();
 
         for phase in phases {
             match phase {
                 SetupPhase::Core => {
-                    self.lock_mining(app_handle.clone()).await;
-                    self.lock_wallet(app_handle.clone()).await;
                     TasksTrackers::current().core_phase.close().await;
                     TasksTrackers::current().core_phase.replace().await;
                     let _unused = self.core_phase_status.send_replace(PhaseStatus::None);
@@ -510,7 +693,10 @@ impl SetupManager {
                     let _unused = self.hardware_phase_status.send_replace(PhaseStatus::None);
                 }
                 SetupPhase::Node => {
-                    self.lock_mining(app_handle.clone()).await;
+                    // On centralized pool cpu miner does not need node phase
+                    if features.is_feature_disabled(SetupFeature::CentralizedPool) {
+                        self.lock_mining(app_handle.clone()).await;
+                    }
                     self.lock_wallet(app_handle.clone()).await;
                     TasksTrackers::current().node_phase.close().await;
                     TasksTrackers::current().node_phase.replace().await;
@@ -523,7 +709,10 @@ impl SetupManager {
                     let _unused = self.wallet_phase_status.send_replace(PhaseStatus::None);
                 }
                 SetupPhase::Unknown => {
-                    self.lock_mining(app_handle.clone()).await;
+                    // On centralized pool cpu miner does not need unknown phase
+                    if features.is_feature_disabled(SetupFeature::CentralizedPool) {
+                        self.lock_mining(app_handle.clone()).await;
+                    }
                     TasksTrackers::current().unknown_phase.close().await;
                     TasksTrackers::current().unknown_phase.replace().await;
                     let _unused = self.unknown_phase_status.send_replace(PhaseStatus::None);
@@ -623,6 +812,7 @@ impl SetupManager {
 
     async fn handle_setup_finished(&self, app_handle: AppHandle) {
         info!(target: LOG_TARGET, "Setup Finished");
+        EventsManager::handle_initial_setup_finished(&app_handle).await;
         let _unused = initialize_frontend_updates(&app_handle).await;
     }
 
@@ -637,6 +827,9 @@ impl SetupManager {
 
     pub async fn start_setup(&self, app_handle: AppHandle) {
         self.pre_setup(app_handle.clone()).await;
+        let _unused = self.resolve_setup_features()
+            .await
+            .inspect_err(|e| error!(target: LOG_TARGET, "Failed to set setup features during start_setup: {}", e));
         *self.app_handle.lock().await = Some(app_handle.clone());
 
         self.wait_for_unlock_conditions(app_handle.clone()).await;
