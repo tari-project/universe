@@ -29,7 +29,7 @@ export function PoolMiningStats() {
                         <Stack direction="row" justifyContent="flex-start">
                             <Stack>
                                 <Typography variant="p">
-                                    {t('pool.accepted_shares')}: <strong>{acceptedFMT}</strong>
+                                    {t('pool.accepted_shares')}: <strong>{pool_status?.accepted_shares ?? `-`}</strong>
                                 </Typography>
                                 <Typography variant="p">
                                     {t('pool.unpaid')}: <strong>{unpaidFMT}</strong>
