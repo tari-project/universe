@@ -1,5 +1,14 @@
 import styled from 'styled-components';
 
+export const Wrapper = styled.div`
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: min(200px, 80vh);
+    min-width: min(200px, 80vw);
+`;
+
 export const EXMinerList = styled.div`
     display: flex;
     flex-direction: column;
@@ -19,4 +28,5 @@ export const EXMiner = styled.div<{ selected: boolean }>`
     transition:
         background 0.15s,
         border 0.15s;
+    text-align: left;
 `;

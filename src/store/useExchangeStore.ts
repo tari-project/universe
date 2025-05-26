@@ -34,9 +34,8 @@ export const setExchangeMiners = (exchangeMiners?: ExchangeMiner[]) => {
 
 export async function fetchExchangeMiners() {
     const mocked_list = [
-        { id: '1', name: 'Mocked Miner 1', slug: 'mocked-miner-1' },
-        { id: '2', name: 'Mocked Miner 2', slug: 'mocked-miner-2' },
-        { id: '3', name: 'Mocked Miner 3', slug: 'mocked-miner-3' },
+        { id: '1ff0f0a96-52db-42d8-a84e-b781ad0c7614', name: 'TariXC', slug: 'TXC' },
+        { id: '1eff0ada-8358-4511-99f8-9ec2820aa37e', name: 'test', slug: 'test' },
     ];
     setExchangeMiners(mocked_list);
 }

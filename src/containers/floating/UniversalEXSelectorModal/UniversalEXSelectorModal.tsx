@@ -6,7 +6,7 @@ import { ExchangeMiner } from '@app/types/exchange';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { fetchBackendInMemoryConfig } from '@app/store/actions/appConfigStoreActions';
-import { EXMiner, EXMinerList } from './styles';
+import { EXMiner, EXMinerList, Wrapper } from './styles';
 import { SquaredButton } from '@app/components/elements/buttons/SquaredButton';
 
 export default function UniversalEXSelectorModal() {
@@ -27,25 +27,27 @@ export default function UniversalEXSelectorModal() {
     return (
         <Dialog open={!!showModal} disableClose>
             <DialogContent $disableOverflow $borderRadius="40px">
-                <EXMinerList>
-                    {exchangeMiners?.map((miner) => (
-                        <EXMiner
-                            selected={miner === selectedExchangeMiner}
-                            onClick={() => setSelectedExchangeMiner(miner)}
-                            key={miner.id}
-                        >
-                            {miner.name}
-                        </EXMiner>
-                    ))}
-                </EXMinerList>
-                <SquaredButton
-                    color="brightGreen"
-                    size="medium"
-                    onClick={confirmExchangeMiner}
-                    disabled={!selectedExchangeMiner}
-                >
-                    {t('select')}
-                </SquaredButton>
+                <Wrapper>
+                    <EXMinerList>
+                        {exchangeMiners?.map((miner) => (
+                            <EXMiner
+                                selected={miner === selectedExchangeMiner}
+                                onClick={() => setSelectedExchangeMiner(miner)}
+                                key={miner.id}
+                            >
+                                {miner.name}
+                            </EXMiner>
+                        ))}
+                    </EXMinerList>
+                    <SquaredButton
+                        color="brightGreen"
+                        size="medium"
+                        onClick={confirmExchangeMiner}
+                        disabled={!selectedExchangeMiner}
+                    >
+                        {t('select')}
+                    </SquaredButton>
+                </Wrapper>
             </DialogContent>
         </Dialog>
     );

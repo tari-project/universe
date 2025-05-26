@@ -197,11 +197,11 @@ pub async fn user_selected_exchange(
     app_handle: tauri::AppHandle,
     exchange_miner: ExchangeMiner,
 ) -> Result<(), String> {
-    info!("[DEBUG UNIVERSAL] running command selected exchange");
+    info!("[DEBUG UNIVERSAL EXCHANGE] running command selected exchange");
+    reset_exchange_address(app_handle.clone()).await?;
     SetupManager::get_instance()
         .select_exchange_miner(exchange_miner, app_handle.clone())
         .await?;
-    reset_exchange_address(app_handle).await?;
     Ok(())
 }
 
