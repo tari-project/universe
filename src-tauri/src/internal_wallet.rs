@@ -382,6 +382,7 @@ pub struct WalletConfig {
     // TODO: "This is for Universe users < v0.5.x who wouldn't be migrated yet. Once we're confident that all users have been migrated, we can remove this."
     pub(crate) passphrase: Option<SafePassword>,
     config_path: Option<PathBuf>,
+    #[serde(default = "default_true")]
     is_tari_address_generated: bool,
 }
 
@@ -389,4 +390,8 @@ pub struct WalletConfig {
 pub struct PaperWalletConfig {
     qr_link: String,
     password: String,
+}
+
+fn default_true() -> bool {
+    true
 }
