@@ -25,6 +25,12 @@
     "step_5": "Try disabling Tor (in Settings)",
     "step_6": "Try an app reset (in Settings)"
   },
+  "pool": {
+    "accepted_shares": "Accepted shares",
+    "balance": "Balance",
+    "min_payout": "Minimum payout",
+    "unpaid": "Unpaid"
+  },
   "you-earn-rewards-separately": "You earn rewards for mining CPU and GPU separately",
   "you-won-block": "You were the winner of <span>block #{{ blockHeight }}</span>",
   "you-won-while-away": "<span>You won {{ blocks }}</span> while you were away",

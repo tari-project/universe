@@ -74,9 +74,8 @@ export const ExpandedWrapper = styled(m.div)`
     box-shadow: 2px 8px 8px 0 rgba(0, 0, 0, 0.04);
     flex-direction: column;
     gap: 6px;
-    width: 360px;
-    padding: 20px;
-
+    width: 358px;
+    padding: 15px;
     h5,
     strong {
         margin: 0;
@@ -97,7 +96,7 @@ export const TooltipChip = styled.div`
     flex-direction: column;
     justify-content: space-between;
     border-radius: 10px;
-    padding: 15px;
+    padding: 8px 10px;
     flex-shrink: 1;
     flex-grow: 1;
     width: 100%;

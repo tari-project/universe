@@ -26,6 +26,12 @@
     "step_5": "Spróbuj wyłączyć Tor (w Ustawieniach)",
     "step_6": "Spróbuj zresetować aplikację (w Ustawieniach)"
   },
+  "pool": {
+    "accepted_shares": "Accepted shares",
+    "balance": "Balance",
+    "min_payout": "Minimum payout",
+    "unpaid": "Unpaid"
+  },
   "you-earn-rewards-separately": "Zarabiasz nagrody za kopanie CPU i GPU osobno",
   "you-won-block": "Byłeś zwycięzcą <span>bloku #{{ blockHeight }}</span>",
   "you-won-while-away": "<span>Wygrałeś {{ blocks }}</span> podczas swojej nieobecności",

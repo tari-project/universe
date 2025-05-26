@@ -1,8 +1,35 @@
+🚀 TARI UNIVERSE v1.0.12: The Shell Eternal
+
+_May 26, 2025_
+
+Hey everyone,
+In preparation for the hard fork at block 15,000 today, contributors have prepared one more hotfix: "The Shell Eternal." Please update Tari Universe to this new version ASAP to help prepare the network for the hard fork. Thank you for being Tari OGs! 💜🐢
+
+---
+
+🚀 TARI UNIVERSE v1.0.11: The Shell Ascendant
+
+_May 25, 2025_
+
+Hey everyone,
+Welcome to Day 19 of Tari mainnet! The "Shell Ascendant" hotfix prepares the network for the hard fork at block 15,000, happening ~ mid-late afternoon on Monday 26th UTC. A reminder of how the Tari network is changing:
+
+Currently, the Tari network hash rate is split as follows:
+- 50% RandomX (merge mine with XMR)
+- 50% SHA3
+
+After the hard fork, the network hash rate will be split as follows:
+- 33% RandomX (merge with XMR)
+- 33% RandomX (Tari solo mine)
+- 33% SHA3
+
+The goal is to create a new opportunity for Tari-focused miners to earn more rewards. All miners must upgrade their mining client to continue mining after the hard fork. If you don't, you'll be mining air 😛
+
+---
+
 🚀 TARI UNIVERSE v1.0.10: Waves of Resolve
 
 _May 15, 2025_
-
-🔄 Rolling out via auto-update
 
 Hey everyone,
 Happy day 9 of Tari mainnet! The “Waves of Resolve” hotfix improves p2pool stability and networking reliability. P2pool ftw! 💜🐢

@@ -39,7 +39,7 @@ export const PoolStatsTile = () => {
     const pool_status = useMiningMetricsStore((s) => s.cpu_mining_status.pool_status);
     const isMining = useMiningMetricsStore((s) => s.cpu_mining_status.is_mining || s.gpu_mining_status.is_mining);
     const loading = isMining && !pool_status;
-    const balanceFMT = formatNumber(pool_status?.balance || 0, FormatPreset.XTM_COMPACT);
+    const unpaidFMT = formatNumber(pool_status?.unpaid || 0, FormatPreset.XTM_COMPACT);
     const [expanded, setExpanded] = useState(false);
     const { refs, context, floatingStyles } = useFloating({
         open: expanded,
@@ -62,7 +62,7 @@ export const PoolStatsTile = () => {
                     <LeftContent>
                         <Title>{t('stats.tile-heading')}</Title>
                         <Values>
-                            <BalanceVal>{`${balanceFMT} XTM`}</BalanceVal>
+                            <BalanceVal>{`${unpaidFMT} XTM`}</BalanceVal>
                         </Values>
                     </LeftContent>
                     <RightContent>
@@ -86,7 +86,7 @@ export const PoolStatsTile = () => {
                                         <Trans
                                             i18nKey="stats.tooltip-copy"
                                             ns="p2p"
-                                            values={{ amount: REWARD_THRESHOLD, duration: `~6 hrs` }}
+                                            values={{ amount: REWARD_THRESHOLD, duration: `~6 hours` }}
                                             components={{ strong: <strong /> }}
                                         />
                                     </Typography>
