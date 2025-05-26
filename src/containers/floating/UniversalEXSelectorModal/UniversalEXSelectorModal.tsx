@@ -6,11 +6,11 @@ import { ExchangeMiner } from '@app/types/exchange';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { fetchBackendInMemoryConfig } from '@app/store/actions/appConfigStoreActions';
-import { EXMiner, EXMinerList, Wrapper } from './styles';
 import { SquaredButton } from '@app/components/elements/buttons/SquaredButton';
+import { EXMiner, EXMinerList, HeaderSection, Heading, Wrapper } from './styles';
 
 export default function UniversalEXSelectorModal() {
-    const { t } = useTranslation('common', { useSuspense: false });
+    const { t } = useTranslation(['exchange', 'common'], { useSuspense: false });
     const showModal = useExchangeStore((s) => s.showUniversalModal);
     const exchangeMiners = useExchangeStore((s) => s.exchangeMiners);
     const [selectedExchangeMiner, setSelectedExchangeMiner] = useState<ExchangeMiner | undefined>(undefined);
@@ -26,8 +26,11 @@ export default function UniversalEXSelectorModal() {
 
     return (
         <Dialog open={!!showModal} disableClose>
-            <DialogContent $disableOverflow $borderRadius="40px">
+            <DialogContent $disableOverflow $borderRadius="40px" $transparentBg>
                 <Wrapper>
+                    <HeaderSection>
+                        <Heading>{t('select.modal-title')}</Heading>
+                    </HeaderSection>
                     <EXMinerList>
                         {exchangeMiners?.map((miner) => (
                             <EXMiner
@@ -45,7 +48,7 @@ export default function UniversalEXSelectorModal() {
                         onClick={confirmExchangeMiner}
                         disabled={!selectedExchangeMiner}
                     >
-                        {t('select')}
+                        {t('common:select')}
                     </SquaredButton>
                 </Wrapper>
             </DialogContent>

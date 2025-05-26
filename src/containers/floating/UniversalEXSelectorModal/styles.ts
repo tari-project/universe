@@ -1,12 +1,12 @@
 import styled from 'styled-components';
+import { Typography } from '@app/components/elements/Typography.tsx';
 
 export const Wrapper = styled.div`
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    min-height: min(200px, 80vh);
-    min-width: min(200px, 80vw);
+    height: min(400px, 80vh);
+    width: max(200px, 40vw);
 `;
 
 export const EXMinerList = styled.div`
@@ -29,4 +29,13 @@ export const EXMiner = styled.div<{ selected: boolean }>`
         background 0.15s,
         border 0.15s;
     text-align: left;
+`;
+
+export const HeaderSection = styled.div`
+    display: flex;
+    padding: 30px 30px 20px;
+`;
+export const Heading = styled(Typography).attrs({ variant: 'h4' })`
+    line-height: 1.2;
+    letter-spacing: -1px;
 `;
