@@ -22,18 +22,19 @@
 
 use std::path::PathBuf;
 
-use anyhow::Error;
+use crate::{
+    binaries::binaries_resolver::{VersionAsset, VersionDownloadInfo},
+    github::{self, request_client::RequestClient},
+    APPLICATION_FOLDER_ID,
+};
+use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use log::{error, info};
 use regex::Regex;
 use tari_common::configuration::Network;
+use tokio::{fs::File, io::AsyncReadExt};
 
-use crate::{
-    binaries::binaries_resolver::{VersionAsset, VersionDownloadInfo},
-    APPLICATION_FOLDER_ID,
-};
-
-use super::tapplets_resolver::TappletApiAdapter;
+use super::tapplets_resolver::LatestVersionApiAdapter;
 
 const LOG_TARGET: &str = "tari::universe::tapplet_bridge";
 
@@ -44,8 +45,68 @@ pub struct BridgeTappletAdapter {
 }
 
 #[async_trait]
-impl TappletApiAdapter for BridgeTappletAdapter {
-    fn get_tapplet_dest_dir(&self) -> Result<PathBuf, Error> {
+impl LatestVersionApiAdapter for BridgeTappletAdapter {
+    async fn fetch_releases_list(&self) -> Result<Vec<VersionDownloadInfo>, Error> {
+        let releases = github::list_releases(&self.owner, &self.repo).await?;
+        Ok(releases.clone())
+    }
+
+    async fn get_expected_checksum(
+        &self,
+        checksum_path: PathBuf,
+        asset_name: &str,
+    ) -> Result<String, Error> {
+        let mut file_sha256 = File::open(checksum_path.clone()).await?;
+        let mut buffer_sha256 = Vec::new();
+        file_sha256.read_to_end(&mut buffer_sha256).await?;
+        let contents =
+            String::from_utf8(buffer_sha256).expect("Failed to read file contents as UTF-8");
+        let mut expected_hash = "";
+        let regex = Regex::new(&format!(r"([a-f0-9]+)\s.{}", asset_name))
+            .map_err(|e| anyhow!("Failed to create regex: {}", e))?;
+
+        for line in contents.lines() {
+            if let Some(caps) = regex.captures(line) {
+                expected_hash = caps
+                    .get(1)
+                    .map(|hash| hash.as_str())
+                    .ok_or_else(|| anyhow!("Failed to extract hash from line: {}", line))?;
+            }
+        }
+        Ok(expected_hash.to_string())
+    }
+    async fn download_and_get_checksum_path(
+        &self,
+        directory: PathBuf,
+        download_info: VersionDownloadInfo,
+    ) -> Result<PathBuf, Error> {
+        let asset = self.find_version_for_platform(&download_info)?;
+        let checksum_path = directory
+            .join("in_progress")
+            .join(format!("{}.sha256", asset.name));
+        let checksum_url = format!("{}.sha256", asset.url);
+
+        match RequestClient::current()
+            .download_file_with_retries(&checksum_url, &checksum_path, asset.source.is_mirror())
+            .await
+        {
+            Ok(_) => Ok(checksum_path),
+            Err(e) => {
+                if let Some(fallback_url) = asset.fallback_url {
+                    let checksum_fallback_url = format!("{}.sha256", fallback_url);
+                    info!(target: LOG_TARGET, "Fallback URL: {}", checksum_fallback_url);
+                    RequestClient::current()
+                        .download_file_with_retries(&checksum_fallback_url, &checksum_path, false)
+                        .await?;
+                    Ok(checksum_path)
+                } else {
+                    Err(anyhow::anyhow!("Failed to download checksum file: {}", e))
+                }
+            }
+        }
+    }
+
+    fn get_tapplet_folder(&self) -> Result<PathBuf, Error> {
         let cache_path =
             dirs::cache_dir().ok_or_else(|| anyhow::anyhow!("Failed to get cache directory"))?;
 

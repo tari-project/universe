@@ -22,6 +22,8 @@
 
 use std::path::PathBuf;
 
+use semver::Version;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Tapplets {
     Bridge,
@@ -34,18 +36,18 @@ impl Tapplets {
         }
     }
 
-    pub fn _from_name(name: &str) -> Self {
+    pub fn from_name(name: &str) -> Self {
         match name {
             "bridge" => Tapplets::Bridge,
-            _ => panic!("Unknown binary name: {}", name),
+            _ => panic!("Unknown tapplet name: {}", name),
         }
     }
 
-    pub fn _tapplet_file_name(self) -> PathBuf {
+    pub fn tapplet_file_name(self, version: Version) -> PathBuf {
         match self {
             Tapplets::Bridge => {
-                let file_name = "bridge";
-                PathBuf::from(file_name)
+                let file_name = format!("bridge-{}", version);
+                PathBuf::from(file_name).join("bridge")
             }
         }
     }

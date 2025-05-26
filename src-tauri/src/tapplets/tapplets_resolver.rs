@@ -1,12 +1,12 @@
 // Copyright 2024. The Tari Project
 //
-// Redistribution and use in source and tapplet forms, with or without modification, are permitted provided that the
+// Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
 // following conditions are met:
 //
 // 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following
 // disclaimer.
 //
-// 2. Redistributions in tapplet form must reproduce the above copyright notice, this list of conditions and the
+// 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
 // following disclaimer in the documentation and/or other materials provided with the distribution.
 //
 // 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
@@ -19,17 +19,19 @@
 // SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 use crate::binaries::binaries_resolver::{VersionAsset, VersionDownloadInfo};
+use crate::configs::config_core::{ConfigCore, ConfigCoreContent};
+use crate::configs::trait_config::ConfigImpl;
 use crate::ProgressTracker;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use log::error;
 use regex::Regex;
+use semver::Version;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::LazyLock;
-use std::time::Duration;
+use std::time::{Duration, SystemTime};
 use tari_common::configuration::Network;
 use tauri_plugin_sentry::sentry;
 use tokio::sync::watch::Receiver;
@@ -37,16 +39,31 @@ use tokio::sync::{Mutex, RwLock};
 use tokio::time::timeout;
 
 use super::bridge_adapter::BridgeTappletAdapter;
-use super::tapp_consts::TAPPLET_SOURCE_DIR;
 use super::tapplets_manager::TappletManager;
 use super::Tapplets;
+
+const TIME_BETWEEN_TAPPLETS_UPDATES: Duration = Duration::from_secs(60 * 60 * 6); // 6 hours
 
 static INSTANCE: LazyLock<RwLock<TappletResolver>> =
     LazyLock::new(|| RwLock::new(TappletResolver::new()));
 
 #[async_trait]
-pub trait TappletApiAdapter: Send + Sync + 'static {
-    fn get_tapplet_dest_dir(&self) -> Result<PathBuf, Error>;
+pub trait LatestVersionApiAdapter: Send + Sync + 'static {
+    async fn fetch_releases_list(&self) -> Result<Vec<VersionDownloadInfo>, Error>;
+
+    async fn get_expected_checksum(
+        &self,
+        checksum_path: PathBuf,
+        asset_name: &str,
+    ) -> Result<String, Error>;
+    async fn download_and_get_checksum_path(
+        &self,
+        directory: PathBuf,
+        download_info: VersionDownloadInfo,
+    ) -> Result<PathBuf, Error>;
+
+    fn get_tapplet_folder(&self) -> Result<PathBuf, Error>;
+
     fn find_version_for_platform(
         &self,
         version: &VersionDownloadInfo,
@@ -72,7 +89,7 @@ impl TappletResolver {
             bridge_mainnet_regex = Regex::new(r"combined.*mainnet").ok();
         }
 
-        let (tari_prerelease_prefix, bridge_specific_name) =
+        let (_tari_prerelease_prefix, _bridge_specific_name) =
             match Network::get_current_or_user_setting_or_default() {
                 Network::MainNet => ("", bridge_mainnet_regex),
                 Network::StageNet => ("", bridge_nextnet_regex),
@@ -86,12 +103,14 @@ impl TappletResolver {
             Tapplets::Bridge,
             Mutex::new(TappletManager::new(
                 Tapplets::Bridge.name().to_string(),
-                Some(tari_prerelease_prefix.to_string()),
+                None,
                 Box::new(BridgeTappletAdapter {
                     repo: "wxtm-bridge-frontend".to_string(),
                     owner: "tari-project".to_string(),
-                    specific_name: bridge_specific_name,
+                    specific_name: None,
                 }),
+                None,
+                false,
             )),
         );
 
@@ -104,36 +123,51 @@ impl TappletResolver {
         &INSTANCE
     }
 
-    pub async fn resolve_path_to_tapplet_dest_dir(
-        &self,
-        tapplet: Tapplets,
-    ) -> Result<PathBuf, Error> {
+    async fn should_check_for_update() -> bool {
+        let now = SystemTime::now();
+
+        let should_check_for_update = now
+            .duration_since(*ConfigCore::content().await.last_binaries_update_timestamp())
+            .unwrap_or(Duration::from_secs(0))
+            .gt(&TIME_BETWEEN_TAPPLETS_UPDATES);
+
+        if should_check_for_update {
+            let _unused = ConfigCore::update_field(
+                ConfigCoreContent::set_last_binaries_update_timestamp,
+                now,
+            )
+            .await;
+        }
+
+        should_check_for_update
+    }
+
+    pub async fn resolve_path_to_tapplet_files(&self, tapplet: Tapplets) -> Result<PathBuf, Error> {
         let manager = self
             .managers
             .get(&tapplet)
             .ok_or_else(|| anyhow!("No latest version manager for this tapplet"))?;
 
-        let dest_dir = manager.lock().await.get_dest_dir().map_err(|error| {
+        let version = manager
+            .lock()
+            .await
+            .get_used_version()
+            .ok_or_else(|| anyhow!("No version selected for tapplet {}", tapplet.name()))?;
+
+        let base_dir = manager.lock().await.get_base_dir().map_err(|error| {
             anyhow!(
-                "No dest directory for tapplet {}, Error: {}",
+                "No base directory for tapplet {}, Error: {}",
                 tapplet.name(),
                 error
             )
         })?;
 
-        let ver = manager
-            .lock()
-            .await
-            .select_highest_local_version()
-            .ok_or_else(|| anyhow!("No version found for tapplet {}", tapplet.name()))?;
-
-        // should return /.cache/com.tari.universe.alpha/tapplets/bridge/<network>/<ver>/package/out
-        let tapp_path = dest_dir.join(ver.to_string());
-        // TODO download zip
-        // .join("package");
-        // .join(TAPPLET_SOURCE_DIR);
-
-        Ok(tapp_path)
+        if let Some(sub_folder) = manager.lock().await.tapplet_subfolder() {
+            return Ok(base_dir
+                .join(sub_folder)
+                .join(tapplet.tapplet_file_name(version)));
+        }
+        Ok(base_dir.join(tapplet.tapplet_file_name(version)))
     }
 
     pub async fn initialize_tapplet_timeout(
@@ -170,11 +204,126 @@ impl TappletResolver {
             .ok_or_else(|| anyhow!("Couldn't find manager for tapplet: {}", tapplet.name()))?
             .lock()
             .await;
-        let ver = manager.select_highest_local_version();
-        manager
-            .download_version_with_retries(ver, progress_tracker.clone())
-            .await?;
+
+        #[allow(unused_variables)]
+        // We will remove this logic in next PR's
+        let should_check_for_update = Self::should_check_for_update().await;
+
+        manager.read_local_versions().await;
+        manager.check_for_updates().await;
+
+        // Selects the highest version from the Vec of downloaded versions and local versions
+        let mut highest_version = manager.select_highest_version();
+
+        // This covers case when we do not check newest version and there is no local version
+        if highest_version.is_none() {
+            highest_version = manager.select_highest_version();
+            manager
+                .download_version_with_retries(highest_version.clone(), progress_tracker.clone())
+                .await?;
+        }
+
+        // Check if the files exist after download
+        let check_if_files_exist =
+            manager.check_if_files_for_version_exist(highest_version.clone());
+        if !check_if_files_exist {
+            manager
+                .download_version_with_retries(highest_version.clone(), progress_tracker.clone())
+                .await?;
+        }
+
+        // Throw error if files still do not exist
+        let check_if_files_exist =
+            manager.check_if_files_for_version_exist(highest_version.clone());
+        if !check_if_files_exist {
+            return Err(anyhow!("Failed to download tapplets"));
+        }
+
+        match highest_version {
+            Some(version) => manager.set_used_version(version),
+            None => {
+                return Err(anyhow!(
+                    "No version selected for tapplet {}",
+                    tapplet.name()
+                ))
+            }
+        }
 
         Ok(())
+    }
+
+    pub async fn update_tapplet(
+        &self,
+        tapplet: Tapplets,
+        progress_tracker: ProgressTracker,
+    ) -> Result<(), Error> {
+        let mut manager = self
+            .managers
+            .get(&tapplet)
+            .ok_or_else(|| anyhow!("Couldn't find manager for tapplet: {}", tapplet.name()))?
+            .lock()
+            .await;
+
+        manager.check_for_updates().await;
+        let highest_version = manager.select_highest_version();
+
+        progress_tracker
+            .send_last_action(format!(
+                "Checking if files exist before download: {} {}",
+                tapplet.name(),
+                highest_version.clone().unwrap_or(Version::new(0, 0, 0))
+            ))
+            .await;
+
+        let check_if_files_exist =
+            manager.check_if_files_for_version_exist(highest_version.clone());
+        if !check_if_files_exist {
+            manager
+                .download_version_with_retries(highest_version.clone(), progress_tracker.clone())
+                .await?;
+        }
+
+        progress_tracker
+            .send_last_action(format!(
+                "Checking if files exist after download: {} {}",
+                tapplet.name(),
+                highest_version.clone().unwrap_or(Version::new(0, 0, 0))
+            ))
+            .await;
+        let check_if_files_exist =
+            manager.check_if_files_for_version_exist(highest_version.clone());
+        if !check_if_files_exist {
+            return Err(anyhow!("Failed to download tapplets"));
+        }
+
+        match highest_version {
+            Some(version) => manager.set_used_version(version),
+            None => {
+                return Err(anyhow!(
+                    "No version selected for tapplet {}",
+                    tapplet.name()
+                ))
+            }
+        }
+
+        Ok(())
+    }
+
+    #[allow(dead_code)]
+    pub async fn get_tapplet_version(&self, tapplet: Tapplets) -> Option<Version> {
+        self.managers
+            .get(&tapplet)
+            .unwrap_or_else(|| panic!("Couldn't find manager for tapplet: {}", tapplet.name()))
+            .lock()
+            .await
+            .get_used_version()
+    }
+
+    #[allow(dead_code)]
+    pub async fn get_tapplet_version_string(&self, tapplet: Tapplets) -> String {
+        let version = self.get_tapplet_version(tapplet).await;
+        version
+            .map(|v| v.to_string())
+            .unwrap_or_else(|| "Not Installed".to_string())
     }
 }
