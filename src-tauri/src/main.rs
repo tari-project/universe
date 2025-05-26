@@ -236,13 +236,9 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
 
 #[derive(Clone)]
 struct UniverseAppState {
-<<<<<<< Updated upstream
-    stop_start_mutex: Arc<Mutex<()>>,
-    stop_start_timestamp_mutex: Arc<Mutex<SystemTime>>,
-=======
+    cpu_miner_timestamp_mutex: Arc<Mutex<SystemTime>>,
     cpu_miner_stop_start_mutex: Arc<Mutex<()>>,
     gpu_miner_stop_start_mutex: Arc<Mutex<()>>,
->>>>>>> Stashed changes
     node_status_watch_rx: Arc<watch::Receiver<BaseNodeStatus>>,
     #[allow(dead_code)]
     wallet_state_watch_rx: Arc<watch::Receiver<Option<WalletState>>>,
@@ -421,13 +417,9 @@ fn main() {
         app_in_memory_config.clone(),
     );
     let app_state = UniverseAppState {
-<<<<<<< Updated upstream
-        stop_start_mutex: Arc::new(Mutex::new(())),
-        stop_start_timestamp_mutex: Arc::new(Mutex::new(SystemTime::now())),
-=======
+        cpu_miner_timestamp_mutex: Arc::new(Mutex::new(SystemTime::now())),
         cpu_miner_stop_start_mutex: Arc::new(Mutex::new(())),
         gpu_miner_stop_start_mutex: Arc::new(Mutex::new(())),
->>>>>>> Stashed changes
         is_getting_p2pool_connections: Arc::new(AtomicBool::new(false)),
         node_status_watch_rx: Arc::new(base_node_watch_rx),
         wallet_state_watch_rx: Arc::new(wallet_state_watch_rx.clone()),

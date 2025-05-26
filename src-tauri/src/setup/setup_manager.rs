@@ -342,17 +342,9 @@ impl SetupManager {
         if cpu_mining_pool_url.is_some() && cpu_mining_pool_status_url.is_some() {
             features.add_feature(SetupFeature::CentralizedPool);
         }
-<<<<<<< Updated upstream
         if EXCHANGE_ID.ne(DEFAULT_EXCHANGE_ID) {
             features.add_feature(SetupFeature::ExchangeMiner);
         }
-=======
-
-        if EXCHANGE_ID.ne(DEFAULT_EXCHANGE_ID) {
-            features.add_feature(SetupFeature::ExchangeMiner);
-        }
-
->>>>>>> Stashed changes
         Ok(())
     }
 
@@ -562,31 +554,20 @@ impl SetupManager {
                             .await;
                     }
 
-<<<<<<< Updated upstream
-                    if is_hardware_phase_succeeded
-                        && is_node_phase_succeeded
-                        && is_unknown_phase_succeeded
-                        && !is_mining_unlocked
-=======
                     if is_core_phase_succeeded
                         && is_hardware_phase_succeeded
                         && is_node_phase_succeeded
                         && is_unknown_phase_succeeded
                         && !is_cpu_mining_unlocked
                         && !is_gpu_mining_unlocked
->>>>>>> Stashed changes
                         && setup_features.is_feature_disabled(SetupFeature::CentralizedPool)
                         && setup_features.is_feature_enabled(SetupFeature::ExchangeMiner)
                     {
                         SetupManager::get_instance()
-<<<<<<< Updated upstream
-                            .unlock_mining(app_handle.clone())
-=======
                             .unlock_cpu_mining(app_handle.clone())
                             .await;
                         SetupManager::get_instance()
                             .unlock_gpu_mining(app_handle.clone())
->>>>>>> Stashed changes
                             .await;
                     }
 
@@ -655,18 +636,11 @@ impl SetupManager {
 
                     if is_core_phase_succeeded
                         && is_hardware_phase_succeeded
-<<<<<<< Updated upstream
-                        && !is_mining_unlocked
-=======
                         && !is_cpu_mining_unlocked
->>>>>>> Stashed changes
                         && setup_features.is_feature_enabled(SetupFeature::CentralizedPool)
                         && setup_features.is_feature_enabled(SetupFeature::ExchangeMiner)
                     {
                         SetupManager::get_instance()
-<<<<<<< Updated upstream
-                            .unlock_mining(app_handle.clone())
-=======
                             .unlock_cpu_mining(app_handle.clone())
                             .await;
                     }
@@ -680,7 +654,6 @@ impl SetupManager {
                     {
                         SetupManager::get_instance()
                             .unlock_gpu_mining(app_handle.clone())
->>>>>>> Stashed changes
                             .await;
                     }
 
@@ -703,12 +676,8 @@ impl SetupManager {
                     if is_app_unlocked
                         // Exchange miner won't have wallet unlocked as we are not using the wallet 
                         && (is_wallet_unlocked || setup_features.is_feature_enabled(SetupFeature::ExchangeMiner))
-<<<<<<< Updated upstream
-                        && is_mining_unlocked
-=======
                         && is_cpu_mining_unlocked
                         && is_gpu_mining_unlocked
->>>>>>> Stashed changes
                         && !is_initial_setup_finished
                     {
                         *SetupManager::get_instance()
@@ -765,13 +734,6 @@ impl SetupManager {
                     let _unused = self.hardware_phase_status.send_replace(PhaseStatus::None);
                 }
                 SetupPhase::Node => {
-<<<<<<< Updated upstream
-                    // On centralized pool cpu miner does not need node phase
-                    if features.is_feature_disabled(SetupFeature::CentralizedPool) {
-                        self.lock_mining(app_handle.clone()).await;
-                    }
-=======
->>>>>>> Stashed changes
                     self.lock_wallet(app_handle.clone()).await;
                     if features.is_feature_enabled(SetupFeature::CentralizedPool) {
                         self.lock_gpu_mining(app_handle.clone()).await;
@@ -791,17 +753,11 @@ impl SetupManager {
                     let _unused = self.wallet_phase_status.send_replace(PhaseStatus::None);
                 }
                 SetupPhase::Unknown => {
-<<<<<<< Updated upstream
-                    // On centralized pool cpu miner does not need unknown phase
-                    if features.is_feature_disabled(SetupFeature::CentralizedPool) {
-                        self.lock_mining(app_handle.clone()).await;
-=======
                     if features.is_feature_enabled(SetupFeature::CentralizedPool) {
                         self.lock_gpu_mining(app_handle.clone()).await;
                     } else {
                         self.lock_gpu_mining(app_handle.clone()).await;
                         self.lock_cpu_mining(app_handle.clone()).await;
->>>>>>> Stashed changes
                     }
                     TasksTrackers::current().unknown_phase.close().await;
                     TasksTrackers::current().unknown_phase.replace().await;
