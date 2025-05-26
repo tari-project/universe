@@ -20,6 +20,7 @@ export default function UniversalEXSelectorModal() {
         setShowUniversalModal(false); // TODO make it last statement in this function after being done with testing
         await invoke('user_selected_exchange', { exchangeMiner: selectedExchangeMiner });
         await fetchBackendInMemoryConfig();
+        console.info('[DEBUG UNIVERSAL EXCHANGE] Fetched backend in memory config');
         setShowExchangeModal(true);
     };
 

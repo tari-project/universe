@@ -199,8 +199,10 @@ pub async fn user_selected_exchange(
 ) -> Result<(), String> {
     info!("[DEBUG UNIVERSAL] running command selected exchange");
     SetupManager::get_instance()
-        .select_exchange_miner(exchange_miner, app_handle)
-        .await
+        .select_exchange_miner(exchange_miner, app_handle.clone())
+        .await?;
+    reset_exchange_address(app_handle).await?;
+    Ok(())
 }
 
 #[tauri::command]
@@ -665,6 +667,32 @@ pub async fn confirm_exchange_address(
         .map_err(InvokeError::from_anyhow)?;
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "set_exchange_address took too long: {:?}", timer.elapsed());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn reset_exchange_address(app_handle: tauri::AppHandle) -> Result<(), String> {
+    let timer = Instant::now();
+    let config_path = app_handle
+        .path()
+        .app_config_dir()
+        .expect("Could not get config dir");
+    let mut internal_wallet = InternalWallet::load_or_create(config_path.clone())
+        .await
+        .map_err(|e| e.to_string())?;
+    internal_wallet
+        .reset_exchange_address(config_path.clone())
+        .await?;
+    let handle_clone = app_handle.clone();
+    EventsEmitter::emit_wallet_address_update(
+        &handle_clone,
+        internal_wallet.get_tari_address(),
+        internal_wallet.get_is_tari_address_generated(),
+    )
+    .await;
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "reset_exchange_address took too long: {:?}", timer.elapsed());
     }
     Ok(())
 }
