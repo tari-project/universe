@@ -18,6 +18,7 @@ const initialState = {
 export const useExchangeStore = create<ExchangeStoreState>()(() => ({ ...initialState }));
 
 export const setShowExchangeModal = (showClassicModal: boolean) => {
+    console.info('[DEBUG UNIVERSAL EXCHANGE] setShowExchangeModal:', showClassicModal);
     useExchangeStore.setState({ showClassicModal: showClassicModal });
 };
 
@@ -26,6 +27,7 @@ export const setExchangeContent = (content?: ExchangeContent | null) => {
 };
 
 export const setShowUniversalModal = (showUniversalModal: boolean) => {
+    console.info('[DEBUG UNIVERSAL EXCHANGE] showUniversalModal:', setShowExchangeModal);
     useExchangeStore.setState({ showUniversalModal: showUniversalModal });
 };
 

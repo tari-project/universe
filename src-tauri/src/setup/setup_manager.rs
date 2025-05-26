@@ -852,24 +852,27 @@ impl SetupManager {
         if !memory_config.is_universal_miner() {
             return;
         }
+        drop(memory_config);
         info!(target: LOG_TARGET, "[DEBUG UNIVERSAL EXCHANGE] awaiting universal modal");
         let _unused = self.universal_modal_status.subscribe().changed().await;
         info!(target: LOG_TARGET, "[DEBUG UNIVERSAL EXCHANGE] input received");
     }
+
     pub async fn select_exchange_miner(
         &self,
         selected_miner: ExchangeMiner,
         app_handle: AppHandle,
     ) -> Result<(), String> {
         info!(target: LOG_TARGET, "[DEBUG UNIVERSAL EXCHANGE] selected exchange miner: {:?}", selected_miner);
-        self.universal_modal_status
-            .send(selected_miner.clone())
-            .map_err(|e| e.to_string())?;
         let state = app_handle.state::<UniverseAppState>();
         let mut config = state.in_memory_config.write().await;
         let new_config = DynamicMemoryConfig::init_universal(&selected_miner);
         *config = new_config;
         info!("[DEBUG UNIVERSAL EXCHANGE] exchange set");
+        self.universal_modal_status
+            .send(selected_miner.clone())
+            .map_err(|e| e.to_string())?;
+        info!("[DEBUG UNIVERSAL EXCHANGE] sent status for selected exchange miner");
         Ok(())
     }
 
