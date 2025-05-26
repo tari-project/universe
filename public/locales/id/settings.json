@@ -160,6 +160,7 @@
     "title": "Perbarui Tari Universe secara otomatis"
   },
   "use-dynamic-fail-data": "Gunakan data gagal dinamis",
+  "use-p2p": "Use P2pool",
   "use-random-control-port": "Gunakan port kontrol acak",
   "use-random-port": "Gunakan port acak",
   "use-tor": "Gunakan Tor",

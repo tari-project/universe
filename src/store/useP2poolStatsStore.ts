@@ -39,7 +39,9 @@ export const fetchP2poolStats = async () => {
 export const fetchP2poolConnections = async () => {
     try {
         const connections = await invoke('get_p2pool_connections');
-        useP2poolStatsStore.setState({ peers: connections.peers });
+        if (connections) {
+            useP2poolStatsStore.setState({ peers: connections?.peers });
+        }
     } catch (e) {
         console.error('Could not get p2p connections: ', e);
     }
