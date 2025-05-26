@@ -167,7 +167,7 @@ impl TappletResolver {
                 .join(sub_folder)
                 .join(tapplet.tapplet_file_name(version)));
         }
-        Ok(base_dir.join(tapplet.tapplet_file_name(version)))
+        Ok(base_dir)
     }
 
     pub async fn initialize_tapplet_timeout(
@@ -236,7 +236,10 @@ impl TappletResolver {
         let check_if_files_exist =
             manager.check_if_files_for_version_exist(highest_version.clone());
         if !check_if_files_exist {
-            return Err(anyhow!("Failed to download tapplets"));
+            return Err(anyhow!(
+                "Failed to download tapplets while initializing: files for version {:?} does not exist",
+                highest_version.clone()
+            ));
         }
 
         match highest_version {
@@ -293,7 +296,10 @@ impl TappletResolver {
         let check_if_files_exist =
             manager.check_if_files_for_version_exist(highest_version.clone());
         if !check_if_files_exist {
-            return Err(anyhow!("Failed to download tapplets"));
+            return Err(anyhow!(
+                "Failed to download tapplet while updating: files for version {:?} does not exist",
+                highest_version.clone()
+            ));
         }
 
         match highest_version {

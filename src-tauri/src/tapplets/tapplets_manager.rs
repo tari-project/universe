@@ -374,9 +374,10 @@ impl TappletManager {
 
     pub fn check_if_files_for_version_exist(&self, version: Option<Version>) -> bool {
         debug!(target: LOG_TARGET,"Checking if files for selected version exist: {:?}", version);
+        info!(target: LOG_TARGET,"Checking if files for selected version exist: {:?}", version);
 
         if let Some(version) = version {
-            debug!(target: LOG_TARGET, "Selected version: {:?}", version);
+            info!(target: LOG_TARGET, "Selected version: {:?}", version);
 
             let tapplet_folder = match self.adapter.get_tapplet_folder() {
                 Ok(path) => path,
@@ -386,18 +387,16 @@ impl TappletManager {
                 }
             };
 
+            info!(target: LOG_TARGET, "Tapplet folder path: {:?}", tapplet_folder);
             let version_folder = tapplet_folder.join(version.to_string());
-            let tapplet_file = version_folder
-                .join(Tapplets::from_name(&self.tapplet_name).tapplet_file_name(version));
-            let tapplet_file_with_exe = tapplet_file.with_extension("exe");
+            let tapplet_file_with_html = version_folder.join("index.html");
 
-            debug!(target: LOG_TARGET, "Tapplet folder path: {:?}", tapplet_folder);
-            debug!(target: LOG_TARGET, "Version folder path: {:?}", version_folder);
-            debug!(target: LOG_TARGET, "Tapplet file path: {:?}", tapplet_file);
+            info!(target: LOG_TARGET, "Version folder path: {:?}", version_folder);
+            info!(target: LOG_TARGET, "Tapplet file path with html: {:?}", tapplet_file_with_html);
 
-            let tapplet_file_exists = tapplet_file.exists() || tapplet_file_with_exe.exists();
+            let tapplet_file_exists = tapplet_file_with_html.exists();
 
-            debug!(target: LOG_TARGET, "tapplet file exists: {:?}", tapplet_file_exists);
+            info!(target: LOG_TARGET, "tapplet file exists: {:?}", tapplet_file_exists);
 
             return tapplet_file_exists;
         }
