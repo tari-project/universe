@@ -190,7 +190,10 @@ export function ToggleSwitch({
                 disabled={disabled}
                 checked={props.checked || false}
                 type="checkbox"
-                onChange={onChange}
+                onChange={(e) => {
+                    e.preventDefault();
+                    onChange?.(e);
+                }}
                 onKeyDown={handleKeyDown}
                 $hasDecorators={!!customDecorators}
                 $isSolid={isSolid}
