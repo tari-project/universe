@@ -3,10 +3,10 @@ import { memo } from 'react';
 import WalletSection from './sections/Wallet.tsx';
 import MiningSection from './sections/Mining.tsx';
 import { GridAreaBottom, GridAreaTop, WrapperGrid, SidebarWrapper } from './Sidebar.styles.ts';
-import { useConfigCoreStore } from '@app/store/useAppConfigStore.ts';
+import { useAirdropStore } from '@app/store/useAirdropStore.ts';
 
 const Sidebar = memo(function Sidebar() {
-    const swapUiEnabled = useConfigCoreStore((s) => s.swaps_enabled);
+    const swapUiEnabled = useAirdropStore((s) => s.swapsEnabled);
     return (
         <SidebarWrapper key="sidebar">
             <WrapperGrid>

@@ -66,7 +66,6 @@ pub struct ConfigCoreContent {
     pre_release: bool,
     last_changelog_version: Version,
     airdrop_tokens: Option<AirdropTokens>,
-    swaps_enabled: Option<bool>,
     remote_base_node_address: String,
     node_type: NodeType,
 }
@@ -119,7 +118,6 @@ impl Default for ConfigCoreContent {
             pre_release: false,
             last_changelog_version: Version::new(0, 0, 0),
             airdrop_tokens: None,
-            swaps_enabled: None,
             remote_base_node_address,
             node_type: NodeType::Local,
         }

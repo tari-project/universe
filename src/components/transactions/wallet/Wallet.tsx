@@ -16,7 +16,7 @@ import { useCopyToClipboard } from '@app/hooks/index.ts';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
 import { SendSVG } from '@app/assets/icons/send.tsx';
 import { ReceiveSVG } from '@app/assets/icons/receive.tsx';
-import { useAirdropStore, useConfigCoreStore, usePaperWalletStore } from '@app/store';
+import { useAirdropStore, usePaperWalletStore } from '@app/store';
 import { Button } from '@app/components/elements/buttons/Button';
 import SyncTooltip from '@app/containers/navigation/components/Wallet/SyncTooltip/SyncTooltip.tsx';
 import {
@@ -49,7 +49,7 @@ const Wallet = memo(function Wallet({ section, setSection }: Props) {
     const walletAddress = useWalletStore((state) => state.tari_address_base58);
     const availableBalance = useWalletStore((s) => s.balance?.available_balance);
     const displayAddress = truncateMiddle(walletAddress, 4);
-    const swapUiEnabled = useConfigCoreStore((s) => s.swaps_enabled);
+    const swapUiEnabled = useAirdropStore((s) => s.swapsEnabled);
     const isSwapping = useWalletStore((s) => s.is_swapping);
 
     const { isWalletScanning, formattedAvailableBalance } = useTariBalance();
