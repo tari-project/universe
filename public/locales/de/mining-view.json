@@ -25,6 +25,12 @@
     "step_5": "Versuche, Tor zu deaktivieren (in den Einstellungen)",
     "step_6": "Versuche einen App-Reset (in den Einstellungen)"
   },
+  "pool": {
+    "accepted_shares": "Accepted shares",
+    "balance": "Balance",
+    "min_payout": "Minimum payout",
+    "unpaid": "Unpaid"
+  },
   "you-earn-rewards-separately": "Sie verdienen Belohnungen für das Mining von CPU und GPU separat",
   "you-won-block": "Sie waren der Gewinner von <span>Block #{{ blockHeight }}</span>",
   "you-won-while-away": "<span>Sie haben {{ blocks }} gewonnen</span>, während Sie weg waren",

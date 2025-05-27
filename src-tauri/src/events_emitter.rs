@@ -343,6 +343,16 @@ impl EventsEmitter {
             error!(target: LOG_TARGET, "Failed to emit CpuMiningUpdate event: {:?}", e);
         }
     }
+    pub async fn emit_mining_time_update(app_handle: &AppHandle, mining_time: u128) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::MiningTime,
+            payload: mining_time,
+        };
+        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+            error!(target: LOG_TARGET, "Failed to emit MiningTime event: {:?}", e);
+        }
+    }
 
     pub async fn emit_gpu_mining_update(app_handle: &AppHandle, status: GpuMinerStatus) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
@@ -438,6 +448,17 @@ impl EventsEmitter {
         };
         if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
             error!(target: LOG_TARGET, "Failed to emit UnknownPhaseFinished event: {:?}", e);
+        }
+    }
+
+    pub async fn emit_initial_setup_finished(app_handle: &AppHandle) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::InitialSetupFinished,
+            payload: (),
+        };
+        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+            error!(target: LOG_TARGET, "Failed to emit SetupFinished event: {:?}", e);
         }
     }
 

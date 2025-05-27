@@ -25,6 +25,7 @@ use std::{sync::LazyLock, time::SystemTime};
 
 use getset::{Getters, Setters};
 use serde::{Deserialize, Serialize};
+use tari_common::configuration::Network;
 use tauri::{AppHandle, Manager};
 use tokio::sync::RwLock;
 
@@ -79,6 +80,10 @@ pub struct ConfigMiningContent {
     cpu_mining_enabled: bool,
     gpu_engine: EngineType,
     squad_override: Option<String>,
+    cpu_mining_pool_url: Option<String>,
+    cpu_mining_pool_status_url: Option<String>,
+    gpu_mining_pool_url: Option<String>,
+    mining_time: u128,
 }
 
 impl Default for ConfigMiningContent {
@@ -99,10 +104,38 @@ impl Default for ConfigMiningContent {
             cpu_mining_enabled: true,
             gpu_engine: EngineType::OpenCL,
             squad_override: None,
+            cpu_mining_pool_url: default_cpu_mining_pool_url(),
+            cpu_mining_pool_status_url: default_cpu_mining_pool_status_url(),
+            gpu_mining_pool_url: None,
+            mining_time: 0,
         }
     }
 }
 impl ConfigContentImpl for ConfigMiningContent {}
+
+fn default_cpu_mining_pool_url() -> Option<String> {
+    match Network::get_current_or_user_setting_or_default() {
+        Network::MainNet => Some("pool-global.tari.snipanet.com:3333".to_string()),
+        Network::NextNet | Network::StageNet => Some("69.164.205.243:3333".to_string()),
+        Network::LocalNet | Network::Igor | Network::Esmeralda => {
+            Some("69.164.205.243:3333".to_string())
+        }
+    }
+}
+
+fn default_cpu_mining_pool_status_url() -> Option<String> {
+    match Network::get_current_or_user_setting_or_default() {
+        Network::MainNet => {
+            Some("https://pool.rxt.tari.jagtech.io/api/miner/%TARI_ADDRESS%/stats".to_string())
+        }
+        Network::NextNet | Network::StageNet => {
+            Some("http://69.164.205.243:3333/api/miner/%TARI_ADDRESS%/stats".to_string())
+        }
+        Network::LocalNet | Network::Igor | Network::Esmeralda => {
+            Some("http://69.164.205.243:3333/api/miner/%TARI_ADDRESS%/stats".to_string())
+        }
+    }
+}
 
 pub struct ConfigMining {
     content: ConfigMiningContent,
@@ -114,11 +147,10 @@ impl ConfigMining {
         let state = app_handle.state::<UniverseAppState>();
         let mut config = Self::current().write().await;
         config.load_app_handle(app_handle.clone()).await;
-        state
-            .cpu_miner_config
-            .write()
-            .await
-            .load_from_config_mining(config._get_content());
+
+        let mut cpu_config = state.cpu_miner_config.write().await;
+        cpu_config.load_from_config_mining(config._get_content());
+        drop(cpu_config);
 
         EventsManager::handle_config_mining_loaded(&app_handle, config.content.clone()).await;
     }

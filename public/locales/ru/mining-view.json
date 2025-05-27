@@ -26,6 +26,12 @@
     "step_5": "Попробуйте отключить Tor (в Настройках)",
     "step_6": "Попробуйте сбросить настройки приложения (в Настройках)"
   },
+  "pool": {
+    "accepted_shares": "Accepted shares",
+    "balance": "Balance",
+    "min_payout": "Minimum payout",
+    "unpaid": "Unpaid"
+  },
   "you-earn-rewards-separately": "Вы получаете награды за майнинг на CPU и GPU отдельно",
   "you-won-block": "Вы выиграли <span>блок #{{ blockHeight }}</span>",
   "you-won-while-away": "<span>Вы выиграли {{ blocks }}</span>, пока Вас не было",
