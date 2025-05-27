@@ -25,9 +25,9 @@ const HistoryList = memo(function HistoryList() {
 
     const handleNext = useCallback(async () => {
         if (!is_transactions_history_loading) {
-            await fetchTransactionsHistory({ continuation: true, limit: 20 });
+            await fetchTransactionsHistory({ offset: transactions.length, limit: 20 });
         }
-    }, [is_transactions_history_loading]);
+    }, [is_transactions_history_loading, transactions.length]);
 
     const listMarkup = useMemo(() => {
         const latestTxId = transactions?.[0]?.tx_id;

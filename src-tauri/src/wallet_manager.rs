@@ -177,13 +177,13 @@ impl WalletManager {
 
     pub async fn get_transactions_history(
         &self,
-        continuation: bool,
-        limit: Option<u32>,
+        offset: Option<u64>,
+        limit: Option<u64>,
     ) -> Result<Vec<TransactionInfo>, WalletManagerError> {
         let process_watcher = self.watcher.read().await;
         process_watcher
             .adapter
-            .get_transactions_history(continuation, limit)
+            .get_transactions_history(offset, limit)
             .await
             .map_err(|e| match e {
                 WalletStatusMonitorError::WalletNotStarted => WalletManagerError::WalletNotStarted,

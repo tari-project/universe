@@ -32,9 +32,9 @@ use async_trait::async_trait;
 use log::{info, warn};
 use minotari_node_grpc_client::grpc::wallet_client::WalletClient;
 use minotari_node_grpc_client::grpc::{
-    GetBalanceRequest, GetBalanceResponse, GetCompletedTransactionsRequest,
-    GetCompletedTransactionsResponse, GetStateRequest, ImportTransactionsRequest,
-    NetworkStatusResponse,
+    GetAllCompletedTransactionsRequest, GetBalanceRequest, GetBalanceResponse,
+    GetCompletedTransactionsRequest, GetCompletedTransactionsResponse, GetStateRequest,
+    ImportTransactionsRequest, NetworkStatusResponse,
 };
 use serde::Serialize;
 use std::fs;
@@ -154,42 +154,23 @@ impl WalletAdapter {
 
     pub async fn get_transactions_history(
         &self,
-        continuation: bool,
-        limit: Option<u32>,
+        offset: Option<u64>,
+        limit: Option<u64>,
     ) -> Result<Vec<TransactionInfo>, WalletStatusMonitorError> {
-        // TODO: Implement starting point instead of continuation
-        let mut stream =
-            if continuation && self.completed_transactions_stream.lock().await.is_some() {
-                self.completed_transactions_stream
-                    .lock()
-                    .await
-                    .take()
-                    .expect("completed_transactions_stream not found")
-            } else {
-                let mut client = WalletClient::connect(self.wallet_grpc_address())
-                    .await
-                    .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
-                let res = client
-                    .get_completed_transactions(GetCompletedTransactionsRequest {
-                        payment_id: None,
-                        block_hash: None,
-                        block_height: None,
-                    })
-                    .await
-                    .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?;
-                res.into_inner()
-            };
+        let mut client = WalletClient::connect(self.wallet_grpc_address())
+            .await
+            .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
+        let res = client
+            .get_all_completed_transactions(GetAllCompletedTransactionsRequest {
+                offset: offset.unwrap_or(0),
+                limit: limit.unwrap_or(0),
+            })
+            .await
+            .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?;
+        let transactions_raw = res.into_inner().transactions;
 
         let mut transactions: Vec<TransactionInfo> = Vec::new();
-
-        while let Some(message) = stream
-            .message()
-            .await
-            .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?
-        {
-            let tx = message.transaction.ok_or_else(|| {
-                WalletStatusMonitorError::UnknownError(anyhow::anyhow!("Transaction not found"))
-            })?;
+        for tx in transactions_raw {
             if tx.status == 14 {
                 // Remove TRANSACTION_STATUS_COINBASE_NOT_IN_BLOCK_CHAIN
                 continue;
@@ -218,10 +199,6 @@ impl WalletAdapter {
             }
         }
 
-        self.completed_transactions_stream
-            .lock()
-            .await
-            .replace(stream);
         Ok(transactions)
     }
 

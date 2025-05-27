@@ -709,8 +709,8 @@ pub async fn get_airdrop_tokens(
 #[tauri::command]
 pub async fn get_transactions_history(
     state: tauri::State<'_, UniverseAppState>,
-    continuation: bool,
-    limit: Option<u32>,
+    offset: Option<u64>,
+    limit: Option<u64>,
 ) -> Result<Vec<TransactionInfo>, String> {
     let timer = Instant::now();
     if state.is_getting_transactions_history.load(Ordering::SeqCst) {
@@ -722,7 +722,7 @@ pub async fn get_transactions_history(
         .store(true, Ordering::SeqCst);
     let transactions = state
         .wallet_manager
-        .get_transactions_history(continuation, limit)
+        .get_transactions_history(offset, limit)
         .await
         .unwrap_or_else(|e| {
             if !matches!(e, WalletManagerError::WalletNotStarted) {

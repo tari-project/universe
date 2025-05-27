@@ -7,11 +7,11 @@ import { setError } from './appStateStoreActions';
 import { setExchangeContent } from '@app/store/useExchangeStore.ts';
 
 interface TxArgs {
-    continuation: boolean;
+    offset?: number;
     limit?: number;
 }
 
-export const fetchTransactionsHistory = async ({ continuation, limit }: TxArgs) => {
+export const fetchTransactionsHistory = async ({ offset = 0, limit }: TxArgs) => {
     if (useWalletStore.getState().is_transactions_history_loading) {
         return [];
     }
@@ -19,9 +19,9 @@ export const fetchTransactionsHistory = async ({ continuation, limit }: TxArgs) 
     try {
         useWalletStore.setState({ is_transactions_history_loading: true });
         const currentTxs = useWalletStore.getState().transactions;
-        const fetchedTxs = await invoke('get_transactions_history', { continuation, limit });
+        const fetchedTxs = await invoke('get_transactions_history', { offset, limit });
 
-        const transactions = continuation ? [...currentTxs, ...fetchedTxs] : fetchedTxs;
+        const transactions = offset > 0 ? [...currentTxs, ...fetchedTxs] : fetchedTxs;
         const has_more_transactions = fetchedTxs.length > 0 && (!limit || fetchedTxs.length === limit);
         useWalletStore.setState({
             has_more_transactions,
@@ -47,7 +47,7 @@ export const importSeedWords = async (seedWords: string[]) => {
     }
 };
 export const initialFetchTxs = () =>
-    fetchTransactionsHistory({ continuation: false, limit: 20 }).then((tx) => {
+    fetchTransactionsHistory({ offset: 0, limit: 20 }).then((tx) => {
         if (tx?.length) {
             useWalletStore.setState({ newestTxIdOnInitialFetch: tx[0]?.tx_id });
         }
@@ -55,7 +55,7 @@ export const initialFetchTxs = () =>
 
 export const refreshTransactions = async () => {
     const limit = useWalletStore.getState().transactions.length;
-    return fetchTransactionsHistory({ continuation: false, limit: Math.max(limit, 20) });
+    return fetchTransactionsHistory({ offset: 0, limit: Math.max(limit, 20) });
 };
 
 export const setGeneratedTariAddress = async (newAddress: string) => {
