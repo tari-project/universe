@@ -127,8 +127,6 @@ const useTauriEventsListener = () => {
                             setCpuMiningStatus(event.payload);
                             break;
                         case 'PoolStatusUpdate':
-                            console.debug('========= PoolStatusUpdate =========');
-                            console.debug(event.payload);
                             setPoolStatus(event.payload);
                             break;
                         case 'ConnectedPeersUpdate':
