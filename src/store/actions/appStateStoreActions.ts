@@ -3,7 +3,7 @@ import { useAppStateStore } from '../appStateStore.ts';
 import { ExternalDependency, NetworkStatus } from '@app/types/app-status.ts';
 import { addToast } from '@app/components/ToastStack/useToastStore.tsx';
 import { CriticalProblemPayload, ShowReleaseNotesPayload } from '@app/types/events-payloads.ts';
-import { setDialogToShow, useUIStore } from '../index.ts';
+import { setDialogToShow, useMiningStore, useUIStore } from '../index.ts';
 import { SetupPhase } from '@app/types/backend-state.ts';
 import {
     updateCoreSetupPhaseInfo,
@@ -105,8 +105,8 @@ export const handleRestartingPhases = async (phasesToRestart: SetupPhase[]) => {
     if (useSetupStore.getState().appUnlocked) {
         setDialogToShow(undefined);
         setShowResumeAppModal(true);
+        useMiningStore.setState({ wasMineOnAppStartExecuted: false });
     }
-    setIsSettingsOpen(false);
 
     for (const phase of phasesToRestart) {
         switch (phase) {

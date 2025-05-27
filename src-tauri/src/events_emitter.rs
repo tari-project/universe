@@ -26,6 +26,7 @@ use crate::events::{
 };
 #[cfg(target_os = "windows")]
 use crate::external_dependencies::RequiredExternalDependency;
+use crate::pool_status_watcher::PoolStatus;
 use crate::{
     commands::CpuMinerStatus,
     configs::{
@@ -333,6 +334,16 @@ impl EventsEmitter {
         }
     }
 
+    pub async fn emit_pool_status_update(app_handle: &AppHandle, pool_status: Option<PoolStatus>) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::PoolStatusUpdate,
+            payload: pool_status,
+        };
+        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+            error!(target: LOG_TARGET, "Failed to emit PoolStatusUpdate event: {:?}", e);
+        }
+    }
     pub async fn emit_cpu_mining_update(app_handle: &AppHandle, status: CpuMinerStatus) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
@@ -484,14 +495,24 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_unlock_mining(app_handle: &AppHandle) {
+    pub async fn emit_unlock_cpu_mining(app_handle: &AppHandle) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
-            event_type: EventType::UnlockMining,
+            event_type: EventType::UnlockCpuMining,
             payload: (),
         };
         if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
-            error!(target: LOG_TARGET, "Failed to emit UnlockMining event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit UnlockCpuMining event: {:?}", e);
+        }
+    }
+    pub async fn emit_unlock_gpu_mining(app_handle: &AppHandle) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::UnlockGpuMining,
+            payload: (),
+        };
+        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+            error!(target: LOG_TARGET, "Failed to emit UnlockGpuMining event: {:?}", e);
         }
     }
 
@@ -506,14 +527,24 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_lock_mining(app_handle: &AppHandle) {
+    pub async fn emit_lock_cpu_mining(app_handle: &AppHandle) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
-            event_type: EventType::LockMining,
+            event_type: EventType::LockCpuMining,
             payload: (),
         };
         if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
-            error!(target: LOG_TARGET, "Failed to emit LockMining event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit LockCpuMining event: {:?}", e);
+        }
+    }
+    pub async fn emit_lock_gpu_mining(app_handle: &AppHandle) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::LockGpuMining,
+            payload: (),
+        };
+        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+            error!(target: LOG_TARGET, "Failed to emit LockGpuMining event: {:?}", e);
         }
     }
 

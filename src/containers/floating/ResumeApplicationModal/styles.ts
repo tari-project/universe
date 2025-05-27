@@ -11,12 +11,11 @@ export const Wrapper = styled.div`
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
-    z-index: 100;
+    z-index: 101;
     position: fixed;
     bottom: 20px;
     right: 20px;
     margin: auto;
-    z-index: 10;
     gap: 16px;
 `;
 

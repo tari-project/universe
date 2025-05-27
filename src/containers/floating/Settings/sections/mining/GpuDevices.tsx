@@ -24,11 +24,11 @@ const GpuDevices = memo(function GpuDevices() {
     const isGPUMining = useMiningMetricsStore((s) => s.gpu_mining_status.is_mining);
     const isHardwarePhaseFinished = useSetupStore((s) => s.hardwarePhaseFinished);
 
-    const miningInitiated = useMiningStore((s) => s.miningInitiated);
+    const miningGpuInitiated = useMiningStore((s) => s.isGpuMiningInitiated);
     const isGpuMiningEnabled = useConfigMiningStore((s) => s.gpu_mining_enabled);
     const isExcludingGpuDevices = useMiningStore((s) => s.isExcludingGpuDevices);
     const isDisabled =
-        !isHardwarePhaseFinished || isExcludingGpuDevices || isGPUMining || miningInitiated || !isGpuMiningEnabled;
+        !isHardwarePhaseFinished || isExcludingGpuDevices || isGPUMining || miningGpuInitiated || !isGpuMiningEnabled;
 
     const handleSetExcludedDevice = useCallback(async (device: GpuDevice) => {
         await toggleDeviceExclusion(device.device_index, !device.settings.is_excluded);
