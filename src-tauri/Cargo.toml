@@ -18,6 +18,7 @@ anyhow = "1"
 async-trait = "0.1.81"
 async_zip = { version = "0.0.17", features = ["full"] }
 auto-launch = "0.5.0"
+axum = "0.7.9"
 base64 = "0.22.1"
 blake2 = "0.10"
 chrono = "0.4.38"
@@ -70,6 +71,7 @@ tari_key_manager = { git = "https://github.com/tari-project/tari.git", tag = "v3
 tari_shutdown = { git = "https://github.com/tari-project/tari.git", tag = "v3.0.2-rc.0" }
 tari_utilities = "0.8.0"
 tauri = { version = "2", features = [
+  "protocol-asset",
   "isolation",
   "macos-private-api",
   "image-png",
@@ -78,6 +80,7 @@ tauri = { version = "2", features = [
   "devtools",          # TODO: Remove this before mainnet
 ] }
 tauri-plugin-cli = "2"
+tauri-plugin-http = "2"
 tauri-plugin-os = "2"
 tauri-plugin-sentry = "0.3"
 tauri-plugin-shell = "2"
@@ -85,6 +88,7 @@ tauri-plugin-updater = "2"
 thiserror = "2.0.10"
 tokio = { version = "1", features = ["full"] }
 tokio-util = { version = "0.7.14", features = ["compat", "rt"] }
+tower-http = { version = "0.6.2", default-features = false, features = ["fs"] }
 xz2 = { version = "0.1.7", features = ["static"] } # static bind lzma
 zip = "2.2.0"
 dirs = "5.0.1"

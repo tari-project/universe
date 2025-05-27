@@ -5,16 +5,14 @@ import { setAnimationProperties } from '@tari-project/tari-tower';
 import { useUIStore } from '@app/store/useUIStore.ts';
 import { setShowTapplet, setSidebarOpen } from '@app/store/actions/uiStoreActions';
 
-import { CubeOutlineSVG } from '@app/assets/icons/cube-outline.tsx';
-import {
-    ConnectionWrapper,
-    HoverIconWrapper,
-    NavIconWrapper,
-    NavigationWrapper,
-    StyledIconButton,
-} from './SidebarMini.styles.ts';
-import ConnectedPulse from '@app/containers/navigation/components/VersionChip/ConnectedPulse/ConnectedPulse.tsx';
+import { SB_SPACING, SB_WIDTH } from '@app/theme/styles.ts';
+import { HoverIconWrapper, NavIconWrapper, NavigationWrapper, StyledIconButton } from './SidebarMini.styles.ts';
 import { AnimatePresence } from 'motion/react';
+// import { setVisualMode, useConfigUIStore } from '@app/store/index.ts';
+import { BridgeOutlineSVG } from '@app/assets/icons/bridge-outline.tsx';
+import { useTappletsStore } from '@app/store/useTappletsStore.ts';
+import { BRIDGE_TAPPLET_ID } from '@app/store/consts.ts';
+import { useTariBalance } from '@app/hooks/wallet/useTariBalance.ts';
 
 interface NavButtonProps {
     children: ReactNode;
@@ -23,10 +21,11 @@ interface NavButtonProps {
 }
 
 const NavButton = memo(function NavButton({ children, isActive, onClick }: NavButtonProps) {
-    const sidebarOpen = useUIStore((s) => s.sidebarOpen);
+    const showTapplet = useUIStore((s) => s.showTapplet);
     const [showArrow, setShowArrow] = useState(false);
+    const { isWalletScanning } = useTariBalance();
 
-    const scaleX = sidebarOpen ? -1 : 1;
+    const scaleX = showTapplet ? -1 : 1;
 
     return (
         <StyledIconButton
@@ -36,11 +35,11 @@ const NavButton = memo(function NavButton({ children, isActive, onClick }: NavBu
             aria-label={isActive ? 'Active sidebar section' : 'Inactive sidebar section'}
             onMouseEnter={() => setShowArrow(true)}
             onMouseLeave={() => setShowArrow(false)}
+            disabled={isWalletScanning}
         >
             <AnimatePresence mode="popLayout">
                 {showArrow ? (
                     <HoverIconWrapper
-                        key="hover"
                         initial={{ opacity: 0, scaleX }}
                         exit={{ opacity: 0, scaleX }}
                         animate={{ opacity: 1, scaleX }}
@@ -48,12 +47,7 @@ const NavButton = memo(function NavButton({ children, isActive, onClick }: NavBu
                         <IoChevronForwardOutline size={28} />
                     </HoverIconWrapper>
                 ) : (
-                    <NavIconWrapper
-                        key="not-hover"
-                        initial={{ opacity: 0 }}
-                        exit={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                    >
+                    <NavIconWrapper initial={{ opacity: 0 }} exit={{ opacity: 0 }} animate={{ opacity: 1 }}>
                         {children}
                     </NavIconWrapper>
                 )}
@@ -61,37 +55,45 @@ const NavButton = memo(function NavButton({ children, isActive, onClick }: NavBu
         </StyledIconButton>
     );
 });
-const NavigationButton = memo(function NavigationButton() {
-    const sidebarOpen = useUIStore((s) => s.sidebarOpen);
-    const towerSidebarOffset = useUIStore((s) => s.towerSidebarOffset);
+const BridgeNavigationButton = memo(function BridgeNavigationButton() {
     const showTapplet = useUIStore((s) => s.showTapplet);
+    const setActiveTappById = useTappletsStore((s) => s.setActiveTappById);
 
     function handleToggleOpen() {
-        if (showTapplet) {
-            setSidebarOpen(true);
-            setShowTapplet(false);
+        if (!showTapplet) {
+            setActiveTappById(BRIDGE_TAPPLET_ID, true);
+            setShowTapplet(true);
+            setSidebarOpen(false);
+            // setVisualMode(false);
         } else {
-            setSidebarOpen(!sidebarOpen);
+            setShowTapplet(false);
+            setSidebarOpen(true);
+            //setVisualMode(true);
         }
     }
 
     useEffect(() => {
+        const offset = SB_WIDTH + SB_SPACING * 2;
         setAnimationProperties([
-            { property: 'offsetX', value: towerSidebarOffset },
-            { property: 'cameraOffsetX', value: towerSidebarOffset / window.innerWidth },
+            { property: 'offsetX', value: offset },
+            { property: 'cameraOffsetX', value: offset / window.innerWidth },
         ]);
-    }, [towerSidebarOffset]);
+
+        return () => {
+            setAnimationProperties([
+                { property: 'offsetX', value: 0 },
+                { property: 'cameraOffsetX', value: 0 },
+            ]);
+        };
+    }, []);
 
     return (
         <NavigationWrapper>
-            <ConnectionWrapper>
-                <ConnectedPulse />
-            </ConnectionWrapper>
-            <NavButton onClick={handleToggleOpen} isActive={true}>
-                <CubeOutlineSVG />
+            <NavButton onClick={handleToggleOpen} isActive>
+                <BridgeOutlineSVG />
             </NavButton>
         </NavigationWrapper>
     );
 });
 
-export default NavigationButton;
+export default BridgeNavigationButton;
