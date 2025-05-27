@@ -8,28 +8,31 @@ import { setShowResumeAppModal } from '@app/store/actions/uiStoreActions';
 import { FloatingNode, FloatingPortal, useFloating, useFloatingNodeId } from '@floating-ui/react';
 
 const ResumeApplicationModal = memo(function ResumeApplicationModal() {
-    const { t } = useTranslation('setup-progresses');
-    const nodeId = useFloatingNodeId();
     const [open, setOpen] = useState(false);
-
+    const nodeId = useFloatingNodeId();
+    const { t } = useTranslation('setup-progresses');
     const { refs } = useFloating({
         nodeId,
         open,
         onOpenChange: setOpen,
     });
 
-    const connectionStatus = useUIStore((s) => s.connectionStatus);
+    const status = useUIStore((s) => s.connectionStatus);
     const corePhaseInfoPayload = useSetupStore((state) => state.core_phase_setup_payload);
     const hardwarePhaseInfoPayload = useSetupStore((state) => state.hardware_phase_setup_payload);
     const nodePhaseInfoPayload = useSetupStore((state) => state.node_phase_setup_payload);
     const unknownPhaseInfoPayload = useSetupStore((state) => state.unknown_phase_setup_payload);
     const walletPhaseInfoPayload = useSetupStore((state) => state.wallet_phase_setup_payload);
+
     const isAppUnlocked = useSetupStore((state) => state.appUnlocked);
     const isSetupFinished = useSetupStore((state) => state.isInitialSetupFinished);
     const shouldShowModal = useUIStore((state) => state.showResumeAppModal);
-    const shouldShowModalForInitialSetup = isAppUnlocked && !isSetupFinished;
-    const shouldShowModalForResume = shouldShowModal && connectionStatus === 'connected';
-    const showModal = shouldShowModalForResume || shouldShowModalForInitialSetup;
+
+    const showModal = useMemo(() => {
+        const shouldShowModalForInitialSetup = isAppUnlocked && !isSetupFinished;
+        const shouldShowModalForResume = shouldShowModal && status === 'connected';
+        return shouldShowModalForResume || shouldShowModalForInitialSetup;
+    }, [isAppUnlocked, isSetupFinished, shouldShowModal, status]);
 
     const currentPhaseToShow = useMemo(() => {
         if (walletPhaseInfoPayload?.is_complete && Boolean(unknownPhaseInfoPayload)) {

@@ -52,7 +52,18 @@ function useDialog({ open: controlledOpen, onOpenChange: setControlledOpen, disa
     const click = useClick(context, {
         enabled: controlledOpen == null,
     });
-    const dismiss = useDismiss(context, { outsidePressEvent: 'mousedown', enabled: dismissEnabled, bubbles: false });
+    const dismiss = useDismiss(context, {
+        outsidePressEvent: 'mousedown',
+        outsidePress: (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            return target.classList.contains('overlay');
+        },
+        enabled: dismissEnabled,
+        bubbles: {
+            escapeKey: false,
+            outsidePress: true,
+        },
+    });
     const role = useRole(context);
     const interactions = useInteractions([click, dismiss, role]);
 
@@ -111,7 +122,7 @@ export const DialogContent = forwardRef<
         <FloatingNode id={context.nodeId} key={context.nodeId}>
             {context.open ? (
                 <FloatingPortal>
-                    <Overlay lockScroll>
+                    <Overlay lockScroll className="overlay">
                         <FloatingFocusManager context={context.context} modal={false}>
                             <ContentWrapper
                                 ref={ref}
