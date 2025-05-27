@@ -1,4 +1,4 @@
-import { PublicClient, WalletClient, formatUnits as viemFormatUnits } from 'viem';
+import { WalletClient, formatUnits as viemFormatUnits } from 'viem';
 import { BrowserProvider, Signer as EthersSigner } from 'ethers';
 import { ChainId, CurrencyAmount, Token, NativeCurrency } from '@uniswap/sdk-core';
 
@@ -52,19 +52,19 @@ export const formatNativeGasFee = (
     }
 };
 
-export const formatGasFeeUSD = (
-    feeInNativeNum: number | undefined,
-    nativePriceUSD: number | undefined
-): string | null => {
-    if (feeInNativeNum === undefined || nativePriceUSD === undefined) return null;
-    const usdValue = feeInNativeNum * nativePriceUSD;
-    return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    }).format(usdValue);
-};
+// export const formatGasFeeUSD = (
+//     feeInNativeNum: number | undefined,
+//     nativePriceUSD: number | undefined
+// ): string | null => {
+//     if (feeInNativeNum === undefined || nativePriceUSD === undefined) return null;
+//     const usdValue = feeInNativeNum * nativePriceUSD;
+//     return new Intl.NumberFormat('en-US', {
+//         style: 'currency',
+//         currency: 'USD',
+//         minimumFractionDigits: 2,
+//         maximumFractionDigits: 2,
+//     }).format(usdValue);
+// };
 
 // Placeholder for fetching USD prices - REPLACE THIS
 export const fetchTokenPriceUSD = async (
@@ -281,114 +281,114 @@ export function formatAmountSmartly(
     return amount.toSignificant(significantDigitsForSmall);
 }
 
-export interface EstimatedGasFees {
-    estimatedGasFeeNative: string | null;
-    estimatedGasFeeUSD: string | null;
-    gasLimit: bigint | null;
-    gasPrice: bigint | null;
-    error?: string; // Optional error message if estimation fails
-}
+// export interface EstimatedGasFees {
+//     estimatedGasFeeNative: string | null;
+//     estimatedGasFeeUSD: string | null;
+//     gasLimit: bigint | null;
+//     gasPrice: bigint | null;
+//     error?: string; // Optional error message if estimation fails
+// }
 
-interface EstimateTransactionGasFeesParams {
-    publicClient: PublicClient;
-    accountAddress: `0x${string}`;
-    toAddress: `0x${string}`;
-    callData: `0x${string}`;
-    valueToSend?: bigint;
-    nativeCurrencyPriceUSD?: number;
-    nativeCurrencyDecimals: number;
-    nativeCurrencySymbol: string;
-    retryMaxAttempts?: number;
-    retryDelayMs?: number;
-}
+// interface EstimateTransactionGasFeesParams {
+//     publicClient: PublicClient;
+//     accountAddress: `0x${string}`;
+//     toAddress: `0x${string}`;
+//     callData: `0x${string}`;
+//     valueToSend?: bigint;
+//     nativeCurrencyPriceUSD?: number;
+//     nativeCurrencyDecimals: number;
+//     nativeCurrencySymbol: string;
+//     retryMaxAttempts?: number;
+//     retryDelayMs?: number;
+// }
 
-export async function estimateTransactionGasFees(params: EstimateTransactionGasFeesParams): Promise<EstimatedGasFees> {
-    const {
-        publicClient,
-        accountAddress,
-        toAddress,
-        callData,
-        valueToSend,
-        nativeCurrencyPriceUSD,
-        nativeCurrencyDecimals,
-        nativeCurrencySymbol,
-        retryMaxAttempts = 3, // Default max attempts
-        retryDelayMs = 500, // Default delay
-    } = params;
-
-    let estimatedGasLimitBI: bigint | null = null;
-    let gasPriceBI: bigint | null = null;
-
-    try {
-        const estimateGasCallParams = {
-            account: accountAddress,
-            to: toAddress,
-            data: callData,
-            value: valueToSend,
-        };
-
-        const estimateGasLimitFn = () => publicClient.estimateGas(estimateGasCallParams);
-        const getGasPriceFn = () => publicClient.getGasPrice();
-        const gasContext = 'estimateTransactionGasFees';
-
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const onRetryCb = (ctx: string, err: any, attempt: number, max: number) => {
-            console.warn(`[${ctx}] Attempt ${attempt}/${max} failed:`, err.shortMessage || err.message || err);
-        };
-
-        estimatedGasLimitBI = await retryAsync(
-            `${gasContext}.estimateGasLimit`,
-            estimateGasLimitFn,
-            retryMaxAttempts,
-            retryDelayMs,
-            onRetryCb
-        );
-
-        gasPriceBI = await retryAsync(
-            `${gasContext}.getGasPrice`,
-            getGasPriceFn,
-            retryMaxAttempts,
-            retryDelayMs,
-            onRetryCb
-        );
-
-        if (estimatedGasLimitBI && gasPriceBI) {
-            const estimatedTotalGasCostNative = estimatedGasLimitBI * gasPriceBI;
-            const nativeFeeStr = formatNativeGasFee(
-                estimatedTotalGasCostNative,
-                nativeCurrencyDecimals,
-                nativeCurrencySymbol
-            );
-            let usdFeeStr: string | null = null;
-            if (nativeCurrencyPriceUSD) {
-                const feeInNativeNum = parseFloat(viemFormatUnits(estimatedTotalGasCostNative, nativeCurrencyDecimals));
-                usdFeeStr = formatGasFeeUSD(feeInNativeNum, nativeCurrencyPriceUSD);
-            }
-            return {
-                estimatedGasFeeNative: nativeFeeStr,
-                estimatedGasFeeUSD: usdFeeStr,
-                gasLimit: estimatedGasLimitBI,
-                gasPrice: gasPriceBI,
-            };
-        }
-        // This case (one null, one not) should ideally not happen if retryAsync re-throws
-        return {
-            estimatedGasFeeNative: null,
-            estimatedGasFeeUSD: null,
-            gasLimit: estimatedGasLimitBI, // Could be null
-            gasPrice: gasPriceBI, // Could be null
-            error: 'Gas estimation partially succeeded or one component failed silently.',
-        };
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (gasError: any) {
-        const errorMessage = gasError.shortMessage || gasError.message || 'Unknown gas estimation error';
-        console.warn('Gas estimation failed after all retries in estimateTransactionGasFees:', errorMessage);
-        return {
-            estimatedGasFeeNative: null,
-            estimatedGasFeeUSD: null,
-            gasLimit: null,
-            gasPrice: null,
-            error: errorMessage,
-        };
-    }
-}
+// export async function estimateTransactionGasFees(params: EstimateTransactionGasFeesParams): Promise<EstimatedGasFees> {
+//     const {
+//         publicClient,
+//         accountAddress,
+//         toAddress,
+//         callData,
+//         valueToSend,
+//         nativeCurrencyPriceUSD,
+//         nativeCurrencyDecimals,
+//         nativeCurrencySymbol,
+//         retryMaxAttempts = 3, // Default max attempts
+//         retryDelayMs = 500, // Default delay
+//     } = params;
+//
+//     let estimatedGasLimitBI: bigint | null = null;
+//     let gasPriceBI: bigint | null = null;
+//
+//     try {
+//         const estimateGasCallParams = {
+//             account: accountAddress,
+//             to: toAddress,
+//             data: callData,
+//             value: valueToSend,
+//         };
+//
+//         const estimateGasLimitFn = () => publicClient.estimateGas(estimateGasCallParams);
+//         const getGasPriceFn = () => publicClient.getGasPrice();
+//         const gasContext = 'estimateTransactionGasFees';
+//
+//         // eslint-disable-next-line @typescript-eslint/no-explicit-any
+//         const onRetryCb = (ctx: string, err: any, attempt: number, max: number) => {
+//             console.warn(`[${ctx}] Attempt ${attempt}/${max} failed:`, err.shortMessage || err.message || err);
+//         };
+//
+//         estimatedGasLimitBI = await retryAsync(
+//             `${gasContext}.estimateGasLimit`,
+//             estimateGasLimitFn,
+//             retryMaxAttempts,
+//             retryDelayMs,
+//             onRetryCb
+//         );
+//
+//         gasPriceBI = await retryAsync(
+//             `${gasContext}.getGasPrice`,
+//             getGasPriceFn,
+//             retryMaxAttempts,
+//             retryDelayMs,
+//             onRetryCb
+//         );
+//
+//         if (estimatedGasLimitBI && gasPriceBI) {
+//             const estimatedTotalGasCostNative = estimatedGasLimitBI * gasPriceBI;
+//             const nativeFeeStr = formatNativeGasFee(
+//                 estimatedTotalGasCostNative,
+//                 nativeCurrencyDecimals,
+//                 nativeCurrencySymbol
+//             );
+//             let usdFeeStr: string | null = null;
+//             if (nativeCurrencyPriceUSD) {
+//                 const feeInNativeNum = parseFloat(viemFormatUnits(estimatedTotalGasCostNative, nativeCurrencyDecimals));
+//                 usdFeeStr = formatGasFeeUSD(feeInNativeNum, nativeCurrencyPriceUSD);
+//             }
+//             return {
+//                 estimatedGasFeeNative: nativeFeeStr,
+//                 estimatedGasFeeUSD: usdFeeStr,
+//                 gasLimit: estimatedGasLimitBI,
+//                 gasPrice: gasPriceBI,
+//             };
+//         }
+//         // This case (one null, one not) should ideally not happen if retryAsync re-throws
+//         return {
+//             estimatedGasFeeNative: null,
+//             estimatedGasFeeUSD: null,
+//             gasLimit: estimatedGasLimitBI, // Could be null
+//             gasPrice: gasPriceBI, // Could be null
+//             error: 'Gas estimation partially succeeded or one component failed silently.',
+//         };
+//         // eslint-disable-next-line @typescript-eslint/no-explicit-any
+//     } catch (gasError: any) {
+//         const errorMessage = gasError.shortMessage || gasError.message || 'Unknown gas estimation error';
+//         console.warn('Gas estimation failed after all retries in estimateTransactionGasFees:', errorMessage);
+//         return {
+//             estimatedGasFeeNative: null,
+//             estimatedGasFeeUSD: null,
+//             gasLimit: null,
+//             gasPrice: null,
+//             error: errorMessage,
+//         };
+//     }
+// }

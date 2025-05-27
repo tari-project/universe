@@ -3,7 +3,7 @@ import { InsufficientReservesError, Pair, Route, Trade } from '@uniswap/v2-sdk';
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi';
 import { Contract, ethers, Signer as EthersSigner, Provider, TransactionResponse, TransactionReceipt } from 'ethers';
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
-import { encodeFunctionData, formatUnits, parseUnits, PublicClient as ViemPublicClient } from 'viem';
+import { formatUnits, parseUnits, PublicClient as ViemPublicClient } from 'viem';
 
 import {
     erc20Abi,
@@ -14,15 +14,15 @@ import {
     KNOWN_SDK_TOKENS,
     SLIPPAGE_TOLERANCE,
     DEADLINE_MINUTES,
-    SWAP_ETH_FOR_EXACT_TOKENS_ABI_VIEM,
-    SWAP_EXACT_ETH_FOR_TOKENS_ABI_VIEM,
-    SWAP_EXACT_TOKENS_FOR_ETH_ABI_VIEM,
-    SWAP_EXACT_TOKENS_FOR_TOKENS_ABI_VIEM,
-    SWAP_TOKENS_FOR_EXACT_ETH_ABI_VIEM,
-    SWAP_TOKENS_FOR_EXACT_TOKENS_ABI_VIEM,
+    // SWAP_ETH_FOR_EXACT_TOKENS_ABI_VIEM,
+    // SWAP_EXACT_ETH_FOR_TOKENS_ABI_VIEM,
+    // SWAP_EXACT_TOKENS_FOR_ETH_ABI_VIEM,
+    // SWAP_EXACT_TOKENS_FOR_TOKENS_ABI_VIEM,
+    // SWAP_TOKENS_FOR_EXACT_ETH_ABI_VIEM,
+    // SWAP_TOKENS_FOR_EXACT_TOKENS_ABI_VIEM,
     RPC_URLS,
 } from './lib/constants';
-import { walletClientToSigner, retryAsync, estimateTransactionGasFees } from './lib/utils';
+import { walletClientToSigner, retryAsync } from './lib/utils';
 import { TradeDetails, SwapField, SwapDirection } from './lib/types';
 import { useToastStore } from '@app/components/ToastStack/useToastStore';
 import { useConfigCoreStore } from '@app/store';
@@ -55,7 +55,7 @@ export const useUniswapV2Interactions = () => {
         () => (currentChainId ? XTM_SDK_TOKEN[currentChainId] : undefined),
         [currentChainId]
     );
-    const nativeCurrencyPriceUSD = useMemo(() => 3000, []);
+    // const nativeCurrencyPriceUSD = useMemo(() => 3000, []);
 
     const [signer, setSigner] = useState<EthersSigner | null>(null);
     useEffect(() => {
@@ -294,93 +294,93 @@ export const useUniswapV2Interactions = () => {
                 //
                 // let callData: `0x${string}`;
                 // let valueToSend: bigint | undefined = undefined;
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                let swapAbiForViem: any;
-                let functionName: string;
 
-                const inputIsNative = token0?.isNative;
-                const outputIsNative = token1?.isNative;
+                // let swapAbiForViem: any;
+                // let functionName: string;
+                //
+                // const inputIsNative = token0?.isNative;
+                // const outputIsNative = token1?.isNative;
 
-                if (trade.tradeType === TradeType.EXACT_INPUT) {
-                    if (inputIsNative) {
-                        swapAbiForViem = SWAP_EXACT_ETH_FOR_TOKENS_ABI_VIEM;
-                        functionName = 'swapExactETHForTokens';
-                        // callData = encodeFunctionData({
-                        //     abi: swapAbiForViem,
-                        //     functionName,
-                        //     args: [amountOutParam, path, accountAddress as `0x${string}`, BigInt(deadline)],
-                        // });
-                        // valueToSend = amountInParam;
-                    } else if (outputIsNative) {
-                        swapAbiForViem = SWAP_EXACT_TOKENS_FOR_ETH_ABI_VIEM;
-                        functionName = 'swapExactTokensForETH';
-                        // callData = encodeFunctionData({
-                        //     abi: swapAbiForViem,
-                        //     functionName,
-                        //     args: [
-                        //         amountInParam,
-                        //         amountOutParam,
-                        //         path,
-                        //         accountAddress as `0x${string}`,
-                        //         BigInt(deadline),
-                        //     ],
-                        // });
-                    } else {
-                        swapAbiForViem = SWAP_EXACT_TOKENS_FOR_TOKENS_ABI_VIEM;
-                        functionName = 'swapExactTokensForTokens';
-                        // callData = encodeFunctionData({
-                        //     abi: swapAbiForViem,
-                        //     functionName,
-                        //     args: [
-                        //         amountInParam,
-                        //         amountOutParam,
-                        //         path,
-                        //         accountAddress as `0x${string}`,
-                        //         BigInt(deadline),
-                        //     ],
-                        // });
-                    }
-                } else {
-                    // EXACT_OUTPUT
-                    if (inputIsNative) {
-                        swapAbiForViem = SWAP_ETH_FOR_EXACT_TOKENS_ABI_VIEM;
-                        functionName = 'swapETHForExactTokens';
-                        // callData = encodeFunctionData({
-                        //     abi: swapAbiForViem,
-                        //     functionName,
-                        //     args: [amountOutParam, path, accountAddress as `0x${string}`, BigInt(deadline)],
-                        // });
-                        // valueToSend = amountInParam;
-                    } else if (outputIsNative) {
-                        swapAbiForViem = SWAP_TOKENS_FOR_EXACT_ETH_ABI_VIEM;
-                        functionName = 'swapTokensForExactETH';
-                        // callData = encodeFunctionData({
-                        //     abi: swapAbiForViem,
-                        //     functionName,
-                        //     args: [
-                        //         amountOutParam,
-                        //         amountInParam,
-                        //         path,
-                        //         accountAddress as `0x${string}`,
-                        //         BigInt(deadline),
-                        //     ],
-                        // });
-                    } else {
-                        // swapAbiForViem = SWAP_TOKENS_FOR_EXACT_TOKENS_ABI_VIEM;
-                        // functionName = 'swapTokensForExactTokens';
-                        // callData = encodeFunctionData({
-                        //     abi: swapAbiForViem,
-                        //     functionName,
-                        //     args: [
-                        //         amountOutParam,
-                        //         amountInParam,
-                        //         path,
-                        //         accountAddress as `0x${string}`,
-                        //         BigInt(deadline),
-                        //     ],
-                        // });
-                    }
-                }
+                // if (trade.tradeType === TradeType.EXACT_INPUT) {
+                //     if (inputIsNative) {
+                //         swapAbiForViem = SWAP_EXACT_ETH_FOR_TOKENS_ABI_VIEM;
+                //         functionName = 'swapExactETHForTokens';
+                //         // callData = encodeFunctionData({
+                //         //     abi: swapAbiForViem,
+                //         //     functionName,
+                //         //     args: [amountOutParam, path, accountAddress as `0x${string}`, BigInt(deadline)],
+                //         // });
+                //         // valueToSend = amountInParam;
+                //     } else if (outputIsNative) {
+                //         swapAbiForViem = SWAP_EXACT_TOKENS_FOR_ETH_ABI_VIEM;
+                //         functionName = 'swapExactTokensForETH';
+                //         // callData = encodeFunctionData({
+                //         //     abi: swapAbiForViem,
+                //         //     functionName,
+                //         //     args: [
+                //         //         amountInParam,
+                //         //         amountOutParam,
+                //         //         path,
+                //         //         accountAddress as `0x${string}`,
+                //         //         BigInt(deadline),
+                //         //     ],
+                //         // });
+                //     } else {
+                //         swapAbiForViem = SWAP_EXACT_TOKENS_FOR_TOKENS_ABI_VIEM;
+                //         functionName = 'swapExactTokensForTokens';
+                //         // callData = encodeFunctionData({
+                //         //     abi: swapAbiForViem,
+                //         //     functionName,
+                //         //     args: [
+                //         //         amountInParam,
+                //         //         amountOutParam,
+                //         //         path,
+                //         //         accountAddress as `0x${string}`,
+                //         //         BigInt(deadline),
+                //         //     ],
+                //         // });
+                //     }
+                // } else {
+                //     // EXACT_OUTPUT
+                //     if (inputIsNative) {
+                //         swapAbiForViem = SWAP_ETH_FOR_EXACT_TOKENS_ABI_VIEM;
+                //         functionName = 'swapETHForExactTokens';
+                //         // callData = encodeFunctionData({
+                //         //     abi: swapAbiForViem,
+                //         //     functionName,
+                //         //     args: [amountOutParam, path, accountAddress as `0x${string}`, BigInt(deadline)],
+                //         // });
+                //         // valueToSend = amountInParam;
+                //     } else if (outputIsNative) {
+                //         swapAbiForViem = SWAP_TOKENS_FOR_EXACT_ETH_ABI_VIEM;
+                //         functionName = 'swapTokensForExactETH';
+                //         // callData = encodeFunctionData({
+                //         //     abi: swapAbiForViem,
+                //         //     functionName,
+                //         //     args: [
+                //         //         amountOutParam,
+                //         //         amountInParam,
+                //         //         path,
+                //         //         accountAddress as `0x${string}`,
+                //         //         BigInt(deadline),
+                //         //     ],
+                //         // });
+                //     } else {
+                //         // swapAbiForViem = SWAP_TOKENS_FOR_EXACT_TOKENS_ABI_VIEM;
+                //         // functionName = 'swapTokensForExactTokens';
+                //         // callData = encodeFunctionData({
+                //         //     abi: swapAbiForViem,
+                //         //     functionName,
+                //         //     args: [
+                //         //         amountOutParam,
+                //         //         amountInParam,
+                //         //         path,
+                //         //         accountAddress as `0x${string}`,
+                //         //         BigInt(deadline),
+                //         //     ],
+                //         // });
+                //     }
+                // }
 
                 // const gasFeeDetails = await estimateTransactionGasFees({
                 //     publicClient,
@@ -456,13 +456,10 @@ export const useUniswapV2Interactions = () => {
             currentChainId,
             sdkToken0,
             sdkToken1,
-            token0,
-            token1,
             routerAddress,
             getPair,
             isConnected,
             accountAddress,
-            error,
             setError,
             setInsufficientLiquidity,
         ]

@@ -130,6 +130,7 @@ export const Swap = memo(function Swap() {
                         placeholder="0.00"
                         onChange={(e) => setFromAmount(e.target.value)}
                         value={ethTokenAmount}
+                        $dynamicFontSize={fromInputFontSize} // Pass dynamic font size
                     />
                     <SwapOptionCurrency $clickable={true} onClick={() => setTokenSelectOpen(true)}>
                         {getCurrencyIcon({ symbol: fromTokenDisplay?.symbol || EnabledTokensEnum.ETH, width: 25 })}
@@ -156,6 +157,7 @@ export const Swap = memo(function Swap() {
                         placeholder="0.00"
                         onChange={(e) => setTargetAmount(e.target.value)}
                         value={wxtmAmount}
+                        $dynamicFontSize={toInputFontSize} // Pass dynamic font size
                     />
                     <SwapOptionCurrency>
                         {getCurrencyIcon({ symbol: EnabledTokensEnum.WXTM, width: 25 })}
