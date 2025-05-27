@@ -81,6 +81,9 @@ const formatDecimalCompact = (value: number) => formatValue(value, { maximumFrac
 export function formatNumber(value: number, preset: FormatPreset): string {
     switch (preset) {
         case FormatPreset.COMPACT:
+            if (value < 10000) {
+                return formatDecimalCompact(value);
+            }
             return formatValue(roundCompactDecimals(value), {
                 maximumFractionDigits: 2,
                 notation: 'compact',
