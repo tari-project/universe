@@ -122,16 +122,75 @@ export const setMiningNetwork = async () => {
         useMiningStore.setState({ network: undefined });
     }
 };
-export const startMining = async () => {
-    if (!useSetupStore.getState().miningUnlocked) return;
 
+export const startCpuMining = async () => {
+    if (!useSetupStore.getState().cpuMiningUnlocked) return;
+    if (useMiningStore.getState().isCpuMiningInitiated) return;
+
+    useMiningStore.setState({ isCpuMiningInitiated: true });
+    console.info('CPU Mining starting....');
+    try {
+        await invoke('start_cpu_mining', {});
+        console.info('CPU Mining started.');
+    } catch (e) {
+        console.error('Failed to start CPU mining: ', e);
+        setError(e as string);
+        useMiningStore.setState({ isCpuMiningInitiated: false });
+    }
+};
+export const startGpuMining = async () => {
+    if (!useSetupStore.getState().gpuMiningUnlocked) return;
+    if (useMiningStore.getState().isGpuMiningInitiated) return;
+
+    useMiningStore.setState({ isGpuMiningInitiated: true });
+    console.info('GPU Mining starting....');
+    try {
+        await invoke('start_gpu_mining', {});
+        console.info('GPU Mining started.');
+    } catch (e) {
+        console.error('Failed to start GPU mining: ', e);
+        setError(e as string);
+        useMiningStore.setState({ isGpuMiningInitiated: false });
+    }
+};
+export const stopCpuMining = async () => {
+    if (!useMiningStore.getState().isCpuMiningInitiated) return;
+
+    console.info('CPU Mining stopping...');
+    useMiningStore.setState({ isCpuMiningInitiated: false });
+    try {
+        await invoke('stop_cpu_mining', {});
+        console.info('CPU Mining stopped.');
+    } catch (e) {
+        console.error('Failed to stop CPU mining: ', e);
+        setError(e as string);
+        useMiningStore.setState({ isCpuMiningInitiated: true });
+    }
+};
+export const stopGpuMining = async () => {
+    if (!useMiningStore.getState().isGpuMiningInitiated) return;
+
+    console.info('GPU Mining stopping...');
+    useMiningStore.setState({ isGpuMiningInitiated: false });
+    try {
+        await invoke('stop_gpu_mining', {});
+        console.info('GPU Mining stopped.');
+    } catch (e) {
+        console.error('Failed to stop GPU mining: ', e);
+        setError(e as string);
+        useMiningStore.setState({ isGpuMiningInitiated: true });
+    }
+};
+
+export const startMining = async () => {
     useMiningStore.setState({ miningInitiated: true });
     console.info('Mining starting....');
     useBlockchainVisualisationStore
         .getState()
         .setDisplayBlockTime({ daysString: '', hoursString: '', minutes: '00', seconds: '00' });
     try {
-        await invoke('start_mining', {});
+        await startCpuMining();
+        await startGpuMining();
         console.info('Mining started.');
     } catch (e) {
         console.error('Failed to start mining: ', e);
@@ -143,7 +202,8 @@ export const stopMining = async () => {
     console.info('Mining stopping...');
     useMiningStore.setState({ miningInitiated: false });
     try {
-        await invoke('stop_mining', {});
+        await stopCpuMining();
+        await stopGpuMining();
         console.info('Mining stopped.');
     } catch (e) {
         console.error('Failed to stop mining: ', e);
