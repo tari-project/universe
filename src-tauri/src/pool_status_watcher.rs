@@ -21,7 +21,6 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use anyhow::Error;
-use log::{error, info};
 use serde::{Deserialize, Serialize};
 
 #[allow(dead_code)]
@@ -52,7 +51,6 @@ impl<T: Clone> PoolStatusWatcher<T> {
 
 impl<T: PoolApiAdapter + Send + Sync + 'static> PoolStatusWatcher<T> {
     pub async fn get_pool_status(&self) -> Result<PoolStatus, Error> {
-        info!(target: LOG_TARGET, "Fetching pool status from URL: {}", self.url);
         let response = reqwest::get(&self.url).await?;
         let data = response.text().await?;
         let pool_status = self.adapter.convert_api_data(&data)?;
@@ -108,8 +106,6 @@ pub struct SupportXmrStyleAdapter {}
 
 impl PoolApiAdapter for SupportXmrStyleAdapter {
     fn convert_api_data(&self, data: &str) -> Result<PoolStatus, Error> {
-        info!(target: LOG_TARGET, "Converting API data for XMR style pool: {}", data);
-
         let response: PoolStatusResponseBody = serde_json::from_str(data)?;
         let pool_status = PoolStatus {
             accepted_shares: response.valid_shares,
