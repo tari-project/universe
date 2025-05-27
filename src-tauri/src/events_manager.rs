@@ -22,7 +22,7 @@
 
 use std::{collections::HashMap, time::Duration};
 
-use log::{error, info};
+use log::error;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tauri::{AppHandle, Manager};
 
@@ -134,7 +134,6 @@ impl EventsManager {
     }
 
     pub async fn handle_pool_status_update(app: &AppHandle, status: Option<PoolStatus>) {
-        info!(target: LOG_TARGET, "handle_pool_status_update called {:?}", status);
         EventsEmitter::emit_pool_status_update(app, status).await;
     }
 
