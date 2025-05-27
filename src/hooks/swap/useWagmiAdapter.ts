@@ -33,7 +33,7 @@ export const useWagmiAdapter = () => {
         const fetchProjectId = async () => {
             console.info('Attempting to fetch project ID...');
             // Prefer checking the store synchronously first if it might already have the value
-            let appInMemoryConfig: ConfigBackendInMemory | undefined = useConfigBEInMemoryStore.getState().config; // Assuming your store holds it under a 'config' key or similar
+            let appInMemoryConfig: ConfigBackendInMemory | undefined = useConfigBEInMemoryStore.getState();
 
             if (!appInMemoryConfig?.walletConnectProjectId) {
                 console.info('Project ID not in memory store, invoking backend...');

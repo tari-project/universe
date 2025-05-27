@@ -189,9 +189,9 @@ export const useSwapData = () => {
             let tokenDefinitionFromEnum: typeof xtmDef;
 
             switch (tokenKey) {
-                case EnabledTokensEnum.WETH:
-                    tokenDefinitionFromEnum = WETH9[chainId];
-                    break;
+                // case EnabledTokensEnum.WETH:
+                //     tokenDefinitionFromEnum = WETH9[chainId];
+                //     break;
                 case EnabledTokensEnum.WXTM:
                     tokenDefinitionFromEnum = xtmDef;
                     break;
