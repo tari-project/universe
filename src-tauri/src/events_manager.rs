@@ -37,6 +37,7 @@ use crate::events::ConnectionStatusPayload;
 use crate::external_dependencies::RequiredExternalDependency;
 use crate::{configs::config_core::ConfigCoreContent, events::CriticalProblemPayload};
 
+use crate::pool_status_watcher::PoolStatus;
 use crate::{
     commands::CpuMinerStatus,
     configs::config_ui::ConfigUIContent,
@@ -133,6 +134,10 @@ impl EventsManager {
             .collect();
 
         EventsEmitter::emit_gpu_devices_update(app, gpu_public_devices).await;
+    }
+
+    pub async fn handle_pool_status_update(app: &AppHandle, status: Option<PoolStatus>) {
+        EventsEmitter::emit_pool_status_update(app, status).await;
     }
 
     pub async fn handle_cpu_mining_update(app: &AppHandle, status: CpuMinerStatus) {

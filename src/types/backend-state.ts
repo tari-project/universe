@@ -16,6 +16,7 @@ import {
     ExternalDependency,
     GpuMinerStatus,
     NetworkStatus,
+    PoolStatus,
     WalletBalance,
 } from './app-status.ts';
 import { ConfigCore, ConfigMining, ConfigUI, ConfigWallet } from './configs.ts';
@@ -193,4 +194,8 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'MiningTime';
           payload: number;
+      }
+    | {
+          event_type: 'PoolStatusUpdate';
+          payload: PoolStatus;
       };

@@ -674,7 +674,7 @@ impl SetupManager {
                         .await;
 
                     if is_app_unlocked
-                        // Exchange miner won't have wallet unlocked as we are not using the wallet 
+                        // Exchange miner won't have wallet unlocked as we are not using the wallet
                         && (is_wallet_unlocked || setup_features.is_feature_enabled(SetupFeature::ExchangeMiner))
                         && is_cpu_mining_unlocked
                         && is_gpu_mining_unlocked
@@ -708,7 +708,7 @@ impl SetupManager {
                         _ = wallet_phase_status_subscriber.changed() => { continue; }
                         _ = unknown_phase_status_subscriber.changed() => { continue; }
                         _ = exchange_modal_status_subscriber.changed() => { continue; }
-                    };
+                    }
                 }
             });
     }
