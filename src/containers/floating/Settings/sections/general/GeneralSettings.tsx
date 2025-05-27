@@ -10,6 +10,7 @@ import AutoUpdate from './AutoUpdate.tsx';
 import PreReleaseSettings from './PreReleaseSettings.tsx';
 import VisualMode from '@app/containers/main/Dashboard/components/VisualMode.tsx';
 import LocalNodeSync from '@app/containers/floating/Settings/sections/general/LocalNodeSync.tsx';
+import AirdropNotificationsSettings from './AirdropNotificationSettings.tsx';
 
 export const GeneralSettings = () => {
     return (
@@ -19,6 +20,7 @@ export const GeneralSettings = () => {
             <AutoUpdate />
             <PreReleaseSettings />
             <AirdropPermissionSettings />
+            <AirdropNotificationsSettings />
             <LanguageSettings />
             <ThemeSettings />
             <VisualMode />

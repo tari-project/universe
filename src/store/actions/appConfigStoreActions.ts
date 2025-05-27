@@ -84,6 +84,15 @@ export const setAllowTelemetry = async (allowTelemetry: boolean) => {
         useConfigCoreStore.setState({ allow_telemetry: !allowTelemetry });
     });
 };
+export const setAllowNotifications = async (allowNotifications: boolean) => {
+    useConfigCoreStore.setState({ allow_notifications: allowNotifications });
+    invoke('set_allow_notifications', { allowNotifications }).catch((e) => {
+        console.error('Could not set notifications mode to ', allowNotifications, e);
+        setError('Could not change notifications mode');
+        useConfigCoreStore.setState({ allow_notifications: !allowNotifications });
+    });
+};
+
 export const setApplicationLanguage = async (applicationLanguage: Language) => {
     const prevApplicationLanguage = useConfigUIStore.getState().application_language;
     useConfigUIStore.setState({ application_language: applicationLanguage });
