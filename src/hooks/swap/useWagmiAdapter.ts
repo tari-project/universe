@@ -4,7 +4,7 @@ import { WagmiAdapter } from '@reown/appkit-adapter-wagmi';
 import { ConfigBackendInMemory } from '@app/types/configs';
 import { useConfigBEInMemoryStore } from '@app/store';
 import { invoke } from '@tauri-apps/api/core';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 const metadata = {
     name: 'TariUniverse',
@@ -53,33 +53,41 @@ export const useWagmiAdapter = () => {
         fetchProjectId();
     }, []);
 
+    const debouncedRef = useRef<NodeJS.Timeout>();
+
     useEffect(() => {
-        if (projectId && !isInitializing && !initializedAdapter) {
-            setIsInitializing(true);
-            console.info(`Initializing AppKit with Project ID: ${projectId}`);
-
-            const wagmiAdapterInstance = new WagmiAdapter({
-                ...baseAdapterConfig,
-                projectId,
-            });
-
-            createAppKit({
-                adapters: [wagmiAdapterInstance],
-                networks,
-                projectId,
-                metadata,
-                features: {
-                    analytics: true,
-                },
-            });
-
-            console.info('AppKit initialized, setting adapter.');
-            setInitializedAdapter(wagmiAdapterInstance);
-            setIsInitializing(false);
-        } else if (projectId === '' && !isInitializing && !initializedAdapter) {
-            console.warn('Project ID is empty, AppKit/WagmiAdapter not initialized.');
-            setIsInitializing(false);
+        if (debouncedRef.current) {
+            clearTimeout(debouncedRef.current);
         }
+
+        debouncedRef.current = setTimeout(() => {
+            if (projectId && !isInitializing && !initializedAdapter) {
+                setIsInitializing(true);
+                console.info(`Initializing AppKit with Project ID: ${projectId}`);
+
+                const wagmiAdapterInstance = new WagmiAdapter({
+                    ...baseAdapterConfig,
+                    projectId,
+                });
+
+                createAppKit({
+                    adapters: [wagmiAdapterInstance],
+                    networks,
+                    projectId,
+                    metadata,
+                    features: {
+                        analytics: true,
+                    },
+                });
+
+                console.info('AppKit initialized, setting adapter.');
+                setInitializedAdapter(wagmiAdapterInstance);
+                setIsInitializing(false);
+            } else if (projectId === '' && !isInitializing && !initializedAdapter) {
+                console.warn('Project ID is empty, AppKit/WagmiAdapter not initialized.');
+                setIsInitializing(false);
+            }
+        }, 1000);
     }, [projectId, initializedAdapter, isInitializing]); // Dependencies for this effect
 
     return initializedAdapter;

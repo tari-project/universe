@@ -36,10 +36,12 @@ import { useTranslation } from 'react-i18next';
 import { setIsSwapping } from '@app/store/actions/walletStoreActions';
 import { EnabledTokensEnum } from '@app/hooks/swap/lib/constants';
 import { useAdaptiveFontSize } from '@app/hooks/helpers/useAdaptiveFontSize';
+import { useAppKitWallet } from '@reown/appkit-wallet-button/react';
 
 export const Swap = memo(function Swap() {
     const [openWallet, setOpenWallet] = useState(false);
     const connectedAccount = useAccount();
+    const { connect } = useAppKitWallet();
     const { t } = useTranslation(['wallet'], { useSuspense: false });
 
     const {
@@ -71,6 +73,14 @@ export const Swap = memo(function Swap() {
         setTokenSelectOpen,
         handleSelectFromToken,
     } = useSwapData();
+
+    const handleButtonClick = () => {
+        if (connectedAccount.address) {
+            setReviewSwap(true);
+        } else {
+            connect('walletconnect');
+        }
+    };
 
     const errorMsg = useSwapError || error;
 
@@ -170,7 +180,7 @@ export const Swap = memo(function Swap() {
             <SubmitButtonWrapper>
                 <WalletButton
                     variant="primary"
-                    onClick={() => setReviewSwap(true)}
+                    onClick={handleButtonClick}
                     size="xl"
                     disabled={disabled && !!connectedAccount.address}
                 >
