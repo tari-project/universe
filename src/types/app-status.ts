@@ -243,3 +243,8 @@ export interface NetworkStatus {
     latency: number;
     is_too_low: boolean;
 }
+
+export interface BridgeEnvs {
+    walletconnect_id: string;
+    backend_api: string;
+}

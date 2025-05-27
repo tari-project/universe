@@ -2114,3 +2114,15 @@ pub async fn get_tari_wallet_balance(
         }),
     }
 }
+
+#[tauri::command]
+pub async fn get_bridge_envs() -> Result<(String, String), String> {
+    let walletconnect_id = option_env!("BRIDGE_WALLET_CONNECT_PROJECT_ID")
+        .unwrap_or("")
+        .to_string();
+    let backend_api = option_env!("BRIDGE_BACKEND_API_URL")
+        .unwrap_or("")
+        .to_string();
+
+    Ok((walletconnect_id, backend_api))
+}
