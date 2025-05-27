@@ -2,7 +2,7 @@ import { Token, WETH9, CurrencyAmount, TradeType, Ether, NativeCurrency, Price }
 import { InsufficientReservesError, Pair, Route, Trade } from '@uniswap/v2-sdk';
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi';
 import { Contract, ethers, Signer as EthersSigner, Provider, TransactionResponse, TransactionReceipt } from 'ethers';
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { encodeFunctionData, formatUnits, parseUnits, PublicClient as ViemPublicClient } from 'viem';
 
 import {
@@ -35,6 +35,9 @@ export const useUniswapV2Interactions = () => {
     const [insufficientLiquidity, setInsufficientLiquidity] = useState(false);
     const [isApproving, setIsApproving] = useState(false);
     const [isFetchingPair, setIsFetchingPair] = useState(false);
+    const aborPairControllerRef = useRef<AbortController | null>(null);
+    const aborApproveControllerRef = useRef<AbortController | null>(null);
+
     const addToast = useToastStore((s) => s.addToast);
 
     const { address: accountAddress, isConnected, chain } = useAccount();
@@ -138,6 +141,15 @@ export const useUniswapV2Interactions = () => {
 
     const getPair = useCallback(
         async (tokenA: Token, tokenB: Token, preview?: boolean): Promise<Pair | null> => {
+            // 1. Abort any ongoing request
+            if (aborPairControllerRef.current) {
+                aborPairControllerRef.current.abort();
+                console.info('Previous request for getPair aborted.');
+            }
+
+            aborPairControllerRef.current = new AbortController();
+            const signal = aborPairControllerRef.current.signal;
+
             if (!tokenA || !tokenB || !provider || tokenA.chainId !== tokenB.chainId) {
                 if (!preview) setError('Invalid token setup or provider for pair.');
                 return null;
@@ -160,8 +172,11 @@ export const useUniswapV2Interactions = () => {
                     (context, err, attempt, max) => {
                         console.warn(`[${context}] Attempt ${attempt}/${max} failed:`, err.message || err);
                         // if (!preview) setTransientError(`Fetching pair info (attempt ${attempt})...`);
-                    }
+                    },
+                    signal
                 );
+
+                if (signal?.aborted) return null;
 
                 const [reserve0BN, reserve1BN] = [reservesData[0], reservesData[1]];
                 const [sortedTokenA, sortedTokenB] = tokenA.sortsBefore(tokenB) ? [tokenA, tokenB] : [tokenB, tokenA];
@@ -202,6 +217,7 @@ export const useUniswapV2Interactions = () => {
                 executionPrice: null,
                 priceImpactPercent: null,
             };
+
             if (!publicClient || !currentChainId || !sdkToken0 || !sdkToken1 || !routerAddress) {
                 setError('Prerequisites for trade details not met.');
                 return emptyReturn;
@@ -441,6 +457,14 @@ export const useUniswapV2Interactions = () => {
             amountToApproveRaw: string,
             spenderAddress?: `0x${string}`
         ): Promise<TransactionReceipt | null> => {
+            if (aborApproveControllerRef.current) {
+                aborApproveControllerRef.current.abort();
+                console.info('Previous request for checkAndRequestApproval aborted.');
+            }
+
+            aborApproveControllerRef.current = new AbortController();
+            const signal = aborApproveControllerRef.current.signal;
+
             const spender = spenderAddress || routerAddress;
             if (!accountAddress || !spender || !currentChainId || tokenToApprove.isNative || !signer) {
                 setError('Approval prerequisites not met or native token.');
@@ -460,6 +484,7 @@ export const useUniswapV2Interactions = () => {
                     receipt = (await approveTx.wait(1)) as TransactionReceipt; // wait for 1 confirmation
                     if (receipt?.status !== 1) throw new Error('Approval transaction failed on-chain.');
                 }
+                if (signal?.aborted) throw new Error('Aborted');
                 setIsApproving(false);
                 return receipt;
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -975,6 +1000,8 @@ export const useUniswapV2Interactions = () => {
         executeSwap,
         addLiquidity,
         removeAllLiquidity,
+        aborPairtControllerRef: aborPairControllerRef,
+        aborApproveControllerRef,
         isReady: !!signer && !!accountAddress && isConnected && !!routerAddress && !!publicClient && !!currentChainId,
     };
 };

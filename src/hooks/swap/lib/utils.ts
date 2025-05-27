@@ -176,11 +176,13 @@ export async function retryAsync<T>(
     maxAttempts = 3, // Default to 1 initial attempt + 2 retries
     delayMs = 1000, // Default to 1 second delay
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    onRetry?: (context: string, error: any, attempt: number, maxAttempts: number) => void
+    onRetry?: (context: string, error: any, attempt: number, maxAttempts: number) => void,
+    signal?: AbortSignal
 ): Promise<T> {
     let attempts = 0;
     while (true) {
         attempts++;
+        if (signal?.aborted) throw new Error('Aborted');
         try {
             if (attempts > 1) console.info(`[RetryAsync][${fnContext}] Attempt ${attempts}/${maxAttempts}...`);
             return await asyncFn();
