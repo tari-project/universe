@@ -37,7 +37,7 @@ export const PoolStatsTile = () => {
     const { t } = useTranslation('p2p');
     const { daysString, hoursString, minutes, seconds } = useMiningTime();
     const pool_status = useMiningMetricsStore((s) => s.cpu_mining_status.pool_status);
-    const isMining = useMiningMetricsStore((s) => s.cpu_mining_status.is_mining || s.gpu_mining_status.is_mining);
+    const isMining = useMiningMetricsStore((s) => s.cpu_mining_status.is_mining);
     const loading = isMining && !pool_status;
     const unpaidFMT = formatNumber(pool_status?.unpaid || 0, FormatPreset.XTM_LONG_DEC);
     const [expanded, setExpanded] = useState(false);
