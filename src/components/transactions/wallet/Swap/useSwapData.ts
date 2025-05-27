@@ -333,7 +333,7 @@ export const useSwapData = () => {
         setPaidTransactionFeeSwap(null);
         setPaidTransactionFeeApproval(null);
         setPaidTransactionFeeSwap(null);
-
+        setReviewSwap(false);
         setSwapSuccess(false);
         setIsProcessingApproval(false);
         setIsProcessingSwap(false);
@@ -500,9 +500,7 @@ export const useSwapData = () => {
     }, [ethTokenAmount, wxtmAmount, lastUpdatedField, direction, debounceCalc]);
 
     const handleNumberInput = (value: string, field: SwapField) => {
-        setReviewSwap(false);
-        setTransactionId(null);
-        setSwapError(null);
+        clearCalculatedDetails();
         const currentUiTokenDef = field === 'ethTokenField' ? fromUiTokenDefinition : toUiTokenDefinition;
         const maxDecimals = currentUiTokenDef?.decimals ?? 18;
         let processedValue = value;
@@ -542,7 +540,6 @@ export const useSwapData = () => {
         const newUiDirection = direction === 'toXtm' ? 'fromXtm' : 'toXtm';
         setSwapEngineDirection(newUiDirection);
         clearCalculatedDetails();
-        shouldCalculate.current = true;
     }, [direction, setSwapEngineDirection, clearCalculatedDetails]);
 
     const handleConfirm = async () => {
@@ -654,10 +651,10 @@ export const useSwapData = () => {
         (selectedToken: SelectableTokenInfo) => {
             setPairTokenAddress(selectedToken.address);
             setLastUpdatedField('ethTokenField');
-            shouldCalculate.current = true;
             setTokenSelectOpen(false);
+            clearCalculatedDetails();
         },
-        [setPairTokenAddress]
+        [setPairTokenAddress, clearCalculatedDetails]
     );
 
     const finalIsLoading =

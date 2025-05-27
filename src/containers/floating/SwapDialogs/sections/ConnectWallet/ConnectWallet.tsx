@@ -43,6 +43,9 @@ export const ConnectWallet = ({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpe
                 });
 
                 provider.on('disconnect', handleDisconnect);
+                provider.on('connect', () => {
+                    setIsOpen(false);
+                });
 
                 const cleanup = () => {
                     provider.removeListener('display_uri', handleUri);
@@ -66,7 +69,7 @@ export const ConnectWallet = ({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpe
         } else {
             console.error('WalletConnect connector not found.');
         }
-    }, [connect, connectors, isOpen]);
+    }, [connect, connectors, isOpen, setIsOpen]);
 
     useEffect(() => {
         if (!isConnected && !qrCodeUri) {
