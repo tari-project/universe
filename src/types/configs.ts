@@ -66,11 +66,5 @@ export interface ConfigBackendInMemory {
     airdropApiUrl: string;
     airdropTwitterAuthUrl: string;
     exchangeId?: string;
-}
-
-export interface ConfigBackendInMemory {
-    airdropUrl: string;
-    airdropApiUrl: string;
-    airdropTwitterAuthUrl: string;
-    exchangeId?: string;
+    isUniversalMiner?: boolean;
 }

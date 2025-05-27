@@ -356,9 +356,10 @@ fn main() {
         pool_status_url: None,
     }));
 
-    let app_in_memory_config = Arc::new(RwLock::new(
-        app_in_memory_config::DynamicMemoryConfig::init(),
-    ));
+    info!("[DEBUG UNIVERSAL EXCHANGE] before blocked fetch");
+    let dynamic_memory_config = block_on(async { DynamicMemoryConfig::init().await });
+    info!("[DEBUG UNIVERSAL EXCHANGE] after blocked fetch");
+    let app_in_memory_config = Arc::new(RwLock::new(dynamic_memory_config));
 
     let cpu_miner: Arc<RwLock<CpuMiner>> = Arc::new(
         CpuMiner::new(
@@ -600,6 +601,7 @@ fn main() {
             commands::set_tari_address,
             commands::confirm_exchange_address,
             commands::user_selected_exchange,
+            commands::is_universal_miner,
             commands::set_p2pool_enabled,
             commands::set_show_experimental_settings,
             commands::set_should_always_use_system_language,

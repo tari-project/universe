@@ -31,7 +31,7 @@ use tokio::sync::{
 use tokio_util::sync::CancellationToken;
 
 use crate::{
-    app_in_memory_config::{DynamicMemoryConfig, UNIVERSAL_EXCHANGE_ID},
+    app_in_memory_config::DynamicMemoryConfig,
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
     hardware::hardware_status_monitor::HardwareStatusMonitor,
     process_utils::retry_with_backoff,
@@ -100,7 +100,7 @@ impl TelemetryService {
         let in_memory_config_cloned = self.in_memory_config.clone();
         let in_memory_config_guard = in_memory_config_cloned.read().await;
         let telemetry_api_url = in_memory_config_guard.telemetry_api_url.clone();
-        let exchange_id = in_memory_config_guard.exchange_id.clone();
+        let in_memory_config_cloned_2 = self.in_memory_config.clone();
         let version = self.version.clone();
         let (tx, mut rx) = mpsc::channel(128);
         self.tx_channel = Some(tx);
@@ -131,7 +131,7 @@ impl TelemetryService {
                                             telemetry_api_url.clone(),
                                             system_info.clone(),
                                             anon_id.clone(),
-                                            exchange_id.clone()
+                                            in_memory_config_cloned_2 .clone()
                                         ))
                                     },
                                     3,
@@ -190,9 +190,10 @@ async fn send_telemetry_data(
     api_url: String,
     system_info: SystemInfo,
     app_id: String,
-    exchange_id: String,
+    memory_config: Arc<RwLock<DynamicMemoryConfig>>,
 ) -> Result<(), TelemetryServiceError> {
-    if exchange_id.eq(UNIVERSAL_EXCHANGE_ID) {
+    let config_read_guard = memory_config.read().await;
+    if config_read_guard.is_universal_miner() {
         info!("[DEBUG UNIVERSAL EXCHANGE] TelemetryService::send_telemetry_data skipping telemetry, user hasn't yet chosen an exchange");
         return Ok(());
     }
@@ -211,6 +212,7 @@ async fn send_telemetry_data(
         Some(gpu) => gpu.public_properties.name.clone(),
         None => "Unknown".to_string(),
     };
+    let exchange_id = config_read_guard.exchange_id.clone();
 
     let full_data = FullTelemetryData {
         event_name: data.event_name,

@@ -123,4 +123,5 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'confirm_exchange_address', payload: { address: string }): Promise<void>;
     function invoke(param: 'get_app_in_memory_config'): Promise<ConfigBackendInMemory>;
     function invoke(param: 'user_selected_exchange', payload: { exchange_miner: ExchangeMiner }): Promise<void>;
+    function invoke(param: 'is_universal_miner'): Promise<boolean>;
 }

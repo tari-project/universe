@@ -44,7 +44,7 @@ export async function fetchExchangeMiners() {
             const list = (await res.json()) as {
                 exchanges: ExchangeMinerAssets[];
             };
-            setExchangeMiners(list.exchanges);
+            setExchangeMiners(list.exchanges.filter((ex) => ex.name !== 'Universal'));
         }
     } catch (e) {
         console.error('Could not fetch exchange miners', e);

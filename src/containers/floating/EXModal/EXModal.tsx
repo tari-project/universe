@@ -11,7 +11,7 @@ import { IoArrowBack } from 'react-icons/io5';
 export default function EXModal() {
     const data = useExchangeStore((s) => s.content);
     const showModal = useExchangeStore((s) => s.showClassicModal);
-    const isUniversal = useConfigBEInMemoryStore((s) => s.exchangeId === 'universal');
+    const isUniversal = useConfigBEInMemoryStore((s) => s.isUniversalMiner);
     if (!data) return null;
     return (
         <Dialog open={!!showModal} disableClose={!isUniversal} onOpenChange={setShowExchangeModal}>

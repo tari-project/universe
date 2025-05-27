@@ -17,7 +17,7 @@ export interface ExchangeContent {
     reward_percentage: number;
 }
 
-// Must match struct ExchangeMiner app_in_memory_config.rs
+// Must match struct ExchangeMiner in app_in_memory_config.rs
 export interface ExchangeMiner {
     id: string;
     name: string;

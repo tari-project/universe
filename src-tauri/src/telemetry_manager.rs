@@ -23,7 +23,7 @@
 use crate::airdrop;
 use crate::airdrop::get_wallet_view_key_hashed;
 use crate::app_in_memory_config::DynamicMemoryConfig;
-use crate::app_in_memory_config::UNIVERSAL_EXCHANGE_ID;
+
 use crate::commands::CpuMinerStatus;
 use crate::configs::config_core::ConfigCore;
 use crate::configs::config_mining::ConfigMining;
@@ -323,7 +323,7 @@ impl TelemetryManager {
 
                 tokio::select! {
                     _ = interval.tick() => {
-                        if in_memory_config_cloned.read().await.exchange_id.eq(UNIVERSAL_EXCHANGE_ID) {
+                        if in_memory_config_cloned.read().await.is_universal_miner() {
                             info!("[DEBUG UNIVERSAL EXCHANGE] TelemetryManager::start_telemetry_process skipping telemetry, user hasn't yet chosen an exchange");
                             return
                         }

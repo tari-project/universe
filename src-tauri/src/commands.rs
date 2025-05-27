@@ -197,6 +197,11 @@ pub async fn close_splashscreen(app: tauri::AppHandle) {
 }
 
 #[tauri::command]
+pub async fn is_universal_miner(state: tauri::State<'_, UniverseAppState>) -> Result<bool, String> {
+    Ok(state.in_memory_config.read().await.is_universal_miner())
+}
+
+#[tauri::command]
 pub async fn user_selected_exchange(
     app_handle: tauri::AppHandle,
     exchange_miner: ExchangeMiner,

@@ -24,6 +24,7 @@ use std::ops::Deref;
 
 use anyhow::anyhow;
 use der::{self, asn1::BitString, oid::ObjectIdentifier, Encode};
+use log::info;
 use ring::signature::{Ed25519KeyPair, KeyPair};
 use ring_compat::pkcs8::{spki::AlgorithmIdentifier, SubjectPublicKeyInfo};
 use serde::{Deserialize, Serialize};
@@ -41,7 +42,6 @@ const TELEMETRY_API_URL: &str =
     std::env!("TELEMETRY_API_URL", "TELEMETRY_API_URL env var not defined");
 
 pub const DEFAULT_EXCHANGE_ID: &str = "classic";
-pub const UNIVERSAL_EXCHANGE_ID: &str = "universal";
 pub const EXCHANGE_ID: &str = match option_env!("EXCHANGE_ID") {
     Some(val) => val,
     None => DEFAULT_EXCHANGE_ID,
@@ -153,7 +153,6 @@ pub enum MinerType {
 impl MinerType {
     fn from_str(s: &str) -> Self {
         match s {
-            UNIVERSAL_EXCHANGE_ID => MinerType::Universal,
             DEFAULT_EXCHANGE_ID => MinerType::Classic,
             _ => MinerType::ExchangeMode,
         }
@@ -178,16 +177,38 @@ pub struct ExchangeMiner {
     pub slug: String,
 }
 
+#[derive(Default, Serialize, Deserialize, Clone, Debug)]
+pub struct ExchangeMinersListResponse {
+    pub exchanges: Vec<ExchangeMiner>,
+}
+
 impl DynamicMemoryConfig {
-    pub fn init() -> Self {
+    pub async fn init() -> Self {
         let in_memory_config = AppInMemoryConfig::init();
         let miner_type = MinerType::from_str(&in_memory_config.exchange_id);
+        let miners_list = DynamicMemoryConfig::get_exchange_miners().await;
+        info!(
+            "[DEBUG UNIVERSAL EXCHANGE] exchange miners: {:?}",
+            miners_list
+        );
+        if miners_list
+            .iter()
+            .find(|miner| miner.id.eq(&in_memory_config.exchange_id) && miner.name.eq("Universal"))
+            .is_some()
+        {
+            info!("[DEBUG UNIVERSAL EXCHANGE] is universal miners");
+            return Self {
+                in_memory_config,
+                miner_type: MinerType::Universal,
+            };
+        }
+        info!("[DEBUG UNIVERSAL EXCHANGE] default miner");
         Self {
             in_memory_config,
             miner_type,
         }
     }
-    pub fn init_universal(exchange_miner: &ExchangeMiner) -> Self {
+    pub async fn init_universal(exchange_miner: &ExchangeMiner) -> Self {
         Self {
             miner_type: MinerType::Universal,
             in_memory_config: AppInMemoryConfig {
@@ -195,11 +216,22 @@ impl DynamicMemoryConfig {
                 exchange_id: exchange_miner.id.clone(),
                 ..AppInMemoryConfig::init()
             },
-            ..Self::init()
+            ..Self::init().await
         }
     }
     pub fn is_universal_miner(&self) -> bool {
         matches!(self.miner_type, MinerType::Universal)
+    }
+    pub async fn get_exchange_miners() -> Vec<ExchangeMiner> {
+        let endpoint = "https://rwa.y.at/miner/exchanges";
+        info!(
+            "[DEBUG UNIVERSAL EXCHANGE] Fetching exchange miners from {}",
+            endpoint
+        );
+        let response = reqwest::get(endpoint).await.unwrap();
+        let miners: ExchangeMinersListResponse = response.json().await.unwrap();
+        info!("[DEBUG UNIVERSAL EXCHANGE] Exchange miners: {:?}", miners);
+        miners.exchanges
     }
 }
 
