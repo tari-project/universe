@@ -12,7 +12,7 @@ import { useAccount } from 'wagmi'; // To get connected chainId
 // Import your token definitions (make sure paths are correct)
 import {
     XTM_SDK_TOKEN,
-    USDC_SDK_TOKEN,
+    USDT_SDK_TOKEN,
     // KNOWN_SDK_TOKENS,
     // ENABLED_TOKEN_ADDRESSES,
     // EnabledTokensEnum,
@@ -51,7 +51,7 @@ export function SwapsGroup() {
         let tBName = 'Token B';
 
         const xtm = XTM_SDK_TOKEN[currentChainId];
-        const musdc = USDC_SDK_TOKEN[currentChainId]; // Make sure this is defined in your constants
+        const musdc = USDT_SDK_TOKEN[currentChainId]; // Make sure this is defined in your constants
         const eth = Ether.onChain(currentChainId);
 
         switch (selectedPair) {

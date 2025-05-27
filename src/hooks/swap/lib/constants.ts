@@ -35,7 +35,7 @@ export enum EnabledTokensEnum {
     ETH = 'ETH',
     WETH = 'wETH',
     WXTM = 'wXTM',
-    USDC = 'USDC',
+    USDT = 'USDT',
 }
 
 export const ENABLED_TOKEN_ADDRESSES = {
@@ -50,8 +50,8 @@ export const ENABLED_TOKEN_ADDRESSES = {
         // REAL SEPOLIA XTM
         // [ChainId.SEPOLIA]: '0xcBe79AB990E0Ab45Cb9148db7d434477E49b7374',
     },
-    [EnabledTokensEnum.USDC]: {
-        [ChainId.MAINNET]: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+    [EnabledTokensEnum.USDT]: {
+        [ChainId.MAINNET]: '0xdAC17F958D2ee523a2206206994597C13D831ec7',
         [ChainId.SEPOLIA]: '0x36e08a171866F92f1E990AB8a8F631839a633E4C',
     },
 } as const;
@@ -79,27 +79,27 @@ export const XTM_SDK_TOKEN: Partial<Record<ChainId, Token>> = {
     ),
 };
 
-export const USDC_SDK_TOKEN: Partial<Record<ChainId, Token>> = {
+export const USDT_SDK_TOKEN: Partial<Record<ChainId, Token>> = {
     [ChainId.MAINNET]: new Token(
         ChainId.MAINNET,
-        ENABLED_TOKEN_ADDRESSES[EnabledTokensEnum.USDC][ChainId.MAINNET],
+        ENABLED_TOKEN_ADDRESSES[EnabledTokensEnum.USDT][ChainId.MAINNET],
         6,
-        EnabledTokensEnum.USDC,
-        'USDC'
+        EnabledTokensEnum.USDT,
+        'USDT'
     ),
     [ChainId.SEPOLIA]: new Token(
         ChainId.SEPOLIA,
-        ENABLED_TOKEN_ADDRESSES[EnabledTokensEnum.USDC][ChainId.SEPOLIA],
+        ENABLED_TOKEN_ADDRESSES[EnabledTokensEnum.USDT][ChainId.SEPOLIA],
         6,
-        EnabledTokensEnum.USDC,
-        'USDC'
+        EnabledTokensEnum.USDT,
+        'USDT'
     ),
 };
 
 export const TOKEN_DEFINITIONS = {
     [EnabledTokensEnum.WETH]: WETH9,
     [EnabledTokensEnum.WXTM]: XTM_SDK_TOKEN,
-    [EnabledTokensEnum.USDC]: USDC_SDK_TOKEN,
+    [EnabledTokensEnum.USDT]: USDT_SDK_TOKEN,
 };
 
 export const KNOWN_SDK_TOKENS: Record<ChainId, Record<`0x${string}`, Token>> = Object.keys(
