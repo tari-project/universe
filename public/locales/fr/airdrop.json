@@ -41,6 +41,10 @@
     "text": "Tari Universe souhaite utiliser des outils d'analyse pour améliorer ton expérience.",
     "title": "Améliore le Tari Universe"
   },
+  "push-notifications": {
+    "text": "Tari Universe would like to be able to send you notifications to your connected devices",
+    "title": "Allow Tari Universe to send notifications  "
+  },
   "referral": "Inviter un ami",
   "rightClickToCopy": "Clic droit pour copier le lien",
   "success": "Succès",

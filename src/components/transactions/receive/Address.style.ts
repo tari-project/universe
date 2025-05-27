@@ -12,7 +12,36 @@ export const QRContainer = styled.div`
     gap: 10px;
 
     align-items: center;
+
+    @media (max-height: 761px) {
+        padding: 10px;
+        gap: 10px;
+    }
 `;
+
+export const QROutside = styled.div`
+    background: #fff;
+    border-radius: 20px;
+    width: 100%;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+`;
+
+export const QRSizer = styled.div`
+    aspect-ratio: 1/1;
+
+    canvas {
+        display: block;
+        border-radius: 20px;
+    }
+
+    @media (max-height: 761px) {
+        height: 350px;
+    }
+`;
+
 export const AddressContainer = styled.div`
     display: flex;
     flex-direction: column;
