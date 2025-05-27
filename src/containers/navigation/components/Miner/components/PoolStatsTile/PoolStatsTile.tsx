@@ -40,7 +40,7 @@ export const PoolStatsTile = () => {
     const isMining = useMiningMetricsStore((s) => s.cpu_mining_status.is_mining);
     const cpuMiningEnabled = useConfigMiningStore((s) => s.cpu_mining_enabled);
     const loading = isMining && !pool_status;
-    const unpaidFMT = formatNumber(pool_status?.unpaid || 0, FormatPreset.XTM_COMPACT);
+    const unpaidFMT = formatNumber(pool_status?.unpaid || 0, FormatPreset.XTM_LONG_DEC);
     const [expanded, setExpanded] = useState(false);
     const { refs, context, floatingStyles } = useFloating({
         open: expanded,
