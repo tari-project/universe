@@ -29,7 +29,7 @@ const ModeSelect = memo(function ModeSelect({ variant = 'primary' }: ModeSelectP
 
     const isMiningControlsEnabled = useMiningStore((s) => s.miningControlsEnabled);
     const isChangingMode = useMiningStore((s) => s.isChangingMode);
-    const isMiningInitiated = useMiningStore((s) => s.miningInitiated);
+    const isMiningInitiated = useMiningStore((s) => s.isCpuMiningInitiated || s.isGpuMiningInitiated);
     const isMining = isCPUMining || isGPUMining;
 
     const isMiningLoading = isMiningInitiated ? !isMining : isMining;

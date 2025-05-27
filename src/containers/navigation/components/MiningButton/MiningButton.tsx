@@ -26,7 +26,7 @@ export default function MiningButton() {
     const isAppSettingUp = useSetupStore((s) => !s.appUnlocked);
     const isMiningUnlocked = useSetupStore((s) => s.cpuMiningUnlocked || s.gpuMiningUnlocked);
     const isMiningControlsEnabled = useMiningStore((s) => s.miningControlsEnabled);
-    const isMiningInitiated = useMiningStore((s) => s.miningInitiated);
+    const isMiningInitiated = useMiningStore((s) => s.isCpuMiningInitiated || s.isGpuMiningInitiated);
 
     const isCPUMining = useMiningMetricsStore((s) => s.cpu_mining_status.is_mining);
     const isGPUMining = useMiningMetricsStore((s) => s.gpu_mining_status.is_mining);

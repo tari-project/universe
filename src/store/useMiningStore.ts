@@ -4,7 +4,6 @@ import { MaxConsumptionLevels } from '@app/types/app-status';
 
 interface MiningStoreState {
     hashrateReady?: boolean;
-    miningInitiated: boolean;
     miningControlsEnabled: boolean;
     isChangingMode: boolean;
     isExcludingGpuDevices: boolean;
@@ -28,7 +27,6 @@ const initialState: MiningStoreState = {
     miningTime: 0,
     sessionMiningTime: 0,
     hashrateReady: false,
-    miningInitiated: false,
     isCpuMiningInitiated: false,
     isGpuMiningInitiated: false,
     wasMineOnAppStartExecuted: false,
