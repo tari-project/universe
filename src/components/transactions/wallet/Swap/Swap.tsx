@@ -78,7 +78,7 @@ export const Swap = memo(function Swap() {
         if (connectedAccount.address) {
             setReviewSwap(true);
         } else {
-            connect('walletconnect');
+            connect('walletConnect');
         }
     };
 
