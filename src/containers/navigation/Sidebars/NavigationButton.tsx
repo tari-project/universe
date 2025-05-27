@@ -40,6 +40,7 @@ const NavButton = memo(function NavButton({ children, isActive, onClick }: NavBu
             <AnimatePresence mode="popLayout">
                 {showArrow ? (
                     <HoverIconWrapper
+                        key="hover"
                         initial={{ opacity: 0, scaleX }}
                         exit={{ opacity: 0, scaleX }}
                         animate={{ opacity: 1, scaleX }}
@@ -47,7 +48,12 @@ const NavButton = memo(function NavButton({ children, isActive, onClick }: NavBu
                         <IoChevronForwardOutline size={28} />
                     </HoverIconWrapper>
                 ) : (
-                    <NavIconWrapper initial={{ opacity: 0 }} exit={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                    <NavIconWrapper
+                        key="not-hover"
+                        initial={{ opacity: 0 }}
+                        exit={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                    >
                         {children}
                     </NavIconWrapper>
                 )}

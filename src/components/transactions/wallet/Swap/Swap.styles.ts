@@ -74,15 +74,11 @@ export const SwapDirection = styled.div`
     z-index: 2;
 `;
 
-export const SwapAmountInput = styled.input<{
-    $error?: boolean;
-    $loading?: boolean;
-    $dynamicFontSize?: number; // Prop for dynamic font size
-}>`
+export const SwapAmountInput = styled.input<{ $error?: boolean; $loading?: boolean }>`
     color: ${({ theme }) => theme.palette.text.primary};
     font-family: Poppins, sans-serif;
     font-weight: 500;
-    font-size: ${({ $dynamicFontSize }) => ($dynamicFontSize ? `${$dynamicFontSize}px` : '28px')};
+    font-size: 28px;
     line-height: 100%;
     width: 100%;
     background: transparent;
@@ -149,7 +145,8 @@ export const SectionHeaderWrapper = styled.div`
     width: 100%;
     display: flex;
     justify-content: space-between;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
+    align-items: center;
 `;
 
 export const BackButton = styled.button`

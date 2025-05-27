@@ -65,6 +65,8 @@ export const useSwapData = () => {
     const [tradeDetails, setTradeDetails] = useState<TradeDetails | null>(null);
     const defaultChainId = useConfigCoreStore((s) => s.default_chain);
 
+    const abortController = useRef<AbortController | null>(null);
+
     const {
         direction,
         token0: swapEngineInputToken,
@@ -347,138 +349,147 @@ export const useSwapData = () => {
     const shouldCalculate = useRef(true);
     const calcRef = useRef<NodeJS.Timeout | null>(null);
 
-    const calcAmounts = useCallback(async () => {
-        if (!shouldCalculate.current) return;
+    const calcAmounts = useCallback(
+        async (signal: AbortSignal) => {
+            let amountTypedByUserStr: string;
+            let tokenUsedForParsingAmount: Token | NativeCurrency | undefined;
+            let amountTypeForGetTradeDetails: SwapField = 'wxtmField';
 
-        shouldCalculate.current = false;
-        let amountTypedByUserStr: string;
-        let tokenUsedForParsingAmount: Token | NativeCurrency | undefined;
-        let amountTypeForGetTradeDetails: SwapField = 'wxtmField';
+            const tradeInputTokenSDK = sdkToken0;
+            const tradeOutputTokenSDK = sdkToken1;
 
-        const tradeInputTokenSDK = sdkToken0;
-        const tradeOutputTokenSDK = sdkToken1;
+            if (lastUpdatedField === 'ethTokenField') {
+                amountTypedByUserStr = ethTokenAmount;
+                tokenUsedForParsingAmount = fromUiTokenDefinition;
+            } else {
+                amountTypedByUserStr = wxtmAmount;
+                tokenUsedForParsingAmount = toUiTokenDefinition;
+            }
 
-        if (lastUpdatedField === 'ethTokenField') {
-            amountTypedByUserStr = ethTokenAmount;
-            tokenUsedForParsingAmount = fromUiTokenDefinition;
-        } else {
-            amountTypedByUserStr = wxtmAmount;
-            tokenUsedForParsingAmount = toUiTokenDefinition;
-        }
+            if (direction === 'toXtm') {
+                amountTypeForGetTradeDetails = lastUpdatedField === 'ethTokenField' ? 'ethTokenField' : 'wxtmField';
+            } else {
+                amountTypeForGetTradeDetails = lastUpdatedField === 'ethTokenField' ? 'wxtmField' : 'ethTokenField';
+            }
 
-        if (direction === 'toXtm') {
-            amountTypeForGetTradeDetails = lastUpdatedField === 'ethTokenField' ? 'ethTokenField' : 'wxtmField';
-        } else {
-            amountTypeForGetTradeDetails = lastUpdatedField === 'ethTokenField' ? 'wxtmField' : 'ethTokenField';
-        }
+            if (
+                !tokenUsedForParsingAmount ||
+                !amountTypedByUserStr ||
+                Number.isNaN(Number(amountTypedByUserStr)) ||
+                Number(amountTypedByUserStr) <= 0 ||
+                !tradeInputTokenSDK ||
+                !tradeOutputTokenSDK
+            ) {
+                clearCalculatedDetails();
+                setIsLoading(false);
+                return;
+            }
 
-        if (
-            !tokenUsedForParsingAmount ||
-            !amountTypedByUserStr ||
-            Number.isNaN(Number(amountTypedByUserStr)) ||
-            Number(amountTypedByUserStr) <= 0 ||
-            !tradeInputTokenSDK ||
-            !tradeOutputTokenSDK
-        ) {
-            clearCalculatedDetails();
-            setIsLoading(false);
-            return;
-        }
+            setIsLoading(true);
+            try {
+                const amountForCalcWei = viemParseUnits(amountTypedByUserStr, tokenUsedForParsingAmount.decimals);
 
-        setIsLoading(true);
-        try {
-            const amountForCalcWei = viemParseUnits(amountTypedByUserStr, tokenUsedForParsingAmount.decimals);
-            const details = await getTradeDetails(amountForCalcWei.toString(), amountTypeForGetTradeDetails);
+                const details = await getTradeDetails(amountForCalcWei.toString(), amountTypeForGetTradeDetails);
+                if (signal.aborted) return;
 
-            setTradeDetails(details);
+                setTradeDetails(details);
 
-            if (details.trade) {
-                setPriceImpact(details.priceImpactPercent ? `${details.priceImpactPercent}%` : null);
-                setSlippage(details.priceImpactPercent ? `${details.priceImpactPercent}% (Price Impact)` : null); // Consider actual slippage setting
-                setNetworkFee(details.estimatedGasFeeNative || null);
+                if (details.trade) {
+                    setPriceImpact(details.priceImpactPercent ? `${details.priceImpactPercent}%` : null);
+                    setSlippage(details.priceImpactPercent ? `${details.priceImpactPercent}% (Price Impact)` : null); // Consider actual slippage setting
+                    setNetworkFee(details.estimatedGasFeeNative || null);
 
-                if (details.minimumReceived && details.minimumReceived.currency.symbol) {
-                    setMinimumReceivedDisplay(
-                        `${formatAmountSmartly(details.minimumReceived)} ${details.minimumReceived.currency.symbol}`
-                    );
-                } else {
-                    setMinimumReceivedDisplay(null);
-                }
-
-                if (details.executionPrice) {
-                    const baseToken = details.executionPrice.baseCurrency;
-                    const quoteToken = details.executionPrice.quoteCurrency;
-                    if (baseToken.symbol && quoteToken.symbol) {
-                        setExecutionPriceDisplay(
-                            `1 ${baseToken.symbol} = ${details.executionPrice.toSignificant(6)} ${quoteToken.symbol}`
+                    if (details.minimumReceived && details.minimumReceived.currency.symbol) {
+                        setMinimumReceivedDisplay(
+                            `${formatAmountSmartly(details.minimumReceived)} ${details.minimumReceived.currency.symbol}`
                         );
+                    } else {
+                        setMinimumReceivedDisplay(null);
+                    }
+
+                    if (details.executionPrice) {
+                        const baseToken = details.executionPrice.baseCurrency;
+                        const quoteToken = details.executionPrice.quoteCurrency;
+                        if (baseToken.symbol && quoteToken.symbol) {
+                            setExecutionPriceDisplay(
+                                `1 ${baseToken.symbol} = ${details.executionPrice.toSignificant(6)} ${quoteToken.symbol}`
+                            );
+                        } else {
+                            setExecutionPriceDisplay(null);
+                        }
                     } else {
                         setExecutionPriceDisplay(null);
                     }
-                } else {
-                    setExecutionPriceDisplay(null);
-                }
 
-                if (lastUpdatedField === 'ethTokenField') {
-                    if (direction === 'toXtm') {
-                        if (details.outputAmount) {
-                            setWxtmAmount(formatAmountSmartly(details.outputAmount));
-                        } else if (wxtmAmount !== '') {
-                            setWxtmAmount('');
+                    if (lastUpdatedField === 'ethTokenField') {
+                        if (direction === 'toXtm') {
+                            if (details.outputAmount) {
+                                setWxtmAmount(formatAmountSmartly(details.outputAmount));
+                            } else if (wxtmAmount !== '') {
+                                setWxtmAmount('');
+                            }
+                        } else {
+                            if (details.inputAmount) {
+                                setWxtmAmount(formatAmountSmartly(details.inputAmount));
+                            } else if (wxtmAmount !== '') {
+                                setWxtmAmount('');
+                            }
                         }
                     } else {
-                        if (details.inputAmount) {
-                            setWxtmAmount(formatAmountSmartly(details.inputAmount));
-                        } else if (wxtmAmount !== '') {
-                            setWxtmAmount('');
+                        // lastUpdatedField === 'wxtmField'
+                        if (direction === 'toXtm') {
+                            if (details.inputAmount) {
+                                setEthTokenAmount(formatAmountSmartly(details.inputAmount));
+                            } else if (ethTokenAmount !== '') {
+                                setEthTokenAmount('');
+                            }
+                        } else {
+                            if (details.outputAmount) {
+                                setEthTokenAmount(formatAmountSmartly(details.outputAmount));
+                            } else if (ethTokenAmount !== '') {
+                                setEthTokenAmount('');
+                            }
                         }
                     }
+                    setIsLoading(false);
                 } else {
-                    // lastUpdatedField === 'wxtmField'
-                    if (direction === 'toXtm') {
-                        if (details.inputAmount) {
-                            setEthTokenAmount(formatAmountSmartly(details.inputAmount));
-                        } else if (ethTokenAmount !== '') {
-                            setEthTokenAmount('');
-                        }
-                    } else {
-                        if (details.outputAmount) {
-                            setEthTokenAmount(formatAmountSmartly(details.outputAmount));
-                        } else if (ethTokenAmount !== '') {
-                            setEthTokenAmount('');
-                        }
-                    }
+                    clearCalculatedDetails();
                 }
-            } else {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } catch (e: any) {
+                addToast({ title: 'Calculation Error', text: e.message || 'Failed to get quote.', type: 'error' });
                 clearCalculatedDetails();
+                setIsLoading(false);
             }
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } catch (e: any) {
-            addToast({ title: 'Calculation Error', text: e.message || 'Failed to get quote.', type: 'error' });
-            clearCalculatedDetails();
-        } finally {
-            setIsLoading(false);
-        }
-    }, [
-        sdkToken0,
-        sdkToken1,
-        lastUpdatedField,
-        direction,
-        ethTokenAmount,
-        fromUiTokenDefinition,
-        wxtmAmount,
-        toUiTokenDefinition,
-        clearCalculatedDetails,
-        getTradeDetails,
-        addToast,
-    ]);
+        },
+        [
+            sdkToken0,
+            sdkToken1,
+            lastUpdatedField,
+            direction,
+            ethTokenAmount,
+            fromUiTokenDefinition,
+            wxtmAmount,
+            toUiTokenDefinition,
+            clearCalculatedDetails,
+            getTradeDetails,
+            addToast,
+        ]
+    );
 
     const debounceCalc = useCallback(() => {
         if (calcRef.current) clearTimeout(calcRef.current);
+        if (abortController.current) abortController.current.abort();
+        abortController.current = new AbortController();
+        const signal = abortController.current.signal;
+
+        if (!shouldCalculate.current) return;
         calcRef.current = setTimeout(() => {
-            if (shouldCalculate.current) calcAmounts();
-            else setIsLoading(false);
-        }, 700);
+            if (shouldCalculate.current) {
+                shouldCalculate.current = false;
+                calcAmounts(signal);
+            } else setIsLoading(false);
+        }, 500);
     }, [calcAmounts]);
 
     useEffect(() => {
