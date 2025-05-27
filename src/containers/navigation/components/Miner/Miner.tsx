@@ -15,7 +15,8 @@ import { PoolStatsTile } from '@app/containers/navigation/components/Miner/compo
 export default function Miner() {
     const { t } = useTranslation('mining-view', { useSuspense: false });
 
-    const miningInitiated = useMiningStore((s) => s.miningInitiated);
+    const miningCpuInitiated = useMiningStore((s) => s.isCpuMiningInitiated);
+    const miningGpuInitiated = useMiningStore((s) => s.isGpuMiningInitiated);
     const isCpuMiningEnabled = useConfigMiningStore((s) => s.cpu_mining_enabled);
     const isGpuMiningEnabled = useConfigMiningStore((s) => s.gpu_mining_enabled);
 
@@ -28,7 +29,8 @@ export default function Miner() {
 
     const isWaitingForCPUHashRate = isCpuMiningEnabled && cpu_is_mining && cpu_hash_rate <= 0;
     const isWaitingForGPUHashRate = isGpuMiningEnabled && gpu_is_mining && gpu_hash_rate <= 0;
-    const isLoading = (miningInitiated && !isMiningInProgress) || (isMiningInProgress && !miningInitiated);
+    const isCpuLoading = (miningCpuInitiated && !isMiningInProgress) || (isMiningInProgress && !miningCpuInitiated);
+    const isGpuLoading = (miningGpuInitiated && !isMiningInProgress) || (isMiningInProgress && !miningGpuInitiated);
 
     return (
         <MinerContainer>
@@ -36,7 +38,7 @@ export default function Miner() {
                 <Tile
                     title={t('cpu-power')}
                     stats={isCpuMiningEnabled && cpu_is_mining ? formatHashrate(cpu_hash_rate, false) : '-'}
-                    isLoading={isCpuMiningEnabled && (isLoading || isWaitingForCPUHashRate)}
+                    isLoading={isCpuMiningEnabled && (isCpuLoading || isWaitingForCPUHashRate)}
                     chipValue={undefined}
                     unit="H/s"
                     useLowerCase
@@ -44,7 +46,7 @@ export default function Miner() {
                 <Tile
                     title={t('gpu-power')}
                     stats={isGpuMiningEnabled && gpu_is_mining ? formatHashrate(gpu_hash_rate, false) : '-'}
-                    isLoading={isGpuMiningEnabled && (isLoading || isWaitingForGPUHashRate)}
+                    isLoading={isGpuMiningEnabled && (isGpuLoading || isWaitingForGPUHashRate)}
                     chipValue={undefined}
                     unit="H/s"
                     useLowerCase
