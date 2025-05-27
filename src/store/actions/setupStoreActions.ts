@@ -1,14 +1,7 @@
 import { loadTowerAnimation, setAnimationState } from '@tari-project/tari-tower';
 
 import { useSetupStore } from '../useSetupStore';
-import {
-    startCpuMining,
-    startGpuMining,
-    startMining,
-    stopCpuMining,
-    stopGpuMining,
-    stopMining,
-} from './miningStoreActions';
+import { startCpuMining, startGpuMining, stopCpuMining, stopGpuMining } from './miningStoreActions';
 import {
     fetchApplicationsVersionsWithRetry,
     initialFetchTxs,
