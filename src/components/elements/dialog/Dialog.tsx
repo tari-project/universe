@@ -52,9 +52,19 @@ function useDialog({ open: controlledOpen, onOpenChange: setControlledOpen, disa
     const click = useClick(context, {
         enabled: controlledOpen == null,
     });
-    const dismiss = useDismiss(context, { outsidePressEvent: 'mousedown', enabled: dismissEnabled, bubbles: false });
+    const dismiss = useDismiss(context, {
+        outsidePressEvent: 'mousedown',
+        outsidePress: (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            return target.classList.contains('overlay');
+        },
+        enabled: dismissEnabled,
+        bubbles: {
+            escapeKey: false,
+            outsidePress: true,
+        },
+    });
     const role = useRole(context);
-
     const interactions = useInteractions([click, dismiss, role]);
 
     return useMemo(
@@ -109,19 +119,19 @@ export const DialogContent = forwardRef<
     const context = useDialogContext();
     const ref = useMergeRefs([context.refs.setFloating, propRef]);
     return (
-        <FloatingNode id={context.nodeId}>
+        <FloatingNode id={context.nodeId} key={context.nodeId}>
             {context.open ? (
                 <FloatingPortal>
-                    <Overlay lockScroll>
+                    <Overlay lockScroll className="overlay">
                         <FloatingFocusManager context={context.context} modal={false}>
                             <ContentWrapper
                                 ref={ref}
                                 aria-labelledby={context.labelId}
                                 aria-describedby={context.descriptionId}
-                                {...context.getFloatingProps(props)}
                                 $unPadded={props.$unPadded}
                                 $disableOverflow={props.$disableOverflow}
                                 $borderRadius={props.$borderRadius}
+                                {...context.getFloatingProps(props)}
                             >
                                 {props.children}
                             </ContentWrapper>
