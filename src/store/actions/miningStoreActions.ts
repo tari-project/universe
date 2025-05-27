@@ -27,7 +27,7 @@ export const changeMiningMode = async (params: ChangeMiningModeArgs) => {
 
     if (metricsState.cpu_mining_status.is_mining || metricsState.gpu_mining_status.is_mining) {
         console.info('Pausing mining...');
-        await pauseMining();
+        await stopMining();
     }
     try {
         await setMode({
@@ -56,16 +56,6 @@ export const getMaxAvailableThreads = async () => {
         setError(e as string);
     }
 };
-export const pauseMining = async () => {
-    console.info('Mining pausing...');
-    try {
-        await invoke('stop_mining', {});
-        console.info('Mining paused.');
-    } catch (e) {
-        console.error('Failed to pause (stop) mining: ', e);
-        setError(e as string);
-    }
-};
 export const restartMining = async () => {
     const isMining =
         useMiningMetricsStore.getState().cpu_mining_status.is_mining ||
@@ -74,7 +64,7 @@ export const restartMining = async () => {
     if (isMining) {
         console.info('Restarting mining...');
         try {
-            await pauseMining();
+            await stopMining();
         } catch (e) {
             console.error('Failed to pause(restart) mining: ', e);
         }
@@ -215,8 +205,8 @@ export const toggleDeviceExclusion = async (deviceIndex: number, excluded: boole
     try {
         const metricsState = useMiningMetricsStore.getState();
         if (metricsState.cpu_mining_status.is_mining || metricsState.gpu_mining_status.is_mining) {
-            console.info('Pausing mining...');
-            await pauseMining();
+            console.info('Stoping mining...');
+            await stopMining();
         }
         await invoke('toggle_device_exclusion', { deviceIndex, excluded });
         const devices = metricsState.gpu_devices;

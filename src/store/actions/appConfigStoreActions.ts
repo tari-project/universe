@@ -11,7 +11,7 @@ import {
     useMiningMetricsStore,
     useMiningStore,
 } from '../index.ts';
-import { pauseMining, restartMining, startMining, stopMining, toggleDeviceExclusion } from './miningStoreActions';
+import { restartMining, startMining, stopMining, toggleDeviceExclusion } from './miningStoreActions';
 import { setError } from './appStateStoreActions.ts';
 import { setUITheme } from './uiStoreActions';
 import { GpuThreads } from '@app/types/app-status.ts';
@@ -121,7 +121,7 @@ export const setCpuMiningEnabled = async (enabled: boolean) => {
     const gpuMining = useMiningMetricsStore.getState().gpu_mining_status.is_mining;
 
     if (cpuMining || gpuMining) {
-        await pauseMining();
+        await stopMining();
     }
     invoke('set_cpu_mining_enabled', { enabled })
         .then(async () => {
@@ -155,7 +155,7 @@ export const setGpuMiningEnabled = async (enabled: boolean) => {
     const gpuMining = useMiningMetricsStore.getState().gpu_mining_status.is_mining;
     const gpuDevices = useMiningMetricsStore.getState().gpu_devices;
     if (cpuMining || gpuMining) {
-        await pauseMining();
+        await stopMining();
     }
     try {
         await invoke('set_gpu_mining_enabled', { enabled });
