@@ -83,8 +83,8 @@ jobs:
         shell: bash
         run: |
           #set -xueo pipefail
-          echo "TARI_NETWORK=esme" >> $GITHUB_ENV
-          echo "TARI_TARGET_NETWORK=testnet" >> $GITHUB_ENV
+          echo "TARI_NETWORK=mainnet" >> $GITHUB_ENV
+          echo "TARI_TARGET_NETWORK=mainnet" >> $GITHUB_ENV
           # Make envs available to other steps
           echo "AIRDROP_BASE_URL=${{ env.AIRDROP_BASE_URL }}" >> $GITHUB_ENV
           echo "AIRDROP_API_BASE_URL=${{ env.AIRDROP_API_BASE_URL }}" >> $GITHUB_ENV
