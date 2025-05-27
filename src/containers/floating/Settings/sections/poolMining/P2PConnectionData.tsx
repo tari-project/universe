@@ -13,7 +13,7 @@ import {
     CardItemLabelWrapper,
     CardItemTitle,
 } from '@app/containers/floating/Settings/components/Settings.styles.tsx';
-import { StatWrapper } from '@app/containers/floating/Settings/sections/p2p/P2PoolStats.styles.ts';
+import { StatWrapper } from '@app/containers/floating/Settings/sections/poolMining/P2PoolStats.styles.ts';
 
 import { useEffect, useState } from 'react';
 
