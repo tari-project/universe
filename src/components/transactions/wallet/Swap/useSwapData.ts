@@ -61,7 +61,6 @@ export const useSwapData = () => {
     const [swapError, setSwapError] = useState<string | null>(null);
     const [minimumReceivedDisplay, setMinimumReceivedDisplay] = useState<string | null>(null);
     const [executionPriceDisplay, setExecutionPriceDisplay] = useState<string | null>(null);
-    const calcAmountsAbortControllerRef = useRef<AbortController | null>(null);
 
     const [tradeDetails, setTradeDetails] = useState<TradeDetails | null>(null);
     const defaultChainId = useConfigCoreStore((s) => s.default_chain);
@@ -350,12 +349,6 @@ export const useSwapData = () => {
 
     const calcAmounts = useCallback(async () => {
         if (!shouldCalculate.current) return;
-        if (calcAmountsAbortControllerRef.current) {
-            calcAmountsAbortControllerRef.current.abort();
-            console.info('Previous request for calcAmounts aborted.');
-        }
-        calcAmountsAbortControllerRef.current = new AbortController();
-        const signal = calcAmountsAbortControllerRef.current.signal;
 
         shouldCalculate.current = false;
         let amountTypedByUserStr: string;
@@ -396,7 +389,6 @@ export const useSwapData = () => {
         try {
             const amountForCalcWei = viemParseUnits(amountTypedByUserStr, tokenUsedForParsingAmount.decimals);
             const details = await getTradeDetails(amountForCalcWei.toString(), amountTypeForGetTradeDetails);
-            if (signal?.aborted) return;
 
             setTradeDetails(details);
 

@@ -112,7 +112,7 @@ export const Swap = memo(function Swap() {
                 {fromTokenDisplay && connectedAccount.address ? (
                     <ConnectedWalletWrapper onClick={() => setOpenWallet(true)}>
                         <>
-                            {getCurrencyIcon({ symbol: fromTokenDisplay.symbol || EnabledTokensEnum.ETH, width: 20 })}
+                            {getCurrencyIcon({ symbol: EnabledTokensEnum.ETH, width: 20 })}
                             {truncateMiddle((connectedAccount?.address as `0x${string}`) || '', 6)}
                         </>
                     </ConnectedWalletWrapper>
