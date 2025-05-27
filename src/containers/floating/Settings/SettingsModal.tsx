@@ -30,7 +30,6 @@ const SettingsModal = memo(function SettingsModal() {
     const { t } = useTranslation(['settings'], { useSuspense: false });
     const [activeSection, setActiveSection] = useState<SettingsType>(SETTINGS_TYPES[0]);
     const isSettingsOpen = useAppStateStore((s) => s.isSettingsOpen);
-
     const markups = {
         general: <GeneralSettings />,
         mining: <MiningSettings />,
@@ -45,6 +44,7 @@ const SettingsModal = memo(function SettingsModal() {
     const sectionMarkup = markups[activeSection];
 
     function onOpenChange() {
+        console.debug('onopenchange');
         if (isSettingsOpen) {
             setActiveSection(SETTINGS_TYPES[0]);
         }

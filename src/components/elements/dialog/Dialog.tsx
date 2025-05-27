@@ -44,7 +44,10 @@ function useDialog({ open: controlledOpen, onOpenChange: setControlledOpen, disa
     const data = useFloating({
         nodeId,
         open,
-        onOpenChange: setOpen,
+        onOpenChange(nextOpen, event, reason) {
+            setOpen?.(nextOpen);
+            console.debug('reason: ', reason);
+        },
     });
 
     const context = data.context;
@@ -54,7 +57,6 @@ function useDialog({ open: controlledOpen, onOpenChange: setControlledOpen, disa
     });
     const dismiss = useDismiss(context, { outsidePressEvent: 'mousedown', enabled: dismissEnabled, bubbles: false });
     const role = useRole(context);
-
     const interactions = useInteractions([click, dismiss, role]);
 
     return useMemo(
@@ -118,10 +120,10 @@ export const DialogContent = forwardRef<
                                 ref={ref}
                                 aria-labelledby={context.labelId}
                                 aria-describedby={context.descriptionId}
-                                {...context.getFloatingProps(props)}
                                 $unPadded={props.$unPadded}
                                 $disableOverflow={props.$disableOverflow}
                                 $borderRadius={props.$borderRadius}
+                                {...context.getFloatingProps(props)}
                             >
                                 {props.children}
                             </ContentWrapper>

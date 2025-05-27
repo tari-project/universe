@@ -1,14 +1,22 @@
-import { AnimatePresence } from 'motion/react';
-import { memo, useMemo } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { CircularProgress } from '@app/components/elements/CircularProgress';
 import { Text, Title, Wrapper, ProgressWrapper, TextWrapper } from './styles';
 import { useTranslation } from 'react-i18next';
 import { useUIStore } from '@app/store';
 import { useSetupStore } from '@app/store/useSetupStore';
 import { setShowResumeAppModal } from '@app/store/actions/uiStoreActions';
+import { FloatingNode, FloatingPortal, useFloating, useFloatingNodeId } from '@floating-ui/react';
 
 const ResumeApplicationModal = memo(function ResumeApplicationModal() {
     const { t } = useTranslation('setup-progresses');
+    const nodeId = useFloatingNodeId();
+    const [open, setOpen] = useState(false);
+
+    const { refs } = useFloating({
+        nodeId,
+        open,
+        onOpenChange: setOpen,
+    });
 
     const connectionStatus = useUIStore((s) => s.connectionStatus);
     const corePhaseInfoPayload = useSetupStore((state) => state.core_phase_setup_payload);
@@ -84,23 +92,29 @@ const ResumeApplicationModal = memo(function ResumeApplicationModal() {
     const setupTitle = currentPhaseToShow?.title;
     const setupParams = currentPhaseToShow?.title_params ? { ...currentPhaseToShow.title_params } : {};
 
+    useEffect(() => {
+        setOpen(showModal && Boolean(currentPhaseToShow));
+    }, [currentPhaseToShow, showModal]);
+
     return (
-        <AnimatePresence>
-            {showModal && Boolean(currentPhaseToShow) && (
-                <Wrapper>
-                    <TextWrapper>
-                        <Title>{t(`phase-title.${setupPhaseTitle}`)}</Title>
-                        <Text>{t(`title.${setupTitle}`, { ...setupParams })}</Text>
-                    </TextWrapper>
-                    <ProgressWrapper>
-                        <Title>
-                            {stageProgress} / {stageTotal}
-                        </Title>
-                        <CircularProgress />
-                    </ProgressWrapper>
-                </Wrapper>
-            )}
-        </AnimatePresence>
+        <FloatingNode id={nodeId}>
+            <FloatingPortal>
+                {open && (
+                    <Wrapper ref={refs.setFloating}>
+                        <TextWrapper>
+                            <Title>{t(`phase-title.${setupPhaseTitle}`)}</Title>
+                            <Text>{t(`title.${setupTitle}`, { ...setupParams })}</Text>
+                        </TextWrapper>
+                        <ProgressWrapper>
+                            <Title>
+                                {stageProgress} / {stageTotal}
+                            </Title>
+                            <CircularProgress />
+                        </ProgressWrapper>
+                    </Wrapper>
+                )}
+            </FloatingPortal>
+        </FloatingNode>
     );
 });
 

@@ -25,6 +25,7 @@ const environment = import.meta.env.MODE;
 const FloatingElements = memo(function FloatingElements() {
     return (
         <FloatingTree>
+            {environment === 'development' && <AdminUI />}
             <SettingsModal />
             <StagedSecurity />
             <AutoUpdateDialog />
@@ -37,12 +38,11 @@ const FloatingElements = memo(function FloatingElements() {
             <ToastStack />
             <CriticalProblemDialog />
             <ReleaseNotesDialog />
-            <ResumeApplicationModal />
             <XSpaceEventBanner />
             <CustomPowerLevelsDialogContainer />
-            {environment === 'development' && <AdminUI />}
             <WarmupDialog />
             <EXModal />
+            <ResumeApplicationModal />
         </FloatingTree>
     );
 });
