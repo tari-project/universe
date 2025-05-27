@@ -36,6 +36,7 @@ pub enum EventType {
     WalletBalanceUpdate,
     BaseNodeUpdate,
     GpuDevicesUpdate,
+    PoolStatusUpdate,
     CpuMiningUpdate,
     GpuMiningUpdate,
     ConnectedPeersUpdate,

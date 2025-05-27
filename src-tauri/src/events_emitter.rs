@@ -26,6 +26,7 @@ use crate::events::{
 };
 #[cfg(target_os = "windows")]
 use crate::external_dependencies::RequiredExternalDependency;
+use crate::pool_status_watcher::PoolStatus;
 use crate::{
     commands::CpuMinerStatus,
     configs::{
@@ -333,6 +334,16 @@ impl EventsEmitter {
         }
     }
 
+    pub async fn emit_pool_status_update(app_handle: &AppHandle, pool_status: Option<PoolStatus>) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::PoolStatusUpdate,
+            payload: pool_status,
+        };
+        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+            error!(target: LOG_TARGET, "Failed to emit PoolStatusUpdate event: {:?}", e);
+        }
+    }
     pub async fn emit_cpu_mining_update(app_handle: &AppHandle, status: CpuMinerStatus) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
