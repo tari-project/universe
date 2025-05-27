@@ -1,3 +1,47 @@
+🚀 TARI UNIVERSE v1.1.1 (HARD FORK): The Flow Supreme
+
+_May 26, 2025_
+
+Hey everyone!
+Welcome to Tari Mainnet Week 3! Today, we're thrilled to launch "The Flow Supreme", an essential upgrade designed to supercharge mining rewards across a diverse range of hardware.
+
+What's New?
+
+✅ Network Hard Fork Complete
+The Tari network has successfully forked as of block 15,000. Here's how the hash is now distributed:
+
+- 33% RandomX (Merged mining with XMR)
+- 33% RandomX (Solo mining for Tari)
+- 33% SHA3
+
+This means ~240 new blocks per day—an entirely fresh lane for miners to win Tari rewards!
+
+✅ Tari Universe, now with "Hatchling" pool baked in
+
+We've integrated a centralized, low-fee (1% for infra costs) mining (Hatchling!) pool specifically optimized for the Tari RandomX solo mining lane. This new pool ensures a steadier, more predictable flow of rewards for CPU miners with diverse hardware configurations, all while we continue refining the decentralized p2pool experience.
+
+- Optional: You can still choose solo mining if that's your preference!
+- CPU only: GPU miners will keep hashing directly via the native Tari p2pool.
+
+⚠️ Known Issues (to be addressed in upcoming hotfix)
+- GPU Mining: GPU mining may not start automatically. If this happens, you'll need to stop and then start mining for it to work *after* sync completes
+- Mac OS Keychain Prompts: On Mac, you'll be asked for your Keychain password many times when Universe updates the wallet. Selecting Always Allow will solve this issue
+
+Expect a hot fix soon that solves both of them.
+
+Thank you for being here and believing in Tari. You are Tari. We are ALL Tari 💜🐢
+
+---
+
+🚀 TARI UNIVERSE v1.0.12: The Shell Eternal
+
+_May 26, 2025_
+
+Hey everyone,
+In preparation for the hard fork at block 15,000 today, contributors have prepared one more hotfix: "The Shell Eternal." Please update Tari Universe to this new version ASAP to help prepare the network for the hard fork. Thank you for being Tari OGs! 💜🐢
+
+---
+
 🚀 TARI UNIVERSE v1.0.11: The Shell Ascendant
 
 _May 25, 2025_

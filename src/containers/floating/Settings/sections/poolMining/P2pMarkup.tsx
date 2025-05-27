@@ -18,7 +18,7 @@ interface P2pMarkupProps {
 }
 
 const P2pMarkup = ({ setDisabledStats }: P2pMarkupProps) => {
-    const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
+    const { t } = useTranslation('settings', { useSuspense: false });
     const isP2poolEnabled = useConfigCoreStore((state) => state.is_p2pool_enabled);
 
     const handleP2poolEnabled = useCallback(
@@ -34,9 +34,9 @@ const P2pMarkup = ({ setDisabledStats }: P2pMarkupProps) => {
             <SettingsGroup>
                 <SettingsGroupContent>
                     <SettingsGroupTitle>
-                        <Typography variant="h6">{t('pool-mining', { ns: 'settings' })}</Typography>
+                        <Typography variant="h6">{t('use-p2p')}</Typography>
                     </SettingsGroupTitle>
-                    <Typography>{t('pool-mining-description', { ns: 'settings' })}</Typography>
+                    <Typography>{t('pool-mining-description')}</Typography>
                 </SettingsGroupContent>
                 <SettingsGroupAction>
                     <ToggleSwitch checked={isP2poolEnabled} onChange={handleP2poolEnabled} />
