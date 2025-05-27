@@ -186,15 +186,16 @@ impl DynamicMemoryConfig {
     pub async fn init() -> Self {
         let in_memory_config = AppInMemoryConfig::init();
         let miner_type = MinerType::from_str(&in_memory_config.exchange_id);
-        let miners_list = DynamicMemoryConfig::get_exchange_miners().await;
+        let miners_list =
+            DynamicMemoryConfig::get_exchange_miners(in_memory_config.airdrop_api_url.clone())
+                .await;
         info!(
             "[DEBUG UNIVERSAL EXCHANGE] exchange miners: {:?}",
             miners_list
         );
         if miners_list
             .iter()
-            .find(|miner| miner.id.eq(&in_memory_config.exchange_id) && miner.name.eq("Universal"))
-            .is_some()
+            .any(|miner| miner.id.eq(&in_memory_config.exchange_id) && miner.name.eq("Universal"))
         {
             info!("[DEBUG UNIVERSAL EXCHANGE] is universal miners");
             return Self {
@@ -208,7 +209,7 @@ impl DynamicMemoryConfig {
             miner_type,
         }
     }
-    pub async fn init_universal(exchange_miner: &ExchangeMiner) -> Self {
+    pub fn init_universal(exchange_miner: &ExchangeMiner) -> Self {
         Self {
             miner_type: MinerType::Universal,
             in_memory_config: AppInMemoryConfig {
@@ -216,20 +217,40 @@ impl DynamicMemoryConfig {
                 exchange_id: exchange_miner.id.clone(),
                 ..AppInMemoryConfig::init()
             },
-            ..Self::init().await
         }
     }
     pub fn is_universal_miner(&self) -> bool {
         matches!(self.miner_type, MinerType::Universal)
     }
-    pub async fn get_exchange_miners() -> Vec<ExchangeMiner> {
-        let endpoint = "https://rwa.y.at/miner/exchanges";
+    pub async fn get_exchange_miners(airdrop_api_url: String) -> Vec<ExchangeMiner> {
+        // let endpoint = "https://rwa.y.at/miner/exchanges";
         info!(
             "[DEBUG UNIVERSAL EXCHANGE] Fetching exchange miners from {}",
-            endpoint
+            airdrop_api_url
         );
-        let response = reqwest::get(endpoint).await.unwrap();
-        let miners: ExchangeMinersListResponse = response.json().await.unwrap();
+        let mut last_err = None;
+        let mut response = None;
+        for _ in 0..3 {
+            match reqwest::get(airdrop_api_url.clone()).await {
+                Ok(resp) => {
+                    response = Some(resp);
+                    break;
+                }
+                Err(e) => {
+                    last_err = Some(e);
+                }
+            }
+        }
+        let response = response.unwrap_or_else(|| {
+            panic!(
+                "Failed to fetch exchange miners after 3 attempts: {:?}",
+                last_err
+            )
+        });
+        let miners: ExchangeMinersListResponse = response
+            .json()
+            .await
+            .unwrap_or_else(|e| panic!("Failed to parse exchange miners response: {:?}", e));
         info!("[DEBUG UNIVERSAL EXCHANGE] Exchange miners: {:?}", miners);
         miners.exchanges
     }

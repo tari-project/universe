@@ -866,7 +866,7 @@ impl SetupManager {
         info!(target: LOG_TARGET, "[DEBUG UNIVERSAL EXCHANGE] selected exchange miner: {:?}", selected_miner);
         let state = app_handle.state::<UniverseAppState>();
         let mut config = state.in_memory_config.write().await;
-        let new_config = DynamicMemoryConfig::init_universal(&selected_miner).await;
+        let new_config = DynamicMemoryConfig::init_universal(&selected_miner);
         *config = new_config;
         info!("[DEBUG UNIVERSAL EXCHANGE] exchange set");
         self.universal_modal_status
