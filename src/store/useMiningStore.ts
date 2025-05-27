@@ -12,6 +12,7 @@ interface MiningStoreState {
     miningTime: number;
     isCpuMiningInitiated: boolean;
     isGpuMiningInitiated: boolean;
+    wasMineOnAppStartExecuted?: boolean;
     sessionMiningTime: number;
     customLevelsDialogOpen: boolean;
     maxAvailableThreads?: MaxConsumptionLevels;
@@ -30,6 +31,7 @@ const initialState: MiningStoreState = {
     miningInitiated: false,
     isCpuMiningInitiated: false,
     isGpuMiningInitiated: false,
+    wasMineOnAppStartExecuted: false,
     isChangingMode: false,
     isExcludingGpuDevices: false,
     //TODO: replace with CpuMiningUnlocked and GpuMiningUnlocked from useSetupStore
