@@ -41,6 +41,10 @@
     "text": "Tari Universe는 귀하의 경험을 개선하기 위해 분석을 사용하고자 합니다.",
     "title": "Tari Universe를 더 좋게 만들기"
   },
+  "push-notifications": {
+    "text": "Tari Universe would like to be able to send you notifications to your connected devices",
+    "title": "Allow Tari Universe to send notifications  "
+  },
   "referral": "친구 초대",
   "rightClickToCopy": "링크를 복사하려면 오른쪽 클릭",
   "success": "성공",

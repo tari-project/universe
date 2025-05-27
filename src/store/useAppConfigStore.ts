@@ -8,6 +8,7 @@ type UIConfigStoreState = Partial<ConfigUI> & {
 const configCoreInitialState: ConfigCore = {
     created_at: '',
     allow_telemetry: false,
+    allow_notifications: true,
     anon_id: '',
     auto_update: false,
     is_p2pool_enabled: false,
