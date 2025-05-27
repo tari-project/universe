@@ -34,7 +34,7 @@ use crate::{
     progress_tracker_old::ProgressTracker,
 };
 
-use super::{tapplets_resolver::LatestVersionApiAdapter, Tapplets};
+use super::tapplets_resolver::LatestVersionApiAdapter;
 
 pub const LOG_TARGET: &str = "tari::universe::tapplet_manager";
 
@@ -389,6 +389,8 @@ impl TappletManager {
 
             info!(target: LOG_TARGET, "Tapplet folder path: {:?}", tapplet_folder);
             let version_folder = tapplet_folder.join(version.to_string());
+
+            // difference between binaries process: for a tapplet just check if index.html exists
             let tapplet_file_with_html = version_folder.join("index.html");
 
             info!(target: LOG_TARGET, "Version folder path: {:?}", version_folder);

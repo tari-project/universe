@@ -36,6 +36,7 @@ impl Tapplets {
         }
     }
 
+    #[allow(dead_code)]
     pub fn from_name(name: &str) -> Self {
         match name {
             "bridge" => Tapplets::Bridge,

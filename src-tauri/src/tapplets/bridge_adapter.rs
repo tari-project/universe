@@ -132,8 +132,8 @@ impl LatestVersionApiAdapter for BridgeTappletAdapter {
         &self,
         version: &VersionDownloadInfo,
     ) -> Result<VersionAsset, Error> {
-        let mut name_suffix = "";
-        // TODO: add platform specific logic
+        let name_suffix = "";
+        // TODO: add platform specific logic if needed
         // if cfg!(target_os = "windows") {
         //     name_suffix = r"windows-x64.*\.zip";
         // }
@@ -159,7 +159,13 @@ impl LatestVersionApiAdapter for BridgeTappletAdapter {
         let platform = version
             .assets
             .iter()
-            .find(|a| name_sufix_regex.is_match(&a.name))
+            .find(|a| {
+                if let Some(ref specific) = self.specific_name {
+                    specific.is_match(&a.name) && name_sufix_regex.is_match(&a.name)
+                } else {
+                    name_sufix_regex.is_match(&a.name)
+                }
+            })
             .ok_or(anyhow::anyhow!("Failed to get platform asset"))?;
         info!(target: LOG_TARGET, "Found platform: {:?}", platform);
         Ok(platform.clone())
