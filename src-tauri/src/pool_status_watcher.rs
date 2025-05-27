@@ -56,28 +56,6 @@ impl<T: PoolApiAdapter + Send + Sync + 'static> PoolStatusWatcher<T> {
         let pool_status = self.adapter.convert_api_data(&data)?;
         Ok(pool_status)
     }
-
-    // async fn start(&self, mut shutdown: ShutdownSignal)-> Result<(), anyhow::Error> {
-    //     let mut interval = tokio::time::interval(Duration::from_secs(20));
-    //     loop {
-    //         tokio::select! {
-    //             _ = shutdown.wait() => {
-    //                 break;
-    //             }
-    //             _ = interval.tick() => {
-    //                 match self.get_pool_status().await {
-    //                     Ok(status) => {
-    //                         self.broadcast.send(Some(status)).unwrap();
-    //                     }
-    //                     Err(e) => {
-    //                         error!(target: LOG_TARGET, "Error fetching pool status: {}", e);
-    //                     }
-    //                 }
-    //             }
-    //         }
-    //     }
-    //     Ok(())
-    // }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
