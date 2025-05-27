@@ -12,14 +12,11 @@ import {
     useMiningStore,
 } from '../index.ts';
 import {
-    pauseMining,
     restartMining,
     startCpuMining,
     startGpuMining,
-    startMining,
     stopCpuMining,
     stopGpuMining,
-    stopMining,
     toggleDeviceExclusion,
 } from './miningStoreActions';
 import { setError } from './appStateStoreActions.ts';
