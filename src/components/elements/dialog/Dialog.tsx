@@ -44,10 +44,7 @@ function useDialog({ open: controlledOpen, onOpenChange: setControlledOpen, disa
     const data = useFloating({
         nodeId,
         open,
-        onOpenChange(nextOpen, event, reason) {
-            setOpen?.(nextOpen);
-            console.debug('reason: ', reason);
-        },
+        onOpenChange: setOpen,
     });
 
     const context = data.context;
@@ -111,7 +108,7 @@ export const DialogContent = forwardRef<
     const context = useDialogContext();
     const ref = useMergeRefs([context.refs.setFloating, propRef]);
     return (
-        <FloatingNode id={context.nodeId}>
+        <FloatingNode id={context.nodeId} key={context.nodeId}>
             {context.open ? (
                 <FloatingPortal>
                     <Overlay lockScroll>

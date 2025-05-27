@@ -44,7 +44,6 @@ const SettingsModal = memo(function SettingsModal() {
     const sectionMarkup = markups[activeSection];
 
     function onOpenChange() {
-        console.debug('onopenchange');
         if (isSettingsOpen) {
             setActiveSection(SETTINGS_TYPES[0]);
         }
