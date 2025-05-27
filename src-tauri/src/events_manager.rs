@@ -22,7 +22,7 @@
 
 use std::{collections::HashMap, time::Duration};
 
-use log::error;
+use log::{error, info};
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tauri::{AppHandle, Manager};
 
@@ -35,6 +35,7 @@ use crate::events::ConnectionStatusPayload;
 use crate::external_dependencies::RequiredExternalDependency;
 use crate::{configs::config_core::ConfigCoreContent, events::CriticalProblemPayload};
 
+use crate::pool_status_watcher::PoolStatus;
 use crate::{
     commands::CpuMinerStatus,
     configs::config_ui::ConfigUIContent,
@@ -130,6 +131,11 @@ impl EventsManager {
             .collect();
 
         EventsEmitter::emit_gpu_devices_update(app, gpu_public_devices).await;
+    }
+
+    pub async fn handle_pool_status_update(app: &AppHandle, status: Option<PoolStatus>) {
+        info!(target: LOG_TARGET, "handle_pool_status_update called {:?}", status);
+        EventsEmitter::emit_pool_status_update(app, status).await;
     }
 
     pub async fn handle_cpu_mining_update(app: &AppHandle, status: CpuMinerStatus) {

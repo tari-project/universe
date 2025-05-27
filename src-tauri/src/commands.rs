@@ -1497,6 +1497,7 @@ pub async fn start_mining<'r>(
                 mode,
                 custom_cpu_usage,
                 &tari_address,
+                app.clone(),
             )
             .await;
         drop(cpu_miner_config);

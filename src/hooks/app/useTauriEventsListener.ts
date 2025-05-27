@@ -10,6 +10,7 @@ import {
     setCpuMiningStatus,
     setGpuDevices,
     setGpuMiningStatus,
+    setPoolStatus,
 } from '@app/store/actions/miningMetricsStoreActions';
 import {
     handleAskForRestart,
@@ -124,6 +125,11 @@ const useTauriEventsListener = () => {
                             break;
                         case 'CpuMiningUpdate':
                             setCpuMiningStatus(event.payload);
+                            break;
+                        case 'PoolStatusUpdate':
+                            console.debug('========= PoolStatusUpdate =========');
+                            console.debug(event.payload);
+                            setPoolStatus(event.payload);
                             break;
                         case 'ConnectedPeersUpdate':
                             handleConnectedPeersUpdate(event.payload);
