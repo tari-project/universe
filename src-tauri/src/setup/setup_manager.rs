@@ -317,7 +317,7 @@ impl SetupManager {
             .path()
             .app_config_dir()
             .expect("Could not get config dir");
-        let internal_wallet = InternalWallet::load_or_create(config_path)
+        let internal_wallet = InternalWallet::load_or_create(config_path, state)
             .await
             .expect("Could not load or create internal wallet");
         let is_address_generated = internal_wallet.get_is_tari_address_generated();

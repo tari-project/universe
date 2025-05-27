@@ -50,6 +50,7 @@ use tari_utilities::hex::Hex;
 
 use crate::credential_manager::{Credential, CredentialError, CredentialManager};
 use crate::wallet_adapter::WalletBalance;
+use crate::UniverseAppState;
 
 const KEY_MANAGER_COMMS_SECRET_KEY_BRANCH_KEY: &str = "comms";
 const LOG_TARGET: &str = "tari::universe::internal_wallet";
@@ -60,7 +61,10 @@ pub struct InternalWallet {
 }
 
 impl InternalWallet {
-    pub async fn load_or_create(config_path: PathBuf) -> Result<Self, anyhow::Error> {
+    pub async fn load_or_create(
+        config_path: PathBuf,
+        state: tauri::State<'_, UniverseAppState>,
+    ) -> Result<Self, anyhow::Error> {
         let network = Network::get_current_or_user_setting_or_default()
             .to_string()
             .to_lowercase();
@@ -98,6 +102,10 @@ impl InternalWallet {
         }
         info!(target: LOG_TARGET, "Wallet config does not exist or is corrupt. Creating new wallet");
         let (wallet, config) = InternalWallet::create_new_wallet(None, config_path).await?;
+        let mut tari_address_guard = state.tari_address.write().await;
+        *tari_address_guard = wallet.tari_address.clone();
+        drop(tari_address_guard);
+
         let config = serde_json::to_string(&config)?;
         fs::write(file, config).await?;
         Ok(wallet)
@@ -151,13 +159,12 @@ impl InternalWallet {
         Ok(tari_address)
     }
 
-    pub async fn reset_exchange_address(&mut self, config_path: PathBuf) -> Result<(), String> {
+    pub async fn reset_is_address_generated(&mut self, config_path: PathBuf) -> Result<(), String> {
         let network = Network::get_current_or_user_setting_or_default()
             .to_string()
             .to_lowercase();
 
-        self.config.is_tari_address_generated = false;
-        self.config.tari_address_base58 = TariAddress::default().to_base58();
+        self.config.is_tari_address_generated = true;
 
         let config = serde_json::to_string(&self.config).map_err(|e| e.to_string())?;
         let file = config_path.join(network).join("wallet_config.json");

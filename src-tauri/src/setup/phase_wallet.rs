@@ -208,6 +208,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
                 log_dir.clone(),
                 self.app_configuration.use_tor,
                 is_local_node,
+                app_state.clone(),
             )
             .await?;
 

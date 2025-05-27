@@ -119,7 +119,7 @@ impl ConfigWallet {
             cpu_config.load_from_config_wallet(&ConfigWallet::content().await);
         }
 
-        match InternalWallet::load_or_create(old_config_path.clone()).await {
+        match InternalWallet::load_or_create(old_config_path.clone(), state.clone()).await {
             Ok(wallet) => {
                 state
                     .wallet_manager
