@@ -69,7 +69,7 @@ export const handleCpuMiningUnlocked = async () => {
         await startMining();
     }
 };
-export const handleMiningUnlocked = async () => {
+export const handleGpuMiningUnlocked = async () => {
     useSetupStore.setState({ gpuMiningUnlocked: true });
     // Proceed with auto mining when enabled
     const mine_on_app_start = useConfigMiningStore.getState().mine_on_app_start;
