@@ -1512,7 +1512,7 @@ pub async fn start_cpu_mining<'r>(
         }
     }
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "start_mining took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET, "start_cpu_mining took too long: {:?}", timer.elapsed());
     }
     Ok(())
 }
@@ -1609,7 +1609,7 @@ pub async fn start_gpu_mining<'r>(
         }
     }
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "start_mining took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET, "start_gpu_mining took too long: {:?}", timer.elapsed());
     }
 
     let mining_time = *ConfigMining::content().await.mining_time();
@@ -1642,10 +1642,6 @@ pub async fn stop_cpu_mining<'r>(
         .map_err(|e| e.to_string())?;
     info!(target:LOG_TARGET, "gpu miner stopped");
 
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "stop_mining took too long: {:?}", timer.elapsed());
-    }
-
     let timestamp_lock = state.cpu_miner_timestamp_mutex.lock().await;
     let current_mining_time_ms = *ConfigMining::content().await.mining_time();
 
@@ -1659,6 +1655,10 @@ pub async fn stop_cpu_mining<'r>(
     let _unused =
         ConfigMining::update_field(ConfigMiningContent::set_mining_time, mining_time).await;
     EventsEmitter::emit_mining_time_update(&app, mining_time).await;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "stop_cpu_mining took too long: {:?}", timer.elapsed());
+    }
 
     Ok(())
 }
@@ -1677,7 +1677,7 @@ pub async fn stop_gpu_mining<'r>(state: tauri::State<'_, UniverseAppState>) -> R
     info!(target:LOG_TARGET, "gpu miner stopped");
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "stop_mining took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET, "stop_cpu_mining took too long: {:?}", timer.elapsed());
     }
     Ok(())
 }
