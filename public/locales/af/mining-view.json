@@ -29,6 +29,12 @@
     "step_5": "Probeer Tor deaktiveer (in Instellings)",
     "step_6": "Probeer \"n toepassingherstel (in Instellings)"
   },
+  "pool": {
+    "accepted_shares": "Accepted shares",
+    "balance": "Balance",
+    "min_payout": "Minimum payout",
+    "unpaid": "Unpaid"
+  },
   "you-earn-rewards-separately": "Jy verdien belonings vir die myn van CPU en GPU afsonderlik",
   "you-won-block": "Jy was die wenner van <span>blok #{{ blockHeight }}</span>",
   "you-won-while-away": "<span>Jy het {{ blocks }} gewen</span> terwyl jy weg was",

@@ -24,8 +24,8 @@ use crate::{events_manager::EventsManager, gpu_miner::EngineType, UniverseAppSta
 use std::{sync::LazyLock, time::SystemTime};
 
 use getset::{Getters, Setters};
-use log::warn;
 use serde::{Deserialize, Serialize};
+use tari_common::configuration::Network;
 use tauri::{AppHandle, Manager};
 use tokio::sync::RwLock;
 
@@ -104,16 +104,38 @@ impl Default for ConfigMiningContent {
             cpu_mining_enabled: true,
             gpu_engine: EngineType::OpenCL,
             squad_override: None,
-            cpu_mining_pool_url: Some("pool-global.tari.snipanet.com:3333".to_string()),
-            cpu_mining_pool_status_url: Some(
-                "https://pool.rxt.tari.jagtech.io/api/miner/%TARI_ADDRESS%/stats".to_string(),
-            ),
+            cpu_mining_pool_url: default_cpu_mining_pool_url(),
+            cpu_mining_pool_status_url: default_cpu_mining_pool_status_url(),
             gpu_mining_pool_url: None,
             mining_time: 0,
         }
     }
 }
 impl ConfigContentImpl for ConfigMiningContent {}
+
+fn default_cpu_mining_pool_url() -> Option<String> {
+    match Network::get_current_or_user_setting_or_default() {
+        Network::MainNet => Some("pool-global.tari.snipanet.com:3333".to_string()),
+        Network::NextNet | Network::StageNet => Some("69.164.205.243:3333".to_string()),
+        Network::LocalNet | Network::Igor | Network::Esmeralda => {
+            Some("69.164.205.243:3333".to_string())
+        }
+    }
+}
+
+fn default_cpu_mining_pool_status_url() -> Option<String> {
+    match Network::get_current_or_user_setting_or_default() {
+        Network::MainNet => {
+            Some("https://pool.rxt.tari.jagtech.io/api/miner/%TARI_ADDRESS%/stats".to_string())
+        }
+        Network::NextNet | Network::StageNet => {
+            Some("http://69.164.205.243:3333/api/miner/%TARI_ADDRESS%/stats".to_string())
+        }
+        Network::LocalNet | Network::Igor | Network::Esmeralda => {
+            Some("http://69.164.205.243:3333/api/miner/%TARI_ADDRESS%/stats".to_string())
+        }
+    }
+}
 
 pub struct ConfigMining {
     content: ConfigMiningContent,
@@ -125,47 +147,6 @@ impl ConfigMining {
         let state = app_handle.state::<UniverseAppState>();
         let mut config = Self::current().write().await;
         config.load_app_handle(app_handle.clone()).await;
-
-        // TODO: Remove this when the migration is done
-        // Can be removed before merging to main
-        let old_cpu_mining_pool_url: Option<String> = Some("pool.supportxmr.com:3333".to_string());
-        let old_cpu_mining_pool_status_url: Option<String> =
-            Some("https://www.supportxmr.com/api/miner/%MONERO_ADDRESS%/stats".to_string());
-
-        // force the default values for the pool urls in case they are not set
-        let is_cpu_mining_pool_url_not_set = config.content.cpu_mining_pool_url.is_none();
-        let is_old_cpu_mining_pool_url = config
-            .content
-            .cpu_mining_pool_url
-            .eq(&old_cpu_mining_pool_url);
-        if is_cpu_mining_pool_url_not_set || is_old_cpu_mining_pool_url {
-            config.content.cpu_mining_pool_url = ConfigMiningContent::default().cpu_mining_pool_url;
-        }
-
-        // force the default values for the pool urls in case they are not set
-        let is_cpu_mining_pool_status_url_not_set =
-            config.content.cpu_mining_pool_status_url.is_none();
-        let is_old_cpu_mining_pool_status_url = config
-            .content
-            .cpu_mining_pool_status_url
-            .eq(&old_cpu_mining_pool_status_url);
-
-        if is_cpu_mining_pool_status_url_not_set || is_old_cpu_mining_pool_status_url {
-            config.content.cpu_mining_pool_status_url =
-                ConfigMiningContent::default().cpu_mining_pool_status_url;
-        }
-        // update json file to reflect the default values
-        if is_cpu_mining_pool_url_not_set
-            || is_cpu_mining_pool_status_url_not_set
-            || is_old_cpu_mining_pool_url
-            || is_old_cpu_mining_pool_status_url
-        {
-            let _unused = ConfigMining::_save_config(config.content.clone()).inspect_err(
-            |error| {
-                warn!(target: crate::LOG_TARGET, "[{}] [save_config] error: {:?}", Self::_get_name(), error);
-            },
-        );
-        }
 
         let mut cpu_config = state.cpu_miner_config.write().await;
         cpu_config.load_from_config_mining(config._get_content());
