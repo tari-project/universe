@@ -2,7 +2,7 @@ import { Table, Cell, TableRow, TableOverflowWrapper } from './P2PoolStats.style
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { timeAgo } from '@app/utils/getTimeAgo.ts';
 import { truncateMiddle } from '@app/utils/truncateString.ts';
-import { ConnectedPeerInfoExtended } from '@app/containers/floating/Settings/sections/p2p/P2PoolStats.tsx';
+import { ConnectedPeerInfoExtended } from '@app/containers/floating/Settings/sections/poolMining/P2PoolStats.tsx';
 import { useP2poolStatsStore } from '@app/store/useP2poolStatsStore.ts';
 
 const headings = ['#', 'Peer ID', 'RandomX Height', 'SHA3X Height', 'Last Ping'];

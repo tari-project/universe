@@ -153,7 +153,7 @@ impl WalletAdapter {
                 excess_sig: tx.excess_sig,
                 fee: tx.fee,
                 timestamp: tx.timestamp,
-                payment_id: PaymentId::from_bytes(&tx.user_payment_id).user_data_as_string(),
+                payment_id: PaymentId::stringify_bytes(&tx.user_payment_id),
                 mined_in_block_height: tx.mined_in_block_height,
             });
             if let Some(limit) = limit {
@@ -221,7 +221,7 @@ impl WalletAdapter {
                 excess_sig: tx.excess_sig,
                 fee: tx.fee,
                 timestamp: tx.timestamp,
-                payment_id: PaymentId::from_bytes(&tx.user_payment_id).user_data_as_string(),
+                payment_id: PaymentId::stringify_bytes(&tx.user_payment_id),
                 mined_in_block_height: tx.mined_in_block_height,
             });
             if let Some(limit) = limit {
@@ -265,7 +265,7 @@ impl WalletAdapter {
                             if let Some(network) = &state.network {
                                 if matches!(network.status, ConnectivityStatus::Online(3..)) {
                                     zero_scanned_height_count += 1;
-                                    if zero_scanned_height_count >= 10 {
+                                    if zero_scanned_height_count >= 5 {
                                         warn!(target: LOG_TARGET, "Wallet scanned before gRPC service started");
                                         return Ok(state);
                                     }

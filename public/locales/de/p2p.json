@@ -1,4 +1,5 @@
 {
+  "connected-since": "Connected since",
   "connections": "Verbindungen",
   "established": "Etabliert",
   "listener-addresses": "Listener-Adressen",
@@ -9,14 +10,14 @@
   "p2pool-connection-info": "Verbindung",
   "p2pool-connection-info-more": "Verbindungsdetails",
   "p2pool-peers": "P2pool-Peers",
-  "p2pool-stats": "Pool-Mining-Statistiken",
+  "p2pool-stats": "P2pool stats",
   "pending": "Ausstehend",
   "randomx-stats": "RandomX-Statistiken",
   "sha3-stats": "SHA3-Statistiken",
   "stats": {
     "tile-heading": "Rewards in Progress",
     "tile-loading": "Pool is warming up",
-    "tooltip-copy": "Rewards are “In Progress” until you earn a minimum of <strong>{{amount}}</strong> and <strong>{{duration}}</strong> have passed.",
+    "tooltip-copy": "Rewards are “In Progress” until you earn a minimum of <strong>{{amount}}</strong> and <strong>{{duration}}</strong> have passed. After you reach both thresholds, in progress rewards will be automatically sent to your Tari Universe wallet. It may take a further 2 hours for them to arrive.",
     "tooltip-tile-heading": "Rewards threshold"
   },
   "tribe": "Stamm"

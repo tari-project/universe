@@ -25,7 +25,6 @@ mod tapplets_manager;
 
 pub mod error;
 pub mod interface;
-pub mod tapp_consts;
 pub mod tapplet_server;
 pub mod tapplets_list;
 pub mod tapplets_resolver;

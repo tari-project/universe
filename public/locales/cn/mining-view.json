@@ -26,6 +26,12 @@
     "step_5": "尝试禁用 Tor（在设置中）",
     "step_6": "尝试重置应用程序（在设置中）"
   },
+  "pool": {
+    "accepted_shares": "Accepted shares",
+    "balance": "Balance",
+    "min_payout": "Minimum payout",
+    "unpaid": "Unpaid"
+  },
   "you-earn-rewards-separately": "您分别为 CPU 和 GPU 挖矿获得奖励",
   "you-won-block": "您赢得了<span>区块 #{{ blockHeight }}</span>",
   "you-won-while-away": "<span>您在离开时赢得了 {{ blocks }}</span>",

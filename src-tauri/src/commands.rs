@@ -1642,6 +1642,7 @@ pub async fn stop_mining<'r>(
 pub async fn update_applications(app: tauri::AppHandle) -> Result<(), InvokeError> {
     let timer = Instant::now();
     let binary_resolver = BinaryResolver::current().read().await;
+    let tapplet_resolver = TappletResolver::current().read().await;
 
     ConfigCore::update_field(
         ConfigCoreContent::set_last_binaries_update_timestamp,
@@ -1672,6 +1673,11 @@ pub async fn update_applications(app: tauri::AppHandle) -> Result<(), InvokeErro
         .map_err(|e| e.to_string())?;
     binary_resolver
         .update_binary(Binaries::ShaP2pool, progress_tracker.clone())
+        .await
+        .map_err(|e| e.to_string())?;
+    sleep(Duration::from_secs(1));
+    tapplet_resolver
+        .update_tapplet(Tapplets::Bridge, progress_tracker.clone())
         .await
         .map_err(|e| e.to_string())?;
     sleep(Duration::from_secs(1));
@@ -2056,7 +2062,7 @@ pub async fn launch_builtin_tapplet() -> Result<ActiveTapplet, String> {
     let tapplet_resolver = TappletResolver::current().read().await;
 
     let tapp_dest_dir = tapplet_resolver
-        .resolve_path_to_tapplet_dest_dir(Tapplets::Bridge)
+        .resolve_path_to_tapplet_files(Tapplets::Bridge)
         .await
         .map_err(|e| e.to_string())?;
 
