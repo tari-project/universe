@@ -350,7 +350,7 @@ impl TelemetryManager {
                 let allow_notifications = *ConfigCore::content().await.allow_notifications();
                 tokio::select! {
                     _ = interval.tick() => {
-                        info!(target: LOG_TARGET, "TelemetryManager::start_telemetry_process has  been started");
+                        debug!(target: LOG_TARGET, "TelemetryManager::start_telemetry_process has  been started");
                         let airdrop_access_token = airdrop_tokens.map(|tokens| tokens.token);
                         let airdrop_access_token_validated = airdrop::validate_jwt(airdrop_access_token).await;
                         let memory_config = in_memory_config_cloned.read().await;
@@ -827,13 +827,13 @@ async fn handle_data(
                     response = send_notification_data(telemetry.into(), airdrop_access_token, airdrop_api_url)
                         =>response,
                     _ = shutdown_signal.wait() => {
-                        info!(target: LOG_TARGET, "mining status notification data sending cancelled by shutdown signal");
+                        debug!(target: LOG_TARGET, "mining status notification data sending cancelled by shutdown signal");
                         return;
                     }
                 };
                 match notification_data_response {
                     Ok(_) => {
-                        info!(target: LOG_TARGET,"successfully sent emitting mining status notification event");
+                        debug!(target: LOG_TARGET,"successfully sent emitting mining status notification event");
                     }
                     Err(e) => {
                         warn!(target: LOG_TARGET,"emitting mining status notification data sending error {:?}", e.to_string());
