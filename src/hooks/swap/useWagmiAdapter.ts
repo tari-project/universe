@@ -27,15 +27,12 @@ export const useWagmiAdapter = () => {
 
     useEffect(() => {
         const fetchProjectId = async () => {
-            console.info('Attempting to fetch project ID...');
             let appInMemoryConfig: ConfigBackendInMemory | undefined = useConfigBEInMemoryStore.getState();
 
             if (!appInMemoryConfig?.walletConnectProjectId) {
-                console.info('Project ID not in memory store, invoking backend...');
                 try {
                     appInMemoryConfig = await invoke<ConfigBackendInMemory>('get_app_in_memory_config', {});
-                } catch (e) {
-                    console.error(`get_app_in_memory_config error: ${e}`);
+                } catch {
                     setProjectId('');
                     return;
                 }
@@ -63,8 +60,6 @@ export const useWagmiAdapter = () => {
         debouncedRef.current = setTimeout(() => {
             if (projectId && !isInitializing && !initializedAdapter) {
                 setIsInitializing(true);
-                console.info(`Initializing AppKit with Project ID: ${projectId}`);
-
                 const wagmiAdapterInstance = new WagmiAdapter({
                     ...baseAdapterConfig,
                     projectId,
@@ -79,12 +74,9 @@ export const useWagmiAdapter = () => {
                         analytics: true,
                     },
                 });
-
-                console.info('AppKit initialized, setting adapter.');
                 setInitializedAdapter(wagmiAdapterInstance);
                 setIsInitializing(false);
             } else if (projectId === '' && !isInitializing && !initializedAdapter) {
-                console.warn('Project ID is empty, AppKit/WagmiAdapter not initialized.');
                 setIsInitializing(false);
             }
         }, 1000);
