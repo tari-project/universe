@@ -1,7 +1,8 @@
 import { ProgressTrackerUpdatePayload } from '@app/hooks/app/useProgressEventsListener';
 
 export interface SetupState {
-    miningUnlocked: boolean;
+    cpuMiningUnlocked: boolean;
+    gpuMiningUnlocked: boolean;
     walletUnlocked: boolean;
     hardwarePhaseFinished: boolean;
     isInitialSetupFinished: boolean;

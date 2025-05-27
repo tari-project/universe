@@ -124,7 +124,11 @@ export type BackendStateUpdateEvent =
           payload: undefined;
       }
     | {
-          event_type: 'UnlockMining';
+          event_type: 'UnlockCpuMining';
+          payload: undefined;
+      }
+    | {
+          event_type: 'UnlockGpuMining';
           payload: undefined;
       }
     | {
@@ -132,7 +136,11 @@ export type BackendStateUpdateEvent =
           payload: undefined;
       }
     | {
-          event_type: 'LockMining';
+          event_type: 'LockGpuMining';
+          payload: undefined;
+      }
+    | {
+          event_type: 'LockCpuMining';
           payload: undefined;
       }
     | {
