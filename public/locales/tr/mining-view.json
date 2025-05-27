@@ -26,6 +26,12 @@
     "step_5": "Tor\"u devre dışı bırakmayı deneyin (Ayarlar\"da)",
     "step_6": "Uygulama sıfırlamayı deneyin (Ayarlar\"da)"
   },
+  "pool": {
+    "accepted_shares": "Accepted shares",
+    "balance": "Balance",
+    "min_payout": "Minimum payout",
+    "unpaid": "Unpaid"
+  },
   "you-earn-rewards-separately": "CPU ve GPU madenciliği için ayrı ayrı ödüller kazanırsınız",
   "you-won-block": "<span>blok #{{ blockHeight }}</span> kazananı siz oldunuz",
   "you-won-while-away": "<span>Uzakta olduğunuzda {{ blocks }} kazandınız</span>",

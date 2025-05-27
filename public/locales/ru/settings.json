@@ -160,6 +160,7 @@
     "title": "Автоматическое обновление Tari Universe"
   },
   "use-dynamic-fail-data": "Использовать динамические данные отказа",
+  "use-p2p": "Use P2pool",
   "use-random-control-port": "Использовать случайный управляющий порт",
   "use-random-port": "Использовать случайный порт",
   "use-tor": "Использовать Tor",

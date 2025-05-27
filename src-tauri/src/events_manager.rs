@@ -55,7 +55,7 @@ impl EventsManager {
     pub async fn handle_new_block_height(app: &AppHandle, block_height: u64) {
         let state = app.state::<UniverseAppState>();
         let in_memoery_config = state.in_memory_config.read().await;
-        if in_memoery_config.exchange_id.eq(DEFAULT_EXCHANGE_ID) {
+        if in_memoery_config.exchange_id.ne(DEFAULT_EXCHANGE_ID) {
             return;
         }
         let app_clone = app.clone();
@@ -246,6 +246,11 @@ impl EventsManager {
     pub async fn handle_unknown_phase_finished(app: &AppHandle, status: bool) {
         EventsEmitter::emit_unknown_phase_finished(app, status).await;
     }
+
+    pub async fn handle_initial_setup_finished(app: &AppHandle) {
+        EventsEmitter::emit_initial_setup_finished(app).await;
+    }
+
     pub async fn handle_unlock_app(app: &AppHandle) {
         EventsEmitter::emit_unlock_app(app).await;
     }

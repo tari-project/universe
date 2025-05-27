@@ -50,6 +50,12 @@ export const handleConfigUILoaded = async (uiConfig: ConfigUI) => {
 };
 export const handleConfigMiningLoaded = (miningConfig: ConfigMining) => {
     useConfigMiningStore.setState(miningConfig);
+    useMiningStore.setState({ miningTime: miningConfig.mining_time });
+};
+
+export const handleMiningTimeUpdate = (miningTime: number) => {
+    useConfigMiningStore.setState({ mining_time: miningTime });
+    useMiningStore.setState({ miningTime });
 };
 
 export const setAirdropTokensInConfig = (
@@ -295,17 +301,6 @@ export const setNodeType = async (nodeType: NodeType) => {
         useConfigCoreStore.setState({ node_type: previousNodeType });
         updateNodeTypeForNodeStore(nodeType);
     });
-};
-
-export const setWarmupSeen = (warmupSeen: boolean) => {
-    invoke('set_warmup_seen', { warmupSeen })
-        .then(() => {
-            useConfigUIStore.setState({ warmup_seen: warmupSeen });
-        })
-        .catch((e) => {
-            console.error('Could not set seen', e);
-            setError('Could not change seen');
-        });
 };
 
 export const setDefaultChain = (chain: ChainId) => {
