@@ -95,3 +95,7 @@ export const setWalletBalance = (balance: WalletBalance) => {
         calculated_balance,
     });
 };
+
+export const setIsSwapping = (isSwapping: boolean) => {
+    useWalletStore.setState({ is_swapping: isSwapping });
+};

@@ -134,6 +134,7 @@ mod setup;
 mod spend_wallet_adapter;
 mod spend_wallet_manager;
 mod systemtray_manager;
+mod tapplets;
 mod tasks_tracker;
 mod telemetry_manager;
 mod telemetry_service;
@@ -474,6 +475,7 @@ fn main() {
         }))
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_cli::init())
+        .plugin(tauri_plugin_http::init())
         .setup(|app| {
             let config_path = app
                 .path()
@@ -634,7 +636,11 @@ fn main() {
             commands::trigger_phases_restart,
             commands::set_node_type,
             commands::set_warmup_seen,
-            commands::set_allow_notifications
+            commands::set_allow_notifications,
+            commands::launch_builtin_tapplet,
+            commands::get_tari_wallet_address,
+            commands::get_tari_wallet_balance,
+            commands::get_bridge_envs
         ])
         .build(tauri::generate_context!())
         .inspect_err(

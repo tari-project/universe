@@ -17,8 +17,9 @@
     "dependencies": {
         "@floating-ui/react": "^0.27.9",
         "@lottiefiles/dotlottie-react": "^0.13.2",
-        "@reown/appkit": "^1.7.4",
-        "@reown/appkit-adapter-wagmi": "^1.7.4",
+        "@reown/appkit": "^1.7.7",
+        "@reown/appkit-adapter-wagmi": "^1.7.7",
+        "@reown/appkit-wallet-button": "^1.7.7",
         "@tanstack/react-query": "^5.77.2",
         "@tari-project/tari-tower": "^0.0.42",
         "@tauri-apps/api": "^2.4.0",
@@ -46,7 +47,7 @@
         "uuid": "^11.1.0",
         "viem": "^2.30.1",
         "vite-tsconfig-paths": "^5.1.4",
-        "wagmi": "^2.15.2",
+        "wagmi": "^2.15.4",
         "zustand": "^5.0.5"
     },
     "devDependencies": {
