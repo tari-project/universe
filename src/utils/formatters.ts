@@ -80,7 +80,7 @@ const formatXTMLong = (value: number) =>
 const formatXTMLongDec = (value: number) =>
     formatValue(removeXTMCryptoDecimals(value), {
         minimumFractionDigits: 2,
-        maximumFractionDigits: 4,
+        maximumFractionDigits: 8,
         notation: 'standard',
         style: 'decimal',
     });
@@ -101,6 +101,9 @@ export function formatNumber(value: number, preset: FormatPreset): string {
         case FormatPreset.PERCENT:
             return formatPercent(value);
         case FormatPreset.XTM_COMPACT:
+            if (value / 1_000_000 < 0.01) {
+                return `< 0.01`;
+            }
             return formatXTMCompact(value);
         case FormatPreset.XTM_LONG:
             return formatXTMLong(value);
