@@ -71,7 +71,7 @@ export function SendReview({
     const statusEntries: StatusListEntry[] = [
         {
             label: t('send.status'),
-            value: status === 'processing' ? t('send.processing') : t('send.completed'),
+            value: status === 'processing' ? t('send.processing') : t('send.broadcast'),
             status,
         },
         // {
