@@ -12,15 +12,6 @@ import ListLoadingAnimation from '@app/containers/navigation/components/Wallet/L
 import { PlaceholderItem } from './ListItem.styles.ts';
 import { LoadingText } from '@app/containers/navigation/components/Wallet/ListLoadingAnimation/styles.ts';
 import { TransactionDetails } from '@app/components/transactions/history/details/TransactionDetails.tsx';
-import { UserTransactionDTO } from '@tari-project/wxtm-bridge-backend-api';
-import {
-    findByTransactionId,
-    findFirstNonBridgeTransaction,
-    getTimestampFromTransaction,
-    isBridgeTransaction,
-    isTransactionInfo,
-} from './helpers.ts';
-import { BridgeHistoryListItem } from './BridgeListItem.tsx';
 
 const HistoryList = memo(function HistoryList() {
     const { t } = useTranslation('wallet');
@@ -30,23 +21,12 @@ const HistoryList = memo(function HistoryList() {
     const walletScanning = useWalletStore((s) => s.wallet_scanning);
     const hasMore = useWalletStore((s) => s.has_more_transactions);
     const transactions = useWalletStore((s) => s.transactions);
-    const bridgeTransactions = useWalletStore((s) => s.bridge_transactions);
 
-    const [detailsItem, setDetailsItem] = useState<TransactionInfo | UserTransactionDTO | null>(null);
+    const [detailsItem, setDetailsItem] = useState<TransactionInfo | null>(null);
 
     const combinedTransactions = useMemo(
-        () =>
-            (
-                [
-                    ...pendingTransactions,
-                    ...transactions,
-                    ...bridgeTransactions,
-                    // ...convertBridgeTransactionsToTransactions(bridgeTransactions),
-                ] as (TransactionInfo | UserTransactionDTO)[]
-            ).sort((a, b) => {
-                return getTimestampFromTransaction(b) - getTimestampFromTransaction(a);
-            }),
-        [pendingTransactions, transactions, bridgeTransactions]
+        () => [...pendingTransactions, ...transactions] as TransactionInfo[],
+        [pendingTransactions, transactions]
     );
 
     const handleNext = useCallback(async () => {
@@ -56,9 +36,9 @@ const HistoryList = memo(function HistoryList() {
     }, [is_transactions_history_loading]);
 
     const listMarkup = useMemo(() => {
-        const latestTxId = findFirstNonBridgeTransaction(combinedTransactions)?.tx_id;
+        const latestTxId = combinedTransactions?.[0]?.tx_id;
         const hasNewTx = latestTxId ? newestTxIdOnInitialFetch !== latestTxId : false;
-        const initialTxTime = findByTransactionId(combinedTransactions, newestTxIdOnInitialFetch)?.timestamp;
+        const initialTxTime = combinedTransactions?.find((tx) => tx.tx_id === newestTxIdOnInitialFetch)?.timestamp;
 
         // Calculate how many placeholder items we need to add
         const transactionsCount = combinedTransactions?.length || 0;
@@ -78,35 +58,16 @@ const HistoryList = memo(function HistoryList() {
                         // there are new txs is general
                         // it's only of the latest 3
                         // its timestamp is later than the latest transaction on the very first fetch
-
-                        if (isTransactionInfo(tx)) {
-                            const isNew = hasNewTx && i <= 2 && initialTxTime ? tx.timestamp > initialTxTime : false;
-                            return (
-                                <HistoryListItem
-                                    key={tx.tx_id}
-                                    item={tx}
-                                    index={i}
-                                    itemIsNew={isNew}
-                                    setDetailsItem={setDetailsItem}
-                                />
-                            );
-                        }
-
-                        if (isBridgeTransaction(tx)) {
-                            return (
-                                <BridgeHistoryListItem
-                                    key={tx.createdAt}
-                                    item={tx}
-                                    index={i}
-                                    itemIsNew={i === 0}
-                                    setDetailsItem={setDetailsItem}
-                                />
-                            );
-                        }
-
-                        // If we reach here, it means the transaction is neither a TransactionInfo nor a UserTransactionDTO
-                        console.warn('Unexpected transaction type:', tx);
-                        return null; // or handle accordingly
+                        const isNew = hasNewTx && i <= 2 && initialTxTime ? tx.timestamp > initialTxTime : false;
+                        return (
+                            <HistoryListItem
+                                key={tx.tx_id}
+                                item={tx}
+                                index={i}
+                                itemIsNew={isNew}
+                                setDetailsItem={setDetailsItem}
+                            />
+                        );
                     })}
 
                     {/* fill the list with placeholders if there are less than 4 entries */}

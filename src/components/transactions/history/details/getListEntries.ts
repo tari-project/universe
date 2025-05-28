@@ -1,29 +1,20 @@
 import i18n from 'i18next';
 import { TransactionInfo } from '@app/types/app-status.ts';
-import { formatTimeStamp, isTransactionInfo } from '@app/components/transactions/history/helpers.ts';
+import { formatTimeStamp } from '@app/components/transactions/history/helpers.ts';
 import { ReactNode } from 'react';
 import { formatNumber, FormatPreset } from '@app/utils';
 import { StatusListEntry } from '@app/components/transactions/components/StatusList/StatusList.tsx';
 import { Network } from '@app/utils/network.ts';
 import { useMiningStore } from '@app/store';
 import { getTxStatusTitleKey, getTxTitle } from '@app/utils/getTxStatus.ts';
-import { UserTransactionDTO } from '@tari-project/wxtm-bridge-backend-api';
 
-type TransactionKey = keyof TransactionInfo;
-type TransactionEntry = {
+type Key = keyof TransactionInfo;
+type Entry = {
     [K in keyof TransactionInfo]-?: {
         key: K;
         value: TransactionInfo[K];
     };
 }[keyof TransactionInfo];
-
-type BridgeTransactionKey = keyof UserTransactionDTO;
-type BridgeTransactionEntry = {
-    [K in keyof UserTransactionDTO]-?: {
-        key: K;
-        value: UserTransactionDTO[K];
-    };
-}[keyof UserTransactionDTO];
 
 const network = useMiningStore.getState().network;
 const explorerURL = `https://${network === Network.Esmeralda ? 'textexplore-esmeralda' : network === Network.NextNet ? 'explore-nextnet' : 'explore'}.tari.com`;
@@ -44,13 +35,11 @@ function getLabel(key: string): string {
     return key in keyTranslations ? i18n.t(keyTranslations[key]) : capitalizeKey(key);
 }
 
-function parseTransactionValues({
+function parseValues({
     key,
     value,
     transaction,
-}: TransactionEntry & { transaction: TransactionInfo }): Partial<StatusListEntry> & {
-    value: ReactNode;
-} {
+}: Entry & { transaction: TransactionInfo }): Partial<StatusListEntry> & { value: ReactNode } {
     const rest: Partial<StatusListEntry> = {};
     if (key === 'timestamp') {
         return { value: formatTimeStamp(value) };
@@ -69,7 +58,6 @@ function parseTransactionValues({
             valueRight: `${formatNumber(value, FormatPreset.DECIMAL_COMPACT)} µT`,
         };
     }
-
     if (key === 'mined_in_block_height' && value) {
         rest['externalLink'] = `${explorerURL}/blocks/${value}`;
     }
@@ -77,77 +65,14 @@ function parseTransactionValues({
     return { value, ...rest };
 }
 
-function parseBridgeTransactionValues({
-    key,
-    value,
-    transaction,
-}: BridgeTransactionEntry & { transaction: UserTransactionDTO }): Partial<StatusListEntry> & {
-    value: ReactNode;
-} {
-    const rest: Partial<StatusListEntry> = {};
-    if (key === 'status') {
-        const tKey = getTxStatusTitleKey(transaction);
-        return { value: i18n.t(`common:${tKey}`), valueRight: value };
-    }
-    if (key === 'tokenAmount') {
-        const preset = value.toString().length > 5 ? FormatPreset.XTM_LONG : FormatPreset.XTM_DECIMALS;
-        return {
-            value: formatNumber(Number(value), preset),
-            valueRight: `${formatNumber(Number(value), FormatPreset.DECIMAL_COMPACT)} µT`,
-        };
-    }
-    if (key === 'amountAfterFee') {
-        const preset = value.toString().length > 5 ? FormatPreset.XTM_LONG : FormatPreset.XTM_DECIMALS;
-        return {
-            value: formatNumber(Number(value), preset),
-            valueRight: `${formatNumber(Number(value), FormatPreset.DECIMAL_COMPACT)} µT`,
-        };
-    }
-    if (key === 'feeAmount') {
-        const preset = value.toString().length > 5 ? FormatPreset.XTM_LONG : FormatPreset.XTM_DECIMALS;
-        return {
-            value: formatNumber(Number(value), preset),
-            valueRight: `${formatNumber(Number(value), FormatPreset.DECIMAL_COMPACT)} µT`,
-        };
-    }
-
-    if (key === 'destinationAddress') {
-        return { label: 'Destination address [ ETH ]', value: transaction.destinationAddress };
-    }
-
-    return { value, ...rest };
-}
-
-export function getListEntries(item: TransactionInfo | UserTransactionDTO, showHidden = false) {
+export function getListEntries(item: TransactionInfo, showHidden = false) {
     const entries = Object.entries(item).filter(([key]) => showHidden || !HIDDEN_KEYS.includes(key));
     return entries.map(([key, _value]) => {
-        // const { value, ...rest } = parseTransactionValues({
-        //     key: key as TransactionKey,
-        //     value: _value,
-        //     transaction: item,
-        // });
-        if (isTransactionInfo(item)) {
-            const { value, ...rest } = parseTransactionValues({
-                key: key as TransactionKey,
-                value: _value,
-                transaction: item,
-            });
-            return {
-                label: getLabel(key),
-                value,
-                ...rest,
-            };
-        } else {
-            const { value, ...rest } = parseBridgeTransactionValues({
-                key: key as BridgeTransactionKey,
-                value: _value,
-                transaction: item,
-            });
-            return {
-                label: getLabel(key),
-                value,
-                ...rest,
-            };
-        }
+        const { value, ...rest } = parseValues({ key: key as Key, value: _value, transaction: item });
+        return {
+            label: getLabel(key),
+            value,
+            ...rest,
+        };
     });
 }

@@ -325,7 +325,6 @@ export const fetchBackendInMemoryConfig = async () => {
     try {
         const res = await invoke('get_app_in_memory_config');
         if (res) {
-            console.log('Fetched backend in memory config:', res);
             useConfigBEInMemoryStore.setState({ ...res });
         }
     } catch (e) {

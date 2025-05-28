@@ -3,10 +3,6 @@ import i18n from 'i18next';
 import { TransactionDirection, TransactionStatus } from '@app/types/transactions.ts';
 import { TransationType } from '@app/components/transactions/types.ts';
 import { TransactionInfo } from '@app/types/app-status.ts';
-import { UserTransactionDTO } from '@tari-project/wxtm-bridge-backend-api';
-import { useWalletStore } from '@app/store';
-import { formatNumber, FormatPreset } from './formatters';
-import { isTransactionInfo } from '@app/components/transactions/history/helpers';
 
 const txTypes = {
     oneSided: [
@@ -48,16 +44,12 @@ export function getTxTypeByStatus(transaction: TransactionInfo): TransationType 
     return 'unknown';
 }
 
-export function getTxStatusTitleKey(transaction: TransactionInfo | UserTransactionDTO): string | undefined {
-    if (isTransactionInfo(transaction)) {
-        return Object.keys(txStates).find((key) => {
-            if (txStates[key].includes(transaction.status)) {
-                return key;
-            }
-        });
-    } else {
-        return transaction.status === UserTransactionDTO.status.SUCCESS ? 'complete' : 'pending';
-    }
+export function getTxStatusTitleKey(transaction: TransactionInfo): string | undefined {
+    return Object.keys(txStates).find((key) => {
+        if (txStates[key].includes(transaction.status)) {
+            return key;
+        }
+    });
 }
 export function getTxTitle(transaction: TransactionInfo): string {
     const itemType = getTxTypeByStatus(transaction);
