@@ -67,4 +67,5 @@ export interface ConfigBackendInMemory {
     airdropApiUrl: string;
     airdropTwitterAuthUrl: string;
     exchangeId?: string;
+    nextPublicBackendApiUrl: string;
 }

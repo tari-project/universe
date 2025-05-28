@@ -6,6 +6,7 @@ import { restartMining } from './miningStoreActions';
 import { setError } from './appStateStoreActions';
 import { setExchangeContent } from '@app/store/useExchangeStore.ts';
 import { WrapTokenService, OpenAPI } from '@tari-project/wxtm-bridge-backend-api';
+import { useConfigBEInMemoryStore } from '../useAppConfigStore';
 interface TxArgs {
     continuation: boolean;
     limit?: number;
@@ -40,10 +41,8 @@ export const fetchTransactionsHistory = async ({ continuation, limit }: TxArgs) 
 
 export const fetchBridgeTransactionsHistory = async () => {
     try {
-        OpenAPI.BASE = 'https://api.staging-bridge.tari.com';
-        WrapTokenService.getUserTransactions(
-            'f2H4tt1WHihgmfsNki5eq7r2iRWE8Rs1ozXEN5HwqV8grF7YzSWJZdBuj4niw8ybxhdx1Jradin6QW2oU2NMoZnoQN7'
-        ).then((response) => {
+        OpenAPI.BASE = useConfigBEInMemoryStore.getState().nextPublicBackendApiUrl;
+        WrapTokenService.getUserTransactions(useWalletStore.getState().tari_address_base58).then((response) => {
             console.log('Bridge transactions fetched successfully:', response);
             useWalletStore.setState({
                 bridge_transactions: response.transactions,

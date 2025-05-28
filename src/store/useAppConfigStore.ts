@@ -69,6 +69,7 @@ const configBEInMemoryInitialState: ConfigBackendInMemory = {
     airdropApiUrl: '',
     airdropTwitterAuthUrl: '',
     exchangeId: undefined,
+    nextPublicBackendApiUrl: '',
 };
 
 export const useConfigCoreStore = create<ConfigCore>()(() => ({
