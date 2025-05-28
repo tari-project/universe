@@ -47,8 +47,13 @@ export const ConnectWallet = ({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpe
                 });
 
                 provider.on('disconnect', handleDisconnect);
-                provider.on('connect', () => {
+                provider.on('connect', (info: unknown) => {
+                    console.info('connect', info);
                     setIsOpen(false);
+                });
+
+                provider.on('error', (error: unknown) => {
+                    console.info('connect', error);
                 });
 
                 const cleanup = () => {
