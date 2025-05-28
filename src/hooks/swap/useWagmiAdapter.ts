@@ -7,9 +7,9 @@ import { invoke } from '@tauri-apps/api/core';
 import { useEffect, useRef, useState } from 'react';
 
 const metadata = {
-    name: 'TariUniverse',
+    name: 'Tari Universe',
     description: 'Tari Universe Wallet',
-    url: window.location.origin,
+    url: 'https://tari.com',
     icons: ['https://universe.tari.com/assets/tari-logo.png'],
 };
 
