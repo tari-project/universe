@@ -1,21 +1,24 @@
-// from tari.rpc.rs - only the enum members we use for now
-
-export enum TransactionStatus {
-    // This transaction has been broadcast to the base layer network and is currently in one or more base node mempools.
-    // Broadcast = 1,
-    /// This transaction is mined and confirmed at the current base node's height
-    // MinedConfirmed = 6,
-    /// This is faux transaction mainly for one-sided transaction outputs or wallet recovery outputs have been found
-    // OneSidedUnconfirmed = 8,
-    /// All Imported and FauxUnconfirmed transactions will end up with this status when the outputs have been confirmed
-    // OneSidedConfirmed = 9,
-    /// This is Coinbase transaction that is detected from chain
-    CoinbaseUnconfirmed = 12,
-    /// This is Coinbase transaction that is detected from chain
-    CoinbaseConfirmed = 13,
-}
+// based on the enums from tari.rpc.rs - update this file if there are changes there!
 
 export enum TransactionDirection {
-    // Inbound = 1,
+    Inbound = 1,
     Outbound = 2,
+}
+
+export enum TransactionStatus {
+    Completed = 0,
+    Broadcast = 1,
+    MinedUnconfirmed = 2,
+    Imported = 3,
+    Pending = 4,
+    Coinbase = 5,
+    MinedConfirmed = 6,
+    Rejected = 7,
+    OneSidedUnconfirmed = 8,
+    OneSidedConfirmed = 9,
+    Queued = 10,
+    NotFound = 11,
+    CoinbaseUnconfirmed = 12,
+    CoinbaseConfirmed = 13,
+    CoinbaseNotInBlockChain = 14,
 }
