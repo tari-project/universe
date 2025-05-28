@@ -194,7 +194,6 @@ async fn send_telemetry_data(
 ) -> Result<(), TelemetryServiceError> {
     let config_read_guard = memory_config.read().await;
     if config_read_guard.is_universal_miner() {
-        info!("[DEBUG UNIVERSAL EXCHANGE] TelemetryService::send_telemetry_data skipping telemetry, user hasn't yet chosen an exchange");
         return Ok(());
     }
     let request = reqwest::Client::new();

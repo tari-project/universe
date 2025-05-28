@@ -19,7 +19,6 @@ export const XCOption = ({ content, isCurrent = false }: XCOptionProps) => {
         };
         await invoke('user_selected_exchange', { exchangeMiner: selectedExchangeMiner });
         await fetchBackendInMemoryConfig();
-        console.info('[DEBUG UNIVERSAL EXCHANGE] Fetched backend in memory config');
         setShowUniversalModal(false);
     };
 

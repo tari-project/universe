@@ -18,7 +18,6 @@ const initialState = {
 export const useExchangeStore = create<ExchangeStoreState>()(() => ({ ...initialState }));
 
 export const setShowExchangeModal = (showClassicModal: boolean) => {
-    console.info('[DEBUG UNIVERSAL EXCHANGE] setShowExchangeModal:', showClassicModal);
     useExchangeStore.setState({ showClassicModal: showClassicModal });
 };
 
@@ -27,7 +26,6 @@ export const setExchangeContent = (content?: ExchangeContent | null) => {
 };
 
 export const setShowUniversalModal = (showUniversalModal: boolean) => {
-    console.info('[DEBUG UNIVERSAL EXCHANGE] showUniversalModal:', setShowExchangeModal);
     useExchangeStore.setState({ showUniversalModal: showUniversalModal });
 };
 
@@ -54,15 +52,12 @@ export async function fetchExchangeMiners() {
 export async function fetchExchangeContent(exchangeId: string) {
     const apiUrl = useConfigBEInMemoryStore.getState().airdropApiUrl;
     const endpoint = `${apiUrl}/miner/exchanges`;
-    console.info(`[DEBUG UNIVERSAL EXCHANGE] fetchExchangeContent: ${exchangeId}`);
     try {
         const content = await fetch(`${endpoint}/${exchangeId}`);
         const xcContent = (await content.json()) as ExchangeContent;
         console.info('xcContent:', xcContent);
         const walletIsGenerated = useWalletStore.getState().is_tari_address_generated;
-        console.info(`[DEBUG UNIVERSAL EXCHANGE] walletIsGenerated : ${walletIsGenerated}`);
         if (xcContent) {
-            console.info('[DEBUG UNIVERSAL EXCHANGE] xcContent:', xcContent);
             setExchangeContent(xcContent);
             setSeedlessUI(true);
             setShowExchangeModal(!!walletIsGenerated);

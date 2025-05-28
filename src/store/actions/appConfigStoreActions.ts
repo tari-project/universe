@@ -311,19 +311,15 @@ export const setDefaultChain = (chain: ChainId) => {
 export const fetchBackendInMemoryConfig = async () => {
     try {
         const isUniversalMiner = await invoke('is_universal_miner');
-        console.info('[DEBUG UNIVERSAL EXCHANGE] isUniversalMiner: ', isUniversalMiner);
 
         const res = await invoke('get_app_in_memory_config');
         if (res) {
-            console.info('[DEBUG UNIVERSAL EXCHANGE] memory config: ', res);
             useConfigBEInMemoryStore.setState({ ...res, isUniversalMiner });
             if (isUniversalMiner) {
-                console.info('[DEBUG UNIVERSAL EXCHANGE] fetching exchange miners ');
                 await fetchExchangeMiners();
                 setShowUniversalModal(true);
             }
             if (res.exchangeId && !isUniversalMiner && res.exchangeId !== 'classic') {
-                console.info('[DEBUG UNIVERSAL EXCHANGE] fetching exchange content ');
                 await fetchExchangeContent(res.exchangeId);
             }
         }

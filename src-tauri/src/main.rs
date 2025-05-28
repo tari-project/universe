@@ -356,9 +356,7 @@ fn main() {
         pool_status_url: None,
     }));
 
-    info!("[DEBUG UNIVERSAL EXCHANGE] before blocked fetch");
     let dynamic_memory_config = block_on(async { DynamicMemoryConfig::init().await });
-    info!("[DEBUG UNIVERSAL EXCHANGE] after blocked fetch");
     let app_in_memory_config = Arc::new(RwLock::new(dynamic_memory_config));
 
     let cpu_miner: Arc<RwLock<CpuMiner>> = Arc::new(

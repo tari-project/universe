@@ -24,7 +24,6 @@ use std::ops::Deref;
 
 use anyhow::anyhow;
 use der::{self, asn1::BitString, oid::ObjectIdentifier, Encode};
-use log::info;
 use ring::signature::{Ed25519KeyPair, KeyPair};
 use ring_compat::pkcs8::{spki::AlgorithmIdentifier, SubjectPublicKeyInfo};
 use serde::{Deserialize, Serialize};
@@ -164,12 +163,6 @@ pub struct DynamicMemoryConfig {
     miner_type: MinerType,
 }
 
-fn get_telemetry_by_exchange_id(exchange_id: &str) -> String {
-    match exchange_id {
-        _ => "exchange-telemetry-url".to_string(), // TODO fill with actual URL per exchange
-    }
-}
-
 #[derive(Default, Serialize, Deserialize, Clone, Debug)]
 pub struct ExchangeMiner {
     pub id: String,
@@ -189,21 +182,15 @@ impl DynamicMemoryConfig {
         let miners_list =
             DynamicMemoryConfig::get_exchange_miners(in_memory_config.airdrop_api_url.clone())
                 .await;
-        info!(
-            "[DEBUG UNIVERSAL EXCHANGE] exchange miners: {:?}",
-            miners_list
-        );
         if miners_list
             .iter()
             .any(|miner| miner.id.eq(&in_memory_config.exchange_id) && miner.name.eq("Universal"))
         {
-            info!("[DEBUG UNIVERSAL EXCHANGE] is universal miners");
             return Self {
                 in_memory_config,
                 miner_type: MinerType::Universal,
             };
         }
-        info!("[DEBUG UNIVERSAL EXCHANGE] default miner");
         Self {
             in_memory_config,
             miner_type,
@@ -213,7 +200,6 @@ impl DynamicMemoryConfig {
         Self {
             miner_type: MinerType::Universal,
             in_memory_config: AppInMemoryConfig {
-                telemetry_api_url: get_telemetry_by_exchange_id(&exchange_miner.id),
                 exchange_id: exchange_miner.id.clone(),
                 ..AppInMemoryConfig::init()
             },
@@ -223,15 +209,11 @@ impl DynamicMemoryConfig {
         matches!(self.miner_type, MinerType::Universal)
     }
     pub async fn get_exchange_miners(airdrop_api_url: String) -> Vec<ExchangeMiner> {
-        // let endpoint = "https://rwa.y.at/miner/exchanges";
-        info!(
-            "[DEBUG UNIVERSAL EXCHANGE] Fetching exchange miners from {}",
-            airdrop_api_url
-        );
+        let endpoint = format!("{}{}", airdrop_api_url, "/miner/exchanges");
         let mut last_err = None;
         let mut response = None;
         for _ in 0..3 {
-            match reqwest::get(airdrop_api_url.clone()).await {
+            match reqwest::get(endpoint.clone()).await {
                 Ok(resp) => {
                     response = Some(resp);
                     break;
@@ -251,7 +233,7 @@ impl DynamicMemoryConfig {
             .json()
             .await
             .unwrap_or_else(|e| panic!("Failed to parse exchange miners response: {:?}", e));
-        info!("[DEBUG UNIVERSAL EXCHANGE] Exchange miners: {:?}", miners);
+
         miners.exchanges
     }
 }
