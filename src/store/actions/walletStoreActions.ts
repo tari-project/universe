@@ -5,7 +5,7 @@ import { useWalletStore } from '../useWalletStore';
 import { restartMining } from './miningStoreActions';
 import { setError } from './appStateStoreActions';
 import { setExchangeContent } from '@app/store/useExchangeStore.ts';
-
+import { WrapTokenService, OpenAPI } from '@tari-project/wxtm-bridge-backend-api';
 interface TxArgs {
     continuation: boolean;
     limit?: number;
@@ -37,6 +37,23 @@ export const fetchTransactionsHistory = async ({ continuation, limit }: TxArgs) 
         useWalletStore.setState({ is_transactions_history_loading: false });
     }
 };
+
+export const fetchBridgeTransactionsHistory = async () => {
+    try {
+        OpenAPI.BASE = 'https://api.staging-bridge.tari.com';
+        WrapTokenService.getUserTransactions(
+            'f2H4tt1WHihgmfsNki5eq7r2iRWE8Rs1ozXEN5HwqV8grF7YzSWJZdBuj4niw8ybxhdx1Jradin6QW2oU2NMoZnoQN7'
+        ).then((response) => {
+            console.log('Bridge transactions fetched successfully:', response);
+            useWalletStore.setState({
+                bridge_transactions: response.transactions,
+            });
+        });
+    } catch (error) {
+        console.error('Could not get bridge transaction history: ', error);
+    }
+};
+
 export const importSeedWords = async (seedWords: string[]) => {
     try {
         useWalletStore.setState({ is_wallet_importing: true });

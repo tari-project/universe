@@ -1,6 +1,7 @@
 import { create } from './create';
 import { TransactionInfo, WalletBalance } from '../types/app-status.ts';
 import { refreshTransactions, setWalletBalance } from './actions/walletStoreActions.ts';
+import { GetUserTransactionsRespDTO, UserTransactionDTO } from '@tari-project/wxtm-bridge-backend-api';
 
 interface PendingTransaction {
     tx_id: number;
@@ -20,6 +21,8 @@ interface WalletStoreState {
     calculated_balance?: number;
     coinbase_transactions: TransactionInfo[];
     transactions: TransactionInfo[];
+    // TODO: decide later for the best place to store this data
+    bridge_transactions: UserTransactionDTO[];
     pending_transactions: PendingTransaction[];
     is_reward_history_loading: boolean;
     has_more_coinbase_transactions: boolean;
@@ -41,6 +44,7 @@ const initialState: WalletStoreState = {
     is_tari_address_generated: null,
     coinbase_transactions: [],
     transactions: [],
+    bridge_transactions: [],
     pending_transactions: [],
     has_more_coinbase_transactions: true,
     has_more_transactions: true,

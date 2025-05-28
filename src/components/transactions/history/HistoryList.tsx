@@ -12,6 +12,7 @@ import ListLoadingAnimation from '@app/containers/navigation/components/Wallet/L
 import { PlaceholderItem } from './ListItem.styles.ts';
 import { LoadingText } from '@app/containers/navigation/components/Wallet/ListLoadingAnimation/styles.ts';
 import { TransactionDetails } from '@app/components/transactions/history/details/TransactionDetails.tsx';
+import { convertBridgeTransactionsToTransactions } from '@app/utils/getTxStatus.ts';
 
 const HistoryList = memo(function HistoryList() {
     const { t } = useTranslation('wallet');
@@ -21,11 +22,17 @@ const HistoryList = memo(function HistoryList() {
     const walletScanning = useWalletStore((s) => s.wallet_scanning);
     const hasMore = useWalletStore((s) => s.has_more_transactions);
     const transactions = useWalletStore((s) => s.transactions);
+    const bridgeTransactions = useWalletStore((s) => s.bridge_transactions);
 
     const [detailsItem, setDetailsItem] = useState<TransactionInfo | null>(null);
 
     const combinedTransactions = useMemo(
-        () => [...pendingTransactions, ...transactions] as TransactionInfo[],
+        () =>
+            [
+                ...pendingTransactions,
+                ...transactions,
+                // ...convertBridgeTransactionsToTransactions(bridgeTransactions),
+            ] as TransactionInfo[],
         [pendingTransactions, transactions]
     );
 
