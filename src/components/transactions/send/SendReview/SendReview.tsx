@@ -45,7 +45,7 @@ export function SendReview({
         }
     }, [status, setStatus, latestTx, latestPendingTx]);
 
-    const formattedAmount = formatNumber((amount || 0) * 1_000_000, FormatPreset.XTM_LONG);
+    const formattedAmount = formatNumber((amount || 0) * 1_000_000, FormatPreset.XTM_COMPACT);
     const formattedAddress = truncateMiddle(address, 5);
 
     const reviewEntries: StatusListEntry[] = [
@@ -71,7 +71,7 @@ export function SendReview({
     const statusEntries: StatusListEntry[] = [
         {
             label: t('send.status'),
-            value: status === 'processing' ? t('send.processing') : t('send.completed'),
+            value: status === 'processing' ? t('send.processing') : t('send.broadcast'),
             status,
         },
         // {

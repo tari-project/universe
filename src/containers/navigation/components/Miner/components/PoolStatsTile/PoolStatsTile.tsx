@@ -1,4 +1,4 @@
-import { useMiningMetricsStore } from '@app/store';
+import { useConfigMiningStore, useMiningMetricsStore } from '@app/store';
 import { formatNumber, FormatPreset } from '@app/utils';
 import {
     LeftContent,
@@ -37,9 +37,10 @@ export const PoolStatsTile = () => {
     const { t } = useTranslation('p2p');
     const { daysString, hoursString, minutes, seconds } = useMiningTime();
     const pool_status = useMiningMetricsStore((s) => s.cpu_mining_status.pool_status);
-    const isMining = useMiningMetricsStore((s) => s.cpu_mining_status.is_mining || s.gpu_mining_status.is_mining);
+    const isMining = useMiningMetricsStore((s) => s.cpu_mining_status.is_mining);
+    const cpuMiningEnabled = useConfigMiningStore((s) => s.cpu_mining_enabled);
     const loading = isMining && !pool_status;
-    const unpaidFMT = formatNumber(pool_status?.unpaid || 0, FormatPreset.XTM_COMPACT);
+    const unpaidFMT = formatNumber(pool_status?.unpaid || 0, FormatPreset.XTM_LONG_DEC);
     const [expanded, setExpanded] = useState(false);
     const { refs, context, floatingStyles } = useFloating({
         open: expanded,
@@ -53,7 +54,7 @@ export const PoolStatsTile = () => {
         handleClose: safePolygon(),
     });
     const { getReferenceProps, getFloatingProps } = useInteractions([hover]);
-    return !isMining ? null : (
+    return !cpuMiningEnabled ? null : (
         <Wrapper $isLoading={loading}>
             {loading ? (
                 <Title style={{ textAlign: 'center' }}>{`${t('stats.tile-loading')}...`}</Title>
@@ -86,7 +87,7 @@ export const PoolStatsTile = () => {
                                         <Trans
                                             i18nKey="stats.tooltip-copy"
                                             ns="p2p"
-                                            values={{ amount: REWARD_THRESHOLD, duration: `~6 hours` }}
+                                            values={{ amount: REWARD_THRESHOLD }}
                                             components={{ strong: <strong /> }}
                                         />
                                     </Typography>

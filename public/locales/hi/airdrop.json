@@ -41,6 +41,10 @@
     "text": "Tari Universe आपके अनुभव को बेहतर बनाने के लिए विश्लेषण का उपयोग करना चाहता है।",
     "title": "Tari Universe को बेहतर बनाएं"
   },
+  "push-notifications": {
+    "text": "Tari Universe would like to be able to send you notifications to your connected devices",
+    "title": "Allow Tari Universe to send notifications  "
+  },
   "referral": "एक मित्र को आमंत्रित करें",
   "rightClickToCopy": "लिंक कॉपी करने के लिए राइट-क्लिक करें",
   "success": "सफलता",

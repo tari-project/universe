@@ -28,13 +28,16 @@ use tauri::{AppHandle, Manager};
 
 use crate::airdrop::send_new_block_mined;
 use crate::app_in_memory_config::DEFAULT_EXCHANGE_ID;
+use crate::configs::config_core::ConfigCore;
 use crate::configs::config_mining::ConfigMiningContent;
 use crate::configs::config_wallet::ConfigWalletContent;
+use crate::configs::trait_config::ConfigImpl;
 use crate::events::ConnectionStatusPayload;
 #[cfg(target_os = "windows")]
 use crate::external_dependencies::RequiredExternalDependency;
 use crate::{configs::config_core::ConfigCoreContent, events::CriticalProblemPayload};
 
+use crate::pool_status_watcher::PoolStatus;
 use crate::{
     commands::CpuMinerStatus,
     configs::config_ui::ConfigUIContent,
@@ -54,8 +57,8 @@ pub struct EventsManager;
 impl EventsManager {
     pub async fn handle_new_block_height(app: &AppHandle, block_height: u64) {
         let state = app.state::<UniverseAppState>();
-        let in_memoery_config = state.in_memory_config.read().await;
-        if in_memoery_config.exchange_id.ne(DEFAULT_EXCHANGE_ID) {
+        let in_memory_config = state.in_memory_config.read().await;
+        if in_memory_config.exchange_id.ne(DEFAULT_EXCHANGE_ID) {
             return;
         }
         let app_clone = app.clone();
@@ -86,7 +89,8 @@ impl EventsManager {
                             Some(balance),
                         )
                         .await;
-                        if coinbase_tx.is_some() {
+                        let allow_notifications = *ConfigCore::content().await.allow_notifications();
+                        if coinbase_tx.is_some() && allow_notifications {
                             send_new_block_mined(app_clone.clone(), block_height).await;
                         }
                     } else {
@@ -130,6 +134,10 @@ impl EventsManager {
             .collect();
 
         EventsEmitter::emit_gpu_devices_update(app, gpu_public_devices).await;
+    }
+
+    pub async fn handle_pool_status_update(app: &AppHandle, status: Option<PoolStatus>) {
+        EventsEmitter::emit_pool_status_update(app, status).await;
     }
 
     pub async fn handle_cpu_mining_update(app: &AppHandle, status: CpuMinerStatus) {
@@ -259,15 +267,21 @@ impl EventsManager {
         EventsEmitter::emit_unlock_wallet(app).await;
     }
 
-    pub async fn handle_unlock_mining(app: &AppHandle) {
-        EventsEmitter::emit_unlock_mining(app).await;
+    pub async fn handle_unlock_cpu_mining(app: &AppHandle) {
+        EventsEmitter::emit_unlock_cpu_mining(app).await;
+    }
+    pub async fn handle_unlock_gpu_mining(app: &AppHandle) {
+        EventsEmitter::emit_unlock_gpu_mining(app).await;
     }
     pub async fn handle_lock_wallet(app: &AppHandle) {
         EventsEmitter::emit_lock_wallet(app).await;
     }
 
-    pub async fn handle_lock_mining(app: &AppHandle) {
-        EventsEmitter::emit_lock_mining(app).await;
+    pub async fn handle_lock_cpu_mining(app: &AppHandle) {
+        EventsEmitter::emit_lock_cpu_mining(app).await;
+    }
+    pub async fn handle_lock_gpu_mining(app: &AppHandle) {
+        EventsEmitter::emit_lock_gpu_mining(app).await;
     }
 
     pub async fn handle_node_type_update(app: &AppHandle) {

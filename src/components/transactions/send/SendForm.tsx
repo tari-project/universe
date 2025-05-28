@@ -41,6 +41,12 @@ export function SendForm({ isBack }: Props) {
             setError('amount', { message: t('send.error-invalid-amount') });
         }
 
+        if (Number(amount) === 0) {
+            console.error('Error in validateAmount: value is invalid: ', amount);
+            setError('amount', { message: t('send.error-invalid-amount') });
+            return;
+        }
+
         try {
             await invoke('validate_minotari_amount', { amount });
             clearErrors('amount');

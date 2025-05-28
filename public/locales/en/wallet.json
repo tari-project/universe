@@ -20,9 +20,10 @@
   },
   "send": {
     "balance": "Balance",
+    "broadcast": "Broadcasting",
     "completed": "Completed",
     "completed-amount-sent": "has been sent to",
-    "completed-text": "Your transfer is now complete.",
+    "completed-text": "Your transfer submission is now complete and will be broadcast.",
     "completed-title": "You're Done!",
     "cta-confirm": "Confirm",
     "cta-review": "Review",
