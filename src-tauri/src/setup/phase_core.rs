@@ -132,7 +132,7 @@ impl SetupPhaseImpl for CoreSetupPhase {
                         error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Core);
                         let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::Core);
                         sentry::capture_message(&error_message, sentry::Level::Error);
-                        EventsManager::handle_critical_problem(&self.app_handle, Some(SetupPhase::Core.get_critical_problem_title()), Some(SetupPhase::Core.get_critical_problem_description()),Some(error_message))
+                        EventsManager::handle_critical_problem(Some(SetupPhase::Core.get_critical_problem_title()), Some(SetupPhase::Core.get_critical_problem_description()),Some(error_message))
                         .await;
                     }
                 }
@@ -146,7 +146,7 @@ impl SetupPhaseImpl for CoreSetupPhase {
                             error!(target: LOG_TARGET, "[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Core,error);
                             let error_message = format!("[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Core,error);
                             sentry::capture_message(&error_message, sentry::Level::Error);
-                            EventsManager::handle_critical_problem(&self.app_handle, Some(SetupPhase::Core.get_critical_problem_title()), Some(SetupPhase::Core.get_critical_problem_description()),Some(error_message))
+                            EventsManager::handle_critical_problem(Some(SetupPhase::Core.get_critical_problem_title()), Some(SetupPhase::Core.get_critical_problem_description()),Some(error_message))
                                 .await;
                         }
                     }
@@ -204,9 +204,7 @@ impl SetupPhaseImpl for CoreSetupPhase {
             .resolve_step(ProgressPlans::Core(ProgressSetupCorePlan::NetworkSpeedTest))
             .await;
 
-        NetworkStatus::current()
-            .run_speed_test_with_timeout(&self.app_handle)
-            .await;
+        NetworkStatus::current().run_speed_test_with_timeout().await;
 
         Ok(())
     }
@@ -220,7 +218,7 @@ impl SetupPhaseImpl for CoreSetupPhase {
             .resolve_step(ProgressPlans::Core(ProgressSetupCorePlan::Done))
             .await;
 
-        EventsManager::handle_core_phase_finished(&self.app_handle, true).await;
+        EventsManager::handle_core_phase_finished(true).await;
 
         Ok(())
     }

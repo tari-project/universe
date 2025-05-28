@@ -139,7 +139,7 @@ impl ConfigCore {
         let mut config = Self::current().write().await;
         config.load_app_handle(app_handle.clone()).await;
 
-        EventsManager::handle_config_core_loaded(&app_handle, config.content.clone()).await;
+        EventsManager::handle_config_core_loaded(config.content.clone()).await;
     }
 }
 

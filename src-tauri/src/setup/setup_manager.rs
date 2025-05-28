@@ -401,9 +401,8 @@ impl SetupManager {
         // TODO: Add option to disable specific phases and handle it properly on frontend
         let in_memory_config = state.in_memory_config.clone();
         if in_memory_config.read().await.exchange_id != DEFAULT_EXCHANGE_ID {
-            self.unlock_wallet(app_handle.clone()).await;
+            self.unlock_wallet().await;
             EventsManager::handle_progress_tracker_update(
-                &app_handle,
                 ProgressEvents::Wallet,
                 "setup-wallet".to_string(),
                 "setup-wallet".to_string(),
@@ -518,10 +517,10 @@ impl SetupManager {
                         && setup_features.is_feature_disabled(SetupFeature::ExchangeMiner)
                     {
                         SetupManager::get_instance()
-                            .unlock_cpu_mining(app_handle.clone())
+                            .unlock_cpu_mining()
                             .await;
                         SetupManager::get_instance()
-                            .unlock_gpu_mining(app_handle.clone())
+                            .unlock_gpu_mining()
                             .await;
                     }
 
@@ -532,7 +531,7 @@ impl SetupManager {
                         && setup_features.is_feature_disabled(SetupFeature::ExchangeMiner)
                     {
                         SetupManager::get_instance()
-                            .unlock_wallet(app_handle.clone())
+                            .unlock_wallet()
                             .await;
                     }
 
@@ -564,10 +563,10 @@ impl SetupManager {
                         && setup_features.is_feature_enabled(SetupFeature::ExchangeMiner)
                     {
                         SetupManager::get_instance()
-                            .unlock_cpu_mining(app_handle.clone())
+                            .unlock_cpu_mining()
                             .await;
                         SetupManager::get_instance()
-                            .unlock_gpu_mining(app_handle.clone())
+                            .unlock_gpu_mining()
                             .await;
                     }
 
@@ -591,7 +590,7 @@ impl SetupManager {
                         && setup_features.is_feature_disabled(SetupFeature::ExchangeMiner)
                     {
                         SetupManager::get_instance()
-                            .unlock_cpu_mining(app_handle.clone())
+                            .unlock_cpu_mining()
                             .await;
                     }
                     if is_core_phase_succeeded
@@ -603,7 +602,7 @@ impl SetupManager {
                         && setup_features.is_feature_disabled(SetupFeature::ExchangeMiner)
                     {
                         SetupManager::get_instance()
-                            .unlock_gpu_mining(app_handle.clone())
+                            .unlock_gpu_mining()
                             .await;
                     }
 
@@ -614,7 +613,7 @@ impl SetupManager {
                         && setup_features.is_feature_disabled(SetupFeature::ExchangeMiner)
                     {
                         SetupManager::get_instance()
-                            .unlock_wallet(app_handle.clone())
+                            .unlock_wallet()
                             .await;
                     }
 
@@ -641,7 +640,7 @@ impl SetupManager {
                         && setup_features.is_feature_enabled(SetupFeature::ExchangeMiner)
                     {
                         SetupManager::get_instance()
-                            .unlock_cpu_mining(app_handle.clone())
+                            .unlock_cpu_mining()
                             .await;
                     }
                     if is_core_phase_succeeded
@@ -653,7 +652,7 @@ impl SetupManager {
                         && setup_features.is_feature_enabled(SetupFeature::ExchangeMiner)
                     {
                         SetupManager::get_instance()
-                            .unlock_gpu_mining(app_handle.clone())
+                            .unlock_gpu_mining()
                             .await;
                     }
 
@@ -694,7 +693,7 @@ impl SetupManager {
                     && is_cpu_mining_unlocked
                     && is_gpu_mining_unlocked
                     && is_initial_setup_finished {
-                        SetupManager::get_instance().handle_restart_finished(app_handle.clone()).await;
+                        SetupManager::get_instance().handle_restart_finished().await;
                     }
                         select! {
                         _ = cacellation_token.cancelled() => {
@@ -727,19 +726,19 @@ impl SetupManager {
                     let _unused = self.core_phase_status.send_replace(PhaseStatus::None);
                 }
                 SetupPhase::Hardware => {
-                    self.lock_cpu_mining(app_handle.clone()).await;
-                    self.lock_gpu_mining(app_handle.clone()).await;
+                    self.lock_cpu_mining().await;
+                    self.lock_gpu_mining().await;
                     TasksTrackers::current().hardware_phase.close().await;
                     TasksTrackers::current().hardware_phase.replace().await;
                     let _unused = self.hardware_phase_status.send_replace(PhaseStatus::None);
                 }
                 SetupPhase::Node => {
-                    self.lock_wallet(app_handle.clone()).await;
+                    self.lock_wallet().await;
                     if features.is_feature_enabled(SetupFeature::CentralizedPool) {
-                        self.lock_gpu_mining(app_handle.clone()).await;
+                        self.lock_gpu_mining().await;
                     } else {
-                        self.lock_gpu_mining(app_handle.clone()).await;
-                        self.lock_cpu_mining(app_handle.clone()).await;
+                        self.lock_gpu_mining().await;
+                        self.lock_cpu_mining().await;
                     }
 
                     TasksTrackers::current().node_phase.close().await;
@@ -747,17 +746,17 @@ impl SetupManager {
                     let _unused = self.node_phase_status.send_replace(PhaseStatus::None);
                 }
                 SetupPhase::Wallet => {
-                    self.lock_wallet(app_handle.clone()).await;
+                    self.lock_wallet().await;
                     TasksTrackers::current().wallet_phase.close().await;
                     TasksTrackers::current().wallet_phase.replace().await;
                     let _unused = self.wallet_phase_status.send_replace(PhaseStatus::None);
                 }
                 SetupPhase::Unknown => {
                     if features.is_feature_enabled(SetupFeature::CentralizedPool) {
-                        self.lock_gpu_mining(app_handle.clone()).await;
+                        self.lock_gpu_mining().await;
                     } else {
-                        self.lock_gpu_mining(app_handle.clone()).await;
-                        self.lock_cpu_mining(app_handle.clone()).await;
+                        self.lock_gpu_mining().await;
+                        self.lock_cpu_mining().await;
                     }
                     TasksTrackers::current().unknown_phase.close().await;
                     TasksTrackers::current().unknown_phase.replace().await;
@@ -772,7 +771,7 @@ impl SetupManager {
 
     async fn resume_phases(&self, app_handle: AppHandle, phases: Vec<SetupPhase>) {
         if !phases.is_empty() {
-            EventsManager::handle_restarting_phases(&app_handle, phases.clone()).await;
+            EventsManager::handle_restarting_phases(phases.clone()).await;
         }
 
         for phase in phases {
@@ -809,10 +808,10 @@ impl SetupManager {
             .handle_release_notes_event_emit(state.clone(), app_handle.clone())
             .await;
 
-        EventsManager::handle_unlock_app(&app_handle).await;
+        EventsManager::handle_unlock_app().await;
     }
 
-    async fn unlock_wallet(&self, app_handle: AppHandle) {
+    async fn unlock_wallet(&self) {
         if *self.is_wallet_unlocked.lock().await {
             debug!(target: LOG_TARGET, "Wallet is already unlocked");
             return;
@@ -820,29 +819,29 @@ impl SetupManager {
 
         info!(target: LOG_TARGET, "Unlocking Wallet");
         *self.is_wallet_unlocked.lock().await = true;
-        EventsManager::handle_unlock_wallet(&app_handle).await;
+        EventsManager::handle_unlock_wallet().await;
     }
 
-    async fn unlock_cpu_mining(&self, app_handle: AppHandle) {
+    async fn unlock_cpu_mining(&self) {
         if *self.is_cpu_mining_unlocked.lock().await {
             debug!(target: LOG_TARGET, "Mining is already unlocked");
             return;
         }
         info!(target: LOG_TARGET, "Unlocking Mining");
         *self.is_cpu_mining_unlocked.lock().await = true;
-        EventsManager::handle_unlock_cpu_mining(&app_handle).await;
+        EventsManager::handle_unlock_cpu_mining().await;
     }
-    async fn unlock_gpu_mining(&self, app_handle: AppHandle) {
+    async fn unlock_gpu_mining(&self) {
         if *self.is_gpu_mining_unlocked.lock().await {
             debug!(target: LOG_TARGET, "Mining is already unlocked");
             return;
         }
         info!(target: LOG_TARGET, "Unlocking Mining");
         *self.is_gpu_mining_unlocked.lock().await = true;
-        EventsManager::handle_unlock_gpu_mining(&app_handle).await;
+        EventsManager::handle_unlock_gpu_mining().await;
     }
 
-    async fn lock_cpu_mining(&self, app_handle: AppHandle) {
+    async fn lock_cpu_mining(&self) {
         if !*self.is_cpu_mining_unlocked.lock().await {
             debug!(target: LOG_TARGET, "Mining is already locked");
             return;
@@ -851,9 +850,9 @@ impl SetupManager {
         info!(target: LOG_TARGET, "Locking Mining");
 
         *self.is_cpu_mining_unlocked.lock().await = false;
-        EventsManager::handle_lock_cpu_mining(&app_handle).await;
+        EventsManager::handle_lock_cpu_mining().await;
     }
-    async fn lock_gpu_mining(&self, app_handle: AppHandle) {
+    async fn lock_gpu_mining(&self) {
         if !*self.is_gpu_mining_unlocked.lock().await {
             debug!(target: LOG_TARGET, "Mining is already locked");
             return;
@@ -862,10 +861,10 @@ impl SetupManager {
         info!(target: LOG_TARGET, "Locking Mining");
 
         *self.is_gpu_mining_unlocked.lock().await = false;
-        EventsManager::handle_lock_gpu_mining(&app_handle).await;
+        EventsManager::handle_lock_gpu_mining().await;
     }
 
-    async fn lock_wallet(&self, app_handle: AppHandle) {
+    async fn lock_wallet(&self) {
         if !*self.is_wallet_unlocked.lock().await {
             debug!(target: LOG_TARGET, "Wallet is already locked");
             return;
@@ -873,22 +872,18 @@ impl SetupManager {
         info!(target: LOG_TARGET, "Locking Wallet");
 
         *self.is_wallet_unlocked.lock().await = false;
-        EventsManager::handle_lock_wallet(&app_handle).await;
+        EventsManager::handle_lock_wallet().await;
     }
 
     async fn handle_setup_finished(&self, app_handle: AppHandle) {
         info!(target: LOG_TARGET, "Setup Finished");
-        EventsManager::handle_initial_setup_finished(&app_handle).await;
+        EventsManager::handle_initial_setup_finished().await;
         let _unused = initialize_frontend_updates(&app_handle).await;
     }
 
-    async fn handle_restart_finished(&self, app_handle: AppHandle) {
+    async fn handle_restart_finished(&self) {
         info!(target: LOG_TARGET, "Restart Finished");
-        EventsManager::handle_connection_status_changed(
-            &app_handle,
-            ConnectionStatusPayload::Succeed,
-        )
-        .await;
+        EventsManager::handle_connection_status_changed(ConnectionStatusPayload::Succeed).await;
     }
 
     pub async fn start_setup(&self, app_handle: AppHandle) {

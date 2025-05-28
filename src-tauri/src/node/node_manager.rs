@@ -31,7 +31,6 @@ use serde::{Deserialize, Serialize};
 use tari_common::configuration::Network;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::ShutdownSignal;
-use tauri::AppHandle;
 use tokio::sync::watch::{self, Sender};
 use tokio::sync::RwLock;
 use tokio::time::sleep;
@@ -148,7 +147,6 @@ impl NodeManager {
         use_tor: bool,
         tor_control_port: Option<u16>,
         remote_grpc_address: Option<String>,
-        app_handle: AppHandle,
     ) -> Result<(), NodeManagerError> {
         let shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
         let task_tracker = TasksTrackers::current().node_phase.get_task_tracker().await;
@@ -203,8 +201,7 @@ impl NodeManager {
         .await?;
         self.wait_ready().await?;
         if matches!(node_type, NodeType::RemoteUntilLocal) {
-            self.switch_to_local_when_synced(shutdown_signal, app_handle)
-                .await?;
+            self.switch_to_local_when_synced(shutdown_signal).await?;
         }
 
         Ok(())
@@ -248,11 +245,9 @@ impl NodeManager {
     async fn switch_to_local_when_synced(
         &self,
         shutdown_signal: ShutdownSignal,
-        app_handle: AppHandle,
     ) -> Result<(), anyhow::Error> {
         let node_type = self.node_type.clone();
         let node_manager = self.clone();
-        let app_handle = app_handle.clone();
 
         // Spawn a task to monitor the local node's sync progress
         TasksTrackers::current()
@@ -269,7 +264,6 @@ impl NodeManager {
                     progress_params_rx,
                     progress_percentage_rx,
                     shutdown_signal_clone,
-                    app_handle.clone(),
                 )
                 .await;
 
@@ -640,7 +634,6 @@ async fn spawn_syncing_updater(
     mut progress_params_rx: watch::Receiver<HashMap<String, String>>,
     progress_percentage_rx: watch::Receiver<f64>,
     mut shutdown_signal: ShutdownSignal,
-    app_handle: AppHandle,
 ) {
     TasksTrackers::current()
         .node_phase
@@ -653,7 +646,7 @@ async fn spawn_syncing_updater(
                         let progress_params = progress_params_rx.borrow().clone();
                         let percentage = *progress_percentage_rx.borrow();
                         if let Some(step) = progress_params.get("step").cloned() {
-                            EventsManager::handle_background_node_sync_update(&app_handle, progress_params.clone()).await;
+                            EventsManager::handle_background_node_sync_update(progress_params.clone()).await;
                             if step == "Block" && percentage == 1.0 {
                                 break;
                             }

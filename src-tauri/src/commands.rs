@@ -205,7 +205,7 @@ pub async fn frontend_ready(app: tauri::AppHandle) {
     }
     FRONTEND_READY_CALLED.store(true, Ordering::SeqCst);
 
-    let app_handle = app.clone();
+    EventsEmitter::load_app_handle(app.clone()).await;
     FrontendReadyChannel::current().set_ready();
     TasksTrackers::current()
         .common
@@ -214,7 +214,7 @@ pub async fn frontend_ready(app: tauri::AppHandle) {
         .spawn(async move {
             // Give the splash screen a few seconds to show before closing it
             sleep(Duration::from_secs(3));
-            EventsManager::handle_close_splash_screen(&app_handle).await;
+            EventsManager::handle_close_splash_screen().await;
         });
 }
 
@@ -603,7 +603,6 @@ pub async fn set_tari_address(address: String, app_handle: tauri::AppHandle) -> 
         .set_tari_address(address, config_path)
         .await?;
     EventsEmitter::emit_wallet_address_update(
-        &app_handle,
         new_address,
         internal_wallet.get_is_tari_address_generated(),
     )
@@ -645,9 +644,7 @@ pub async fn confirm_exchange_address(
     let new_address = internal_wallet
         .set_tari_address(address, config_path)
         .await?;
-    let handle_clone = app.clone();
     EventsEmitter::emit_wallet_address_update(
-        &handle_clone,
         new_address,
         internal_wallet.get_is_tari_address_generated(),
     )
@@ -1434,7 +1431,7 @@ pub async fn set_airdrop_tokens<'r>(
         };
 
         if currently_mining {
-            stop_cpu_mining(state.clone(), app.clone())
+            stop_cpu_mining(state.clone())
                 .await
                 .map_err(|e| e.to_string())?;
             stop_gpu_mining(state.clone())
@@ -1503,7 +1500,6 @@ pub async fn start_cpu_mining<'r>(
                 mode,
                 custom_cpu_usage,
                 &tari_address,
-                app.clone(),
             )
             .await;
         drop(cpu_miner_config);
@@ -1625,15 +1621,12 @@ pub async fn start_gpu_mining<'r>(
     }
 
     let mining_time = *ConfigMining::content().await.mining_time();
-    EventsEmitter::emit_mining_time_update(&app, mining_time).await;
+    EventsEmitter::emit_mining_time_update(mining_time).await;
     Ok(())
 }
 
 #[tauri::command]
-pub async fn stop_cpu_mining<'r>(
-    state: tauri::State<'_, UniverseAppState>,
-    app: tauri::AppHandle,
-) -> Result<(), String> {
+pub async fn stop_cpu_mining<'r>(state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
     let _lock = state.cpu_miner_stop_start_mutex.lock().await;
     let timer = Instant::now();
     state
@@ -1666,7 +1659,7 @@ pub async fn stop_cpu_mining<'r>(
     let mining_time = current_mining_time_ms + mining_time_duration;
     let _unused =
         ConfigMining::update_field(ConfigMiningContent::set_mining_time, mining_time).await;
-    EventsEmitter::emit_mining_time_update(&app, mining_time).await;
+    EventsEmitter::emit_mining_time_update(mining_time).await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "stop_cpu_mining took too long: {:?}", timer.elapsed());
@@ -1875,7 +1868,7 @@ pub async fn set_selected_engine(
         .gpu_miner
         .write()
         .await
-        .set_selected_engine(engine_type.clone(), config, app)
+        .set_selected_engine(engine_type.clone(), config)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -1936,7 +1929,6 @@ pub async fn websocket_connect(
 #[tauri::command]
 pub async fn reconnect(app_handle: tauri::AppHandle) -> Result<(), String> {
     EventsManager::handle_connection_status_changed(
-        &app_handle,
         crate::events::ConnectionStatusPayload::InProgress,
     )
     .await;

@@ -131,7 +131,6 @@ impl ConfigWallet {
                 let tari_address = wallet.get_tari_address();
                 *state.tari_address.write().await = tari_address.clone();
                 EventsEmitter::emit_wallet_address_update(
-                    &app_handle,
                     tari_address,
                     wallet.get_is_tari_address_generated(),
                 )
@@ -142,11 +141,8 @@ impl ConfigWallet {
             }
         };
 
-        EventsManager::handle_config_wallet_loaded(
-            &app_handle,
-            Self::current().write().await.content.clone(),
-        )
-        .await;
+        EventsManager::handle_config_wallet_loaded(Self::current().write().await.content.clone())
+            .await;
     }
 }
 

@@ -77,9 +77,7 @@ pub trait ConfigImpl {
     }
 
     async fn _send_restart_event(&self) -> Result<(), Error> {
-        if let Some(app_handle) = self._get_app_handle().await {
-            EventsManager::handle_ask_for_restart(&app_handle).await;
-        }
+        EventsManager::handle_ask_for_restart().await;
         Ok(())
     }
 

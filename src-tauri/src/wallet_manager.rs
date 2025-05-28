@@ -37,7 +37,6 @@ use std::sync::Arc;
 use std::time::Duration;
 use tari_common::configuration::Network;
 use tari_shutdown::ShutdownSignal;
-use tauri::AppHandle;
 use tokio::fs;
 use tokio::sync::watch;
 use tokio::sync::RwLock;
@@ -245,7 +244,6 @@ impl WalletManager {
     #[allow(clippy::too_many_lines)]
     pub async fn wait_for_initial_wallet_scan(
         &self,
-        app: &AppHandle,
         node_status_watch_rx: watch::Receiver<BaseNodeStatus>,
     ) -> Result<(), WalletManagerError> {
         if self.is_initial_scan_completed() {
@@ -258,7 +256,6 @@ impl WalletManager {
             return Err(WalletManagerError::WalletNotStarted);
         }
         let wallet_state_receiver = process_watcher.adapter.state_broadcast.subscribe();
-        let app_clone = app.clone();
         drop(process_watcher);
 
         let node_status_watch_rx_progress = node_status_watch_rx.clone();
@@ -295,7 +292,6 @@ impl WalletManager {
                         if scanned_height > 0 && progress < 100.0 {
                             log::info!(target: LOG_TARGET, "Initial wallet scanning: {}% ({}/{})", progress, scanned_height, current_target_height);
                             EventsEmitter::emit_init_wallet_scanning_progress(
-                                &app_clone,
                                 scanned_height,
                                 current_target_height,
                                 progress,
@@ -306,7 +302,6 @@ impl WalletManager {
             }
         });
 
-        let app_clone2 = app.clone();
         let wallet_manager = self.clone();
         let mut node_status_watch_rx_scan = node_status_watch_rx.clone();
 
@@ -351,9 +346,8 @@ impl WalletManager {
                                         latest_height,
                                         balance.available_balance
                                     );
-                                    EventsEmitter::emit_wallet_balance_update(&app_clone2, balance).await;
+                                    EventsEmitter::emit_wallet_balance_update(balance).await;
                                     EventsEmitter::emit_init_wallet_scanning_progress(
-                                        &app_clone2,
                                         current_target_height,
                                         current_target_height,
                                         100.0,

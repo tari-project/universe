@@ -152,7 +152,7 @@ impl ConfigMining {
         cpu_config.load_from_config_mining(config._get_content());
         drop(cpu_config);
 
-        EventsManager::handle_config_mining_loaded(&app_handle, config.content.clone()).await;
+        EventsManager::handle_config_mining_loaded(config.content.clone()).await;
     }
 }
 

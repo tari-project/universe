@@ -151,7 +151,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
                         error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Node);
                         let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::Node);
                         sentry::capture_message(&error_message, sentry::Level::Error);
-                        EventsManager::handle_critical_problem(&self.app_handle, Some(SetupPhase::Node.get_critical_problem_title()), Some(SetupPhase::Node.get_critical_problem_description()),Some(error_message))
+                        EventsManager::handle_critical_problem(Some(SetupPhase::Node.get_critical_problem_title()), Some(SetupPhase::Node.get_critical_problem_description()),Some(error_message))
                         .await;
                     }
                 }
@@ -166,7 +166,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
                             let error_message = format!("[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Node,error);
                             sentry::capture_message(&error_message, sentry::Level::Error);
                             EventsManager
-                                ::handle_critical_problem(&self.app_handle, Some(SetupPhase::Node.get_critical_problem_title()), Some(SetupPhase::Node.get_critical_problem_description()),Some(error_message))
+                                ::handle_critical_problem(Some(SetupPhase::Node.get_critical_problem_title()), Some(SetupPhase::Node.get_critical_problem_description()),Some(error_message))
                                 .await;
                         }
                     }
@@ -235,7 +235,6 @@ impl SetupPhaseImpl for NodeSetupPhase {
                     self.app_configuration.use_tor,
                     tor_control_port,
                     Some(self.app_configuration.base_node_grpc_address.clone()),
-                    self.app_handle.clone(),
                 )
                 .await
             {
@@ -342,38 +341,42 @@ impl SetupPhaseImpl for NodeSetupPhase {
             .resolve_step(ProgressPlans::Node(ProgressSetupNodePlan::Done))
             .await;
 
-        EventsManager::handle_node_phase_finished(&self.app_handle, true).await;
+        EventsManager::handle_node_phase_finished(true).await;
 
         let app_handle_clone: tauri::AppHandle = self.app_handle.clone();
         let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
-        TasksTrackers::current().node_phase.get_task_tracker().await.spawn(async move {
-            let mut interval: Interval = interval(Duration::from_secs(30));
+        TasksTrackers::current()
+            .node_phase
+            .get_task_tracker()
+            .await
+            .spawn(async move {
+                let mut interval: Interval = interval(Duration::from_secs(30));
 
-            loop {
-                tokio::select! {
-                    _ = interval.tick() => {
-                        let state = app_handle_clone.state::<UniverseAppState>().inner();
-                        let check_if_orphan = state
-                            .node_manager
-                            .check_if_is_orphan_chain()
-                            .await;
-                        match check_if_orphan {
-                            Ok(is_stuck) => {
-                                EventsManager::handle_stuck_on_orphan_chain(&app_handle_clone, is_stuck)
-                            .await;
+                loop {
+                    tokio::select! {
+                        _ = interval.tick() => {
+                            let state = app_handle_clone.state::<UniverseAppState>().inner();
+                            let check_if_orphan = state
+                                .node_manager
+                                .check_if_is_orphan_chain()
+                                .await;
+                            match check_if_orphan {
+                                Ok(is_stuck) => {
+                                    EventsManager::handle_stuck_on_orphan_chain(is_stuck)
+                                .await;
+                                }
+                                Err(ref e) => {
+                                    error!(target: LOG_TARGET, "{}", e);
+                                }
                             }
-                            Err(ref e) => {
-                                error!(target: LOG_TARGET, "{}", e);
-                            }
+                        },
+                        _ = shutdown_signal.wait() => {
+                            info!(target: LOG_TARGET, "Stopping periodic orphan chain checks");
+                            break;
                         }
-                    },
-                    _ = shutdown_signal.wait() => {
-                        info!(target: LOG_TARGET, "Stopping periodic orphan chain checks");
-                        break;
                     }
                 }
-            }
-        });
+            });
 
         Ok(())
     }

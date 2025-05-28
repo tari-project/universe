@@ -144,7 +144,7 @@ impl SetupPhaseImpl for HardwareSetupPhase {
                         error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Hardware);
                         let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::Hardware);
                         sentry::capture_message(&error_message, sentry::Level::Error);
-                        EventsManager::handle_critical_problem(&self.app_handle, Some(SetupPhase::Hardware.get_critical_problem_title()), Some(SetupPhase::Hardware.get_critical_problem_description()),Some(error_message))
+                        EventsManager::handle_critical_problem(Some(SetupPhase::Hardware.get_critical_problem_title()), Some(SetupPhase::Hardware.get_critical_problem_description()),Some(error_message))
                         .await;
                     }
                 }
@@ -159,7 +159,7 @@ impl SetupPhaseImpl for HardwareSetupPhase {
                             let error_message = format!("[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Hardware,error);
                             sentry::capture_message(&error_message, sentry::Level::Error);
                             EventsManager
-                                ::handle_critical_problem(&self.app_handle, Some(SetupPhase::Hardware.get_critical_problem_title()), Some(SetupPhase::Hardware.get_critical_problem_description()),Some(error_message))
+                                ::handle_critical_problem(Some(SetupPhase::Hardware.get_critical_problem_title()), Some(SetupPhase::Hardware.get_critical_problem_description()),Some(error_message))
                                 .await;
                         }
                     }
@@ -213,7 +213,6 @@ impl SetupPhaseImpl for HardwareSetupPhase {
             .write()
             .await
             .detect(
-                self.app_handle.clone(),
                 config_dir.clone(),
                 self.app_configuration.gpu_engine.clone(),
             )
@@ -261,11 +260,11 @@ impl SetupPhaseImpl for HardwareSetupPhase {
                 select! {
                     _ = gpu_status_watch_rx.changed() => {
                         let gpu_status: GpuMinerStatus = gpu_status_watch_rx.borrow().clone();
-                        let _ = EventsManager::handle_gpu_mining_update(&app_handle_clone, gpu_status).await;
+                        let _ = EventsManager::handle_gpu_mining_update(gpu_status).await;
                     },
                     _ = cpu_miner_status_watch_rx.changed() => {
                         let cpu_status = cpu_miner_status_watch_rx.borrow().clone();
-                        let _ = EventsManager::handle_cpu_mining_update(&app_handle_clone, cpu_status.clone()).await;
+                        let _ = EventsManager::handle_cpu_mining_update(cpu_status.clone()).await;
 
                         // Update systemtray data
                         let gpu_status: GpuMinerStatus = gpu_status_watch_rx.borrow().clone();
@@ -294,7 +293,7 @@ impl SetupPhaseImpl for HardwareSetupPhase {
             }
         });
 
-        EventsManager::handle_hardware_phase_finished(&self.app_handle, true).await;
+        EventsManager::handle_hardware_phase_finished(true).await;
         Ok(())
     }
 }
