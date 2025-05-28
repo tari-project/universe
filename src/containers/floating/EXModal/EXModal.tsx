@@ -10,11 +10,12 @@ import { IoArrowBack } from 'react-icons/io5';
 
 export default function EXModal() {
     const data = useExchangeStore((s) => s.content);
-    const showModal = useExchangeStore((s) => s.showClassicModal);
+    const showModal = useExchangeStore((s) => s.showExchangeAddressModal);
     const isUniversal = useConfigBEInMemoryStore((s) => s.isUniversalMiner);
     if (!data) return null;
+
     return (
-        <Dialog open={!!showModal} disableClose={!isUniversal} onOpenChange={setShowExchangeModal}>
+        <Dialog open={!!showModal} disableClose onOpenChange={setShowExchangeModal}>
             <DialogContent $disableOverflow $borderRadius="40px">
                 <Wrapper>
                     {isUniversal && (

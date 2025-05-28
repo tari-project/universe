@@ -6,19 +6,19 @@ import { setSeedlessUI } from '@app/store/actions/uiStoreActions.ts';
 
 interface ExchangeStoreState {
     content?: ExchangeContent | null;
-    showClassicModal: boolean | null;
+    showExchangeAddressModal: boolean | null;
     exchangeMiners?: ExchangeMiner[];
     showUniversalModal: boolean | null;
 }
 
 const initialState = {
-    showClassicModal: null,
+    showExchangeAddressModal: null,
     showUniversalModal: null,
 };
 export const useExchangeStore = create<ExchangeStoreState>()(() => ({ ...initialState }));
 
-export const setShowExchangeModal = (showClassicModal: boolean) => {
-    useExchangeStore.setState({ showClassicModal: showClassicModal });
+export const setShowExchangeModal = (showExchangeAddressModal: boolean) => {
+    useExchangeStore.setState({ showExchangeAddressModal });
 };
 
 export const setExchangeContent = (content?: ExchangeContent | null) => {
