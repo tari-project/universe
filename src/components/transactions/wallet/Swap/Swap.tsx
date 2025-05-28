@@ -179,11 +179,6 @@ export const Swap = memo(function Swap() {
                 {connectedAccount.address ? <span>{`${t('swap.balance')}: ${toTokenDisplay?.balance}`}</span> : null}
             </SwapOption>
             {(errorMsg || customError) && <SwapErrorMessage> {errorMsg || customError} </SwapErrorMessage>}
-            <SwapErrorMessage>
-                {
-                    'Wallet Connect failed. Please try again with a different Ethereum wallet. If you continue to face challenges, please connect with Tari contributors on Telegram or Discord.'
-                }
-            </SwapErrorMessage>
             {/* Show error only if it exists */}
             <SubmitButtonWrapper>
                 <WalletButton
