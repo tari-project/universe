@@ -9,7 +9,7 @@ import { useEffect, useRef, useState } from 'react';
 const metadata = {
     name: 'TariUniverse',
     description: 'Tari Universe Wallet',
-    url: 'https://universe.tari.com',
+    url: 'tauri://localhost',
     icons: ['https://universe.tari.com/assets/tari-logo.png'],
 };
 
