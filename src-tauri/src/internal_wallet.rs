@@ -159,19 +159,6 @@ impl InternalWallet {
         Ok(tari_address)
     }
 
-    pub async fn reset_is_address_generated(&mut self, config_path: PathBuf) -> Result<(), String> {
-        let network = Network::get_current_or_user_setting_or_default()
-            .to_string()
-            .to_lowercase();
-
-        self.config.is_tari_address_generated = true;
-
-        let config = serde_json::to_string(&self.config).map_err(|e| e.to_string())?;
-        let file = config_path.join(network).join("wallet_config.json");
-        fs::write(file, config).await.map_err(|e| e.to_string())?;
-        Ok(())
-    }
-
     pub async fn get_paper_wallet_details(
         &self,
         anon_id: String,

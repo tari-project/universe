@@ -206,7 +206,6 @@ pub async fn user_selected_exchange(
     app_handle: tauri::AppHandle,
     exchange_miner: ExchangeMiner,
 ) -> Result<(), String> {
-    reset_is_address_generated(app_handle.clone()).await?;
     SetupManager::get_instance()
         .select_exchange_miner(exchange_miner, app_handle.clone())
         .await?;
@@ -681,33 +680,6 @@ pub async fn confirm_exchange_address(
         .map_err(InvokeError::from_anyhow)?;
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "set_exchange_address took too long: {:?}", timer.elapsed());
-    }
-    Ok(())
-}
-
-#[tauri::command]
-pub async fn reset_is_address_generated(app_handle: tauri::AppHandle) -> Result<(), String> {
-    let timer = Instant::now();
-    let config_path = app_handle
-        .path()
-        .app_config_dir()
-        .expect("Could not get config dir");
-    let state = app_handle.state::<UniverseAppState>();
-    let mut internal_wallet = InternalWallet::load_or_create(config_path.clone(), state)
-        .await
-        .map_err(|e| e.to_string())?;
-    internal_wallet
-        .reset_is_address_generated(config_path.clone())
-        .await?;
-    let handle_clone = app_handle.clone();
-    EventsEmitter::emit_wallet_address_update(
-        &handle_clone,
-        internal_wallet.get_tari_address(),
-        internal_wallet.get_is_tari_address_generated(),
-    )
-    .await;
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "reset_exchange_address took too long: {:?}", timer.elapsed());
     }
     Ok(())
 }
