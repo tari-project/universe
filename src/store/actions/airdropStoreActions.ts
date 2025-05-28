@@ -266,6 +266,14 @@ export async function fetchUiSendRecvFeatureFlag() {
     return response;
 }
 
+export async function fetchBlockBubblesFeatureFlag() {
+    const response = await fetchFeatureFlag(FEATURES.FF_UI_BLOCK_BUBBLES);
+    if (response) {
+        useUIStore.setState({ blockBubblesEnabled: response.access });
+    }
+    return response;
+}
+
 export async function fetchCommunityMessages() {
     const response = await handleAirdropRequest<CommunityMessage[] | null>({
         publicRequest: true,
