@@ -44,7 +44,7 @@ export const ENABLED_TOKEN_ADDRESSES = {
     //     [ChainId.SEPOLIA]: '0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9',
     // },
     [EnabledTokensEnum.WXTM]: {
-        [ChainId.MAINNET]: '0x',
+        [ChainId.MAINNET]: '0xcBe79AB990E0Ab45Cb9148db7d434477E49b7374',
         // TEST SEPOLIA XTM
         // [ChainId.SEPOLIA]: '0x45388D68e2C2e8162259483498577296D2B5C8A0',
         // REAL SEPOLIA XTM
