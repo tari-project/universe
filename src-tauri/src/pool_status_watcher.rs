@@ -27,7 +27,7 @@ use serde::{Deserialize, Serialize};
 const LOG_TARGET: &str = "tari::universe::pool_status_watcher";
 #[derive(Clone, Debug, Serialize)]
 pub(crate) struct PoolStatus {
-    pub accepted_shares: u32,
+    pub accepted_shares: u64,
     pub unpaid: u64,
     pub balance: u64,
     pub min_payout: u64,
@@ -60,16 +60,16 @@ impl<T: PoolApiAdapter + Send + Sync + 'static> PoolStatusWatcher<T> {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PoolStatusResponseBody {
-    pub hash: u32,
+    pub hash: u64,
     pub identifier: String,
     #[serde(rename = "lastHash")]
-    pub last_hash: u32,
+    pub last_hash: u64,
     #[serde(rename = "totalHashes")]
-    pub total_hashes: u32,
+    pub total_hashes: u64,
     #[serde(rename = "validShares")]
-    pub valid_shares: u32,
+    pub valid_shares: u64,
     #[serde(rename = "invalidShares")]
-    pub invalid_shares: u32,
+    pub invalid_shares: u64,
     pub expiry: u64,
     #[serde(rename = "amtPaid")]
     pub amt_paid: u64,
