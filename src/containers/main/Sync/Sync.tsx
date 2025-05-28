@@ -2,7 +2,7 @@ import Progress from './components/Progress.tsx';
 import AirdropInvite from './actions/AirdropInvite.tsx';
 import AirdropLogin from './actions/AirdropLogin.tsx';
 import ModeSelection from './actions/ModeSelection.tsx';
-import { type } from '@tauri-apps/plugin-os';
+
 import {
     ActionContent,
     Content,
@@ -14,24 +14,24 @@ import {
     Wrapper,
 } from './sync.styles.ts';
 import { useTranslation } from 'react-i18next';
-import { useMemo } from 'react';
+import VideoStream from '@app/components/VideoStream/VideoStream.tsx';
+import { useTheme } from 'styled-components';
 
 export default function Sync() {
     const { t } = useTranslation('setup-view');
-    const isMac = type() === 'macos';
-    const videoMarkup = useMemo(
-        () => (
-            <video playsInline autoPlay loop muted controls={false}>
-                <source src={`/assets/video/coinLoader.${isMac ? 'mov' : 'webm'}`} />
-            </video>
-        ),
-        [isMac]
-    );
+    const theme = useTheme();
+
     return (
         <Wrapper>
             <Content>
                 <HeaderContent>
-                    <HeaderGraphic>{videoMarkup}</HeaderGraphic>
+                    <HeaderGraphic>
+                        {theme.mode === 'light' ? (
+                            <VideoStream src="https://customer-o6ocjyfui1ltpm5h.cloudflarestream.com/d15edd1d0a5a2452a49f1312312b69f0/manifest/video.m3u8" />
+                        ) : (
+                            <VideoStream src="https://customer-o6ocjyfui1ltpm5h.cloudflarestream.com/af0c72594da95f7507ccca86831c4c0b/manifest/video.m3u8" />
+                        )}
+                    </HeaderGraphic>
                     <Heading>{t('sync.header')}</Heading>
                     <SubHeading>{t('sync.subheader')}</SubHeading>
                 </HeaderContent>
