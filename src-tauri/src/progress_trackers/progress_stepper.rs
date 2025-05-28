@@ -30,7 +30,7 @@ use tauri::{AppHandle, Manager};
 
 use log::warn;
 
-use crate::{events_manager::EventsManager, UniverseAppState};
+use crate::{events_emitter::EventsEmitter, UniverseAppState};
 
 use super::progress_plans::{ProgressEvent, ProgressPlans, ProgressStep};
 
@@ -52,7 +52,7 @@ impl ChanneledStepUpdate {
                 - self.step_percentage)
                 * current_step_percentage;
 
-        EventsManager::handle_progress_tracker_update(
+        EventsEmitter::emit_progress_tracker_update(
             self.step.get_event_type(),
             self.step.get_phase_title(),
             self.step.get_title(),
@@ -79,7 +79,7 @@ impl ProgressStepper {
 
             let is_completed = self.plan.is_empty();
 
-            EventsManager::handle_progress_tracker_update(
+            EventsEmitter::emit_progress_tracker_update(
                 event.get_event_type(),
                 resolved_step.get_phase_title(),
                 event.get_title(),

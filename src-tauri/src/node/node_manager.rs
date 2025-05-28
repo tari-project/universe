@@ -39,7 +39,7 @@ use tokio_util::task::TaskTracker;
 
 use crate::configs::config_core::ConfigCore;
 use crate::configs::trait_config::ConfigImpl;
-use crate::events_manager::EventsManager;
+use crate::events_emitter::EventsEmitter;
 use crate::node::node_adapter::{
     NodeAdapter, NodeAdapterService, NodeIdentity, NodeStatusMonitorError,
 };
@@ -646,7 +646,7 @@ async fn spawn_syncing_updater(
                         let progress_params = progress_params_rx.borrow().clone();
                         let percentage = *progress_percentage_rx.borrow();
                         if let Some(step) = progress_params.get("step").cloned() {
-                            EventsManager::handle_background_node_sync_update(progress_params.clone()).await;
+                            EventsEmitter::emit_background_node_sync_update(progress_params.clone()).await;
                             if step == "Block" && percentage == 1.0 {
                                 break;
                             }

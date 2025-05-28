@@ -25,6 +25,8 @@ use std::{collections::HashMap, time::Duration};
 use crate::{
     binaries::{Binaries, BinaryResolver},
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
+    events::CriticalProblemPayload,
+    events_emitter::EventsEmitter,
     events_manager::EventsManager,
     node::node_manager::{NodeManagerError, STOP_ON_ERROR_CODES},
     progress_tracker_old::ProgressTracker,
@@ -151,8 +153,11 @@ impl SetupPhaseImpl for NodeSetupPhase {
                         error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Node);
                         let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::Node);
                         sentry::capture_message(&error_message, sentry::Level::Error);
-                        EventsManager::handle_critical_problem(Some(SetupPhase::Node.get_critical_problem_title()), Some(SetupPhase::Node.get_critical_problem_description()),Some(error_message))
-                        .await;
+                        EventsEmitter::emit_critical_problem(CriticalProblemPayload {
+                            title: Some(SetupPhase::Node.get_critical_problem_title()),
+                            description: Some(SetupPhase::Node.get_critical_problem_description()),
+                            error_message: Some(error_message),
+                        }).await;
                     }
                 }
                 result = self.setup_inner() => {
@@ -165,9 +170,11 @@ impl SetupPhaseImpl for NodeSetupPhase {
                             error!(target: LOG_TARGET, "[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Node,error);
                             let error_message = format!("[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Node,error);
                             sentry::capture_message(&error_message, sentry::Level::Error);
-                            EventsManager
-                                ::handle_critical_problem(Some(SetupPhase::Node.get_critical_problem_title()), Some(SetupPhase::Node.get_critical_problem_description()),Some(error_message))
-                                .await;
+                            EventsEmitter::emit_critical_problem(CriticalProblemPayload {
+                                title: Some(SetupPhase::Node.get_critical_problem_title()),
+                                description: Some(SetupPhase::Node.get_critical_problem_description()),
+                                error_message: Some(error_message),
+                            }).await;
                         }
                     }
                 }
@@ -341,7 +348,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
             .resolve_step(ProgressPlans::Node(ProgressSetupNodePlan::Done))
             .await;
 
-        EventsManager::handle_node_phase_finished(true).await;
+        EventsEmitter::emit_node_phase_finished(true).await;
 
         let app_handle_clone: tauri::AppHandle = self.app_handle.clone();
         let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
@@ -362,8 +369,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
                                 .await;
                             match check_if_orphan {
                                 Ok(is_stuck) => {
-                                    EventsManager::handle_stuck_on_orphan_chain(is_stuck)
-                                .await;
+                                    EventsEmitter::emit_stuck_on_orphan_chain(is_stuck).await;
                                 }
                                 Err(ref e) => {
                                     error!(target: LOG_TARGET, "{}", e);

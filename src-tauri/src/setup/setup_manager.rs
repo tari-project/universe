@@ -32,6 +32,7 @@ use crate::{
         config_wallet::ConfigWallet, trait_config::ConfigImpl,
     },
     events::{ConnectionStatusPayload, ProgressEvents},
+    events_emitter::EventsEmitter,
     events_manager::EventsManager,
     initialize_frontend_updates,
     internal_wallet::InternalWallet,
@@ -402,13 +403,13 @@ impl SetupManager {
         let in_memory_config = state.in_memory_config.clone();
         if in_memory_config.read().await.exchange_id != DEFAULT_EXCHANGE_ID {
             self.unlock_wallet().await;
-            EventsManager::handle_progress_tracker_update(
+            EventsEmitter::emit_progress_tracker_update(
                 ProgressEvents::Wallet,
                 "setup-wallet".to_string(),
                 "setup-wallet".to_string(),
                 60.0,
                 None,
-                true, // just enforce is_completed true
+                true,
             )
             .await;
 
@@ -771,7 +772,7 @@ impl SetupManager {
 
     async fn resume_phases(&self, app_handle: AppHandle, phases: Vec<SetupPhase>) {
         if !phases.is_empty() {
-            EventsManager::handle_restarting_phases(phases.clone()).await;
+            EventsEmitter::emit_restarting_phases(phases.clone()).await;
         }
 
         for phase in phases {
@@ -808,7 +809,7 @@ impl SetupManager {
             .handle_release_notes_event_emit(state.clone(), app_handle.clone())
             .await;
 
-        EventsManager::handle_unlock_app().await;
+        EventsEmitter::emit_unlock_app().await;
     }
 
     async fn unlock_wallet(&self) {
@@ -819,7 +820,7 @@ impl SetupManager {
 
         info!(target: LOG_TARGET, "Unlocking Wallet");
         *self.is_wallet_unlocked.lock().await = true;
-        EventsManager::handle_unlock_wallet().await;
+        EventsEmitter::emit_unlock_wallet().await;
     }
 
     async fn unlock_cpu_mining(&self) {
@@ -829,7 +830,7 @@ impl SetupManager {
         }
         info!(target: LOG_TARGET, "Unlocking Mining");
         *self.is_cpu_mining_unlocked.lock().await = true;
-        EventsManager::handle_unlock_cpu_mining().await;
+        EventsEmitter::emit_unlock_cpu_mining().await;
     }
     async fn unlock_gpu_mining(&self) {
         if *self.is_gpu_mining_unlocked.lock().await {
@@ -838,7 +839,7 @@ impl SetupManager {
         }
         info!(target: LOG_TARGET, "Unlocking Mining");
         *self.is_gpu_mining_unlocked.lock().await = true;
-        EventsManager::handle_unlock_gpu_mining().await;
+        EventsEmitter::emit_unlock_gpu_mining().await;
     }
 
     async fn lock_cpu_mining(&self) {
@@ -850,7 +851,7 @@ impl SetupManager {
         info!(target: LOG_TARGET, "Locking Mining");
 
         *self.is_cpu_mining_unlocked.lock().await = false;
-        EventsManager::handle_lock_cpu_mining().await;
+        EventsEmitter::emit_lock_cpu_mining().await;
     }
     async fn lock_gpu_mining(&self) {
         if !*self.is_gpu_mining_unlocked.lock().await {
@@ -861,7 +862,7 @@ impl SetupManager {
         info!(target: LOG_TARGET, "Locking Mining");
 
         *self.is_gpu_mining_unlocked.lock().await = false;
-        EventsManager::handle_lock_gpu_mining().await;
+        EventsEmitter::emit_lock_gpu_mining().await;
     }
 
     async fn lock_wallet(&self) {
@@ -872,18 +873,18 @@ impl SetupManager {
         info!(target: LOG_TARGET, "Locking Wallet");
 
         *self.is_wallet_unlocked.lock().await = false;
-        EventsManager::handle_lock_wallet().await;
+        EventsEmitter::emit_lock_wallet().await;
     }
 
     async fn handle_setup_finished(&self, app_handle: AppHandle) {
         info!(target: LOG_TARGET, "Setup Finished");
-        EventsManager::handle_initial_setup_finished().await;
+        EventsEmitter::emit_initial_setup_finished().await;
         let _unused = initialize_frontend_updates(&app_handle).await;
     }
 
     async fn handle_restart_finished(&self) {
         info!(target: LOG_TARGET, "Restart Finished");
-        EventsManager::handle_connection_status_changed(ConnectionStatusPayload::Succeed).await;
+        EventsEmitter::emit_connection_status_changed(ConnectionStatusPayload::Succeed).await;
     }
 
     pub async fn start_setup(&self, app_handle: AppHandle) {

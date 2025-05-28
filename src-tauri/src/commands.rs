@@ -31,6 +31,7 @@ use crate::configs::config_ui::{ConfigUI, ConfigUIContent, DisplayMode};
 use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent};
 use crate::configs::trait_config::ConfigImpl;
 use crate::credential_manager::{CredentialError, CredentialManager};
+use crate::events::ConnectionStatusPayload;
 use crate::events_emitter::EventsEmitter;
 use crate::events_manager::EventsManager;
 use crate::external_dependencies::{
@@ -214,7 +215,7 @@ pub async fn frontend_ready(app: tauri::AppHandle) {
         .spawn(async move {
             // Give the splash screen a few seconds to show before closing it
             sleep(Duration::from_secs(3));
-            EventsManager::handle_close_splash_screen().await;
+            EventsEmitter::emit_close_splashscreen().await;
         });
 }
 
@@ -1919,13 +1920,12 @@ pub async fn websocket_connect(
 
 #[tauri::command]
 pub async fn reconnect(app_handle: tauri::AppHandle) -> Result<(), String> {
-    EventsManager::handle_connection_status_changed(
-        crate::events::ConnectionStatusPayload::InProgress,
-    )
-    .await;
-    let sm = SetupManager::get_instance();
-    sm.add_phases_to_restart_queue(SetupPhase::all()).await;
-    sm.restart_phases_from_queue(app_handle).await;
+    EventsEmitter::emit_connection_status_changed(ConnectionStatusPayload::InProgress).await;
+    let setup_manager = SetupManager::get_instance();
+    setup_manager
+        .add_phases_to_restart_queue(SetupPhase::all())
+        .await;
+    setup_manager.restart_phases_from_queue(app_handle).await;
     Ok(())
 }
 

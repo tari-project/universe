@@ -30,7 +30,7 @@ use tauri_plugin_sentry::sentry;
 use tokio::sync::watch::{Receiver, Sender};
 use tokio::task::spawn_blocking;
 
-use crate::events_manager::EventsManager;
+use crate::events_emitter::EventsEmitter;
 
 const LOG_TARGET: &str = "tari::universe::network_status";
 const SPEED_TEST_TIMEOUT: Duration = Duration::from_secs(60);
@@ -81,7 +81,7 @@ impl NetworkStatus {
                 error!("Failed to send network speeds: {:?}", e);
             });
 
-        EventsManager::handle_network_status_update(
+        EventsEmitter::emit_network_status(
             download_speed,
             upload_speed,
             latency,

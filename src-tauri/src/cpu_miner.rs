@@ -24,7 +24,7 @@ use crate::binaries::Binaries;
 use crate::commands::{CpuMinerConnection, CpuMinerConnectionStatus, CpuMinerStatus};
 use crate::configs::config_mining::{ConfigMiningContent, MiningMode};
 use crate::configs::config_wallet::ConfigWalletContent;
-use crate::events_manager::EventsManager;
+use crate::events_emitter::EventsEmitter;
 use crate::pool_status_watcher::SupportXmrStyleAdapter;
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
@@ -406,7 +406,7 @@ impl CpuMiner {
                             None => None,
                         };
 
-                        let _ = EventsManager::handle_pool_status_update(last_pool_status.clone()).await;
+                        EventsEmitter::emit_pool_status_update(last_pool_status.clone()).await;
 
                     }
                     _ = summary_watch_rx.changed() => {

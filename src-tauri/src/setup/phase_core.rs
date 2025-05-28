@@ -31,7 +31,8 @@ use tokio::{
 use crate::{
     auto_launcher::AutoLauncher,
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
-    events_manager::EventsManager,
+    events::CriticalProblemPayload,
+    events_emitter::EventsEmitter,
     progress_trackers::{
         progress_plans::ProgressPlans, progress_stepper::ProgressStepperBuilder,
         ProgressSetupCorePlan, ProgressStepper,
@@ -132,8 +133,11 @@ impl SetupPhaseImpl for CoreSetupPhase {
                         error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Core);
                         let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::Core);
                         sentry::capture_message(&error_message, sentry::Level::Error);
-                        EventsManager::handle_critical_problem(Some(SetupPhase::Core.get_critical_problem_title()), Some(SetupPhase::Core.get_critical_problem_description()),Some(error_message))
-                        .await;
+                        EventsEmitter::emit_critical_problem(CriticalProblemPayload {
+                            title: Some(SetupPhase::Core.get_critical_problem_title()),
+                            description: Some(SetupPhase::Core.get_critical_problem_description()),
+                            error_message: Some(error_message),
+                        }).await;
                     }
                 }
                 result = self.setup_inner() => {
@@ -146,8 +150,11 @@ impl SetupPhaseImpl for CoreSetupPhase {
                             error!(target: LOG_TARGET, "[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Core,error);
                             let error_message = format!("[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Core,error);
                             sentry::capture_message(&error_message, sentry::Level::Error);
-                            EventsManager::handle_critical_problem(Some(SetupPhase::Core.get_critical_problem_title()), Some(SetupPhase::Core.get_critical_problem_description()),Some(error_message))
-                                .await;
+                            EventsEmitter::emit_critical_problem(CriticalProblemPayload {
+                                title: Some(SetupPhase::Core.get_critical_problem_title()),
+                                description: Some(SetupPhase::Core.get_critical_problem_description()),
+                                error_message: Some(error_message),
+                            }).await;
                         }
                     }
                 }
@@ -218,7 +225,7 @@ impl SetupPhaseImpl for CoreSetupPhase {
             .resolve_step(ProgressPlans::Core(ProgressSetupCorePlan::Done))
             .await;
 
-        EventsManager::handle_core_phase_finished(true).await;
+        EventsEmitter::emit_core_phase_finished(true).await;
 
         Ok(())
     }

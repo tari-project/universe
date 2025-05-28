@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::events_manager::EventsManager;
+use crate::events_emitter::EventsEmitter;
 
 use std::{sync::LazyLock, time::SystemTime};
 
@@ -118,7 +118,7 @@ impl ConfigUI {
         let mut config = Self::current().write().await;
         config.load_app_handle(app_handle.clone()).await;
 
-        EventsManager::handle_config_ui_loaded(config.content.clone()).await;
+        EventsEmitter::emit_ui_config_loaded(config.content.clone()).await;
         drop(config);
 
         let _unused = Self::update_field(

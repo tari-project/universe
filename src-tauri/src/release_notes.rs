@@ -43,8 +43,7 @@ use crate::{
         trait_config::ConfigImpl,
     },
     events::ShowReleaseNotesPayload,
-    events_manager::EventsManager,
-    UniverseAppState, APPLICATION_FOLDER_ID,
+    EventsEmitter, UniverseAppState, APPLICATION_FOLDER_ID,
 };
 
 const LOG_TARGET: &str = "tari::universe::release_notes";
@@ -287,7 +286,7 @@ impl ReleaseNotes {
 
         debug!(target: LOG_TARGET, "[handle_release_notes_event_emit] Is app update available: {}", is_app_update_available);
 
-        EventsManager::handle_show_release_notes(ShowReleaseNotesPayload {
+        EventsEmitter::emit_show_release_notes(ShowReleaseNotesPayload {
             release_notes: release_notes.content,
             is_app_update_available,
             should_show_dialog: should_show_release_notes,

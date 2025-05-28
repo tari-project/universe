@@ -25,7 +25,8 @@ use std::time::Duration;
 use crate::{
     binaries::{Binaries, BinaryResolver},
     configs::{config_mining::ConfigMining, trait_config::ConfigImpl},
-    events_manager::EventsManager,
+    events::CriticalProblemPayload,
+    events_emitter::EventsEmitter,
     gpu_miner::EngineType,
     hardware::hardware_status_monitor::HardwareStatusMonitor,
     progress_tracker_old::ProgressTracker,
@@ -144,8 +145,11 @@ impl SetupPhaseImpl for HardwareSetupPhase {
                         error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Hardware);
                         let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::Hardware);
                         sentry::capture_message(&error_message, sentry::Level::Error);
-                        EventsManager::handle_critical_problem(Some(SetupPhase::Hardware.get_critical_problem_title()), Some(SetupPhase::Hardware.get_critical_problem_description()),Some(error_message))
-                        .await;
+                        EventsEmitter::emit_critical_problem(CriticalProblemPayload {
+                            title: Some(SetupPhase::Hardware.get_critical_problem_title()),
+                            description: Some(SetupPhase::Hardware.get_critical_problem_description()),
+                            error_message: Some(error_message),
+                        }).await;
                     }
                 }
                 result = self.setup_inner() => {
@@ -158,9 +162,11 @@ impl SetupPhaseImpl for HardwareSetupPhase {
                             error!(target: LOG_TARGET, "[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Hardware,error);
                             let error_message = format!("[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Hardware,error);
                             sentry::capture_message(&error_message, sentry::Level::Error);
-                            EventsManager
-                                ::handle_critical_problem(Some(SetupPhase::Hardware.get_critical_problem_title()), Some(SetupPhase::Hardware.get_critical_problem_description()),Some(error_message))
-                                .await;
+                            EventsEmitter::emit_critical_problem(CriticalProblemPayload {
+                                title: Some(SetupPhase::Hardware.get_critical_problem_title()),
+                                description: Some(SetupPhase::Hardware.get_critical_problem_description()),
+                                error_message: Some(error_message),
+                            }).await;
                         }
                     }
                 }
@@ -260,11 +266,11 @@ impl SetupPhaseImpl for HardwareSetupPhase {
                 select! {
                     _ = gpu_status_watch_rx.changed() => {
                         let gpu_status: GpuMinerStatus = gpu_status_watch_rx.borrow().clone();
-                        let _ = EventsManager::handle_gpu_mining_update(gpu_status).await;
+                        EventsEmitter::emit_gpu_mining_update(gpu_status).await;
                     },
                     _ = cpu_miner_status_watch_rx.changed() => {
                         let cpu_status = cpu_miner_status_watch_rx.borrow().clone();
-                        let _ = EventsManager::handle_cpu_mining_update(cpu_status.clone()).await;
+                        EventsEmitter::emit_cpu_mining_update(cpu_status.clone()).await;
 
                         // Update systemtray data
                         let gpu_status: GpuMinerStatus = gpu_status_watch_rx.borrow().clone();
@@ -293,7 +299,7 @@ impl SetupPhaseImpl for HardwareSetupPhase {
             }
         });
 
-        EventsManager::handle_hardware_phase_finished(true).await;
+        EventsEmitter::emit_hardware_phase_finished(true).await;
         Ok(())
     }
 }

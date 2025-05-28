@@ -26,8 +26,8 @@ use crate::{
         config_ui::{ConfigUI, ConfigUIContent},
         trait_config::ConfigImpl,
     },
+    events::CriticalProblemPayload,
     events_emitter::EventsEmitter,
-    events_manager::EventsManager,
     progress_tracker_old::ProgressTracker,
     progress_trackers::{
         progress_plans::{ProgressPlans, ProgressSetupWalletPlan},
@@ -145,8 +145,11 @@ impl SetupPhaseImpl for WalletSetupPhase {
                         error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Wallet);
                         let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::Wallet);
                         sentry::capture_message(&error_message, sentry::Level::Error);
-                        EventsManager::handle_critical_problem(Some(SetupPhase::Wallet.get_critical_problem_title()), Some(SetupPhase::Wallet.get_critical_problem_description()),Some(error_message))
-                        .await;
+                        EventsEmitter::emit_critical_problem(CriticalProblemPayload {
+                            title: Some(SetupPhase::Wallet.get_critical_problem_title()),
+                            description: Some(SetupPhase::Wallet.get_critical_problem_description()),
+                            error_message: Some(error_message),
+                        }).await;
                     }
                 }
                 result = self.setup_inner() => {
@@ -159,9 +162,11 @@ impl SetupPhaseImpl for WalletSetupPhase {
                             error!(target: LOG_TARGET, "[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Wallet,error);
                             let error_message = format!("[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Wallet,error);
                             sentry::capture_message(&error_message, sentry::Level::Error);
-                            EventsManager
-                                ::handle_critical_problem(Some(SetupPhase::Wallet.get_critical_problem_title()), Some(SetupPhase::Wallet.get_critical_problem_description()),Some(error_message))
-                                .await;
+                            EventsEmitter::emit_critical_problem(CriticalProblemPayload {
+                                title: Some(SetupPhase::Wallet.get_critical_problem_title()),
+                                description: Some(SetupPhase::Wallet.get_critical_problem_description()),
+                                error_message: Some(error_message),
+                            }).await;
                         }
                     }
                 }
@@ -304,7 +309,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
                 });
         }
 
-        EventsManager::handle_wallet_phase_finished(true).await;
+        EventsEmitter::emit_wallet_phase_finished(true).await;
 
         Ok(())
     }
