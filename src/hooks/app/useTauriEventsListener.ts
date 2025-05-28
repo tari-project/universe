@@ -10,6 +10,7 @@ import {
     setCpuMiningStatus,
     setGpuDevices,
     setGpuMiningStatus,
+    setPoolStatus,
 } from '@app/store/actions/miningMetricsStoreActions';
 import {
     handleAskForRestart,
@@ -32,9 +33,11 @@ import { refreshTransactions, setWalletBalance, updateWalletScanningProgress } f
 import { deepEqual } from '@app/utils/objectDeepEqual.ts';
 import {
     handleAppUnlocked,
+    handleCpuMiningLocked,
+    handleCpuMiningUnlocked,
+    handleGpuMiningLocked,
+    handleGpuMiningUnlocked,
     handleHardwarePhaseFinished,
-    handleMiningLocked,
-    handleMiningUnlocked,
     handleWalletLocked,
     handleWalletUnlocked,
     handleWalletUpdate,
@@ -99,11 +102,17 @@ const useTauriEventsListener = () => {
                         case 'UnlockWallet':
                             handleWalletUnlocked();
                             break;
-                        case 'UnlockMining':
-                            await handleMiningUnlocked();
+                        case 'UnlockCpuMining':
+                            await handleCpuMiningUnlocked();
                             break;
-                        case 'LockMining':
-                            await handleMiningLocked();
+                        case 'UnlockGpuMining':
+                            await handleGpuMiningUnlocked();
+                            break;
+                        case 'LockCpuMining':
+                            await handleCpuMiningLocked();
+                            break;
+                        case 'LockGpuMining':
+                            await handleGpuMiningLocked();
                             break;
                         case 'LockWallet':
                             handleWalletLocked();
@@ -124,6 +133,9 @@ const useTauriEventsListener = () => {
                             break;
                         case 'CpuMiningUpdate':
                             setCpuMiningStatus(event.payload);
+                            break;
+                        case 'PoolStatusUpdate':
+                            setPoolStatus(event.payload);
                             break;
                         case 'ConnectedPeersUpdate':
                             handleConnectedPeersUpdate(event.payload);

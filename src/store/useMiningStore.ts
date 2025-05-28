@@ -4,12 +4,14 @@ import { MaxConsumptionLevels } from '@app/types/app-status';
 
 interface MiningStoreState {
     hashrateReady?: boolean;
-    miningInitiated: boolean;
     miningControlsEnabled: boolean;
     isChangingMode: boolean;
     isExcludingGpuDevices: boolean;
     counter: number;
     miningTime: number;
+    isCpuMiningInitiated: boolean;
+    isGpuMiningInitiated: boolean;
+    wasMineOnAppStartExecuted?: boolean;
     sessionMiningTime: number;
     customLevelsDialogOpen: boolean;
     maxAvailableThreads?: MaxConsumptionLevels;
@@ -25,9 +27,12 @@ const initialState: MiningStoreState = {
     miningTime: 0,
     sessionMiningTime: 0,
     hashrateReady: false,
-    miningInitiated: false,
+    isCpuMiningInitiated: false,
+    isGpuMiningInitiated: false,
+    wasMineOnAppStartExecuted: false,
     isChangingMode: false,
     isExcludingGpuDevices: false,
+    //TODO: replace with CpuMiningUnlocked and GpuMiningUnlocked from useSetupStore
     miningControlsEnabled: true,
     availableEngines: [],
     engine: undefined,

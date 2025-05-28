@@ -39,7 +39,7 @@ const P2pMarkup = ({ setDisabledStats }: P2pMarkupProps) => {
                     <Typography>{t('pool-mining-description')}</Typography>
                 </SettingsGroupContent>
                 <SettingsGroupAction>
-                    <ToggleSwitch checked={isP2poolEnabled} onChange={handleP2poolEnabled} />
+                    <ToggleSwitch checked={isP2poolEnabled} onChange={handleP2poolEnabled} key={`${isP2poolEnabled}`} />
                 </SettingsGroupAction>
             </SettingsGroup>
         </SettingsGroupWrapper>

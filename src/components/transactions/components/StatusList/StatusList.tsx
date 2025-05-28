@@ -32,7 +32,7 @@ export function StatusList({ entries }: Props) {
                                     {value} <ExternalLinkIcon />
                                 </ExternalLink>
                             )}
-                            {valueRight && <ValueRight>{valueRight}</ValueRight>}
+                            {valueRight !== undefined && valueRight !== null && <ValueRight>{valueRight}</ValueRight>}
                         </Value>
                     </Entry>
                 ))}
