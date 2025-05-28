@@ -77,10 +77,10 @@ const formatXTMLong = (value: number) =>
         style: 'decimal',
     });
 
-const formatXTMLongDec = (value: number) =>
+const formatXTMLongDec = (value: number, maxFractionDigits = 7) =>
     formatValue(removeXTMCryptoDecimals(value), {
         minimumFractionDigits: 2,
-        maximumFractionDigits: 8,
+        maximumFractionDigits: maxFractionDigits,
         notation: 'standard',
         style: 'decimal',
     });
@@ -107,8 +107,10 @@ export function formatNumber(value: number, preset: FormatPreset): string {
             return formatXTMCompact(value);
         case FormatPreset.XTM_LONG:
             return formatXTMLong(value);
-        case FormatPreset.XTM_LONG_DEC:
-            return formatXTMLongDec(value);
+        case FormatPreset.XTM_LONG_DEC: {
+            const fracDigits = value / 1_000_000 < 1 ? 7 : 4;
+            return formatXTMLongDec(value, fracDigits);
+        }
         case FormatPreset.XTM_DECIMALS:
             return formatXTMDecimals(value);
         case FormatPreset.DECIMAL_COMPACT:
