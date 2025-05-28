@@ -43,7 +43,7 @@ pub const EXCHANGE_ID: &str = match option_env!("EXCHANGE_ID") {
     Some(val) => val,
     None => DEFAULT_EXCHANGE_ID,
 };
-pub const WALLET_CONNECT_PROJECT_ID: &str = match option_env!("WALLET_CONNECT_PROJECT_ID") {
+pub const WALLET_CONNECT_PROJECT_ID: &str = match option_env!("BRIDGE_WALLET_CONNECT_PROJECT_ID") {
     Some(val) => val,
     None => "c523cd3d3e0246530115c1dc2c016852",
 };

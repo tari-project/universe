@@ -9,7 +9,7 @@ import { useEffect, useRef, useState } from 'react';
 const metadata = {
     name: 'TariUniverse',
     description: 'Tari Universe Wallet',
-    url: 'tauri://localhost',
+    url: window.location.origin,
     icons: ['https://universe.tari.com/assets/tari-logo.png'],
 };
 
@@ -17,7 +17,7 @@ const networks: [AppKitNetwork, ...AppKitNetwork[]] = [mainnet, sepolia];
 
 const baseAdapterConfig = {
     networks,
-    ssr: typeof window === 'undefined',
+    ssr: false,
 };
 
 export const useWagmiAdapter = () => {
