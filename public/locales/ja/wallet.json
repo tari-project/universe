@@ -70,7 +70,7 @@
     "buy-tari-wxtm": "Tari (wXTM) を購入",
     "completed": "完了",
     "connect-not-supported": "WalletConnectコネクタが見つかりません。",
-    "connect-wallet": "MetaMaskに接続",
+    "connect-wallet": "ウォレットに接続 (ETH)",
     "connect-wallet-text": "接続待機中",
     "done": "完了",
     "enter-amount": "金額を入力",

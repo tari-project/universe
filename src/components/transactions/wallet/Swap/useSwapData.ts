@@ -64,6 +64,7 @@ export const useSwapData = () => {
 
     const [tradeDetails, setTradeDetails] = useState<TradeDetails | null>(null);
     const defaultChainId = useConfigCoreStore((s) => s.default_chain);
+    const [customError, setCustomError] = useState<string | null>(null);
 
     const abortController = useRef<AbortController | null>(null);
 
@@ -320,6 +321,7 @@ export const useSwapData = () => {
     ]);
 
     const clearCalculatedDetails = useCallback(() => {
+        setCustomError(null);
         setSwapError(null);
         setTradeDetails(null);
         setPriceImpact(null);
@@ -693,6 +695,8 @@ export const useSwapData = () => {
         handleRefetchBalances,
         lastUpdatedField,
         error: swapError,
+        customError,
+        setCustomError,
         setFromAmount: (val: string) => handleNumberInput(val, 'ethTokenField'),
         setTargetAmount: (val: string) => handleNumberInput(val, 'wxtmField'),
     };

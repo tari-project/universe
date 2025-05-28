@@ -17,8 +17,16 @@ import TransactionModal from '@app/components/TransactionModal/TransactionModal'
 import { useTranslation } from 'react-i18next';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots';
 
-export const ConnectWallet = ({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (isOpen: boolean) => void }) => {
-    const { connect, connectors } = useConnect();
+export const ConnectWallet = ({
+    isOpen,
+    setIsOpen,
+    setError,
+}: {
+    isOpen: boolean;
+    setIsOpen: (isOpen: boolean) => void;
+    setError?: (error: string) => void;
+}) => {
+    const { connectors } = useConnect();
     const [qrCodeUri, setQrCodeUri] = useState<string | null>(null);
     const [isConnected, setIsConnected] = useState(false);
     const { t } = useTranslation(['wallet'], { useSuspense: false });
@@ -38,6 +46,7 @@ export const ConnectWallet = ({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpe
                 };
 
                 const handleDisconnect = () => {
+                    console.info('Disconnected from wallet');
                     setIsConnected(false);
                     setQrCodeUri(null);
                 };
@@ -47,15 +56,31 @@ export const ConnectWallet = ({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpe
                 });
 
                 provider.on('disconnect', handleDisconnect);
-                provider.on('connect', () => {
+
+                provider.on('connect', (info: unknown) => {
+                    console.info('connect', info);
                     setIsOpen(false);
+                });
+
+                provider.on('proposal_expire', () => {
+                    setError?.(
+                        'Wallet Connect failed. Please try again with a different Ethereum wallet. If you continue to face challenges, please connect with Tari contributors on Telegram or Discord.'
+                    );
+                });
+
+                provider.on('error', (error: unknown) => {
+                    console.info('connect', error);
                 });
 
                 const cleanup = () => {
                     provider.removeListener('display_uri', handleUri);
                     provider.removeListener('disconnect', handleDisconnect);
                 };
-                connect({ connector: walletConnectConnector });
+                walletConnectConnector
+                    .connect()
+                    .then((r) => console.info(r))
+                    .catch((e) => console.error('Error connecting to wallet:', e));
+                // connect({ connector: walletConnectConnector });
                 setQrCodeUri(null);
                 setIsConnected(true);
                 return cleanup;
@@ -73,7 +98,7 @@ export const ConnectWallet = ({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpe
         } else {
             console.error('WalletConnect connector not found.');
         }
-    }, [connect, connectors, isOpen, setIsOpen]);
+    }, [connectors, isOpen, setError, setIsOpen]);
 
     useEffect(() => {
         if (!isConnected && !qrCodeUri) {

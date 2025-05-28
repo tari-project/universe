@@ -64,6 +64,8 @@ export const Swap = memo(function Swap() {
         useSwapError,
         insufficientLiquidity,
         lastUpdatedField,
+        customError,
+        setCustomError: setOnConnectError,
         setProcessingOpen,
         setFromAmount,
         setTargetAmount,
@@ -176,7 +178,13 @@ export const Swap = memo(function Swap() {
                 </SwapOptionAmount>
                 {connectedAccount.address ? <span>{`${t('swap.balance')}: ${toTokenDisplay?.balance}`}</span> : null}
             </SwapOption>
-            {errorMsg && <SwapErrorMessage> {errorMsg} </SwapErrorMessage>} {/* Show error only if it exists */}
+            {(errorMsg || customError) && <SwapErrorMessage> {errorMsg || customError} </SwapErrorMessage>}
+            <SwapErrorMessage>
+                {
+                    'Wallet Connect failed. Please try again with a different Ethereum wallet. If you continue to face challenges, please connect with Tari contributors on Telegram or Discord.'
+                }
+            </SwapErrorMessage>
+            {/* Show error only if it exists */}
             <SubmitButtonWrapper>
                 <WalletButton
                     variant="primary"
@@ -193,7 +201,11 @@ export const Swap = memo(function Swap() {
             </SubmitButtonWrapper>
             {/* ////////////////////////////////// */}
             {/* Floating Elements */}
-            <ConnectWallet isOpen={reviewSwap && !connectedAccount.address} setIsOpen={setReviewSwap} />
+            <ConnectWallet
+                isOpen={reviewSwap && !connectedAccount.address}
+                setIsOpen={setReviewSwap}
+                setError={setOnConnectError}
+            />
             <SwapConfirmation
                 isOpen={Boolean(
                     reviewSwap &&

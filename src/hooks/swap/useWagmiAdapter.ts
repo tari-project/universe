@@ -70,9 +70,6 @@ export const useWagmiAdapter = () => {
                     networks,
                     projectId,
                     metadata,
-                    features: {
-                        analytics: true,
-                    },
                 });
                 setInitializedAdapter(wagmiAdapterInstance);
                 setIsInitializing(false);
