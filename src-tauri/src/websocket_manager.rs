@@ -239,9 +239,6 @@ impl WebsocketManager {
             loop {
                 tokio::select! {
                     _ = async {
-                        if config_cloned.read().await.is_universal_miner() {
-                            sleep(Duration::from_millis(5000)).await;
-                        }
                         let connection_res = WebsocketManager::connect_to_url(&config_cloned).await.inspect_err(|e|{
                             error!(target:LOG_TARGET,"failed to connect to websocket due to {}",e.to_string())});
 

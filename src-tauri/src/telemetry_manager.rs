@@ -351,9 +351,6 @@ impl TelemetryManager {
                 let allow_notifications = *ConfigCore::content().await.allow_notifications();
                 tokio::select! {
                     _ = interval.tick() => {
-                        if in_memory_config_cloned.read().await.is_universal_miner() {
-                            return
-                        }
                         debug!(target: LOG_TARGET, "TelemetryManager::start_telemetry_process has  been started");
                         let airdrop_access_token = airdrop_tokens.map(|tokens| tokens.token);
                         let airdrop_access_token_validated = airdrop::validate_jwt(airdrop_access_token).await;

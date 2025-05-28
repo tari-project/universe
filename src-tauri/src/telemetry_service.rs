@@ -193,9 +193,6 @@ async fn send_telemetry_data(
     memory_config: Arc<RwLock<DynamicMemoryConfig>>,
 ) -> Result<(), TelemetryServiceError> {
     let config_read_guard = memory_config.read().await;
-    if config_read_guard.is_universal_miner() {
-        return Ok(());
-    }
     let request = reqwest::Client::new();
 
     let hardware = HardwareStatusMonitor::current();
