@@ -24,9 +24,9 @@ use serde::Serialize;
 use std::collections::HashMap;
 
 use crate::{
+    app_in_memory_config::AppInMemoryConfig,
     gpu_status_file::GpuDevice,
-    node::node_adapter::NodeIdentity,
-    node::node_manager::NodeType,
+    node::{node_adapter::NodeIdentity, node_manager::NodeType},
     wallet_adapter::{TransactionInfo, WalletBalance},
 };
 
@@ -75,6 +75,7 @@ pub enum EventType {
     ConnectionStatus,
     ShowStageSecurityModal,
     MiningTime,
+    AppInMemoryConfigChanged,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -167,4 +168,10 @@ pub enum ConnectionStatusPayload {
     Succeed,
     #[allow(dead_code)]
     Failed,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct AppInMemoryConfigChangedPayload {
+    pub app_in_memory_config: AppInMemoryConfig,
+    pub is_universal_exchange: bool,
 }

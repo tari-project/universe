@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use crate::app_in_memory_config::AppInMemoryConfig;
 // Copyright 2024. The Tari Project
 //
 // Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -22,7 +23,8 @@ use std::collections::HashMap;
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 use crate::events::{
-    ConnectionStatusPayload, CriticalProblemPayload, InitWalletScanningProgressPayload,
+    AppInMemoryConfigChangedPayload, ConnectionStatusPayload, CriticalProblemPayload,
+    InitWalletScanningProgressPayload,
 };
 #[cfg(target_os = "windows")]
 use crate::external_dependencies::RequiredExternalDependency;
@@ -604,6 +606,24 @@ impl EventsEmitter {
         };
         if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
             error!(target: LOG_TARGET, "Failed to emit ConnectionStatus event: {:?}", e);
+        }
+    }
+
+    pub async fn emit_app_in_memory_config_changed(
+        app_handle: &AppHandle,
+        app_in_memory_config: AppInMemoryConfig,
+        is_universal_exchange: bool,
+    ) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::AppInMemoryConfigChanged,
+            payload: AppInMemoryConfigChangedPayload {
+                app_in_memory_config,
+                is_universal_exchange,
+            },
+        };
+        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+            error!(target: LOG_TARGET, "Failed to emit AppInMemoryConfigChanged event: {:?}", e);
         }
     }
 }

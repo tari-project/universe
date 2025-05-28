@@ -159,8 +159,8 @@ impl MinerType {
 }
 #[derive(Debug)]
 pub struct DynamicMemoryConfig {
-    in_memory_config: AppInMemoryConfig,
-    miner_type: MinerType,
+    pub in_memory_config: AppInMemoryConfig,
+    pub miner_type: MinerType,
 }
 
 #[derive(Default, Serialize, Deserialize, Clone, Debug)]

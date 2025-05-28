@@ -55,7 +55,6 @@ export async function fetchExchangeContent(exchangeId: string) {
     try {
         const content = await fetch(`${endpoint}/${exchangeId}`);
         const xcContent = (await content.json()) as ExchangeContent;
-        console.info('xcContent:', xcContent);
         const walletIsGenerated = useWalletStore.getState().is_tari_address_generated;
         if (xcContent) {
             setExchangeContent(xcContent);

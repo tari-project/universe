@@ -23,10 +23,12 @@ import { setError } from './appStateStoreActions.ts';
 import { setUITheme } from './uiStoreActions';
 import { GpuThreads } from '@app/types/app-status.ts';
 import { displayMode, modeType } from '../types';
-import { ConfigCore, ConfigMining, ConfigUI, ConfigWallet } from '@app/types/configs.ts';
+import { ConfigBackendInMemory, ConfigCore, ConfigMining, ConfigUI, ConfigWallet } from '@app/types/configs.ts';
 import { NodeType, updateNodeType as updateNodeTypeForNodeStore } from '../useNodeStore.ts';
 import { fetchExchangeContent, fetchExchangeMiners, setShowUniversalModal } from '../useExchangeStore.ts';
 import { ChainId } from '@uniswap/sdk-core';
+
+import { AppInMemoryConfigChangedPayload } from '@app/types/events-payloads.ts';
 
 interface SetModeProps {
     mode: modeType;
@@ -340,4 +342,15 @@ export const fetchBackendInMemoryConfig = async () => {
     } catch (e) {
         console.error('Could not fetch backend in memory config', e);
     }
+};
+
+export const handleAppInMemoryConfigChanged = (payload: AppInMemoryConfigChangedPayload) => {
+    const newConfig: ConfigBackendInMemory = {
+        airdropApiUrl: payload.app_in_memory_config.airdrop_api_url,
+        airdropUrl: payload.app_in_memory_config.airdrop_url,
+        airdropTwitterAuthUrl: payload.app_in_memory_config.airdrop_twitter_auth_url,
+        exchangeId: payload.app_in_memory_config.exchange_id,
+        isUniversalMiner: payload.is_universal_exchange || false,
+    };
+    useConfigBEInMemoryStore.setState(newConfig);
 };

@@ -1,4 +1,5 @@
 import { GpuDevice, TransactionInfo, WalletBalance } from './app-status';
+import { ConfigBackendInMemory } from './configs';
 
 export interface WalletAddressUpdatePayload {
     tari_address_base58: string;
@@ -64,5 +65,16 @@ export type BackgroundNodeSyncUpdatePayload =
           local_block_height: number;
           tip_block_height: number;
       };
+
+export interface SnakeCaseAppInMemoryConfig {
+    airdrop_url: string;
+    airdrop_api_url: string;
+    airdrop_twitter_auth_url: string;
+    exchange_id?: string;
+}
+export interface AppInMemoryConfigChangedPayload {
+    app_in_memory_config: SnakeCaseAppInMemoryConfig;
+    is_universal_exchange: boolean;
+}
 
 export type ConnectionStatusPayload = 'InProgress' | 'Succeed' | 'Failed';

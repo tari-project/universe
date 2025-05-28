@@ -1,4 +1,5 @@
 import {
+    AppInMemoryConfigChangedPayload,
     BackgroundNodeSyncUpdatePayload,
     ConnectedPeersUpdatePayload,
     ConnectionStatusPayload,
@@ -198,4 +199,8 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'PoolStatusUpdate';
           payload: PoolStatus;
+      }
+    | {
+          event_type: 'AppInMemoryConfigChanged';
+          payload: AppInMemoryConfigChangedPayload;
       };

@@ -45,6 +45,7 @@ import {
 } from '@app/store/actions/setupStoreActions';
 import { setBackgroundNodeState, setNodeStoreState } from '@app/store/useNodeStore';
 import {
+    handleAppInMemoryConfigChanged,
     handleConfigCoreLoaded,
     handleConfigMiningLoaded,
     handleConfigUILoaded,
@@ -215,6 +216,9 @@ const useTauriEventsListener = () => {
                             break;
                         case 'MiningTime':
                             handleMiningTimeUpdate(event.payload);
+                            break;
+                        case 'AppInMemoryConfigChanged':
+                            handleAppInMemoryConfigChanged(event.payload);
                             break;
                         default:
                             console.warn('Unknown event', JSON.stringify(event));
