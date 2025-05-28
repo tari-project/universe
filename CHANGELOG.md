@@ -14,7 +14,7 @@ These features mark an exciting step towards integrating Tari with broader block
 
 ⚠️ Important Notes:
 • MVP Release: Currently a one-way bridge (XTM → wXTM only). The two-way bridge (wXTM → XTM) is scheduled for release around July 2025.
-• Transaction Cap: Transactions are initially capped at 100,000 XTM for security purposes. Transactions exceeding this amount enter a review queue, typically processed within 24-48 hours. This cap will increase and eventually be removed as the feature matures.
+• Transaction Cap: Transactions are initially capped at 100,000 XTM for security purposes. Transactions exceeding this amount will fail. There is no limit to the number of transactions you can do.  This cap will increase and eventually be removed as the feature matures.
 • Potential Bugs: Extensive QA testing has been conducted, but given the variety of community system configurations, you might encounter unforeseen issues. Please report bugs you encounter here: https://forms.gle/n8MVwLRrL9m6G7w39 so contributors can help!
 
 🔖 Official wXTM Contract Address:
