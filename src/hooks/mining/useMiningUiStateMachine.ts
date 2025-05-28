@@ -8,7 +8,7 @@ import { useConfigUIStore } from '@app/store';
 
 export const useUiMiningStateMachine = () => {
     const setupComplete = useSetupStore((s) => s.appUnlocked);
-    const isMiningInitiated = useMiningStore((s) => s.miningInitiated);
+    const isMiningInitiated = useMiningStore((s) => s.isCpuMiningInitiated || s.isGpuMiningInitiated);
     const isChangingMode = useMiningStore((s) => s.isChangingMode);
     const cpuIsMining = useMiningMetricsStore((s) => s.cpu_mining_status?.is_mining);
     const gpuIsMining = useMiningMetricsStore((s) => s.gpu_mining_status?.is_mining);

@@ -1648,15 +1648,6 @@ pub async fn stop_cpu_mining<'r>(
         .map_err(|e| e.to_string())?;
     info!(target:LOG_TARGET, "cpu miner stopped");
 
-    state
-        .gpu_miner
-        .write()
-        .await
-        .stop()
-        .await
-        .map_err(|e| e.to_string())?;
-    info!(target:LOG_TARGET, "gpu miner stopped");
-
     let timestamp_lock = state.cpu_miner_timestamp_mutex.lock().await;
     let current_mining_time_ms = *ConfigMining::content().await.mining_time();
 

@@ -20,9 +20,10 @@
   },
   "send": {
     "balance": "Баланс",
+    "broadcast": "Broadcasting",
     "completed": "Выполнено",
     "completed-amount-sent": "было отправлено",
-    "completed-text": "Ваш перевод выполнен.",
+    "completed-text": "Your transfer submission is now complete and will be broadcast.",
     "completed-title": "Вы закончили!",
     "cta-confirm": "Подтвердить",
     "cta-review": "Детали",
