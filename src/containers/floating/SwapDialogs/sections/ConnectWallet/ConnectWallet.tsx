@@ -62,11 +62,11 @@ export const ConnectWallet = ({
                     setIsOpen(false);
                 });
 
-                // provider.on('proposal_expire', () => {
-                //     setError?.(
-                //         'Wallet Connect failed. Please try again with a different Ethereum wallet. If you continue to face challenges, please connect with Tari contributors on Telegram or Discord.'
-                //     );
-                // });
+                provider.on('proposal_expire', () => {
+                    setError?.(
+                        'Wallet Connect failed. Please try again with a different Ethereum wallet. If you continue to face challenges, please connect with Tari contributors on Telegram or Discord.'
+                    );
+                });
 
                 provider.on('error', (error: unknown) => {
                     console.info('connect', error);
