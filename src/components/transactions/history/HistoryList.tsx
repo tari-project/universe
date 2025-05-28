@@ -12,8 +12,13 @@ import ListLoadingAnimation from '@app/containers/navigation/components/Wallet/L
 import { PlaceholderItem } from './ListItem.styles.ts';
 import { LoadingText } from '@app/containers/navigation/components/Wallet/ListLoadingAnimation/styles.ts';
 import { TransactionDetails } from '@app/components/transactions/history/details/TransactionDetails.tsx';
+import { getTxTypeByStatus } from '@app/utils/getTxStatus.ts';
 
-const HistoryList = memo(function HistoryList() {
+export const FILTER_TYPES = ['rewards', 'transactions'];
+type FilterTuple = typeof FILTER_TYPES;
+export type ItemFilter = FilterTuple[number];
+
+const HistoryList = memo(function HistoryList({ filter }: { filter: ItemFilter }) {
     const { t } = useTranslation('wallet');
     const is_transactions_history_loading = useWalletStore((s) => s.is_transactions_history_loading);
     const newestTxIdOnInitialFetch = useWalletStore((s) => s.newestTxIdOnInitialFetch);
@@ -24,10 +29,21 @@ const HistoryList = memo(function HistoryList() {
 
     const [detailsItem, setDetailsItem] = useState<TransactionInfo | null>(null);
 
-    const combinedTransactions = useMemo(
-        () => [...pendingTransactions, ...transactions] as TransactionInfo[],
-        [pendingTransactions, transactions]
-    );
+    const combinedTransactions = useMemo(() => {
+        const combined = [...pendingTransactions, ...transactions] as TransactionInfo[];
+
+        return combined.filter((tx) => {
+            const isMined = getTxTypeByStatus(tx) === 'mined';
+
+            if (filter === 'rewards' && isMined) {
+                return tx;
+            }
+
+            if (filter === 'transactions' && !isMined) {
+                return tx;
+            }
+        });
+    }, [filter, pendingTransactions, transactions]);
 
     const handleNext = useCallback(async () => {
         if (!is_transactions_history_loading) {
