@@ -1,20 +1,13 @@
 import { SwapDirection as SwapDirectionType } from '@app/hooks/swap/lib/types';
 import styled, { css } from 'styled-components';
 
-export const SwapsContainer = styled.div`
-    // width: 100%;
-    // position: absolute;
-    // bottom: 0;
-    // left: 0;
-`;
-
-export const SwapOption = styled.div`
+export const SwapOption = styled.div<{ $paddingBottom?: number }>`
     width: 100%;
     margin-top: 5px;
     padding: 20px;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 3px;
     background: ${({ theme }) => theme.palette.background.main};
     border-radius: 20px;
 
@@ -22,7 +15,14 @@ export const SwapOption = styled.div`
         color: ${({ theme }) => theme.palette.text.secondary};
         font-size: 10px;
     }
+    ${({ $paddingBottom }) =>
+        $paddingBottom &&
+        css`
+            padding-bottom: ${$paddingBottom}px;
+        `}
 `;
+
+export const SwapsContainer = styled.div``;
 
 export const SwapOptionAmount = styled.div`
     display: flex;
@@ -38,8 +38,8 @@ export const SwapOptionAmount = styled.div`
 export const SwapOptionCurrency = styled.div<{ $clickable?: boolean }>`
     border-radius: 60px;
     gap: 6px;
-    padding: 3px;
-    padding-right: 10px;
+    height: 35px;
+    padding-inline: 6px;
     background: ${({ theme }) => theme.palette.background.paper};
     display: inline-flex;
     align-items: center;
@@ -74,11 +74,15 @@ export const SwapDirection = styled.div`
     z-index: 2;
 `;
 
-export const SwapAmountInput = styled.input<{ $error?: boolean }>`
+export const SwapAmountInput = styled.input<{
+    $error?: boolean;
+    $loading?: boolean;
+    $dynamicFontSize?: number; // Prop for dynamic font size
+}>`
     color: ${({ theme }) => theme.palette.text.primary};
     font-family: Poppins, sans-serif;
     font-weight: 500;
-    font-size: 28px;
+    font-size: ${({ $dynamicFontSize }) => ($dynamicFontSize ? `${$dynamicFontSize}px` : '28px')};
     line-height: 100%;
     width: 100%;
     background: transparent;
@@ -99,6 +103,12 @@ export const SwapAmountInput = styled.input<{ $error?: boolean }>`
         $error &&
         css`
             color: ${({ theme }) => theme.palette.error.main};
+        `}
+
+    ${({ $loading }) =>
+        $loading &&
+        css`
+            opacity: 0.5;
         `}
 `;
 
@@ -139,7 +149,8 @@ export const SectionHeaderWrapper = styled.div`
     width: 100%;
     display: flex;
     justify-content: space-between;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
+    align-items: center;
 `;
 
 export const BackButton = styled.button`
@@ -155,7 +166,7 @@ export const BackButton = styled.button`
 `;
 
 export const HeaderWrapper = styled.div`
-    padding: 10px;
+    padding-bottom: 10px;
     width: 100%;
     display: flex;
     justify-content: space-between;
