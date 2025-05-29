@@ -244,6 +244,14 @@ export async function fetchPollingFeatureFlag() {
     return response;
 }
 
+export async function fetchSwapsEnabledFeatureFlag() {
+    const response = await fetchFeatureFlag(FEATURES.FF_SWAPS_ENABLED);
+    if (response) {
+        useAirdropStore.setState({ swapsEnabled: response.access });
+    }
+    return response;
+}
+
 export async function fetchOrphanChainUiFeatureFlag() {
     const response = await fetchFeatureFlag(FEATURES.FF_UI_ORPHAN_CHAIN_DISABLED);
     if (response) {
