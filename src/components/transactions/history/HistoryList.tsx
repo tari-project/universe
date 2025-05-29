@@ -1,6 +1,6 @@
 import { memo, useCallback, useMemo, useState } from 'react';
 import InfiniteScroll from 'react-infinite-scroll-component';
-import { useWalletStore } from '@app/store/useWalletStore';
+import { BackendBridgeTransaction, useWalletStore } from '@app/store/useWalletStore';
 import { CircularProgress } from '@app/components/elements/CircularProgress';
 import { ListItemWrapper, ListWrapper } from './TxHistory.styles.ts';
 import { HistoryListItem } from './ListItem.tsx';
@@ -32,17 +32,15 @@ const HistoryList = memo(function HistoryList() {
     const transactions = useWalletStore((s) => s.transactions);
     const bridgeTransactions = useWalletStore((s) => s.bridge_transactions);
 
-    const [detailsItem, setDetailsItem] = useState<TransactionInfo | UserTransactionDTO | null>(null);
+    const [detailsItem, setDetailsItem] = useState<TransactionInfo | BackendBridgeTransaction | null>(null);
 
     const combinedTransactions = useMemo(
         () =>
             (
-                [
-                    ...pendingTransactions,
-                    ...transactions,
-                    ...bridgeTransactions,
-                    // ...convertBridgeTransactionsToTransactions(bridgeTransactions),
-                ] as (TransactionInfo | UserTransactionDTO)[]
+                [...pendingTransactions, ...transactions, ...bridgeTransactions] as (
+                    | TransactionInfo
+                    | UserTransactionDTO
+                )[]
             ).sort((a, b) => {
                 return getTimestampFromTransaction(b) - getTimestampFromTransaction(a);
             }),
@@ -55,7 +53,11 @@ const HistoryList = memo(function HistoryList() {
                 if (isBridgeTransaction(tx) && index > 0) {
                     const previousTx = acc[acc.length - 1];
                     if (isTransactionInfo(previousTx) && previousTx.amount === Number(tx.tokenAmount)) {
-                        acc.pop();
+                        const removedBridgeTransaction = acc.pop();
+                        if (removedBridgeTransaction && isTransactionInfo(removedBridgeTransaction)) {
+                            tx.mineAtHeight = removedBridgeTransaction.mined_in_block_height;
+                            tx.sourceAddress = removedBridgeTransaction.source_address;
+                        }
                     }
                 }
                 acc.push(tx);

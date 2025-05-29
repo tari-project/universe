@@ -5,9 +5,8 @@ import { ReactNode } from 'react';
 import { formatNumber, FormatPreset } from '@app/utils';
 import { StatusListEntry } from '@app/components/transactions/components/StatusList/StatusList.tsx';
 import { Network } from '@app/utils/network.ts';
-import { useMiningStore } from '@app/store';
+import { BackendBridgeTransaction, useMiningStore } from '@app/store';
 import { getTxStatusTitleKey, getTxTitle } from '@app/utils/getTxStatus.ts';
-import { UserTransactionDTO } from '@tari-project/wxtm-bridge-backend-api';
 
 type TransactionKey = keyof TransactionInfo;
 type TransactionEntry = {
@@ -17,13 +16,13 @@ type TransactionEntry = {
     };
 }[keyof TransactionInfo];
 
-type BridgeTransactionKey = keyof UserTransactionDTO;
+type BridgeTransactionKey = keyof BackendBridgeTransaction;
 type BridgeTransactionEntry = {
-    [K in keyof UserTransactionDTO]-?: {
+    [K in keyof BackendBridgeTransaction]-?: {
         key: K;
-        value: UserTransactionDTO[K];
+        value: BackendBridgeTransaction[K];
     };
-}[keyof UserTransactionDTO];
+}[keyof BackendBridgeTransaction];
 
 const network = useMiningStore.getState().network;
 const explorerURL = `https://${network === Network.Esmeralda ? 'textexplore-esmeralda' : network === Network.NextNet ? 'explore-nextnet' : 'explore'}.tari.com`;
@@ -87,7 +86,7 @@ function parseBridgeTransactionValues({
     key,
     value,
     transaction,
-}: BridgeTransactionEntry & { transaction: UserTransactionDTO }): Partial<StatusListEntry> & {
+}: BridgeTransactionEntry & { transaction: BackendBridgeTransaction }): Partial<StatusListEntry> & {
     value: ReactNode;
 } {
     const rest: Partial<StatusListEntry> = {};
@@ -124,14 +123,9 @@ function parseBridgeTransactionValues({
     return { value, ...rest };
 }
 
-export function getListEntries(item: TransactionInfo | UserTransactionDTO, showHidden = false) {
+export function getListEntries(item: TransactionInfo | BackendBridgeTransaction, showHidden = false) {
     const entries = Object.entries(item).filter(([key]) => showHidden || !HIDDEN_KEYS.includes(key));
     return entries.map(([key, _value]) => {
-        // const { value, ...rest } = parseTransactionValues({
-        //     key: key as TransactionKey,
-        //     value: _value,
-        //     transaction: item,
-        // });
         if (isTransactionInfo(item)) {
             const { value, ...rest } = parseTransactionValues({
                 key: key as TransactionKey,

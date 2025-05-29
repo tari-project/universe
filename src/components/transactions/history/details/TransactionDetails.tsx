@@ -8,10 +8,10 @@ import { Wrapper } from './styles.ts';
 import { StatusList } from '@app/components/transactions/components/StatusList/StatusList.tsx';
 import { getListEntries } from './getListEntries.tsx';
 import { useCallback, useRef, useState } from 'react';
-import { UserTransactionDTO } from '@tari-project/wxtm-bridge-backend-api';
+import { BackendBridgeTransaction } from '@app/store/useWalletStore.ts';
 
 interface TransactionDetailsProps {
-    item: TransactionInfo | UserTransactionDTO;
+    item: TransactionInfo | BackendBridgeTransaction;
     expanded: boolean;
     handleClose: () => void;
 }

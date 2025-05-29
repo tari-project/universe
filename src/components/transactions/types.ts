@@ -1,3 +1,4 @@
+import { BackendBridgeTransaction } from '@app/store';
 import { TransactionInfo } from '@app/types/app-status.ts';
 import { TransactionDirection } from '@app/types/transactions.ts';
 import { UserTransactionDTO } from '@tari-project/wxtm-bridge-backend-api';
@@ -12,10 +13,10 @@ export interface HistoryListItemProps {
 }
 
 export interface BridgeHistoryListItemProps {
-    item: UserTransactionDTO;
+    item: BackendBridgeTransaction;
     index: number;
     itemIsNew?: boolean;
-    setDetailsItem?: (item: UserTransactionDTO | null) => void;
+    setDetailsItem?: (item: BackendBridgeTransaction | null) => void;
 }
 
 export interface BaseItemProps {

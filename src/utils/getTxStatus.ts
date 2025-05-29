@@ -4,9 +4,8 @@ import { TransactionDirection, TransactionStatus } from '@app/types/transactions
 import { TransationType } from '@app/components/transactions/types.ts';
 import { TransactionInfo } from '@app/types/app-status.ts';
 import { UserTransactionDTO } from '@tari-project/wxtm-bridge-backend-api';
-import { useWalletStore } from '@app/store';
-import { formatNumber, FormatPreset } from './formatters';
 import { isTransactionInfo } from '@app/components/transactions/history/helpers';
+import { BackendBridgeTransaction } from '@app/store';
 
 const txTypes = {
     oneSided: [
@@ -48,7 +47,7 @@ export function getTxTypeByStatus(transaction: TransactionInfo): TransationType 
     return 'unknown';
 }
 
-export function getTxStatusTitleKey(transaction: TransactionInfo | UserTransactionDTO): string | undefined {
+export function getTxStatusTitleKey(transaction: TransactionInfo | BackendBridgeTransaction): string | undefined {
     if (isTransactionInfo(transaction)) {
         return Object.keys(txStates).find((key) => {
             if (txStates[key].includes(transaction.status)) {

@@ -1,6 +1,5 @@
-import { useConfigUIStore } from '@app/store';
+import { BackendBridgeTransaction, useConfigUIStore } from '@app/store';
 import { TransactionInfo } from '@app/types/app-status';
-import { UserTransactionDTO } from '@tari-project/wxtm-bridge-backend-api';
 
 function formatTimeStamp(timestamp: number): string {
     const appLanguage = useConfigUIStore.getState().application_language;
@@ -23,7 +22,7 @@ function formatBridgeDateToTimestamp(date: string): number {
     return Math.floor(dateObj.getTime() / 1000); // Convert to seconds
 }
 
-function getTimestampFromTransaction(transaction: TransactionInfo | UserTransactionDTO): number {
+function getTimestampFromTransaction(transaction: TransactionInfo | BackendBridgeTransaction): number {
     if (isTransactionInfo(transaction)) {
         return transaction.timestamp;
     } else if (isBridgeTransaction(transaction)) {
@@ -33,23 +32,25 @@ function getTimestampFromTransaction(transaction: TransactionInfo | UserTransact
 }
 
 function findFirstNonBridgeTransaction(
-    transactions: (TransactionInfo | UserTransactionDTO)[]
+    transactions: (TransactionInfo | BackendBridgeTransaction)[]
 ): TransactionInfo | undefined {
     return transactions.find((tx) => 'direction' in tx && tx.direction !== undefined) as TransactionInfo | undefined;
 }
 
 function findByTransactionId(
-    transactions: (TransactionInfo | UserTransactionDTO)[],
+    transactions: (TransactionInfo | BackendBridgeTransaction)[],
     txId: number | undefined
 ): TransactionInfo | undefined {
     return transactions.find((tx) => 'tx_id' in tx && tx.tx_id === txId) as TransactionInfo | undefined;
 }
 
-function isBridgeTransaction(transaction: TransactionInfo | UserTransactionDTO): transaction is UserTransactionDTO {
+function isBridgeTransaction(
+    transaction: TransactionInfo | BackendBridgeTransaction
+): transaction is BackendBridgeTransaction {
     return 'tokenAmount' in transaction && typeof transaction.tokenAmount === 'string';
 }
 
-function isTransactionInfo(transaction: TransactionInfo | UserTransactionDTO): transaction is TransactionInfo {
+function isTransactionInfo(transaction: TransactionInfo | BackendBridgeTransaction): transaction is TransactionInfo {
     return 'tx_id' in transaction && typeof transaction.tx_id === 'number';
 }
 
