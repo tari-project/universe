@@ -1563,16 +1563,7 @@ pub async fn start_gpu_mining<'r>(
         .get_unique_string()
         .await;
 
-    let config_path = app
-        .path()
-        .app_config_dir()
-        .expect("Could not get config dir");
-
-    let tari_address = InternalWallet::load_or_create(config_path, state.clone())
-        .await
-        .map_err(|e| e.to_string())?
-        .get_tari_address();
-
+    let tari_address = state.tari_address.read().await;
     let gpu_miner = state.gpu_miner.read().await;
     let gpu_miner_running = gpu_miner.is_running().await;
     let gpu_available = gpu_miner.is_gpu_mining_available();
