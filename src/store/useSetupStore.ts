@@ -4,7 +4,8 @@ import { SetupState } from './types/setup.ts';
 export type PhaseTitle = 'setup-core' | 'setup-local-node' | 'setup-hardware' | 'setup-wallet' | 'setup-unknown';
 
 const initialState: SetupState = {
-    miningUnlocked: false,
+    cpuMiningUnlocked: false,
+    gpuMiningUnlocked: false,
     walletUnlocked: false,
     hardwarePhaseFinished: false,
     isInitialSetupFinished: false,

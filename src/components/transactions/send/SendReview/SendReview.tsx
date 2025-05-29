@@ -36,7 +36,7 @@ export function SendReview({
 }: Props) {
     const { t } = useTranslation('wallet');
 
-    const formattedAmount = formatNumber((amount || 0) * 1_000_000, FormatPreset.XTM_LONG);
+    const formattedAmount = formatNumber((amount || 0) * 1_000_000, FormatPreset.XTM_COMPACT);
     const formattedAddress = truncateMiddle(address, 5);
 
     const reviewEntries: StatusListEntry[] = [

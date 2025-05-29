@@ -27,7 +27,7 @@ use serde::{Deserialize, Serialize};
 const LOG_TARGET: &str = "tari::universe::pool_status_watcher";
 #[derive(Clone, Debug, Serialize)]
 pub(crate) struct PoolStatus {
-    pub accepted_shares: u32,
+    pub accepted_shares: u64,
     pub unpaid: u64,
     pub balance: u64,
     pub min_payout: u64,
@@ -56,42 +56,20 @@ impl<T: PoolApiAdapter + Send + Sync + 'static> PoolStatusWatcher<T> {
         let pool_status = self.adapter.convert_api_data(&data)?;
         Ok(pool_status)
     }
-
-    // async fn start(&self, mut shutdown: ShutdownSignal)-> Result<(), anyhow::Error> {
-    //     let mut interval = tokio::time::interval(Duration::from_secs(20));
-    //     loop {
-    //         tokio::select! {
-    //             _ = shutdown.wait() => {
-    //                 break;
-    //             }
-    //             _ = interval.tick() => {
-    //                 match self.get_pool_status().await {
-    //                     Ok(status) => {
-    //                         self.broadcast.send(Some(status)).unwrap();
-    //                     }
-    //                     Err(e) => {
-    //                         error!(target: LOG_TARGET, "Error fetching pool status: {}", e);
-    //                     }
-    //                 }
-    //             }
-    //         }
-    //     }
-    //     Ok(())
-    // }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PoolStatusResponseBody {
-    pub hash: u32,
+    pub hash: u64,
     pub identifier: String,
     #[serde(rename = "lastHash")]
-    pub last_hash: u32,
+    pub last_hash: u64,
     #[serde(rename = "totalHashes")]
-    pub total_hashes: u32,
+    pub total_hashes: u64,
     #[serde(rename = "validShares")]
-    pub valid_shares: u32,
+    pub valid_shares: u64,
     #[serde(rename = "invalidShares")]
-    pub invalid_shares: u32,
+    pub invalid_shares: u64,
     pub expiry: u64,
     #[serde(rename = "amtPaid")]
     pub amt_paid: u64,

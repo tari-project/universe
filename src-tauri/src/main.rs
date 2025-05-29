@@ -134,6 +134,7 @@ mod setup;
 mod spend_wallet_adapter;
 mod spend_wallet_manager;
 mod systemtray_manager;
+mod tapplets;
 mod tasks_tracker;
 mod telemetry_manager;
 mod telemetry_service;
@@ -236,8 +237,9 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
 
 #[derive(Clone)]
 struct UniverseAppState {
-    stop_start_mutex: Arc<Mutex<()>>,
-    stop_start_timestamp_mutex: Arc<Mutex<SystemTime>>,
+    cpu_miner_timestamp_mutex: Arc<Mutex<SystemTime>>,
+    cpu_miner_stop_start_mutex: Arc<Mutex<()>>,
+    gpu_miner_stop_start_mutex: Arc<Mutex<()>>,
     node_status_watch_rx: Arc<watch::Receiver<BaseNodeStatus>>,
     #[allow(dead_code)]
     wallet_state_watch_rx: Arc<watch::Receiver<Option<WalletState>>>,
@@ -247,8 +249,6 @@ struct UniverseAppState {
     is_getting_p2pool_connections: Arc<AtomicBool>,
     is_getting_transactions_history: Arc<AtomicBool>,
     is_getting_coinbase_history: Arc<AtomicBool>,
-    #[allow(dead_code)]
-    is_setup_finished: Arc<RwLock<bool>>,
     in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
     tari_address: Arc<RwLock<TariAddress>>,
     cpu_miner: Arc<RwLock<CpuMiner>>,
@@ -418,15 +418,15 @@ fn main() {
         app_in_memory_config.clone(),
     );
     let app_state = UniverseAppState {
-        stop_start_mutex: Arc::new(Mutex::new(())),
-        stop_start_timestamp_mutex: Arc::new(Mutex::new(SystemTime::now())),
+        cpu_miner_timestamp_mutex: Arc::new(Mutex::new(SystemTime::now())),
+        cpu_miner_stop_start_mutex: Arc::new(Mutex::new(())),
+        gpu_miner_stop_start_mutex: Arc::new(Mutex::new(())),
         is_getting_p2pool_connections: Arc::new(AtomicBool::new(false)),
         node_status_watch_rx: Arc::new(base_node_watch_rx),
         wallet_state_watch_rx: Arc::new(wallet_state_watch_rx.clone()),
         cpu_miner_status_watch_rx: Arc::new(cpu_miner_status_watch_rx),
         gpu_latest_status: Arc::new(gpu_status_rx),
         p2pool_latest_status: Arc::new(p2pool_stats_rx),
-        is_setup_finished: Arc::new(RwLock::new(false)),
         is_getting_transactions_history: Arc::new(AtomicBool::new(false)),
         is_getting_coinbase_history: Arc::new(AtomicBool::new(false)),
         in_memory_config: app_in_memory_config.clone(),
@@ -475,6 +475,7 @@ fn main() {
         }))
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_cli::init())
+        .plugin(tauri_plugin_http::init())
         .setup(|app| {
             let config_path = app
                 .path()
@@ -605,8 +606,10 @@ fn main() {
             commands::set_tor_config,
             commands::set_use_tor,
             commands::set_visual_mode,
-            commands::start_mining,
-            commands::stop_mining,
+            commands::start_cpu_mining,
+            commands::start_gpu_mining,
+            commands::stop_cpu_mining,
+            commands::stop_gpu_mining,
             commands::update_applications,
             commands::get_p2pool_connections,
             commands::set_p2pool_stats_server_port,
@@ -633,7 +636,11 @@ fn main() {
             commands::trigger_phases_restart,
             commands::set_node_type,
             commands::set_warmup_seen,
-            commands::set_allow_notifications
+            commands::set_allow_notifications,
+            commands::launch_builtin_tapplet,
+            commands::get_tari_wallet_address,
+            commands::get_tari_wallet_balance,
+            commands::get_bridge_envs
         ])
         .build(tauri::generate_context!())
         .inspect_err(

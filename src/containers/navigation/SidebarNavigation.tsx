@@ -9,6 +9,7 @@ import { useSetupStore } from '@app/store/useSetupStore.ts';
 
 const SidebarNavigation = memo(function SidebarNavigation() {
     const sidebarOpen = useUIStore((s) => s.sidebarOpen);
+    const showTapplet = useUIStore((s) => s.showTapplet);
     const isSettingUp = useSetupStore((s) => !s.appUnlocked);
 
     useEffect(() => {
@@ -20,7 +21,7 @@ const SidebarNavigation = memo(function SidebarNavigation() {
     return (
         <SidebarNavigationWrapper>
             <SidebarMini />
-            <AnimatePresence>{sidebarOpen && <Sidebar />}</AnimatePresence>
+            <AnimatePresence>{sidebarOpen && !showTapplet && <Sidebar />}</AnimatePresence>
         </SidebarNavigationWrapper>
     );
 });

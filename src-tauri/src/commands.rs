@@ -44,11 +44,14 @@ use crate::node::node_manager::NodeType;
 use crate::p2pool::models::{Connections, P2poolStats};
 use crate::progress_tracker_old::ProgressTracker;
 use crate::setup::setup_manager::{SetupManager, SetupPhase};
+use crate::tapplets::interface::ActiveTapplet;
+use crate::tapplets::tapplet_server::start_tapplet;
+use crate::tapplets::{TappletResolver, Tapplets};
 use crate::tasks_tracker::TasksTrackers;
 use crate::tor_adapter::TorConfig;
 use crate::utils::address_utils::verify_send;
 use crate::utils::app_flow_utils::FrontendReadyChannel;
-use crate::wallet_adapter::TransactionInfo;
+use crate::wallet_adapter::{TransactionInfo, WalletBalance};
 use crate::wallet_manager::WalletManagerError;
 use crate::websocket_manager::WebsocketManagerStatusMessage;
 use crate::{airdrop, PoolStatus, UniverseAppState, APPLICATION_FOLDER_ID};
@@ -1434,13 +1437,19 @@ pub async fn set_airdrop_tokens<'r>(
         };
 
         if currently_mining {
-            stop_mining(state.clone(), app.clone())
+            stop_cpu_mining(state.clone(), app.clone())
+                .await
+                .map_err(|e| e.to_string())?;
+            stop_gpu_mining(state.clone())
                 .await
                 .map_err(|e| e.to_string())?;
 
             airdrop::restart_mm_proxy_with_new_telemetry_id(state.clone()).await?;
 
-            start_mining(state.clone(), app.clone())
+            start_cpu_mining(state.clone(), app.clone())
+                .await
+                .map_err(|e| e.to_string())?;
+            start_gpu_mining(state, app)
                 .await
                 .map_err(|e| e.to_string())?;
         } else {
@@ -1450,30 +1459,19 @@ pub async fn set_airdrop_tokens<'r>(
     Ok(())
 }
 
-#[allow(clippy::too_many_lines)]
 #[tauri::command]
-pub async fn start_mining<'r>(
+pub async fn start_cpu_mining<'r>(
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
     let timer = Instant::now();
-    let _lock = state.stop_start_mutex.lock().await;
-    let mut timestamp_lock = state.stop_start_timestamp_mutex.lock().await;
+    let _lock = state.cpu_miner_stop_start_mutex.lock().await;
+    let mut timestamp_lock = state.cpu_miner_timestamp_mutex.lock().await;
     *timestamp_lock = SystemTime::now();
 
     let cpu_mining_enabled = *ConfigMining::content().await.cpu_mining_enabled();
-    let gpu_mining_enabled = *ConfigMining::content().await.gpu_mining_enabled();
     let mode = *ConfigMining::content().await.mode();
     let custom_cpu_usage = *ConfigMining::content().await.custom_max_cpu_usage();
-    let custom_gpu_usage = ConfigMining::content().await.custom_max_gpu_usage().clone();
-    let p2pool_enabled = *ConfigCore::content().await.is_p2pool_enabled();
-
-    let mut telemetry_id = state
-        .telemetry_manager
-        .read()
-        .await
-        .get_unique_string()
-        .await;
 
     let cpu_miner = state.cpu_miner.read().await;
     let cpu_miner_running = cpu_miner.is_running().await;
@@ -1508,6 +1506,7 @@ pub async fn start_mining<'r>(
                 mode,
                 custom_cpu_usage,
                 &tari_address,
+                app.clone(),
             )
             .await;
         drop(cpu_miner_config);
@@ -1527,6 +1526,40 @@ pub async fn start_mining<'r>(
             return Err(e.to_string());
         }
     }
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "start_cpu_mining took too long: {:?}", timer.elapsed());
+    }
+    Ok(())
+}
+#[tauri::command]
+pub async fn start_gpu_mining<'r>(
+    state: tauri::State<'_, UniverseAppState>,
+    app: tauri::AppHandle,
+) -> Result<(), String> {
+    let timer = Instant::now();
+    let _lock = state.gpu_miner_stop_start_mutex.lock().await;
+
+    let gpu_mining_enabled = *ConfigMining::content().await.gpu_mining_enabled();
+    let mode = *ConfigMining::content().await.mode();
+    let custom_gpu_usage = ConfigMining::content().await.custom_max_gpu_usage().clone();
+    let p2pool_enabled = *ConfigCore::content().await.is_p2pool_enabled();
+
+    let mut telemetry_id = state
+        .telemetry_manager
+        .read()
+        .await
+        .get_unique_string()
+        .await;
+
+    let config_path = app
+        .path()
+        .app_config_dir()
+        .expect("Could not get config dir");
+
+    let tari_address = InternalWallet::load_or_create(config_path)
+        .await
+        .map_err(|e| e.to_string())?
+        .get_tari_address();
 
     let gpu_miner = state.gpu_miner.read().await;
     let gpu_miner_running = gpu_miner.is_running().await;
@@ -1591,7 +1624,7 @@ pub async fn start_mining<'r>(
         }
     }
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "start_mining took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET, "start_gpu_mining took too long: {:?}", timer.elapsed());
     }
 
     let mining_time = *ConfigMining::content().await.mining_time();
@@ -1600,12 +1633,11 @@ pub async fn start_mining<'r>(
 }
 
 #[tauri::command]
-pub async fn stop_mining<'r>(
+pub async fn stop_cpu_mining<'r>(
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
-    let _lock = state.stop_start_mutex.lock().await;
-
+    let _lock = state.cpu_miner_stop_start_mutex.lock().await;
     let timer = Instant::now();
     state
         .cpu_miner
@@ -1616,20 +1648,7 @@ pub async fn stop_mining<'r>(
         .map_err(|e| e.to_string())?;
     info!(target:LOG_TARGET, "cpu miner stopped");
 
-    state
-        .gpu_miner
-        .write()
-        .await
-        .stop()
-        .await
-        .map_err(|e| e.to_string())?;
-    info!(target:LOG_TARGET, "gpu miner stopped");
-
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "stop_mining took too long: {:?}", timer.elapsed());
-    }
-
-    let timestamp_lock = state.stop_start_timestamp_mutex.lock().await;
+    let timestamp_lock = state.cpu_miner_timestamp_mutex.lock().await;
     let current_mining_time_ms = *ConfigMining::content().await.mining_time();
 
     let now = SystemTime::now();
@@ -1643,6 +1662,29 @@ pub async fn stop_mining<'r>(
         ConfigMining::update_field(ConfigMiningContent::set_mining_time, mining_time).await;
     EventsEmitter::emit_mining_time_update(&app, mining_time).await;
 
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "stop_cpu_mining took too long: {:?}", timer.elapsed());
+    }
+
+    Ok(())
+}
+#[tauri::command]
+pub async fn stop_gpu_mining<'r>(state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
+    let _lock = state.gpu_miner_stop_start_mutex.lock().await;
+    let timer = Instant::now();
+
+    state
+        .gpu_miner
+        .write()
+        .await
+        .stop()
+        .await
+        .map_err(|e| e.to_string())?;
+    info!(target:LOG_TARGET, "gpu miner stopped");
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "stop_cpu_mining took too long: {:?}", timer.elapsed());
+    }
     Ok(())
 }
 
@@ -1650,6 +1692,7 @@ pub async fn stop_mining<'r>(
 pub async fn update_applications(app: tauri::AppHandle) -> Result<(), InvokeError> {
     let timer = Instant::now();
     let binary_resolver = BinaryResolver::current().read().await;
+    let tapplet_resolver = TappletResolver::current().read().await;
 
     ConfigCore::update_field(
         ConfigCoreContent::set_last_binaries_update_timestamp,
@@ -1680,6 +1723,11 @@ pub async fn update_applications(app: tauri::AppHandle) -> Result<(), InvokeErro
         .map_err(|e| e.to_string())?;
     binary_resolver
         .update_binary(Binaries::ShaP2pool, progress_tracker.clone())
+        .await
+        .map_err(|e| e.to_string())?;
+    sleep(Duration::from_secs(1));
+    tapplet_resolver
+        .update_tapplet(Tapplets::Bridge, progress_tracker.clone())
         .await
         .map_err(|e| e.to_string())?;
     sleep(Duration::from_secs(1));
@@ -2060,4 +2108,78 @@ pub async fn set_warmup_seen(warmup_seen: bool) -> Result<(), String> {
         .map_err(|e| e.to_string())?;
 
     Ok(())
+}
+
+/*
+ ********** TAPPLETS SECTION **********
+*/
+
+#[tauri::command]
+pub async fn launch_builtin_tapplet() -> Result<ActiveTapplet, String> {
+    let tapplet_resolver = TappletResolver::current().read().await;
+
+    let tapp_dest_dir = tapplet_resolver
+        .resolve_path_to_tapplet_files(Tapplets::Bridge)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let handle_start =
+        tauri::async_runtime::spawn(async move { start_tapplet(tapp_dest_dir).await });
+
+    let (addr, _cancel_token) = match handle_start.await {
+        Ok(result) => result.map_err(|e| e.to_string())?,
+        Err(e) => {
+            error!(target: LOG_TARGET, "❌ Error handling tapplet start: {:?}", e);
+            return Err(e.to_string());
+        }
+    };
+
+    Ok(ActiveTapplet {
+        tapplet_id: 0,
+        display_name: "Bridge-wXTM".to_string(),
+        source: format!("http://{}", addr),
+        version: "1.0.0".to_string(),
+    })
+}
+
+#[tauri::command]
+pub async fn get_tari_wallet_address(
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<String, String> {
+    let tari_address = state.tari_address.clone();
+    let addr = tari_address.read().await.to_base58();
+    Ok(addr)
+}
+
+#[tauri::command]
+pub async fn get_tari_wallet_balance(
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<WalletBalance, String> {
+    let balance = state
+        .wallet_state_watch_rx
+        .borrow()
+        .clone()
+        .and_then(|state| state.balance);
+
+    match balance {
+        Some(balance) => Ok(balance),
+        None => Ok(WalletBalance {
+            available_balance: MicroMinotari(0),
+            timelocked_balance: MicroMinotari(0),
+            pending_incoming_balance: MicroMinotari(0),
+            pending_outgoing_balance: MicroMinotari(0),
+        }),
+    }
+}
+
+#[tauri::command]
+pub async fn get_bridge_envs() -> Result<(String, String), String> {
+    let walletconnect_id = option_env!("BRIDGE_WALLET_CONNECT_PROJECT_ID")
+        .unwrap_or("")
+        .to_string();
+    let backend_api = option_env!("BRIDGE_BACKEND_API_URL")
+        .unwrap_or("")
+        .to_string();
+
+    Ok((walletconnect_id, backend_api))
 }

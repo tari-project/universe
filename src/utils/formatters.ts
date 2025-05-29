@@ -5,6 +5,7 @@ export enum FormatPreset {
     XTM_DECIMALS = 'xtm-decimals',
     XTM_COMPACT = 'xtm-compact',
     XTM_LONG = 'xtm-crypto',
+    XTM_LONG_DEC = 'xtm-long',
     DECIMAL_COMPACT = 'decimal-compact',
     COMPACT = 'compact',
 }
@@ -76,6 +77,14 @@ const formatXTMLong = (value: number) =>
         style: 'decimal',
     });
 
+const formatXTMLongDec = (value: number, maxFractionDigits = 7) =>
+    formatValue(removeXTMCryptoDecimals(value), {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: maxFractionDigits,
+        notation: 'standard',
+        style: 'decimal',
+    });
+
 const formatDecimalCompact = (value: number) => formatValue(value, { maximumFractionDigits: 2, style: 'decimal' });
 
 export function formatNumber(value: number, preset: FormatPreset): string {
@@ -92,9 +101,16 @@ export function formatNumber(value: number, preset: FormatPreset): string {
         case FormatPreset.PERCENT:
             return formatPercent(value);
         case FormatPreset.XTM_COMPACT:
+            if (value / 1_000_000 < 0.01) {
+                return `< 0.01`;
+            }
             return formatXTMCompact(value);
         case FormatPreset.XTM_LONG:
             return formatXTMLong(value);
+        case FormatPreset.XTM_LONG_DEC: {
+            const fracDigits = value / 1_000_000 < 1 ? 7 : 4;
+            return formatXTMLongDec(value, fracDigits);
+        }
         case FormatPreset.XTM_DECIMALS:
             return formatXTMDecimals(value);
         case FormatPreset.DECIMAL_COMPACT:

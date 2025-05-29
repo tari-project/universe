@@ -12,7 +12,6 @@ import { setMiningControlsEnabled } from './actions/miningStoreActions.ts';
 import { updateWalletScanningProgress, useWalletStore } from './useWalletStore.ts';
 import { useConfigUIStore } from '@app/store/useAppConfigStore.ts';
 
-
 const appWindow = getCurrentWindow();
 
 interface Recap {
@@ -148,7 +147,7 @@ async function processNewBlock(payload: {
     coinbase_transaction?: TransactionInfo;
     balance: WalletBalance;
 }) {
-    if (useMiningStore.getState().miningInitiated) {
+    if (useMiningStore.getState().isCpuMiningInitiated || useMiningStore.getState().isGpuMiningInitiated) {
         const minimized = await appWindow?.isMinimized();
         const documentIsVisible = document?.visibilityState === 'visible' || false;
         const canAnimate = !minimized && documentIsVisible;

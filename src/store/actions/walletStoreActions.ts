@@ -83,3 +83,7 @@ export const setWalletBalance = (balance: WalletBalance) => {
         balance.available_balance + balance.timelocked_balance + balance.pending_incoming_balance;
     useWalletStore.setState({ balance, calculated_balance });
 };
+
+export const setIsSwapping = (isSwapping: boolean) => {
+    useWalletStore.setState({ is_swapping: isSwapping });
+};

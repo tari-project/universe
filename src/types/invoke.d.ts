@@ -7,12 +7,15 @@ import {
     MaxConsumptionLevels,
     GpuThreads,
     P2poolConnections,
+    WalletBalance,
+    BridgeEnvs,
 } from './app-status';
 import { Language } from '@app/i18initializer';
 import { PaperWalletDetails } from '@app/types/app-status.ts';
 import { displayMode, modeType } from '@app/store/types.ts';
 import { SignData } from '@app/types/ws.ts';
 import { ConfigBackendInMemory } from '@app/types/configs.ts';
+import { ActiveTapplet } from '@app/types/tapplets/tapplet.types';
 
 declare module '@tauri-apps/api/core' {
     function invoke(
@@ -35,8 +38,10 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'get_paper_wallet_details', payload?: { authUuid?: string }): Promise<PaperWalletDetails>;
     function invoke(param: 'set_mine_on_app_start', payload: { mineOnAppStart: boolean }): Promise<void>;
     function invoke(param: 'open_log_dir'): Promise<void>;
-    function invoke(param: 'start_mining'): Promise<void>;
-    function invoke(param: 'stop_mining'): Promise<void>;
+    function invoke(param: 'start_cpu_mining'): Promise<void>;
+    function invoke(param: 'start_gpu_mining'): Promise<void>;
+    function invoke(param: 'stop_cpu_mining'): Promise<void>;
+    function invoke(param: 'stop_gpu_mining'): Promise<void>;
     function invoke(param: 'set_allow_telemetry', payload: { allow_telemetry: boolean }): Promise<void>;
     function invoke(param: 'send_data_telemetry_service', payload: { eventName: string; data: object }): Promise<void>;
     function invoke(param: 'set_user_inactivity_timeout', payload: { timeout: number }): Promise<void>;
@@ -121,4 +126,8 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'set_tari_address', payload: { address: string }): Promise<void>;
     function invoke(param: 'confirm_exchange_address', payload: { address: string }): Promise<void>;
     function invoke(param: 'get_app_in_memory_config'): Promise<ConfigBackendInMemory>;
+    function invoke(param: 'launch_builtin_tapplet'): Promise<ActiveTapplet>;
+    function invoke(param: 'get_tari_wallet_address'): Promise<string>;
+    function invoke(param: 'get_tari_wallet_balance'): Promise<WalletBalance>;
+    function invoke(param: 'get_bridge_envs'): Promise<BridgeEnvs>;
 }

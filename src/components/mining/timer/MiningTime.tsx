@@ -23,10 +23,10 @@ export const MiningTime = memo(function MiningTime({ variant = 'primary', timing
     const { daysString, hoursString, minutes, seconds } = timing;
 
     const _minutes = isMini && minutes === '0' ? '00' : minutes;
+    const _seconds = isMini && seconds === '0' ? '00' : seconds;
 
     const renderHours = hoursString && parseInt(hoursString) > 0;
-    const daysMarkup = daysString?.length ? daysString : null;
-
+    const daysMarkup = parseInt(daysString || '0') > 0 ? daysString : null;
     const hourMarkup = renderHours ? (
         <>
             {hoursString?.split('').map((c, i) => <SpacedNum key={`hr-${i}-${c}`}>{c}</SpacedNum>)}
@@ -40,6 +40,12 @@ export const MiningTime = memo(function MiningTime({ variant = 'primary', timing
             <TimerUnitWrapper $variant={variant}>{isMini ? ':' : `m`}</TimerUnitWrapper>
         </>
     );
+    const secondMarkup = (
+        <>
+            {_seconds?.split('').map((c, i) => <SpacedNum key={`sec-${i}-${c}`}>{c}</SpacedNum>)}
+            <TimerUnitWrapper $variant={variant}>{!isMini && 's'}</TimerUnitWrapper>
+        </>
+    );
 
     // TODO: dedupe from block time/make reusable spaced counter?
 
@@ -48,8 +54,7 @@ export const MiningTime = memo(function MiningTime({ variant = 'primary', timing
             {daysMarkup}
             {hourMarkup}
             {minuteMarkup}
-            {seconds?.split('').map((c, i) => <SpacedNum key={`sec-${i}-${c}`}>{c}</SpacedNum>)}
-            {!isMini && 's'}
+            {secondMarkup}
         </TimerTextWrapper>
     );
 
