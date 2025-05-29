@@ -29,6 +29,8 @@ jobs:
     steps:
       - name: Install Dependencies
         run: |
+          npm config set //npm.pkg.github.com/:_authToken=${{ env.NODE_AUTH_TOKEN }}
+          npm config set @tari-project:registry=https://npm.pkg.github.com
           npm install -g @commitlint/cli @commitlint/config-conventional
           echo "module.exports = {extends: ['@commitlint/config-conventional']}" > commitlint.config.js
       - name: Lint Title

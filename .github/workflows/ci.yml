@@ -122,7 +122,10 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies (node)
-        run: npm ci
+        run: |
+          npm config set //npm.pkg.github.com/:_authToken=${{ env.NODE_AUTH_TOKEN }}
+          npm config set @tari-project:registry=https://npm.pkg.github.com
+          npm ci
 
       - uses: dtolnay/rust-toolchain@stable
       - uses: swatinem/rust-cache@v2.7.5
