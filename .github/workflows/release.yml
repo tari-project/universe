@@ -249,8 +249,8 @@ jobs:
 
       - name: Install Dependencies - Node
         run: |
-          npm config set //npm.pkg.github.com/:_authToken ${{ env.NODE_AUTH_TOKEN }}
-          npm config set @tari-project:registry https://npm.pkg.github.com
+          npm config set //npm.pkg.github.com/:_authToken=${{ env.NODE_AUTH_TOKEN }}
+          npm config set @tari-project:registry=https://npm.pkg.github.com
           npm --version
           npm install
 
