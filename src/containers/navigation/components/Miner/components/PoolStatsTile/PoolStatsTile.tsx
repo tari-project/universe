@@ -39,7 +39,7 @@ const variants = {
     },
 };
 
-const REWARD_THRESHOLD = `2 XTM`;
+const REWARD_THRESHOLD = `2.0 XTM`;
 
 export const PoolStatsTile = () => {
     const { t } = useTranslation('p2p');
