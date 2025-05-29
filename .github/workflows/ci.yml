@@ -21,7 +21,8 @@ concurrency:
 env:
   NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-permissions: { packages: read, contents: write }
+permissions:
+  packages: read
 
 jobs:
   cargo-checks:
