@@ -17,6 +17,7 @@ import {
     Border,
     AnimatedGradient,
     TotalVal,
+    Inside,
 } from './styles';
 import { Trans, useTranslation } from 'react-i18next';
 import { Typography } from '@app/components/elements/Typography.tsx';
@@ -27,6 +28,7 @@ import { offset, safePolygon, useFloating, useHover, useInteractions } from '@fl
 import { AnimatePresence } from 'motion/react';
 import { MiningTime } from '@app/components/mining/timer/MiningTime.tsx';
 import { useMiningTime } from '@app/hooks/mining/useMiningTime.ts';
+import { SuccessAnimation } from './SuccessAnimation/SuccessAnimation';
 
 const variants = {
     hidden: {
@@ -39,7 +41,7 @@ const variants = {
     },
 };
 
-const REWARD_THRESHOLD = `2.0 XTM`;
+const REWARD_THRESHOLD = `2 XTM`;
 
 export const PoolStatsTile = () => {
     const { t } = useTranslation('p2p');
@@ -50,6 +52,8 @@ export const PoolStatsTile = () => {
     const loading = isMining && !pool_status;
     const unpaidFMT = formatNumber(pool_status?.unpaid || 0, FormatPreset.XTM_LONG_DEC);
     const [expanded, setExpanded] = useState(false);
+
+    const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
 
     const { refs, context, floatingStyles } = useFloating({
         open: expanded,
@@ -67,30 +71,36 @@ export const PoolStatsTile = () => {
 
     return !cpuMiningEnabled ? null : (
         <>
-            <Border $isLoading={loading} $isMining={isMining}>
-                <Wrapper $isLoading={loading} $isMining={isMining}>
-                    {loading ? (
-                        <Title style={{ textAlign: 'center' }}>{`${t('stats.tile-loading')}...`}</Title>
-                    ) : (
-                        <>
-                            <LeftContent>
-                                <Title>{t('stats.tile-heading')}</Title>
-                                <Values>
-                                    <BalanceVal>{`${unpaidFMT} XTM`}</BalanceVal>
-                                    <TotalVal>{`/${REWARD_THRESHOLD}`}</TotalVal>
-                                </Values>
-                            </LeftContent>
-                            <RightContent>
-                                <TriggerWrapper ref={refs.setReference} {...getReferenceProps()}>
-                                    <QuestionMarkSvg />
-                                </TriggerWrapper>
-                                <MiningTime timing={{ daysString, hoursString, minutes, seconds }} variant="mini" />
-                            </RightContent>
-                        </>
-                    )}
-                </Wrapper>
-                <AnimatedGradient $isLoading={loading} $isMining={isMining} />
-            </Border>
+            <Wrapper>
+                <Border $isLoading={loading} $isMining={isMining}>
+                    <Inside $isLoading={loading} $isMining={isMining}>
+                        {loading ? (
+                            <Title style={{ textAlign: 'center' }}>{`${t('stats.tile-loading')}...`}</Title>
+                        ) : (
+                            <>
+                                <LeftContent>
+                                    <Title>{t('stats.tile-heading')}</Title>
+                                    <Values>
+                                        <BalanceVal>{`${unpaidFMT} XTM`}</BalanceVal>
+                                    </Values>
+                                </LeftContent>
+                                <RightContent>
+                                    <TriggerWrapper ref={refs.setReference} {...getReferenceProps()}>
+                                        <QuestionMarkSvg />
+                                    </TriggerWrapper>
+                                    <MiningTime timing={{ daysString, hoursString, minutes, seconds }} variant="mini" />
+                                </RightContent>
+                            </>
+                        )}
+                    </Inside>
+                    <AnimatedGradient $isLoading={loading} $isMining={isMining} />
+                </Border>
+                <SuccessAnimation
+                    isVisible={showSuccessAnimation}
+                    setIsVisible={setShowSuccessAnimation}
+                    rewardThreshold={REWARD_THRESHOLD}
+                />
+            </Wrapper>
             <AnimatePresence>
                 {expanded && (
                     <ExpandedWrapper ref={refs.setFloating} {...getFloatingProps()} style={floatingStyles}>

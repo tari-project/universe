@@ -3,7 +3,20 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 import * as m from 'motion/react-m';
 import { keyframes } from 'styled-components';
 
-export const Wrapper = styled.div<{ $isLoading?: boolean; $isMining?: boolean }>`
+export const Wrapper = styled.div`
+    width: 100%;
+    position: relative;
+`;
+
+export const Border = styled.div<{ $isLoading?: boolean; $isMining?: boolean }>`
+    width: 100%;
+    overflow: hidden;
+    padding: 2px;
+    border-radius: 12px;
+    position: relative;
+`;
+
+export const Inside = styled.div<{ $isLoading?: boolean; $isMining?: boolean }>`
     width: 100%;
     display: flex;
     align-items: center;
@@ -48,14 +61,6 @@ export const Wrapper = styled.div<{ $isLoading?: boolean; $isMining?: boolean }>
     min-height: 70px;
     position: relative;
     z-index: 2;
-`;
-
-export const Border = styled.div<{ $isLoading?: boolean; $isMining?: boolean }>`
-    width: 100%;
-    overflow: hidden;
-    padding: 2px;
-    border-radius: 12px;
-    position: relative;
 `;
 
 const spin = keyframes`
