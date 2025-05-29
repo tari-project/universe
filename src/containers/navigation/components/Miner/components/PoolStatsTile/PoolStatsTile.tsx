@@ -14,6 +14,9 @@ import {
     TooltipChipHeading,
     TooltipChipText,
     ExpandedBox,
+    Border,
+    AnimatedGradient,
+    TotalVal,
 } from './styles';
 import { Trans, useTranslation } from 'react-i18next';
 import { Typography } from '@app/components/elements/Typography.tsx';
@@ -35,7 +38,9 @@ const variants = {
         x: 0,
     },
 };
+
 const REWARD_THRESHOLD = `2 XTM`;
+
 export const PoolStatsTile = () => {
     const { t } = useTranslation('p2p');
     const { daysString, hoursString, minutes, seconds } = useMiningTime();
@@ -62,26 +67,30 @@ export const PoolStatsTile = () => {
 
     return !cpuMiningEnabled ? null : (
         <>
-            <Wrapper $isLoading={loading}>
-                {loading ? (
-                    <Title style={{ textAlign: 'center' }}>{`${t('stats.tile-loading')}...`}</Title>
-                ) : (
-                    <>
-                        <LeftContent>
-                            <Title>{t('stats.tile-heading')}</Title>
-                            <Values>
-                                <BalanceVal>{`${unpaidFMT} XTM`}</BalanceVal>
-                            </Values>
-                        </LeftContent>
-                        <RightContent>
-                            <TriggerWrapper ref={refs.setReference} {...getReferenceProps()}>
-                                <QuestionMarkSvg />
-                            </TriggerWrapper>
-                            <MiningTime timing={{ daysString, hoursString, minutes, seconds }} variant="mini" />
-                        </RightContent>
-                    </>
-                )}
-            </Wrapper>
+            <Border $isLoading={loading} $isMining={isMining}>
+                <Wrapper $isLoading={loading} $isMining={isMining}>
+                    {loading ? (
+                        <Title style={{ textAlign: 'center' }}>{`${t('stats.tile-loading')}...`}</Title>
+                    ) : (
+                        <>
+                            <LeftContent>
+                                <Title>{t('stats.tile-heading')}</Title>
+                                <Values>
+                                    <BalanceVal>{`${unpaidFMT} XTM`}</BalanceVal>
+                                    <TotalVal>{`/${REWARD_THRESHOLD}`}</TotalVal>
+                                </Values>
+                            </LeftContent>
+                            <RightContent>
+                                <TriggerWrapper ref={refs.setReference} {...getReferenceProps()}>
+                                    <QuestionMarkSvg />
+                                </TriggerWrapper>
+                                <MiningTime timing={{ daysString, hoursString, minutes, seconds }} variant="mini" />
+                            </RightContent>
+                        </>
+                    )}
+                </Wrapper>
+                <AnimatedGradient $isLoading={loading} $isMining={isMining} />
+            </Border>
             <AnimatePresence>
                 {expanded && (
                     <ExpandedWrapper ref={refs.setFloating} {...getFloatingProps()} style={floatingStyles}>

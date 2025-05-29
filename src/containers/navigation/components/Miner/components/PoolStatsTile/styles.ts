@@ -1,27 +1,107 @@
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 import { Typography } from '@app/components/elements/Typography.tsx';
-import { convertHexToRGBA } from '@app/utils';
 import * as m from 'motion/react-m';
+import { keyframes } from 'styled-components';
 
-const bg = '#188750';
-const bg_loading = '#CC7A1C';
-export const Wrapper = styled.div<{ $isLoading?: boolean }>`
+export const Wrapper = styled.div<{ $isLoading?: boolean; $isMining?: boolean }>`
     width: 100%;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    border: 1px solid ${({ $isLoading }) => convertHexToRGBA($isLoading ? bg_loading : bg, 0.15)};
-    box-shadow: 0 4px 12px -5px ${({ $isLoading }) => convertHexToRGBA($isLoading ? bg_loading : bg, 0.05)};
-    background: ${({ $isLoading, theme }) =>
-        `linear-gradient(99deg,  ${convertHexToRGBA($isLoading ? bg_loading : bg, 0.3)} -33%, ${theme.palette.background.default} 10%, ${convertHexToRGBA($isLoading ? bg_loading : bg, 0.2)} 190%)`};
+
+    background: linear-gradient(99deg, #fff 8.49%, #e4fdf8 100.54%), #fff;
+
+    ${({ theme }) =>
+        theme.mode === 'dark' &&
+        css`
+            background: linear-gradient(99deg, #1a2d28 8.49%, #233c34 100.54%), #1a2d28;
+        `}
+
+    ${({ $isMining, theme }) =>
+        $isMining &&
+        css`
+            background: linear-gradient(99deg, #fff 8.49%, #e4fdf8 100.54%), #fff;
+            ${theme.mode === 'dark' &&
+            css`
+                background: linear-gradient(99deg, #1a2d28 8.49%, #233c34 100.54%), #1a2d28;
+            `}
+        `}
+
+    ${({ $isLoading, theme }) =>
+        $isLoading &&
+        css`
+            background: linear-gradient(99deg, #fffdf7 8.49%, #ffefc7 100.54%);
+            ${theme.mode === 'dark' &&
+            css`
+                background: linear-gradient(99deg, #3a2d1a 8.49%, #4d3a1a 100.54%), #3a2d1a;
+            `}
+        `}
+
     color: ${({ theme }) => theme.palette.text.accent};
-    border-radius: ${({ theme }) => theme.shape.borderRadius.app};
+    border-radius: 10px;
+
     font-size: 12px;
     font-weight: 500;
     flex-shrink: 0;
     flex-grow: 6;
     padding: 14px;
-    min-height: 66px;
+    min-height: 70px;
+    position: relative;
+    z-index: 2;
+`;
+
+export const Border = styled.div<{ $isLoading?: boolean; $isMining?: boolean }>`
+    width: 100%;
+    overflow: hidden;
+    padding: 2px;
+    border-radius: 12px;
+    position: relative;
+`;
+
+const spin = keyframes`
+  100% {
+    transform: translate(-50%, -50%) rotate(-360deg);
+  }
+`;
+
+export const AnimatedGradient = styled.div<{ $isLoading?: boolean; $isMining?: boolean }>`
+    width: 400%;
+    aspect-ratio: 1 / 2;
+
+    background: #c3ebdb;
+
+    ${({ theme }) =>
+        theme.mode === 'dark' &&
+        css`
+            background: #1a2d28;
+        `}
+
+    ${({ $isMining, theme }) =>
+        $isMining &&
+        css`
+            background: conic-gradient(
+                from 0deg,
+                ${theme.mode === 'dark' ? '#1a5c3a' : '#33cd7e'} 0deg,
+                ${theme.mode === 'dark' ? '#3a7c5a' : '#b5dac9'} 360deg
+            );
+            animation: ${spin} 3s linear infinite;
+        `}
+
+    ${({ $isLoading, theme }) =>
+        $isLoading &&
+        css`
+            background: conic-gradient(
+                from 0deg,
+                ${theme.mode === 'dark' ? '#4d3a1a' : '#FFD8B0'} 0deg,
+                ${theme.mode === 'dark' ? '#b38c4d' : '#FFF3E0'} 360deg
+            );
+        `}
+
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1;
 `;
 
 export const LeftContent = styled.div`
@@ -45,6 +125,7 @@ export const RightContent = styled.div`
 export const Values = styled.div`
     display: flex;
     align-items: baseline;
+    gap: 4px;
 `;
 
 export const Title = styled(Typography).attrs({ variant: 'h6' })`
@@ -60,6 +141,14 @@ export const BalanceVal = styled(Typography)`
     letter-spacing: -0.4px;
 `;
 
+export const TotalVal = styled(Typography)`
+    font-size: 10px;
+    font-weight: 500;
+    color: ${({ theme }) => theme.palette.text.secondary};
+    vertical-align: bottom;
+    letter-spacing: -0.4px;
+`;
+
 export const TriggerWrapper = styled(m.div)`
     width: 14px;
     height: 14px;
@@ -69,6 +158,8 @@ export const TriggerWrapper = styled(m.div)`
     align-items: center;
     border-radius: 100%;
     color: ${({ theme }) => theme.palette.base};
+
+    transform: translateX(0px) translateY(-8px);
 `;
 
 export const ExpandedWrapper = styled.div``;
@@ -91,7 +182,7 @@ export const ExpandedBox = styled(m.div)`
 
 export const TooltipChipWrapper = styled.div`
     display: flex;
-    padding: 4px 0 0;
+    padding: 4px 0 0 0;
     flex-direction: row;
     gap: 6px;
 `;
@@ -101,9 +192,8 @@ export const TooltipChip = styled.div`
     color: ${({ theme }) => theme.palette.text.contrast};
     background-color: ${({ theme }) => theme.palette.contrast};
     flex-direction: column;
-    justify-content: space-between;
     border-radius: 10px;
-    padding: 8px 10px;
+    padding: 10px 10px 6px 10px;
     flex-shrink: 1;
     flex-grow: 1;
     width: 100%;
@@ -121,4 +211,7 @@ export const TooltipChipText = styled(Typography).attrs({ variant: 'p' })`
     font-weight: 500;
     letter-spacing: 1px;
     line-height: 1.1;
+    height: 27px;
+    display: flex;
+    align-items: center;
 `;
