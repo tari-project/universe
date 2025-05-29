@@ -26,10 +26,10 @@
     "step_6": "Versuche einen App-Reset (in den Einstellungen)"
   },
   "pool": {
-    "accepted_shares": "Accepted shares",
-    "balance": "Balance",
-    "min_payout": "Minimum payout",
-    "unpaid": "Unpaid"
+    "accepted_shares": "Akzeptierte Anteile",
+    "balance": "Kontostand",
+    "min_payout": "Mindestzahlung",
+    "unpaid": "Unbezahlt"
   },
   "you-earn-rewards-separately": "Sie verdienen Belohnungen für das Mining von CPU und GPU separat",
   "you-won-block": "Sie waren der Gewinner von <span>Block #{{ blockHeight }}</span>",
