@@ -404,17 +404,6 @@ impl SetupManager {
         let in_memory_config = state.in_memory_config.clone();
         if in_memory_config.read().await.exchange_id != DEFAULT_EXCHANGE_ID {
             self.unlock_wallet(app_handle.clone()).await;
-            EventsManager::handle_progress_tracker_update(
-                &app_handle,
-                ProgressEvents::Wallet,
-                "setup-wallet".to_string(),
-                "setup-wallet".to_string(),
-                60.0,
-                None,
-                true, // just enforce is_completed true
-            )
-            .await;
-
             return;
         }
         let wallet_phase_setup = PhaseBuilder::new()
