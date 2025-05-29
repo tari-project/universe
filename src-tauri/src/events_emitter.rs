@@ -24,7 +24,7 @@ use crate::app_in_memory_config::AppInMemoryConfig;
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 use crate::events::{
     AppInMemoryConfigChangedPayload, ConnectionStatusPayload, CriticalProblemPayload,
-    InitWalletScanningProgressPayload,
+    DisabledPhasesPayload, InitWalletScanningProgressPayload,
 };
 #[cfg(target_os = "windows")]
 use crate::external_dependencies::RequiredExternalDependency;
@@ -624,6 +624,20 @@ impl EventsEmitter {
         };
         if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
             error!(target: LOG_TARGET, "Failed to emit AppInMemoryConfigChanged event: {:?}", e);
+        }
+    }
+
+    pub async fn emit_disabled_phases_changed(
+        app_handle: &AppHandle,
+        disabled_phases: Vec<SetupPhase>,
+    ) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::DisabledPhasesChanged,
+            payload: DisabledPhasesPayload { disabled_phases },
+        };
+        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+            error!(target: LOG_TARGET, "Failed to emit DisabledPhasesChanged event: {:?}", e);
         }
     }
 }

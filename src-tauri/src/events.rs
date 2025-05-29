@@ -27,6 +27,7 @@ use crate::{
     app_in_memory_config::AppInMemoryConfig,
     gpu_status_file::GpuDevice,
     node::{node_adapter::NodeIdentity, node_manager::NodeType},
+    setup::setup_manager::SetupPhase,
     wallet_adapter::{TransactionInfo, WalletBalance},
 };
 
@@ -76,6 +77,7 @@ pub enum EventType {
     ShowStageSecurityModal,
     MiningTime,
     AppInMemoryConfigChanged,
+    DisabledPhasesChanged,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -174,4 +176,9 @@ pub enum ConnectionStatusPayload {
 pub struct AppInMemoryConfigChangedPayload {
     pub app_in_memory_config: AppInMemoryConfig,
     pub is_universal_exchange: bool,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct DisabledPhasesPayload {
+    pub disabled_phases: Vec<SetupPhase>,
 }

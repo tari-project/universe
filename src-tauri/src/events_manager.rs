@@ -344,4 +344,8 @@ impl EventsManager {
         )
         .await;
     }
+
+    pub async fn handle_disabled_phases_changed(app: &AppHandle, payload: Vec<SetupPhase>) {
+        EventsEmitter::emit_disabled_phases_changed(app, payload).await;
+    }
 }

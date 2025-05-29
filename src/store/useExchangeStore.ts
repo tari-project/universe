@@ -57,8 +57,6 @@ export async function fetchExchangeContent(exchangeId: string) {
         const content = await fetch(`${endpoint}/${exchangeId}`);
         const xcContent = (await content.json()) as ExchangeContent;
         const walletIsGenerated = useWalletStore.getState().is_tari_address_generated;
-        console.info('Exchange content fetched:', xcContent);
-        console.info('Wallet is generated:', walletIsGenerated);
         if (xcContent) {
             setExchangeContent(xcContent);
             setSeedlessUI(true);

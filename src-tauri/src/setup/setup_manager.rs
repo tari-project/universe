@@ -32,7 +32,7 @@ use crate::{
         config_core::ConfigCore, config_mining::ConfigMining, config_ui::ConfigUI,
         config_wallet::ConfigWallet, trait_config::ConfigImpl,
     },
-    events::{ConnectionStatusPayload, ProgressEvents},
+    events::ConnectionStatusPayload,
     events_manager::EventsManager,
     initialize_frontend_updates,
     internal_wallet::InternalWallet,
@@ -324,6 +324,11 @@ impl SetupManager {
         let is_address_generated = internal_wallet.get_is_tari_address_generated();
         let is_on_exchange_miner_build =
             in_memory_config.read().await.exchange_id != DEFAULT_EXCHANGE_ID;
+
+        if is_on_exchange_miner_build {
+            EventsManager::handle_disabled_phases_changed(&app_handle, vec![SetupPhase::Wallet])
+                .await;
+        }
 
         if is_on_exchange_miner_build && is_address_generated {
             self.exchange_modal_status

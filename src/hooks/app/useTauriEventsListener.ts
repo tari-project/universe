@@ -42,6 +42,7 @@ import {
     handleWalletUnlocked,
     handleWalletUpdate,
     setInitialSetupFinished,
+    updateDisabledPhases,
 } from '@app/store/actions/setupStoreActions';
 import { setBackgroundNodeState, setNodeStoreState } from '@app/store/useNodeStore';
 import {
@@ -219,6 +220,9 @@ const useTauriEventsListener = () => {
                             break;
                         case 'AppInMemoryConfigChanged':
                             handleAppInMemoryConfigChanged(event.payload);
+                            break;
+                        case 'DisabledPhasesChanged':
+                            updateDisabledPhases(event.payload);
                             break;
                         default:
                             console.warn('Unknown event', JSON.stringify(event));
