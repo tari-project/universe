@@ -33,8 +33,6 @@ import { useTariBalance } from '@app/hooks/wallet/useTariBalance.ts';
 import ArrowRight from './ArrowRight.tsx';
 import { Swap } from './Swap/Swap.tsx';
 import { AnimatePresence } from 'motion/react';
-import { useTappletsStore } from '@app/store/useTappletsStore.ts';
-import BridgeButton from '../bridge/BridgeButton.tsx';
 import { swapTransition, walletTransition } from './transitions.ts';
 import { setIsSwapping } from '@app/store/actions/walletStoreActions.ts';
 
@@ -53,7 +51,6 @@ const Wallet = memo(function Wallet({ section, setSection }: Props) {
     const displayAddress = truncateMiddle(walletAddress, 4);
     const swapUiEnabled = useAirdropStore((s) => s.swapsEnabled);
     const isSwapping = useWalletStore((s) => s.is_swapping);
-    const { uiBridgeSwapsEnabled } = useTappletsStore();
     const { isWalletScanning, formattedAvailableBalance } = useTariBalance();
 
     return (
@@ -76,7 +73,6 @@ const Wallet = memo(function Wallet({ section, setSection }: Props) {
                         </TabHeader>
 
                         <WalletBalanceMarkup />
-                        {uiBridgeSwapsEnabled && <BridgeButton />}
                         {uiSendRecvEnabled && !isWalletScanning && (
                             <TabsWrapper>
                                 <TabsTitle>{`${t('history.available-balance')}: ${formattedAvailableBalance} ${t('common:xtm')}`}</TabsTitle>
