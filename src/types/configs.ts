@@ -68,5 +68,4 @@ export interface ConfigBackendInMemory {
     exchangeId?: string;
     isUniversalMiner?: boolean;
     walletConnectProjectId?: string;
-
 }
