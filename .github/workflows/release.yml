@@ -21,6 +21,7 @@ concurrency:
 permissions: {}
 
 env:
+  NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   TS_FEATURES: release-ci
   BETA_STRING: '(Beta)'
 
@@ -247,6 +248,8 @@ jobs:
 
       - name: Install Dependencies - Node
         run: |
+          npm config set //npm.pkg.github.com/:_authToken ${{ env.NODE_AUTH_TOKEN }}
+          npm config set @tari-project:registry https://npm.pkg.github.com
           npm --version
           npm install
 

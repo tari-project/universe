@@ -27,6 +27,7 @@ concurrency:
 permissions: {}
 
 env:
+  NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   TS_FEATURES: exchange-ci
   NODE_OPTIONS: '--max_old_space_size=8192'
 
@@ -215,6 +216,8 @@ jobs:
 
       - name: Install Dependencies - Node
         run: |
+          npm config set //npm.pkg.github.com/:_authToken ${{ env.NODE_AUTH_TOKEN }}
+          npm config set @tari-project:registry https://npm.pkg.github.com
           npm --version
           npm install
 
