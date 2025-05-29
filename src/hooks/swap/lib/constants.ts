@@ -1,53 +1,42 @@
-import { ChainId, Token, Percent } from '@uniswap/sdk-core'; //WETH9,
+import { ChainId, Token, Percent } from '@uniswap/sdk-core';
+import { FeeAmount } from '@uniswap/v3-sdk';
 
 import erc20Abi from '../abi/erc20.json';
-import uniswapV2RouterAbi from '../abi/UniswapV2Router02.json';
-import uniswapV2PairAbi from '../abi/UniswapV2Pair.json';
-import {
-    SWAP_ETH_FOR_EXACT_TOKENS_ABI_VIEM,
-    SWAP_EXACT_ETH_FOR_TOKENS_ABI_VIEM,
-    SWAP_EXACT_TOKENS_FOR_ETH_ABI_VIEM,
-    SWAP_EXACT_TOKENS_FOR_TOKENS_ABI_VIEM,
-    SWAP_TOKENS_FOR_EXACT_ETH_ABI_VIEM,
-    SWAP_TOKENS_FOR_EXACT_TOKENS_ABI_VIEM,
-} from '../abi/viemFunctionData';
 
-export {
-    erc20Abi,
-    uniswapV2RouterAbi,
-    uniswapV2PairAbi,
-    SWAP_ETH_FOR_EXACT_TOKENS_ABI_VIEM,
-    SWAP_EXACT_ETH_FOR_TOKENS_ABI_VIEM,
-    SWAP_EXACT_TOKENS_FOR_ETH_ABI_VIEM,
-    SWAP_EXACT_TOKENS_FOR_TOKENS_ABI_VIEM,
-    SWAP_TOKENS_FOR_EXACT_ETH_ABI_VIEM,
-    SWAP_TOKENS_FOR_EXACT_TOKENS_ABI_VIEM,
-};
+// V3 ABIs - You'll need to get these ABI files
+import uniswapV3PoolAbi from '../abi/IUniswapV3Pool.json';
+import uniswapV3QuoterV2Abi from '../abi/IQuoterV2.json';
+import uniswapV3SwapRouter02Abi from '../abi/ISwapRouter02.json';
+import uniswapV3FactoryAbi from '../abi/UniswapV3Factory.json';
+
+export { erc20Abi, uniswapV3PoolAbi, uniswapV3QuoterV2Abi, uniswapV3SwapRouter02Abi, uniswapV3FactoryAbi };
 
 const ENABLED_NETWORKS = [ChainId.MAINNET, ChainId.SEPOLIA];
 
-export const ROUTER_ADDRESSES: Partial<Record<ChainId, `0x${string}`>> = {
-    [ChainId.MAINNET]: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D',
-    [ChainId.SEPOLIA]: '0xeE567Fe1712Faf6149d80dA1E6934E354124CfE3',
+export const ROUTER_ADDRESSES_V3: Partial<Record<ChainId, `0x${string}`>> = {
+    [ChainId.MAINNET]: '0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45',
+    [ChainId.SEPOLIA]: '0x3bFA4769FB09eefC5a80d6E87c3B9C650f7Ae48E',
+};
+
+export const QUOTER_ADDRESSES_V3: Partial<Record<ChainId, `0x${string}`>> = {
+    [ChainId.MAINNET]: '0x61fFE014bA17989E743c5F6cB21bF9697530B21e',
+    [ChainId.SEPOLIA]: '0xEd1f6473345F45b75F8179591dd5bA1888cf2FB3',
+};
+
+export const FACTORY_ADDRESSES_V3: Partial<Record<ChainId, `0x${string}`>> = {
+    [ChainId.MAINNET]: '0x1F98431c8aD98523631AE4a59f267346ea31F984',
+    [ChainId.SEPOLIA]: '0x0227628f3F023bb0B980b67D528571c95c6DaC1c',
 };
 
 export enum EnabledTokensEnum {
     ETH = 'ETH',
-    // WETH = 'wETH',
     WXTM = 'wXTM',
     USDT = 'USDT',
 }
 
 export const ENABLED_TOKEN_ADDRESSES = {
-    // [EnabledTokensEnum.WETH]: {
-    //     [ChainId.MAINNET]: '0x',
-    //     [ChainId.SEPOLIA]: '0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9',
-    // },
     [EnabledTokensEnum.WXTM]: {
         [ChainId.MAINNET]: '0xfD36fA88bb3feA8D1264fc89d70723b6a2B56958',
-        // TEST SEPOLIA XTM
-        // [ChainId.SEPOLIA]: '0x45388D68e2C2e8162259483498577296D2B5C8A0',
-        // REAL SEPOLIA XTM
         [ChainId.SEPOLIA]: '0xcBe79AB990E0Ab45Cb9148db7d434477E49b7374',
     },
     [EnabledTokensEnum.USDT]: {
@@ -57,9 +46,8 @@ export const ENABLED_TOKEN_ADDRESSES = {
 } as const;
 
 export const RPC_URLS: Partial<Record<ChainId, string>> = {
-    // TODO - have these on config - Infura might be needed
-    [ChainId.MAINNET]: 'https://rwa.y.at/miner/rpc/mainnet',
-    [ChainId.SEPOLIA]: 'https://rwa.y.at/miner/rpc/sepolia',
+    [ChainId.MAINNET]: 'https://airdrop.tari.com/api/miner/rpc/mainnet',
+    [ChainId.SEPOLIA]: 'https://airdrop.tari.com/api/miner/rpc/sepolia',
 };
 
 export const XTM_SDK_TOKEN: Partial<Record<ChainId, Token>> = {
@@ -97,7 +85,6 @@ export const USDT_SDK_TOKEN: Partial<Record<ChainId, Token>> = {
 };
 
 export const TOKEN_DEFINITIONS = {
-    // [EnabledTokensEnum.WETH]: WETH9,
     [EnabledTokensEnum.WXTM]: XTM_SDK_TOKEN,
     [EnabledTokensEnum.USDT]: USDT_SDK_TOKEN,
 };
@@ -106,16 +93,19 @@ export const KNOWN_SDK_TOKENS: Record<ChainId, Record<`0x${string}`, Token>> = O
     ENABLED_TOKEN_ADDRESSES
 ).reduce(
     (acc, key) => {
-        const tokenAddresses = ENABLED_TOKEN_ADDRESSES[key];
+        const tokenAddresses = ENABLED_TOKEN_ADDRESSES[key as keyof typeof ENABLED_TOKEN_ADDRESSES];
         for (const enabledNetwork of ENABLED_NETWORKS) {
             if (!acc[enabledNetwork]) acc[enabledNetwork] = {};
 
-            const tokenAddress = tokenAddresses[enabledNetwork];
-            const token = TOKEN_DEFINITIONS?.[key]?.[enabledNetwork];
+            const tokenAddress = tokenAddresses[enabledNetwork as keyof typeof tokenAddresses];
+            const tokenDef = TOKEN_DEFINITIONS[key as keyof typeof TOKEN_DEFINITIONS];
+            const token = tokenDef?.[enabledNetwork as keyof typeof tokenDef];
+
             if (tokenAddress && token) {
                 acc[enabledNetwork]![tokenAddress.toLowerCase() as `0x${string}`] = token;
             }
         }
+
         return acc;
     },
     {} as Record<ChainId, Record<`0x${string}`, Token>>
@@ -123,3 +113,6 @@ export const KNOWN_SDK_TOKENS: Record<ChainId, Record<`0x${string}`, Token>> = O
 
 export const SLIPPAGE_TOLERANCE = new Percent('50', '10000'); // 0.5%
 export const DEADLINE_MINUTES = 20;
+
+// Default V3 Fee Tier to use. In a real app, you might want to query available pools or let user select.
+export const DEFAULT_V3_POOL_FEE = FeeAmount.MEDIUM; // 0.3%

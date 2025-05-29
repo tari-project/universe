@@ -15,7 +15,6 @@ import {
     KNOWN_SDK_TOKENS,
     DEADLINE_MINUTES,
     DEFAULT_V3_POOL_FEE,
-    // USDT_SDK_TOKEN,
 } from './lib/constants';
 import { encodePath, walletClientToSigner } from './lib/utils';
 import { V3TradeDetails, SwapField, SwapDirection } from './lib/types';
@@ -56,10 +55,6 @@ export const useUniswapV3Interactions = () => {
         () => (currentChainId ? XTM_SDK_TOKEN[currentChainId] : undefined),
         [currentChainId]
     );
-    // const usdtTokenForSwap = useMemo(
-    //     () => (currentChainId ? USDT_SDK_TOKEN[currentChainId] : undefined),
-    //     [currentChainId]
-    // );
 
     const [signer, setSigner] = useState<EthersSigner | null>(null);
     useEffect(() => {
@@ -79,11 +74,23 @@ export const useUniswapV3Interactions = () => {
         };
     }, [walletClient]);
 
+    // Modified to prioritize native ETH over WETH
     const sdkPairTokenForSwap = useMemo(() => {
         if (!currentChainId) return undefined;
-        const currentWeth = WETH9[currentChainId as keyof typeof WETH9];
-        if (pairTokenAddress === null) return currentWeth;
+
+        // If pairTokenAddress is null, return native ETH instead of WETH
+        if (pairTokenAddress === null) {
+            return Ether.onChain(currentChainId);
+        }
+
         const lowerCaseAddress = pairTokenAddress.toLowerCase() as `0x${string}`;
+        const currentWeth = WETH9[currentChainId as keyof typeof WETH9];
+
+        // If the selected token is WETH, return native ETH instead
+        if (currentWeth && lowerCaseAddress === currentWeth.address.toLowerCase()) {
+            return Ether.onChain(currentChainId);
+        }
+
         return KNOWN_SDK_TOKENS[currentChainId]?.[lowerCaseAddress] || undefined;
     }, [pairTokenAddress, currentChainId]);
 
@@ -103,14 +110,17 @@ export const useUniswapV3Interactions = () => {
         let selectedPairSideTokenForSwapUi: Token | NativeCurrency | undefined;
 
         if (pairTokenAddress === null) {
+            // Always use native ETH when no specific token is selected
             selectedPairSideTokenForSwapUi = Ether.onChain(currentChainId);
         } else {
             const currentWeth = WETH9[currentChainId as keyof typeof WETH9];
-            if (currentWeth && pairTokenAddress.toLowerCase() === currentWeth.address.toLowerCase()) {
-                selectedPairSideTokenForSwapUi = currentWeth;
+            const lowerCaseAddress = pairTokenAddress.toLowerCase() as `0x${string}`;
+
+            // If WETH is selected, use native ETH instead
+            if (currentWeth && lowerCaseAddress === currentWeth.address.toLowerCase()) {
+                selectedPairSideTokenForSwapUi = Ether.onChain(currentChainId);
             } else {
-                selectedPairSideTokenForSwapUi =
-                    KNOWN_SDK_TOKENS[currentChainId]?.[pairTokenAddress.toLowerCase() as `0x${string}`];
+                selectedPairSideTokenForSwapUi = KNOWN_SDK_TOKENS[currentChainId]?.[lowerCaseAddress];
             }
         }
         const _xtmUiToken = xtmTokenForSwap;
@@ -140,19 +150,27 @@ export const useUniswapV3Interactions = () => {
         async (
             amountRaw: string,
             amountType: SwapField,
-            _feeAmountParamIgnored: FeeAmount = DEFAULT_V3_POOL_FEE, // fee is now determined by pathfinder
+            _feeAmountParamIgnored: FeeAmount = DEFAULT_V3_POOL_FEE,
             signal?: AbortSignal
         ): Promise<V3TradeDetails> => {
-            setIsFetchingPool(true); // Or a more generic isLoading
+            setIsFetchingPool(true);
             setError(null);
             setInsufficientLiquidity(false);
 
             const result = await getPathfinderTradeDetails(amountRaw, amountType, signal);
+            console.info(
+                'Pathfinder Result:',
+                JSON.stringify(
+                    result,
+                    (key, value) => (typeof value === 'bigint' ? value.toString() : value), // Convert BigInts to strings for logging
+                    2
+                )
+            );
 
             setIsFetchingPool(false);
             if (result.error) {
                 setError(result.error);
-                setInsufficientLiquidity(true); // Assume error means no trade
+                setInsufficientLiquidity(true);
             }
             if (BigInt(result.tradeDetails?.outputAmount?.quotient?.toString() || '0') === 0n) {
                 setInsufficientLiquidity(true);
@@ -221,7 +239,7 @@ export const useUniswapV3Interactions = () => {
     const executeSwap = useCallback(
         async (
             tradeDetailsToExecute: V3TradeDetails,
-            _feeAmountIgnored: FeeAmount = DEFAULT_V3_POOL_FEE
+            _feeAmountIgnored?: FeeAmount
         ): Promise<{ response: TransactionResponse; receipt: TransactionReceipt } | null> => {
             setError(null);
             setIsLoading(true);
@@ -236,7 +254,6 @@ export const useUniswapV3Interactions = () => {
                 !tradeDetailsToExecute.outputAmount ||
                 !tradeDetailsToExecute.minimumReceived ||
                 !uiToken0 ||
-                !uiToken1 ||
                 !tradeDetailsToExecute.path ||
                 tradeDetailsToExecute.path.length === 0
             ) {
@@ -245,26 +262,16 @@ export const useUniswapV3Interactions = () => {
                 return null;
             }
 
-            const actualTokenInForExecution = uiToken0.isNative
-                ? WETH9[currentChainId as keyof typeof WETH9]
-                : (uiToken0 as Token);
-            if (!actualTokenInForExecution) {
-                setError('Could not determine WETH for router.');
-                setIsLoading(false);
-                return null;
-            }
+            const firstTokenInActualPath = tradeDetailsToExecute.path[0].tokenIn;
 
             try {
-                if (!actualTokenInForExecution.isNative) {
-                    const approvalAmount = tradeDetailsToExecute.inputAmount.quotient;
-                    await checkAndRequestApproval(actualTokenInForExecution as Token, approvalAmount.toString());
-                    const tokenContract = new Contract(actualTokenInForExecution.address, erc20Abi, signer);
-                    const currentAllowance = BigInt(
-                        (await tokenContract.allowance(accountAddress, v3RouterAddress)).toString()
+                if (!uiToken0.isNative) {
+                    const approvalAmount = BigInt(tradeDetailsToExecute.inputAmount.quotient.toString());
+                    const approvalOk = await checkAndRequestApproval(
+                        firstTokenInActualPath as Token,
+                        approvalAmount.toString()
                     );
-                    const apprvalAmountBigInt = BigInt(approvalAmount.toString());
-                    if (currentAllowance < apprvalAmountBigInt) {
-                        setError('Approval failed or is insufficient for V3 swap.');
+                    if (!approvalOk) {
                         setIsLoading(false);
                         return null;
                     }
@@ -272,7 +279,8 @@ export const useUniswapV3Interactions = () => {
 
                 const routerContract = new Contract(v3RouterAddress, uniswapV3SwapRouter02Abi, signer);
                 const deadline = Math.floor(Date.now() / 1000) + DEADLINE_MINUTES * 60;
-                const txOptions: { value?: bigint; gasLimit?: bigint } = {};
+                const txOptions: { value?: bigint; gasLimit?: bigint } = { gasLimit: 200000n };
+
                 if (uiToken0.isNative) {
                     txOptions.value = BigInt(tradeDetailsToExecute.inputAmount.quotient.toString());
                 }
@@ -280,6 +288,8 @@ export const useUniswapV3Interactions = () => {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 let swapTxResponse: any;
                 const path = tradeDetailsToExecute.path;
+                const amountInForRouter = BigInt(tradeDetailsToExecute.inputAmount.quotient.toString());
+                const amountOutMinForRouter = BigInt(tradeDetailsToExecute.minimumReceived.quotient.toString());
 
                 if (path.length === 1) {
                     const leg = path[0];
@@ -289,29 +299,56 @@ export const useUniswapV3Interactions = () => {
                         fee: leg.fee,
                         recipient: accountAddress as `0x${string}`,
                         deadline: BigInt(deadline),
-                        amountIn: tradeDetailsToExecute.inputAmount.quotient,
-                        amountOutMinimum: tradeDetailsToExecute.minimumReceived.quotient,
+                        amountIn: amountInForRouter,
+                        amountOutMinimum: amountOutMinForRouter,
                         sqrtPriceLimitX96: 0n,
                     };
+                    try {
+                        // MODIFIED GAS ESTIMATION CALL
+                        const estimatedGas = await routerContract.exactInputSingle.estimateGas(params, txOptions);
+                        txOptions.gasLimit = (BigInt(estimatedGas) * 120n) / 100n;
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    } catch (gasError: any) {
+                        console.warn('Gas estimation failed for exactInputSingle:', gasError.message, gasError);
+                        // setError(
+                        //     `Gas estimation failed: ${gasError?.reason || gasError?.shortMessage || gasError?.message}`
+                        // );
+                        setIsLoading(false);
+                        // return null;
+                    }
                     swapTxResponse = await routerContract.exactInputSingle(params, txOptions);
                 } else {
-                    const tokensForPath: `0x${string}`[] = [path[0].tokenIn.address as `0x${string}`];
+                    // Multi-hop
+                    const tokensForPathAddresses: `0x${string}`[] = [path[0].tokenIn.address as `0x${string}`];
                     const feesForPath: FeeAmount[] = [];
-                    path.forEach((leg) => {
-                        tokensForPath.push(leg.tokenOut.address as `0x${string}`);
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    path.forEach((leg: any) => {
+                        tokensForPathAddresses.push(leg.tokenOut.address as `0x${string}`);
                         feesForPath.push(leg.fee);
                     });
-                    // The last fee is not used for the last token, so remove it if encodePath expects fees between tokens
-                    if (feesForPath.length === tokensForPath.length) feesForPath.pop();
+                    if (feesForPath.length === tokensForPathAddresses.length) feesForPath.pop();
 
-                    const encodedPath = encodePath(tokensForPath, feesForPath);
+                    const encodedPath = encodePath(tokensForPathAddresses, feesForPath);
                     const params = {
                         path: encodedPath,
                         recipient: accountAddress as `0x${string}`,
                         deadline: BigInt(deadline),
-                        amountIn: tradeDetailsToExecute.inputAmount.quotient,
-                        amountOutMinimum: tradeDetailsToExecute.minimumReceived.quotient,
+                        amountIn: amountInForRouter,
+                        amountOutMinimum: amountOutMinForRouter,
                     };
+                    try {
+                        // MODIFIED GAS ESTIMATION CALL
+                        const estimatedGas = await routerContract.exactInput.estimateGas(params, txOptions);
+                        txOptions.gasLimit = (BigInt(estimatedGas) * 120n) / 100n;
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    } catch (gasError: any) {
+                        console.warn('Gas estimation failed for exactInput (multi-hop):', gasError.message, gasError);
+                        // setError(
+                        //     `Gas estimation failed: ${gasError?.reason || gasError?.shortMessage || gasError?.message}`
+                        // );
+                        setIsLoading(false);
+                        // return null;
+                    }
                     swapTxResponse = await routerContract.exactInput(params, txOptions);
                 }
 
@@ -325,23 +362,12 @@ export const useUniswapV3Interactions = () => {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
             } catch (error: any) {
                 console.error('Error executing V3 swap transaction:', error);
-                setError(`Swap failed: ${error?.reason || error?.message || 'Unknown error'}`);
+                setError(`Swap failed: ${error?.reason || error?.shortMessage || error?.message || 'Unknown error'}`);
                 setIsLoading(false);
                 return null;
             }
         },
-        [
-            signer,
-            accountAddress,
-            isConnected,
-            v3RouterAddress,
-            currentChainId,
-            uiToken0,
-            uiToken1,
-            checkAndRequestApproval,
-            setError,
-            setIsLoading,
-        ]
+        [signer, accountAddress, isConnected, v3RouterAddress, currentChainId, uiToken0, checkAndRequestApproval]
     );
 
     return {

@@ -1,17 +1,39 @@
-import { Token, CurrencyAmount, TradeType, Price, NativeCurrency } from '@uniswap/sdk-core';
-import { Route, Trade } from '@uniswap/v2-sdk';
+import { Token, CurrencyAmount, Price, NativeCurrency } from '@uniswap/sdk-core';
+import { FeeAmount, Pool } from '@uniswap/v3-sdk';
 
-export interface TradeDetails {
-    trade: Trade<Token, Token, TradeType> | null;
-    route: Route<Token, Token> | null;
-    estimatedGasFeeNative?: string | null; // Allow null
-    estimatedGasFeeUSD?: string | null; // Allow null
-    midPrice?: Price<Token, Token>;
-    inputAmount?: CurrencyAmount<Token>;
-    outputAmount?: CurrencyAmount<Token>;
-    minimumReceived?: CurrencyAmount<Token | NativeCurrency> | null; // Added
-    executionPrice?: Price<Token | NativeCurrency, Token | NativeCurrency> | null; // Added
-    priceImpactPercent?: string | null; // Added
+export interface V3PoolInfo {
+    sqrtPriceX96: bigint;
+    liquidity: bigint;
+    tick: number;
+    poolContract: Pool;
+}
+
+export interface V3TradeDetails {
+    // If using QuoterV2 directly, you might not have a full Trade object
+    // but rather the direct outputs.
+    // If building a full V3 Trade object, this would be:
+    // trade: TradeV3<Token, Token, TradeType.EXACT_INPUT | TradeType.EXACT_OUTPUT> | null;
+    // route: RouteV3<Token, Token> | null;
+
+    // For QuoterV2 based approach:
+    inputToken?: Token | NativeCurrency;
+    outputToken?: Token | NativeCurrency;
+    inputAmount?: CurrencyAmount<Token | NativeCurrency>;
+    outputAmount?: CurrencyAmount<Token | NativeCurrency>; // Quoted output amount
+
+    estimatedGasFeeNative?: string | null;
+    estimatedGasFeeUSD?: string | null; // If you calculate this
+
+    // V3 specific details you might get or calculate:
+    // sqrtPriceX96After?: bigint;
+    // initializedTicksCrossed?: number;
+
+    // Simplified details for UI:
+    minimumReceived?: CurrencyAmount<Token | NativeCurrency> | null;
+    executionPrice?: Price<Token | NativeCurrency, Token | NativeCurrency> | null;
+    priceImpactPercent?: string | null; // Harder to calculate accurately with QuoterV2 alone
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    path?: any;
 }
 
 export type SwapField = 'ethTokenField' | 'wxtmField';
@@ -21,13 +43,19 @@ export interface SwapTransaction {
     amount: string;
     targetAmount: string;
     direction: SwapDirection;
-    slippage?: string | null; // This seems to be set to priceImpact, consider if it should be different
-    networkFee?: string | null; // Estimated network fee for the swap
-    priceImpact?: string | null; // Added for clarity
-    minimumReceived?: string | null; // Added
-    executionPrice?: string | null; // Added
+    slippage?: string | null;
+    networkFee?: string | null;
+    priceImpact?: string | null;
+    minimumReceived?: string | null;
+    executionPrice?: string | null;
     transactionId?: string | null;
     paidTransactionFeeApproval?: string | null;
     paidTransactionFeeSwap?: string | null;
     txBlockHash?: `0x${string}` | null;
+}
+
+export interface TradeLeg {
+    tokenIn: Token;
+    tokenOut: Token;
+    fee: FeeAmount;
 }

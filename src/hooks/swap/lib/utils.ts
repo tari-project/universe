@@ -1,8 +1,9 @@
-import { WalletClient, formatUnits as viemFormatUnits } from 'viem';
+import { PublicClient, WalletClient, formatUnits as viemFormatUnits } from 'viem';
 import { BrowserProvider, Signer as EthersSigner } from 'ethers';
 import { ChainId, CurrencyAmount, Token, NativeCurrency } from '@uniswap/sdk-core';
+import { FeeAmount } from '@uniswap/v3-sdk';
 
-export async function walletClientToSigner(walletClient: WalletClient): Promise<EthersSigner | null> {
+export async function walletClientToSigner(walletClient: WalletClient | PublicClient): Promise<EthersSigner | null> {
     const { account, chain, transport } = walletClient;
     if (!account) {
         console.warn('walletClientToSigner: Missing account');
@@ -51,20 +52,6 @@ export const formatNativeGasFee = (
         return null;
     }
 };
-
-// export const formatGasFeeUSD = (
-//     feeInNativeNum: number | undefined,
-//     nativePriceUSD: number | undefined
-// ): string | null => {
-//     if (feeInNativeNum === undefined || nativePriceUSD === undefined) return null;
-//     const usdValue = feeInNativeNum * nativePriceUSD;
-//     return new Intl.NumberFormat('en-US', {
-//         style: 'currency',
-//         currency: 'USD',
-//         minimumFractionDigits: 2,
-//         maximumFractionDigits: 2,
-//     }).format(usdValue);
-// };
 
 // Placeholder for fetching USD prices - REPLACE THIS
 export const fetchTokenPriceUSD = async (
@@ -275,120 +262,31 @@ export function formatAmountSmartly(
         return amount.toFixed(fixedDecimalsForBig);
     }
 
-    // Handle "small" numbers (but not "very small")
-    // These are >= displayThresholdMinVal and < bigNumberThreshold
-    // toSignificant is generally good here and shouldn't produce 'e' notation for this range.
     return amount.toSignificant(significantDigitsForSmall);
 }
 
-// export interface EstimatedGasFees {
-//     estimatedGasFeeNative: string | null;
-//     estimatedGasFeeUSD: string | null;
-//     gasLimit: bigint | null;
-//     gasPrice: bigint | null;
-//     error?: string; // Optional error message if estimation fails
-// }
+/**
+ * Encodes a path for multi-hop swaps on Uniswap V3.
+ * @param tokens An array of token addresses in the path.
+ * @param fees An array of fees for each pool in the path. Must be one less than tokens array length.
+ * @returns The encoded path as a bytes string.
+ */
+export function encodePath(tokens: `0x${string}`[], fees: FeeAmount[]): `0x${string}` {
+    if (tokens.length !== fees.length + 1) {
+        throw new Error('Path encoding error: tokens length must be fees length + 1');
+    }
 
-// interface EstimateTransactionGasFeesParams {
-//     publicClient: PublicClient;
-//     accountAddress: `0x${string}`;
-//     toAddress: `0x${string}`;
-//     callData: `0x${string}`;
-//     valueToSend?: bigint;
-//     nativeCurrencyPriceUSD?: number;
-//     nativeCurrencyDecimals: number;
-//     nativeCurrencySymbol: string;
-//     retryMaxAttempts?: number;
-//     retryDelayMs?: number;
-// }
+    let encoded = tokens[0];
 
-// export async function estimateTransactionGasFees(params: EstimateTransactionGasFeesParams): Promise<EstimatedGasFees> {
-//     const {
-//         publicClient,
-//         accountAddress,
-//         toAddress,
-//         callData,
-//         valueToSend,
-//         nativeCurrencyPriceUSD,
-//         nativeCurrencyDecimals,
-//         nativeCurrencySymbol,
-//         retryMaxAttempts = 3, // Default max attempts
-//         retryDelayMs = 500, // Default delay
-//     } = params;
-//
-//     let estimatedGasLimitBI: bigint | null = null;
-//     let gasPriceBI: bigint | null = null;
-//
-//     try {
-//         const estimateGasCallParams = {
-//             account: accountAddress,
-//             to: toAddress,
-//             data: callData,
-//             value: valueToSend,
-//         };
-//
-//         const estimateGasLimitFn = () => publicClient.estimateGas(estimateGasCallParams);
-//         const getGasPriceFn = () => publicClient.getGasPrice();
-//         const gasContext = 'estimateTransactionGasFees';
-//
-//         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-//         const onRetryCb = (ctx: string, err: any, attempt: number, max: number) => {
-//             console.warn(`[${ctx}] Attempt ${attempt}/${max} failed:`, err.shortMessage || err.message || err);
-//         };
-//
-//         estimatedGasLimitBI = await retryAsync(
-//             `${gasContext}.estimateGasLimit`,
-//             estimateGasLimitFn,
-//             retryMaxAttempts,
-//             retryDelayMs,
-//             onRetryCb
-//         );
-//
-//         gasPriceBI = await retryAsync(
-//             `${gasContext}.getGasPrice`,
-//             getGasPriceFn,
-//             retryMaxAttempts,
-//             retryDelayMs,
-//             onRetryCb
-//         );
-//
-//         if (estimatedGasLimitBI && gasPriceBI) {
-//             const estimatedTotalGasCostNative = estimatedGasLimitBI * gasPriceBI;
-//             const nativeFeeStr = formatNativeGasFee(
-//                 estimatedTotalGasCostNative,
-//                 nativeCurrencyDecimals,
-//                 nativeCurrencySymbol
-//             );
-//             let usdFeeStr: string | null = null;
-//             if (nativeCurrencyPriceUSD) {
-//                 const feeInNativeNum = parseFloat(viemFormatUnits(estimatedTotalGasCostNative, nativeCurrencyDecimals));
-//                 usdFeeStr = formatGasFeeUSD(feeInNativeNum, nativeCurrencyPriceUSD);
-//             }
-//             return {
-//                 estimatedGasFeeNative: nativeFeeStr,
-//                 estimatedGasFeeUSD: usdFeeStr,
-//                 gasLimit: estimatedGasLimitBI,
-//                 gasPrice: gasPriceBI,
-//             };
-//         }
-//         // This case (one null, one not) should ideally not happen if retryAsync re-throws
-//         return {
-//             estimatedGasFeeNative: null,
-//             estimatedGasFeeUSD: null,
-//             gasLimit: estimatedGasLimitBI, // Could be null
-//             gasPrice: gasPriceBI, // Could be null
-//             error: 'Gas estimation partially succeeded or one component failed silently.',
-//         };
-//         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-//     } catch (gasError: any) {
-//         const errorMessage = gasError.shortMessage || gasError.message || 'Unknown gas estimation error';
-//         console.warn('Gas estimation failed after all retries in estimateTransactionGasFees:', errorMessage);
-//         return {
-//             estimatedGasFeeNative: null,
-//             estimatedGasFeeUSD: null,
-//             gasLimit: null,
-//             gasPrice: null,
-//             error: errorMessage,
-//         };
-//     }
-// }
+    for (let i = 0; i < fees.length; i++) {
+        encoded += fees[i].toString(16).padStart(6, '0') + tokens[i + 1].substring(2);
+    }
+    return encoded as `0x${string}`;
+}
+
+// Helper to create the V3TradeDetails path structure
+export interface TradeLeg {
+    tokenIn: Token;
+    tokenOut: Token;
+    fee: FeeAmount;
+}

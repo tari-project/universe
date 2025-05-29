@@ -9,8 +9,7 @@ import {
     TOKEN_DEFINITIONS,
     XTM_SDK_TOKEN,
 } from '@app/hooks/swap/lib/constants';
-import { SwapField, SwapTransaction, TradeDetails } from '@app/hooks/swap/lib/types';
-import { useUniswapV2Interactions } from '@app/hooks/swap/useSwapV2';
+import { SwapField, SwapTransaction, V3TradeDetails } from '@app/hooks/swap/lib/types';
 import { useConfigCoreStore } from '@app/store';
 import {
     fetchTokenPriceUSD,
@@ -20,6 +19,7 @@ import {
 } from '@app/hooks/swap/lib/utils';
 import { useTokenDisplayInfo } from './helpers/useTokenInfo';
 import { TransactionReceipt as EthersTransactionReceipt } from 'ethers';
+import { useUniswapV3Interactions } from '@app/hooks/swap/useSwapV3';
 
 export type TokenSymbol = EnabledTokensEnum;
 export interface SelectableTokenInfo {
@@ -62,7 +62,7 @@ export const useSwapData = () => {
     const [minimumReceivedDisplay, setMinimumReceivedDisplay] = useState<string | null>(null);
     const [executionPriceDisplay, setExecutionPriceDisplay] = useState<string | null>(null);
 
-    const [tradeDetails, setTradeDetails] = useState<TradeDetails | null>(null);
+    const [tradeDetails, setTradeDetails] = useState<V3TradeDetails | null>(null);
     const defaultChainId = useConfigCoreStore((s) => s.default_chain);
     const [customError, setCustomError] = useState<string | null>(null);
 
@@ -81,7 +81,7 @@ export const useSwapData = () => {
         executeSwap,
         insufficientLiquidity,
         error: useSwapError,
-    } = useUniswapV2Interactions();
+    } = useUniswapV3Interactions();
 
     const currentChainId = useMemo(() => connectedAccount.chain?.id, [connectedAccount.chain]);
 
@@ -396,7 +396,7 @@ export const useSwapData = () => {
 
                 setTradeDetails(details);
 
-                if (details.trade) {
+                if (details) {
                     setPriceImpact(details.priceImpactPercent ? `${details.priceImpactPercent}%` : null);
                     setSlippage(details.priceImpactPercent ? `${details.priceImpactPercent}% (Price Impact)` : null); // Consider actual slippage setting
                     setNetworkFee(details.estimatedGasFeeNative || null);
@@ -551,11 +551,13 @@ export const useSwapData = () => {
         setPaidTransactionFeeSwap(null);
         setTxBlockHash(null);
 
-        if (!tradeDetails?.trade || !sdkToken0) {
-            addToast({ title: 'Error', text: 'No valid trade. Refresh quote.', type: 'error' });
+        if (!tradeDetails?.inputAmount || !tradeDetails?.outputAmount || !tradeDetails.inputToken) {
+            // Check V3 specific details
+            addToast({ title: 'Error', text: 'No valid V3 trade. Refresh quote.', type: 'error' });
             return;
         }
-        const inputAmountToExecute = BigInt(tradeDetails.trade.inputAmount.quotient.toString());
+
+        const inputAmountToExecute = BigInt(tradeDetails.inputAmount.quotient.toString());
         if (!inputAmountToExecute || inputAmountToExecute <= 0n) {
             addToast({ title: 'Error', text: 'Invalid trade amount.', type: 'error' });
             return;
@@ -584,7 +586,7 @@ export const useSwapData = () => {
 
             setIsProcessingSwap(true);
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const swapResult = (await executeSwap(tradeDetails.trade!)) as any;
+            const swapResult = (await executeSwap(tradeDetails!)) as any;
             setIsProcessingSwap(false);
 
             if (!swapResult || !swapResult.receipt || swapResult.receipt.status !== 1) {

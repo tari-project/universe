@@ -5,6 +5,8 @@ import { ConfigBackendInMemory } from '@app/types/configs';
 import { useConfigBEInMemoryStore } from '@app/store';
 import { invoke } from '@tauri-apps/api/core';
 import { useEffect, useRef, useState } from 'react';
+import { http } from 'viem';
+import { RPC_URLS } from './lib/constants';
 
 const metadata = {
     name: 'Tari Universe',
@@ -14,11 +16,6 @@ const metadata = {
 };
 
 const networks: [AppKitNetwork, ...AppKitNetwork[]] = [mainnet, sepolia];
-
-const baseAdapterConfig = {
-    networks,
-    ssr: false,
-};
 
 export const useWagmiAdapter = () => {
     const [projectId, setProjectId] = useState<string | undefined>(undefined);
@@ -61,14 +58,20 @@ export const useWagmiAdapter = () => {
             if (projectId && !isInitializing && !initializedAdapter) {
                 setIsInitializing(true);
                 const wagmiAdapterInstance = new WagmiAdapter({
-                    ...baseAdapterConfig,
+                    networks,
                     projectId,
+                    ssr: false,
+                    transports: {
+                        [mainnet.id]: http(RPC_URLS[mainnet.id]),
+                        [sepolia.id]: http(RPC_URLS[sepolia.id]),
+                    },
                 });
 
                 createAppKit({
                     adapters: [wagmiAdapterInstance],
                     networks,
                     projectId,
+                    debug: window.location.origin.startsWith('http://localhost'),
                     metadata,
                 });
                 setInitializedAdapter(wagmiAdapterInstance);
