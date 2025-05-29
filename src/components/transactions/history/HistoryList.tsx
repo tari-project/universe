@@ -49,6 +49,22 @@ const HistoryList = memo(function HistoryList() {
         [pendingTransactions, transactions, bridgeTransactions]
     );
 
+    const adjustedTransactions = useMemo(() => {
+        return combinedTransactions.reduce(
+            (acc, tx, index) => {
+                if (isBridgeTransaction(tx) && index > 0) {
+                    const previousTx = acc[acc.length - 1];
+                    if (isTransactionInfo(previousTx) && previousTx.amount === Number(tx.tokenAmount)) {
+                        acc.pop();
+                    }
+                }
+                acc.push(tx);
+                return acc;
+            },
+            [] as (TransactionInfo | UserTransactionDTO)[]
+        );
+    }, [combinedTransactions]);
+
     const handleNext = useCallback(async () => {
         if (!is_transactions_history_loading) {
             await fetchTransactionsHistory({ continuation: true, limit: 20 });
@@ -56,12 +72,12 @@ const HistoryList = memo(function HistoryList() {
     }, [is_transactions_history_loading]);
 
     const listMarkup = useMemo(() => {
-        const latestTxId = findFirstNonBridgeTransaction(combinedTransactions)?.tx_id;
+        const latestTxId = findFirstNonBridgeTransaction(adjustedTransactions)?.tx_id;
         const hasNewTx = latestTxId ? newestTxIdOnInitialFetch !== latestTxId : false;
-        const initialTxTime = findByTransactionId(combinedTransactions, newestTxIdOnInitialFetch)?.timestamp;
+        const initialTxTime = findByTransactionId(adjustedTransactions, newestTxIdOnInitialFetch)?.timestamp;
 
         // Calculate how many placeholder items we need to add
-        const transactionsCount = combinedTransactions?.length || 0;
+        const transactionsCount = adjustedTransactions?.length || 0;
         const placeholdersNeeded = Math.max(0, 5 - transactionsCount);
 
         return (
@@ -73,7 +89,7 @@ const HistoryList = memo(function HistoryList() {
                 scrollableTarget="list"
             >
                 <ListItemWrapper>
-                    {combinedTransactions?.map((tx, i) => {
+                    {adjustedTransactions?.map((tx, i) => {
                         // only show "new" badge under these conditions:
                         // there are new txs is general
                         // it's only of the latest 3
@@ -119,7 +135,7 @@ const HistoryList = memo(function HistoryList() {
                 </ListItemWrapper>
             </InfiniteScroll>
         );
-    }, [combinedTransactions, handleNext, hasMore, newestTxIdOnInitialFetch]);
+    }, [adjustedTransactions, handleNext, hasMore, newestTxIdOnInitialFetch]);
 
     const baseMarkup = walletScanning.is_scanning ? (
         <ListLoadingAnimation
@@ -137,7 +153,7 @@ const HistoryList = memo(function HistoryList() {
         listMarkup
     );
 
-    const isEmpty = !walletScanning.is_scanning && !combinedTransactions?.length;
+    const isEmpty = !walletScanning.is_scanning && !adjustedTransactions?.length;
     const emptyMarkup = isEmpty ? <LoadingText>{t('empty-tx')}</LoadingText> : null;
 
     return (
