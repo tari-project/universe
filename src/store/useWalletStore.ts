@@ -4,7 +4,6 @@ import { refreshTransactions, setWalletBalance } from './actions/walletStoreActi
 import { UserTransactionDTO } from '@tari-project/wxtm-bridge-backend-api';
 
 export interface BackendBridgeTransaction extends UserTransactionDTO {
-    mineAtHeight?: number;
     sourceAddress?: string;
 }
 
@@ -28,6 +27,7 @@ interface WalletStoreState {
     transactions: TransactionInfo[];
     // TODO: decide later for the best place to store this data
     bridge_transactions: BackendBridgeTransaction[];
+    cold_wallet_address?: string;
     pending_transactions: PendingTransaction[];
     is_reward_history_loading: boolean;
     has_more_coinbase_transactions: boolean;
@@ -51,6 +51,7 @@ const initialState: WalletStoreState = {
     coinbase_transactions: [],
     transactions: [],
     bridge_transactions: [],
+    cold_wallet_address: undefined,
     pending_transactions: [],
     has_more_coinbase_transactions: true,
     has_more_transactions: true,

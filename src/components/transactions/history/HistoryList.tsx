@@ -31,6 +31,7 @@ const HistoryList = memo(function HistoryList() {
     const hasMore = useWalletStore((s) => s.has_more_transactions);
     const transactions = useWalletStore((s) => s.transactions);
     const bridgeTransactions = useWalletStore((s) => s.bridge_transactions);
+    const coldWalletAddress = useWalletStore((s) => s.cold_wallet_address);
 
     const [detailsItem, setDetailsItem] = useState<TransactionInfo | BackendBridgeTransaction | null>(null);
 
@@ -51,12 +52,18 @@ const HistoryList = memo(function HistoryList() {
         return combinedTransactions.reduce(
             (acc, tx, index) => {
                 if (isBridgeTransaction(tx) && index > 0) {
-                    const previousTx = acc[acc.length - 1];
-                    if (isTransactionInfo(previousTx) && previousTx.amount === Number(tx.tokenAmount)) {
-                        const removedBridgeTransaction = acc.pop();
+                    const previousTransactions = acc.slice(-5); // Get up to the last 5 transactions
+                    const matchingTransaction = previousTransactions.find(
+                        (prevTx) =>
+                            isTransactionInfo(prevTx) &&
+                            prevTx.amount === Number(tx.tokenAmount) &&
+                            prevTx.dest_address === coldWalletAddress
+                    );
+
+                    if (matchingTransaction) {
+                        const removedBridgeTransaction = acc.splice(acc.indexOf(matchingTransaction), 1)[0];
                         console.log(removedBridgeTransaction);
                         if (removedBridgeTransaction && isTransactionInfo(removedBridgeTransaction)) {
-                            tx.mineAtHeight = removedBridgeTransaction.mined_in_block_height;
                             tx.sourceAddress = removedBridgeTransaction.source_address;
                         }
                     }
