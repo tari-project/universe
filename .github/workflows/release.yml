@@ -18,7 +18,7 @@ concurrency:
   group: '${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}'
   cancel-in-progress: ${{ github.ref != 'refs/heads/release' }}
 
-permissions: write-all
+permissions: { packages: read, contents: write }
 
 env:
   NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
