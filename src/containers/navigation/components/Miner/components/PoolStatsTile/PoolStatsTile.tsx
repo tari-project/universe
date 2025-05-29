@@ -16,7 +16,6 @@ import {
     ExpandedBox,
     Border,
     AnimatedGradient,
-    TotalVal,
     Inside,
 } from './styles';
 import { Trans, useTranslation } from 'react-i18next';
