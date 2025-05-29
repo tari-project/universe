@@ -74,7 +74,7 @@ export const ExpandedWrapper = styled(m.div)`
     box-shadow: 2px 8px 8px 0 rgba(0, 0, 0, 0.04);
     flex-direction: column;
     gap: 6px;
-    width: 358px;
+    width: 340px;
     padding: 15px;
     h5,
     strong {
@@ -111,4 +111,6 @@ export const TooltipChipText = styled(Typography).attrs({ variant: 'p' })`
     color: ${({ theme }) => theme.palette.text.contrast};
     font-size: 18px;
     font-weight: 500;
+    letter-spacing: 1px;
+    line-height: 1.1;
 `;

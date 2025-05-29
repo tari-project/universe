@@ -23,7 +23,6 @@ export interface ConfigCore {
     };
     remote_base_node_address: string;
     node_type?: NodeType;
-    swaps_enabled?: boolean;
     default_chain: number;
 }
 export interface ConfigWallet {
@@ -68,4 +67,6 @@ export interface ConfigBackendInMemory {
     airdropTwitterAuthUrl: string;
     exchangeId?: string;
     isUniversalMiner?: boolean;
+    walletConnectProjectId?: string;
+
 }
