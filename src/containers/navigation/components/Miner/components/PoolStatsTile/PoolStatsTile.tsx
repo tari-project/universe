@@ -13,6 +13,7 @@ import {
     TooltipChipWrapper,
     TooltipChipHeading,
     TooltipChipText,
+    ExpandedBox,
 } from './styles';
 import { Trans, useTranslation } from 'react-i18next';
 import { Typography } from '@app/components/elements/Typography.tsx';
@@ -27,9 +28,11 @@ import { useMiningTime } from '@app/hooks/mining/useMiningTime.ts';
 const variants = {
     hidden: {
         opacity: 0,
+        x: 10,
     },
     visible: {
         opacity: 1,
+        x: 0,
     },
 };
 const REWARD_THRESHOLD = `2 XTM`;
@@ -42,6 +45,7 @@ export const PoolStatsTile = () => {
     const loading = isMining && !pool_status;
     const unpaidFMT = formatNumber(pool_status?.unpaid || 0, FormatPreset.XTM_LONG_DEC);
     const [expanded, setExpanded] = useState(false);
+
     const { refs, context, floatingStyles } = useFloating({
         open: expanded,
         onOpenChange: setExpanded,
@@ -53,59 +57,57 @@ export const PoolStatsTile = () => {
         move: !expanded,
         handleClose: safePolygon(),
     });
+
     const { getReferenceProps, getFloatingProps } = useInteractions([hover]);
+
     return !cpuMiningEnabled ? null : (
-        <Wrapper $isLoading={loading}>
-            {loading ? (
-                <Title style={{ textAlign: 'center' }}>{`${t('stats.tile-loading')}...`}</Title>
-            ) : (
-                <>
-                    <LeftContent>
-                        <Title>{t('stats.tile-heading')}</Title>
-                        <Values>
-                            <BalanceVal>{`${unpaidFMT} XTM`}</BalanceVal>
-                        </Values>
-                    </LeftContent>
-                    <RightContent>
-                        <TriggerWrapper ref={refs.setReference} {...getReferenceProps()}>
-                            <QuestionMarkSvg />
-                        </TriggerWrapper>
-                        <MiningTime timing={{ daysString, hoursString, minutes, seconds }} variant="mini" />
-                        <AnimatePresence mode="sync">
-                            {expanded && (
-                                <ExpandedWrapper
-                                    ref={refs.setFloating}
-                                    {...getFloatingProps()}
-                                    style={floatingStyles}
-                                    variants={variants}
-                                    initial="hidden"
-                                    animate="visible"
-                                    exit="hidden"
-                                >
-                                    <Typography variant="h5">{t('stats.tile-heading')}</Typography>
-                                    <Typography variant="p">
-                                        <Trans
-                                            i18nKey="stats.tooltip-copy"
-                                            ns="p2p"
-                                            values={{ amount: REWARD_THRESHOLD }}
-                                            components={{ strong: <strong /> }}
-                                        />
-                                    </Typography>
-                                    <TooltipChipWrapper>
-                                        <TooltipChip>
-                                            <MiningTime timing={{ daysString, hoursString, minutes, seconds }} />
-                                        </TooltipChip>
-                                        <TooltipChip>
-                                            <TooltipChipHeading>{t('stats.tooltip-tile-heading')}</TooltipChipHeading>
-                                            <TooltipChipText>{REWARD_THRESHOLD}</TooltipChipText>
-                                        </TooltipChip>
-                                    </TooltipChipWrapper>
-                                </ExpandedWrapper>
-                            )}
-                        </AnimatePresence>
-                    </RightContent>
-                </>
-            )}
-        </Wrapper>
+        <>
+            <Wrapper $isLoading={loading}>
+                {loading ? (
+                    <Title style={{ textAlign: 'center' }}>{`${t('stats.tile-loading')}...`}</Title>
+                ) : (
+                    <>
+                        <LeftContent>
+                            <Title>{t('stats.tile-heading')}</Title>
+                            <Values>
+                                <BalanceVal>{`${unpaidFMT} XTM`}</BalanceVal>
+                            </Values>
+                        </LeftContent>
+                        <RightContent>
+                            <TriggerWrapper ref={refs.setReference} {...getReferenceProps()}>
+                                <QuestionMarkSvg />
+                            </TriggerWrapper>
+                            <MiningTime timing={{ daysString, hoursString, minutes, seconds }} variant="mini" />
+                        </RightContent>
+                    </>
+                )}
+            </Wrapper>
+            <AnimatePresence>
+                {expanded && (
+                    <ExpandedWrapper ref={refs.setFloating} {...getFloatingProps()} style={floatingStyles}>
+                        <ExpandedBox variants={variants} initial="hidden" animate="visible" exit="hidden">
+                            <Typography variant="h5">{t('stats.tile-heading')}</Typography>
+                            <Typography variant="p">
+                                <Trans
+                                    i18nKey="stats.tooltip-copy"
+                                    ns="p2p"
+                                    values={{ amount: REWARD_THRESHOLD }}
+                                    components={{ strong: <strong /> }}
+                                />
+                            </Typography>
+                            <TooltipChipWrapper>
+                                <TooltipChip>
+                                    <MiningTime timing={{ daysString, hoursString, minutes, seconds }} />
+                                </TooltipChip>
+                                <TooltipChip>
+                                    <TooltipChipHeading>{t('stats.tooltip-tile-heading')}</TooltipChipHeading>
+                                    <TooltipChipText>{REWARD_THRESHOLD}</TooltipChipText>
+                                </TooltipChip>
+                            </TooltipChipWrapper>
+                        </ExpandedBox>
+                    </ExpandedWrapper>
+                )}
+            </AnimatePresence>
+        </>
     );
 };

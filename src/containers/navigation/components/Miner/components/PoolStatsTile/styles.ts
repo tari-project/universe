@@ -6,7 +6,6 @@ import * as m from 'motion/react-m';
 const bg = '#188750';
 const bg_loading = '#CC7A1C';
 export const Wrapper = styled.div<{ $isLoading?: boolean }>`
-    height: 60px;
     width: 100%;
     display: flex;
     align-items: center;
@@ -21,7 +20,8 @@ export const Wrapper = styled.div<{ $isLoading?: boolean }>`
     font-weight: 500;
     flex-shrink: 0;
     flex-grow: 6;
-    padding: 7px 10px;
+    padding: 14px;
+    min-height: 66px;
 `;
 
 export const LeftContent = styled.div`
@@ -29,11 +29,14 @@ export const LeftContent = styled.div`
     height: 100%;
     justify-content: space-between;
     flex-direction: column;
+    gap: 4px;
 `;
+
 export const RightContent = styled.div`
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+    gap: 4px;
     align-items: end;
     height: 100%;
     position: relative;
@@ -47,6 +50,7 @@ export const Values = styled.div`
 export const Title = styled(Typography).attrs({ variant: 'h6' })`
     font-size: 12px;
     width: 100%;
+    line-height: 1.1;
 `;
 
 export const BalanceVal = styled(Typography)`
@@ -67,7 +71,9 @@ export const TriggerWrapper = styled(m.div)`
     color: ${({ theme }) => theme.palette.base};
 `;
 
-export const ExpandedWrapper = styled(m.div)`
+export const ExpandedWrapper = styled.div``;
+
+export const ExpandedBox = styled(m.div)`
     display: flex;
     background-color: ${({ theme }) => theme.palette.background.default};
     border-radius: ${({ theme }) => theme.shape.borderRadius.app};
@@ -89,6 +95,7 @@ export const TooltipChipWrapper = styled.div`
     flex-direction: row;
     gap: 6px;
 `;
+
 export const TooltipChip = styled.div`
     display: flex;
     color: ${({ theme }) => theme.palette.text.contrast};
@@ -107,6 +114,7 @@ export const TooltipChipHeading = styled(Typography).attrs({ variant: 'p' })`
     color: ${({ theme }) => theme.palette.text.secondary};
     font-weight: 500;
 `;
+
 export const TooltipChipText = styled(Typography).attrs({ variant: 'p' })`
     color: ${({ theme }) => theme.palette.text.contrast};
     font-size: 18px;
