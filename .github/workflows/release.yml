@@ -30,7 +30,9 @@ jobs:
     name: Building ${{ matrix.platform }}${{ matrix.extra }}
     # best effort disabled by default
     continue-on-error: ${{ matrix.best_effort || false }}
-    permissions: write-all
+    permissions:
+      contents: write
+      packages: read
     strategy:
       fail-fast: false
       matrix:
