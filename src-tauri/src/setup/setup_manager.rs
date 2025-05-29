@@ -918,9 +918,7 @@ impl SetupManager {
             return;
         }
         drop(memory_config);
-        info!("[DEBUG UNIVERSAL EXCHANGE] Waiting for selected exchange miner...");
         let _unused = self.universal_modal_status.subscribe().changed().await;
-        info!("[DEBUG UNIVERSAL EXCHANGE] Selected exchange miner");
     }
 
     pub async fn select_exchange_miner(
@@ -932,18 +930,13 @@ impl SetupManager {
         let mut config = state.in_memory_config.write().await;
         let new_config = DynamicMemoryConfig::init_universal(&selected_miner);
         let new_config_cloned = new_config.clone();
-        info!("[DEBUG UNIVERSAL EXCHANGE] new config: {:?}", new_config);
         *config = new_config;
-        info!(
-            "[DEBUG UNIVERSAL EXCHANGE] Universal miner selected: {:?}",
-            selected_miner
-        );
+
         EventsManager::handle_app_in_memory_config_changed(&app_handle, new_config_cloned, true)
             .await;
         self.universal_modal_status
             .send(selected_miner.clone())
             .map_err(|e| e.to_string())?;
-        info!("[DEBUG UNIVERSAL EXCHANGE] Universal miner selected exiting function");
         Ok(())
     }
 

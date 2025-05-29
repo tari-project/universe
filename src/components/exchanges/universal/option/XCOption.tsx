@@ -1,25 +1,25 @@
 import { ContentWrapper, Heading, Wrapper, XCContent } from '@app/components/exchanges/universal/option/styles.ts';
-import { ExchangeMinerAssets } from '@app/types/exchange.ts';
+import { ExchangeMinerAssets, ExchangeMiner } from '@app/types/exchange.ts';
 import { ImgWrapper, OpenButton } from '../../commonStyles.ts';
 import { ChevronSVG } from '@app/assets/icons/chevron.tsx';
-import { setShowUniversalModal } from '@app/store/useExchangeStore.ts';
+import { setShowExchangeModal, setShowUniversalModal } from '@app/store/useExchangeStore.ts';
 import { invoke } from '@tauri-apps/api/core';
-import { fetchBackendInMemoryConfig } from '@app/store/actions/appConfigStoreActions.ts';
 
 interface XCOptionProps {
     content: Partial<ExchangeMinerAssets>;
     isCurrent?: boolean;
 }
+
 export const XCOption = ({ content, isCurrent = false }: XCOptionProps) => {
     const confirmExchangeMiner = async () => {
-        const selectedExchangeMiner = {
+        const selectedExchangeMiner: Partial<ExchangeMiner> = {
             id: content.id,
             slug: content.slug,
             name: content.name,
         };
         await invoke('user_selected_exchange', { exchangeMiner: selectedExchangeMiner });
-        await fetchBackendInMemoryConfig();
         setShowUniversalModal(false);
+        setShowExchangeModal(true);
     };
 
     return (
