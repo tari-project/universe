@@ -19,6 +19,7 @@ import { WalletAddress } from '@app/types/app-status.ts';
 import { setSeedlessUI } from '@app/store/actions/uiStoreActions.ts';
 import { fetchExchangeContent, useExchangeStore } from '@app/store/useExchangeStore.ts';
 import { SetupPhase } from '@app/types/backend-state';
+import { useTappletsStore } from '../useTappletsStore';
 
 export interface DisabledPhasesPayload {
     disabled_phases: SetupPhase[];
@@ -146,4 +147,11 @@ export const updateUnknownSetupPhaseInfo = (payload: ProgressTrackerUpdatePayloa
 
 export const updateDisabledPhases = (payload: DisabledPhasesPayload) => {
     useSetupStore.setState({ disabled_phases: payload.disabled_phases });
+};
+
+export const handleUpdateDisabledPhases = (payload: DisabledPhasesPayload) => {
+    updateDisabledPhases(payload);
+    if (payload.disabled_phases.includes(SetupPhase.Wallet)) {
+        useTappletsStore.setState({ uiBridgeSwapsEnabled: false });
+    }
 };

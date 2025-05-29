@@ -38,6 +38,7 @@ import {
     handleGpuMiningLocked,
     handleGpuMiningUnlocked,
     handleHardwarePhaseFinished,
+    handleUpdateDisabledPhases,
     handleWalletLocked,
     handleWalletUnlocked,
     handleWalletUpdate,
@@ -222,7 +223,7 @@ const useTauriEventsListener = () => {
                             handleAppInMemoryConfigChanged(event.payload);
                             break;
                         case 'DisabledPhasesChanged':
-                            updateDisabledPhases(event.payload);
+                            handleUpdateDisabledPhases(event.payload);
                             break;
                         default:
                             console.warn('Unknown event', JSON.stringify(event));
