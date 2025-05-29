@@ -24,7 +24,7 @@ concurrency:
   # https://docs.github.com/en/actions/examples/using-concurrency-expressions-and-a-test-matrix
   group: '${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}'
   cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/v') || github.ref != 'refs/heads/main' || github.ref != 'refs/heads/release' }}
-permissions: {}
+permissions: { packages: read }
 
 env:
   NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -57,7 +57,6 @@ jobs:
     continue-on-error: ${{ matrix.platforms.best_effort || false }}
     permissions:
       contents: write
-      packages: read
     strategy:
       fail-fast: false
       matrix:
