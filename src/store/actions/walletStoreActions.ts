@@ -5,6 +5,7 @@ import { useWalletStore } from '../useWalletStore';
 import { restartMining } from './miningStoreActions';
 import { setError } from './appStateStoreActions';
 import { setExchangeContent } from '@app/store/useExchangeStore.ts';
+import { TransactionDirection, TransactionStatus } from '@app/types/transactions';
 
 interface TxArgs {
     offset?: number;
@@ -78,10 +79,30 @@ export const setWalletAddress = (addresses: Partial<WalletAddress>) => {
         is_tari_address_generated: addresses.is_tari_address_generated,
     });
 };
-export const setWalletBalance = (balance: WalletBalance) => {
-    const calculated_balance =
-        balance.available_balance + balance.timelocked_balance + balance.pending_incoming_balance;
-    useWalletStore.setState({ balance, calculated_balance });
+
+const getPendingOutgoingBalance = async () => {
+    const pendingTxs = useWalletStore
+        .getState()
+        .transactions.filter(
+            (tx) =>
+                tx.direction === TransactionDirection.Outbound &&
+                [TransactionStatus.Completed, TransactionStatus.Broadcast].includes(tx.status)
+        );
+    console.info('Pending txs: ', pendingTxs);
+    return pendingTxs.reduce((acc, tx) => acc + tx.amount, 0);
+};
+
+export const setWalletBalance = async (balance: WalletBalance) => {
+    const pendingOutgoingBalance = await getPendingOutgoingBalance();
+    console.info('Pending outgoing balace: ', pendingOutgoingBalance);
+    const available_balance = balance.available_balance - pendingOutgoingBalance;
+    const pending_outgoing_balance = balance.pending_outgoing_balance + pendingOutgoingBalance;
+
+    const calculated_balance = available_balance + balance.timelocked_balance + balance.pending_incoming_balance;
+    useWalletStore.setState({
+        balance: { ...balance, available_balance, pending_outgoing_balance },
+        calculated_balance,
+    });
 };
 
 export const setIsSwapping = (isSwapping: boolean) => {

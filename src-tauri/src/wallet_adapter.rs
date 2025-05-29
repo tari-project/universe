@@ -66,7 +66,6 @@ pub struct WalletAdapter {
     pub(crate) grpc_port: u16,
     pub(crate) state_broadcast: watch::Sender<Option<WalletState>>,
     pub(crate) wallet_birthday: Option<u16>,
-    completed_transactions_stream: Mutex<Option<Streaming<GetCompletedTransactionsResponse>>>,
     coinbase_transactions_stream: Mutex<Option<Streaming<GetCompletedTransactionsResponse>>>,
 }
 
@@ -85,7 +84,6 @@ impl WalletAdapter {
             grpc_port,
             state_broadcast,
             wallet_birthday: None,
-            completed_transactions_stream: Mutex::new(None),
             coinbase_transactions_stream: Mutex::new(None),
         }
     }
@@ -179,7 +177,7 @@ impl WalletAdapter {
             let dest_address = TariAddress::from_bytes(&tx.dest_address)?;
 
             transactions.push(TransactionInfo {
-                tx_id: tx.tx_id,
+                tx_id: tx.tx_id.to_string(),
                 source_address: source_address.to_base58(),
                 dest_address: dest_address.to_base58(),
                 status: tx.status,
@@ -243,7 +241,7 @@ impl WalletAdapter {
                 continue;
             }
             transactions.push(TransactionInfo {
-                tx_id: tx.tx_id,
+                tx_id: tx.tx_id.to_string(),
                 source_address: tx.source_address.to_hex(),
                 dest_address: tx.dest_address.to_hex(),
                 status: tx.status,
@@ -707,7 +705,7 @@ impl WalletBalance {
 
 #[derive(Debug, Serialize, Clone)]
 pub struct TransactionInfo {
-    pub tx_id: u64,
+    pub tx_id: String,
     pub source_address: String,
     pub dest_address: String,
     pub status: i32,

@@ -25,16 +25,24 @@ use crate::binaries::BinaryResolver;
 use crate::node::node_manager::NodeManager;
 use crate::spend_wallet_adapter::SpendWalletAdapter;
 use crate::wallet_manager::WalletManager;
+use crate::BaseNodeStatus;
 use anyhow::Error;
-use log::info;
+use log::{debug, info};
 use std::path::PathBuf;
+use std::sync::{Arc, Mutex};
 use tari_shutdown::ShutdownSignal;
+use tokio::sync::watch::{self};
+use tokio::task::JoinHandle;
 
 const LOG_TARGET: &str = "tari::universe::spend_wallet_manager";
+const BLOCKS_THRESHOLD: u64 = 5;
 
 pub struct SpendWalletManager {
     adapter: SpendWalletAdapter,
     node_manager: NodeManager,
+    next_wallet_data_erasure_block: Arc<Mutex<Option<u64>>>,
+    cleanup_task: Arc<Mutex<Option<JoinHandle<()>>>>,
+    base_node_status_rx: watch::Receiver<BaseNodeStatus>,
 }
 
 impl Clone for SpendWalletManager {
@@ -42,17 +50,26 @@ impl Clone for SpendWalletManager {
         Self {
             adapter: self.adapter.clone(),
             node_manager: self.node_manager.clone(),
+            next_wallet_data_erasure_block: self.next_wallet_data_erasure_block.clone(),
+            cleanup_task: self.cleanup_task.clone(),
+            base_node_status_rx: self.base_node_status_rx.clone(),
         }
     }
 }
 
 impl SpendWalletManager {
-    pub fn new(node_manager: NodeManager) -> Self {
+    pub fn new(
+        node_manager: NodeManager,
+        base_node_status_rx: watch::Receiver<BaseNodeStatus>,
+    ) -> Self {
         let adapter = SpendWalletAdapter::new();
 
         Self {
             adapter,
             node_manager,
+            next_wallet_data_erasure_block: Arc::new(Mutex::new(None)),
+            cleanup_task: Arc::new(Mutex::new(None)),
+            base_node_status_rx,
         }
     }
 
@@ -68,9 +85,28 @@ impl SpendWalletManager {
             .await
             .resolve_path_to_binary_files(Binaries::Wallet)
             .await?;
+
+        self.spawn_cleanup_task(base_path.clone());
+        SpendWalletManager::erase_related_data(base_path.clone())?;
+
         self.adapter
             .init(app_shutdown, base_path, config_path, log_path, binary_path)
             .await
+    }
+
+    fn spawn_cleanup_task(&self, base_path: PathBuf) {
+        let self_clone = self.clone();
+        let base_node_status_rx = self.base_node_status_rx.clone();
+
+        let task = tokio::spawn(async move {
+            self_clone
+                .monitor_block_height_for_cleanup(base_node_status_rx, base_path)
+                .await;
+        });
+
+        if let Ok(mut guard) = self.cleanup_task.lock() {
+            *guard = Some(task);
+        }
     }
 
     pub async fn send_one_sided_to_stealth_address(
@@ -86,14 +122,83 @@ impl SpendWalletManager {
         self.adapter.base_node_address = Some(public_address.clone());
         info!(target: LOG_TARGET, "[send_one_sided_to_stealth_address] with node {:?}:{:?}", public_key, public_address);
 
+        // Prevent from erasing wallet data when sending in progress
+        self.set_next_wallet_data_erasure_block(None)?;
+
         let res = self
             .adapter
             .send_one_sided_to_stealth_address(amount, destination, payment_id, view_wallet_manager)
             .await;
-        if res.is_err() {
-            self.adapter.erase_related_data().await?;
-        }
+
+        let node_status = *self.base_node_status_rx.borrow();
+        self.set_next_wallet_data_erasure_block(Some(node_status.block_height + BLOCKS_THRESHOLD))?;
 
         res
+    }
+
+    async fn monitor_block_height_for_cleanup(
+        &self,
+        mut node_status_rx: watch::Receiver<BaseNodeStatus>,
+        base_path: PathBuf,
+    ) {
+        info!(target: LOG_TARGET, "Starting block height monitoring task for transaction cleanup");
+
+        loop {
+            tokio::select! {
+                _ = node_status_rx.changed() => {
+                    let node_status = *node_status_rx.borrow();
+                    let current_height = node_status.block_height;
+                    let erasure_height = self.get_next_wallet_data_erasure_block();
+
+                    if let Some(erasure_height) = erasure_height {
+                        if current_height >= erasure_height {
+                            info!(
+                                target: LOG_TARGET,
+                                "Cleanup threshold reached: {} blocks since at height {}. Erasing Spend wallet related data.",
+                                BLOCKS_THRESHOLD, current_height
+                            );
+
+                            match SpendWalletManager::erase_related_data(base_path.clone()) {
+                                Ok(_) => {
+                                    info!(target: LOG_TARGET, "Successfully erased related data");
+                                    let _unused = self.set_next_wallet_data_erasure_block(None);
+                                },
+                                Err(e) => {
+                                    debug!(target: LOG_TARGET, "Error erasing related data: {:?}", e);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    pub fn erase_related_data(base_path: PathBuf) -> Result<(), Error> {
+        let _unused = std::fs::remove_dir_all(base_path.join("spend_wallet"));
+        Ok(())
+    }
+
+    fn get_next_wallet_data_erasure_block(&self) -> Option<u64> {
+        match self.next_wallet_data_erasure_block.lock() {
+            Ok(guard) => *guard,
+            Err(_) => {
+                log::error!(target: LOG_TARGET, "Failed to read next_wallet_data_erasure_block due to poisoned lock");
+                None
+            }
+        }
+    }
+
+    fn set_next_wallet_data_erasure_block(&self, height: Option<u64>) -> Result<(), Error> {
+        match self.next_wallet_data_erasure_block.lock() {
+            Ok(mut guard) => {
+                info!(target: LOG_TARGET, "Updating next wallet data erasure block to: {:?}", height);
+                *guard = height;
+                Ok(())
+            }
+            Err(_) => Err(anyhow::anyhow!(
+                "Failed to write next_wallet_data_erasure_block due to poisoned lock"
+            )),
+        }
     }
 }

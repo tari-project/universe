@@ -59,6 +59,7 @@ pub struct SpendWalletAdapter {
     config_dir: Option<PathBuf>,
     log_dir: Option<PathBuf>,
     wallet_binary: Option<PathBuf>,
+    pub(crate) wallet_birthday: Option<u16>,
 }
 
 impl SpendWalletAdapter {
@@ -73,6 +74,7 @@ impl SpendWalletAdapter {
             config_dir: None,
             log_dir: None,
             wallet_binary: None,
+            wallet_birthday: None,
         }
     }
 }
@@ -90,17 +92,20 @@ impl SpendWalletAdapter {
 
         self.app_shutdown = Some(app_shutdown);
         self.data_dir = Some(data_dir);
-        self.config_dir = Some(config_dir);
+        self.config_dir = Some(config_dir.clone());
         self.log_dir = Some(log_dir);
         self.wallet_binary = Some(wallet_binary);
 
-        let _unused = self.erase_related_data().await;
+        // let _unused = self.erase_related_data().await;
         std::fs::create_dir_all(self.get_working_dir())?;
         setup_logging(
             &self.get_log_config_file(),
             &self.get_log_dir(),
             include_str!("../log4rs/spend_wallet_sample.yml"),
         )?;
+
+        let wallet_birthday = self.get_wallet_birthday(config_dir.clone()).await;
+        self.wallet_birthday = wallet_birthday.ok();
 
         Ok(())
     }
@@ -133,7 +138,6 @@ impl SpendWalletAdapter {
             return Err(anyhow::anyhow!("Failed to extract Transaction ID"));
         }
 
-        self.erase_related_data().await?;
         Ok(())
     }
 
@@ -157,7 +161,7 @@ impl SpendWalletAdapter {
                 seed_words.to_string(),
             )]));
 
-        self.execute_command(command).await
+        self.execute_command(command, vec![0, 109]).await
     }
 
     async fn execute_sync_command(&self) -> Result<(i32, Vec<String>, Vec<String>), Error> {
@@ -172,7 +176,7 @@ impl SpendWalletAdapter {
             "sync".to_string(),
         ]);
 
-        self.execute_command(command).await
+        self.execute_command(command, vec![0]).await
     }
 
     async fn execute_send_one_sided_command(
@@ -203,12 +207,23 @@ impl SpendWalletAdapter {
 
         let command = ExecutionCommand::new("send-one-sided").with_extra_args(args);
 
-        let (_exit_code, stdout_lines, _stderr_lines) = self.execute_command(command).await?;
+        let (_exit_code, stdout_lines, stderr_lines) =
+            self.execute_command(command, vec![0]).await?;
         let tx_id = stdout_lines
             .iter()
             .find(|line| line.starts_with("Transaction ID:"))
             .and_then(|line| line.split("Transaction ID: ").nth(1))
             .map(|id| id.trim());
+
+        if tx_id.is_none() {
+            log::error!(
+                target: LOG_TARGET,
+                "Transaction ID not found. Details: {{ stdout_lines: {:?}, stderr_lines: {:?} }}",
+                stdout_lines.join("\n"),
+                stderr_lines.join("\n"),
+            );
+            return Err(anyhow::anyhow!(stderr_lines.join(" | ")));
+        };
 
         Ok(tx_id.map(|id| id.to_string()))
     }
@@ -233,7 +248,8 @@ impl SpendWalletAdapter {
             tx_id.to_string(),
         ]);
 
-        let (exit_code, _stdout_lines, _stderr_lines) = self.execute_command(command).await?;
+        let (exit_code, _stdout_lines, _stderr_lines) =
+            self.execute_command(command, vec![0]).await?;
 
         if exit_code != 0 {
             return Err(anyhow::anyhow!(
@@ -249,6 +265,7 @@ impl SpendWalletAdapter {
     async fn execute_command(
         &self,
         command: ExecutionCommand,
+        allow_exit_codes: Vec<i32>,
     ) -> Result<(i32, Vec<String>, Vec<String>), Error> {
         let (mut instance, _monitor) = self.spawn(
             self.get_data_dir(),
@@ -277,7 +294,17 @@ impl SpendWalletAdapter {
             )
             .await?;
 
-        if exit_code != 0 {
+        log::info!(
+            target: LOG_TARGET,
+            "Command '{}' execution completed with exit code: {}. Details: {{ stdout_lines: {:?}, stderr_lines: {:?}, extra_args: {:?} }}",
+            command.name,
+            exit_code,
+            stdout_lines.join("\n"),
+            stderr_lines.join("\n"),
+            command.extra_args
+        );
+
+        if !allow_exit_codes.contains(&exit_code) {
             sentry::capture_event(Event {
                 level: sentry::Level::Error,
                 culprit: Some("SpendWallet::ExecuteCommand".to_string()),
@@ -310,15 +337,15 @@ impl SpendWalletAdapter {
                 ..Default::default()
             });
 
-            log::error!(
-                target: LOG_TARGET,
-                "Command '{}' failed with exit code: {}. Details: {{ stdout_lines: {:?}, stderr_lines: {:?}, extra_args: {:?} }}",
-                command.name,
-                exit_code,
-                stdout_lines.join("\n"),
-                stderr_lines.join("\n"),
-                command.extra_args
-            );
+            // log::error!(
+            //     target: LOG_TARGET,
+            //     "Command '{}' failed with exit code: {}. Details: {{ stdout_lines: {:?}, stderr_lines: {:?}, extra_args: {:?} }}",
+            //     command.name,
+            //     exit_code,
+            //     stdout_lines.join("\n"),
+            //     stderr_lines.join("\n"),
+            //     command.extra_args
+            // );
 
             return Err(anyhow::anyhow!(
                 "Command '{}' failed with exit code: {}",
@@ -327,12 +354,11 @@ impl SpendWalletAdapter {
             ));
         }
 
-        Ok((exit_code, stdout_lines, stderr_lines))
-    }
+        if exit_code == 109 {
+            log::info!(target: LOG_TARGET, "Spend wallet recovery skipped since it was already recovered");
+        }
 
-    pub async fn erase_related_data(&self) -> Result<(), Error> {
-        std::fs::remove_dir_all(self.get_working_dir())?;
-        Ok(())
+        Ok((exit_code, stdout_lines, stderr_lines))
     }
 
     fn get_shared_args(&self) -> Result<Vec<String>, Error> {
@@ -347,7 +373,7 @@ impl SpendWalletAdapter {
             }
         };
 
-        let shared_args = vec![
+        let mut shared_args = vec![
             "-b".to_string(),
             convert_to_string(self.get_working_dir())?,
             "--non-interactive-mode".to_string(),
@@ -372,6 +398,16 @@ impl SpendWalletAdapter {
             format!("{}.p2p.seeds.dns_seeds={}", network.as_key_str(), dns_seeds),
         ];
 
+        match self.wallet_birthday {
+            Some(wallet_birthday) => {
+                shared_args.push("--birthday".to_string());
+                shared_args.push(wallet_birthday.to_string());
+            }
+            None => {
+                log::warn!(target: LOG_TARGET, "Wallet birthday not specified - wallet will scan from genesis block");
+            }
+        }
+
         Ok(shared_args)
     }
 
@@ -392,6 +428,11 @@ impl SpendWalletAdapter {
         let internal_wallet = InternalWallet::load_or_create(config_path).await?;
         let seed_words = internal_wallet.decrypt_seed_words().await?;
         Ok(seed_words.join(" ").reveal().to_string())
+    }
+
+    pub async fn get_wallet_birthday(&self, config_path: PathBuf) -> Result<u16, anyhow::Error> {
+        let internal_wallet = InternalWallet::load_or_create(config_path).await?;
+        internal_wallet.get_birthday().await
     }
 
     fn get_config_dir(&self) -> PathBuf {
