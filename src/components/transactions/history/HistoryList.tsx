@@ -54,6 +54,7 @@ const HistoryList = memo(function HistoryList() {
                     const previousTx = acc[acc.length - 1];
                     if (isTransactionInfo(previousTx) && previousTx.amount === Number(tx.tokenAmount)) {
                         const removedBridgeTransaction = acc.pop();
+                        console.log(removedBridgeTransaction);
                         if (removedBridgeTransaction && isTransactionInfo(removedBridgeTransaction)) {
                             tx.mineAtHeight = removedBridgeTransaction.mined_in_block_height;
                             tx.sourceAddress = removedBridgeTransaction.source_address;

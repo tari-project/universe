@@ -41,7 +41,7 @@ export const fetchTransactionsHistory = async ({ continuation, limit }: TxArgs) 
 
 export const fetchBridgeTransactionsHistory = async () => {
     try {
-        OpenAPI.BASE = useConfigBEInMemoryStore.getState().nextPublicBackendApiUrl;
+        OpenAPI.BASE = useConfigBEInMemoryStore.getState().bridgeBackendApiUrl;
         WrapTokenService.getUserTransactions(useWalletStore.getState().tari_address_base58).then((response) => {
             console.log('Bridge transactions fetched successfully:', response);
             useWalletStore.setState({
