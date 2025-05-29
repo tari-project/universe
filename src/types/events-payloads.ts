@@ -1,5 +1,4 @@
 import { GpuDevice, TransactionInfo, WalletBalance } from './app-status';
-import { ConfigBackendInMemory } from './configs';
 
 export interface WalletAddressUpdatePayload {
     tari_address_base58: string;
