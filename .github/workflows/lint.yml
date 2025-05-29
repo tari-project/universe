@@ -1,6 +1,8 @@
 name: Lint
 on: pull_request
 
+permissions: { packages: read, contents: write }
+
 jobs:
   run-linters:
     name: Run linters
