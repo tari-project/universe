@@ -57,6 +57,7 @@ jobs:
     continue-on-error: ${{ matrix.platforms.best_effort || false }}
     permissions:
       contents: write
+      packages: read
     strategy:
       fail-fast: false
       matrix:
