@@ -51,15 +51,21 @@ export async function fetchExchangeMiners() {
 
 export async function fetchExchangeContent(exchangeId: string) {
     const apiUrl = useConfigBEInMemoryStore.getState().airdropApiUrl;
+    const isUniversalMiner = useConfigBEInMemoryStore.getState().isUniversalMiner;
     const endpoint = `${apiUrl}/miner/exchanges`;
     try {
         const content = await fetch(`${endpoint}/${exchangeId}`);
         const xcContent = (await content.json()) as ExchangeContent;
         const walletIsGenerated = useWalletStore.getState().is_tari_address_generated;
+        console.info('Exchange content fetched:', xcContent);
+        console.info('Wallet is generated:', walletIsGenerated);
         if (xcContent) {
             setExchangeContent(xcContent);
             setSeedlessUI(true);
             setShowExchangeModal(!!walletIsGenerated);
+            if (isUniversalMiner) {
+                setShowExchangeModal(true);
+            }
         }
     } catch (e) {
         console.error('Could not fetch exchange content', e);
