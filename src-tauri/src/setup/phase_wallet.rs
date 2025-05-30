@@ -26,8 +26,8 @@ use crate::{
         config_ui::{ConfigUI, ConfigUIContent},
         trait_config::ConfigImpl,
     },
+    events::CriticalProblemPayload,
     events_emitter::EventsEmitter,
-    events_manager::EventsManager,
     progress_tracker_old::ProgressTracker,
     progress_trackers::{
         progress_plans::{ProgressPlans, ProgressSetupWalletPlan},
@@ -147,8 +147,11 @@ impl SetupPhaseImpl for WalletSetupPhase {
                         error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Wallet);
                         let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::Wallet);
                         sentry::capture_message(&error_message, sentry::Level::Error);
-                        EventsManager::handle_critical_problem(&self.app_handle, Some(SetupPhase::Wallet.get_critical_problem_title()), Some(SetupPhase::Wallet.get_critical_problem_description()),Some(error_message))
-                        .await;
+                        EventsEmitter::emit_critical_problem(CriticalProblemPayload {
+                            title: Some(SetupPhase::Wallet.get_critical_problem_title()),
+                            description: Some(SetupPhase::Wallet.get_critical_problem_description()),
+                            error_message: Some(error_message),
+                        }).await;
                     }
                 }
                 result = self.setup_inner() => {
@@ -161,9 +164,11 @@ impl SetupPhaseImpl for WalletSetupPhase {
                             error!(target: LOG_TARGET, "[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Wallet,error);
                             let error_message = format!("[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Wallet,error);
                             sentry::capture_message(&error_message, sentry::Level::Error);
-                            EventsManager
-                                ::handle_critical_problem(&self.app_handle, Some(SetupPhase::Wallet.get_critical_problem_title()), Some(SetupPhase::Wallet.get_critical_problem_description()),Some(error_message))
-                                .await;
+                            EventsEmitter::emit_critical_problem(CriticalProblemPayload {
+                                title: Some(SetupPhase::Wallet.get_critical_problem_title()),
+                                description: Some(SetupPhase::Wallet.get_critical_problem_description()),
+                                error_message: Some(error_message),
+                            }).await;
                         }
                     }
                 }
@@ -252,7 +257,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
         let node_status_watch_rx = (*app_state.node_status_watch_rx).clone();
         app_state
             .wallet_manager
-            .wait_for_initial_wallet_scan(self.get_app_handle(), node_status_watch_rx)
+            .wait_for_initial_wallet_scan(node_status_watch_rx)
             .await?;
 
         self.status_sender.send(PhaseStatus::Success).ok();
@@ -300,7 +305,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
                                 if balance_sum.gt(&MicroMinotari::zero())
                                     && wallet_manager.is_initial_scan_completed()
                                 {
-                                    EventsEmitter::show_staged_security_modal(&app_handle).await;
+                                    EventsEmitter::show_staged_security_modal().await;
                                     let _unused = ConfigUI::update_field(
                                         ConfigUIContent::set_was_staged_security_modal_shown,
                                         true,
@@ -316,7 +321,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
                 });
         }
 
-        EventsManager::handle_wallet_phase_finished(&self.app_handle, true).await;
+        EventsEmitter::emit_wallet_phase_finished(true).await;
 
         Ok(())
     }

@@ -26,11 +26,12 @@ use cfspeedtest::speedtest::{test_download, test_latency, test_upload};
 use cfspeedtest::OutputFormat;
 use log::error;
 use log::info;
+use tauri_plugin_sentry::sentry;
 use tauri::AppHandle;
 use tokio::sync::watch::{Receiver, Sender};
 use tokio::task::spawn_blocking;
 
-use crate::events_manager::EventsManager;
+use crate::events_emitter::EventsEmitter;
 
 const LOG_TARGET: &str = "tari::universe::network_status";
 const SPEED_TEST_TIMEOUT: Duration = Duration::from_secs(60);
@@ -64,13 +65,7 @@ impl NetworkStatus {
             || upload_speed < MINIMAL_NETWORK_UPLOAD_SPEED
     }
 
-    pub async fn handle_test_results(
-        &self,
-        app_handle: &AppHandle,
-        download_speed: f64,
-        upload_speed: f64,
-        latency: f64,
-    ) {
+    pub async fn handle_test_results(&self, download_speed: f64, upload_speed: f64, latency: f64) {
         info!(
             target: LOG_TARGET,
             "Network speed test results: download_speed: {:.2} MB/s, upload_speed: {:.2} MB/s, latency: {:.2} ms",
@@ -87,8 +82,7 @@ impl NetworkStatus {
                 error!(target: LOG_TARGET, "Failed to send network speeds: {:?}", e);
             });
 
-        EventsManager::handle_network_status_update(
-            app_handle,
+        EventsEmitter::emit_network_status(
             download_speed,
             upload_speed,
             latency,
@@ -146,10 +140,10 @@ impl NetworkStatus {
         Ok((download_speed, upload_speed, latency))
     }
 
-    pub async fn run_speed_test_once(&self, app_handle: &AppHandle) -> Result<(), anyhow::Error> {
+    pub async fn run_speed_test_once(&self) -> Result<(), anyhow::Error> {
         match self.perform_speed_test().await {
             Ok((download_speed, upload_speed, latency)) => {
-                self.handle_test_results(app_handle, download_speed, upload_speed, latency)
+                self.handle_test_results(download_speed, upload_speed, latency)
                     .await;
                 Ok(())
             }
@@ -160,8 +154,8 @@ impl NetworkStatus {
         }
     }
 
-    pub async fn run_speed_test_with_timeout(&self, app_handle: &AppHandle) {
-        match tokio::time::timeout(SPEED_TEST_TIMEOUT, self.run_speed_test_once(app_handle)).await {
+    pub async fn run_speed_test_with_timeout(&self) {
+        match tokio::time::timeout(SPEED_TEST_TIMEOUT, self.run_speed_test_once()).await {
             Ok(Ok(_)) => info!(target: LOG_TARGET, "Network speed test completed"),
             Ok(Err(error_message)) => {
                 let error_message =

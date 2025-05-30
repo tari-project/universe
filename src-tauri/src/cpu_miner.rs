@@ -24,7 +24,7 @@ use crate::binaries::Binaries;
 use crate::commands::{CpuMinerConnection, CpuMinerConnectionStatus, CpuMinerStatus};
 use crate::configs::config_mining::{ConfigMiningContent, MiningMode};
 use crate::configs::config_wallet::ConfigWalletContent;
-use crate::events_manager::EventsManager;
+use crate::events_emitter::EventsEmitter;
 use crate::pool_status_watcher::SupportXmrStyleAdapter;
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
@@ -135,7 +135,6 @@ impl CpuMiner {
         mode: MiningMode,
         custom_cpu_threads: Option<u32>,
         tari_address: &TariAddress,
-        app: tauri::AppHandle,
     ) -> Result<(), anyhow::Error> {
         let (xmrig_node_connection, pool_watcher) = match cpu_miner_config.node_connection {
             CpuMinerConnection::BuiltInProxy => (
@@ -259,8 +258,7 @@ impl CpuMiner {
             .await?;
         }
 
-        self.initialize_status_updates(app_shutdown, app.clone())
-            .await;
+        self.initialize_status_updates(app_shutdown).await;
 
         Ok(())
     }
@@ -382,11 +380,7 @@ impl CpuMiner {
         lock.is_pid_file_exists(base_path)
     }
 
-    async fn initialize_status_updates(
-        &self,
-        mut app_shutdown: ShutdownSignal,
-        app: tauri::AppHandle,
-    ) {
+    async fn initialize_status_updates(&self, mut app_shutdown: ShutdownSignal) {
         let cpu_miner_status_watch_tx = self.cpu_miner_status_watch_tx.clone();
         let mut summary_watch_rx = self.summary_watch_rx.clone();
         let node_status_watch_rx = self.node_status_watch_rx.clone();
@@ -412,7 +406,7 @@ impl CpuMiner {
                             None => None,
                         };
 
-                        let _ = EventsManager::handle_pool_status_update(&app.clone(), last_pool_status.clone()).await;
+                        EventsEmitter::emit_pool_status_update(last_pool_status.clone()).await;
 
                     }
                     _ = summary_watch_rx.changed() => {
