@@ -79,3 +79,21 @@ export interface UniversalMinerInitializedExchangeIdChangedPayload {
     universal_miner_initialized_exchange_id: string;
 }
 export type ConnectionStatusPayload = 'InProgress' | 'Succeed' | 'Failed';
+
+// New event payloads for binary retry functionality
+export interface BinaryStartupAttemptPayload {
+    name: string;
+    attempt: number;
+    max_attempts: number;
+}
+
+export interface BinaryRuntimeRestartAttemptPayload {
+    name: string;
+    attempt: number;
+    max_attempts: number;
+}
+
+export interface BinaryPermanentFailurePayload {
+    name: string;
+    reason: string; // 'startup' or 'runtime'
+}

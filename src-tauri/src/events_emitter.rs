@@ -24,7 +24,8 @@ use crate::app_in_memory_config::AppInMemoryConfig;
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 use crate::events::{
-    AppInMemoryConfigChangedPayload, ConnectionStatusPayload, CriticalProblemPayload,
+    AppInMemoryConfigChangedPayload, BinaryPermanentFailurePayload, BinaryRuntimeRestartAttemptPayload, 
+    BinaryStartupAttemptPayload, ConnectionStatusPayload, CriticalProblemPayload,
     DisabledPhasesPayload, InitWalletScanningProgressPayload,
     UniversalMinerInitializedExchangeIdChangedPayload,
 };
@@ -787,6 +788,61 @@ impl EventsEmitter {
             .emit(BACKEND_STATE_UPDATE, event)
         {
             error!(target: LOG_TARGET, "Failed to emit UniversalMinerInitializedExchangeIdChanged event: {:?}", e);
+        }
+    }
+
+    pub async fn emit_binary_startup_attempt(
+        app_handle: &AppHandle,
+        name: String,
+        attempt: u32,
+        max_attempts: u32,
+    ) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::BinaryStartupAttempt,
+            payload: BinaryStartupAttemptPayload {
+                name,
+                attempt,
+                max_attempts,
+            },
+        };
+        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+            error!(target: LOG_TARGET, "Failed to emit BinaryStartupAttempt event: {:?}", e);
+        }
+    }
+
+    pub async fn emit_binary_runtime_restart_attempt(
+        app_handle: &AppHandle,
+        name: String,
+        attempt: u32,
+        max_attempts: u32,
+    ) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::BinaryRuntimeRestartAttempt,
+            payload: BinaryRuntimeRestartAttemptPayload {
+                name,
+                attempt,
+                max_attempts,
+            },
+        };
+        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+            error!(target: LOG_TARGET, "Failed to emit BinaryRuntimeRestartAttempt event: {:?}", e);
+        }
+    }
+
+    pub async fn emit_binary_permanent_failure(
+        app_handle: &AppHandle,
+        name: String,
+        reason: String,
+    ) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::BinaryPermanentFailure,
+            payload: BinaryPermanentFailurePayload { name, reason },
+        };
+        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+            error!(target: LOG_TARGET, "Failed to emit BinaryPermanentFailure event: {:?}", e);
         }
     }
 }
