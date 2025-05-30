@@ -15,6 +15,7 @@
   "randomx-stats": "RandomX Statistieke",
   "sha3-stats": "SHA3 Statistieke",
   "stats": {
+    "earned": "You earned",
     "tile-heading": "Belonings in Proses",
     "tile-loading": "Swembad is besig om op te warm",
     "tooltip-copy": "Belonings is \"In Proses\" totdat jy \"n minimum van <strong>{{amount}}</strong> verdien. Nadat jy die drempel bereik het, sal belonings wat in proses is, outomaties na jou Tari Heelal beursie gestuur word. Dit kan \"n verdere 2 uur neem om aan te kom.",

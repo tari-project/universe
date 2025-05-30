@@ -15,6 +15,7 @@
   "randomx-stats": "RandomX İstatistikleri",
   "sha3-stats": "SHA3 İstatistikleri",
   "stats": {
+    "earned": "You earned",
     "tile-heading": "Devam Eden Ödüller",
     "tile-loading": "Havuz ısınıyor",
     "tooltip-copy": "Ödüller, <strong>{{amount}}</strong> minimumunu kazanana kadar “Devam Ediyor” durumundadır. Eşiğe ulaştıktan sonra, devam eden ödüller otomatik olarak Tari Universe cüzdanınıza gönderilecektir. Gelmesi için 2 saat daha sürebilir.",

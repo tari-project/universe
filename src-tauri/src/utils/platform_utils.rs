@@ -30,7 +30,7 @@ use crate::external_dependencies::ExternalDependencies;
 
 use crate::events::CriticalProblemPayload;
 use crate::events_emitter::EventsEmitter;
-#[cfg(not(target_os = "linux"))]
+#[cfg(target_os = "windows")]
 use crate::events_manager::EventsManager;
 #[cfg(not(target_os = "linux"))]
 use anyhow::anyhow;
@@ -67,6 +67,7 @@ impl PlatformUtils {
         }
     }
 
+    #[allow(unused_variables)]
     pub async fn initialize_preqesities(app_handle: tauri::AppHandle) -> Result<(), anyhow::Error> {
         let current_os = PlatformUtils::detect_current_os();
         match current_os {

@@ -15,6 +15,7 @@
   "randomx-stats": "Statistik RandomX",
   "sha3-stats": "Statistik SHA3",
   "stats": {
+    "earned": "You earned",
     "tile-heading": "Hadiah Sedang Berlangsung",
     "tile-loading": "Pool sedang memanas",
     "tooltip-copy": "Hadiah berada dalam status “Sedang Berlangsung” hingga Anda mendapatkan minimal <strong>{{amount}}</strong>. Setelah mencapai ambang batas, hadiah yang sedang berlangsung akan otomatis dikirim ke dompet Tari Universe Anda. Mungkin diperlukan waktu tambahan 2 jam untuk tiba.",
