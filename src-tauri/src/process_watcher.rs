@@ -36,7 +36,6 @@ use tokio::task::JoinHandle;
 
 use tokio::select;
 use tokio::sync::watch;
-use tokio::time::sleep;
 use tokio::time::{Instant, MissedTickBehavior};
 use tokio_util::task::TaskTracker;
 
@@ -195,7 +194,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         config_path: PathBuf,
         log_path: PathBuf,
         binary: Binaries,
-        global_shutdown_signal: ShutdownSignal,
+        mut global_shutdown_signal: ShutdownSignal,
         task_tracker: TaskTracker,
     ) -> Result<(), anyhow::Error> {
         if global_shutdown_signal.is_terminated() || global_shutdown_signal.is_triggered() {
@@ -411,19 +410,18 @@ async fn do_health_check<TStatusMonitor: StatusMonitor, TProcessInstance: Proces
                 *warning_count += 1;
                 if *warning_count > 10 {
                     error!(target: LOG_TARGET, "'{}' is not healthy. Health check returned warning {} times.", name, *warning_count);
-                    is_healthy = false;
+                    // Don't assign to is_healthy here since it's not used after this
                 } else {
                     is_healthy = true;
                 }
             }
             HealthStatus::Unhealthy => {
                 warn!(target: LOG_TARGET, "'{}' is not healthy. Health check returned Unhealthy status.", name);
-                is_healthy = false;
+                // Don't assign to is_healthy here since it's not used after this
             }
         }
     } else {
         ping_failed = true;
-        is_healthy = false;
         warn!(target: LOG_TARGET, "Process '{}' ping failed, process is not running.", name);
     }
 

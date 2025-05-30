@@ -156,7 +156,6 @@ pub(crate) trait ProcessInstanceTrait: Sync + Send + 'static {
     fn ping(&self) -> bool;
     async fn start(&mut self, task_tracker: TaskTracker) -> Result<(), anyhow::Error>;
     async fn stop(&mut self) -> Result<i32, anyhow::Error>;
-    fn is_shutdown_triggered(&self) -> bool;
     async fn wait(&mut self) -> Result<i32, anyhow::Error>;
     async fn start_and_wait_for_output(
         &mut self,
@@ -315,10 +314,6 @@ impl ProcessInstanceTrait for ProcessInstance {
         handle
             .ok_or_else(|| anyhow!("Handle is not present"))?
             .await?
-    }
-
-    fn is_shutdown_triggered(&self) -> bool {
-        self.shutdown.is_triggered()
     }
 
     async fn wait(&mut self) -> Result<i32, anyhow::Error> {

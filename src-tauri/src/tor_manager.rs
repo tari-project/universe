@@ -30,6 +30,7 @@ use std::time::Duration;
 use std::{path::PathBuf, sync::Arc};
 use tauri_plugin_sentry::sentry;
 use tokio::sync::{watch, RwLock};
+use tauri::AppHandle;
 
 const LOG_TARGET: &str = "tari::universe::tor_manager";
 const STARTUP_TIMEOUT: u64 = 180; // 3mins
@@ -52,6 +53,7 @@ impl TorManager {
     pub fn new(
         status_broadcast: watch::Sender<TorStatus>,
         stats_collector: &mut ProcessStatsCollectorBuilder,
+        app_handle: AppHandle, // Add this parameter
     ) -> Self {
         let status_watch_rx = status_broadcast.subscribe();
         let adapter = TorAdapter::new(status_broadcast);

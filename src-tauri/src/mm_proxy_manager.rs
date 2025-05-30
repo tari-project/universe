@@ -29,6 +29,7 @@ use log::info;
 use tari_common_types::tari_address::TariAddress;
 use tokio::sync::RwLock;
 use tokio::time::sleep;
+use tauri::AppHandle;
 
 use crate::mm_proxy_adapter::{MergeMiningProxyAdapter, MergeMiningProxyConfig};
 use crate::port_allocator::PortAllocator;
@@ -84,7 +85,10 @@ impl Clone for MmProxyManager {
 }
 
 impl MmProxyManager {
-    pub fn new(stats_collector: &mut ProcessStatsCollectorBuilder) -> Self {
+    pub fn new(
+        stats_collector: &mut ProcessStatsCollectorBuilder,
+        app_handle: AppHandle, // Add this parameter
+    ) -> Self {
         let sidecar_adapter = MergeMiningProxyAdapter::new();
         let mut process_watcher =
             ProcessWatcher::new(sidecar_adapter, stats_collector.take_mm_proxy(), app_handle);
