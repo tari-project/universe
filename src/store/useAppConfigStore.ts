@@ -23,6 +23,7 @@ const configCoreInitialState: ConfigCore = {
     last_binaries_update_timestamp: '',
     p2pool_stats_server_port: undefined,
     default_chain: window.location.host.startsWith('localhost:') ? ChainId.SEPOLIA : ChainId.MAINNET,
+    universal_miner_initialized_exchange_id: undefined,
 };
 
 const configWalletInitialState: ConfigWallet = {
@@ -68,7 +69,7 @@ const configBEInMemoryInitialState: ConfigBackendInMemory = {
     airdropUrl: '',
     airdropApiUrl: '',
     airdropTwitterAuthUrl: '',
-    exchangeId: undefined,
+    exchangeId: '',
     isUniversalMiner: false,
 };
 
