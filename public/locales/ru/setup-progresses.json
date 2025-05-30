@@ -43,6 +43,7 @@
     "p2pool": "Запуск P2Pool",
     "platform-prequisites": "Инициализация предварительных условий платформы",
     "run-cpu-benchmark": "Запуск теста производительности CPU",
+    "setup-bridge": "Preparing Bridge",
     "start-tor": "Запуск Tor",
     "start-wallet": "Запуск кошелька",
     "starting-node": "Запуск узла Minotari",
