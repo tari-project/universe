@@ -43,6 +43,7 @@
     "p2pool": "Begin P2Pool",
     "platform-prequisites": "Initialiseer Platform Voorvereistes",
     "run-cpu-benchmark": "Voer CPU Benchmark uit",
+    "setup-bridge": "Preparing Bridge",
     "start-tor": "Begin Tor",
     "start-wallet": "Begin Beursie",
     "starting-node": "Begin Minotari Node",
