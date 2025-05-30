@@ -31,6 +31,7 @@ use crate::app_in_memory_config::DEFAULT_EXCHANGE_ID;
 use crate::configs::config_core::ConfigCore;
 use crate::configs::trait_config::ConfigImpl;
 
+use crate::external_dependencies::RequiredExternalDependency;
 use crate::{
     events::NodeTypeUpdatePayload, events_emitter::EventsEmitter, tasks_tracker::TasksTrackers,
     UniverseAppState,
@@ -119,5 +120,13 @@ impl EventsManager {
         };
 
         EventsEmitter::emit_node_type_update(payload).await;
+    }
+
+    #[cfg(target_os = "windows")]
+    pub async fn handle_missing_application_files(
+        app: &AppHandle,
+        external_dependecies: RequiredExternalDependency,
+    ) {
+        EventsEmitter::emit_missing_applications(app, external_dependecies).await;
     }
 }
