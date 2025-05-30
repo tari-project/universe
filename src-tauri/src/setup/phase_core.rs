@@ -161,7 +161,7 @@ impl SetupPhaseImpl for CoreSetupPhase {
                 _ = shutdown_signal.wait() => {
                     warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Core);
                 }
-            };
+            }
         });
     }
 
@@ -175,7 +175,7 @@ impl SetupPhaseImpl for CoreSetupPhase {
                 ProgressSetupCorePlan::PlatformPrequisites,
             ))
             .await;
-        PlatformUtils::initialize_preqesities(self.app_handle.clone()).await?;
+        PlatformUtils::initialize_preqesities().await?;
 
         progress_stepper
             .resolve_step(ProgressPlans::Core(
