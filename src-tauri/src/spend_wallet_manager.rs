@@ -24,6 +24,7 @@ use crate::binaries::Binaries;
 use crate::binaries::BinaryResolver;
 use crate::node::node_manager::NodeManager;
 use crate::spend_wallet_adapter::SpendWalletAdapter;
+use crate::tasks_tracker::TasksTrackers;
 use crate::wallet_manager::WalletManager;
 use crate::BaseNodeStatus;
 use anyhow::Error;
@@ -142,7 +143,7 @@ impl SpendWalletManager {
         base_path: PathBuf,
     ) {
         info!(target: LOG_TARGET, "Starting block height monitoring task for transaction cleanup");
-
+        let mut shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
         loop {
             tokio::select! {
                 _ = node_status_rx.changed() => {
@@ -169,7 +170,10 @@ impl SpendWalletManager {
                             }
                         }
                     }
-                }
+                },
+                _ = shutdown_signal.wait() => {
+                    break;
+                },
             }
         }
     }

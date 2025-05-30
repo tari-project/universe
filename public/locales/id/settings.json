@@ -104,6 +104,8 @@
   "pre-release-note": "Anda akan beralih ke versi pra-rilis aplikasi. Versi ini dapat menawarkan fitur dan peningkatan baru yang menarik, dengan kemungkinan menemukan area yang mungkin masih dalam penyempurnaan.",
   "randomx-network-hash-rate": "Hashrate jaringan Randomx",
   "refresh-versions": "Segarkan versi",
+  "refresh-wallet-history": "Refresh wallet history",
+  "refresh-wallet-history-description": "Scan and validate all your transactions",
   "release-notes": {
     "loading": "Memuat catatan rilis...",
     "upgrade-available": "⚠️ Pembaruan Tersedia"

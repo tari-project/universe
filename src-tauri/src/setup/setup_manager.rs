@@ -770,7 +770,7 @@ impl SetupManager {
         self.wait_for_unlock_conditions(app_handle.clone()).await;
     }
 
-    async fn resume_phases(&self, app_handle: AppHandle, phases: Vec<SetupPhase>) {
+    pub async fn resume_phases(&self, app_handle: AppHandle, phases: Vec<SetupPhase>) {
         if !phases.is_empty() {
             EventsManager::handle_restarting_phases(&app_handle, phases.clone()).await;
         }

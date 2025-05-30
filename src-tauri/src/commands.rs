@@ -2194,3 +2194,40 @@ pub async fn parse_tari_address(address: String) -> Result<TariAddressVariants, 
         hex: tari_address.to_hex(),
     })
 }
+
+#[tauri::command]
+pub async fn refresh_wallet_history(
+    state: tauri::State<'_, UniverseAppState>,
+    app_handle: tauri::AppHandle,
+) -> Result<(), String> {
+    SetupManager::get_instance()
+        .shutdown_phases(app_handle.clone(), vec![SetupPhase::Wallet])
+        .await;
+
+    let base_path = app_handle
+        .path()
+        .app_local_data_dir()
+        .map_err(|_| "Could not find wallet data dir".to_string())?;
+    state
+        .wallet_manager
+        .clean_data_folder(&base_path)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    // Trigger it manually to immediately update the UI
+    let node_status_watch_rx = state.node_status_watch_rx.clone();
+    let node_status = *node_status_watch_rx.borrow();
+    EventsEmitter::emit_init_wallet_scanning_progress(
+        &app_handle,
+        0,
+        node_status.block_height,
+        0.0,
+    )
+    .await;
+
+    SetupManager::get_instance()
+        .resume_phases(app_handle, vec![SetupPhase::Wallet])
+        .await;
+
+    Ok(())
+}

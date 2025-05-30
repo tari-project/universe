@@ -132,4 +132,5 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'get_tari_wallet_balance'): Promise<WalletBalance>;
     function invoke(param: 'get_bridge_envs'): Promise<BridgeEnvs>;
     function invoke(param: 'parse_tari_address', payload: { address: string }): Promise<TariAddressVariants>;
+    function invoke(param: 'refresh_wallet_history'): Promise<void>;
 }

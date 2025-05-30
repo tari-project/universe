@@ -104,6 +104,8 @@
   "pre-release-note": "Du bist dabei, zur Vorabversion der Anwendung zu wechseln. Diese Version kann spannende neue Funktionen und Verbesserungen bieten, mit der Möglichkeit, auf Bereiche zu stoßen, die noch in der Verfeinerung sind.",
   "randomx-network-hash-rate": "Randomx-Netzwerk-Hashrate",
   "refresh-versions": "Versionen aktualisieren",
+  "refresh-wallet-history": "Refresh wallet history",
+  "refresh-wallet-history-description": "Scan and validate all your transactions",
   "release-notes": {
     "loading": "Lade Versionshinweise...",
     "upgrade-available": "⚠️ Upgrade verfügbar"

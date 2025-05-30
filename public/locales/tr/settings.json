@@ -104,6 +104,8 @@
   "pre-release-note": "Uygulamanın ön sürüm versiyonuna geçmek üzeresiniz. Bu versiyon, heyecan verici yeni özellikler ve iyileştirmeler sunabilir, ancak hala geliştirilmekte olan alanlarla karşılaşma olasılığı vardır.",
   "randomx-network-hash-rate": "Randomx ağ hash oranı",
   "refresh-versions": "Sürümleri yenileyin",
+  "refresh-wallet-history": "Refresh wallet history",
+  "refresh-wallet-history-description": "Scan and validate all your transactions",
   "release-notes": {
     "loading": "Sürüm notları yükleniyor...",
     "upgrade-available": "⚠️ Güncelleme Mevcut"

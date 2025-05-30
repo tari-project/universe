@@ -85,7 +85,7 @@ const getPendingOutgoingBalance = async () => {
         .getState()
         .transactions.filter(
             (tx) =>
-                tx.direction === TransactionDirection.Outbound &&
+                tx.direction == TransactionDirection.Outbound &&
                 [TransactionStatus.Completed, TransactionStatus.Broadcast].includes(tx.status)
         );
     console.info('Pending txs: ', pendingTxs);
@@ -94,7 +94,7 @@ const getPendingOutgoingBalance = async () => {
 
 export const setWalletBalance = async (balance: WalletBalance) => {
     const pendingOutgoingBalance = await getPendingOutgoingBalance();
-    console.info('Pending outgoing balace: ', pendingOutgoingBalance);
+    console.info('Setting new wallet balance: ', { balance, pendingOutgoingBalance });
     const available_balance = balance.available_balance - pendingOutgoingBalance;
     const pending_outgoing_balance = balance.pending_outgoing_balance + pendingOutgoingBalance;
 

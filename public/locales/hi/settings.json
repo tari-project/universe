@@ -104,6 +104,8 @@
   "pre-release-note": "आप एप्लिकेशन के पूर्व-रिलीज़ संस्करण पर स्विच करने वाले हैं। यह संस्करण रोमांचक नई सुविधाएँ और संवर्द्धन प्रदान कर सकता है, जिसमें उन क्षेत्रों का सामना करने की संभावना है जो अभी भी परिष्कृत हो सकते हैं।",
   "randomx-network-hash-rate": "Randomx नेटवर्क हैशरेट",
   "refresh-versions": "संस्करण ताज़ा करें",
+  "refresh-wallet-history": "Refresh wallet history",
+  "refresh-wallet-history-description": "Scan and validate all your transactions",
   "release-notes": {
     "loading": "रिलीज़ नोट्स लोड हो रहे हैं...",
     "upgrade-available": "⚠️ उन्नयन उपलब्ध"

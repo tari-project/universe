@@ -106,6 +106,8 @@
   "pre-release-note": "Zamierzasz przełączyć się na wersję przedpremierową aplikacji. Ta wersja może oferować ekscytujące nowe funkcje i ulepszenia, z możliwością napotkania obszarów, które mogą być jeszcze w trakcie dopracowywania.",
   "randomx-network-hash-rate": "Hashrate sieci Randomx",
   "refresh-versions": "Odśwież wersje",
+  "refresh-wallet-history": "Refresh wallet history",
+  "refresh-wallet-history-description": "Scan and validate all your transactions",
   "release-notes": {
     "loading": "Ładowanie notatek o wydaniu...",
     "upgrade-available": "⚠️ Dostępna aktualizacja"

@@ -160,6 +160,9 @@ impl WalletManager {
     }
 
     pub async fn clean_data_folder(&self, base_path: &Path) -> Result<(), anyhow::Error> {
+        self.initial_scan_completed
+            .store(false, std::sync::atomic::Ordering::Relaxed);
+
         fs::remove_dir_all(
             base_path
                 .join("wallet")
