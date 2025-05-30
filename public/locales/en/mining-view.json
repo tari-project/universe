@@ -27,7 +27,7 @@
   },
   "pool": {
     "accepted_shares": "Accepted shares",
-    "balance": "Balance (amount paid + amount due)",
+    "balance": "Total earnings",
     "min_payout": "Minimum payout",
     "unpaid": "Unpaid"
   },

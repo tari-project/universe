@@ -27,7 +27,7 @@
   },
   "pool": {
     "accepted_shares": "Akzeptierte Anteile",
-    "balance": "Kontostand",
+    "balance": "Total earnings",
     "min_payout": "Mindestzahlung",
     "unpaid": "Unbezahlt"
   },

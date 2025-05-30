@@ -28,7 +28,7 @@
   },
   "pool": {
     "accepted_shares": "Zaakceptowane udziały",
-    "balance": "Saldo",
+    "balance": "Total earnings",
     "min_payout": "Minimalna wypłata",
     "unpaid": "Niezapłacone"
   },

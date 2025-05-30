@@ -28,7 +28,7 @@
   },
   "pool": {
     "accepted_shares": "Kabul Edilen Paylar",
-    "balance": "Bakiye",
+    "balance": "Total earnings",
     "min_payout": "Minimum ödeme",
     "unpaid": "Ödenmemiş"
   },

@@ -28,7 +28,7 @@
   },
   "pool": {
     "accepted_shares": "Принятые шары",
-    "balance": "Баланс",
+    "balance": "Total earnings",
     "min_payout": "Минимальная выплата",
     "unpaid": "Не выплачено"
   },
