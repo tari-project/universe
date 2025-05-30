@@ -25,7 +25,6 @@ use crate::binaries::BinaryResolver;
 use crate::node::node_manager::NodeManager;
 use crate::spend_wallet_adapter::SpendWalletAdapter;
 use crate::tasks_tracker::TasksTrackers;
-use crate::wallet_manager::WalletManager;
 use crate::BaseNodeStatus;
 use crate::UniverseAppState;
 use anyhow::Error;
@@ -81,6 +80,7 @@ impl SpendWalletManager {
         base_path: PathBuf,
         config_path: PathBuf,
         log_path: PathBuf,
+        app_state: tauri::State<'_, UniverseAppState>,
     ) -> Result<(), Error> {
         let binary_path = BinaryResolver::current()
             .read()
@@ -92,7 +92,14 @@ impl SpendWalletManager {
         SpendWalletManager::erase_related_data(base_path.clone())?;
 
         self.adapter
-            .init(app_shutdown, base_path, config_path, log_path, binary_path)
+            .init(
+                app_shutdown,
+                base_path,
+                config_path,
+                log_path,
+                binary_path,
+                app_state,
+            )
             .await
     }
 
@@ -116,7 +123,6 @@ impl SpendWalletManager {
         amount: String,
         destination: String,
         payment_id: Option<String>,
-        view_wallet_manager: &WalletManager,
         state: tauri::State<'_, UniverseAppState>,
     ) -> Result<(), Error> {
         self.node_manager.wait_ready().await?;
@@ -130,7 +136,7 @@ impl SpendWalletManager {
 
         let res = self
             .adapter
-            .send_one_sided_to_stealth_address(amount, destination, payment_id, view_wallet_manager, state)
+            .send_one_sided_to_stealth_address(amount, destination, payment_id, state)
             .await;
 
         let node_status = *self.base_node_status_rx.borrow();

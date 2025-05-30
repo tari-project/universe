@@ -27,7 +27,6 @@ use crate::process_adapter::{
 use crate::tasks_tracker::TasksTrackers;
 use crate::utils::file_utils::convert_to_string;
 use crate::utils::logging_utils::setup_logging;
-use crate::wallet_manager::WalletManager;
 use crate::UniverseAppState;
 use crate::{internal_wallet::InternalWallet, process_adapter::HealthStatus};
 use anyhow::Error;
@@ -88,6 +87,7 @@ impl SpendWalletAdapter {
         config_dir: PathBuf,
         log_dir: PathBuf,
         wallet_binary: PathBuf,
+        app_state: tauri::State<'_, UniverseAppState>,
     ) -> Result<(), Error> {
         info!(target: LOG_TARGET, "Initializing spend wallet adapter");
 
@@ -105,7 +105,9 @@ impl SpendWalletAdapter {
             include_str!("../log4rs/spend_wallet_sample.yml"),
         )?;
 
-        let wallet_birthday = self.get_wallet_birthday(config_dir.clone()).await;
+        let wallet_birthday = self
+            .get_wallet_birthday(config_dir.clone(), app_state)
+            .await;
         self.wallet_birthday = wallet_birthday.ok();
 
         Ok(())
@@ -116,10 +118,11 @@ impl SpendWalletAdapter {
         _amount: String,
         destination: String,
         payment_id: Option<String>,
-        view_wallet_manager: &WalletManager,
         state: tauri::State<'_, UniverseAppState>,
     ) -> Result<(), Error> {
-        let seed_words = self.get_seed_words(self.get_config_dir(), state).await?;
+        let seed_words = self
+            .get_seed_words(self.get_config_dir(), state.clone())
+            .await?;
         let t_amount = Minotari::from_str(_amount.as_str())?;
         let converted_amount = MicroMinotari::from(t_amount);
         let amount = converted_amount.to_string();
@@ -133,7 +136,8 @@ impl SpendWalletAdapter {
 
         if let Some(tx_id) = tx_id {
             let exported_tx_path = self.export_transaction(&tx_id).await?;
-            view_wallet_manager
+            state
+                .wallet_manager
                 .import_transaction(exported_tx_path)
                 .await?;
         } else {
@@ -436,7 +440,11 @@ impl SpendWalletAdapter {
         Ok(seed_words.join(" ").reveal().to_string())
     }
 
-    pub async fn get_wallet_birthday(&self, config_path: PathBuf, state: tauri::State<'_, UniverseAppState>) -> Result<u16, anyhow::Error> {
+    pub async fn get_wallet_birthday(
+        &self,
+        config_path: PathBuf,
+        state: tauri::State<'_, UniverseAppState>,
+    ) -> Result<u16, anyhow::Error> {
         let internal_wallet = InternalWallet::load_or_create(config_path, state).await?;
         internal_wallet.get_birthday().await
     }
