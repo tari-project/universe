@@ -154,6 +154,11 @@ mod xmrig_adapter;
 
 const LOG_TARGET: &str = "tari::universe::main";
 const RESTART_EXIT_CODE: i32 = i32::MAX;
+const IGNORED_SENTRY_ERRORS: [&str; 2] = [
+    "Failed to initialize gtk backend",
+    "SIGABRT / SI_TKILL / 0x0",
+];
+
 #[cfg(not(any(
     feature = "release-ci",
     feature = "release-ci-beta",
@@ -301,6 +306,15 @@ fn main() {
         sentry::ClientOptions {
             release: sentry::release_name!(),
             attach_stacktrace: true,
+            before_send: Some(Arc::new(|event| {
+                if event.logentry.as_ref().map_or(false, |entry| {
+                    IGNORED_SENTRY_ERRORS.iter().any(|ignored| entry.message.starts_with(ignored))
+                }) {
+                    None
+                } else {
+                    Some(event)
+                }
+            })),
             ..Default::default()
         },
     ));
