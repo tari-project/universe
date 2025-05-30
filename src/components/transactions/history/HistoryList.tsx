@@ -64,7 +64,19 @@ const HistoryList = memo(function HistoryList() {
                     if (matchingTransaction) {
                         const removedBridgeTransaction = acc.splice(acc.indexOf(matchingTransaction), 1)[0];
                         if (removedBridgeTransaction && isTransactionInfo(removedBridgeTransaction)) {
-                            tx.sourceAddress = removedBridgeTransaction.source_address;
+                            const updatedTransaction: BackendBridgeTransaction = {
+                                sourceAddress: removedBridgeTransaction.source_address,
+                                destinationAddress: tx.destinationAddress,
+                                status: tx.status,
+                                createdAt: tx.createdAt,
+                                tokenAmount: tx.tokenAmount,
+                                amountAfterFee: tx.amountAfterFee,
+                                feeAmount: tx.feeAmount,
+                                paymentId: tx.paymentId,
+                                mined_in_block_height: removedBridgeTransaction.mined_in_block_height,
+                            };
+                            acc.push(updatedTransaction);
+                            return acc;
                         }
                     }
                 }

@@ -5,6 +5,7 @@ import { UserTransactionDTO } from '@tari-project/wxtm-bridge-backend-api';
 
 export interface BackendBridgeTransaction extends UserTransactionDTO {
     sourceAddress?: string;
+    mined_in_block_height?: number;
 }
 
 interface PendingTransaction {
