@@ -27,6 +27,7 @@ use crate::process_adapter::{
 use crate::tasks_tracker::TasksTrackers;
 use crate::utils::file_utils::convert_to_string;
 use crate::utils::logging_utils::setup_logging;
+use crate::UniverseAppState;
 use crate::{internal_wallet::InternalWallet, process_adapter::HealthStatus};
 use anyhow::Error;
 use log::info;
@@ -107,8 +108,9 @@ impl SpendWalletAdapter {
         _amount: String,
         destination: String,
         payment_id: Option<String>,
+        state: tauri::State<'_, UniverseAppState>,
     ) -> Result<(), Error> {
-        let seed_words = self.get_seed_words(self.get_config_dir()).await?;
+        let seed_words = self.get_seed_words(self.get_config_dir(), state).await?;
         let t_amount = Minotari::from_str(_amount.as_str())?;
         let converted_amount = MicroMinotari::from(t_amount);
         let amount = converted_amount.to_string();
@@ -227,8 +229,12 @@ impl SpendWalletAdapter {
         Ok(shared_args)
     }
 
-    async fn get_seed_words(&self, config_path: PathBuf) -> Result<String, Error> {
-        let internal_wallet = InternalWallet::load_or_create(config_path).await?;
+    async fn get_seed_words(
+        &self,
+        config_path: PathBuf,
+        state: tauri::State<'_, UniverseAppState>,
+    ) -> Result<String, Error> {
+        let internal_wallet = InternalWallet::load_or_create(config_path, state).await?;
         let seed_words = internal_wallet.decrypt_seed_words().await?;
         Ok(seed_words.join(" ").reveal().to_string())
     }

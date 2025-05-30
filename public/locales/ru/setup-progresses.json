@@ -1,5 +1,6 @@
 {
   "any_moment_now": "В любой момент",
+  "awaiting-exchange-selection": "Awaiting user exchange selection",
   "block-sync": "Синхронизация блоков",
   "calculating_time": "Расчет оставшегося времени...",
   "header-sync": "Синхронизация заголовков",
