@@ -97,7 +97,7 @@ impl GpuMiner {
     ) -> Self {
         let (gpu_raw_status_tx, gpu_raw_status_rx) = watch::channel(None);
         let adapter = GpuMinerAdapter::new(Vec::new(), gpu_raw_status_tx);
-        let mut process_watcher = ProcessWatcher::new(adapter, stats_collector.take_gpu_miner());
+        let mut process_watcher = ProcessWatcher::new(adapter, stats_collector.take_gpu_miner(), app_handle);
         process_watcher.health_timeout = Duration::from_secs(9);
         process_watcher.poll_time = Duration::from_secs(10);
 

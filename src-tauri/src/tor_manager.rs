@@ -55,7 +55,7 @@ impl TorManager {
     ) -> Self {
         let status_watch_rx = status_broadcast.subscribe();
         let adapter = TorAdapter::new(status_broadcast);
-        let mut process_watcher = ProcessWatcher::new(adapter, stats_collector.take_tor());
+        let mut process_watcher = ProcessWatcher::new(adapter, stats_collector.take_tor(), app_handle);
         process_watcher.expected_startup_time = Duration::from_secs(STARTUP_TIMEOUT);
         process_watcher.health_timeout = Duration::from_secs(9);
         process_watcher.poll_time = Duration::from_secs(10);

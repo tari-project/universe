@@ -331,4 +331,41 @@ impl EventsManager {
     ) {
         EventsEmitter::emit_connection_status_changed(app, status).await;
     }
+
+    pub async fn emit_binary_startup_attempt(
+        app: &AppHandle,
+        name: String,
+        attempt: u32,
+        max_attempts: u32,
+    ) {
+        EventsEmitter::emit_binary_startup_attempt(app, name, attempt, max_attempts).await;
+    }
+
+    pub async fn emit_binary_runtime_restart_attempt(
+        app: &AppHandle,
+        name: String,
+        attempt: u32,
+        max_attempts: u32,
+    ) {
+        EventsEmitter::emit_binary_runtime_restart_attempt(app, name, attempt, max_attempts).await;
+    }
+
+    pub async fn emit_binary_permanent_failure(
+        app: &AppHandle,
+        name: String,
+        reason: String,
+    ) {
+        EventsEmitter::emit_binary_permanent_failure(app, name, reason).await;
+        
+        // Also emit a critical problem for serious failures
+        Self::handle_critical_problem(
+            app,
+            Some(format!("{} Failed", name)),
+            Some(format!(
+                "The {} process failed to start or stay running after multiple attempts. Please check the logs or try restarting the application.",
+                name
+            )),
+            None,
+        ).await;
+    }
 }

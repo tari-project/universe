@@ -75,6 +75,10 @@ pub enum EventType {
     ConnectionStatus,
     ShowStageSecurityModal,
     MiningTime,
+    // New event types for binary retry functionality
+    BinaryStartupAttempt,
+    BinaryRuntimeRestartAttempt,
+    BinaryPermanentFailure,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -85,6 +89,7 @@ pub enum ProgressEvents {
     Node,
     Unknown,
 }
+
 #[derive(Clone, Debug, Serialize)]
 pub struct ProgressTrackerUpdatePayload {
     pub phase_title: String,
@@ -167,4 +172,25 @@ pub enum ConnectionStatusPayload {
     Succeed,
     #[allow(dead_code)]
     Failed,
+}
+
+// New payload structures for binary retry functionality
+#[derive(Clone, Debug, Serialize)]
+pub struct BinaryStartupAttemptPayload {
+    pub name: String,
+    pub attempt: u32,
+    pub max_attempts: u32,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct BinaryRuntimeRestartAttemptPayload {
+    pub name: String,
+    pub attempt: u32,
+    pub max_attempts: u32,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct BinaryPermanentFailurePayload {
+    pub name: String,
+    pub reason: String, // "startup" or "runtime"
 }

@@ -1,5 +1,8 @@
 import {
     BackgroundNodeSyncUpdatePayload,
+    BinaryPermanentFailurePayload,
+    BinaryRuntimeRestartAttemptPayload,
+    BinaryStartupAttemptPayload,
     ConnectedPeersUpdatePayload,
     ConnectionStatusPayload,
     CriticalProblemPayload,
@@ -198,4 +201,16 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'PoolStatusUpdate';
           payload: PoolStatus;
+      }
+    | {
+          event_type: 'BinaryStartupAttempt';
+          payload: BinaryStartupAttemptPayload;
+      }
+    | {
+          event_type: 'BinaryRuntimeRestartAttempt';
+          payload: BinaryRuntimeRestartAttemptPayload;
+      }
+    | {
+          event_type: 'BinaryPermanentFailure';
+          payload: BinaryPermanentFailurePayload;
       };
