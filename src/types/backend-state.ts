@@ -16,6 +16,7 @@ import {
     ExternalDependency,
     GpuMinerStatus,
     NetworkStatus,
+    PoolStatus,
     WalletBalance,
 } from './app-status.ts';
 import { ConfigCore, ConfigMining, ConfigUI, ConfigWallet } from './configs.ts';
@@ -111,6 +112,10 @@ export type BackendStateUpdateEvent =
           payload: boolean;
       }
     | {
+          event_type: 'InitialSetupFinished';
+          payload: undefined;
+      }
+    | {
           event_type: 'UnlockApp';
           payload: undefined;
       }
@@ -119,7 +124,11 @@ export type BackendStateUpdateEvent =
           payload: undefined;
       }
     | {
-          event_type: 'UnlockMining';
+          event_type: 'UnlockCpuMining';
+          payload: undefined;
+      }
+    | {
+          event_type: 'UnlockGpuMining';
           payload: undefined;
       }
     | {
@@ -127,7 +136,11 @@ export type BackendStateUpdateEvent =
           payload: undefined;
       }
     | {
-          event_type: 'LockMining';
+          event_type: 'LockGpuMining';
+          payload: undefined;
+      }
+    | {
+          event_type: 'LockCpuMining';
           payload: undefined;
       }
     | {
@@ -177,4 +190,12 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'ShowStageSecurityModal';
           payload: undefined;
+      }
+    | {
+          event_type: 'MiningTime';
+          payload: number;
+      }
+    | {
+          event_type: 'PoolStatusUpdate';
+          payload: PoolStatus;
       };

@@ -8,9 +8,10 @@ import { fetchTransactionsHistory } from '@app/store';
 import { useTranslation } from 'react-i18next';
 import { TransactionInfo } from '@app/types/app-status.ts';
 import ListLoadingAnimation from '@app/containers/navigation/components/Wallet/ListLoadingAnimation/ListLoadingAnimation.tsx';
-import ItemExpand from './ExpandedItem.tsx';
+
 import { PlaceholderItem } from './ListItem.styles.ts';
 import { LoadingText } from '@app/containers/navigation/components/Wallet/ListLoadingAnimation/styles.ts';
+import { TransactionDetails } from '@app/components/transactions/history/details/TransactionDetails.tsx';
 
 const HistoryList = memo(function HistoryList() {
     const { t } = useTranslation('wallet');
@@ -108,7 +109,7 @@ const HistoryList = memo(function HistoryList() {
             </ListWrapper>
 
             {detailsItem && (
-                <ItemExpand
+                <TransactionDetails
                     item={detailsItem}
                     expanded={Boolean(detailsItem)}
                     handleClose={() => setDetailsItem(null)}

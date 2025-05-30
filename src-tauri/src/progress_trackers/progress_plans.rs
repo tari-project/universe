@@ -49,7 +49,7 @@ impl ProgressEvent for ProgressPlanEventPayload {
         self.title.clone()
     }
 }
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum ProgressSetupCorePlan {
     PlatformPrequisites,
     InitializeApplicationModules,
@@ -93,7 +93,7 @@ impl ProgressStep for ProgressSetupCorePlan {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum ProgressSetupNodePlan {
     BinariesTor,
     BinariesNode,
@@ -146,7 +146,7 @@ impl ProgressStep for ProgressSetupNodePlan {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum ProgressSetupHardwarePlan {
     BinariesCpuMiner,
     BinariesGpuMiner,
@@ -190,11 +190,12 @@ impl ProgressStep for ProgressSetupHardwarePlan {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum ProgressSetupWalletPlan {
     BinariesWallet,
     StartWallet,
     InitializeSpendingWallet,
+    SetupBridge,
     Done,
 }
 
@@ -210,6 +211,7 @@ impl ProgressStep for ProgressSetupWalletPlan {
             ProgressSetupWalletPlan::BinariesWallet => 2,
             ProgressSetupWalletPlan::StartWallet => 1,
             ProgressSetupWalletPlan::InitializeSpendingWallet => 1,
+            ProgressSetupWalletPlan::SetupBridge => 1,
             ProgressSetupWalletPlan::Done => 1,
         }
     }
@@ -221,6 +223,7 @@ impl ProgressStep for ProgressSetupWalletPlan {
             ProgressSetupWalletPlan::InitializeSpendingWallet => {
                 "initialize-spending-wallet".to_string()
             }
+            ProgressSetupWalletPlan::SetupBridge => "setup-bridge".to_string(),
             ProgressSetupWalletPlan::Done => "done".to_string(),
         }
     }
@@ -233,7 +236,7 @@ impl ProgressStep for ProgressSetupWalletPlan {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum ProgressSetupUnknownPlan {
     BinariesP2pool,
     BinariesMergeMiningProxy,
@@ -280,7 +283,7 @@ impl ProgressStep for ProgressSetupUnknownPlan {
 }
 
 #[allow(dead_code)]
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum ProgressPlans {
     Core(ProgressSetupCorePlan),
     Node(ProgressSetupNodePlan),

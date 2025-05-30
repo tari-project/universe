@@ -67,6 +67,7 @@ export interface ExternalDependency {
 export interface WalletAddress {
     tari_address_base58: string;
     tari_address_emoji: string;
+    is_tari_address_generated: boolean;
 }
 
 export interface TransactionInfo {
@@ -177,6 +178,14 @@ export interface CpuMinerStatus {
     hash_rate: number;
     estimated_earnings: number;
     connection: CpuMinerConnectionStatus;
+    pool_status?: PoolStatus;
+}
+
+export interface PoolStatus {
+    accepted_shares: number;
+    unpaid: number;
+    balance: number;
+    min_payout: number;
 }
 
 interface CpuMinerConnectionStatus {
@@ -233,4 +242,9 @@ export interface NetworkStatus {
     upload_speed: number;
     latency: number;
     is_too_low: boolean;
+}
+
+export interface BridgeEnvs {
+    walletconnect_id: string;
+    backend_api: string;
 }

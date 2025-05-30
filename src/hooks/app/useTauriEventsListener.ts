@@ -10,6 +10,7 @@ import {
     setCpuMiningStatus,
     setGpuDevices,
     setGpuMiningStatus,
+    setPoolStatus,
 } from '@app/store/actions/miningMetricsStoreActions';
 import {
     handleAskForRestart,
@@ -28,15 +29,19 @@ import {
     setIsStuckOnOrphanChain,
     setNetworkStatus,
 } from '@app/store/actions/appStateStoreActions';
-import { refreshTransactions, setWalletAddress, setWalletBalance, updateWalletScanningProgress } from '@app/store';
+import { refreshTransactions, setWalletBalance, updateWalletScanningProgress } from '@app/store';
 import { deepEqual } from '@app/utils/objectDeepEqual.ts';
 import {
     handleAppUnlocked,
+    handleCpuMiningLocked,
+    handleCpuMiningUnlocked,
+    handleGpuMiningLocked,
+    handleGpuMiningUnlocked,
     handleHardwarePhaseFinished,
-    handleMiningLocked,
-    handleMiningUnlocked,
     handleWalletLocked,
     handleWalletUnlocked,
+    handleWalletUpdate,
+    setInitialSetupFinished,
 } from '@app/store/actions/setupStoreActions';
 import { setBackgroundNodeState, setNodeStoreState } from '@app/store/useNodeStore';
 import {
@@ -44,11 +49,19 @@ import {
     handleConfigMiningLoaded,
     handleConfigUILoaded,
     handleConfigWalletLoaded,
+    handleMiningTimeUpdate,
 } from '@app/store/actions/appConfigStoreActions';
 import { invoke } from '@tauri-apps/api/core';
 import { handleShowStagedSecurityModal } from '@app/store/actions/stagedSecurityActions';
 
-const LOG_EVENT_TYPES = ['LockMining', 'LockWallet', 'UnlockMining', 'UnlockWallet'];
+const LOG_EVENT_TYPES = [
+    'LockMining',
+    'LockWallet',
+    'UnlockMining',
+    'UnlockWallet',
+    'CpuMiningUpdate',
+    'WalletAddressUpdate',
+];
 
 const useTauriEventsListener = () => {
     const eventRef = useRef<BackendStateUpdateEvent | null>(null);
@@ -80,24 +93,34 @@ const useTauriEventsListener = () => {
                             break;
                         case 'WalletPhaseFinished':
                             break;
+                        case 'InitialSetupFinished':
+                            setInitialSetupFinished(true);
+                            break;
                         case 'UnlockApp':
                             await handleAppUnlocked();
                             break;
                         case 'UnlockWallet':
                             handleWalletUnlocked();
                             break;
-                        case 'UnlockMining':
-                            await handleMiningUnlocked();
+                        case 'UnlockCpuMining':
+                            await handleCpuMiningUnlocked();
                             break;
-                        case 'LockMining':
-                            await handleMiningLocked();
+                        case 'UnlockGpuMining':
+                            await handleGpuMiningUnlocked();
+                            break;
+                        case 'LockCpuMining':
+                            await handleCpuMiningLocked();
+                            break;
+                        case 'LockGpuMining':
+                            await handleGpuMiningLocked();
                             break;
                         case 'LockWallet':
                             handleWalletLocked();
                             break;
-                        case 'WalletAddressUpdate':
-                            setWalletAddress(event.payload);
+                        case 'WalletAddressUpdate': {
+                            await handleWalletUpdate(event.payload);
                             break;
+                        }
                         case 'WalletBalanceUpdate':
                             setWalletBalance(event.payload);
                             refreshTransactions();
@@ -110,6 +133,9 @@ const useTauriEventsListener = () => {
                             break;
                         case 'CpuMiningUpdate':
                             setCpuMiningStatus(event.payload);
+                            break;
+                        case 'PoolStatusUpdate':
+                            setPoolStatus(event.payload);
                             break;
                         case 'ConnectedPeersUpdate':
                             handleConnectedPeersUpdate(event.payload);
@@ -186,6 +212,9 @@ const useTauriEventsListener = () => {
                             break;
                         case 'ShowStageSecurityModal':
                             handleShowStagedSecurityModal();
+                            break;
+                        case 'MiningTime':
+                            handleMiningTimeUpdate(event.payload);
                             break;
                         default:
                             console.warn('Unknown event', JSON.stringify(event));

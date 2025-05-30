@@ -1,23 +1,38 @@
-import { AnimatePresence } from 'motion/react';
-import { memo, useMemo } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { CircularProgress } from '@app/components/elements/CircularProgress';
 import { Text, Title, Wrapper, ProgressWrapper, TextWrapper } from './styles';
 import { useTranslation } from 'react-i18next';
 import { useUIStore } from '@app/store';
 import { useSetupStore } from '@app/store/useSetupStore';
 import { setShowResumeAppModal } from '@app/store/actions/uiStoreActions';
+import { FloatingNode, FloatingPortal, useFloating, useFloatingNodeId } from '@floating-ui/react';
 
 const ResumeApplicationModal = memo(function ResumeApplicationModal() {
+    const [open, setOpen] = useState(false);
+    const nodeId = useFloatingNodeId();
     const { t } = useTranslation('setup-progresses');
+    const { refs } = useFloating({
+        nodeId,
+        open,
+        onOpenChange: setOpen,
+    });
 
-    const connectionStatus = useUIStore((s) => s.connectionStatus);
+    const status = useUIStore((s) => s.connectionStatus);
     const corePhaseInfoPayload = useSetupStore((state) => state.core_phase_setup_payload);
     const hardwarePhaseInfoPayload = useSetupStore((state) => state.hardware_phase_setup_payload);
     const nodePhaseInfoPayload = useSetupStore((state) => state.node_phase_setup_payload);
     const unknownPhaseInfoPayload = useSetupStore((state) => state.unknown_phase_setup_payload);
     const walletPhaseInfoPayload = useSetupStore((state) => state.wallet_phase_setup_payload);
 
-    const showModal = useUIStore((state) => state.showResumeAppModal) && connectionStatus === 'connected';
+    const isAppUnlocked = useSetupStore((state) => state.appUnlocked);
+    const isSetupFinished = useSetupStore((state) => state.isInitialSetupFinished);
+    const shouldShowModal = useUIStore((state) => state.showResumeAppModal);
+
+    const showModal = useMemo(() => {
+        const shouldShowModalForInitialSetup = isAppUnlocked && !isSetupFinished;
+        const shouldShowModalForResume = shouldShowModal && status === 'connected';
+        return shouldShowModalForResume || shouldShowModalForInitialSetup;
+    }, [isAppUnlocked, isSetupFinished, shouldShowModal, status]);
 
     const currentPhaseToShow = useMemo(() => {
         if (walletPhaseInfoPayload?.is_complete && Boolean(unknownPhaseInfoPayload)) {
@@ -80,23 +95,29 @@ const ResumeApplicationModal = memo(function ResumeApplicationModal() {
     const setupTitle = currentPhaseToShow?.title;
     const setupParams = currentPhaseToShow?.title_params ? { ...currentPhaseToShow.title_params } : {};
 
+    useEffect(() => {
+        setOpen(showModal && Boolean(currentPhaseToShow));
+    }, [currentPhaseToShow, showModal]);
+
     return (
-        <AnimatePresence>
-            {showModal && Boolean(currentPhaseToShow) && (
-                <Wrapper>
-                    <TextWrapper>
-                        <Title>{t(`phase-title.${setupPhaseTitle}`)}</Title>
-                        <Text>{t(`title.${setupTitle}`, { ...setupParams })}</Text>
-                    </TextWrapper>
-                    <ProgressWrapper>
-                        <Title>
-                            {stageProgress} / {stageTotal}
-                        </Title>
-                        <CircularProgress />
-                    </ProgressWrapper>
-                </Wrapper>
-            )}
-        </AnimatePresence>
+        <FloatingNode id={nodeId}>
+            <FloatingPortal>
+                {open && (
+                    <Wrapper ref={refs.setFloating}>
+                        <TextWrapper>
+                            <Title>{t(`phase-title.${setupPhaseTitle}`)}</Title>
+                            <Text>{t(`title.${setupTitle}`, { ...setupParams })}</Text>
+                        </TextWrapper>
+                        <ProgressWrapper>
+                            <Title>
+                                {stageProgress} / {stageTotal}
+                            </Title>
+                            <CircularProgress />
+                        </ProgressWrapper>
+                    </Wrapper>
+                )}
+            </FloatingPortal>
+        </FloatingNode>
     );
 });
 

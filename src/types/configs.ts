@@ -7,6 +7,7 @@ export interface ConfigCore {
     is_p2pool_enabled: boolean;
     use_tor: boolean;
     allow_telemetry: boolean;
+    allow_notifications: boolean;
     last_binaries_update_timestamp?: string;
     anon_id: string;
     should_auto_launch: boolean;
@@ -22,6 +23,7 @@ export interface ConfigCore {
     };
     remote_base_node_address: string;
     node_type?: NodeType;
+    default_chain: number;
 }
 export interface ConfigWallet {
     created_at: string;
@@ -56,4 +58,13 @@ export interface ConfigMining {
     gpu_mining_enabled: boolean;
     cpu_mining_enabled: boolean;
     gpu_engine: string;
+    mining_time: number;
+}
+
+export interface ConfigBackendInMemory {
+    airdropUrl: string;
+    airdropApiUrl: string;
+    airdropTwitterAuthUrl: string;
+    exchangeId?: string;
+    walletConnectProjectId?: string;
 }

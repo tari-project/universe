@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { ReactNode, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LazyMotion, domAnimation, AnimatePresence } from 'motion/react';
 
@@ -15,6 +15,11 @@ import MainView from '../containers/main/MainView.tsx';
 import { AppContentContainer } from './App.styles.ts';
 import { useUIStore } from '@app/store/useUIStore.ts';
 import { TOWER_CANVAS_ID } from '@app/store';
+import { WagmiProvider } from 'wagmi';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useWagmiAdapter } from '@app/hooks/swap/useWagmiAdapter.ts';
+
+const queryClient = new QueryClient();
 
 interface CurrentAppSectionProps {
     showSplashscreen?: boolean;
@@ -53,6 +58,16 @@ function CurrentAppSection({ showSplashscreen, isShuttingDown }: CurrentAppSecti
     return <AnimatePresence mode="wait">{currentSection}</AnimatePresence>;
 }
 
+function WagmiWrapper({ children }: { children: ReactNode }) {
+    const wagmiAdapter = useWagmiAdapter();
+    if (!wagmiAdapter) return <>{children}</>;
+    return (
+        <WagmiProvider config={wagmiAdapter?.wagmiConfig}>
+            <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+        </WagmiProvider>
+    );
+}
+
 export default function App() {
     const isShuttingDown = useShuttingDown();
     const showSplashscreen = useUIStore((s) => s.showSplashscreen);
@@ -65,13 +80,15 @@ export default function App() {
 
     return (
         <ThemeProvider>
-            <GlobalReset />
-            <GlobalStyle $hideCanvas={showSplashscreen || isShuttingDown} />
-            <LazyMotion features={domAnimation} strict>
-                <FloatingElements />
-                <CurrentAppSection showSplashscreen={showSplashscreen} isShuttingDown={isShuttingDown} />
-                <canvas id={TOWER_CANVAS_ID} />
-            </LazyMotion>
+            <WagmiWrapper>
+                <GlobalReset />
+                <GlobalStyle $hideCanvas={showSplashscreen || isShuttingDown} />
+                <LazyMotion features={domAnimation} strict>
+                    <FloatingElements />
+                    <CurrentAppSection showSplashscreen={showSplashscreen} isShuttingDown={isShuttingDown} />
+                    <canvas id={TOWER_CANVAS_ID} />
+                </LazyMotion>
+            </WagmiWrapper>
         </ThemeProvider>
     );
 }

@@ -21,21 +21,26 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use getset::{Getters, Setters};
-use log::warn;
 use semver::Version;
 use serde::{Deserialize, Serialize};
-use std::{str::FromStr, sync::LazyLock, time::SystemTime};
+use std::{sync::LazyLock, time::SystemTime};
 use tari_common::configuration::Network;
 use tauri::AppHandle;
 use tokio::sync::RwLock;
 
 use crate::node::node_manager::NodeType;
 use crate::{
-    ab_test_selector::ABTestSelector, app_config::AirdropTokens, events_manager::EventsManager,
-    internal_wallet::generate_password, AppConfig,
+    ab_test_selector::ABTestSelector, events_manager::EventsManager,
+    internal_wallet::generate_password,
 };
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct AirdropTokens {
+    pub token: String,
+    pub refresh_token: String,
+}
 
 static INSTANCE: LazyLock<RwLock<ConfigCore>> = LazyLock::new(|| RwLock::new(ConfigCore::new()));
 #[allow(clippy::struct_excessive_bools)]
@@ -50,6 +55,7 @@ pub struct ConfigCoreContent {
     is_p2pool_enabled: bool,
     use_tor: bool,
     allow_telemetry: bool,
+    allow_notifications: bool,
     last_binaries_update_timestamp: SystemTime,
     anon_id: String,
     ab_group: ABTestSelector,
@@ -102,6 +108,7 @@ impl Default for ConfigCoreContent {
             is_p2pool_enabled: true,
             use_tor: true,
             allow_telemetry: true,
+            allow_notifications: false,
             last_binaries_update_timestamp: SystemTime::now(),
             anon_id,
             ab_group: ab_test_selector,
@@ -126,15 +133,9 @@ pub struct ConfigCore {
 }
 
 impl ConfigCore {
-    pub async fn initialize(app_handle: AppHandle, old_config: Option<AppConfig>) {
+    pub async fn initialize(app_handle: AppHandle) {
         let mut config = Self::current().write().await;
         config.load_app_handle(app_handle.clone()).await;
-        config.handle_old_config_migration(old_config);
-        if config.content.mmproxy_monero_nodes.is_empty() {
-            warn!("Empty list of monero nodes for mmproxy found. Using default list");
-            config.content.mmproxy_monero_nodes = default_monero_nodes();
-            let _unused = Self::_save_config(config.content.clone());
-        }
 
         EventsManager::handle_config_core_loaded(&app_handle, config.content.clone()).await;
     }
@@ -142,7 +143,6 @@ impl ConfigCore {
 
 impl ConfigImpl for ConfigCore {
     type Config = ConfigCoreContent;
-    type OldConfig = AppConfig;
 
     fn current() -> &'static RwLock<Self> {
         &INSTANCE
@@ -173,37 +173,5 @@ impl ConfigImpl for ConfigCore {
 
     fn _get_content_mut(&mut self) -> &mut Self::Config {
         &mut self.content
-    }
-
-    fn handle_old_config_migration(&mut self, old_config: Option<Self::OldConfig>) {
-        if self.content.was_config_migrated {
-            return;
-        }
-
-        if old_config.is_some() {
-            let old_config = old_config.expect("Old config should be present");
-            self.content = ConfigCoreContent {
-                was_config_migrated: true,
-                created_at: SystemTime::now(),
-                is_p2pool_enabled: old_config.p2pool_enabled(),
-                use_tor: old_config.use_tor(),
-                allow_telemetry: old_config.allow_telemetry(),
-                last_binaries_update_timestamp: old_config.last_binaries_update_timestamp(),
-                anon_id: old_config.anon_id().to_string(),
-                should_auto_launch: old_config.should_auto_launch(),
-                mmproxy_use_monero_failover: old_config.mmproxy_use_monero_fail(),
-                mmproxy_monero_nodes: old_config.mmproxy_monero_nodes().to_vec(),
-                auto_update: old_config.auto_update(),
-                p2pool_stats_server_port: old_config.p2pool_stats_server_port(),
-                pre_release: old_config.pre_release(),
-                last_changelog_version: Version::from_str(old_config.last_changelog_version())
-                    .unwrap_or_else(|_| Version::new(0, 0, 0)),
-                airdrop_tokens: old_config.airdrop_tokens(),
-                ..Default::default()
-            };
-            let _unused = Self::_save_config(self.content.clone());
-        } else {
-            self.content.set_was_config_migrated(true);
-        }
     }
 }

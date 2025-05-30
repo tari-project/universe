@@ -38,11 +38,23 @@ const AIRDROP_API_BASE_URL: &str = std::env!(
 const TELEMETRY_API_URL: &str =
     std::env!("TELEMETRY_API_URL", "TELEMETRY_API_URL env var not defined");
 
+pub const DEFAULT_EXCHANGE_ID: &str = "universal";
+pub const EXCHANGE_ID: &str = match option_env!("EXCHANGE_ID") {
+    Some(val) => val,
+    None => DEFAULT_EXCHANGE_ID,
+};
+pub const WALLET_CONNECT_PROJECT_ID: &str = match option_env!("BRIDGE_WALLET_CONNECT_PROJECT_ID") {
+    Some(val) => val,
+    None => "c523cd3d3e0246530115c1dc2c016852",
+};
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AppInMemoryConfig {
     pub airdrop_url: String,
     pub airdrop_api_url: String,
     pub telemetry_api_url: String,
+    pub exchange_id: String,
+    pub wallet_connect_project_id: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -50,6 +62,8 @@ pub struct AppInMemoryConfig {
 pub struct AirdropInMemoryConfig {
     pub airdrop_url: String,
     pub airdrop_api_url: String,
+    pub exchange_id: Option<String>,
+    pub wallet_connect_project_id: Option<String>,
 }
 
 impl From<AppInMemoryConfig> for AirdropInMemoryConfig {
@@ -57,6 +71,8 @@ impl From<AppInMemoryConfig> for AirdropInMemoryConfig {
         AirdropInMemoryConfig {
             airdrop_url: app_config.airdrop_url,
             airdrop_api_url: app_config.airdrop_api_url,
+            exchange_id: Some(app_config.exchange_id),
+            wallet_connect_project_id: Some(app_config.wallet_connect_project_id),
         }
     }
 }
@@ -67,6 +83,8 @@ impl Default for AppInMemoryConfig {
             airdrop_url: "https://airdrop.tari.com".into(),
             airdrop_api_url: "https://ut.tari.com".into(),
             telemetry_api_url: "https://ut.tari.com/push".into(),
+            exchange_id: EXCHANGE_ID.into(),
+            wallet_connect_project_id: WALLET_CONNECT_PROJECT_ID.into(),
         }
     }
 }
@@ -111,6 +129,8 @@ impl AppInMemoryConfig {
             airdrop_url: AIRDROP_BASE_URL.into(),
             airdrop_api_url: AIRDROP_API_BASE_URL.into(),
             telemetry_api_url: TELEMETRY_API_URL.into(),
+            exchange_id: EXCHANGE_ID.into(),
+            wallet_connect_project_id: WALLET_CONNECT_PROJECT_ID.into(),
         };
 
         #[cfg(all(feature = "airdrop-local", not(feature = "airdrop-env")))]
@@ -118,12 +138,14 @@ impl AppInMemoryConfig {
             airdrop_url: "http://localhost:4000".into(),
             airdrop_api_url: "http://localhost:3004".into(),
             telemetry_api_url: "http://localhost:3004".into(),
+            exchange_id: EXCHANGE_ID.into(),
+            wallet_connect_project_id: WALLET_CONNECT_PROJECT_ID.into(),
         };
 
         #[cfg(not(any(
             feature = "airdrop-local",
             feature = "airdrop-env",
-            feature = "telemetry-env"
+            feature = "telemetry-env",
         )))]
         AppInMemoryConfig::default()
     }

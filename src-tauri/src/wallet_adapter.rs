@@ -103,24 +103,27 @@ impl WalletAdapter {
         limit: Option<u32>,
     ) -> Result<Vec<TransactionInfo>, WalletStatusMonitorError> {
         // TODO: Implement starting point instead of continuation
-        let mut stream = if continuation
-            && self.completed_transactions_stream.lock().await.is_some()
-        {
-            self.completed_transactions_stream
-                .lock()
-                .await
-                .take()
-                .expect("completed_transactions_stream not found")
-        } else {
-            let mut client = WalletClient::connect(self.wallet_grpc_address())
-                .await
-                .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
-            let res = client
-                .get_completed_transactions(GetCompletedTransactionsRequest { payment_id: None })
-                .await
-                .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?;
-            res.into_inner()
-        };
+        let mut stream =
+            if continuation && self.completed_transactions_stream.lock().await.is_some() {
+                self.completed_transactions_stream
+                    .lock()
+                    .await
+                    .take()
+                    .expect("completed_transactions_stream not found")
+            } else {
+                let mut client = WalletClient::connect(self.wallet_grpc_address())
+                    .await
+                    .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
+                let res = client
+                    .get_completed_transactions(GetCompletedTransactionsRequest {
+                        payment_id: None,
+                        block_hash: None,
+                        block_height: None,
+                    })
+                    .await
+                    .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?;
+                res.into_inner()
+            };
 
         let mut transactions: Vec<TransactionInfo> = Vec::new();
 
@@ -132,8 +135,8 @@ impl WalletAdapter {
             let tx = message.transaction.ok_or_else(|| {
                 WalletStatusMonitorError::UnknownError(anyhow::anyhow!("Transaction not found"))
             })?;
-            if tx.status == 14 || tx.status == 7 {
-                // Remove TRANSACTION_STATUS_COINBASE_NOT_IN_BLOCK_CHAIN and REJECTED
+            if tx.status == 14 {
+                // Remove TRANSACTION_STATUS_COINBASE_NOT_IN_BLOCK_CHAIN
                 continue;
             }
             let source_address = TariAddress::from_bytes(&tx.source_address)?;
@@ -150,7 +153,7 @@ impl WalletAdapter {
                 excess_sig: tx.excess_sig,
                 fee: tx.fee,
                 timestamp: tx.timestamp,
-                payment_id: PaymentId::from_bytes(&tx.payment_id).user_data_as_string(),
+                payment_id: PaymentId::stringify_bytes(&tx.user_payment_id),
                 mined_in_block_height: tx.mined_in_block_height,
             });
             if let Some(limit) = limit {
@@ -185,7 +188,11 @@ impl WalletAdapter {
                 .await
                 .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
             let res = client
-                .get_completed_transactions(GetCompletedTransactionsRequest { payment_id: None })
+                .get_completed_transactions(GetCompletedTransactionsRequest {
+                    payment_id: None,
+                    block_hash: None,
+                    block_height: None,
+                })
                 .await
                 .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?;
             res.into_inner()
@@ -214,7 +221,7 @@ impl WalletAdapter {
                 excess_sig: tx.excess_sig,
                 fee: tx.fee,
                 timestamp: tx.timestamp,
-                payment_id: PaymentId::from_bytes(&tx.payment_id).user_data_as_string(),
+                payment_id: PaymentId::stringify_bytes(&tx.user_payment_id),
                 mined_in_block_height: tx.mined_in_block_height,
             });
             if let Some(limit) = limit {
@@ -258,7 +265,7 @@ impl WalletAdapter {
                             if let Some(network) = &state.network {
                                 if matches!(network.status, ConnectivityStatus::Online(3..)) {
                                     zero_scanned_height_count += 1;
-                                    if zero_scanned_height_count >= 10 {
+                                    if zero_scanned_height_count >= 5 {
                                         warn!(target: LOG_TARGET, "Wallet scanned before gRPC service started");
                                         return Ok(state);
                                     }

@@ -36,6 +36,7 @@ pub enum EventType {
     WalletBalanceUpdate,
     BaseNodeUpdate,
     GpuDevicesUpdate,
+    PoolStatusUpdate,
     CpuMiningUpdate,
     GpuMiningUpdate,
     ConnectedPeersUpdate,
@@ -56,11 +57,14 @@ pub enum EventType {
     HardwarePhaseFinished,
     NodePhaseFinished,
     UnknownPhaseFinished,
+    InitialSetupFinished,
     UnlockApp,
     UnlockWallet,
-    UnlockMining,
+    UnlockCpuMining,
+    UnlockGpuMining,
     LockWallet,
-    LockMining,
+    LockCpuMining,
+    LockGpuMining,
     NodeTypeUpdate,
     ConfigCoreLoaded,
     ConfigUILoaded,
@@ -70,6 +74,7 @@ pub enum EventType {
     InitWalletScanningProgress,
     ConnectionStatus,
     ShowStageSecurityModal,
+    MiningTime,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -118,6 +123,7 @@ pub struct Event<T, E> {
 pub struct WalletAddressUpdatePayload {
     pub tari_address_base58: String,
     pub tari_address_emoji: String,
+    pub is_tari_address_generated: bool,
 }
 
 #[derive(Clone, Debug, Serialize)]

@@ -24,7 +24,7 @@ import {
     useInteractions,
     useRole,
 } from '@floating-ui/react';
-import LoadingDots from '@app/components/transactions/send/SendReview/icons/LoadingDots.tsx';
+import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 
 export interface SelectOption<T = string> {
     label: string;
@@ -95,8 +95,10 @@ export function Select({
     ) : (
         <>
             <SelectedOption $isBordered={isBordered} $forceHeight={forceHeight}>
-                <Typography style={isBordered ? undefined : { padding: `0 0 0 15px` }}>{selectedLabel}</Typography>
-                {selectedIcon ? <img src={selectedIcon} alt={`Selected option: ${selectedLabel} icon `} /> : null}
+                <Typography>{selectedLabel}</Typography>
+                {selectedIcon && variant !== 'primary' ? (
+                    <img src={selectedIcon} alt={`Selected option: ${selectedLabel} icon `} />
+                ) : null}
             </SelectedOption>
         </>
     );

@@ -35,6 +35,7 @@ use crate::{
         ProgressStepper,
     },
     setup::{setup_manager::SetupPhase, utils::conditional_sleeper},
+    tapplets::{TappletResolver, Tapplets},
     tasks_tracker::TasksTrackers,
     UniverseAppState,
 };
@@ -52,7 +53,7 @@ use tokio::{
 };
 
 use super::{
-    setup_manager::PhaseStatus,
+    setup_manager::{PhaseStatus, SetupFeaturesList},
     trait_setup_phase::{SetupConfiguration, SetupPhaseImpl},
 };
 
@@ -74,6 +75,8 @@ pub struct WalletSetupPhase {
     app_configuration: WalletSetupPhaseAppConfiguration,
     setup_configuration: SetupConfiguration,
     status_sender: Sender<PhaseStatus>,
+    #[allow(dead_code)]
+    setup_features: SetupFeaturesList,
 }
 
 impl SetupPhaseImpl for WalletSetupPhase {
@@ -83,6 +86,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
         app_handle: AppHandle,
         status_sender: Sender<PhaseStatus>,
         configuration: SetupConfiguration,
+        setup_features: SetupFeaturesList,
     ) -> Self {
         Self {
             app_handle: app_handle.clone(),
@@ -90,6 +94,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
             app_configuration: Self::load_app_configuration().await.unwrap_or_default(),
             setup_configuration: configuration,
             status_sender,
+            setup_features,
         }
     }
 
@@ -106,6 +111,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
             .add_step(ProgressPlans::Wallet(
                 ProgressSetupWalletPlan::InitializeSpendingWallet,
             ))
+            .add_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::SetupBridge))
             .add_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::Done))
             .build(app_handle)
     }
@@ -178,6 +184,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
         let progress = ProgressTracker::new(self.app_handle.clone(), Some(tx));
 
         let binary_resolver = BinaryResolver::current().read().await;
+        let tapplet_resolver = TappletResolver::current().read().await;
 
         progress_stepper
             .resolve_step(ProgressPlans::Wallet(
@@ -227,6 +234,14 @@ impl SetupPhaseImpl for WalletSetupPhase {
             )
             .await?;
         drop(spend_wallet_manager);
+
+        progress_stepper
+            .resolve_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::SetupBridge))
+            .await;
+
+        tapplet_resolver
+            .initialize_tapplet_timeout(Tapplets::Bridge, progress.clone(), rx.clone())
+            .await?;
 
         Ok(())
     }

@@ -13,7 +13,7 @@ import eco from '@app/assets/icons/emoji/eco.png';
 import fire from '@app/assets/icons/emoji/fire.png';
 import custom from '@app/assets/icons/emoji/custom.png';
 
-import { TileItem } from '../styles';
+import { TileItem, TileTop } from '../styles';
 import { useConfigMiningStore, useConfigUIStore } from '@app/store';
 import { useSetupStore } from '@app/store/useSetupStore';
 
@@ -29,7 +29,7 @@ const ModeSelect = memo(function ModeSelect({ variant = 'primary' }: ModeSelectP
 
     const isMiningControlsEnabled = useMiningStore((s) => s.miningControlsEnabled);
     const isChangingMode = useMiningStore((s) => s.isChangingMode);
-    const isMiningInitiated = useMiningStore((s) => s.miningInitiated);
+    const isMiningInitiated = useMiningStore((s) => s.isCpuMiningInitiated || s.isGpuMiningInitiated);
     const isMining = isCPUMining || isGPUMining;
 
     const isMiningLoading = isMiningInitiated ? !isMining : isMining;
@@ -86,9 +86,24 @@ const ModeSelect = memo(function ModeSelect({ variant = 'primary' }: ModeSelectP
         return selectMarkup;
     }
 
+    const headerIcon = tabOptions.find((option) => option.value === mode)?.iconSrc;
+
     return (
-        <TileItem $unpadded>
-            <Typography style={{ padding: `0 15px` }}>{t('mode')}</Typography>
+        <TileItem>
+            <TileTop>
+                <Typography>{t('mode')}</Typography>
+                {headerIcon ? (
+                    <img
+                        src={headerIcon}
+                        alt="bla"
+                        style={{
+                            width: 12,
+                            display: 'flex',
+                            marginRight: 4,
+                        }}
+                    />
+                ) : null}
+            </TileTop>
             {selectMarkup}
         </TileItem>
     );

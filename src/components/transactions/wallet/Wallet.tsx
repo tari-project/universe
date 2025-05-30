@@ -19,10 +19,22 @@ import { ReceiveSVG } from '@app/assets/icons/receive.tsx';
 import { useAirdropStore, usePaperWalletStore } from '@app/store';
 import { Button } from '@app/components/elements/buttons/Button';
 import SyncTooltip from '@app/containers/navigation/components/Wallet/SyncTooltip/SyncTooltip.tsx';
-import { SyncButton, TabsTitle, TabsWrapper, Wrapper } from './wallet.styles.ts';
+import {
+    BuyTariButton,
+    SyncButton,
+    TabsTitle,
+    Wrapper,
+    TabsWrapper,
+    WalletWrapper,
+    SwapsWrapper,
+} from './wallet.styles.ts';
 import { memo } from 'react';
 import { useTariBalance } from '@app/hooks/wallet/useTariBalance.ts';
 import ArrowRight from './ArrowRight.tsx';
+import { Swap } from './Swap/Swap.tsx';
+import { AnimatePresence } from 'motion/react';
+import { swapTransition, walletTransition } from './transitions.ts';
+import { setIsSwapping } from '@app/store/actions/walletStoreActions.ts';
 
 interface Props {
     section: string;
@@ -37,72 +49,91 @@ const Wallet = memo(function Wallet({ section, setSection }: Props) {
     const walletAddress = useWalletStore((state) => state.tari_address_base58);
     const availableBalance = useWalletStore((s) => s.balance?.available_balance);
     const displayAddress = truncateMiddle(walletAddress, 4);
+    const swapUiEnabled = useAirdropStore((s) => s.swapsEnabled);
+    const isSwapping = useWalletStore((s) => s.is_swapping);
 
     const { isWalletScanning, formattedAvailableBalance } = useTariBalance();
 
     return (
-        <Wrapper>
-            <TabHeader $noBorder>
-                <HeaderLabel>{t('my_tari')}</HeaderLabel>
-                <AddressWrapper>
-                    <HeaderLabel>{displayAddress}</HeaderLabel>
-                    <StyledIconButton onClick={() => copyToClipboard(walletAddress)}>
-                        {!isCopied ? <IoCopyOutline size={12} /> : <IoCheckmarkOutline size={12} />}
-                    </StyledIconButton>
-                </AddressWrapper>
-            </TabHeader>
+        <AnimatePresence mode="wait">
+            {isSwapping && swapUiEnabled ? (
+                <SwapsWrapper {...swapTransition} key="swap">
+                    <Swap />
+                </SwapsWrapper>
+            ) : (
+                <WalletWrapper {...walletTransition} key="wallet">
+                    <Wrapper>
+                        <TabHeader $noBorder>
+                            <HeaderLabel>{t('my_tari')}</HeaderLabel>
+                            <AddressWrapper>
+                                <HeaderLabel>{displayAddress}</HeaderLabel>
+                                <StyledIconButton onClick={() => copyToClipboard(walletAddress)}>
+                                    {!isCopied ? <IoCopyOutline size={12} /> : <IoCheckmarkOutline size={12} />}
+                                </StyledIconButton>
+                            </AddressWrapper>
+                        </TabHeader>
 
-            <WalletBalanceMarkup />
+                        <WalletBalanceMarkup />
 
-            {uiSendRecvEnabled && !isWalletScanning && (
-                <TabsWrapper>
-                    <TabsTitle>{`${t('history.available-balance')}: ${formattedAvailableBalance} ${t('common:xtm')}`}</TabsTitle>
-                    <SyncButton onClick={() => setShowPaperWalletModal(true)}>
-                        {t('history.sync-with-phone')} <ArrowRight />
-                    </SyncButton>
-                </TabsWrapper>
+                        {uiSendRecvEnabled && !isWalletScanning && (
+                            <TabsWrapper>
+                                <TabsTitle>{`${t('history.available-balance')}: ${formattedAvailableBalance} ${t('common:xtm')}`}</TabsTitle>
+                                <SyncButton onClick={() => setShowPaperWalletModal(true)}>
+                                    {t('history.sync-with-phone')} <ArrowRight />
+                                </SyncButton>
+                            </TabsWrapper>
+                        )}
+
+                        <HistoryList />
+
+                        {uiSendRecvEnabled ? (
+                            <>
+                                {swapUiEnabled ? (
+                                    <BuyTariButton onClick={() => setIsSwapping(true)}>
+                                        {'Buy Tari (wXTM)'}
+                                    </BuyTariButton>
+                                ) : null}
+                                <BottomNavWrapper>
+                                    <NavButton
+                                        onClick={() => setSection('send')}
+                                        $isActive={section === 'send'}
+                                        aria-selected={section === 'send'}
+                                        disabled={isWalletScanning || !availableBalance}
+                                    >
+                                        <NavButtonContent>
+                                            <SendSVG />
+                                            {t('tabs.send')}
+                                        </NavButtonContent>
+                                    </NavButton>
+                                    <NavButton
+                                        onClick={() => setSection('receive')}
+                                        $isActive={section === 'receive'}
+                                        aria-selected={section === 'receive'}
+                                    >
+                                        <NavButtonContent>
+                                            <ReceiveSVG />
+                                            {t('tabs.receive')}
+                                        </NavButtonContent>
+                                    </NavButton>
+                                </BottomNavWrapper>
+                            </>
+                        ) : (
+                            <BottomNavWrapper>
+                                <SyncTooltip
+                                    title={t('paper-wallet-tooltip-title', { ns: 'sidebar' })}
+                                    text={t('paper-wallet-tooltip-message', { ns: 'sidebar' })}
+                                    trigger={
+                                        <Button fluid onClick={() => setShowPaperWalletModal(true)}>
+                                            {t('paper-wallet-button', { ns: 'sidebar' })}
+                                        </Button>
+                                    }
+                                />
+                            </BottomNavWrapper>
+                        )}
+                    </Wrapper>
+                </WalletWrapper>
             )}
-
-            <HistoryList />
-
-            <BottomNavWrapper>
-                {uiSendRecvEnabled ? (
-                    <>
-                        <NavButton
-                            onClick={() => setSection('send')}
-                            $isActive={section === 'send'}
-                            aria-selected={section === 'send'}
-                            disabled={isWalletScanning || !availableBalance}
-                        >
-                            <NavButtonContent>
-                                <SendSVG />
-                                {t('tabs.send')}
-                            </NavButtonContent>
-                        </NavButton>
-                        <NavButton
-                            onClick={() => setSection('receive')}
-                            $isActive={section === 'receive'}
-                            aria-selected={section === 'receive'}
-                        >
-                            <NavButtonContent>
-                                <ReceiveSVG />
-                                {t('tabs.receive')}
-                            </NavButtonContent>
-                        </NavButton>
-                    </>
-                ) : (
-                    <SyncTooltip
-                        title={t('paper-wallet-tooltip-title', { ns: 'sidebar' })}
-                        text={t('paper-wallet-tooltip-message', { ns: 'sidebar' })}
-                        trigger={
-                            <Button fluid onClick={() => setShowPaperWalletModal(true)}>
-                                {t('paper-wallet-button', { ns: 'sidebar' })}
-                            </Button>
-                        }
-                    />
-                )}
-            </BottomNavWrapper>
-        </Wrapper>
+        </AnimatePresence>
     );
 });
 

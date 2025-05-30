@@ -160,6 +160,7 @@
     "title": "自动更新 Tari 宇宙"
   },
   "use-dynamic-fail-data": "使用动态失败数据",
+  "use-p2p": "Use P2pool",
   "use-random-control-port": "使用随机控制端口",
   "use-random-port": "使用随机端口",
   "use-tor": "使用Tor",
