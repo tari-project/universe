@@ -23,7 +23,7 @@ const configCoreInitialState: ConfigCore = {
     last_binaries_update_timestamp: '',
     p2pool_stats_server_port: undefined,
     default_chain: window.location.host.startsWith('localhost:') ? ChainId.SEPOLIA : ChainId.MAINNET,
-    is_universal_miner_initialized: false,
+    is_universal_miner_initialized: undefined,
 };
 
 const configWalletInitialState: ConfigWallet = {

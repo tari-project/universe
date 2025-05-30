@@ -907,26 +907,24 @@ impl SetupManager {
     async fn await_selected_exchange_miner(&self, app_handle: AppHandle) {
         let state = app_handle.state::<UniverseAppState>();
         let memory_config = state.in_memory_config.read().await;
-        let is_universal_miner_initialized =
-            *ConfigCore::content().await.is_universal_miner_initialized();
+        let is_universal_miner_initialized = ConfigCore::content()
+            .await
+            .is_universal_miner_initialized()
+            .clone();
         info!(
-            "[DEBUG] is_universal_miner_initialized: {}",
+            "[DEBUG] is_universal_miner_initialized: {:?}",
             is_universal_miner_initialized
         );
         info!(
             "[DEBUG] is_universal_miner: {}",
             memory_config.is_universal_miner()
         );
-        if !memory_config.is_universal_miner() || is_universal_miner_initialized {
+        if !memory_config.is_universal_miner() || is_universal_miner_initialized.is_some() {
             info!("[DEBUG] Initializing universal miner");
             return;
         }
         drop(memory_config);
         let _unused = self.universal_modal_status.subscribe().changed().await;
-        let _unused =
-            ConfigCore::update_field(ConfigCoreContent::set_is_universal_miner_initialized, true)
-                .await;
-        EventsEmitter::emit_is_universal_miner_initialized_changed(true).await;
     }
 
     pub async fn select_exchange_miner(
@@ -941,6 +939,12 @@ impl SetupManager {
         *config = new_config;
 
         EventsEmitter::emit_app_in_memory_config_changed(new_config_cloned, true).await;
+        let _unused = ConfigCore::update_field(
+            ConfigCoreContent::set_is_universal_miner_initialized,
+            Some(selected_miner.id.clone()),
+        )
+        .await;
+        EventsEmitter::emit_is_universal_miner_initialized_changed(selected_miner.id.clone()).await;
         self.universal_modal_status
             .send(selected_miner.clone())
             .map_err(|e| e.to_string())?;

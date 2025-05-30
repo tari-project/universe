@@ -186,5 +186,5 @@ pub struct DisabledPhasesPayload {
 
 #[derive(Debug, Serialize, Clone)]
 pub struct IsUniversalMinerInitializedChangedPayload {
-    pub is_universal_miner_initialized: bool,
+    pub is_universal_miner_initialized: String,
 }

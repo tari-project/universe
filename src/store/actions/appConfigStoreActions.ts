@@ -334,15 +334,20 @@ export const fetchBackendInMemoryConfig = async () => {
         const res = await invoke('get_app_in_memory_config');
         if (res) {
             useConfigBEInMemoryStore.setState({ ...res, isUniversalMiner });
-            const isUniversalMinerInitialized = await invoke('get_is_universal_miner_initialized'); // It has to be a command instead of getter from appConfigStore since it's not initialized yet
+            const isUniversalMinerInitialized = await invoke('get_is_universal_miner_initialized'); // It has to be a command instead of getter from appConfigStore since store is not initialized yet
             console.info('[DEBUG] isUniversalMinerInitialized: ', isUniversalMinerInitialized);
-            if (isUniversalMiner && !isUniversalMinerInitialized) {
+            const isUniversalUninitialized = isUniversalMiner && !isUniversalMinerInitialized;
+            const isUniversalInitialized = isUniversalMiner && isUniversalMinerInitialized;
+            const isExchangeMode = res.exchangeId && !isUniversalMiner && res.exchangeId !== 'classic';
+            if (isUniversalUninitialized) {
                 await fetchExchangeMiners();
-                console.info('[DEBUG] setting setShowUniversalModal to true');
                 setShowUniversalModal(true);
             }
-            if (res.exchangeId && !isUniversalMiner && res.exchangeId !== 'classic') {
+            if (isExchangeMode) {
                 await fetchExchangeContent(res.exchangeId);
+            }
+            if (isUniversalInitialized) {
+                await fetchExchangeContent(isUniversalMinerInitialized);
             }
         }
     } catch (e) {

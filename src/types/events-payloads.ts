@@ -69,14 +69,14 @@ export interface SnakeCaseAppInMemoryConfig {
     airdrop_url: string;
     airdrop_api_url: string;
     airdrop_twitter_auth_url: string;
-    exchange_id?: string;
+    exchange_id: string;
 }
 export interface AppInMemoryConfigChangedPayload {
     app_in_memory_config: SnakeCaseAppInMemoryConfig;
     is_universal_exchange: boolean;
 }
 export interface IsUniversalMinerInitializedChangedPayload {
-    is_universal_miner_initialized: boolean;
+    is_universal_miner_initialized: string;
 }
 export interface ConnectionStatusPayload {
     status: 'InProgress' | 'Succeed' | 'Failed';

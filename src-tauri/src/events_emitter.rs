@@ -772,7 +772,9 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_is_universal_miner_initialized_changed(is_universal_miner_initialized: bool) {
+    pub async fn emit_is_universal_miner_initialized_changed(
+        is_universal_miner_initialized: String,
+    ) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::IsUniversalMinerInitializedChanged,
