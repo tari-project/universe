@@ -6,15 +6,15 @@ import erc20Abi from '../abi/erc20.json';
 // V3 ABIs - You'll need to get these ABI files
 import uniswapV3PoolAbi from '../abi/IUniswapV3Pool.json';
 import uniswapV3QuoterV2Abi from '../abi/IQuoterV2.json';
-import uniswapV3SwapRouter02Abi from '../abi/ISwapRouter02.json';
+import universalRouterAbi from '../abi/UniversalRouter.json';
 import uniswapV3FactoryAbi from '../abi/UniswapV3Factory.json';
 
-export { erc20Abi, uniswapV3PoolAbi, uniswapV3QuoterV2Abi, uniswapV3SwapRouter02Abi, uniswapV3FactoryAbi };
+export { erc20Abi, uniswapV3PoolAbi, uniswapV3QuoterV2Abi, universalRouterAbi, uniswapV3FactoryAbi };
 
 const ENABLED_NETWORKS = [ChainId.MAINNET, ChainId.SEPOLIA];
 
-export const ROUTER_ADDRESSES_V3: Partial<Record<ChainId, `0x${string}`>> = {
-    [ChainId.MAINNET]: '0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45',
+export const UNIVERSAL_ROUTER_ADDRESSES: Partial<Record<ChainId, `0x${string}`>> = {
+    [ChainId.MAINNET]: '0x66a9893cc07d91d95644aedd05d03f95e1dba8af',
     [ChainId.SEPOLIA]: '0x3bFA4769FB09eefC5a80d6E87c3B9C650f7Ae48E',
 };
 
@@ -26,6 +26,16 @@ export const QUOTER_ADDRESSES_V3: Partial<Record<ChainId, `0x${string}`>> = {
 export const FACTORY_ADDRESSES_V3: Partial<Record<ChainId, `0x${string}`>> = {
     [ChainId.MAINNET]: '0x1F98431c8aD98523631AE4a59f267346ea31F984',
     [ChainId.SEPOLIA]: '0x0227628f3F023bb0B980b67D528571c95c6DaC1c',
+};
+
+export const PERMIT2_ADDRESS: Partial<Record<ChainId, `0x${string}`>> = {
+    [ChainId.MAINNET]: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
+    [ChainId.SEPOLIA]: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
+};
+
+export const PERMIT2_SPENDER_ADDRESS: Partial<Record<ChainId, `0x${string}`>> = {
+    [ChainId.MAINNET]: '0x66a9893cc07d91d95644aedd05d03f95e1dba8af',
+    [ChainId.SEPOLIA]: '0x3bFA4769FB09eefC5a80d6E87c3B9C650f7Ae48E',
 };
 
 export enum EnabledTokensEnum {
@@ -116,3 +126,8 @@ export const DEADLINE_MINUTES = 20;
 
 // Default V3 Fee Tier to use. In a real app, you might want to query available pools or let user select.
 export const DEFAULT_V3_POOL_FEE = FeeAmount.MEDIUM; // 0.3%
+
+export const POOL_FACTORY_CONTRACT_ADDRESS = '0x1F98431c8aD98523631AE4a59f267346ea31F984';
+
+// In constants.ts
+export const SLIPPAGE_TOLERANCE_PERCENT = new Percent(50, 10_000); // 0.5%

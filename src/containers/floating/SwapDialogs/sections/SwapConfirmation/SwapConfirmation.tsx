@@ -96,7 +96,8 @@ export const SwapConfirmation = ({
         if (networkFee) {
             baseItems.push({
                 label: t('swap.network-cost'), // Estimated Network Cost
-                value: networkFee,
+                value: `${networkFee} (gas units est.)`,
+
                 helpText: networkFee,
             });
         }

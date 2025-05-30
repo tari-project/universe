@@ -8,13 +8,19 @@ export interface V3PoolInfo {
     poolContract: Pool;
 }
 
-export interface V3TradeDetails {
-    // If using QuoterV2 directly, you might not have a full Trade object
-    // but rather the direct outputs.
-    // If building a full V3 Trade object, this would be:
-    // trade: TradeV3<Token, Token, TradeType.EXACT_INPUT | TradeType.EXACT_OUTPUT> | null;
-    // route: RouteV3<Token, Token> | null;
+// Represents a single leg in a multi-hop swap path
+export interface SwapLeg {
+    poolAddress: string; // For debugging or direct pool interaction
+    tokenIn: Token;
+    tokenOut: Token;
+    fee: FeeAmount;
+    // Optional: raw pool data if fetched
+    sqrtRatioX96?: bigint;
+    liquidity?: bigint;
+    tickCurrent?: number;
+}
 
+export interface V3TradeDetails {
     // For QuoterV2 based approach:
     inputToken?: Token | NativeCurrency;
     outputToken?: Token | NativeCurrency;

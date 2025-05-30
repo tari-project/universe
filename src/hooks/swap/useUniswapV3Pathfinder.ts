@@ -1,4 +1,4 @@
-import { Token, WETH9, CurrencyAmount, Ether, NativeCurrency, Price, Percent } from '@uniswap/sdk-core';
+import { Token, WETH9, CurrencyAmount, NativeCurrency, Price, Percent } from '@uniswap/sdk-core';
 import { FeeAmount } from '@uniswap/v3-sdk';
 import { usePublicClient } from 'wagmi';
 import { PublicClient as ViemPublicClient, zeroAddress } from 'viem';
@@ -9,26 +9,26 @@ import {
     QUOTER_ADDRESSES_V3,
     FACTORY_ADDRESSES_V3,
     uniswapV3FactoryAbi,
-    uniswapV3PoolAbi,
     USDT_SDK_TOKEN,
     XTM_SDK_TOKEN,
-    SLIPPAGE_TOLERANCE,
-} from './lib/constants'; // Assuming constants are correctly set up
+    SLIPPAGE_TOLERANCE_PERCENT,
+} from './lib/constants';
 import { V3TradeDetails, SwapField, TradeLeg } from './lib/types';
 
 interface UseUniswapV3PathfinderArgs {
     currentChainId: number | undefined;
-    uiToken0: Token | NativeCurrency | undefined; // Token corresponding to the 'from' field in UI
-    uiToken1: Token | NativeCurrency | undefined; // Token corresponding to the 'to' field in UI
+    uiToken0: Token | NativeCurrency | undefined;
+    uiToken1: Token | NativeCurrency | undefined;
 }
 
 interface PathfinderResult {
     tradeDetails: V3TradeDetails | null;
     error: string | null;
-    isLoading: boolean; // You'll need to manage this state outside if needed
+    isLoading: boolean;
 }
 
 const emptyPathfinderReturn: PathfinderResult = { tradeDetails: null, error: null, isLoading: false };
+
 export const useUniswapV3Pathfinder = ({ currentChainId, uiToken0, uiToken1 }: UseUniswapV3PathfinderArgs) => {
     const publicClient = usePublicClient({ chainId: currentChainId }) as ViemPublicClient;
 
@@ -42,10 +42,11 @@ export const useUniswapV3Pathfinder = ({ currentChainId, uiToken0, uiToken1 }: U
     );
     const xtmToken = useMemo(() => (currentChainId ? XTM_SDK_TOKEN[currentChainId] : undefined), [currentChainId]);
     const usdtToken = useMemo(() => (currentChainId ? USDT_SDK_TOKEN[currentChainId] : undefined), [currentChainId]);
-    const wethToken = useMemo(
-        () => (currentChainId ? WETH9[currentChainId as keyof typeof WETH9] : undefined),
-        [currentChainId]
-    );
+
+    const wethToken = useMemo(() => {
+        if (!currentChainId || !WETH9[currentChainId as keyof typeof WETH9]) return undefined;
+        return WETH9[currentChainId as keyof typeof WETH9];
+    }, [currentChainId]);
 
     const findAndQuoteSingleLeg = useCallback(
         async (
@@ -59,99 +60,79 @@ export const useUniswapV3Pathfinder = ({ currentChainId, uiToken0, uiToken1 }: U
             inputAmount?: CurrencyAmount<Token>;
             fee: FeeAmount;
             gasEstimate: bigint;
-            poolAddress: `0x${string}`; // Return pool address for debugging
+            poolAddress: `0x${string}`;
         } | null> => {
-            if (!publicClient || !v3FactoryAddress || !v3QuoterAddress) return null;
+            if (!publicClient || !v3FactoryAddress || !v3QuoterAddress || !tIn || !tOut) return null;
 
-            // Try fee tiers in a more common order, or allow specific overrides per pair type
-            const feeTiersToTry = [FeeAmount.LOW, FeeAmount.MEDIUM, FeeAmount.LOWEST, FeeAmount.HIGH]; // Example: 0.05%, 0.3%, 0.01%, 1%
+            const feeTiersToTry = [FeeAmount.LOW, FeeAmount.MEDIUM, FeeAmount.LOWEST, FeeAmount.HIGH];
             const [sortedA, sortedB] = tIn.sortsBefore(tOut) ? [tIn, tOut] : [tOut, tIn];
 
             for (const fee of feeTiersToTry) {
                 if (signal?.aborted) throw new Error('Aborted');
-                const poolAddr = (await publicClient.readContract({
-                    address: v3FactoryAddress,
-                    abi: uniswapV3FactoryAbi,
-                    functionName: 'getPool',
-                    args: [sortedA.address as `0x${string}`, sortedB.address as `0x${string}`, fee],
-                })) as `0x${string}`;
+                try {
+                    const poolAddr = (await publicClient.readContract({
+                        address: v3FactoryAddress,
+                        abi: uniswapV3FactoryAbi,
+                        functionName: 'getPool',
+                        args: [sortedA.address as `0x${string}`, sortedB.address as `0x${string}`, fee],
+                    })) as `0x${string}`;
 
-                if (poolAddr && poolAddr.toLowerCase() !== zeroAddress.toLowerCase()) {
-                    const liquidity = (await publicClient.readContract({
-                        address: poolAddr,
-                        abi: uniswapV3PoolAbi,
-                        functionName: 'liquidity',
-                    })) as bigint;
-
-                    if (liquidity > 0n) {
-                        // Pool exists and has some liquidity registered
-                        try {
-                            if (isExactInputLeg) {
-                                const quoteResult = (await publicClient.readContract({
-                                    address: v3QuoterAddress,
-                                    abi: uniswapV3QuoterV2Abi,
-                                    functionName: 'quoteExactInputSingle',
-                                    args: [
-                                        {
-                                            tokenIn: tIn.address as `0x${string}`,
-                                            tokenOut: tOut.address as `0x${string}`,
-                                            fee,
-                                            amountIn: amountForLeg.quotient,
-                                            sqrtPriceLimitX96: 0n,
-                                        },
-                                    ],
-                                })) as [bigint, bigint, bigint, bigint];
-
-                                if (quoteResult[0] > 0n) {
-                                    // Amount Out > 0
-                                    return {
-                                        outputAmount: CurrencyAmount.fromRawAmount(tOut, quoteResult[0].toString()),
+                    if (poolAddr && poolAddr.toLowerCase() !== zeroAddress.toLowerCase()) {
+                        if (isExactInputLeg) {
+                            const quoteResult = (await publicClient.readContract({
+                                address: v3QuoterAddress,
+                                abi: uniswapV3QuoterV2Abi,
+                                functionName: 'quoteExactInputSingle',
+                                args: [
+                                    {
+                                        tokenIn: tIn.address as `0x${string}`,
+                                        tokenOut: tOut.address as `0x${string}`,
+                                        amountIn: amountForLeg.quotient,
                                         fee,
-                                        gasEstimate: quoteResult[3],
-                                        poolAddress: poolAddr,
-                                    };
-                                }
-                            } else {
-                                // Exact Output
-                                const quoteResult = (await publicClient.readContract({
-                                    address: v3QuoterAddress,
-                                    abi: uniswapV3QuoterV2Abi,
-                                    functionName: 'quoteExactOutputSingle',
-                                    args: [
-                                        {
-                                            tokenIn: tIn.address as `0x${string}`,
-                                            tokenOut: tOut.address as `0x${string}`,
-                                            fee,
-                                            amount: amountForLeg.quotient,
-                                            sqrtPriceLimitX96: 0n,
-                                        },
-                                    ],
-                                })) as [bigint, bigint, bigint, bigint];
-                                if (quoteResult[0] > 0n) {
-                                    // Amount In > 0
-                                    return {
-                                        inputAmount: CurrencyAmount.fromRawAmount(tIn, quoteResult[0].toString()),
-                                        fee,
-                                        gasEstimate: quoteResult[3],
-                                        poolAddress: poolAddr,
-                                    };
-                                }
+                                        sqrtPriceLimitX96: 0n,
+                                    },
+                                ],
+                            })) as [bigint, bigint, bigint, bigint];
+
+                            if (quoteResult[0] > 0n) {
+                                return {
+                                    outputAmount: CurrencyAmount.fromRawAmount(tOut, quoteResult[0].toString()),
+                                    fee,
+                                    gasEstimate: quoteResult[3],
+                                    poolAddress: poolAddr,
+                                };
                             }
-                            console.warn(
-                                `Pathfinder: Quoted zero amount for ${tIn.symbol}->${tOut.symbol} (Pool: ${poolAddr}, Fee: ${fee})`
-                            );
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        } catch (quoteError: any) {
-                            // Quoter can revert if pool is created but has no initialized ticks for the range, or other issues
-                            console.warn(
-                                `Pathfinder: Quoting ${tIn.symbol}->${tOut.symbol} (Pool: ${poolAddr}, Fee: ${fee}) failed:`,
-                                quoteError.shortMessage || quoteError.message
-                            );
+                        } else {
+                            const quoteResult = (await publicClient.readContract({
+                                address: v3QuoterAddress,
+                                abi: uniswapV3QuoterV2Abi,
+                                functionName: 'quoteExactOutputSingle',
+                                args: [
+                                    {
+                                        tokenIn: tIn.address as `0x${string}`,
+                                        tokenOut: tOut.address as `0x${string}`,
+                                        amount: amountForLeg.quotient,
+                                        fee,
+                                        sqrtPriceLimitX96: 0n,
+                                    },
+                                ],
+                            })) as [bigint, bigint, bigint, bigint];
+
+                            if (quoteResult[0] > 0n) {
+                                return {
+                                    inputAmount: CurrencyAmount.fromRawAmount(tIn, quoteResult[0].toString()),
+                                    fee,
+                                    gasEstimate: quoteResult[3],
+                                    poolAddress: poolAddr,
+                                };
+                            }
                         }
                     }
+                } catch (_quoteError: any) {
+                    if (signal?.aborted) throw new Error('Aborted');
                 }
             }
-            return null; // No suitable liquid pool found for this leg with any tried fee tier
+            return null;
         },
         [publicClient, v3FactoryAddress, v3QuoterAddress]
     );
@@ -159,72 +140,76 @@ export const useUniswapV3Pathfinder = ({ currentChainId, uiToken0, uiToken1 }: U
     const getBestTradeForAmount = useCallback(
         async (amountRaw: string, amountType: SwapField, signal?: AbortSignal): Promise<PathfinderResult> => {
             try {
-                if (!currentChainId || !uiToken0 || !uiToken1 || !wethToken || !xtmToken || !usdtToken) {
+                if (
+                    !currentChainId ||
+                    !uiToken0 ||
+                    !uiToken1 ||
+                    !wethToken ||
+                    !xtmToken ||
+                    !usdtToken ||
+                    !publicClient
+                ) {
                     return { ...emptyPathfinderReturn, error: 'Pathfinder: Prerequisites not met.' };
                 }
                 if (!/^\d+$/.test(amountRaw) || BigInt(amountRaw) <= 0n) {
                     return { ...emptyPathfinderReturn, error: 'Pathfinder: Invalid or zero amount.' };
                 }
 
-                const initialInputTokenLogic = uiToken0.isNative ? wethToken : (uiToken0 as Token);
-                const finalOutputTokenLogic = uiToken1.isNative ? wethToken : (uiToken1 as Token);
+                const initialLogicToken = uiToken0.isNative ? wethToken : (uiToken0 as Token);
+                const finalLogicToken = uiToken1.isNative ? wethToken : (uiToken1 as Token);
 
-                let currentAmountInForQuoting: CurrencyAmount<Token>;
-                let desiredAmountOutForQuoting: CurrencyAmount<Token>;
+                if (initialLogicToken.equals(finalLogicToken)) {
+                    return { ...emptyPathfinderReturn, error: 'Pathfinder: Input and output tokens are the same.' };
+                }
+
+                let amountInToQuote: CurrencyAmount<Token> | undefined;
+                let amountOutToQuote: CurrencyAmount<Token> | undefined;
 
                 if (amountType === 'ethTokenField') {
-                    currentAmountInForQuoting = CurrencyAmount.fromRawAmount(initialInputTokenLogic, amountRaw);
-                    desiredAmountOutForQuoting = CurrencyAmount.fromRawAmount(finalOutputTokenLogic, '0');
+                    amountInToQuote = CurrencyAmount.fromRawAmount(initialLogicToken, amountRaw);
                 } else {
-                    desiredAmountOutForQuoting = CurrencyAmount.fromRawAmount(finalOutputTokenLogic, amountRaw);
-                    currentAmountInForQuoting = CurrencyAmount.fromRawAmount(initialInputTokenLogic, '0');
+                    amountOutToQuote = CurrencyAmount.fromRawAmount(finalLogicToken, amountRaw);
                 }
 
-                const possiblePaths: Token[][] = [];
-                possiblePaths.push([initialInputTokenLogic, finalOutputTokenLogic]);
+                const commonIntermediaries = [wethToken, usdtToken].filter(
+                    (token) => token && !token.equals(initialLogicToken) && !token.equals(finalLogicToken)
+                );
 
-                if (
-                    !initialInputTokenLogic.equals(wethToken) &&
-                    !finalOutputTokenLogic.equals(wethToken) &&
-                    !initialInputTokenLogic.equals(finalOutputTokenLogic)
-                ) {
-                    possiblePaths.push([initialInputTokenLogic, wethToken, finalOutputTokenLogic]);
-                }
-                if (
-                    (initialInputTokenLogic.equals(xtmToken) && finalOutputTokenLogic.equals(wethToken)) ||
-                    (initialInputTokenLogic.equals(wethToken) && finalOutputTokenLogic.equals(xtmToken))
-                ) {
-                    possiblePaths.push([initialInputTokenLogic, usdtToken, finalOutputTokenLogic]);
-                }
-                if (
-                    (initialInputTokenLogic.equals(usdtToken) && finalOutputTokenLogic.equals(wethToken)) ||
-                    (initialInputTokenLogic.equals(wethToken) && finalOutputTokenLogic.equals(usdtToken))
-                ) {
-                    // This case is covered by the generic WETH hop if initial/final are not WETH
+                const possiblePathsTokens: Token[][] = [];
+                possiblePathsTokens.push([initialLogicToken, finalLogicToken]);
+
+                for (const intermediary of commonIntermediaries) {
+                    if (intermediary) {
+                        possiblePathsTokens.push([initialLogicToken, intermediary, finalLogicToken]);
+                    }
                 }
 
                 let bestTradePath: TradeLeg[] = [];
-                let bestFinalOutputAmount: CurrencyAmount<Token> | undefined;
-                let bestFinalInputAmount: CurrencyAmount<Token> | undefined;
+                let bestCalculatedInputAmount: CurrencyAmount<Token> | undefined;
+                let bestCalculatedOutputAmount: CurrencyAmount<Token> | undefined;
                 let bestTotalGasEstimate = 0n;
 
-                for (const path of possiblePaths) {
+                for (const currentPathTokens of possiblePathsTokens) {
                     if (signal?.aborted) throw new Error('Aborted');
-                    const currentPathLegs: TradeLeg[] = [];
-                    let pathOutputAmount: CurrencyAmount<Token> | undefined;
-                    let pathInputAmount: CurrencyAmount<Token> | undefined;
-                    let pathTotalGas = 0n;
-                    let possible = true;
+                    const currentTradeLegs: TradeLeg[] = [];
+                    let currentPathInputAmount: CurrencyAmount<Token> | undefined;
+                    let currentPathOutputAmount: CurrencyAmount<Token> | undefined;
+                    let currentPathTotalGas = 0n;
+                    let pathIsPossible = true;
 
-                    if (amountType === 'ethTokenField') {
-                        pathInputAmount = currentAmountInForQuoting;
-                        let amountForNextLeg = pathInputAmount;
-                        for (let i = 0; i < path.length - 1; i++) {
-                            const legIn = path[i];
-                            const legOut = path[i + 1];
-                            const quote = await findAndQuoteSingleLeg(legIn, legOut, amountForNextLeg, true, signal);
-                            console.info(
-                                `Pathfinder DEBUG: Leg ${legIn.symbol}->${legOut.symbol} (Fee: ${quote?.fee}), Input: ${amountForNextLeg.toSignificant(6)}, Quote Output: ${quote?.outputAmount?.toSignificant(6) || 'N/A'}, Pool: ${quote?.poolAddress}`
+                    if (amountType === 'ethTokenField' && amountInToQuote) {
+                        currentPathInputAmount = amountInToQuote;
+                        let nextLegInputAmount = currentPathInputAmount;
+
+                        for (let i = 0; i < currentPathTokens.length - 1; i++) {
+                            const legInToken = currentPathTokens[i];
+                            const legOutToken = currentPathTokens[i + 1];
+                            const quote = await findAndQuoteSingleLeg(
+                                legInToken,
+                                legOutToken,
+                                nextLegInputAmount,
+                                true,
+                                signal
                             );
 
                             if (
@@ -232,54 +217,62 @@ export const useUniswapV3Pathfinder = ({ currentChainId, uiToken0, uiToken1 }: U
                                 !quote.outputAmount ||
                                 BigInt(quote.outputAmount.quotient.toString()) === 0n
                             ) {
-                                possible = false;
+                                pathIsPossible = false;
                                 break;
                             }
-                            currentPathLegs.push({ tokenIn: legIn, tokenOut: legOut, fee: quote.fee });
-                            amountForNextLeg = quote.outputAmount;
-                            pathTotalGas += quote.gasEstimate;
+                            currentTradeLegs.push({ tokenIn: legInToken, tokenOut: legOutToken, fee: quote.fee });
+                            nextLegInputAmount = quote.outputAmount;
+                            currentPathTotalGas += quote.gasEstimate;
                         }
-                        if (possible) pathOutputAmount = amountForNextLeg;
-                    } else {
-                        // Exact Output
-                        pathOutputAmount = desiredAmountOutForQuoting;
-                        let amountForPreviousLeg = pathOutputAmount;
-                        for (let i = path.length - 1; i > 0; i--) {
-                            const legIn = path[i - 1];
-                            const legOut = path[i];
+                        if (pathIsPossible) currentPathOutputAmount = nextLegInputAmount;
+                    } else if (amountOutToQuote) {
+                        currentPathOutputAmount = amountOutToQuote;
+                        let prevLegOutputAmount = currentPathOutputAmount;
+
+                        for (let i = currentPathTokens.length - 1; i > 0; i--) {
+                            const legInToken = currentPathTokens[i - 1];
+                            const legOutToken = currentPathTokens[i];
                             const quote = await findAndQuoteSingleLeg(
-                                legIn,
-                                legOut,
-                                amountForPreviousLeg,
+                                legInToken,
+                                legOutToken,
+                                prevLegOutputAmount,
                                 false,
                                 signal
                             );
+
                             if (!quote || !quote.inputAmount || BigInt(quote.inputAmount.quotient.toString()) === 0n) {
-                                possible = false;
+                                pathIsPossible = false;
                                 break;
                             }
-                            currentPathLegs.unshift({ tokenIn: legIn, tokenOut: legOut, fee: quote.fee });
-                            amountForPreviousLeg = quote.inputAmount;
-                            pathTotalGas += quote.gasEstimate;
+                            currentTradeLegs.unshift({ tokenIn: legInToken, tokenOut: legOutToken, fee: quote.fee });
+                            prevLegOutputAmount = quote.inputAmount;
+                            currentPathTotalGas += quote.gasEstimate;
                         }
-                        if (possible) pathInputAmount = amountForPreviousLeg;
+                        if (pathIsPossible) currentPathInputAmount = prevLegOutputAmount;
+                    } else {
+                        pathIsPossible = false; // Should not happen if amountInToQuote or amountOutToQuote is defined
                     }
 
-                    if (possible && pathInputAmount && pathOutputAmount) {
+                    if (pathIsPossible && currentPathInputAmount && currentPathOutputAmount) {
                         if (amountType === 'ethTokenField') {
-                            if (!bestFinalOutputAmount || pathOutputAmount.greaterThan(bestFinalOutputAmount)) {
-                                bestFinalOutputAmount = pathOutputAmount;
-                                bestFinalInputAmount = pathInputAmount;
-                                bestTradePath = currentPathLegs;
-                                bestTotalGasEstimate = pathTotalGas;
+                            if (
+                                !bestCalculatedOutputAmount ||
+                                currentPathOutputAmount.greaterThan(bestCalculatedOutputAmount)
+                            ) {
+                                bestCalculatedOutputAmount = currentPathOutputAmount;
+                                bestCalculatedInputAmount = currentPathInputAmount;
+                                bestTradePath = currentTradeLegs;
+                                bestTotalGasEstimate = currentPathTotalGas;
                             }
                         } else {
-                            // Exact Output
-                            if (!bestFinalInputAmount || pathInputAmount.lessThan(bestFinalInputAmount)) {
-                                bestFinalInputAmount = pathInputAmount;
-                                bestFinalOutputAmount = pathOutputAmount;
-                                bestTradePath = currentPathLegs;
-                                bestTotalGasEstimate = pathTotalGas;
+                            if (
+                                !bestCalculatedInputAmount ||
+                                currentPathInputAmount.lessThan(bestCalculatedInputAmount)
+                            ) {
+                                bestCalculatedInputAmount = currentPathInputAmount;
+                                bestCalculatedOutputAmount = currentPathOutputAmount;
+                                bestTradePath = currentTradeLegs;
+                                bestTotalGasEstimate = currentPathTotalGas;
                             }
                         }
                     }
@@ -289,46 +282,45 @@ export const useUniswapV3Pathfinder = ({ currentChainId, uiToken0, uiToken1 }: U
 
                 if (
                     bestTradePath.length === 0 ||
-                    !bestFinalInputAmount ||
-                    !bestFinalOutputAmount ||
-                    BigInt(bestFinalOutputAmount.quotient.toString()) === 0n
+                    !bestCalculatedInputAmount ||
+                    !bestCalculatedOutputAmount ||
+                    BigInt(bestCalculatedOutputAmount.quotient.toString()) === 0n
                 ) {
                     return { ...emptyPathfinderReturn, error: 'Pathfinder: No viable trade path found.' };
                 }
 
-                const displayInputAmount = uiToken0.isNative
-                    ? CurrencyAmount.fromRawAmount(
-                          Ether.onChain(currentChainId),
-                          bestFinalInputAmount.quotient.toString()
-                      )
-                    : bestFinalInputAmount;
-                const displayOutputAmount = uiToken1.isNative
-                    ? CurrencyAmount.fromRawAmount(
-                          Ether.onChain(currentChainId),
-                          bestFinalOutputAmount.quotient.toString()
-                      )
-                    : bestFinalOutputAmount;
+                const finalDisplayInputAmount = CurrencyAmount.fromRawAmount(
+                    uiToken0,
+                    bestCalculatedInputAmount.quotient
+                );
+                const finalDisplayOutputAmount = CurrencyAmount.fromRawAmount(
+                    uiToken1,
+                    bestCalculatedOutputAmount.quotient
+                );
 
                 const executionPrice = new Price(
-                    displayInputAmount.currency,
-                    displayOutputAmount.currency,
-                    displayInputAmount.quotient,
-                    displayOutputAmount.quotient
+                    finalDisplayInputAmount.currency,
+                    finalDisplayOutputAmount.currency,
+                    finalDisplayInputAmount.quotient,
+                    finalDisplayOutputAmount.quotient
                 );
+
+                const oneHundredPercent = new Percent(1, 1);
+                const slippageAdjustedPercent = oneHundredPercent.subtract(SLIPPAGE_TOLERANCE_PERCENT);
+                const minimumReceivedRaw = bestCalculatedOutputAmount.multiply(slippageAdjustedPercent).quotient;
+
                 const minimumReceived = CurrencyAmount.fromRawAmount(
-                    bestFinalOutputAmount.currency,
-                    new Percent(bestFinalOutputAmount.quotient, 1)
-                        .multiply(SLIPPAGE_TOLERANCE.invert())
-                        .quotient.toString()
+                    finalDisplayOutputAmount.currency,
+                    minimumReceivedRaw
                 );
-                const estimatedGasFeeNativeStr =
-                    bestTotalGasEstimate > 0n ? `${bestTotalGasEstimate.toString()} (gas units est.)` : null;
+
+                const estimatedGasFeeNativeStr = bestTotalGasEstimate > 0n ? bestTotalGasEstimate.toString() : null;
 
                 const tradeDetails: V3TradeDetails = {
                     inputToken: uiToken0,
                     outputToken: uiToken1,
-                    inputAmount: displayInputAmount,
-                    outputAmount: displayOutputAmount,
+                    inputAmount: finalDisplayInputAmount,
+                    outputAmount: finalDisplayOutputAmount,
                     minimumReceived,
                     executionPrice,
                     priceImpactPercent: null,
@@ -336,12 +328,10 @@ export const useUniswapV3Pathfinder = ({ currentChainId, uiToken0, uiToken1 }: U
                     path: bestTradePath,
                 };
                 return { tradeDetails, error: null, isLoading: false };
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
             } catch (e: any) {
-                if (e.message === 'Aborted') {
+                if (signal?.aborted) {
                     return { ...emptyPathfinderReturn, isLoading: false };
                 }
-                console.error('Pathfinder: Error in getBestTradeForAmount:', e);
                 return {
                     ...emptyPathfinderReturn,
                     error: e.message || 'Pathfinder: Failed to get trade details.',
@@ -349,7 +339,7 @@ export const useUniswapV3Pathfinder = ({ currentChainId, uiToken0, uiToken1 }: U
                 };
             }
         },
-        [currentChainId, uiToken0, uiToken1, wethToken, xtmToken, usdtToken, findAndQuoteSingleLeg]
+        [currentChainId, uiToken0, uiToken1, wethToken, xtmToken, usdtToken, findAndQuoteSingleLeg, publicClient]
     );
 
     return { getBestTradeForAmount };

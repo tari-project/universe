@@ -1,25 +1,143 @@
-import { Token, WETH9, Ether, NativeCurrency } from '@uniswap/sdk-core';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { Token, WETH9, Ether, NativeCurrency, CurrencyAmount } from '@uniswap/sdk-core';
 import { FeeAmount } from '@uniswap/v3-sdk';
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi';
-import { Contract, Signer as EthersSigner, TransactionResponse, TransactionReceipt } from 'ethers';
+import {
+    Contract,
+    Signer as EthersSigner,
+    TransactionResponse,
+    TransactionReceipt,
+    AbiCoder,
+    TypedDataDomain,
+    TypedDataField,
+} from 'ethers';
+
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
-import { PublicClient as ViemPublicClient } from 'viem';
+import { maxInt160 as ethersMaxUint160, PublicClient as ViemPublicClient } from 'viem';
 
 import {
-    erc20Abi,
-    uniswapV3SwapRouter02Abi,
-    ROUTER_ADDRESSES_V3,
+    UNIVERSAL_ROUTER_ADDRESSES as UNIVERSAL_ROUTER_ADDRESSES,
+    universalRouterAbi,
     QUOTER_ADDRESSES_V3,
-    FACTORY_ADDRESSES_V3,
     XTM_SDK_TOKEN,
     KNOWN_SDK_TOKENS,
     DEADLINE_MINUTES,
-    DEFAULT_V3_POOL_FEE,
+    PERMIT2_ADDRESS, // You need to define this in constants.ts
+    PERMIT2_SPENDER_ADDRESS, // You need to define this in constants.ts (often Universal Router address)
 } from './lib/constants';
-import { encodePath, walletClientToSigner } from './lib/utils';
-import { V3TradeDetails, SwapField, SwapDirection } from './lib/types';
+import { encodePath as encodeV3Path, walletClientToSigner } from './lib/utils';
+import { V3TradeDetails, SwapField, SwapDirection, TradeLeg } from './lib/types';
 import { useConfigCoreStore } from '@app/store';
 import { useUniswapV3Pathfinder } from './useUniswapV3Pathfinder';
+
+const COMMAND_BYTE = {
+    V3_SWAP_EXACT_IN: '00',
+    PERMIT2_PERMIT: '0a',
+    WRAP_ETH: '0b',
+    UNWRAP_WETH: '0c',
+};
+const ROUTER_AS_RECIPIENT = '0x0000000000000000000000000000000000000000';
+
+interface PermitDetails {
+    token: string;
+    amount: bigint;
+    expiration: number;
+    nonce: number;
+}
+interface PermitSingle {
+    details: PermitDetails;
+    spender: string;
+    sigDeadline: number;
+}
+const EIP712_PERMIT2_DOMAIN_NAME = 'Permit2';
+const PERMIT_TYPES: Record<string, TypedDataField[]> = {
+    PermitDetails: [
+        { name: 'token', type: 'address' },
+        { name: 'amount', type: 'uint160' },
+        { name: 'expiration', type: 'uint48' },
+        { name: 'nonce', type: 'uint48' },
+    ],
+    PermitSingle: [
+        { name: 'details', type: 'PermitDetails' },
+        { name: 'spender', type: 'address' },
+        { name: 'sigDeadline', type: 'uint256' },
+    ],
+};
+
+async function getPermit2Nonce(
+    publicClient: ViemPublicClient,
+    permit2Address: string,
+    ownerAddress: string,
+    tokenAddress: string,
+    spenderAddress: string
+): Promise<bigint> {
+    try {
+        const data = await publicClient.readContract({
+            address: permit2Address as `0x${string}`,
+            abi: [
+                {
+                    inputs: [
+                        { name: 'user', type: 'address' },
+                        { name: 'token', type: 'address' },
+                        { name: 'spender', type: 'address' },
+                    ],
+                    name: 'allowance',
+                    outputs: [
+                        { name: 'amount', type: 'uint160' },
+                        { name: 'expiration', type: 'uint48' },
+                        { name: 'nonce', type: 'uint48' },
+                    ],
+                    stateMutability: 'view',
+                    type: 'function',
+                },
+            ],
+            functionName: 'allowance',
+            args: [ownerAddress as `0x${string}`, tokenAddress as `0x${string}`, spenderAddress as `0x${string}`],
+        });
+        return BigInt(data[2].toString());
+    } catch (e) {
+        console.error('Failed to fetch Permit2 nonce, defaulting to 0. THIS IS UNSAFE FOR PRODUCTION.', e);
+        return 0n;
+    }
+}
+
+async function signPermit2Data(
+    signer: EthersSigner,
+    permitAddress: string,
+    chainId: number,
+    owner: string,
+    token: string,
+    amount: bigint,
+    expiration: bigint,
+    nonce: bigint,
+    spender: string,
+    sigDeadline: bigint
+): Promise<{ permitSingleData: PermitSingle; signature: string } | null> {
+    const domain: TypedDataDomain = {
+        name: EIP712_PERMIT2_DOMAIN_NAME,
+        chainId: chainId,
+        verifyingContract: permitAddress,
+    };
+
+    const message: PermitSingle = {
+        details: {
+            token: token,
+            amount: amount,
+            expiration: Number(expiration),
+            nonce: Number(nonce),
+        },
+        spender: spender,
+        sigDeadline: Number(sigDeadline),
+    };
+
+    try {
+        const signature = await signer.signTypedData(domain, PERMIT_TYPES, message);
+        return { permitSingleData: message, signature };
+    } catch (e) {
+        console.error('Error signing Permit2 message:', e);
+        return null;
+    }
+}
 
 export const useUniswapV3Interactions = () => {
     const [pairTokenAddress, setPairTokenAddress] = useState<`0x${string}` | null>(null);
@@ -38,16 +156,12 @@ export const useUniswapV3Interactions = () => {
     const currentChainId = useMemo(() => chain?.id || defaultChainId, [chain?.id, defaultChainId]);
     const publicClient = usePublicClient({ chainId: currentChainId }) as ViemPublicClient;
 
-    const v3RouterAddress = useMemo(
-        () => (currentChainId ? ROUTER_ADDRESSES_V3[currentChainId] : undefined),
+    const universalRouterAddress = useMemo(
+        () => (currentChainId ? UNIVERSAL_ROUTER_ADDRESSES[currentChainId] : undefined),
         [currentChainId]
     );
     const v3QuoterAddress = useMemo(
         () => (currentChainId ? QUOTER_ADDRESSES_V3[currentChainId] : undefined),
-        [currentChainId]
-    );
-    const v3FactoryAddress = useMemo(
-        () => (currentChainId ? FACTORY_ADDRESSES_V3[currentChainId] : undefined),
         [currentChainId]
     );
 
@@ -74,23 +188,14 @@ export const useUniswapV3Interactions = () => {
         };
     }, [walletClient]);
 
-    // Modified to prioritize native ETH over WETH
     const sdkPairTokenForSwap = useMemo(() => {
         if (!currentChainId) return undefined;
-
-        // If pairTokenAddress is null, return native ETH instead of WETH
-        if (pairTokenAddress === null) {
-            return Ether.onChain(currentChainId);
-        }
-
+        if (pairTokenAddress === null) return Ether.onChain(currentChainId);
         const lowerCaseAddress = pairTokenAddress.toLowerCase() as `0x${string}`;
         const currentWeth = WETH9[currentChainId as keyof typeof WETH9];
-
-        // If the selected token is WETH, return native ETH instead
         if (currentWeth && lowerCaseAddress === currentWeth.address.toLowerCase()) {
             return Ether.onChain(currentChainId);
         }
-
         return KNOWN_SDK_TOKENS[currentChainId]?.[lowerCaseAddress] || undefined;
     }, [pairTokenAddress, currentChainId]);
 
@@ -110,13 +215,10 @@ export const useUniswapV3Interactions = () => {
         let selectedPairSideTokenForSwapUi: Token | NativeCurrency | undefined;
 
         if (pairTokenAddress === null) {
-            // Always use native ETH when no specific token is selected
             selectedPairSideTokenForSwapUi = Ether.onChain(currentChainId);
         } else {
             const currentWeth = WETH9[currentChainId as keyof typeof WETH9];
             const lowerCaseAddress = pairTokenAddress.toLowerCase() as `0x${string}`;
-
-            // If WETH is selected, use native ETH instead
             if (currentWeth && lowerCaseAddress === currentWeth.address.toLowerCase()) {
                 selectedPairSideTokenForSwapUi = Ether.onChain(currentChainId);
             } else {
@@ -150,224 +252,233 @@ export const useUniswapV3Interactions = () => {
         async (
             amountRaw: string,
             amountType: SwapField,
-            _feeAmountParamIgnored: FeeAmount = DEFAULT_V3_POOL_FEE,
+            _feeAmountParamIgnored?: FeeAmount,
             signal?: AbortSignal
         ): Promise<V3TradeDetails> => {
             setIsFetchingPool(true);
             setError(null);
             setInsufficientLiquidity(false);
-
             const result = await getPathfinderTradeDetails(amountRaw, amountType, signal);
-            console.info(
-                'Pathfinder Result:',
-                JSON.stringify(
-                    result,
-                    (key, value) => (typeof value === 'bigint' ? value.toString() : value), // Convert BigInts to strings for logging
-                    2
-                )
-            );
-
             setIsFetchingPool(false);
             if (result.error) {
                 setError(result.error);
                 setInsufficientLiquidity(true);
             }
-            if (BigInt(result.tradeDetails?.outputAmount?.quotient?.toString() || '0') === 0n) {
-                setInsufficientLiquidity(true);
+            const outputAmountQuotient = result.tradeDetails?.outputAmount?.quotient;
+            if (outputAmountQuotient === undefined || BigInt(outputAmountQuotient.toString()) === 0n) {
+                if (!result.error) setInsufficientLiquidity(true);
             }
 
-            return (
-                result.tradeDetails || {
-                    inputAmount: undefined,
-                    outputAmount: undefined,
-                    estimatedGasFeeNative: null,
-                    minimumReceived: null,
-                    executionPrice: null,
-                    priceImpactPercent: null,
-                    path: [],
-                }
-            );
+            const defaultInputCurrency = uiToken0 || (currentChainId ? Ether.onChain(currentChainId) : undefined);
+            const defaultOutputCurrency = uiToken1 || (currentChainId ? Ether.onChain(currentChainId) : undefined);
+
+            const defaultTrade: V3TradeDetails = {
+                inputToken: defaultInputCurrency!,
+                outputToken: defaultOutputCurrency!,
+                inputAmount: defaultInputCurrency
+                    ? CurrencyAmount.fromRawAmount(defaultInputCurrency, '0')
+                    : undefined!,
+                outputAmount: defaultOutputCurrency
+                    ? CurrencyAmount.fromRawAmount(defaultOutputCurrency, '0')
+                    : undefined!,
+                minimumReceived: defaultOutputCurrency
+                    ? CurrencyAmount.fromRawAmount(defaultOutputCurrency, '0')
+                    : undefined!,
+                executionPrice: undefined!,
+                priceImpactPercent: null,
+                estimatedGasFeeNative: null,
+                path: [],
+            };
+            return result.tradeDetails || defaultTrade;
         },
-        [getPathfinderTradeDetails, setIsFetchingPool, setError, setInsufficientLiquidity]
-    );
-
-    const checkAndRequestApproval = useCallback(
-        async (
-            tokenToApprove: Token,
-            amountToApproveRaw: string,
-            spenderAddress?: `0x${string}`
-        ): Promise<TransactionReceipt | null> => {
-            if (abortApproveControllerRef.current) {
-                abortApproveControllerRef.current.abort();
-            }
-            abortApproveControllerRef.current = new AbortController();
-            const signal = abortApproveControllerRef.current.signal;
-
-            const spender = spenderAddress || v3RouterAddress;
-            if (!accountAddress || !spender || !currentChainId || tokenToApprove.isNative || !signer) {
-                setError('Approval prerequisites not met or native token.');
-                return null;
-            }
-            setIsApproving(true);
-            setError(null);
-            let receipt: TransactionReceipt | null = null;
-            try {
-                const tokenContract = new Contract(tokenToApprove.address, erc20Abi, signer);
-                const amountToApproveBI = BigInt(amountToApproveRaw);
-                const currentAllowance = BigInt((await tokenContract.allowance(accountAddress, spender)).toString());
-
-                if (currentAllowance < amountToApproveBI) {
-                    const approveTx = await tokenContract.approve(spender, amountToApproveBI);
-                    receipt = (await approveTx.wait(1)) as TransactionReceipt;
-                    if (receipt?.status !== 1) throw new Error('Approval transaction failed on-chain.');
-                }
-                if (signal?.aborted) throw new Error('Aborted');
-                setIsApproving(false);
-                return receipt;
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            } catch (e: any) {
-                console.error('Error during approval:', e);
-                const message = e?.reason || e?.data?.message || e?.message || 'User rejected or approval failed.';
-                setError(`Approval failed: ${message}`);
-                setIsApproving(false);
-                return null;
-            }
-        },
-        [signer, accountAddress, v3RouterAddress, currentChainId, setError, setIsApproving]
+        [getPathfinderTradeDetails, uiToken0, uiToken1, currentChainId]
     );
 
     const executeSwap = useCallback(
         async (
-            tradeDetailsToExecute: V3TradeDetails,
-            _feeAmountIgnored?: FeeAmount
+            tradeDetailsToExecute: V3TradeDetails
         ): Promise<{ response: TransactionResponse; receipt: TransactionReceipt } | null> => {
             setError(null);
             setIsLoading(true);
+
+            const inputCurrency = tradeDetailsToExecute?.inputAmount?.currency;
+            const outputCurrency = tradeDetailsToExecute?.outputAmount?.currency;
 
             if (
                 !signer ||
                 !accountAddress ||
                 !isConnected ||
-                !v3RouterAddress ||
+                !universalRouterAddress ||
                 !currentChainId ||
+                !inputCurrency ||
+                !outputCurrency ||
                 !tradeDetailsToExecute.inputAmount ||
                 !tradeDetailsToExecute.outputAmount ||
                 !tradeDetailsToExecute.minimumReceived ||
-                !uiToken0 ||
                 !tradeDetailsToExecute.path ||
-                tradeDetailsToExecute.path.length === 0
+                tradeDetailsToExecute.path.length === 0 ||
+                !PERMIT2_ADDRESS ||
+                !PERMIT2_SPENDER_ADDRESS
             ) {
-                setError('V3 Swap prerequisites not met for execution.');
+                setError('Swap prerequisites not met for Universal Router execution (Permit2).');
                 setIsLoading(false);
                 return null;
             }
 
-            const firstTokenInActualPath = tradeDetailsToExecute.path[0].tokenIn;
+            const commandsHexList: string[] = [];
+            const encodedInputs: string[] = [];
+            const abiCoder = AbiCoder.defaultAbiCoder();
+            const txOptions: { value?: bigint; gasLimit?: bigint } = {};
 
             try {
-                if (!uiToken0.isNative) {
-                    const approvalAmount = BigInt(tradeDetailsToExecute.inputAmount.quotient.toString());
-                    const approvalOk = await checkAndRequestApproval(
-                        firstTokenInActualPath as Token,
-                        approvalAmount.toString()
+                if (!inputCurrency.isNative) {
+                    setIsApproving(true);
+                    const tokenToPermit = inputCurrency as Token;
+                    const permitAmount = ethersMaxUint160;
+                    const permitExpiration = BigInt(Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60);
+                    const permitNonce = await getPermit2Nonce(
+                        publicClient,
+                        PERMIT2_ADDRESS[currentChainId],
+                        accountAddress,
+                        tokenToPermit.address,
+                        PERMIT2_SPENDER_ADDRESS[currentChainId]
                     );
-                    if (!approvalOk) {
+                    const txDeadlineForPermit = BigInt(Math.floor(Date.now() / 1000) + DEADLINE_MINUTES * 60);
+                    const permitSigDeadline = txDeadlineForPermit + 600n;
+
+                    const permitResult = await signPermit2Data(
+                        signer,
+                        PERMIT2_ADDRESS[currentChainId],
+                        currentChainId,
+                        accountAddress,
+                        tokenToPermit.address,
+                        permitAmount,
+                        permitExpiration,
+                        permitNonce,
+                        PERMIT2_SPENDER_ADDRESS[currentChainId],
+                        permitSigDeadline
+                    );
+                    setIsApproving(false);
+
+                    if (!permitResult) {
+                        setError('Failed to sign Permit2 message.');
                         setIsLoading(false);
                         return null;
                     }
-                }
 
-                const routerContract = new Contract(v3RouterAddress, uniswapV3SwapRouter02Abi, signer);
-                const deadline = Math.floor(Date.now() / 1000) + DEADLINE_MINUTES * 60;
-                const txOptions: { value?: bigint; gasLimit?: bigint } = { gasLimit: 200000n };
-
-                if (uiToken0.isNative) {
+                    commandsHexList.push(COMMAND_BYTE.PERMIT2_PERMIT);
+                    encodedInputs.push(
+                        abiCoder.encode(
+                            [
+                                '(address token,uint160 amount,uint48 expiration,uint48 nonce) details',
+                                'address spender',
+                                'uint256 sigDeadline',
+                                'bytes signature',
+                            ],
+                            [
+                                permitResult.permitSingleData.details,
+                                permitResult.permitSingleData.spender,
+                                permitResult.permitSingleData.sigDeadline,
+                                permitResult.signature,
+                            ]
+                        )
+                    );
+                } else {
+                    commandsHexList.push(COMMAND_BYTE.WRAP_ETH);
+                    encodedInputs.push(
+                        abiCoder.encode(
+                            ['address', 'uint256'],
+                            [universalRouterAddress, BigInt(tradeDetailsToExecute.inputAmount.quotient.toString())]
+                        )
+                    );
                     txOptions.value = BigInt(tradeDetailsToExecute.inputAmount.quotient.toString());
                 }
 
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                let swapTxResponse: any;
-                const path = tradeDetailsToExecute.path;
-                const amountInForRouter = BigInt(tradeDetailsToExecute.inputAmount.quotient.toString());
-                const amountOutMinForRouter = BigInt(tradeDetailsToExecute.minimumReceived.quotient.toString());
+                const amountInForSwap = BigInt(tradeDetailsToExecute.inputAmount.quotient.toString());
+                const amountOutMinForSwap = BigInt(tradeDetailsToExecute.minimumReceived.quotient.toString());
 
-                if (path.length === 1) {
-                    const leg = path[0];
-                    const params = {
-                        tokenIn: leg.tokenIn.address as `0x${string}`,
-                        tokenOut: leg.tokenOut.address as `0x${string}`,
-                        fee: leg.fee,
-                        recipient: accountAddress as `0x${string}`,
-                        deadline: BigInt(deadline),
-                        amountIn: amountInForRouter,
-                        amountOutMinimum: amountOutMinForRouter,
-                        sqrtPriceLimitX96: 0n,
-                    };
-                    try {
-                        // MODIFIED GAS ESTIMATION CALL
-                        const estimatedGas = await routerContract.exactInputSingle.estimateGas(params, txOptions);
-                        txOptions.gasLimit = (BigInt(estimatedGas) * 120n) / 100n;
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    } catch (gasError: any) {
-                        console.warn('Gas estimation failed for exactInputSingle:', gasError.message, gasError);
-                        // setError(
-                        //     `Gas estimation failed: ${gasError?.reason || gasError?.shortMessage || gasError?.message}`
-                        // );
-                        setIsLoading(false);
-                        // return null;
-                    }
-                    swapTxResponse = await routerContract.exactInputSingle(params, txOptions);
-                } else {
-                    // Multi-hop
-                    const tokensForPathAddresses: `0x${string}`[] = [path[0].tokenIn.address as `0x${string}`];
-                    const feesForPath: FeeAmount[] = [];
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    path.forEach((leg: any) => {
-                        tokensForPathAddresses.push(leg.tokenOut.address as `0x${string}`);
-                        feesForPath.push(leg.fee);
-                    });
-                    if (feesForPath.length === tokensForPathAddresses.length) feesForPath.pop();
+                const v3PathTokens: `0x${string}`[] = [tradeDetailsToExecute.path[0].tokenIn.address as `0x${string}`];
+                const v3PathFees: FeeAmount[] = [];
+                tradeDetailsToExecute.path.forEach((leg: TradeLeg) => {
+                    v3PathTokens.push(leg.tokenOut.address as `0x${string}`);
+                    v3PathFees.push(leg.fee);
+                });
+                const v3EncodedPathBytes = encodeV3Path(v3PathTokens, v3PathFees);
 
-                    const encodedPath = encodePath(tokensForPathAddresses, feesForPath);
-                    const params = {
-                        path: encodedPath,
-                        recipient: accountAddress as `0x${string}`,
-                        deadline: BigInt(deadline),
-                        amountIn: amountInForRouter,
-                        amountOutMinimum: amountOutMinForRouter,
-                    };
-                    try {
-                        // MODIFIED GAS ESTIMATION CALL
-                        const estimatedGas = await routerContract.exactInput.estimateGas(params, txOptions);
-                        txOptions.gasLimit = (BigInt(estimatedGas) * 120n) / 100n;
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    } catch (gasError: any) {
-                        console.warn('Gas estimation failed for exactInput (multi-hop):', gasError.message, gasError);
-                        // setError(
-                        //     `Gas estimation failed: ${gasError?.reason || gasError?.shortMessage || gasError?.message}`
-                        // );
-                        setIsLoading(false);
-                        // return null;
-                    }
-                    swapTxResponse = await routerContract.exactInput(params, txOptions);
+                let recipientForV3Swap: `0x${string}` = accountAddress as `0x${string}`;
+                if (outputCurrency.isNative) {
+                    recipientForV3Swap = ROUTER_AS_RECIPIENT as `0x${string}`;
                 }
+
+                commandsHexList.push(COMMAND_BYTE.V3_SWAP_EXACT_IN);
+                encodedInputs.push(
+                    abiCoder.encode(
+                        ['address', 'uint256', 'uint256', 'bytes', 'bool'],
+                        [
+                            recipientForV3Swap,
+                            amountInForSwap,
+                            amountOutMinForSwap,
+                            v3EncodedPathBytes,
+                            false,
+                            //!inputCurrency.isNative ? false : true,
+                        ]
+                    )
+                );
+
+                if (outputCurrency.isNative) {
+                    commandsHexList.push(COMMAND_BYTE.UNWRAP_WETH);
+                    encodedInputs.push(
+                        abiCoder.encode(['address', 'uint256'], [accountAddress as `0x${string}`, amountOutMinForSwap])
+                    );
+                }
+
+                const finalCommandsBytes = '0x' + commandsHexList.join('');
+                const deadline = BigInt(Math.floor(Date.now() / 1000) + DEADLINE_MINUTES * 60);
+                const routerContract = new Contract(universalRouterAddress, universalRouterAbi, signer);
+
+                try {
+                    const estimatedGas = await routerContract.execute.estimateGas(
+                        finalCommandsBytes,
+                        encodedInputs,
+                        deadline,
+                        txOptions
+                    );
+                    if (estimatedGas) {
+                        txOptions.gasLimit = (estimatedGas * 125n) / 100n;
+                    }
+                } catch (gasError: any) {
+                    console.warn('Gas estimation failed for Universal Router execute:', gasError);
+                    txOptions.gasLimit = BigInt(inputCurrency.isNative ? 300000 : 450000);
+                }
+
+                const swapTxResponse = await routerContract.execute(
+                    finalCommandsBytes,
+                    encodedInputs,
+                    deadline,
+                    txOptions
+                );
 
                 const swapTxReceipt = (await swapTxResponse.wait(1)) as TransactionReceipt;
                 setIsLoading(false);
 
                 if (swapTxReceipt?.status !== 1) {
-                    throw new Error('V3 Swap transaction failed on-chain.');
+                    throw new Error('Universal Router Swap transaction failed on-chain.');
                 }
                 return { response: swapTxResponse, receipt: swapTxReceipt };
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
             } catch (error: any) {
-                console.error('Error executing V3 swap transaction:', error);
-                setError(`Swap failed: ${error?.reason || error?.shortMessage || error?.message || 'Unknown error'}`);
+                let message = 'Unknown error executing swap.';
+                if (error.reason) message = `Swap failed: ${error.reason}`;
+                else if (error.data?.message) message = `Swap failed: ${error.data.message}`;
+                else if (error.error?.message) message = `Swap failed: ${error.error.message}`;
+                else if (error.message) message = `Swap failed: ${error.message}`;
+
+                setError(message);
                 setIsLoading(false);
+                setIsApproving(false);
                 return null;
             }
         },
-        [signer, accountAddress, isConnected, v3RouterAddress, currentChainId, uiToken0, checkAndRequestApproval]
+        [signer, accountAddress, isConnected, universalRouterAddress, currentChainId, publicClient]
     );
 
     return {
@@ -384,18 +495,18 @@ export const useUniswapV3Interactions = () => {
         isFetchingPool,
         error,
         insufficientLiquidity,
-        v3RouterAddress,
-        checkAndRequestApproval,
+        v3RouterAddress: universalRouterAddress,
         getTradeDetails,
         executeSwap,
         isReady:
             !!publicClient &&
             !!currentChainId &&
             !!v3QuoterAddress &&
-            !!v3FactoryAddress &&
             !!signer &&
             !!accountAddress &&
             isConnected &&
-            !!v3RouterAddress,
+            !!universalRouterAddress &&
+            !!PERMIT2_ADDRESS && // Add these checks
+            !!PERMIT2_SPENDER_ADDRESS,
     };
 };

@@ -1,7 +1,6 @@
 import { PublicClient, WalletClient, formatUnits as viemFormatUnits } from 'viem';
 import { BrowserProvider, Signer as EthersSigner } from 'ethers';
 import { ChainId, CurrencyAmount, Token, NativeCurrency } from '@uniswap/sdk-core';
-import { FeeAmount } from '@uniswap/v3-sdk';
 
 export async function walletClientToSigner(walletClient: WalletClient | PublicClient): Promise<EthersSigner | null> {
     const { account, chain, transport } = walletClient;

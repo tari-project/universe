@@ -1,8 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useAccount, useBalance, useReadContracts } from 'wagmi';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useToastStore } from '@app/components/ToastStack/useToastStore';
 import { formatUnits as viemFormatUnits, parseUnits as viemParseUnits, erc20Abi as viemErc20Abi } from 'viem';
-import { Token, NativeCurrency, WETH9, Ether } from '@uniswap/sdk-core';
+import { Token, NativeCurrency, Ether } from '@uniswap/sdk-core';
 import {
     ENABLED_TOKEN_ADDRESSES,
     EnabledTokensEnum,
@@ -18,7 +19,6 @@ import {
     formatNativeGasFee as utilFormatNativeGasFee,
 } from '@app/hooks/swap/lib/utils';
 import { useTokenDisplayInfo } from './helpers/useTokenInfo';
-import { TransactionReceipt as EthersTransactionReceipt } from 'ethers';
 import { useUniswapV3Interactions } from '@app/hooks/swap/useSwapV3';
 
 export type TokenSymbol = EnabledTokensEnum;
@@ -46,6 +46,7 @@ export const useSwapData = () => {
     const [reviewSwap, setReviewSwap] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [processingOpen, setProcessingOpen] = useState(false);
+    // isProcessingApproval can now represent "isSigningPermit" or general pre-swap processing
     const [isProcessingApproval, setIsProcessingApproval] = useState(false);
     const [isProcessingSwap, setIsProcessingSwap] = useState(false);
     const [swapSuccess, setSwapSuccess] = useState(false);
@@ -53,10 +54,10 @@ export const useSwapData = () => {
 
     const [priceImpact, setPriceImpact] = useState<string | null>(null);
     const [networkFee, setNetworkFee] = useState<string | null>(null);
-    const [slippage, setSlippage] = useState<string | null>(null); // This seems to be set to priceImpact, consider if it should be different
+    const [slippage, setSlippage] = useState<string | null>(null);
     const [transactionId, setTransactionId] = useState<string | null>(null);
-    const [paidTransactionFeeApproval, setPaidTransactionFeeApproval] = useState<string | null>(null);
-    const [paidTransactionFeeSwap, setPaidTransactionFeeSwap] = useState<string | null>(null);
+    // We won't have separate approval and swap fees if using Permit2 for all ERC20s in a single tx
+    const [paidTransactionFee, setPaidTransactionFee] = useState<string | null>(null);
     const [txBlockHash, setTxBlockHash] = useState<`0x${string}` | null>(null);
     const [swapError, setSwapError] = useState<string | null>(null);
     const [minimumReceivedDisplay, setMinimumReceivedDisplay] = useState<string | null>(null);
@@ -72,15 +73,17 @@ export const useSwapData = () => {
         direction,
         token0: swapEngineInputToken,
         token1: swapEngineOutputToken,
-        sdkToken0,
-        sdkToken1,
+        // sdkToken0, // Not directly used in this UI layer logic
+        // sdkToken1, // Not directly used in this UI layer logic
         setDirection: setSwapEngineDirection,
         setPairTokenAddress,
         getTradeDetails,
-        checkAndRequestApproval,
+        // checkAndRequestApproval, // No longer called directly from here
         executeSwap,
         insufficientLiquidity,
-        error: useSwapError,
+        error: useSwapError, // This is error from useUniswapV3Interactions
+        isLoading: isSwapEngineLoading, // Loading state from useUniswapV3Interactions
+        isApproving: isSwapEngineApproving, // isSigningPermit state from useUniswapV3Interactions
     } = useUniswapV3Interactions();
 
     const currentChainId = useMemo(() => connectedAccount.chain?.id, [connectedAccount.chain]);
@@ -99,10 +102,10 @@ export const useSwapData = () => {
         isLoading: isLoadingFromBalance,
         refetch: refetchFromToken,
     } = useTokenDisplayInfo({
-        uiTokenDefinition: fromUiTokenDefinition as Token,
+        uiTokenDefinition: fromUiTokenDefinition, // No need to cast if type is Token | NativeCurrency | undefined
         chainId: currentChainId || defaultChainId,
         accountAddress: connectedAccount.address,
-        fallbackDefinition: currentChainId ? WETH9[currentChainId] : undefined,
+        fallbackDefinition: currentChainId ? Ether.onChain(currentChainId) : undefined, // WETH9 changed to Ether for native
     });
 
     const {
@@ -110,7 +113,7 @@ export const useSwapData = () => {
         isLoading: isLoadingToBalance,
         refetch: refetchToToken,
     } = useTokenDisplayInfo({
-        uiTokenDefinition: toUiTokenDefinition as Token,
+        uiTokenDefinition: toUiTokenDefinition, // No need to cast
         chainId: currentChainId || defaultChainId,
         accountAddress: connectedAccount.address,
         fallbackDefinition: currentChainId ? XTM_SDK_TOKEN[currentChainId] : undefined,
@@ -156,8 +159,8 @@ export const useSwapData = () => {
         const xtmDef = XTM_SDK_TOKEN[chainId];
         const tokens: Omit<SelectableTokenInfo, 'balance' | 'usdValue' | 'rawBalance' | 'pricePerTokenUSD'>[] = [];
 
-        Array.from(Object.keys(ENABLED_TOKEN_ADDRESSES)).forEach((tokenId) => {
-            const token = TOKEN_DEFINITIONS[tokenId][chainId];
+        Object.keys(ENABLED_TOKEN_ADDRESSES).forEach((tokenId) => {
+            const token = TOKEN_DEFINITIONS[tokenId as EnabledTokensEnum]?.[chainId];
             if (token) {
                 tokens.push({
                     label: token.name || 'Token',
@@ -187,21 +190,11 @@ export const useSwapData = () => {
         }
 
         Object.values(EnabledTokensEnum).forEach((tokenKey) => {
-            let tokenDefinitionFromEnum: typeof xtmDef;
-
-            switch (tokenKey) {
-                // case EnabledTokensEnum.WETH:
-                //     tokenDefinitionFromEnum = WETH9[chainId];
-                //     break;
-                case EnabledTokensEnum.WXTM:
-                    tokenDefinitionFromEnum = xtmDef;
-                    break;
-                default:
-                    tokenDefinitionFromEnum = undefined;
-            }
+            let tokenDefinitionFromEnum: Token | undefined;
+            if (tokenKey === EnabledTokensEnum.WXTM) tokenDefinitionFromEnum = xtmDef;
 
             if (tokenDefinitionFromEnum?.address) {
-                if (!tokens.find((t) => t.definition.equals(tokenDefinitionFromEnum))) {
+                if (!tokens.find((t) => t.definition.equals(tokenDefinitionFromEnum!))) {
                     tokens.push({
                         label: tokenDefinitionFromEnum.name || tokenKey,
                         symbol: (tokenDefinitionFromEnum.symbol || tokenKey) as TokenSymbol,
@@ -251,7 +244,10 @@ export const useSwapData = () => {
             setIsLoadingPrices(true);
             const newPrices: Record<string, number | undefined> = {};
             const promises = baseSelectableTokensForList.map(async (token) => {
-                newPrices[token.symbol] = await fetchTokenPriceUSD(token.symbol, currentChainId);
+                if (token.symbol) {
+                    // Ensure symbol exists
+                    newPrices[token.symbol] = await fetchTokenPriceUSD(token.symbol, currentChainId);
+                }
             });
             await Promise.all(promises);
             setTokenPrices((prev) => ({ ...prev, ...newPrices }));
@@ -277,15 +273,13 @@ export const useSwapData = () => {
                     );
                     const balanceResult =
                         contractIndex !== -1 && erc20BalancesData ? erc20BalancesData[contractIndex] : undefined;
-                    if (balanceResult?.status === 'success') {
-                        rawBalance = balanceResult.result as bigint;
-                    }
+                    if (balanceResult?.status === 'success') rawBalance = balanceResult.result as bigint;
                     balanceStr = rawBalance
                         ? formatDisplayBalanceForSelectable(rawBalance, baseToken.decimals, baseToken.symbol)
                         : undefined;
                 }
 
-                const pricePerToken = tokenPrices[baseToken.symbol];
+                const pricePerToken = baseToken.symbol ? tokenPrices[baseToken.symbol] : undefined;
                 let totalUsdValueStr: string | undefined;
                 if (rawBalance !== undefined && pricePerToken !== undefined) {
                     const numericBalance = parseFloat(viemFormatUnits(rawBalance, baseToken.decimals));
@@ -331,10 +325,7 @@ export const useSwapData = () => {
         setExecutionPriceDisplay(null);
         setTxBlockHash(null);
         setTransactionId(null);
-        setPaidTransactionFeeApproval(null);
-        setPaidTransactionFeeSwap(null);
-        setPaidTransactionFeeApproval(null);
-        setPaidTransactionFeeSwap(null);
+        setPaidTransactionFee(null);
         setReviewSwap(false);
         setSwapSuccess(false);
         setIsProcessingApproval(false);
@@ -355,23 +346,19 @@ export const useSwapData = () => {
         async (signal: AbortSignal) => {
             let amountTypedByUserStr: string;
             let tokenUsedForParsingAmount: Token | NativeCurrency | undefined;
-            let amountTypeForGetTradeDetails: SwapField = 'wxtmField';
+            let amountTypeForGetTradeDetails: SwapField;
 
-            const tradeInputTokenSDK = sdkToken0;
-            const tradeOutputTokenSDK = sdkToken1;
+            const tradeInputTokenDef = direction === 'toXtm' ? fromUiTokenDefinition : toUiTokenDefinition;
+            const tradeOutputTokenDef = direction === 'toXtm' ? toUiTokenDefinition : fromUiTokenDefinition;
 
             if (lastUpdatedField === 'ethTokenField') {
                 amountTypedByUserStr = ethTokenAmount;
                 tokenUsedForParsingAmount = fromUiTokenDefinition;
+                amountTypeForGetTradeDetails = 'ethTokenField';
             } else {
                 amountTypedByUserStr = wxtmAmount;
                 tokenUsedForParsingAmount = toUiTokenDefinition;
-            }
-
-            if (direction === 'toXtm') {
-                amountTypeForGetTradeDetails = lastUpdatedField === 'ethTokenField' ? 'ethTokenField' : 'wxtmField';
-            } else {
-                amountTypeForGetTradeDetails = lastUpdatedField === 'ethTokenField' ? 'wxtmField' : 'ethTokenField';
+                amountTypeForGetTradeDetails = 'wxtmField';
             }
 
             if (
@@ -379,8 +366,8 @@ export const useSwapData = () => {
                 !amountTypedByUserStr ||
                 Number.isNaN(Number(amountTypedByUserStr)) ||
                 Number(amountTypedByUserStr) <= 0 ||
-                !tradeInputTokenSDK ||
-                !tradeOutputTokenSDK
+                !tradeInputTokenDef ||
+                !tradeOutputTokenDef
             ) {
                 clearCalculatedDetails();
                 setIsLoading(false);
@@ -390,24 +377,33 @@ export const useSwapData = () => {
             setIsLoading(true);
             try {
                 const amountForCalcWei = viemParseUnits(amountTypedByUserStr, tokenUsedForParsingAmount.decimals);
-
-                const details = await getTradeDetails(amountForCalcWei.toString(), amountTypeForGetTradeDetails);
+                const details = await getTradeDetails(
+                    amountForCalcWei.toString(),
+                    amountTypeForGetTradeDetails,
+                    undefined,
+                    signal
+                );
                 if (signal.aborted) return;
 
                 setTradeDetails(details);
 
-                if (details) {
-                    setPriceImpact(details.priceImpactPercent ? `${details.priceImpactPercent}%` : null);
-                    setSlippage(details.priceImpactPercent ? `${details.priceImpactPercent}% (Price Impact)` : null); // Consider actual slippage setting
+                if (details && details.inputAmount && details.outputAmount) {
+                    // Ensure details are valid
+                    setPriceImpact(
+                        details.priceImpactPercent ? `${details.priceImpactPercent.toSignificant(2)}%` : null
+                    );
+                    setSlippage(
+                        details.priceImpactPercent
+                            ? `${details.priceImpactPercent.toSignificant(2)}% (Price Impact)`
+                            : null
+                    );
                     setNetworkFee(details.estimatedGasFeeNative || null);
 
                     if (details.minimumReceived && details.minimumReceived.currency.symbol) {
                         setMinimumReceivedDisplay(
                             `${formatAmountSmartly(details.minimumReceived)} ${details.minimumReceived.currency.symbol}`
                         );
-                    } else {
-                        setMinimumReceivedDisplay(null);
-                    }
+                    } else setMinimumReceivedDisplay(null);
 
                     if (details.executionPrice) {
                         const baseToken = details.executionPrice.baseCurrency;
@@ -416,48 +412,20 @@ export const useSwapData = () => {
                             setExecutionPriceDisplay(
                                 `1 ${baseToken.symbol} = ${details.executionPrice.toSignificant(6)} ${quoteToken.symbol}`
                             );
-                        } else {
-                            setExecutionPriceDisplay(null);
-                        }
-                    } else {
-                        setExecutionPriceDisplay(null);
-                    }
+                        } else setExecutionPriceDisplay(null);
+                    } else setExecutionPriceDisplay(null);
 
                     if (lastUpdatedField === 'ethTokenField') {
-                        if (direction === 'toXtm') {
-                            if (details.outputAmount) {
-                                setWxtmAmount(formatAmountSmartly(details.outputAmount));
-                            } else if (wxtmAmount !== '') {
-                                setWxtmAmount('');
-                            }
-                        } else {
-                            if (details.inputAmount) {
-                                setWxtmAmount(formatAmountSmartly(details.inputAmount));
-                            } else if (wxtmAmount !== '') {
-                                setWxtmAmount('');
-                            }
-                        }
+                        setWxtmAmount(formatAmountSmartly(details.outputAmount));
                     } else {
-                        // lastUpdatedField === 'wxtmField'
-                        if (direction === 'toXtm') {
-                            if (details.inputAmount) {
-                                setEthTokenAmount(formatAmountSmartly(details.inputAmount));
-                            } else if (ethTokenAmount !== '') {
-                                setEthTokenAmount('');
-                            }
-                        } else {
-                            if (details.outputAmount) {
-                                setEthTokenAmount(formatAmountSmartly(details.outputAmount));
-                            } else if (ethTokenAmount !== '') {
-                                setEthTokenAmount('');
-                            }
-                        }
+                        setEthTokenAmount(formatAmountSmartly(details.inputAmount));
                     }
-                    setIsLoading(false);
                 } else {
-                    clearCalculatedDetails();
+                    if (lastUpdatedField === 'ethTokenField' && wxtmAmount !== '') setWxtmAmount('');
+                    else if (lastUpdatedField === 'wxtmField' && ethTokenAmount !== '') setEthTokenAmount('');
+                    clearCalculatedDetails(); // Clear if details are null or incomplete
                 }
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                setIsLoading(false);
             } catch (e: any) {
                 addToast({ title: 'Calculation Error', text: e.message || 'Failed to get quote.', type: 'error' });
                 clearCalculatedDetails();
@@ -465,8 +433,6 @@ export const useSwapData = () => {
             }
         },
         [
-            sdkToken0,
-            sdkToken1,
             lastUpdatedField,
             direction,
             ethTokenAmount,
@@ -512,7 +478,6 @@ export const useSwapData = () => {
                 setEthTokenAmount(processedValue);
                 if (wxtmAmount !== '') setWxtmAmount('');
             } else {
-                // field === 'target'
                 setWxtmAmount(processedValue);
                 if (ethTokenAmount !== '') setEthTokenAmount('');
             }
@@ -525,11 +490,13 @@ export const useSwapData = () => {
         }
         const regex = /^\d*\.?\d*$/;
         if (!regex.test(processedValue) || (processedValue !== '.' && Number.isNaN(Number(processedValue)))) return;
-        if (processedValue.length > 1 && processedValue.startsWith('0') && !processedValue.startsWith('0.'))
+        if (processedValue.length > 1 && processedValue.startsWith('0') && !processedValue.startsWith('0.')) {
             processedValue = processedValue.substring(1);
+        }
         const parts = processedValue.split('.');
-        if (parts[1] && parts[1].length > maxDecimals)
+        if (parts[1] && parts[1].length > maxDecimals) {
             processedValue = `${parts[0]}.${parts[1].substring(0, maxDecimals)}`;
+        }
 
         if (field === 'ethTokenField') setEthTokenAmount(processedValue);
         else setWxtmAmount(processedValue);
@@ -541,19 +508,22 @@ export const useSwapData = () => {
     const handleToggleUiDirection = useCallback(() => {
         const newUiDirection = direction === 'toXtm' ? 'fromXtm' : 'toXtm';
         setSwapEngineDirection(newUiDirection);
+        const tempAmount = ethTokenAmount;
+        setEthTokenAmount(wxtmAmount);
+        setWxtmAmount(tempAmount);
+        setLastUpdatedField(lastUpdatedField === 'ethTokenField' ? 'wxtmField' : 'ethTokenField');
         clearCalculatedDetails();
-    }, [direction, setSwapEngineDirection, clearCalculatedDetails]);
+        shouldCalculate.current = true;
+    }, [direction, setSwapEngineDirection, clearCalculatedDetails, ethTokenAmount, wxtmAmount, lastUpdatedField]);
 
     const handleConfirm = async () => {
         setTransactionId(null);
         setSwapSuccess(false);
-        setPaidTransactionFeeApproval(null);
-        setPaidTransactionFeeSwap(null);
+        setPaidTransactionFee(null);
         setTxBlockHash(null);
 
-        if (!tradeDetails?.inputAmount || !tradeDetails?.outputAmount || !tradeDetails.inputToken) {
-            // Check V3 specific details
-            addToast({ title: 'Error', text: 'No valid V3 trade. Refresh quote.', type: 'error' });
+        if (!tradeDetails || !tradeDetails.inputAmount || !tradeDetails.outputAmount || !tradeDetails.inputToken) {
+            addToast({ title: 'Error', text: 'No valid trade details. Please try again.', type: 'error' });
             return;
         }
 
@@ -562,61 +532,55 @@ export const useSwapData = () => {
             addToast({ title: 'Error', text: 'Invalid trade amount.', type: 'error' });
             return;
         }
-        const amountInWeiString = inputAmountToExecute.toString();
 
-        setIsProcessingApproval(true);
         setProcessingOpen(true);
         setReviewSwap(false);
-
-        let approvalTxFeeString = '';
-        let swapTxFeeString = '';
+        setIsProcessingApproval(true); // Indicates "preparing transaction" (includes permit signing if applicable)
 
         try {
-            const approvalReceipt: EthersTransactionReceipt | null = (await checkAndRequestApproval(
-                sdkToken0 as Token,
-                amountInWeiString
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            )) as any;
-            setIsProcessingApproval(false);
+            const swapResult = await executeSwap(tradeDetails);
 
-            if (approvalReceipt && approvalReceipt.gasUsed && approvalReceipt.gasPrice && connectedAccount.chain) {
-                const approvalFee = approvalReceipt.gasUsed * approvalReceipt.gasPrice;
-                approvalTxFeeString = `${utilFormatNativeGasFee(approvalFee, connectedAccount.chain.nativeCurrency.decimals, connectedAccount.chain.nativeCurrency.symbol)}`;
-            }
-
-            setIsProcessingSwap(true);
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const swapResult = (await executeSwap(tradeDetails!)) as any;
-            setIsProcessingSwap(false);
+            setIsProcessingApproval(false); // Done with pre-swap steps
+            setIsProcessingSwap(true); // Indicates swap tx is submitted
 
             if (!swapResult || !swapResult.receipt || swapResult.receipt.status !== 1) {
-                // Ethers uses 1 for success
+                setIsProcessingSwap(false);
                 setProcessingOpen(false);
-                addToast({ title: 'Swap Failed', text: 'Transaction failed.', type: 'error' });
+                addToast({
+                    title: 'Swap Failed',
+                    text: swapResult?.response?.hash
+                        ? `Transaction ${swapResult.response.hash} failed.`
+                        : 'Transaction failed on-chain.',
+                    type: 'error',
+                });
                 return;
             }
 
+            setIsProcessingSwap(false);
             setSwapSuccess(true);
             setTransactionId(swapResult.response.hash);
             setTxBlockHash(swapResult.receipt.blockHash as `0x${string}`);
 
             if (swapResult.receipt.gasUsed && swapResult.receipt.gasPrice && connectedAccount.chain) {
-                const swapFee = swapResult.receipt.gasUsed * swapResult.receipt.gasPrice;
-                swapTxFeeString = `${utilFormatNativeGasFee(BigInt(swapFee), connectedAccount.chain.nativeCurrency.decimals, connectedAccount.chain.nativeCurrency.symbol)}`;
+                const swapFee =
+                    BigInt(swapResult.receipt.gasUsed.toString()) * BigInt(swapResult.receipt.gasPrice.toString());
+                setPaidTransactionFee(
+                    `${utilFormatNativeGasFee(swapFee, connectedAccount.chain.nativeCurrency.decimals, connectedAccount.chain.nativeCurrency.symbol)}`
+                );
             }
-
-            setPaidTransactionFeeApproval(approvalTxFeeString);
-            setPaidTransactionFeeSwap(swapTxFeeString);
 
             setTimeout(() => {
                 handleRefetchBalances();
             }, 3000);
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (e: any) {
             setIsProcessingApproval(false);
             setIsProcessingSwap(false);
             setProcessingOpen(false);
-            addToast({ title: 'Error', text: e.message || 'An error occurred.', type: 'error' });
+            addToast({
+                title: 'Transaction Error',
+                text: e.message || 'An error occurred during the swap.',
+                type: 'error',
+            });
         }
     };
 
@@ -632,8 +596,8 @@ export const useSwapData = () => {
             executionPrice: executionPriceDisplay,
             transactionId,
             txBlockHash,
-            paidTransactionFeeApproval,
-            paidTransactionFeeSwap,
+            paidTransactionFeeApproval: null, // Combined into paidTransactionFee
+            paidTransactionFeeSwap: paidTransactionFee, // Use the combined fee
         }),
         [
             direction,
@@ -646,28 +610,44 @@ export const useSwapData = () => {
             executionPriceDisplay,
             transactionId,
             txBlockHash,
-            paidTransactionFeeApproval,
-            paidTransactionFeeSwap,
+            paidTransactionFee,
         ]
     );
 
     const handleSelectFromToken = useCallback(
         (selectedToken: SelectableTokenInfo) => {
             setPairTokenAddress(selectedToken.address);
+            setEthTokenAmount('1'); // Reset amount on token change
+            setWxtmAmount('');
             setLastUpdatedField('ethTokenField');
             setTokenSelectOpen(false);
             clearCalculatedDetails();
+            shouldCalculate.current = true;
         },
         [setPairTokenAddress, clearCalculatedDetails]
     );
 
-    const finalIsLoading =
-        isLoading ||
-        isLoadingFromBalance ||
-        isLoadingToBalance ||
-        isLoadingErc20Balances ||
-        isLoadingNativeForList ||
-        isLoadingPrices;
+    const anyLoading = useMemo(
+        () =>
+            isLoading ||
+            isLoadingFromBalance ||
+            isLoadingToBalance ||
+            isLoadingErc20Balances ||
+            isLoadingNativeForList ||
+            isLoadingPrices ||
+            isSwapEngineLoading ||
+            isSwapEngineApproving,
+        [
+            isLoading,
+            isLoadingFromBalance,
+            isLoadingToBalance,
+            isLoadingErc20Balances,
+            isLoadingNativeForList,
+            isLoadingPrices,
+            isSwapEngineLoading,
+            isSwapEngineApproving,
+        ]
+    );
 
     return {
         notEnoughBalance,
@@ -675,7 +655,7 @@ export const useSwapData = () => {
         toTokenDisplay,
         reviewSwap,
         setReviewSwap,
-        isLoading: finalIsLoading,
+        isLoading: anyLoading,
         processingOpen,
         setProcessingOpen,
         isProcessingApproval,
@@ -696,7 +676,7 @@ export const useSwapData = () => {
         insufficientLiquidity,
         handleRefetchBalances,
         lastUpdatedField,
-        error: swapError,
+        error: swapError || useSwapError, // Combine errors
         customError,
         setCustomError,
         setFromAmount: (val: string) => handleNumberInput(val, 'ethTokenField'),

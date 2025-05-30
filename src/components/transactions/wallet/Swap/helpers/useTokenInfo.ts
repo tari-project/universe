@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useBalance } from 'wagmi';
-import { Ether, Token } from '@uniswap/sdk-core';
+import { Ether, NativeCurrency, Token } from '@uniswap/sdk-core';
 import { XTM_SDK_TOKEN } from '@app/hooks/swap/lib/constants';
 import { fetchTokenPriceUSD, formatDisplayBalanceForSelectable } from '@app/hooks/swap/lib/utils';
 import { formatUnits } from 'viem';
@@ -11,7 +11,7 @@ export interface SelectableTokenInfo {
     symbol: TokenSymbol;
     address: `0x${string}` | null;
     iconSymbol: string;
-    definition: Token;
+    definition: Token | NativeCurrency;
     balance: string;
     rawBalance?: bigint;
     decimals: number;
@@ -20,10 +20,10 @@ export interface SelectableTokenInfo {
 }
 
 interface UseTokenDisplayInfoProps {
-    uiTokenDefinition: Token;
+    uiTokenDefinition?: Token | NativeCurrency;
     chainId?: number;
     accountAddress?: `0x${string}`;
-    fallbackDefinition?: Token;
+    fallbackDefinition?: Token | NativeCurrency;
 }
 
 export function useTokenDisplayInfo({
