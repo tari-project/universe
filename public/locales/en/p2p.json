@@ -15,6 +15,7 @@
   "randomx-stats": "RandomX Stats",
   "sha3-stats": "SHA3 Stats",
   "stats": {
+    "earned": "You earned",
     "tile-heading": "Rewards in Progress",
     "tile-loading": "Pool is warming up",
     "tooltip-copy": "Rewards are “In Progress” until you earn a minimum of <strong>{{amount}}</strong>. After you reach the threshold, in-progress rewards will be automatically sent to your Tari Universe wallet. It may take a further 2 hours for them to arrive.",
