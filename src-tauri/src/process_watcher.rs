@@ -107,6 +107,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         Ok(())
     }
 
+    #[allow(clippy::too_many_arguments)]
     async fn attempt_to_start_and_stabilize_child(
         &self,
         child: &mut TAdapter::ProcessInstance,
