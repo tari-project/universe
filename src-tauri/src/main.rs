@@ -283,6 +283,155 @@ struct FEPayload {
     token: Option<String>,
 }
 
+// Helper function to create managers with AppHandle
+async fn create_managers_with_app_handle(
+    app_handle: tauri::AppHandle,
+    stats_collector: &mut ProcessStatsCollectorBuilder,
+    base_node_watch_rx: watch::Receiver<BaseNodeStatus>,
+    wallet_state_watch_tx: watch::Sender<Option<WalletState>>,
+    websocket_message_tx: tokio::sync::mpsc::Sender<WebsocketMessage>,
+    websocket_manager_status_tx: watch::Sender<WebsocketManagerStatusMessage>,
+    websocket_manager_status_rx: watch::Receiver<WebsocketManagerStatusMessage>,
+    gpu_status_tx: watch::Sender<GpuMinerStatus>,
+    cpu_miner_status_watch_tx: watch::Sender<CpuMinerStatus>,
+    p2pool_stats_tx: watch::Sender<Option<P2poolStats>>,
+    tor_watch_tx: watch::Sender<TorStatus>,
+    app_in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
+    cpu_config: Arc<RwLock<CpuMinerConfig>>,
+) -> (
+    NodeManager,
+    WalletManager,
+    SpendWalletManager,
+    CpuMiner,
+    GpuMiner,
+    TorManager,
+    MmProxyManager,
+    P2poolManager,
+    TelemetryManager,
+    WebsocketManager,
+    WebsocketEventsManager,
+    UpdatesManager,
+    TelemetryService,
+    Feedback,
+    MiningStatusManager,
+) {
+    // Create node manager components
+    let (local_node_watch_tx, local_node_watch_rx) = watch::channel(BaseNodeStatus::default());
+    let (remote_node_watch_tx, remote_node_watch_rx) = watch::channel(BaseNodeStatus::default());
+    let (base_node_watch_tx, _) = watch::channel(BaseNodeStatus::default());
+    
+    let node_manager = NodeManager::new(
+        stats_collector,
+        LocalNodeAdapter::new(local_node_watch_tx.clone()),
+        RemoteNodeAdapter::new(remote_node_watch_tx.clone()),
+        NodeType::Local,
+        base_node_watch_tx,
+        local_node_watch_rx,
+        remote_node_watch_rx,
+        app_handle.clone(),
+    );
+
+    let wallet_manager = WalletManager::new(
+        node_manager.clone(),
+        wallet_state_watch_tx,
+        stats_collector,
+        app_handle.clone(),
+    );
+
+    let spend_wallet_manager = SpendWalletManager::new(node_manager.clone());
+
+    let cpu_miner = CpuMiner::new(
+        stats_collector,
+        cpu_miner_status_watch_tx,
+        base_node_watch_rx.clone(),
+        app_handle.clone(),
+    );
+
+    let gpu_miner = GpuMiner::new(
+        gpu_status_tx,
+        base_node_watch_rx.clone(),
+        stats_collector,
+        app_handle.clone(),
+    );
+
+    let tor_manager = TorManager::new(
+        tor_watch_tx,
+        stats_collector,
+        app_handle.clone(),
+    );
+
+    let mm_proxy_manager = MmProxyManager::new(
+        stats_collector,
+        app_handle.clone(),
+    );
+
+    let p2pool_manager = P2poolManager::new(
+        p2pool_stats_tx.clone(),
+        stats_collector,
+        app_handle.clone(),
+    );
+
+    let (tor_watch_rx,) = (tor_watch_tx.subscribe(),);
+    let (gpu_status_rx,) = (gpu_status_tx.subscribe(),);
+    let (cpu_miner_status_watch_rx,) = (cpu_miner_status_watch_tx.subscribe(),);
+    let (p2pool_stats_rx,) = (p2pool_stats_tx.subscribe(),);
+
+    let telemetry_manager = TelemetryManager::new(
+        cpu_miner_status_watch_rx.clone(),
+        app_in_memory_config.clone(),
+        Some(Network::default()),
+        gpu_status_rx.clone(),
+        base_node_watch_rx.clone(),
+        p2pool_stats_rx.clone(),
+        tor_watch_rx.clone(),
+        stats_collector.build(),
+        node_manager.clone(),
+    );
+
+    let websocket_manager = WebsocketManager::new(
+        app_in_memory_config.clone(),
+        tokio::sync::mpsc::channel::<WebsocketMessage>(500).1,
+        websocket_manager_status_tx.clone(),
+        websocket_manager_status_rx.clone(),
+    );
+
+    let websocket_events_manager = WebsocketEventsManager::new(
+        cpu_miner_status_watch_rx.clone(),
+        gpu_status_rx.clone(),
+        base_node_watch_rx.clone(),
+        websocket_message_tx.clone(),
+    );
+
+    let updates_manager = UpdatesManager::new();
+    let telemetry_service = TelemetryService::new(app_in_memory_config.clone());
+    let feedback = Feedback::new(app_in_memory_config.clone());
+
+    let mining_status_manager = MiningStatusManager::new(
+        cpu_miner_status_watch_rx.clone(),
+        gpu_status_rx.clone(),
+        base_node_watch_rx.clone(),
+        app_in_memory_config.clone(),
+    );
+
+    (
+        node_manager,
+        wallet_manager,
+        spend_wallet_manager,
+        cpu_miner,
+        gpu_miner,
+        tor_manager,
+        mm_proxy_manager,
+        p2pool_manager,
+        telemetry_manager,
+        websocket_manager,
+        websocket_events_manager,
+        updates_manager,
+        telemetry_service,
+        feedback,
+        mining_status_manager,
+    )
+}
+
 #[allow(clippy::too_many_lines)]
 fn main() {
     #[cfg(target_os = "linux")]
@@ -329,34 +478,14 @@ fn main() {
     let _guard = minidump::init(&client);
 
     let mut stats_collector = ProcessStatsCollectorBuilder::new();
-    // NOTE: Nothing is started at this point, so ports are not known. You can only start settings ports
-    // and addresses once the different services have been started.
-    // A better way is to only provide the config when we start the service.
+    
+    // Create channels for communication between components
     let (base_node_watch_tx, base_node_watch_rx) = watch::channel(BaseNodeStatus::default());
-    let (local_node_watch_tx, local_node_watch_rx) = watch::channel(BaseNodeStatus::default());
-    let (remote_node_watch_tx, remote_node_watch_rx) = watch::channel(BaseNodeStatus::default());
-    let node_manager = NodeManager::new(
-        &mut stats_collector,
-        LocalNodeAdapter::new(local_node_watch_tx.clone()),
-        RemoteNodeAdapter::new(remote_node_watch_tx.clone()),
-        // This value is later overriden when retrieved from config
-        NodeType::Local,
-        base_node_watch_tx,
-        local_node_watch_rx,
-        remote_node_watch_rx,
-    );
-    let (wallet_state_watch_tx, wallet_state_watch_rx) =
-        watch::channel::<Option<WalletState>>(None);
-    let (websocket_message_tx, websocket_message_rx) =
-        tokio::sync::mpsc::channel::<WebsocketMessage>(500);
-
-    //NOTE DONT use websocket_state_tx anywhere else than WebsocketManager
-    let (websocket_manager_status_tx, websocket_manager_status_rx) =
-        watch::channel::<WebsocketManagerStatusMessage>(WebsocketManagerStatusMessage::Stopped);
-
+    let (wallet_state_watch_tx, wallet_state_watch_rx) = watch::channel::<Option<WalletState>>(None);
+    let (websocket_message_tx, websocket_message_rx) = tokio::sync::mpsc::channel::<WebsocketMessage>(500);
+    let (websocket_manager_status_tx, websocket_manager_status_rx) = watch::channel::<WebsocketManagerStatusMessage>(WebsocketManagerStatusMessage::Stopped);
     let (gpu_status_tx, gpu_status_rx) = watch::channel(GpuMinerStatus::default());
-    let (cpu_miner_status_watch_tx, cpu_miner_status_watch_rx) =
-        watch::channel::<CpuMinerStatus>(CpuMinerStatus::default());
+    let (cpu_miner_status_watch_tx, cpu_miner_status_watch_rx) = watch::channel::<CpuMinerStatus>(CpuMinerStatus::default());
     let wallet_manager = WalletManager::new(
         node_manager.clone(),
         wallet_state_watch_tx,
@@ -365,7 +494,7 @@ fn main() {
     let spend_wallet_manager =
         SpendWalletManager::new(node_manager.clone(), base_node_watch_rx.clone());
     let (p2pool_stats_tx, p2pool_stats_rx) = watch::channel(None);
-    let p2pool_manager = P2poolManager::new(p2pool_stats_tx, &mut stats_collector);
+    let (tor_watch_tx, tor_watch_rx) = watch::channel(TorStatus::default());
 
     let cpu_config = Arc::new(RwLock::new(CpuMinerConfig {
         node_connection: CpuMinerConnection::BuiltInProxy,
@@ -482,10 +611,7 @@ fn main() {
         websocket_event_manager: Arc::new(RwLock::new(websocket_events_manager)),
     };
     let app_state_clone = app_state.clone();
-    #[allow(
-        deprecated,
-        reason = "This is a temporary fix until the new tauri API is released"
-    )]
+    #[allow(deprecated, reason = "This is a temporary fix until the new tauri API is released")]
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_process::init())
@@ -539,8 +665,82 @@ fn main() {
                 .expect("Could not parse the contents of the log file as yaml");
             log4rs::init_raw_config(config).expect("Could not initialize logging");
 
-            // Do this after logging has started otherwise we can't actually see any errors
-            app.manage(app_state_clone);
+            // Initialize managers with app handle - moved to async setup
+            let app_handle = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                let mut stats_collector_local = ProcessStatsCollectorBuilder::new();
+                
+                let (
+                    node_manager,
+                    wallet_manager,
+                    spend_wallet_manager,
+                    cpu_miner,
+                    gpu_miner,
+                    tor_manager,
+                    mm_proxy_manager,
+                    p2pool_manager,
+                    telemetry_manager,
+                    websocket_manager,
+                    websocket_events_manager,
+                    updates_manager,
+                    telemetry_service,
+                    feedback,
+                    mining_status_manager,
+                ) = create_managers_with_app_handle(
+                    app_handle.clone(),
+                    &mut stats_collector_local,
+                    base_node_watch_rx.clone(),
+                    wallet_state_watch_tx.clone(),
+                    websocket_message_tx.clone(),
+                    websocket_manager_status_tx.clone(),
+                    websocket_manager_status_rx.clone(),
+                    gpu_status_tx.clone(),
+                    cpu_miner_status_watch_tx.clone(),
+                    p2pool_stats_tx.clone(),
+                    tor_watch_tx.clone(),
+                    app_in_memory_config.clone(),
+                    cpu_config.clone(),
+                ).await;
+
+                let app_state = UniverseAppState {
+                    cpu_miner_timestamp_mutex: Arc::new(Mutex::new(SystemTime::now())),
+                    cpu_miner_stop_start_mutex: Arc::new(Mutex::new(())),
+                    gpu_miner_stop_start_mutex: Arc::new(Mutex::new(())),
+                    is_getting_p2pool_connections: Arc::new(AtomicBool::new(false)),
+                    node_status_watch_rx: Arc::new(base_node_watch_rx),
+                    wallet_state_watch_rx: Arc::new(wallet_state_watch_rx.clone()),
+                    cpu_miner_status_watch_rx: Arc::new(cpu_miner_status_watch_rx),
+                    gpu_latest_status: Arc::new(gpu_status_rx),
+                    p2pool_latest_status: Arc::new(p2pool_stats_rx),
+                    is_getting_transactions_history: Arc::new(AtomicBool::new(false)),
+                    is_getting_coinbase_history: Arc::new(AtomicBool::new(false)),
+                    in_memory_config: app_in_memory_config.clone(),
+                    tari_address: Arc::new(RwLock::new(TariAddress::default())),
+                    cpu_miner: Arc::new(RwLock::new(cpu_miner)),
+                    gpu_miner: Arc::new(RwLock::new(gpu_miner)),
+                    cpu_miner_config: cpu_config.clone(),
+                    mm_proxy_manager,
+                    node_manager,
+                    wallet_manager,
+                    spend_wallet_manager: Arc::new(RwLock::new(spend_wallet_manager)),
+                    p2pool_manager,
+                    telemetry_manager: Arc::new(RwLock::new(telemetry_manager)),
+                    telemetry_service: Arc::new(RwLock::new(telemetry_service)),
+                    feedback: Arc::new(RwLock::new(feedback)),
+                    tor_manager,
+                    updates_manager,
+                    cached_p2pool_connections: Arc::new(RwLock::new(None)),
+                    systemtray_manager: Arc::new(RwLock::new(SystemTrayManager::new())),
+                    mining_status_manager: Arc::new(RwLock::new(mining_status_manager)),
+                    websocket_message_tx: Arc::new(websocket_message_tx),
+                    websocket_manager_status_rx: Arc::new(websocket_manager_status_rx.clone()),
+                    websocket_manager: Arc::new(RwLock::new(websocket_manager)),
+                    websocket_event_manager: Arc::new(RwLock::new(websocket_events_manager)),
+                };
+
+                app_handle.manage(app_state);
+            });
+
             match app.cli().matches() {
                 Ok(matches) => {
                     if let Some(backup_path) = matches.args.get("import-backup") {
@@ -745,9 +945,9 @@ fn main() {
 
     app.run(move |app_handle, event| {
         // We can only receive system events from the event loop so this needs to be here
-        let _unused = SystemStatus::current()
-            .receive_power_event(&power_monitor)
-            .inspect_err(|e| error!(target: LOG_TARGET, "Could not receive power event: {:?}", e));
+        let _unused = SystemStatus::current().receive_power_event(&power_monitor).inspect_err(|e| {
+            error!(target: LOG_TARGET, "Could not receive power event: {:?}", e)
+        });
 
         match event {
             tauri::RunEvent::Ready => {

@@ -106,6 +106,7 @@ impl NodeManager {
         base_node_watch_tx: watch::Sender<BaseNodeStatus>,
         local_node_watch_rx: watch::Receiver<BaseNodeStatus>,
         remote_node_watch_rx: watch::Receiver<BaseNodeStatus>,
+        app_handle: AppHandle, // Add this parameter
     ) -> Self {
         let stats_broadcast = stats_collector.take_minotari_node();
         let local_node_watcher: Option<ProcessWatcher<LocalNodeAdapter>> =
@@ -113,12 +114,14 @@ impl NodeManager {
                 stats_broadcast.clone(),
                 local_node_adapter.clone(),
                 node_type.is_local(),
+                app_handle.clone(), // Pass app_handle here
             ));
         let remote_node_watcher: Option<ProcessWatcher<RemoteNodeAdapter>> =
             Some(construct_process_watcher(
                 stats_broadcast,
                 remote_node_adapter.clone(),
                 node_type.is_local(),
+                app_handle.clone(), // Pass app_handle here
             ));
 
         let current_adapter: Box<dyn NodeAdapter + Send + Sync> = match node_type {
@@ -420,8 +423,9 @@ fn construct_process_watcher<T: NodeAdapter + ProcessAdapter + Send + Sync + 'st
     stats_broadcast: Sender<ProcessWatcherStats>,
     node_adapter: T,
     is_local: bool,
+    app_handle: AppHandle,
 ) -> ProcessWatcher<T> {
-    let mut process_watcher = ProcessWatcher::new(node_adapter, stats_broadcast);
+    let mut process_watcher = ProcessWatcher::new(node_adapter, stats_broadcast, app_handle); // Pass app_handle here
     if is_local {
         process_watcher.poll_time = Duration::from_secs(5);
         process_watcher.health_timeout = Duration::from_secs(4);
