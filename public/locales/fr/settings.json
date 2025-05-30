@@ -160,7 +160,7 @@
     "title": "Mettre à jour Tari Universe automatiquement"
   },
   "use-dynamic-fail-data": "Utiliser des données d\"échec dynamiques",
-  "use-p2p": "Use P2pool",
+  "use-p2p": "Utiliser P2pool",
   "use-random-control-port": "Utiliser un port de contrôle aléatoire",
   "use-random-port": "Utiliser un port aléatoire",
   "use-tor": "Utiliser Tor",

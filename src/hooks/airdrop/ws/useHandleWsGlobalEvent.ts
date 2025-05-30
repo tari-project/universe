@@ -9,7 +9,7 @@ export const useHandleWsGlobalEvent = () => {
                 setXSpaceEvent(event.data);
                 break;
             default:
-                console.warn('Unknown global event', event);
+                console.warn('Unknown global event', event.name);
         }
     }, []);
 };

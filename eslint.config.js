@@ -36,10 +36,7 @@ export default [
         rules: {
             ...react.configs.recommended.rules,
             ...hooksPlugin.configs.recommended.rules,
-            'no-console': [
-                'warn',
-                { allow: ['info', 'warn', 'debug', 'error', 'group', 'groupCollapsed', 'groupEnd'] },
-            ],
+            'no-console': ['warn', { allow: ['info', 'warn', 'debug', 'error'] }],
             'no-unused-vars': 'off', // base rule must be disabled
             '@typescript-eslint/no-unused-vars': [
                 'warn',

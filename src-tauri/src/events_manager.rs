@@ -27,7 +27,7 @@ use tari_core::transactions::tari_amount::MicroMinotari;
 use tauri::{AppHandle, Manager};
 
 use crate::airdrop::send_new_block_mined;
-use crate::app_in_memory_config::DEFAULT_EXCHANGE_ID;
+use crate::app_in_memory_config::{AppInMemoryConfig, DEFAULT_EXCHANGE_ID};
 use crate::configs::config_core::ConfigCore;
 use crate::configs::config_mining::ConfigMiningContent;
 use crate::configs::config_wallet::ConfigWalletContent;
@@ -330,5 +330,22 @@ impl EventsManager {
         status: ConnectionStatusPayload,
     ) {
         EventsEmitter::emit_connection_status_changed(app, status).await;
+    }
+
+    pub async fn handle_app_in_memory_config_changed(
+        app: &AppHandle,
+        app_in_memory_config: AppInMemoryConfig,
+        is_universal_exchange: bool,
+    ) {
+        EventsEmitter::emit_app_in_memory_config_changed(
+            app,
+            app_in_memory_config,
+            is_universal_exchange,
+        )
+        .await;
+    }
+
+    pub async fn handle_disabled_phases_changed(app: &AppHandle, payload: Vec<SetupPhase>) {
+        EventsEmitter::emit_disabled_phases_changed(app, payload).await;
     }
 }

@@ -20,7 +20,7 @@ import LoadingDots from '@app/components/elements/loaders/LoadingDots';
 export const ConnectWallet = ({
     isOpen,
     setIsOpen,
-    setError,
+    setError: _setError,
 }: {
     isOpen: boolean;
     setIsOpen: (isOpen: boolean) => void;
@@ -62,12 +62,6 @@ export const ConnectWallet = ({
                     setIsOpen(false);
                 });
 
-                // provider.on('proposal_expire', () => {
-                //     setError?.(
-                //         'Wallet Connect failed. Please try again with a different Ethereum wallet. If you continue to face challenges, please connect with Tari contributors on Telegram or Discord.'
-                //     );
-                // });
-
                 provider.on('error', (error: unknown) => {
                     console.info('connect', error);
                 });
@@ -98,7 +92,7 @@ export const ConnectWallet = ({
         } else {
             console.error('WalletConnect connector not found.');
         }
-    }, [connectors, isOpen, setError, setIsOpen]);
+    }, [connectors, isOpen, setIsOpen]);
 
     useEffect(() => {
         if (!isConnected && !qrCodeUri) {
