@@ -212,7 +212,8 @@ impl GpuMiner {
 
         info!(target: LOG_TARGET, "Gpu miner binary file path {:?}", gpuminer_bin.clone());
         crate::download_utils::set_permissions(&gpuminer_bin).await?;
-        let child = process_utils::launch_child_process(&gpuminer_bin, &config_dir, None, &args)?;
+        let child =
+            process_utils::launch_child_process(&gpuminer_bin, &config_dir, None, &args, false)?;
         let output = child.wait_with_output().await?;
         info!(target: LOG_TARGET, "Gpu detect exit code: {:?}", output.status.code().unwrap_or_default());
 

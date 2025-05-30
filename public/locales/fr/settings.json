@@ -104,6 +104,8 @@
   "pre-release-note": "Vous êtes sur le point de passer à la version préliminaire de l\"application. Cette version peut offrir de nouvelles fonctionnalités et améliorations passionnantes, avec la possibilité de rencontrer des zones qui peuvent encore être en cours de perfectionnement.",
   "randomx-network-hash-rate": "Taux de hachage du réseau Randomx",
   "refresh-versions": "Rafraîchir les versions",
+  "refresh-wallet-history": "Refresh wallet history",
+  "refresh-wallet-history-description": "Scan and validate all your transactions",
   "release-notes": {
     "loading": "Chargement des notes de version...",
     "upgrade-available": "⚠️ Mise à jour disponible"

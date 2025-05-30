@@ -363,7 +363,8 @@ fn main() {
         wallet_state_watch_tx,
         &mut stats_collector,
     );
-    let spend_wallet_manager = SpendWalletManager::new(node_manager.clone());
+    let spend_wallet_manager =
+        SpendWalletManager::new(node_manager.clone(), base_node_watch_rx.clone());
     let (p2pool_stats_tx, p2pool_stats_rx) = watch::channel(None);
     let p2pool_manager = P2poolManager::new(p2pool_stats_tx, &mut stats_collector);
 
@@ -713,7 +714,9 @@ fn main() {
             commands::launch_builtin_tapplet,
             commands::get_tari_wallet_address,
             commands::get_tari_wallet_balance,
-            commands::get_bridge_envs
+            commands::get_bridge_envs,
+            commands::parse_tari_address,
+            commands::refresh_wallet_history
         ])
         .build(tauri::generate_context!())
         .inspect_err(|e| {
@@ -757,6 +760,11 @@ fn main() {
                     target: LOG_TARGET,
                     "App shutdown request caught with code: {:#?}", code
                 );
+                let base_path = app_handle.path().app_local_data_dir().expect("Could not get data dir");
+                match SpendWalletManager::erase_related_data(base_path) {
+                    Ok(_) => info!(target: LOG_TARGET, "Successfully erased related spend wallet data."),
+                    Err(e) => error!(target: LOG_TARGET, "Failed to erase related spend wallet data: {:?}", e),
+                }
                 if let Some(exit_code) = code {
                     if exit_code == RESTART_EXIT_CODE {
                         // RunEvent does not hold the exit code so we store it separately

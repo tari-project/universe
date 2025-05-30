@@ -121,4 +121,12 @@ impl EventsManager {
 
         EventsEmitter::emit_node_type_update(payload).await;
     }
+
+    #[cfg(target_os = "windows")]
+    pub async fn handle_missing_application_files(
+        app: &AppHandle,
+        external_dependecies: RequiredExternalDependency,
+    ) {
+        EventsEmitter::emit_missing_applications(app, external_dependecies).await;
+    }
 }
