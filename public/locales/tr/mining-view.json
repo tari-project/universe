@@ -27,10 +27,10 @@
     "step_6": "Uygulama sıfırlamayı deneyin (Ayarlar\"da)"
   },
   "pool": {
-    "accepted_shares": "Accepted shares",
-    "balance": "Balance",
-    "min_payout": "Minimum payout",
-    "unpaid": "Unpaid"
+    "accepted_shares": "Kabul Edilen Paylar",
+    "balance": "Bakiye",
+    "min_payout": "Minimum ödeme",
+    "unpaid": "Ödenmemiş"
   },
   "you-earn-rewards-separately": "CPU ve GPU madenciliği için ayrı ayrı ödüller kazanırsınız",
   "you-won-block": "<span>blok #{{ blockHeight }}</span> kazananı siz oldunuz",
