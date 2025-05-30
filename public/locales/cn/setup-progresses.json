@@ -43,6 +43,7 @@
     "p2pool": "启动 P2Pool",
     "platform-prequisites": "初始化平台先决条件",
     "run-cpu-benchmark": "运行 CPU 基准测试",
+    "setup-bridge": "Preparing Bridge",
     "start-tor": "启动 Tor",
     "start-wallet": "启动钱包",
     "starting-node": "启动 Minotari 节点",
