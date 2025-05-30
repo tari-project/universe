@@ -58,7 +58,7 @@ export const Inside = styled.div<{ $isLoading?: boolean; $isMining?: boolean }>`
     flex-shrink: 0;
     flex-grow: 6;
     padding: 14px;
-    min-height: 62px;
+    height: 62px;
     position: relative;
     z-index: 2;
 `;
@@ -114,7 +114,9 @@ export const LeftContent = styled.div`
     height: 100%;
     justify-content: space-between;
     flex-direction: column;
-    gap: 4px;
+
+    position: relative;
+    z-index: 2;
 `;
 
 export const RightContent = styled.div`
@@ -125,6 +127,9 @@ export const RightContent = styled.div`
     align-items: end;
     height: 100%;
     position: relative;
+
+    position: relative;
+    z-index: 2;
 `;
 
 export const Values = styled.div`
@@ -219,4 +224,29 @@ export const TooltipChipText = styled(Typography).attrs({ variant: 'p' })`
     height: 27px;
     display: flex;
     align-items: center;
+`;
+
+export const LottieWrapper = styled(m.div)`
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 10px;
+    z-index: 1;
+    padding-right: 20px;
+
+    background: linear-gradient(0deg, #eafadf 0%, #eafadf 100%), #fff;
+
+    ${({ theme }) =>
+        theme.mode === 'dark' &&
+        css`
+            background: linear-gradient(0deg, #1a2d28 0%, #1a2d28 100%), #1a2d28;
+        `}
+
+    .lottie-animation {
+        width: 100%;
+        height: 100%;
+        transform: scale(1.1);
+    }
 `;

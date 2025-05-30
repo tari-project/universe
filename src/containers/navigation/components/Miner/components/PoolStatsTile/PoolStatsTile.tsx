@@ -17,17 +17,21 @@ import {
     Border,
     AnimatedGradient,
     Inside,
+    LottieWrapper,
 } from './styles';
 import { Trans, useTranslation } from 'react-i18next';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import QuestionMarkSvg from '@app/components/svgs/QuestionMarkSvg.tsx';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { offset, safePolygon, useFloating, useHover, useInteractions } from '@floating-ui/react';
+import NumberFlow from '@number-flow/react';
 
 import { AnimatePresence } from 'motion/react';
 import { MiningTime } from '@app/components/mining/timer/MiningTime.tsx';
 import { useMiningTime } from '@app/hooks/mining/useMiningTime.ts';
 import { SuccessAnimation } from './SuccessAnimation/SuccessAnimation';
+import { DotLottieReact } from '@lottiefiles/dotlottie-react';
+import coins_increase_url from './lotties/Coins_Progress_Lottie.json?url';
 
 const variants = {
     hidden: {
@@ -49,10 +53,32 @@ export const PoolStatsTile = () => {
     const isMining = useMiningMetricsStore((s) => s.cpu_mining_status.is_mining);
     const cpuMiningEnabled = useConfigMiningStore((s) => s.cpu_mining_enabled);
     const loading = isMining && !pool_status;
-    const unpaidFMT = formatNumber(pool_status?.unpaid || 0, FormatPreset.XTM_LONG_DEC);
     const [expanded, setExpanded] = useState(false);
 
+    // const unpaidFMT = formatNumber(pool_status?.unpaid || 0, FormatPreset.XTM_LONG_DEC);
+
+    // ================== Animations ==================
+
+    const [showIncreaseAnimation, setShowIncreaseAnimation] = useState(false);
     const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
+
+    const [unpaid, setUnpaid] = useState(pool_status?.unpaid || 0);
+    const [prevUnpaid, setPrevUnpaid] = useState(unpaid);
+
+    useEffect(() => {
+        setUnpaid(pool_status?.unpaid || 0);
+    }, [pool_status?.unpaid]);
+
+    useEffect(() => {
+        if (unpaid > prevUnpaid) {
+            setShowIncreaseAnimation(true);
+            const timer = setTimeout(() => setShowIncreaseAnimation(false), 5000);
+            return () => clearTimeout(timer);
+        }
+        setPrevUnpaid(unpaid);
+    }, [unpaid, prevUnpaid]);
+
+    // ================== Floating UI ==================
 
     const { refs, context, floatingStyles } = useFloating({
         open: expanded,
@@ -68,6 +94,8 @@ export const PoolStatsTile = () => {
 
     const { getReferenceProps, getFloatingProps } = useInteractions([hover]);
 
+    // ================== Render ==================
+
     return !cpuMiningEnabled ? null : (
         <>
             <Wrapper>
@@ -80,7 +108,18 @@ export const PoolStatsTile = () => {
                                 <LeftContent>
                                     <Title>{t('stats.tile-heading')}</Title>
                                     <Values>
-                                        <BalanceVal>{`${unpaidFMT} XTM`}</BalanceVal>
+                                        <BalanceVal>
+                                            <NumberFlow
+                                                format={{
+                                                    minimumFractionDigits: 2,
+                                                    maximumFractionDigits: 7,
+                                                    notation: 'standard',
+                                                    style: 'decimal',
+                                                }}
+                                                value={unpaid / 1000000}
+                                                suffix=" XTM"
+                                            />
+                                        </BalanceVal>
                                     </Values>
                                 </LeftContent>
                                 <RightContent>
@@ -89,6 +128,26 @@ export const PoolStatsTile = () => {
                                     </TriggerWrapper>
                                     <MiningTime timing={{ daysString, hoursString, minutes, seconds }} variant="mini" />
                                 </RightContent>
+                                <AnimatePresence>
+                                    {showIncreaseAnimation && (
+                                        <LottieWrapper
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            exit={{ opacity: 0 }}
+                                            transition={{
+                                                duration: 1,
+                                                ease: [0.15, 0, 0, 0.97],
+                                            }}
+                                        >
+                                            <DotLottieReact
+                                                src={coins_increase_url}
+                                                autoplay
+                                                loop={false}
+                                                className="lottie-animation"
+                                            />
+                                        </LottieWrapper>
+                                    )}
+                                </AnimatePresence>
                             </>
                         )}
                     </Inside>
