@@ -1,5 +1,6 @@
 {
   "any_moment_now": "Sebentar lagi",
+  "awaiting-exchange-selection": "Awaiting user exchange selection",
   "block-sync": "Menyinkronkan blok",
   "calculating_time": "Menghitung waktu yang tersisa...",
   "header-sync": "Menyinkronkan header",
@@ -42,6 +43,7 @@
     "p2pool": "Memulai P2Pool",
     "platform-prequisites": "Memulai Prasyarat Platform",
     "run-cpu-benchmark": "Menjalankan Benchmark CPU",
+    "setup-bridge": "Preparing Bridge",
     "start-tor": "Memulai Tor",
     "start-wallet": "Memulai Dompet",
     "starting-node": "Memulai Node Minotari",

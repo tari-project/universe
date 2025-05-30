@@ -10,6 +10,7 @@ import { setAnimationState } from '@tari-project/tari-tower';
 import { TransactionInfo, WalletBalance } from '@app/types/app-status.ts';
 import { setMiningControlsEnabled } from './actions/miningStoreActions.ts';
 import { refreshPendingTransactions, updateWalletScanningProgress, useWalletStore } from './useWalletStore.ts';
+import { useConfigUIStore } from '@app/store/useAppConfigStore.ts';
 
 const appWindow = getCurrentWindow();
 
@@ -68,9 +69,11 @@ const handleWin = async (coinbase_transaction: TransactionInfo, balance: WalletB
     useBlockchainVisualisationStore.setState((curr) => ({ rewardCount: (curr.rewardCount || 0) + 1 }));
     if (canAnimate) {
         setMiningControlsEnabled(false);
-        const successTier = getSuccessTier(earnings);
-
-        setAnimationState(successTier);
+        const visualModeEnabled = useConfigUIStore.getState().visual_mode;
+        if (visualModeEnabled) {
+            const successTier = getSuccessTier(earnings);
+            setAnimationState(successTier);
+        }
         useBlockchainVisualisationStore.setState({ earnings });
         if (winTimeout) {
             clearTimeout(winTimeout);
@@ -93,7 +96,8 @@ const handleWin = async (coinbase_transaction: TransactionInfo, balance: WalletB
     }
 };
 const handleFail = async (blockHeight: number, balance: WalletBalance, canAnimate: boolean) => {
-    if (canAnimate) {
+    const visualModeEnabled = useConfigUIStore.getState().visual_mode;
+    if (canAnimate && visualModeEnabled) {
         setMiningControlsEnabled(false);
         setAnimationState('fail');
         if (failTimeout) {
@@ -146,11 +150,10 @@ async function processNewBlock(payload: {
     coinbase_transaction?: TransactionInfo;
     balance: WalletBalance;
 }) {
-    if (useMiningStore.getState().miningInitiated) {
+    if (useMiningStore.getState().isCpuMiningInitiated || useMiningStore.getState().isGpuMiningInitiated) {
         const minimized = await appWindow?.isMinimized();
         const documentIsVisible = document?.visibilityState === 'visible' || false;
         const canAnimate = !minimized && documentIsVisible;
-
         if (payload.coinbase_transaction) {
             await handleWin(payload.coinbase_transaction, payload.balance, canAnimate);
         } else {
@@ -158,7 +161,6 @@ async function processNewBlock(payload: {
         }
     } else {
         useBlockchainVisualisationStore.setState({ displayBlockHeight: payload.block_height });
-        console.info('Mining not initiated. Block height updated.');
         await refreshTransactions();
         refreshPendingTransactions();
     }

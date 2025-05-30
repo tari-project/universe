@@ -60,6 +60,17 @@ export const Value = styled.div<{ $status?: SendStatus }>`
         `}
 `;
 
+export const ValueLeft = styled.div`
+    display: flex;
+    align-items: baseline;
+    span {
+        line-height: 1;
+        font-size: 10px;
+        vertical-align: bottom;
+        display: flex;
+    }
+`;
+
 export const ValueRight = styled.div`
     font-size: 10px;
     font-style: normal;

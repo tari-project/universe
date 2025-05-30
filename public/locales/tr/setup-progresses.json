@@ -1,5 +1,6 @@
 {
   "any_moment_now": "Her an şimdi",
+  "awaiting-exchange-selection": "Awaiting user exchange selection",
   "block-sync": "Bloklar senkronize ediliyor",
   "calculating_time": "Kalan süre hesaplanıyor...",
   "header-sync": "Başlıklar senkronize ediliyor",
@@ -42,6 +43,7 @@
     "p2pool": "P2Pool Başlatılıyor",
     "platform-prequisites": "Platform Ön Koşulları Başlatılıyor",
     "run-cpu-benchmark": "CPU Karşılaştırması Çalıştırılıyor",
+    "setup-bridge": "Preparing Bridge",
     "start-tor": "Tor Başlatılıyor",
     "start-wallet": "Cüzdan Başlatılıyor",
     "starting-node": "Minotari Düğümü Başlatılıyor",

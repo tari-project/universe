@@ -106,6 +106,7 @@ export interface AirdropStoreState {
     latestXSpaceEvent?: XSpaceEvent | null;
     pollingEnabled?: boolean;
     orphanChainUiDisabled?: boolean;
+    swapsEnabled?: boolean;
     uiSendRecvEnabled: boolean;
     communityMessages?: CommunityMessage[];
 }

@@ -98,6 +98,7 @@ export const handleAskForRestart = () => {
     setDialogToShow('restart');
 };
 export const setShowResumeAppModal = (showResumeAppModal: boolean) => useUIStore.setState({ showResumeAppModal });
+export const setShowTapplet = (showTapplet: boolean) => useUIStore.setState({ showTapplet });
 export const animationLightBg = [
     { property: 'bgColor1', value: '#ffffff' },
     { property: 'bgColor2', value: '#d0d0d0' },

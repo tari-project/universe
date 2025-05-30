@@ -11,14 +11,24 @@ import {
     useMiningMetricsStore,
     useMiningStore,
 } from '../index.ts';
-import { pauseMining, restartMining, startMining, stopMining, toggleDeviceExclusion } from './miningStoreActions';
+import {
+    restartMining,
+    startCpuMining,
+    startGpuMining,
+    stopCpuMining,
+    stopGpuMining,
+    toggleDeviceExclusion,
+} from './miningStoreActions';
 import { setError } from './appStateStoreActions.ts';
 import { setUITheme } from './uiStoreActions';
 import { GpuThreads } from '@app/types/app-status.ts';
 import { displayMode, modeType } from '../types';
-import { ConfigCore, ConfigMining, ConfigUI, ConfigWallet } from '@app/types/configs.ts';
+import { ConfigBackendInMemory, ConfigCore, ConfigMining, ConfigUI, ConfigWallet } from '@app/types/configs.ts';
 import { NodeType, updateNodeType as updateNodeTypeForNodeStore } from '../useNodeStore.ts';
+import { fetchExchangeContent, fetchExchangeMiners, setShowUniversalModal } from '../useExchangeStore.ts';
 import { ChainId } from '@uniswap/sdk-core';
+
+import { AppInMemoryConfigChangedPayload } from '@app/types/events-payloads.ts';
 
 interface SetModeProps {
     mode: modeType;
@@ -116,27 +126,26 @@ export const setAutoUpdate = async (autoUpdate: boolean) => {
 };
 export const setCpuMiningEnabled = async (enabled: boolean) => {
     useConfigMiningStore.setState({ cpu_mining_enabled: enabled });
-    const miningInitiated = useMiningStore.getState().miningInitiated;
+    const miningInitiated = useMiningStore.getState().isCpuMiningInitiated;
     const cpuMining = useMiningMetricsStore.getState().cpu_mining_status.is_mining;
-    const gpuMining = useMiningMetricsStore.getState().gpu_mining_status.is_mining;
 
-    if (cpuMining || gpuMining) {
-        await pauseMining();
+    if (cpuMining) {
+        await stopCpuMining();
     }
     invoke('set_cpu_mining_enabled', { enabled })
         .then(async () => {
-            if (miningInitiated && (enabled || gpuMining)) {
-                await startMining();
+            if (miningInitiated && enabled) {
+                await startCpuMining();
             } else {
-                await stopMining();
+                await stopCpuMining();
             }
         })
         .catch((e) => {
             console.error('Could not set CPU mining enabled', e);
             setError('Could not change CPU mining enabled');
             useConfigMiningStore.setState({ cpu_mining_enabled: !enabled });
-            if (miningInitiated && !cpuMining && !gpuMining) {
-                void stopMining();
+            if (miningInitiated && !cpuMining) {
+                void stopCpuMining();
             }
         });
 };
@@ -150,19 +159,18 @@ export const setCustomStatsServerPort = async (port?: number) => {
 };
 export const setGpuMiningEnabled = async (enabled: boolean) => {
     useConfigMiningStore.setState({ gpu_mining_enabled: enabled });
-    const miningInitiated = useMiningStore.getState().miningInitiated;
-    const cpuMining = useMiningMetricsStore.getState().cpu_mining_status.is_mining;
+    const miningInitiated = useMiningStore.getState().isGpuMiningInitiated;
     const gpuMining = useMiningMetricsStore.getState().gpu_mining_status.is_mining;
     const gpuDevices = useMiningMetricsStore.getState().gpu_devices;
-    if (cpuMining || gpuMining) {
-        await pauseMining();
+    if (gpuMining) {
+        await stopGpuMining();
     }
     try {
         await invoke('set_gpu_mining_enabled', { enabled });
-        if (miningInitiated && (cpuMining || enabled)) {
-            await startMining();
+        if (miningInitiated && enabled) {
+            await startGpuMining();
         } else {
-            void stopMining();
+            void stopGpuMining();
         }
         if (enabled && gpuDevices.every((device) => device.settings.is_excluded)) {
             for (const device of gpuDevices) {
@@ -178,8 +186,8 @@ export const setGpuMiningEnabled = async (enabled: boolean) => {
         console.error('Could not set GPU mining enabled', e);
         setError('Could not change GPU mining enabled');
         useConfigMiningStore.setState({ gpu_mining_enabled: !enabled });
-        if (miningInitiated && !cpuMining && !gpuMining) {
-            void stopMining();
+        if (miningInitiated && !gpuMining) {
+            void stopGpuMining();
         }
     }
 };
@@ -318,11 +326,31 @@ export const setDefaultChain = (chain: ChainId) => {
 
 export const fetchBackendInMemoryConfig = async () => {
     try {
+        const isUniversalMiner = await invoke('is_universal_miner');
+
         const res = await invoke('get_app_in_memory_config');
         if (res) {
-            useConfigBEInMemoryStore.setState({ ...res });
+            useConfigBEInMemoryStore.setState({ ...res, isUniversalMiner });
+            if (isUniversalMiner) {
+                await fetchExchangeMiners();
+                setShowUniversalModal(true);
+            }
+            if (res.exchangeId && !isUniversalMiner && res.exchangeId !== 'classic') {
+                await fetchExchangeContent(res.exchangeId);
+            }
         }
     } catch (e) {
         console.error('Could not fetch backend in memory config', e);
     }
+};
+
+export const handleAppInMemoryConfigChanged = (payload: AppInMemoryConfigChangedPayload) => {
+    const newConfig: ConfigBackendInMemory = {
+        airdropApiUrl: payload.app_in_memory_config.airdrop_api_url,
+        airdropUrl: payload.app_in_memory_config.airdrop_url,
+        airdropTwitterAuthUrl: payload.app_in_memory_config.airdrop_twitter_auth_url,
+        exchangeId: payload.app_in_memory_config.exchange_id,
+        isUniversalMiner: payload.is_universal_exchange || false,
+    };
+    useConfigBEInMemoryStore.setState(newConfig);
 };

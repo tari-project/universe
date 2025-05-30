@@ -27,7 +27,7 @@ export function useHandleWsUserIdEvent() {
                 setLatestXSpaceEvent(event.data);
                 break;
             default:
-                console.warn('Unknown event', event);
+                console.warn('Unknown event', event.name);
         }
     }, []);
 }

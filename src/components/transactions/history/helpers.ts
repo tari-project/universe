@@ -1,39 +1,4 @@
-import { TransactionInfo } from '@app/types/app-status.ts';
-import { TransactionDirection as D, TransactionStatus as S } from '@app/types/transactions.ts';
-import { TransationType } from '@app/components/transactions/types.ts';
-import i18n from 'i18next';
 import { useConfigUIStore } from '@app/store';
-
-interface GetTitleArgs {
-    itemType: TransationType;
-    blockHeight?: number;
-    message?: string;
-}
-
-function getItemType(item: TransactionInfo): TransationType {
-    const mined = [S.CoinbaseConfirmed, S.CoinbaseUnconfirmed];
-    // const oneSided = [S.MinedConfirmed, S.MinedConfirmed, S.OneSidedConfirmed, S.OneSidedUnconfirmed];
-
-    const isMined = mined.includes(item.status);
-
-    if (isMined) {
-        return 'mined';
-    }
-
-    return item.direction === D.Outbound ? 'sent' : 'received';
-}
-
-function getItemTitle({ itemType, blockHeight, message }: GetTitleArgs): string {
-    if (itemType === 'mined' && blockHeight) {
-        return `${i18n.t('sidebar:block')} #${blockHeight}`;
-    }
-
-    if (message && !message.includes('<No message>')) {
-        return message;
-    }
-
-    return i18n.t(`common:${itemType}`);
-}
 
 function formatTimeStamp(timestamp: number): string {
     const appLanguage = useConfigUIStore.getState().application_language;
@@ -46,4 +11,4 @@ function formatTimeStamp(timestamp: number): string {
         minute: 'numeric',
     });
 }
-export { getItemType, getItemTitle, formatTimeStamp };
+export { formatTimeStamp };

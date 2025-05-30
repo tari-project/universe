@@ -3,7 +3,7 @@ import { IoChevronForwardOutline } from 'react-icons/io5';
 import { setAnimationProperties } from '@tari-project/tari-tower';
 
 import { useUIStore } from '@app/store/useUIStore.ts';
-import { setSidebarOpen } from '@app/store/actions/uiStoreActions';
+import { setShowTapplet, setSidebarOpen } from '@app/store/actions/uiStoreActions';
 
 import { CubeOutlineSVG } from '@app/assets/icons/cube-outline.tsx';
 import {
@@ -40,6 +40,7 @@ const NavButton = memo(function NavButton({ children, isActive, onClick }: NavBu
             <AnimatePresence mode="popLayout">
                 {showArrow ? (
                     <HoverIconWrapper
+                        key="hover"
                         initial={{ opacity: 0, scaleX }}
                         exit={{ opacity: 0, scaleX }}
                         animate={{ opacity: 1, scaleX }}
@@ -47,7 +48,12 @@ const NavButton = memo(function NavButton({ children, isActive, onClick }: NavBu
                         <IoChevronForwardOutline size={28} />
                     </HoverIconWrapper>
                 ) : (
-                    <NavIconWrapper initial={{ opacity: 0 }} exit={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                    <NavIconWrapper
+                        key="not-hover"
+                        initial={{ opacity: 0 }}
+                        exit={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                    >
                         {children}
                     </NavIconWrapper>
                 )}
@@ -58,9 +64,15 @@ const NavButton = memo(function NavButton({ children, isActive, onClick }: NavBu
 const NavigationButton = memo(function NavigationButton() {
     const sidebarOpen = useUIStore((s) => s.sidebarOpen);
     const towerSidebarOffset = useUIStore((s) => s.towerSidebarOffset);
+    const showTapplet = useUIStore((s) => s.showTapplet);
 
     function handleToggleOpen() {
-        setSidebarOpen(!sidebarOpen);
+        if (showTapplet) {
+            setSidebarOpen(true);
+            setShowTapplet(false);
+        } else {
+            setSidebarOpen(!sidebarOpen);
+        }
     }
 
     useEffect(() => {

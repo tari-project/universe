@@ -64,19 +64,20 @@ jobs:
           - platform: 'ubuntu-22.04'
             args: '--bundles deb,appimage'
             extra: '-x64'
-          - platform: 'ubuntu-24.04-arm'
-            args: '--bundles deb,appimage'
-            best_effort: true
-          - platform: 'ubuntu-22.04'
-            args: '--bundles rpm'
-            extra: '-x64-rpm'
-            best_effort: true
-          - platform: 'ubuntu-24.04-arm'
-            args: '--bundles rpm'
-            extra: '-rpm'
-            best_effort: true
-          - platform: 'windows-latest'
-            args: '--bundles msi'
+          # - platform: 'ubuntu-24.04-arm'
+          #   args: '--bundles deb,appimage'
+          #   best_effort: true
+          # Too slow. Maybe some day though... some day...
+          # - platform: 'ubuntu-22.04'
+          #   args: '--bundles rpm'
+          #   extra: '-x64-rpm'
+          #   best_effort: true
+          # - platform: 'ubuntu-24.04-arm'
+          #   args: '--bundles rpm'
+          #   extra: '-rpm'
+          #   best_effort: true
+          # - platform: 'windows-latest'
+          #   args: '--bundles msi'
           - platform: 'macos-latest'
             args: '--target universal-apple-darwin'
     runs-on: ${{ matrix.platforms.platform }}
@@ -547,23 +548,39 @@ jobs:
         with:
           name: tari_universe-${{ matrix.exchange.id }}_${{ needs.builds.outputs.APP_VERSION }}_aarch64.AppImage
           path: tari_universe-${{ matrix.exchange.name }}_${{ needs.builds.outputs.APP_VERSION }}_aarch64.AppImage
-      - name: Upload rpm aarch64 artifact
+      - name: Upload Deb amd64 artifact
         if: ${{ inputs.destination == 'github' }}
         continue-on-error: true
-        id: upload-rpm-aarch
         uses: actions/upload-artifact@v4
         with:
-          name: tari_universe-${{ matrix.exchange.id }}_${{ needs.builds.outputs.APP_VERSION }}_aarch64.rpm
-          path: tari_universe-${{ matrix.exchange.name }}_${{ needs.builds.outputs.APP_VERSION }}-1_aarch64.rpm
+          name: tari_universe-${{ matrix.exchange.id }}_${{ needs.builds.outputs.APP_VERSION }}_amd64.deb
+          path: tari_universe-${{ matrix.exchange.name }}_${{ needs.builds.outputs.APP_VERSION }}_amd64.deb
 
-      - name: Upload rpm amd64 artifact
+      - name: Upload Deb aarch64 artifact
         if: ${{ inputs.destination == 'github' }}
         continue-on-error: true
-        id: upload-rpm-amd64
         uses: actions/upload-artifact@v4
         with:
-          name: tari_universe-${{ matrix.exchange.id }}_${{ needs.builds.outputs.APP_VERSION }}_amd64.rpm
-          path: tari_universe-${{ matrix.exchange.name }}_${{ needs.builds.outputs.APP_VERSION }}-1.x86_64.rpm
+          name: tari_universe-${{ matrix.exchange.id }}_${{ needs.builds.outputs.APP_VERSION }}_arm64.deb
+          path: tari_universe-${{ matrix.exchange.name }}_${{ needs.builds.outputs.APP_VERSION }}_arm64.deb
+
+      # - name: Upload rpm aarch64 artifact
+      #   if: ${{ inputs.destination == 'github' }}
+      #   continue-on-error: true
+      #   id: upload-rpm-aarch
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: tari_universe-${{ matrix.exchange.id }}_${{ needs.builds.outputs.APP_VERSION }}_aarch64.rpm
+      #     path: tari_universe-${{ matrix.exchange.name }}_${{ needs.builds.outputs.APP_VERSION }}-1_aarch64.rpm
+
+      # - name: Upload rpm amd64 artifact
+      #   if: ${{ inputs.destination == 'github' }}
+      #   continue-on-error: true
+      #   id: upload-rpm-amd64
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: tari_universe-${{ matrix.exchange.id }}_${{ needs.builds.outputs.APP_VERSION }}_amd64.rpm
+      #     path: tari_universe-${{ matrix.exchange.name }}_${{ needs.builds.outputs.APP_VERSION }}-1.x86_64.rpm
 
       - name: Construct binaries download urls
         shell: bash

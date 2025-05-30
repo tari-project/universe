@@ -1,5 +1,5 @@
 {
-  "connected-since": "Connected since",
+  "connected-since": "연결된 시점",
   "connections": "연결",
   "established": "설립됨",
   "listener-addresses": "리스너 주소",
@@ -10,15 +10,16 @@
   "p2pool-connection-info": "연결",
   "p2pool-connection-info-more": "연결 세부 정보",
   "p2pool-peers": "P2pool 피어",
-  "p2pool-stats": "P2pool stats",
+  "p2pool-stats": "P2pool 통계",
   "pending": "대기 중",
   "randomx-stats": "RandomX 통계",
   "sha3-stats": "SHA3 통계",
   "stats": {
-    "tile-heading": "Rewards in Progress",
-    "tile-loading": "Pool is warming up",
-    "tooltip-copy": "Rewards are “In Progress” until you earn a minimum of <strong>{{amount}}</strong> and <strong>{{duration}}</strong> have passed. After you reach both thresholds, in progress rewards will be automatically sent to your Tari Universe wallet. It may take a further 2 hours for them to arrive.",
-    "tooltip-tile-heading": "Rewards threshold"
+    "earned": "You earned",
+    "tile-heading": "진행 중인 보상",
+    "tile-loading": "풀 준비 중",
+    "tooltip-copy": "보상은 <strong>{{amount}}</strong>의 최소 금액을 벌기 전까지 \"진행 중\" 상태입니다. 기준에 도달하면 진행 중인 보상이 자동으로 Tari Universe 지갑으로 전송됩니다. 도착까지 추가로 2시간이 소요될 수 있습니다.",
+    "tooltip-tile-heading": "보상 기준"
   },
   "tribe": "부족"
 }
