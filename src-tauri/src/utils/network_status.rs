@@ -112,7 +112,6 @@ impl NetworkStatus {
                 NETWORK_DOWNLOAD_SPEED_PAYLOAD_TEST,
                 OutputFormat::None,
             );
-            panic!("Download speed test failed");
         })
         .await
         {
