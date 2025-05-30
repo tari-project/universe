@@ -1,5 +1,5 @@
 import { useConfigMiningStore, useMiningMetricsStore } from '@app/store';
-import { formatNumber, FormatPreset } from '@app/utils';
+
 import {
     LeftContent,
     RightContent,
