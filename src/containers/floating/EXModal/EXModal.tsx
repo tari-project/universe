@@ -1,26 +1,30 @@
-import { useExchangeStore } from '@app/store/useExchangeStore.ts';
+import { setShowExchangeModal, useExchangeStore } from '@app/store/useExchangeStore.ts';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import Hero from './components/Hero.tsx';
 import Content from './components/Content.tsx';
 
 import { Wrapper } from './styles.ts';
+import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 
 export default function EXModal() {
     const data = useExchangeStore((s) => s.content);
-    const showModal = useExchangeStore((s) => s.showModal);
+    const showModal = useExchangeStore((s) => s.showExchangeAddressModal);
 
-    if (!data) return null;
     return (
-        <Dialog open={!!showModal} disableClose>
+        <Dialog open={!!showModal} disableClose onOpenChange={setShowExchangeModal}>
             <DialogContent $disableOverflow $borderRadius="40px">
-                <Wrapper>
-                    <Hero
-                        heroImgUrl={data.hero_img_url}
-                        primaryCol={data.primary_colour}
-                        secondaryCol={data.secondary_colour}
-                    />
-                    <Content data={data} />
-                </Wrapper>
+                {data ? (
+                    <Wrapper>
+                        <Hero
+                            heroImgUrl={data.hero_img_url}
+                            primaryCol={data.primary_colour}
+                            secondaryCol={data.secondary_colour}
+                        />
+                        <Content data={data} />
+                    </Wrapper>
+                ) : (
+                    <LoadingDots />
+                )}
             </DialogContent>
         </Dialog>
     );

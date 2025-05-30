@@ -53,8 +53,14 @@ function parseValues({
     }
     if (key === 'amount') {
         const preset = value.toString().length > 5 ? FormatPreset.XTM_LONG : FormatPreset.XTM_DECIMALS;
+        const valueMarkup = (
+            <>
+                {formatNumber(value, preset)}
+                <span>{` XTM`}</span>
+            </>
+        );
         return {
-            value: formatNumber(value, preset),
+            value: valueMarkup,
             valueRight: `${formatNumber(value, FormatPreset.DECIMAL_COMPACT)} µT`,
         };
     }

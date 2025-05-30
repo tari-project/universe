@@ -69,7 +69,7 @@ use tokio::sync::{Mutex, RwLock};
 use tokio::time;
 use utils::logging_utils::setup_logging;
 
-use app_in_memory_config::AppInMemoryConfig;
+use app_in_memory_config::DynamicMemoryConfig;
 #[cfg(all(feature = "exchange-ci", not(feature = "release-ci")))]
 use app_in_memory_config::EXCHANGE_ID;
 
@@ -135,6 +135,7 @@ mod setup;
 mod spend_wallet_adapter;
 mod spend_wallet_manager;
 mod systemtray_manager;
+mod tapplets;
 mod tasks_tracker;
 mod telemetry_manager;
 mod telemetry_service;
@@ -249,7 +250,7 @@ struct UniverseAppState {
     is_getting_p2pool_connections: Arc<AtomicBool>,
     is_getting_transactions_history: Arc<AtomicBool>,
     is_getting_coinbase_history: Arc<AtomicBool>,
-    in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
+    in_memory_config: Arc<RwLock<DynamicMemoryConfig>>,
     tari_address: Arc<RwLock<TariAddress>>,
     cpu_miner: Arc<RwLock<CpuMiner>>,
     gpu_miner: Arc<RwLock<GpuMiner>>,
@@ -356,8 +357,8 @@ fn main() {
         pool_status_url: None,
     }));
 
-    let app_in_memory_config =
-        Arc::new(RwLock::new(app_in_memory_config::AppInMemoryConfig::init()));
+    let dynamic_memory_config = block_on(async { DynamicMemoryConfig::init().await });
+    let app_in_memory_config = Arc::new(RwLock::new(dynamic_memory_config));
 
     let cpu_miner: Arc<RwLock<CpuMiner>> = Arc::new(
         CpuMiner::new(
@@ -475,6 +476,7 @@ fn main() {
         }))
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_cli::init())
+        .plugin(tauri_plugin_http::init())
         .setup(|app| {
             let config_path = app
                 .path()
@@ -598,6 +600,8 @@ fn main() {
             commands::set_monerod_config,
             commands::set_tari_address,
             commands::confirm_exchange_address,
+            commands::user_selected_exchange,
+            commands::is_universal_miner,
             commands::set_p2pool_enabled,
             commands::set_show_experimental_settings,
             commands::set_should_always_use_system_language,
@@ -635,7 +639,11 @@ fn main() {
             commands::trigger_phases_restart,
             commands::set_node_type,
             commands::set_warmup_seen,
-            commands::set_allow_notifications
+            commands::set_allow_notifications,
+            commands::launch_builtin_tapplet,
+            commands::get_tari_wallet_address,
+            commands::get_tari_wallet_balance,
+            commands::get_bridge_envs
         ])
         .build(tauri::generate_context!())
         .inspect_err(

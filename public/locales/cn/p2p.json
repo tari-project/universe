@@ -1,5 +1,5 @@
 {
-  "connected-since": "Connected since",
+  "connected-since": "连接自",
   "connections": "连接",
   "established": "已建立",
   "listener-addresses": "监听地址",
@@ -10,15 +10,15 @@
   "p2pool-connection-info": "连接",
   "p2pool-connection-info-more": "连接详情",
   "p2pool-peers": "P2pool 节点",
-  "p2pool-stats": "P2pool stats",
+  "p2pool-stats": "P2pool统计",
   "pending": "待处理",
   "randomx-stats": "RandomX 统计",
   "sha3-stats": "SHA3 统计",
   "stats": {
-    "tile-heading": "Rewards in Progress",
-    "tile-loading": "Pool is warming up",
-    "tooltip-copy": "Rewards are “In Progress” until you earn a minimum of <strong>{{amount}}</strong> and <strong>{{duration}}</strong> have passed. After you reach both thresholds, in progress rewards will be automatically sent to your Tari Universe wallet. It may take a further 2 hours for them to arrive.",
-    "tooltip-tile-heading": "Rewards threshold"
+    "tile-heading": "奖励进行中",
+    "tile-loading": "矿池正在热身",
+    "tooltip-copy": "奖励处于“进行中”状态，直到您赚取至少<strong>{{amount}}</strong>。达到门槛后，进行中的奖励将自动发送到您的Tari Universe钱包。可能需要再过2小时才能到达。",
+    "tooltip-tile-heading": "奖励门槛"
   },
   "tribe": "部落"
 }

@@ -10,7 +10,7 @@ listen<string>('ws-status-change', (event) => {
     if (event.payload === 'Stopped') {
         socketInitialised = false;
     }
-    console.info(`websocket status changed: ${event.payload}`);
+    console.info(`websocket status changed: `, event.payload);
 });
 
 const initialiseSocket = () => {

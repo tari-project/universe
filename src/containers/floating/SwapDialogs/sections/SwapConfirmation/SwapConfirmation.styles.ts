@@ -146,7 +146,6 @@ export const SwapDirectionWrapper = styled.div<{ $direction: SwapDirectionType }
     display: flex;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
     transition: background-color 0.2s ease;
 
     svg {

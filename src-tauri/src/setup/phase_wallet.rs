@@ -35,6 +35,7 @@ use crate::{
         ProgressStepper,
     },
     setup::{setup_manager::SetupPhase, utils::conditional_sleeper},
+    tapplets::{TappletResolver, Tapplets},
     tasks_tracker::TasksTrackers,
     UniverseAppState,
 };
@@ -110,6 +111,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
             .add_step(ProgressPlans::Wallet(
                 ProgressSetupWalletPlan::InitializeSpendingWallet,
             ))
+            .add_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::SetupBridge))
             .add_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::Done))
             .build(app_handle)
     }
@@ -187,6 +189,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
         let progress = ProgressTracker::new(self.app_handle.clone(), Some(tx));
 
         let binary_resolver = BinaryResolver::current().read().await;
+        let tapplet_resolver = TappletResolver::current().read().await;
 
         progress_stepper
             .resolve_step(ProgressPlans::Wallet(
@@ -213,6 +216,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
                 log_dir.clone(),
                 self.app_configuration.use_tor,
                 is_local_node,
+                app_state.clone(),
             )
             .await?;
 
@@ -236,6 +240,14 @@ impl SetupPhaseImpl for WalletSetupPhase {
             )
             .await?;
         drop(spend_wallet_manager);
+
+        progress_stepper
+            .resolve_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::SetupBridge))
+            .await;
+
+        tapplet_resolver
+            .initialize_tapplet_timeout(Tapplets::Bridge, progress.clone(), rx.clone())
+            .await?;
 
         Ok(())
     }

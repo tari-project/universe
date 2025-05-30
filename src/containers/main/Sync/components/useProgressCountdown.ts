@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNodeStore } from '@app/store/useNodeStore';
 import { useTranslation } from 'react-i18next';
 import { useSetupStore } from '@app/store/useSetupStore';
+import { useExchangeStore } from '@app/store/useExchangeStore';
 
 const MIN_PER_BLOCK_SYNC = 0.002866666667;
 const REMOTE_DEFAULT_ESTIMATE = 120;
@@ -41,6 +42,15 @@ export const useProgressCountdown = () => {
     const nodeSetupParams = useSetupStore((state) => state.node_phase_setup_payload?.title_params);
     const nodeType = useNodeStore((s) => s.node_type);
     const [countdown, setCountdown] = useState(nodeType !== 'Local' ? REMOTE_DEFAULT_ESTIMATE : -1);
+    const showUniversalModal = useExchangeStore((s) => s.showUniversalModal);
+
+    useEffect(() => {
+        if (showUniversalModal) {
+            setCountdown(-1);
+        } else {
+            setCountdown(nodeType !== 'Local' ? REMOTE_DEFAULT_ESTIMATE : -1);
+        }
+    }, [showUniversalModal, nodeType]);
 
     useEffect(() => {
         if (countdown < 0 && hasValidEstimate(nodeSetupParams)) {
@@ -116,8 +126,11 @@ export const useProgressCountdown = () => {
         if (countdown === 1) {
             return `${countdown} ${t('second_remaining')}`;
         }
+        if (showUniversalModal) {
+            return t('awaiting-exchange-selection');
+        }
         return t('any_moment_now');
-    }, [nodeType, countdown, isNodePhaseCompleted, nodeSetupParams, t]);
+    }, [nodeType, countdown, isNodePhaseCompleted, nodeSetupParams, showUniversalModal, t]);
 
     return {
         countdown,

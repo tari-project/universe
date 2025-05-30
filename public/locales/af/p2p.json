@@ -1,5 +1,5 @@
 {
-  "connected-since": "Connected since",
+  "connected-since": "Gekoppel sedert",
   "connections": "verbindings",
   "established": "Gevestig",
   "listener-addresses": "Luisteraaradresse",
@@ -10,15 +10,15 @@
   "p2pool-connection-info": "Verbinding",
   "p2pool-connection-info-more": "Verbindingsbesonderhede",
   "p2pool-peers": "P2pool eweknieë",
-  "p2pool-stats": "P2pool stats",
+  "p2pool-stats": "P2pool statistieke",
   "pending": "Hangende",
   "randomx-stats": "RandomX Statistieke",
   "sha3-stats": "SHA3 Statistieke",
   "stats": {
-    "tile-heading": "Rewards in Progress",
-    "tile-loading": "Pool is warming up",
-    "tooltip-copy": "Rewards are “In Progress” until you earn a minimum of <strong>{{amount}}</strong> and <strong>{{duration}}</strong> have passed. After you reach both thresholds, in progress rewards will be automatically sent to your Tari Universe wallet. It may take a further 2 hours for them to arrive.",
-    "tooltip-tile-heading": "Rewards threshold"
+    "tile-heading": "Belonings in Proses",
+    "tile-loading": "Swembad is besig om op te warm",
+    "tooltip-copy": "Belonings is \"In Proses\" totdat jy \"n minimum van <strong>{{amount}}</strong> verdien. Nadat jy die drempel bereik het, sal belonings wat in proses is, outomaties na jou Tari Heelal beursie gestuur word. Dit kan \"n verdere 2 uur neem om aan te kom.",
+    "tooltip-tile-heading": "Beloningsdrempel"
   },
   "tribe": "Stam"
 }

@@ -1,5 +1,5 @@
 {
-  "connected-since": "Connected since",
+  "connected-since": "Bağlantı tarihi",
   "connections": "bağlantılar",
   "established": "Kuruldu",
   "listener-addresses": "Dinleyici adresleri",
@@ -10,15 +10,15 @@
   "p2pool-connection-info": "Bağlantı",
   "p2pool-connection-info-more": "Bağlantı detayları",
   "p2pool-peers": "P2pool eşleri",
-  "p2pool-stats": "P2pool stats",
+  "p2pool-stats": "P2pool İstatistikleri",
   "pending": "Beklemede",
   "randomx-stats": "RandomX İstatistikleri",
   "sha3-stats": "SHA3 İstatistikleri",
   "stats": {
-    "tile-heading": "Rewards in Progress",
-    "tile-loading": "Pool is warming up",
-    "tooltip-copy": "Rewards are “In Progress” until you earn a minimum of <strong>{{amount}}</strong> and <strong>{{duration}}</strong> have passed. After you reach both thresholds, in progress rewards will be automatically sent to your Tari Universe wallet. It may take a further 2 hours for them to arrive.",
-    "tooltip-tile-heading": "Rewards threshold"
+    "tile-heading": "Devam Eden Ödüller",
+    "tile-loading": "Havuz ısınıyor",
+    "tooltip-copy": "Ödüller, <strong>{{amount}}</strong> minimumunu kazanana kadar “Devam Ediyor” durumundadır. Eşiğe ulaştıktan sonra, devam eden ödüller otomatik olarak Tari Universe cüzdanınıza gönderilecektir. Gelmesi için 2 saat daha sürebilir.",
+    "tooltip-tile-heading": "Ödül Eşiği"
   },
   "tribe": "Kabile"
 }

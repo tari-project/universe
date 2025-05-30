@@ -26,6 +26,7 @@ interface WalletStoreState {
     has_more_transactions: boolean;
     is_transactions_history_loading: boolean;
     is_wallet_importing: boolean;
+    is_swapping?: boolean;
     wallet_scanning: {
         is_scanning: boolean;
         scanned_height: number;
