@@ -78,6 +78,12 @@ export const PoolStatsTile = () => {
         setPrevUnpaid(unpaid);
     }, [unpaid, prevUnpaid]);
 
+    useEffect(() => {
+        if (unpaid === 2000000) {
+            setShowSuccessAnimation(true);
+        }
+    }, [unpaid]);
+
     // ================== Floating UI ==================
 
     const { refs, context, floatingStyles } = useFloating({
