@@ -57,12 +57,12 @@ const HistoryList = memo(function HistoryList() {
                         (prevTx) =>
                             isTransactionInfo(prevTx) &&
                             prevTx.amount === Number(tx.tokenAmount) &&
+                            prevTx.payment_id === tx.paymentId &&
                             prevTx.dest_address === coldWalletAddress
                     );
 
                     if (matchingTransaction) {
                         const removedBridgeTransaction = acc.splice(acc.indexOf(matchingTransaction), 1)[0];
-                        console.log(removedBridgeTransaction);
                         if (removedBridgeTransaction && isTransactionInfo(removedBridgeTransaction)) {
                             tx.sourceAddress = removedBridgeTransaction.source_address;
                         }

@@ -28,6 +28,7 @@ const network = useMiningStore.getState().network;
 const explorerURL = `https://${network === Network.Esmeralda ? 'textexplore-esmeralda' : network === Network.NextNet ? 'explore-nextnet' : 'explore'}.tari.com`;
 
 const HIDDEN_KEYS = ['direction', 'excess_sig', 'tx_id'];
+const BRIDGE_HIDDEN_KEYS = ['paymentId'];
 
 const keyTranslations: Record<string, string> = {
     tx_id: 'wallet:send.transaction-id',
@@ -124,7 +125,8 @@ function parseBridgeTransactionValues({
 }
 
 export function getListEntries(item: TransactionInfo | BackendBridgeTransaction, showHidden = false) {
-    const entries = Object.entries(item).filter(([key]) => showHidden || !HIDDEN_KEYS.includes(key));
+    const hiddenKeys = isTransactionInfo(item) ? HIDDEN_KEYS : BRIDGE_HIDDEN_KEYS;
+    const entries = Object.entries(item).filter(([key]) => showHidden || !hiddenKeys.includes(key));
     return entries.map(([key, _value]) => {
         if (isTransactionInfo(item)) {
             const { value, ...rest } = parseTransactionValues({
