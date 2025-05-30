@@ -28,7 +28,7 @@
   },
   "pool": {
     "accepted_shares": "受け入れられたシェア",
-    "balance": "残高",
+    "balance": "Total earnings",
     "min_payout": "最低支払い額",
     "unpaid": "未払い"
   },

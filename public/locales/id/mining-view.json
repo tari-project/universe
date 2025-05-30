@@ -28,7 +28,7 @@
   },
   "pool": {
     "accepted_shares": "Saham Diterima",
-    "balance": "Saldo",
+    "balance": "Total earnings",
     "min_payout": "Pembayaran minimum",
     "unpaid": "Belum Dibayar"
   },
