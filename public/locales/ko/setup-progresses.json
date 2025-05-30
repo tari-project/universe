@@ -43,6 +43,7 @@
     "p2pool": "P2Pool 시작 중",
     "platform-prequisites": "플랫폼 필수 조건 초기화 중",
     "run-cpu-benchmark": "CPU 벤치마크 실행 중",
+    "setup-bridge": "Preparing Bridge",
     "start-tor": "Tor 시작 중",
     "start-wallet": "지갑 시작 중",
     "starting-node": "Minotari 노드 시작 중",

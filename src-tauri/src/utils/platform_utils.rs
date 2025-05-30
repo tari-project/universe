@@ -25,11 +25,14 @@ use super::macos_utils::is_app_in_applications_folder;
 #[cfg(target_os = "macos")]
 use crate::tasks_tracker::TasksTrackers;
 
-#[cfg(target_os = "windows")]
-use crate::external_dependencies::ExternalDependencies;
-
+#[cfg(target_os = "macos")]
+use crate::events::CriticalProblemPayload;
+#[cfg(target_os = "macos")]
+use crate::events_emitter::EventsEmitter;
 #[cfg(target_os = "windows")]
 use crate::events_manager::EventsManager;
+#[cfg(target_os = "windows")]
+use crate::external_dependencies::ExternalDependencies;
 #[cfg(not(target_os = "linux"))]
 use anyhow::anyhow;
 use std::fmt::Display;
