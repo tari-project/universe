@@ -29,7 +29,7 @@ use crate::tasks_tracker::TasksTrackers;
 use crate::wallet_adapter::TransactionInfo;
 use crate::wallet_adapter::WalletStatusMonitorError;
 use crate::wallet_adapter::{WalletAdapter, WalletState};
-use crate::BaseNodeStatus;
+use crate::{BaseNodeStatus, UniverseAppState};
 use futures_util::future::FusedFuture;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::AtomicBool;
@@ -94,6 +94,7 @@ impl WalletManager {
         log_path: PathBuf,
         use_tor: bool,
         connect_with_local_node: bool,
+        state: tauri::State<'_, UniverseAppState>,
     ) -> Result<(), WalletManagerError> {
         let shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
         let task_tracker = TasksTrackers::current()
@@ -118,8 +119,10 @@ impl WalletManager {
         process_watcher
             .adapter
             .connect_with_local_node(connect_with_local_node);
-        process_watcher.adapter.wallet_birthday =
-            self.get_wallet_birthday(config_path.clone()).await.ok();
+        process_watcher.adapter.wallet_birthday = self
+            .get_wallet_birthday(config_path.clone(), state)
+            .await
+            .ok();
 
         process_watcher
             .start(
@@ -154,8 +157,12 @@ impl WalletManager {
             .load(std::sync::atomic::Ordering::Relaxed)
     }
 
-    pub async fn get_wallet_birthday(&self, config_path: PathBuf) -> Result<u16, anyhow::Error> {
-        let internal_wallet = InternalWallet::load_or_create(config_path).await?;
+    pub async fn get_wallet_birthday(
+        &self,
+        config_path: PathBuf,
+        state: tauri::State<'_, UniverseAppState>,
+    ) -> Result<u16, anyhow::Error> {
+        let internal_wallet = InternalWallet::load_or_create(config_path, state).await?;
         internal_wallet.get_birthday().await
     }
 

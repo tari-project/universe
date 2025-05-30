@@ -66,5 +66,6 @@ export interface ConfigBackendInMemory {
     airdropApiUrl: string;
     airdropTwitterAuthUrl: string;
     exchangeId?: string;
+    isUniversalMiner?: boolean;
     walletConnectProjectId?: string;
 }
