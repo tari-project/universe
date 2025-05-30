@@ -18,6 +18,12 @@ import { ProgressTrackerUpdatePayload } from '@app/hooks/app/useProgressEventsLi
 import { WalletAddress } from '@app/types/app-status.ts';
 import { setSeedlessUI } from '@app/store/actions/uiStoreActions.ts';
 import { fetchExchangeContent, useExchangeStore } from '@app/store/useExchangeStore.ts';
+import { SetupPhase } from '@app/types/backend-state';
+import { useTappletsStore } from '../useTappletsStore';
+
+export interface DisabledPhasesPayload {
+    disabled_phases: SetupPhase[];
+}
 
 export const handleAppUnlocked = async () => {
     useSetupStore.setState({ appUnlocked: true });
@@ -54,7 +60,7 @@ export const handleWalletUpdate = async (addressPayload: WalletAddress) => {
 
     if (xcID) {
         const currentID = useExchangeStore.getState().content?.exchange_id;
-        const canFetchXCContent = xcID && currentID !== xcID && xcID !== 'universal';
+        const canFetchXCContent = xcID && currentID !== xcID && xcID !== 'classic';
         if (canFetchXCContent) {
             await fetchExchangeContent(xcID);
         }
@@ -137,4 +143,15 @@ export const updateWalletSetupPhaseInfo = (payload: ProgressTrackerUpdatePayload
 
 export const updateUnknownSetupPhaseInfo = (payload: ProgressTrackerUpdatePayload | undefined) => {
     useSetupStore.setState({ unknown_phase_setup_payload: payload });
+};
+
+export const updateDisabledPhases = (payload: DisabledPhasesPayload) => {
+    useSetupStore.setState({ disabled_phases: payload.disabled_phases });
+};
+
+export const handleUpdateDisabledPhases = (payload: DisabledPhasesPayload) => {
+    updateDisabledPhases(payload);
+    if (payload.disabled_phases.includes(SetupPhase.Wallet)) {
+        useTappletsStore.setState({ uiBridgeSwapsEnabled: false });
+    }
 };
