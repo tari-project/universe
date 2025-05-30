@@ -58,7 +58,7 @@ export const Inside = styled.div<{ $isLoading?: boolean; $isMining?: boolean }>`
     flex-shrink: 0;
     flex-grow: 6;
     padding: 14px;
-    min-height: 70px;
+    min-height: 62px;
     position: relative;
     z-index: 2;
 `;
@@ -164,7 +164,7 @@ export const TriggerWrapper = styled(m.div)`
     border-radius: 100%;
     color: ${({ theme }) => theme.palette.base};
 
-    transform: translateX(0px) translateY(-8px);
+    transform: translateX(0px) translateY(-4px);
 `;
 
 export const ExpandedWrapper = styled.div``;
