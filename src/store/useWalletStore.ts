@@ -56,9 +56,28 @@ const initialState: WalletStoreState = {
     },
 };
 
+// Configuration for memory management
+const MAX_TRANSACTIONS_IN_MEMORY = 1000; // Keep only the latest 1000 transactions
+const MAX_COINBASE_TRANSACTIONS_IN_MEMORY = 500; // Keep only the latest 500 coinbase transactions
+const MAX_PENDING_TRANSACTIONS = 100; // Keep only the latest 100 pending transactions
+
 export const useWalletStore = create<WalletStoreState>()(() => ({
     ...initialState,
 }));
+
+// Helper function to prune large arrays
+const pruneTransactionArray = <T extends { timestamp?: number; tx_id?: number }>(array: T[], maxSize: number): T[] => {
+    if (array.length <= maxSize) return array;
+
+    // Sort by timestamp (newest first) or tx_id as fallback, then take the latest
+    return array
+        .sort((a, b) => {
+            const aTime = a.timestamp || a.tx_id || 0;
+            const bTime = b.timestamp || b.tx_id || 0;
+            return bTime - aTime;
+        })
+        .slice(0, maxSize);
+};
 
 // Temporary solution until we use excess_sig to track pending transactions
 export const addPendingTransaction = (payload: { amount: number; destination: string; paymentId: string }) => {
@@ -72,9 +91,14 @@ export const addPendingTransaction = (payload: { amount: number; destination: st
         timestamp: Math.floor(Date.now() / 1000),
     };
 
-    useWalletStore.setState((state) => ({
-        pending_transactions: [transaction, ...state.pending_transactions],
-    }));
+    useWalletStore.setState((state) => {
+        const newPendingTransactions = [transaction, ...state.pending_transactions];
+
+        return {
+            pending_transactions: pruneTransactionArray(newPendingTransactions, MAX_PENDING_TRANSACTIONS),
+        };
+    });
+
     const balance = useWalletStore.getState().balance;
     if (balance) {
         setWalletBalance(balance);
@@ -110,7 +134,22 @@ export const refreshPendingTransactions = () => {
         });
 
         return {
-            pending_transactions: updatedPendingTransactions,
+            pending_transactions: pruneTransactionArray(updatedPendingTransactions, MAX_PENDING_TRANSACTIONS),
         };
     });
+};
+
+// New function to prune transaction arrays when they get too large
+export const pruneTransactionHistory = () => {
+    useWalletStore.setState((state) => ({
+        transactions: pruneTransactionArray(state.transactions, MAX_TRANSACTIONS_IN_MEMORY),
+        coinbase_transactions: pruneTransactionArray(state.coinbase_transactions, MAX_COINBASE_TRANSACTIONS_IN_MEMORY),
+        pending_transactions: pruneTransactionArray(state.pending_transactions, MAX_PENDING_TRANSACTIONS),
+    }));
+};
+
+// Function to clear old transaction data (can be called periodically or on certain events)
+const _clearOldTransactionData = () => {
+    console.info('Clearing old transaction data to free memory');
+    pruneTransactionHistory();
 };
