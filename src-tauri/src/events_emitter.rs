@@ -779,7 +779,7 @@ impl EventsEmitter {
         let event = Event {
             event_type: EventType::UniversalMinerInitializedExchangeIdChanged,
             payload: UniversalMinerInitializedExchangeIdChangedPayload {
-                universal_miner_initialized_exchange_id: universal_miner_initialized_exchange_id,
+                universal_miner_initialized_exchange_id,
             },
         };
         if let Err(e) = Self::get_app_handle()
