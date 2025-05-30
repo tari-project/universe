@@ -17,7 +17,7 @@ const setupWsStatusListener = async () => {
         if (event.payload === 'Stopped') {
             socketInitialised = false;
         }
-        console.info(`websocket status changed: ${event.payload}`);
+        console.info(`websocket status changed: `,event.payload);
     });
     console.info("WebSocket status listener initiated.");
 };
@@ -38,7 +38,7 @@ function removeSocket() {
         console.info(`closing websocket connection...`);
         invoke('websocket_close').catch(console.error);
     }
-    
+
     // Always clean up the listener when removing socket
     if (unlistenWsStatusChange) {
         unlistenWsStatusChange();

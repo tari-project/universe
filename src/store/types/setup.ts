@@ -1,4 +1,5 @@
 import { ProgressTrackerUpdatePayload } from '@app/hooks/app/useProgressEventsListener';
+import { SetupPhase } from '@app/types/backend-state';
 
 export interface SetupState {
     cpuMiningUnlocked: boolean;
@@ -12,4 +13,5 @@ export interface SetupState {
     node_phase_setup_payload?: ProgressTrackerUpdatePayload;
     wallet_phase_setup_payload?: ProgressTrackerUpdatePayload;
     unknown_phase_setup_payload?: ProgressTrackerUpdatePayload;
+    disabled_phases: SetupPhase[];
 }

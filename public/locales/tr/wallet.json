@@ -20,10 +20,10 @@
   },
   "send": {
     "balance": "Bakiye",
-    "broadcast": "Broadcasting",
+    "broadcast": "Yayınlanıyor",
     "completed": "Tamamlandı",
     "completed-amount-sent": "gönderildi",
-    "completed-text": "Your transfer submission is now complete and will be broadcast.",
+    "completed-text": "Transfer başvurunuz tamamlandı ve yayınlanacak.",
     "completed-title": "Tamamladınız!",
     "cta-confirm": "Onayla",
     "cta-review": "Gözden Geçir",

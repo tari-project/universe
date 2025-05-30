@@ -26,10 +26,10 @@
     "step_6": "Essayez de réinitialiser l\"application (dans les paramètres)"
   },
   "pool": {
-    "accepted_shares": "Accepted shares",
-    "balance": "Balance",
-    "min_payout": "Minimum payout",
-    "unpaid": "Unpaid"
+    "accepted_shares": "Parts acceptées",
+    "balance": "Total earnings",
+    "min_payout": "Paiement minimum",
+    "unpaid": "Non payé"
   },
   "you-earn-rewards-separately": "Vous gagnez des récompenses pour le minage CPU et GPU séparément",
   "you-won-block": "Vous avez gagné le <span>bloc #{{ blockHeight }}</span>",
