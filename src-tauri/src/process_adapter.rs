@@ -256,7 +256,7 @@ impl Drop for ProcessInstance {
     fn drop(&mut self) {
         // Always trigger shutdown first
         self.shutdown.trigger();
-        
+
         if let Some(handle) = self.handle.take() {
             // Check if we're in a tokio runtime context
             if let Ok(current_handle) = Handle::try_current() {
@@ -271,7 +271,7 @@ impl Drop for ProcessInstance {
                 // We're not in a tokio context, we need to use block_on
                 // This is the fallback case - log it as it might indicate a design issue
                 warn!(target: LOG_TARGET, "Process {} dropped outside tokio context, using block_on for cleanup", self.startup_spec.name);
-                
+
                 // Use a timeout to prevent indefinite blocking
                 if let Ok(rt) = tokio::runtime::Handle::try_current() {
                     rt.block_on(async move {
