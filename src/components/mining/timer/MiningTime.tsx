@@ -26,7 +26,12 @@ export const MiningTime = memo(function MiningTime({ variant = 'primary', timing
     const _seconds = isMini && seconds === '0' ? '00' : seconds;
 
     const renderHours = hoursString && parseInt(hoursString) > 0;
-    const daysMarkup = parseInt(daysString || '0') > 0 ? daysString : null;
+    const daysMarkup = daysString ? (
+        <>
+            {daysString}
+            <TimerUnitWrapper />
+        </>
+    ) : null;
     const hourMarkup = renderHours ? (
         <>
             {hoursString?.split('').map((c, i) => <SpacedNum key={`hr-${i}-${c}`}>{c}</SpacedNum>)}
