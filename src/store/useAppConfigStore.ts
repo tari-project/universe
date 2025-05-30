@@ -69,6 +69,7 @@ const configBEInMemoryInitialState: ConfigBackendInMemory = {
     airdropApiUrl: '',
     airdropTwitterAuthUrl: '',
     exchangeId: undefined,
+    bridgeBackendApiUrl: '',
     isUniversalMiner: false,
 };
 

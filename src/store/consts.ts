@@ -11,8 +11,8 @@ export const FEATURES = {
     FF_UI_ORPHAN_CHAIN_DISABLED,
     FF_UI_TX,
     FF_UI_WARMUP,
-    FF_SWAPS_ENABLED,
     FF_UI_BRIDGE,
+    FF_SWAPS_ENABLED,
 };
 
 export const BRIDGE_TAPPLET_ID = 0;
