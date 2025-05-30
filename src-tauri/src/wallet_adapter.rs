@@ -152,16 +152,16 @@ impl WalletAdapter {
 
     pub async fn get_transactions_history(
         &self,
-        offset: Option<u64>,
-        limit: Option<u64>,
+        offset: Option<i32>,
+        limit: Option<i32>,
     ) -> Result<Vec<TransactionInfo>, WalletStatusMonitorError> {
         let mut client = WalletClient::connect(self.wallet_grpc_address())
             .await
             .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
         let res = client
             .get_all_completed_transactions(GetAllCompletedTransactionsRequest {
-                offset: offset.unwrap_or(0),
-                limit: limit.unwrap_or(0),
+                offset: offset.unwrap_or(0) as u64,
+                limit: limit.unwrap_or(0) as u64,
             })
             .await
             .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?;

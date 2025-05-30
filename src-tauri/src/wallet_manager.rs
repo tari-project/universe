@@ -186,8 +186,8 @@ impl WalletManager {
 
     pub async fn get_transactions_history(
         &self,
-        offset: Option<u64>,
-        limit: Option<u64>,
+        offset: Option<i32>,
+        limit: Option<i32>,
     ) -> Result<Vec<TransactionInfo>, WalletManagerError> {
         let process_watcher = self.watcher.read().await;
         process_watcher

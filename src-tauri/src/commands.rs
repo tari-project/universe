@@ -732,8 +732,8 @@ pub async fn get_airdrop_tokens(
 #[tauri::command]
 pub async fn get_transactions_history(
     state: tauri::State<'_, UniverseAppState>,
-    offset: Option<u64>,
-    limit: Option<u64>,
+    offset: Option<i32>,
+    limit: Option<i32>,
 ) -> Result<Vec<TransactionInfo>, String> {
     let timer = Instant::now();
     if state.is_getting_transactions_history.load(Ordering::SeqCst) {
