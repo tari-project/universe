@@ -355,9 +355,10 @@ impl EventsManager {
         name: String,
         reason: String,
     ) {
-        EventsEmitter::emit_binary_permanent_failure(app, name, reason).await;
+        // Clone the name before the first use
+        EventsEmitter::emit_binary_permanent_failure(app, name.clone(), reason).await;
         
-        // Also emit a critical problem for serious failures
+        // Now we can use name again
         Self::handle_critical_problem(
             app,
             Some(format!("{} Failed", name)),

@@ -292,7 +292,7 @@ async fn create_managers_with_app_handle(
     p2pool_stats_tx: watch::Sender<Option<P2poolStats>>,
     tor_watch_tx: watch::Sender<TorStatus>,
     app_in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
-    cpu_config: Arc<RwLock<CpuMinerConfig>>,
+    _cpu_config: Arc<RwLock<CpuMinerConfig>>, // Prefix with _ to silence warning
 ) -> (
     NodeManager,
     WalletManager,
@@ -310,6 +310,12 @@ async fn create_managers_with_app_handle(
     Feedback,
     MiningStatusManager,
 ) {
+    // Create receivers before passing senders to constructors
+    let gpu_status_rx = gpu_status_tx.subscribe();
+    let cpu_miner_status_watch_rx = cpu_miner_status_watch_tx.subscribe();
+    let p2pool_stats_rx = p2pool_stats_tx.subscribe();
+    let tor_watch_rx = tor_watch_tx.subscribe();
+
     // Create node manager components
     let (local_node_watch_tx, local_node_watch_rx) = watch::channel(BaseNodeStatus::default());
     let (remote_node_watch_tx, remote_node_watch_rx) = watch::channel(BaseNodeStatus::default());
@@ -334,42 +340,40 @@ async fn create_managers_with_app_handle(
     );
 
     let spend_wallet_manager = SpendWalletManager::new(node_manager.clone());
-
+    
     let cpu_miner = CpuMiner::new(
         stats_collector,
-        cpu_miner_status_watch_tx,
+        cpu_miner_status_watch_tx.clone(), // Clone here
         base_node_watch_rx.clone(),
         app_handle.clone(),
     );
-
+    
     let gpu_miner = GpuMiner::new(
-        gpu_status_tx,
+        gpu_status_tx.clone(), // Clone here
         base_node_watch_rx.clone(),
         stats_collector,
         app_handle.clone(),
     );
-
+    
     let tor_manager = TorManager::new(
-        tor_watch_tx,
+        tor_watch_tx.clone(), // Clone here
         stats_collector,
         app_handle.clone(),
     );
-
+    
     let mm_proxy_manager = MmProxyManager::new(
         stats_collector,
         app_handle.clone(),
     );
-
+    
     let p2pool_manager = P2poolManager::new(
-        p2pool_stats_tx.clone(),
+        p2pool_stats_tx.clone(), // Clone here
         stats_collector,
         app_handle.clone(),
     );
 
-    let (tor_watch_rx,) = (tor_watch_tx.subscribe(),);
-    let (gpu_status_rx,) = (gpu_status_tx.subscribe(),);
-    let (cpu_miner_status_watch_rx,) = (cpu_miner_status_watch_tx.subscribe(),);
-    let (p2pool_stats_rx,) = (p2pool_stats_tx.subscribe(),);
+    // Build stats collector before creating telemetry manager
+    let stats_collector_built = ProcessStatsCollectorBuilder::new().build();
 
     let telemetry_manager = TelemetryManager::new(
         cpu_miner_status_watch_rx.clone(),
@@ -379,7 +383,7 @@ async fn create_managers_with_app_handle(
         base_node_watch_rx.clone(),
         p2pool_stats_rx.clone(),
         tor_watch_rx.clone(),
-        stats_collector.build(),
+        stats_collector_built, // Use the built version
         node_manager.clone(),
     );
 
@@ -454,17 +458,17 @@ fn main() {
     ));
     let _guard = minidump::init(&client);
 
-    let mut stats_collector = ProcessStatsCollectorBuilder::new();
+    let _stats_collector = ProcessStatsCollectorBuilder::new();
     
     // Create channels for communication between components
-    let (base_node_watch_tx, base_node_watch_rx) = watch::channel(BaseNodeStatus::default());
+    let (_base_node_watch_tx, base_node_watch_rx) = watch::channel(BaseNodeStatus::default());
     let (wallet_state_watch_tx, wallet_state_watch_rx) = watch::channel::<Option<WalletState>>(None);
-    let (websocket_message_tx, websocket_message_rx) = tokio::sync::mpsc::channel::<WebsocketMessage>(500);
+    let (websocket_message_tx, _websocket_message_rx) = tokio::sync::mpsc::channel::<WebsocketMessage>(500);
     let (websocket_manager_status_tx, websocket_manager_status_rx) = watch::channel::<WebsocketManagerStatusMessage>(WebsocketManagerStatusMessage::Stopped);
     let (gpu_status_tx, gpu_status_rx) = watch::channel(GpuMinerStatus::default());
     let (cpu_miner_status_watch_tx, cpu_miner_status_watch_rx) = watch::channel::<CpuMinerStatus>(CpuMinerStatus::default());
     let (p2pool_stats_tx, p2pool_stats_rx) = watch::channel(None);
-    let (tor_watch_tx, tor_watch_rx) = watch::channel(TorStatus::default());
+    let (tor_watch_tx, _tor_watch_rx) = watch::channel(TorStatus::default());
 
     let cpu_config = Arc::new(RwLock::new(CpuMinerConfig {
         node_connection: CpuMinerConnection::BuiltInProxy,

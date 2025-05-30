@@ -44,6 +44,7 @@ use tari_shutdown::ShutdownSignal;
 use tokio::select;
 use tokio::sync::{watch, RwLock};
 use tokio::time::{interval, sleep, timeout};
+use tauri::AppHandle;
 
 const LOG_TARGET: &str = "tari::universe::cpu_miner";
 const ECO_MODE_CPU_USAGE: u32 = 30;
@@ -108,6 +109,7 @@ impl CpuMiner {
         stats_collector: &mut ProcessStatsCollectorBuilder,
         cpu_miner_status_watch_tx: watch::Sender<CpuMinerStatus>,
         node_status_watch_rx: watch::Receiver<BaseNodeStatus>,
+        app_handle: AppHandle, // Add this parameter
     ) -> Self {
         let (summary_watch_tx, summary_watch_rx) = watch::channel::<Option<Summary>>(None);
         let xmrig_adapter = XmrigAdapter::new(summary_watch_tx);
