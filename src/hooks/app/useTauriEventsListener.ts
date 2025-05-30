@@ -43,7 +43,6 @@ import {
     handleWalletUnlocked,
     handleWalletUpdate,
     setInitialSetupFinished,
-    updateDisabledPhases,
 } from '@app/store/actions/setupStoreActions';
 import { setBackgroundNodeState, setNodeStoreState } from '@app/store/useNodeStore';
 import {
