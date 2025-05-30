@@ -43,6 +43,7 @@
     "p2pool": "P2Pool wird gestartet",
     "platform-prequisites": "Plattform-Voraussetzungen werden initialisiert",
     "run-cpu-benchmark": "CPU-Benchmark wird ausgeführt",
+    "setup-bridge": "Preparing Bridge",
     "start-tor": "Tor wird gestartet",
     "start-wallet": "Wallet wird gestartet",
     "starting-node": "Minotari-Knoten wird gestartet",
