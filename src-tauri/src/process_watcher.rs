@@ -120,18 +120,20 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                 info!(target: LOG_TARGET, "Shutdown triggered during initial startup of {}", name);
                 return Err(anyhow::anyhow!("Shutdown during initial startup of {}", name));
             }
-
+    
             startup_attempts += 1;
             info!(target: LOG_TARGET, "Attempting to start '{}' (Attempt {}/{})", name, startup_attempts, self.max_startup_attempts);
             EventsManager::emit_binary_startup_attempt(&self.app_handle, name.to_string(), startup_attempts, self.max_startup_attempts).await;
-
+    
             if let Err(e) = child.start(task_tracker.clone()).await {
                 warn!(target: LOG_TARGET, "child.start() failed for '{}': {:?}.", name, e);
             } else {
                 info!(target: LOG_TARGET, "Process '{}' launched. Waiting {:?} for stabilization.", name, self.expected_startup_time);
                 let stabilization_deadline = Instant::now() + self.expected_startup_time;
+                let startup_grace_period = Duration::from_secs(15); // ADD THIS: Grace period before health checks
+                let grace_deadline = Instant::now() + startup_grace_period;
                 let mut initial_health_passed = false;
-
+    
                 while Instant::now() < stabilization_deadline {
                     if global_shutdown_signal.is_triggered() || inner_shutdown_signal.is_triggered() {
                         warn!(target: LOG_TARGET, "Shutdown during stabilization for {}", name);
@@ -142,7 +144,14 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                         warn!(target: LOG_TARGET, "Process '{}' died immediately after start (ping failed).", name);
                         break;
                     }
-
+    
+                    // ADD THIS: Skip health checks during grace period
+                    if Instant::now() < grace_deadline {
+                        info!(target: LOG_TARGET, "Process '{}' in startup grace period, skipping health check.", name);
+                        tokio::time::sleep(Duration::from_secs(2)).await;
+                        continue;
+                    }
+    
                     let health_status = status_monitor.check_health(Duration::from_secs(0), self.health_timeout).await;
                     match health_status {
                         HealthStatus::Healthy => {
@@ -160,26 +169,26 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                     }
                     tokio::time::sleep(Duration::from_secs(2)).await;
                 }
-
+    
                 if initial_health_passed {
                     info!(target: LOG_TARGET, "Process '{}' successfully started and stabilized.", name);
                     return Ok(());
                 }
-
+    
                 warn!(target: LOG_TARGET, "Process '{}' did not stabilize or become healthy. Stopping before retry.", name);
                 if let Err(e) = child.stop().await {
                     warn!(target: LOG_TARGET, "Error stopping child process '{}' after failed stabilization: {:?}", name, e);
                 }
             }
-
+    
             stats.num_restarts += 1;
-
+    
             if startup_attempts >= self.max_startup_attempts {
                 error!(target: LOG_TARGET, "Failed to start and stabilize process '{}' after {} attempts.", name, self.max_startup_attempts);
                 EventsManager::emit_binary_permanent_failure(&self.app_handle, name.to_string(), "startup".to_string()).await;
                 return Err(anyhow::anyhow!("Failed to start '{}' after max startup retries", name));
             }
-
+    
             warn!(target: LOG_TARGET, "Retrying startup for '{}' in {:?}.", name, self.startup_retry_delay);
             tokio::time::sleep(self.startup_retry_delay).await;
         }
