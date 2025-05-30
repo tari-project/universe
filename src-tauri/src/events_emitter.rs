@@ -738,7 +738,6 @@ impl EventsEmitter {
     }
 
     pub async fn emit_app_in_memory_config_changed(
-        app_handle: &AppHandle,
         app_in_memory_config: AppInMemoryConfig,
         is_universal_exchange: bool,
     ) {
@@ -750,21 +749,24 @@ impl EventsEmitter {
                 is_universal_exchange,
             },
         };
-        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
             error!(target: LOG_TARGET, "Failed to emit AppInMemoryConfigChanged event: {:?}", e);
         }
     }
 
-    pub async fn emit_disabled_phases_changed(
-        app_handle: &AppHandle,
-        disabled_phases: Vec<SetupPhase>,
-    ) {
+    pub async fn emit_disabled_phases_changed(disabled_phases: Vec<SetupPhase>) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::DisabledPhasesChanged,
             payload: DisabledPhasesPayload { disabled_phases },
         };
-        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
             error!(target: LOG_TARGET, "Failed to emit DisabledPhasesChanged event: {:?}", e);
         }
     }

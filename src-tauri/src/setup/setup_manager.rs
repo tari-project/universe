@@ -327,8 +327,7 @@ impl SetupManager {
             in_memory_config.read().await.exchange_id != DEFAULT_EXCHANGE_ID;
 
         if is_on_exchange_miner_build {
-            EventsManager::handle_disabled_phases_changed(&app_handle, vec![SetupPhase::Wallet])
-                .await;
+            EventsEmitter::emit_disabled_phases_changed(vec![SetupPhase::Wallet]).await;
         }
 
         if is_on_exchange_miner_build && is_address_generated {
@@ -409,7 +408,7 @@ impl SetupManager {
         // TODO: Add option to disable specific phases and handle it properly on frontend
         let in_memory_config = state.in_memory_config.clone();
         if in_memory_config.read().await.exchange_id != DEFAULT_EXCHANGE_ID {
-            self.unlock_wallet(app_handle.clone()).await;
+            self.unlock_wallet().await;
             return;
         }
         let wallet_phase_setup = PhaseBuilder::new()
@@ -923,8 +922,7 @@ impl SetupManager {
         let new_config_cloned = new_config.clone();
         *config = new_config;
 
-        EventsManager::handle_app_in_memory_config_changed(&app_handle, new_config_cloned, true)
-            .await;
+        EventsEmitter::emit_app_in_memory_config_changed(new_config_cloned, true).await;
         self.universal_modal_status
             .send(selected_miner.clone())
             .map_err(|e| e.to_string())?;
