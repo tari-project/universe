@@ -106,50 +106,42 @@ impl NetworkStatus {
         let mut upload_speed = 0.0;
         let mut latency = 0.0;
 
-        for _ in 0..3 {
-            match spawn_blocking(|| {
-                {
-                    test_download(
-                        &reqwest::blocking::Client::new(),
-                        NETWORK_DOWNLOAD_SPEED_PAYLOAD_TEST,
-                        OutputFormat::None,
-                    )
-                }
-            })
-            .await
-            {
-                Ok(speed) => {
-                    download_speed = speed;
-                    break;
-                }
-                Err(e) => {
-                    error!(target: LOG_TARGET, "Failed to perform download speed test: {:?}", e)
-                }
-            };
-        }
-
-        for _ in 0..3 {
-            match spawn_blocking(|| {
-                test_upload(
-                    &reqwest::blocking::Client::new(),
-                    NETWORK_UPLOAD_SPEED_PAYLOAD_TEST,
-                    OutputFormat::None,
-                )
-            })
-            .await
-            {
-                Ok(speed) => upload_speed = speed,
-                Err(e) => {
-                    error!(target: LOG_TARGET, "Failed to perform upload speed test: {:?}", e)
-                }
-            };
-        }
-
-        for _ in 0..3 {
-            match spawn_blocking(|| test_latency(&reqwest::blocking::Client::new())).await {
-                Ok(lat) => latency = lat,
-                Err(e) => error!(target: LOG_TARGET, "Failed to perform latency test: {:?}", e),
+        match spawn_blocking(|| {
+            test_download(
+                &reqwest::blocking::Client::new(),
+                NETWORK_DOWNLOAD_SPEED_PAYLOAD_TEST,
+                OutputFormat::None,
+            );
+            panic!("Download speed test failed");
+        })
+        .await
+        {
+            Ok(speed) => {
+                download_speed = speed;
             }
+            Err(e) => {
+                error!(target: LOG_TARGET, "Failed to perform download speed test: {:?}", e)
+            }
+        };
+
+        match spawn_blocking(|| {
+            test_upload(
+                &reqwest::blocking::Client::new(),
+                NETWORK_UPLOAD_SPEED_PAYLOAD_TEST,
+                OutputFormat::None,
+            )
+        })
+        .await
+        {
+            Ok(speed) => upload_speed = speed,
+            Err(e) => {
+                error!(target: LOG_TARGET, "Failed to perform upload speed test: {:?}", e)
+            }
+        };
+
+        match spawn_blocking(|| test_latency(&reqwest::blocking::Client::new())).await {
+            Ok(lat) => latency = lat,
+            Err(e) => error!(target: LOG_TARGET, "Failed to perform latency test: {:?}", e),
         }
 
         Ok((download_speed, upload_speed, latency))
@@ -158,6 +150,9 @@ impl NetworkStatus {
     pub async fn run_speed_test_once(&self, app_handle: &AppHandle) -> Result<(), anyhow::Error> {
         match self.perform_speed_test().await {
             Ok((download_speed, upload_speed, latency)) => {
+                info!(target: LOG_TARGET, "[DEBUG NETWORK]Download speed: {:.2} Mbps", download_speed);
+                info!(target: LOG_TARGET, "[DEBUG NETWORK]Upload speed: {:.2} Mbps", upload_speed);
+                info!(target: LOG_TARGET, "[DEBUG NETWORK]Latency: {:.2} ms", latency);
                 self.handle_test_results(app_handle, download_speed, upload_speed, latency)
                     .await;
                 Ok(())
