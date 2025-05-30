@@ -448,8 +448,6 @@ fn main() {
         }
     }
     let _unused = fix_path_env::fix();
-    // TODO: Integrate sentry into logs. Because we are using Tari's logging infrastructure, log4rs
-    // sets the logger and does not expose a way to add sentry into it.
 
     #[cfg(debug_assertions)]
     {
@@ -481,12 +479,14 @@ fn main() {
     ));
     let _guard = minidump::init(&client);
 
-    let _stats_collector = ProcessStatsCollectorBuilder::new();
+    let mut stats_collector = ProcessStatsCollectorBuilder::new();
     
     // Create channels for communication between components
-    let (_base_node_watch_tx, base_node_watch_rx) = watch::channel(BaseNodeStatus::default());
+    let (base_node_watch_tx, base_node_watch_rx) = watch::channel(BaseNodeStatus::default());
+    let node_manager = NodeManager::new(base_node_watch_tx, &mut stats_collector, shutdown.to_signal());
+    let p2pool_manager = P2poolManager::new(base_node_watch_rx.clone(), &mut stats_collector);
     let (wallet_state_watch_tx, wallet_state_watch_rx) = watch::channel::<Option<WalletState>>(None);
-    let (websocket_message_tx, _websocket_message_rx) = tokio::sync::mpsc::channel::<WebsocketMessage>(500);
+    let (websocket_message_tx, websocket_message_rx) = tokio::sync::mpsc::channel::<WebsocketMessage>(500);
     let (websocket_manager_status_tx, websocket_manager_status_rx) = watch::channel::<WebsocketManagerStatusMessage>(WebsocketManagerStatusMessage::Stopped);
     let (gpu_status_tx, gpu_status_rx) = watch::channel(GpuMinerStatus::default());
     let (cpu_miner_status_watch_tx, cpu_miner_status_watch_rx) = watch::channel::<CpuMinerStatus>(CpuMinerStatus::default());
@@ -498,7 +498,7 @@ fn main() {
     let spend_wallet_manager =
         SpendWalletManager::new(node_manager.clone(), base_node_watch_rx.clone());
     let (p2pool_stats_tx, p2pool_stats_rx) = watch::channel(None);
-    let (tor_watch_tx, _tor_watch_rx) = watch::channel(TorStatus::default());
+    let (tor_watch_tx, tor_watch_rx) = watch::channel(TorStatus::default());
 
     let cpu_config = Arc::new(RwLock::new(CpuMinerConfig {
         node_connection: CpuMinerConnection::BuiltInProxy,
@@ -669,82 +669,110 @@ fn main() {
                 .expect("Could not parse the contents of the log file as yaml");
             log4rs::init_raw_config(config).expect("Could not initialize logging");
 
-            // Initialize managers with app handle - moved to async setup
+            // Get app handle for manager creation
             let app_handle = app.handle().clone();
-            tauri::async_runtime::spawn(async move {
-                let mut stats_collector_local = ProcessStatsCollectorBuilder::new();
-                
-                let (
-                    node_manager,
-                    wallet_manager,
-                    spend_wallet_manager,
-                    cpu_miner,
-                    gpu_miner,
-                    tor_manager,
-                    mm_proxy_manager,
-                    p2pool_manager,
-                    telemetry_manager,
-                    websocket_manager,
-                    websocket_events_manager,
-                    updates_manager,
-                    telemetry_service,
-                    feedback,
-                    mining_status_manager,
-                ) = create_managers_with_app_handle(
-                    app_handle.clone(),
-                    &mut stats_collector_local,
-                    base_node_watch_rx.clone(),
-                    wallet_state_watch_tx.clone(),
-                    websocket_message_tx.clone(),
-                    websocket_manager_status_tx.clone(),
-                    websocket_manager_status_rx.clone(),
-                    gpu_status_tx.clone(),
-                    cpu_miner_status_watch_tx.clone(),
-                    p2pool_stats_tx.clone(),
-                    tor_watch_tx.clone(),
-                    app_in_memory_config.clone(),
-                    cpu_config.clone(),
-                ).await;
 
-                let app_state = UniverseAppState {
-                    cpu_miner_timestamp_mutex: Arc::new(Mutex::new(SystemTime::now())),
-                    cpu_miner_stop_start_mutex: Arc::new(Mutex::new(())),
-                    gpu_miner_stop_start_mutex: Arc::new(Mutex::new(())),
-                    is_getting_p2pool_connections: Arc::new(AtomicBool::new(false)),
-                    node_status_watch_rx: Arc::new(base_node_watch_rx),
-                    wallet_state_watch_rx: Arc::new(wallet_state_watch_rx.clone()),
-                    cpu_miner_status_watch_rx: Arc::new(cpu_miner_status_watch_rx),
-                    gpu_latest_status: Arc::new(gpu_status_rx),
-                    p2pool_latest_status: Arc::new(p2pool_stats_rx),
-                    is_getting_transactions_history: Arc::new(AtomicBool::new(false)),
-                    is_getting_coinbase_history: Arc::new(AtomicBool::new(false)),
-                    in_memory_config: app_in_memory_config.clone(),
-                    tari_address: Arc::new(RwLock::new(TariAddress::default())),
-                    cpu_miner: Arc::new(RwLock::new(cpu_miner)),
-                    gpu_miner: Arc::new(RwLock::new(gpu_miner)),
-                    cpu_miner_config: cpu_config.clone(),
-                    mm_proxy_manager,
-                    node_manager,
-                    wallet_manager,
-                    spend_wallet_manager: Arc::new(RwLock::new(spend_wallet_manager)),
-                    p2pool_manager,
-                    telemetry_manager: Arc::new(RwLock::new(telemetry_manager)),
-                    telemetry_service: Arc::new(RwLock::new(telemetry_service)),
-                    feedback: Arc::new(RwLock::new(feedback)),
-                    tor_manager,
-                    updates_manager,
-                    cached_p2pool_connections: Arc::new(RwLock::new(None)),
-                    systemtray_manager: Arc::new(RwLock::new(SystemTrayManager::new())),
-                    mining_status_manager: Arc::new(RwLock::new(mining_status_manager)),
-                    websocket_message_tx: Arc::new(websocket_message_tx),
-                    websocket_manager_status_rx: Arc::new(websocket_manager_status_rx.clone()),
-                    websocket_manager: Arc::new(RwLock::new(websocket_manager)),
-                    websocket_event_manager: Arc::new(RwLock::new(websocket_events_manager)),
-                };
+            // Create channels for communication between components
+            let (_base_node_watch_tx, base_node_watch_rx) = watch::channel(BaseNodeStatus::default());
+            let (wallet_state_watch_tx, wallet_state_watch_rx) = watch::channel::<Option<WalletState>>(None);
+            let (websocket_message_tx, _websocket_message_rx) = tokio::sync::mpsc::channel::<WebsocketMessage>(500);
+            let (websocket_manager_status_tx, websocket_manager_status_rx) = watch::channel::<WebsocketManagerStatusMessage>(WebsocketManagerStatusMessage::Stopped);
+            let (gpu_status_tx, gpu_status_rx) = watch::channel(GpuMinerStatus::default());
+            let (cpu_miner_status_watch_tx, cpu_miner_status_watch_rx) = watch::channel::<CpuMinerStatus>(CpuMinerStatus::default());
+            let (p2pool_stats_tx, p2pool_stats_rx) = watch::channel(None);
+            let (tor_watch_tx, _tor_watch_rx) = watch::channel(TorStatus::default());
 
-                app_handle.manage(app_state);
-            });
+            let cpu_config = Arc::new(RwLock::new(CpuMinerConfig {
+                node_connection: CpuMinerConnection::BuiltInProxy,
+                eco_mode_xmrig_options: vec![],
+                ludicrous_mode_xmrig_options: vec![],
+                custom_mode_xmrig_options: vec![],
+                eco_mode_cpu_percentage: None,
+                ludicrous_mode_cpu_percentage: None,
+                pool_host_name: None,
+                pool_port: None,
+                monero_address: "".to_string(),
+                pool_status_url: None,
+            }));
 
+            let app_in_memory_config = Arc::new(RwLock::new(app_in_memory_config::AppInMemoryConfig::init()));
+
+            let mut stats_collector = ProcessStatsCollectorBuilder::new();
+
+            // Create managers synchronously but pass app_handle to each
+            let (
+                node_manager,
+                wallet_manager,
+                spend_wallet_manager,
+                cpu_miner,
+                gpu_miner,
+                tor_manager,
+                mm_proxy_manager,
+                p2pool_manager,
+                telemetry_manager,
+                websocket_manager,
+                websocket_events_manager,
+                updates_manager,
+                telemetry_service,
+                feedback,
+                mining_status_manager,
+            ) = tauri::async_runtime::block_on(create_managers_with_app_handle(
+                app_handle.clone(),
+                &mut stats_collector,
+                base_node_watch_rx.clone(),
+                wallet_state_watch_tx.clone(),
+                websocket_message_tx.clone(),
+                websocket_manager_status_tx.clone(),
+                websocket_manager_status_rx.clone(),
+                gpu_status_tx.clone(),
+                cpu_miner_status_watch_tx.clone(),
+                p2pool_stats_tx.clone(),
+                tor_watch_tx.clone(),
+                app_in_memory_config.clone(),
+                cpu_config.clone(),
+            ));
+
+            // Create app state with all properly initialized managers
+            let app_state = UniverseAppState {
+                cpu_miner_timestamp_mutex: Arc::new(Mutex::new(SystemTime::now())),
+                cpu_miner_stop_start_mutex: Arc::new(Mutex::new(())),
+                gpu_miner_stop_start_mutex: Arc::new(Mutex::new(())),
+                is_getting_p2pool_connections: Arc::new(AtomicBool::new(false)),
+                node_status_watch_rx: Arc::new(base_node_watch_rx),
+                wallet_state_watch_rx: Arc::new(wallet_state_watch_rx.clone()),
+                cpu_miner_status_watch_rx: Arc::new(cpu_miner_status_watch_rx),
+                gpu_latest_status: Arc::new(gpu_status_rx),
+                p2pool_latest_status: Arc::new(p2pool_stats_rx),
+                is_getting_transactions_history: Arc::new(AtomicBool::new(false)),
+                is_getting_coinbase_history: Arc::new(AtomicBool::new(false)),
+                in_memory_config: app_in_memory_config.clone(),
+                tari_address: Arc::new(RwLock::new(TariAddress::default())),
+                cpu_miner: Arc::new(RwLock::new(cpu_miner)),
+                gpu_miner: Arc::new(RwLock::new(gpu_miner)),
+                cpu_miner_config: cpu_config.clone(),
+                mm_proxy_manager,
+                node_manager,
+                wallet_manager,
+                spend_wallet_manager: Arc::new(RwLock::new(spend_wallet_manager)),
+                p2pool_manager,
+                telemetry_manager: Arc::new(RwLock::new(telemetry_manager)),
+                telemetry_service: Arc::new(RwLock::new(telemetry_service)),
+                feedback: Arc::new(RwLock::new(feedback)),
+                tor_manager,
+                updates_manager,
+                cached_p2pool_connections: Arc::new(RwLock::new(None)),
+                systemtray_manager: Arc::new(RwLock::new(SystemTrayManager::new())),
+                mining_status_manager: Arc::new(RwLock::new(mining_status_manager)),
+                websocket_message_tx: Arc::new(websocket_message_tx),
+                websocket_manager_status_rx: Arc::new(websocket_manager_status_rx.clone()),
+                websocket_manager: Arc::new(RwLock::new(websocket_manager)),
+                websocket_event_manager: Arc::new(RwLock::new(websocket_events_manager)),
+            };
+
+            // Manage the state synchronously - this is critical for invoke handlers to work
+            app.manage(app_state);
+
+            // Handle CLI arguments
             match app.cli().matches() {
                 Ok(matches) => {
                     if let Some(backup_path) = matches.args.get("import-backup") {
@@ -804,7 +832,8 @@ fn main() {
                     return Err(Box::new(e));
                 }
             };
-            // The start of needed restart operations. Break this out into a module if we need n+1
+
+            // Handle restart operations
             let tcp_tor_toggled_file = config_path.join("tcp_tor_toggled");
             if tcp_tor_toggled_file.exists() {
                 let network = Network::default().as_key_str();
@@ -958,17 +987,16 @@ fn main() {
                 info!(target: LOG_TARGET, "RunEvent Ready");
                 let handle_clone = app_handle.clone();
                 tauri::async_runtime::spawn(async move {
-                    SetupManager::get_instance()
-                        .start_setup(handle_clone.clone())
-                        .await;
+                    SetupManager::get_instance().start_setup(handle_clone.clone()).await;
                     SetupManager::spawn_sleep_mode_handler(handle_clone.clone()).await;
+                    // Initialize frontend updates after setup is complete
+                    if let Err(e) = initialize_frontend_updates(&handle_clone).await {
+                        error!(target: LOG_TARGET, "Failed to initialize frontend updates: {:?}", e);
+                    }
                 });
             }
             tauri::RunEvent::ExitRequested { api: _, code, .. } => {
-                info!(
-                    target: LOG_TARGET,
-                    "App shutdown request caught with code: {:#?}", code
-                );
+                info!(target: LOG_TARGET, "App shutdown request caught with code: {:#?}", code);
                 let base_path = app_handle.path().app_local_data_dir().expect("Could not get data dir");
                 match SpendWalletManager::erase_related_data(base_path) {
                     Ok(_) => info!(target: LOG_TARGET, "Successfully erased related spend wallet data."),

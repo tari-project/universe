@@ -83,7 +83,7 @@ impl WalletManager {
         node_manager: NodeManager,
         wallet_state_watch_tx: watch::Sender<Option<WalletState>>,
         stats_collector: &mut ProcessStatsCollectorBuilder,
-        app_handle: AppHandle, // Add this parameter
+        app_handle: AppHandle,
     ) -> Self {
         let adapter = WalletAdapter::new(wallet_state_watch_tx);
         let process_watcher = ProcessWatcher::new(adapter, stats_collector.take_wallet(), app_handle);
