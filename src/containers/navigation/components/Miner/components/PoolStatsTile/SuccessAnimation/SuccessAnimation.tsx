@@ -11,9 +11,16 @@ interface SuccessAnimationProps {
     isVisible: boolean;
     setIsVisible: (isVisible: boolean) => void;
     rewardThreshold: string;
+    rewardCopy: string;
 }
 
-export const SuccessAnimation = ({ onComplete, isVisible, setIsVisible, rewardThreshold }: SuccessAnimationProps) => {
+export const SuccessAnimation = ({
+    onComplete,
+    isVisible,
+    setIsVisible,
+    rewardThreshold,
+    rewardCopy,
+}: SuccessAnimationProps) => {
     useEffect(() => {
         if (!isVisible) return;
 
@@ -38,8 +45,7 @@ export const SuccessAnimation = ({ onComplete, isVisible, setIsVisible, rewardTh
                             ease: [0.15, 0, 0, 0.97],
                         }}
                     >
-                        {`You earned `}
-                        {rewardThreshold}!
+                        {rewardCopy} {rewardThreshold}!
                     </Text>
                     <LottieWrapper>
                         <DotLottieReact src={coins_victory_url} autoplay loop={false} className="lottie-animation" />

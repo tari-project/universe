@@ -15,6 +15,7 @@
   "randomx-stats": "RandomX 统计",
   "sha3-stats": "SHA3 统计",
   "stats": {
+    "earned": "You earned",
     "tile-heading": "奖励进行中",
     "tile-loading": "矿池正在热身",
     "tooltip-copy": "奖励处于“进行中”状态，直到您赚取至少<strong>{{amount}}</strong>。达到门槛后，进行中的奖励将自动发送到您的Tari Universe钱包。可能需要再过2小时才能到达。",

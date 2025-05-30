@@ -1,4 +1,4 @@
-import { useConfigMiningStore, useMiningMetricsStore } from '@app/store';
+import { useConfigMiningStore, useConfigUIStore, useMiningMetricsStore } from '@app/store';
 
 import {
     LeftContent,
@@ -32,6 +32,7 @@ import { useMiningTime } from '@app/hooks/mining/useMiningTime.ts';
 import { SuccessAnimation } from './SuccessAnimation/SuccessAnimation';
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import coins_increase_url from './lotties/Coins_Progress_Lottie.json?url';
+import { setAnimationState } from '@tari-project/tari-tower';
 
 const variants = {
     hidden: {
@@ -52,10 +53,9 @@ export const PoolStatsTile = () => {
     const pool_status = useMiningMetricsStore((s) => s.cpu_mining_status.pool_status);
     const isMining = useMiningMetricsStore((s) => s.cpu_mining_status.is_mining);
     const cpuMiningEnabled = useConfigMiningStore((s) => s.cpu_mining_enabled);
+    const visualMode = useConfigUIStore((s) => s.visual_mode);
     const loading = isMining && !pool_status;
     const [expanded, setExpanded] = useState(false);
-
-    // const unpaidFMT = formatNumber(pool_status?.unpaid || 0, FormatPreset.XTM_LONG_DEC);
 
     // ================== Animations ==================
 
@@ -77,12 +77,16 @@ export const PoolStatsTile = () => {
         }
         setPrevUnpaid(unpaid);
     }, [unpaid, prevUnpaid]);
-
     useEffect(() => {
-        if (unpaid === 2000000) {
+        const isSuccessAmount = unpaid >= 2 * 1_000_000;
+        if (isSuccessAmount) {
             setShowSuccessAnimation(true);
+
+            if (visualMode) {
+                setAnimationState('success', true);
+            }
         }
-    }, [unpaid]);
+    }, [unpaid, visualMode]);
 
     // ================== Floating UI ==================
 
@@ -117,12 +121,12 @@ export const PoolStatsTile = () => {
                                         <BalanceVal>
                                             <NumberFlow
                                                 format={{
-                                                    minimumFractionDigits: 2,
-                                                    maximumFractionDigits: 7,
+                                                    minimumFractionDigits: 1,
+                                                    maximumFractionDigits: 4,
                                                     notation: 'standard',
                                                     style: 'decimal',
                                                 }}
-                                                value={unpaid / 1000000}
+                                                value={unpaid / 1_000_000}
                                                 suffix=" XTM"
                                             />
                                         </BalanceVal>
@@ -163,6 +167,7 @@ export const PoolStatsTile = () => {
                     isVisible={showSuccessAnimation}
                     setIsVisible={setShowSuccessAnimation}
                     rewardThreshold={REWARD_THRESHOLD}
+                    rewardCopy={t('stats.earned')}
                 />
             </Wrapper>
             <AnimatePresence>
