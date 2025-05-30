@@ -46,6 +46,7 @@ export const TimerDot = styled.div`
     height: 7px;
 `;
 export const TimerUnitWrapper = styled.div<{ $variant?: MiningTimeVariant }>`
+    white-space: nowrap;
     ${({ $variant }) => {
         switch ($variant) {
             case 'mini': {
@@ -62,8 +63,9 @@ export const TimerUnitWrapper = styled.div<{ $variant?: MiningTimeVariant }>`
 `;
 export const TimerTextWrapper = styled.div<{ $variant?: MiningTimeVariant }>`
     display: flex;
+    flex-grow: 1;
     align-items: baseline;
-
+    white-space: nowrap;
     ${({ $variant }) => {
         switch ($variant) {
             case 'mini': {
@@ -86,6 +88,7 @@ export const TimerTextWrapper = styled.div<{ $variant?: MiningTimeVariant }>`
 
 export const SpacedNum = styled(Typography)`
     font-variant-numeric: tabular-nums;
+    white-space: nowrap;
     display: inline-flex;
     align-items: center;
     justify-content: center;

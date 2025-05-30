@@ -28,7 +28,7 @@
   },
   "pool": {
     "accepted_shares": "수락된 공유",
-    "balance": "잔액",
+    "balance": "Total earnings",
     "min_payout": "최소 지급액",
     "unpaid": "미지급"
   },

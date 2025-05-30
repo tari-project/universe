@@ -31,7 +31,7 @@
   },
   "pool": {
     "accepted_shares": "Aanvaarde aandele",
-    "balance": "Balans",
+    "balance": "Total earnings",
     "min_payout": "Minimum uitbetaling",
     "unpaid": "Onbetaald"
   },

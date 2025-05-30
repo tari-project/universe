@@ -28,7 +28,7 @@
   },
   "pool": {
     "accepted_shares": "स्वीकृत शेयर",
-    "balance": "शेष राशि",
+    "balance": "Total earnings",
     "min_payout": "न्यूनतम भुगतान",
     "unpaid": "अवैतनिक"
   },

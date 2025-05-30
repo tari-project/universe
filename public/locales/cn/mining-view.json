@@ -28,7 +28,7 @@
   },
   "pool": {
     "accepted_shares": "已接受份额",
-    "balance": "余额",
+    "balance": "Total earnings",
     "min_payout": "最低支付",
     "unpaid": "未支付"
   },
