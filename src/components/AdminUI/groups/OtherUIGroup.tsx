@@ -55,7 +55,6 @@ export function OtherUIGroup() {
                 </Button>
             </ButtonGroup>
             <CategoryLabel>Gem animations</CategoryLabel>
-            {/* TODO: add the other sections if we want */}
             <ButtonGroup>
                 <Button onClick={() => setFlareAnimationType('FriendAccepted')}>FriendAccepted</Button>
                 <Button onClick={() => setFlareAnimationType('GoalComplete')}>GoalComplete</Button>
