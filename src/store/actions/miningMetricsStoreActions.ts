@@ -25,7 +25,12 @@ export const setGpuMiningStatus = (gpu_mining_status: GpuMinerStatus) => {
     useMiningMetricsStore.setState({ gpu_mining_status });
 };
 export const setCpuMiningStatus = (cpu_mining_status: CpuMinerStatus) => {
-    useMiningMetricsStore.setState({ cpu_mining_status });
+    useMiningMetricsStore.setState((current) => {
+        const updatedPoolStatus = cpu_mining_status.pool_status ?? current.cpu_mining_status.pool_status;
+        return {
+            cpu_mining_status: { ...cpu_mining_status, pool_status: updatedPoolStatus },
+        };
+    });
 };
 
 export const setPoolStatus = (pool_status: CpuMinerStatus['pool_status']) => {
