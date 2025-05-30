@@ -254,13 +254,40 @@ impl ProcessInstanceTrait for ProcessInstance {
 
 impl Drop for ProcessInstance {
     fn drop(&mut self) {
+        // Always trigger shutdown first
         self.shutdown.trigger();
+
         if let Some(handle) = self.handle.take() {
-            Handle::current().block_on(async move {
-                if let Err(e) = handle.await {
-                    warn!(target: LOG_TARGET, "Error in Process Adapter: {}", e);
+            // Check if we're in a tokio runtime context
+            if let Ok(current_handle) = Handle::try_current() {
+                // We're in a tokio context, spawn a detached task for cleanup
+                let spec_name = self.startup_spec.name.clone();
+                current_handle.spawn(async move {
+                    if let Err(e) = handle.await {
+                        warn!(target: LOG_TARGET, "Error during process cleanup for {}: {}", spec_name, e);
+                    }
+                });
+            } else {
+                // We're not in a tokio context, we need to use block_on
+                // This is the fallback case - log it as it might indicate a design issue
+                warn!(target: LOG_TARGET, "Process {} dropped outside tokio context, using block_on for cleanup", self.startup_spec.name);
+
+                // Use a timeout to prevent indefinite blocking
+                if let Ok(rt) = tokio::runtime::Handle::try_current() {
+                    rt.block_on(async move {
+                        if let Err(e) = tokio::time::timeout(
+                            Duration::from_secs(5),
+                            handle
+                        ).await {
+                            warn!(target: LOG_TARGET, "Timeout or error during emergency process cleanup: {}", e);
+                        }
+                    });
+                } else {
+                    // Last resort: detach the handle and let the OS clean up
+                    warn!(target: LOG_TARGET, "Cannot properly clean up process {}, detaching handle", self.startup_spec.name);
+                    std::mem::forget(handle);
                 }
-            });
+            }
         }
     }
 }
