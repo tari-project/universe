@@ -9,6 +9,7 @@ import {
     P2poolConnections,
     WalletBalance,
     BridgeEnvs,
+    TariAddressVariants,
 } from './app-status';
 import { Language } from '@app/i18initializer';
 import { PaperWalletDetails } from '@app/types/app-status.ts';
@@ -130,4 +131,5 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'get_tari_wallet_address'): Promise<string>;
     function invoke(param: 'get_tari_wallet_balance'): Promise<WalletBalance>;
     function invoke(param: 'get_bridge_envs'): Promise<BridgeEnvs>;
+    function invoke(param: 'parse_tari_address', payload: { address: string }): Promise<TariAddressVariants>;
 }

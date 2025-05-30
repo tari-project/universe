@@ -718,3 +718,10 @@ pub struct TransactionInfo {
     pub payment_id: String,
     pub mined_in_block_height: u64,
 }
+
+#[derive(Debug, Serialize, Clone)]
+pub struct TariAddressVariants {
+    pub emoji_string: String,
+    pub base58: String,
+    pub hex: String,
+}

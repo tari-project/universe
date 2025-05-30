@@ -641,7 +641,8 @@ fn main() {
             commands::launch_builtin_tapplet,
             commands::get_tari_wallet_address,
             commands::get_tari_wallet_balance,
-            commands::get_bridge_envs
+            commands::get_bridge_envs,
+            commands::parse_tari_address,
         ])
         .build(tauri::generate_context!())
         .inspect_err(
