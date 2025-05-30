@@ -27,10 +27,10 @@
     "step_6": "尝试重置应用程序（在设置中）"
   },
   "pool": {
-    "accepted_shares": "Accepted shares",
-    "balance": "Balance (amount paid + amount due)",
-    "min_payout": "Minimum payout",
-    "unpaid": "Unpaid"
+    "accepted_shares": "已接受份额",
+    "balance": "余额",
+    "min_payout": "最低支付",
+    "unpaid": "未支付"
   },
   "you-earn-rewards-separately": "您分别为 CPU 和 GPU 挖矿获得奖励",
   "you-won-block": "您赢得了<span>区块 #{{ blockHeight }}</span>",

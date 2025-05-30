@@ -38,7 +38,6 @@ export const useWagmiAdapter = () => {
                 }
             }
 
-            console.info('Fetched appInMemoryConfig:', appInMemoryConfig);
             if (appInMemoryConfig?.walletConnectProjectId) {
                 setProjectId(appInMemoryConfig.walletConnectProjectId);
             } else {
@@ -47,7 +46,7 @@ export const useWagmiAdapter = () => {
             }
         };
 
-        fetchProjectId();
+        void fetchProjectId();
     }, []);
 
     const debouncedRef = useRef<NodeJS.Timeout>();

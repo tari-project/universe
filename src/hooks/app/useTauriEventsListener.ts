@@ -54,14 +54,7 @@ import {
 import { invoke } from '@tauri-apps/api/core';
 import { handleShowStagedSecurityModal } from '@app/store/actions/stagedSecurityActions';
 
-const LOG_EVENT_TYPES = [
-    'LockMining',
-    'LockWallet',
-    'UnlockMining',
-    'UnlockWallet',
-    'CpuMiningUpdate',
-    'WalletAddressUpdate',
-];
+const LOG_EVENT_TYPES = ['WalletAddressUpdate', 'CriticalProblem', 'MissingApplications'];
 
 const useTauriEventsListener = () => {
     const eventRef = useRef<BackendStateUpdateEvent | null>(null);
@@ -69,11 +62,12 @@ const useTauriEventsListener = () => {
         if (LOG_EVENT_TYPES.includes(newEvent.event_type)) {
             const isEqual = deepEqual(eventRef.current, newEvent);
             if (!isEqual) {
-                console.info('Received event', newEvent);
+                console.info(newEvent.event_type, newEvent.payload);
                 eventRef.current = newEvent;
             }
         }
     }
+
     useEffect(() => {
         const setupListener = async () => {
             // Set up the event listener
@@ -123,7 +117,7 @@ const useTauriEventsListener = () => {
                         }
                         case 'WalletBalanceUpdate':
                             setWalletBalance(event.payload);
-                            refreshTransactions();
+                            await refreshTransactions();
                             break;
                         case 'BaseNodeUpdate':
                             handleBaseNodeStatusUpdate(event.payload);
@@ -196,7 +190,7 @@ const useTauriEventsListener = () => {
                             setNodeStoreState(event.payload);
                             break;
                         case 'RestartingPhases':
-                            handleRestartingPhases(event.payload);
+                            await handleRestartingPhases(event.payload);
                             break;
                         case 'AskForRestart':
                             handleAskForRestart();
