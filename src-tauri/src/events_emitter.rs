@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::sync::LazyLock;
 
 use crate::app_in_memory_config::AppInMemoryConfig;
 // Copyright 2024. The Tari Project
@@ -50,16 +51,42 @@ use crate::{
 use log::error;
 use tari_common_types::tari_address::TariAddress;
 use tauri::{AppHandle, Emitter};
+use tokio::sync::RwLock;
 
 const LOG_TARGET: &str = "tari::universe::events_emitter";
 const BACKEND_STATE_UPDATE: &str = "backend_state_update";
 const PROGRESS_TRACKER_UPDATE: &str = "progress_tracker_update";
 
-pub(crate) struct EventsEmitter;
+static INSTANCE: LazyLock<EventsEmitter> = LazyLock::new(EventsEmitter::new);
+pub(crate) struct EventsEmitter {
+    app_handle: RwLock<Option<AppHandle>>,
+}
 
 impl EventsEmitter {
+    pub fn new() -> Self {
+        Self {
+            app_handle: RwLock::new(None),
+        }
+    }
+
+    pub async fn load_app_handle(app_handle: AppHandle) {
+        if INSTANCE.app_handle.read().await.is_some() {
+            error!(target: LOG_TARGET, "AppHandle is already set. This should only be set once.");
+        } else {
+            *INSTANCE.app_handle.write().await = Some(app_handle);
+        }
+    }
+
+    async fn get_app_handle() -> AppHandle {
+        INSTANCE
+            .app_handle
+            .read()
+            .await
+            .as_ref()
+            .expect("Cannot emit events due to missing AppHandle")
+            .clone()
+    }
     pub async fn emit_progress_tracker_update(
-        app_handle: &AppHandle,
         event_type: ProgressEvents,
         phase_title: String,
         title: String,
@@ -77,94 +104,114 @@ impl EventsEmitter {
                 is_complete,
             },
         };
-        if let Err(e) = app_handle.emit(PROGRESS_TRACKER_UPDATE, event) {
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(PROGRESS_TRACKER_UPDATE, event)
+        {
             error!(target: LOG_TARGET, "Failed to emit ProgressTrackerUpdate event: {:?}", e);
         }
     }
 
-    pub async fn emit_stuck_on_orphan_chain(app_handle: &AppHandle, is_stuck: bool) {
+    pub async fn emit_stuck_on_orphan_chain(is_stuck: bool) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::StuckOnOrphanChain,
             payload: is_stuck,
         };
-        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
             error!(target: LOG_TARGET, "Failed to emit StuckOnOrphanChain event: {:?}", e);
         }
     }
 
-    pub async fn emit_show_release_notes(app_handle: &AppHandle, payload: ShowReleaseNotesPayload) {
+    pub async fn emit_show_release_notes(payload: ShowReleaseNotesPayload) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::ShowReleaseNotes,
             payload,
         };
-        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
             error!(target: LOG_TARGET, "Failed to emit ShowReleaseNotesPayload event: {:?}", e);
         }
     }
 
     #[cfg(target_os = "windows")]
-    pub async fn emit_missing_applications(
-        app_handle: &AppHandle,
-        external_dependencies: RequiredExternalDependency,
-    ) {
+    pub async fn emit_missing_applications(external_dependencies: RequiredExternalDependency) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::MissingApplications,
             payload: external_dependencies,
         };
-        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
             error!(target: LOG_TARGET, "Failed to emit MissingApplications event: {:?}", e);
         }
     }
 
-    pub async fn emit_critical_problem(app_handle: &AppHandle, payload: CriticalProblemPayload) {
+    pub async fn emit_critical_problem(payload: CriticalProblemPayload) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::CriticalProblem,
             payload,
         };
-        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
             error!(target: LOG_TARGET, "Failed to emit CriticalProblem event: {:?}", e);
         }
     }
 
-    pub async fn emit_restarting_phases(app_handle: &AppHandle, payload: Vec<SetupPhase>) {
+    pub async fn emit_restarting_phases(payload: Vec<SetupPhase>) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::RestartingPhases,
             payload,
         };
-        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
             error!(target: LOG_TARGET, "Failed to emit RestartingPhases event: {:?}", e);
         }
     }
 
-    pub async fn emit_ask_for_restart(app_handle: &AppHandle) {
+    pub async fn emit_ask_for_restart() {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::AskForRestart,
             payload: (),
         };
-        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
             error!(target: LOG_TARGET, "Failed to emit AskForRestart event: {:?}", e);
         }
     }
 
-    pub async fn emit_detected_devices(app_handle: &AppHandle, devices: Vec<GpuDevice>) {
+    pub async fn emit_detected_devices(devices: Vec<GpuDevice>) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::DetectedDevices,
             payload: DetectedDevicesPayload { devices },
         };
-        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
             error!(target: LOG_TARGET, "Failed to emit DetectedDevices event: {:?}", e);
         }
     }
 
     pub async fn emit_detected_available_gpu_engines(
-        app_handle: &AppHandle,
         engines: Vec<String>,
         selected_engine: String,
     ) {
@@ -176,24 +223,29 @@ impl EventsEmitter {
                 selected_engine,
             },
         };
-        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
             error!(target: LOG_TARGET, "Failed to emit DetectedAvailableGpuEngines event: {:?}", e);
         }
     }
 
-    pub async fn emit_close_splashscreen(app_handle: &AppHandle) {
+    pub async fn emit_close_splashscreen() {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::CloseSplashscreen,
             payload: (),
         };
-        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
             error!(target: LOG_TARGET, "Failed to emit CloseSplashscreen event: {:?}", e);
         }
     }
 
     pub async fn emit_network_status(
-        app_handle: &AppHandle,
         download_speed: f64,
         upload_speed: f64,
         latency: f64,
@@ -208,68 +260,71 @@ impl EventsEmitter {
                 is_too_low,
             },
         };
-        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
             error!(target: LOG_TARGET, "Failed to emit NetworkStatus event: {:?}", e);
         }
     }
-    // pub async fn emit_app_config_loaded(app_handle: &AppHandle, app_config: AppConfig) {
-    //     let _unused = FrontendReadyChannel::current().wait_for_ready().await;
-    //     let event = Event {
-    //         event_type: EventType::AppConfigLoaded,
-    //         payload: app_config,
-    //     };
-    //     if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
-    //         error!(target: LOG_TARGET, "Failed to emit AppConfigLoaded event: {:?}", e);
-    //     }
-    //     info!(target: LOG_TARGET, "AppConfigLoaded event emitted");
-    // }
 
-    pub async fn emit_core_config_loaded(app_handle: &AppHandle, payload: ConfigCoreContent) {
+    pub async fn emit_core_config_loaded(payload: ConfigCoreContent) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::ConfigCoreLoaded,
             payload,
         };
-        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
             error!(target: LOG_TARGET, "Failed to emit CoreConfigLoaded event: {:?}", e);
         }
     }
 
-    pub async fn emit_ui_config_loaded(app_handle: &AppHandle, payload: ConfigUIContent) {
+    pub async fn emit_ui_config_loaded(payload: ConfigUIContent) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::ConfigUILoaded,
             payload,
         };
-        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
             error!(target: LOG_TARGET, "Failed to emit UIConfigLoaded event: {:?}", e);
         }
     }
 
-    pub async fn emit_wallet_config_loaded(app_handle: &AppHandle, payload: ConfigWalletContent) {
+    pub async fn emit_wallet_config_loaded(payload: ConfigWalletContent) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::ConfigWalletLoaded,
             payload,
         };
-        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
             error!(target: LOG_TARGET, "Failed to emit WalletConfigLoaded event: {:?}", e);
         }
     }
 
-    pub async fn emit_mining_config_loaded(app_handle: &AppHandle, payload: ConfigMiningContent) {
+    pub async fn emit_mining_config_loaded(payload: ConfigMiningContent) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::ConfigMiningLoaded,
             payload,
         };
-        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
             error!(target: LOG_TARGET, "Failed to emit MiningConfigLoaded event: {:?}", e);
         }
     }
 
     pub async fn emit_wallet_address_update(
-        app_handle: &AppHandle,
         wallet_address: TariAddress,
         is_tari_address_generated: bool,
     ) {
@@ -282,115 +337,141 @@ impl EventsEmitter {
                 is_tari_address_generated,
             },
         };
-        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
             error!(target: LOG_TARGET, "Failed to emit WalletAddressUpdate event: {:?}", e);
         }
     }
 
-    pub async fn emit_wallet_balance_update(app_handle: &AppHandle, balance: WalletBalance) {
+    pub async fn emit_wallet_balance_update(balance: WalletBalance) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::WalletBalanceUpdate,
             payload: balance,
         };
-        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
             error!(target: LOG_TARGET, "Failed to emit WalletBalanceUpdate event: {:?}", e);
         }
     }
 
-    pub async fn emit_base_node_update(app_handle: &AppHandle, status: BaseNodeStatus) {
+    pub async fn emit_base_node_update(status: BaseNodeStatus) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::BaseNodeUpdate,
             payload: status,
         };
 
-        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
             error!(target: LOG_TARGET, "Failed to emit BaseNodeUpdate event: {:?}", e);
         }
     }
 
-    pub async fn show_staged_security_modal(app_handle: &AppHandle) {
+    pub async fn show_staged_security_modal() {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::ShowStageSecurityModal,
             payload: (),
         };
-        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
             error!(target: LOG_TARGET, "Failed to emit ShowStagedSecurityModal event: {:?}", e);
         }
     }
 
     #[allow(dead_code)]
-    pub async fn emit_gpu_devices_update(
-        app_handle: &AppHandle,
-        gpu_public_devices: Vec<PublicDeviceProperties>,
-    ) {
+    pub async fn emit_gpu_devices_update(gpu_public_devices: Vec<PublicDeviceProperties>) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::GpuDevicesUpdate,
             payload: gpu_public_devices,
         };
-        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
             error!(target: LOG_TARGET, "Failed to emit GpuDevicesUpdate event: {:?}", e);
         }
     }
 
-    pub async fn emit_pool_status_update(app_handle: &AppHandle, pool_status: Option<PoolStatus>) {
+    pub async fn emit_pool_status_update(pool_status: Option<PoolStatus>) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::PoolStatusUpdate,
             payload: pool_status,
         };
-        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
             error!(target: LOG_TARGET, "Failed to emit PoolStatusUpdate event: {:?}", e);
         }
     }
-    pub async fn emit_cpu_mining_update(app_handle: &AppHandle, status: CpuMinerStatus) {
+    pub async fn emit_cpu_mining_update(status: CpuMinerStatus) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::CpuMiningUpdate,
             payload: status,
         };
-        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
             error!(target: LOG_TARGET, "Failed to emit CpuMiningUpdate event: {:?}", e);
         }
     }
-    pub async fn emit_mining_time_update(app_handle: &AppHandle, mining_time: u128) {
+    pub async fn emit_mining_time_update(mining_time: u128) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::MiningTime,
             payload: mining_time,
         };
-        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
             error!(target: LOG_TARGET, "Failed to emit MiningTime event: {:?}", e);
         }
     }
 
-    pub async fn emit_gpu_mining_update(app_handle: &AppHandle, status: GpuMinerStatus) {
+    pub async fn emit_gpu_mining_update(status: GpuMinerStatus) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::GpuMiningUpdate,
             payload: status,
         };
-        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
             error!(target: LOG_TARGET, "Failed to emit GpuMiningUpdate event: {:?}", e);
         }
     }
 
-    pub async fn emit_connected_peers_update(app_handle: &AppHandle, connected_peers: Vec<String>) {
+    pub async fn emit_connected_peers_update(connected_peers: Vec<String>) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::ConnectedPeersUpdate,
             payload: connected_peers,
         };
-        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
             error!(target: LOG_TARGET, "Failed to emit ConnectedPeersUpdate event: {:?}", e);
         }
     }
 
     pub async fn emit_new_block_mined(
-        app_handle: &AppHandle,
         block_height: u64,
         coinbase_transaction: Option<TransactionInfo>,
         balance: Option<WalletBalance>,
@@ -404,179 +485,223 @@ impl EventsEmitter {
                 balance,
             },
         };
-        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
             error!(target: LOG_TARGET, "Failed to emit NewBlockHeight event: {:?}", e);
         }
     }
 
-    pub async fn emit_core_phase_finished(app_handle: &AppHandle, status: bool) {
+    pub async fn emit_core_phase_finished(status: bool) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::CorePhaseFinished,
             payload: status,
         };
-        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
             error!(target: LOG_TARGET, "Failed to emit CorePhaseFinished event: {:?}", e);
         }
     }
 
-    pub async fn emit_wallet_phase_finished(app_handle: &AppHandle, status: bool) {
+    pub async fn emit_wallet_phase_finished(status: bool) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::WalletPhaseFinished,
             payload: status,
         };
-        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
             error!(target: LOG_TARGET, "Failed to emit WalletPhaseFinished event: {:?}", e);
         }
     }
 
-    pub async fn emit_hardware_phase_finished(app_handle: &AppHandle, status: bool) {
+    pub async fn emit_hardware_phase_finished(status: bool) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::HardwarePhaseFinished,
             payload: status,
         };
-        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
             error!(target: LOG_TARGET, "Failed to emit HardwarePhaseFinished event: {:?}", e);
         }
     }
 
-    pub async fn emit_node_phase_finished(app_handle: &AppHandle, status: bool) {
+    pub async fn emit_node_phase_finished(status: bool) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::NodePhaseFinished,
             payload: status,
         };
-        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
             error!(target: LOG_TARGET, "Failed to emit NodePhaseFinished event: {:?}", e);
         }
     }
 
-    pub async fn emit_unknown_phase_finished(app_handle: &AppHandle, status: bool) {
+    pub async fn emit_unknown_phase_finished(status: bool) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::UnknownPhaseFinished,
             payload: status,
         };
-        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
             error!(target: LOG_TARGET, "Failed to emit UnknownPhaseFinished event: {:?}", e);
         }
     }
 
-    pub async fn emit_initial_setup_finished(app_handle: &AppHandle) {
+    pub async fn emit_initial_setup_finished() {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::InitialSetupFinished,
             payload: (),
         };
-        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
             error!(target: LOG_TARGET, "Failed to emit SetupFinished event: {:?}", e);
         }
     }
 
-    pub async fn emit_unlock_app(app_handle: &AppHandle) {
+    pub async fn emit_unlock_app() {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::UnlockApp,
             payload: (),
         };
-        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
             error!(target: LOG_TARGET, "Failed to emit UnlockApp event: {:?}", e);
         }
     }
 
-    pub async fn emit_unlock_wallet(app_handle: &AppHandle) {
+    pub async fn emit_unlock_wallet() {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::UnlockWallet,
             payload: (),
         };
-        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
             error!(target: LOG_TARGET, "Failed to emit UnlockWallet event: {:?}", e);
         }
     }
 
-    pub async fn emit_unlock_cpu_mining(app_handle: &AppHandle) {
+    pub async fn emit_unlock_cpu_mining() {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::UnlockCpuMining,
             payload: (),
         };
-        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
             error!(target: LOG_TARGET, "Failed to emit UnlockCpuMining event: {:?}", e);
         }
     }
-    pub async fn emit_unlock_gpu_mining(app_handle: &AppHandle) {
+    pub async fn emit_unlock_gpu_mining() {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::UnlockGpuMining,
             payload: (),
         };
-        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
             error!(target: LOG_TARGET, "Failed to emit UnlockGpuMining event: {:?}", e);
         }
     }
 
-    pub async fn emit_lock_wallet(app_handle: &AppHandle) {
+    pub async fn emit_lock_wallet() {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::LockWallet,
             payload: (),
         };
-        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
             error!(target: LOG_TARGET, "Failed to emit LockWallet event: {:?}", e);
         }
     }
 
-    pub async fn emit_lock_cpu_mining(app_handle: &AppHandle) {
+    pub async fn emit_lock_cpu_mining() {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::LockCpuMining,
             payload: (),
         };
-        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
             error!(target: LOG_TARGET, "Failed to emit LockCpuMining event: {:?}", e);
         }
     }
-    pub async fn emit_lock_gpu_mining(app_handle: &AppHandle) {
+    pub async fn emit_lock_gpu_mining() {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::LockGpuMining,
             payload: (),
         };
-        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
             error!(target: LOG_TARGET, "Failed to emit LockGpuMining event: {:?}", e);
         }
     }
 
-    pub async fn emit_node_type_update(app_handle: &AppHandle, payload: NodeTypeUpdatePayload) {
+    pub async fn emit_node_type_update(payload: NodeTypeUpdatePayload) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::NodeTypeUpdate,
             payload,
         };
-        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
             error!(target: LOG_TARGET, "Failed to emit NodeTypeUpdate event: {:?}", e);
         }
     }
 
-    pub async fn emit_background_node_sync_update(
-        app_handle: &AppHandle,
-        payload: HashMap<String, String>,
-    ) {
+    pub async fn emit_background_node_sync_update(payload: HashMap<String, String>) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::BackgroundNodeSyncUpdate,
             payload,
         };
-        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
             error!(target: LOG_TARGET, "Failed to emit BackgroundNodeSyncUpdate event: {:?}", e);
         }
     }
 
     pub async fn emit_init_wallet_scanning_progress(
-        app_handle: &AppHandle,
         scanned_height: u64,
         total_height: u64,
         progress: f64,
@@ -590,27 +715,29 @@ impl EventsEmitter {
                 progress,
             },
         };
-        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
             error!(target: LOG_TARGET, "Failed to emit InitWalletScanningProgress event: {:?}", e);
         }
     }
 
-    pub async fn emit_connection_status_changed(
-        app_handle: &AppHandle,
-        connection_status: ConnectionStatusPayload,
-    ) {
+    pub async fn emit_connection_status_changed(connection_status: ConnectionStatusPayload) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::ConnectionStatus,
             payload: connection_status,
         };
-        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
             error!(target: LOG_TARGET, "Failed to emit ConnectionStatus event: {:?}", e);
         }
     }
 
     pub async fn emit_app_in_memory_config_changed(
-        app_handle: &AppHandle,
         app_in_memory_config: AppInMemoryConfig,
         is_universal_exchange: bool,
     ) {
@@ -622,21 +749,24 @@ impl EventsEmitter {
                 is_universal_exchange,
             },
         };
-        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
             error!(target: LOG_TARGET, "Failed to emit AppInMemoryConfigChanged event: {:?}", e);
         }
     }
 
-    pub async fn emit_disabled_phases_changed(
-        app_handle: &AppHandle,
-        disabled_phases: Vec<SetupPhase>,
-    ) {
+    pub async fn emit_disabled_phases_changed(disabled_phases: Vec<SetupPhase>) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::DisabledPhasesChanged,
             payload: DisabledPhasesPayload { disabled_phases },
         };
-        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
             error!(target: LOG_TARGET, "Failed to emit DisabledPhasesChanged event: {:?}", e);
         }
     }
