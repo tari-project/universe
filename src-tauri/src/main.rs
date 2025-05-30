@@ -25,6 +25,7 @@
 
 use commands::CpuMinerStatus;
 use cpu_miner::CpuMinerConfig;
+use events_emitter::EventsEmitter;
 use events_manager::EventsManager;
 use gpu_miner_adapter::GpuMinerStatus;
 use log::{error, info, warn};
@@ -153,6 +154,11 @@ mod xmrig_adapter;
 
 const LOG_TARGET: &str = "tari::universe::main";
 const RESTART_EXIT_CODE: i32 = i32::MAX;
+const IGNORED_SENTRY_ERRORS: [&str; 2] = [
+    "Failed to initialize gtk backend",
+    "SIGABRT / SI_TKILL / 0x0",
+];
+
 #[cfg(not(any(
     feature = "release-ci",
     feature = "release-ci-beta",
@@ -178,7 +184,7 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
         let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
 
         let init_node_status = *node_status_watch_rx.borrow();
-        let _ = EventsManager::handle_base_node_update(&move_app, init_node_status).await;
+        EventsEmitter::emit_base_node_update(init_node_status).await;
 
         let mut latest_updated_block_height = init_node_status.block_height;
         loop {
@@ -194,7 +200,7 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
                         }
                     }
                     if node_status.block_height > latest_updated_block_height && !initial_sync_finished {
-                        let _ = EventsManager::handle_base_node_update(&move_app, node_status).await;
+                        EventsEmitter::emit_base_node_update(node_status).await;
                         latest_updated_block_height = node_status.block_height;
                     }
                 },
@@ -219,7 +225,7 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
                         .node_manager
                         .list_connected_peers()
                         .await {
-                            let _ = EventsManager::handle_connected_peers_update(&move_app, connected_peers).await;
+                            EventsEmitter::emit_connected_peers_update(connected_peers.clone()).await;
                         } else {
                             let err_msg = "Error getting connected peers";
                             error!(target: LOG_TARGET, "{}", err_msg);
@@ -300,6 +306,15 @@ fn main() {
         sentry::ClientOptions {
             release: sentry::release_name!(),
             attach_stacktrace: true,
+            before_send: Some(Arc::new(|event| {
+                if event.logentry.as_ref().map_or(false, |entry| {
+                    IGNORED_SENTRY_ERRORS.iter().any(|ignored| entry.message.starts_with(ignored))
+                }) {
+                    None
+                } else {
+                    Some(event)
+                }
+            })),
             ..Default::default()
         },
     ));
