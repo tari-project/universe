@@ -27,6 +27,8 @@ will create sub issues for the rest
 | :-------- | :----------------------------------------------------------------------------------------- | --------------------------------------: | :----------------------------------------------------: |
 | 🤷🏻        | // TODO: Ensure we actually need this                                                      | `src-tauri/src/spend_wallet_adapter.rs` |                                                        |
 | 🤷🏻        | // TODO: Check if this is correct                                                          | `src-tauri/src/spend_wallet_adapter.rs` |                                                        |
+| 🤷🏻        | // TODO: Rename to ProcessInstance                                                         |      `src-tauri/src/process_adapter.rs` |                                                        |
+| 🤷🏻        | //TODO: Do we still need this?                                                             |             `src-tauri/src/commands.rs` |                                                        |
 | @brianp   | # TODO: Remove this before mainnet                                                         |                  `src-tauri/Cargo.toml` | should remove the todo only, i think it's still handy? |
 | @Misieq01 | # needed for keymanager. TODO: Find a way of creating a keymanager without bundling sqlite |                  `src-tauri/Cargo.toml` |                                                        |
 |           |                                                                                            |                                         |                                                        |
