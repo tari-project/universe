@@ -1,4 +1,3 @@
-import { memo } from 'react';
 import { FloatingTree } from '@floating-ui/react';
 
 import SettingsModal from './Settings/SettingsModal.tsx';
@@ -23,7 +22,7 @@ import EXModal from '@app/containers/floating/EXModal/EXModal.tsx';
 
 const environment = import.meta.env.MODE;
 
-const FloatingElements = memo(function FloatingElements() {
+const FloatingElements = () => {
     return (
         <FloatingTree>
             {environment === 'development' && <AdminUI />}
@@ -46,6 +45,6 @@ const FloatingElements = memo(function FloatingElements() {
             <ResumeApplicationModal />
         </FloatingTree>
     );
-});
+};
 
 export default FloatingElements;

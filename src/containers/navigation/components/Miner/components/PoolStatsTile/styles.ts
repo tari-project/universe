@@ -181,7 +181,7 @@ export const ExpandedBox = styled(m.div)`
     box-shadow: 2px 8px 8px 0 rgba(0, 0, 0, 0.04);
     flex-direction: column;
     gap: 6px;
-    width: 340px;
+    min-width: 340px;
     padding: 15px;
     h5,
     strong {
@@ -205,7 +205,7 @@ export const TooltipChip = styled.div`
     border-radius: 10px;
     padding: 10px 10px 6px 10px;
     flex-shrink: 1;
-    flex-grow: 1;
+    flex-grow: 2;
     width: 100%;
 `;
 

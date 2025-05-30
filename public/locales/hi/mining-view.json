@@ -27,10 +27,10 @@
     "step_6": "ऐप रीसेट करने का प्रयास करें (सेटिंग्स में)"
   },
   "pool": {
-    "accepted_shares": "Accepted shares",
-    "balance": "Balance",
-    "min_payout": "Minimum payout",
-    "unpaid": "Unpaid"
+    "accepted_shares": "स्वीकृत शेयर",
+    "balance": "Total earnings",
+    "min_payout": "न्यूनतम भुगतान",
+    "unpaid": "अवैतनिक"
   },
   "you-earn-rewards-separately": "आप CPU और GPU माइनिंग के लिए अलग-अलग पुरस्कार अर्जित करते हैं",
   "you-won-block": "आप <span>ब्लॉक #{{ blockHeight }}</span> के विजेता थे",

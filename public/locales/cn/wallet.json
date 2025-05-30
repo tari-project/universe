@@ -20,10 +20,10 @@
   },
   "send": {
     "balance": "余额",
-    "broadcast": "Broadcasting",
+    "broadcast": "正在广播",
     "completed": "已完成",
     "completed-amount-sent": "已发送至",
-    "completed-text": "Your transfer submission is now complete and will be broadcast.",
+    "completed-text": "您的转账提交现已完成并将被广播。",
     "completed-title": "您完成了！",
     "cta-confirm": "确认",
     "cta-review": "审核",

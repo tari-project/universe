@@ -154,7 +154,6 @@ async function processNewBlock(payload: {
         const minimized = await appWindow?.isMinimized();
         const documentIsVisible = document?.visibilityState === 'visible' || false;
         const canAnimate = !minimized && documentIsVisible;
-
         if (payload.coinbase_transaction) {
             await handleWin(payload.coinbase_transaction, payload.balance, canAnimate);
         } else {
@@ -162,7 +161,6 @@ async function processNewBlock(payload: {
         }
     } else {
         useBlockchainVisualisationStore.setState({ displayBlockHeight: payload.block_height });
-        console.info('Mining not initiated. Block height updated.');
         await refreshTransactions();
         refreshPendingTransactions();
     }

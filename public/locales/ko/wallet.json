@@ -20,10 +20,10 @@
   },
   "send": {
     "balance": "잔액",
-    "broadcast": "Broadcasting",
+    "broadcast": "전송 중",
     "completed": "완료됨",
     "completed-amount-sent": "전송되었습니다",
-    "completed-text": "Your transfer submission is now complete and will be broadcast.",
+    "completed-text": "전송 제출이 완료되었으며 전송될 예정입니다.",
     "completed-title": "완료되었습니다!",
     "cta-confirm": "확인",
     "cta-review": "검토",
