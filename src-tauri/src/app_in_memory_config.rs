@@ -20,6 +20,8 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::ops::Deref;
+
 use anyhow::anyhow;
 use der::{self, asn1::BitString, oid::ObjectIdentifier, Encode};
 use ring::signature::{Ed25519KeyPair, KeyPair};
@@ -38,7 +40,7 @@ const AIRDROP_API_BASE_URL: &str = std::env!(
 const TELEMETRY_API_URL: &str =
     std::env!("TELEMETRY_API_URL", "TELEMETRY_API_URL env var not defined");
 
-pub const DEFAULT_EXCHANGE_ID: &str = "universal";
+pub const DEFAULT_EXCHANGE_ID: &str = "classic";
 pub const EXCHANGE_ID: &str = match option_env!("EXCHANGE_ID") {
     Some(val) => val,
     None => DEFAULT_EXCHANGE_ID,
@@ -148,5 +150,107 @@ impl AppInMemoryConfig {
             feature = "telemetry-env",
         )))]
         AppInMemoryConfig::default()
+    }
+}
+
+#[derive(Debug)]
+pub enum MinerType {
+    Classic,
+    Universal,
+    ExchangeMode,
+}
+impl MinerType {
+    fn from_str(s: &str) -> Self {
+        match s {
+            DEFAULT_EXCHANGE_ID => MinerType::Classic,
+            _ => MinerType::ExchangeMode,
+        }
+    }
+}
+#[derive(Debug)]
+pub struct DynamicMemoryConfig {
+    pub in_memory_config: AppInMemoryConfig,
+    pub miner_type: MinerType,
+}
+
+#[derive(Default, Serialize, Deserialize, Clone, Debug)]
+pub struct ExchangeMiner {
+    pub id: String,
+    pub name: String,
+    pub slug: String,
+}
+
+#[derive(Default, Serialize, Deserialize, Clone, Debug)]
+pub struct ExchangeMinersListResponse {
+    pub exchanges: Vec<ExchangeMiner>,
+}
+
+impl DynamicMemoryConfig {
+    pub async fn init() -> Self {
+        let in_memory_config = AppInMemoryConfig::init();
+        let miner_type = MinerType::from_str(&in_memory_config.exchange_id);
+        let miners_list =
+            DynamicMemoryConfig::get_exchange_miners(in_memory_config.airdrop_api_url.clone())
+                .await;
+        if miners_list
+            .iter()
+            .any(|miner| miner.id.eq(&in_memory_config.exchange_id) && miner.name.eq("Universal"))
+        {
+            return Self {
+                in_memory_config,
+                miner_type: MinerType::Universal,
+            };
+        }
+        Self {
+            in_memory_config,
+            miner_type,
+        }
+    }
+    pub fn init_universal(exchange_miner: &ExchangeMiner) -> Self {
+        Self {
+            miner_type: MinerType::Universal,
+            in_memory_config: AppInMemoryConfig {
+                exchange_id: exchange_miner.id.clone(),
+                ..AppInMemoryConfig::init()
+            },
+        }
+    }
+    pub fn is_universal_miner(&self) -> bool {
+        matches!(self.miner_type, MinerType::Universal)
+    }
+    pub async fn get_exchange_miners(airdrop_api_url: String) -> Vec<ExchangeMiner> {
+        let endpoint = format!("{}{}", airdrop_api_url, "/miner/exchanges");
+        let mut last_err = None;
+        let mut response = None;
+        for _ in 0..3 {
+            match reqwest::get(endpoint.clone()).await {
+                Ok(resp) => {
+                    response = Some(resp);
+                    break;
+                }
+                Err(e) => {
+                    last_err = Some(e);
+                }
+            }
+        }
+        let response = response.unwrap_or_else(|| {
+            panic!(
+                "Failed to fetch exchange miners after 3 attempts: {:?}",
+                last_err
+            )
+        });
+        let miners: ExchangeMinersListResponse = response
+            .json()
+            .await
+            .unwrap_or_else(|e| panic!("Failed to parse exchange miners response: {:?}", e));
+
+        miners.exchanges
+    }
+}
+
+impl Deref for DynamicMemoryConfig {
+    type Target = AppInMemoryConfig;
+    fn deref(&self) -> &Self::Target {
+        &self.in_memory_config
     }
 }
