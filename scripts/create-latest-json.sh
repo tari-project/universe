@@ -226,6 +226,8 @@ check_if_file_exists_and_move "$BASE_DIR/darwin-aarch64/dmg" "*.dmg"
 check_if_file_exists_and_move "$BASE_DIR/windows-exe" "*en-US.exe"
 check_if_file_exists_and_move "$BASE_DIR/ubuntu-x64-rpm" "*.rpm"
 check_if_file_exists_and_move "$BASE_DIR/ubuntu-arm-rpm" "*.rpm"
+check_if_file_exists_and_move "$BASE_DIR/linux-x86_64/deb" "*.deb"
+check_if_file_exists_and_move "$BASE_DIR/linux-aarch64/deb" "*.deb"
 
 # # get file from $BASE_DIR/macos-latest/dmg add its name to variable and move to root
 # # Check if the directory exists
