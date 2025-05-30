@@ -162,7 +162,7 @@
     "title": "Tari-Universum automatisch aktualisieren"
   },
   "use-dynamic-fail-data": "Dynamische Fehlerdaten verwenden",
-  "use-p2p": "Use P2pool",
+  "use-p2p": "P2pool verwenden",
   "use-random-control-port": "Zufälligen Steuerport verwenden",
   "use-random-port": "Zufälligen Port verwenden",
   "use-tor": "Tor verwenden",

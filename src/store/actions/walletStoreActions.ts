@@ -30,7 +30,7 @@ export const fetchTransactionsHistory = async ({ offset = 0, limit }: TxArgs) =>
         });
         return transactions;
     } catch (error) {
-        if (error !== ALREADY_FETCHING.HISTORY) {
+        if (error !== ALREADY_FETCHING.HISTORY && error !== ALREADY_FETCHING.TX_HISTORY) {
             console.error('Could not get transaction history: ', error);
         }
         return [];

@@ -222,10 +222,12 @@ prepare_directory_files "${BASE_DIR}/${ID}_${VERSION}_ubuntu-24.04-arm-rpm" "ubu
 #1eff0ada-8358-4511-99f8-9ec2820aa37e_1.0.10_ubuntu-22.04-x64-rpm
 #1eff0ada-8358-4511-99f8-9ec2820aa37e_1.0.10_ubuntu-24.04-arm-rpm
 
-check_if_file_exists_and_move "$BASE_DIR/macos-latest/dmg" "*.dmg"
+check_if_file_exists_and_move "$BASE_DIR/darwin-aarch64/dmg" "*.dmg"
 check_if_file_exists_and_move "$BASE_DIR/windows-exe" "*en-US.exe"
 check_if_file_exists_and_move "$BASE_DIR/ubuntu-x64-rpm" "*.rpm"
 check_if_file_exists_and_move "$BASE_DIR/ubuntu-arm-rpm" "*.rpm"
+check_if_file_exists_and_move "$BASE_DIR/linux-x86_64/deb" "*.deb"
+check_if_file_exists_and_move "$BASE_DIR/linux-aarch64/deb" "*.deb"
 
 # # get file from $BASE_DIR/macos-latest/dmg add its name to variable and move to root
 # # Check if the directory exists

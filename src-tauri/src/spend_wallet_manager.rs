@@ -27,6 +27,7 @@ use crate::spend_wallet_adapter::SpendWalletAdapter;
 use crate::tasks_tracker::TasksTrackers;
 use crate::wallet_manager::WalletManager;
 use crate::BaseNodeStatus;
+use crate::UniverseAppState;
 use anyhow::Error;
 use log::{debug, info};
 use std::path::PathBuf;
@@ -116,6 +117,7 @@ impl SpendWalletManager {
         destination: String,
         payment_id: Option<String>,
         view_wallet_manager: &WalletManager,
+        state: tauri::State<'_, UniverseAppState>,
     ) -> Result<(), Error> {
         self.node_manager.wait_ready().await?;
         let (public_key, public_address) = self.node_manager.get_connection_details().await?;
@@ -128,7 +130,7 @@ impl SpendWalletManager {
 
         let res = self
             .adapter
-            .send_one_sided_to_stealth_address(amount, destination, payment_id, view_wallet_manager)
+            .send_one_sided_to_stealth_address(amount, destination, payment_id, view_wallet_manager, state)
             .await;
 
         let node_status = *self.base_node_status_rx.borrow();

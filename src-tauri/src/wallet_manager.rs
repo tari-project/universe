@@ -29,7 +29,7 @@ use crate::tasks_tracker::TasksTrackers;
 use crate::wallet_adapter::WalletStatusMonitorError;
 use crate::wallet_adapter::{TransactionInfo, WalletBalance};
 use crate::wallet_adapter::{WalletAdapter, WalletState};
-use crate::BaseNodeStatus;
+use crate::{BaseNodeStatus, UniverseAppState};
 use futures_util::future::FusedFuture;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::AtomicBool;
@@ -37,7 +37,6 @@ use std::sync::Arc;
 use std::time::Duration;
 use tari_common::configuration::Network;
 use tari_shutdown::ShutdownSignal;
-use tauri::AppHandle;
 use tokio::fs;
 use tokio::sync::watch;
 use tokio::sync::RwLock;
@@ -94,6 +93,7 @@ impl WalletManager {
         log_path: PathBuf,
         use_tor: bool,
         connect_with_local_node: bool,
+        state: tauri::State<'_, UniverseAppState>,
     ) -> Result<(), WalletManagerError> {
         let shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
         let task_tracker = TasksTrackers::current()
@@ -118,8 +118,10 @@ impl WalletManager {
         process_watcher
             .adapter
             .connect_with_local_node(connect_with_local_node);
-        process_watcher.adapter.wallet_birthday =
-            self.get_wallet_birthday(config_path.clone()).await.ok();
+        process_watcher.adapter.wallet_birthday = self
+            .get_wallet_birthday(config_path.clone(), state)
+            .await
+            .ok();
 
         process_watcher
             .start(
@@ -154,8 +156,12 @@ impl WalletManager {
             .load(std::sync::atomic::Ordering::Relaxed)
     }
 
-    pub async fn get_wallet_birthday(&self, config_path: PathBuf) -> Result<u16, anyhow::Error> {
-        let internal_wallet = InternalWallet::load_or_create(config_path).await?;
+    pub async fn get_wallet_birthday(
+        &self,
+        config_path: PathBuf,
+        state: tauri::State<'_, UniverseAppState>,
+    ) -> Result<u16, anyhow::Error> {
+        let internal_wallet = InternalWallet::load_or_create(config_path, state).await?;
         internal_wallet.get_birthday().await
     }
 
@@ -266,7 +272,6 @@ impl WalletManager {
     #[allow(clippy::too_many_lines)]
     pub async fn wait_for_initial_wallet_scan(
         &self,
-        app: &AppHandle,
         node_status_watch_rx: watch::Receiver<BaseNodeStatus>,
     ) -> Result<(), WalletManagerError> {
         if self.is_initial_scan_completed() {
@@ -279,7 +284,6 @@ impl WalletManager {
             return Err(WalletManagerError::WalletNotStarted);
         }
         let wallet_state_receiver = process_watcher.adapter.state_broadcast.subscribe();
-        let app_clone = app.clone();
         drop(process_watcher);
 
         let node_status_watch_rx_progress = node_status_watch_rx.clone();
@@ -316,7 +320,6 @@ impl WalletManager {
                         if scanned_height > 0 && progress < 100.0 {
                             log::info!(target: LOG_TARGET, "Initial wallet scanning: {}% ({}/{})", progress, scanned_height, current_target_height);
                             EventsEmitter::emit_init_wallet_scanning_progress(
-                                &app_clone,
                                 scanned_height,
                                 current_target_height,
                                 progress,
@@ -327,7 +330,6 @@ impl WalletManager {
             }
         });
 
-        let app_clone2 = app.clone();
         let wallet_manager = self.clone();
         let mut node_status_watch_rx_scan = node_status_watch_rx.clone();
 
@@ -372,9 +374,8 @@ impl WalletManager {
                                         latest_height,
                                         balance.available_balance
                                     );
-                                    EventsEmitter::emit_wallet_balance_update(&app_clone2, balance).await;
+                                    EventsEmitter::emit_wallet_balance_update(balance).await;
                                     EventsEmitter::emit_init_wallet_scanning_progress(
-                                        &app_clone2,
                                         current_target_height,
                                         current_target_height,
                                         100.0,

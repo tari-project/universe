@@ -25,6 +25,7 @@
 
 use commands::CpuMinerStatus;
 use cpu_miner::CpuMinerConfig;
+use events_emitter::EventsEmitter;
 use events_manager::EventsManager;
 use gpu_miner_adapter::GpuMinerStatus;
 use log::{error, info, warn};
@@ -68,7 +69,7 @@ use tokio::sync::{Mutex, RwLock};
 use tokio::time;
 use utils::logging_utils::setup_logging;
 
-use app_in_memory_config::AppInMemoryConfig;
+use app_in_memory_config::DynamicMemoryConfig;
 #[cfg(all(feature = "exchange-ci", not(feature = "release-ci")))]
 use app_in_memory_config::EXCHANGE_ID;
 
@@ -153,6 +154,11 @@ mod xmrig_adapter;
 
 const LOG_TARGET: &str = "tari::universe::main";
 const RESTART_EXIT_CODE: i32 = i32::MAX;
+const IGNORED_SENTRY_ERRORS: [&str; 2] = [
+    "Failed to initialize gtk backend",
+    "SIGABRT / SI_TKILL / 0x0",
+];
+
 #[cfg(not(any(
     feature = "release-ci",
     feature = "release-ci-beta",
@@ -178,7 +184,7 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
         let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
 
         let init_node_status = *node_status_watch_rx.borrow();
-        let _ = EventsManager::handle_base_node_update(&move_app, init_node_status).await;
+        EventsEmitter::emit_base_node_update(init_node_status).await;
 
         let mut latest_updated_block_height = init_node_status.block_height;
         loop {
@@ -194,7 +200,7 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
                         }
                     }
                     if node_status.block_height > latest_updated_block_height && !initial_sync_finished {
-                        let _ = EventsManager::handle_base_node_update(&move_app, node_status).await;
+                        EventsEmitter::emit_base_node_update(node_status).await;
                         latest_updated_block_height = node_status.block_height;
                     }
                 },
@@ -219,7 +225,7 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
                         .node_manager
                         .list_connected_peers()
                         .await {
-                            let _ = EventsManager::handle_connected_peers_update(&move_app, connected_peers).await;
+                            EventsEmitter::emit_connected_peers_update(connected_peers.clone()).await;
                         } else {
                             let err_msg = "Error getting connected peers";
                             error!(target: LOG_TARGET, "{}", err_msg);
@@ -249,7 +255,7 @@ struct UniverseAppState {
     is_getting_p2pool_connections: Arc<AtomicBool>,
     is_getting_transactions_history: Arc<AtomicBool>,
     is_getting_coinbase_history: Arc<AtomicBool>,
-    in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
+    in_memory_config: Arc<RwLock<DynamicMemoryConfig>>,
     tari_address: Arc<RwLock<TariAddress>>,
     cpu_miner: Arc<RwLock<CpuMiner>>,
     gpu_miner: Arc<RwLock<GpuMiner>>,
@@ -300,6 +306,15 @@ fn main() {
         sentry::ClientOptions {
             release: sentry::release_name!(),
             attach_stacktrace: true,
+            before_send: Some(Arc::new(|event| {
+                if event.logentry.as_ref().map_or(false, |entry| {
+                    IGNORED_SENTRY_ERRORS.iter().any(|ignored| entry.message.starts_with(ignored))
+                }) {
+                    None
+                } else {
+                    Some(event)
+                }
+            })),
             ..Default::default()
         },
     ));
@@ -357,8 +372,8 @@ fn main() {
         pool_status_url: None,
     }));
 
-    let app_in_memory_config =
-        Arc::new(RwLock::new(app_in_memory_config::AppInMemoryConfig::init()));
+    let dynamic_memory_config = block_on(async { DynamicMemoryConfig::init().await });
+    let app_in_memory_config = Arc::new(RwLock::new(dynamic_memory_config));
 
     let cpu_miner: Arc<RwLock<CpuMiner>> = Arc::new(
         CpuMiner::new(
@@ -600,6 +615,8 @@ fn main() {
             commands::set_monerod_config,
             commands::set_tari_address,
             commands::confirm_exchange_address,
+            commands::user_selected_exchange,
+            commands::is_universal_miner,
             commands::set_p2pool_enabled,
             commands::set_show_experimental_settings,
             commands::set_should_always_use_system_language,

@@ -51,7 +51,7 @@ export const useProgressEventsListener = () => {
         if (LOG_EVENT_TYPES.includes(newEvent.event_type)) {
             const isEqual = deepEqual(eventRef.current, newEvent);
             if (!isEqual) {
-                console.info('Received event', newEvent);
+                console.info(newEvent.event_type, newEvent.payload);
                 eventRef.current = newEvent;
             }
         }
