@@ -33,6 +33,7 @@ import { SuccessAnimation } from './SuccessAnimation/SuccessAnimation';
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import coins_increase_url from './lotties/Coins_Progress_Lottie.json?url';
 import { setAnimationState } from '@tari-project/tari-tower';
+import i18n from 'i18next';
 
 const variants = {
     hidden: {
@@ -63,20 +64,30 @@ export const PoolStatsTile = () => {
     const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
 
     const [unpaid, setUnpaid] = useState(pool_status?.unpaid || 0);
-    const [prevUnpaid, setPrevUnpaid] = useState(unpaid);
+    const fmtMatch = (value: number) =>
+        Intl.NumberFormat(i18n.language, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 4,
+            notation: 'standard',
+            style: 'decimal',
+        }).format(value);
+    const [unpaidFMT, setUnpaidFTM] = useState(fmtMatch(unpaid));
+    const [prevUnpaid, setPrevUnpaid] = useState(unpaidFMT);
 
     useEffect(() => {
         setUnpaid(pool_status?.unpaid || 0);
+        setUnpaidFTM(fmtMatch(pool_status?.unpaid || 0));
     }, [pool_status?.unpaid]);
 
     useEffect(() => {
-        if (unpaid > prevUnpaid) {
+        if (unpaidFMT > prevUnpaid) {
             setShowIncreaseAnimation(true);
             const timer = setTimeout(() => setShowIncreaseAnimation(false), 5000);
             return () => clearTimeout(timer);
         }
-        setPrevUnpaid(unpaid);
-    }, [unpaid, prevUnpaid]);
+        setPrevUnpaid(unpaidFMT);
+    }, [unpaidFMT, prevUnpaid]);
+
     useEffect(() => {
         const isSuccessAmount = unpaid >= 2 * 1_000_000;
         if (isSuccessAmount) {

@@ -151,14 +151,6 @@ export const BalanceVal = styled(Typography)`
     letter-spacing: -0.4px;
 `;
 
-export const TotalVal = styled(Typography)`
-    font-size: 10px;
-    font-weight: 500;
-    color: ${({ theme }) => theme.palette.text.secondary};
-    vertical-align: bottom;
-    letter-spacing: -0.4px;
-`;
-
 export const TriggerWrapper = styled(m.div)`
     width: 14px;
     height: 14px;
