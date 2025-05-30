@@ -416,7 +416,7 @@ async fn do_health_check<TStatusMonitor: StatusMonitor, TProcessInstance: Proces
                 }
                 Err(e) => warn!(target: LOG_TARGET, "Error stopping unhealthy process '{}': {:?}. Attempting restart regardless.", name, e),
             }
-
+    
             if let Err(e) = status_monitor.handle_unhealthy().await {
                 error!(target: LOG_TARGET, "Failed to handle unhealthy status for '{}': {}. Proceeding with restart attempt.", name, e);
             }
@@ -424,12 +424,15 @@ async fn do_health_check<TStatusMonitor: StatusMonitor, TProcessInstance: Proces
             // Runtime Restart Loop
             let mut runtime_restart_attempts = 0;
             loop {
-                if global_shutdown_signal.is_triggered() || inner_shutdown.is_triggered() {
+                if global_shutdown_signal.is_triggered() 
+                    || inner_shutdown.is_triggered() 
+                    || child.is_shutdown_triggered() {
                     info!(target: LOG_TARGET, "Shutdown triggered during runtime restart of '{}'.", name);
                     return Ok(Some(0));
                 }
-
+    
                 runtime_restart_attempts += 1;
+
                 info!(target: LOG_TARGET, "Restarting '{}' (Runtime attempt {}/{})", name, runtime_restart_attempts, max_runtime_restart_attempts);
                 EventsManager::emit_binary_runtime_restart_attempt(app_handle, name.to_string(), runtime_restart_attempts, max_runtime_restart_attempts).await;
                 stats.num_restarts += 1;
