@@ -28,6 +28,8 @@ use crate::tasks_tracker::TasksTrackers;
 #[cfg(target_os = "windows")]
 use crate::external_dependencies::ExternalDependencies;
 
+use crate::events::CriticalProblemPayload;
+use crate::events_emitter::EventsEmitter;
 #[cfg(not(target_os = "linux"))]
 use crate::events_manager::EventsManager;
 #[cfg(not(target_os = "linux"))]
@@ -80,23 +82,20 @@ impl PlatformUtils {
             }
             CurrentOperatingSystem::MacOS => {
                 #[cfg(target_os = "macos")]
-                PlatformUtils::initialize_macos_preqesities(app_handle).await?;
+                PlatformUtils::initialize_macos_preqesities().await?;
                 Ok(())
             }
         }
     }
 
     #[cfg(target_os = "macos")]
-    async fn initialize_macos_preqesities(
-        app_handle: tauri::AppHandle,
-    ) -> Result<(), anyhow::Error> {
+    async fn initialize_macos_preqesities() -> Result<(), anyhow::Error> {
         if !cfg!(dev) && !is_app_in_applications_folder() {
-            EventsManager::handle_critical_problem(
-                &app_handle,
-                Some("common:installation-problem".to_string()),
-                Some("common:not-installed-in-applications-directory".to_string()),
-                None,
-            )
+            EventsEmitter::emit_critical_problem(CriticalProblemPayload {
+                title: Some("common:installation-problem".to_string()),
+                description: Some("common:not-installed-in-applications-directory".to_string()),
+                error_message: None,
+            })
             .await;
             TasksTrackers::current().stop_all_processes().await;
             return Err(anyhow!(
