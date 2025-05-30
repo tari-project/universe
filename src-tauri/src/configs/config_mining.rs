@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::{events_manager::EventsManager, gpu_miner::EngineType, UniverseAppState};
+use crate::{events_emitter::EventsEmitter, gpu_miner::EngineType, UniverseAppState};
 use std::{sync::LazyLock, time::SystemTime};
 
 use getset::{Getters, Setters};
@@ -152,7 +152,7 @@ impl ConfigMining {
         cpu_config.load_from_config_mining(config._get_content());
         drop(cpu_config);
 
-        EventsManager::handle_config_mining_loaded(&app_handle, config.content.clone()).await;
+        EventsEmitter::emit_mining_config_loaded(config.content.clone()).await;
     }
 }
 
