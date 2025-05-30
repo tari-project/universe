@@ -27,6 +27,7 @@ use crate::tasks_tracker::TasksTrackers;
 
 #[cfg(target_os = "macos")]
 use crate::events::CriticalProblemPayload;
+#[cfg(target_os = "macos")]
 use crate::events_emitter::EventsEmitter;
 #[cfg(target_os = "windows")]
 use crate::events_manager::EventsManager;
