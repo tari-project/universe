@@ -26,7 +26,7 @@ use crate::app_in_memory_config::AppInMemoryConfig;
 use crate::events::{
     AppInMemoryConfigChangedPayload, ConnectionStatusPayload, CriticalProblemPayload,
     DisabledPhasesPayload, InitWalletScanningProgressPayload,
-    IsUniversalMinerInitializedChangedPayload,
+    UniversalMinerInitializedExchangeIdChangedPayload,
 };
 #[cfg(target_os = "windows")]
 use crate::external_dependencies::RequiredExternalDependency;
@@ -772,21 +772,21 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_is_universal_miner_initialized_changed(
-        is_universal_miner_initialized: String,
+    pub async fn emit_universal_miner_initialized_exchange_id_changed(
+        universal_miner_initialized_exchange_id: String,
     ) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
-            event_type: EventType::IsUniversalMinerInitializedChanged,
-            payload: IsUniversalMinerInitializedChangedPayload {
-                is_universal_miner_initialized,
+            event_type: EventType::UniversalMinerInitializedExchangeIdChanged,
+            payload: UniversalMinerInitializedExchangeIdChangedPayload {
+                universal_miner_initialized_exchange_id: universal_miner_initialized_exchange_id,
             },
         };
         if let Err(e) = Self::get_app_handle()
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit IsUniversalMinerInitialized event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit UniversalMinerInitializedExchangeIdChanged event: {:?}", e);
         }
     }
 }

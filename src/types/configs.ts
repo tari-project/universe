@@ -24,7 +24,7 @@ export interface ConfigCore {
     remote_base_node_address: string;
     node_type?: NodeType;
     default_chain: number;
-    is_universal_miner_initialized?: string;
+    universal_miner_initialized_exchange_id?: string;
 }
 export interface ConfigWallet {
     created_at: string;

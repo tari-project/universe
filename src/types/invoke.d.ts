@@ -133,5 +133,5 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'get_tari_wallet_address'): Promise<string>;
     function invoke(param: 'get_tari_wallet_balance'): Promise<WalletBalance>;
     function invoke(param: 'get_bridge_envs'): Promise<BridgeEnvs>;
-    function invoke(param: 'get_is_universal_miner_initialized'): Promise<string | undefiend>;
+    function invoke(param: 'get_universal_miner_initialized_exchange_id'): Promise<string | undefiend>;
 }

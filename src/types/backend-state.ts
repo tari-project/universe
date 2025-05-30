@@ -6,7 +6,7 @@ import {
     CriticalProblemPayload,
     DetectedAvailableGpuEngines,
     DetectedDevicesPayload,
-    IsUniversalMinerInitializedChangedPayload,
+    UniversalMinerInitializedExchangeIdChangedPayload,
     NewBlockHeightPayload,
     NodeTypeUpdatePayload,
     ShowReleaseNotesPayload,
@@ -211,6 +211,6 @@ export type BackendStateUpdateEvent =
           payload: DisabledPhasesPayload;
       }
     | {
-          event_type: 'IsUniversalMinerInitializedChanged';
-          payload: IsUniversalMinerInitializedChangedPayload;
+          event_type: 'UniversalMinerInitializedExchangeIdChanged';
+          payload: UniversalMinerInitializedExchangeIdChangedPayload;
       };

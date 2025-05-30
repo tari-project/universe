@@ -30,7 +30,7 @@ import { ChainId } from '@uniswap/sdk-core';
 
 import {
     AppInMemoryConfigChangedPayload,
-    IsUniversalMinerInitializedChangedPayload,
+    UniversalMinerInitializedExchangeIdChangedPayload,
 } from '@app/types/events-payloads.ts';
 
 interface SetModeProps {
@@ -334,10 +334,9 @@ export const fetchBackendInMemoryConfig = async () => {
         const res = await invoke('get_app_in_memory_config');
         if (res) {
             useConfigBEInMemoryStore.setState({ ...res, isUniversalMiner });
-            const isUniversalMinerInitialized = await invoke('get_is_universal_miner_initialized'); // It has to be a command instead of getter from appConfigStore since store is not initialized yet
-            console.info('[DEBUG] isUniversalMinerInitialized: ', isUniversalMinerInitialized);
-            const isUniversalUninitialized = isUniversalMiner && !isUniversalMinerInitialized;
-            const isUniversalInitialized = isUniversalMiner && isUniversalMinerInitialized;
+            const universalMinerExchangeId = await invoke('get_universal_miner_initialized_exchange_id'); // It has to be a command instead of getter from appConfigStore since store is not initialized yet
+            const isUniversalUninitialized = isUniversalMiner && !universalMinerExchangeId;
+            const isUniversalInitialized = isUniversalMiner && universalMinerExchangeId;
             const isExchangeMode = res.exchangeId && !isUniversalMiner && res.exchangeId !== 'classic';
             if (isUniversalUninitialized) {
                 await fetchExchangeMiners();
@@ -347,7 +346,7 @@ export const fetchBackendInMemoryConfig = async () => {
                 await fetchExchangeContent(res.exchangeId);
             }
             if (isUniversalInitialized) {
-                await fetchExchangeContent(isUniversalMinerInitialized);
+                await fetchExchangeContent(universalMinerExchangeId);
             }
         }
     } catch (e) {
@@ -355,10 +354,13 @@ export const fetchBackendInMemoryConfig = async () => {
     }
 };
 
-export const handleIsUniversalMinerInitializedChanged = (payload: IsUniversalMinerInitializedChangedPayload) => {
-    console.info('[DEBUG] handleIsUniversalMinerInitializedChanged: ', payload);
-    useConfigCoreStore.setState({ is_universal_miner_initialized: payload.is_universal_miner_initialized });
-    if (payload.is_universal_miner_initialized) {
+export const handleUniversalMinerInitializedExchangeIdChanged = (
+    payload: UniversalMinerInitializedExchangeIdChangedPayload
+) => {
+    useConfigCoreStore.setState({
+        universal_miner_initialized_exchange_id: payload.universal_miner_initialized_exchange_id,
+    });
+    if (payload.universal_miner_initialized_exchange_id) {
         setShowUniversalModal(false); // Enforce this flag if there is race condition between this and handleAppInMemoryConfigChanged
     }
 };

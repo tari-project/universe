@@ -546,10 +546,10 @@ pub async fn get_used_p2pool_stats_server_port(
 }
 
 #[tauri::command]
-pub async fn get_is_universal_miner_initialized() -> Result<Option<String>, String> {
+pub async fn get_universal_miner_initialized_exchange_id() -> Result<Option<String>, String> {
     Ok(ConfigCore::content()
         .await
-        .is_universal_miner_initialized()
+        .universal_miner_initialized_exchange_id()
         .clone())
 }
 

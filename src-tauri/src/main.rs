@@ -658,7 +658,7 @@ fn main() {
             commands::get_tari_wallet_address,
             commands::get_tari_wallet_balance,
             commands::get_bridge_envs,
-            commands::get_is_universal_miner_initialized,
+            commands::get_universal_miner_initialized_exchange_id,
         ])
         .build(tauri::generate_context!())
         .inspect_err(
