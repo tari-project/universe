@@ -96,9 +96,9 @@ export const TooltipChip = styled.div`
     flex-direction: column;
     justify-content: space-between;
     border-radius: 10px;
-    padding: 8px 10px;
+    padding: 8px;
     flex-shrink: 1;
-    flex-grow: 1;
+    flex-grow: 2;
     width: 100%;
 `;
 
