@@ -2,6 +2,7 @@ import { ConfigBackendInMemory, ConfigCore, ConfigMining, ConfigUI, ConfigWallet
 import { create } from './create';
 import { ChainId } from '@uniswap/sdk-core';
 
+export const DEFAULT_EXCHANGE_ID = 'classic';
 type UIConfigStoreState = Partial<ConfigUI> & {
     visualModeToggleLoading: boolean;
 };

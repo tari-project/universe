@@ -28,8 +28,6 @@ use crate::tasks_tracker::TasksTrackers;
 #[cfg(target_os = "windows")]
 use crate::external_dependencies::ExternalDependencies;
 
-use crate::events::CriticalProblemPayload;
-use crate::events_emitter::EventsEmitter;
 #[cfg(target_os = "windows")]
 use crate::events_manager::EventsManager;
 #[cfg(not(target_os = "linux"))]
