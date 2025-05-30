@@ -30,13 +30,12 @@ use std::{path::PathBuf, sync::Arc};
 use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::ShutdownSignal;
-use tauri::AppHandle;
 use tokio::select;
 use tokio::sync::{watch, RwLock};
 
 use crate::binaries::{Binaries, BinaryResolver};
 use crate::configs::config_mining::{GpuThreads, MiningMode};
-use crate::events_manager::EventsManager;
+use crate::events_emitter::EventsEmitter;
 use crate::gpu_miner_adapter::GpuNodeSource;
 use crate::gpu_status_file::{GpuDevice, GpuStatusFile};
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
@@ -180,7 +179,6 @@ impl GpuMiner {
 
     pub async fn detect(
         &mut self,
-        app: AppHandle,
         config_dir: PathBuf,
         engine: EngineType,
     ) -> Result<(), anyhow::Error> {
@@ -227,8 +225,7 @@ impl GpuMiner {
         match output.status.code() {
             Some(0) => {
                 self.is_available = true;
-                EventsManager::handle_detected_available_gpu_engines(
-                    &app,
+                EventsEmitter::emit_detected_available_gpu_engines(
                     self.get_available_gpu_engines(config_dir)
                         .await?
                         .iter()
@@ -238,7 +235,7 @@ impl GpuMiner {
                 )
                 .await;
 
-                EventsManager::handle_detected_devices(&app, self.gpu_devices.clone()).await;
+                EventsEmitter::emit_detected_devices(self.gpu_devices.clone()).await;
                 Ok(())
             }
             _ => {
@@ -365,7 +362,6 @@ impl GpuMiner {
         &mut self,
         engine: EngineType,
         config_dir: PathBuf,
-        app: AppHandle,
     ) -> Result<(), anyhow::Error> {
         self.curent_selected_engine = engine.clone();
         let mut process_watcher = self.watcher.write().await;
@@ -378,7 +374,7 @@ impl GpuMiner {
 
         self.gpu_devices = gpu_settings.gpu_devices;
 
-        EventsManager::handle_detected_devices(&app, self.gpu_devices.clone()).await;
+        EventsEmitter::emit_detected_devices(self.gpu_devices.clone()).await;
 
         Ok(())
     }

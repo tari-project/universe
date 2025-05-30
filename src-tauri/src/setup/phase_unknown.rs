@@ -23,7 +23,8 @@
 use crate::{
     binaries::{Binaries, BinaryResolver},
     configs::{config_core::ConfigCore, config_mining::ConfigMining, trait_config::ConfigImpl},
-    events_manager::EventsManager,
+    events::CriticalProblemPayload,
+    events_emitter::EventsEmitter,
     p2pool_manager::P2poolConfig,
     progress_tracker_old::ProgressTracker,
     progress_trackers::{
@@ -153,8 +154,11 @@ impl SetupPhaseImpl for UnknownSetupPhase {
                         error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Unknown);
                         let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::Unknown);
                         sentry::capture_message(&error_message, sentry::Level::Error);
-                        EventsManager::handle_critical_problem(&self.app_handle, Some(SetupPhase::Unknown.get_critical_problem_title()), Some(SetupPhase::Unknown.get_critical_problem_description()),Some(error_message))
-                        .await;
+                        EventsEmitter::emit_critical_problem(CriticalProblemPayload {
+                            title: Some(SetupPhase::Unknown.get_critical_problem_title()),
+                            description: Some(SetupPhase::Unknown.get_critical_problem_description()),
+                            error_message: Some(error_message),
+                        }).await;
                     }
                 }
                 result = self.setup_inner() => {
@@ -167,9 +171,11 @@ impl SetupPhaseImpl for UnknownSetupPhase {
                             error!(target: LOG_TARGET, "[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Unknown,error);
                             let error_message = format!("[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Unknown,error);
                             sentry::capture_message(&error_message, sentry::Level::Error);
-                            EventsManager
-                                ::handle_critical_problem(&self.app_handle, Some(SetupPhase::Unknown.get_critical_problem_title()), Some(SetupPhase::Unknown.get_critical_problem_description()),Some(error_message))
-                                .await;
+                            EventsEmitter::emit_critical_problem(CriticalProblemPayload {
+                                title: Some(SetupPhase::Unknown.get_critical_problem_title()),
+                                description: Some(SetupPhase::Unknown.get_critical_problem_description()),
+                                error_message: Some(error_message),
+                            }).await;
                         }
                     }
                 }
@@ -297,7 +303,7 @@ impl SetupPhaseImpl for UnknownSetupPhase {
             .resolve_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::Done))
             .await;
 
-        EventsManager::handle_unknown_phase_finished(&self.app_handle, true).await;
+        EventsEmitter::emit_unknown_phase_finished(true).await;
 
         Ok(())
     }

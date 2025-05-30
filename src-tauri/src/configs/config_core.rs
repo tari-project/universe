@@ -28,11 +28,9 @@ use tari_common::configuration::Network;
 use tauri::AppHandle;
 use tokio::sync::RwLock;
 
+use crate::events_emitter::EventsEmitter;
 use crate::node::node_manager::NodeType;
-use crate::{
-    ab_test_selector::ABTestSelector, events_manager::EventsManager,
-    internal_wallet::generate_password,
-};
+use crate::{ab_test_selector::ABTestSelector, internal_wallet::generate_password};
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
 
@@ -137,7 +135,7 @@ impl ConfigCore {
         let mut config = Self::current().write().await;
         config.load_app_handle(app_handle.clone()).await;
 
-        EventsManager::handle_config_core_loaded(&app_handle, config.content.clone()).await;
+        EventsEmitter::emit_core_config_loaded(config.content.clone()).await;
     }
 }
 

@@ -30,7 +30,7 @@ use tauri::{AppHandle, Manager};
 
 use log::warn;
 
-use crate::{events_manager::EventsManager, UniverseAppState};
+use crate::{events_emitter::EventsEmitter, UniverseAppState};
 
 use super::progress_plans::{ProgressEvent, ProgressPlans, ProgressStep};
 
@@ -41,7 +41,6 @@ pub struct ChanneledStepUpdate {
     step: ProgressPlans,
     step_percentage: f64,
     next_step_percentage: Option<f64>,
-    app_handle: AppHandle,
 }
 
 impl ChanneledStepUpdate {
@@ -53,8 +52,7 @@ impl ChanneledStepUpdate {
                 - self.step_percentage)
                 * current_step_percentage;
 
-        EventsManager::handle_progress_tracker_update(
-            &self.app_handle,
+        EventsEmitter::emit_progress_tracker_update(
             self.step.get_event_type(),
             self.step.get_phase_title(),
             self.step.get_title(),
@@ -81,8 +79,7 @@ impl ProgressStepper {
 
             let is_completed = self.plan.is_empty();
 
-            EventsManager::handle_progress_tracker_update(
-                &self.app_handle,
+            EventsEmitter::emit_progress_tracker_update(
                 event.get_event_type(),
                 resolved_step.get_phase_title(),
                 event.get_title(),
@@ -131,7 +128,6 @@ impl ProgressStepper {
                         step: resolved_step.clone(),
                         step_percentage: resolved_percentage,
                         next_step_percentage,
-                        app_handle: self.app_handle.clone(),
                     };
 
                     return Some(channel_step_update);
@@ -140,7 +136,6 @@ impl ProgressStepper {
                 let channel_step_update = ChanneledStepUpdate {
                     step: resolved_step.clone(),
                     step_percentage: resolved_percentage,
-                    app_handle: self.app_handle.clone(),
                     next_step_percentage: None,
                 };
 
