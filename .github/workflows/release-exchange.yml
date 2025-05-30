@@ -475,10 +475,10 @@ jobs:
         with:
           pattern: '${{ matrix.exchange.id }}*'
 
-      # - name: Delete artifacts
-      #   uses: geekyeggo/delete-artifact@v5
-      #   with:
-      #     name: '${{ matrix.exchange.id }}*'
+      - name: Delete artifacts
+        uses: geekyeggo/delete-artifact@v5
+        with:
+          name: '${{ matrix.exchange.id }}*'
 
       - name: Log downloaded artifact
         shell: bash
