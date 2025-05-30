@@ -26,8 +26,6 @@ use cfspeedtest::speedtest::{test_download, test_latency, test_upload};
 use cfspeedtest::OutputFormat;
 use log::error;
 use log::info;
-use tauri::AppHandle;
-use tauri_plugin_sentry::sentry;
 use tokio::sync::watch::{Receiver, Sender};
 use tokio::task::spawn_blocking;
 
