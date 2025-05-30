@@ -1,5 +1,6 @@
 {
   "any_moment_now": "今すぐにでも",
+  "awaiting-exchange-selection": "Awaiting user exchange selection",
   "block-sync": "ブロックを同期中",
   "calculating_time": "残り時間を計算中...",
   "header-sync": "ヘッダーを同期中",

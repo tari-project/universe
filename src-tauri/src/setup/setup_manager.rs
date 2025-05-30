@@ -25,13 +25,14 @@ use super::{
     phase_unknown::UnknownSetupPhase, phase_wallet::WalletSetupPhase,
     trait_setup_phase::SetupPhaseImpl, utils::phase_builder::PhaseBuilder,
 };
+use crate::app_in_memory_config::EXCHANGE_ID;
 use crate::{
-    app_in_memory_config::{DEFAULT_EXCHANGE_ID, EXCHANGE_ID},
+    app_in_memory_config::{DynamicMemoryConfig, ExchangeMiner, DEFAULT_EXCHANGE_ID},
     configs::{
         config_core::ConfigCore, config_mining::ConfigMining, config_ui::ConfigUI,
         config_wallet::ConfigWallet, trait_config::ConfigImpl,
     },
-    events::{ConnectionStatusPayload, ProgressEvents},
+    events::ConnectionStatusPayload,
     events_manager::EventsManager,
     initialize_frontend_updates,
     internal_wallet::InternalWallet,
@@ -218,6 +219,7 @@ pub struct SetupManager {
     wallet_phase_status: Sender<PhaseStatus>,
     unknown_phase_status: Sender<PhaseStatus>,
     exchange_modal_status: Sender<ExchangeModalStatus>,
+    universal_modal_status: Sender<ExchangeMiner>,
     is_app_unlocked: Mutex<bool>,
     is_wallet_unlocked: Mutex<bool>,
     is_cpu_mining_unlocked: Mutex<bool>,
@@ -316,12 +318,17 @@ impl SetupManager {
             .path()
             .app_config_dir()
             .expect("Could not get config dir");
-        let internal_wallet = InternalWallet::load_or_create(config_path)
+        let internal_wallet = InternalWallet::load_or_create(config_path, state)
             .await
             .expect("Could not load or create internal wallet");
         let is_address_generated = internal_wallet.get_is_tari_address_generated();
         let is_on_exchange_miner_build =
             in_memory_config.read().await.exchange_id != DEFAULT_EXCHANGE_ID;
+
+        if is_on_exchange_miner_build {
+            EventsManager::handle_disabled_phases_changed(&app_handle, vec![SetupPhase::Wallet])
+                .await;
+        }
 
         if is_on_exchange_miner_build && is_address_generated {
             self.exchange_modal_status
@@ -404,17 +411,6 @@ impl SetupManager {
         let in_memory_config = state.in_memory_config.clone();
         if in_memory_config.read().await.exchange_id != DEFAULT_EXCHANGE_ID {
             self.unlock_wallet(app_handle.clone()).await;
-            EventsManager::handle_progress_tracker_update(
-                &app_handle,
-                ProgressEvents::Wallet,
-                "setup-wallet".to_string(),
-                "setup-wallet".to_string(),
-                60.0,
-                None,
-                true, // just enforce is_completed true
-            )
-            .await;
-
             return;
         }
         let wallet_phase_setup = PhaseBuilder::new()
@@ -502,6 +498,7 @@ impl SetupManager {
                         && is_hardware_phase_succeeded
                         && is_node_phase_succeeded
                         && is_unknown_phase_succeeded
+                        && is_exchange_modal_completed
                         && !is_app_unlocked
                         && setup_features.is_feature_disabled(SetupFeature::CentralizedPool)
                         && setup_features.is_feature_disabled(SetupFeature::ExchangeMiner)
@@ -894,6 +891,7 @@ impl SetupManager {
     }
 
     pub async fn start_setup(&self, app_handle: AppHandle) {
+        self.await_selected_exchange_miner(app_handle.clone()).await;
         self.pre_setup(app_handle.clone()).await;
         let _unused = self.resolve_setup_features()
             .await
@@ -907,6 +905,35 @@ impl SetupManager {
         self.setup_node_phase(app_handle.clone()).await;
         self.setup_wallet_phase(app_handle.clone()).await;
         self.setup_unknown_phase(app_handle.clone()).await;
+    }
+
+    async fn await_selected_exchange_miner(&self, app_handle: AppHandle) {
+        let state = app_handle.state::<UniverseAppState>();
+        let memory_config = state.in_memory_config.read().await;
+        if !memory_config.is_universal_miner() {
+            return;
+        }
+        drop(memory_config);
+        let _unused = self.universal_modal_status.subscribe().changed().await;
+    }
+
+    pub async fn select_exchange_miner(
+        &self,
+        selected_miner: ExchangeMiner,
+        app_handle: AppHandle,
+    ) -> Result<(), String> {
+        let state = app_handle.state::<UniverseAppState>();
+        let mut config = state.in_memory_config.write().await;
+        let new_config = DynamicMemoryConfig::init_universal(&selected_miner);
+        let new_config_cloned = new_config.clone();
+        *config = new_config;
+
+        EventsManager::handle_app_in_memory_config_changed(&app_handle, new_config_cloned, true)
+            .await;
+        self.universal_modal_status
+            .send(selected_miner.clone())
+            .map_err(|e| e.to_string())?;
+        Ok(())
     }
 
     pub async fn handle_switch_to_local_node(&self) {

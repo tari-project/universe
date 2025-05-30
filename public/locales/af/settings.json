@@ -67,7 +67,7 @@
   },
   "miners": "Mynwerkers",
   "mining-toggle-warning": "Mynbou sal gepauseer word terwyl die veranderinge in werking tree.",
-  "minotari-node": "Minotari Node",
+  "minotari-node": "Minotari Knoop",
   "monero-address": {
     "placeholder": "Voer Monero-adres in",
     "title": "Monero-adres"
@@ -136,7 +136,7 @@
   "stable-version-note": "Deur die voorafvrystelling weergawe van die toepassing af te skakel, sal jy terugkeer na die stabiele weergawe, wat betroubaarheid en konsekwentheid prioritiseer. Jy mag dalk die nuutste kenmerke en verbeterings mis.",
   "stats-server-port": "Statistieke bedienerpoort",
   "tabs": {
-    "airdrop": "Airdrop",
+    "airdrop": "Lugstorting",
     "connections": "Verbindings",
     "experimental": "Eksperimenteel",
     "general": "Algemeen",
@@ -160,7 +160,7 @@
     "title": "Werk Tari Universe outomaties op"
   },
   "use-dynamic-fail-data": "Gebruik dinamiese mislukdata",
-  "use-p2p": "Use P2pool",
+  "use-p2p": "Gebruik P2pool",
   "use-random-control-port": "Gebruik ewekansige beheerpoort",
   "use-random-port": "Gebruik ewekansige poort",
   "use-tor": "Gebruik Tor",

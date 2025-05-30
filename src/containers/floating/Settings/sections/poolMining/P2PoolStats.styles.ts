@@ -32,7 +32,7 @@ export const TableRow = styled.div<{ $isHeadingRow?: boolean; $altBg?: boolean; 
     display: grid;
     width: 100%;
     gap: 2px;
-    grid-template-columns: 0.8fr 6fr repeat(3, 5fr);
+    grid-template-columns: 0.8fr 6fr repeat(2, 5fr);
     justify-content: center;
     background-color: ${({ $altBg }) => ($altBg ? 'rgba(0, 0, 0, 0.02)' : 'none')};
     height: min-content;

@@ -1,5 +1,6 @@
 {
   "any_moment_now": "随时",
+  "awaiting-exchange-selection": "Awaiting user exchange selection",
   "block-sync": "同步区块",
   "calculating_time": "计算剩余时间...",
   "header-sync": "同步头部",

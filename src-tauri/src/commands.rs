@@ -21,7 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::app_in_memory_config::{
-    get_der_encode_pub_key, get_websocket_key, AirdropInMemoryConfig,
+    get_der_encode_pub_key, get_websocket_key, AirdropInMemoryConfig, ExchangeMiner,
 };
 use crate::auto_launcher::AutoLauncher;
 use crate::binaries::{Binaries, BinaryResolver};
@@ -197,6 +197,22 @@ pub async fn close_splashscreen(app: tauri::AppHandle) {
         splashscreen_window.close().expect("could not close");
         main_window.show().expect("could not show");
     }
+}
+
+#[tauri::command]
+pub async fn is_universal_miner(state: tauri::State<'_, UniverseAppState>) -> Result<bool, String> {
+    Ok(state.in_memory_config.read().await.is_universal_miner())
+}
+
+#[tauri::command]
+pub async fn user_selected_exchange(
+    app_handle: tauri::AppHandle,
+    exchange_miner: ExchangeMiner,
+) -> Result<(), String> {
+    SetupManager::get_instance()
+        .select_exchange_miner(exchange_miner, app_handle.clone())
+        .await?;
+    Ok(())
 }
 
 #[tauri::command]
@@ -545,7 +561,7 @@ pub async fn get_paper_wallet_details(
         .clone()
         .and_then(|state| state.balance);
 
-    let internal_wallet = InternalWallet::load_or_create(config_path)
+    let internal_wallet = InternalWallet::load_or_create(config_path, state)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -570,7 +586,8 @@ pub async fn get_seed_words(app: tauri::AppHandle) -> Result<Vec<String>, String
         .path()
         .app_config_dir()
         .expect("Could not get config dir");
-    let internal_wallet = InternalWallet::load_or_create(config_path)
+    let state = app.state::<UniverseAppState>();
+    let internal_wallet = InternalWallet::load_or_create(config_path, state)
         .await
         .map_err(|e| e.to_string())?;
     let seed_words = internal_wallet
@@ -599,14 +616,18 @@ pub async fn set_tari_address(address: String, app_handle: tauri::AppHandle) -> 
         .path()
         .app_config_dir()
         .expect("Could not get config dir");
-    let mut internal_wallet = InternalWallet::load_or_create(config_path.clone())
+    let state = app_handle.state::<UniverseAppState>();
+    let mut internal_wallet = InternalWallet::load_or_create(config_path.clone(), state)
         .await
         .map_err(|e| e.to_string())?;
     let new_address = internal_wallet
         .set_tari_address(address, config_path)
         .await?;
+    let state = app_handle.state::<UniverseAppState>();
+    let mut tari_adress_guard = state.tari_address.write().await;
+    *tari_adress_guard = new_address.clone();
     EventsEmitter::emit_wallet_address_update(
-        &app_handle,
+        &app_handle.clone(),
         new_address,
         internal_wallet.get_is_tari_address_generated(),
     )
@@ -623,7 +644,7 @@ pub async fn set_tari_address(address: String, app_handle: tauri::AppHandle) -> 
         .await;
 
     SetupManager::get_instance()
-        .restart_phases_from_queue(app_handle)
+        .restart_phases_from_queue(app_handle.clone())
         .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
@@ -642,7 +663,8 @@ pub async fn confirm_exchange_address(
         .path()
         .app_config_dir()
         .expect("Could not get config dir");
-    let mut internal_wallet = InternalWallet::load_or_create(config_path.clone())
+    let state = app.state::<UniverseAppState>();
+    let mut internal_wallet = InternalWallet::load_or_create(config_path.clone(), state)
         .await
         .map_err(|e| e.to_string())?;
     let new_address = internal_wallet
@@ -1477,14 +1499,7 @@ pub async fn start_cpu_mining<'r>(
     let cpu_miner_running = cpu_miner.is_running().await;
     drop(cpu_miner);
     let cpu_miner_config = state.cpu_miner_config.read().await;
-    let config_path = app
-        .path()
-        .app_config_dir()
-        .expect("Could not get config dir");
-    let tari_address = InternalWallet::load_or_create(config_path)
-        .await
-        .map_err(|e| e.to_string())?
-        .get_tari_address();
+    let tari_address = state.tari_address.read().await;
     drop(cpu_miner_config);
 
     if cpu_mining_enabled && !cpu_miner_running {
@@ -1551,16 +1566,7 @@ pub async fn start_gpu_mining<'r>(
         .get_unique_string()
         .await;
 
-    let config_path = app
-        .path()
-        .app_config_dir()
-        .expect("Could not get config dir");
-
-    let tari_address = InternalWallet::load_or_create(config_path)
-        .await
-        .map_err(|e| e.to_string())?
-        .get_tari_address();
-
+    let tari_address = state.tari_address.read().await;
     let gpu_miner = state.gpu_miner.read().await;
     let gpu_miner_running = gpu_miner.is_running().await;
     let gpu_available = gpu_miner.is_gpu_mining_available();
@@ -1595,7 +1601,7 @@ pub async fn start_gpu_mining<'r>(
         let mut gpu_miner = state.gpu_miner.write().await;
         let res = gpu_miner
             .start(
-                tari_address,
+                tari_address.clone(),
                 source,
                 app.path()
                     .app_local_data_dir()
@@ -1955,9 +1961,10 @@ pub async fn send_one_sided_to_stealth_address(
 ) -> Result<(), String> {
     let timer = Instant::now();
     info!(target: LOG_TARGET, "[send_one_sided_to_stealth_address] called with args: (amount: {:?}, destination: {:?}, payment_id: {:?})", amount, destination, payment_id);
-    let mut spend_wallet_manager = state.spend_wallet_manager.write().await;
+    let state_clone = state.clone();
+    let mut spend_wallet_manager = state_clone.spend_wallet_manager.write().await;
     spend_wallet_manager
-        .send_one_sided_to_stealth_address(amount, destination, payment_id)
+        .send_one_sided_to_stealth_address(amount, destination, payment_id, state)
         .await
         .map_err(|e| e.to_string())?;
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
