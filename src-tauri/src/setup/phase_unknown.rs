@@ -24,7 +24,6 @@ use crate::{
     binaries::{Binaries, BinaryResolver},
     configs::{config_core::ConfigCore, config_mining::ConfigMining, trait_config::ConfigImpl},
     events_manager::EventsManager,
-    internal_wallet::InternalWallet,
     p2pool_manager::P2poolConfig,
     progress_tracker_old::ProgressTracker,
     progress_trackers::{
@@ -187,14 +186,7 @@ impl SetupPhaseImpl for UnknownSetupPhase {
         let mut progress_stepper = self.progress_stepper.lock().await;
         let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
         let state = self.app_handle.state::<UniverseAppState>();
-        let config_path = self
-            .app_handle
-            .path()
-            .app_config_dir()
-            .expect("Could not get config dir");
-        let tari_address = InternalWallet::load_or_create(config_path)
-            .await?
-            .get_tari_address();
+        let tari_address = state.tari_address.read().await;
         let telemetry_id = state
             .telemetry_manager
             .read()
@@ -281,7 +273,7 @@ impl SetupPhaseImpl for UnknownSetupPhase {
                     base_path: data_dir.clone(),
                     config_path: config_dir.clone(),
                     log_path: log_dir.clone(),
-                    tari_address,
+                    tari_address: tari_address.clone(),
                     coinbase_extra: telemetry_id,
                     p2pool_enabled: self.app_configuration.p2pool_enabled,
                     monero_nodes: self.app_configuration.mmproxy_monero_nodes.clone(),

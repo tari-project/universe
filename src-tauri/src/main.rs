@@ -68,7 +68,7 @@ use tokio::sync::{Mutex, RwLock};
 use tokio::time;
 use utils::logging_utils::setup_logging;
 
-use app_in_memory_config::AppInMemoryConfig;
+use app_in_memory_config::DynamicMemoryConfig;
 #[cfg(all(feature = "exchange-ci", not(feature = "release-ci")))]
 use app_in_memory_config::EXCHANGE_ID;
 
@@ -249,7 +249,7 @@ struct UniverseAppState {
     is_getting_p2pool_connections: Arc<AtomicBool>,
     is_getting_transactions_history: Arc<AtomicBool>,
     is_getting_coinbase_history: Arc<AtomicBool>,
-    in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
+    in_memory_config: Arc<RwLock<DynamicMemoryConfig>>,
     tari_address: Arc<RwLock<TariAddress>>,
     cpu_miner: Arc<RwLock<CpuMiner>>,
     gpu_miner: Arc<RwLock<GpuMiner>>,
@@ -356,8 +356,8 @@ fn main() {
         pool_status_url: None,
     }));
 
-    let app_in_memory_config =
-        Arc::new(RwLock::new(app_in_memory_config::AppInMemoryConfig::init()));
+    let dynamic_memory_config = block_on(async { DynamicMemoryConfig::init().await });
+    let app_in_memory_config = Arc::new(RwLock::new(dynamic_memory_config));
 
     let cpu_miner: Arc<RwLock<CpuMiner>> = Arc::new(
         CpuMiner::new(
@@ -599,6 +599,8 @@ fn main() {
             commands::set_monerod_config,
             commands::set_tari_address,
             commands::confirm_exchange_address,
+            commands::user_selected_exchange,
+            commands::is_universal_miner,
             commands::set_p2pool_enabled,
             commands::set_show_experimental_settings,
             commands::set_should_always_use_system_language,
