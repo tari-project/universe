@@ -43,6 +43,7 @@
     "p2pool": "P2Pool Başlatılıyor",
     "platform-prequisites": "Platform Ön Koşulları Başlatılıyor",
     "run-cpu-benchmark": "CPU Karşılaştırması Çalıştırılıyor",
+    "setup-bridge": "Preparing Bridge",
     "start-tor": "Tor Başlatılıyor",
     "start-wallet": "Cüzdan Başlatılıyor",
     "starting-node": "Minotari Düğümü Başlatılıyor",
