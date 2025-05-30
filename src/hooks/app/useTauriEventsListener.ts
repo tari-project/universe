@@ -51,6 +51,7 @@ import {
     handleConfigMiningLoaded,
     handleConfigUILoaded,
     handleConfigWalletLoaded,
+    handleIsUniversalMinerInitializedChanged,
     handleMiningTimeUpdate,
 } from '@app/store/actions/appConfigStoreActions';
 import { invoke } from '@tauri-apps/api/core';
@@ -217,6 +218,10 @@ const useTauriEventsListener = () => {
                             break;
                         case 'DisabledPhasesChanged':
                             handleUpdateDisabledPhases(event.payload);
+                            break;
+                        case 'IsUniversalMinerInitializedChanged':
+                            console.info('[DEBUG] received event: ', event);
+                            handleIsUniversalMinerInitializedChanged(event.payload);
                             break;
                         default:
                             console.warn('Unknown event', JSON.stringify(event));

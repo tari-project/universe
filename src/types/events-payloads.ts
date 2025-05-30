@@ -75,5 +75,9 @@ export interface AppInMemoryConfigChangedPayload {
     app_in_memory_config: SnakeCaseAppInMemoryConfig;
     is_universal_exchange: boolean;
 }
-
-export type ConnectionStatusPayload = 'InProgress' | 'Succeed' | 'Failed';
+export interface IsUniversalMinerInitializedChangedPayload {
+    is_universal_miner_initialized: boolean;
+}
+export interface ConnectionStatusPayload {
+    status: 'InProgress' | 'Succeed' | 'Failed';
+}

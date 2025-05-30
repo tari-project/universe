@@ -28,7 +28,10 @@ import { NodeType, updateNodeType as updateNodeTypeForNodeStore } from '../useNo
 import { fetchExchangeContent, fetchExchangeMiners, setShowUniversalModal } from '../useExchangeStore.ts';
 import { ChainId } from '@uniswap/sdk-core';
 
-import { AppInMemoryConfigChangedPayload } from '@app/types/events-payloads.ts';
+import {
+    AppInMemoryConfigChangedPayload,
+    IsUniversalMinerInitializedChangedPayload,
+} from '@app/types/events-payloads.ts';
 
 interface SetModeProps {
     mode: modeType;
@@ -331,8 +334,11 @@ export const fetchBackendInMemoryConfig = async () => {
         const res = await invoke('get_app_in_memory_config');
         if (res) {
             useConfigBEInMemoryStore.setState({ ...res, isUniversalMiner });
-            if (isUniversalMiner) {
+            const isUniversalMinerInitialized = await invoke('get_is_universal_miner_initialized'); // It has to be a command instead of getter from appConfigStore since it's not initialized yet
+            console.info('[DEBUG] isUniversalMinerInitialized: ', isUniversalMinerInitialized);
+            if (isUniversalMiner && !isUniversalMinerInitialized) {
                 await fetchExchangeMiners();
+                console.info('[DEBUG] setting setShowUniversalModal to true');
                 setShowUniversalModal(true);
             }
             if (res.exchangeId && !isUniversalMiner && res.exchangeId !== 'classic') {
@@ -341,6 +347,14 @@ export const fetchBackendInMemoryConfig = async () => {
         }
     } catch (e) {
         console.error('Could not fetch backend in memory config', e);
+    }
+};
+
+export const handleIsUniversalMinerInitializedChanged = (payload: IsUniversalMinerInitializedChangedPayload) => {
+    console.info('[DEBUG] handleIsUniversalMinerInitializedChanged: ', payload);
+    useConfigCoreStore.setState({ is_universal_miner_initialized: payload.is_universal_miner_initialized });
+    if (payload.is_universal_miner_initialized) {
+        setShowUniversalModal(false); // Enforce this flag if there is race condition between this and handleAppInMemoryConfigChanged
     }
 };
 

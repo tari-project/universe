@@ -26,6 +26,7 @@ use super::{
     trait_setup_phase::SetupPhaseImpl, utils::phase_builder::PhaseBuilder,
 };
 use crate::app_in_memory_config::EXCHANGE_ID;
+use crate::configs::config_core::ConfigCoreContent;
 use crate::{
     app_in_memory_config::{DynamicMemoryConfig, ExchangeMiner, DEFAULT_EXCHANGE_ID},
     configs::{
@@ -906,11 +907,26 @@ impl SetupManager {
     async fn await_selected_exchange_miner(&self, app_handle: AppHandle) {
         let state = app_handle.state::<UniverseAppState>();
         let memory_config = state.in_memory_config.read().await;
-        if !memory_config.is_universal_miner() {
+        let is_universal_miner_initialized =
+            *ConfigCore::content().await.is_universal_miner_initialized();
+        info!(
+            "[DEBUG] is_universal_miner_initialized: {}",
+            is_universal_miner_initialized
+        );
+        info!(
+            "[DEBUG] is_universal_miner: {}",
+            memory_config.is_universal_miner()
+        );
+        if !memory_config.is_universal_miner() || is_universal_miner_initialized {
+            info!("[DEBUG] Initializing universal miner");
             return;
         }
         drop(memory_config);
         let _unused = self.universal_modal_status.subscribe().changed().await;
+        let _unused =
+            ConfigCore::update_field(ConfigCoreContent::set_is_universal_miner_initialized, true)
+                .await;
+        EventsEmitter::emit_is_universal_miner_initialized_changed(true).await;
     }
 
     pub async fn select_exchange_miner(
