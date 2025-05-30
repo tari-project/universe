@@ -15,6 +15,7 @@
   "randomx-stats": "RandomX 統計",
   "sha3-stats": "SHA3 統計",
   "stats": {
+    "earned": "You earned",
     "tile-heading": "進行中の報酬",
     "tile-loading": "プールが準備中です",
     "tooltip-copy": "報酬は<strong>{{amount}}</strong>の最低額を獲得するまで「進行中」です。しきい値に達すると、進行中の報酬は自動的にTari Universeウォレットに送信されます。到着までさらに2時間かかる場合があります。",
