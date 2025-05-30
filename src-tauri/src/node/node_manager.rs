@@ -107,7 +107,7 @@ impl NodeManager {
         base_node_watch_tx: watch::Sender<BaseNodeStatus>,
         local_node_watch_rx: watch::Receiver<BaseNodeStatus>,
         remote_node_watch_rx: watch::Receiver<BaseNodeStatus>,
-        app_handle: AppHandle, // Add this parameter
+        app_handle: AppHandle,
     ) -> Self {
         let stats_broadcast = stats_collector.take_minotari_node();
         let local_node_watcher: Option<ProcessWatcher<LocalNodeAdapter>> =

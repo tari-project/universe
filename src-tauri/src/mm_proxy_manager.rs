@@ -87,7 +87,7 @@ impl Clone for MmProxyManager {
 impl MmProxyManager {
     pub fn new(
         stats_collector: &mut ProcessStatsCollectorBuilder,
-        app_handle: AppHandle, // Add this parameter
+        app_handle: AppHandle,
     ) -> Self {
         let sidecar_adapter = MergeMiningProxyAdapter::new();
         let mut process_watcher =

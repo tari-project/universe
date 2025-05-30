@@ -53,7 +53,7 @@ impl TorManager {
     pub fn new(
         status_broadcast: watch::Sender<TorStatus>,
         stats_collector: &mut ProcessStatsCollectorBuilder,
-        app_handle: AppHandle, // Add this parameter
+        app_handle: AppHandle,
     ) -> Self {
         let status_watch_rx = status_broadcast.subscribe();
         let adapter = TorAdapter::new(status_broadcast);

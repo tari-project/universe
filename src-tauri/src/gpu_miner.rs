@@ -94,7 +94,7 @@ impl GpuMiner {
         status_broadcast: watch::Sender<GpuMinerStatus>,
         node_status_watch_rx: watch::Receiver<BaseNodeStatus>,
         stats_collector: &mut ProcessStatsCollectorBuilder,
-        app_handle: AppHandle, // Add this parameter
+        app_handle: AppHandle,
     ) -> Self {
         let (gpu_raw_status_tx, gpu_raw_status_rx) = watch::channel(None);
         let adapter = GpuMinerAdapter::new(Vec::new(), gpu_raw_status_tx);

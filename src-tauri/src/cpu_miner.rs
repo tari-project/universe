@@ -109,7 +109,7 @@ impl CpuMiner {
         stats_collector: &mut ProcessStatsCollectorBuilder,
         cpu_miner_status_watch_tx: watch::Sender<CpuMinerStatus>,
         node_status_watch_rx: watch::Receiver<BaseNodeStatus>,
-        app_handle: AppHandle, // Add this parameter
+        app_handle: AppHandle,
     ) -> Self {
         let (summary_watch_tx, summary_watch_rx) = watch::channel::<Option<Summary>>(None);
         let xmrig_adapter = XmrigAdapter::new(summary_watch_tx);
