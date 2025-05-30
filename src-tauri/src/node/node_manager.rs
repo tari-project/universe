@@ -99,6 +99,7 @@ pub struct NodeManager {
 }
 
 impl NodeManager {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         stats_collector: &mut ProcessStatsCollectorBuilder,
         local_node_adapter: LocalNodeAdapter,

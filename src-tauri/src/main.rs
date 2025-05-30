@@ -279,6 +279,7 @@ struct FEPayload {
 }
 
 // Helper function to create managers with AppHandle
+#[allow(clippy::too_many_arguments)]
 async fn create_managers_with_app_handle(
     app_handle: tauri::AppHandle,
     stats_collector: &mut ProcessStatsCollectorBuilder,
