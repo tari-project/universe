@@ -17,9 +17,9 @@ const setupWsStatusListener = async () => {
         if (event.payload === 'Stopped') {
             socketInitialised = false;
         }
-        console.info(`websocket status changed: `,event.payload);
+        console.info(`websocket status changed: `, event.payload);
     });
-    console.info("WebSocket status listener initiated.");
+    console.info('WebSocket status listener initiated.');
 };
 
 const initialiseSocket = async () => {
@@ -43,7 +43,7 @@ function removeSocket() {
     if (unlistenWsStatusChange) {
         unlistenWsStatusChange();
         unlistenWsStatusChange = null;
-        console.info("WebSocket status listener unlistened.");
+        console.info('WebSocket status listener unlistened.');
     }
 }
 

@@ -66,12 +66,9 @@ export const useWalletStore = create<WalletStoreState>()(() => ({
 }));
 
 // Helper function to prune large arrays
-const pruneTransactionArray = <T extends { timestamp?: number; tx_id?: number }>(
-    array: T[], 
-    maxSize: number
-): T[] => {
+const pruneTransactionArray = <T extends { timestamp?: number; tx_id?: number }>(array: T[], maxSize: number): T[] => {
     if (array.length <= maxSize) return array;
-    
+
     // Sort by timestamp (newest first) or tx_id as fallback, then take the latest
     return array
         .sort((a, b) => {
@@ -96,12 +93,12 @@ export const addPendingTransaction = (payload: { amount: number; destination: st
 
     useWalletStore.setState((state) => {
         const newPendingTransactions = [transaction, ...state.pending_transactions];
-        
+
         return {
             pending_transactions: pruneTransactionArray(newPendingTransactions, MAX_PENDING_TRANSACTIONS),
         };
     });
-    
+
     const balance = useWalletStore.getState().balance;
     if (balance) {
         setWalletBalance(balance);
@@ -152,7 +149,7 @@ export const pruneTransactionHistory = () => {
 };
 
 // Function to clear old transaction data (can be called periodically or on certain events)
-export const clearOldTransactionData = () => {
+const _clearOldTransactionData = () => {
     console.info('Clearing old transaction data to free memory');
     pruneTransactionHistory();
 };
