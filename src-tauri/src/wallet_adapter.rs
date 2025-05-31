@@ -24,6 +24,7 @@ use crate::port_allocator::PortAllocator;
 use crate::process_adapter::{
     HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
 };
+use crate::process_adapter_utils::{setup_working_directory, setup_logging_config, build_base_args, add_network_args, cleanup_peer_data_folder, setup_windows_firewall};
 use crate::tasks_tracker::TasksTrackers;
 use crate::utils::file_utils::convert_to_string;
 use crate::utils::logging_utils::setup_logging;
@@ -331,22 +332,12 @@ impl ProcessAdapter for WalletAdapter {
         binary_version_path: PathBuf,
         _is_first_start: bool,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
-        // TODO: This was copied from node_adapter. This should be DRY'ed up
         let inner_shutdown = Shutdown::new();
 
         info!(target: LOG_TARGET, "Starting read only wallet");
-        let working_dir = data_dir.join("wallet");
-        let network_dir = working_dir.join(Network::get_current().to_string().to_lowercase());
-        std::fs::create_dir_all(&working_dir)?;
-
-        // Remove peerdb on every restart as requested by Protocol team
-        let peer_db_dir = network_dir.join("peer_db");
-        if peer_db_dir.exists() {
-            info!(target: LOG_TARGET, "Removing peer db at {:?}", peer_db_dir);
-            let _unused = fs::remove_dir_all(peer_db_dir).inspect_err(|e| {
-                warn!(target: LOG_TARGET, "Failed to remove peer db: {:?}", e);
-            });
-        }
+        
+        // Setup working directory using shared utility
+        let working_dir = setup_working_directory(&data_dir, "wallet")?;
 
         let formatted_working_dir = convert_to_string(working_dir.clone())?;
         let config_dir = log_dir

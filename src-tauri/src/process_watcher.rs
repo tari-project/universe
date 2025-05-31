@@ -214,13 +214,37 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
     pub async fn wait_ready(&self) -> Result<(), anyhow::Error> {
         if let Some(ref task) = self.watcher_task {
             if task.is_finished() {
-                //let exit_code = task.await??;
-
                 return Err(anyhow::anyhow!("Process watcher task has already finished"));
             }
+        } else {
+            return Err(anyhow::anyhow!("Process watcher task not started"));
         }
-        //TODO
-        Ok(())
+
+        // Wait for the expected startup time to allow the process to initialize
+        let startup_time = self.expected_startup_time;
+        tokio::time::sleep(startup_time).await;
+
+        // If we have a status monitor, verify the process is healthy
+        if let Some(ref status_monitor) = self.status_monitor {
+            let health_status = status_monitor.check_health(
+                startup_time,
+                self.health_timeout
+            ).await;
+            
+            match health_status {
+                HealthStatus::Healthy => Ok(()),
+                HealthStatus::Warning => {
+                    warn!(target: LOG_TARGET, "Process started with warnings but is considered ready");
+                    Ok(())
+                },
+                HealthStatus::Unhealthy => {
+                    Err(anyhow::anyhow!("Process failed health check during startup"))
+                }
+            }
+        } else {
+            // No status monitor available, just wait for startup time
+            Ok(())
+        }
     }
 
     pub async fn stop(&mut self) -> Result<i32, anyhow::Error> {
