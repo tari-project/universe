@@ -334,7 +334,7 @@ impl ProcessAdapter for WalletAdapter {
         let inner_shutdown = Shutdown::new();
 
         info!(target: LOG_TARGET, "Starting read only wallet");
-        
+
         // Setup working directory using shared utility
         let working_dir = setup_working_directory(&data_dir, "wallet")?;
 
