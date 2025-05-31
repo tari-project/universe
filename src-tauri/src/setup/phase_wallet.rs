@@ -21,6 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 use crate::{
     binaries::{Binaries, BinaryResolver},
+    wallet_manager::WalletStartupConfig,
     configs::{
         config_core::ConfigCore,
         config_ui::{ConfigUI, ConfigUIContent},
@@ -207,15 +208,18 @@ impl SetupPhaseImpl for WalletSetupPhase {
 
         let app_state = self.get_app_handle().state::<UniverseAppState>().clone();
         let is_local_node = app_state.node_manager.is_local_current().await?;
+        let wallet_config = WalletStartupConfig {
+            base_path: data_dir.clone(),
+            config_path: config_dir.clone(),
+            log_path: log_dir.clone(),
+            use_tor: self.app_configuration.use_tor,
+            connect_with_local_node: is_local_node,
+        };
         state
             .wallet_manager
             .ensure_started(
                 TasksTrackers::current().wallet_phase.get_signal().await,
-                data_dir.clone(),
-                config_dir.clone(),
-                log_dir.clone(),
-                self.app_configuration.use_tor,
-                is_local_node,
+                wallet_config,
                 app_state.clone(),
             )
             .await?;

@@ -23,14 +23,14 @@
 use anyhow::Error;
 use log::{info, warn};
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use tari_common::configuration::Network;
 
 const LOG_TARGET: &str = "tari::universe::process_adapter_utils";
 
 /// Setup common directory structure and cleanup
 pub fn setup_working_directory(
-    data_dir: &PathBuf,
+    data_dir: &Path,
     working_dir_name: &str,
 ) -> Result<PathBuf, Error> {
     let working_dir = data_dir.join(working_dir_name);
