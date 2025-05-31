@@ -24,7 +24,7 @@ use crate::port_allocator::PortAllocator;
 use crate::process_adapter::{
     HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
 };
-use crate::process_adapter_utils::{setup_working_directory, setup_logging_config, build_base_args, add_network_args, cleanup_peer_data_folder, setup_windows_firewall};
+use crate::process_adapter_utils::setup_working_directory;
 use crate::tasks_tracker::TasksTrackers;
 use crate::utils::file_utils::convert_to_string;
 use crate::utils::logging_utils::setup_logging;
@@ -37,7 +37,6 @@ use minotari_node_grpc_client::grpc::{
     GetStateRequest, NetworkStatusResponse,
 };
 use serde::Serialize;
-use std::fs;
 use std::path::PathBuf;
 use std::time::Duration;
 use tari_common::configuration::Network;
