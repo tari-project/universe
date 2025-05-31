@@ -226,20 +226,19 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
 
         // If we have a status monitor, verify the process is healthy
         if let Some(ref status_monitor) = self.status_monitor {
-            let health_status = status_monitor.check_health(
-                startup_time,
-                self.health_timeout
-            ).await;
-            
+            let health_status = status_monitor
+                .check_health(startup_time, self.health_timeout)
+                .await;
+
             match health_status {
                 HealthStatus::Healthy => Ok(()),
                 HealthStatus::Warning => {
                     warn!(target: LOG_TARGET, "Process started with warnings but is considered ready");
                     Ok(())
-                },
-                HealthStatus::Unhealthy => {
-                    Err(anyhow::anyhow!("Process failed health check during startup"))
                 }
+                HealthStatus::Unhealthy => Err(anyhow::anyhow!(
+                    "Process failed health check during startup"
+                )),
             }
         } else {
             // No status monitor available, just wait for startup time
