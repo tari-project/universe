@@ -21,7 +21,6 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 use crate::{
     binaries::{Binaries, BinaryResolver},
-    wallet_manager::WalletStartupConfig,
     configs::{
         config_core::ConfigCore,
         config_ui::{ConfigUI, ConfigUIContent},
@@ -38,6 +37,7 @@ use crate::{
     setup::{setup_manager::SetupPhase, utils::conditional_sleeper},
     tapplets::{TappletResolver, Tapplets},
     tasks_tracker::TasksTrackers,
+    wallet_manager::WalletStartupConfig,
     UniverseAppState,
 };
 use anyhow::Error;
