@@ -43,6 +43,15 @@ use tokio::sync::RwLock;
 
 static LOG_TARGET: &str = "tari::universe::wallet_manager";
 
+#[derive(Debug, Clone)]
+pub struct WalletStartupConfig {
+    pub base_path: PathBuf,
+    pub config_path: PathBuf,
+    pub log_path: PathBuf,
+    pub use_tor: bool,
+    pub connect_with_local_node: bool,
+}
+
 #[derive(thiserror::Error, Debug)]
 pub enum WalletManagerError {
     #[error("Wallet not started")]
@@ -88,11 +97,7 @@ impl WalletManager {
     pub async fn ensure_started(
         &self,
         app_shutdown: ShutdownSignal,
-        base_path: PathBuf,
-        config_path: PathBuf,
-        log_path: PathBuf,
-        use_tor: bool,
-        connect_with_local_node: bool,
+        config: WalletStartupConfig,
         state: tauri::State<'_, UniverseAppState>,
     ) -> Result<(), WalletManagerError> {
         let shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
@@ -114,20 +119,20 @@ impl WalletManager {
         let (public_key, public_address) = self.node_manager.get_connection_details().await?;
         process_watcher.adapter.base_node_public_key = Some(public_key.clone());
         process_watcher.adapter.base_node_address = Some(public_address.clone());
-        process_watcher.adapter.use_tor(use_tor);
+        process_watcher.adapter.use_tor(config.use_tor);
         process_watcher
             .adapter
-            .connect_with_local_node(connect_with_local_node);
+            .connect_with_local_node(config.connect_with_local_node);
         process_watcher.adapter.wallet_birthday = self
-            .get_wallet_birthday(config_path.clone(), state)
+            .get_wallet_birthday(config.config_path.clone(), state)
             .await
             .ok();
 
         process_watcher
             .start(
-                base_path,
-                config_path,
-                log_path,
+                config.base_path,
+                config.config_path,
+                config.log_path,
                 crate::binaries::Binaries::Wallet,
                 shutdown_signal,
                 task_tracker,

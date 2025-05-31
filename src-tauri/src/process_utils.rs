@@ -34,8 +34,8 @@ pub fn launch_child_process(
             .args(args)
             .current_dir(current_dir)
             .envs(envs.cloned().unwrap_or_default())
-            .stdout(std::process::Stdio::null()) // TODO: uncomment, only for testing
-            .stderr(std::process::Stdio::null()) // TODO: uncomment, only for testing
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
             .kill_on_drop(true)
             .spawn()?)
     }
