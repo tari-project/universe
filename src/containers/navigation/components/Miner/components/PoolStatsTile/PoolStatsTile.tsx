@@ -46,7 +46,8 @@ const variants = {
     },
 };
 
-const REWARD_THRESHOLD = `2 XTM`;
+const REWARD_THRESHOLD_STR = `2 XTM`;
+const REWARD_THRESHOLD = 2 * 1_000_000;
 
 export const PoolStatsTile = () => {
     const { t } = useTranslation('p2p');
@@ -89,8 +90,10 @@ export const PoolStatsTile = () => {
     }, [unpaidFMT, prevUnpaid]);
 
     useEffect(() => {
-        const isSuccessAmount = unpaid >= 2 * 1_000_000;
-        if (isSuccessAmount) {
+        const unpaidAboveThreshold = unpaid >= REWARD_THRESHOLD;
+        if (!unpaidAboveThreshold) return;
+        const canShowSuccess = unpaid % REWARD_THRESHOLD === 0;
+        if (canShowSuccess) {
             setShowSuccessAnimation(true);
 
             if (visualMode) {
@@ -177,7 +180,7 @@ export const PoolStatsTile = () => {
                 <SuccessAnimation
                     isVisible={showSuccessAnimation}
                     setIsVisible={setShowSuccessAnimation}
-                    rewardThreshold={REWARD_THRESHOLD}
+                    rewardThreshold={REWARD_THRESHOLD_STR}
                     rewardCopy={t('stats.earned')}
                 />
             </Wrapper>
@@ -190,7 +193,7 @@ export const PoolStatsTile = () => {
                                 <Trans
                                     i18nKey="stats.tooltip-copy"
                                     ns="p2p"
-                                    values={{ amount: REWARD_THRESHOLD }}
+                                    values={{ amount: REWARD_THRESHOLD_STR }}
                                     components={{ strong: <strong /> }}
                                 />
                             </Typography>
@@ -200,7 +203,7 @@ export const PoolStatsTile = () => {
                                 </TooltipChip>
                                 <TooltipChip>
                                     <TooltipChipHeading>{t('stats.tooltip-tile-heading')}</TooltipChipHeading>
-                                    <TooltipChipText>{REWARD_THRESHOLD}</TooltipChipText>
+                                    <TooltipChipText>{REWARD_THRESHOLD_STR}</TooltipChipText>
                                 </TooltipChip>
                             </TooltipChipWrapper>
                         </ExpandedBox>
