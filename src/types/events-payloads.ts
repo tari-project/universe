@@ -78,6 +78,4 @@ export interface AppInMemoryConfigChangedPayload {
 export interface UniversalMinerInitializedExchangeIdChangedPayload {
     universal_miner_initialized_exchange_id: string;
 }
-export interface ConnectionStatusPayload {
-    status: 'InProgress' | 'Succeed' | 'Failed';
-}
+export type ConnectionStatusPayload = 'InProgress' | 'Succeed' | 'Failed';
