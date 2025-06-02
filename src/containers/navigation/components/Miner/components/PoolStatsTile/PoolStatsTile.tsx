@@ -22,7 +22,7 @@ import {
 import { Trans, useTranslation } from 'react-i18next';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import QuestionMarkSvg from '@app/components/svgs/QuestionMarkSvg.tsx';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { offset, safePolygon, useFloating, useHover, useInteractions } from '@floating-ui/react';
 import NumberFlow from '@number-flow/react';
 
@@ -46,7 +46,8 @@ const variants = {
     },
 };
 
-const REWARD_THRESHOLD = `2 XTM`;
+const REWARD_THRESHOLD_STR = `2 XTM`;
+const REWARD_THRESHOLD = 2 * 1_000_000;
 
 export const PoolStatsTile = () => {
     const { t } = useTranslation('p2p');
@@ -57,13 +58,15 @@ export const PoolStatsTile = () => {
     const visualMode = useConfigUIStore((s) => s.visual_mode);
     const loading = isMining && !pool_status;
     const [expanded, setExpanded] = useState(false);
+    const [unpaid, setUnpaid] = useState(pool_status?.unpaid || 0);
+
+    const prevFloored = useRef(Math.floor((pool_status?.unpaid || 0) / 1_000_000));
 
     // ================== Animations ==================
 
     const [showIncreaseAnimation, setShowIncreaseAnimation] = useState(false);
     const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
 
-    const [unpaid, setUnpaid] = useState(pool_status?.unpaid || 0);
     const fmtMatch = (value: number) =>
         Intl.NumberFormat(i18n.language, {
             minimumFractionDigits: 2,
@@ -89,13 +92,18 @@ export const PoolStatsTile = () => {
     }, [unpaidFMT, prevUnpaid]);
 
     useEffect(() => {
-        const isSuccessAmount = unpaid >= 2 * 1_000_000;
-        if (isSuccessAmount) {
-            setShowSuccessAnimation(true);
+        const unpaidAboveThreshold = unpaid >= REWARD_THRESHOLD;
+        if (!unpaidAboveThreshold) return;
+        const floored = Math.floor(unpaid / 1_000_000);
 
+        const canShowSuccess = floored % 2 === 0 && prevFloored.current !== floored;
+        if (canShowSuccess) {
+            setShowSuccessAnimation(true);
             if (visualMode) {
                 setAnimationState('success', true);
             }
+
+            prevFloored.current = floored;
         }
     }, [unpaid, visualMode]);
 
@@ -177,7 +185,7 @@ export const PoolStatsTile = () => {
                 <SuccessAnimation
                     isVisible={showSuccessAnimation}
                     setIsVisible={setShowSuccessAnimation}
-                    rewardThreshold={REWARD_THRESHOLD}
+                    rewardThreshold={REWARD_THRESHOLD_STR}
                     rewardCopy={t('stats.earned')}
                 />
             </Wrapper>
@@ -190,7 +198,7 @@ export const PoolStatsTile = () => {
                                 <Trans
                                     i18nKey="stats.tooltip-copy"
                                     ns="p2p"
-                                    values={{ amount: REWARD_THRESHOLD }}
+                                    values={{ amount: REWARD_THRESHOLD_STR }}
                                     components={{ strong: <strong /> }}
                                 />
                             </Typography>
@@ -200,7 +208,7 @@ export const PoolStatsTile = () => {
                                 </TooltipChip>
                                 <TooltipChip>
                                     <TooltipChipHeading>{t('stats.tooltip-tile-heading')}</TooltipChipHeading>
-                                    <TooltipChipText>{REWARD_THRESHOLD}</TooltipChipText>
+                                    <TooltipChipText>{REWARD_THRESHOLD_STR}</TooltipChipText>
                                 </TooltipChip>
                             </TooltipChipWrapper>
                         </ExpandedBox>
