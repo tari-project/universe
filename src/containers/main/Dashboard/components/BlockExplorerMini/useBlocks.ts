@@ -1,12 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { isStagenet, isTestnet } from '@app/utils/network.ts';
+import { getExplorerUrl } from '@app/utils/network.ts';
 
 export const BLOCKS_KEY = ['blocks'];
-// TODO: make nice helper in utils
-const EXPLORER_URL_ID_ESME = `-esmeralda`;
-const EXPLORER_URL_ID_NEXTNET = `-nextnet`;
-const EXPLORER_URL_ID = isTestnet() ? EXPLORER_URL_ID_ESME : isStagenet() ? EXPLORER_URL_ID_NEXTNET : '';
-const address = `https://textexplore${EXPLORER_URL_ID}.tari.com`;
 
 interface Blocks {
     height: string;
@@ -40,7 +35,11 @@ export interface BlockData {
 }
 
 async function fetchBlockStats(): Promise<BlocksStats> {
-    const response = await fetch(`${address}/?json`);
+    const explorerUrl = getExplorerUrl();
+    if (!explorerUrl) {
+        throw new Error('No explorer url found.');
+    }
+    const response = await fetch(`${explorerUrl}/?json`);
 
     if (!response.ok) {
         throw new Error('Failed to fetch blocks');

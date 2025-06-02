@@ -1,5 +1,6 @@
 import { useMiningStore } from '@app/store';
 
+type NetworkGroup = 'testnet' | 'stagenet' | 'mainnet';
 export enum Network {
     MainNet = 'mainnet',
     StageNet = 'stagenet',
@@ -8,26 +9,44 @@ export enum Network {
     Igor = 'igor',
     Esmeralda = 'esmeralda',
 }
+
+const networkGroups: Record<NetworkGroup, Network[]> = {
+    testnet: [Network.LocalNet, Network.Esmeralda, Network.Igor],
+    stagenet: [Network.StageNet, Network.NextNet],
+    mainnet: [Network.MainNet],
+};
+
 const storedNetwork = useMiningStore.getState().network;
 const _network = Object.values(Network).find((network) => network === storedNetwork);
 
-export function isTestnet(network: Network | undefined = _network): boolean {
-    if (!network) {
-        return false;
-    }
-    return network === Network.LocalNet || network === Network.Esmeralda || network === Network.Igor;
+function _isTestnet(): boolean {
+    return _network ? networkGroups.testnet.includes(_network) : false;
 }
 
-export function isStagenet(network: Network | undefined = _network): boolean {
-    if (!network) {
-        return false;
-    }
-    return network === Network.StageNet || network === Network.NextNet;
+function _isStagenet(): boolean {
+    return _network ? networkGroups.stagenet.includes(_network) : false;
 }
 
-export function isMainNet(network: Network | undefined = _network): boolean {
-    if (!network) {
-        return false;
+export function isMainNet(): boolean {
+    return _network ? networkGroups.mainnet.includes(_network) : false;
+}
+
+export function getNetworkGroup() {
+    return Object.keys(networkGroups).find((key) => networkGroups[key].includes(_network));
+}
+
+const urlSuffixMap = {
+    testnet: '-esmeralda',
+    stagenet: '-nextnet',
+    mainnet: '',
+};
+
+export function getExplorerUrl(nonTextExplorer = false) {
+    const baseSubdomain = nonTextExplorer ? `explore` : `textexplore`;
+    const networkGroup = getNetworkGroup();
+    if (networkGroup) {
+        const subdomainSuffix = urlSuffixMap[networkGroup] ?? '';
+
+        return `https://${baseSubdomain}${subdomainSuffix}.tari.com`;
     }
-    return network === Network.MainNet;
 }
