@@ -23,14 +23,14 @@
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use futures_util::future::FusedFuture;
-use log::{error, info, warn};
-use sentry::protocol::Event;
+use log::{info, warn};
 use std::collections::HashMap;
+use std::ffi::OsStr;
 use std::fs;
 use std::path::PathBuf;
 use std::time::Duration;
+use sysinfo::System;
 use tari_shutdown::Shutdown;
-use tauri_plugin_sentry::sentry;
 use tokio::runtime::Handle;
 use tokio::select;
 use tokio::task::JoinHandle;
@@ -82,26 +82,43 @@ pub(crate) trait ProcessAdapter {
             .exists()
     }
 
-    async fn kill_previous_instances(&self, base_folder: PathBuf) -> Result<(), Error> {
+    fn find_process_pid_by_name(binary_name: &OsStr) -> Option<u32> {
+        let mut sys = System::new_all();
+        sys.refresh_all();
+
+        for (pid, process) in sys.processes() {
+            if process.name() == binary_name {
+                return Some(pid.as_u32());
+            }
+        }
+        None
+    }
+
+    async fn kill_previous_instances(
+        &self,
+        base_folder: PathBuf,
+        binary_path: &PathBuf,
+    ) -> Result<(), Error> {
         info!(target: LOG_TARGET, "Killing previous instances of {}", self.name());
+        let binary_name = binary_path.file_name().unwrap();
         match fs::read_to_string(base_folder.join(self.pid_file_name())) {
-            Ok(pid) => match pid.trim().parse::<i32>() {
-                Ok(pid) => {
-                    warn!(target: LOG_TARGET, "{} process did not shut down cleanly: {} pid file was created", pid, self.pid_file_name());
-                    kill_process(pid).await?;
+            Ok(pid) => {
+                match pid.trim().parse::<i32>() {
+                    Ok(pid) => {
+                        warn!(target: LOG_TARGET, "{} process did not shut down cleanly: {} pid file was created", pid, self.pid_file_name());
+                        kill_process(pid).await?;
+                    }
+                    Err(_) => {
+                        warn!(target: LOG_TARGET, "pid file is not a valid integer: {}. Attempting to kill process by name", pid);
+                        let pid_by_name = Self::find_process_pid_by_name(&binary_name);
+                        if let Some(process) = pid_by_name {
+                            kill_process(process as i32).await?; // It is safe to cast it because it is guaranteed to be in the scope of [0, i32::MAX]
+                        } else {
+                            warn!(target: LOG_TARGET, "No process found with name {}", binary_name.to_str().unwrap_or_default());
+                        }
+                    }
                 }
-                Err(e) => {
-                    let error_msg =
-                        format!("Error parsing pid file: {}. Pid file content: {}", e, pid);
-                    error!(target: LOG_TARGET, "{}", error_msg);
-                    sentry::capture_event(Event {
-                        message: Some(error_msg),
-                        level: sentry::Level::Error,
-                        culprit: Some("process-adapter".to_string()),
-                        ..Default::default()
-                    });
-                }
-            },
+            }
             Err(e) => {
                 if let Ok(true) = std::path::Path::new(&base_folder)
                     .join(self.pid_file_name())
