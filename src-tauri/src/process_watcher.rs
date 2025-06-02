@@ -134,9 +134,10 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
             } else {
                 info!(target: LOG_TARGET, "Process '{}' launched. Waiting {:?} for stabilization.", name, self.expected_startup_time);
                 let stabilization_deadline = Instant::now() + self.expected_startup_time;
-                let startup_grace_period = Duration::from_secs(15); // ADD THIS: Grace period before health checks
-                let grace_deadline = Instant::now() + startup_grace_period;
                 let mut initial_health_passed = false;
+                let mut consecutive_health_failures = 0;
+                let mut grace_period_active = false;
+                let mut grace_deadline = Instant::now(); // Will be set when needed
     
                 while Instant::now() < stabilization_deadline {
                     if global_shutdown_signal.is_triggered() || inner_shutdown_signal.is_triggered() {
@@ -149,9 +150,9 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                         break;
                     }
     
-                    // ADD THIS: Skip health checks during grace period
-                    if Instant::now() < grace_deadline {
-                        info!(target: LOG_TARGET, "Process '{}' in startup grace period, skipping health check.", name);
+                    // Smart grace period: only skip health checks if grace period is active
+                    if grace_period_active && Instant::now() < grace_deadline {
+                        info!(target: LOG_TARGET, "Process '{}' in adaptive grace period due to previous failures", name);
                         tokio::time::sleep(Duration::from_secs(2)).await;
                         continue;
                     }
@@ -159,16 +160,42 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                     let health_status = status_monitor.check_health(Duration::from_secs(0), self.health_timeout).await;
                     match health_status {
                         HealthStatus::Healthy => {
+                            // Reset failure tracking on success
+                            consecutive_health_failures = 0;
+                            grace_period_active = false;
                             info!(target: LOG_TARGET, "Process '{}' stabilized and is healthy.", name);
                             initial_health_passed = true;
                             break;
                         }
                         HealthStatus::Warning => {
-                            info!(target: LOG_TARGET, "Process '{}' stabilizing (Warning status).", name);
+                            consecutive_health_failures += 1;
+                            if consecutive_health_failures >= 3 && !grace_period_active {
+                                // Activate grace period after 3 consecutive warnings
+                                let grace_duration = Duration::from_secs(5 + (consecutive_health_failures as u64 * 2));
+                                grace_deadline = Instant::now() + grace_duration;
+                                grace_period_active = true;
+                                info!(target: LOG_TARGET, "Activating {:.1}s grace period for '{}' after {} warning failures", 
+                                      grace_duration.as_secs_f32(), name, consecutive_health_failures);
+                            }
+                            info!(target: LOG_TARGET, "Process '{}' stabilizing (Warning status, {} consecutive failures).", name, consecutive_health_failures);
                         }
                         HealthStatus::Unhealthy => {
-                            warn!(target: LOG_TARGET, "Process '{}' became unhealthy during stabilization.", name);
-                            break;
+                            consecutive_health_failures += 1;
+                            if consecutive_health_failures >= 2 && !grace_period_active {
+                                // Activate grace period after 2 unhealthy checks
+                                let grace_duration = Duration::from_secs(8 + (consecutive_health_failures as u64 * 3));
+                                grace_deadline = Instant::now() + grace_duration;
+                                grace_period_active = true;
+                                info!(target: LOG_TARGET, "Activating {:.1}s grace period for '{}' after {} unhealthy failures", 
+                                      grace_duration.as_secs_f32(), name, consecutive_health_failures);
+                            }
+                            warn!(target: LOG_TARGET, "Process '{}' became unhealthy during stabilization ({} consecutive failures).", name, consecutive_health_failures);
+                            
+                            if consecutive_health_failures >= 6 {
+                                // Give up after too many failures
+                                warn!(target: LOG_TARGET, "Process '{}' failed too many consecutive health checks ({}), giving up on this attempt.", name, consecutive_health_failures);
+                                break;
+                            }
                         }
                     }
                     tokio::time::sleep(Duration::from_secs(2)).await;
