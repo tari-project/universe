@@ -17,12 +17,11 @@ import {
     Border,
     AnimatedGradient,
     Inside,
-    LottieWrapper,
 } from './styles';
 import { Trans, useTranslation } from 'react-i18next';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import QuestionMarkSvg from '@app/components/svgs/QuestionMarkSvg.tsx';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { offset, safePolygon, useFloating, useHover, useInteractions } from '@floating-ui/react';
 import NumberFlow from '@number-flow/react';
 
@@ -30,23 +29,12 @@ import { AnimatePresence } from 'motion/react';
 import { MiningTime } from '@app/components/mining/timer/MiningTime.tsx';
 import { useMiningTime } from '@app/hooks/mining/useMiningTime.ts';
 import { SuccessAnimation } from './SuccessAnimation/SuccessAnimation';
-import { DotLottieReact } from '@lottiefiles/dotlottie-react';
-import coins_increase_url from './lotties/Coins_Progress_Lottie.json?url';
 import { setAnimationState } from '@tari-project/tari-tower';
 import i18n from 'i18next';
+import { ProgressAnimation } from './ProgressAnimation/ProgressAnimation';
 
-const variants = {
-    hidden: {
-        opacity: 0,
-        x: 10,
-    },
-    visible: {
-        opacity: 1,
-        x: 0,
-    },
-};
-
-const REWARD_THRESHOLD = `2 XTM`;
+const REWARD_THRESHOLD_STR = `2 XTM`;
+const REWARD_THRESHOLD = 2 * 1_000_000;
 
 export const PoolStatsTile = () => {
     const { t } = useTranslation('p2p');
@@ -57,13 +45,15 @@ export const PoolStatsTile = () => {
     const visualMode = useConfigUIStore((s) => s.visual_mode);
     const loading = isMining && !pool_status;
     const [expanded, setExpanded] = useState(false);
+    const [unpaid, setUnpaid] = useState(pool_status?.unpaid || 0);
+
+    const prevFloored = useRef(Math.floor((pool_status?.unpaid || 0) / 1_000_000));
 
     // ================== Animations ==================
 
-    const [showIncreaseAnimation, setShowIncreaseAnimation] = useState(false);
+    const [showProgressAnimation, setShowProgressAnimation] = useState(false);
     const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
 
-    const [unpaid, setUnpaid] = useState(pool_status?.unpaid || 0);
     const fmtMatch = (value: number) =>
         Intl.NumberFormat(i18n.language, {
             minimumFractionDigits: 2,
@@ -81,21 +71,26 @@ export const PoolStatsTile = () => {
 
     useEffect(() => {
         if (unpaidFMT > prevUnpaid) {
-            setShowIncreaseAnimation(true);
-            const timer = setTimeout(() => setShowIncreaseAnimation(false), 5000);
+            setShowProgressAnimation(true);
+            const timer = setTimeout(() => setShowProgressAnimation(false), 5000);
             return () => clearTimeout(timer);
         }
         setPrevUnpaid(unpaidFMT);
     }, [unpaidFMT, prevUnpaid]);
 
     useEffect(() => {
-        const isSuccessAmount = unpaid >= 2 * 1_000_000;
-        if (isSuccessAmount) {
-            setShowSuccessAnimation(true);
+        const unpaidAboveThreshold = unpaid >= REWARD_THRESHOLD;
+        if (!unpaidAboveThreshold) return;
+        const floored = Math.floor(unpaid / 1_000_000);
 
+        const canShowSuccess = floored % 2 === 0 && prevFloored.current !== floored;
+        if (canShowSuccess) {
+            setShowSuccessAnimation(true);
             if (visualMode) {
                 setAnimationState('success', true);
             }
+
+            prevFloored.current = floored;
         }
     }, [unpaid, visualMode]);
 
@@ -149,26 +144,10 @@ export const PoolStatsTile = () => {
                                     </TriggerWrapper>
                                     <MiningTime timing={{ daysString, hoursString, minutes, seconds }} variant="mini" />
                                 </RightContent>
-                                <AnimatePresence>
-                                    {showIncreaseAnimation && (
-                                        <LottieWrapper
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                            exit={{ opacity: 0 }}
-                                            transition={{
-                                                duration: 1,
-                                                ease: [0.15, 0, 0, 0.97],
-                                            }}
-                                        >
-                                            <DotLottieReact
-                                                src={coins_increase_url}
-                                                autoplay
-                                                loop={false}
-                                                className="lottie-animation"
-                                            />
-                                        </LottieWrapper>
-                                    )}
-                                </AnimatePresence>
+                                <ProgressAnimation
+                                    isVisible={showProgressAnimation}
+                                    setIsVisible={setShowProgressAnimation}
+                                />
                             </>
                         )}
                     </Inside>
@@ -177,20 +156,24 @@ export const PoolStatsTile = () => {
                 <SuccessAnimation
                     isVisible={showSuccessAnimation}
                     setIsVisible={setShowSuccessAnimation}
-                    rewardThreshold={REWARD_THRESHOLD}
+                    rewardThreshold={REWARD_THRESHOLD_STR}
                     rewardCopy={t('stats.earned')}
                 />
             </Wrapper>
             <AnimatePresence>
                 {expanded && (
                     <ExpandedWrapper ref={refs.setFloating} {...getFloatingProps()} style={floatingStyles}>
-                        <ExpandedBox variants={variants} initial="hidden" animate="visible" exit="hidden">
+                        <ExpandedBox
+                            initial={{ opacity: 0, x: 10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 10 }}
+                        >
                             <Typography variant="h5">{t('stats.tile-heading')}</Typography>
                             <Typography variant="p">
                                 <Trans
                                     i18nKey="stats.tooltip-copy"
                                     ns="p2p"
-                                    values={{ amount: REWARD_THRESHOLD }}
+                                    values={{ amount: REWARD_THRESHOLD_STR }}
                                     components={{ strong: <strong /> }}
                                 />
                             </Typography>
@@ -200,7 +183,7 @@ export const PoolStatsTile = () => {
                                 </TooltipChip>
                                 <TooltipChip>
                                     <TooltipChipHeading>{t('stats.tooltip-tile-heading')}</TooltipChipHeading>
-                                    <TooltipChipText>{REWARD_THRESHOLD}</TooltipChipText>
+                                    <TooltipChipText>{REWARD_THRESHOLD_STR}</TooltipChipText>
                                 </TooltipChip>
                             </TooltipChipWrapper>
                         </ExpandedBox>
