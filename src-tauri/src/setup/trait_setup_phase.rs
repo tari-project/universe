@@ -85,7 +85,6 @@ pub trait SetupPhaseImpl {
     async fn get_task_tracker(&self) -> TaskTracker;
     fn get_app_handle(&self) -> &AppHandle;
     fn get_phase_id(&self) -> SetupPhase;
-    fn get_status_sender(&self) -> Sender<PhaseStatus>;
     fn get_phase_dependencies(&self) -> Vec<Receiver<PhaseStatus>>;
     fn get_timeout_watcher(&self) -> &TimeoutWatcher;
 }

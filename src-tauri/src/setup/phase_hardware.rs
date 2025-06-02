@@ -90,7 +90,7 @@ impl SetupPhaseImpl for HardwareSetupPhase {
         configuration: SetupConfiguration,
         setup_features: SetupFeaturesList,
     ) -> Self {
-        let timeout_watcher = TimeoutWatcher::new(configuration.setup_timeout_duration.clone());
+        let timeout_watcher = TimeoutWatcher::new(configuration.setup_timeout_duration);
         Self {
             app_handle: app_handle.clone(),
             progress_stepper: Mutex::new(Self::create_progress_stepper(
@@ -121,9 +121,6 @@ impl SetupPhaseImpl for HardwareSetupPhase {
     }
     fn get_phase_id(&self) -> SetupPhase {
         SetupPhase::Hardware
-    }
-    fn get_status_sender(&self) -> Sender<PhaseStatus> {
-        self.status_sender.clone()
     }
     fn get_timeout_watcher(&self) -> &TimeoutWatcher {
         &self.timeout_watcher

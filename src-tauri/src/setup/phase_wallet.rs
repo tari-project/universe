@@ -54,7 +54,7 @@ use super::{
     utils::{setup_default_adapter::SetupDefaultAdapter, timeout_watcher::TimeoutWatcher},
 };
 
-static LOG_TARGET: &str = "tari::universe::phase_hardware";
+// static LOG_TARGET: &str = "tari::universe::phase_hardware";
 
 #[derive(Clone, Default)]
 pub struct WalletSetupPhaseOutput {}
@@ -86,7 +86,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
         configuration: SetupConfiguration,
         setup_features: SetupFeaturesList,
     ) -> Self {
-        let timeout_watcher = TimeoutWatcher::new(configuration.setup_timeout_duration.clone());
+        let timeout_watcher = TimeoutWatcher::new(configuration.setup_timeout_duration);
         Self {
             app_handle: app_handle.clone(),
             progress_stepper: Mutex::new(Self::create_progress_stepper(
@@ -118,9 +118,6 @@ impl SetupPhaseImpl for WalletSetupPhase {
     }
     fn get_phase_id(&self) -> SetupPhase {
         SetupPhase::Wallet
-    }
-    fn get_status_sender(&self) -> Sender<PhaseStatus> {
-        self.status_sender.clone()
     }
     fn get_timeout_watcher(&self) -> &TimeoutWatcher {
         &self.timeout_watcher

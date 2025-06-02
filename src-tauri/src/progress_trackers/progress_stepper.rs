@@ -22,7 +22,6 @@
 
 use std::{
     collections::HashMap,
-    hash::Hash,
     ops::{Add, Mul},
 };
 
