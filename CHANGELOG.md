@@ -1,3 +1,30 @@
+🚀 TARI UNIVERSE v1.2.2: The Song of Soon
+
+_June 2, 2025_
+
+Hey everyone,
+
+As we approach week 4 of mainnet, Tari contributors are excited to share a new release of Tari Universe: v1.2.2, aka "The Song of Soon." This release focuses on maintenance, bug fixes, and enhancing the quality of life for all Tari Universe users. Thank you for your continuous feedback. Our goal is to make Tari Universe the world's best and easiest-to-use crypto app.
+
+✨What's New: Desktop
+• New animations to celebrate your pool wins
+• UI cleanup and front-end performance improvements (removing bloat)
+• GPU mining no longer requires a manual restart after loading
+• Mac OS Keychain no longer prompts unnecessarily
+• Fixed front-end memory leak
+• Added translations (more coming)
+• Fix for buttons requiring double clicks to toggle
+• White screen (of death) fix on linux 🙌
+• Base node update (low-level enhancements will reduce memory usage)
+
+🐞 Known Issues (Fixes Coming Soon):
+• 📱 Mobile Wallet – Some users are experiencing sync issues, disappearing transactions, and problems with exchange payment IDs
+• 🌉 wXTM Bridge – Known issues include transactions stuck on pending, unclear failure states, and slow performance
+• 🔗 Network Sync – Users may get stuck at "Setting up Tari Node 3/5" or see incorrect block heights
+• ⚖️ Wallet Balance – Balance sync and transaction state feedback are being overhauled for accuracy and reliability
+
+---
+
 🚀 TARI UNIVERSE v1.2.0: The Flourishing
 
 _May 28, 2025_
