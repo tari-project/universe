@@ -7,7 +7,7 @@ import { SendForm } from './SendForm.tsx';
 import { SendReview } from './SendReview/SendReview.tsx';
 import { StyledForm, Wrapper } from './Send.styles.ts';
 import { invoke } from '@tauri-apps/api/core';
-import { refreshTransactions, setError as setStoreError } from '@app/store';
+import { setError as setStoreError } from '@app/store';
 
 interface SendModalProps {
     section: string;

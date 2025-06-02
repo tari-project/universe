@@ -7,9 +7,7 @@ import { formatNumber, FormatPreset, truncateMiddle } from '@app/utils';
 import ProcessingIcon from './icons/ProcessingIcon';
 import CompletedIcon from './icons/CompletedIcon';
 
-import { useEffect } from 'react';
 import { SendStatus } from '@app/components/transactions/send/SendModal.tsx';
-import { useWalletStore } from '@app/store';
 import { StatusHero } from '../../components/StatusHero/StatusHero';
 import { StatusList, StatusListEntry } from '../../components/StatusList/StatusList';
 
@@ -26,7 +24,7 @@ interface Props {
 
 export function SendReview({
     status,
-    setStatus,
+    // setStatus,
     amount,
     address,
     message,

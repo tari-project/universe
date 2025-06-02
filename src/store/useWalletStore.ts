@@ -47,7 +47,7 @@ const initialState: WalletStoreState = {
 // Configuration for memory management
 const MAX_TRANSACTIONS_IN_MEMORY = 1000; // Keep only the latest 1000 transactions
 const MAX_COINBASE_TRANSACTIONS_IN_MEMORY = 500; // Keep only the latest 500 coinbase transactions
-const MAX_PENDING_TRANSACTIONS = 100; // Keep only the latest 100 pending transactions
+// const MAX_PENDING_TRANSACTIONS = 100; // Keep only the latest 100 pending transactions
 
 export const useWalletStore = create<WalletStoreState>()(() => ({
     ...initialState,
