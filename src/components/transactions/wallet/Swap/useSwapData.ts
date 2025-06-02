@@ -535,9 +535,7 @@ export const useSwapData = () => {
         setIsProcessingPreSwap(true);
 
         try {
-            const swapResult = await executeSwap(tradeDetails);
-
-            setIsProcessingPreSwap(false);
+            const swapResult = await executeSwap(tradeDetails, () => setIsProcessingPreSwap(false));
 
             if (!swapResult || !swapResult.receipt) {
                 // Check if executeSwap returned null or no receipt

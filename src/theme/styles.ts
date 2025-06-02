@@ -39,3 +39,8 @@ export const Background = styled.div`
     background-blend-mode: overlay;
     filter: ${({ theme }) => (theme.mode === 'dark' ? 'brightness(0.45)' : 'none')};
 `;
+
+export const IframeBackground = styled.div`
+    position: absolute;
+    inset: 0;
+`;

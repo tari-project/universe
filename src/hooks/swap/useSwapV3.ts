@@ -205,7 +205,8 @@ export const useUniswapV3Interactions = () => {
 
     const executeSwapWithV3Router02 = useCallback(
         async (
-            tradeDetails: V3TradeDetails
+            tradeDetails: V3TradeDetails,
+            onApprove?: () => void
         ): Promise<{ response: TransactionResponse; receipt: TransactionReceipt } | null> => {
             setErrorHook(null);
             setIsLoadingHook(true);
@@ -228,6 +229,7 @@ export const useUniswapV3Interactions = () => {
             ) {
                 setErrorHook('Swap (V3Router02) prerequisites not met.');
                 setIsLoadingHook(false);
+                onApprove?.();
                 return null;
             }
 
@@ -248,9 +250,11 @@ export const useUniswapV3Interactions = () => {
                     );
                     if (!approvalSuccess) {
                         setIsLoadingHook(false);
-                        return null; // Error already set by approveTokenForV3Router02
+                        return null;
                     }
                 }
+
+                onApprove?.();
 
                 // Handle ETH value if input is native ETH
                 if (inputCurrency.isNative) {
