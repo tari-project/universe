@@ -20,7 +20,6 @@ import { useAccount } from 'wagmi';
 import { getCurrencyIcon } from '@app/containers/floating/SwapDialogs/helpers/getIcon';
 import { ArrowIcon } from '@app/containers/floating/SwapDialogs/icons/elements/ArrowIcon';
 import { WalletButton } from '@app/containers/floating/SwapDialogs/components/WalletButton/WalletButton';
-import { ConnectWallet } from '@app/containers/floating/SwapDialogs/sections/ConnectWallet/ConnectWallet';
 import { HeaderLabel, TabHeader } from '../../components/Tabs/tab.styles';
 import { SwapConfirmation } from '@app/containers/floating/SwapDialogs/sections/SwapConfirmation/SwapConfirmation';
 import { ProcessingTransaction } from '@app/containers/floating/SwapDialogs/sections/ProcessingTransaction/ProcessingTransaction';
@@ -191,7 +190,7 @@ export const Swap = memo(function Swap() {
             </SubmitButtonWrapper>
             {/* ////////////////////////////////// */}
             {/* Floating Elements */}
-            <ConnectWallet isOpen={reviewSwap && !connectedAccount.address} setIsOpen={setReviewSwap} />
+            <useConnectWallet isOpen={reviewSwap && !connectedAccount.address} setIsOpen={setReviewSwap} />
             <SwapConfirmation
                 isOpen={Boolean(
                     reviewSwap &&
