@@ -32,10 +32,7 @@ use crate::{
         progress_stepper::ProgressStepperBuilder,
         ProgressStepper,
     },
-    setup::{
-        setup_manager::{SetupFeature, SetupPhase},
-        utils::conditional_sleeper,
-    },
+    setup::setup_manager::{SetupFeature, SetupPhase},
     tasks_tracker::TasksTrackers,
     StartConfig, UniverseAppState,
 };
@@ -54,6 +51,7 @@ use tokio::{
 use super::{
     setup_manager::{PhaseStatus, SetupFeaturesList},
     trait_setup_phase::{SetupConfiguration, SetupPhaseImpl},
+    utils::timeout_watcher::TimeoutWatcher,
 };
 
 static LOG_TARGET: &str = "tari::universe::phase_hardware";
@@ -79,6 +77,7 @@ pub struct UnknownSetupPhase {
     setup_configuration: SetupConfiguration,
     status_sender: Sender<PhaseStatus>,
     setup_features: SetupFeaturesList,
+    timeout_watcher: TimeoutWatcher,
 }
 
 impl SetupPhaseImpl for UnknownSetupPhase {
@@ -90,13 +89,18 @@ impl SetupPhaseImpl for UnknownSetupPhase {
         configuration: SetupConfiguration,
         setup_features: SetupFeaturesList,
     ) -> Self {
+        let timeout_watcher = TimeoutWatcher::new(configuration.setup_timeout_duration.clone());
         Self {
             app_handle: app_handle.clone(),
-            progress_stepper: Mutex::new(Self::create_progress_stepper(app_handle.clone())),
+            progress_stepper: Mutex::new(Self::create_progress_stepper(
+                app_handle.clone(),
+                timeout_watcher.get_sender(),
+            )),
             app_configuration: Self::load_app_configuration().await.unwrap_or_default(),
             setup_configuration: configuration,
             status_sender,
             setup_features,
+            timeout_watcher,
         }
     }
 
@@ -104,7 +108,10 @@ impl SetupPhaseImpl for UnknownSetupPhase {
         &self.app_handle
     }
 
-    fn create_progress_stepper(app_handle: AppHandle) -> ProgressStepper {
+    fn create_progress_stepper(
+        app_handle: AppHandle,
+        timeout_watcher_sender: Sender<u64>,
+    ) -> ProgressStepper {
         ProgressStepperBuilder::new()
             .add_step(ProgressPlans::Unknown(
                 ProgressSetupUnknownPlan::BinariesMergeMiningProxy,
@@ -115,7 +122,7 @@ impl SetupPhaseImpl for UnknownSetupPhase {
             .add_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::P2Pool))
             .add_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::MMProxy))
             .add_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::Done))
-            .build(app_handle.clone())
+            .build(app_handle.clone(), timeout_watcher_sender)
     }
 
     async fn load_app_configuration() -> Result<Self::AppConfiguration, Error> {
@@ -149,7 +156,7 @@ impl SetupPhaseImpl for UnknownSetupPhase {
                 }
             };
             tokio::select! {
-                result = conditional_sleeper(self.setup_configuration.setup_timeout_duration) => {
+                result = self.timeout_watcher.resolve_timeout() => {
                     if result.is_some() {
                         error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Unknown);
                         let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::Unknown);

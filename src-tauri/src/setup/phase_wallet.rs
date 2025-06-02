@@ -34,7 +34,7 @@ use crate::{
         progress_stepper::ProgressStepperBuilder,
         ProgressStepper,
     },
-    setup::{setup_manager::SetupPhase, utils::conditional_sleeper},
+    setup::setup_manager::SetupPhase,
     tapplets::{TappletResolver, Tapplets},
     tasks_tracker::TasksTrackers,
     UniverseAppState,
@@ -55,6 +55,7 @@ use tokio::{
 use super::{
     setup_manager::{PhaseStatus, SetupFeaturesList},
     trait_setup_phase::{SetupConfiguration, SetupPhaseImpl},
+    utils::timeout_watcher::TimeoutWatcher,
 };
 
 static LOG_TARGET: &str = "tari::universe::phase_hardware";
@@ -77,6 +78,7 @@ pub struct WalletSetupPhase {
     status_sender: Sender<PhaseStatus>,
     #[allow(dead_code)]
     setup_features: SetupFeaturesList,
+    timeout_watcher: TimeoutWatcher,
 }
 
 impl SetupPhaseImpl for WalletSetupPhase {
@@ -88,13 +90,18 @@ impl SetupPhaseImpl for WalletSetupPhase {
         configuration: SetupConfiguration,
         setup_features: SetupFeaturesList,
     ) -> Self {
+        let timeout_watcher = TimeoutWatcher::new(configuration.setup_timeout_duration.clone());
         Self {
             app_handle: app_handle.clone(),
-            progress_stepper: Mutex::new(Self::create_progress_stepper(app_handle.clone())),
+            progress_stepper: Mutex::new(Self::create_progress_stepper(
+                app_handle.clone(),
+                timeout_watcher.get_sender(),
+            )),
             app_configuration: Self::load_app_configuration().await.unwrap_or_default(),
             setup_configuration: configuration,
             status_sender,
             setup_features,
+            timeout_watcher,
         }
     }
 
@@ -102,7 +109,10 @@ impl SetupPhaseImpl for WalletSetupPhase {
         &self.app_handle
     }
 
-    fn create_progress_stepper(app_handle: AppHandle) -> ProgressStepper {
+    fn create_progress_stepper(
+        app_handle: AppHandle,
+        timeout_watcher_sender: Sender<u64>,
+    ) -> ProgressStepper {
         ProgressStepperBuilder::new()
             .add_step(ProgressPlans::Wallet(
                 ProgressSetupWalletPlan::BinariesWallet,
@@ -113,7 +123,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
             ))
             .add_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::SetupBridge))
             .add_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::Done))
-            .build(app_handle)
+            .build(app_handle, timeout_watcher_sender)
     }
 
     async fn load_app_configuration() -> Result<Self::AppConfiguration, Error> {
@@ -142,7 +152,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
             };
 
             tokio::select! {
-                result = conditional_sleeper(self.setup_configuration.setup_timeout_duration) => {
+                result = self.timeout_watcher.resolve_timeout() => {
                     if result.is_some() {
                         error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Wallet);
                         let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::Wallet);

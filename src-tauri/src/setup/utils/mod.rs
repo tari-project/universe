@@ -23,6 +23,7 @@
 use std::{future::pending, time::Duration};
 
 pub mod phase_builder;
+pub mod timeout_watcher;
 
 pub async fn conditional_sleeper(duration: Option<Duration>) -> Option<()> {
     match duration {

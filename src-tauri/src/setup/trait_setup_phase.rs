@@ -45,7 +45,10 @@ pub trait SetupPhaseImpl {
         configuration: SetupConfiguration,
         setup_features: SetupFeaturesList,
     ) -> Self;
-    fn create_progress_stepper(app_handle: AppHandle) -> ProgressStepper;
+    fn create_progress_stepper(
+        app_handle: AppHandle,
+        timeout_watcher_sender: Sender<u64>,
+    ) -> ProgressStepper;
     async fn load_app_configuration() -> Result<Self::AppConfiguration, Error>;
     async fn setup(self);
     async fn setup_inner(&self) -> Result<(), Error>;
