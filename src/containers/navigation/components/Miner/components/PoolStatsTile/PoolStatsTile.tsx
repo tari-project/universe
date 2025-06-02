@@ -59,7 +59,7 @@ export const PoolStatsTile = () => {
     const loading = isMining && !pool_status;
     const [expanded, setExpanded] = useState(false);
 
-    const unpaidRef = useRef(0);
+    const unpaidFlooredRef = useRef(0);
 
     // ================== Animations ==================
 
@@ -94,16 +94,15 @@ export const PoolStatsTile = () => {
     useEffect(() => {
         const unpaidAboveThreshold = unpaid >= REWARD_THRESHOLD;
         if (!unpaidAboveThreshold) return;
+        const floored = Math.floor(unpaid / 1_000_000);
+        const canShowSuccess = floored % 2 === 0 && floored !== unpaidFlooredRef.current;
 
-        const canShowSuccess = Math.floor(unpaid / 1_000_000) % REWARD_THRESHOLD === 0;
-        const shouldShowSuccess = unpaidRef.current !== unpaid && unpaidRef.current > 0 && unpaidRef.current < unpaid;
-
-        if (canShowSuccess && shouldShowSuccess) {
+        if (canShowSuccess) {
             setShowSuccessAnimation(true);
             if (visualMode) {
                 setAnimationState('success', true);
             }
-            unpaidRef.current = unpaid;
+            unpaidFlooredRef.current = floored;
         }
     }, [unpaid, visualMode]);
 
