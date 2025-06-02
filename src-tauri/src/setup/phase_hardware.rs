@@ -25,7 +25,6 @@ use std::time::Duration;
 use crate::{
     binaries::{Binaries, BinaryResolver},
     configs::{config_mining::ConfigMining, trait_config::ConfigImpl},
-    events::CriticalProblemPayload,
     events_emitter::EventsEmitter,
     gpu_miner::EngineType,
     hardware::hardware_status_monitor::HardwareStatusMonitor,
@@ -42,21 +41,23 @@ use crate::{
     GpuMinerStatus, UniverseAppState,
 };
 use anyhow::Error;
-use log::{error, info, warn};
+use log::error;
+use tari_shutdown::ShutdownSignal;
 use tauri::{AppHandle, Manager};
 use tauri_plugin_sentry::sentry;
 use tokio::{
     select,
     sync::{
-        watch::{self, Sender},
+        watch::{self, Receiver, Sender},
         Mutex,
     },
 };
+use tokio_util::task::TaskTracker;
 
 use super::{
     setup_manager::{PhaseStatus, SetupFeaturesList},
     trait_setup_phase::{SetupConfiguration, SetupPhaseImpl},
-    utils::timeout_watcher::{self, TimeoutWatcher},
+    utils::{setup_default_adapter::SetupDefaultAdapter, timeout_watcher::TimeoutWatcher},
 };
 
 static LOG_TARGET: &str = "tari::universe::phase_hardware";
@@ -107,6 +108,26 @@ impl SetupPhaseImpl for HardwareSetupPhase {
     fn get_app_handle(&self) -> &AppHandle {
         &self.app_handle
     }
+    async fn get_shutdown_signal(&self) -> ShutdownSignal {
+        TasksTrackers::current().core_phase.get_signal().await
+    }
+    async fn get_task_tracker(&self) -> TaskTracker {
+        TasksTrackers::current().core_phase.get_task_tracker().await
+    }
+    fn get_phase_dependencies(&self) -> Vec<Receiver<PhaseStatus>> {
+        self.setup_configuration
+            .listeners_for_required_phases_statuses
+            .clone()
+    }
+    fn get_phase_id(&self) -> SetupPhase {
+        SetupPhase::Hardware
+    }
+    fn get_status_sender(&self) -> Sender<PhaseStatus> {
+        self.status_sender.clone()
+    }
+    fn get_timeout_watcher(&self) -> &TimeoutWatcher {
+        &self.timeout_watcher
+    }
 
     fn create_progress_stepper(
         app_handle: AppHandle,
@@ -135,56 +156,8 @@ impl SetupPhaseImpl for HardwareSetupPhase {
         Ok(HardwareSetupPhaseAppConfiguration { gpu_engine })
     }
 
-    async fn setup(mut self) {
-        info!(target: LOG_TARGET, "[ {} Phase ] Starting setup", SetupPhase::Hardware);
-
-        TasksTrackers::current().hardware_phase.get_task_tracker().await.spawn(async move {
-            let mut shutdown_signal = TasksTrackers::current().hardware_phase.get_signal().await;
-            for subscriber in &mut self.setup_configuration.listeners_for_required_phases_statuses.iter_mut() {
-                select! {
-                    _ = subscriber.wait_for(|value| value.is_success()) => {}
-                    _ = shutdown_signal.wait() => {
-                        warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Hardware);
-                        return;
-                    }
-                }
-            };
-            tokio::select! {
-                result = self.timeout_watcher.resolve_timeout() => {
-                    if result.is_some() {
-                        error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Hardware);
-                        let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::Hardware);
-                        sentry::capture_message(&error_message, sentry::Level::Error);
-                        EventsEmitter::emit_critical_problem(CriticalProblemPayload {
-                            title: Some(SetupPhase::Hardware.get_critical_problem_title()),
-                            description: Some(SetupPhase::Hardware.get_critical_problem_description()),
-                            error_message: Some(error_message),
-                        }).await;
-                    }
-                }
-                result = self.setup_inner() => {
-                    match result {
-                        Ok(_) => {
-                            info!(target: LOG_TARGET, "[ {} Phase ] Setup completed successfully", SetupPhase::Hardware);
-                            let _unused = self.finalize_setup().await;
-                        }
-                        Err(error) => {
-                            error!(target: LOG_TARGET, "[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Hardware,error);
-                            let error_message = format!("[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Hardware,error);
-                            sentry::capture_message(&error_message, sentry::Level::Error);
-                            EventsEmitter::emit_critical_problem(CriticalProblemPayload {
-                                title: Some(SetupPhase::Hardware.get_critical_problem_title()),
-                                description: Some(SetupPhase::Hardware.get_critical_problem_description()),
-                                error_message: Some(error_message),
-                            }).await;
-                        }
-                    }
-                }
-                _ = shutdown_signal.wait() => {
-                    warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Core);
-                }
-            };
-        });
+    async fn setup(self) {
+        let _unused = SetupDefaultAdapter::setup(self).await;
     }
 
     async fn setup_inner(&self) -> Result<(), Error> {
