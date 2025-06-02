@@ -58,15 +58,15 @@ export const PoolStatsTile = () => {
     const visualMode = useConfigUIStore((s) => s.visual_mode);
     const loading = isMining && !pool_status;
     const [expanded, setExpanded] = useState(false);
+    const [unpaid, setUnpaid] = useState(pool_status?.unpaid || 0);
 
-    const unpaidFlooredRef = useRef(0);
+    const prevFloored = useRef(Math.floor((pool_status?.unpaid || 0) / 1_000_000));
 
     // ================== Animations ==================
 
     const [showIncreaseAnimation, setShowIncreaseAnimation] = useState(false);
     const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
 
-    const [unpaid, setUnpaid] = useState(pool_status?.unpaid || 0);
     const fmtMatch = (value: number) =>
         Intl.NumberFormat(i18n.language, {
             minimumFractionDigits: 2,
@@ -87,8 +87,6 @@ export const PoolStatsTile = () => {
             setShowIncreaseAnimation(true);
             const timer = setTimeout(() => setShowIncreaseAnimation(false), 5000);
             return () => clearTimeout(timer);
-        } else {
-            unpaidFlooredRef.current = 0;
         }
         setPrevUnpaid(unpaidFMT);
     }, [unpaidFMT, prevUnpaid]);
@@ -97,14 +95,15 @@ export const PoolStatsTile = () => {
         const unpaidAboveThreshold = unpaid >= REWARD_THRESHOLD;
         if (!unpaidAboveThreshold) return;
         const floored = Math.floor(unpaid / 1_000_000);
-        const canShowSuccess = floored % 2 === 0 && floored !== unpaidFlooredRef.current;
 
+        const canShowSuccess = floored % 2 === 0 && prevFloored.current !== floored;
         if (canShowSuccess) {
             setShowSuccessAnimation(true);
             if (visualMode) {
                 setAnimationState('success', true);
             }
-            unpaidFlooredRef.current = floored;
+
+            prevFloored.current = floored;
         }
     }, [unpaid, visualMode]);
 
