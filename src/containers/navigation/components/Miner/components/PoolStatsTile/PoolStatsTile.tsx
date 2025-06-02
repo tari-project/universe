@@ -17,7 +17,6 @@ import {
     Border,
     AnimatedGradient,
     Inside,
-    LottieWrapper,
 } from './styles';
 import { Trans, useTranslation } from 'react-i18next';
 import { Typography } from '@app/components/elements/Typography.tsx';
@@ -30,10 +29,9 @@ import { AnimatePresence } from 'motion/react';
 import { MiningTime } from '@app/components/mining/timer/MiningTime.tsx';
 import { useMiningTime } from '@app/hooks/mining/useMiningTime.ts';
 import { SuccessAnimation } from './SuccessAnimation/SuccessAnimation';
-import { DotLottieReact } from '@lottiefiles/dotlottie-react';
-import coins_increase_url from './lotties/Coins_Progress_Lottie.json?url';
 import { setAnimationState } from '@tari-project/tari-tower';
 import i18n from 'i18next';
+import { ProgressAnimation } from './ProgressAnimation/ProgressAnimation';
 
 const variants = {
     hidden: {
@@ -60,7 +58,7 @@ export const PoolStatsTile = () => {
 
     // ================== Animations ==================
 
-    const [showIncreaseAnimation, setShowIncreaseAnimation] = useState(false);
+    const [showProgressAnimation, setShowProgressAnimation] = useState(false);
     const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
 
     const [unpaid, setUnpaid] = useState(pool_status?.unpaid || 0);
@@ -81,8 +79,8 @@ export const PoolStatsTile = () => {
 
     useEffect(() => {
         if (unpaidFMT > prevUnpaid) {
-            setShowIncreaseAnimation(true);
-            const timer = setTimeout(() => setShowIncreaseAnimation(false), 5000);
+            setShowProgressAnimation(true);
+            const timer = setTimeout(() => setShowProgressAnimation(false), 5000);
             return () => clearTimeout(timer);
         }
         setPrevUnpaid(unpaidFMT);
@@ -149,26 +147,10 @@ export const PoolStatsTile = () => {
                                     </TriggerWrapper>
                                     <MiningTime timing={{ daysString, hoursString, minutes, seconds }} variant="mini" />
                                 </RightContent>
-                                <AnimatePresence>
-                                    {showIncreaseAnimation && (
-                                        <LottieWrapper
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                            exit={{ opacity: 0 }}
-                                            transition={{
-                                                duration: 1,
-                                                ease: [0.15, 0, 0, 0.97],
-                                            }}
-                                        >
-                                            <DotLottieReact
-                                                src={coins_increase_url}
-                                                autoplay
-                                                loop={false}
-                                                className="lottie-animation"
-                                            />
-                                        </LottieWrapper>
-                                    )}
-                                </AnimatePresence>
+                                <ProgressAnimation
+                                    isVisible={showProgressAnimation}
+                                    setIsVisible={setShowProgressAnimation}
+                                />
                             </>
                         )}
                     </Inside>
