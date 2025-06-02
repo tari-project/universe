@@ -17,7 +17,7 @@ export default function ListLoadingAnimation({ loadingText }: Props) {
 
         const animateIn = () => {
             if (!isMounted) return;
-            
+
             if (currentIndex < totalSquares) {
                 const newActiveSquares = Array.from({ length: currentIndex + 1 }).map((_, i) => i);
                 setActiveSquares(newActiveSquares);

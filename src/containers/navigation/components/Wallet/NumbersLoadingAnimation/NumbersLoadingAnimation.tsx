@@ -13,7 +13,7 @@ export default function NumbersLoadingAnimation() {
 
         const animateIn = () => {
             if (!isMounted) return;
-            
+
             if (currentIndex < totalSquares) {
                 const newActiveSquares = Array.from({ length: currentIndex + 1 }).map((_, i) => i);
                 setActiveSquares(newActiveSquares);
