@@ -25,7 +25,7 @@ use crate::process_adapter::ProcessInstanceTrait;
 use crate::process_adapter::{HealthStatus, ProcessAdapter, StatusMonitor};
 use futures_util::future::FusedFuture;
 use log::{error, info, warn};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use std::time::Duration;
@@ -86,10 +86,10 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
     pub async fn kill_previous_instances(
         &mut self,
         base_path: PathBuf,
-        binary_path: &PathBuf,
+        binary_path: &Path,
     ) -> Result<(), anyhow::Error> {
         self.adapter
-            .kill_previous_instances(base_path, &binary_path)
+            .kill_previous_instances(base_path, binary_path)
             .await?;
         Ok(())
     }
