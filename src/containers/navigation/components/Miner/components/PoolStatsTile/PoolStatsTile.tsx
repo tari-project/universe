@@ -87,6 +87,8 @@ export const PoolStatsTile = () => {
             setShowIncreaseAnimation(true);
             const timer = setTimeout(() => setShowIncreaseAnimation(false), 5000);
             return () => clearTimeout(timer);
+        } else {
+            unpaidFlooredRef.current = 0;
         }
         setPrevUnpaid(unpaidFMT);
     }, [unpaidFMT, prevUnpaid]);
