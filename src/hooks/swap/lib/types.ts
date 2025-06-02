@@ -1,24 +1,5 @@
 import { Token, CurrencyAmount, Price, NativeCurrency } from '@uniswap/sdk-core';
-import { FeeAmount, Pool } from '@uniswap/v3-sdk';
-
-export interface V3PoolInfo {
-    sqrtPriceX96: bigint;
-    liquidity: bigint;
-    tick: number;
-    poolContract: Pool;
-}
-
-// Represents a single leg in a multi-hop swap path
-export interface SwapLeg {
-    poolAddress: string; // For debugging or direct pool interaction
-    tokenIn: Token;
-    tokenOut: Token;
-    fee: FeeAmount;
-    // Optional: raw pool data if fetched
-    sqrtRatioX96?: bigint;
-    liquidity?: bigint;
-    tickCurrent?: number;
-}
+import { FeeAmount } from '@uniswap/v3-sdk';
 
 export interface V3TradeDetails {
     // For QuoterV2 based approach:

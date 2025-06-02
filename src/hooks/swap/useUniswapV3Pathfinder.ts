@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Token, WETH9, CurrencyAmount, NativeCurrency, Price, Percent } from '@uniswap/sdk-core';
 import { FeeAmount } from '@uniswap/v3-sdk';
 import { usePublicClient } from 'wagmi';
@@ -46,7 +47,7 @@ export const useUniswapV3Pathfinder = ({ currentChainId, uiToken0, uiToken1 }: U
     const wethToken = useMemo(() => {
         if (!currentChainId || !WETH9[currentChainId as keyof typeof WETH9]) return undefined;
         return WETH9[currentChainId as keyof typeof WETH9];
-    }, [currentChainId]);
+    }, [currentChainId]) as Token;
 
     const findAndQuoteSingleLeg = useCallback(
         async (
@@ -155,8 +156,12 @@ export const useUniswapV3Pathfinder = ({ currentChainId, uiToken0, uiToken1 }: U
                     return { ...emptyPathfinderReturn, error: 'Pathfinder: Invalid or zero amount.' };
                 }
 
-                const initialLogicToken = uiToken0.isNative ? wethToken : (uiToken0 as Token);
-                const finalLogicToken = uiToken1.isNative ? wethToken : (uiToken1 as Token);
+                // uiToken0 is ALREADY the input token for the trade path, uiToken1 is ALREADY the output.
+                const actualTradeInputToken = uiToken0;
+                const actualTradeOutputToken = uiToken1;
+
+                const initialLogicToken = actualTradeInputToken.isNative ? wethToken : (actualTradeInputToken as Token);
+                const finalLogicToken = actualTradeOutputToken.isNative ? wethToken : (actualTradeOutputToken as Token);
 
                 if (initialLogicToken.equals(finalLogicToken)) {
                     return { ...emptyPathfinderReturn, error: 'Pathfinder: Input and output tokens are the same.' };
@@ -165,10 +170,26 @@ export const useUniswapV3Pathfinder = ({ currentChainId, uiToken0, uiToken1 }: U
                 let amountInToQuote: CurrencyAmount<Token> | undefined;
                 let amountOutToQuote: CurrencyAmount<Token> | undefined;
 
-                if (amountType === 'ethTokenField') {
-                    amountInToQuote = CurrencyAmount.fromRawAmount(initialLogicToken, amountRaw);
+                // 'ethTokenField' means the amount typed is for the "FROM" UI field, which maps to actualTradeInputToken (uiToken0).
+                // 'wxtmField' means the amount typed is for the "TO" UI field, which maps to actualTradeOutputToken (uiToken1).
+
+                const toXtm = uiToken1.name === XTM_SDK_TOKEN[currentChainId].name;
+                const calcAmountOut = toXtm ? amountType === 'wxtmField' : amountType === 'ethTokenField';
+                const isExactInputTrade =
+                    (toXtm && amountType === 'ethTokenField') || (!toXtm && amountType === 'wxtmField');
+
+                if (calcAmountOut) {
+                    if (toXtm) {
+                        amountOutToQuote = CurrencyAmount.fromRawAmount((uiToken1 as Token) || wethToken, amountRaw);
+                    } else {
+                        amountOutToQuote = CurrencyAmount.fromRawAmount(uiToken0 as Token, amountRaw);
+                    }
                 } else {
-                    amountOutToQuote = CurrencyAmount.fromRawAmount(finalLogicToken, amountRaw);
+                    if (toXtm) {
+                        amountInToQuote = CurrencyAmount.fromRawAmount(uiToken0 as Token, amountRaw);
+                    } else {
+                        amountInToQuote = CurrencyAmount.fromRawAmount((uiToken1 as Token) || wethToken, amountRaw);
+                    }
                 }
 
                 const commonIntermediaries = [wethToken, usdtToken].filter(
@@ -197,7 +218,7 @@ export const useUniswapV3Pathfinder = ({ currentChainId, uiToken0, uiToken1 }: U
                     let currentPathTotalGas = 0n;
                     let pathIsPossible = true;
 
-                    if (amountType === 'ethTokenField' && amountInToQuote) {
+                    if (isExactInputTrade && amountInToQuote) {
                         currentPathInputAmount = amountInToQuote;
                         let nextLegInputAmount = currentPathInputAmount;
 
@@ -208,7 +229,7 @@ export const useUniswapV3Pathfinder = ({ currentChainId, uiToken0, uiToken1 }: U
                                 legInToken,
                                 legOutToken,
                                 nextLegInputAmount,
-                                true,
+                                true, // isExactInputLeg = true
                                 signal
                             );
 
@@ -225,7 +246,8 @@ export const useUniswapV3Pathfinder = ({ currentChainId, uiToken0, uiToken1 }: U
                             currentPathTotalGas += quote.gasEstimate;
                         }
                         if (pathIsPossible) currentPathOutputAmount = nextLegInputAmount;
-                    } else if (amountOutToQuote) {
+                    } else if (!isExactInputTrade && amountOutToQuote) {
+                        // Exact output trade
                         currentPathOutputAmount = amountOutToQuote;
                         let prevLegOutputAmount = currentPathOutputAmount;
 
@@ -236,7 +258,7 @@ export const useUniswapV3Pathfinder = ({ currentChainId, uiToken0, uiToken1 }: U
                                 legInToken,
                                 legOutToken,
                                 prevLegOutputAmount,
-                                false,
+                                false, // isExactInputLeg = false
                                 signal
                             );
 
@@ -250,11 +272,11 @@ export const useUniswapV3Pathfinder = ({ currentChainId, uiToken0, uiToken1 }: U
                         }
                         if (pathIsPossible) currentPathInputAmount = prevLegOutputAmount;
                     } else {
-                        pathIsPossible = false; // Should not happen if amountInToQuote or amountOutToQuote is defined
+                        pathIsPossible = false;
                     }
 
                     if (pathIsPossible && currentPathInputAmount && currentPathOutputAmount) {
-                        if (amountType === 'ethTokenField') {
+                        if (isExactInputTrade) {
                             if (
                                 !bestCalculatedOutputAmount ||
                                 currentPathOutputAmount.greaterThan(bestCalculatedOutputAmount)
@@ -290,11 +312,11 @@ export const useUniswapV3Pathfinder = ({ currentChainId, uiToken0, uiToken1 }: U
                 }
 
                 const finalDisplayInputAmount = CurrencyAmount.fromRawAmount(
-                    uiToken0,
+                    actualTradeInputToken, // This is uiToken0
                     bestCalculatedInputAmount.quotient
                 );
                 const finalDisplayOutputAmount = CurrencyAmount.fromRawAmount(
-                    uiToken1,
+                    actualTradeOutputToken, // This is uiToken1
                     bestCalculatedOutputAmount.quotient
                 );
 
@@ -317,8 +339,8 @@ export const useUniswapV3Pathfinder = ({ currentChainId, uiToken0, uiToken1 }: U
                 const estimatedGasFeeNativeStr = bestTotalGasEstimate > 0n ? bestTotalGasEstimate.toString() : null;
 
                 const tradeDetails: V3TradeDetails = {
-                    inputToken: uiToken0,
-                    outputToken: uiToken1,
+                    inputToken: actualTradeInputToken,
+                    outputToken: actualTradeOutputToken,
                     inputAmount: finalDisplayInputAmount,
                     outputAmount: finalDisplayOutputAmount,
                     minimumReceived,

@@ -61,11 +61,8 @@ export const Swap = memo(function Swap() {
         tokenSelectOpen,
         selectableFromTokens,
         error,
-        useSwapError,
         insufficientLiquidity,
         lastUpdatedField,
-        customError,
-        setCustomError: setOnConnectError,
         setProcessingOpen,
         setFromAmount,
         setTargetAmount,
@@ -83,8 +80,6 @@ export const Swap = memo(function Swap() {
             connect('walletConnect');
         }
     };
-
-    const errorMsg = useSwapError || error;
 
     const disabled = useMemo(() => {
         const hasAmount = Number(ethTokenAmount) > 0 || Number(wxtmAmount) > 0; // Check if either has a positive amount
@@ -178,7 +173,7 @@ export const Swap = memo(function Swap() {
                 </SwapOptionAmount>
                 {connectedAccount.address ? <span>{`${t('swap.balance')}: ${toTokenDisplay?.balance}`}</span> : null}
             </SwapOption>
-            {(errorMsg || customError) && <SwapErrorMessage> {errorMsg || customError} </SwapErrorMessage>}
+            {error && <SwapErrorMessage> {error} </SwapErrorMessage>}
             {/* Show error only if it exists */}
             <SubmitButtonWrapper>
                 <WalletButton
@@ -196,11 +191,7 @@ export const Swap = memo(function Swap() {
             </SubmitButtonWrapper>
             {/* ////////////////////////////////// */}
             {/* Floating Elements */}
-            <ConnectWallet
-                isOpen={reviewSwap && !connectedAccount.address}
-                setIsOpen={setReviewSwap}
-                setError={setOnConnectError}
-            />
+            <ConnectWallet isOpen={reviewSwap && !connectedAccount.address} setIsOpen={setReviewSwap} />
             <SwapConfirmation
                 isOpen={Boolean(
                     reviewSwap &&
@@ -222,7 +213,7 @@ export const Swap = memo(function Swap() {
                           ? 'processingswap'
                           : swapSuccess
                             ? 'success'
-                            : errorMsg // If there's an error, set status to 'error'
+                            : error // If there's an error, set status to 'error'
                               ? 'error'
                               : 'processingapproval' // Default or handle appropriately
                 }
@@ -234,7 +225,7 @@ export const Swap = memo(function Swap() {
                 }}
                 txBlockHash={transaction?.txBlockHash ?? undefined}
                 transactionId={transaction?.transactionId ?? undefined}
-                errorMessage={errorMsg} // Pass the error message
+                errorMessage={error} // Pass the error message
             />
             <TokenSelection
                 isOpen={tokenSelectOpen}

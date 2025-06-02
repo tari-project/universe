@@ -1,153 +1,44 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Token, WETH9, Ether, NativeCurrency, CurrencyAmount } from '@uniswap/sdk-core';
-import { FeeAmount } from '@uniswap/v3-sdk';
+import { encodeSqrtRatioX96, FeeAmount, TickMath } from '@uniswap/v3-sdk';
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi';
 import {
     Contract,
     Signer as EthersSigner,
     TransactionResponse,
     TransactionReceipt,
-    AbiCoder,
-    TypedDataDomain,
-    TypedDataField,
+    zeroPadValue,
+    TransactionRequest,
 } from 'ethers';
-
-import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
-import { maxInt160 as ethersMaxUint160, PublicClient as ViemPublicClient } from 'viem';
+import { useEffect, useMemo, useState, useCallback } from 'react';
+import { erc20Abi, parseUnits, PublicClient as ViemPublicClient, zeroAddress } from 'viem';
 
 import {
-    UNIVERSAL_ROUTER_ADDRESSES as UNIVERSAL_ROUTER_ADDRESSES,
-    universalRouterAbi,
     QUOTER_ADDRESSES_V3,
     XTM_SDK_TOKEN,
     KNOWN_SDK_TOKENS,
     DEADLINE_MINUTES,
-    PERMIT2_ADDRESS, // You need to define this in constants.ts
-    PERMIT2_SPENDER_ADDRESS, // You need to define this in constants.ts (often Universal Router address)
+    nonfungiblePositionManagerAbi,
+    FACTORY_ADDRESSES_V3,
+    uniswapV3FactoryAbi,
+    NONFUNGIBLE_POSITION_MANAGER_ADDRESSES,
+    V3_SWAP_ROUTER_ADDRESS,
+    swapRouter02AbiJson,
 } from './lib/constants';
 import { encodePath as encodeV3Path, walletClientToSigner } from './lib/utils';
-import { V3TradeDetails, SwapField, SwapDirection, TradeLeg } from './lib/types';
+import { V3TradeDetails, SwapField, SwapDirection } from './lib/types';
 import { useConfigCoreStore } from '@app/store';
 import { useUniswapV3Pathfinder } from './useUniswapV3Pathfinder';
-
-const COMMAND_BYTE = {
-    V3_SWAP_EXACT_IN: '00',
-    PERMIT2_PERMIT: '0a',
-    WRAP_ETH: '0b',
-    UNWRAP_WETH: '0c',
-};
-const ROUTER_AS_RECIPIENT = '0x0000000000000000000000000000000000000000';
-
-interface PermitDetails {
-    token: string;
-    amount: bigint;
-    expiration: number;
-    nonce: number;
-}
-interface PermitSingle {
-    details: PermitDetails;
-    spender: string;
-    sigDeadline: number;
-}
-const EIP712_PERMIT2_DOMAIN_NAME = 'Permit2';
-const PERMIT_TYPES: Record<string, TypedDataField[]> = {
-    PermitDetails: [
-        { name: 'token', type: 'address' },
-        { name: 'amount', type: 'uint160' },
-        { name: 'expiration', type: 'uint48' },
-        { name: 'nonce', type: 'uint48' },
-    ],
-    PermitSingle: [
-        { name: 'details', type: 'PermitDetails' },
-        { name: 'spender', type: 'address' },
-        { name: 'sigDeadline', type: 'uint256' },
-    ],
-};
-
-async function getPermit2Nonce(
-    publicClient: ViemPublicClient,
-    permit2Address: string,
-    ownerAddress: string,
-    tokenAddress: string,
-    spenderAddress: string
-): Promise<bigint> {
-    try {
-        const data = await publicClient.readContract({
-            address: permit2Address as `0x${string}`,
-            abi: [
-                {
-                    inputs: [
-                        { name: 'user', type: 'address' },
-                        { name: 'token', type: 'address' },
-                        { name: 'spender', type: 'address' },
-                    ],
-                    name: 'allowance',
-                    outputs: [
-                        { name: 'amount', type: 'uint160' },
-                        { name: 'expiration', type: 'uint48' },
-                        { name: 'nonce', type: 'uint48' },
-                    ],
-                    stateMutability: 'view',
-                    type: 'function',
-                },
-            ],
-            functionName: 'allowance',
-            args: [ownerAddress as `0x${string}`, tokenAddress as `0x${string}`, spenderAddress as `0x${string}`],
-        });
-        return BigInt(data[2].toString());
-    } catch (e) {
-        console.error('Failed to fetch Permit2 nonce, defaulting to 0. THIS IS UNSAFE FOR PRODUCTION.', e);
-        return 0n;
-    }
-}
-
-async function signPermit2Data(
-    signer: EthersSigner,
-    permitAddress: string,
-    chainId: number,
-    owner: string,
-    token: string,
-    amount: bigint,
-    expiration: bigint,
-    nonce: bigint,
-    spender: string,
-    sigDeadline: bigint
-): Promise<{ permitSingleData: PermitSingle; signature: string } | null> {
-    const domain: TypedDataDomain = {
-        name: EIP712_PERMIT2_DOMAIN_NAME,
-        chainId: chainId,
-        verifyingContract: permitAddress,
-    };
-
-    const message: PermitSingle = {
-        details: {
-            token: token,
-            amount: amount,
-            expiration: Number(expiration),
-            nonce: Number(nonce),
-        },
-        spender: spender,
-        sigDeadline: Number(sigDeadline),
-    };
-
-    try {
-        const signature = await signer.signTypedData(domain, PERMIT_TYPES, message);
-        return { permitSingleData: message, signature };
-    } catch (e) {
-        console.error('Error signing Permit2 message:', e);
-        return null;
-    }
-}
+import { sendTransactionWithWagmiSigner, TransactionState } from './lib/providers';
 
 export const useUniswapV3Interactions = () => {
     const [pairTokenAddress, setPairTokenAddress] = useState<`0x${string}` | null>(null);
     const [direction, setDirection] = useState<SwapDirection>('toXtm');
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [insufficientLiquidity, setInsufficientLiquidity] = useState(false);
-    const [isApproving, setIsApproving] = useState(false);
-    const [isFetchingPool, setIsFetchingPool] = useState(false);
-    const abortApproveControllerRef = useRef<AbortController | null>(null);
+    const [isLoadingHook, setIsLoadingHook] = useState(false);
+    const [errorHook, setErrorHook] = useState<string | null>(null);
+    const [insufficientLiquidityHook, setInsufficientLiquidityHook] = useState(false);
+    const [isApprovingHook, setIsApprovingHook] = useState(false);
+    const [isFetchingPoolHook, setIsFetchingPoolHook] = useState(false);
 
     const { address: accountAddress, isConnected, chain } = useAccount();
     const { data: walletClient } = useWalletClient();
@@ -156,12 +47,14 @@ export const useUniswapV3Interactions = () => {
     const currentChainId = useMemo(() => chain?.id || defaultChainId, [chain?.id, defaultChainId]);
     const publicClient = usePublicClient({ chainId: currentChainId }) as ViemPublicClient;
 
-    const universalRouterAddress = useMemo(
-        () => (currentChainId ? UNIVERSAL_ROUTER_ADDRESSES[currentChainId] : undefined),
+    const quoterAddressV3 = useMemo(
+        () => (currentChainId ? QUOTER_ADDRESSES_V3[currentChainId] : undefined),
         [currentChainId]
     );
-    const v3QuoterAddress = useMemo(
-        () => (currentChainId ? QUOTER_ADDRESSES_V3[currentChainId] : undefined),
+
+    const v3SwapRouter02Address = useMemo(
+        // For the V3 SwapRouter02
+        () => (currentChainId ? V3_SWAP_ROUTER_ADDRESS[currentChainId] : undefined),
         [currentChainId]
     );
 
@@ -176,12 +69,8 @@ export const useUniswapV3Interactions = () => {
         (async () => {
             if (walletClient) {
                 const s = await walletClientToSigner(walletClient);
-                if (!cancelled) {
-                    setSigner(s);
-                }
-            } else if (!cancelled) {
-                setSigner(null);
-            }
+                if (!cancelled) setSigner(s);
+            } else if (!cancelled) setSigner(null);
         })();
         return () => {
             cancelled = true;
@@ -199,17 +88,11 @@ export const useUniswapV3Interactions = () => {
         return KNOWN_SDK_TOKENS[currentChainId]?.[lowerCaseAddress] || undefined;
     }, [pairTokenAddress, currentChainId]);
 
-    const { sdkToken0, sdkToken1 } = useMemo(() => {
-        const _sdkToken0 = direction === 'toXtm' ? sdkPairTokenForSwap : xtmTokenForSwap;
-        const _sdkToken1 = direction === 'toXtm' ? xtmTokenForSwap : sdkPairTokenForSwap;
-        return { sdkToken0: _sdkToken0, sdkToken1: _sdkToken1 };
-    }, [sdkPairTokenForSwap, xtmTokenForSwap, direction]);
+    const [sdkToken0, setSdkToken0] = useState<Token | undefined>(undefined);
+    const [sdkToken1, setSdkToken1] = useState<Token | undefined>(undefined);
 
-    const { token0: uiToken0, token1: uiToken1 } = useMemo((): {
-        token0: Token | NativeCurrency | undefined;
-        token1: Token | NativeCurrency | undefined;
-    } => {
-        if (!currentChainId) return { token0: undefined, token1: undefined };
+    useEffect(() => {
+        if (!currentChainId) return;
         let _uiInputToken: Token | NativeCurrency | undefined;
         let _uiOutputToken: Token | NativeCurrency | undefined;
         let selectedPairSideTokenForSwapUi: Token | NativeCurrency | undefined;
@@ -234,43 +117,39 @@ export const useUniswapV3Interactions = () => {
             _uiInputToken = _xtmUiToken;
             _uiOutputToken = selectedPairSideTokenForSwapUi;
         }
-        return { token0: _uiInputToken, token1: _uiOutputToken };
-    }, [pairTokenAddress, xtmTokenForSwap, direction, currentChainId]);
+        setSdkToken0(_uiInputToken as Token);
+        setSdkToken1(_uiOutputToken as Token);
+    }, [currentChainId, direction, pairTokenAddress, sdkPairTokenForSwap, xtmTokenForSwap]);
 
     useEffect(() => {
-        setError(null);
-        setInsufficientLiquidity(false);
+        setErrorHook(null);
+        setInsufficientLiquidityHook(false);
     }, [sdkToken0, sdkToken1, pairTokenAddress, direction, currentChainId]);
 
     const { getBestTradeForAmount: getPathfinderTradeDetails } = useUniswapV3Pathfinder({
         currentChainId,
-        uiToken0,
-        uiToken1,
+        uiToken0: sdkToken0,
+        uiToken1: sdkToken1,
     });
 
     const getTradeDetails = useCallback(
-        async (
-            amountRaw: string,
-            amountType: SwapField,
-            _feeAmountParamIgnored?: FeeAmount,
-            signal?: AbortSignal
-        ): Promise<V3TradeDetails> => {
-            setIsFetchingPool(true);
-            setError(null);
-            setInsufficientLiquidity(false);
+        async (amountRaw: string, amountType: SwapField, signal?: AbortSignal): Promise<V3TradeDetails> => {
+            setIsFetchingPoolHook(true);
+            setErrorHook(null);
+            setInsufficientLiquidityHook(false);
             const result = await getPathfinderTradeDetails(amountRaw, amountType, signal);
-            setIsFetchingPool(false);
+            setIsFetchingPoolHook(false);
             if (result.error) {
-                setError(result.error);
-                setInsufficientLiquidity(true);
+                setErrorHook(result.error);
+                setInsufficientLiquidityHook(true);
             }
             const outputAmountQuotient = result.tradeDetails?.outputAmount?.quotient;
             if (outputAmountQuotient === undefined || BigInt(outputAmountQuotient.toString()) === 0n) {
-                if (!result.error) setInsufficientLiquidity(true);
+                if (!result.error) setInsufficientLiquidityHook(true);
             }
 
-            const defaultInputCurrency = uiToken0 || (currentChainId ? Ether.onChain(currentChainId) : undefined);
-            const defaultOutputCurrency = uiToken1 || (currentChainId ? Ether.onChain(currentChainId) : undefined);
+            const defaultInputCurrency = sdkToken0 || (currentChainId ? Ether.onChain(currentChainId) : undefined);
+            const defaultOutputCurrency = sdkToken1 || (currentChainId ? Ether.onChain(currentChainId) : undefined);
 
             const defaultTrade: V3TradeDetails = {
                 inputToken: defaultInputCurrency!,
@@ -291,222 +170,467 @@ export const useUniswapV3Interactions = () => {
             };
             return result.tradeDetails || defaultTrade;
         },
-        [getPathfinderTradeDetails, uiToken0, uiToken1, currentChainId]
+        [getPathfinderTradeDetails, sdkToken0, currentChainId, sdkToken1]
     );
 
-    const executeSwap = useCallback(
-        async (
-            tradeDetailsToExecute: V3TradeDetails
-        ): Promise<{ response: TransactionResponse; receipt: TransactionReceipt } | null> => {
-            setError(null);
-            setIsLoading(true);
+    const approveTokenForV3Router02 = useCallback(
+        async (token: Token, amount: bigint, spender: string) => {
+            if (!signer || !accountAddress) throw new Error('Wallet not connected for approval');
+            setIsApprovingHook(true);
+            setErrorHook(null);
+            try {
+                const tokenContract = new Contract(token.address, erc20Abi, signer);
+                const currentAllowance = await tokenContract.allowance(accountAddress, spender);
+                if (BigInt(currentAllowance.toString()) < amount) {
+                    const approveTxPopulated = await tokenContract.approve.populateTransaction(spender, amount);
+                    const approveResult = await sendTransactionWithWagmiSigner(signer, approveTxPopulated);
+                    if (approveResult.state !== TransactionState.Sent || !approveResult.receipt) {
+                        throw new Error(`Approval for ${token.symbol} failed or receipt not found.`);
+                    }
+                    console.info(`${token.symbol} approved for V3SwapRouter02`);
+                } else {
+                    console.info(`Sufficient allowance for ${token.symbol} already exists for V3SwapRouter02`);
+                }
+                setIsApprovingHook(false);
+                return true;
+            } catch (e: any) {
+                console.error(`Approval error for ${token.symbol}:`, e);
+                setErrorHook(`Approval failed: ${e.message || 'Unknown error'}`);
+                setIsApprovingHook(false);
+                return false;
+            }
+        },
+        [signer, accountAddress]
+    );
 
-            const inputCurrency = tradeDetailsToExecute?.inputAmount?.currency;
-            const outputCurrency = tradeDetailsToExecute?.outputAmount?.currency;
+    const executeSwapWithV3Router02 = useCallback(
+        async (
+            tradeDetails: V3TradeDetails
+        ): Promise<{ response: TransactionResponse; receipt: TransactionReceipt } | null> => {
+            setErrorHook(null);
+            setIsLoadingHook(true);
+
+            const inputCurrency = tradeDetails?.inputAmount?.currency;
+            const amountInRaw = tradeDetails?.inputAmount?.quotient;
+            const amountOutMinRaw = tradeDetails?.minimumReceived?.quotient;
 
             if (
                 !signer ||
                 !accountAddress ||
                 !isConnected ||
-                !universalRouterAddress ||
+                !v3SwapRouter02Address ||
                 !currentChainId ||
                 !inputCurrency ||
-                !outputCurrency ||
-                !tradeDetailsToExecute.inputAmount ||
-                !tradeDetailsToExecute.outputAmount ||
-                !tradeDetailsToExecute.minimumReceived ||
-                !tradeDetailsToExecute.path ||
-                tradeDetailsToExecute.path.length === 0 ||
-                !PERMIT2_ADDRESS ||
-                !PERMIT2_SPENDER_ADDRESS
+                !amountInRaw ||
+                !amountOutMinRaw ||
+                !tradeDetails.path ||
+                tradeDetails.path.length === 0
             ) {
-                setError('Swap prerequisites not met for Universal Router execution (Permit2).');
-                setIsLoading(false);
+                setErrorHook('Swap (V3Router02) prerequisites not met.');
+                setIsLoadingHook(false);
                 return null;
             }
 
-            const commandsHexList: string[] = [];
-            const encodedInputs: string[] = [];
-            const abiCoder = AbiCoder.defaultAbiCoder();
+            const routerContract = new Contract(v3SwapRouter02Address, swapRouter02AbiJson, signer);
+            const deadline = BigInt(Math.floor(Date.now() / 1000) + DEADLINE_MINUTES * 60);
             const txOptions: { value?: bigint; gasLimit?: bigint } = {};
 
+            const amountInBigInt = BigInt(amountInRaw.toString());
+            const amountOutMinBigInt = BigInt(amountOutMinRaw.toString());
+
             try {
+                // Handle Approval if input is ERC20
                 if (!inputCurrency.isNative) {
-                    setIsApproving(true);
-                    const tokenToPermit = inputCurrency as Token;
-                    const permitAmount = ethersMaxUint160;
-                    const permitExpiration = BigInt(Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60);
-                    const permitNonce = await getPermit2Nonce(
-                        publicClient,
-                        PERMIT2_ADDRESS[currentChainId],
-                        accountAddress,
-                        tokenToPermit.address,
-                        PERMIT2_SPENDER_ADDRESS[currentChainId]
+                    const approvalSuccess = await approveTokenForV3Router02(
+                        inputCurrency as Token,
+                        amountInBigInt,
+                        v3SwapRouter02Address
                     );
-                    const txDeadlineForPermit = BigInt(Math.floor(Date.now() / 1000) + DEADLINE_MINUTES * 60);
-                    const permitSigDeadline = txDeadlineForPermit + 600n;
-
-                    const permitResult = await signPermit2Data(
-                        signer,
-                        PERMIT2_ADDRESS[currentChainId],
-                        currentChainId,
-                        accountAddress,
-                        tokenToPermit.address,
-                        permitAmount,
-                        permitExpiration,
-                        permitNonce,
-                        PERMIT2_SPENDER_ADDRESS[currentChainId],
-                        permitSigDeadline
-                    );
-                    setIsApproving(false);
-
-                    if (!permitResult) {
-                        setError('Failed to sign Permit2 message.');
-                        setIsLoading(false);
-                        return null;
+                    if (!approvalSuccess) {
+                        setIsLoadingHook(false);
+                        return null; // Error already set by approveTokenForV3Router02
                     }
+                }
 
-                    commandsHexList.push(COMMAND_BYTE.PERMIT2_PERMIT);
-                    encodedInputs.push(
-                        abiCoder.encode(
-                            [
-                                '(address token,uint160 amount,uint48 expiration,uint48 nonce) details',
-                                'address spender',
-                                'uint256 sigDeadline',
-                                'bytes signature',
-                            ],
-                            [
-                                permitResult.permitSingleData.details,
-                                permitResult.permitSingleData.spender,
-                                permitResult.permitSingleData.sigDeadline,
-                                permitResult.signature,
-                            ]
-                        )
-                    );
+                // Handle ETH value if input is native ETH
+                if (inputCurrency.isNative) {
+                    txOptions.value = amountInBigInt;
+                }
+
+                let populatedTx: TransactionRequest;
+
+                if (tradeDetails.path.length === 1) {
+                    // Single hop swap
+                    const leg = tradeDetails.path[0];
+                    const params = {
+                        tokenIn: leg.tokenIn.wrapped.address as `0x${string}`,
+                        tokenOut: leg.tokenOut.wrapped.address as `0x${string}`,
+                        fee: leg.fee as FeeAmount,
+                        recipient: accountAddress as `0x${string}`,
+                        deadline: deadline,
+                        amountIn: amountInBigInt,
+                        amountOutMinimum: amountOutMinBigInt,
+                        sqrtPriceLimitX96: 0n, // Typically 0 for no limit
+                    };
+                    console.info('[V3SwapRouter02] exactInputSingle params:', params);
+                    populatedTx = await routerContract.exactInputSingle.populateTransaction(params, txOptions);
                 } else {
-                    commandsHexList.push(COMMAND_BYTE.WRAP_ETH);
-                    encodedInputs.push(
-                        abiCoder.encode(
-                            ['address', 'uint256'],
-                            [universalRouterAddress, BigInt(tradeDetailsToExecute.inputAmount.quotient.toString())]
-                        )
+                    // Multi-hop swap
+                    const pathBytes = encodeV3Path(
+                        tradeDetails.path
+                            .map((leg) => leg.tokenIn.wrapped.address as `0x${string}`)
+                            .concat(
+                                tradeDetails.path[tradeDetails.path.length - 1].tokenOut.wrapped
+                                    .address as `0x${string}`
+                            ),
+                        tradeDetails.path.map((leg) => leg.fee as FeeAmount)
                     );
-                    txOptions.value = BigInt(tradeDetailsToExecute.inputAmount.quotient.toString());
+                    const params = {
+                        path: pathBytes,
+                        recipient: accountAddress as `0x${string}`,
+                        deadline: deadline,
+                        amountIn: amountInBigInt,
+                        amountOutMinimum: amountOutMinBigInt,
+                    };
+                    populatedTx = await routerContract.exactInput.populateTransaction(params, txOptions);
                 }
-
-                const amountInForSwap = BigInt(tradeDetailsToExecute.inputAmount.quotient.toString());
-                const amountOutMinForSwap = BigInt(tradeDetailsToExecute.minimumReceived.quotient.toString());
-
-                const v3PathTokens: `0x${string}`[] = [tradeDetailsToExecute.path[0].tokenIn.address as `0x${string}`];
-                const v3PathFees: FeeAmount[] = [];
-                tradeDetailsToExecute.path.forEach((leg: TradeLeg) => {
-                    v3PathTokens.push(leg.tokenOut.address as `0x${string}`);
-                    v3PathFees.push(leg.fee);
-                });
-                const v3EncodedPathBytes = encodeV3Path(v3PathTokens, v3PathFees);
-
-                let recipientForV3Swap: `0x${string}` = accountAddress as `0x${string}`;
-                if (outputCurrency.isNative) {
-                    recipientForV3Swap = ROUTER_AS_RECIPIENT as `0x${string}`;
-                }
-
-                commandsHexList.push(COMMAND_BYTE.V3_SWAP_EXACT_IN);
-                encodedInputs.push(
-                    abiCoder.encode(
-                        ['address', 'uint256', 'uint256', 'bytes', 'bool'],
-                        [
-                            recipientForV3Swap,
-                            amountInForSwap,
-                            amountOutMinForSwap,
-                            v3EncodedPathBytes,
-                            false,
-                            //!inputCurrency.isNative ? false : true,
-                        ]
-                    )
-                );
-
-                if (outputCurrency.isNative) {
-                    commandsHexList.push(COMMAND_BYTE.UNWRAP_WETH);
-                    encodedInputs.push(
-                        abiCoder.encode(['address', 'uint256'], [accountAddress as `0x${string}`, amountOutMinForSwap])
-                    );
-                }
-
-                const finalCommandsBytes = '0x' + commandsHexList.join('');
-                const deadline = BigInt(Math.floor(Date.now() / 1000) + DEADLINE_MINUTES * 60);
-                const routerContract = new Contract(universalRouterAddress, universalRouterAbi, signer);
 
                 try {
-                    const estimatedGas = await routerContract.execute.estimateGas(
-                        finalCommandsBytes,
-                        encodedInputs,
-                        deadline,
-                        txOptions
-                    );
-                    if (estimatedGas) {
-                        txOptions.gasLimit = (estimatedGas * 125n) / 100n;
-                    }
+                    const estimatedGas = await signer.estimateGas(populatedTx);
+                    populatedTx.gasLimit = (estimatedGas * 120n) / 100n; // 20% buffer
                 } catch (gasError: any) {
-                    console.warn('Gas estimation failed for Universal Router execute:', gasError);
-                    txOptions.gasLimit = BigInt(inputCurrency.isNative ? 300000 : 450000);
+                    console.warn('[V3SwapRouter02] Gas estimation failed:', gasError);
+                    populatedTx.gasLimit = inputCurrency.isNative ? 200000n : 300000n; // Fallback
                 }
 
-                const swapTxResponse = await routerContract.execute(
-                    finalCommandsBytes,
-                    encodedInputs,
-                    deadline,
-                    txOptions
-                );
+                const txResult = await sendTransactionWithWagmiSigner(signer, populatedTx);
+                setIsLoadingHook(false);
 
-                const swapTxReceipt = (await swapTxResponse.wait(1)) as TransactionReceipt;
-                setIsLoading(false);
-
-                if (swapTxReceipt?.status !== 1) {
-                    throw new Error('Universal Router Swap transaction failed on-chain.');
+                if (txResult.state === TransactionState.Sent && txResult.receipt && txResult.response) {
+                    console.info('[V3SwapRouter02] Swap successful!');
+                    return { response: txResult.response, receipt: txResult.receipt };
+                } else {
+                    setErrorHook(
+                        txResult.receipt
+                            ? 'Swap (V3Router02) transaction failed on-chain.'
+                            : 'Swap (V3Router02) transaction submission failed.'
+                    );
+                    return null;
                 }
-                return { response: swapTxResponse, receipt: swapTxReceipt };
             } catch (error: any) {
-                let message = 'Unknown error executing swap.';
+                let message = 'Unknown error executing V3Router02 swap.';
                 if (error.reason) message = `Swap failed: ${error.reason}`;
                 else if (error.data?.message) message = `Swap failed: ${error.data.message}`;
-                else if (error.error?.message) message = `Swap failed: ${error.error.message}`;
                 else if (error.message) message = `Swap failed: ${error.message}`;
-
-                setError(message);
-                setIsLoading(false);
-                setIsApproving(false);
+                setErrorHook(message);
+                setIsLoadingHook(false);
+                setIsApprovingHook(false);
                 return null;
             }
         },
-        [signer, accountAddress, isConnected, universalRouterAddress, currentChainId, publicClient]
+        [signer, accountAddress, isConnected, v3SwapRouter02Address, currentChainId, approveTokenForV3Router02]
     );
 
+    const addLiquidityAndCreatePoolIfNeeded = useCallback(async () => {
+        setErrorHook(null);
+        setIsLoadingHook(true);
+        setIsApprovingHook(false);
+
+        const fee = FeeAmount.LOW;
+        const tickSpacing = 10;
+        const minTick = Math.ceil(TickMath.MIN_TICK / tickSpacing) * tickSpacing;
+        const maxTick = Math.floor(TickMath.MAX_TICK / tickSpacing) * tickSpacing;
+        const tickLower = minTick; // Full range for testing
+        const tickUpper = maxTick; // Full range for testing
+        const amountUiToken0DesiredStr = '10000';
+        const amountUiToken1DesiredStr = '10000000';
+        const amountUiToken0MinStr = '10000';
+        const amountUiToken1MinStr = '10000';
+
+        const finalRecipient = accountAddress;
+
+        if (!sdkToken0 || !sdkToken1 || !currentChainId || !signer || !accountAddress || !publicClient) {
+            setErrorHook('Core prerequisites (tokens, chain, signer, account) not available.');
+            setIsLoadingHook(false);
+            return { state: TransactionState.Failed };
+        }
+
+        const nftPositionManagerAddr = currentChainId
+            ? NONFUNGIBLE_POSITION_MANAGER_ADDRESSES[currentChainId]
+            : undefined;
+        const factoryAddr = currentChainId ? FACTORY_ADDRESSES_V3[currentChainId] : undefined;
+
+        if (!nftPositionManagerAddr || !nonfungiblePositionManagerAbi || !factoryAddr || !uniswapV3FactoryAbi) {
+            setErrorHook('NFTPM or Factory address/ABI not configured for the current chain.');
+            setIsLoadingHook(false);
+            return { state: TransactionState.Failed };
+        }
+
+        if (tickLower >= tickUpper) {
+            setErrorHook('tickLower must be less than tickUpper.');
+            setIsLoadingHook(false);
+            return { state: TransactionState.Failed };
+        }
+        if (tickLower % tickSpacing !== 0 || tickUpper % tickSpacing !== 0) {
+            setErrorHook(`Ticks must be multiples of tickSpacing (${tickSpacing} for fee ${fee}).`);
+            setIsLoadingHook(false);
+            return { state: TransactionState.Failed };
+        }
+
+        const nftpmContract = new Contract(nftPositionManagerAddr, nonfungiblePositionManagerAbi, signer);
+        let createPoolResponse: TransactionResponse | undefined;
+        let createPoolReceipt: TransactionReceipt | undefined;
+        let mintResponse: TransactionResponse | undefined;
+        let mintReceipt: TransactionReceipt | undefined;
+        let nftTokenId: bigint | undefined;
+
+        try {
+            // --- Determine actual token order for the pool (tokenA address < tokenB address) ---
+            const [tokenA_pool, tokenB_pool] = sdkToken0.wrapped.sortsBefore(sdkToken1.wrapped)
+                ? [sdkToken0, sdkToken1]
+                : [sdkToken1, sdkToken0];
+
+            // --- Convert desired and min amounts based on sorted pool tokens ---
+            const amountADesired_pool = parseUnits(
+                tokenA_pool.equals(sdkToken0) ? amountUiToken0DesiredStr : amountUiToken1DesiredStr,
+                tokenA_pool.decimals
+            );
+            const amountBDesired_pool = parseUnits(
+                tokenB_pool.equals(sdkToken0) ? amountUiToken0DesiredStr : amountUiToken1DesiredStr,
+                tokenB_pool.decimals
+            );
+            const amountAMin_pool = parseUnits(
+                tokenA_pool.equals(sdkToken0) ? amountUiToken0MinStr : amountUiToken1MinStr,
+                tokenA_pool.decimals
+            );
+            const amountBMin_pool = parseUnits(
+                tokenB_pool.equals(sdkToken0) ? amountUiToken0MinStr : amountUiToken1MinStr,
+                tokenB_pool.decimals
+            );
+
+            // --- Check if pool exists ---
+            const factoryContract = new Contract(factoryAddr, uniswapV3FactoryAbi, signer.provider); // Use provider for read
+            console.info(
+                `[AddLiq] Checking pool for: ${tokenA_pool.wrapped.address}, ${tokenB_pool.wrapped.address}, fee: ${fee}`
+            );
+            const poolAddressOnFactory = await factoryContract.getPool(
+                tokenA_pool.wrapped.address,
+                tokenB_pool.wrapped.address,
+                fee
+            );
+            console.info(`[AddLiq] Fetched pool address from factory: ${poolAddressOnFactory}`);
+
+            if (poolAddressOnFactory === zeroAddress) {
+                setIsLoadingHook(true);
+                setErrorHook('Pool does not exist. Attempting to create and initialize...');
+
+                if (amountADesired_pool === 0n || amountBDesired_pool === 0n) {
+                    setErrorHook(
+                        'Both desired amounts must be greater than 0 to initialize a new pool with a price based on their ratio.'
+                    );
+                    setIsLoadingHook(false);
+                    return { state: TransactionState.Failed };
+                }
+                // Calculate sqrtPriceX96 for initialization based on the ratio of desired amounts
+                const sqrtPriceX96 = encodeSqrtRatioX96(amountBDesired_pool.toString(), amountADesired_pool.toString());
+                console.info(
+                    `[AddLiq] Pool does not exist. Initializing with sqrtPriceX96: ${sqrtPriceX96.toString()} based on desired amounts ratio.`
+                );
+
+                const createPoolPopulatedTx =
+                    await nftpmContract.createAndInitializePoolIfNecessary.populateTransaction(
+                        tokenA_pool.wrapped.address,
+                        tokenB_pool.wrapped.address,
+                        fee,
+                        BigInt(sqrtPriceX96.toString())
+                    );
+
+                try {
+                    const estimatedGas = await signer.estimateGas(createPoolPopulatedTx);
+                    createPoolPopulatedTx.gasLimit = (estimatedGas * 120n) / 100n;
+                } catch (gasError: any) {
+                    console.warn('[AddLiq] Gas estimation failed for createAndInitializePoolIfNecessary:', gasError);
+                    setErrorHook(`Gas Est Fail (Create Pool): ${gasError.reason || gasError.message}`);
+                    setIsLoadingHook(false);
+                    return { state: TransactionState.Failed };
+                }
+
+                const createPoolTxResult = await sendTransactionWithWagmiSigner(signer, createPoolPopulatedTx);
+                createPoolResponse = createPoolTxResult.response;
+                createPoolReceipt = createPoolTxResult.receipt;
+
+                if (createPoolTxResult.state !== TransactionState.Sent || !createPoolReceipt) {
+                    setErrorHook('Pool creation transaction failed or receipt not found.');
+                    setIsLoadingHook(false);
+                    return { state: TransactionState.Failed, createPoolResponse, createPoolReceipt };
+                }
+                setErrorHook(null);
+                console.info('[AddLiq] Pool created and initialized successfully.');
+            } else {
+                console.info('[AddLiq] Pool already exists at:', poolAddressOnFactory);
+            }
+
+            // --- Approvals for NFTPM ---
+            setIsLoadingHook(true); // For approvals and mint
+            setIsApprovingHook(true);
+            const tokensToApproveInfo: { token: Token; amount: bigint }[] = [];
+            if (!tokenA_pool.isNative && amountADesired_pool > 0n) {
+                tokensToApproveInfo.push({ token: tokenA_pool as Token, amount: amountADesired_pool });
+            }
+            if (!tokenB_pool.isNative && amountBDesired_pool > 0n) {
+                tokensToApproveInfo.push({ token: tokenB_pool as Token, amount: amountBDesired_pool });
+            }
+
+            for (const { token, amount } of tokensToApproveInfo) {
+                const tokenContract = new Contract(token.address, erc20Abi, signer);
+                try {
+                    const currentAllowance = await tokenContract.allowance(accountAddress, nftPositionManagerAddr);
+                    if (BigInt(currentAllowance.toString()) < amount) {
+                        console.info(`[AddLiq] Approving ${amount.toString()} of ${token.symbol} for NFTPM...`);
+                        const approveTxPopulated = await tokenContract.approve.populateTransaction(
+                            nftPositionManagerAddr,
+                            amount
+                        );
+                        try {
+                            const estimatedGas = await signer.estimateGas(approveTxPopulated);
+                            approveTxPopulated.gasLimit = (estimatedGas * 120n) / 100n;
+                        } catch (gasError) {
+                            console.warn(`[AddLiq] Gas estimation failed for ${token.symbol} approval, using default`);
+                            console.error(gasError);
+                            approveTxPopulated.gasLimit = 100000n;
+                        }
+                        const approveTxResult = await sendTransactionWithWagmiSigner(signer, approveTxPopulated);
+                        if (approveTxResult.state !== TransactionState.Sent || !approveTxResult.receipt) {
+                            throw new Error(`Approval failed for ${token.symbol}`);
+                        }
+                        console.info(`[AddLiq] Approved ${token.symbol}`);
+                    } else {
+                        console.info(`[AddLiq] Sufficient allowance already exists for ${token.symbol}`);
+                    }
+                } catch (approvalError: any) {
+                    console.error(`[AddLiq] Approval error for ${token.symbol}:`, approvalError);
+                    setIsApprovingHook(false);
+                    throw new Error(`Failed to approve ${token.symbol}: ${approvalError.message || approvalError}`);
+                }
+            }
+            setIsApprovingHook(false);
+
+            // --- ETH Value for Mint ---
+            let ethValueForMint = 0n;
+            if (tokenA_pool.isNative && amountADesired_pool > 0n) ethValueForMint = amountADesired_pool;
+            else if (tokenB_pool.isNative && amountBDesired_pool > 0n) ethValueForMint = amountBDesired_pool;
+
+            // --- Mint Parameters ---
+            const mintParamsForManager = {
+                token0: tokenA_pool.wrapped.address,
+                token1: tokenB_pool.wrapped.address,
+                fee: fee,
+                tickLower: tickLower,
+                tickUpper: tickUpper,
+                amount0Desired: amountADesired_pool,
+                amount1Desired: amountBDesired_pool,
+                amount0Min: amountAMin_pool,
+                amount1Min: amountBMin_pool,
+                recipient: finalRecipient as `0x${string}`,
+                deadline: BigInt(Math.floor(Date.now() / 1000) + DEADLINE_MINUTES * 60),
+            };
+            console.info(
+                '[AddLiq] Minting with params:',
+                JSON.stringify(mintParamsForManager, (_, v) => (typeof v === 'bigint' ? v.toString() : v))
+            );
+
+            const mintPopulatedTx = await nftpmContract.mint.populateTransaction(mintParamsForManager, {
+                value: ethValueForMint > 0n ? ethValueForMint : undefined,
+            });
+
+            try {
+                const estimatedGas = await signer.estimateGas(mintPopulatedTx);
+                mintPopulatedTx.gasLimit = (estimatedGas * 130n) / 100n;
+            } catch (gasError: any) {
+                console.warn('[AddLiq] Gas estimation failed for NFTPM mint:', gasError);
+                mintPopulatedTx.gasLimit = 700000n; // Increased fallback for mint
+            }
+
+            const mintTxResult = await sendTransactionWithWagmiSigner(signer, mintPopulatedTx);
+            mintResponse = mintTxResult.response;
+            mintReceipt = mintTxResult.receipt;
+            setIsLoadingHook(false);
+
+            if (mintTxResult.state === TransactionState.Sent && mintReceipt) {
+                console.info('[AddLiq] Liquidity minted successfully!');
+                try {
+                    const transferTopic = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
+                    const mintEventLog = mintReceipt.logs.find(
+                        (log) =>
+                            log.address.toLowerCase() === nftPositionManagerAddr?.toLowerCase() &&
+                            log.topics[0] === transferTopic && // Transfer event
+                            log.topics[1].toLowerCase() ===
+                                zeroPadValue('0x0000000000000000000000000000000000000000', 32).toLowerCase() && // From zero address
+                            log.topics[2].toLowerCase() === zeroPadValue(finalRecipient!, 32).toLowerCase() // To recipient
+                    );
+                    if (mintEventLog && mintEventLog.topics[3]) {
+                        nftTokenId = BigInt(mintEventLog.topics[3]);
+                        console.info(`[AddLiq] Minted NFT ID: ${nftTokenId}`);
+                    }
+                } catch (parseError) {
+                    console.warn('[AddLiq] Could not parse tokenId from mint receipt logs:', parseError);
+                }
+                return {
+                    state: TransactionState.Sent,
+                    createPoolResponse,
+                    createPoolReceipt,
+                    mintResponse,
+                    mintReceipt,
+                    nftTokenId,
+                };
+            } else {
+                const errorMsg = mintReceipt
+                    ? 'Mint transaction failed on-chain (NFTPM).'
+                    : 'Mint transaction submission failed (NFTPM).';
+                setErrorHook(errorMsg);
+                return {
+                    state: TransactionState.Failed,
+                    createPoolResponse,
+                    createPoolReceipt,
+                    mintResponse,
+                    mintReceipt,
+                };
+            }
+        } catch (error: any) {
+            console.error('[AddLiq] Error in addLiquidityAndCreatePoolIfNeeded:', error);
+            let errorMessage = 'An error occurred during add liquidity.';
+            if (error.message) errorMessage = error.message;
+            else if (error.reason) errorMessage = error.reason;
+            else if (error.code) errorMessage = `Transaction failed with code: ${error.code}`;
+            setErrorHook(errorMessage);
+            setIsLoadingHook(false);
+            setIsApprovingHook(false);
+            return {
+                state: TransactionState.Failed,
+                createPoolResponse,
+                createPoolReceipt,
+                mintResponse,
+                mintReceipt,
+            };
+        }
+    }, [sdkToken0, sdkToken1, accountAddress, currentChainId, signer, publicClient]);
+
     return {
+        addLiquidityV3: addLiquidityAndCreatePoolIfNeeded,
         pairTokenAddress,
         direction,
         setPairTokenAddress,
         setDirection,
-        token0: uiToken0,
-        token1: uiToken1,
-        sdkToken0,
-        sdkToken1,
-        isLoading: isLoading || isApproving || isFetchingPool,
-        isApproving,
-        isFetchingPool,
-        error,
-        insufficientLiquidity,
-        v3RouterAddress: universalRouterAddress,
+        token0: sdkToken0,
+        token1: sdkToken1,
+        isLoading: isLoadingHook,
+        isApproving: isApprovingHook,
+        isFetchingPool: isFetchingPoolHook,
+        error: errorHook,
+        insufficientLiquidity: insufficientLiquidityHook,
         getTradeDetails,
-        executeSwap,
-        isReady:
-            !!publicClient &&
-            !!currentChainId &&
-            !!v3QuoterAddress &&
-            !!signer &&
-            !!accountAddress &&
-            isConnected &&
-            !!universalRouterAddress &&
-            !!PERMIT2_ADDRESS && // Add these checks
-            !!PERMIT2_SPENDER_ADDRESS,
+        executeSwap: executeSwapWithV3Router02,
+        executeSwapWithV3Router02,
+        isReady: !!publicClient && !!currentChainId && !!quoterAddressV3 && !!signer && !!accountAddress && isConnected,
     };
 };

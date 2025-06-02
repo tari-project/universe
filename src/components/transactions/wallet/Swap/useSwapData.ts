@@ -19,7 +19,7 @@ import {
     formatNativeGasFee as utilFormatNativeGasFee,
 } from '@app/hooks/swap/lib/utils';
 import { useTokenDisplayInfo } from './helpers/useTokenInfo';
-import { useUniswapV3Interactions } from '@app/hooks/swap/useSwapV3';
+import { useUniswapV3Interactions } from '@app/hooks/swap/useSwapV3'; // Correct path
 
 export type TokenSymbol = EnabledTokensEnum;
 export interface SelectableTokenInfo {
@@ -39,16 +39,19 @@ export const useSwapData = () => {
     const connectedAccount = useAccount();
     const addToast = useToastStore((s) => s.addToast);
 
-    const [ethTokenAmount, setEthTokenAmount] = useState<string>('1');
-    const [wxtmAmount, setWxtmAmount] = useState<string>('');
+    const lastEthValue = useRef<string>('1');
+    const lastWxtmValue = useRef<string>('');
+    const [ethTokenAmount, setEthTokenAmount] = useState<string>(lastEthValue.current);
+    const [wxtmAmount, setWxtmAmount] = useState<string>(lastWxtmValue.current);
+
     const [lastUpdatedField, setLastUpdatedField] = useState<SwapField>('ethTokenField');
 
     const [reviewSwap, setReviewSwap] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
+    // isLoading in useSwapData will combine local loading with hook's loading
+    const [isCalculatingQuote, setIsCalculatingQuote] = useState(false);
     const [processingOpen, setProcessingOpen] = useState(false);
-    // isProcessingApproval can now represent "isSigningPermit" or general pre-swap processing
-    const [isProcessingApproval, setIsProcessingApproval] = useState(false);
-    const [isProcessingSwap, setIsProcessingSwap] = useState(false);
+    const [isProcessingPreSwap, setIsProcessingPreSwap] = useState(false); // For permit signing
+    const [isProcessingSwapTx, setIsProcessingSwapTx] = useState(false); // For actual swap tx
     const [swapSuccess, setSwapSuccess] = useState(false);
     const [tokenSelectOpen, setTokenSelectOpen] = useState(false);
 
@@ -56,37 +59,36 @@ export const useSwapData = () => {
     const [networkFee, setNetworkFee] = useState<string | null>(null);
     const [slippage, setSlippage] = useState<string | null>(null);
     const [transactionId, setTransactionId] = useState<string | null>(null);
-    // We won't have separate approval and swap fees if using Permit2 for all ERC20s in a single tx
     const [paidTransactionFee, setPaidTransactionFee] = useState<string | null>(null);
     const [txBlockHash, setTxBlockHash] = useState<`0x${string}` | null>(null);
-    const [swapError, setSwapError] = useState<string | null>(null);
+    const [uiError, setUiError] = useState<string | null>(null); // Error specific to this UI layer
     const [minimumReceivedDisplay, setMinimumReceivedDisplay] = useState<string | null>(null);
     const [executionPriceDisplay, setExecutionPriceDisplay] = useState<string | null>(null);
 
     const [tradeDetails, setTradeDetails] = useState<V3TradeDetails | null>(null);
     const defaultChainId = useConfigCoreStore((s) => s.default_chain);
-    const [customError, setCustomError] = useState<string | null>(null);
 
     const abortController = useRef<AbortController | null>(null);
 
     const {
         direction,
+        addLiquidityV3,
         token0: swapEngineInputToken,
         token1: swapEngineOutputToken,
-        // sdkToken0, // Not directly used in this UI layer logic
-        // sdkToken1, // Not directly used in this UI layer logic
         setDirection: setSwapEngineDirection,
         setPairTokenAddress,
         getTradeDetails,
-        // checkAndRequestApproval, // No longer called directly from here
         executeSwap,
-        insufficientLiquidity,
-        error: useSwapError, // This is error from useUniswapV3Interactions
-        isLoading: isSwapEngineLoading, // Loading state from useUniswapV3Interactions
-        isApproving: isSwapEngineApproving, // isSigningPermit state from useUniswapV3Interactions
+        insufficientLiquidity: insufficientLiquidityFromHook,
+        error: swapEngineError,
+        isLoading: isSwapEngineLoading,
+        isApproving: isSwapEngineSigningPermit, // This is the isApproving from the inner hook
     } = useUniswapV3Interactions();
 
-    const currentChainId = useMemo(() => connectedAccount.chain?.id, [connectedAccount.chain]);
+    const currentChainId = useMemo(
+        () => connectedAccount.chain?.id || defaultChainId,
+        [connectedAccount.chain, defaultChainId]
+    );
 
     const fromUiTokenDefinition = useMemo(
         () => (direction === 'toXtm' ? swapEngineInputToken : swapEngineOutputToken),
@@ -102,10 +104,10 @@ export const useSwapData = () => {
         isLoading: isLoadingFromBalance,
         refetch: refetchFromToken,
     } = useTokenDisplayInfo({
-        uiTokenDefinition: fromUiTokenDefinition, // No need to cast if type is Token | NativeCurrency | undefined
-        chainId: currentChainId || defaultChainId,
+        uiTokenDefinition: fromUiTokenDefinition,
+        chainId: currentChainId,
         accountAddress: connectedAccount.address,
-        fallbackDefinition: currentChainId ? Ether.onChain(currentChainId) : undefined, // WETH9 changed to Ether for native
+        fallbackDefinition: currentChainId ? Ether.onChain(currentChainId) : undefined,
     });
 
     const {
@@ -113,8 +115,8 @@ export const useSwapData = () => {
         isLoading: isLoadingToBalance,
         refetch: refetchToToken,
     } = useTokenDisplayInfo({
-        uiTokenDefinition: toUiTokenDefinition, // No need to cast
-        chainId: currentChainId || defaultChainId,
+        uiTokenDefinition: toUiTokenDefinition,
+        chainId: currentChainId,
         accountAddress: connectedAccount.address,
         fallbackDefinition: currentChainId ? XTM_SDK_TOKEN[currentChainId] : undefined,
     });
@@ -155,7 +157,7 @@ export const useSwapData = () => {
         SelectableTokenInfo,
         'balance' | 'usdValue' | 'rawBalance' | 'pricePerTokenUSD'
     >[] => {
-        const chainId = currentChainId || defaultChainId;
+        const chainId = currentChainId;
         const xtmDef = XTM_SDK_TOKEN[chainId];
         const tokens: Omit<SelectableTokenInfo, 'balance' | 'usdValue' | 'rawBalance' | 'pricePerTokenUSD'>[] = [];
 
@@ -191,7 +193,7 @@ export const useSwapData = () => {
 
         Object.values(EnabledTokensEnum).forEach((tokenKey) => {
             let tokenDefinitionFromEnum: Token | undefined;
-            if (tokenKey === EnabledTokensEnum.WXTM) tokenDefinitionFromEnum = xtmDef;
+            if (tokenKey === EnabledTokensEnum.WXTM && xtmDef) tokenDefinitionFromEnum = xtmDef;
 
             if (tokenDefinitionFromEnum?.address) {
                 if (!tokens.find((t) => t.definition.equals(tokenDefinitionFromEnum!))) {
@@ -207,7 +209,7 @@ export const useSwapData = () => {
             }
         });
         return tokens;
-    }, [currentChainId, defaultChainId]);
+    }, [currentChainId]);
 
     const selectableTokensContracts = useMemo(() => {
         if (!connectedAccount.address || baseSelectableTokensForList.length === 0) return [];
@@ -245,7 +247,6 @@ export const useSwapData = () => {
             const newPrices: Record<string, number | undefined> = {};
             const promises = baseSelectableTokensForList.map(async (token) => {
                 if (token.symbol) {
-                    // Ensure symbol exists
                     newPrices[token.symbol] = await fetchTokenPriceUSD(token.symbol, currentChainId);
                 }
             });
@@ -255,6 +256,11 @@ export const useSwapData = () => {
         };
         fetchAllPrices();
     }, [baseSelectableTokensForList, currentChainId]);
+
+    useEffect(() => {
+        lastEthValue.current = ethTokenAmount;
+        lastWxtmValue.current = wxtmAmount;
+    }, [ethTokenAmount, wxtmAmount]);
 
     const selectableFromTokens = useMemo((): SelectableTokenInfo[] => {
         return baseSelectableTokensForList
@@ -315,8 +321,7 @@ export const useSwapData = () => {
     ]);
 
     const clearCalculatedDetails = useCallback(() => {
-        setCustomError(null);
-        setSwapError(null);
+        setUiError(null);
         setTradeDetails(null);
         setPriceImpact(null);
         setNetworkFee(null);
@@ -328,8 +333,8 @@ export const useSwapData = () => {
         setPaidTransactionFee(null);
         setReviewSwap(false);
         setSwapSuccess(false);
-        setIsProcessingApproval(false);
-        setIsProcessingSwap(false);
+        setIsProcessingPreSwap(false);
+        setIsProcessingSwapTx(false);
         shouldCalculate.current = true;
     }, []);
 
@@ -346,7 +351,6 @@ export const useSwapData = () => {
         async (signal: AbortSignal) => {
             let amountTypedByUserStr: string;
             let tokenUsedForParsingAmount: Token | NativeCurrency | undefined;
-            let amountTypeForGetTradeDetails: SwapField;
 
             const tradeInputTokenDef = direction === 'toXtm' ? fromUiTokenDefinition : toUiTokenDefinition;
             const tradeOutputTokenDef = direction === 'toXtm' ? toUiTokenDefinition : fromUiTokenDefinition;
@@ -354,11 +358,9 @@ export const useSwapData = () => {
             if (lastUpdatedField === 'ethTokenField') {
                 amountTypedByUserStr = ethTokenAmount;
                 tokenUsedForParsingAmount = fromUiTokenDefinition;
-                amountTypeForGetTradeDetails = 'ethTokenField';
             } else {
                 amountTypedByUserStr = wxtmAmount;
                 tokenUsedForParsingAmount = toUiTokenDefinition;
-                amountTypeForGetTradeDetails = 'wxtmField';
             }
 
             if (
@@ -370,41 +372,30 @@ export const useSwapData = () => {
                 !tradeOutputTokenDef
             ) {
                 clearCalculatedDetails();
-                setIsLoading(false);
+                setIsCalculatingQuote(false);
                 return;
             }
 
-            setIsLoading(true);
+            setIsCalculatingQuote(true);
             try {
                 const amountForCalcWei = viemParseUnits(amountTypedByUserStr, tokenUsedForParsingAmount.decimals);
-                const details = await getTradeDetails(
-                    amountForCalcWei.toString(),
-                    amountTypeForGetTradeDetails,
-                    undefined,
-                    signal
-                );
-                if (signal.aborted) return;
+                const details = await getTradeDetails(amountForCalcWei.toString(), lastUpdatedField, signal);
+                if (signal.aborted) {
+                    setIsCalculatingQuote(false);
+                    return;
+                }
 
                 setTradeDetails(details);
 
                 if (details && details.inputAmount && details.outputAmount) {
-                    // Ensure details are valid
-                    setPriceImpact(
-                        details.priceImpactPercent ? `${details.priceImpactPercent.toSignificant(2)}%` : null
-                    );
-                    setSlippage(
-                        details.priceImpactPercent
-                            ? `${details.priceImpactPercent.toSignificant(2)}% (Price Impact)`
-                            : null
-                    );
+                    setPriceImpact(details.priceImpactPercent ? `${details.priceImpactPercent}%` : null);
+                    setSlippage(details.priceImpactPercent ? `${details.priceImpactPercent}% (Price Impact)` : null);
                     setNetworkFee(details.estimatedGasFeeNative || null);
-
                     if (details.minimumReceived && details.minimumReceived.currency.symbol) {
                         setMinimumReceivedDisplay(
                             `${formatAmountSmartly(details.minimumReceived)} ${details.minimumReceived.currency.symbol}`
                         );
                     } else setMinimumReceivedDisplay(null);
-
                     if (details.executionPrice) {
                         const baseToken = details.executionPrice.baseCurrency;
                         const quoteToken = details.executionPrice.quoteCurrency;
@@ -415,32 +406,41 @@ export const useSwapData = () => {
                         } else setExecutionPriceDisplay(null);
                     } else setExecutionPriceDisplay(null);
 
-                    if (lastUpdatedField === 'ethTokenField') {
-                        setWxtmAmount(formatAmountSmartly(details.outputAmount));
+                    if (details.inputToken?.name === XTM_SDK_TOKEN[currentChainId].name) {
+                        if (lastUpdatedField === 'ethTokenField') {
+                            setWxtmAmount(formatAmountSmartly(details.inputAmount));
+                        } else {
+                            setEthTokenAmount(formatAmountSmartly(details.outputAmount));
+                        }
                     } else {
-                        setEthTokenAmount(formatAmountSmartly(details.inputAmount));
+                        if (lastUpdatedField === 'ethTokenField') {
+                            setWxtmAmount(formatAmountSmartly(details.outputAmount));
+                        } else {
+                            setEthTokenAmount(formatAmountSmartly(details.inputAmount));
+                        }
                     }
                 } else {
                     if (lastUpdatedField === 'ethTokenField' && wxtmAmount !== '') setWxtmAmount('');
                     else if (lastUpdatedField === 'wxtmField' && ethTokenAmount !== '') setEthTokenAmount('');
-                    clearCalculatedDetails(); // Clear if details are null or incomplete
+                    clearCalculatedDetails();
                 }
-                setIsLoading(false);
+                setIsCalculatingQuote(false);
             } catch (e: any) {
                 addToast({ title: 'Calculation Error', text: e.message || 'Failed to get quote.', type: 'error' });
                 clearCalculatedDetails();
-                setIsLoading(false);
+                setIsCalculatingQuote(false);
             }
         },
         [
-            lastUpdatedField,
             direction,
-            ethTokenAmount,
             fromUiTokenDefinition,
-            wxtmAmount,
             toUiTokenDefinition,
+            lastUpdatedField,
+            ethTokenAmount,
+            wxtmAmount,
             clearCalculatedDetails,
             getTradeDetails,
+            currentChainId,
             addToast,
         ]
     );
@@ -456,7 +456,7 @@ export const useSwapData = () => {
             if (shouldCalculate.current) {
                 shouldCalculate.current = false;
                 calcAmounts(signal);
-            } else setIsLoading(false);
+            } else setIsCalculatingQuote(false);
         }, 500);
     }, [calcAmounts]);
 
@@ -484,7 +484,7 @@ export const useSwapData = () => {
             setLastUpdatedField(field);
             shouldCalculate.current = false;
             clearCalculatedDetails();
-            setIsLoading(false);
+            setIsCalculatingQuote(false);
             if (calcRef.current) clearTimeout(calcRef.current);
             return;
         }
@@ -502,25 +502,22 @@ export const useSwapData = () => {
         else setWxtmAmount(processedValue);
         setLastUpdatedField(field);
         shouldCalculate.current = true;
-        setIsLoading(true);
+        setIsCalculatingQuote(true);
     };
 
     const handleToggleUiDirection = useCallback(() => {
         const newUiDirection = direction === 'toXtm' ? 'fromXtm' : 'toXtm';
         setSwapEngineDirection(newUiDirection);
-        const tempAmount = ethTokenAmount;
-        setEthTokenAmount(wxtmAmount);
-        setWxtmAmount(tempAmount);
-        setLastUpdatedField(lastUpdatedField === 'ethTokenField' ? 'wxtmField' : 'ethTokenField');
         clearCalculatedDetails();
         shouldCalculate.current = true;
-    }, [direction, setSwapEngineDirection, clearCalculatedDetails, ethTokenAmount, wxtmAmount, lastUpdatedField]);
+    }, [direction, setSwapEngineDirection, clearCalculatedDetails]);
 
     const handleConfirm = async () => {
         setTransactionId(null);
         setSwapSuccess(false);
         setPaidTransactionFee(null);
         setTxBlockHash(null);
+        setUiError(null);
 
         if (!tradeDetails || !tradeDetails.inputAmount || !tradeDetails.outputAmount || !tradeDetails.inputToken) {
             addToast({ title: 'Error', text: 'No valid trade details. Please try again.', type: 'error' });
@@ -535,33 +532,48 @@ export const useSwapData = () => {
 
         setProcessingOpen(true);
         setReviewSwap(false);
-        setIsProcessingApproval(true); // Indicates "preparing transaction" (includes permit signing if applicable)
+        setIsProcessingPreSwap(true);
 
         try {
             const swapResult = await executeSwap(tradeDetails);
 
-            setIsProcessingApproval(false); // Done with pre-swap steps
-            setIsProcessingSwap(true); // Indicates swap tx is submitted
+            setIsProcessingPreSwap(false);
 
-            if (!swapResult || !swapResult.receipt || swapResult.receipt.status !== 1) {
-                setIsProcessingSwap(false);
+            if (!swapResult || !swapResult.receipt) {
+                // Check if executeSwap returned null or no receipt
+                setIsProcessingSwapTx(false);
                 setProcessingOpen(false);
+                // Error would have been set by executeSwap, or set a generic one here
+                setUiError(swapEngineError || 'Swap execution failed to return a result.');
                 addToast({
                     title: 'Swap Failed',
-                    text: swapResult?.response?.hash
-                        ? `Transaction ${swapResult.response.hash} failed.`
-                        : 'Transaction failed on-chain.',
+                    text: swapEngineError || 'Swap execution did not complete.',
                     type: 'error',
                 });
                 return;
             }
 
-            setIsProcessingSwap(false);
+            setIsProcessingSwapTx(true); // Indicates swap tx is submitted and we are waiting for it
+
+            if (swapResult.receipt.status !== 1) {
+                setIsProcessingSwapTx(false);
+                setProcessingOpen(false);
+                setUiError(`Transaction ${swapResult.response.hash} failed on-chain.`);
+                addToast({
+                    title: 'Swap Failed',
+                    text: `Transaction ${swapResult.response.hash} failed.`,
+                    type: 'error',
+                });
+                return;
+            }
+
+            setIsProcessingSwapTx(false);
             setSwapSuccess(true);
             setTransactionId(swapResult.response.hash);
             setTxBlockHash(swapResult.receipt.blockHash as `0x${string}`);
 
             if (swapResult.receipt.gasUsed && swapResult.receipt.gasPrice && connectedAccount.chain) {
+                // Use effectiveGasPrice
                 const swapFee =
                     BigInt(swapResult.receipt.gasUsed.toString()) * BigInt(swapResult.receipt.gasPrice.toString());
                 setPaidTransactionFee(
@@ -573,9 +585,11 @@ export const useSwapData = () => {
                 handleRefetchBalances();
             }, 3000);
         } catch (e: any) {
-            setIsProcessingApproval(false);
-            setIsProcessingSwap(false);
+            // This catch is for errors thrown by executeSwap itself before returning
+            setIsProcessingPreSwap(false);
+            setIsProcessingSwapTx(false);
             setProcessingOpen(false);
+            setUiError(e.message || 'An error occurred during the swap process.');
             addToast({
                 title: 'Transaction Error',
                 text: e.message || 'An error occurred during the swap.',
@@ -596,8 +610,8 @@ export const useSwapData = () => {
             executionPrice: executionPriceDisplay,
             transactionId,
             txBlockHash,
-            paidTransactionFeeApproval: null, // Combined into paidTransactionFee
-            paidTransactionFeeSwap: paidTransactionFee, // Use the combined fee
+            paidTransactionFeeApproval: null,
+            paidTransactionFeeSwap: paidTransactionFee,
         }),
         [
             direction,
@@ -617,7 +631,7 @@ export const useSwapData = () => {
     const handleSelectFromToken = useCallback(
         (selectedToken: SelectableTokenInfo) => {
             setPairTokenAddress(selectedToken.address);
-            setEthTokenAmount('1'); // Reset amount on token change
+            setEthTokenAmount('1');
             setWxtmAmount('');
             setLastUpdatedField('ethTokenField');
             setTokenSelectOpen(false);
@@ -627,27 +641,27 @@ export const useSwapData = () => {
         [setPairTokenAddress, clearCalculatedDetails]
     );
 
-    const anyLoading = useMemo(
+    const combinedIsLoading = useMemo(
         () =>
-            isLoading ||
+            isCalculatingQuote ||
             isLoadingFromBalance ||
             isLoadingToBalance ||
             isLoadingErc20Balances ||
             isLoadingNativeForList ||
             isLoadingPrices ||
-            isSwapEngineLoading ||
-            isSwapEngineApproving,
+            isSwapEngineLoading,
         [
-            isLoading,
+            isCalculatingQuote,
             isLoadingFromBalance,
             isLoadingToBalance,
             isLoadingErc20Balances,
             isLoadingNativeForList,
             isLoadingPrices,
             isSwapEngineLoading,
-            isSwapEngineApproving,
         ]
     );
+
+    const combinedError = uiError || swapEngineError; // Prioritize UI error, then hook error
 
     return {
         notEnoughBalance,
@@ -655,30 +669,28 @@ export const useSwapData = () => {
         toTokenDisplay,
         reviewSwap,
         setReviewSwap,
-        isLoading: anyLoading,
+        isLoading: combinedIsLoading,
         processingOpen,
         setProcessingOpen,
-        isProcessingApproval,
-        isProcessingSwap,
+        isProcessingApproval: isProcessingPreSwap || isSwapEngineSigningPermit, // Combine pre-swap and permit signing
+        isProcessingSwap: isProcessingSwapTx,
         swapSuccess,
         ethTokenAmount,
         wxtmAmount,
         uiDirection: direction,
         handleConfirm,
         transaction: transactionForDisplay,
-        useSwapError,
+        error: combinedError, // Use combined error
         handleSelectFromToken,
         selectableFromTokens,
         tokenSelectOpen,
         setTokenSelectOpen,
         handleToggleUiDirection,
         clearCalculatedDetails,
-        insufficientLiquidity,
+        insufficientLiquidity: insufficientLiquidityFromHook,
         handleRefetchBalances,
         lastUpdatedField,
-        error: swapError || useSwapError, // Combine errors
-        customError,
-        setCustomError,
+        addLiquidityV3,
         setFromAmount: (val: string) => handleNumberInput(val, 'ethTokenField'),
         setTargetAmount: (val: string) => handleNumberInput(val, 'wxtmField'),
     };

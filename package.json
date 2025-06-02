@@ -27,6 +27,7 @@
         "@tauri-apps/plugin-os": "^2.2.1",
         "@tauri-apps/plugin-shell": "^2.2.0",
         "@uniswap/sdk-core": "^7.7.2",
+        "@uniswap/smart-order-router": "^4.21.17",
         "@uniswap/universal-router": "^2.0.0",
         "@uniswap/v2-sdk": "^4.15.2",
         "@uniswap/v3-core": "^1.0.1",
