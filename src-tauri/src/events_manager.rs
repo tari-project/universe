@@ -30,7 +30,8 @@ use crate::airdrop::send_new_block_mined;
 use crate::app_in_memory_config::DEFAULT_EXCHANGE_ID;
 use crate::configs::config_core::ConfigCore;
 use crate::configs::trait_config::ConfigImpl;
-
+#[cfg(target_os = "windows")]
+use crate::external_dependencies::RequiredExternalDependency;
 use crate::{
     events::NodeTypeUpdatePayload, events_emitter::EventsEmitter, tasks_tracker::TasksTrackers,
     UniverseAppState,
