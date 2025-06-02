@@ -6,6 +6,7 @@ import { useUIStore } from '@app/store';
 import { useSetupStore } from '@app/store/useSetupStore';
 import { setShowResumeAppModal } from '@app/store/actions/uiStoreActions';
 import { FloatingNode, FloatingPortal, useFloating, useFloatingNodeId } from '@floating-ui/react';
+import { SetupPhase } from '@app/types/backend-state';
 
 const ResumeApplicationModal = memo(function ResumeApplicationModal() {
     const [open, setOpen] = useState(false);
@@ -27,6 +28,7 @@ const ResumeApplicationModal = memo(function ResumeApplicationModal() {
     const isAppUnlocked = useSetupStore((state) => state.appUnlocked);
     const isSetupFinished = useSetupStore((state) => state.isInitialSetupFinished);
     const shouldShowModal = useUIStore((state) => state.showResumeAppModal);
+    const disabledPhases = useSetupStore((state) => state.disabled_phases);
 
     const showModal = useMemo(() => {
         const shouldShowModalForInitialSetup = isAppUnlocked && !isSetupFinished;
@@ -35,19 +37,35 @@ const ResumeApplicationModal = memo(function ResumeApplicationModal() {
     }, [isAppUnlocked, isSetupFinished, shouldShowModal, status]);
 
     const currentPhaseToShow = useMemo(() => {
-        if (walletPhaseInfoPayload?.is_complete && Boolean(unknownPhaseInfoPayload)) {
+        if (
+            walletPhaseInfoPayload?.is_complete &&
+            Boolean(unknownPhaseInfoPayload) &&
+            !disabledPhases.includes(SetupPhase.Unknown)
+        ) {
             return unknownPhaseInfoPayload;
         }
 
-        if (hardwarePhaseInfoPayload?.is_complete && Boolean(walletPhaseInfoPayload)) {
+        if (
+            hardwarePhaseInfoPayload?.is_complete &&
+            Boolean(walletPhaseInfoPayload) &&
+            !disabledPhases.includes(SetupPhase.Wallet)
+        ) {
             return walletPhaseInfoPayload;
         }
 
-        if (nodePhaseInfoPayload?.is_complete && Boolean(hardwarePhaseInfoPayload)) {
+        if (
+            nodePhaseInfoPayload?.is_complete &&
+            Boolean(hardwarePhaseInfoPayload) &&
+            !disabledPhases.includes(SetupPhase.Hardware)
+        ) {
             return hardwarePhaseInfoPayload;
         }
 
-        if (corePhaseInfoPayload?.is_complete && Boolean(nodePhaseInfoPayload)) {
+        if (
+            corePhaseInfoPayload?.is_complete &&
+            Boolean(nodePhaseInfoPayload) &&
+            !disabledPhases.includes(SetupPhase.Node)
+        ) {
             return nodePhaseInfoPayload;
         }
 
@@ -58,6 +76,7 @@ const ResumeApplicationModal = memo(function ResumeApplicationModal() {
         nodePhaseInfoPayload,
         unknownPhaseInfoPayload,
         walletPhaseInfoPayload,
+        disabledPhases,
     ]);
 
     const [stageProgress, stageTotal] = useMemo(() => {

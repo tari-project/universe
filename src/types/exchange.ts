@@ -16,3 +16,15 @@ export interface ExchangeContent {
     logo_img_small_url?: string;
     reward_percentage: number;
 }
+
+// Must match struct ExchangeMiner in app_in_memory_config.rs
+export interface ExchangeMiner {
+    id: string;
+    name: string;
+    slug: string;
+}
+
+export interface ExchangeMinerAssets extends ExchangeMiner {
+    logoImgUrl?: string;
+    logoImgUrlSmall?: string;
+}
