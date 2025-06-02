@@ -160,11 +160,10 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                     let health_status = status_monitor.check_health(Duration::from_secs(0), self.health_timeout).await;
                     match health_status {
                         HealthStatus::Healthy => {
-                            // Reset failure tracking on success
-                            consecutive_health_failures = 0;
-                            grace_period_active = false;
                             info!(target: LOG_TARGET, "Process '{}' stabilized and is healthy.", name);
                             initial_health_passed = true;
+                            // Reset failure tracking on success - these values won't be used again since we're exiting
+                            let _ = (consecutive_health_failures, grace_period_active);
                             break;
                         }
                         HealthStatus::Warning => {
