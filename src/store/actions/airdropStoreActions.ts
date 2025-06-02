@@ -223,7 +223,7 @@ export const handleUsernameChange = async (username: string, onError?: (e: unkno
     });
 };
 
-async function fetchFeatureFlag(route: string) {
+export async function fetchFeatureFlag(route: string) {
     return await handleAirdropRequest<{ access: boolean } | null>({
         publicRequest: true,
         path: `/features/${route}`,
@@ -240,6 +240,14 @@ export async function fetchPollingFeatureFlag() {
         useAirdropStore.setState({ pollingEnabled: response.access });
         // Let the BE know we're using the polling feature for mining proofs
         // invoke('set_airdrop_polling', { pollingEnabled: response.access });
+    }
+    return response;
+}
+
+export async function fetchSwapsEnabledFeatureFlag() {
+    const response = await fetchFeatureFlag(FEATURES.FF_SWAPS_ENABLED);
+    if (response) {
+        useAirdropStore.setState({ swapsEnabled: response.access });
     }
     return response;
 }

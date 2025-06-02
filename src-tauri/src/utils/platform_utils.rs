@@ -23,13 +23,16 @@
 #[cfg(target_os = "macos")]
 use super::macos_utils::is_app_in_applications_folder;
 #[cfg(target_os = "macos")]
+use crate::events::CriticalProblemPayload;
+#[cfg(target_os = "macos")]
+use crate::events_emitter::EventsEmitter;
+#[cfg(target_os = "macos")]
 use crate::tasks_tracker::TasksTrackers;
 
 #[cfg(target_os = "windows")]
+use crate::events_emitter::EventsEmitter;
+#[cfg(target_os = "windows")]
 use crate::external_dependencies::ExternalDependencies;
-
-#[cfg(not(target_os = "linux"))]
-use crate::events_manager::EventsManager;
 #[cfg(not(target_os = "linux"))]
 use anyhow::anyhow;
 use std::fmt::Display;
@@ -65,38 +68,36 @@ impl PlatformUtils {
         }
     }
 
-    pub async fn initialize_preqesities(app_handle: tauri::AppHandle) -> Result<(), anyhow::Error> {
+    #[allow(unused_variables)]
+    pub async fn initialize_preqesities() -> Result<(), anyhow::Error> {
         let current_os = PlatformUtils::detect_current_os();
         match current_os {
             CurrentOperatingSystem::Windows => {
                 #[cfg(target_os = "windows")]
-                PlatformUtils::initialize_windows_preqesities(app_handle).await?;
+                PlatformUtils::initialize_windows_preqesities().await?;
                 Ok(())
             }
             CurrentOperatingSystem::Linux => {
                 #[cfg(target_os = "linux")]
-                PlatformUtils::initialize_linux_preqesities(app_handle).await?;
+                PlatformUtils::initialize_linux_preqesities().await?;
                 Ok(())
             }
             CurrentOperatingSystem::MacOS => {
                 #[cfg(target_os = "macos")]
-                PlatformUtils::initialize_macos_preqesities(app_handle).await?;
+                PlatformUtils::initialize_macos_preqesities().await?;
                 Ok(())
             }
         }
     }
 
     #[cfg(target_os = "macos")]
-    async fn initialize_macos_preqesities(
-        app_handle: tauri::AppHandle,
-    ) -> Result<(), anyhow::Error> {
+    async fn initialize_macos_preqesities() -> Result<(), anyhow::Error> {
         if !cfg!(dev) && !is_app_in_applications_folder() {
-            EventsManager::handle_critical_problem(
-                &app_handle,
-                Some("common:installation-problem".to_string()),
-                Some("common:not-installed-in-applications-directory".to_string()),
-                None,
-            )
+            EventsEmitter::emit_critical_problem(CriticalProblemPayload {
+                title: Some("common:installation-problem".to_string()),
+                description: Some("common:not-installed-in-applications-directory".to_string()),
+                error_message: None,
+            })
             .await;
             TasksTrackers::current().stop_all_processes().await;
             return Err(anyhow!(
@@ -107,9 +108,7 @@ impl PlatformUtils {
     }
 
     #[cfg(target_os = "windows")]
-    async fn initialize_windows_preqesities(
-        app_handle: tauri::AppHandle,
-    ) -> Result<(), anyhow::Error> {
+    async fn initialize_windows_preqesities() -> Result<(), anyhow::Error> {
         if cfg!(target_os = "windows") && !cfg!(dev) {
             ExternalDependencies::current()
                 .read_registry_installed_applications()
@@ -118,8 +117,7 @@ impl PlatformUtils {
                 .check_if_some_dependency_is_not_installed()
                 .await;
             if is_missing {
-                EventsManager::handle_missing_application_files(
-                    &app_handle,
+                EventsEmitter::emit_missing_applications(
                     ExternalDependencies::current()
                         .get_external_dependencies()
                         .await,
@@ -132,9 +130,7 @@ impl PlatformUtils {
     }
 
     #[cfg(target_os = "linux")]
-    async fn initialize_linux_preqesities(
-        _app_handle: tauri::AppHandle,
-    ) -> Result<(), anyhow::Error> {
+    async fn initialize_linux_preqesities() -> Result<(), anyhow::Error> {
         Ok(())
     }
 }

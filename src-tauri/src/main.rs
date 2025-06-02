@@ -25,6 +25,7 @@
 
 use commands::CpuMinerStatus;
 use cpu_miner::CpuMinerConfig;
+use events_emitter::EventsEmitter;
 use events_manager::EventsManager;
 use gpu_miner_adapter::GpuMinerStatus;
 use log::{error, info, warn};
@@ -68,7 +69,7 @@ use tokio::sync::{Mutex, RwLock};
 use tokio::time;
 use utils::logging_utils::setup_logging;
 
-use app_in_memory_config::AppInMemoryConfig;
+use app_in_memory_config::DynamicMemoryConfig;
 #[cfg(all(feature = "exchange-ci", not(feature = "release-ci")))]
 use app_in_memory_config::EXCHANGE_ID;
 
@@ -134,6 +135,7 @@ mod setup;
 mod spend_wallet_adapter;
 mod spend_wallet_manager;
 mod systemtray_manager;
+mod tapplets;
 mod tasks_tracker;
 mod telemetry_manager;
 mod telemetry_service;
@@ -152,6 +154,11 @@ mod xmrig_adapter;
 
 const LOG_TARGET: &str = "tari::universe::main";
 const RESTART_EXIT_CODE: i32 = i32::MAX;
+const IGNORED_SENTRY_ERRORS: [&str; 2] = [
+    "Failed to initialize gtk backend",
+    "SIGABRT / SI_TKILL / 0x0",
+];
+
 #[cfg(not(any(
     feature = "release-ci",
     feature = "release-ci-beta",
@@ -177,7 +184,7 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
         let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
 
         let init_node_status = *node_status_watch_rx.borrow();
-        let _ = EventsManager::handle_base_node_update(&move_app, init_node_status).await;
+        EventsEmitter::emit_base_node_update(init_node_status).await;
 
         let mut latest_updated_block_height = init_node_status.block_height;
         loop {
@@ -193,7 +200,7 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
                         }
                     }
                     if node_status.block_height > latest_updated_block_height && !initial_sync_finished {
-                        let _ = EventsManager::handle_base_node_update(&move_app, node_status).await;
+                        EventsEmitter::emit_base_node_update(node_status).await;
                         latest_updated_block_height = node_status.block_height;
                     }
                 },
@@ -218,7 +225,7 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
                         .node_manager
                         .list_connected_peers()
                         .await {
-                            let _ = EventsManager::handle_connected_peers_update(&move_app, connected_peers).await;
+                            EventsEmitter::emit_connected_peers_update(connected_peers.clone()).await;
                         } else {
                             let err_msg = "Error getting connected peers";
                             error!(target: LOG_TARGET, "{}", err_msg);
@@ -248,7 +255,7 @@ struct UniverseAppState {
     is_getting_p2pool_connections: Arc<AtomicBool>,
     is_getting_transactions_history: Arc<AtomicBool>,
     is_getting_coinbase_history: Arc<AtomicBool>,
-    in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
+    in_memory_config: Arc<RwLock<DynamicMemoryConfig>>,
     tari_address: Arc<RwLock<TariAddress>>,
     cpu_miner: Arc<RwLock<CpuMiner>>,
     gpu_miner: Arc<RwLock<GpuMiner>>,
@@ -279,6 +286,15 @@ struct FEPayload {
 
 #[allow(clippy::too_many_lines)]
 fn main() {
+    #[cfg(target_os = "linux")]
+    {
+        if std::path::Path::new("/dev/dri").exists()
+            && std::env::var("WAYLAND_DISPLAY").is_err()
+            && std::env::var("XDG_SESSION_TYPE").unwrap_or_default() == "x11"
+        {
+            std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
+        }
+    }
     let _unused = fix_path_env::fix();
     // TODO: Integrate sentry into logs. Because we are using Tari's logging infrastructure, log4rs
     // sets the logger and does not expose a way to add sentry into it.
@@ -299,6 +315,15 @@ fn main() {
         sentry::ClientOptions {
             release: sentry::release_name!(),
             attach_stacktrace: true,
+            before_send: Some(Arc::new(|event| {
+                if event.logentry.as_ref().map_or(false, |entry| {
+                    IGNORED_SENTRY_ERRORS.iter().any(|ignored| entry.message.starts_with(ignored))
+                }) {
+                    None
+                } else {
+                    Some(event)
+                }
+            })),
             ..Default::default()
         },
     ));
@@ -355,8 +380,8 @@ fn main() {
         pool_status_url: None,
     }));
 
-    let app_in_memory_config =
-        Arc::new(RwLock::new(app_in_memory_config::AppInMemoryConfig::init()));
+    let dynamic_memory_config = block_on(async { DynamicMemoryConfig::init().await });
+    let app_in_memory_config = Arc::new(RwLock::new(dynamic_memory_config));
 
     let cpu_miner: Arc<RwLock<CpuMiner>> = Arc::new(
         CpuMiner::new(
@@ -452,7 +477,10 @@ fn main() {
         websocket_event_manager: Arc::new(RwLock::new(websocket_events_manager)),
     };
     let app_state_clone = app_state.clone();
-    #[allow(deprecated, reason = "This is a temporary fix until the new tauri API is released")]
+    #[allow(
+        deprecated,
+        reason = "This is a temporary fix until the new tauri API is released"
+    )]
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_process::init())
@@ -464,9 +492,14 @@ fn main() {
 
             match app.get_webview_window("main") {
                 Some(w) => {
-                    let _unused = w.show().map_err(|err| error!(target: LOG_TARGET, "Couldn't show the main window {:?}", err));
+                    let _unused = w.show().map_err(|err| {
+                        error!(
+                            target: LOG_TARGET,
+                            "Couldn't show the main window {:?}", err
+                        )
+                    });
                     let _unused = w.set_focus();
-                },
+                }
                 None => {
                     error!(target: LOG_TARGET, "Could not find main window");
                 }
@@ -474,6 +507,7 @@ fn main() {
         }))
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_cli::init())
+        .plugin(tauri_plugin_http::init())
         .setup(|app| {
             let config_path = app
                 .path()
@@ -505,30 +539,60 @@ fn main() {
             match app.cli().matches() {
                 Ok(matches) => {
                     if let Some(backup_path) = matches.args.get("import-backup") {
-                        if let Some(backup_path)  = backup_path.value.as_str() {
-                            info!(target: LOG_TARGET, "Trying to copy backup to existing db: {:?}", backup_path);
+                        if let Some(backup_path) = backup_path.value.as_str() {
+                            info!(
+                                target: LOG_TARGET,
+                                "Trying to copy backup to existing db: {:?}", backup_path
+                            );
                             let backup_path = Path::new(backup_path);
                             if backup_path.exists() {
-                               let existing_db = app.path()
+                                let existing_db = app
+                                    .path()
                                     .app_local_data_dir()
                                     .map_err(Box::new)?
                                     .join("node")
-                                    .join(Network::get_current_or_user_setting_or_default().to_string())
-                                    .join("data").join("base_node").join("db");
+                                    .join(
+                                        Network::get_current_or_user_setting_or_default()
+                                            .to_string(),
+                                    )
+                                    .join("data")
+                                    .join("base_node")
+                                    .join("db");
 
                                 info!(target: LOG_TARGET, "Existing db path: {:?}", existing_db);
-                                let _unused = fs::remove_dir_all(&existing_db).inspect_err(|e| warn!(target: LOG_TARGET, "Could not remove existing db when importing backup: {:?}", e));
-                                let _unused=fs::create_dir_all(&existing_db).inspect_err(|e| error!(target: LOG_TARGET, "Could not create existing db when importing backup: {:?}", e));
-                                let _unused = fs::copy(backup_path, existing_db.join("data.mdb")).inspect_err(|e| error!(target: LOG_TARGET, "Could not copy backup to existing db: {:?}", e));
+                                let _unused = fs::remove_dir_all(&existing_db).inspect_err(|e| {
+                                    warn!(
+                                        target: LOG_TARGET,
+                                        "Could not remove existing db when importing backup: {:?}",
+                                        e
+                                    )
+                                });
+                                let _unused = fs::create_dir_all(&existing_db).inspect_err(|e| {
+                                    error!(
+                                        target: LOG_TARGET,
+                                        "Could not create existing db when importing backup: {:?}",
+                                        e
+                                    )
+                                });
+                                let _unused = fs::copy(backup_path, existing_db.join("data.mdb"))
+                                    .inspect_err(|e| {
+                                        error!(
+                                            target: LOG_TARGET,
+                                            "Could not copy backup to existing db: {:?}", e
+                                        )
+                                    });
                             } else {
-                                warn!(target: LOG_TARGET, "Backup file does not exist: {:?}", backup_path);
+                                warn!(
+                                    target: LOG_TARGET,
+                                    "Backup file does not exist: {:?}", backup_path
+                                );
                             }
                         }
                     }
-                },
+                }
                 Err(e) => {
                     error!(target: LOG_TARGET, "Could not get cli matches: {:?}", e);
-                   return Err(Box::new(e));
+                    return Err(Box::new(e));
                 }
             };
             // The start of needed restart operations. Break this out into a module if we need n+1
@@ -542,18 +606,27 @@ fn main() {
                 // They may not exist. This could be first run.
                 if node_peer_db.exists() {
                     if let Err(e) = remove_dir_all(node_peer_db) {
-                        warn!(target: LOG_TARGET, "Could not clear peer data folder: {}", e);
+                        warn!(
+                            target: LOG_TARGET,
+                            "Could not clear peer data folder: {}", e
+                        );
                     }
                 }
 
                 if wallet_peer_db.exists() {
                     if let Err(e) = remove_dir_all(wallet_peer_db) {
-                        warn!(target: LOG_TARGET, "Could not clear peer data folder: {}", e);
+                        warn!(
+                            target: LOG_TARGET,
+                            "Could not clear peer data folder: {}", e
+                        );
                     }
                 }
 
                 remove_file(tcp_tor_toggled_file).map_err(|e| {
-                    error!(target: LOG_TARGET, "Could not remove tcp_tor_toggled file: {}", e);
+                    error!(
+                        target: LOG_TARGET,
+                        "Could not remove tcp_tor_toggled file: {}", e
+                    );
                     e.to_string()
                 })?;
             }
@@ -597,6 +670,8 @@ fn main() {
             commands::set_monerod_config,
             commands::set_tari_address,
             commands::confirm_exchange_address,
+            commands::user_selected_exchange,
+            commands::is_universal_miner,
             commands::set_p2pool_enabled,
             commands::set_show_experimental_settings,
             commands::set_should_always_use_system_language,
@@ -634,12 +709,19 @@ fn main() {
             commands::trigger_phases_restart,
             commands::set_node_type,
             commands::set_warmup_seen,
-            commands::set_allow_notifications
+            commands::set_allow_notifications,
+            commands::launch_builtin_tapplet,
+            commands::get_tari_wallet_address,
+            commands::get_tari_wallet_balance,
+            commands::get_bridge_envs
         ])
         .build(tauri::generate_context!())
-        .inspect_err(
-            |e| error!(target: LOG_TARGET, "Error while building tauri application: {:?}", e),
-        )
+        .inspect_err(|e| {
+            error!(
+                target: LOG_TARGET,
+                "Error while building tauri application: {:?}", e
+            )
+        })
         .expect("error while running tauri application");
 
     info!(
@@ -655,46 +737,53 @@ fn main() {
 
     app.run(move |app_handle, event| {
         // We can only receive system events from the event loop so this needs to be here
-        let _unused = SystemStatus::current().receive_power_event(&power_monitor).inspect_err(|e| {
-            error!(target: LOG_TARGET, "Could not receive power event: {:?}", e)
-        });
-
-
+        let _unused = SystemStatus::current()
+            .receive_power_event(&power_monitor)
+            .inspect_err(|e| error!(target: LOG_TARGET, "Could not receive power event: {:?}", e));
 
         match event {
-        tauri::RunEvent::Ready  => {
-            info!(target: LOG_TARGET, "RunEvent Ready");
-            let handle_clone = app_handle.clone();
-            tauri::async_runtime::spawn(async move {
-                SetupManager::get_instance().start_setup(handle_clone.clone()).await;
-                SetupManager::spawn_sleep_mode_handler(handle_clone.clone()).await;
-            });
-        }
-        tauri::RunEvent::ExitRequested { api: _, code, .. } => {
-            info!(target: LOG_TARGET, "App shutdown request caught with code: {:#?}", code);
-            if let Some(exit_code) = code {
-                if exit_code == RESTART_EXIT_CODE {
-                    // RunEvent does not hold the exit code so we store it separately
-                    is_restart_requested.store(true, Ordering::SeqCst);
+            tauri::RunEvent::Ready => {
+                info!(target: LOG_TARGET, "RunEvent Ready");
+                let handle_clone = app_handle.clone();
+                tauri::async_runtime::spawn(async move {
+                    SetupManager::get_instance()
+                        .start_setup(handle_clone.clone())
+                        .await;
+                    SetupManager::spawn_sleep_mode_handler(handle_clone.clone()).await;
+                });
+            }
+            tauri::RunEvent::ExitRequested { api: _, code, .. } => {
+                info!(
+                    target: LOG_TARGET,
+                    "App shutdown request caught with code: {:#?}", code
+                );
+                if let Some(exit_code) = code {
+                    if exit_code == RESTART_EXIT_CODE {
+                        // RunEvent does not hold the exit code so we store it separately
+                        is_restart_requested.store(true, Ordering::SeqCst);
+                    }
                 }
+                block_on(TasksTrackers::current().stop_all_processes());
+                info!(target: LOG_TARGET, "App shutdown complete");
             }
-            block_on(TasksTrackers::current().stop_all_processes());
-            info!(target: LOG_TARGET, "App shutdown complete");
-        }
-        tauri::RunEvent::Exit => {
-            info!(target: LOG_TARGET, "App shutdown caught");
-            block_on(TasksTrackers::current().stop_all_processes());
-            if is_restart_requested_clone.load(Ordering::SeqCst) {
-                app_handle.cleanup_before_exit();
-                let env = app_handle.env();
-                tauri::process::restart(&env); // this will call exit(0) so we'll not return to the event loop
+            tauri::RunEvent::Exit => {
+                info!(target: LOG_TARGET, "App shutdown caught");
+                block_on(TasksTrackers::current().stop_all_processes());
+                if is_restart_requested_clone.load(Ordering::SeqCst) {
+                    app_handle.cleanup_before_exit();
+                    let env = app_handle.env();
+                    tauri::process::restart(&env); // this will call exit(0) so we'll not return to the event loop
+                }
+                info!(
+                    target: LOG_TARGET,
+                    "Tari Universe v{} shut down successfully",
+                    app_handle.package_info().version
+                );
             }
-            info!(target: LOG_TARGET, "Tari Universe v{} shut down successfully", app_handle.package_info().version);
-        }
-        RunEvent::MainEventsCleared => {
-            // no need to handle
-        }
-        _ => {}
-    };
+            RunEvent::MainEventsCleared => {
+                // no need to handle
+            }
+            _ => {}
+        };
     });
 }

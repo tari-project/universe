@@ -29,7 +29,7 @@ export const fetchTransactionsHistory = async ({ continuation, limit }: TxArgs) 
         });
         return transactions;
     } catch (error) {
-        if (error !== ALREADY_FETCHING.HISTORY) {
+        if (error !== ALREADY_FETCHING.HISTORY && error !== ALREADY_FETCHING.TX_HISTORY) {
             console.error('Could not get transaction history: ', error);
         }
         return [];
@@ -94,4 +94,8 @@ export const setWalletBalance = (balance: WalletBalance) => {
         },
         calculated_balance,
     });
+};
+
+export const setIsSwapping = (isSwapping: boolean) => {
+    useWalletStore.setState({ is_swapping: isSwapping });
 };

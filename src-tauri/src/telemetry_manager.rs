@@ -22,7 +22,8 @@
 
 use crate::airdrop;
 use crate::airdrop::get_wallet_view_key_hashed;
-use crate::app_in_memory_config::AppInMemoryConfig;
+use crate::app_in_memory_config::DynamicMemoryConfig;
+
 use crate::commands::CpuMinerStatus;
 use crate::configs::config_core::ConfigCore;
 use crate::configs::config_mining::ConfigMining;
@@ -234,7 +235,7 @@ impl From<TelemetryData> for NotificationData {
 
 pub struct TelemetryManager {
     cpu_miner_status_watch_rx: watch::Receiver<CpuMinerStatus>,
-    in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
+    in_memory_config: Arc<RwLock<DynamicMemoryConfig>>,
     node_network: Option<Network>,
     gpu_status: watch::Receiver<GpuMinerStatus>,
     node_status: watch::Receiver<BaseNodeStatus>,
@@ -248,7 +249,7 @@ impl TelemetryManager {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         cpu_miner_status_watch_rx: watch::Receiver<CpuMinerStatus>,
-        in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
+        in_memory_config: Arc<RwLock<DynamicMemoryConfig>>,
         network: Option<Network>,
         gpu_status: watch::Receiver<GpuMinerStatus>,
         node_status: watch::Receiver<BaseNodeStatus>,
