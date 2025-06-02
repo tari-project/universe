@@ -94,8 +94,10 @@ export const PoolStatsTile = () => {
     useEffect(() => {
         const unpaidAboveThreshold = unpaid >= REWARD_THRESHOLD;
         if (!unpaidAboveThreshold) return;
-        const canShowSuccess = unpaid % REWARD_THRESHOLD === 0;
-        const shouldShowSuccess = unpaidRef.current !== unpaid;
+
+        const canShowSuccess = Math.floor(unpaid / 1_000_000) % REWARD_THRESHOLD === 0;
+        const shouldShowSuccess = unpaidRef.current !== unpaid && unpaidRef.current > 0 && unpaidRef.current < unpaid;
+
         if (canShowSuccess && shouldShowSuccess) {
             setShowSuccessAnimation(true);
             if (visualMode) {
