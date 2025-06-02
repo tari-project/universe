@@ -48,7 +48,7 @@ export {
     getMaxAvailableThreads,
     setCustomLevelsDialogOpen,
     setMiningControlsEnabled,
-    setMiningNetwork,
+    getMiningNetwork,
     startMining,
     stopMining,
     toggleDeviceExclusion,

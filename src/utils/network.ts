@@ -16,22 +16,16 @@ const networkGroups: Record<NetworkGroup, Network[]> = {
     mainnet: [Network.MainNet],
 };
 
-const storedNetwork = useMiningStore.getState().network;
-const _network = Object.values(Network).find((network) => network === storedNetwork);
-
-function _isTestnet(): boolean {
-    return _network ? networkGroups.testnet.includes(_network) : false;
-}
-
-function _isStagenet(): boolean {
-    return _network ? networkGroups.stagenet.includes(_network) : false;
-}
-
 export function isMainNet(): boolean {
+    const storedNetwork = useMiningStore.getState().network;
+    const _network = Object.values(Network).find((network) => network === storedNetwork);
     return _network ? networkGroups.mainnet.includes(_network) : false;
 }
 
 export function getNetworkGroup() {
+    const storedNetwork = useMiningStore.getState().network;
+    if (!storedNetwork) getNetworkGroup();
+    const _network = Object.values(Network).find((network) => network === storedNetwork);
     return Object.keys(networkGroups).find((key) => networkGroups[key].includes(_network));
 }
 
@@ -43,10 +37,7 @@ const urlSuffixMap = {
 
 export function getExplorerUrl(nonTextExplorer = false) {
     const baseSubdomain = nonTextExplorer ? `explore` : `textexplore`;
-    const networkGroup = getNetworkGroup();
-    if (networkGroup) {
-        const subdomainSuffix = urlSuffixMap[networkGroup] ?? '';
-
-        return `https://${baseSubdomain}${subdomainSuffix}.tari.com`;
-    }
+    const networkGroup = getNetworkGroup() || 'mainnet';
+    const subdomainSuffix = urlSuffixMap[networkGroup] ?? '';
+    return `https://${baseSubdomain}${subdomainSuffix}.tari.com`;
 }
