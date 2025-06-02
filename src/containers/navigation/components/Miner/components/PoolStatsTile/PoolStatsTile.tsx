@@ -33,17 +33,6 @@ import { setAnimationState } from '@tari-project/tari-tower';
 import i18n from 'i18next';
 import { ProgressAnimation } from './ProgressAnimation/ProgressAnimation';
 
-const variants = {
-    hidden: {
-        opacity: 0,
-        x: 10,
-    },
-    visible: {
-        opacity: 1,
-        x: 0,
-    },
-};
-
 const REWARD_THRESHOLD = `2 XTM`;
 
 export const PoolStatsTile = () => {
@@ -166,7 +155,11 @@ export const PoolStatsTile = () => {
             <AnimatePresence>
                 {expanded && (
                     <ExpandedWrapper ref={refs.setFloating} {...getFloatingProps()} style={floatingStyles}>
-                        <ExpandedBox variants={variants} initial="hidden" animate="visible" exit="hidden">
+                        <ExpandedBox
+                            initial={{ opacity: 0, x: 10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 10 }}
+                        >
                             <Typography variant="h5">{t('stats.tile-heading')}</Typography>
                             <Typography variant="p">
                                 <Trans
