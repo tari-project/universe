@@ -27,9 +27,9 @@ use std::time::Duration;
 use futures_util::future::FusedFuture;
 use log::{info, warn};
 use tari_common::configuration::Network;
+use tauri::AppHandle;
 use tokio::sync::{watch, RwLock};
 use tokio::time::sleep;
-use tauri::AppHandle;
 
 use crate::p2pool::models::{Connections, P2poolStats};
 use crate::p2pool_adapter::P2poolAdapter;
@@ -145,7 +145,8 @@ impl P2poolManager {
         app_handle: AppHandle,
     ) -> Self {
         let adapter = P2poolAdapter::new(stats_broadcast);
-        let mut process_watcher = ProcessWatcher::new(adapter, stats_collector.take_p2pool(), app_handle);
+        let mut process_watcher =
+            ProcessWatcher::new(adapter, stats_collector.take_p2pool(), app_handle);
         process_watcher.expected_startup_time = Duration::from_secs(300);
 
         Self {

@@ -77,7 +77,8 @@ impl WalletManager {
         app_handle: AppHandle,
     ) -> Self {
         let adapter = WalletAdapter::new(wallet_state_watch_tx);
-        let process_watcher = ProcessWatcher::new(adapter, stats_collector.take_wallet(), app_handle);
+        let process_watcher =
+            ProcessWatcher::new(adapter, stats_collector.take_wallet(), app_handle);
 
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),
