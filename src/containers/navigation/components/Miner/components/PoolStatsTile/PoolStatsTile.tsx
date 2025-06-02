@@ -22,7 +22,7 @@ import {
 import { Trans, useTranslation } from 'react-i18next';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import QuestionMarkSvg from '@app/components/svgs/QuestionMarkSvg.tsx';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { offset, safePolygon, useFloating, useHover, useInteractions } from '@floating-ui/react';
 import NumberFlow from '@number-flow/react';
 
@@ -59,6 +59,8 @@ export const PoolStatsTile = () => {
     const loading = isMining && !pool_status;
     const [expanded, setExpanded] = useState(false);
 
+    const unpaidRef = useRef(0);
+
     // ================== Animations ==================
 
     const [showIncreaseAnimation, setShowIncreaseAnimation] = useState(false);
@@ -93,12 +95,13 @@ export const PoolStatsTile = () => {
         const unpaidAboveThreshold = unpaid >= REWARD_THRESHOLD;
         if (!unpaidAboveThreshold) return;
         const canShowSuccess = unpaid % REWARD_THRESHOLD === 0;
-        if (canShowSuccess) {
+        const shouldShowSuccess = unpaidRef.current !== unpaid;
+        if (canShowSuccess && shouldShowSuccess) {
             setShowSuccessAnimation(true);
-
             if (visualMode) {
                 setAnimationState('success', true);
             }
+            unpaidRef.current = unpaid;
         }
     }, [unpaid, visualMode]);
 
