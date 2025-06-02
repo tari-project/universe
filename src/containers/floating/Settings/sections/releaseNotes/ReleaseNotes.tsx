@@ -7,7 +7,6 @@ import packageInfo from '../../../../../../package.json';
 import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/core';
 import { useAppStateStore } from '@app/store/appStateStore';
-import { useMiningStore } from '@app/store';
 import { isMainNet } from '@app/utils/network';
 
 const appVersion = packageInfo.version;

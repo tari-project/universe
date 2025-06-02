@@ -111,6 +111,7 @@ export const setMiningNetwork = async () => {
     try {
         const network = (await invoke('get_network', {})) as Network;
         useMiningStore.setState({ network });
+        return network;
     } catch (e) {
         console.error('Could not get network: ', e);
         setError(e as string);

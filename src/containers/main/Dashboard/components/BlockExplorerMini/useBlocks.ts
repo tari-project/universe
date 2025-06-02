@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { getExplorerUrl } from '@app/utils/network.ts';
+import { setMiningNetwork } from '@app/store';
 
 export const BLOCKS_KEY = ['blocks'];
 
@@ -35,9 +36,14 @@ export interface BlockData {
 }
 
 async function fetchBlockStats(): Promise<BlocksStats> {
-    const explorerUrl = getExplorerUrl();
+    let explorerUrl = getExplorerUrl();
     if (!explorerUrl) {
-        throw new Error('No explorer url found.');
+        const network = await setMiningNetwork();
+        if (network) {
+            explorerUrl = getExplorerUrl();
+        } else {
+            throw new Error('No explorer url found.');
+        }
     }
     const response = await fetch(`${explorerUrl}/?json`);
 
