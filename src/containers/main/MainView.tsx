@@ -15,7 +15,7 @@ export default function MainView() {
             {!visualMode && !isSettingUp && <Background />}
 
             <IframeBackground>
-                <Tapplet source={'http://localhost:3000/swaps'} />
+                <Tapplet source={'https://d9dec270.tari-dot-com-2025.pages.dev/swaps'} />
             </IframeBackground>
 
             <DashboardContent>
