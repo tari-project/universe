@@ -29,7 +29,7 @@ interface Props {
 export default function QRCodeSection({ onDoneClick }: Props) {
     const { t } = useTranslation(['paper-wallet'], { useSuspense: false });
     const { qrCodeValue, identificationCode } = usePaperWalletStore();
-    const selfClosingTimeoutRef = useRef<NodeJS.Timeout>();
+    const selfClosingTimeoutRef = useRef<NodeJS.Timeout>(undefined);
 
     const [showCode, setShowCode] = useState(false);
     const [copied, setCopied] = useState(false);

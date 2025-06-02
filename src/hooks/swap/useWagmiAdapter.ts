@@ -49,7 +49,7 @@ export const useWagmiAdapter = () => {
         void fetchProjectId();
     }, []);
 
-    const debouncedRef = useRef<NodeJS.Timeout>();
+    const debouncedRef = useRef<NodeJS.Timeout>(undefined);
 
     useEffect(() => {
         if (debouncedRef.current) {
