@@ -28,9 +28,9 @@ use crate::tor_control_client::TorStatus;
 use anyhow::anyhow;
 use std::time::Duration;
 use std::{path::PathBuf, sync::Arc};
+use tauri::AppHandle;
 use tauri_plugin_sentry::sentry;
 use tokio::sync::{watch, RwLock};
-use tauri::AppHandle;
 
 const LOG_TARGET: &str = "tari::universe::tor_manager";
 const STARTUP_TIMEOUT: u64 = 180; // 3mins
@@ -57,7 +57,8 @@ impl TorManager {
     ) -> Self {
         let status_watch_rx = status_broadcast.subscribe();
         let adapter = TorAdapter::new(status_broadcast);
-        let mut process_watcher = ProcessWatcher::new(adapter, stats_collector.take_tor(), app_handle);
+        let mut process_watcher =
+            ProcessWatcher::new(adapter, stats_collector.take_tor(), app_handle);
         process_watcher.expected_startup_time = Duration::from_secs(STARTUP_TIMEOUT);
         process_watcher.health_timeout = Duration::from_secs(9);
         process_watcher.poll_time = Duration::from_secs(10);
