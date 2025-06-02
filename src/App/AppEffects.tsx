@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import setupLogger from '../utils/shared-logger';
 
 import { airdropSetup } from '../store/actions/airdropStoreActions';
-import { setMiningNetwork } from '../store/actions/miningStoreActions';
+import { getMiningNetwork } from '../store/actions/miningStoreActions';
 
 import useTauriEventsListener from '../hooks/app/useTauriEventsListener';
 import { useDisableRefresh } from '../hooks/app/useDisableRefresh';
@@ -20,7 +20,7 @@ export default function AppEffects() {
     useEffect(() => {
         async function initialize() {
             await fetchBackendInMemoryConfig();
-            await setMiningNetwork();
+            await getMiningNetwork();
             await airdropSetup();
         }
         void initialize();
