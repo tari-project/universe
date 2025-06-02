@@ -36,6 +36,7 @@ interface Actions {
     setDebugBlockTime: (displayBlockTime: BlockTimeData) => void;
     setRecapCount: (recapCount?: number) => void;
     setRewardCount: (rewardCount?: number) => void;
+    cleanup: () => void;
 }
 
 type BlockchainVisualisationStoreState = State & Actions;
@@ -58,6 +59,20 @@ export const useBlockchainVisualisationStore = create<BlockchainVisualisationSto
     setDebugBlockTime: (debugBlockTime) => set({ debugBlockTime }),
     setRecapCount: (recapCount) => set({ recapCount }),
     setRewardCount: (rewardCount) => set({ rewardCount }),
+    cleanup: () => {
+        if (winTimeout) {
+            clearTimeout(winTimeout);
+            winTimeout = undefined;
+        }
+        if (failTimeout) {
+            clearTimeout(failTimeout);
+            failTimeout = undefined;
+        }
+        if (newBlockDebounceTimeout) {
+            clearTimeout(newBlockDebounceTimeout);
+            newBlockDebounceTimeout = undefined;
+        }
+    },
 }));
 
 const handleWin = async (coinbase_transaction: TransactionInfo, balance: WalletBalance, canAnimate: boolean) => {
