@@ -21,13 +21,6 @@ pub fn hash_value<T: Hash>(value: &T) -> u64 {
     hasher.finish()
 }
 
-// #[derive(Clone)]
-pub struct TimeoutWatcher {
-    sender: Sender<u64>,
-    timeout_duration: Option<Duration>,
-    last_hash_value: Mutex<Option<u64>>,
-}
-
 pub async fn conditional_sleeper(duration: Option<Duration>) -> Option<()> {
     match duration {
         Some(duration) => {
@@ -39,6 +32,12 @@ pub async fn conditional_sleeper(duration: Option<Duration>) -> Option<()> {
             None
         }
     }
+}
+
+pub struct TimeoutWatcher {
+    sender: Sender<u64>,
+    timeout_duration: Option<Duration>,
+    last_hash_value: Mutex<Option<u64>>,
 }
 
 impl TimeoutWatcher {
