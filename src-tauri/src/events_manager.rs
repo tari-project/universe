@@ -350,14 +350,10 @@ impl EventsManager {
         EventsEmitter::emit_binary_runtime_restart_attempt(app, name, attempt, max_attempts).await;
     }
 
-    pub async fn emit_binary_permanent_failure(
-        app: &AppHandle,
-        name: String,
-        reason: String,
-    ) {
+    pub async fn emit_binary_permanent_failure(app: &AppHandle, name: String, reason: String) {
         // Clone the name before the first use
         EventsEmitter::emit_binary_permanent_failure(app, name.clone(), reason).await;
-        
+
         // Now we can use name again
         Self::handle_critical_problem(
             app,

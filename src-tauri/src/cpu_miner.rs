@@ -41,10 +41,10 @@ use std::time::{Duration, Instant};
 use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::ShutdownSignal;
+use tauri::AppHandle;
 use tokio::select;
 use tokio::sync::{watch, RwLock};
 use tokio::time::{interval, sleep, timeout};
-use tauri::AppHandle;
 
 const LOG_TARGET: &str = "tari::universe::cpu_miner";
 const ECO_MODE_CPU_USAGE: u32 = 30;
@@ -113,7 +113,8 @@ impl CpuMiner {
     ) -> Self {
         let (summary_watch_tx, summary_watch_rx) = watch::channel::<Option<Summary>>(None);
         let xmrig_adapter = XmrigAdapter::new(summary_watch_tx);
-        let process_watcher = ProcessWatcher::new(xmrig_adapter, stats_collector.take_cpu_miner(), app_handle);
+        let process_watcher =
+            ProcessWatcher::new(xmrig_adapter, stats_collector.take_cpu_miner(), app_handle);
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),
             cpu_miner_status_watch_tx,

@@ -73,7 +73,11 @@ pub struct ProcessWatcher<TAdapter: ProcessAdapter> {
 }
 
 impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
-    pub fn new(adapter: TAdapter, stats_broadcast: watch::Sender<ProcessWatcherStats>, app_handle: AppHandle) -> Self {
+    pub fn new(
+        adapter: TAdapter,
+        stats_broadcast: watch::Sender<ProcessWatcherStats>,
+        app_handle: AppHandle,
+    ) -> Self {
         Self {
             adapter,
             watcher_task: None,
@@ -119,13 +123,22 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         loop {
             if global_shutdown_signal.is_triggered() || inner_shutdown_signal.is_triggered() {
                 info!(target: LOG_TARGET, "Shutdown triggered during initial startup of {}", name);
-                return Err(anyhow::anyhow!("Shutdown during initial startup of {}", name));
+                return Err(anyhow::anyhow!(
+                    "Shutdown during initial startup of {}",
+                    name
+                ));
             }
-    
+
             startup_attempts += 1;
             info!(target: LOG_TARGET, "Attempting to start '{}' (Attempt {}/{})", name, startup_attempts, self.max_startup_attempts);
-            EventsManager::emit_binary_startup_attempt(&self.app_handle, name.to_string(), startup_attempts, self.max_startup_attempts).await;
-    
+            EventsManager::emit_binary_startup_attempt(
+                &self.app_handle,
+                name.to_string(),
+                startup_attempts,
+                self.max_startup_attempts,
+            )
+            .await;
+
             if let Err(e) = child.start(task_tracker.clone()).await {
                 warn!(target: LOG_TARGET, "child.start() failed for '{}': {:?}.", name, e);
             } else {
@@ -135,9 +148,10 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                 let mut consecutive_health_failures = 0;
                 let mut grace_period_active = false;
                 let mut grace_deadline = Instant::now(); // Will be set when needed
-    
+
                 while Instant::now() < stabilization_deadline {
-                    if global_shutdown_signal.is_triggered() || inner_shutdown_signal.is_triggered() {
+                    if global_shutdown_signal.is_triggered() || inner_shutdown_signal.is_triggered()
+                    {
                         warn!(target: LOG_TARGET, "Shutdown during stabilization for {}", name);
                         let _ = child.stop().await;
                         return Err(anyhow::anyhow!("Shutdown during stabilization of {}", name));
@@ -146,15 +160,17 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                         warn!(target: LOG_TARGET, "Process '{}' died immediately after start (ping failed).", name);
                         break;
                     }
-    
+
                     // Smart grace period: only skip health checks if grace period is active
                     if grace_period_active && Instant::now() < grace_deadline {
                         info!(target: LOG_TARGET, "Process '{}' in adaptive grace period due to previous failures", name);
                         tokio::time::sleep(Duration::from_secs(2)).await;
                         continue;
                     }
-    
-                    let health_status = status_monitor.check_health(Duration::from_secs(0), self.health_timeout).await;
+
+                    let health_status = status_monitor
+                        .check_health(Duration::from_secs(0), self.health_timeout)
+                        .await;
                     match health_status {
                         HealthStatus::Healthy => {
                             info!(target: LOG_TARGET, "Process '{}' stabilized and is healthy.", name);
@@ -167,7 +183,9 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                             consecutive_health_failures += 1;
                             if consecutive_health_failures >= 3 && !grace_period_active {
                                 // Activate grace period after 3 consecutive warnings
-                                let grace_duration = Duration::from_secs(5 + (consecutive_health_failures as u64 * 2));
+                                let grace_duration = Duration::from_secs(
+                                    5 + (consecutive_health_failures as u64 * 2),
+                                );
                                 grace_deadline = Instant::now() + grace_duration;
                                 grace_period_active = true;
                                 info!(target: LOG_TARGET, "Activating {:.1}s grace period for '{}' after {} warning failures", 
@@ -179,14 +197,16 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                             consecutive_health_failures += 1;
                             if consecutive_health_failures >= 2 && !grace_period_active {
                                 // Activate grace period after 2 unhealthy checks
-                                let grace_duration = Duration::from_secs(8 + (consecutive_health_failures as u64 * 3));
+                                let grace_duration = Duration::from_secs(
+                                    8 + (consecutive_health_failures as u64 * 3),
+                                );
                                 grace_deadline = Instant::now() + grace_duration;
                                 grace_period_active = true;
                                 info!(target: LOG_TARGET, "Activating {:.1}s grace period for '{}' after {} unhealthy failures", 
                                       grace_duration.as_secs_f32(), name, consecutive_health_failures);
                             }
                             warn!(target: LOG_TARGET, "Process '{}' became unhealthy during stabilization ({} consecutive failures).", name, consecutive_health_failures);
-                            
+
                             if consecutive_health_failures >= 6 {
                                 // Give up after too many failures
                                 warn!(target: LOG_TARGET, "Process '{}' failed too many consecutive health checks ({}), giving up on this attempt.", name, consecutive_health_failures);
@@ -196,26 +216,34 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                     }
                     tokio::time::sleep(Duration::from_secs(2)).await;
                 }
-    
+
                 if initial_health_passed {
                     info!(target: LOG_TARGET, "Process '{}' successfully started and stabilized.", name);
                     return Ok(());
                 }
-    
+
                 warn!(target: LOG_TARGET, "Process '{}' did not stabilize or become healthy. Stopping before retry.", name);
                 if let Err(e) = child.stop().await {
                     warn!(target: LOG_TARGET, "Error stopping child process '{}' after failed stabilization: {:?}", name, e);
                 }
             }
-    
+
             stats.num_restarts += 1;
-    
+
             if startup_attempts >= self.max_startup_attempts {
                 error!(target: LOG_TARGET, "Failed to start and stabilize process '{}' after {} attempts.", name, self.max_startup_attempts);
-                EventsManager::emit_binary_permanent_failure(&self.app_handle, name.to_string(), "startup".to_string()).await;
-                return Err(anyhow::anyhow!("Failed to start '{}' after max startup retries", name));
+                EventsManager::emit_binary_permanent_failure(
+                    &self.app_handle,
+                    name.to_string(),
+                    "startup".to_string(),
+                )
+                .await;
+                return Err(anyhow::anyhow!(
+                    "Failed to start '{}' after max startup retries",
+                    name
+                ));
             }
-    
+
             warn!(target: LOG_TARGET, "Retrying startup for '{}' in {:?}.", name, self.startup_retry_delay);
             tokio::time::sleep(self.startup_retry_delay).await;
         }
@@ -244,7 +272,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
 
         self.internal_shutdown = Shutdown::new();
         let inner_shutdown_signal_for_startup = self.internal_shutdown.to_signal();
-        let mut inner_shutdown_signal_for_monitoring = self.internal_shutdown.to_signal(); 
+        let mut inner_shutdown_signal_for_monitoring = self.internal_shutdown.to_signal();
 
         let binary_path = BinaryResolver::current()
             .read()
@@ -276,7 +304,8 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
             &global_shutdown_signal,
             &inner_shutdown_signal_for_startup,
             &mut stats,
-        ).await?;
+        )
+        .await?;
 
         info!(target: LOG_TARGET, "Process '{}' successfully started & stabilized. Entering main monitoring loop.", name);
         let mut uptime = Instant::now();
@@ -398,13 +427,13 @@ async fn do_health_check<TStatusMonitor: StatusMonitor, TProcessInstance: Proces
 
         match select! {
             r = status_monitor.check_health(current_uptime, health_timeout) => r,
-            _ = inner_shutdown2.wait() => { 
-                info!(target: LOG_TARGET, "Inner shutdown during health check for '{}'", name); 
-                return Ok(Some(0)); 
+            _ = inner_shutdown2.wait() => {
+                info!(target: LOG_TARGET, "Inner shutdown during health check for '{}'", name);
+                return Ok(Some(0));
             },
-            _ = app_shutdown2.wait() => { 
-                info!(target: LOG_TARGET, "Global shutdown during health check for '{}'", name); 
-                return Ok(Some(0)); 
+            _ = app_shutdown2.wait() => {
+                info!(target: LOG_TARGET, "Global shutdown during health check for '{}'", name);
+                return Ok(Some(0));
             }
         } {
             HealthStatus::Healthy => {
@@ -450,34 +479,45 @@ async fn do_health_check<TStatusMonitor: StatusMonitor, TProcessInstance: Proces
                         return Ok(Some(exit_code));
                     }
                 }
-                Err(e) => warn!(target: LOG_TARGET, "Error stopping unhealthy process '{}': {:?}. Attempting restart regardless.", name, e),
+                Err(e) => {
+                    warn!(target: LOG_TARGET, "Error stopping unhealthy process '{}': {:?}. Attempting restart regardless.", name, e)
+                }
             }
-    
+
             if let Err(e) = status_monitor.handle_unhealthy().await {
                 error!(target: LOG_TARGET, "Failed to handle unhealthy status for '{}': {}. Proceeding with restart attempt.", name, e);
             }
-            
+
             // Runtime Restart Loop
             let mut runtime_restart_attempts = 0;
             loop {
-                if global_shutdown_signal.is_triggered() 
-                    || inner_shutdown.is_triggered() 
-                    || child.is_shutdown_triggered() {
+                if global_shutdown_signal.is_triggered()
+                    || inner_shutdown.is_triggered()
+                    || child.is_shutdown_triggered()
+                {
                     info!(target: LOG_TARGET, "Shutdown triggered during runtime restart of '{}'.", name);
                     return Ok(Some(0));
                 }
-    
+
                 runtime_restart_attempts += 1;
 
                 info!(target: LOG_TARGET, "Restarting '{}' (Runtime attempt {}/{})", name, runtime_restart_attempts, max_runtime_restart_attempts);
-                EventsManager::emit_binary_runtime_restart_attempt(app_handle, name.to_string(), runtime_restart_attempts, max_runtime_restart_attempts).await;
+                EventsManager::emit_binary_runtime_restart_attempt(
+                    app_handle,
+                    name.to_string(),
+                    runtime_restart_attempts,
+                    max_runtime_restart_attempts,
+                )
+                .await;
                 stats.num_restarts += 1;
 
                 match child.start(task_tracker.clone()).await {
                     Ok(_) => {
                         tokio::time::sleep(Duration::from_secs(2)).await;
                         if child.ping() {
-                            let health_after_restart = status_monitor.check_health(Duration::from_secs(0), health_timeout).await;
+                            let health_after_restart = status_monitor
+                                .check_health(Duration::from_secs(0), health_timeout)
+                                .await;
                             if health_after_restart == HealthStatus::Healthy {
                                 info!(target: LOG_TARGET, "Process '{}' restarted successfully.", name);
                                 *warning_count = 0;
@@ -488,18 +528,26 @@ async fn do_health_check<TStatusMonitor: StatusMonitor, TProcessInstance: Proces
                                 let _ = child.stop().await;
                             }
                         } else {
-                             warn!(target: LOG_TARGET, "Process '{}' restarted but died immediately (ping failed).", name);
+                            warn!(target: LOG_TARGET, "Process '{}' restarted but died immediately (ping failed).", name);
                         }
                     }
                     Err(e) => {
                         warn!(target: LOG_TARGET, "Error during runtime restart of '{}': {:?}", name, e);
                     }
                 }
-                
+
                 if runtime_restart_attempts >= max_runtime_restart_attempts {
                     error!(target: LOG_TARGET, "Failed to restart process '{}' after {} runtime attempts.", name, max_runtime_restart_attempts);
-                    EventsManager::emit_binary_permanent_failure(app_handle, name.to_string(), "runtime".to_string()).await;
-                    return Err(anyhow::anyhow!("Failed to restart '{}' after max runtime retries", name));
+                    EventsManager::emit_binary_permanent_failure(
+                        app_handle,
+                        name.to_string(),
+                        "runtime".to_string(),
+                    )
+                    .await;
+                    return Err(anyhow::anyhow!(
+                        "Failed to restart '{}' after max runtime retries",
+                        name
+                    ));
                 }
 
                 warn!(target: LOG_TARGET, "Retrying runtime restart for '{}' in {:?}.", name, runtime_restart_retry_delay);

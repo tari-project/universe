@@ -321,7 +321,7 @@ async fn create_managers_with_app_handle(
     let (local_node_watch_tx, local_node_watch_rx) = watch::channel(BaseNodeStatus::default());
     let (remote_node_watch_tx, remote_node_watch_rx) = watch::channel(BaseNodeStatus::default());
     let (base_node_watch_tx, _) = watch::channel(BaseNodeStatus::default());
-    
+
     let node_manager = NodeManager::new(
         stats_collector,
         LocalNodeAdapter::new(local_node_watch_tx.clone()),
@@ -341,32 +341,29 @@ async fn create_managers_with_app_handle(
     );
 
     let spend_wallet_manager = SpendWalletManager::new(node_manager.clone());
-    
+
     let cpu_miner = CpuMiner::new(
         stats_collector,
         cpu_miner_status_watch_tx.clone(), // Clone here
         base_node_watch_rx.clone(),
         app_handle.clone(),
     );
-    
+
     let gpu_miner = GpuMiner::new(
         gpu_status_tx.clone(), // Clone here
         base_node_watch_rx.clone(),
         stats_collector,
         app_handle.clone(),
     );
-    
+
     let tor_manager = TorManager::new(
         tor_watch_tx.clone(), // Clone here
         stats_collector,
         app_handle.clone(),
     );
-    
-    let mm_proxy_manager = MmProxyManager::new(
-        stats_collector,
-        app_handle.clone(),
-    );
-    
+
+    let mm_proxy_manager = MmProxyManager::new(stats_collector, app_handle.clone());
+
     let p2pool_manager = P2poolManager::new(
         p2pool_stats_tx.clone(), // Clone here
         stats_collector,
