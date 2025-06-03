@@ -1,10 +1,12 @@
 import {
+    AppInMemoryConfigChangedPayload,
     BackgroundNodeSyncUpdatePayload,
     ConnectedPeersUpdatePayload,
     ConnectionStatusPayload,
     CriticalProblemPayload,
     DetectedAvailableGpuEngines,
     DetectedDevicesPayload,
+    UniversalMinerInitializedExchangeIdChangedPayload,
     NewBlockHeightPayload,
     NodeTypeUpdatePayload,
     ShowReleaseNotesPayload,
@@ -20,6 +22,7 @@ import {
     WalletBalance,
 } from './app-status.ts';
 import { ConfigCore, ConfigMining, ConfigUI, ConfigWallet } from './configs.ts';
+import { DisabledPhasesPayload } from '@app/store/actions/setupStoreActions.ts';
 
 export enum SetupPhase {
     Core = 'Core',
@@ -198,4 +201,16 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'PoolStatusUpdate';
           payload: PoolStatus;
+      }
+    | {
+          event_type: 'AppInMemoryConfigChanged';
+          payload: AppInMemoryConfigChangedPayload;
+      }
+    | {
+          event_type: 'DisabledPhasesChanged';
+          payload: DisabledPhasesPayload;
+      }
+    | {
+          event_type: 'UniversalMinerInitializedExchangeIdChanged';
+          payload: UniversalMinerInitializedExchangeIdChangedPayload;
       };

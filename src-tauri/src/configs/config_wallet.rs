@@ -29,7 +29,7 @@ use tauri::{AppHandle, Manager};
 use tokio::sync::RwLock;
 
 use crate::{
-    events_emitter::EventsEmitter, events_manager::EventsManager, internal_wallet::InternalWallet,
+    events_emitter::EventsEmitter, internal_wallet::InternalWallet,
     utils::wallet_utils::create_monereo_address, UniverseAppState,
 };
 
@@ -119,7 +119,7 @@ impl ConfigWallet {
             cpu_config.load_from_config_wallet(&ConfigWallet::content().await);
         }
 
-        match InternalWallet::load_or_create(old_config_path.clone()).await {
+        match InternalWallet::load_or_create(old_config_path.clone(), state.clone()).await {
             Ok(wallet) => {
                 state
                     .wallet_manager
@@ -131,7 +131,6 @@ impl ConfigWallet {
                 let tari_address = wallet.get_tari_address();
                 *state.tari_address.write().await = tari_address.clone();
                 EventsEmitter::emit_wallet_address_update(
-                    &app_handle,
                     tari_address,
                     wallet.get_is_tari_address_generated(),
                 )
@@ -142,11 +141,8 @@ impl ConfigWallet {
             }
         };
 
-        EventsManager::handle_config_wallet_loaded(
-            &app_handle,
-            Self::current().write().await.content.clone(),
-        )
-        .await;
+        EventsEmitter::emit_wallet_config_loaded(Self::current().write().await.content.clone())
+            .await;
     }
 }
 

@@ -28,11 +28,9 @@ use tari_common::configuration::Network;
 use tauri::AppHandle;
 use tokio::sync::RwLock;
 
+use crate::events_emitter::EventsEmitter;
 use crate::node::node_manager::NodeType;
-use crate::{
-    ab_test_selector::ABTestSelector, events_manager::EventsManager,
-    internal_wallet::generate_password,
-};
+use crate::{ab_test_selector::ABTestSelector, internal_wallet::generate_password};
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
 
@@ -69,6 +67,7 @@ pub struct ConfigCoreContent {
     airdrop_tokens: Option<AirdropTokens>,
     remote_base_node_address: String,
     node_type: NodeType,
+    universal_miner_initialized_exchange_id: Option<String>,
 }
 
 fn default_monero_nodes() -> Vec<String> {
@@ -122,6 +121,7 @@ impl Default for ConfigCoreContent {
             airdrop_tokens: None,
             remote_base_node_address,
             node_type: NodeType::Local,
+            universal_miner_initialized_exchange_id: None,
         }
     }
 }
@@ -137,7 +137,7 @@ impl ConfigCore {
         let mut config = Self::current().write().await;
         config.load_app_handle(app_handle.clone()).await;
 
-        EventsManager::handle_config_core_loaded(&app_handle, config.content.clone()).await;
+        EventsEmitter::emit_core_config_loaded(config.content.clone()).await;
     }
 }
 

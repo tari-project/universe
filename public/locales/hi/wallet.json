@@ -20,10 +20,10 @@
   },
   "send": {
     "balance": "शेष राशि",
-    "broadcast": "Broadcasting",
+    "broadcast": "प्रसारण",
     "completed": "पूरा हुआ",
     "completed-amount-sent": "को भेजा गया है",
-    "completed-text": "Your transfer submission is now complete and will be broadcast.",
+    "completed-text": "आपका स्थानांतरण सबमिशन अब पूर्ण हो गया है और प्रसारित किया जाएगा।",
     "completed-title": "आपका काम हो गया!",
     "cta-confirm": "पुष्टि करें",
     "cta-review": "समीक्षा करें",

@@ -24,6 +24,7 @@ use crate::binaries::Binaries;
 use crate::binaries::BinaryResolver;
 use crate::node::node_manager::NodeManager;
 use crate::spend_wallet_adapter::SpendWalletAdapter;
+use crate::UniverseAppState;
 use anyhow::Error;
 use log::info;
 use std::path::PathBuf;
@@ -77,6 +78,7 @@ impl SpendWalletManager {
         amount: String,
         destination: String,
         payment_id: Option<String>,
+        state: tauri::State<'_, UniverseAppState>,
     ) -> Result<(), Error> {
         self.node_manager.wait_ready().await?;
         let (public_key, public_address) = self.node_manager.get_connection_details().await?;
@@ -85,7 +87,7 @@ impl SpendWalletManager {
         info!(target: LOG_TARGET, "[send_one_sided_to_stealth_address] with node {:?}:{:?}", public_key, public_address);
 
         self.adapter
-            .send_one_sided_to_stealth_address(amount, destination, payment_id)
+            .send_one_sided_to_stealth_address(amount, destination, payment_id, state)
             .await
     }
 }

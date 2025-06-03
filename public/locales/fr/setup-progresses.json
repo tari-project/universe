@@ -1,5 +1,6 @@
 {
   "any_moment_now": "D\"un moment à l\"autre",
+  "awaiting-exchange-selection": "Awaiting user exchange selection",
   "block-sync": "Synchronisation des blocs",
   "calculating_time": "Calcul du temps restant...",
   "header-sync": "Synchronisation des en-têtes",
@@ -42,6 +43,7 @@
     "p2pool": "Démarrage de P2Pool",
     "platform-prequisites": "Initialisation des prérequis de la plateforme",
     "run-cpu-benchmark": "Exécution du benchmark CPU",
+    "setup-bridge": "Preparing Bridge",
     "start-tor": "Démarrage de Tor",
     "start-wallet": "Démarrage du portefeuille",
     "starting-node": "Démarrage du nœud Minotari",

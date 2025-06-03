@@ -15,5 +15,6 @@ const initialState: SetupState = {
     node_phase_setup_payload: undefined,
     wallet_phase_setup_payload: undefined,
     unknown_phase_setup_payload: undefined,
+    disabled_phases: [],
 };
 export const useSetupStore = create<SetupState>()(() => ({ ...initialState }));

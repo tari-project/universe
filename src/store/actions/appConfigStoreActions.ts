@@ -23,9 +23,15 @@ import { setError } from './appStateStoreActions.ts';
 import { setUITheme } from './uiStoreActions';
 import { GpuThreads } from '@app/types/app-status.ts';
 import { displayMode, modeType } from '../types';
-import { ConfigCore, ConfigMining, ConfigUI, ConfigWallet } from '@app/types/configs.ts';
+import { ConfigBackendInMemory, ConfigCore, ConfigMining, ConfigUI, ConfigWallet } from '@app/types/configs.ts';
 import { NodeType, updateNodeType as updateNodeTypeForNodeStore } from '../useNodeStore.ts';
+import { fetchExchangeContent, fetchExchangeMiners, setShowUniversalModal } from '../useExchangeStore.ts';
 import { ChainId } from '@uniswap/sdk-core';
+
+import {
+    AppInMemoryConfigChangedPayload,
+    UniversalMinerInitializedExchangeIdChangedPayload,
+} from '@app/types/events-payloads.ts';
 
 interface SetModeProps {
     mode: modeType;
@@ -323,11 +329,49 @@ export const setDefaultChain = (chain: ChainId) => {
 
 export const fetchBackendInMemoryConfig = async () => {
     try {
+        const isUniversalMiner = await invoke('is_universal_miner');
+
         const res = await invoke('get_app_in_memory_config');
         if (res) {
-            useConfigBEInMemoryStore.setState({ ...res });
+            useConfigBEInMemoryStore.setState({ ...res, isUniversalMiner });
+            const universalMinerExchangeId = await invoke('get_universal_miner_initialized_exchange_id'); // It has to be a command instead of getter from appConfigStore since store is not initialized yet
+            const isUniversalUninitialized = isUniversalMiner && !universalMinerExchangeId;
+            const isUniversalInitialized = isUniversalMiner && universalMinerExchangeId;
+            const isExchangeMode = res.exchangeId && !isUniversalMiner && res.exchangeId !== 'classic';
+            if (isUniversalUninitialized) {
+                await fetchExchangeMiners();
+                setShowUniversalModal(true);
+            }
+            if (isExchangeMode) {
+                await fetchExchangeContent(res.exchangeId);
+            }
+            if (isUniversalInitialized) {
+                await fetchExchangeContent(universalMinerExchangeId);
+            }
         }
     } catch (e) {
         console.error('Could not fetch backend in memory config', e);
     }
+};
+
+export const handleUniversalMinerInitializedExchangeIdChanged = (
+    payload: UniversalMinerInitializedExchangeIdChangedPayload
+) => {
+    useConfigCoreStore.setState({
+        universal_miner_initialized_exchange_id: payload.universal_miner_initialized_exchange_id,
+    });
+    if (payload.universal_miner_initialized_exchange_id) {
+        setShowUniversalModal(false); // Enforce this flag if there is race condition between this and handleAppInMemoryConfigChanged
+    }
+};
+
+export const handleAppInMemoryConfigChanged = (payload: AppInMemoryConfigChangedPayload) => {
+    const newConfig: ConfigBackendInMemory = {
+        airdropApiUrl: payload.app_in_memory_config.airdrop_api_url,
+        airdropUrl: payload.app_in_memory_config.airdrop_url,
+        airdropTwitterAuthUrl: payload.app_in_memory_config.airdrop_twitter_auth_url,
+        exchangeId: payload.app_in_memory_config.exchange_id,
+        isUniversalMiner: payload.is_universal_exchange || false,
+    };
+    useConfigBEInMemoryStore.setState(newConfig);
 };

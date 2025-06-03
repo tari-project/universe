@@ -1,5 +1,6 @@
 {
   "any_moment_now": "今すぐにでも",
+  "awaiting-exchange-selection": "Awaiting user exchange selection",
   "block-sync": "ブロックを同期中",
   "calculating_time": "残り時間を計算中...",
   "header-sync": "ヘッダーを同期中",
@@ -42,6 +43,7 @@
     "p2pool": "P2Poolを開始",
     "platform-prequisites": "プラットフォームの前提条件を初期化中",
     "run-cpu-benchmark": "CPUベンチマークを実行中",
+    "setup-bridge": "Preparing Bridge",
     "start-tor": "Torを開始",
     "start-wallet": "ウォレットを開始",
     "starting-node": "Minotariノードを開始",

@@ -1,3 +1,68 @@
+🚀 TARI UNIVERSE v1.2.2: The Song of Soon
+
+_June 2, 2025_
+
+Hey everyone,
+
+As we approach week 4 of mainnet, Tari contributors are excited to share a new release of Tari Universe: v1.2.2, aka "The Song of Soon." This release focuses on maintenance, bug fixes, and enhancing the quality of life for all Tari Universe users. Thank you for your continuous feedback. Our goal is to make Tari Universe the world's best and easiest-to-use crypto app.
+
+✨What's New: Desktop
+• New animations to celebrate your pool wins
+• UI cleanup and front-end performance improvements (removing bloat)
+• GPU mining no longer requires a manual restart after loading
+• Mac OS Keychain no longer prompts unnecessarily
+• Fixed front-end memory leak
+• Added translations (more coming)
+• Fix for buttons requiring double clicks to toggle
+• White screen (of death) fix on linux 🙌
+• Base node update (low-level enhancements will reduce memory usage)
+
+🐞 Known Issues (Fixes Coming Soon):
+• 📱 Mobile Wallet – Some users are experiencing sync issues, disappearing transactions, and problems with exchange payment IDs
+• 🌉 wXTM Bridge – Known issues include transactions stuck on pending, unclear failure states, and slow performance
+• 🔗 Network Sync – Users may get stuck at "Setting up Tari Node 3/5" or see incorrect block heights
+• ⚖️ Wallet Balance – Balance sync and transaction state feedback are being overhauled for accuracy and reliability
+
+---
+
+🚀 TARI UNIVERSE v1.2.0: The Flourishing
+
+_May 28, 2025_
+
+Hey everyone,
+
+Welcome to Tari Universe v1.2.0 - "The Flourishing"! Contributors are thrilled to deliver powerful new features designed to expand the Tari Universe and create new opportunities for the Tari community:
+
+🌉 New Features:
+• Bridge XTM → wXTM NOW directly on Ethereum Mainnet via Metamask.
+• Swap Ethereum & ETH tokens → wXTM COMING SOON natively within the Tari Universe.
+
+These features mark an exciting step towards integrating Tari with broader blockchain ecosystems.
+
+⚠️ Important Notes:
+• MVP Release: Currently a one-way bridge (XTM → wXTM only). The two-way bridge (wXTM → XTM) is scheduled for release around July 2025.
+• Transaction Cap: Transactions are initially capped at 100,000 XTM for security purposes. Transactions exceeding this amount will fail. There is no limit to the number of transactions you can do.  This cap will increase and eventually be removed as the feature matures.
+• Potential Bugs: Extensive QA testing has been conducted, but given the variety of community system configurations, you might encounter unforeseen issues. Please report bugs you encounter here: https://forms.gle/n8MVwLRrL9m6G7w39 so contributors can help!
+
+🔖 Official wXTM Contract Address:
+• Contract Address: `0xfD36fA88bb3feA8D1264fc89d70723b6a2B56958`
+• Controller: `0x6c6f5B091bc50a6cB62e55B5c1EB7455205d2880`
+• Bridge: `0xb72FD42A94a360587dCe790947e18A2CbcD4BC65`
+
+A community-led liquidity pool has been seeded on Uniswap, but you are free to use your wXTM tokens with any Ethereum-compatible tool you prefer. Future deployments of wXTM across multiple chains will leverage LayerZero OFTs, enabling seamless cross-chain transfers.
+
+🔍 Smart Contract Audit Report:
+We want to thank the team at Coinspect for auditing the wXTM smart contract. You can view their audit report here: https://www.coinspect.com/doc/Coinspect%20-%20Smart%20Contract%20Audit%20-%20Tari%20-%20wXTM%20Bridge%20-%20Fix%20Review%20-%20v250528.pdf
+
+🐞 Known Issues (Fixes Coming Soon):
+• Metamask on iOS + Mac OSX combination for Tari Universe Swap: This combination of products doesn't work properly yet. It does work with other iOS based Ethereum wallets
+• GPU Mining: Might require manual restart after sync completion
+• Mac OS Keychain Prompts: Multiple prompts may appear during wallet updates. Choosing "Always Allow" resolves this issue
+• Translations: Bridge feature translations are currently missing but will be added ASAP
+• Display/UI Artifacts: Minor visual design errors present
+
+---
+
 🚀 TARI UNIVERSE v1.1.1 (HARD FORK): The Flow Supreme
 
 _May 26, 2025_

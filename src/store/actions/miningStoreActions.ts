@@ -107,10 +107,11 @@ export const setMiningControlsEnabled = (miningControlsEnabled: boolean) =>
                 state.isChangingMode || (!gpu_mining_enabled && !cpu_mining_enabled) ? false : miningControlsEnabled,
         };
     });
-export const setMiningNetwork = async () => {
+export const getMiningNetwork = async () => {
     try {
         const network = (await invoke('get_network', {})) as Network;
         useMiningStore.setState({ network });
+        return network;
     } catch (e) {
         console.error('Could not get network: ', e);
         setError(e as string);

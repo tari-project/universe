@@ -1,5 +1,6 @@
 {
   "any_moment_now": "किसी भी क्षण",
+  "awaiting-exchange-selection": "Awaiting user exchange selection",
   "block-sync": "ब्लॉक्स सिंक कर रहा है",
   "calculating_time": "शेष समय की गणना कर रहा है...",
   "header-sync": "हेडर सिंक कर रहा है",
@@ -42,6 +43,7 @@
     "p2pool": "पी2पूल शुरू कर रहे हैं",
     "platform-prequisites": "प्लेटफ़ॉर्म पूर्वापेक्षाएँ प्रारंभ कर रहे हैं",
     "run-cpu-benchmark": "सीपीयू बेंचमार्क चला रहे हैं",
+    "setup-bridge": "Preparing Bridge",
     "start-tor": "टोर शुरू कर रहे हैं",
     "start-wallet": "वॉलेट शुरू कर रहे हैं",
     "starting-node": "मिनोटारी नोड शुरू कर रहे हैं",

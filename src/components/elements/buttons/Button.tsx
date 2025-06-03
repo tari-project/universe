@@ -1,10 +1,12 @@
-import { StyledButton, ChildrenWrapper, IconWrapper } from './BaseButton.styles.ts';
+import { memo } from 'react';
 import { CommonButtonProps } from './button.types.ts';
+import { StyledButton, ChildrenWrapper, IconWrapper } from './BaseButton.styles.ts';
 
 type ButtonProps = CommonButtonProps & {
     disableColour?: boolean;
 };
-export const Button = ({
+
+const Button = memo(function Button({
     children,
     variant = 'primary',
     color,
@@ -17,7 +19,7 @@ export const Button = ({
     loader,
     icon,
     ...buttonProps
-}: ButtonProps) => {
+}: ButtonProps) {
     return (
         <StyledButton
             $variant={variant}
@@ -37,4 +39,5 @@ export const Button = ({
             ) : null}
         </StyledButton>
     );
-};
+});
+export { Button };

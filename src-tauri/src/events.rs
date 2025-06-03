@@ -24,9 +24,10 @@ use serde::Serialize;
 use std::collections::HashMap;
 
 use crate::{
+    app_in_memory_config::AppInMemoryConfig,
     gpu_status_file::GpuDevice,
-    node::node_adapter::NodeIdentity,
-    node::node_manager::NodeType,
+    node::{node_adapter::NodeIdentity, node_manager::NodeType},
+    setup::setup_manager::SetupPhase,
     wallet_adapter::{TransactionInfo, WalletBalance},
 };
 
@@ -75,6 +76,9 @@ pub enum EventType {
     ConnectionStatus,
     ShowStageSecurityModal,
     MiningTime,
+    AppInMemoryConfigChanged,
+    DisabledPhasesChanged,
+    UniversalMinerInitializedExchangeIdChanged,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -167,4 +171,20 @@ pub enum ConnectionStatusPayload {
     Succeed,
     #[allow(dead_code)]
     Failed,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct AppInMemoryConfigChangedPayload {
+    pub app_in_memory_config: AppInMemoryConfig,
+    pub is_universal_exchange: bool,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct DisabledPhasesPayload {
+    pub disabled_phases: Vec<SetupPhase>,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct UniversalMinerInitializedExchangeIdChangedPayload {
+    pub universal_miner_initialized_exchange_id: String,
 }
