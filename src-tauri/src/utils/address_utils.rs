@@ -49,14 +49,14 @@ pub fn verify_send(address: String, sending_method: TariAddressFeatures) -> Resu
 /// Returns a string indicator for telemetry purposes
 pub fn extract_payment_id(address: &str) -> Result<Option<String>, String> {
     let tari_address = verify_tari_address(address)?;
-    
+
     // Check if address is a dual address
     match tari_address {
         TariAddress::Dual(_dual_addr) => {
             // Dual addresses can contain payment IDs
             // For telemetry purposes, we just indicate that this is a dual address
             Ok(Some("dual_address_detected".to_string()))
-        },
+        }
         _ => {
             // Single addresses don't have payment IDs
             Ok(None)

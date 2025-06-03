@@ -50,7 +50,7 @@ use crate::tapplets::tapplet_server::start_tapplet;
 use crate::tapplets::{TappletResolver, Tapplets};
 use crate::tasks_tracker::TasksTrackers;
 use crate::tor_adapter::TorConfig;
-use crate::utils::address_utils::{verify_send, extract_payment_id};
+use crate::utils::address_utils::{extract_payment_id, verify_send};
 use crate::utils::app_flow_utils::FrontendReadyChannel;
 use crate::wallet_adapter::{TransactionInfo, WalletBalance};
 use crate::wallet_manager::WalletManagerError;
@@ -667,27 +667,34 @@ pub async fn confirm_exchange_address(
     app: tauri::AppHandle,
 ) -> Result<(), InvokeError> {
     let timer = Instant::now();
-    
+
     // Extract dual address detection for telemetry before processing
     if let Ok(Some(dual_address_info)) = extract_payment_id(&address) {
         info!(target: LOG_TARGET, "Exchange address is a dual address, sending telemetry");
         let state = app.state::<UniverseAppState>();
         let mut telemetry_data = serde_json::Map::new();
-        telemetry_data.insert("dual_address_detected".to_string(), serde_json::Value::String("true".to_string()));
-        telemetry_data.insert("address_type".to_string(), serde_json::Value::String(dual_address_info));
-        
+        telemetry_data.insert(
+            "dual_address_detected".to_string(),
+            serde_json::Value::String("true".to_string()),
+        );
+        telemetry_data.insert(
+            "address_type".to_string(),
+            serde_json::Value::String(dual_address_info),
+        );
+
         // Send telemetry event asynchronously without blocking the main flow
         let telemetry_result = send_data_telemetry_service(
             state.clone(),
             "exchange_address_dual_type".to_string(),
-            serde_json::Value::Object(telemetry_data)
-        ).await;
-        
+            serde_json::Value::Object(telemetry_data),
+        )
+        .await;
+
         if let Err(e) = telemetry_result {
             warn!(target: LOG_TARGET, "Failed to send dual address telemetry: {:?}", e);
         }
     }
-    
+
     let config_path = app
         .path()
         .app_config_dir()
@@ -2035,7 +2042,7 @@ pub fn verify_address_for_send(
     sending_method: Option<TariAddressFeatures>,
 ) -> Result<(), String> {
     let sending_method = sending_method.unwrap_or(TariAddressFeatures::ONE_SIDED);
-    
+
     // Log dual address detection for general address validation (non-blocking)
     if let Ok(Some(_dual_address_info)) = extract_payment_id(&address) {
         debug!(target: LOG_TARGET, "Address validation detected dual address");
