@@ -18,16 +18,16 @@ export function AddressQRCode({ useEmoji, setUseEmoji }: Props) {
                 <QRSizer>
                     <QRCode
                         value={`tari://${network}/transactions/send?tariAddress=${walletAddress}`}
-                        ecLevel="L"
+                        ecLevel="H"
                         size={400}
                         id="Tari Address QR Code"
-                        quietZone={15}
+                        quietZone={20}
                         logoImage={'/assets/img/tari-outline.svg'}
                         logoPaddingStyle={'circle'}
-                        logoPadding={18}
+                        logoPadding={14}
                         qrStyle="dots"
                         removeQrCodeBehindLogo={true}
-                        eyeRadius={20}
+                        eyeRadius={12}
                         style={{ width: '100%', height: '100%' }}
                     />
                 </QRSizer>
