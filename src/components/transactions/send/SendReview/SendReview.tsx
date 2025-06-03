@@ -7,9 +7,7 @@ import { formatNumber, FormatPreset, truncateMiddle } from '@app/utils';
 import ProcessingIcon from './icons/ProcessingIcon';
 import CompletedIcon from './icons/CompletedIcon';
 
-import { useEffect } from 'react';
 import { SendStatus } from '@app/components/transactions/send/SendModal.tsx';
-import { useWalletStore } from '@app/store';
 import { StatusHero } from '../../components/StatusHero/StatusHero';
 import { StatusList, StatusListEntry } from '../../components/StatusList/StatusList';
 
@@ -26,7 +24,7 @@ interface Props {
 
 export function SendReview({
     status,
-    setStatus,
+    // setStatus,
     amount,
     address,
     message,
@@ -35,15 +33,6 @@ export function SendReview({
     handleClose,
 }: Props) {
     const { t } = useTranslation('wallet');
-    const latestPendingTx = useWalletStore((s) => s.pending_transactions?.[0]);
-    const latestTx = useWalletStore((s) => s.transactions?.[0]);
-
-    useEffect(() => {
-        if (status !== 'processing' || !latestTx || !latestPendingTx) return;
-        if (latestTx.timestamp === latestPendingTx?.timestamp) {
-            setStatus('completed');
-        }
-    }, [status, setStatus, latestTx, latestPendingTx]);
 
     const formattedAmount = formatNumber((amount || 0) * 1_000_000, FormatPreset.XTM_COMPACT);
     const formattedAddress = truncateMiddle(address, 5);

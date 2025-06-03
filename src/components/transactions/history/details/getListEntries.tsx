@@ -1,5 +1,4 @@
 import i18n from 'i18next';
-import { TransactionInfo } from '@app/types/app-status.ts';
 import { formatTimeStamp } from '@app/components/transactions/history/helpers.ts';
 import { ReactNode } from 'react';
 import { formatNumber, FormatPreset } from '@app/utils';
@@ -7,14 +6,15 @@ import { StatusListEntry } from '@app/components/transactions/components/StatusL
 import { getExplorerUrl, Network } from '@app/utils/network.ts';
 import { useMiningStore } from '@app/store';
 import { getTxStatusTitleKey, getTxTitle } from '@app/utils/getTxStatus.ts';
+import { TransactionDetailsItem } from '../HistoryList';
 
-type Key = keyof TransactionInfo;
+type Key = keyof TransactionDetailsItem;
 type Entry = {
-    [K in keyof TransactionInfo]-?: {
+    [K in keyof TransactionDetailsItem]-?: {
         key: K;
-        value: TransactionInfo[K];
+        value: TransactionDetailsItem[K];
     };
-}[keyof TransactionInfo];
+}[keyof TransactionDetailsItem];
 
 const network = useMiningStore.getState().network;
 
@@ -38,7 +38,7 @@ function parseValues({
     key,
     value,
     transaction,
-}: Entry & { transaction: TransactionInfo }): Partial<StatusListEntry> & { value: ReactNode } {
+}: Entry & { transaction: TransactionDetailsItem }): Partial<StatusListEntry> & { value: ReactNode } {
     const rest: Partial<StatusListEntry> = {};
     if (key === 'timestamp') {
         return { value: formatTimeStamp(value) };
@@ -71,7 +71,7 @@ function parseValues({
     return { value, ...rest };
 }
 
-export function getListEntries(item: TransactionInfo, showHidden = false) {
+export function getListEntries(item: TransactionDetailsItem, showHidden = false) {
     const entries = Object.entries(item).filter(([key]) => showHidden || !HIDDEN_KEYS.includes(key));
     return entries.map(([key, _value]) => {
         const { value, ...rest } = parseValues({ key: key as Key, value: _value, transaction: item });

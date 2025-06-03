@@ -104,6 +104,8 @@
   "pre-release-note": "애플리케이션의 사전 릴리스 버전으로 전환하려고 합니다. 이 버전은 흥미로운 새로운 기능과 개선 사항을 제공할 수 있으며, 아직 개선 중인 부분을 만날 가능성이 있습니다.",
   "randomx-network-hash-rate": "Randomx 네트워크 해시레이트",
   "refresh-versions": "버전 새로고침",
+  "refresh-wallet-history": "Refresh wallet history",
+  "refresh-wallet-history-description": "Scan and validate all your transactions",
   "release-notes": {
     "loading": "릴리스 노트 로딩 중...",
     "upgrade-available": "⚠️ 업그레이드 가능"

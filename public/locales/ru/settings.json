@@ -104,6 +104,8 @@
   "pre-release-note": "Вы собираетесь переключиться на пре-релизную версию приложения. Эта версия может предложить Вам захватывающие новые функции и улучшения, но с возможностью столкнуться с областями, которые все ещё могут находиться в стадии доработки.",
   "randomx-network-hash-rate": "Хэшрейт сети Randomx",
   "refresh-versions": "Обновить версии",
+  "refresh-wallet-history": "Refresh wallet history",
+  "refresh-wallet-history-description": "Scan and validate all your transactions",
   "release-notes": {
     "loading": "Загрузка примечаний к выпуску...",
     "upgrade-available": "⚠️ Доступно обновление"

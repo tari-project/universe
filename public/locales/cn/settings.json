@@ -104,6 +104,8 @@
   "pre-release-note": "您即将切换到应用程序的预发布版本。此版本可能提供令人兴奋的新功能和增强，但可能会遇到仍在改进的区域。",
   "randomx-network-hash-rate": "Randomx 网络算力",
   "refresh-versions": "刷新版本",
+  "refresh-wallet-history": "Refresh wallet history",
+  "refresh-wallet-history-description": "Scan and validate all your transactions",
   "release-notes": {
     "loading": "正在加载发布说明...",
     "upgrade-available": "⚠️ 可用升级"

@@ -104,6 +104,8 @@
   "pre-release-note": "Jy is op die punt om oor te skakel na die voorafvrystelling weergawe van die toepassing. Hierdie weergawe kan opwindende nuwe kenmerke en verbeterings bied, met die moontlikheid om gebiede teë te kom wat dalk nog verfyn word.",
   "randomx-network-hash-rate": "Randomx netwerk hashrate",
   "refresh-versions": "Verfris weergawes",
+  "refresh-wallet-history": "Refresh wallet history",
+  "refresh-wallet-history-description": "Scan and validate all your transactions",
   "release-notes": {
     "loading": "Laai vrystellingsnotas...",
     "upgrade-available": "⚠️ Opgradering Beskikbaar"

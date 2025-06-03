@@ -213,6 +213,7 @@ impl ProcessInstanceTrait for NullProcessInstance {
     async fn start(&mut self, _task_trakcer: TaskTracker) -> Result<(), anyhow::Error> {
         Ok(())
     }
+
     async fn stop(&mut self) -> Result<i32, anyhow::Error> {
         self.shutdown.trigger();
         Ok(0)
@@ -224,5 +225,15 @@ impl ProcessInstanceTrait for NullProcessInstance {
 
     async fn wait(&mut self) -> Result<i32, Error> {
         Ok(0)
+    }
+
+    async fn start_and_wait_for_output(
+        &mut self,
+        _task_tracker: TaskTracker,
+    ) -> Result<(i32, Vec<String>, Vec<String>), anyhow::Error> {
+        self.start(_task_tracker).await?;
+        self.wait()
+            .await
+            .map(|exit_code| (exit_code, Vec::new(), Vec::new()))
     }
 }
