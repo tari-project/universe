@@ -18,6 +18,13 @@ interface Recap {
     count: number;
     totalEarnings: number;
 }
+interface PendingWin {
+    coinbase_transaction: TransactionInfo;
+    balance: WalletBalance;
+    canAnimate: boolean;
+    winBlockHeight: number;
+}
+
 interface State {
     displayBlockTime?: BlockTimeData;
     debugBlockTime?: BlockTimeData;
@@ -28,6 +35,7 @@ interface State {
     rewardCount?: number;
     recapIds: TransactionInfo['tx_id'][];
     replayItem?: TransactionInfo;
+    pendingWins: PendingWin[];
 }
 
 interface Actions {
@@ -54,6 +62,7 @@ const getSuccessTier = (earnings: number) => {
 
 export const useBlockchainVisualisationStore = create<BlockchainVisualisationStoreState>()((set) => ({
     recapIds: [],
+    pendingWins: [],
     setDisplayBlockHeight: (displayBlockHeight) => set({ displayBlockHeight }),
     setDisplayBlockTime: (displayBlockTime) => set({ displayBlockTime }),
     setDebugBlockTime: (debugBlockTime) => set({ debugBlockTime }),
@@ -160,17 +169,50 @@ let latestBlockPayload:
       }
     | undefined = undefined;
 
+const checkPendingWins = async (currentBlockHeight: number) => {
+    const state = useBlockchainVisualisationStore.getState();
+    const winsToProcess = state.pendingWins.filter((win) => currentBlockHeight >= win.winBlockHeight + 3);
+
+    if (winsToProcess.length > 0) {
+        // Remove processed wins from pending
+        useBlockchainVisualisationStore.setState((prev) => ({
+            pendingWins: prev.pendingWins.filter((win) => currentBlockHeight < win.winBlockHeight + 3),
+        }));
+
+        // Process each pending win
+        for (const win of winsToProcess) {
+            await handleWin(win.coinbase_transaction, win.balance, win.canAnimate);
+        }
+    }
+};
+
 async function processNewBlock(payload: {
     block_height: number;
     coinbase_transaction?: TransactionInfo;
     balance: WalletBalance;
 }) {
+    // Always check for pending wins first
+    await checkPendingWins(payload.block_height);
+
     if (useMiningStore.getState().isCpuMiningInitiated || useMiningStore.getState().isGpuMiningInitiated) {
         const minimized = await appWindow?.isMinimized();
         const documentIsVisible = document?.visibilityState === 'visible' || false;
         const canAnimate = !minimized && documentIsVisible;
+
         if (payload.coinbase_transaction) {
-            await handleWin(payload.coinbase_transaction, payload.balance, canAnimate);
+            // Instead of processing win immediately, queue it for 3 blocks later
+            const pendingWin: PendingWin = {
+                coinbase_transaction: payload.coinbase_transaction,
+                balance: payload.balance,
+                canAnimate,
+                winBlockHeight: payload.block_height,
+            };
+
+            useBlockchainVisualisationStore.setState((prev) => ({
+                pendingWins: [...prev.pendingWins, pendingWin],
+            }));
+
+            console.info(`Block #${payload.block_height} win queued - will show in 3 blocks`);
         } else {
             await handleFail(payload.block_height, payload.balance, canAnimate);
         }
