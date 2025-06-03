@@ -9,11 +9,11 @@ import {
     ProcessingTransaction,
 } from '@app/containers/floating/SwapDialogs/sections/ProcessingTransaction/ProcessingTransaction';
 
-import { useState, memo, useCallback } from 'react'; // Added useRef
+import { useState, memo } from 'react'; // Added useRef
 import { SignApprovalMessage } from '@app/containers/floating/SwapDialogs/sections/SignMessage/SignApprovalMessage';
 import { useTranslation } from 'react-i18next';
 import { setIsSwapping } from '@app/store/actions/walletStoreActions';
-import { MessageType, useIframeMessage } from '@app/hooks/swap/useIframeMessage';
+import { MessageType, postToParentIframe, useIframeMessage } from '@app/hooks/swap/useIframeMessage';
 
 export const Swap = memo(function Swap() {
     const [processingOpen, setProcessingOpen] = useState(false);
@@ -25,43 +25,38 @@ export const Swap = memo(function Swap() {
 
     const { t } = useTranslation(['wallet'], { useSuspense: false });
 
-    const handleConfirm = useCallback(() => {
-        console.info('confirming');
-    }, []);
-
     useIframeMessage((event) => {
-        if (event.data.type === MessageType.CONFIRM_REQUEST) {
-            setConfirming(true);
-            setConfirmingTransaction({
-                fromTokenDisplay: event.data.payload.fromTokenDisplay,
-                toTokenSymbol: event.data.payload.toTokenSymbol,
-                transaction: event.data.payload.transaction,
-            });
+        switch (event.data.type) {
+            case MessageType.CONFIRM_REQUEST:
+                setConfirming(true);
+                setConfirmingTransaction({
+                    fromTokenDisplay: event.data.payload.fromTokenDisplay,
+                    toTokenSymbol: event.data.payload.toTokenSymbol,
+                    transaction: event.data.payload.transaction,
+                });
+                break;
+            case MessageType.APPROVE_REQUEST:
+                setApproving(true);
+                break;
+            case MessageType.APPROVE_SUCCESS:
+                setApproving(false);
+                break;
+            case MessageType.PROCESSING_STATUS: {
+                setProcessingTransaction(event.data.payload);
+                setProcessingOpen(true);
+                break;
+            }
+            case MessageType.ERROR:
+                setError(event.data.payload.message);
+                break;
         }
-        // console.info(event);
-        // if (event.type === MessageType.APPROVE_REQUEST) {
-        //     setApproving(true);
-        // } else if (event.type === MessageType.APPROVE_SUCCESS) {
-        //     setApproving(false);
-        //     setConfirming(true);
-        //     setConfirmingTransaction({
-        //         fromTokenDisplay: event.data.payload.fromTokenDisplay,
-        //         toTokenSymbol: event.data.payload.toTokenSymbol,
-        //         transaction: event.data.payload.transaction,
-        //     });
-        // } else if (event.type === MessageType.CONFIRM_REQUEST) {
-        //     setConfirming(true);
-        //     setConfirmingTransaction({
-        //         fromTokenDisplay: event.data.payload.fromTokenDisplay,
-        //         toTokenSymbol: event.data.payload.toTokenSymbol,
-        //         transaction: event.data.payload.transaction,
-        //     });
-        // } else if (event.type === MessageType.PROCESSING_STATUS) {
-        //     setProcessingTransaction(event.data.payload);
-        // } else if (event.type === MessageType.ERROR) {
-        //     setError(event.data.payload.message);
-        // }
     });
+
+    const handleConfirmTransaction = async () => {
+        postToParentIframe({
+            type: 'EXECUTE_SWAP',
+        });
+    };
 
     return (
         <SwapsContainer>
@@ -86,12 +81,11 @@ export const Swap = memo(function Swap() {
                     }}
                 />
             </div>
-            {/* ////////////////////////////////// */}
             {/* Floating Elements */}
             <SwapConfirmation
                 isOpen={confirming}
                 setIsOpen={setConfirming}
-                onConfirm={handleConfirm}
+                onConfirm={handleConfirmTransaction}
                 transaction={confirmingTransaction?.transaction}
                 fromTokenDisplay={confirmingTransaction?.fromTokenDisplay}
                 toTokenSymbol={confirmingTransaction?.toTokenSymbol}
