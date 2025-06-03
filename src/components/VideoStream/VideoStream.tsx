@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import * as m from 'motion/react-m';
 import Hls from 'hls.js';
 import { PlayerContainer, VideoElement, PosterOverlay, PosterImage } from './styles.ts';
+import { AnimatePresence } from 'motion/react';
 
 interface ErrorData {
     type: string;
@@ -37,7 +37,6 @@ const VideoStream: React.FC<VideoStreamProps> = ({
     const videoRef = useRef<HTMLVideoElement>(null);
     const hlsRef = useRef<Hls | null>(null);
     const [showPoster, setShowPoster] = useState(!!poster);
-    const [isReady, setIsReady] = useState(false);
 
     useEffect(() => {
         const video = videoRef.current;
@@ -60,8 +59,6 @@ const VideoStream: React.FC<VideoStreamProps> = ({
             });
 
             hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                setShowPoster(false);
-                setIsReady(true);
                 onLoadedData?.();
 
                 video.play().catch((err) => {
@@ -80,8 +77,6 @@ const VideoStream: React.FC<VideoStreamProps> = ({
             onLoadStart?.();
 
             video.addEventListener('loadeddata', () => {
-                setShowPoster(false);
-                setIsReady(true);
                 onLoadedData?.();
             });
 
@@ -105,7 +100,6 @@ const VideoStream: React.FC<VideoStreamProps> = ({
     }, [src, onLoadStart, onLoadedData, onError, poster]);
 
     const handlePlay = () => {
-        setShowPoster(false);
         onPlay?.();
     };
 
@@ -113,35 +107,35 @@ const VideoStream: React.FC<VideoStreamProps> = ({
         onPause?.();
     };
 
-    return (
-        <m.div
-            initial={{ opacity: 1 }}
-            animate={{ opacity: isReady ? 1 : 1 }}
-            transition={{ duration: 0.5 }}
-            className={className}
-        >
-            <PlayerContainer>
-                <VideoElement
-                    ref={videoRef}
-                    width={width}
-                    height={height}
-                    autoPlay={true}
-                    controls={false}
-                    muted={true}
-                    loop={true}
-                    poster={poster}
-                    playsInline={true}
-                    onPlay={handlePlay}
-                    onPause={handlePause}
-                />
+    const handlePlaying = () => {
+        setShowPoster(false);
+    };
 
+    return (
+        <PlayerContainer className={className}>
+            <VideoElement
+                ref={videoRef}
+                width={width}
+                height={height}
+                autoPlay={true}
+                controls={false}
+                muted={true}
+                loop={true}
+                poster={poster}
+                playsInline={true}
+                onPlay={handlePlay}
+                onPause={handlePause}
+                onPlaying={handlePlaying}
+            />
+
+            <AnimatePresence>
                 {showPoster && poster && (
-                    <PosterOverlay>
+                    <PosterOverlay initial={{ opacity: 1 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                         <PosterImage src={poster} alt="Video poster" />
                     </PosterOverlay>
                 )}
-            </PlayerContainer>
-        </m.div>
+            </AnimatePresence>
+        </PlayerContainer>
     );
 };
 

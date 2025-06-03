@@ -1,4 +1,5 @@
 import styled from 'styled-components';
+import * as m from 'motion/react-m';
 
 export const PlayerContainer = styled.div`
     position: relative;
@@ -9,7 +10,7 @@ export const VideoElement = styled.video`
     display: block;
 `;
 
-export const PosterOverlay = styled.div`
+export const PosterOverlay = styled(m.div)`
     position: absolute;
     inset: 0;
     display: flex;
