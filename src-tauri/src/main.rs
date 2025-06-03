@@ -776,10 +776,6 @@ fn main() {
             tauri::async_runtime::spawn(async move {
                 SetupManager::get_instance().start_setup(handle_clone.clone()).await;
                 SetupManager::spawn_sleep_mode_handler(handle_clone.clone()).await;
-                // Initialize frontend updates after setup is complete
-                if let Err(e) = initialize_frontend_updates(&handle_clone).await {
-                    error!(target: LOG_TARGET, "Failed to initialize frontend updates: {:?}", e);
-                }
             });
         }
         tauri::RunEvent::ExitRequested { api: _, code, .. } => {
