@@ -10,10 +10,6 @@ interface WalletStoreState {
     calculated_balance?: number;
     coinbase_transactions: TransactionInfo[];
     transactions: TransactionInfo[];
-    is_reward_history_loading: boolean;
-    has_more_coinbase_transactions: boolean;
-    has_more_transactions: boolean;
-    is_transactions_history_loading: boolean;
     is_wallet_importing: boolean;
     is_swapping?: boolean;
     wallet_scanning: {
@@ -22,7 +18,6 @@ interface WalletStoreState {
         total_height: number;
         progress: number;
     };
-    newestTxIdOnInitialFetch?: TransactionInfo['tx_id']; // only set once - needed to check against truly "new" txs for the badge
 }
 
 const initialState: WalletStoreState = {
@@ -31,10 +26,6 @@ const initialState: WalletStoreState = {
     is_tari_address_generated: null,
     coinbase_transactions: [],
     transactions: [],
-    has_more_coinbase_transactions: true,
-    has_more_transactions: true,
-    is_reward_history_loading: false,
-    is_transactions_history_loading: false,
     is_wallet_importing: false,
     wallet_scanning: {
         is_scanning: true,

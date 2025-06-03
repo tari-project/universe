@@ -7,37 +7,60 @@ import { setError } from './appStateStoreActions';
 import { setExchangeContent } from '@app/store/useExchangeStore.ts';
 import { TransactionDirection, TransactionStatus } from '@app/types/transactions';
 
-interface TxArgs {
+export const COINBASE_BITFLAG =
+    (1 << TransactionStatus.CoinbaseConfirmed) | (1 << TransactionStatus.CoinbaseUnconfirmed);
+export const NON_COINBASE_BITFLAG: number =
+    (1 << TransactionStatus.Completed) |
+    (1 << TransactionStatus.Broadcast) |
+    (1 << TransactionStatus.MinedUnconfirmed) |
+    (1 << TransactionStatus.Imported) |
+    (1 << TransactionStatus.Pending) |
+    (1 << TransactionStatus.MinedConfirmed) |
+    (1 << TransactionStatus.Rejected) |
+    (1 << TransactionStatus.OneSidedUnconfirmed) |
+    (1 << TransactionStatus.OneSidedConfirmed) |
+    (1 << TransactionStatus.Queued) |
+    (1 << TransactionStatus.NotFound);
+
+export interface TxArgs {
     offset?: number;
     limit?: number;
 }
+type StoreKey = 'coinbase_transactions' | 'transactions';
 
-export const fetchTransactionsHistory = async ({ offset = 0, limit }: TxArgs) => {
-    if (useWalletStore.getState().is_transactions_history_loading) {
-        return [];
-    }
+interface FetchConfig {
+    storeKey: StoreKey;
+    bitflag: number;
+}
 
+const fetchTransactions = async ({ offset = 0, limit }: TxArgs, { storeKey, bitflag }: FetchConfig) => {
     try {
-        useWalletStore.setState({ is_transactions_history_loading: true });
-        const currentTxs = useWalletStore.getState().transactions;
-        const fetchedTxs = await invoke('get_transactions_history', { offset, limit });
+        const currentTxs = useWalletStore.getState()[storeKey];
+        const fetchedTxs = await invoke('get_transactions', { offset, limit, statusBitflag: bitflag });
 
-        const transactions = offset > 0 ? [...currentTxs, ...fetchedTxs] : fetchedTxs;
-        const has_more_transactions = fetchedTxs.length > 0 && (!limit || fetchedTxs.length === limit);
-        useWalletStore.setState({
-            has_more_transactions,
-            transactions,
-        });
-        return transactions;
+        const updatedTxs = offset > 0 ? [...currentTxs, ...fetchedTxs] : fetchedTxs;
+        useWalletStore.setState({ [storeKey]: updatedTxs });
+        return updatedTxs;
     } catch (error) {
         if (error !== ALREADY_FETCHING.HISTORY && error !== ALREADY_FETCHING.TX_HISTORY) {
-            console.error('Could not get transaction history: ', error);
+            console.error(`Could not get transaction history for ${storeKey}: `, error);
         }
         return [];
-    } finally {
-        useWalletStore.setState({ is_transactions_history_loading: false });
     }
 };
+
+export const fetchCoinbaseTransactions = (args: TxArgs) =>
+    fetchTransactions(args, {
+        storeKey: 'coinbase_transactions',
+        bitflag: COINBASE_BITFLAG,
+    });
+
+export const fetchNonCoinbaseTransactions = (args: TxArgs) =>
+    fetchTransactions(args, {
+        storeKey: 'transactions',
+        bitflag: NON_COINBASE_BITFLAG,
+    });
+
 export const importSeedWords = async (seedWords: string[]) => {
     try {
         useWalletStore.setState({ is_wallet_importing: true });
@@ -47,16 +70,11 @@ export const importSeedWords = async (seedWords: string[]) => {
         useWalletStore.setState({ is_wallet_importing: false });
     }
 };
-export const initialFetchTxs = () =>
-    fetchTransactionsHistory({ offset: 0, limit: 20 }).then((tx) => {
-        if (tx?.length) {
-            useWalletStore.setState({ newestTxIdOnInitialFetch: tx[0]?.tx_id });
-        }
-    });
 
 export const refreshTransactions = async () => {
-    const limit = useWalletStore.getState().transactions.length;
-    return fetchTransactionsHistory({ offset: 0, limit: Math.max(limit, 20) });
+    const { transactions, coinbase_transactions } = useWalletStore.getState();
+    await fetchNonCoinbaseTransactions({ offset: 0, limit: Math.max(transactions.length, 20) });
+    await fetchCoinbaseTransactions({ offset: 0, limit: Math.max(coinbase_transactions.length, 20) });
 };
 
 export const setGeneratedTariAddress = async (newAddress: string) => {
@@ -88,7 +106,9 @@ const getPendingOutgoingBalance = async () => {
                 tx.direction == TransactionDirection.Outbound &&
                 [TransactionStatus.Completed, TransactionStatus.Broadcast].includes(tx.status)
         );
-    console.info('Pending txs: ', pendingTxs);
+    if (!pendingTxs.length) {
+        console.info('No pending outgoing transactions');
+    }
     return pendingTxs.reduce((acc, tx) => acc + tx.amount, 0);
 };
 

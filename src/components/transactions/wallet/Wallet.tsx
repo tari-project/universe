@@ -8,7 +8,7 @@ import {
     StyledIconButton,
     TabHeader,
 } from '../components/Tabs/tab.styles.ts';
-import HistoryList, { FILTER_TYPES, ItemFilter } from '../history/HistoryList.tsx';
+import HistoryList, { TxHistoryFilter } from '../history/HistoryList.tsx';
 import WalletBalanceMarkup from '@app/containers/navigation/components/Wallet/WalletBalanceMarkup.tsx';
 import { IoCheckmarkOutline, IoCopyOutline } from 'react-icons/io5';
 import { truncateMiddle } from '@app/utils/truncateString.ts';
@@ -37,6 +37,8 @@ import { swapTransition, walletTransition } from './transitions.ts';
 import { setIsSwapping } from '@app/store/actions/walletStoreActions.ts';
 import { FilterCTA, FilterWrapper } from '@app/components/transactions/history/TxHistory.styles.ts';
 
+const FILTER_TYPES: TxHistoryFilter[] = ['rewards', 'transactions'] as const;
+
 interface Props {
     section: string;
     setSection: (section: string) => void;
@@ -52,11 +54,11 @@ const Wallet = memo(function Wallet({ section, setSection }: Props) {
     const displayAddress = truncateMiddle(walletAddress, 4);
     const swapUiEnabled = useAirdropStore((s) => s.swapsEnabled);
     const isSwapping = useWalletStore((s) => s.is_swapping);
-    const [filter, setFilter] = useState<ItemFilter>('rewards');
+    const [filter, setFilter] = useState<TxHistoryFilter>('rewards');
 
     const { isWalletScanning, formattedAvailableBalance } = useTariBalance();
 
-    function handleFilterChange(newFilter: ItemFilter) {
+    function handleFilterChange(newFilter: TxHistoryFilter) {
         setFilter(newFilter);
     }
 

@@ -4,7 +4,8 @@ import { useSetupStore } from '../useSetupStore';
 import { startCpuMining, startGpuMining, stopCpuMining, stopGpuMining } from './miningStoreActions';
 import {
     fetchApplicationsVersionsWithRetry,
-    initialFetchTxs,
+    fetchCoinbaseTransactions,
+    fetchNonCoinbaseTransactions,
     setWalletAddress,
     TOWER_CANVAS_ID,
     useConfigBEInMemoryStore,
@@ -48,8 +49,9 @@ export const handleAppUnlocked = async () => {
 };
 export const handleWalletUnlocked = () => {
     useSetupStore.setState({ walletUnlocked: true });
-    // moved initialFetchTxs here so we don't call it constantly on sidebar open/close
-    initialFetchTxs();
+    // Initial fetch of transactions
+    fetchCoinbaseTransactions({ offset: 0, limit: 20 });
+    fetchNonCoinbaseTransactions({ offset: 0, limit: 20 });
 };
 export const handleWalletUpdate = async (addressPayload: WalletAddress) => {
     const addressIsGenerated = addressPayload.is_tari_address_generated;

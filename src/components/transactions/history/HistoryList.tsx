@@ -1,10 +1,9 @@
-import { memo, useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import { useWalletStore } from '@app/store/useWalletStore';
 import { CircularProgress } from '@app/components/elements/CircularProgress';
 import { ListItemWrapper, ListWrapper } from './TxHistory.styles.ts';
 import { HistoryListItem } from './ListItem.tsx';
-import { fetchTransactionsHistory } from '@app/store';
 import { useTranslation } from 'react-i18next';
 import { TransactionInfo } from '@app/types/app-status.ts';
 import ListLoadingAnimation from '@app/containers/navigation/components/Wallet/ListLoadingAnimation/ListLoadingAnimation.tsx';
@@ -13,43 +12,55 @@ import { PlaceholderItem } from './ListItem.styles.ts';
 import { LoadingText } from '@app/containers/navigation/components/Wallet/ListLoadingAnimation/styles.ts';
 import { TransactionDetails } from '@app/components/transactions/history/details/TransactionDetails.tsx';
 import { invoke } from '@tauri-apps/api/core';
-import { getTxTypeByStatus } from '@app/utils/getTxStatus.ts';
+import { TxArgs } from '@app/store/actions/walletStoreActions.ts';
+import { fetchCoinbaseTransactions, fetchNonCoinbaseTransactions } from '@app/store';
 
 export type TransactionDetailsItem = TransactionInfo & { dest_address_emoji?: string };
 
-export const FILTER_TYPES = ['rewards', 'transactions'];
-type FilterTuple = typeof FILTER_TYPES;
-export type ItemFilter = FilterTuple[number];
+const TX_FETCH_LIMIT = 20;
+const IS_NEW_TIMEOUT = 15 * 60 * 1000; // 15min
 
-const HistoryList = memo(function HistoryList({ filter }: { filter: ItemFilter }) {
+export type TxHistoryFilter = 'rewards' | 'transactions';
+
+const fetchTransactionsHistory = async (filter: TxHistoryFilter, tx_args: TxArgs) => {
+    if (filter === 'rewards') {
+        return fetchCoinbaseTransactions(tx_args);
+    }
+    if (filter === 'transactions') {
+        return fetchNonCoinbaseTransactions(tx_args);
+    }
+    console.error('Invalid tx history filter: ', filter);
+    return Promise.resolve([]);
+};
+
+const HistoryList = memo(function HistoryList({ filter }: { filter: TxHistoryFilter }) {
     const { t } = useTranslation('wallet');
-    const is_transactions_history_loading = useWalletStore((s) => s.is_transactions_history_loading);
-    const newestTxIdOnInitialFetch = useWalletStore((s) => s.newestTxIdOnInitialFetch);
-    const walletScanning = useWalletStore((s) => s.wallet_scanning);
-    const hasMore = useWalletStore((s) => s.has_more_transactions);
-    const transactions = useWalletStore((s) => s.transactions);
-
+    const [isFetchingTxs, setIsFetchingTxs] = useState(false);
+    const [hasMore, setHasMore] = useState(true);
     const [detailsItem, setDetailsItem] = useState<TransactionDetailsItem | null>(null);
+    const walletScanning = useWalletStore((s) => s.wallet_scanning);
+    const regularTransactions = useWalletStore((state) => state.transactions);
+    const rewardsTransactions = useWalletStore((state) => state.coinbase_transactions);
 
-    // const filteredTransactions = useMemo(() => {
-    //     return transactions.filter((tx) => {
-    //         const isMined = getTxTypeByStatus(tx) === 'mined';
+    const transactionsToShow = filter === 'rewards' ? rewardsTransactions : regularTransactions;
 
-    //         if (filter === 'rewards' && isMined) {
-    //             return tx;
-    //         }
-
-    //         if (filter === 'transactions' && !isMined) {
-    //             return tx;
-    //         }
-    //     });
-    // }, [filter, transactions]);
+    useEffect(() => {
+        setHasMore(false);
+    }, [filter]);
 
     const handleNext = useCallback(async () => {
-        if (!is_transactions_history_loading) {
-            await fetchTransactionsHistory({ offset: transactions.length, limit: 20 });
+        if (isFetchingTxs) return;
+        setIsFetchingTxs(true);
+        try {
+            const offset = transactionsToShow.length;
+            const txs = await fetchTransactionsHistory(filter, { offset, limit: TX_FETCH_LIMIT });
+            setHasMore(txs.length >= offset + TX_FETCH_LIMIT);
+        } catch (error) {
+            console.error('Failed to fetch transaction history:', error);
+        } finally {
+            setIsFetchingTxs(false);
         }
-    }, [is_transactions_history_loading, transactions.length]);
+    }, [filter, isFetchingTxs, transactionsToShow]);
 
     const handleDetailsChange = useCallback(async (tx: TransactionInfo | null) => {
         if (!tx) {
@@ -61,30 +72,26 @@ const HistoryList = memo(function HistoryList({ filter }: { filter: ItemFilter }
             .catch(() => undefined);
         // Specify order here
         setDetailsItem({
-            tx_id: tx.tx_id,
-            amount: tx.amount,
-            payment_id: tx.payment_id,
-            status: tx.status,
             source_address: tx.source_address,
             dest_address: tx.dest_address,
             dest_address_emoji,
+            tx_id: tx.tx_id,
+            status: tx.status,
+            amount: tx.amount,
+            timestamp: tx.timestamp,
+            payment_id: tx.payment_id,
             message: tx.message,
+            mined_in_block_height: tx.mined_in_block_height,
             direction: tx.direction,
             fee: tx.fee,
             is_cancelled: tx.is_cancelled,
             excess_sig: tx.excess_sig,
-            timestamp: tx.timestamp,
-            mined_in_block_height: tx.mined_in_block_height,
         });
     }, []);
 
     const listMarkup = useMemo(() => {
-        const latestTxId = transactions?.[0]?.tx_id;
-        const hasNewTx = latestTxId ? newestTxIdOnInitialFetch !== latestTxId : false;
-        const initialTxTime = transactions?.find((tx) => tx.tx_id === newestTxIdOnInitialFetch)?.timestamp;
-
         // Calculate how many placeholder items we need to add
-        const transactionsCount = transactions?.length || 0;
+        const transactionsCount = transactionsToShow?.length || 0;
         const placeholdersNeeded = Math.max(0, 5 - transactionsCount);
 
         return (
@@ -96,12 +103,8 @@ const HistoryList = memo(function HistoryList({ filter }: { filter: ItemFilter }
                 scrollableTarget="list"
             >
                 <ListItemWrapper>
-                    {transactions?.map((tx, i) => {
-                        // only show "new" badge under these conditions:
-                        // there are new txs is general
-                        // it's only of the latest 3
-                        // its timestamp is later than the latest transaction on the very first fetch
-                        const isNew = hasNewTx && i <= 2 && initialTxTime ? tx.timestamp > initialTxTime : false;
+                    {transactionsToShow?.map((tx, i) => {
+                        const isNew = Date.now() - tx.timestamp * 1000 < IS_NEW_TIMEOUT;
                         return (
                             <HistoryListItem
                                 key={tx.tx_id}
@@ -123,7 +126,7 @@ const HistoryList = memo(function HistoryList({ filter }: { filter: ItemFilter }
                 </ListItemWrapper>
             </InfiniteScroll>
         );
-    }, [transactions, newestTxIdOnInitialFetch, handleNext, hasMore, handleDetailsChange]);
+    }, [transactionsToShow, handleNext, hasMore, handleDetailsChange]);
 
     const baseMarkup = walletScanning.is_scanning ? (
         <ListLoadingAnimation
@@ -141,7 +144,7 @@ const HistoryList = memo(function HistoryList({ filter }: { filter: ItemFilter }
         listMarkup
     );
 
-    const isEmpty = !walletScanning.is_scanning && !transactions?.length;
+    const isEmpty = !walletScanning.is_scanning && !transactionsToShow?.length;
     const emptyMarkup = isEmpty ? <LoadingText>{t('empty-tx')}</LoadingText> : null;
 
     return (
