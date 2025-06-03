@@ -6,6 +6,7 @@ export enum MessageType {
     SUCCESS = 'SUCCESS',
     APPROVE_REQUEST = 'APPROVE_REQUEST',
     APPROVE_SUCCESS = 'APPROVE_SUCCESS',
+    WALLET_CONNECT = 'WALLET_CONNECT',
     CONFIRM_REQUEST = 'CONFIRM_REQUEST',
     PROCESSING_STATUS = 'PROCESSING_STATUS',
 }
@@ -45,6 +46,13 @@ interface ErrorMessage {
     };
 }
 
+interface WalletConnectMessage {
+    type: MessageType.WALLET_CONNECT;
+    payload: {
+        open: boolean;
+    };
+}
+
 interface SuccessMessage {
     type: MessageType.SUCCESS;
     payload: {
@@ -70,15 +78,8 @@ export type IframeMessage =
     | SwapConfirmation
     | ErrorMessage
     | SuccessMessage
+    | WalletConnectMessage
     | ProcessingMessage;
-
-// Post a message to the parent window
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function postToParentIframe(message: Record<string, any>, targetOrigin = '*') {
-    if (window.parent) {
-        window.parent.postMessage(message, targetOrigin);
-    }
-}
 
 // Hook to listen for messages from the parent window
 export function useIframeMessage(onMessage: (event: MessageEvent<IframeMessage>) => void) {

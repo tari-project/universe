@@ -19,3 +19,23 @@ export const SectionHeaderWrapper = styled.div`
     margin-bottom: 15px;
     align-items: center;
 `;
+
+export const SwapsIframe = styled.iframe<{ $walletConnectOpen: boolean }>`
+    width: 100%;
+    height: 100%;
+    min-height: ${({ $walletConnectOpen }) => ($walletConnectOpen ? '470px' : '397px')};
+    border: none;
+    pointer-events: all;
+    border-radius: ${({ $walletConnectOpen }) => ($walletConnectOpen ? '30px' : '20px')};
+    overflow: hidden;
+    transition: all 0.3s ease-in-out;
+`;
+
+export const IframeContainer = styled.div`
+    width: 100%;
+    height: 100%;
+    min-height: 350px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+`;
