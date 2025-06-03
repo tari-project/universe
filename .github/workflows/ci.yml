@@ -17,13 +17,6 @@ concurrency:
   # https://docs.github.com/en/actions/examples/using-concurrency-expressions-and-a-test-matrix
   group: '${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}'
   cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/v') || github.ref != 'refs/heads/development' || github.ref != 'refs/heads/nextnet' || github.ref != 'refs/heads/stagenet' }}
-
-env:
-  NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-permissions:
-  packages: read
-
 jobs:
   cargo-checks:
     name: cargo checks (fmt, clippy, check)
@@ -126,10 +119,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies (node)
-        run: |
-          npm config set //npm.pkg.github.com/:_authToken=${{ env.NODE_AUTH_TOKEN }}
-          npm config set @tari-project:registry=https://npm.pkg.github.com
-          npm ci
+        run: npm ci
 
       - uses: dtolnay/rust-toolchain@stable
       - uses: swatinem/rust-cache@v2.7.5

@@ -18,10 +18,9 @@ concurrency:
   group: '${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}'
   cancel-in-progress: ${{ github.ref != 'refs/heads/release' }}
 
-permissions: { packages: read, contents: write }
+permissions: {}
 
 env:
-  NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   TS_FEATURES: release-ci
   BETA_STRING: '(Beta)'
 
@@ -30,6 +29,8 @@ jobs:
     name: Building ${{ matrix.platform }}${{ matrix.extra }}
     # best effort disabled by default
     continue-on-error: ${{ matrix.best_effort || false }}
+    permissions:
+      contents: write
     strategy:
       fail-fast: false
       matrix:
@@ -246,8 +247,6 @@ jobs:
 
       - name: Install Dependencies - Node
         run: |
-          npm config set //npm.pkg.github.com/:_authToken=${{ env.NODE_AUTH_TOKEN }}
-          npm config set @tari-project:registry=https://npm.pkg.github.com
           npm --version
           npm install
 

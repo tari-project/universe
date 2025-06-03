@@ -1,12 +1,5 @@
 name: Lint
 on: pull_request
-
-permissions:
-  packages: read
-
-env:
-  NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
 jobs:
   run-linters:
     name: Run linters
@@ -18,10 +11,7 @@ jobs:
           cache: 'npm'
           node-version: lts/*
       - name: Install Node.js dependencies
-        run: |
-          npm config set //npm.pkg.github.com/:_authToken=${{ env.NODE_AUTH_TOKEN }}
-          npm config set @tari-project:registry=https://npm.pkg.github.com
-          npm ci
+        run: npm ci
       - name: check lint/prettier errors
         run: npm run lint
       - name: check taplo

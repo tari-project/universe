@@ -24,10 +24,9 @@ concurrency:
   # https://docs.github.com/en/actions/examples/using-concurrency-expressions-and-a-test-matrix
   group: '${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}'
   cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/v') || github.ref != 'refs/heads/main' || github.ref != 'refs/heads/release' }}
-permissions: { packages: read, contents: write }
 
+permissions: {}
 env:
-  NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   TS_FEATURES: exchange-ci
   NODE_OPTIONS: '--max_old_space_size=8192'
 
@@ -55,6 +54,8 @@ jobs:
       APP_VERSION: ${{ steps.set-env.outputs.APP_VERSION }}
     # best effort disabled by default
     continue-on-error: ${{ matrix.platforms.best_effort || false }}
+    permissions:
+      contents: write
     strategy:
       fail-fast: false
       matrix:
@@ -214,8 +215,6 @@ jobs:
 
       - name: Install Dependencies - Node
         run: |
-          npm config set //npm.pkg.github.com/:_authToken ${{ env.NODE_AUTH_TOKEN }}
-          npm config set @tari-project:registry https://npm.pkg.github.com
           npm --version
           npm install
 
