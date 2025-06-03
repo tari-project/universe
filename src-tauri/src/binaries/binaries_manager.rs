@@ -31,7 +31,7 @@ use crate::{
     download_utils::{extract, validate_checksum},
     github::request_client::RequestClient,
     progress_tracker_old::ProgressTracker,
-    utils::error_utils::find_io_error_kind,
+    utils::error_utils::find_io_error,
 };
 
 use super::{
@@ -449,11 +449,10 @@ impl BinaryManager {
             {
                 Ok(_) => return Ok(()),
                 Err(error) => {
-                    if let Some(kind) = find_io_error_kind(&error) {
-                        if kind == io::ErrorKind::PermissionDenied {
-                            error!(target: LOG_TARGET, "Permission denied error when downloading binary: {} at retry: {}. Error: {:?}", self.binary_name, retry, error);
-                            // Return early, since retrying likely won't help
-                            return Err(error);
+                    if let Some(io_error) = find_io_error(&error) {
+                        if io_error.kind() == io::ErrorKind::PermissionDenied {
+                            error!(target: LOG_TARGET, "Permission denied error when downloading binary: {} Error: {:?}", self.binary_name, error);
+                            return Err(anyhow!(io_error.to_string()));
                         }
                     }
 
