@@ -1,5 +1,6 @@
 name: Lint
 on: pull_request
+
 jobs:
   run-linters:
     name: Run linters
