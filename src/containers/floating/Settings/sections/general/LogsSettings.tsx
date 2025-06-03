@@ -44,7 +44,6 @@ export default function LogsSettings() {
                     </SettingsGroupTitle>
                     {issueReference && (
                         <Stack direction="row" alignItems="center" justifyContent="flex-start" gap={5}>
-                            {/* TODO: consider moving reference to dialog?*/}
                             <Typography>
                                 <Trans
                                     t={t}

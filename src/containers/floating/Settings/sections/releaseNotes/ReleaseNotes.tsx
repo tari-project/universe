@@ -7,7 +7,6 @@ import packageInfo from '../../../../../../package.json';
 import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/core';
 import { useAppStateStore } from '@app/store/appStateStore';
-import { useMiningStore } from '@app/store';
 import { isMainNet } from '@app/utils/network';
 
 const appVersion = packageInfo.version;
@@ -48,7 +47,6 @@ interface Props {
 export const ReleaseNotes = ({ noHeader, showScrollBars }: Props) => {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
     const releaseNotes = useAppStateStore((state) => state.releaseNotes);
-    const network = useMiningStore((state) => state.network);
     const needsUpgrade = useAppStateStore((state) => state.isAppUpdateAvailable);
     const [openSectionIndex, setOpenSectionIndex] = useState<number | null>(0);
 
@@ -72,7 +70,7 @@ export const ReleaseNotes = ({ noHeader, showScrollBars }: Props) => {
                     <TextWrapper>
                         <Title>{t('settings:tabs.releaseNotes')}</Title>
                         <Text>
-                            {t('tari-universe')} - {!isMainNet(network) && t('testnet')} {versionString}
+                            {t('tari-universe')} - {!isMainNet() && t('testnet')} {versionString}
                         </Text>
                     </TextWrapper>
 

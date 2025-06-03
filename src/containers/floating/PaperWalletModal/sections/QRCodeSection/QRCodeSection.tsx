@@ -81,9 +81,9 @@ export default function QRCodeSection({ onDoneClick }: Props) {
                         size={190}
                         style={{ borderRadius: 15 }}
                         value={qrCodeValue}
-                        quietZone={10}
+                        quietZone={6}
                         eyeRadius={4}
-                        ecLevel="L"
+                        ecLevel="M"
                     />
                 </QRCodeWrapper>
 
