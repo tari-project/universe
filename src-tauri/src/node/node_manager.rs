@@ -59,8 +59,6 @@ pub enum NodeManagerError {
     ExitCode(i32),
     #[error("Node failed with an unknown error: {0}")]
     UnknownError(#[from] anyhow::Error),
-    #[error("Maximum failed requests exceeded")]
-    MaxFailedRequestsExceeded,
 }
 
 pub const STOP_ON_ERROR_CODES: [i32; 2] = [114, 102];
