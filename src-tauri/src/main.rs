@@ -380,7 +380,12 @@ fn main() {
         pool_status_url: None,
     }));
 
-    let dynamic_memory_config = block_on(async { DynamicMemoryConfig::init().await });
+    let dynamic_memory_config =
+        if std::env::var("EXCHANGE_ID").unwrap_or_else(|_| "classic".to_string()) == "classic" {
+            DynamicMemoryConfig::init_classic()
+        } else {
+            block_on(async { DynamicMemoryConfig::init().await })
+        };
     let app_in_memory_config = Arc::new(RwLock::new(dynamic_memory_config));
 
     let cpu_miner: Arc<RwLock<CpuMiner>> = Arc::new(
