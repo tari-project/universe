@@ -429,7 +429,7 @@ fn construct_process_watcher<T: NodeAdapter + ProcessAdapter + Send + Sync + 'st
         process_watcher.poll_time = Duration::from_secs(10);
         process_watcher.health_timeout = Duration::from_secs(9);
     }
-    process_watcher.expected_startup_time = Duration::from_secs(600);
+    process_watcher.expected_startup_time = Duration::from_secs(1200);
 
     process_watcher
 }

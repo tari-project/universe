@@ -232,7 +232,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
 
         info!(target: LOG_TARGET, "Starting node manager, grpc address: {}", self.app_configuration.base_node_grpc_address);
 
-        for _i in 0..2 {
+        for _i in 0..20 {
             match state
                 .node_manager
                 .ensure_started(
@@ -259,7 +259,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
                         continue;
                     }
                     if let NodeManagerError::UnknownError(error) = e {
-                        warn!(target: LOG_TARGET, "NodeManagerError::UnknownError({:?}) needs a restart.", error);
+                        warn!(target: LOG_TARGET, "NodeManagerError::UnknownError({}) needs a restart.", error);
                         continue;
                     }
                     error!(target: LOG_TARGET, "Could not start node manager after restart: {:?} | Exitting the app", e);
