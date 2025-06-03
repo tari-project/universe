@@ -546,6 +546,14 @@ pub async fn get_used_p2pool_stats_server_port(
 }
 
 #[tauri::command]
+pub async fn get_universal_miner_initialized_exchange_id() -> Result<Option<String>, String> {
+    Ok(ConfigCore::content()
+        .await
+        .universal_miner_initialized_exchange_id()
+        .clone())
+}
+
+#[tauri::command]
 pub async fn get_paper_wallet_details(
     app: tauri::AppHandle,
     state: tauri::State<'_, UniverseAppState>,

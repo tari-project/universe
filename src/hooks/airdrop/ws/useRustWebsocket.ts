@@ -41,7 +41,7 @@ export default function useAirdropWebsocket() {
 
     useEffect(() => {
         const unlistenPromise = listen('ws-status-change', (event) => {
-            console.info(`websocket status changed: ${event}`);
+            console.info(`websocket status changed: `, event);
         });
 
         return () => {

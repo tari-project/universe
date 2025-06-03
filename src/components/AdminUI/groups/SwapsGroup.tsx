@@ -162,23 +162,23 @@ export function SwapsGroup() {
     return (
         <>
             <CategoryLabel>Dev Admin Controls (Liquidity)</CategoryLabel>
-            <div style={{ marginBottom: 16, border: '1px solid #444', padding: 16, borderRadius: 8 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-                    <span style={{ fontSize: 14, color: '#ddd' }}>
-                        Default Chain (No Wallet): <b>{getChainName(defaultChainForStore)}</b>
+            <div style={{ marginBottom: 5, border: '1px solid #444', padding: 8, borderRadius: 8 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+                    <span style={{ fontSize: 12, color: '#ddd' }}>
+                        Default Chain (No Wallet): <br /> <b>{getChainName(defaultChainForStore)}</b>
                     </span>
-                    <Button onClick={handleToggleChain} style={{ padding: '4px 12px' }}>
+                    <Button onClick={handleToggleChain} style={{ padding: '4px 8px' }}>
                         Toggle Default Chain
                     </Button>
                 </div>
                 {connectedChain && (
-                    <div style={{ marginBottom: 16, fontSize: 14, color: '#ddd' }}>
+                    <div style={{ marginBottom: 16, fontSize: 12, color: '#ddd' }}>
                         Connected Wallet Chain: <b>{getChainName(connectedChain.id)}</b> (Using this for operations)
                     </div>
                 )}
 
                 <div style={{ marginBottom: 16 }}>
-                    <label htmlFor="pair-select" style={{ color: '#ddd', marginRight: 8 }}>
+                    <label htmlFor="pair-select" style={{ color: '#ddd', marginRight: 8, fontSize: 14 }}>
                         Select Pair:
                     </label>
                     <select

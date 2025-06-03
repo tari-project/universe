@@ -4,7 +4,7 @@ import { formatTimeStamp } from '@app/components/transactions/history/helpers.ts
 import { ReactNode } from 'react';
 import { formatNumber, FormatPreset } from '@app/utils';
 import { StatusListEntry } from '@app/components/transactions/components/StatusList/StatusList.tsx';
-import { Network } from '@app/utils/network.ts';
+import { getExplorerUrl, Network } from '@app/utils/network.ts';
 import { useMiningStore } from '@app/store';
 import { getTxStatusTitleKey, getTxTitle } from '@app/utils/getTxStatus.ts';
 
@@ -17,7 +17,6 @@ type Entry = {
 }[keyof TransactionInfo];
 
 const network = useMiningStore.getState().network;
-const explorerURL = `https://${network === Network.Esmeralda ? 'textexplore-esmeralda' : network === Network.NextNet ? 'explore-nextnet' : 'explore'}.tari.com`;
 
 const HIDDEN_KEYS = ['direction', 'excess_sig', 'tx_id'];
 
@@ -65,6 +64,7 @@ function parseValues({
         };
     }
     if (key === 'mined_in_block_height' && value) {
+        const explorerURL = getExplorerUrl(network === Network.MainNet);
         rest['externalLink'] = `${explorerURL}/blocks/${value}`;
     }
 

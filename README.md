@@ -98,6 +98,37 @@ Built applications will be in `src-tauri/target/release/bundle/`:
 - **Windows**: `.msi` installer  
 - **macOS**: `.dmg` and `.app` bundle
 
+## Contributing
+
+### Code Quality
+
+The project uses comprehensive linting tools to maintain code quality:
+- **Frontend**: ESLint with TypeScript, React, and Prettier integration
+- **Backend**: Clippy for Rust with custom lint rules
+
+### Running Lints
+
+```bash
+# Frontend linting
+npm run lint          # Run all linters (knip + eslint)
+npm run lint:fix      # Auto-fix ESLint issues
+npm run lint:taplo    # Check TOML file formatting
+
+# Backend linting (from src-tauri directory)
+cd src-tauri
+cargo clippy          # Run Rust linting
+cargo fmt             # Format Rust code
+```
+
+### IDE Integration
+
+For the best development experience, install:
+- **ESLint extension** for automatic JavaScript/TypeScript linting
+- **rust-analyzer extension** for Rust development
+- **Prettier extension** for code formatting
+
+Most linting issues can be auto-fixed by your IDE or the lint commands above.
+
 ## Configuration
 
 Configuration files are stored at:
