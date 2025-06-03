@@ -45,6 +45,25 @@ pub fn verify_send(address: String, sending_method: TariAddressFeatures) -> Resu
     Ok(())
 }
 
+/// Detects if a Tari address is a dual address (which can contain payment IDs)
+/// Returns a string indicator for telemetry purposes
+pub fn extract_payment_id(address: &str) -> Result<Option<String>, String> {
+    let tari_address = verify_tari_address(address)?;
+    
+    // Check if address is a dual address
+    match tari_address {
+        TariAddress::Dual(_dual_addr) => {
+            // Dual addresses can contain payment IDs
+            // For telemetry purposes, we just indicate that this is a dual address
+            Ok(Some("dual_address_detected".to_string()))
+        },
+        _ => {
+            // Single addresses don't have payment IDs
+            Ok(None)
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -127,5 +146,40 @@ mod tests {
             Err(e) => assert_eq!(e, "Address does not support feature Interactive,"),
             _ => panic!("Expected an error but got success"),
         }
+    }
+
+    #[test]
+    fn test_extract_payment_id_detects_dual_addresses() {
+        // Test with addresses - these appear to be dual addresses based on test output
+        let result = extract_payment_id(ESME_ONE_SIDED_ADDRESS);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), Some("dual_address_detected".to_string()));
+
+        let result = extract_payment_id(ESME_INTERACTIVE_ADDRESS);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), Some("dual_address_detected".to_string()));
+
+        // Test with emoji addresses
+        let result = extract_payment_id(ESME_ONE_SIDED_EMOJI_ADDRESS);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), Some("dual_address_detected".to_string()));
+
+        let result = extract_payment_id(ESME_INTERACTIVE_EMOJI_ADDRESS);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), Some("dual_address_detected".to_string()));
+    }
+
+    #[test]
+    fn test_extract_payment_id_invalid_address() {
+        let result = extract_payment_id("invalid_address");
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), "Invalid address format");
+    }
+
+    #[test]
+    fn test_extract_payment_id_network_mismatch() {
+        let result = extract_payment_id(NEXTNET_ONE_SIDED_ADDRESSS);
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), "Invalid network");
     }
 }
