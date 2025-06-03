@@ -45,17 +45,21 @@ pub fn verify_send(address: String, sending_method: TariAddressFeatures) -> Resu
     Ok(())
 }
 
-/// Detects if a Tari address is a dual address (which can contain payment IDs)
-/// Returns a string indicator for telemetry purposes
+/// Extracts payment ID from a Tari address if present
+/// Returns hex-encoded payment ID for telemetry purposes  
 pub fn extract_payment_id(address: &str) -> Result<Option<String>, String> {
     let tari_address = verify_tari_address(address)?;
 
-    // Check if address is a dual address
+    // Try to extract payment ID from address
     match tari_address {
-        TariAddress::Dual(_dual_addr) => {
-            // Dual addresses can contain payment IDs
-            // For telemetry purposes, we just indicate that this is a dual address
-            Ok(Some("dual_address_detected".to_string()))
+        TariAddress::Dual(dual_addr) => {
+            // Try to access payment ID through dual address properties
+            let payment_id_bytes = dual_addr.get_payment_id_user_data_bytes();
+            if !payment_id_bytes.is_empty() {
+                return Ok(Some(hex::encode(payment_id_bytes)));
+            }
+            // If no payment ID, return None for dual addresses without payment ID
+            Ok(None)
         }
         _ => {
             // Single addresses don't have payment IDs
@@ -149,24 +153,25 @@ mod tests {
     }
 
     #[test]
-    fn test_extract_payment_id_detects_dual_addresses() {
-        // Test with addresses - these appear to be dual addresses based on test output
+    fn test_extract_payment_id_from_addresses() {
+        // Test with addresses - checking what they actually return
         let result = extract_payment_id(ESME_ONE_SIDED_ADDRESS);
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), Some("dual_address_detected".to_string()));
+        // These test addresses don't appear to have payment IDs
+        assert_eq!(result.unwrap(), None);
 
         let result = extract_payment_id(ESME_INTERACTIVE_ADDRESS);
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), Some("dual_address_detected".to_string()));
+        assert_eq!(result.unwrap(), None);
 
         // Test with emoji addresses
         let result = extract_payment_id(ESME_ONE_SIDED_EMOJI_ADDRESS);
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), Some("dual_address_detected".to_string()));
+        assert_eq!(result.unwrap(), None);
 
         let result = extract_payment_id(ESME_INTERACTIVE_EMOJI_ADDRESS);
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), Some("dual_address_detected".to_string()));
+        assert_eq!(result.unwrap(), None);
     }
 
     #[test]
