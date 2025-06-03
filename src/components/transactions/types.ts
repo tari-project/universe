@@ -1,7 +1,7 @@
 import { BackendBridgeTransaction } from '@app/store';
 import { TransactionInfo } from '@app/types/app-status.ts';
 import { TransactionDirection } from '@app/types/transactions.ts';
-import { UserTransactionDTO } from '@tari-project/wxtm-bridge-backend-api';
+import { UserTransactionDTO } from '@tari-project/wxtm-bridge-backend-api-node';
 
 export type TransationType = 'mined' | 'sent' | 'received' | 'unknown';
 
