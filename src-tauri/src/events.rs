@@ -81,6 +81,7 @@ pub enum EventType {
     MiningTime,
     AppInMemoryConfigChanged,
     DisabledPhasesChanged,
+    UniversalMinerInitializedExchangeIdChanged,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -196,4 +197,9 @@ pub struct AppInMemoryConfigChangedPayload {
 #[derive(Debug, Serialize, Clone)]
 pub struct DisabledPhasesPayload {
     pub disabled_phases: Vec<SetupPhase>,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct UniversalMinerInitializedExchangeIdChangedPayload {
+    pub universal_miner_initialized_exchange_id: String,
 }

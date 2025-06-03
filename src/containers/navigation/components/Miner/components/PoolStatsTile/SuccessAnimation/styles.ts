@@ -1,5 +1,3 @@
-'use client';
-
 import styled from 'styled-components';
 import * as m from 'motion/react-m';
 
