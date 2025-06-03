@@ -150,7 +150,7 @@ export const ProcessingTransaction = ({
 
     return (
         <TransactionModal show={isOpen} handleClose={() => setIsOpen(false)}>
-            <StatusHero icon={statusIcon} title={heroTitle}>
+            <StatusHero icon={statusIcon} title={heroTitle || ''}>
                 <p>{heroMessage}</p>
             </StatusHero>
 
