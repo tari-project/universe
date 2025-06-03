@@ -158,7 +158,7 @@ impl TimeoutWatcher {
         &self,
         initial_duration: Option<Duration>,
     ) -> Result<(), anyhow::Error> {
-        if let None = initial_duration {
+        if initial_duration.is_none() {
             info!(target: LOG_TARGET, "Timeout watcher is set to wait indefinitely.");
             // If the duration is None, we will wait indefinitely
             pending::<()>().await;
