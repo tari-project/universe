@@ -203,6 +203,17 @@ impl ProcessAdapter for LocalNodeAdapter {
             info!(target: LOG_TARGET, "Node Migration v2 complete");
             migration_info.version = 2;
         }
+        if migration_info.version < 3 {
+            // Delete the db and sync from scratch
+            if fs::exists(network_dir.join("data")).unwrap_or(false) {
+                info!(target: LOG_TARGET, "Node migration v3: removing data directory at {:?}", network_dir.join("data"));
+                let _unused = fs::remove_dir_all(network_dir.join("data")).inspect_err(|e| {
+                    warn!(target: LOG_TARGET, "Failed to remove data directory: {:?}", e);
+                });
+            }
+            info!(target: LOG_TARGET, "Node Migration v3 complete");
+            migration_info.version = 3;
+        }
         migration_info.save(&migration_file)?;
 
         // Remove peerdb on every restart as requested by Protocol team
