@@ -315,7 +315,6 @@ impl TappletResolver {
         Ok(())
     }
 
-    #[allow(dead_code)]
     pub async fn get_tapplet_version(&self, tapplet: Tapplets) -> Option<Version> {
         self.managers
             .get(&tapplet)
@@ -325,7 +324,6 @@ impl TappletResolver {
             .get_used_version()
     }
 
-    #[allow(dead_code)]
     pub async fn get_tapplet_version_string(&self, tapplet: Tapplets) -> String {
         let version = self.get_tapplet_version(tapplet).await;
         version
