@@ -1,12 +1,18 @@
-import { TokenSymbol } from '@app/components/transactions/wallet/Swap/useSwapData';
 import EthereumIcon from '../icons/chains/ethereumIcon';
 import { PolygonIcon } from '../icons/chains/polygonIcon';
 import { TariIcon } from '../icons/chains/tariIcon';
 import { USDCIcon } from '../icons/chains/usdcIcon';
 import { USDTIcon } from '../icons/chains/usdtIcon';
 
+export enum EnabledTokensEnum {
+    ETH = 'ETH',
+    WXTM = 'wXTM',
+    USDT = 'USDT',
+    USDC = 'USDC',
+}
+
 interface Props {
-    symbol: TokenSymbol;
+    symbol: EnabledTokensEnum;
     width?: string | number;
     fill?: string;
 }
