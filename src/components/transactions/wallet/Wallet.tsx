@@ -8,7 +8,7 @@ import {
     StyledIconButton,
     TabHeader,
 } from '../components/Tabs/tab.styles.ts';
-import HistoryList from '../history/HistoryList.tsx';
+import HistoryList, { FILTER_TYPES, ItemFilter } from '../history/HistoryList.tsx';
 import WalletBalanceMarkup from '@app/containers/navigation/components/Wallet/WalletBalanceMarkup.tsx';
 import { IoCheckmarkOutline, IoCopyOutline } from 'react-icons/io5';
 import { truncateMiddle } from '@app/utils/truncateString.ts';
@@ -28,13 +28,14 @@ import {
     WalletWrapper,
     SwapsWrapper,
 } from './wallet.styles.ts';
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { useTariBalance } from '@app/hooks/wallet/useTariBalance.ts';
 import ArrowRight from './ArrowRight.tsx';
 import { Swap } from './Swap/Swap.tsx';
 import { AnimatePresence } from 'motion/react';
 import { swapTransition, walletTransition } from './transitions.ts';
 import { setIsSwapping } from '@app/store/actions/walletStoreActions.ts';
+import { FilterCTA, FilterWrapper } from '@app/components/transactions/history/TxHistory.styles.ts';
 
 interface Props {
     section: string;
@@ -51,8 +52,13 @@ const Wallet = memo(function Wallet({ section, setSection }: Props) {
     const displayAddress = truncateMiddle(walletAddress, 4);
     const swapUiEnabled = useAirdropStore((s) => s.swapsEnabled);
     const isSwapping = useWalletStore((s) => s.is_swapping);
+    const [filter, setFilter] = useState<ItemFilter>('rewards');
 
     const { isWalletScanning, formattedAvailableBalance } = useTariBalance();
+
+    function handleFilterChange(newFilter: ItemFilter) {
+        setFilter(newFilter);
+    }
 
     return (
         <AnimatePresence mode="wait">
@@ -76,15 +82,29 @@ const Wallet = memo(function Wallet({ section, setSection }: Props) {
                         <WalletBalanceMarkup />
 
                         {uiSendRecvEnabled && !isWalletScanning && (
-                            <TabsWrapper>
+                            <>
                                 <TabsTitle>{`${t('history.available-balance')}: ${formattedAvailableBalance} ${t('common:xtm')}`}</TabsTitle>
-                                <SyncButton onClick={() => setShowPaperWalletModal(true)}>
-                                    {t('history.sync-with-phone')} <ArrowRight />
-                                </SyncButton>
-                            </TabsWrapper>
+
+                                <TabsWrapper>
+                                    <FilterWrapper>
+                                        {FILTER_TYPES.map((type) => (
+                                            <FilterCTA
+                                                key={type}
+                                                $isActive={filter === type}
+                                                onClick={() => handleFilterChange(type)}
+                                            >
+                                                {type}
+                                            </FilterCTA>
+                                        ))}
+                                    </FilterWrapper>
+                                    <SyncButton onClick={() => setShowPaperWalletModal(true)}>
+                                        {t('history.sync-with-phone')} <ArrowRight />
+                                    </SyncButton>
+                                </TabsWrapper>
+                            </>
                         )}
 
-                        <HistoryList />
+                        <HistoryList filter={filter} />
 
                         {uiSendRecvEnabled ? (
                             <>

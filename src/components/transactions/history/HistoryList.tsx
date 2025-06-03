@@ -13,10 +13,15 @@ import { PlaceholderItem } from './ListItem.styles.ts';
 import { LoadingText } from '@app/containers/navigation/components/Wallet/ListLoadingAnimation/styles.ts';
 import { TransactionDetails } from '@app/components/transactions/history/details/TransactionDetails.tsx';
 import { invoke } from '@tauri-apps/api/core';
+import { getTxTypeByStatus } from '@app/utils/getTxStatus.ts';
 
 export type TransactionDetailsItem = TransactionInfo & { dest_address_emoji?: string };
 
-const HistoryList = memo(function HistoryList() {
+export const FILTER_TYPES = ['rewards', 'transactions'];
+type FilterTuple = typeof FILTER_TYPES;
+export type ItemFilter = FilterTuple[number];
+
+const HistoryList = memo(function HistoryList({ filter }: { filter: ItemFilter }) {
     const { t } = useTranslation('wallet');
     const is_transactions_history_loading = useWalletStore((s) => s.is_transactions_history_loading);
     const newestTxIdOnInitialFetch = useWalletStore((s) => s.newestTxIdOnInitialFetch);
@@ -25,6 +30,20 @@ const HistoryList = memo(function HistoryList() {
     const transactions = useWalletStore((s) => s.transactions);
 
     const [detailsItem, setDetailsItem] = useState<TransactionDetailsItem | null>(null);
+
+    // const filteredTransactions = useMemo(() => {
+    //     return transactions.filter((tx) => {
+    //         const isMined = getTxTypeByStatus(tx) === 'mined';
+
+    //         if (filter === 'rewards' && isMined) {
+    //             return tx;
+    //         }
+
+    //         if (filter === 'transactions' && !isMined) {
+    //             return tx;
+    //         }
+    //     });
+    // }, [filter, transactions]);
 
     const handleNext = useCallback(async () => {
         if (!is_transactions_history_loading) {
