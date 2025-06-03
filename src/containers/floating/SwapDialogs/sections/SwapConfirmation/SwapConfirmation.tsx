@@ -1,15 +1,9 @@
 import { WalletButton } from '../../components/WalletButton/WalletButton';
-// import { setWalletConnectModalStep } from '@app/store/actions/walletStoreActions';
-// import { SwapStep } from '@app/store';
 import {
     SelectedChain,
     SelectedChainInfo,
     SwapAmountInput,
     SwapDetails,
-    // NewOutputAmount,
-    // NewOutputWrapper,
-    // SwapDetailsKey,
-    // SwapDetailsValue,
     SwapDirection,
     SwapDirectionWrapper,
     SwapOption,
@@ -22,20 +16,15 @@ import { getCurrencyIcon } from '../../helpers/getIcon';
 import { ArrowIcon } from '../../icons/elements/ArrowIcon';
 import { StatusList, StatusListEntry } from '@app/components/transactions/components/StatusList/StatusList';
 import TransactionModal from '@app/components/TransactionModal/TransactionModal';
-import { useAccount } from 'wagmi';
 import { useMemo } from 'react';
-import { SelectableTokenInfo } from '@app/components/transactions/wallet/Swap/useSwapData';
 import { useTranslation } from 'react-i18next';
-import { SwapDirection as SwapDirectionType } from '@app/hooks/swap/lib/types';
+import { SelectableTokenInfo, SwapDirection as SwapDirectionType } from '@app/hooks/swap/lib/types';
 import { EnabledTokensEnum } from '@app/hooks/swap/lib/constants';
 
-interface Props {
-    isOpen: boolean;
-    setIsOpen: (isOpen: boolean) => void;
-    onConfirm: () => void;
+export interface SwapConfirmationTransactionProps {
     fromTokenDisplay?: SelectableTokenInfo;
     toTokenSymbol?: string; // Added to determine the "Receive" token symbol
-    transaction: {
+    transaction?: {
         amount: string;
         targetAmount: string;
         direction: SwapDirectionType;
@@ -46,8 +35,16 @@ interface Props {
         executionPrice?: string | null; // Added
         transactionId?: string | null;
         paidTransactionFee?: string | null; // Added: Actual fee paid
+        destinationAddress?: string | null;
     };
 }
+
+interface Props extends SwapConfirmationTransactionProps {
+    isOpen: boolean;
+    setIsOpen: (isOpen: boolean) => void;
+    onConfirm: () => void;
+}
+
 export const SwapConfirmation = ({
     isOpen,
     setIsOpen,
@@ -66,10 +63,10 @@ export const SwapConfirmation = ({
         executionPrice,
         paidTransactionFee,
         transactionId,
-    } = transaction;
+    } = transaction || {};
+
     const { t } = useTranslation(['wallet'], { useSuspense: false });
 
-    const dataAcc = useAccount();
     const activeChainIcon = useMemo(() => {
         if (!fromTokenDisplay?.symbol) return null;
         return getCurrencyIcon({
@@ -134,10 +131,8 @@ export const SwapConfirmation = ({
                     <SelectedChain>
                         {activeChainIcon}
                         <SelectedChainInfo>
-                            <span className="address">{truncateMiddle(dataAcc.address || '', 6)}</span>
-                            <span className="chain">
-                                {fromTokenDisplay?.symbol} {dataAcc.chain?.testnet ? '(TESTNET)' : 'MAINNET'}
-                            </span>
+                            <span className="address">{truncateMiddle(transaction?.destinationAddress || '', 6)}</span>
+                            <span className="chain">{fromTokenDisplay?.symbol}</span>
                         </SelectedChainInfo>
                     </SelectedChain>
                 </WalletConnectHeader>
@@ -156,7 +151,7 @@ export const SwapConfirmation = ({
                     <span>{fromTokenDisplay?.balance}</span>
                 </SwapOption>
                 <SwapDirection>
-                    <SwapDirectionWrapper $direction={direction}>
+                    <SwapDirectionWrapper $direction={direction || 'toXtm'}>
                         <ArrowIcon width={15} />
                     </SwapDirectionWrapper>
                 </SwapDirection>
@@ -178,22 +173,6 @@ export const SwapConfirmation = ({
                 </SwapOption>
 
                 <SwapDetails>
-                    {
-                        // <NewOutputWrapper>
-                        //     <NewOutputAmount>
-                        //         <SwapDetailsKey>{t('swap.new-output')}</SwapDetailsKey>
-                        //         <SwapDetailsValue>{1.074234}</SwapDetailsValue>
-                        //     </NewOutputAmount>
-                        //     <WalletButton
-                        //         variant="success"
-                        //         onClick={() => setWalletConnectModalStep(SwapStep.WalletContents)}
-                        //         size="medium"
-                        //     >
-                        //         {t('swap.accept')}
-                        //     </WalletButton>
-                        // </NewOutputWrapper>
-                    }
-
                     <StatusList entries={items} />
                 </SwapDetails>
 

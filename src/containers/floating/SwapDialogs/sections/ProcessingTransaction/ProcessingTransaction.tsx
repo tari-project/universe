@@ -8,27 +8,22 @@ import { StatusHero } from '@app/components/transactions/components/StatusHero/S
 import ProcessingIcon from '@app/components/transactions/send/SendReview/icons/ProcessingIcon';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots';
 import CompletedIcon from '@app/components/transactions/send/SendReview/icons/CompletedIcon';
-import { useAccount } from 'wagmi';
-import { ChainId } from '@uniswap/sdk-core';
+import { SwapStatus } from '@app/hooks/swap/lib/types';
 
-export type SwapStatus = 'processingapproval' | 'processingswap' | 'success' | 'error';
-
-interface Props {
-    status: SwapStatus;
-    isOpen: boolean;
+export interface ProccessingTransactionProps {
+    status?: SwapStatus;
     fees?: { approval: string | null; swap: string | null };
-    setIsOpen: (isOpen: boolean) => void;
     transactionId?: string | null; // Hash of the swap transaction
     txBlockHash?: `0x${string}` | null;
     errorMessage?: string | null; // Added for error status
 }
 
-const sepoliaExplorerUrl = 'https://sepolia.etherscan.io';
+interface Props extends ProccessingTransactionProps {
+    isOpen: boolean;
+    setIsOpen: (isOpen: boolean) => void;
+}
+
 const mainnetExplorerUrl = 'https://etherscan.io';
-const ExplorerUrls = {
-    [ChainId.SEPOLIA]: sepoliaExplorerUrl,
-    [ChainId.MAINNET]: mainnetExplorerUrl,
-};
 
 export const ProcessingTransaction = ({
     status,
@@ -40,8 +35,7 @@ export const ProcessingTransaction = ({
     errorMessage,
 }: Props) => {
     const { t } = useTranslation(['wallet'], { useSuspense: false });
-    const { chain } = useAccount();
-    const explorerUrl = ExplorerUrls[chain?.id ?? ChainId.MAINNET];
+    const explorerUrl = mainnetExplorerUrl;
 
     const statusItems: StatusListEntry[] = useMemo(() => {
         const items: StatusListEntry[] = [];
