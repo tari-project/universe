@@ -138,16 +138,47 @@ impl TimeoutWatcher {
         loop {
             select! {
                 _ = self.resolve_when_hash_changed(&mut receiver) => {
-                    info!(target: LOG_TARGET, "Timeout watcher received a signal to restart timeout.");
                 }
                 _ = conditional_sleeper(self.timeout_duration) => {
                     // If the timeout duration has elapsed, we can exit the loop
                     info!(target: LOG_TARGET, "Timeout watcher has resolved the timeout.");
                     return Some(());
                 }
+                // _ = self.count_sleep_duration(self.timeout_duration) => {
+                //     return Some(());
+                // }
             }
         }
     }
+
+    /// Counts down the sleep duration, logging the remaining time at each second.
+    /// Use for debugging purposes to see how much time is left before the timeout is resolved.
+    #[allow(dead_code)]
+    async fn count_sleep_duration(
+        &self,
+        initial_duration: Option<Duration>,
+    ) -> Result<(), anyhow::Error> {
+        if let None = initial_duration {
+            info!(target: LOG_TARGET, "Timeout watcher is set to wait indefinitely.");
+            // If the duration is None, we will wait indefinitely
+            pending::<()>().await;
+            return Ok(());
+        }
+
+        let mut duration = initial_duration.expect("Timeout duration should be set");
+        loop {
+            if duration.is_zero() {
+                info!(target: LOG_TARGET, "Timeout watcher has resolved the timeout.");
+                return Ok(()); // The timeout has been resolved
+            }
+
+            let sleep_duration = std::cmp::min(duration, Duration::from_secs(1));
+            info!(target: LOG_TARGET, "Remaining timeout duration: {:?}", sleep_duration);
+            tokio::time::sleep(sleep_duration).await;
+            duration -= sleep_duration;
+        }
+    }
+
     async fn resolve_when_hash_changed(
         &self,
         receiver: &mut Receiver<u64>,
@@ -160,7 +191,6 @@ impl TimeoutWatcher {
                     if last_hash_value.ne(&Some(new_hash_value)) {
                         last_hash_value = Some(new_hash_value);
                         *self.last_hash_value.lock().await = last_hash_value;
-                        info!(target: LOG_TARGET, "Timeout watcher received a signal to restart timeout.");
                         return Ok(()); // The timeout has been reset
                     }
                     // If the hash value has not changed, we continue waiting
