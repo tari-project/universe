@@ -22,6 +22,7 @@
 
 pub mod address_utils;
 pub mod app_flow_utils;
+pub mod error_utils;
 pub mod file_utils;
 pub mod formatting_utils;
 pub mod locks_utils;
