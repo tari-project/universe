@@ -151,7 +151,7 @@ impl TimeoutWatcher {
         }
     }
 
-    /// Counts down the sleep duration, logging the remaining time at each second.
+    /// Counts down the sleep duration, logging the remaining time at each second.  
     /// Use for debugging purposes to see how much time is left before the timeout is resolved.
     #[allow(dead_code)]
     async fn count_sleep_duration(
