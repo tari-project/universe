@@ -286,8 +286,6 @@ impl NodeManager {
         progress_percentage_tx: &watch::Sender<f64>,
     ) -> Result<(), anyhow::Error> {
         let shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
-        let mut failed_request_counter = 0;
-        static MAX_FAILED_REQUESTS: u32 = 10;
         loop {
             let current_service = self.get_current_service().await?;
             match current_service
@@ -301,19 +299,10 @@ impl NodeManager {
                 Ok(_) => {
                     return Ok(());
                 }
-                Err(e) => match e {
-                    NodeStatusMonitorError::NodeNotStarted => {
-                        continue;
-                    }
-                    _ => {
-                        failed_request_counter += 1;
-                        if failed_request_counter >= MAX_FAILED_REQUESTS {
-                            return Err(NodeManagerError::MaxFailedRequestsExceeded.into());
-                        }
-                        sleep(Duration::from_millis(100)).await;
-                        continue;
-                    }
-                },
+                Err(_) => {
+                    sleep(Duration::from_secs(5)).await;
+                    continue;
+                }
             }
         }
     }
