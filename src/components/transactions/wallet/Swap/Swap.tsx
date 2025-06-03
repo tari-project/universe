@@ -190,7 +190,6 @@ export const Swap = memo(function Swap() {
             </SubmitButtonWrapper>
             {/* ////////////////////////////////// */}
             {/* Floating Elements */}
-            <useConnectWallet isOpen={reviewSwap && !connectedAccount.address} setIsOpen={setReviewSwap} />
             <SwapConfirmation
                 isOpen={Boolean(
                     reviewSwap &&
