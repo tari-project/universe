@@ -380,7 +380,12 @@ fn main() {
         pool_status_url: None,
     }));
 
-    let dynamic_memory_config = block_on(async { DynamicMemoryConfig::init().await });
+    let dynamic_memory_config =
+        if std::env::var("EXCHANGE_ID").unwrap_or_else(|_| "classic".to_string()) == "classic" {
+            DynamicMemoryConfig::init_classic()
+        } else {
+            block_on(async { DynamicMemoryConfig::init().await })
+        };
     let app_in_memory_config = Arc::new(RwLock::new(dynamic_memory_config));
 
     let cpu_miner: Arc<RwLock<CpuMiner>> = Arc::new(
@@ -713,7 +718,8 @@ fn main() {
             commands::launch_builtin_tapplet,
             commands::get_tari_wallet_address,
             commands::get_tari_wallet_balance,
-            commands::get_bridge_envs
+            commands::get_bridge_envs,
+            commands::get_universal_miner_initialized_exchange_id,
         ])
         .build(tauri::generate_context!())
         .inspect_err(|e| {

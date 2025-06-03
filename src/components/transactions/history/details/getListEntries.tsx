@@ -4,7 +4,7 @@ import { formatTimeStamp, isTransactionInfo } from '@app/components/transactions
 import { ReactNode } from 'react';
 import { formatNumber, FormatPreset } from '@app/utils';
 import { StatusListEntry } from '@app/components/transactions/components/StatusList/StatusList.tsx';
-import { Network } from '@app/utils/network.ts';
+import { getExplorerUrl, Network } from '@app/utils/network.ts';
 import { BackendBridgeTransaction, useMiningStore } from '@app/store';
 import { getTxStatusTitleKey, getTxTitle } from '@app/utils/getTxStatus.ts';
 
@@ -25,7 +25,6 @@ type BridgeTransactionEntry = {
 }[keyof BackendBridgeTransaction];
 
 const network = useMiningStore.getState().network;
-const explorerURL = `https://${network === Network.Esmeralda ? 'textexplore-esmeralda' : network === Network.NextNet ? 'explore-nextnet' : 'explore'}.tari.com`;
 
 const HIDDEN_KEYS = ['direction', 'excess_sig', 'tx_id'];
 const BRIDGE_HIDDEN_KEYS = ['paymentId'];
@@ -77,6 +76,7 @@ function parseTransactionValues({
     }
 
     if (key === 'mined_in_block_height' && value) {
+        const explorerURL = getExplorerUrl(network === Network.MainNet);
         rest['externalLink'] = `${explorerURL}/blocks/${value}`;
     }
 

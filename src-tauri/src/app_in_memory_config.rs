@@ -226,6 +226,17 @@ impl DynamicMemoryConfig {
             },
         }
     }
+
+    pub fn init_classic() -> Self {
+        Self {
+            miner_type: MinerType::Classic,
+            in_memory_config: AppInMemoryConfig {
+                exchange_id: "classic".to_string(),
+                ..AppInMemoryConfig::init()
+            },
+        }
+    }
+
     pub fn is_universal_miner(&self) -> bool {
         matches!(self.miner_type, MinerType::Universal)
     }
