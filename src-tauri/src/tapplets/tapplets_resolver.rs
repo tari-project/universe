@@ -152,7 +152,7 @@ impl TappletResolver {
             .lock()
             .await
             .get_used_version()
-            .ok_or_else(|| anyhow!("No version selected for tapplet {}", tapplet.name()))?;
+            .ok_or_else(|| anyhow!("No versin found for tapplet {}", tapplet.name()))?;
 
         let base_dir = manager.lock().await.get_base_dir().map_err(|error| {
             anyhow!(
@@ -246,7 +246,7 @@ impl TappletResolver {
             Some(version) => manager.set_used_version(version),
             None => {
                 return Err(anyhow!(
-                    "No version selected for tapplet {}",
+                    "Initialize {} tapplet version: no version selected",
                     tapplet.name()
                 ))
             }
@@ -306,7 +306,7 @@ impl TappletResolver {
             Some(version) => manager.set_used_version(version),
             None => {
                 return Err(anyhow!(
-                    "No version selected for tapplet {}",
+                    "Update {} tapplet version: no version selected",
                     tapplet.name()
                 ))
             }
