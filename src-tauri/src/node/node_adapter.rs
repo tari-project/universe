@@ -379,7 +379,6 @@ impl StatusMonitor for NodeStatusMonitor {
         match timeout(timeout_duration, self.node_service.get_network_state()).await {
             Ok(res) => match res {
                 Ok(status) => {
-                    info!(target: LOG_TARGET, "{:?} Node Health Check Success: status: {:?}", self.node_type, status);
                     let _res = self.status_broadcast.send(status);
                     if status.num_connections == 0 {
                         warn!(
@@ -390,25 +389,25 @@ impl StatusMonitor for NodeStatusMonitor {
                         return HealthStatus::Warning;
                     }
 
-                    // if self
-                    //     .last_block_time
-                    //     .load(std::sync::atomic::Ordering::SeqCst)
-                    //     == status.block_time
-                    // {
-                    //     if uptime.as_secs() > 3600
-                    //         && EpochTime::now()
-                    //             .checked_sub(EpochTime::from_secs_since_epoch(status.block_time))
-                    //             .unwrap_or(EpochTime::from(0))
-                    //             .as_u64()
-                    //             > 3600
-                    //     {
-                    //         warn!(target: LOG_TARGET, "Base node height has not changed in an hour");
-                    //         return HealthStatus::Unhealthy;
-                    //     }
-                    // } else {
-                    //     self.last_block_time
-                    //         .store(status.block_time, std::sync::atomic::Ordering::SeqCst);
-                    // }
+                    if self
+                        .last_block_time
+                        .load(std::sync::atomic::Ordering::SeqCst)
+                        == status.block_time
+                    {
+                        if uptime.as_secs() > 3600
+                            && EpochTime::now()
+                                .checked_sub(EpochTime::from_secs_since_epoch(status.block_time))
+                                .unwrap_or(EpochTime::from(0))
+                                .as_u64()
+                                > 3600
+                        {
+                            warn!(target: LOG_TARGET, "Base node height has not changed in an hour");
+                            return HealthStatus::Unhealthy;
+                        }
+                    } else {
+                        self.last_block_time
+                            .store(status.block_time, std::sync::atomic::Ordering::SeqCst);
+                    }
                     HealthStatus::Healthy
                 }
                 Err(e) => {
