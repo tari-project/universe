@@ -20,7 +20,9 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::{events::CriticalProblemPayload, setup::trait_setup_phase::SetupPhaseImpl, EventsEmitter};
+use crate::{
+    events::CriticalProblemPayload, setup::trait_setup_phase::SetupPhaseImpl, EventsEmitter,
+};
 use log::{error, info, warn};
 use tauri_plugin_sentry::sentry;
 use tokio::select;
@@ -63,7 +65,6 @@ impl SetupDefaultAdapter {
                         Ok(_) => {
                             info!(target: LOG_TARGET, "[ {} Phase ] Setup completed successfully", phase.get_phase_id());
                             let _unused = phase.finalize_setup().await;
-    
                         }
                         Err(error) => {
                             error!(target: LOG_TARGET, "[ {} Phase ] Setup failed with error: {:?}", phase.get_phase_id(),error);
