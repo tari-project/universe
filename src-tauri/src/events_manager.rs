@@ -153,4 +153,21 @@ impl EventsManager {
             None,
         ).await;
     }
+
+    pub async fn handle_critical_problem(
+        _app: &AppHandle,
+        title: Option<String>,
+        description: Option<String>,
+        error_message: Option<String>,
+    ) {
+        use crate::events::CriticalProblemPayload;
+        use crate::events_emitter::EventsEmitter;
+
+        let payload = CriticalProblemPayload {
+            title,
+            description,
+            error_message,
+        };
+        EventsEmitter::emit_critical_problem(payload).await;
+    }
 }

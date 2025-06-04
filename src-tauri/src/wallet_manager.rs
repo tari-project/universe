@@ -28,6 +28,7 @@ use crate::process_watcher::ProcessWatcher;
 use crate::tasks_tracker::TasksTrackers;
 use crate::wallet_adapter::WalletStatusMonitorError;
 use crate::wallet_adapter::{TransactionInfo, WalletBalance};
+use tauri::AppHandle;
 use crate::wallet_adapter::{WalletAdapter, WalletState};
 use crate::{BaseNodeStatus, UniverseAppState};
 use futures_util::future::FusedFuture;

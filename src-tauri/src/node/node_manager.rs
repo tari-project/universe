@@ -26,6 +26,8 @@ use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use std::time::Duration;
 
+use tauri::AppHandle;
+
 use log::{error, info, warn};
 use serde::{Deserialize, Serialize};
 use tari_common::configuration::Network;

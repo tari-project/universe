@@ -69,7 +69,7 @@ use tokio::sync::{Mutex, RwLock};
 use tokio::time;
 use utils::logging_utils::setup_logging;
 
-use app_in_memory_config::DynamicMemoryConfig;
+use app_in_memory_config::{AppInMemoryConfig, DynamicMemoryConfig};
 #[cfg(all(feature = "exchange-ci", not(feature = "release-ci")))]
 use app_in_memory_config::EXCHANGE_ID;
 
@@ -296,7 +296,7 @@ async fn create_managers_with_app_handle(
     cpu_miner_status_watch_tx: watch::Sender<CpuMinerStatus>,
     p2pool_stats_tx: watch::Sender<Option<P2poolStats>>,
     tor_watch_tx: watch::Sender<TorStatus>,
-    app_in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
+    app_in_memory_config: Arc<RwLock<DynamicMemoryConfig>>,
     _cpu_config: Arc<RwLock<CpuMinerConfig>>, // Prefix with _ to silence warning
 ) -> (
     NodeManager,
@@ -344,7 +344,7 @@ async fn create_managers_with_app_handle(
         app_handle.clone(),
     );
 
-    let spend_wallet_manager = SpendWalletManager::new(node_manager.clone());
+    let spend_wallet_manager = SpendWalletManager::new(node_manager.clone(), base_node_watch_rx.clone());
 
     let cpu_miner = CpuMiner::new(
         stats_collector,
@@ -556,7 +556,7 @@ fn main() {
                 pool_status_url: None,
             }));
 
-            let app_in_memory_config = Arc::new(RwLock::new(app_in_memory_config::AppInMemoryConfig::init()));
+            let app_in_memory_config = Arc::new(RwLock::new(DynamicMemoryConfig::init_classic()));
 
             let mut stats_collector = ProcessStatsCollectorBuilder::new();
 

@@ -280,7 +280,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
             .await?;
 
         self.internal_shutdown = Shutdown::new();
-        let mut inner_shutdown_signal_for_startup = self.internal_shutdown.to_signal();
+        let inner_shutdown_signal_for_startup = self.internal_shutdown.to_signal();
         let mut inner_shutdown_signal_for_monitoring = self.internal_shutdown.to_signal();
 
         info!(target: LOG_TARGET, "Using {:?} for {}", binary_path, name);
