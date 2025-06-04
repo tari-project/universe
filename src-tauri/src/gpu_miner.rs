@@ -39,7 +39,6 @@ use crate::events_emitter::EventsEmitter;
 use crate::gpu_miner_adapter::GpuNodeSource;
 use crate::gpu_status_file::{GpuDevice, GpuStatusFile};
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
-use tauri::AppHandle;
 use crate::tasks_tracker::TasksTrackers;
 use crate::utils::math_utils::estimate_earning;
 use crate::{
@@ -47,6 +46,7 @@ use crate::{
     process_watcher::ProcessWatcher,
 };
 use crate::{process_utils, BaseNodeStatus};
+use tauri::AppHandle;
 
 const LOG_TARGET: &str = "tari::universe::gpu_miner";
 

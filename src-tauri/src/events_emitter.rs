@@ -25,9 +25,9 @@ use std::sync::LazyLock;
 
 use crate::app_in_memory_config::AppInMemoryConfig;
 use crate::events::{
-    AppInMemoryConfigChangedPayload, BinaryPermanentFailurePayload, BinaryRuntimeRestartAttemptPayload, 
-    BinaryStartupAttemptPayload, ConnectionStatusPayload, CriticalProblemPayload,
-    DisabledPhasesPayload, InitWalletScanningProgressPayload,
+    AppInMemoryConfigChangedPayload, BinaryPermanentFailurePayload,
+    BinaryRuntimeRestartAttemptPayload, BinaryStartupAttemptPayload, ConnectionStatusPayload,
+    CriticalProblemPayload, DisabledPhasesPayload, InitWalletScanningProgressPayload,
     UniversalMinerInitializedExchangeIdChangedPayload,
 };
 #[cfg(target_os = "windows")]

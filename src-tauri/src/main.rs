@@ -69,9 +69,9 @@ use tokio::sync::{Mutex, RwLock};
 use tokio::time;
 use utils::logging_utils::setup_logging;
 
-use app_in_memory_config::{AppInMemoryConfig, DynamicMemoryConfig};
 #[cfg(all(feature = "exchange-ci", not(feature = "release-ci")))]
 use app_in_memory_config::EXCHANGE_ID;
+use app_in_memory_config::{AppInMemoryConfig, DynamicMemoryConfig};
 
 use progress_tracker_old::ProgressTracker;
 use telemetry_manager::TelemetryManager;
@@ -344,7 +344,8 @@ async fn create_managers_with_app_handle(
         app_handle.clone(),
     );
 
-    let spend_wallet_manager = SpendWalletManager::new(node_manager.clone(), base_node_watch_rx.clone());
+    let spend_wallet_manager =
+        SpendWalletManager::new(node_manager.clone(), base_node_watch_rx.clone());
 
     let cpu_miner = CpuMiner::new(
         stats_collector,
@@ -476,7 +477,10 @@ fn main() {
     ));
     let _guard = minidump::init(&client);
 
-    #[allow(deprecated, reason = "This is a temporary fix until the new tauri API is released")]
+    #[allow(
+        deprecated,
+        reason = "This is a temporary fix until the new tauri API is released"
+    )]
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_process::init())
@@ -534,12 +538,19 @@ fn main() {
             let app_handle = app.handle().clone();
 
             // Create channels for communication between components
-            let (_base_node_watch_tx, base_node_watch_rx) = watch::channel(BaseNodeStatus::default());
-            let (wallet_state_watch_tx, wallet_state_watch_rx) = watch::channel::<Option<WalletState>>(None);
-            let (websocket_message_tx, _websocket_message_rx) = tokio::sync::mpsc::channel::<WebsocketMessage>(500);
-            let (websocket_manager_status_tx, websocket_manager_status_rx) = watch::channel::<WebsocketManagerStatusMessage>(WebsocketManagerStatusMessage::Stopped);
+            let (_base_node_watch_tx, base_node_watch_rx) =
+                watch::channel(BaseNodeStatus::default());
+            let (wallet_state_watch_tx, wallet_state_watch_rx) =
+                watch::channel::<Option<WalletState>>(None);
+            let (websocket_message_tx, _websocket_message_rx) =
+                tokio::sync::mpsc::channel::<WebsocketMessage>(500);
+            let (websocket_manager_status_tx, websocket_manager_status_rx) =
+                watch::channel::<WebsocketManagerStatusMessage>(
+                    WebsocketManagerStatusMessage::Stopped,
+                );
             let (gpu_status_tx, gpu_status_rx) = watch::channel(GpuMinerStatus::default());
-            let (cpu_miner_status_watch_tx, cpu_miner_status_watch_rx) = watch::channel::<CpuMinerStatus>(CpuMinerStatus::default());
+            let (cpu_miner_status_watch_tx, cpu_miner_status_watch_rx) =
+                watch::channel::<CpuMinerStatus>(CpuMinerStatus::default());
             let (p2pool_stats_tx, p2pool_stats_rx) = watch::channel(None);
             let (tor_watch_tx, _tor_watch_rx) = watch::channel(TorStatus::default());
 
