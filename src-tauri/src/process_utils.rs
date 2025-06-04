@@ -127,5 +127,7 @@ pub fn write_pid_file(spec: &ProcessStartupSpec, id: u32) -> Result<(), String> 
         .map_err(|e| format!("Failed to create PID file: {}", e))?;
     file.write_all(id.to_string().as_bytes())
         .map_err(|e| format!("Failed to write PID file: {}", e))?;
+    file.flush()
+        .map_err(|e| format!("Failed to flush PID file: {}", e))?;
     Ok(())
 }
