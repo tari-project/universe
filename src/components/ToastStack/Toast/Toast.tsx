@@ -20,7 +20,7 @@ export const Toast = ({ id, index, title, text, timeout = 4500, isHovered = fals
     const [show, setShow] = useState(false);
     const [positionVariant, setPositionVariant] = useState('hidden');
     const progress = useMotionValue(0);
-    const progressInterval = useRef<NodeJS.Timeout>();
+    const progressInterval = useRef<NodeJS.Timeout>(undefined);
     const elapsedTimeRef = useRef<number>(0);
     const lastUpdateRef = useRef<number>(Date.now());
     const [finished, setFinished] = useState(false);

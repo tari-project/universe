@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 
 export default function useDebouncedValue(initialValue, delay = 250) {
     const [value, setValue] = useState(initialValue);
-    const timeoutRef = useRef<NodeJS.Timeout>();
+    const timeoutRef = useRef<NodeJS.Timeout>(undefined);
 
     function cleanup() {
         if (timeoutRef.current) {

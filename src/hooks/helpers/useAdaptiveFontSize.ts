@@ -2,7 +2,7 @@ import { useState, useEffect, RefObject } from 'react';
 
 interface UseAdaptiveFontSizeOptions {
     inputValue: string;
-    inputRef: RefObject<HTMLInputElement | HTMLTextAreaElement>; // Can be input or textarea
+    inputRef: RefObject<HTMLInputElement | HTMLTextAreaElement | null>; // Can be input or textarea
     minFontSize?: number;
     maxFontSize?: number;
     containerWidth?: number;
