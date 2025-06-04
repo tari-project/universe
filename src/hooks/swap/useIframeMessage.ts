@@ -9,6 +9,14 @@ export enum MessageType {
     WALLET_CONNECT = 'WALLET_CONNECT',
     CONFIRM_REQUEST = 'CONFIRM_REQUEST',
     PROCESSING_STATUS = 'PROCESSING_STATUS',
+    SWAP_HEIGHT_CHANGE = 'SWAP_HEIGHT_CHANGE',
+}
+
+interface SwapHeightChangeMessage {
+    type: MessageType.SWAP_HEIGHT_CHANGE;
+    payload: {
+        height: number;
+    };
 }
 
 interface SwapConfirmation {
@@ -79,6 +87,7 @@ export type IframeMessage =
     | ErrorMessage
     | SuccessMessage
     | WalletConnectMessage
+    | SwapHeightChangeMessage
     | ProcessingMessage;
 
 // Hook to listen for messages from the parent window

@@ -57,31 +57,13 @@ export const ProcessingTransaction = ({
         });
         items.push({
             label: t('swap.transaction-id'),
-            value: transactionId ? (
-                explorerUrl ? (
-                    <a href={`${explorerUrl}/tx/${transactionId}`} target="_blank" rel="noopener noreferrer">
-                        {transactionId}
-                    </a>
-                ) : (
-                    transactionId
-                )
-            ) : (
-                <LoadingDots />
-            ),
+            externalLink: transactionId ? `${explorerUrl}/tx/${transactionId}` : undefined,
+            value: transactionId ? transactionId : <LoadingDots />,
         });
         items.push({
             label: t('swap.block-hash'),
-            value: txBlockHash ? (
-                explorerUrl ? (
-                    <a href={`${explorerUrl}/block/${txBlockHash}`} target="_blank" rel="noopener noreferrer">
-                        {txBlockHash}
-                    </a>
-                ) : (
-                    txBlockHash
-                )
-            ) : (
-                <LoadingDots />
-            ),
+            externalLink: txBlockHash ? `${explorerUrl}/block/${txBlockHash}` : undefined,
+            value: txBlockHash ? txBlockHash : <LoadingDots />,
         });
 
         if (status === 'error' && errorMessage) {
