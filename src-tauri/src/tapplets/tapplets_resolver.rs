@@ -143,16 +143,18 @@ impl TappletResolver {
     }
 
     pub async fn resolve_path_to_tapplet_files(&self, tapplet: Tapplets) -> Result<PathBuf, Error> {
-        let manager = self
-            .managers
-            .get(&tapplet)
-            .ok_or_else(|| anyhow!("No latest version manager for this tapplet"))?;
+        let manager = self.managers.get(&tapplet).ok_or_else(|| {
+            anyhow!(
+                "No latest version manager for the {} tapplet",
+                tapplet.name()
+            )
+        })?;
 
         let version = manager
             .lock()
             .await
             .get_used_version()
-            .ok_or_else(|| anyhow!("No versin found for tapplet {}", tapplet.name()))?;
+            .ok_or_else(|| anyhow!("No version found for the {} tapplet", tapplet.name()))?;
 
         let base_dir = manager.lock().await.get_base_dir().map_err(|error| {
             anyhow!(
