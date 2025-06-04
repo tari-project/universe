@@ -20,7 +20,9 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::{future::Future, path::Path, pin::Pin, time::Duration};
+use std::{fs, future::Future, io::Write, path::Path, pin::Pin, time::Duration};
+
+use crate::process_adapter::ProcessStartupSpec;
 
 pub fn launch_child_process(
     file_path: &Path,
@@ -118,4 +120,12 @@ where
         "Max retries reached, {} failed without capturing error",
         operation_name
     ))
+}
+
+pub fn write_pid_file(spec: &ProcessStartupSpec, id: u32) -> Result<(), String> {
+    let mut file = fs::File::create(spec.data_dir.join(spec.pid_file_name.clone()))
+        .map_err(|e| format!("Failed to create PID file: {}", e))?;
+    file.write_all(id.to_string().as_bytes())
+        .map_err(|e| format!("Failed to write PID file: {}", e))?;
+    Ok(())
 }

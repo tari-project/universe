@@ -37,7 +37,7 @@ use tokio::task::JoinHandle;
 use tokio_util::task::TaskTracker;
 
 use crate::process_killer::kill_process;
-use crate::process_utils::launch_child_process;
+use crate::process_utils::{launch_child_process, write_pid_file};
 
 const LOG_TARGET: &str = "tari::universe::process_adapter";
 
@@ -193,10 +193,12 @@ impl ProcessInstanceTrait for ProcessInstance {
             )?;
 
             if let Some(id) = child.id() {
-                fs::write(
-                    spec.data_dir.join(spec.pid_file_name.clone()),
-                    id.to_string(),
-                )?;
+                let pid_file_res = write_pid_file(&spec, id);
+                if let Err(e) = pid_file_res {
+                    let error_msg = format!("Failed to write PID file: {}", e);
+                    error!(target: LOG_TARGET, "{}", error_msg);
+                    sentry::capture_message(&error_msg, sentry::Level::Error);
+                }
             }
             let exit_code;
 
