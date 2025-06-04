@@ -13,12 +13,13 @@ export const ContentContainer = styled.div`
     flex-direction: column;
 `;
 export const LogoContainer = styled.div`
-    height: 80px;
+    height: 70px;
     display: flex;
     align-items: center;
     gap: 8px;
     font-size: 30px;
     font-weight: 700;
+    margin: 0 0 12px;
     img {
         width: 100%;
         max-width: 100px;
