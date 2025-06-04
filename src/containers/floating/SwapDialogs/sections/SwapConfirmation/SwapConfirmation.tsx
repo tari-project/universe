@@ -69,7 +69,7 @@ export const SwapConfirmation = ({
     const activeChainIcon = useMemo(() => {
         if (!fromTokenDisplay?.symbol) return null;
         return getCurrencyIcon({
-            symbol: fromTokenDisplay.symbol,
+            symbol: 'eth',
             width: 20,
         });
     }, [fromTokenDisplay?.symbol]);
@@ -131,7 +131,7 @@ export const SwapConfirmation = ({
                         {activeChainIcon}
                         <SelectedChainInfo>
                             <span className="address">{truncateMiddle(transaction?.destinationAddress || '', 6)}</span>
-                            <span className="chain">{fromTokenDisplay?.symbol}</span>
+                            <span className="chain">{'ETH'}</span>
                         </SelectedChainInfo>
                     </SelectedChain>
                 </WalletConnectHeader>
