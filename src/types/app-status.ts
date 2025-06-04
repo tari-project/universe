@@ -249,3 +249,9 @@ export interface BridgeEnvs {
     walletconnect_id: string;
     backend_api: string;
 }
+
+export interface TariAddressVariants {
+    emoji_string: string;
+    base58: string;
+    hex: string;
+}

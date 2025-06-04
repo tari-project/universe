@@ -2,6 +2,7 @@ import WalletAddressMarkup from './WalletAddressMarkup';
 import MoneroAddressMarkup from './MoneroAddressMarkup';
 import TariSeedWords from './TariSeedWords/TariSeedWords.tsx';
 import MoneroSeedWordSettings from './MoneroSeedWords/MoneroSeedWordSettings.tsx';
+import { RefreshWalletHistory } from './RefreshWalletHistory.tsx';
 import { DEFAULT_EXCHANGE_ID, useConfigBEInMemoryStore, useConfigWalletStore } from '@app/store/useAppConfigStore.ts';
 
 export const WalletSettings = () => {
@@ -15,6 +16,8 @@ export const WalletSettings = () => {
             <MoneroAddressMarkup />
 
             {monero_address_is_generated ? <MoneroSeedWordSettings /> : undefined}
+
+            <RefreshWalletHistory />
         </>
     );
 };

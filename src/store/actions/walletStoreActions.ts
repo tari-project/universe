@@ -5,13 +5,14 @@ import { useWalletStore } from '../useWalletStore';
 import { restartMining } from './miningStoreActions';
 import { setError } from './appStateStoreActions';
 import { setExchangeContent } from '@app/store/useExchangeStore.ts';
+import { TransactionDirection, TransactionStatus } from '@app/types/transactions';
 
 interface TxArgs {
-    continuation: boolean;
+    offset?: number;
     limit?: number;
 }
 
-export const fetchTransactionsHistory = async ({ continuation, limit }: TxArgs) => {
+export const fetchTransactionsHistory = async ({ offset = 0, limit }: TxArgs) => {
     if (useWalletStore.getState().is_transactions_history_loading) {
         return [];
     }
@@ -19,9 +20,9 @@ export const fetchTransactionsHistory = async ({ continuation, limit }: TxArgs) 
     try {
         useWalletStore.setState({ is_transactions_history_loading: true });
         const currentTxs = useWalletStore.getState().transactions;
-        const fetchedTxs = await invoke('get_transactions_history', { continuation, limit });
+        const fetchedTxs = await invoke('get_transactions_history', { offset, limit });
 
-        const transactions = continuation ? [...currentTxs, ...fetchedTxs] : fetchedTxs;
+        const transactions = offset > 0 ? [...currentTxs, ...fetchedTxs] : fetchedTxs;
         const has_more_transactions = fetchedTxs.length > 0 && (!limit || fetchedTxs.length === limit);
         useWalletStore.setState({
             has_more_transactions,
@@ -47,7 +48,7 @@ export const importSeedWords = async (seedWords: string[]) => {
     }
 };
 export const initialFetchTxs = () =>
-    fetchTransactionsHistory({ continuation: false, limit: 20 }).then((tx) => {
+    fetchTransactionsHistory({ offset: 0, limit: 20 }).then((tx) => {
         if (tx?.length) {
             useWalletStore.setState({ newestTxIdOnInitialFetch: tx[0]?.tx_id });
         }
@@ -55,7 +56,7 @@ export const initialFetchTxs = () =>
 
 export const refreshTransactions = async () => {
     const limit = useWalletStore.getState().transactions.length;
-    return fetchTransactionsHistory({ continuation: false, limit: Math.max(limit, 20) });
+    return fetchTransactionsHistory({ offset: 0, limit: Math.max(limit, 20) });
 };
 
 export const setGeneratedTariAddress = async (newAddress: string) => {
@@ -78,20 +79,28 @@ export const setWalletAddress = (addresses: Partial<WalletAddress>) => {
         is_tari_address_generated: addresses.is_tari_address_generated,
     });
 };
-export const setWalletBalance = (balance: WalletBalance) => {
-    const calculated_balance =
-        balance.available_balance + balance.timelocked_balance + balance.pending_incoming_balance;
 
-    const pendingSendAmount = useWalletStore
+const getPendingOutgoingBalance = async () => {
+    const pendingTxs = useWalletStore
         .getState()
-        .pending_transactions.reduce((total, tx) => total + tx.amount, 0);
+        .transactions.filter(
+            (tx) =>
+                tx.direction == TransactionDirection.Outbound &&
+                [TransactionStatus.Completed, TransactionStatus.Broadcast].includes(tx.status)
+        );
+    console.info('Pending txs: ', pendingTxs);
+    return pendingTxs.reduce((acc, tx) => acc + tx.amount, 0);
+};
 
+export const setWalletBalance = async (balance: WalletBalance) => {
+    const pendingOutgoingBalance = await getPendingOutgoingBalance();
+    console.info('Setting new wallet balance: ', { balance, pendingOutgoingBalance });
+    const available_balance = balance.available_balance - pendingOutgoingBalance;
+    const pending_outgoing_balance = balance.pending_outgoing_balance + pendingOutgoingBalance;
+
+    const calculated_balance = available_balance + balance.timelocked_balance + balance.pending_incoming_balance;
     useWalletStore.setState({
-        balance: {
-            ...balance,
-            available_balance: balance.available_balance - pendingSendAmount,
-            pending_outgoing_balance: balance.pending_outgoing_balance + pendingSendAmount,
-        },
+        balance: { ...balance, available_balance, pending_outgoing_balance },
         calculated_balance,
     });
 };

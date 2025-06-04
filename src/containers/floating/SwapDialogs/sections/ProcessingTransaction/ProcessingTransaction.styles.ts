@@ -1,7 +1,7 @@
+import { SwapStatus } from '@app/hooks/swap/lib/types';
 import styled from 'styled-components';
-import { SwapStatus } from './ProcessingTransaction';
 
-export const StatusValue = styled.div<{ $status: SwapStatus }>`
+export const StatusValue = styled.div<{ $status?: SwapStatus }>`
     font-family: Poppins;
     font-weight: bold;
     font-size: 14px;
