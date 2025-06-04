@@ -8,7 +8,6 @@ import { setShowTapplet, setSidebarOpen } from '@app/store/actions/uiStoreAction
 import { SB_SPACING, SB_WIDTH } from '@app/theme/styles.ts';
 import { HoverIconWrapper, NavIconWrapper, NavigationWrapper, StyledIconButton } from './SidebarMini.styles.ts';
 import { AnimatePresence } from 'motion/react';
-// import { setVisualMode, useConfigUIStore } from '@app/store/index.ts';
 import { BridgeOutlineSVG } from '@app/assets/icons/bridge-outline.tsx';
 import { useTappletsStore } from '@app/store/useTappletsStore.ts';
 import { BRIDGE_TAPPLET_ID } from '@app/store/consts.ts';
@@ -64,11 +63,9 @@ const BridgeNavigationButton = memo(function BridgeNavigationButton() {
             setActiveTappById(BRIDGE_TAPPLET_ID, true);
             setShowTapplet(true);
             setSidebarOpen(false);
-            // setVisualMode(false);
         } else {
             setShowTapplet(false);
             setSidebarOpen(true);
-            //setVisualMode(true);
         }
     }
 

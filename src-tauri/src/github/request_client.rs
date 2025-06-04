@@ -157,7 +157,6 @@ impl RequestClient {
     }
 
     pub async fn send_head_request(&self, url: &str) -> Result<Response, Error> {
-        info!(target: LOG_TARGET, "[ DOWNLOAD HEAD ] Downloading from url");
         let head_response = self
             .client
             .head(url)
@@ -165,7 +164,6 @@ impl RequestClient {
             .send()
             .await;
 
-        info!(target: LOG_TARGET, "[ DOWNLOAD HEAD ] response {:?}", &head_response);
         if let Ok(response) = head_response {
             if response.status().is_success() {
                 return Ok(response);
@@ -176,7 +174,6 @@ impl RequestClient {
                 ));
             }
         };
-        info!(target: LOG_TARGET, "[ DOWNLOAD HEAD ] end ");
         head_response.map_err(|e| anyhow!("HEAD request failed with error: {}", e))
     }
 
