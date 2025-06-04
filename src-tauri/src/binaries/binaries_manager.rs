@@ -30,7 +30,6 @@ use tauri_plugin_sentry::sentry;
 use crate::{
     download_utils::{extract, validate_checksum},
     github::request_client::RequestClient,
-    progress_tracker_old::ProgressTracker,
 };
 
 use super::{
@@ -181,7 +180,6 @@ impl BinaryManager {
     async fn delete_in_progress_folder_for_selected_version(
         &self,
         selected_version: Version,
-        progress_tracker: ProgressTracker,
     ) -> Result<(), Error> {
         debug!(target: LOG_TARGET,"Deleting in progress folder for version: {:?}", selected_version);
 
@@ -194,12 +192,6 @@ impl BinaryManager {
             .join(selected_version.to_string())
             .join("in_progress");
 
-        progress_tracker
-            .send_last_action(format!(
-                "Removing in progress folder: {:?}",
-                in_progress_folder
-            ))
-            .await;
         if in_progress_folder.exists() {
             debug!(target: LOG_TARGET,"Removing in progress folder: {:?}", in_progress_folder);
             if let Err(error) = std::fs::remove_dir_all(&in_progress_folder) {
@@ -267,19 +259,12 @@ impl BinaryManager {
         asset: VersionAsset,
         destination_dir: PathBuf,
         in_progress_file_zip: PathBuf,
-        progress_tracker: ProgressTracker,
     ) -> Result<(), Error> {
         info!(target: LOG_TARGET, "Validating checksum for binary: {} with version: {:?}", self.binary_name, version);
         let version_download_info = VersionDownloadInfo {
             version: version.clone(),
             assets: vec![asset.clone()],
         };
-        progress_tracker
-            .send_last_action(format!(
-                "Downloading checksum file for dest: {:?}",
-                destination_dir
-            ))
-            .await;
         let checksum_file = self
             .adapter
             .download_and_get_checksum_path(
@@ -301,12 +286,6 @@ impl BinaryManager {
             .get_expected_checksum(checksum_file.clone(), &asset.name)
             .await?;
 
-        progress_tracker
-            .send_last_action(format!(
-                "Validating checksum for checksum file: {:?} and in progress file: {:?}",
-                checksum_file, in_progress_file_zip
-            ))
-            .await;
         match validate_checksum(in_progress_file_zip.clone(), expected_checksum).await {
             Ok(validate_checksum) => {
                 if validate_checksum {
@@ -438,12 +417,11 @@ impl BinaryManager {
     pub async fn download_version_with_retries(
         &self,
         selected_version: Option<Version>,
-        progress_tracker: ProgressTracker,
     ) -> Result<(), Error> {
         let mut last_error_message = String::new();
         for retry in 0..3 {
             match self
-                .download_selected_version(selected_version.clone(), progress_tracker.clone())
+                .download_selected_version(selected_version.clone())
                 .await
             {
                 Ok(_) => return Ok(()),
@@ -466,7 +444,6 @@ impl BinaryManager {
     async fn download_selected_version(
         &self,
         selected_version: Option<Version>,
-        progress_tracker: ProgressTracker,
     ) -> Result<(), Error> {
         debug!(target: LOG_TARGET,"Downloading version: {:?}", selected_version);
 
@@ -514,12 +491,6 @@ impl BinaryManager {
         let fallback_url = asset.clone().fallback_url;
 
         info!(target: LOG_TARGET, "Downloading binary: {} from url: {}", self.binary_name, download_url);
-        progress_tracker
-            .send_last_action(format!(
-                "Downloading binary: {} with version: {}",
-                self.binary_name, version
-            ))
-            .await;
 
         if RequestClient::current()
             .download_file(
@@ -533,12 +504,6 @@ impl BinaryManager {
         {
             if let Some(fallback_url) = fallback_url {
                 info!(target: LOG_TARGET, "Downloading binary: {} from fallback url: {}", self.binary_name, fallback_url);
-                progress_tracker
-                    .send_last_action(format!(
-                        "Downloading binary: {} with version: {} from fallback url",
-                        self.binary_name, version
-                    ))
-                    .await;
 
                 RequestClient::current()
                     .download_file(
@@ -558,33 +523,17 @@ impl BinaryManager {
             }
         }
 
-        progress_tracker
-            .send_last_action(format!(
-                "Extracting file: {} to dest: {}",
-                in_progress_file_zip.to_str().unwrap_or_default(),
-                destination_dir.to_str().unwrap_or_default()
-            ))
-            .await;
         extract(&in_progress_file_zip, &destination_dir)
             .await
             .map_err(|e| anyhow!("Error extracting version: {:?}. Error: {:?}", version, e))?;
 
         if self.should_validate_checksum {
-            self.validate_checksum(
-                &version,
-                asset,
-                destination_dir,
-                in_progress_file_zip,
-                progress_tracker.clone(),
-            )
-            .await?;
+            self.validate_checksum(&version, asset, destination_dir, in_progress_file_zip)
+                .await?;
         }
 
-        self.delete_in_progress_folder_for_selected_version(
-            version.clone(),
-            progress_tracker.clone(),
-        )
-        .await?;
+        self.delete_in_progress_folder_for_selected_version(version.clone())
+            .await?;
         Ok(())
     }
 

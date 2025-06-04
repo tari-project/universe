@@ -23,7 +23,6 @@
 use crate::configs::config_core::{ConfigCore, ConfigCoreContent};
 use crate::configs::trait_config::ConfigImpl;
 use crate::github::ReleaseSource;
-use crate::ProgressTracker;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use log::error;
@@ -277,12 +276,7 @@ impl BinaryResolver {
         progress_tracker: ProgressTracker,
         timeout_channel: Receiver<String>,
     ) -> Result<(), Error> {
-        match timeout(
-            Duration::from_secs(60 * 5),
-            self.initialize_binary(binary, progress_tracker.clone()),
-        )
-        .await
-        {
+        match timeout(Duration::from_secs(60 * 5), self.initialize_binary(binary)).await {
             Err(_) => {
                 let last_msg = timeout_channel.borrow().clone();
                 error!(target: "tari::universe::main", "Setup took too long: {:?}", last_msg);
@@ -320,7 +314,7 @@ impl BinaryResolver {
         if highest_version.is_none() {
             highest_version = manager.select_highest_version();
             manager
-                .download_version_with_retries(highest_version.clone(), progress_tracker.clone())
+                .download_version_with_retries(highest_version.clone())
                 .await?;
         }
 
@@ -329,63 +323,11 @@ impl BinaryResolver {
             manager.check_if_files_for_version_exist(highest_version.clone());
         if !check_if_files_exist {
             manager
-                .download_version_with_retries(highest_version.clone(), progress_tracker.clone())
+                .download_version_with_retries(highest_version.clone())
                 .await?;
         }
 
         // Throw error if files still do not exist
-        let check_if_files_exist =
-            manager.check_if_files_for_version_exist(highest_version.clone());
-        if !check_if_files_exist {
-            return Err(anyhow!("Failed to download binaries"));
-        }
-
-        match highest_version {
-            Some(version) => manager.set_used_version(version),
-            None => return Err(anyhow!("No version selected for binary {}", binary.name())),
-        }
-
-        Ok(())
-    }
-
-    pub async fn update_binary(
-        &self,
-        binary: Binaries,
-        progress_tracker: ProgressTracker,
-    ) -> Result<(), Error> {
-        let mut manager = self
-            .managers
-            .get(&binary)
-            .ok_or_else(|| anyhow!("Couldn't find manager for binary: {}", binary.name()))?
-            .lock()
-            .await;
-
-        manager.check_for_updates().await;
-        let highest_version = manager.select_highest_version();
-
-        progress_tracker
-            .send_last_action(format!(
-                "Checking if files exist before download: {} {}",
-                binary.name(),
-                highest_version.clone().unwrap_or(Version::new(0, 0, 0))
-            ))
-            .await;
-
-        let check_if_files_exist =
-            manager.check_if_files_for_version_exist(highest_version.clone());
-        if !check_if_files_exist {
-            manager
-                .download_version_with_retries(highest_version.clone(), progress_tracker.clone())
-                .await?;
-        }
-
-        progress_tracker
-            .send_last_action(format!(
-                "Checking if files exist after download: {} {}",
-                binary.name(),
-                highest_version.clone().unwrap_or(Version::new(0, 0, 0))
-            ))
-            .await;
         let check_if_files_exist =
             manager.check_if_files_for_version_exist(highest_version.clone());
         if !check_if_files_exist {

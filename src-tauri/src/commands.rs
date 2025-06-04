@@ -43,7 +43,6 @@ use crate::gpu_status_file::GpuStatus;
 use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
 use crate::node::node_manager::NodeType;
 use crate::p2pool::models::{Connections, P2poolStats};
-use crate::progress_tracker_old::ProgressTracker;
 use crate::setup::setup_manager::{SetupManager, SetupPhase};
 use crate::tapplets::interface::ActiveTapplet;
 use crate::tapplets::tapplet_server::start_tapplet;
@@ -1693,59 +1692,6 @@ pub async fn stop_gpu_mining<'r>(state: tauri::State<'_, UniverseAppState>) -> R
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "stop_cpu_mining took too long: {:?}", timer.elapsed());
     }
-    Ok(())
-}
-
-#[tauri::command]
-pub async fn update_applications(app: tauri::AppHandle) -> Result<(), InvokeError> {
-    let timer = Instant::now();
-    let binary_resolver = BinaryResolver::current().read().await;
-    let tapplet_resolver = TappletResolver::current().read().await;
-
-    ConfigCore::update_field(
-        ConfigCoreContent::set_last_binaries_update_timestamp,
-        SystemTime::now(),
-    )
-    .await
-    .map_err(InvokeError::from_anyhow)?;
-
-    let progress_tracker = ProgressTracker::new(app.clone(), None);
-    binary_resolver
-        .update_binary(Binaries::Xmrig, progress_tracker.clone())
-        .await
-        .map_err(|e| e.to_string())?;
-    sleep(Duration::from_secs(1));
-    binary_resolver
-        .update_binary(Binaries::MinotariNode, progress_tracker.clone())
-        .await
-        .map_err(|e| e.to_string())?;
-    sleep(Duration::from_secs(1));
-    binary_resolver
-        .update_binary(Binaries::MergeMiningProxy, progress_tracker.clone())
-        .await
-        .map_err(|e| e.to_string())?;
-    sleep(Duration::from_secs(1));
-    binary_resolver
-        .update_binary(Binaries::Wallet, progress_tracker.clone())
-        .await
-        .map_err(|e| e.to_string())?;
-    binary_resolver
-        .update_binary(Binaries::ShaP2pool, progress_tracker.clone())
-        .await
-        .map_err(|e| e.to_string())?;
-    sleep(Duration::from_secs(1));
-    tapplet_resolver
-        .update_tapplet(Tapplets::Bridge, progress_tracker.clone())
-        .await
-        .map_err(|e| e.to_string())?;
-    sleep(Duration::from_secs(1));
-
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "update_applications took too long: {:?}", timer.elapsed());
-    }
-
-    drop(binary_resolver);
-
     Ok(())
 }
 
