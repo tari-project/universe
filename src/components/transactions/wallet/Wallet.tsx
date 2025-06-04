@@ -16,7 +16,7 @@ import { useCopyToClipboard } from '@app/hooks/index.ts';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
 import { SendSVG } from '@app/assets/icons/send.tsx';
 import { ReceiveSVG } from '@app/assets/icons/receive.tsx';
-import { useAirdropStore, usePaperWalletStore, useUIStore } from '@app/store';
+import { useAirdropStore, usePaperWalletStore } from '@app/store';
 import { Button } from '@app/components/elements/buttons/Button';
 import SyncTooltip from '@app/containers/navigation/components/Wallet/SyncTooltip/SyncTooltip.tsx';
 import {

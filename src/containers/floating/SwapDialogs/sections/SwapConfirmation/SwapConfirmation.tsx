@@ -19,7 +19,6 @@ import TransactionModal from '@app/components/TransactionModal/TransactionModal'
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SelectableTokenInfo, SwapDirection as SwapDirectionType } from '@app/hooks/swap/lib/types';
-import { EnabledTokensEnum } from '@app/hooks/swap/lib/constants';
 
 export interface SwapConfirmationTransactionProps {
     fromTokenDisplay?: SelectableTokenInfo;
@@ -77,7 +76,7 @@ export const SwapConfirmation = ({
 
     const receiveTokenSymbol = useMemo(() => {
         if (toTokenSymbol) return toTokenSymbol;
-        return direction === 'toXtm' ? EnabledTokensEnum.WXTM : (fromTokenDisplay?.symbol ?? '');
+        return direction === 'toXtm' ? 'wXTM' : (fromTokenDisplay?.symbol ?? '');
     }, [direction, fromTokenDisplay?.symbol, toTokenSymbol]);
 
     const items = useMemo(() => {
@@ -166,7 +165,7 @@ export const SwapConfirmation = ({
                             value={targetAmount}
                         />
                         <SwapOptionCurrency>
-                            {getCurrencyIcon({ symbol: receiveTokenSymbol as EnabledTokensEnum, width: 25 })}
+                            {getCurrencyIcon({ symbol: receiveTokenSymbol, width: 25 })}
                             <span>{receiveTokenSymbol}</span>
                         </SwapOptionCurrency>
                     </SwapOptionAmount>

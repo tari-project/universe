@@ -58,10 +58,6 @@ export const Value = styled.div<{ $status?: SendStatus }>`
         css`
             color: #36c475;
         `}
-
-    a {
-        color: ${({ theme }) => theme.palette.text.primary};
-    }
 `;
 
 export const ValueLeft = styled.div`

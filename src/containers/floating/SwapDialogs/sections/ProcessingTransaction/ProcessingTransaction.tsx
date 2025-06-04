@@ -51,10 +51,6 @@ export const ProcessingTransaction = ({
             ),
         });
 
-        // items.push({
-        //     label: t('swap.total-fees-approval'),
-        //     value: fees?.approval ?? <LoadingDots />,
-        // });
         items.push({
             label: t('swap.total-fees-swap'),
             value: fees?.swap ?? <LoadingDots />,

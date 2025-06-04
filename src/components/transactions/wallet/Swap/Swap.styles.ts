@@ -16,7 +16,7 @@ export const SectionHeaderWrapper = styled.div`
     width: 100%;
     display: flex;
     justify-content: space-between;
-    margin-bottom: 15px;
+    margin-bottom: 10px;
     align-items: center;
 `;
 

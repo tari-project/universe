@@ -1,4 +1,4 @@
-import { Background, DashboardContainer, DashboardContent, IframeBackground } from '@app/theme/styles.ts';
+import { Background, DashboardContainer, DashboardContent } from '@app/theme/styles.ts';
 import SidebarNavigation from '@app/containers/navigation/SidebarNavigation.tsx';
 import { Dashboard } from './Dashboard';
 import { useSetupStore } from '@app/store/useSetupStore.ts';
