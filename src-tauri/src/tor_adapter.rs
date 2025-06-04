@@ -264,7 +264,6 @@ impl ProcessAdapter for TorAdapter {
         ];
 
         let envs = get_libevent_envs(&binary_version_path);
-        log::info!(target: LOG_TARGET, "LIBEVENT ENVS: {:?}", envs);
 
         if self.config.use_bridges {
             // Used by tor bridges
@@ -385,6 +384,7 @@ fn get_libevent_envs(_binary_version_path: &std::path::PathBuf) -> Option<HashMa
                 "LD_PRELOAD".to_string(),
                 format!("{}/libevent-2.1.so.7", tor_bundle_path.display()),
             );
+            log::warn!(target: LOG_TARGET, "Using LD_PRELOAD, libevent-2.1.so.7 not found.");
             return Some(envs);
         }
     }
@@ -399,8 +399,6 @@ fn check_libevent_exists() -> bool {
         .arg("/usr/local/lib")
         .arg("-name")
         .arg("libevent-2.1.so.7")
-        .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::null())
         .output()
         .expect("Failed to execute find libevent-2.1.so.7 command");
 
