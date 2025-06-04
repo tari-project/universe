@@ -17,7 +17,8 @@ import { MessageType, useIframeMessage } from '@app/hooks/swap/useIframeMessage'
 import { useUIStore } from '@app/store';
 
 // TODO: Replace with the actual URL
-const SWAPS_IFRAME_URL = 'https://feat-swaps.tari-dot-com-2025.pages.dev/swaps';
+// const SWAPS_IFRAME_URL = 'https://feat-swaps.tari-dot-com-2025.pages.dev/swaps';
+const SWAPS_IFRAME_URL = 'http://localhost:3000/swaps';
 
 export const Swap = memo(function Swap() {
     const theme = useUIStore((s) => s.theme);
@@ -73,6 +74,7 @@ export const Swap = memo(function Swap() {
                 setApproving(false);
                 break;
             case MessageType.PROCESSING_STATUS: {
+                setApproving(false);
                 setProcessingTransaction(event.data.payload);
                 setProcessingOpen(true);
                 break;
@@ -93,6 +95,7 @@ export const Swap = memo(function Swap() {
     const handleConfirmTransaction = async () => {
         if (iframeRef.current) {
             handleClearState();
+            setApproving(true);
             iframeRef.current.contentWindow?.postMessage({ type: 'EXECUTE_SWAP' }, '*');
         }
     };
