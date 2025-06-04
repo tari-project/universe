@@ -12,36 +12,60 @@ import ListLoadingAnimation from '@app/containers/navigation/components/Wallet/L
 import { PlaceholderItem } from './ListItem.styles.ts';
 import { LoadingText } from '@app/containers/navigation/components/Wallet/ListLoadingAnimation/styles.ts';
 import { TransactionDetails } from '@app/components/transactions/history/details/TransactionDetails.tsx';
+import { invoke } from '@tauri-apps/api/core';
+
+export type TransactionDetailsItem = TransactionInfo & { dest_address_emoji?: string };
 
 const HistoryList = memo(function HistoryList() {
     const { t } = useTranslation('wallet');
     const is_transactions_history_loading = useWalletStore((s) => s.is_transactions_history_loading);
     const newestTxIdOnInitialFetch = useWalletStore((s) => s.newestTxIdOnInitialFetch);
-    const pendingTransactions = useWalletStore((s) => s.pending_transactions);
     const walletScanning = useWalletStore((s) => s.wallet_scanning);
     const hasMore = useWalletStore((s) => s.has_more_transactions);
     const transactions = useWalletStore((s) => s.transactions);
 
-    const [detailsItem, setDetailsItem] = useState<TransactionInfo | null>(null);
-
-    const combinedTransactions = useMemo(
-        () => [...pendingTransactions, ...transactions] as TransactionInfo[],
-        [pendingTransactions, transactions]
-    );
+    const [detailsItem, setDetailsItem] = useState<TransactionDetailsItem | null>(null);
 
     const handleNext = useCallback(async () => {
         if (!is_transactions_history_loading) {
-            await fetchTransactionsHistory({ continuation: true, limit: 20 });
+            await fetchTransactionsHistory({ offset: transactions.length, limit: 20 });
         }
-    }, [is_transactions_history_loading]);
+    }, [is_transactions_history_loading, transactions.length]);
+
+    const handleDetailsChange = useCallback(async (tx: TransactionInfo | null) => {
+        if (!tx) {
+            setDetailsItem(null);
+            return;
+        }
+        const dest_address_emoji = await invoke('parse_tari_address', { address: tx.dest_address })
+            .then((result) => result?.emoji_string)
+            .catch(() => undefined);
+        // Specify order here
+        setDetailsItem({
+            tx_id: tx.tx_id,
+            amount: tx.amount,
+            payment_id: tx.payment_id,
+            status: tx.status,
+            source_address: tx.source_address,
+            dest_address: tx.dest_address,
+            dest_address_emoji,
+            message: tx.message,
+            direction: tx.direction,
+            fee: tx.fee,
+            is_cancelled: tx.is_cancelled,
+            excess_sig: tx.excess_sig,
+            timestamp: tx.timestamp,
+            mined_in_block_height: tx.mined_in_block_height,
+        });
+    }, []);
 
     const listMarkup = useMemo(() => {
-        const latestTxId = combinedTransactions?.[0]?.tx_id;
+        const latestTxId = transactions?.[0]?.tx_id;
         const hasNewTx = latestTxId ? newestTxIdOnInitialFetch !== latestTxId : false;
-        const initialTxTime = combinedTransactions?.find((tx) => tx.tx_id === newestTxIdOnInitialFetch)?.timestamp;
+        const initialTxTime = transactions?.find((tx) => tx.tx_id === newestTxIdOnInitialFetch)?.timestamp;
 
         // Calculate how many placeholder items we need to add
-        const transactionsCount = combinedTransactions?.length || 0;
+        const transactionsCount = transactions?.length || 0;
         const placeholdersNeeded = Math.max(0, 5 - transactionsCount);
 
         return (
@@ -53,7 +77,7 @@ const HistoryList = memo(function HistoryList() {
                 scrollableTarget="list"
             >
                 <ListItemWrapper>
-                    {combinedTransactions?.map((tx, i) => {
+                    {transactions?.map((tx, i) => {
                         // only show "new" badge under these conditions:
                         // there are new txs is general
                         // it's only of the latest 3
@@ -65,7 +89,7 @@ const HistoryList = memo(function HistoryList() {
                                 item={tx}
                                 index={i}
                                 itemIsNew={isNew}
-                                setDetailsItem={setDetailsItem}
+                                setDetailsItem={handleDetailsChange}
                             />
                         );
                     })}
@@ -80,7 +104,7 @@ const HistoryList = memo(function HistoryList() {
                 </ListItemWrapper>
             </InfiniteScroll>
         );
-    }, [combinedTransactions, handleNext, hasMore, newestTxIdOnInitialFetch]);
+    }, [transactions, newestTxIdOnInitialFetch, handleNext, hasMore, handleDetailsChange]);
 
     const baseMarkup = walletScanning.is_scanning ? (
         <ListLoadingAnimation
@@ -98,7 +122,7 @@ const HistoryList = memo(function HistoryList() {
         listMarkup
     );
 
-    const isEmpty = !walletScanning.is_scanning && !combinedTransactions?.length;
+    const isEmpty = !walletScanning.is_scanning && !transactions?.length;
     const emptyMarkup = isEmpty ? <LoadingText>{t('empty-tx')}</LoadingText> : null;
 
     return (

@@ -9,7 +9,7 @@ import { BlockTimeData } from '@app/types/mining.ts';
 import { setAnimationState } from '@tari-project/tari-tower';
 import { TransactionInfo, WalletBalance } from '@app/types/app-status.ts';
 import { setMiningControlsEnabled } from './actions/miningStoreActions.ts';
-import { refreshPendingTransactions, updateWalletScanningProgress, useWalletStore } from './useWalletStore.ts';
+import { updateWalletScanningProgress, useWalletStore } from './useWalletStore.ts';
 import { useConfigUIStore } from '@app/store/useAppConfigStore.ts';
 
 const appWindow = getCurrentWindow();
@@ -105,13 +105,11 @@ const handleWin = async (coinbase_transaction: TransactionInfo, balance: WalletB
         winTimeout = setTimeout(async () => {
             useBlockchainVisualisationStore.setState({ displayBlockHeight: blockHeight, earnings: undefined });
             await refreshTransactions();
-            refreshPendingTransactions();
             setWalletBalance(balance);
             setMiningControlsEnabled(true);
         }, 2000);
     } else {
         await refreshTransactions();
-        refreshPendingTransactions();
         useBlockchainVisualisationStore.setState((curr) => ({
             recapIds: [...curr.recapIds, coinbase_transaction.tx_id],
             displayBlockHeight: blockHeight,
@@ -131,7 +129,6 @@ const handleFail = async (blockHeight: number, balance: WalletBalance, canAnimat
             useBlockchainVisualisationStore.setState({ displayBlockHeight: blockHeight });
             setMiningControlsEnabled(true);
             await refreshTransactions();
-            refreshPendingTransactions();
             setWalletBalance(balance);
         }, 1000);
     } else {
@@ -219,7 +216,6 @@ async function processNewBlock(payload: {
     } else {
         useBlockchainVisualisationStore.setState({ displayBlockHeight: payload.block_height });
         await refreshTransactions();
-        refreshPendingTransactions();
     }
 }
 
