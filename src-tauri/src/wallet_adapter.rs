@@ -109,7 +109,7 @@ impl WalletAdapter {
     }
 
     pub async fn import_transaction(&self, tx_output_file: PathBuf) -> Result<(), anyhow::Error> {
-        let tx_json = fs::read_to_string(&tx_output_file).map_err(|e| {
+        let tx_json = std::fs::read_to_string(&tx_output_file).map_err(|e| {
             log::error!(
                 "[import_transaction] Failed to read transaction output file: {}, output_file:\n{:?}",
                 e,
