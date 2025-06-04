@@ -373,11 +373,11 @@ impl Default for TorConfig {
     }
 }
 
-fn get_libevent_envs(_binary_version_path: &std::path::PathBuf) -> Option<HashMap<String, String>> {
+fn get_libevent_envs(_binary_version_path: &std::path::Path) -> Option<HashMap<String, String>> {
     #[cfg(target_os = "linux")]
     {
         if !check_libevent_exists() {
-            let mut tor_bundle_path = _binary_version_path.clone();
+            let mut tor_bundle_path = _binary_version_path.to_path_buf();
             tor_bundle_path.pop();
             let mut envs = HashMap::new();
             envs.insert(
