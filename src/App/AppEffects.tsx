@@ -10,6 +10,7 @@ import { useDisableRefresh } from '../hooks/app/useDisableRefresh';
 import { useDetectMode } from '../hooks/helpers/useDetectMode';
 import { useProgressEventsListener } from '@app/hooks/app/useProgressEventsListener';
 import { fetchBackendInMemoryConfig } from '@app/store/actions/appConfigStoreActions.ts';
+import { fetchBridgeColdWalletAddress } from '@app/store/actions/walletStoreActions';
 
 // This component is used to initialise the app and listen for any events that need to be listened to
 // Created as a separate component to avoid cluttering the main App component and unwanted re-renders
@@ -22,6 +23,7 @@ export default function AppEffects() {
             await fetchBackendInMemoryConfig();
             await getMiningNetwork();
             await airdropSetup();
+            await fetchBridgeColdWalletAddress();
         }
         void initialize();
     }, []);

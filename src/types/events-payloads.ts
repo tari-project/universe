@@ -69,6 +69,8 @@ export interface SnakeCaseAppInMemoryConfig {
     airdrop_url: string;
     airdrop_api_url: string;
     airdrop_twitter_auth_url: string;
+    bridge_backend_api_url: string;
+    wallet_connect_project_id: string;
     exchange_id: string;
 }
 export interface AppInMemoryConfigChangedPayload {

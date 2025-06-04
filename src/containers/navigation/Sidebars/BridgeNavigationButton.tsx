@@ -5,10 +5,10 @@ import { setAnimationProperties } from '@tari-project/tari-tower';
 import { useUIStore } from '@app/store/useUIStore.ts';
 import { setShowTapplet, setSidebarOpen } from '@app/store/actions/uiStoreActions';
 
-import { SB_SPACING, SB_WIDTH } from '@app/theme/styles.ts';
+import { SB_MINI_WIDTH, SB_SPACING, SB_WIDTH } from '@app/theme/styles.ts';
 import { HoverIconWrapper, NavIconWrapper, NavigationWrapper, StyledIconButton } from './SidebarMini.styles.ts';
 import { AnimatePresence } from 'motion/react';
-// import { setVisualMode, useConfigUIStore } from '@app/store/index.ts';
+import { setVisualMode } from '@app/store/index.ts';
 import { BridgeOutlineSVG } from '@app/assets/icons/bridge-outline.tsx';
 import { useTappletsStore } from '@app/store/useTappletsStore.ts';
 import { BRIDGE_TAPPLET_ID } from '@app/store/consts.ts';
@@ -21,11 +21,11 @@ interface NavButtonProps {
 }
 
 const NavButton = memo(function NavButton({ children, isActive, onClick }: NavButtonProps) {
-    const showTapplet = useUIStore((s) => s.showTapplet);
+    const sidebarOpen = useUIStore((s) => s.sidebarOpen);
     const [showArrow, setShowArrow] = useState(false);
     const { isWalletScanning } = useTariBalance();
 
-    const scaleX = showTapplet ? -1 : 1;
+    const scaleX = sidebarOpen ? -1 : 1;
 
     return (
         <StyledIconButton
@@ -56,6 +56,7 @@ const NavButton = memo(function NavButton({ children, isActive, onClick }: NavBu
     );
 });
 const BridgeNavigationButton = memo(function BridgeNavigationButton() {
+    const sidebarOpen = useUIStore((s) => s.sidebarOpen);
     const showTapplet = useUIStore((s) => s.showTapplet);
     const setActiveTappById = useTappletsStore((s) => s.setActiveTappById);
 
@@ -64,16 +65,16 @@ const BridgeNavigationButton = memo(function BridgeNavigationButton() {
             setActiveTappById(BRIDGE_TAPPLET_ID, true);
             setShowTapplet(true);
             setSidebarOpen(false);
-            // setVisualMode(false);
+            setVisualMode(false);
         } else {
             setShowTapplet(false);
             setSidebarOpen(true);
-            //setVisualMode(true);
+            setVisualMode(true);
         }
     }
 
     useEffect(() => {
-        const offset = SB_WIDTH + SB_SPACING * 2;
+        const offset = (!sidebarOpen ? SB_MINI_WIDTH : SB_WIDTH) + SB_SPACING * 2;
         setAnimationProperties([
             { property: 'offsetX', value: offset },
             { property: 'cameraOffsetX', value: offset / window.innerWidth },
@@ -85,7 +86,7 @@ const BridgeNavigationButton = memo(function BridgeNavigationButton() {
                 { property: 'cameraOffsetX', value: 0 },
             ]);
         };
-    }, []);
+    }, [sidebarOpen]);
 
     return (
         <NavigationWrapper>

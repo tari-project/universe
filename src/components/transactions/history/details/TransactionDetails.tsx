@@ -8,9 +8,10 @@ import { Wrapper } from './styles.ts';
 import { StatusList } from '@app/components/transactions/components/StatusList/StatusList.tsx';
 import { getListEntries } from './getListEntries.tsx';
 import { useCallback, useRef, useState } from 'react';
+import { BackendBridgeTransaction } from '@app/store/useWalletStore.ts';
 
 interface TransactionDetailsProps {
-    item: TransactionInfo;
+    item: TransactionInfo | BackendBridgeTransaction;
     expanded: boolean;
     handleClose: () => void;
 }
