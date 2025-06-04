@@ -23,14 +23,14 @@
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use futures_util::future::FusedFuture;
-use log::{error, info, warn};
-use sentry::protocol::Event;
+use log::{info, warn};
 use std::collections::HashMap;
+use std::ffi::OsStr;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::time::Duration;
+use sysinfo::System;
 use tari_shutdown::Shutdown;
-use tauri_plugin_sentry::sentry;
 use tokio::runtime::Handle;
 use tokio::select;
 use tokio::task::JoinHandle;
@@ -82,24 +82,43 @@ pub(crate) trait ProcessAdapter {
             .exists()
     }
 
-    async fn kill_previous_instances(&self, base_folder: PathBuf) -> Result<(), Error> {
+    fn find_process_pid_by_name(binary_name: &OsStr) -> Option<u32> {
+        let mut sys = System::new_all();
+        sys.refresh_all();
+
+        for (pid, process) in sys.processes() {
+            if process.name() == binary_name {
+                return Some(pid.as_u32());
+            }
+        }
+        None
+    }
+
+    async fn kill_previous_instances(
+        &self,
+        base_folder: PathBuf,
+        binary_path: &Path,
+    ) -> Result<(), Error> {
         info!(target: LOG_TARGET, "Killing previous instances of {}", self.name());
+        let binary_name = binary_path
+            .file_name()
+            .expect("binary path must have a file name");
         match fs::read_to_string(base_folder.join(self.pid_file_name())) {
             Ok(pid) => match pid.trim().parse::<i32>() {
                 Ok(pid) => {
                     warn!(target: LOG_TARGET, "{} process did not shut down cleanly: {} pid file was created", pid, self.pid_file_name());
                     kill_process(pid).await?;
                 }
-                Err(e) => {
-                    let error_msg =
-                        format!("Error parsing pid file: {}. Pid file content: {}", e, pid);
-                    error!(target: LOG_TARGET, "{}", error_msg);
-                    sentry::capture_event(Event {
-                        message: Some(error_msg),
-                        level: sentry::Level::Error,
-                        culprit: Some("process-adapter".to_string()),
-                        ..Default::default()
-                    });
+                Err(_) => {
+                    warn!(target: LOG_TARGET, "pid file is not a valid integer: {}. Attempting to kill process by name", pid);
+                    let pid_by_name = Self::find_process_pid_by_name(binary_name);
+                    if let Some(process) = pid_by_name {
+                        let parsed_id = i32::try_from(process)
+                            .expect("Failed to parse process ID from u32 to i32");
+                        kill_process(parsed_id).await?;
+                    } else {
+                        warn!(target: LOG_TARGET, "No process found with name {}", binary_name.to_str().unwrap_or_default());
+                    }
                 }
             },
             Err(e) => {
@@ -138,6 +157,10 @@ pub(crate) trait ProcessInstanceTrait: Sync + Send + 'static {
     async fn stop(&mut self) -> Result<i32, anyhow::Error>;
     fn is_shutdown_triggered(&self) -> bool;
     async fn wait(&mut self) -> Result<i32, anyhow::Error>;
+    async fn start_and_wait_for_output(
+        &mut self,
+        task_tracker: TaskTracker,
+    ) -> Result<(i32, Vec<String>, Vec<String>), anyhow::Error>;
 }
 
 #[derive(Clone)]
@@ -190,6 +213,7 @@ impl ProcessInstanceTrait for ProcessInstance {
                 spec.data_dir.as_path(),
                 spec.envs.as_ref(),
                 &spec.args,
+                false
             )?;
 
             if let Some(id) = child.id() {
@@ -230,6 +254,58 @@ impl ProcessInstanceTrait for ProcessInstance {
             Ok(exit_code)
         }));
         Ok(())
+    }
+
+    async fn start_and_wait_for_output(
+        &mut self,
+        _task_tracker: TaskTracker,
+    ) -> Result<(i32, Vec<String>, Vec<String>), anyhow::Error> {
+        if self.handle.is_some() {
+            warn!(target: LOG_TARGET, "Process is already running");
+            return Ok((0, vec![], vec![]));
+        }
+        info!(target: LOG_TARGET, "Starting {} process with args: {}", self.startup_spec.name, self.startup_spec.args.join(" "));
+        let spec = self.startup_spec.clone();
+        self.shutdown = Shutdown::new();
+        let shutdown_signal = self.shutdown.to_signal();
+
+        if shutdown_signal.is_terminated() || shutdown_signal.is_triggered() {
+            warn!(target: LOG_TARGET, "Shutdown signal is triggered. Not starting process");
+            return Ok((0, vec![], vec![]));
+        };
+
+        let child = launch_child_process(
+            &spec.file_path,
+            spec.data_dir.as_path(),
+            spec.envs.as_ref(),
+            &spec.args,
+            true,
+        )?;
+
+        if let Some(id) = child.id() {
+            fs::write(
+                spec.data_dir.join(spec.pid_file_name.clone()),
+                id.to_string(),
+            )?;
+        }
+        let result = child.wait_with_output().await?;
+        let exit_code = result.status.code().unwrap_or(0);
+        let stdout_lines: Vec<String> = String::from_utf8_lossy(&result.stdout)
+            .lines()
+            .map(|line| line.to_string())
+            .collect();
+        let stderr_lines: Vec<String> = String::from_utf8_lossy(&result.stderr)
+            .lines()
+            .map(|line| line.to_string())
+            .collect();
+
+        info!(target: LOG_TARGET, "Stopping {} process with exit code: {}", spec.name, exit_code);
+
+        if let Err(error) = fs::remove_file(spec.data_dir.join(spec.pid_file_name)) {
+            warn!(target: LOG_TARGET, "Could not clear {}'s pid file: {:?}", spec.name, error);
+        }
+
+        Ok((exit_code, stdout_lines, stderr_lines))
     }
 
     async fn stop(&mut self) -> Result<i32, anyhow::Error> {
