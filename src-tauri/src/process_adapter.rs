@@ -23,7 +23,7 @@
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use futures_util::future::FusedFuture;
-use log::{info, warn};
+use log::{error, info, warn};
 use std::collections::HashMap;
 use std::ffi::OsStr;
 use std::fs;
@@ -31,6 +31,7 @@ use std::path::{Path, PathBuf};
 use std::time::Duration;
 use sysinfo::System;
 use tari_shutdown::Shutdown;
+use tauri_plugin_sentry::sentry;
 use tokio::runtime::Handle;
 use tokio::select;
 use tokio::task::JoinHandle;
