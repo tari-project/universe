@@ -12,7 +12,7 @@ import ListLoadingAnimation from '@app/containers/navigation/components/Wallet/L
 import { PlaceholderItem } from './ListItem.styles.ts';
 import { LoadingText } from '@app/containers/navigation/components/Wallet/ListLoadingAnimation/styles.ts';
 import { TransactionDetails } from '@app/components/transactions/history/details/TransactionDetails.tsx';
-import { UserTransactionDTO } from '@tari-project/wxtm-bridge-backend-api-node';
+import { UserTransactionDTO } from '@tari-project/wxtm-bridge-backend-api';
 import {
     findByTransactionId,
     findFirstNonBridgeTransaction,

@@ -1,7 +1,7 @@
 import { create } from './create';
 import { TransactionInfo, WalletBalance } from '../types/app-status.ts';
 import { refreshTransactions, setWalletBalance } from './actions/walletStoreActions.ts';
-import { UserTransactionDTO } from '@tari-project/wxtm-bridge-backend-api-node';
+import { UserTransactionDTO } from '@tari-project/wxtm-bridge-backend-api';
 
 export interface BackendBridgeTransaction extends UserTransactionDTO {
     sourceAddress?: string;

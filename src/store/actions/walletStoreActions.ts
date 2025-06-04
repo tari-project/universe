@@ -5,7 +5,7 @@ import { useWalletStore } from '../useWalletStore';
 import { restartMining } from './miningStoreActions';
 import { setError } from './appStateStoreActions';
 import { setExchangeContent } from '@app/store/useExchangeStore.ts';
-import { WrapTokenService, OpenAPI } from '@tari-project/wxtm-bridge-backend-api-node';
+import { WrapTokenService, OpenAPI } from '@tari-project/wxtm-bridge-backend-api';
 import { useConfigBEInMemoryStore } from '../useAppConfigStore';
 interface TxArgs {
     continuation: boolean;
