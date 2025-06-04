@@ -30,7 +30,6 @@ use minotari_node_grpc_client::grpc::{
 };
 use std::path::PathBuf;
 use std::time::{Duration, SystemTime};
-use tari_utilities::epoch_time::EpochTime;
 use tokio::fs;
 
 use chrono::{NaiveDateTime, TimeZone, Utc};
@@ -351,6 +350,7 @@ pub(crate) struct NodeStatusMonitor {
     node_type: NodeType,
     node_service: NodeAdapterService,
     status_broadcast: watch::Sender<BaseNodeStatus>,
+    #[allow(dead_code)]
     last_block_time: Arc<AtomicU64>,
     base_path: Option<PathBuf>,
 }
@@ -375,7 +375,7 @@ impl NodeStatusMonitor {
 
 #[async_trait]
 impl StatusMonitor for NodeStatusMonitor {
-    async fn check_health(&self, uptime: Duration, timeout_duration: Duration) -> HealthStatus {
+    async fn check_health(&self, _uptime: Duration, timeout_duration: Duration) -> HealthStatus {
         match timeout(timeout_duration, self.node_service.get_network_state()).await {
             Ok(res) => match res {
                 Ok(status) => {
