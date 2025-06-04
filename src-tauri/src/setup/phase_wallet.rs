@@ -26,7 +26,6 @@ use crate::{
         config_ui::{ConfigUI, ConfigUIContent},
         trait_config::ConfigImpl,
     },
-    events::CriticalProblemPayload,
     events_emitter::EventsEmitter,
     progress_tracker_old::ProgressTracker,
     progress_trackers::{
@@ -34,31 +33,29 @@ use crate::{
         progress_stepper::ProgressStepperBuilder,
         ProgressStepper,
     },
-    setup::{setup_manager::SetupPhase, utils::conditional_sleeper},
+    setup::setup_manager::SetupPhase,
     tapplets::{TappletResolver, Tapplets},
     tasks_tracker::TasksTrackers,
     wallet_manager::WalletStartupConfig,
     UniverseAppState,
 };
 use anyhow::Error;
-use log::{error, info, warn};
 use tari_core::transactions::tari_amount::MicroMinotari;
+use tari_shutdown::ShutdownSignal;
 use tauri::{AppHandle, Manager};
-use tauri_plugin_sentry::sentry;
-use tokio::{
-    select,
-    sync::{
-        watch::{self, Sender},
-        Mutex,
-    },
+use tokio::sync::{
+    watch::{self, Receiver, Sender},
+    Mutex,
 };
+use tokio_util::task::TaskTracker;
 
 use super::{
     setup_manager::{PhaseStatus, SetupFeaturesList},
     trait_setup_phase::{SetupConfiguration, SetupPhaseImpl},
+    utils::{setup_default_adapter::SetupDefaultAdapter, timeout_watcher::TimeoutWatcher},
 };
 
-static LOG_TARGET: &str = "tari::universe::phase_hardware";
+// static LOG_TARGET: &str = "tari::universe::phase_hardware";
 
 #[derive(Clone, Default)]
 pub struct WalletSetupPhaseOutput {}
@@ -78,6 +75,7 @@ pub struct WalletSetupPhase {
     status_sender: Sender<PhaseStatus>,
     #[allow(dead_code)]
     setup_features: SetupFeaturesList,
+    timeout_watcher: TimeoutWatcher,
 }
 
 impl SetupPhaseImpl for WalletSetupPhase {
@@ -89,13 +87,18 @@ impl SetupPhaseImpl for WalletSetupPhase {
         configuration: SetupConfiguration,
         setup_features: SetupFeaturesList,
     ) -> Self {
+        let timeout_watcher = TimeoutWatcher::new(configuration.setup_timeout_duration);
         Self {
             app_handle: app_handle.clone(),
-            progress_stepper: Mutex::new(Self::create_progress_stepper(app_handle.clone())),
+            progress_stepper: Mutex::new(Self::create_progress_stepper(
+                app_handle.clone(),
+                timeout_watcher.get_sender(),
+            )),
             app_configuration: Self::load_app_configuration().await.unwrap_or_default(),
             setup_configuration: configuration,
             status_sender,
             setup_features,
+            timeout_watcher,
         }
     }
 
@@ -103,7 +106,28 @@ impl SetupPhaseImpl for WalletSetupPhase {
         &self.app_handle
     }
 
-    fn create_progress_stepper(app_handle: AppHandle) -> ProgressStepper {
+    async fn get_shutdown_signal(&self) -> ShutdownSignal {
+        TasksTrackers::current().core_phase.get_signal().await
+    }
+    async fn get_task_tracker(&self) -> TaskTracker {
+        TasksTrackers::current().core_phase.get_task_tracker().await
+    }
+    fn get_phase_dependencies(&self) -> Vec<Receiver<PhaseStatus>> {
+        self.setup_configuration
+            .listeners_for_required_phases_statuses
+            .clone()
+    }
+    fn get_phase_id(&self) -> SetupPhase {
+        SetupPhase::Wallet
+    }
+    fn get_timeout_watcher(&self) -> &TimeoutWatcher {
+        &self.timeout_watcher
+    }
+
+    fn create_progress_stepper(
+        app_handle: AppHandle,
+        timeout_watcher_sender: Sender<u64>,
+    ) -> ProgressStepper {
         ProgressStepperBuilder::new()
             .add_step(ProgressPlans::Wallet(
                 ProgressSetupWalletPlan::BinariesWallet,
@@ -114,7 +138,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
             ))
             .add_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::SetupBridge))
             .add_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::Done))
-            .build(app_handle)
+            .build(app_handle, timeout_watcher_sender)
     }
 
     async fn load_app_configuration() -> Result<Self::AppConfiguration, Error> {
@@ -127,57 +151,8 @@ impl SetupPhaseImpl for WalletSetupPhase {
         })
     }
 
-    async fn setup(mut self) {
-        info!(target: LOG_TARGET, "[ {} Phase ] Starting setup", SetupPhase::Wallet);
-
-        TasksTrackers::current().wallet_phase.get_task_tracker().await.spawn(async move {
-            let mut shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
-            for subscriber in &mut self.setup_configuration.listeners_for_required_phases_statuses.iter_mut() {
-                select! {
-                    _ = subscriber.wait_for(|value| value.is_success()) => {}
-                    _ = shutdown_signal.wait() => {
-                        warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Wallet);
-                        return;
-                    }
-                }
-            };
-
-            tokio::select! {
-                result = conditional_sleeper(self.setup_configuration.setup_timeout_duration) => {
-                    if result.is_some() {
-                        error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Wallet);
-                        let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::Wallet);
-                        sentry::capture_message(&error_message, sentry::Level::Error);
-                        EventsEmitter::emit_critical_problem(CriticalProblemPayload {
-                            title: Some(SetupPhase::Wallet.get_critical_problem_title()),
-                            description: Some(SetupPhase::Wallet.get_critical_problem_description()),
-                            error_message: Some(error_message),
-                        }).await;
-                    }
-                }
-                result = self.setup_inner() => {
-                    match result {
-                        Ok(_) => {
-                            info!(target: LOG_TARGET, "[ {} Phase ] Setup completed successfully", SetupPhase::Wallet);
-                            let _unused = self.finalize_setup().await;
-                        }
-                        Err(error) => {
-                            error!(target: LOG_TARGET, "[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Wallet,error);
-                            let error_message = format!("[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Wallet,error);
-                            sentry::capture_message(&error_message, sentry::Level::Error);
-                            EventsEmitter::emit_critical_problem(CriticalProblemPayload {
-                                title: Some(SetupPhase::Wallet.get_critical_problem_title()),
-                                description: Some(SetupPhase::Wallet.get_critical_problem_description()),
-                                error_message: Some(error_message),
-                            }).await;
-                        }
-                    }
-                }
-                _ = shutdown_signal.wait() => {
-                    warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Wallet);
-                }
-            };
-        });
+    async fn setup(self) {
+        let _unused = SetupDefaultAdapter::setup(self).await;
     }
 
     async fn setup_inner(&self) -> Result<(), Error> {

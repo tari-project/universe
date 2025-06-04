@@ -385,16 +385,9 @@ impl SetupManager {
 
     async fn setup_node_phase(&self, app_handle: AppHandle) {
         let setup_features = self.features.read().await.clone();
-        let state = app_handle.state::<UniverseAppState>();
-        let is_local_node = state.node_manager.is_local_current().await.unwrap_or(true);
-        let timeout_duration = if is_local_node {
-            Duration::from_secs(60 * 60) // 60 Minutes
-        } else {
-            Duration::from_secs(60 * 10) // 10 Minutes
-        };
 
         let node_phase_setup = PhaseBuilder::new()
-            .with_setup_timeout_duration(timeout_duration)
+            .with_setup_timeout_duration(Duration::from_secs(60 * 30))
             .with_listeners_for_required_phases_statuses(vec![self.core_phase_status.subscribe()])
             .build::<NodeSetupPhase>(
                 app_handle.clone(),

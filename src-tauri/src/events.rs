@@ -21,7 +21,10 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use serde::Serialize;
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    hash::{Hash, Hasher},
+};
 
 use crate::{
     app_in_memory_config::AppInMemoryConfig,
@@ -96,6 +99,18 @@ pub struct ProgressTrackerUpdatePayload {
     pub progress: f64,
     pub title_params: Option<HashMap<String, String>>,
     pub is_complete: bool,
+}
+
+impl Hash for ProgressTrackerUpdatePayload {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.phase_title.hash(state);
+        self.title.hash(state);
+        self.progress.to_bits().hash(state);
+        if let Some(params) = &self.title_params {
+            params.hasher();
+        }
+        self.is_complete.hash(state);
+    }
 }
 
 #[derive(Clone, Debug, Serialize)]
