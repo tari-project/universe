@@ -1,3 +1,4 @@
+import i18n from 'i18next';
 import { useConfigMiningStore, useConfigUIStore, useMiningMetricsStore } from '@app/store';
 
 import {
@@ -30,7 +31,7 @@ import { MiningTime } from '@app/components/mining/timer/MiningTime.tsx';
 import { useMiningTime } from '@app/hooks/mining/useMiningTime.ts';
 import { SuccessAnimation } from './SuccessAnimation/SuccessAnimation';
 import { setAnimationState } from '@tari-project/tari-tower';
-import i18n from 'i18next';
+
 import { ProgressAnimation } from './ProgressAnimation/ProgressAnimation';
 
 const REWARD_THRESHOLD_STR = `2 XTM`;
@@ -121,6 +122,7 @@ export const PoolStatsTile = () => {
                                     <Values>
                                         <BalanceVal>
                                             <NumberFlow
+                                                locales={i18n.language}
                                                 format={{
                                                     minimumFractionDigits: 1,
                                                     maximumFractionDigits: 4,
