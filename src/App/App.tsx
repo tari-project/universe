@@ -14,7 +14,7 @@ import MainView from '../containers/main/MainView.tsx';
 
 import { AppContentContainer } from './App.styles.ts';
 import { useUIStore } from '@app/store/useUIStore.ts';
-import { TOWER_CANVAS_ID } from '@app/store';
+import { TOWER_CANVAS_ID } from '@app/store/types/ui.ts';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const queryClient = new QueryClient();

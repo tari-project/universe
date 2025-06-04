@@ -4,7 +4,7 @@ import { setDialogToShow, useUIStore } from '@app/store';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog';
 import { Typography } from '@app/components/elements/Typography.tsx';
 
-import { CloseButton, CopyWrapper, Wrapper } from './styles.ts';
+import { CloseButton, CopyWrapper, HeaderWrapper, Wrapper } from './styles.ts';
 
 export default function KeychainDialog() {
     const dialogToShow = useUIStore((s) => s.dialogToShow);
@@ -16,15 +16,16 @@ export default function KeychainDialog() {
     return (
         <Dialog open={isOpen} onOpenChange={handleClose}>
             <DialogContent>
+                <CloseButton onClick={handleClose}>
+                    <IoClose />
+                </CloseButton>
                 <Wrapper>
-                    <CloseButton onClick={handleClose}>
-                        <IoClose size={18} />
-                    </CloseButton>
-                    <Typography variant="h3">{'Keychain Access'}</Typography>
-                    <PiWarning size={24} />
+                    <HeaderWrapper>
+                        <Typography variant="h2">{'Enable Keychain Access'}</Typography>
+                    </HeaderWrapper>
                     <CopyWrapper>
-                        <Typography variant="p">{`Keychain access is required for this operation.`}</Typography>
-                        <Typography variant="p">{`Please try again and select "allow"`}</Typography>
+                        <PiWarning size={24} />
+                        <Typography>{`Keychain access is required for this operation.\nPlease try again and select "allow".`}</Typography>
                     </CopyWrapper>
                 </Wrapper>
             </DialogContent>

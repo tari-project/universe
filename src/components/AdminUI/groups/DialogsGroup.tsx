@@ -29,7 +29,6 @@ export function DialogsGroup() {
                 >
                     Critical Problem
                 </Button>
-
                 <Button
                     onClick={() => setDialogToShow(dialogToShow === 'autoUpdate' ? undefined : 'autoUpdate')}
                     $isActive={dialogToShow === 'autoUpdate'}
@@ -41,6 +40,12 @@ export function DialogsGroup() {
                     $isActive={showExternalDependenciesDialog}
                 >
                     External Deps
+                </Button>
+                <Button
+                    onClick={() => setDialogToShow(dialogToShow === 'keychain' ? undefined : 'keychain')}
+                    $isActive={dialogToShow === 'keychain'}
+                >
+                    Keychain Access
                 </Button>
             </ButtonGroup>
         </>
