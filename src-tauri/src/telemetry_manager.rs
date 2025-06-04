@@ -37,6 +37,7 @@ use crate::p2pool::models::P2poolStats;
 use crate::process_stats_collector::ProcessStatsCollector;
 use crate::process_utils::retry_with_backoff;
 use crate::tor_control_client::TorStatus;
+use crate::utils::address_utils::extract_payment_id;
 use crate::utils::network_status::NetworkStatus;
 use crate::TasksTrackers;
 use anyhow::Result;
@@ -57,7 +58,7 @@ use sysinfo::{Disks, System};
 use tari_common::configuration::Network;
 use tari_shutdown::ShutdownSignal;
 use tari_utilities::encoding::MBase58;
-use tauri::Emitter;
+use tauri::{Emitter, Manager};
 use tokio::sync::{watch, RwLock};
 use tokio::time::interval;
 
@@ -525,6 +526,17 @@ async fn get_telemetry_data_inner(
         "config_tor_enabled".to_string(),
         config.use_tor().to_string(),
     );
+
+    // Add payment ID from current tari address
+    if let Some(state) = app_handle.try_state::<crate::UniverseAppState>() {
+        let tari_address = state.tari_address.read().await;
+        let address_str = tari_address.to_base58();
+        if let Ok(Some(payment_id)) = extract_payment_id(&address_str) {
+            extra_data.insert("mining_address_payment_id".to_string(), payment_id);
+        }
+        // Note: If no payment ID, we don't add the field (saves space vs empty string)
+    }
+
     let mut squad = None;
     if let Some(stats) = p2pool_stats.as_ref() {
         extra_data.insert(

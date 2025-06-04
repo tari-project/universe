@@ -1,12 +1,10 @@
-'use client';
-
 import { useEffect } from 'react';
 import { Wrapper, Text, LottieWrapper } from './styles';
 import { AnimatePresence } from 'motion/react';
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import coins_victory_url from '../lotties/Coins_Victory_Lottie.json?url';
 
-interface SuccessAnimationProps {
+interface Props {
     onComplete?: () => void;
     isVisible: boolean;
     setIsVisible: (isVisible: boolean) => void;
@@ -14,13 +12,7 @@ interface SuccessAnimationProps {
     rewardCopy: string;
 }
 
-export const SuccessAnimation = ({
-    onComplete,
-    isVisible,
-    setIsVisible,
-    rewardThreshold,
-    rewardCopy,
-}: SuccessAnimationProps) => {
+export const SuccessAnimation = ({ onComplete, isVisible, setIsVisible, rewardThreshold, rewardCopy }: Props) => {
     useEffect(() => {
         if (!isVisible) return;
 
@@ -37,9 +29,9 @@ export const SuccessAnimation = ({
             {isVisible && (
                 <Wrapper initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                     <Text
-                        initial={{ scale: 0, opacity: 0 }}
+                        initial={{ scale: 0.5, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 0, opacity: 0 }}
+                        exit={{ scale: 1.5, opacity: 0 }}
                         transition={{
                             duration: 0.5,
                             ease: [0.15, 0, 0, 0.97],

@@ -27,7 +27,18 @@ pub fn launch_child_process(
     current_dir: &Path,
     envs: Option<&std::collections::HashMap<String, String>>,
     args: &[String],
+    allow_output: bool,
 ) -> Result<tokio::process::Child, anyhow::Error> {
+    let stdout = if allow_output {
+        std::process::Stdio::piped()
+    } else {
+        std::process::Stdio::null()
+    };
+    let stderr = if allow_output {
+        std::process::Stdio::piped()
+    } else {
+        std::process::Stdio::null()
+    };
     #[cfg(not(target_os = "windows"))]
     {
         Ok(tokio::process::Command::new(file_path)
@@ -42,6 +53,7 @@ pub fn launch_child_process(
     #[cfg(target_os = "windows")]
     {
         use crate::consts::PROCESS_CREATION_NO_WINDOW;
+
         Ok(tokio::process::Command::new(file_path)
             .args(args)
             .current_dir(current_dir)

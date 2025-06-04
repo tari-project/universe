@@ -51,6 +51,7 @@ import {
     handleConfigMiningLoaded,
     handleConfigUILoaded,
     handleConfigWalletLoaded,
+    handleUniversalMinerInitializedExchangeIdChanged,
     handleMiningTimeUpdate,
 } from '@app/store/actions/appConfigStoreActions';
 import { invoke } from '@tauri-apps/api/core';
@@ -118,8 +119,8 @@ const useTauriEventsListener = () => {
                             break;
                         }
                         case 'WalletBalanceUpdate':
-                            setWalletBalance(event.payload);
                             await refreshTransactions();
+                            await setWalletBalance(event.payload);
                             break;
                         case 'BaseNodeUpdate':
                             handleBaseNodeStatusUpdate(event.payload);
@@ -217,6 +218,9 @@ const useTauriEventsListener = () => {
                             break;
                         case 'DisabledPhasesChanged':
                             handleUpdateDisabledPhases(event.payload);
+                            break;
+                        case 'UniversalMinerInitializedExchangeIdChanged':
+                            handleUniversalMinerInitializedExchangeIdChanged(event.payload);
                             break;
                         default:
                             console.warn('Unknown event', JSON.stringify(event));

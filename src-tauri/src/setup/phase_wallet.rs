@@ -241,6 +241,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
                 data_dir,
                 config_dir,
                 log_dir,
+                app_state.clone(),
             )
             .await?;
         drop(spend_wallet_manager);
