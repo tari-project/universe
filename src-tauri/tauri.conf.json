@@ -1,5 +1,5 @@
 {
-    "version": "1.2.1",
+    "version": "1.2.6",
     "productName": "Tari Universe (Alpha)",
     "mainBinaryName": "Tari Universe (Alpha)",
     "identifier": "com.tari.universe.alpha",
@@ -54,10 +54,10 @@
                     "https://ethereum-sepolia-rpc.publicnode.com",
                     "tauri:",
                     "tauri://localhost:*",
-                    "ipc:",
-                    "http://ipc.localhost",
                     "http://localhost:*",
                     "http://127.0.0.1:*",
+                    "ipc:",
+                    "http://ipc.localhost",
                     "data:",
                     "blob:",
                     "application/octet-stream",
@@ -67,11 +67,14 @@
                 "worker-src": "'self' blob: https://cdn.npmjs.com/@tari-project/tari-tower",
                 "img-src": "'self' data: blob: base64: https://*.twimg.com https://cdn.npmjs.com/@tari-project/tari-tower http://127.0.0.1 http://127.0.0.1/ http://127.0.0.1:* http://localhost http://localhost/ http://localhost:*",
                 "object-src": "'self' data: blob:",
+                "media-src": "'self' data: blob: tauri: https:",
                 "script-src-elem": "'self' 'unsafe-inline' 'unsafe-eval'"
             },
             "assetProtocol": {
                 "enable": true,
-                "scope": ["**"]
+                "scope": [
+                    "**"
+                ]
             },
             "pattern": {
                 "use": "isolation",

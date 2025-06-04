@@ -26,6 +26,7 @@ use super::{
     trait_setup_phase::SetupPhaseImpl, utils::phase_builder::PhaseBuilder,
 };
 use crate::app_in_memory_config::EXCHANGE_ID;
+use crate::configs::config_core::ConfigCoreContent;
 use crate::{
     app_in_memory_config::{DynamicMemoryConfig, ExchangeMiner, DEFAULT_EXCHANGE_ID},
     configs::{
@@ -769,7 +770,7 @@ impl SetupManager {
         self.wait_for_unlock_conditions(app_handle.clone()).await;
     }
 
-    async fn resume_phases(&self, app_handle: AppHandle, phases: Vec<SetupPhase>) {
+    pub async fn resume_phases(&self, app_handle: AppHandle, phases: Vec<SetupPhase>) {
         if !phases.is_empty() {
             EventsEmitter::emit_restarting_phases(phases.clone()).await;
         }
@@ -906,7 +907,12 @@ impl SetupManager {
     async fn await_selected_exchange_miner(&self, app_handle: AppHandle) {
         let state = app_handle.state::<UniverseAppState>();
         let memory_config = state.in_memory_config.read().await;
-        if !memory_config.is_universal_miner() {
+        let universal_miner_initialized_exchange_id = ConfigCore::content()
+            .await
+            .universal_miner_initialized_exchange_id()
+            .clone();
+        if !memory_config.is_universal_miner() || universal_miner_initialized_exchange_id.is_some()
+        {
             return;
         }
         drop(memory_config);
@@ -925,6 +931,15 @@ impl SetupManager {
         *config = new_config;
 
         EventsEmitter::emit_app_in_memory_config_changed(new_config_cloned, true).await;
+        let _unused = ConfigCore::update_field(
+            ConfigCoreContent::set_universal_miner_initialized_exchange_id,
+            Some(selected_miner.id.clone()),
+        )
+        .await;
+        EventsEmitter::emit_universal_miner_initialized_exchange_id_changed(
+            selected_miner.id.clone(),
+        )
+        .await;
         self.universal_modal_status
             .send(selected_miner.clone())
             .map_err(|e| e.to_string())?;
