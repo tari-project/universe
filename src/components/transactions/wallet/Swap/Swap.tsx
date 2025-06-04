@@ -9,13 +9,18 @@ import {
     ProcessingTransaction,
 } from '@app/containers/floating/SwapDialogs/sections/ProcessingTransaction/ProcessingTransaction';
 
-import { useState, memo, useRef } from 'react'; // Added useRef
+import { useState, memo, useRef, useEffect, useCallback } from 'react'; // Added useRef
 import { SignApprovalMessage } from '@app/containers/floating/SwapDialogs/sections/SignMessage/SignApprovalMessage';
 import { useTranslation } from 'react-i18next';
 import { setIsSwapping } from '@app/store/actions/walletStoreActions';
 import { MessageType, useIframeMessage } from '@app/hooks/swap/useIframeMessage';
+import { useUIStore } from '@app/store';
+
+// TODO: Replace with the actual URL
+const SWAPS_IFRAME_URL = 'https://feat-swaps.tari-dot-com-2025.pages.dev/swaps';
 
 export const Swap = memo(function Swap() {
+    const theme = useUIStore((s) => s.theme);
     const [processingOpen, setProcessingOpen] = useState(false);
     const [processingTransaction, setProcessingTransaction] = useState<ProccessingTransactionProps | null>(null);
     const [approving, setApproving] = useState(false);
@@ -27,6 +32,21 @@ export const Swap = memo(function Swap() {
     const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
     const { t } = useTranslation(['wallet'], { useSuspense: false });
+
+    const handleSetTheme = useCallback(() => {
+        if (iframeRef.current) {
+            iframeRef.current.contentWindow?.postMessage({ type: 'SET_THEME', payload: theme }, '*');
+        }
+    }, [theme]);
+
+    useEffect(() => {
+        // Keep the iframe theme in sync with the app theme
+        handleSetTheme();
+        const timeout = setTimeout(handleSetTheme, 1000);
+        return () => {
+            clearTimeout(timeout);
+        };
+    }, [handleSetTheme]);
 
     const handleClearState = () => {
         setApproving(false);
@@ -85,8 +105,9 @@ export const Swap = memo(function Swap() {
                 <SwapsIframe
                     $walletConnectOpen={walletConnectOpen}
                     ref={iframeRef}
-                    src="https://feat-swaps.tari-dot-com-2025.pages.dev/swaps"
-                    title="swap"
+                    src={SWAPS_IFRAME_URL}
+                    title="Swap Iframe"
+                    onLoad={handleSetTheme}
                 />
             </IframeContainer>
             {/* Floating Elements */}
@@ -108,7 +129,7 @@ export const Swap = memo(function Swap() {
                 }}
                 txBlockHash={processingTransaction?.txBlockHash ?? undefined}
                 transactionId={processingTransaction?.transactionId ?? undefined}
-                errorMessage={error} // Pass the error message
+                errorMessage={error}
             />
             <SignApprovalMessage isOpen={approving} setIsOpen={setProcessingOpen} />
         </SwapsContainer>
