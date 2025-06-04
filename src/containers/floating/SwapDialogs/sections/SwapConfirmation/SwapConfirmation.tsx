@@ -137,7 +137,7 @@ export const SwapConfirmation = ({
                 </WalletConnectHeader>
 
                 <SwapOption>
-                    <span> {t('swap.sell')} </span>
+                    <span> {direction === 'toXtm' ? t('swap.sell') : t('swap.receive-estimated')} </span>
                     <SwapOptionAmount>
                         <SwapAmountInput disabled type="text" inputMode="decimal" placeholder="0.00" value={amount} />
                         <SwapOptionCurrency>
@@ -155,7 +155,7 @@ export const SwapConfirmation = ({
                     </SwapDirectionWrapper>
                 </SwapDirection>
                 <SwapOption>
-                    <span> {t('swap.receive-estimated')} </span>
+                    <span> {direction === 'toXtm' ? t('swap.receive-estimated') : t('swap.sell')} </span>
                     <SwapOptionAmount>
                         <SwapAmountInput
                             disabled
