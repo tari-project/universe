@@ -131,7 +131,7 @@ export const Swap = memo(function Swap() {
                 transactionId={processingTransaction?.transactionId ?? undefined}
                 errorMessage={error}
             />
-            <SignApprovalMessage isOpen={approving} setIsOpen={setProcessingOpen} />
+            <SignApprovalMessage isOpen={approving} setIsOpen={setApproving} />
         </SwapsContainer>
     );
 });
