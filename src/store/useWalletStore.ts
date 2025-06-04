@@ -1,16 +1,6 @@
 import { create } from './create';
 import { TransactionInfo, WalletBalance } from '../types/app-status.ts';
-import { refreshTransactions, setWalletBalance } from './actions/walletStoreActions.ts';
-
-interface PendingTransaction {
-    tx_id: number;
-    amount: number;
-    dest_address: string;
-    payment_id: string;
-    direction: number;
-    status: number;
-    timestamp: number;
-}
+import { refreshTransactions } from './actions/walletStoreActions.ts';
 
 interface WalletStoreState {
     tari_address_base58: string;
@@ -20,7 +10,6 @@ interface WalletStoreState {
     calculated_balance?: number;
     coinbase_transactions: TransactionInfo[];
     transactions: TransactionInfo[];
-    pending_transactions: PendingTransaction[];
     is_reward_history_loading: boolean;
     has_more_coinbase_transactions: boolean;
     has_more_transactions: boolean;
@@ -42,7 +31,6 @@ const initialState: WalletStoreState = {
     is_tari_address_generated: null,
     coinbase_transactions: [],
     transactions: [],
-    pending_transactions: [],
     has_more_coinbase_transactions: true,
     has_more_transactions: true,
     is_reward_history_loading: false,
@@ -59,7 +47,7 @@ const initialState: WalletStoreState = {
 // Configuration for memory management
 const MAX_TRANSACTIONS_IN_MEMORY = 1000; // Keep only the latest 1000 transactions
 const MAX_COINBASE_TRANSACTIONS_IN_MEMORY = 500; // Keep only the latest 500 coinbase transactions
-const MAX_PENDING_TRANSACTIONS = 100; // Keep only the latest 100 pending transactions
+// const MAX_PENDING_TRANSACTIONS = 100; // Keep only the latest 100 pending transactions
 
 export const useWalletStore = create<WalletStoreState>()(() => ({
     ...initialState,
@@ -77,32 +65,6 @@ const pruneTransactionArray = <T extends { timestamp?: number; tx_id?: number }>
             return bTime - aTime;
         })
         .slice(0, maxSize);
-};
-
-// Temporary solution until we use excess_sig to track pending transactions
-export const addPendingTransaction = (payload: { amount: number; destination: string; paymentId: string }) => {
-    const transaction: PendingTransaction = {
-        tx_id: Date.now(),
-        amount: Number(payload.amount) * 1_000_000,
-        dest_address: payload.destination,
-        payment_id: payload.paymentId,
-        direction: 2,
-        status: 1,
-        timestamp: Math.floor(Date.now() / 1000),
-    };
-
-    useWalletStore.setState((state) => {
-        const newPendingTransactions = [transaction, ...state.pending_transactions];
-
-        return {
-            pending_transactions: pruneTransactionArray(newPendingTransactions, MAX_PENDING_TRANSACTIONS),
-        };
-    });
-
-    const balance = useWalletStore.getState().balance;
-    if (balance) {
-        setWalletBalance(balance);
-    }
 };
 
 export const updateWalletScanningProgress = (payload: {
@@ -123,28 +85,11 @@ export const updateWalletScanningProgress = (payload: {
     }
 };
 
-export const refreshPendingTransactions = () => {
-    useWalletStore.setState((state) => {
-        // Filter out pending transactions that have matching confirmed transactions
-        const updatedPendingTransactions = state.pending_transactions.filter((pending) => {
-            const isConfirmed = state.transactions.some(
-                (tx) => tx.amount === pending.amount && tx.payment_id === pending.payment_id
-            );
-            return !isConfirmed;
-        });
-
-        return {
-            pending_transactions: pruneTransactionArray(updatedPendingTransactions, MAX_PENDING_TRANSACTIONS),
-        };
-    });
-};
-
 // New function to prune transaction arrays when they get too large
 export const pruneTransactionHistory = () => {
     useWalletStore.setState((state) => ({
         transactions: pruneTransactionArray(state.transactions, MAX_TRANSACTIONS_IN_MEMORY),
         coinbase_transactions: pruneTransactionArray(state.coinbase_transactions, MAX_COINBASE_TRANSACTIONS_IN_MEMORY),
-        pending_transactions: pruneTransactionArray(state.pending_transactions, MAX_PENDING_TRANSACTIONS),
     }));
 };
 
