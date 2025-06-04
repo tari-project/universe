@@ -273,9 +273,13 @@ impl TelemetryManager {
     }
 
     pub async fn get_unique_string(&self) -> String {
-        let _allow_telemetry = *ConfigCore::content().await.allow_telemetry();
+        let allow_telemetry = *ConfigCore::content().await.allow_telemetry();
         let anon_id = ConfigCore::content().await.anon_id().clone();
         let airdrop_tokens = ConfigCore::content().await.airdrop_tokens().clone();
+
+        if !allow_telemetry {
+            return "".to_string();
+        }
 
         // let os = std::env::consts::OS;
         let mut hasher = Blake2bVar::new(20).expect("Failed to create hasher");
