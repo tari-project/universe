@@ -15,9 +15,11 @@ import { useTranslation } from 'react-i18next';
 import { setIsSwapping } from '@app/store/actions/walletStoreActions';
 import { MessageType, useIframeMessage } from '@app/hooks/swap/useIframeMessage';
 import { useUIStore } from '@app/store';
+import { useIframeUrl } from '@app/hooks/swap/useIframeUrl';
+import LoadingDots from '@app/components/elements/loaders/LoadingDots';
 
 // TODO: Replace with the actual URL
-const SWAPS_IFRAME_URL = 'https://feat-swaps.tari-dot-com-2025.pages.dev/swaps';
+// const SWAPS_IFRAME_URL = 'https://feat-swaps.tari-dot-com-2025.pages.dev/swaps';
 // const SWAPS_IFRAME_URL = 'http://localhost:3000/swaps';
 
 export const Swap = memo(function Swap() {
@@ -30,6 +32,7 @@ export const Swap = memo(function Swap() {
     const [error, setError] = useState<string | null>(null);
     const [walletConnectOpen, setWalletConnectOpen] = useState(false);
     const [swapHeight, setSwapHeight] = useState(0);
+    const iframeUrl = useIframeUrl();
 
     const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
@@ -109,14 +112,18 @@ export const Swap = memo(function Swap() {
                 </SectionHeaderWrapper>
             </TabHeader>
             <IframeContainer>
-                <SwapsIframe
-                    $swapHeight={swapHeight}
-                    $walletConnectOpen={walletConnectOpen}
-                    ref={iframeRef}
-                    src={SWAPS_IFRAME_URL}
-                    title="Swap Iframe"
-                    onLoad={handleSetTheme}
-                />
+                {iframeUrl ? (
+                    <SwapsIframe
+                        $swapHeight={swapHeight}
+                        $walletConnectOpen={walletConnectOpen}
+                        ref={iframeRef}
+                        src={iframeUrl}
+                        title="Swap Iframe"
+                        onLoad={handleSetTheme}
+                    />
+                ) : (
+                    <LoadingDots />
+                )}
             </IframeContainer>
             {/* Floating Elements */}
             <SwapConfirmation
