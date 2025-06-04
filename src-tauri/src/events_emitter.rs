@@ -1,7 +1,3 @@
-use std::collections::HashMap;
-use std::sync::LazyLock;
-
-use crate::app_in_memory_config::AppInMemoryConfig;
 // Copyright 2024. The Tari Project
 //
 // Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -23,6 +19,11 @@ use crate::app_in_memory_config::AppInMemoryConfig;
 // SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+use std::collections::HashMap;
+use std::sync::LazyLock;
+
+use crate::app_in_memory_config::AppInMemoryConfig;
 use crate::events::{
     AppInMemoryConfigChangedPayload, BinaryPermanentFailurePayload, BinaryRuntimeRestartAttemptPayload, 
     BinaryStartupAttemptPayload, ConnectionStatusPayload, CriticalProblemPayload,
