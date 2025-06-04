@@ -1,0 +1,17 @@
+{
+  "widget": {
+    "prize": {
+      "upcomingReward": "phần thưởng sắp tới / macbook pro 16’"
+    },
+    "timer": {
+      "gettingClose": "Bạn sắp đạt mục tiêu",
+      "days": "ngày",
+      "hours": "giờ"
+    },
+    "friends": {
+      "reduceTimer": "Giảm thời gian bằng cách mời bạn bè",
+      "linkCopied": "Đã sao chép liên kết!",
+      "growCrew": "mở rộng đội nhóm"
+    }
+  }
+}
