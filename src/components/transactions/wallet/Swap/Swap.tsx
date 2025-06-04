@@ -56,6 +56,7 @@ export const Swap = memo(function Swap() {
     const handleClearState = () => {
         setApproving(false);
         setConfirming(false);
+        setProcessingOpen(false);
         setConfirmingTransaction(null);
         setProcessingTransaction(null);
     };
@@ -79,7 +80,9 @@ export const Swap = memo(function Swap() {
             case MessageType.PROCESSING_STATUS: {
                 setApproving(false);
                 setProcessingTransaction(event.data.payload);
-                setProcessingOpen(true);
+                if (processingTransaction?.status !== 'error') {
+                    setProcessingOpen(true);
+                }
                 break;
             }
             case MessageType.WALLET_CONNECT:

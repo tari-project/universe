@@ -6,18 +6,20 @@ export const useIframeUrl = () => {
     const [url, setUrl] = useState<string | null>(urlRef.current);
 
     useEffect(() => {
-        handleAirdropRequest<{ url: string }>({
-            path: '/swaps/url',
-            method: 'GET',
-            publicRequest: true,
-            onError: () => setUrl(null),
-        }).then((data) => {
-            if (data?.url) {
-                urlRef.current = data.url;
-                setUrl(data.url);
-            }
-        });
-    }, []);
+        if (!urlRef.current && url === null) {
+            handleAirdropRequest<{ url: string }>({
+                path: '/swaps/url',
+                method: 'GET',
+                publicRequest: true,
+                onError: () => setUrl(null),
+            }).then((data) => {
+                if (data?.url) {
+                    urlRef.current = data.url;
+                    setUrl(data.url);
+                }
+            });
+        }
+    }, [url]);
 
     return url || urlRef.current;
 };
