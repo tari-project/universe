@@ -22,21 +22,15 @@
 use crate::binaries::binaries_resolver::{VersionAsset, VersionDownloadInfo};
 use crate::configs::config_core::{ConfigCore, ConfigCoreContent};
 use crate::configs::trait_config::ConfigImpl;
-use crate::ProgressTracker;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
-use log::error;
 use regex::Regex;
-use semver::Version;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::LazyLock;
 use std::time::{Duration, SystemTime};
 use tari_common::configuration::Network;
-use tauri_plugin_sentry::sentry;
-use tokio::sync::watch::Receiver;
 use tokio::sync::{Mutex, RwLock};
-use tokio::time::timeout;
 
 use super::bridge_adapter::BridgeTappletAdapter;
 use super::tapplets_manager::TappletManager;
@@ -170,34 +164,7 @@ impl TappletResolver {
         Ok(base_dir)
     }
 
-    pub async fn initialize_tapplet_timeout(
-        &self,
-        tapplet: Tapplets,
-        progress_tracker: ProgressTracker,
-        timeout_channel: Receiver<String>,
-    ) -> Result<(), Error> {
-        match timeout(
-            Duration::from_secs(60 * 5),
-            self.initialize_tapplet(tapplet, progress_tracker.clone()),
-        )
-        .await
-        {
-            Err(_) => {
-                let last_msg = timeout_channel.borrow().clone();
-                error!(target: "tari::universe::main", "Setup took too long: {:?}", last_msg);
-                let error_msg = format!("Setup took too long: {}", last_msg);
-                sentry::capture_message(&error_msg, sentry::Level::Error);
-                Err(anyhow!(error_msg))
-            }
-            Ok(result) => result,
-        }
-    }
-
-    pub async fn initialize_tapplet(
-        &self,
-        tapplet: Tapplets,
-        progress_tracker: ProgressTracker,
-    ) -> Result<(), Error> {
+    pub async fn initialize_tapplet(&self, tapplet: Tapplets) -> Result<(), Error> {
         let mut manager = self
             .managers
             .get(&tapplet)
@@ -219,7 +186,7 @@ impl TappletResolver {
         if highest_version.is_none() {
             highest_version = manager.select_highest_version();
             manager
-                .download_version_with_retries(highest_version.clone(), progress_tracker.clone())
+                .download_version_with_retries(highest_version.clone())
                 .await?;
         }
 
@@ -228,7 +195,7 @@ impl TappletResolver {
             manager.check_if_files_for_version_exist(highest_version.clone());
         if !check_if_files_exist {
             manager
-                .download_version_with_retries(highest_version.clone(), progress_tracker.clone())
+                .download_version_with_retries(highest_version.clone())
                 .await?;
         }
 
@@ -253,83 +220,5 @@ impl TappletResolver {
         }
 
         Ok(())
-    }
-
-    pub async fn update_tapplet(
-        &self,
-        tapplet: Tapplets,
-        progress_tracker: ProgressTracker,
-    ) -> Result<(), Error> {
-        let mut manager = self
-            .managers
-            .get(&tapplet)
-            .ok_or_else(|| anyhow!("Couldn't find manager for tapplet: {}", tapplet.name()))?
-            .lock()
-            .await;
-
-        manager.check_for_updates().await;
-        let highest_version = manager.select_highest_version();
-
-        progress_tracker
-            .send_last_action(format!(
-                "Checking if files exist before download: {} {}",
-                tapplet.name(),
-                highest_version.clone().unwrap_or(Version::new(0, 0, 0))
-            ))
-            .await;
-
-        let check_if_files_exist =
-            manager.check_if_files_for_version_exist(highest_version.clone());
-        if !check_if_files_exist {
-            manager
-                .download_version_with_retries(highest_version.clone(), progress_tracker.clone())
-                .await?;
-        }
-
-        progress_tracker
-            .send_last_action(format!(
-                "Checking if files exist after download: {} {}",
-                tapplet.name(),
-                highest_version.clone().unwrap_or(Version::new(0, 0, 0))
-            ))
-            .await;
-        let check_if_files_exist =
-            manager.check_if_files_for_version_exist(highest_version.clone());
-        if !check_if_files_exist {
-            return Err(anyhow!(
-                "Failed to download tapplet while updating: files for version {:?} does not exist",
-                highest_version.clone()
-            ));
-        }
-
-        match highest_version {
-            Some(version) => manager.set_used_version(version),
-            None => {
-                return Err(anyhow!(
-                    "No version selected for tapplet {}",
-                    tapplet.name()
-                ))
-            }
-        }
-
-        Ok(())
-    }
-
-    #[allow(dead_code)]
-    pub async fn get_tapplet_version(&self, tapplet: Tapplets) -> Option<Version> {
-        self.managers
-            .get(&tapplet)
-            .unwrap_or_else(|| panic!("Couldn't find manager for tapplet: {}", tapplet.name()))
-            .lock()
-            .await
-            .get_used_version()
-    }
-
-    #[allow(dead_code)]
-    pub async fn get_tapplet_version_string(&self, tapplet: Tapplets) -> String {
-        let version = self.get_tapplet_version(tapplet).await;
-        version
-            .map(|v| v.to_string())
-            .unwrap_or_else(|| "Not Installed".to_string())
     }
 }

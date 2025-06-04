@@ -25,7 +25,6 @@ use crate::configs::trait_config::ConfigImpl;
 use crate::github::ReleaseSource;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
-use log::error;
 use regex::Regex;
 use semver::Version;
 use serde::{Deserialize, Serialize};
@@ -34,10 +33,7 @@ use std::path::PathBuf;
 use std::sync::LazyLock;
 use std::time::{Duration, SystemTime};
 use tari_common::configuration::Network;
-use tauri_plugin_sentry::sentry;
-use tokio::sync::watch::Receiver;
 use tokio::sync::{Mutex, RwLock};
-use tokio::time::timeout;
 
 use super::adapter_github::GithubReleasesAdapter;
 use super::adapter_tor::TorReleaseAdapter;
@@ -270,29 +266,7 @@ impl BinaryResolver {
         Ok(base_dir.join(binary.binary_file_name(version)))
     }
 
-    pub async fn initialize_binary_timeout(
-        &self,
-        binary: Binaries,
-        progress_tracker: ProgressTracker,
-        timeout_channel: Receiver<String>,
-    ) -> Result<(), Error> {
-        match timeout(Duration::from_secs(60 * 5), self.initialize_binary(binary)).await {
-            Err(_) => {
-                let last_msg = timeout_channel.borrow().clone();
-                error!(target: "tari::universe::main", "Setup took too long: {:?}", last_msg);
-                let error_msg = format!("Setup took too long: {}", last_msg);
-                sentry::capture_message(&error_msg, sentry::Level::Error);
-                Err(anyhow!(error_msg))
-            }
-            Ok(result) => result,
-        }
-    }
-
-    pub async fn initialize_binary(
-        &self,
-        binary: Binaries,
-        progress_tracker: ProgressTracker,
-    ) -> Result<(), Error> {
+    pub async fn initialize_binary(&self, binary: Binaries) -> Result<(), Error> {
         let mut manager = self
             .managers
             .get(&binary)
