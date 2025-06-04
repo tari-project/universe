@@ -20,10 +20,10 @@ export const SectionHeaderWrapper = styled.div`
     align-items: center;
 `;
 
-export const SwapsIframe = styled.iframe<{ $walletConnectOpen: boolean }>`
+export const SwapsIframe = styled.iframe<{ $walletConnectOpen: boolean; $swapHeight: number }>`
     width: 100%;
     height: 100%;
-    min-height: ${({ $walletConnectOpen }) => ($walletConnectOpen ? '470px' : '397px')};
+    min-height: ${({ $walletConnectOpen, $swapHeight }) => ($walletConnectOpen ? 470 : $swapHeight || 397)}px;
     border: none;
     pointer-events: all;
     border-radius: ${({ $walletConnectOpen }) => ($walletConnectOpen ? '30px' : '20px')};

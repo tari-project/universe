@@ -28,6 +28,7 @@ export const Swap = memo(function Swap() {
     const [confirmingTransaction, setConfirmingTransaction] = useState<SwapConfirmationTransactionProps | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [walletConnectOpen, setWalletConnectOpen] = useState(false);
+    const [swapHeight, setSwapHeight] = useState(0);
 
     const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
@@ -35,7 +36,7 @@ export const Swap = memo(function Swap() {
 
     const handleSetTheme = useCallback(() => {
         if (iframeRef.current) {
-            iframeRef.current.contentWindow?.postMessage({ type: 'SET_THEME', payload: theme }, '*');
+            iframeRef.current.contentWindow?.postMessage({ type: 'SET_THEME', payload: { theme } }, '*');
         }
     }, [theme]);
 
@@ -79,6 +80,9 @@ export const Swap = memo(function Swap() {
             case MessageType.WALLET_CONNECT:
                 setWalletConnectOpen(event.data.payload.open);
                 break;
+            case MessageType.SWAP_HEIGHT_CHANGE:
+                setSwapHeight(event.data.payload.height);
+                break;
             case MessageType.ERROR:
                 handleClearState();
                 setError(event.data.payload.message);
@@ -103,6 +107,7 @@ export const Swap = memo(function Swap() {
             </TabHeader>
             <IframeContainer>
                 <SwapsIframe
+                    $swapHeight={swapHeight}
                     $walletConnectOpen={walletConnectOpen}
                     ref={iframeRef}
                     src={SWAPS_IFRAME_URL}
