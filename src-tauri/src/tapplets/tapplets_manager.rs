@@ -496,6 +496,7 @@ impl TappletManager {
                 download_url.as_str(),
                 &in_progress_file_zip,
                 asset.source.is_mirror(),
+                None,
             )
             .await
             .map_err(|e| anyhow!("Error downloading version: {:?}. Error: {:?}", version, e))
@@ -509,6 +510,7 @@ impl TappletManager {
                         fallback_url.as_str(),
                         &in_progress_file_zip,
                         asset.source.is_mirror(),
+                        None,
                     )
                     .await
                     .map_err(|e| {

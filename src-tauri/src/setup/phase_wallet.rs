@@ -167,7 +167,9 @@ impl SetupPhaseImpl for WalletSetupPhase {
             ))
             .await;
 
-        binary_resolver.initialize_binary(Binaries::Wallet).await?;
+        binary_resolver
+            .initialize_binary(Binaries::Wallet, None)
+            .await?;
 
         progress_stepper
             .resolve_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::StartWallet))

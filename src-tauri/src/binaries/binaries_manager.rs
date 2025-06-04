@@ -30,6 +30,7 @@ use tauri_plugin_sentry::sentry;
 use crate::{
     download_utils::{extract, validate_checksum},
     github::request_client::RequestClient,
+    progress_trackers::progress_stepper::ChanneledStepUpdate,
 };
 
 use super::{
@@ -417,11 +418,12 @@ impl BinaryManager {
     pub async fn download_version_with_retries(
         &self,
         selected_version: Option<Version>,
+        progress_channel: Option<ChanneledStepUpdate>,
     ) -> Result<(), Error> {
         let mut last_error_message = String::new();
         for retry in 0..3 {
             match self
-                .download_selected_version(selected_version.clone())
+                .download_selected_version(selected_version.clone(), progress_channel.clone())
                 .await
             {
                 Ok(_) => return Ok(()),
@@ -444,6 +446,7 @@ impl BinaryManager {
     async fn download_selected_version(
         &self,
         selected_version: Option<Version>,
+        progress_channel: Option<ChanneledStepUpdate>,
     ) -> Result<(), Error> {
         debug!(target: LOG_TARGET,"Downloading version: {:?}", selected_version);
 
@@ -497,6 +500,7 @@ impl BinaryManager {
                 download_url.as_str(),
                 &in_progress_file_zip,
                 asset.source.is_mirror(),
+                None,
             )
             .await
             .map_err(|e| anyhow!("Error downloading version: {:?}. Error: {:?}", version, e))
@@ -510,6 +514,7 @@ impl BinaryManager {
                         fallback_url.as_str(),
                         &in_progress_file_zip,
                         asset.source.is_mirror(),
+                        None,
                     )
                     .await
                     .map_err(|e| {

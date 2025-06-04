@@ -23,6 +23,7 @@
 use crate::configs::config_core::{ConfigCore, ConfigCoreContent};
 use crate::configs::trait_config::ConfigImpl;
 use crate::github::ReleaseSource;
+use crate::progress_trackers::progress_stepper::ChanneledStepUpdate;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use regex::Regex;
@@ -266,7 +267,11 @@ impl BinaryResolver {
         Ok(base_dir.join(binary.binary_file_name(version)))
     }
 
-    pub async fn initialize_binary(&self, binary: Binaries) -> Result<(), Error> {
+    pub async fn initialize_binary(
+        &self,
+        binary: Binaries,
+        progress_channel: Option<ChanneledStepUpdate>,
+    ) -> Result<(), Error> {
         let mut manager = self
             .managers
             .get(&binary)
@@ -288,7 +293,7 @@ impl BinaryResolver {
         if highest_version.is_none() {
             highest_version = manager.select_highest_version();
             manager
-                .download_version_with_retries(highest_version.clone())
+                .download_version_with_retries(highest_version.clone(), progress_channel.clone())
                 .await?;
         }
 
@@ -297,7 +302,7 @@ impl BinaryResolver {
             manager.check_if_files_for_version_exist(highest_version.clone());
         if !check_if_files_exist {
             manager
-                .download_version_with_retries(highest_version.clone())
+                .download_version_with_retries(highest_version.clone(), progress_channel)
                 .await?;
         }
 

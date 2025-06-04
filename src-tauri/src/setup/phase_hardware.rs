@@ -163,23 +163,27 @@ impl SetupPhaseImpl for HardwareSetupPhase {
 
         let binary_resolver = BinaryResolver::current().read().await;
 
-        progress_stepper
-            .resolve_step(ProgressPlans::Hardware(
-                ProgressSetupHardwarePlan::BinariesGpuMiner,
-            ))
-            .await;
+        let gpu_miner_binary_progress_tracker = progress_stepper.channel_step_range_updates(
+            ProgressPlans::Hardware(ProgressSetupHardwarePlan::BinariesGpuMiner),
+            Some(ProgressPlans::Hardware(
+                ProgressSetupHardwarePlan::BinariesCpuMiner,
+            )),
+        );
 
         binary_resolver
-            .initialize_binary(Binaries::GpuMiner)
+            .initialize_binary(Binaries::GpuMiner, gpu_miner_binary_progress_tracker)
             .await?;
 
-        progress_stepper
-            .resolve_step(ProgressPlans::Hardware(
-                ProgressSetupHardwarePlan::BinariesCpuMiner,
-            ))
-            .await;
+        let cpu_miner_binary_progress_tracker = progress_stepper.channel_step_range_updates(
+            ProgressPlans::Hardware(ProgressSetupHardwarePlan::BinariesCpuMiner),
+            Some(ProgressPlans::Hardware(
+                ProgressSetupHardwarePlan::DetectGPU,
+            )),
+        );
 
-        binary_resolver.initialize_binary(Binaries::Xmrig).await?;
+        binary_resolver
+            .initialize_binary(Binaries::Xmrig, cpu_miner_binary_progress_tracker)
+            .await?;
 
         progress_stepper
             .resolve_step(ProgressPlans::Hardware(

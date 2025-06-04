@@ -20,14 +20,19 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use futures::executor::block_on;
 use futures::StreamExt;
 use std::path::Path;
 use std::path::PathBuf;
+use std::sync::atomic::AtomicU64;
+use std::sync::atomic::Ordering;
+use std::sync::Arc;
 use std::sync::LazyLock;
 use std::time::Duration;
 use tokio::fs;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
+use tokio::time::interval;
 
 use super::Release;
 use anyhow::{anyhow, Error};
@@ -180,7 +185,54 @@ impl RequestClient {
         head_response.map_err(|e| anyhow!("HEAD request failed with error: {}", e))
     }
 
-    pub async fn send_get_request(&self, url: &str) -> Result<Response, Error> {
+    pub async fn send_get_request(
+        &self,
+        url: &str,
+        chunk_callback: Option<Box<dyn Fn(u64, u64) + Send + Sync>>,
+    ) -> Result<Response, Error> {
+        // test
+        let accumulated_size = Arc::new(AtomicU64::new(0));
+        let accumulated_size_clone = Arc::clone(&accumulated_size);
+
+        let test = self
+            .client
+            .get(url)
+            .header("User-Agent", self.user_agent.clone())
+            .send()
+            .await?;
+
+        let content_length = test
+            .content_length()
+            .ok_or_else(|| anyhow!("Content length is not available"))?;
+
+        // Spawn a separate task for logging progress
+        tokio::spawn(async move {
+            let mut progress_interval = interval(Duration::from_secs(1));
+            loop {
+                progress_interval.tick().await;
+                let progress = accumulated_size_clone.load(Ordering::Relaxed);
+                info!(target: LOG_TARGET, "Progress: {} / {}", progress, content_length);
+
+                if progress >= content_length {
+                    info!(target: LOG_TARGET, "Download completed.");
+                    break;
+                }
+            }
+        });
+
+        test.bytes_stream()
+            .fold(0, |acc, chunk| {
+                let chunk_size = chunk.unwrap().len() as u64;
+                accumulated_size.fetch_add(chunk_size, Ordering::Relaxed);
+
+                if let Some(callback) = &chunk_callback {
+                    callback(acc, chunk_size);
+                }
+
+                async move { acc + chunk_size }
+            })
+            .await;
+
         let get_response = self
             .client
             .get(url)
@@ -250,7 +302,10 @@ impl RequestClient {
         &self,
         url: &str,
     ) -> Result<(Vec<Release>, String), anyhow::Error> {
-        let get_response = self.send_get_request(url).await.map_err(|e| anyhow!(e))?;
+        let get_response = self
+            .send_get_request(url, None)
+            .await
+            .map_err(|e| anyhow!(e))?;
         let etag = get_response
             .headers()
             .get("etag")
@@ -320,6 +375,7 @@ impl RequestClient {
         url: &str,
         destination: &Path,
         check_cache: bool,
+        chunk_callback: Option<Box<dyn Fn(u64, u64) + Send + Sync>>,
     ) -> Result<(), anyhow::Error> {
         if check_cache {
             //TODO (2/2) bring it back once cloudflare stops returning dynamic status
@@ -332,7 +388,7 @@ impl RequestClient {
             self.get_content_length_from_head_response(&head_response);
         let head_reponse_etag = self.get_etag_from_head_response(&head_response);
 
-        let get_response: reqwest::Response = self.send_get_request(url).await?;
+        let get_response: reqwest::Response = self.send_get_request(url, None).await?;
         let get_reposnse_etag = self.get_etag_from_head_response(&get_response);
         info!(target: LOG_TARGET, "[ DOWNLOAD ] Response etag");
         // Ensure the directory exists
@@ -409,7 +465,10 @@ impl RequestClient {
                 ));
             }
 
-            match self.download_file(url, destination, check_cache).await {
+            match self
+                .download_file(url, destination, check_cache, None)
+                .await
+            {
                 Ok(_) => break,
                 Err(e) => {
                     last_error_message = e.to_string();

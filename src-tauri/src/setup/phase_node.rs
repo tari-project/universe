@@ -176,7 +176,9 @@ impl SetupPhaseImpl for NodeSetupPhase {
             progress_stepper
                 .resolve_step(ProgressPlans::Node(ProgressSetupNodePlan::BinariesTor))
                 .await;
-            binary_resolver.initialize_binary(Binaries::Tor).await?;
+            binary_resolver
+                .initialize_binary(Binaries::Tor, None)
+                .await?;
         } else {
             progress_stepper.skip_step(ProgressPlans::Node(ProgressSetupNodePlan::BinariesTor));
         };
@@ -185,7 +187,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
             .resolve_step(ProgressPlans::Node(ProgressSetupNodePlan::BinariesNode))
             .await;
         binary_resolver
-            .initialize_binary(Binaries::MinotariNode)
+            .initialize_binary(Binaries::MinotariNode, None)
             .await?;
 
         if self.app_configuration.use_tor && !cfg!(target_os = "macos") {

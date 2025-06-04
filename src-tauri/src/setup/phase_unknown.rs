@@ -182,7 +182,7 @@ impl SetupPhaseImpl for UnknownSetupPhase {
             .await;
 
         binary_resolver
-            .initialize_binary(Binaries::MergeMiningProxy)
+            .initialize_binary(Binaries::MergeMiningProxy, None)
             .await?;
 
         progress_stepper
@@ -192,7 +192,7 @@ impl SetupPhaseImpl for UnknownSetupPhase {
             .await;
 
         binary_resolver
-            .initialize_binary(Binaries::ShaP2pool)
+            .initialize_binary(Binaries::ShaP2pool, None)
             .await?;
 
         let base_node_grpc_address = state.node_manager.get_grpc_address().await?;
