@@ -8,7 +8,6 @@ import MinerCount from '@app/containers/main/Dashboard/components/BlockExplorerM
 
 export default function BlockExplorerMini() {
     const { data, isLoading, isError } = useBlocks();
-
     const [stickyEntry, setStickyEntry] = useState<BlockData | null>(null);
     const [scrollList, setScrollList] = useState<BlockData[]>([]);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -51,9 +50,11 @@ export default function BlockExplorerMini() {
             if (data && data.length > 0) {
                 setScrollList(updateScrollList());
             }
-        }, 30000);
+        }, 30 * 1000);
 
-        return () => clearInterval(interval);
+        return () => {
+            clearInterval(interval);
+        };
     }, [data]);
 
     if (isLoading) {
