@@ -1,4 +1,12 @@
 {
+  "bubbles": {
+    "ago": "ago",
+    "block": "block",
+    "got-rewarded": "got rewarded",
+    "miners": "miners",
+    "pool": "pool",
+    "solving": "is being solved"
+  },
   "connection-to-node-lost": "Połączenie z węzłem kopania zostało utracone. Poczekaj, aż wznowi połącznie lub uruchom go ponownie.",
   "cpu-power": "Moc CPU",
   "current-block-time": "Aktualny czas bloku",

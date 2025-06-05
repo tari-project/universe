@@ -1,4 +1,12 @@
 {
+  "bubbles": {
+    "ago": "ago",
+    "block": "block",
+    "got-rewarded": "got rewarded",
+    "miners": "miners",
+    "pool": "pool",
+    "solving": "is being solved"
+  },
   "connection-to-node-lost": "Koneksi ke penambang terputus. Harap tunggu penambang untuk menyambung kembali atau mulai ulang penambang.",
   "cpu-power": "Daya CPU",
   "current-block-time": "Waktu blok saat ini",

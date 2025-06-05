@@ -1,4 +1,12 @@
 {
+  "bubbles": {
+    "ago": "ago",
+    "block": "block",
+    "got-rewarded": "got rewarded",
+    "miners": "miners",
+    "pool": "pool",
+    "solving": "is being solved"
+  },
   "connection-to-node-lost": "Verbindung zum Miner verloren. Bitte warte, bis der Miner sich wieder verbindet, oder starte den Miner neu.",
   "cpu-power": "CPU-Leistung",
   "current-block-time": "Aktuelle Blockzeit",

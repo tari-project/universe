@@ -1,4 +1,12 @@
 {
+  "bubbles": {
+    "ago": "ago",
+    "block": "block",
+    "got-rewarded": "got rewarded",
+    "miners": "miners",
+    "pool": "pool",
+    "solving": "is being solved"
+  },
   "connection-to-node-lost": "Madenciyle bağlantı kesildi. Lütfen madencinin yeniden bağlanmasını bekleyin veya madenciyi yeniden başlatın.",
   "cpu-power": "CPU Gücü",
   "current-block-time": "Geçerli blok zamanı",
