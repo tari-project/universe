@@ -148,10 +148,12 @@ impl ProcessCircuitBreaker {
         }
     }
 
+    #[allow(dead_code)]
     pub fn get_state(&self) -> &CircuitState {
         &self.state
     }
 
+    #[allow(dead_code)]
     pub fn get_failure_count(&self) -> u32 {
         self.failure_count
     }
@@ -168,6 +170,7 @@ impl ProcessCircuitBreaker {
         None
     }
 
+    #[allow(dead_code)]
     pub fn reset(&mut self) {
         info!(target: LOG_TARGET, "Circuit breaker reset for {}", self.process_name);
         self.state = CircuitState::Closed;
@@ -176,12 +179,14 @@ impl ProcessCircuitBreaker {
         self.last_failure_time = None;
     }
 
+    #[allow(dead_code)]
     pub fn force_open(&mut self) {
         warn!(target: LOG_TARGET, "Circuit breaker forced open for {}", self.process_name);
         self.state = CircuitState::Open;
         self.last_failure_time = Some(Instant::now());
     }
 
+    #[allow(dead_code)]
     pub fn configure_thresholds(&mut self, failure_threshold: u32, success_threshold: u32) {
         self.failure_threshold = failure_threshold;
         self.success_threshold = success_threshold;
