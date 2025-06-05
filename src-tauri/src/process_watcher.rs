@@ -24,14 +24,14 @@ use crate::binaries::{Binaries, BinaryResolver};
 use crate::binary_integrity::BinaryIntegrityChecker;
 use crate::configs::config_process_retry::{ConfigProcessRetry, ConfigProcessRetryContent};
 use crate::configs::trait_config::ConfigImpl;
-use crate::events::BinaryCorruptionPayload;
+use crate::events::{BinaryCorruptionPayload, BinaryRetryPayload, RetryReason};
 use crate::events_emitter::EventsEmitter;
 use crate::process_adapter::ProcessInstanceTrait;
 use crate::process_adapter::{HealthStatus, ProcessAdapter, StatusMonitor};
 use futures_util::future::FusedFuture;
 use log::{error, info, warn};
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicBool, AtomicU8};
+use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 use tari_shutdown::{Shutdown, ShutdownSignal};
@@ -195,6 +195,78 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
             }
         }
     }
+
+    async fn spawn_with_startup_retries(
+        &mut self,
+        base_path: PathBuf,
+        config_path: PathBuf,
+        log_path: PathBuf,
+        binary_path: PathBuf,
+        first_start: bool,
+    ) -> Result<(TAdapter::ProcessInstance, TAdapter::StatusMonitor), anyhow::Error> {
+        let name = self.adapter.name().to_string();
+        let max_attempts = *self.retry_config.max_startup_attempts();
+        let retry_delay = self.retry_config.startup_retry_delay();
+
+        for attempt in 1..=max_attempts {
+            // Emit startup attempt event
+            if attempt > 1 {
+                EventsEmitter::emit_binary_startup_attempt(BinaryRetryPayload {
+                    process_name: name.clone(),
+                    attempt_number: attempt,
+                    max_attempts,
+                    retry_reason: RetryReason::StartupFailure,
+                    next_retry_in_seconds: if attempt < max_attempts {
+                        Some(retry_delay.as_secs())
+                    } else {
+                        None
+                    },
+                }).await;
+            }
+
+            // Attempt to spawn the process
+            match self.adapter.spawn(
+                base_path.clone(),
+                config_path.clone(),
+                log_path.clone(),
+                binary_path.clone(),
+                first_start
+            ) {
+                Ok(result) => {
+                    info!(target: LOG_TARGET, "Successfully spawned {} on attempt {}", name, attempt);
+                    // Reset attempt counter on success
+                    self.startup_attempt_count.store(0, Ordering::SeqCst);
+                    return Ok(result);
+                }
+                Err(e) if attempt < max_attempts => {
+                    warn!(target: LOG_TARGET, "Startup attempt {} failed for {}: {}, retrying in {:?}", 
+                          attempt, name, e, retry_delay);
+                    
+                    // Update attempt counter
+                    self.startup_attempt_count.store(attempt, Ordering::SeqCst);
+                    
+                    // Wait before retrying
+                    tokio::time::sleep(retry_delay).await;
+                }
+                Err(e) => {
+                    // All attempts exhausted - emit permanent failure
+                    error!(target: LOG_TARGET, "All {} startup attempts failed for {}: {}", max_attempts, name, e);
+                    
+                    EventsEmitter::emit_binary_permanent_failure(BinaryRetryPayload {
+                        process_name: name.clone(),
+                        attempt_number: attempt,
+                        max_attempts,
+                        retry_reason: RetryReason::StartupFailure,
+                        next_retry_in_seconds: None,
+                    }).await;
+                    
+                    return Err(anyhow::anyhow!("Failed to start {} after {} attempts: {}", name, max_attempts, e));
+                }
+            }
+        }
+
+        unreachable!("Loop should have returned or errored before reaching this point")
+    }
 }
 
 impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
@@ -247,13 +319,17 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         info!(target: LOG_TARGET, "Using {:?} for {}", binary_path, name);
         let first_start = self
             .is_first_start
-            .load(std::sync::atomic::Ordering::SeqCst);
-        let (mut child, status_monitor) =
-            self.adapter
-                .spawn(base_path, config_path, log_path, binary_path, first_start)?;
+            .load(Ordering::SeqCst);
+        let (mut child, status_monitor) = self.spawn_with_startup_retries(
+            base_path, 
+            config_path, 
+            log_path, 
+            binary_path, 
+            first_start
+        ).await?;
         if first_start {
             self.is_first_start
-                .store(false, std::sync::atomic::Ordering::SeqCst);
+                .store(false, Ordering::SeqCst);
         }
         let status_monitor2 = status_monitor.clone();
         self.status_monitor = Some(status_monitor);
