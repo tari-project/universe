@@ -24,7 +24,7 @@ use std::path::PathBuf;
 
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
-use log::error;
+use log::{error, info, warn};
 use regex::Regex;
 use tari_common::configuration::Network;
 use tokio::{fs::File, io::AsyncReadExt};

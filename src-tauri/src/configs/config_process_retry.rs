@@ -59,6 +59,8 @@ pub struct ConfigProcessRetryContent {
     corruption_redownload_enabled: bool,
     /// Maximum number of re-download attempts for corrupted binaries
     max_corruption_redownload_attempts: u8,
+    /// Use lenient checksum validation (fallback strategies when strict validation fails)
+    use_lenient_checksum_validation: bool,
 }
 
 impl Default for ProcessSpecificConfig {
@@ -80,6 +82,7 @@ impl Default for ConfigProcessRetryContent {
             enable_corruption_detection: true,
             corruption_redownload_enabled: true,
             max_corruption_redownload_attempts: 3,
+            use_lenient_checksum_validation: true,
         }
     }
 }
@@ -114,6 +117,8 @@ impl ConfigProcessRetryContent {
     pub fn get_process_names(&self) -> Vec<String> {
         self.process_overrides.keys().cloned().collect()
     }
+
+
 }
 
 impl ConfigContentImpl for ConfigProcessRetryContent {}

@@ -148,7 +148,15 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         }
 
         // Check binary integrity if corruption detection is enabled
-        match BinaryIntegrityChecker::validate_binary_integrity_smart(&binary_path, binary, None).await {
+        let use_lenient = *self.retry_config.use_lenient_checksum_validation();
+        
+        let validation_result = if use_lenient {
+            BinaryIntegrityChecker::validate_binary_integrity_smart(&binary_path, binary, None).await
+        } else {
+            BinaryIntegrityChecker::validate_binary_integrity(&binary_path, binary).await
+        };
+        
+        match validation_result {
             Ok(true) => {
                 info!(target: LOG_TARGET, "Binary integrity check passed for {:?}", binary_path);
                 // Cache the binary hash for runtime checking

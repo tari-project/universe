@@ -303,6 +303,14 @@ impl BinaryIntegrityChecker {
         let hash = hasher.finalize();
         Ok(format!("{:x}", hash))
     }
+
+    /// Test method to validate checksum calculation matches external tools
+    #[cfg(test)]
+    pub async fn test_checksum_calculation(file_path: &Path, expected_hash: &str) -> Result<bool, anyhow::Error> {
+        let calculated_hash = Self::calculate_file_hash(file_path).await?;
+        info!(target: LOG_TARGET, "Test checksum - Expected: {}, Calculated: {}", expected_hash, calculated_hash);
+        Ok(calculated_hash == expected_hash)
+    }
 }
 
 #[cfg(test)]
@@ -350,5 +358,54 @@ mod tests {
             .await
             .unwrap();
         assert!(!is_invalid);
+    }
+
+    #[tokio::test]
+    async fn test_basic_integrity_validation() {
+        // Create a temporary file with reasonable size
+        let mut temp_file = NamedTempFile::new().unwrap();
+        temp_file.write_all(&vec![0u8; 2048]).unwrap(); // 2KB file
+        temp_file.flush().unwrap();
+
+        // Should pass basic integrity check
+        let is_valid = BinaryIntegrityChecker::validate_basic_integrity(temp_file.path())
+            .await
+            .unwrap();
+        assert!(is_valid);
+
+        // Test with too small file
+        let mut small_file = NamedTempFile::new().unwrap();
+        small_file.write_all(b"tiny").unwrap();
+        small_file.flush().unwrap();
+
+        let is_invalid = BinaryIntegrityChecker::validate_basic_integrity(small_file.path())
+            .await
+            .unwrap();
+        assert!(!is_invalid);
+    }
+
+    #[tokio::test]
+    async fn test_checksum_calculation_consistency() {
+        // Create a file with known content
+        let mut temp_file = NamedTempFile::new().unwrap();
+        let test_content = b"Hello, World! This is a test file for checksum validation.";
+        temp_file.write_all(test_content).unwrap();
+        temp_file.flush().unwrap();
+
+        // Calculate hash multiple times to ensure consistency
+        let hash1 = BinaryIntegrityChecker::calculate_file_hash(temp_file.path())
+            .await
+            .unwrap();
+        let hash2 = BinaryIntegrityChecker::calculate_file_hash(temp_file.path())
+            .await
+            .unwrap();
+
+        assert_eq!(hash1, hash2);
+        assert_eq!(hash1.len(), 64); // SHA256 produces 64 character hex string
+        
+        // Verify the hash is what we expect for this specific content
+        // You can verify this with: echo -n "Hello, World! This is a test file for checksum validation." | sha256sum
+        let expected_hash = "3c2b94cfcb90a5a1ff5de24fb08dd72ed19bc6e44d2c38c09841aa83eed07200";
+        assert_eq!(hash1, expected_hash);
     }
 }
