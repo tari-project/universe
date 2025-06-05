@@ -36,6 +36,5 @@ export const useIframeUrl = () => {
         return () => clearInterval(interval);
     }, [handleFetchUrl, url]);
 
-    // return url || urlRef.current;
-    return 'http://localhost:3000/swaps';
+    return url || urlRef.current;
 };
