@@ -37,6 +37,7 @@ use tokio::select;
 use tokio::task::JoinHandle;
 use tokio_util::task::TaskTracker;
 
+use crate::download_utils::set_permissions;
 use crate::process_killer::kill_process;
 use crate::process_utils::{launch_child_process, write_pid_file};
 
@@ -206,7 +207,11 @@ impl ProcessInstanceTrait for ProcessInstance {
         };
 
         self.handle = Some(task_tracker.spawn(async move {
-            crate::download_utils::set_permissions(&spec.file_path).await?;
+            if let Err(e) = set_permissions(&spec.file_path).await {
+                error!(target: LOG_TARGET, "{}", e);
+                sentry::capture_message(&e.to_string(), sentry::Level::Error);
+                return Err(e);
+            }
             // start
             info!(target: LOG_TARGET, "Launching process for: {}", spec.name);
             let mut child = launch_child_process(
