@@ -22,7 +22,7 @@
 
 use crate::binaries::{Binaries, BinaryResolver};
 use crate::binary_integrity::BinaryIntegrityChecker;
-use crate::configs::config_process_retry::{ConfigProcessRetry, ConfigProcessRetryContent};
+use crate::configs::config_process_retry::{ConfigProcessRetry, ConfigProcessRetryContent, ProcessSpecificConfig};
 use crate::configs::trait_config::ConfigImpl;
 use crate::events::{BinaryCorruptionPayload, BinaryRetryPayload, RetryReason};
 use crate::events_emitter::EventsEmitter;
@@ -70,6 +70,7 @@ pub struct ProcessWatcher<TAdapter: ProcessAdapter> {
     
     // Retry configuration
     retry_config: ConfigProcessRetryContent,
+    process_specific_config: ProcessSpecificConfig,
     
     // State tracking
     startup_attempt_count: Arc<AtomicU8>,
@@ -96,6 +97,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
             stats_broadcast,
             is_first_start: Arc::new(AtomicBool::new(true)),
             retry_config: ConfigProcessRetryContent::default(),
+            process_specific_config: ProcessSpecificConfig::default(),
             startup_attempt_count: Arc::new(AtomicU8::new(0)),
             runtime_restart_count: Arc::new(AtomicU8::new(0)),
             has_been_healthy: Arc::new(AtomicBool::new(false)),
@@ -108,8 +110,16 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
     pub async fn load_retry_config(&mut self) -> Result<(), anyhow::Error> {
         let config_instance = ConfigProcessRetry::current().await;
         let config_lock = config_instance.read().await;
+        let process_name = self.adapter.name();
+        
+        // Get process-specific config or fall back to defaults
+        let process_config = config_lock._get_content()
+            .get_config_for_process(process_name);
+        
         self.retry_config = config_lock._get_content().clone();
-        info!(target: LOG_TARGET, "Loaded retry config: {:?}", self.retry_config);
+        self.process_specific_config = process_config.clone();
+        
+        info!(target: LOG_TARGET, "Loaded retry config for process {}: {:?}", process_name, self.process_specific_config);
         Ok(())
     }
 
@@ -175,7 +185,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
 
         info!(target: LOG_TARGET, "Attempting to recover from binary corruption for {}", process_name);
         
-        match BinaryIntegrityChecker::handle_corruption(binary, corrupted_path).await {
+        match BinaryIntegrityChecker::handle_corruption(binary, corrupted_path, &process_name).await {
             Ok(new_path) => {
                 info!(target: LOG_TARGET, "Successfully recovered from binary corruption for {}", process_name);
                 
@@ -206,8 +216,8 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         first_start: bool,
     ) -> Result<(TAdapter::ProcessInstance, TAdapter::StatusMonitor), anyhow::Error> {
         let name = self.adapter.name().to_string();
-        let max_attempts = *self.retry_config.max_startup_attempts();
-        let retry_delay = self.retry_config.startup_retry_delay();
+        let max_attempts = self.process_specific_config.max_startup_attempts;
+        let retry_delay = self.process_specific_config.startup_retry_delay();
 
         for attempt in 1..=max_attempts {
             // Emit startup attempt event
