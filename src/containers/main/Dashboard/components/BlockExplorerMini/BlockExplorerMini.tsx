@@ -14,6 +14,7 @@ export default function BlockExplorerMini() {
     const isFirstRender = useRef(true);
 
     useEffect(() => {
+        let stickyTimeout: NodeJS.Timeout;
         const updateStickyEntry = (isSolved: boolean) => {
             if (!data || data.length === 0) return null;
             return {
@@ -39,10 +40,10 @@ export default function BlockExplorerMini() {
                 isFirstRender.current = false;
             } else {
                 setStickyEntry(updateStickyEntry(true));
-                setTimeout(() => {
+                stickyTimeout = setTimeout(() => {
                     setStickyEntry((prev) => (prev ? { ...prev, isSolved: false } : null));
                     setScrollList(updateScrollList());
-                }, 4000);
+                }, 3 * 1000);
             }
         }
 
@@ -54,6 +55,9 @@ export default function BlockExplorerMini() {
 
         return () => {
             clearInterval(interval);
+            if (stickyTimeout) {
+                clearTimeout(stickyTimeout);
+            }
         };
     }, [data]);
 
