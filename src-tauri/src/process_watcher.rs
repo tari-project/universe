@@ -39,8 +39,7 @@ use tokio::task::JoinHandle;
 
 use tokio::select;
 use tokio::sync::watch;
-use tokio::time::sleep;
-use tokio::time::{Instant, MissedTickBehavior};
+use tokio::time::{sleep, Instant, MissedTickBehavior};
 use tokio_util::task::TaskTracker;
 
 const LOG_TARGET: &str = "tari::universe::process_watcher";
@@ -339,6 +338,10 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         let task_tracker = task_tracker.clone();
         let stop_on_exit_codes = self.stop_on_exit_codes.clone();
         let stats_broadcast = self.stats_broadcast.clone();
+        let retry_config = self.retry_config.clone();
+        let runtime_restart_count = Arc::new(AtomicU8::new(0));
+        let has_been_healthy = Arc::new(AtomicBool::new(false));
+        
         self.watcher_task = Some(task_tracker.clone().spawn(async move {
             child.start(task_tracker.clone()).await?;
             let mut uptime = Instant::now();
@@ -374,7 +377,10 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                             inner_shutdown.clone(),
                             &mut warning_count,
                             &stop_on_exit_codes,
-                            &mut stats
+                            &mut stats,
+                            &retry_config,
+                            runtime_restart_count.clone(),
+                            has_been_healthy.clone(),
                         ).await? {
                             return Ok(exit_code);
                         }
@@ -444,6 +450,9 @@ async fn do_health_check<TStatusMonitor: StatusMonitor, TProcessInstance: Proces
     warning_count: &mut u32,
     stop_on_exit_codes: &[i32],
     stats: &mut ProcessWatcherStats,
+    retry_config: &ConfigProcessRetryContent,
+    runtime_restart_count: Arc<AtomicU8>,
+    has_been_healthy: Arc<AtomicBool>,
 ) -> Result<Option<i32>, anyhow::Error> {
     let mut is_healthy = false;
     let mut ping_failed = false;
@@ -464,6 +473,10 @@ async fn do_health_check<TStatusMonitor: StatusMonitor, TProcessInstance: Proces
             HealthStatus::Healthy => {
                 *warning_count = 0;
                 is_healthy = true;
+                // Mark as healthy if this is the first time
+                if !has_been_healthy.load(Ordering::SeqCst) {
+                    has_been_healthy.store(true, Ordering::SeqCst);
+                }
             }
             HealthStatus::Warning => {
                 stats.num_warnings += 1;
@@ -473,6 +486,10 @@ async fn do_health_check<TStatusMonitor: StatusMonitor, TProcessInstance: Proces
                     *warning_count = 0;
                 } else {
                     is_healthy = true;
+                    // Mark as healthy if this is the first time
+                    if !has_been_healthy.load(Ordering::SeqCst) {
+                        has_been_healthy.store(true, Ordering::SeqCst);
+                    }
                 }
             }
             HealthStatus::Unhealthy => {
@@ -516,24 +533,123 @@ async fn do_health_check<TStatusMonitor: StatusMonitor, TProcessInstance: Proces
                     //   return Err(e);
                 }
             }
-            // Restart dead app
-            sleep(Duration::from_secs(1)).await;
-            warn!(target: LOG_TARGET, "Restarting {} after health check failure", name);
-            *uptime = Instant::now();
-            stats.num_restarts += 1;
-            stats.current_uptime = uptime.elapsed();
-            match status_monitor3.handle_unhealthy().await {
-                Ok(_) => {}
+            // Handle runtime restart with retry logic
+            match handle_runtime_restart(
+                child,
+                status_monitor3,
+                &name,
+                uptime,
+                task_tracker,
+                stats,
+                retry_config,
+                runtime_restart_count,
+                has_been_healthy,
+            ).await {
+                Ok(should_continue) => {
+                    if !should_continue {
+                        // Permanent failure - exit the watcher
+                        return Ok(Some(1));
+                    }
+                }
                 Err(e) => {
-                    error!(target: LOG_TARGET, "Failed to handle unhealthy {} status: {}", name, e)
+                    error!(target: LOG_TARGET, "Failed to handle runtime restart for {}: {}", name, e);
+                    return Err(e);
                 }
             }
-            child.start(task_tracker).await?;
-            // Wait for a bit before checking health again
-            // sleep(Duration::from_secs(10)).await;
         }
     } else {
         stats.current_uptime = uptime.elapsed();
     }
     Ok(None)
+}
+
+#[allow(clippy::too_many_arguments)]
+async fn handle_runtime_restart<TStatusMonitor: StatusMonitor, TProcessInstance: ProcessInstanceTrait>(
+    child: &mut TProcessInstance,
+    status_monitor: TStatusMonitor,
+    name: &str,
+    uptime: &mut Instant,
+    task_tracker: TaskTracker,
+    stats: &mut ProcessWatcherStats,
+    retry_config: &ConfigProcessRetryContent,
+    runtime_restart_count: Arc<AtomicU8>,
+    has_been_healthy: Arc<AtomicBool>,
+) -> Result<bool, anyhow::Error> {
+    // Only count as runtime failure if the process has been healthy before
+    let is_runtime_failure = has_been_healthy.load(Ordering::SeqCst);
+    
+    if !is_runtime_failure {
+        // This is still startup phase, use normal restart without counting against runtime retries
+        warn!(target: LOG_TARGET, "Restarting {} during startup phase", name);
+        *uptime = Instant::now();
+        stats.num_restarts += 1;
+        stats.current_uptime = uptime.elapsed();
+        
+        match status_monitor.handle_unhealthy().await {
+            Ok(_) => {}
+            Err(e) => {
+                error!(target: LOG_TARGET, "Failed to handle unhealthy {} status: {}", name, e)
+            }
+        }
+        
+        child.start(task_tracker).await?;
+        sleep(Duration::from_secs(1)).await;
+        return Ok(true);
+    }
+    
+    // This is a runtime failure - check retry limits
+    let current_restart_count = runtime_restart_count.load(Ordering::SeqCst);
+    let max_attempts = *retry_config.max_runtime_restart_attempts();
+    
+    if current_restart_count >= max_attempts {
+        // All runtime restart attempts exhausted
+        error!(target: LOG_TARGET, "All {} runtime restart attempts exhausted for {}", max_attempts, name);
+        
+        EventsEmitter::emit_binary_permanent_failure(BinaryRetryPayload {
+            process_name: name.to_string(),
+            attempt_number: current_restart_count + 1,
+            max_attempts,
+            retry_reason: RetryReason::RuntimeCrash,
+            next_retry_in_seconds: None,
+        }).await;
+        
+        return Ok(false); // Don't continue - permanent failure
+    }
+    
+    // Increment restart count
+    let new_count = current_restart_count + 1;
+    runtime_restart_count.store(new_count, Ordering::SeqCst);
+    
+    // Emit runtime restart event
+    let retry_delay = retry_config.runtime_restart_delay();
+    EventsEmitter::emit_binary_runtime_restart(BinaryRetryPayload {
+        process_name: name.to_string(),
+        attempt_number: new_count,
+        max_attempts,
+        retry_reason: RetryReason::RuntimeCrash,
+        next_retry_in_seconds: Some(retry_delay.as_secs()),
+    }).await;
+    
+    warn!(target: LOG_TARGET, "Runtime restart attempt {} of {} for {}", new_count, max_attempts, name);
+    
+    // Wait for the configured delay
+    sleep(retry_delay).await;
+    
+    // Reset uptime and stats
+    *uptime = Instant::now();
+    stats.num_restarts += 1;
+    stats.current_uptime = uptime.elapsed();
+    
+    // Handle unhealthy status
+    match status_monitor.handle_unhealthy().await {
+        Ok(_) => {}
+        Err(e) => {
+            error!(target: LOG_TARGET, "Failed to handle unhealthy {} status: {}", name, e)
+        }
+    }
+    
+    // Start the process again
+    child.start(task_tracker).await?;
+    
+    Ok(true) // Continue monitoring
 }
