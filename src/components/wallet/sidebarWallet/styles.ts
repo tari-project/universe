@@ -13,6 +13,8 @@ export const Wrapper = styled.div`
     width: 100%;
     max-height: clamp(10vh, 600px, 55vh);
     gap: 10px;
+    position: relative;
+    overflow: scroll;
 `;
 
 export const DetailsCard = styled(m.div)`
@@ -20,7 +22,7 @@ export const DetailsCard = styled(m.div)`
     border-radius: 20px;
     padding: 14px;
     width: 100%;
-    min-height: 170px;
+
     box-shadow: 10px 10px 40px 0 rgba(0, 0, 0, 0.06);
     position: relative;
     overflow: hidden;
@@ -50,6 +52,5 @@ export const DetailsCardContent = styled.div`
     flex-direction: column;
     display: flex;
     width: 100%;
-    height: 100%;
 `;
 export const SwapsWrapper = styled(m.div)``;

@@ -1,26 +1,12 @@
-import { Wrapper } from './styles.ts';
 import HistoryList from '@app/components/transactions/history/HistoryList.tsx';
-import { useEffect, useRef } from 'react';
+import { Wrapper } from './styles.ts';
 
 interface WalletHistoryProps {
-    handleScroll: (scrolling: boolean) => void;
+    height?: number;
 }
-export default function WalletHistory({ handleScroll }: WalletHistoryProps) {
-    const ref = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        const wrapper = ref.current;
-        wrapper?.addEventListener('scroll', () => handleScroll(true));
-        wrapper?.addEventListener('scrollend', () => handleScroll(false));
-
-        return () => {
-            wrapper?.removeEventListener('scroll', () => handleScroll(true));
-            wrapper?.removeEventListener('scrollend', () => handleScroll(false));
-        };
-    }, [handleScroll]);
-
+export default function WalletHistory({ height = 700 }: WalletHistoryProps) {
     return (
-        <Wrapper ref={ref}>
+        <Wrapper style={{ height }}>
             <HistoryList />
         </Wrapper>
     );
