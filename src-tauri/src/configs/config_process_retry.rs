@@ -1,0 +1,140 @@
+// Copyright 2024. The Tari Project
+//
+// Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
+// following conditions are met:
+//
+// 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+// disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
+// following disclaimer in the documentation and/or other materials provided with the distribution.
+//
+// 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
+// products derived from this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+// INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+// USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+use getset::{Getters, Setters};
+use serde::{Deserialize, Serialize};
+use std::sync::LazyLock;
+use tauri::AppHandle;
+use tokio::sync::RwLock;
+
+use crate::events_emitter::EventsEmitter;
+
+use super::trait_config::{ConfigContentImpl, ConfigImpl};
+
+static INSTANCE: LazyLock<RwLock<ConfigProcessRetry>> = LazyLock::new(|| RwLock::new(ConfigProcessRetry::new()));
+
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+#[serde(rename_all = "snake_case")]
+#[serde(default)]
+#[derive(Getters, Setters)]
+#[getset(get = "pub", set = "pub")]
+pub struct ConfigProcessRetryContent {
+    /// Maximum number of startup attempts before giving up
+    max_startup_attempts: u8,
+    /// Delay between startup retry attempts in seconds
+    startup_retry_delay_secs: u64,
+    /// Maximum number of runtime restart attempts before giving up
+    max_runtime_restart_attempts: u8,
+    /// Delay between runtime restart attempts in seconds
+    runtime_restart_delay_secs: u64,
+    /// Enable binary corruption detection during startup and runtime
+    enable_corruption_detection: bool,
+    /// Enable automatic re-download of corrupted binaries
+    corruption_redownload_enabled: bool,
+    /// Maximum number of re-download attempts for corrupted binaries
+    max_corruption_redownload_attempts: u8,
+}
+
+impl Default for ConfigProcessRetryContent {
+    fn default() -> Self {
+        Self {
+            max_startup_attempts: 10,
+            startup_retry_delay_secs: 5,
+            max_runtime_restart_attempts: 3,
+            runtime_restart_delay_secs: 10,
+            enable_corruption_detection: true,
+            corruption_redownload_enabled: true,
+            max_corruption_redownload_attempts: 3,
+        }
+    }
+}
+
+impl ConfigProcessRetryContent {
+    pub fn startup_retry_delay(&self) -> std::time::Duration {
+        std::time::Duration::from_secs(self.startup_retry_delay_secs)
+    }
+
+    pub fn runtime_restart_delay(&self) -> std::time::Duration {
+        std::time::Duration::from_secs(self.runtime_restart_delay_secs)
+    }
+}
+
+impl ConfigContentImpl for ConfigProcessRetryContent {
+    fn content_key() -> &'static str {
+        "process_retry"
+    }
+
+    fn is_enabled(&self) -> bool {
+        true
+    }
+}
+
+pub struct ConfigProcessRetry {
+    inner: ConfigProcessRetryContent,
+}
+
+impl ConfigProcessRetry {
+    pub fn new() -> Self {
+        Self {
+            inner: ConfigProcessRetryContent::default(),
+        }
+    }
+
+    pub async fn current() -> &'static LazyLock<RwLock<ConfigProcessRetry>> {
+        &INSTANCE
+    }
+}
+
+#[async_trait::async_trait]
+impl ConfigImpl<ConfigProcessRetryContent> for ConfigProcessRetry {
+    fn get_inner(&self) -> &ConfigProcessRetryContent {
+        &self.inner
+    }
+
+    fn set_inner(&mut self, inner: ConfigProcessRetryContent) {
+        self.inner = inner;
+    }
+
+    async fn on_config_loaded(_config: &ConfigProcessRetryContent, _app_handle: &AppHandle) -> Result<(), anyhow::Error> {
+        // Emit event to notify frontend of loaded config
+        EventsEmitter::emit_process_retry_config_loaded(
+            _config.clone(),
+        )
+        .await;
+        Ok(())
+    }
+
+    async fn on_config_updated(_config: &ConfigProcessRetryContent, _app_handle: &AppHandle) -> Result<(), anyhow::Error> {
+        // Emit event to notify frontend of updated config
+        EventsEmitter::emit_process_retry_config_updated(
+            _config.clone(),
+        )
+        .await;
+        Ok(())
+    }
+}
+
+impl Default for ConfigProcessRetry {
+    fn default() -> Self {
+        Self::new()
+    }
+}
