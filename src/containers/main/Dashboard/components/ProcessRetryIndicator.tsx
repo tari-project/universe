@@ -65,31 +65,29 @@ export function ProcessRetryIndicator() {
   const [isMinimized, setIsMinimized] = useState(false);
 
   useEffect(() => {
-    // This would integrate with the actual event listener
-    // For now, this is a placeholder for the implementation
-    const handleBackendStateUpdate = (event: any) => {
-      switch (event.event_type) {
+    const handleBackendStateUpdate = (event: CustomEvent) => {
+      const backendEvent = event.detail;
+      switch (backendEvent.event_type) {
         case 'BinaryStartupAttempt':
         case 'BinaryRuntimeRestart':
-          handleRetryEvent(event.payload as BinaryRetryEvent);
+          handleRetryEvent(backendEvent.payload as BinaryRetryEvent);
           break;
         case 'BinaryPermanentFailure':
-          handlePermanentFailure(event.payload.process_name);
+          handlePermanentFailure(backendEvent.payload.process_name);
           break;
         case 'BinaryCorruptionDetected':
-          handleCorruptionEvent(event.payload as BinaryCorruptionEvent);
+          handleCorruptionEvent(backendEvent.payload as BinaryCorruptionEvent);
           break;
         case 'BinaryIntegrityRestored':
-          handleIntegrityRestored(event.payload);
+          handleIntegrityRestored(backendEvent.payload);
           break;
       }
     };
 
-    // Mock event listener setup - replace with actual implementation
-    // window.addEventListener('backend_state_update', handleBackendStateUpdate);
+    window.addEventListener('backend_state_update', handleBackendStateUpdate as EventListener);
     
     return () => {
-      // window.removeEventListener('backend_state_update', handleBackendStateUpdate);
+      window.removeEventListener('backend_state_update', handleBackendStateUpdate as EventListener);
     };
   }, []);
 
