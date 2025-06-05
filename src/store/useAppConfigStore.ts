@@ -22,7 +22,7 @@ const configCoreInitialState: ConfigCore = {
     airdrop_tokens: undefined,
     last_binaries_update_timestamp: '',
     p2pool_stats_server_port: undefined,
-    universal_miner_initialized_exchange_id: undefined,
+    universal_miner_exchange_id: undefined,
 };
 
 const configWalletInitialState: ConfigWallet = {
