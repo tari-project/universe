@@ -919,7 +919,7 @@ impl SetupManager {
     ) -> Result<(), String> {
         let state = app_handle.state::<UniverseAppState>();
         let mut config = state.in_memory_config.write().await;
-        let new_config = DynamicMemoryConfig::init_universal(&selected_miner);
+        let new_config = DynamicMemoryConfig::init_exchange_miner(&selected_miner.id);
         let new_config_cloned = new_config.clone();
         *config = new_config;
 
