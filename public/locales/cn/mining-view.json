@@ -4,7 +4,8 @@
     "block": "block",
     "got-rewarded": "got rewarded",
     "miners": "miners",
-    "pool": "pool",
+    "pool": "Pool",
+    "solved": "solved",
     "solving": "is being solved"
   },
   "connection-to-node-lost": "与矿工的连接丢失。请等待矿机重新连接或重启矿机.",

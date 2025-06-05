@@ -4,7 +4,8 @@
     "block": "block",
     "got-rewarded": "got rewarded",
     "miners": "miners",
-    "pool": "pool",
+    "pool": "Pool",
+    "solved": "solved",
     "solving": "is being solved"
   },
   "connection-to-node-lost": "Madenciyle bağlantı kesildi. Lütfen madencinin yeniden bağlanmasını bekleyin veya madenciyi yeniden başlatın.",

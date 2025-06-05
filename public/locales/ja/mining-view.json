@@ -4,7 +4,8 @@
     "block": "block",
     "got-rewarded": "got rewarded",
     "miners": "miners",
-    "pool": "pool",
+    "pool": "Pool",
+    "solved": "solved",
     "solving": "is being solved"
   },
   "connection-to-node-lost": "マイナーへの接続が失われました。マイナーが再接続するか、再起動するのをお待ちください。",

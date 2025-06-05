@@ -4,7 +4,8 @@
     "block": "block",
     "got-rewarded": "got rewarded",
     "miners": "miners",
-    "pool": "pool",
+    "pool": "Pool",
+    "solved": "solved",
     "solving": "is being solved"
   },
   "connection-to-node-lost": "Соединение с майнером потеряно. Пожалуйста, подождите, пока майнер переподключится, или перезапустите его.",

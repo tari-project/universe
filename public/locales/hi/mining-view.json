@@ -4,7 +4,8 @@
     "block": "block",
     "got-rewarded": "got rewarded",
     "miners": "miners",
-    "pool": "pool",
+    "pool": "Pool",
+    "solved": "solved",
     "solving": "is being solved"
   },
   "connection-to-node-lost": "माइनर से कनेक्शन खो गया। कृपया माइनर के पुनः कनेक्ट होने या पुनः आरंभ करने की प्रतीक्षा करें।",
