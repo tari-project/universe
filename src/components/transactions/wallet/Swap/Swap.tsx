@@ -33,16 +33,18 @@ export const Swap = memo(function Swap() {
     const [walletConnectOpen, setWalletConnectOpen] = useState(false);
     const [swapHeight, setSwapHeight] = useState(0);
     const iframeUrl = useIframeUrl();
-
     const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
     const { t } = useTranslation(['wallet'], { useSuspense: false });
 
     const handleSetTheme = useCallback(() => {
-        if (iframeRef.current) {
-            iframeRef.current.contentWindow?.postMessage({ type: 'SET_THEME', payload: { theme } }, '*');
-        }
-    }, [theme]);
+        if (!iframeUrl) return;
+        setTimeout(() => {
+            if (iframeRef.current) {
+                iframeRef.current.contentWindow?.postMessage({ type: 'SET_THEME', payload: { theme } }, '*');
+            }
+        }, 1000);
+    }, [iframeUrl, theme]);
 
     useEffect(() => {
         // Keep the iframe theme in sync with the app theme
