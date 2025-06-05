@@ -64,7 +64,8 @@ impl BinaryIntegrityChecker {
         Self::calculate_file_hash(binary_path).await
     }
 
-    /// Quick integrity check using cached hash
+    #[allow(dead_code)]
+    /// Quick integrity check using cached hash (for future use)
     pub async fn verify_cached_integrity(
         binary_path: &Path,
         cached_hash: &str,

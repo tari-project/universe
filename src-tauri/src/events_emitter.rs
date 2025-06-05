@@ -851,6 +851,7 @@ impl EventsEmitter {
         }
     }
 
+    #[allow(dead_code)]
     pub async fn emit_process_retry_config_loaded(payload: ConfigProcessRetryContent) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
@@ -865,6 +866,7 @@ impl EventsEmitter {
         }
     }
 
+    #[allow(dead_code)]
     pub async fn emit_process_retry_config_updated(payload: ConfigProcessRetryContent) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {

@@ -73,7 +73,9 @@ pub struct ProcessWatcher<TAdapter: ProcessAdapter> {
     
     // State tracking
     startup_attempt_count: Arc<AtomicU8>,
+    #[allow(dead_code)]
     runtime_restart_count: Arc<AtomicU8>,
+    #[allow(dead_code)]
     has_been_healthy: Arc<AtomicBool>,
     last_binary_hash: Option<String>,
     binary_path: Option<PathBuf>,
@@ -302,10 +304,10 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         
         // Load retry configuration
         self.load_retry_config().await?;
-        self.set_binary_type(binary.clone());
+        self.set_binary_type(binary);
         
         // Try to get binary with corruption checking and retries
-        let binary_path = self.get_binary_with_integrity_check(binary.clone()).await?;
+        let binary_path = self.get_binary_with_integrity_check(binary).await?;
         self.kill_previous_instances(base_path.clone(), &binary_path)
             .await?;
 

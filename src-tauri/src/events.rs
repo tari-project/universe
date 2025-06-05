@@ -87,7 +87,9 @@ pub enum EventType {
     BinaryPermanentFailure,
     BinaryCorruptionDetected,
     BinaryIntegrityRestored,
+    #[allow(dead_code)]
     ProcessRetryConfigLoaded,
+    #[allow(dead_code)]
     ProcessRetryConfigUpdated,
 }
 
@@ -224,7 +226,9 @@ pub struct BinaryRetryPayload {
 pub enum RetryReason {
     StartupFailure,
     RuntimeCrash,
+    #[allow(dead_code)]
     BinaryCorruption,
+    #[allow(dead_code)]
     HealthCheckFailure,
 }
 
