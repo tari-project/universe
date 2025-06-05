@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { BinaryRetryEvent, BinaryCorruptionEvent, AlertSeverity } from '../../../../types/retry-config';
-import LinearProgress from '../../../../components/elements/LinearProgress';
-import Typography from '../../../../components/elements/Typography';
-import Button from '../../../../components/elements/buttons/Button';
+import { LinearProgress } from '../../../../components/elements/LinearProgress';
+import { Typography } from '../../../../components/elements/Typography';
+import { Button } from '../../../../components/elements/buttons/Button';
 
 const Container = styled.div`
   position: fixed;
@@ -13,11 +13,11 @@ const Container = styled.div`
   max-height: 300px;
   overflow-y: auto;
   z-index: 1000;
-  background: ${({ theme }) => theme.colors.accent};
+  background: ${({ theme }) => theme.palette.background.accent};
   border-radius: 8px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   padding: 12px;
-  border: 1px solid ${({ theme }) => theme.colors.primary};
+  border: 1px solid ${({ theme }) => theme.palette.primary.main};
 `;
 
 const RetryItem = styled.div<{ $severity: AlertSeverity }>`
@@ -27,17 +27,17 @@ const RetryItem = styled.div<{ $severity: AlertSeverity }>`
   border-left: 4px solid ${({ theme, $severity }) => {
     switch ($severity) {
       case AlertSeverity.Critical:
-        return theme.colors.error || '#ff4444';
+        return theme.palette.error?.main || '#ff4444';
       case AlertSeverity.Error:
-        return theme.colors.error || '#ff4444';
+        return theme.palette.error?.main || '#ff4444';
       case AlertSeverity.Warning:
-        return theme.colors.warning || '#ffaa00';
+        return theme.palette.warning?.main || '#ffaa00';
       case AlertSeverity.Info:
       default:
-        return theme.colors.primary;
+        return theme.palette.primary.main;
     }
   }};
-  background: ${({ theme }) => theme.colors.darkAlpha};
+  background: ${({ theme }) => theme.palette.background.default};
 `;
 
 const FlexRow = styled.div`
@@ -59,7 +59,7 @@ const ProgressContainer = styled.div`
 
 const TimeRemaining = styled.div`
   font-size: 0.75rem;
-  color: ${({ theme }) => theme.colors.grey};
+  color: ${({ theme }) => theme.palette.text.secondary};
   margin-top: 4px;
 `;
 
@@ -70,14 +70,14 @@ const StatusIcon = styled.div<{ $severity: AlertSeverity }>`
   background: ${({ theme, $severity }) => {
     switch ($severity) {
       case AlertSeverity.Critical:
-        return theme.colors.error || '#ff4444';
+        return theme.palette.error?.main || '#ff4444';
       case AlertSeverity.Error:
-        return theme.colors.error || '#ff4444';
+        return theme.palette.error?.main || '#ff4444';
       case AlertSeverity.Warning:
-        return theme.colors.warning || '#ffaa00';
+        return theme.palette.warning?.main || '#ffaa00';
       case AlertSeverity.Info:
       default:
-        return theme.colors.primary;
+        return theme.palette.primary.main;
     }
   }};
   display: flex;
@@ -242,12 +242,12 @@ export function ProcessRetryIndicator() {
   return (
     <Container>
       <FlexBetween>
-        <Typography variant="subtitle2" style={{ fontWeight: 'bold' }}>
+        <Typography variant="h6" style={{ fontWeight: 'bold' }}>
           Process Status
         </Typography>
         <Button
           onClick={() => setIsMinimized(!isMinimized)}
-          variant="text"
+          variant="secondary"
           size="small"
         >
           {isMinimized ? '▼' : '▲'}
@@ -265,12 +265,12 @@ export function ProcessRetryIndicator() {
             <RetryItem key={retry.id} $severity={severity}>
               <FlexRow>
                 {getSeverityIcon(severity)}
-                <Typography variant="body2" style={{ fontWeight: 'bold' }}>
+                <Typography variant="p" style={{ fontWeight: 'bold' }}>
                   {retry.process_name}
                 </Typography>
               </FlexRow>
               
-              <Typography variant="caption" style={{ color: 'inherit', opacity: 0.7 }}>
+              <Typography variant="span" style={{ color: 'inherit', opacity: 0.7, fontSize: '0.8rem' }}>
                 {retry.retry_reason} - Attempt {retry.attempt_number} of {retry.max_attempts}
               </Typography>
 
@@ -278,7 +278,6 @@ export function ProcessRetryIndicator() {
                 <ProgressContainer>
                   <LinearProgress 
                     value={progress}
-                    color={severity === AlertSeverity.Critical ? 'error' : 'primary'}
                   />
                   <TimeRemaining>{timeRemaining}</TimeRemaining>
                 </ProgressContainer>
@@ -292,18 +291,18 @@ export function ProcessRetryIndicator() {
           <RetryItem key={corruption.id} $severity={AlertSeverity.Error}>
             <FlexRow>
               <StatusIcon $severity={AlertSeverity.Error}>!</StatusIcon>
-              <Typography variant="body2" style={{ fontWeight: 'bold' }}>
+              <Typography variant="p" style={{ fontWeight: 'bold' }}>
                 {corruption.process_name}
               </Typography>
             </FlexRow>
             
-            <Typography variant="caption" style={{ color: 'inherit', opacity: 0.7 }}>
+            <Typography variant="span" style={{ color: 'inherit', opacity: 0.7, fontSize: '0.8rem' }}>
               Binary corruption detected
             </Typography>
             
             {corruption.redownload_initiated && (
               <div style={{ marginTop: '8px' }}>
-                <Typography variant="caption" style={{ color: '#4caf50' }}>
+                <Typography variant="span" style={{ color: '#4caf50', fontSize: '0.8rem' }}>
                   <StatusIcon $severity={AlertSeverity.Info} style={{ display: 'inline-block', marginRight: '4px', backgroundColor: '#4caf50' }}>✓</StatusIcon>
                   Re-download initiated
                 </Typography>
