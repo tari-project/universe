@@ -52,19 +52,80 @@ impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
         checksum_path: PathBuf,
         asset_name: &str,
     ) -> Result<String, Error> {
+        info!(target: LOG_TARGET, "Reading SHA256SUMS file from: {:?}", checksum_path);
+        info!(target: LOG_TARGET, "Looking for checksum for asset: {}", asset_name);
+        
         let mut file_sha256 = File::open(checksum_path.clone()).await?;
         let mut buffer_sha256 = Vec::new();
         file_sha256.read_to_end(&mut buffer_sha256).await?;
         let contents =
             String::from_utf8(buffer_sha256).expect("Failed to read file contents as UTF-8");
 
-        let xmrig_hash = contents
-            .lines()
-            .find(|line| line.contains(asset_name))
-            .and_then(|line| line.split_whitespace().next())
-            .map(|hash| hash.to_string());
+        info!(target: LOG_TARGET, "SHA256SUMS file contents:\n{}", contents);
+        
+        // Log all lines to understand the format
+        for (i, line) in contents.lines().enumerate() {
+            info!(target: LOG_TARGET, "SHA256SUMS line {}: {}", i + 1, line);
+        }
 
-        xmrig_hash.ok_or(anyhow!("No checksum was found for xmrig"))
+        // xmrig SHA256SUMS contains checksums for the actual binary executable, not the archive
+        // We need to look for the executable binary name, not the archive name
+        let mut xmrig_hash = None;
+        
+        // Extract the binary name patterns that might appear in SHA256SUMS
+        let potential_binary_names = [
+            "xmrig",                                          // Most common pattern
+            "xmrig.exe",                                      // Windows executable
+            &format!("xmrig-{}", asset_name.split('-').nth(1).unwrap_or("")), // versioned binary
+        ];
+        
+        info!(target: LOG_TARGET, "Looking for xmrig binary checksums with potential names: {:?}", potential_binary_names);
+        
+        // Try to find checksum for the binary executable
+        for binary_name in &potential_binary_names {
+            for line in contents.lines() {
+                // SHA256SUMS format: <hash>  <filename>
+                let parts: Vec<&str> = line.split_whitespace().collect();
+                if parts.len() >= 2 {
+                    let hash = parts[0];
+                    let filename = parts[1];
+                    
+                    info!(target: LOG_TARGET, "Checking SHA256SUMS entry: hash={}, filename={}", hash, filename);
+                    
+                    // Match against potential binary names
+                    if filename.contains(binary_name) || filename.ends_with(binary_name) {
+                        info!(target: LOG_TARGET, "Found matching binary '{}' in SHA256SUMS: {}", filename, hash);
+                        xmrig_hash = Some(hash.to_string());
+                        break;
+                    }
+                }
+            }
+            
+            if xmrig_hash.is_some() {
+                info!(target: LOG_TARGET, "Successfully found checksum using binary name pattern: {}", binary_name);
+                break;
+            }
+        }
+        
+        // Fallback: try to find any hash in the file if specific patterns don't work
+        if xmrig_hash.is_none() {
+            warn!(target: LOG_TARGET, "Could not find checksum using binary name patterns, trying archive name fallback");
+            
+            xmrig_hash = contents
+                .lines()
+                .find(|line| line.contains(asset_name))
+                .and_then(|line| {
+                    info!(target: LOG_TARGET, "Found fallback line matching asset name: {}", line);
+                    line.split_whitespace().next()
+                })
+                .map(|hash| hash.to_string());
+                
+            if let Some(ref hash) = xmrig_hash {
+                info!(target: LOG_TARGET, "Found checksum using archive name fallback: {}", hash);
+            }
+        }
+
+        xmrig_hash.ok_or(anyhow!("No checksum was found for xmrig asset: {}", asset_name))
     }
 
     async fn download_and_get_checksum_path(
@@ -118,6 +179,8 @@ impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
         &self,
         _version: &VersionDownloadInfo,
     ) -> Result<VersionAsset, anyhow::Error> {
+        info!(target: LOG_TARGET, "Finding platform asset for xmrig version: {}", _version.version);
+        
         let mut name_suffix = "";
         if cfg!(target_os = "windows") {
             name_suffix = r".*msvc-win64\.zip";
@@ -139,14 +202,28 @@ impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
             panic!("Unsupported OS");
         }
 
+        info!(target: LOG_TARGET, "Using platform pattern: {}", name_suffix);
+
         let name_sufix_regex = Regex::new(name_suffix)
             .map_err(|error| anyhow::anyhow!("Failed to create regex: {}", error))?;
+
+        // Log all available assets for debugging
+        info!(target: LOG_TARGET, "Available assets for xmrig version {}:", _version.version);
+        for (i, asset) in _version.assets.iter().enumerate() {
+            info!(target: LOG_TARGET, "  Asset {}: {}", i + 1, asset.name);
+        }
 
         let platform = _version
             .assets
             .iter()
-            .find(|a| name_sufix_regex.is_match(&a.name))
-            .ok_or(anyhow::anyhow!("Failed to get platform asset"))?;
+            .find(|a| {
+                let matches = name_sufix_regex.is_match(&a.name);
+                info!(target: LOG_TARGET, "Checking asset '{}' against pattern '{}': {}", a.name, name_suffix, matches);
+                matches
+            })
+            .ok_or(anyhow::anyhow!("Failed to get platform asset for pattern: {}", name_suffix))?;
+            
+        info!(target: LOG_TARGET, "Selected platform asset: {}", platform.name);
         Ok(platform.clone())
     }
 }

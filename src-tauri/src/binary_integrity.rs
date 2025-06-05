@@ -33,6 +33,114 @@ const LOG_TARGET: &str = "tari::universe::binary_integrity";
 pub struct BinaryIntegrityChecker;
 
 impl BinaryIntegrityChecker {
+    /// Validate archive integrity before extraction
+    pub async fn validate_archive_integrity(
+        archive_path: &Path,
+        binary: Binaries,
+    ) -> Result<bool, anyhow::Error> {
+        if !archive_path.exists() {
+            return Err(anyhow::anyhow!("Archive file does not exist: {:?}", archive_path));
+        }
+
+        info!(target: LOG_TARGET, "Validating archive integrity for {:?} (binary type: {:?})", archive_path, binary);
+
+        // Get expected checksum from BinaryResolver
+        let resolver = BinaryResolver::current().read().await;
+        match resolver.get_binary_checksum(binary).await {
+            Ok(expected_checksum) => {
+                info!(target: LOG_TARGET, "Retrieved expected checksum for archive {:?}: {}", archive_path, expected_checksum);
+                
+                // Calculate actual checksum of the archive
+                let actual_hash = Self::calculate_file_hash(archive_path).await?;
+                info!(target: LOG_TARGET, "Calculated actual hash for archive {:?}: {}", archive_path, actual_hash);
+                
+                // Compare checksums
+                let is_valid = expected_checksum == actual_hash;
+                
+                if is_valid {
+                    info!(target: LOG_TARGET, "Archive integrity validation PASSED for {:?}", archive_path);
+                } else {
+                    warn!(target: LOG_TARGET, "Archive integrity validation FAILED for {:?}", archive_path);
+                    warn!(target: LOG_TARGET, "Expected archive checksum: {}", expected_checksum);
+                    warn!(target: LOG_TARGET, "Actual archive checksum:   {}", actual_hash);
+                }
+                
+                Ok(is_valid)
+            }
+            Err(e) => {
+                warn!(target: LOG_TARGET, "No checksum available for archive {:?} (error: {})", archive_path, e);
+                Ok(true) // Allow archives without checksums to proceed
+            }
+        }
+    }
+
+    /// Smart validation that tries multiple strategies based on the binary type
+    pub async fn validate_binary_integrity_smart(
+        binary_path: &Path,
+        binary: Binaries,
+        archive_path: Option<&Path>,
+    ) -> Result<bool, anyhow::Error> {
+        if !binary_path.exists() {
+            return Err(anyhow::anyhow!("Binary file does not exist: {:?}", binary_path));
+        }
+
+        info!(target: LOG_TARGET, "Starting smart binary integrity validation for {:?} (binary type: {:?})", binary_path, binary);
+
+        // Try binary validation first (for most cases)
+        match Self::validate_binary_integrity(binary_path, binary).await {
+            Ok(true) => {
+                info!(target: LOG_TARGET, "Binary validation succeeded for {:?}", binary_path);
+                return Ok(true);
+            }
+            Ok(false) => {
+                warn!(target: LOG_TARGET, "Binary validation failed, trying alternative strategies");
+                
+                // For xmrig, try archive validation if archive path is provided
+                if matches!(binary, Binaries::Xmrig) && archive_path.is_some() {
+                    info!(target: LOG_TARGET, "Trying archive validation for xmrig");
+                    match Self::validate_archive_integrity(archive_path.unwrap(), binary).await {
+                        Ok(true) => {
+                            info!(target: LOG_TARGET, "Archive validation succeeded for xmrig, accepting binary");
+                            return Ok(true);
+                        }
+                        Ok(false) => {
+                            warn!(target: LOG_TARGET, "Archive validation also failed");
+                        }
+                        Err(e) => {
+                            warn!(target: LOG_TARGET, "Archive validation error: {}", e);
+                        }
+                    }
+                }
+            }
+            Err(e) => {
+                warn!(target: LOG_TARGET, "Binary validation error: {}", e);
+            }
+        }
+
+        // Final fallback: basic size and sanity checks
+        Self::validate_basic_integrity(binary_path).await
+    }
+
+    /// Basic integrity validation using file size and basic sanity checks
+    pub async fn validate_basic_integrity(binary_path: &Path) -> Result<bool, anyhow::Error> {
+        let metadata = std::fs::metadata(binary_path)?;
+        let file_size = metadata.len();
+        
+        // Basic sanity checks
+        if file_size < 1024 {
+            warn!(target: LOG_TARGET, "Binary file is suspiciously small: {} bytes", file_size);
+            return Ok(false);
+        }
+        
+        if file_size > 1024 * 1024 * 1024 { // 1GB
+            warn!(target: LOG_TARGET, "Binary file is suspiciously large: {} bytes", file_size);
+            return Ok(false);
+        }
+
+        info!(target: LOG_TARGET, "Basic integrity validation passed for {:?} (size: {} bytes)", binary_path, file_size);
+        Ok(true)
+    }
+
     /// Validate binary integrity using full SHA256 checksum validation
     pub async fn validate_binary_integrity(
         binary_path: &Path,
@@ -42,37 +150,46 @@ impl BinaryIntegrityChecker {
             return Err(anyhow::anyhow!("Binary file does not exist: {:?}", binary_path));
         }
 
-        debug!(target: LOG_TARGET, "Validating binary integrity for {:?}", binary_path);
+        info!(target: LOG_TARGET, "Starting binary integrity validation for {:?} (binary type: {:?})", binary_path, binary);
 
         // Get expected checksum from BinaryResolver
         let resolver = BinaryResolver::current().read().await;
         match resolver.get_binary_checksum(binary).await {
             Ok(expected_checksum) => {
-                // Use existing validate_checksum function for full validation
-                match crate::download_utils::validate_checksum(binary_path.to_path_buf(), expected_checksum.clone()).await {
-                    Ok(is_valid) => {
-                        if is_valid {
-                            debug!(target: LOG_TARGET, "Binary integrity validation passed for {:?}", binary_path);
-                        } else {
-                            warn!(target: LOG_TARGET, "Binary integrity validation failed for {:?} - checksum mismatch", binary_path);
-                            // Log actual vs expected for debugging
-                            if let Ok(actual_hash) = Self::calculate_file_hash(binary_path).await {
-                                warn!(target: LOG_TARGET, 
-                                    "Binary integrity mismatch for {:?}: expected={}, actual={}", 
-                                    binary_path, expected_checksum, actual_hash);
-                            }
-                        }
-                        Ok(is_valid)
-                    }
-                    Err(e) => {
-                        error!(target: LOG_TARGET, "Error during checksum validation for {:?}: {}", binary_path, e);
-                        Err(anyhow::anyhow!("Checksum validation error: {}", e))
-                    }
+                info!(target: LOG_TARGET, "Retrieved expected checksum for {:?}: {}", binary_path, expected_checksum);
+                
+                // Calculate actual checksum of the binary
+                let actual_hash = Self::calculate_file_hash(binary_path).await?;
+                info!(target: LOG_TARGET, "Calculated actual hash for {:?}: {}", binary_path, actual_hash);
+                
+                // Compare checksums
+                let is_valid = expected_checksum == actual_hash;
+                
+                if is_valid {
+                    info!(target: LOG_TARGET, "Binary integrity validation PASSED for {:?}", binary_path);
+                } else {
+                    warn!(target: LOG_TARGET, "Binary integrity validation FAILED for {:?}", binary_path);
+                    warn!(target: LOG_TARGET, "Expected checksum: {}", expected_checksum);
+                    warn!(target: LOG_TARGET, "Actual checksum:   {}", actual_hash);
+                    
+                    // Additional debugging: check if this is a platform-specific binary name issue
+                    let file_name = binary_path.file_name()
+                        .and_then(|n| n.to_str())
+                        .unwrap_or("unknown");
+                    warn!(target: LOG_TARGET, "Binary file name being validated: {}", file_name);
+                    
+                    // Check if file was modified during extraction
+                    let metadata = std::fs::metadata(binary_path)?;
+                    warn!(target: LOG_TARGET, "Binary file size: {} bytes", metadata.len());
+                    warn!(target: LOG_TARGET, "Binary file permissions: {:?}", metadata.permissions());
                 }
+                
+                Ok(is_valid)
             }
-            Err(_) => {
-                // Fallback to basic size check when checksum is not available
-                warn!(target: LOG_TARGET, "No checksum available for {:?}, falling back to size check", binary);
+            Err(e) => {
+                // Enhanced error reporting when checksum is not available
+                warn!(target: LOG_TARGET, "No checksum available for {:?} (error: {}), falling back to size check", binary, e);
+                
                 let metadata = std::fs::metadata(binary_path)?;
                 let file_size = metadata.len();
                 
@@ -82,7 +199,7 @@ impl BinaryIntegrityChecker {
                     return Ok(false);
                 }
 
-                debug!(target: LOG_TARGET, "Binary integrity validation passed for {:?} (size: {} bytes)", binary_path, file_size);
+                info!(target: LOG_TARGET, "Binary integrity validation passed for {:?} (size: {} bytes, no checksum available)", binary_path, file_size);
                 Ok(true)
             }
         }

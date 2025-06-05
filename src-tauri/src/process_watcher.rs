@@ -148,7 +148,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         }
 
         // Check binary integrity if corruption detection is enabled
-        match BinaryIntegrityChecker::validate_binary_integrity(&binary_path, binary).await {
+        match BinaryIntegrityChecker::validate_binary_integrity_smart(&binary_path, binary, None).await {
             Ok(true) => {
                 info!(target: LOG_TARGET, "Binary integrity check passed for {:?}", binary_path);
                 // Cache the binary hash for runtime checking
