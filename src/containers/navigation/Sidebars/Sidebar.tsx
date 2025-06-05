@@ -13,7 +13,7 @@ const Sidebar = memo(function Sidebar() {
                 <GridAreaTop>
                     <MiningSection />
                 </GridAreaTop>
-                <GridAreaBottom $overflowVisible={swapUiEnabled}>
+                <GridAreaBottom>
                     <SidebarWallet />
                 </GridAreaBottom>
             </WrapperGrid>

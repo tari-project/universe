@@ -3,7 +3,7 @@ export const walletTransition = {
     animate: { opacity: 1, x: 0 },
     exit: { opacity: 0, x: -20 },
     transition: { duration: 0.2, ease: 'easeInOut' },
-    style: { width: '100%', maxHeight: '100%' },
+    style: { width: '100%', height: '100%' },
 };
 
 export const swapTransition = {
@@ -11,5 +11,5 @@ export const swapTransition = {
     animate: { opacity: 1, x: 0 },
     exit: { opacity: 0, x: -20 },
     transition: { duration: 0.2, ease: 'easeInOut' },
-    style: { width: '100%', maxHeight: '100%' },
+    style: { width: '100%', height: '100%' },
 };
