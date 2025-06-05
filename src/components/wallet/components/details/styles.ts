@@ -27,6 +27,14 @@ export const LogoWrapper = styled.div`
     height: 20px;
     background-color: #000;
     border-radius: 50%;
+    color: #c2ff28;
+    align-items: center;
+    justify-content: center;
+    svg,
+    img {
+        height: 11px;
+        display: flex;
+    }
 `;
 export const Actions = styled.div`
     display: flex;

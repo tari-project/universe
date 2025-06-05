@@ -4,7 +4,7 @@ import { useWalletStore } from '@app/store';
 
 import { roundToTwoDecimals, removeXTMCryptoDecimals } from '@app/utils';
 import { Typography } from '@app/components/elements/Typography.tsx';
-import { AvailableWrapper, BalanceWrapper, Wrapper } from './styles.ts';
+import { AvailableWrapper, BalanceWrapper, SuffixWrapper, Wrapper } from './styles.ts';
 import { useTariBalance } from '@app/hooks/wallet/useTariBalance.ts';
 import { useTranslation } from 'react-i18next';
 
@@ -23,7 +23,8 @@ export default function WalletBalance() {
     return (
         <Wrapper>
             <BalanceWrapper>
-                <NumberFlow locales={i18n.language} format={formatOptions} value={balanceValue} suffix={` XTM`} />
+                <NumberFlow locales={i18n.language} format={formatOptions} value={balanceValue} />
+                <SuffixWrapper>{` XTM`}</SuffixWrapper>
             </BalanceWrapper>
             <AvailableWrapper>
                 <Typography>{`${t('history.available-balance')}: ${formattedAvailableBalance} XTM`}</Typography>

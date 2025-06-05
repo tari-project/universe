@@ -1,17 +1,22 @@
 import { Actions, DetailsLeft, LogoWrapper, Name, Wrapper } from './styles.ts';
+import { TariOutlineSVG } from '@app/assets/icons/tari-outline.tsx';
+import WalletActions from '@app/components/wallet/components/actions/WalletActions.tsx';
 
 export default function WalletDetails() {
-    const { name, logoSrc } = {
+    const { name } = {
         name: 'Tari Universe',
-        logoSrc: null,
     };
     return (
         <Wrapper>
             <DetailsLeft>
-                <LogoWrapper></LogoWrapper>
+                <LogoWrapper>
+                    <TariOutlineSVG />
+                </LogoWrapper>
                 <Name>{name}</Name>
             </DetailsLeft>
-            <Actions></Actions>
+            <Actions>
+                <WalletActions />
+            </Actions>
         </Wrapper>
     );
 }
