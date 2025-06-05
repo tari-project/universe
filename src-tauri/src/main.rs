@@ -94,6 +94,7 @@ mod airdrop;
 mod app_in_memory_config;
 mod auto_launcher;
 mod binaries;
+mod binary_integrity;
 mod commands;
 mod configs;
 mod consts;
