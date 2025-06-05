@@ -50,7 +50,7 @@ function parseValues({
         const tKey = getTxStatusTitleKey(transaction);
         return { value: i18n.t(`common:${tKey}`), valueRight: value };
     }
-    if (key === 'amount') {
+    if (key === 'amount' || key === 'fee') {
         const preset = value.toString().length > 5 ? FormatPreset.XTM_LONG : FormatPreset.XTM_DECIMALS;
         const valueMarkup = (
             <>
