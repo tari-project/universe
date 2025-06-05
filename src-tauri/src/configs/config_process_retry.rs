@@ -100,14 +100,17 @@ impl ConfigProcessRetryContent {
             .unwrap_or(&self.default_config)
     }
 
+    #[allow(dead_code)]
     pub fn set_process_config(&mut self, process_name: String, config: ProcessSpecificConfig) {
         self.process_overrides.insert(process_name, config);
     }
 
+    #[allow(dead_code)]
     pub fn remove_process_config(&mut self, process_name: &str) -> Option<ProcessSpecificConfig> {
         self.process_overrides.remove(process_name)
     }
 
+    #[allow(dead_code)]
     pub fn get_process_names(&self) -> Vec<String> {
         self.process_overrides.keys().cloned().collect()
     }
