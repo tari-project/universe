@@ -33,10 +33,10 @@ const LOG_TARGET: &str = "tari::universe::binary_integrity";
 pub struct BinaryIntegrityChecker;
 
 impl BinaryIntegrityChecker {
-    /// Validate binary integrity (simplified version using file size as basic check)
+    /// Validate binary integrity using full SHA256 checksum validation
     pub async fn validate_binary_integrity(
         binary_path: &Path,
-        _binary: Binaries,
+        binary: Binaries,
     ) -> Result<bool, anyhow::Error> {
         if !binary_path.exists() {
             return Err(anyhow::anyhow!("Binary file does not exist: {:?}", binary_path));
@@ -44,18 +44,42 @@ impl BinaryIntegrityChecker {
 
         debug!(target: LOG_TARGET, "Validating binary integrity for {:?}", binary_path);
 
-        // For now, just check if the file exists and has a reasonable size
-        let metadata = std::fs::metadata(binary_path)?;
-        let file_size = metadata.len();
-        
-        // Basic sanity check - binary should be at least 1KB
-        if file_size < 1024 {
-            warn!(target: LOG_TARGET, "Binary file is suspiciously small: {} bytes", file_size);
-            return Ok(false);
-        }
+        // Get expected checksum from BinaryResolver
+        let resolver = BinaryResolver::current().read().await;
+        match resolver.get_binary_checksum(binary).await {
+            Ok(expected_checksum) => {
+                // Use existing validate_checksum function for full validation
+                match crate::download_utils::validate_checksum(binary_path.to_path_buf(), expected_checksum.clone()).await {
+                    Ok(is_valid) => {
+                        if is_valid {
+                            debug!(target: LOG_TARGET, "Binary integrity validation passed for {:?}", binary_path);
+                        } else {
+                            warn!(target: LOG_TARGET, "Binary integrity validation failed for {:?} - checksum mismatch", binary_path);
+                        }
+                        Ok(is_valid)
+                    }
+                    Err(e) => {
+                        error!(target: LOG_TARGET, "Error during checksum validation for {:?}: {}", binary_path, e);
+                        Err(anyhow::anyhow!("Checksum validation error: {}", e))
+                    }
+                }
+            }
+            Err(_) => {
+                // Fallback to basic size check when checksum is not available
+                warn!(target: LOG_TARGET, "No checksum available for {:?}, falling back to size check", binary);
+                let metadata = std::fs::metadata(binary_path)?;
+                let file_size = metadata.len();
+                
+                // Basic sanity check - binary should be at least 1KB
+                if file_size < 1024 {
+                    warn!(target: LOG_TARGET, "Binary file is suspiciously small: {} bytes", file_size);
+                    return Ok(false);
+                }
 
-        debug!(target: LOG_TARGET, "Binary integrity validation passed for {:?} (size: {} bytes)", binary_path, file_size);
-        Ok(true)
+                debug!(target: LOG_TARGET, "Binary integrity validation passed for {:?} (size: {} bytes)", binary_path, file_size);
+                Ok(true)
+            }
+        }
     }
 
     /// Calculate and cache binary hash for runtime checks
@@ -91,11 +115,33 @@ impl BinaryIntegrityChecker {
     pub async fn handle_corruption(
         binary: Binaries,
         binary_path: &Path,
+        process_name: &str,
     ) -> Result<PathBuf, anyhow::Error> {
         error!(target: LOG_TARGET, "Binary corruption detected for {:?} at {:?}", binary, binary_path);
 
-        // For now, just remove the corrupted file and resolve the path again
-        // This will trigger a re-download through the normal binary resolution process
+        // Calculate actual hash for reporting
+        let actual_hash = match Self::calculate_file_hash(binary_path).await {
+            Ok(hash) => hash,
+            Err(_) => "unknown".to_string(),
+        };
+
+        // Get expected hash
+        let expected_hash = {
+            let resolver = BinaryResolver::current().read().await;
+            resolver.get_binary_checksum(binary).await.ok()
+        };
+
+        // Emit corruption detection event
+        let corruption_payload = crate::events::BinaryCorruptionPayload {
+            process_name: process_name.to_string(),
+            binary_path: binary_path.display().to_string(),
+            expected_hash: expected_hash.clone(),
+            actual_hash: actual_hash.clone(),
+            redownload_initiated: true,
+        };
+        crate::events_emitter::EventsEmitter::emit_binary_corruption_detected(corruption_payload).await;
+
+        // Remove the corrupted file
         if binary_path.exists() {
             if let Err(e) = std::fs::remove_file(binary_path) {
                 warn!(target: LOG_TARGET, "Failed to remove corrupted binary file: {}", e);
@@ -107,6 +153,10 @@ impl BinaryIntegrityChecker {
         match resolver.resolve_path_to_binary_files(binary).await {
             Ok(new_path) => {
                 info!(target: LOG_TARGET, "Successfully resolved binary path after corruption: {:?}", new_path);
+
+                // Emit integrity restored event if download was successful
+                crate::events_emitter::EventsEmitter::emit_binary_integrity_restored(process_name.to_string()).await;
+
                 Ok(new_path)
             }
             Err(e) => {
