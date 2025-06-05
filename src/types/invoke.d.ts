@@ -9,6 +9,7 @@ import {
     P2poolConnections,
     WalletBalance,
     BridgeEnvs,
+    TariAddressVariants,
 } from './app-status';
 import { Language } from '@app/i18initializer';
 import { PaperWalletDetails } from '@app/types/app-status.ts';
@@ -73,7 +74,7 @@ declare module '@tauri-apps/api/core' {
     ): Promise<TransactionInfo[]>;
     function invoke(
         param: 'get_transactions_history',
-        payload: { continuation: boolean; limit?: number }
+        payload: { offset?: number; limit?: number }
     ): Promise<TransactionInfo[]>;
     function invoke(param: 'import_seed_words', payload: { seedWords: string[] }): Promise<void>;
     function invoke(param: 'get_tor_config'): Promise<TorConfig>;
@@ -132,5 +133,7 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'get_tari_wallet_address'): Promise<string>;
     function invoke(param: 'get_tari_wallet_balance'): Promise<WalletBalance>;
     function invoke(param: 'get_bridge_envs'): Promise<BridgeEnvs>;
+    function invoke(param: 'parse_tari_address', payload: { address: string }): Promise<TariAddressVariants>;
+    function invoke(param: 'refresh_wallet_history'): Promise<void>;
     function invoke(param: 'get_universal_miner_initialized_exchange_id'): Promise<string | undefiend>;
 }

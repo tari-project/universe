@@ -74,3 +74,11 @@ export const AddressInput = styled.input<{ $hasError?: boolean }>`
             }
         `}
 `;
+
+export const OptInWrapper = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 0;
+    margin: 0 0 10px;
+`;

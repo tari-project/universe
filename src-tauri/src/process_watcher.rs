@@ -25,7 +25,7 @@ use crate::process_adapter::ProcessInstanceTrait;
 use crate::process_adapter::{HealthStatus, ProcessAdapter, StatusMonitor};
 use futures_util::future::FusedFuture;
 use log::{error, info, warn};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use std::time::Duration;
@@ -86,8 +86,11 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
     pub async fn kill_previous_instances(
         &mut self,
         base_path: PathBuf,
+        binary_path: &Path,
     ) -> Result<(), anyhow::Error> {
-        self.adapter.kill_previous_instances(base_path).await?;
+        self.adapter
+            .kill_previous_instances(base_path, binary_path)
+            .await?;
         Ok(())
     }
 
@@ -110,7 +113,13 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
             self.stop().await?;
         }
         info!(target: LOG_TARGET, "Starting process watcher for {}", name);
-        self.kill_previous_instances(base_path.clone()).await?;
+        let binary_path = BinaryResolver::current()
+            .read()
+            .await
+            .resolve_path_to_binary_files(binary)
+            .await?;
+        self.kill_previous_instances(base_path.clone(), &binary_path)
+            .await?;
 
         self.internal_shutdown = Shutdown::new();
         let mut inner_shutdown = self.internal_shutdown.to_signal();
@@ -118,11 +127,6 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         let poll_time = self.poll_time;
         let health_timeout = self.health_timeout;
 
-        let binary_path = BinaryResolver::current()
-            .read()
-            .await
-            .resolve_path_to_binary_files(binary)
-            .await?;
         info!(target: LOG_TARGET, "Using {:?} for {}", binary_path, name);
         let first_start = self
             .is_first_start
@@ -214,13 +218,36 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
     pub async fn wait_ready(&self) -> Result<(), anyhow::Error> {
         if let Some(ref task) = self.watcher_task {
             if task.is_finished() {
-                //let exit_code = task.await??;
-
                 return Err(anyhow::anyhow!("Process watcher task has already finished"));
             }
+        } else {
+            return Err(anyhow::anyhow!("Process watcher task not started"));
         }
-        //TODO
-        Ok(())
+
+        // Wait for the expected startup time to allow the process to initialize
+        let startup_time = self.expected_startup_time;
+        tokio::time::sleep(startup_time).await;
+
+        // If we have a status monitor, verify the process is healthy
+        if let Some(ref status_monitor) = self.status_monitor {
+            let health_status = status_monitor
+                .check_health(startup_time, self.health_timeout)
+                .await;
+
+            match health_status {
+                HealthStatus::Healthy => Ok(()),
+                HealthStatus::Warning => {
+                    warn!(target: LOG_TARGET, "Process started with warnings but is considered ready");
+                    Ok(())
+                }
+                HealthStatus::Unhealthy => Err(anyhow::anyhow!(
+                    "Process failed health check during startup"
+                )),
+            }
+        } else {
+            // No status monitor available, just wait for startup time
+            Ok(())
+        }
     }
 
     pub async fn stop(&mut self) -> Result<i32, anyhow::Error> {

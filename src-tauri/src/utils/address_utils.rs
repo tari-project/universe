@@ -45,8 +45,33 @@ pub fn verify_send(address: String, sending_method: TariAddressFeatures) -> Resu
     Ok(())
 }
 
+/// Extracts payment ID from a Tari address if present
+/// Returns hex-encoded payment ID for telemetry purposes  
+pub fn extract_payment_id(address: &str) -> Result<Option<String>, String> {
+    let tari_address = verify_tari_address(address)?;
+
+    // Try to extract payment ID from address
+    match tari_address {
+        TariAddress::Dual(dual_addr) => {
+            // Try to access payment ID through dual address properties
+            let payment_id_bytes = dual_addr.get_payment_id_user_data_bytes();
+            if !payment_id_bytes.is_empty() {
+                return Ok(Some(hex::encode(payment_id_bytes)));
+            }
+            // If no payment ID, return None for dual addresses without payment ID
+            Ok(None)
+        }
+        _ => {
+            // Single addresses don't have payment IDs
+            Ok(None)
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::unwrap_used)]
+
     use super::*;
 
     const ESME_ONE_SIDED_ADDRESS: &str = "f25eNHz2YnBVKHaqNuacGyDFB321RwwCnTr4vb2SjQCgDZVXyNNthc7zftQKRDu6evLjvSUD8W5akpPMdhS4HQ9kF3g";
@@ -127,5 +152,41 @@ mod tests {
             Err(e) => assert_eq!(e, "Address does not support feature Interactive,"),
             _ => panic!("Expected an error but got success"),
         }
+    }
+
+    #[test]
+    fn test_extract_payment_id_from_addresses() {
+        // Test with addresses - checking what they actually return
+        let result = extract_payment_id(ESME_ONE_SIDED_ADDRESS);
+        assert!(result.is_ok());
+        // These test addresses don't appear to have payment IDs
+        assert_eq!(result.unwrap(), None);
+
+        let result = extract_payment_id(ESME_INTERACTIVE_ADDRESS);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), None);
+
+        // Test with emoji addresses
+        let result = extract_payment_id(ESME_ONE_SIDED_EMOJI_ADDRESS);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), None);
+
+        let result = extract_payment_id(ESME_INTERACTIVE_EMOJI_ADDRESS);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), None);
+    }
+
+    #[test]
+    fn test_extract_payment_id_invalid_address() {
+        let result = extract_payment_id("invalid_address");
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), "Invalid address format");
+    }
+
+    #[test]
+    fn test_extract_payment_id_network_mismatch() {
+        let result = extract_payment_id(NEXTNET_ONE_SIDED_ADDRESSS);
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), "Invalid network");
     }
 }

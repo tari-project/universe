@@ -51,7 +51,7 @@ use crate::tasks_tracker::TasksTrackers;
 use crate::tor_adapter::TorConfig;
 use crate::utils::address_utils::verify_send;
 use crate::utils::app_flow_utils::FrontendReadyChannel;
-use crate::wallet_adapter::{TransactionInfo, WalletBalance};
+use crate::wallet_adapter::{TariAddressVariants, TransactionInfo, WalletBalance};
 use crate::wallet_manager::WalletManagerError;
 use crate::websocket_manager::WebsocketManagerStatusMessage;
 use crate::{airdrop, PoolStatus, UniverseAppState, APPLICATION_FOLDER_ID};
@@ -70,7 +70,7 @@ use std::sync::atomic::Ordering;
 use std::thread::{available_parallelism, sleep};
 use std::time::{Duration, Instant, SystemTime};
 use tari_common::configuration::Network;
-use tari_common_types::tari_address::TariAddressFeatures;
+use tari_common_types::tari_address::{TariAddress, TariAddressFeatures};
 use tari_core::transactions::tari_amount::{MicroMinotari, Minotari};
 use tauri::ipc::InvokeError;
 use tauri::{Manager, PhysicalPosition, PhysicalSize};
@@ -739,8 +739,8 @@ pub async fn get_airdrop_tokens(
 #[tauri::command]
 pub async fn get_transactions_history(
     state: tauri::State<'_, UniverseAppState>,
-    continuation: bool,
-    limit: Option<u32>,
+    offset: Option<i32>,
+    limit: Option<i32>,
 ) -> Result<Vec<TransactionInfo>, String> {
     let timer = Instant::now();
     if state.is_getting_transactions_history.load(Ordering::SeqCst) {
@@ -752,7 +752,7 @@ pub async fn get_transactions_history(
         .store(true, Ordering::SeqCst);
     let transactions = state
         .wallet_manager
-        .get_transactions_history(continuation, limit)
+        .get_transactions_history(offset, limit)
         .await
         .unwrap_or_else(|e| {
             if !matches!(e, WalletManagerError::WalletNotStarted) {
@@ -1910,9 +1910,15 @@ pub async fn send_one_sided_to_stealth_address(
     let state_clone = state.clone();
     let mut spend_wallet_manager = state_clone.spend_wallet_manager.write().await;
     spend_wallet_manager
-        .send_one_sided_to_stealth_address(amount, destination, payment_id, state)
+        .send_one_sided_to_stealth_address(amount, destination, payment_id, state.clone())
         .await
         .map_err(|e| e.to_string())?;
+
+    let balance = state.wallet_manager.get_balance().await;
+    if let Ok(balance) = balance {
+        EventsEmitter::emit_wallet_balance_update(balance).await;
+    }
+
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "send_one_sided_to_stealth_address took too long: {:?}", timer.elapsed());
     }
@@ -2128,4 +2134,46 @@ pub async fn get_bridge_envs() -> Result<(String, String), String> {
         .to_string();
 
     Ok((walletconnect_id, backend_api))
+}
+
+#[tauri::command]
+pub async fn parse_tari_address(address: String) -> Result<TariAddressVariants, String> {
+    let tari_address = TariAddress::from_str(&address).map_err(|e| e.to_string())?;
+
+    Ok(TariAddressVariants {
+        emoji_string: tari_address.to_emoji_string(),
+        base58: tari_address.to_base58(),
+        hex: tari_address.to_hex(),
+    })
+}
+
+#[tauri::command]
+pub async fn refresh_wallet_history(
+    state: tauri::State<'_, UniverseAppState>,
+    app_handle: tauri::AppHandle,
+) -> Result<(), String> {
+    SetupManager::get_instance()
+        .shutdown_phases(app_handle.clone(), vec![SetupPhase::Wallet])
+        .await;
+
+    let base_path = app_handle
+        .path()
+        .app_local_data_dir()
+        .map_err(|_| "Could not find wallet data dir".to_string())?;
+    state
+        .wallet_manager
+        .clean_data_folder(&base_path)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    // Trigger it manually to immediately update the UI
+    let node_status_watch_rx = state.node_status_watch_rx.clone();
+    let node_status = *node_status_watch_rx.borrow();
+    EventsEmitter::emit_init_wallet_scanning_progress(0, node_status.block_height, 0.0).await;
+
+    SetupManager::get_instance()
+        .resume_phases(app_handle, vec![SetupPhase::Wallet])
+        .await;
+
+    Ok(())
 }
