@@ -6,7 +6,7 @@ export const SB_MINI_WIDTH = 78;
 export const SB_WIDTH = 356;
 export const SB_SPACING = 15;
 
-export const DashboardContainer = styled.div<{ $disableBackground?: boolean }>`
+export const DashboardContainer = styled.div`
     display: flex;
     flex-direction: column;
     position: relative;
@@ -15,6 +15,8 @@ export const DashboardContainer = styled.div<{ $disableBackground?: boolean }>`
     padding: 10px;
     gap: 10px;
     max-height: 100%;
+
+    background-color: ${({ theme }) => theme.palette.background.main};
     background-image: ${({ theme }) =>
         `linear-gradient(to top, transparent -90px, ${convertHexToRGBA(theme.palette.background.main, 0.6)} 130px, transparent 230px)`};
 `;
