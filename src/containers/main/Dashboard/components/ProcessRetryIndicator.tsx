@@ -27,18 +27,18 @@ const RetryItem = styled.div<{ $severity: AlertSeverity }>`
     border-radius: 4px;
     border-left: 4px solid
         ${({ theme, $severity }) => {
-        switch ($severity) {
-            case AlertSeverity.Critical:
-                return theme.palette.error?.main || '#ff4444';
-            case AlertSeverity.Error:
-                return theme.palette.error?.main || '#ff4444';
-            case AlertSeverity.Warning:
-                return theme.palette.warning?.main || '#ffaa00';
-            case AlertSeverity.Info:
-            default:
-                return theme.palette.primary.main;
-        }
-    }};
+            switch ($severity) {
+                case AlertSeverity.Critical:
+                    return theme.palette.error?.main || '#ff4444';
+                case AlertSeverity.Error:
+                    return theme.palette.error?.main || '#ff4444';
+                case AlertSeverity.Warning:
+                    return theme.palette.warning?.main || '#ffaa00';
+                case AlertSeverity.Info:
+                default:
+                    return theme.palette.primary.main;
+            }
+        }};
     background: ${({ theme }) => theme.palette.background.default};
 `;
 
@@ -270,7 +270,9 @@ export function ProcessRetryIndicator() {
                             </FlexRow>
 
                             <Typography variant="span" style={{ color: 'inherit', opacity: 0.7, fontSize: '0.8rem' }}>
-                                {retry.retry_reason}{TECHNICAL_MESSAGES.RETRY_REASON_SEPARATOR}{TECHNICAL_MESSAGES.ATTEMPT_TEMPLATE(retry.attempt_number, retry.max_attempts)}
+                                {retry.retry_reason}
+                                {TECHNICAL_MESSAGES.RETRY_REASON_SEPARATOR}
+                                {TECHNICAL_MESSAGES.ATTEMPT_TEMPLATE(retry.attempt_number, retry.max_attempts)}
                             </Typography>
 
                             {retry.next_retry_in_seconds && (
