@@ -380,8 +380,9 @@ impl BinaryManager {
             debug!(target: LOG_TARGET, "Version folder path: {:?}", version_folder);
             debug!(target: LOG_TARGET, "Binary file path: {:?}", binary_file);
 
-            let binary_file_exists = binary_file.exists() || binary_file_with_exe.exists() ||
-                binary_file_with_html.exists();
+            let binary_file_exists = binary_file.exists()
+                || binary_file_with_exe.exists()
+                || binary_file_with_html.exists();
 
             debug!(target: LOG_TARGET, "Binary file exists: {:?}", binary_file_exists);
 
@@ -470,7 +471,6 @@ impl BinaryManager {
                         info!(target: LOG_TARGET, "Shutdown signal received. Stopping progress channel for binary: {:?}", binary_name);
                         break;
                     }
-                    
                     receiver.changed().await.expect("Failed to receive progress update");
 
                     let last_percentage = *receiver.borrow();
@@ -557,7 +557,8 @@ impl BinaryManager {
 
         info!(target: LOG_TARGET, "Downloading binary: {} from url: {}", self.binary_name, download_url);
 
-        let chunk_progress_sender = self.resolve_progress_channel(progress_channel.clone())
+        let chunk_progress_sender = self
+            .resolve_progress_channel(progress_channel.clone())
             .await
             .map_err(|e| anyhow!("Error resolving progress channel: {:?}", e))?;
 
@@ -575,10 +576,10 @@ impl BinaryManager {
             if let Some(fallback_url) = fallback_url {
                 info!(target: LOG_TARGET, "Downloading binary: {} from fallback url: {}", self.binary_name, fallback_url);
 
-                let chunk_progress_sender = self.resolve_progress_channel(progress_channel.clone())
+                let chunk_progress_sender = self
+                    .resolve_progress_channel(progress_channel.clone())
                     .await
                     .map_err(|e| anyhow!("Error resolving progress channel: {:?}", e))?;
-
 
                 RequestClient::current()
                     .download_file(
