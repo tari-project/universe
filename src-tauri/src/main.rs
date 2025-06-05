@@ -723,6 +723,14 @@ fn main() {
             commands::parse_tari_address,
             commands::refresh_wallet_history,
             commands::get_universal_miner_initialized_exchange_id,
+            commands::get_process_retry_config,
+            commands::set_process_retry_config,
+            commands::set_max_startup_attempts,
+            commands::set_startup_retry_delay_secs,
+            commands::set_max_runtime_restart_attempts,
+            commands::set_runtime_restart_delay_secs,
+            commands::set_enable_corruption_detection,
+            commands::set_corruption_redownload_enabled,
         ])
         .build(tauri::generate_context!())
         .inspect_err(|e| {

@@ -27,6 +27,7 @@ use crate::auto_launcher::AutoLauncher;
 use crate::binaries::{Binaries, BinaryResolver};
 use crate::configs::config_core::{AirdropTokens, ConfigCore, ConfigCoreContent};
 use crate::configs::config_mining::{ConfigMining, ConfigMiningContent, GpuThreads, MiningMode};
+use crate::configs::config_process_retry::{ConfigProcessRetry, ConfigProcessRetryContent};
 use crate::configs::config_ui::{ConfigUI, ConfigUIContent, DisplayMode};
 use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent};
 use crate::configs::trait_config::ConfigImpl;
@@ -2229,5 +2230,92 @@ pub async fn refresh_wallet_history(
         .resume_phases(app_handle, vec![SetupPhase::Wallet])
         .await;
 
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn get_process_retry_config() -> Result<ConfigProcessRetryContent, String> {
+    let config = ConfigProcessRetry::current().await;
+    let config_lock = config.read().await;
+    Ok(config_lock._get_content().clone())
+}
+
+#[tauri::command]
+pub async fn set_process_retry_config(
+    config: ConfigProcessRetryContent,
+) -> Result<(), InvokeError> {
+    let config_instance = ConfigProcessRetry::current().await;
+    {
+        let mut config_lock = config_instance.write().await;
+        *config_lock._get_content_mut() = config.clone();
+    }
+    // Save the config using the trait method
+    ConfigProcessRetry::_save_config(config).map_err(InvokeError::from_anyhow)?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn set_max_startup_attempts(max_attempts: u8) -> Result<(), InvokeError> {
+    ConfigProcessRetry::update_field(
+        ConfigProcessRetryContent::set_max_startup_attempts,
+        max_attempts,
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn set_startup_retry_delay_secs(delay_secs: u64) -> Result<(), InvokeError> {
+    ConfigProcessRetry::update_field(
+        ConfigProcessRetryContent::set_startup_retry_delay_secs,
+        delay_secs,
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn set_max_runtime_restart_attempts(max_attempts: u8) -> Result<(), InvokeError> {
+    ConfigProcessRetry::update_field(
+        ConfigProcessRetryContent::set_max_runtime_restart_attempts,
+        max_attempts,
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn set_runtime_restart_delay_secs(delay_secs: u64) -> Result<(), InvokeError> {
+    ConfigProcessRetry::update_field(
+        ConfigProcessRetryContent::set_runtime_restart_delay_secs,
+        delay_secs,
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn set_enable_corruption_detection(enable: bool) -> Result<(), InvokeError> {
+    ConfigProcessRetry::update_field(
+        ConfigProcessRetryContent::set_enable_corruption_detection,
+        enable,
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn set_corruption_redownload_enabled(enable: bool) -> Result<(), InvokeError> {
+    ConfigProcessRetry::update_field(
+        ConfigProcessRetryContent::set_corruption_redownload_enabled,
+        enable,
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
     Ok(())
 }
