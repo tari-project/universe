@@ -5,6 +5,7 @@ import { useAirdropStore, useUIStore } from '@app/store';
 import { useTappletsStore } from '@app/store/useTappletsStore';
 import { Tapplet } from '@app/components/tapplets/Tapplet.tsx';
 import MiningView from './MiningView/MiningView.tsx';
+import { ProcessRetryIndicator } from './components/ProcessRetryIndicator.tsx';
 
 export default function Dashboard() {
     const { uiBridgeSwapsEnabled } = useTappletsStore();
@@ -23,6 +24,7 @@ export default function Dashboard() {
             ) : (
                 <MiningView />
             )}
+            <ProcessRetryIndicator />
         </DashboardContentContainer>
     );
 }
