@@ -26,7 +26,7 @@ use std::sync::LazyLock;
 use tauri::AppHandle;
 use tokio::sync::RwLock;
 
-use crate::events_emitter::EventsEmitter;
+
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
 
@@ -78,24 +78,18 @@ impl ConfigProcessRetryContent {
     }
 }
 
-impl ConfigContentImpl for ConfigProcessRetryContent {
-    fn content_key() -> &'static str {
-        "process_retry"
-    }
-
-    fn is_enabled(&self) -> bool {
-        true
-    }
-}
+impl ConfigContentImpl for ConfigProcessRetryContent {}
 
 pub struct ConfigProcessRetry {
-    inner: ConfigProcessRetryContent,
+    content: ConfigProcessRetryContent,
+    app_handle: RwLock<Option<AppHandle>>,
 }
 
 impl ConfigProcessRetry {
     pub fn new() -> Self {
         Self {
-            inner: ConfigProcessRetryContent::default(),
+            content: ConfigProcessRetryContent::default(),
+            app_handle: RwLock::new(None),
         }
     }
 
@@ -104,32 +98,38 @@ impl ConfigProcessRetry {
     }
 }
 
-#[async_trait::async_trait]
-impl ConfigImpl<ConfigProcessRetryContent> for ConfigProcessRetry {
-    fn get_inner(&self) -> &ConfigProcessRetryContent {
-        &self.inner
+impl ConfigImpl for ConfigProcessRetry {
+    type Config = ConfigProcessRetryContent;
+
+    fn current() -> &'static RwLock<Self> {
+        &INSTANCE
     }
 
-    fn set_inner(&mut self, inner: ConfigProcessRetryContent) {
-        self.inner = inner;
+    fn new() -> Self {
+        Self {
+            content: ConfigProcessRetryContent::default(),
+            app_handle: RwLock::new(None),
+        }
     }
 
-    async fn on_config_loaded(_config: &ConfigProcessRetryContent, _app_handle: &AppHandle) -> Result<(), anyhow::Error> {
-        // Emit event to notify frontend of loaded config
-        EventsEmitter::emit_process_retry_config_loaded(
-            _config.clone(),
-        )
-        .await;
-        Ok(())
+    async fn _get_app_handle(&self) -> Option<AppHandle> {
+        self.app_handle.read().await.clone()
     }
 
-    async fn on_config_updated(_config: &ConfigProcessRetryContent, _app_handle: &AppHandle) -> Result<(), anyhow::Error> {
-        // Emit event to notify frontend of updated config
-        EventsEmitter::emit_process_retry_config_updated(
-            _config.clone(),
-        )
-        .await;
-        Ok(())
+    async fn load_app_handle(&mut self, app_handle: AppHandle) {
+        *self.app_handle.write().await = Some(app_handle);
+    }
+
+    fn _get_name() -> String {
+        "config_process_retry".to_string()
+    }
+
+    fn _get_content(&self) -> &Self::Config {
+        &self.content
+    }
+
+    fn _get_content_mut(&mut self) -> &mut Self::Config {
+        &mut self.content
     }
 }
 

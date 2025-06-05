@@ -23,14 +23,15 @@
 use crate::binaries::{Binaries, BinaryResolver};
 use crate::binary_integrity::BinaryIntegrityChecker;
 use crate::configs::config_process_retry::{ConfigProcessRetry, ConfigProcessRetryContent};
-use crate::events::{BinaryCorruptionPayload, BinaryRetryPayload, RetryReason};
+use crate::configs::trait_config::ConfigImpl;
+use crate::events::BinaryCorruptionPayload;
 use crate::events_emitter::EventsEmitter;
 use crate::process_adapter::ProcessInstanceTrait;
 use crate::process_adapter::{HealthStatus, ProcessAdapter, StatusMonitor};
 use futures_util::future::FusedFuture;
 use log::{error, info, warn};
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU8};
 use std::sync::Arc;
 use std::time::Duration;
 use tari_shutdown::{Shutdown, ShutdownSignal};
@@ -106,7 +107,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
     pub async fn load_retry_config(&mut self) -> Result<(), anyhow::Error> {
         let config_instance = ConfigProcessRetry::current().await;
         let config_lock = config_instance.read().await;
-        self.retry_config = config_lock.get_inner().clone();
+        self.retry_config = config_lock._get_content().clone();
         info!(target: LOG_TARGET, "Loaded retry config: {:?}", self.retry_config);
         Ok(())
     }
@@ -116,13 +117,13 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
     }
 
     async fn get_binary_with_integrity_check(&mut self, binary: Binaries) -> Result<PathBuf, anyhow::Error> {
-        let mut binary_path = BinaryResolver::current()
+        let binary_path = BinaryResolver::current()
             .read()
             .await
             .resolve_path_to_binary_files(binary)
             .await?;
 
-        if !self.retry_config.enable_corruption_detection {
+        if !self.retry_config.enable_corruption_detection() {
             self.binary_path = Some(binary_path.clone());
             return Ok(binary_path);
         }
@@ -140,7 +141,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
             }
             Ok(false) => {
                 warn!(target: LOG_TARGET, "Binary integrity check failed for {:?}", binary_path);
-                if self.retry_config.corruption_redownload_enabled {
+                if *self.retry_config.corruption_redownload_enabled() {
                     self.handle_binary_corruption(binary, &binary_path).await
                 } else {
                     Err(anyhow::anyhow!("Binary corruption detected and re-download is disabled"))
@@ -164,10 +165,10 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
             binary_path: corrupted_path.display().to_string(),
             expected_hash: None, // Could be enhanced to include expected hash
             actual_hash: "unknown".to_string(), // Could be enhanced to include actual hash
-            redownload_initiated: self.retry_config.corruption_redownload_enabled,
+            redownload_initiated: *self.retry_config.corruption_redownload_enabled(),
         }).await;
 
-        if !self.retry_config.corruption_redownload_enabled {
+        if !*self.retry_config.corruption_redownload_enabled() {
             return Err(anyhow::anyhow!("Binary corruption detected but re-download is disabled"));
         }
 
