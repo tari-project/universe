@@ -4,6 +4,7 @@ import { BlockData, useBlocks } from './useBlocks';
 import BlockEntry from './BlockEntry/BlockEntry';
 import BlockScrollList from './BlockScrollList/BlockScrollList';
 import { timeAgo } from './utils/formatting';
+import MinerCount from '@app/containers/main/Dashboard/components/BlockExplorerMini/MinerCount/MinerCount.tsx';
 
 export default function BlockExplorerMini() {
     const { data, isLoading, isError } = useBlocks();
@@ -65,6 +66,7 @@ export default function BlockExplorerMini() {
 
     return (
         <Wrapper ref={containerRef}>
+            <MinerCount />
             <InsideHolder>
                 <StickyEntryWrapper>
                     {stickyEntry && (

@@ -1,5 +1,6 @@
 {
   "bubbles": {
+    "active-miners": "active miners",
     "ago": "ago",
     "block": "block",
     "got-rewarded": "got rewarded",
