@@ -175,7 +175,10 @@ impl AppInMemoryConfig {
             feature = "airdrop-env",
             feature = "telemetry-env",
         )))]
-        AppInMemoryConfig::default()
+        return AppInMemoryConfig {
+            exchange_id: exchange_id.into(),
+            ..AppInMemoryConfig::default()
+        };
     }
 }
 
