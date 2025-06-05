@@ -175,24 +175,24 @@ impl SetupPhaseImpl for UnknownSetupPhase {
 
         let binary_resolver = BinaryResolver::current().read().await;
 
-        progress_stepper
-            .resolve_step(ProgressPlans::Unknown(
-                ProgressSetupUnknownPlan::BinariesMergeMiningProxy,
-            ))
-            .await;
+        let mmproxy_binary_progress_tracker = progress_stepper.channel_step_range_updates(
+            ProgressPlans::Unknown(ProgressSetupUnknownPlan::BinariesMergeMiningProxy),
+            Some(ProgressPlans::Unknown(
+                ProgressSetupUnknownPlan::BinariesP2pool,
+            )),
+        );
 
         binary_resolver
-            .initialize_binary(Binaries::MergeMiningProxy, None)
+            .initialize_binary(Binaries::MergeMiningProxy, mmproxy_binary_progress_tracker)
             .await?;
 
-        progress_stepper
-            .resolve_step(ProgressPlans::Unknown(
-                ProgressSetupUnknownPlan::BinariesP2pool,
-            ))
-            .await;
+        let p2pool_binary_progress_tracker = progress_stepper.channel_step_range_updates(
+            ProgressPlans::Unknown(ProgressSetupUnknownPlan::BinariesP2pool),
+            Some(ProgressPlans::Unknown(ProgressSetupUnknownPlan::P2Pool)),
+        );
 
         binary_resolver
-            .initialize_binary(Binaries::ShaP2pool, None)
+            .initialize_binary(Binaries::ShaP2pool, p2pool_binary_progress_tracker)
             .await?;
 
         let base_node_grpc_address = state.node_manager.get_grpc_address().await?;

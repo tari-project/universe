@@ -112,6 +112,7 @@ futures = "0.3.31"
 getset = "0.1.5"
 console-subscriber = "0.4.1"
 const_format = "0.2.34"
+async-stream = "0.3.6"
 
 [target.'cfg(windows)'.dependencies]
 planif = "1.0.0"

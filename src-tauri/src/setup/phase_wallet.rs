@@ -162,14 +162,13 @@ impl SetupPhaseImpl for WalletSetupPhase {
         let binary_resolver = BinaryResolver::current().read().await;
         let tapplet_resolver = TappletResolver::current().read().await;
 
-        progress_stepper
-            .resolve_step(ProgressPlans::Wallet(
-                ProgressSetupWalletPlan::BinariesWallet,
-            ))
-            .await;
+        let mmproxy_binary_progress_tracker = progress_stepper.channel_step_range_updates(
+            ProgressPlans::Wallet(ProgressSetupWalletPlan::BinariesWallet),
+            Some(ProgressPlans::Wallet(ProgressSetupWalletPlan::StartWallet)),
+        );
 
         binary_resolver
-            .initialize_binary(Binaries::Wallet, None)
+            .initialize_binary(Binaries::Wallet, mmproxy_binary_progress_tracker)
             .await?;
 
         progress_stepper

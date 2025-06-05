@@ -8108,6 +8108,7 @@ name = "tari-universe"
 version = "1.2.7"
 dependencies = [
  "anyhow",
+ "async-stream",
  "async-trait",
  "async_zip",
  "auto-launch",

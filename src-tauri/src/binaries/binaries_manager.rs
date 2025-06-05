@@ -23,14 +23,16 @@ use anyhow::{anyhow, Error};
 use log::{debug, error, info, warn};
 use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, path::PathBuf, str::FromStr};
+use std::{collections::HashMap, ops::Div, path::PathBuf, str::FromStr};
 use tari_common::configuration::Network;
 use tauri_plugin_sentry::sentry;
+use tokio::sync::watch::{channel, Sender};
 
 use crate::{
     download_utils::{extract, validate_checksum},
     github::request_client::RequestClient,
     progress_trackers::progress_stepper::ChanneledStepUpdate,
+    tasks_tracker::TasksTrackers,
 };
 
 use super::{
@@ -442,6 +444,59 @@ impl BinaryManager {
         Err(anyhow!(last_error_message))
     }
 
+    async fn resolve_progress_channel(
+        &self,
+        progress_channel: Option<ChanneledStepUpdate>,
+    ) -> Result<Option<Sender<f64>>, Error> {
+        if let Some(step_update_channel) = progress_channel {
+            let (sender, mut receiver) = channel::<f64>(0.0);
+            let task_tacker = match Binaries::from_name(&self.binary_name) {
+                Binaries::GpuMiner => &TasksTrackers::current().hardware_phase,
+                Binaries::Xmrig => &TasksTrackers::current().hardware_phase,
+                Binaries::Wallet => &TasksTrackers::current().wallet_phase,
+                Binaries::MinotariNode => &TasksTrackers::current().node_phase,
+                Binaries::Tor => &TasksTrackers::current().common,
+                Binaries::MergeMiningProxy => &TasksTrackers::current().unknown_phase,
+                Binaries::ShaP2pool => &TasksTrackers::current().unknown_phase,
+            };
+            let binary_name = self.binary_name.clone();
+            let shutdown_signal = task_tacker.get_signal().await;
+            task_tacker.get_task_tracker().await.spawn(async move {
+                loop {
+                    if shutdown_signal.is_triggered() {
+                        info!(target: LOG_TARGET, "Shutdown signal received. Stopping progress channel for binary: {:?}", binary_name);
+                        break;
+                    }
+                    
+                    receiver.changed().await.expect("Failed to receive progress update");
+
+                    let last_percentage = *receiver.borrow();
+                    if last_percentage.ge(&100.0)  {
+                        info!(target: LOG_TARGET, "Progress channel completed for binary: {:?}", binary_name);
+                        break;
+                    }
+
+                    info!(target: LOG_TARGET, "Sending progress update for binary: {:?} with percentage: {}", binary_name, last_percentage);
+
+                    let mut params = HashMap::new();
+                    params.insert(
+                        "progress".to_string(),
+                        last_percentage.clone().to_string(),
+                    );
+                    step_update_channel
+                        .send_update(params, (last_percentage / 100.0).round())
+                        .await;
+
+                    tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+                }
+            });
+
+            Ok(Some(sender))
+        } else {
+            Ok(None)
+        }
+    }
+
     #[allow(clippy::too_many_lines)]
     async fn download_selected_version(
         &self,
@@ -495,12 +550,16 @@ impl BinaryManager {
 
         info!(target: LOG_TARGET, "Downloading binary: {} from url: {}", self.binary_name, download_url);
 
+        let chunk_progress_sender = self.resolve_progress_channel(progress_channel.clone())
+            .await
+            .map_err(|e| anyhow!("Error resolving progress channel: {:?}", e))?;
+
         if RequestClient::current()
             .download_file(
                 download_url.as_str(),
                 &in_progress_file_zip,
                 asset.source.is_mirror(),
-                None,
+                chunk_progress_sender.clone(),
             )
             .await
             .map_err(|e| anyhow!("Error downloading version: {:?}. Error: {:?}", version, e))
@@ -509,12 +568,17 @@ impl BinaryManager {
             if let Some(fallback_url) = fallback_url {
                 info!(target: LOG_TARGET, "Downloading binary: {} from fallback url: {}", self.binary_name, fallback_url);
 
+                let chunk_progress_sender = self.resolve_progress_channel(progress_channel.clone())
+                    .await
+                    .map_err(|e| anyhow!("Error resolving progress channel: {:?}", e))?;
+
+
                 RequestClient::current()
                     .download_file(
                         fallback_url.as_str(),
                         &in_progress_file_zip,
                         asset.source.is_mirror(),
-                        None,
+                        chunk_progress_sender,
                     )
                     .await
                     .map_err(|e| {

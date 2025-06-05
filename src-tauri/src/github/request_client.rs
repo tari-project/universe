@@ -20,19 +20,18 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use futures::executor::block_on;
 use futures::StreamExt;
 use std::path::Path;
 use std::path::PathBuf;
 use std::sync::atomic::AtomicU64;
 use std::sync::atomic::Ordering;
-use std::sync::Arc;
 use std::sync::LazyLock;
 use std::time::Duration;
 use tokio::fs;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
-use tokio::time::interval;
+use tokio::sync::watch::Sender;
+use tokio_util::io::ReaderStream;
 
 use super::Release;
 use anyhow::{anyhow, Error};
@@ -162,7 +161,6 @@ impl RequestClient {
     }
 
     pub async fn send_head_request(&self, url: &str) -> Result<Response, Error> {
-        info!(target: LOG_TARGET, "[ DOWNLOAD HEAD ] Downloading from url");
         let head_response = self
             .client
             .head(url)
@@ -170,7 +168,6 @@ impl RequestClient {
             .send()
             .await;
 
-        info!(target: LOG_TARGET, "[ DOWNLOAD HEAD ] response {:?}", &head_response);
         if let Ok(response) = head_response {
             if response.status().is_success() {
                 return Ok(response);
@@ -181,58 +178,10 @@ impl RequestClient {
                 ));
             }
         };
-        info!(target: LOG_TARGET, "[ DOWNLOAD HEAD ] end ");
         head_response.map_err(|e| anyhow!("HEAD request failed with error: {}", e))
     }
 
-    pub async fn send_get_request(
-        &self,
-        url: &str,
-        chunk_callback: Option<Box<dyn Fn(u64, u64) + Send + Sync>>,
-    ) -> Result<Response, Error> {
-        // test
-        let accumulated_size = Arc::new(AtomicU64::new(0));
-        let accumulated_size_clone = Arc::clone(&accumulated_size);
-
-        let test = self
-            .client
-            .get(url)
-            .header("User-Agent", self.user_agent.clone())
-            .send()
-            .await?;
-
-        let content_length = test
-            .content_length()
-            .ok_or_else(|| anyhow!("Content length is not available"))?;
-
-        // Spawn a separate task for logging progress
-        tokio::spawn(async move {
-            let mut progress_interval = interval(Duration::from_secs(1));
-            loop {
-                progress_interval.tick().await;
-                let progress = accumulated_size_clone.load(Ordering::Relaxed);
-                info!(target: LOG_TARGET, "Progress: {} / {}", progress, content_length);
-
-                if progress >= content_length {
-                    info!(target: LOG_TARGET, "Download completed.");
-                    break;
-                }
-            }
-        });
-
-        test.bytes_stream()
-            .fold(0, |acc, chunk| {
-                let chunk_size = chunk.unwrap().len() as u64;
-                accumulated_size.fetch_add(chunk_size, Ordering::Relaxed);
-
-                if let Some(callback) = &chunk_callback {
-                    callback(acc, chunk_size);
-                }
-
-                async move { acc + chunk_size }
-            })
-            .await;
-
+    pub async fn send_get_request(&self, url: &str) -> Result<Response, Error> {
         let get_response = self
             .client
             .get(url)
@@ -252,6 +201,78 @@ impl RequestClient {
         };
 
         get_response.map_err(|e| anyhow!("GET request failed with error: {}", e))
+    }
+
+    pub async fn send_get_file_request(
+        &self,
+        url: &str,
+        file_destination_path: &Path,
+        expected_size: u64,
+        progress_status_sender: Option<Sender<f64>>,
+    ) -> Result<(), Error> {
+        info!(target: LOG_TARGET, "[ DOWNLOAD GET FILE ] Downloading from url: {:?} to dest: {:?}", &url, &file_destination_path);
+
+        let mut file = match File::open(file_destination_path).await {
+            Ok(file) => file,
+            Err(e) => {
+                warn!(target: LOG_TARGET, "Failed to open file for writing: {}", e);
+                File::create(file_destination_path).await.map_err(|e| {
+                    warn!(target: LOG_TARGET, "Failed to create file: {}", e);
+                    e
+                })?
+            }
+        };
+
+        let get_response = self
+            .client
+            .get(url)
+            .header("User-Agent", self.user_agent.clone())
+            .header("Accept", "application/octet-stream")
+            .send()
+            .await;
+
+        if let Ok(response) = get_response {
+            let response_status = response.status();
+
+            let mut stream = response.bytes_stream();
+            while let Some(chunk) = stream.next().await {
+                match chunk {
+                    Ok(data) => {
+                        if let Err(e) = file.write_all(&data).await {
+                            warn!(target: LOG_TARGET, "Failed to write chunk to file: {}", e);
+                            return Err(anyhow!("Failed to write chunk to file: {}", e));
+                        }
+                        if expected_size > 0 {
+                            let progress_percentage = (file.metadata().await?.len() as f64
+                                / expected_size as f64)
+                                * 100.0;
+                            info!(target: LOG_TARGET, "Progress: {:.2}%", progress_percentage);
+                            if let Some(sender) = &progress_status_sender {
+                                if let Err(e) = sender.send(progress_percentage.round()) {
+                                    warn!(target: LOG_TARGET, "Failed to send progress update: {}", e);
+                                }
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        warn!(target: LOG_TARGET, "Error reading chunk: {}", e);
+                        return Err(anyhow!("Error reading chunk: {}", e));
+                    }
+                }
+            }
+
+            if response_status.is_success() {
+                return Ok(());
+            } else {
+                return Err(anyhow!(
+                    "GET request failed with status code: {}",
+                    response_status
+                ));
+            }
+        };
+
+        Ok(())
+        // get_response.map_err(|e| anyhow!("GET request failed with error: {}", e))
     }
 
     pub fn get_etag_from_head_response(&self, response: &Response) -> String {
@@ -302,10 +323,7 @@ impl RequestClient {
         &self,
         url: &str,
     ) -> Result<(Vec<Release>, String), anyhow::Error> {
-        let get_response = self
-            .send_get_request(url, None)
-            .await
-            .map_err(|e| anyhow!(e))?;
+        let get_response = self.send_get_request(url).await.map_err(|e| anyhow!(e))?;
         let etag = get_response
             .headers()
             .get("etag")
@@ -375,36 +393,24 @@ impl RequestClient {
         url: &str,
         destination: &Path,
         check_cache: bool,
-        chunk_callback: Option<Box<dyn Fn(u64, u64) + Send + Sync>>,
+        chunk_progress_sender: Option<Sender<f64>>,
     ) -> Result<(), anyhow::Error> {
         if check_cache {
             //TODO (2/2) bring it back once cloudflare stops returning dynamic status
             // self.check_if_cache_hits(url).await?;
         }
-        info!(target: LOG_TARGET, "[ DOWNLOAD ] Downloading from url: {:?} to dest: {:?}", &url, &destination);
         let head_response = self.send_head_request(url).await?;
-        info!(target: LOG_TARGET, "[ DOWNLOAD ] Head response {:?}", &head_response);
         let head_reponse_content_length =
             self.get_content_length_from_head_response(&head_response);
-        let head_reponse_etag = self.get_etag_from_head_response(&head_response);
 
-        let get_response: reqwest::Response = self.send_get_request(url, None).await?;
-        let get_reposnse_etag = self.get_etag_from_head_response(&get_response);
-        info!(target: LOG_TARGET, "[ DOWNLOAD ] Response etag");
-        // Ensure the directory exists
-        if let Some(parent) = destination.parent() {
-            fs::create_dir_all(parent).await?;
-        }
-
-        // Open a file for writing
-        let mut destination_path = File::create(destination).await?;
-        info!(target: LOG_TARGET, "[ DOWNLOAD ] Dest {:?}", &destination_path);
-        // Stream the response body directly to the file
-        let mut stream = get_response.bytes_stream();
-        while let Some(item) = stream.next().await {
-            destination_path.write_all(&item?).await?;
-        }
-        info!(target: LOG_TARGET, "[ DOWNLOAD ] Stream done");
+        let _unused = self
+            .send_get_file_request(
+                url,
+                destination,
+                head_reponse_content_length,
+                chunk_progress_sender,
+            )
+            .await?;
 
         let destination_file_size = self
             .get_content_size_from_file(destination.to_path_buf())
@@ -420,23 +426,12 @@ impl RequestClient {
         info!(target: LOG_TARGET, "Expected downloaded file size: {}", head_reponse_content_length);
         info!(target: LOG_TARGET, "Downloaded file size: {}", destination_file_size);
 
-        info!(target: LOG_TARGET, "Expected etag: {}", head_reponse_etag);
-        info!(target: LOG_TARGET, "Downloaded etag: {}", get_reposnse_etag);
-
         if head_reponse_content_length != 0 && head_reponse_content_length != destination_file_size
         {
             return Err(anyhow!(
                 "Downloaded file size does not match expected size. Expected: {}, Actual: {}",
                 head_reponse_content_length,
                 destination_file_size
-            ));
-        };
-
-        if !head_reponse_etag.is_empty() && head_reponse_etag != get_reposnse_etag {
-            return Err(anyhow!(
-                "Downloaded etag does not match expected etag. Expected: {}, Actual: {}",
-                head_reponse_etag,
-                get_reposnse_etag
             ));
         };
 
@@ -450,6 +445,7 @@ impl RequestClient {
         url: &str,
         destination: &Path,
         check_cache: bool,
+        chunk_progress_sender: Option<Sender<f64>>,
     ) -> Result<(), anyhow::Error> {
         info!(target: LOG_TARGET, "Downloading file: {}", url);
 
@@ -466,7 +462,7 @@ impl RequestClient {
             }
 
             match self
-                .download_file(url, destination, check_cache, None)
+                .download_file(url, destination, check_cache, chunk_progress_sender.clone())
                 .await
             {
                 Ok(_) => break,

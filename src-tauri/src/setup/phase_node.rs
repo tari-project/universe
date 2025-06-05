@@ -172,22 +172,23 @@ impl SetupPhaseImpl for NodeSetupPhase {
         let binary_resolver = BinaryResolver::current().read().await;
 
         if self.app_configuration.use_tor && !cfg!(target_os = "macos") {
-            tokio::time::sleep(Duration::from_secs(10)).await;
-            progress_stepper
-                .resolve_step(ProgressPlans::Node(ProgressSetupNodePlan::BinariesTor))
-                .await;
+            let tor_binary_progress_tracker = progress_stepper.channel_step_range_updates(
+                ProgressPlans::Node(ProgressSetupNodePlan::BinariesTor),
+                Some(ProgressPlans::Node(ProgressSetupNodePlan::BinariesNode)),
+            );
             binary_resolver
-                .initialize_binary(Binaries::Tor, None)
+                .initialize_binary(Binaries::Tor, tor_binary_progress_tracker)
                 .await?;
         } else {
             progress_stepper.skip_step(ProgressPlans::Node(ProgressSetupNodePlan::BinariesTor));
         };
 
-        progress_stepper
-            .resolve_step(ProgressPlans::Node(ProgressSetupNodePlan::BinariesNode))
-            .await;
+        let node_binary_progress_tracker = progress_stepper.channel_step_range_updates(
+            ProgressPlans::Node(ProgressSetupNodePlan::BinariesNode),
+            Some(ProgressPlans::Node(ProgressSetupNodePlan::StartTor)),
+        );
         binary_resolver
-            .initialize_binary(Binaries::MinotariNode, None)
+            .initialize_binary(Binaries::MinotariNode, node_binary_progress_tracker)
             .await?;
 
         if self.app_configuration.use_tor && !cfg!(target_os = "macos") {
