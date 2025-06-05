@@ -68,60 +68,53 @@ impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
             info!(target: LOG_TARGET, "SHA256SUMS line {}: {}", i + 1, line);
         }
 
-        // xmrig SHA256SUMS contains checksums for the actual binary executable, not the archive
-        // We need to look for the executable binary name, not the archive name
-        let mut xmrig_hash = None;
-        
-        // Extract the binary name patterns that might appear in SHA256SUMS
-        let potential_binary_names = [
-            "xmrig",                                          // Most common pattern
-            "xmrig.exe",                                      // Windows executable
-            &format!("xmrig-{}", asset_name.split('-').nth(1).unwrap_or("")), // versioned binary
-        ];
-        
-        info!(target: LOG_TARGET, "Looking for xmrig binary checksums with potential names: {:?}", potential_binary_names);
-        
-        // Try to find checksum for the binary executable
-        for binary_name in &potential_binary_names {
-            for line in contents.lines() {
-                // SHA256SUMS format: <hash>  <filename>
-                let parts: Vec<&str> = line.split_whitespace().collect();
-                if parts.len() >= 2 {
-                    let hash = parts[0];
-                    let filename = parts[1];
-                    
-                    info!(target: LOG_TARGET, "Checking SHA256SUMS entry: hash={}, filename={}", hash, filename);
-                    
-                    // Match against potential binary names
-                    if filename.contains(binary_name) || filename.ends_with(binary_name) {
-                        info!(target: LOG_TARGET, "Found matching binary '{}' in SHA256SUMS: {}", filename, hash);
-                        xmrig_hash = Some(hash.to_string());
-                        break;
+        // First, try to find the exact asset name in SHA256SUMS (most common case)
+        let mut xmrig_hash = contents
+            .lines()
+            .find(|line| {
+                // Handle both "*filename" and "filename" formats in SHA256SUMS
+                line.contains(asset_name) || line.contains(&format!("*{}", asset_name))
+            })
+            .and_then(|line| {
+                info!(target: LOG_TARGET, "Found exact match for asset '{}' in line: {}", asset_name, line);
+                line.split_whitespace().next()
+            })
+            .map(|hash| hash.to_string());
+
+        if let Some(ref hash) = xmrig_hash {
+            info!(target: LOG_TARGET, "Successfully found checksum for exact asset name '{}': {}", asset_name, hash);
+        } else {
+            warn!(target: LOG_TARGET, "Could not find exact match for asset '{}', trying alternative patterns", asset_name);
+            
+            // Fallback: try alternative binary name patterns (for edge cases)
+            let potential_binary_names = [
+                "xmrig",                                          // Generic pattern
+                "xmrig.exe",                                      // Windows executable
+                &format!("xmrig-{}", asset_name.split('-').nth(1).unwrap_or("")), // versioned binary
+            ];
+            
+            info!(target: LOG_TARGET, "Looking for xmrig binary checksums with potential names: {:?}", potential_binary_names);
+            
+            for binary_name in &potential_binary_names {
+                for line in contents.lines() {
+                    let parts: Vec<&str> = line.split_whitespace().collect();
+                    if parts.len() >= 2 {
+                        let hash = parts[0];
+                        let filename = parts[1];
+                        
+                        // Only match if the filename ends with the binary name (to avoid cross-platform matches)
+                        if filename.ends_with(binary_name) {
+                            info!(target: LOG_TARGET, "Found alternative match for '{}' in SHA256SUMS: {}", filename, hash);
+                            xmrig_hash = Some(hash.to_string());
+                            break;
+                        }
                     }
                 }
-            }
-            
-            if xmrig_hash.is_some() {
-                info!(target: LOG_TARGET, "Successfully found checksum using binary name pattern: {}", binary_name);
-                break;
-            }
-        }
-        
-        // Fallback: try to find any hash in the file if specific patterns don't work
-        if xmrig_hash.is_none() {
-            warn!(target: LOG_TARGET, "Could not find checksum using binary name patterns, trying archive name fallback");
-            
-            xmrig_hash = contents
-                .lines()
-                .find(|line| line.contains(asset_name))
-                .and_then(|line| {
-                    info!(target: LOG_TARGET, "Found fallback line matching asset name: {}", line);
-                    line.split_whitespace().next()
-                })
-                .map(|hash| hash.to_string());
                 
-            if let Some(ref hash) = xmrig_hash {
-                info!(target: LOG_TARGET, "Found checksum using archive name fallback: {}", hash);
+                if xmrig_hash.is_some() {
+                    info!(target: LOG_TARGET, "Successfully found checksum using alternative pattern: {}", binary_name);
+                    break;
+                }
             }
         }
 
