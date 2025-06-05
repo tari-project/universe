@@ -82,6 +82,13 @@ pub enum EventType {
     AppInMemoryConfigChanged,
     DisabledPhasesChanged,
     UniversalMinerInitializedExchangeIdChanged,
+    BinaryStartupAttempt,
+    BinaryRuntimeRestart,
+    BinaryPermanentFailure,
+    BinaryCorruptionDetected,
+    BinaryIntegrityRestored,
+    ProcessRetryConfigLoaded,
+    ProcessRetryConfigUpdated,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -202,4 +209,30 @@ pub struct DisabledPhasesPayload {
 #[derive(Debug, Serialize, Clone)]
 pub struct UniversalMinerInitializedExchangeIdChangedPayload {
     pub universal_miner_initialized_exchange_id: String,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct BinaryRetryPayload {
+    pub process_name: String,
+    pub attempt_number: u8,
+    pub max_attempts: u8,
+    pub retry_reason: RetryReason,
+    pub next_retry_in_seconds: Option<u64>,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub enum RetryReason {
+    StartupFailure,
+    RuntimeCrash,
+    BinaryCorruption,
+    HealthCheckFailure,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct BinaryCorruptionPayload {
+    pub process_name: String,
+    pub binary_path: String,
+    pub expected_hash: Option<String>,
+    pub actual_hash: String,
+    pub redownload_initiated: bool,
 }

@@ -24,9 +24,9 @@ use crate::app_in_memory_config::AppInMemoryConfig;
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 use crate::events::{
-    AppInMemoryConfigChangedPayload, ConnectionStatusPayload, CriticalProblemPayload,
-    DisabledPhasesPayload, InitWalletScanningProgressPayload,
-    UniversalMinerInitializedExchangeIdChangedPayload,
+    AppInMemoryConfigChangedPayload, BinaryCorruptionPayload, BinaryRetryPayload,
+    ConnectionStatusPayload, CriticalProblemPayload, DisabledPhasesPayload,
+    InitWalletScanningProgressPayload, UniversalMinerInitializedExchangeIdChangedPayload,
 };
 #[cfg(target_os = "windows")]
 use crate::external_dependencies::RequiredExternalDependency;
@@ -35,7 +35,8 @@ use crate::{
     commands::CpuMinerStatus,
     configs::{
         config_core::ConfigCoreContent, config_mining::ConfigMiningContent,
-        config_ui::ConfigUIContent, config_wallet::ConfigWalletContent,
+        config_process_retry::ConfigProcessRetryContent, config_ui::ConfigUIContent,
+        config_wallet::ConfigWalletContent,
     },
     events::{
         DetectedAvailableGpuEnginesPayload, DetectedDevicesPayload, Event, EventType,
@@ -777,6 +778,104 @@ impl EventsEmitter {
             .emit(BACKEND_STATE_UPDATE, event)
         {
             error!(target: LOG_TARGET, "Failed to emit UniversalMinerInitializedExchangeIdChanged event: {:?}", e);
+        }
+    }
+
+    pub async fn emit_binary_startup_attempt(payload: BinaryRetryPayload) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::BinaryStartupAttempt,
+            payload,
+        };
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
+            error!(target: LOG_TARGET, "Failed to emit BinaryStartupAttempt event: {:?}", e);
+        }
+    }
+
+    pub async fn emit_binary_runtime_restart(payload: BinaryRetryPayload) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::BinaryRuntimeRestart,
+            payload,
+        };
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
+            error!(target: LOG_TARGET, "Failed to emit BinaryRuntimeRestart event: {:?}", e);
+        }
+    }
+
+    pub async fn emit_binary_permanent_failure(payload: BinaryRetryPayload) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::BinaryPermanentFailure,
+            payload,
+        };
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
+            error!(target: LOG_TARGET, "Failed to emit BinaryPermanentFailure event: {:?}", e);
+        }
+    }
+
+    pub async fn emit_binary_corruption_detected(payload: BinaryCorruptionPayload) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::BinaryCorruptionDetected,
+            payload,
+        };
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
+            error!(target: LOG_TARGET, "Failed to emit BinaryCorruptionDetected event: {:?}", e);
+        }
+    }
+
+    pub async fn emit_binary_integrity_restored(process_name: String) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::BinaryIntegrityRestored,
+            payload: process_name,
+        };
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
+            error!(target: LOG_TARGET, "Failed to emit BinaryIntegrityRestored event: {:?}", e);
+        }
+    }
+
+    pub async fn emit_process_retry_config_loaded(payload: ConfigProcessRetryContent) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::ProcessRetryConfigLoaded,
+            payload,
+        };
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
+            error!(target: LOG_TARGET, "Failed to emit ProcessRetryConfigLoaded event: {:?}", e);
+        }
+    }
+
+    pub async fn emit_process_retry_config_updated(payload: ConfigProcessRetryContent) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::ProcessRetryConfigUpdated,
+            payload,
+        };
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
+            error!(target: LOG_TARGET, "Failed to emit ProcessRetryConfigUpdated event: {:?}", e);
         }
     }
 }
