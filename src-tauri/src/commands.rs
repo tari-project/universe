@@ -2256,45 +2256,49 @@ pub async fn set_process_retry_config(
 
 #[tauri::command]
 pub async fn set_max_startup_attempts(max_attempts: u8) -> Result<(), InvokeError> {
-    ConfigProcessRetry::update_field(
-        ConfigProcessRetryContent::set_max_startup_attempts,
-        max_attempts,
-    )
-    .await
-    .map_err(InvokeError::from_anyhow)?;
+    let config_instance = ConfigProcessRetry::current().await;
+    let mut config_lock = config_instance.write().await;
+    config_lock._get_content_mut().default_config.max_startup_attempts = max_attempts;
+    let config = config_lock._get_content().clone();
+    drop(config_lock);
+    
+    ConfigProcessRetry::_save_config(config).map_err(InvokeError::from_anyhow)?;
     Ok(())
 }
 
 #[tauri::command]
 pub async fn set_startup_retry_delay_secs(delay_secs: u64) -> Result<(), InvokeError> {
-    ConfigProcessRetry::update_field(
-        ConfigProcessRetryContent::set_startup_retry_delay_secs,
-        delay_secs,
-    )
-    .await
-    .map_err(InvokeError::from_anyhow)?;
+    let config_instance = ConfigProcessRetry::current().await;
+    let mut config_lock = config_instance.write().await;
+    config_lock._get_content_mut().default_config.startup_retry_delay_secs = delay_secs;
+    let config = config_lock._get_content().clone();
+    drop(config_lock);
+    
+    ConfigProcessRetry::_save_config(config).map_err(InvokeError::from_anyhow)?;
     Ok(())
 }
 
 #[tauri::command]
 pub async fn set_max_runtime_restart_attempts(max_attempts: u8) -> Result<(), InvokeError> {
-    ConfigProcessRetry::update_field(
-        ConfigProcessRetryContent::set_max_runtime_restart_attempts,
-        max_attempts,
-    )
-    .await
-    .map_err(InvokeError::from_anyhow)?;
+    let config_instance = ConfigProcessRetry::current().await;
+    let mut config_lock = config_instance.write().await;
+    config_lock._get_content_mut().default_config.max_runtime_restart_attempts = max_attempts;
+    let config = config_lock._get_content().clone();
+    drop(config_lock);
+    
+    ConfigProcessRetry::_save_config(config).map_err(InvokeError::from_anyhow)?;
     Ok(())
 }
 
 #[tauri::command]
 pub async fn set_runtime_restart_delay_secs(delay_secs: u64) -> Result<(), InvokeError> {
-    ConfigProcessRetry::update_field(
-        ConfigProcessRetryContent::set_runtime_restart_delay_secs,
-        delay_secs,
-    )
-    .await
-    .map_err(InvokeError::from_anyhow)?;
+    let config_instance = ConfigProcessRetry::current().await;
+    let mut config_lock = config_instance.write().await;
+    config_lock._get_content_mut().default_config.runtime_restart_delay_secs = delay_secs;
+    let config = config_lock._get_content().clone();
+    drop(config_lock);
+    
+    ConfigProcessRetry::_save_config(config).map_err(InvokeError::from_anyhow)?;
     Ok(())
 }
 

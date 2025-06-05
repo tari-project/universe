@@ -50,9 +50,9 @@ pub struct ProcessSpecificConfig {
 #[getset(get = "pub", set = "pub")]
 pub struct ConfigProcessRetryContent {
     /// Global default configuration
-    default_config: ProcessSpecificConfig,
+    pub default_config: ProcessSpecificConfig,
     /// Process-specific overrides
-    process_overrides: HashMap<String, ProcessSpecificConfig>,
+    pub process_overrides: HashMap<String, ProcessSpecificConfig>,
     /// Enable binary corruption detection during startup and runtime
     enable_corruption_detection: bool,
     /// Enable automatic re-download of corrupted binaries

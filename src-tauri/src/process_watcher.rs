@@ -87,6 +87,7 @@ pub struct ProcessWatcher<TAdapter: ProcessAdapter> {
 
 impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
     pub fn new(adapter: TAdapter, stats_broadcast: watch::Sender<ProcessWatcherStats>) -> Self {
+        let adapter_name = adapter.name().to_string();
         Self {
             adapter,
             watcher_task: None,
@@ -107,7 +108,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
             binary_path: None,
             binary_type: None,
             circuit_breaker: ProcessCircuitBreaker::new(
-                adapter.name().to_string(),
+                adapter_name,
                 5, // Default failure threshold
                 Duration::from_secs(60), // Default recovery timeout
             ),
