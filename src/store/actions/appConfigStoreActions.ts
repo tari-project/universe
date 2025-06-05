@@ -25,7 +25,7 @@ import { GpuThreads } from '@app/types/app-status.ts';
 import { displayMode, modeType } from '../types';
 import { ConfigBackendInMemory, ConfigCore, ConfigMining, ConfigUI, ConfigWallet } from '@app/types/configs.ts';
 import { NodeType, updateNodeType as updateNodeTypeForNodeStore } from '../useNodeStore.ts';
-import { fetchExchangeContent } from '../useExchangeStore.ts';
+import { fetchExchangeContent, fetchExchangeMiners } from '../useExchangeStore.ts';
 
 import { AppInMemoryConfigChangedPayload } from '@app/types/events-payloads.ts';
 
@@ -329,6 +329,9 @@ export const fetchBackendInMemoryConfig = async () => {
             const isExchangeMode = res.exchangeId && !isUniversalMiner && res.exchangeId !== 'universal';
             if (isExchangeMode) {
                 await fetchExchangeContent(res.exchangeId);
+            }
+            if (isUniversalMiner) {
+                await fetchExchangeMiners();
             }
         }
     } catch (e) {
