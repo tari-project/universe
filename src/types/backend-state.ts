@@ -12,6 +12,7 @@ import {
     ShowReleaseNotesPayload,
     WalletAddressUpdatePayload,
 } from './events-payloads.ts';
+import { BinaryRetryEvent, BinaryCorruptionEvent } from './retry-config.ts';
 import {
     BaseNodeStatus,
     CpuMinerStatus,
@@ -213,4 +214,24 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'UniversalMinerInitializedExchangeIdChanged';
           payload: UniversalMinerInitializedExchangeIdChangedPayload;
+      }
+    | {
+          event_type: 'BinaryStartupAttempt';
+          payload: BinaryRetryEvent;
+      }
+    | {
+          event_type: 'BinaryRuntimeRestart';
+          payload: BinaryRetryEvent;
+      }
+    | {
+          event_type: 'BinaryPermanentFailure';
+          payload: { process_name: string };
+      }
+    | {
+          event_type: 'BinaryCorruptionDetected';
+          payload: BinaryCorruptionEvent;
+      }
+    | {
+          event_type: 'BinaryIntegrityRestored';
+          payload: { process_name: string };
       };
