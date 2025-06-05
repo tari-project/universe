@@ -96,6 +96,7 @@ mod auto_launcher;
 mod binaries;
 mod binary_integrity;
 mod commands;
+mod process_circuit_breaker;
 mod configs;
 mod consts;
 mod cpu_miner;

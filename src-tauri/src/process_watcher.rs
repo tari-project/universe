@@ -23,6 +23,7 @@
 use crate::binaries::{Binaries, BinaryResolver};
 use crate::binary_integrity::BinaryIntegrityChecker;
 use crate::configs::config_process_retry::{ConfigProcessRetry, ConfigProcessRetryContent, ProcessSpecificConfig};
+use crate::process_circuit_breaker::ProcessCircuitBreaker;
 use crate::configs::trait_config::ConfigImpl;
 use crate::events::{BinaryCorruptionPayload, BinaryRetryPayload, RetryReason};
 use crate::events_emitter::EventsEmitter;
@@ -81,6 +82,7 @@ pub struct ProcessWatcher<TAdapter: ProcessAdapter> {
     last_binary_hash: Option<String>,
     binary_path: Option<PathBuf>,
     binary_type: Option<Binaries>,
+    circuit_breaker: ProcessCircuitBreaker,
 }
 
 impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
@@ -104,6 +106,11 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
             last_binary_hash: None,
             binary_path: None,
             binary_type: None,
+            circuit_breaker: ProcessCircuitBreaker::new(
+                adapter.name().to_string(),
+                5, // Default failure threshold
+                Duration::from_secs(60), // Default recovery timeout
+            ),
         }
     }
 
@@ -220,6 +227,14 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         let retry_delay = self.process_specific_config.startup_retry_delay();
 
         for attempt in 1..=max_attempts {
+            // Check circuit breaker before attempting
+            if !self.circuit_breaker.should_attempt_retry() {
+                if let Some(recovery_time) = self.circuit_breaker.get_time_until_recovery() {
+                    warn!(target: LOG_TARGET, "Circuit breaker open for {}, blocking retry for {:?}", name, recovery_time);
+                    return Err(anyhow::anyhow!("Circuit breaker open, retry blocked for {:?}", recovery_time));
+                }
+            }
+
             // Emit startup attempt event
             if attempt > 1 {
                 EventsEmitter::emit_binary_startup_attempt(BinaryRetryPayload {
@@ -245,6 +260,8 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
             ) {
                 Ok(result) => {
                     info!(target: LOG_TARGET, "Successfully spawned {} on attempt {}", name, attempt);
+                    // Record success in circuit breaker
+                    self.circuit_breaker.record_success();
                     // Reset attempt counter on success
                     self.startup_attempt_count.store(0, Ordering::SeqCst);
                     return Ok(result);
@@ -252,6 +269,9 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                 Err(e) if attempt < max_attempts => {
                     warn!(target: LOG_TARGET, "Startup attempt {} failed for {}: {}, retrying in {:?}", 
                           attempt, name, e, retry_delay);
+                    
+                    // Record failure in circuit breaker
+                    self.circuit_breaker.record_failure();
                     
                     // Update attempt counter
                     self.startup_attempt_count.store(attempt, Ordering::SeqCst);
@@ -262,6 +282,9 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                 Err(e) => {
                     // All attempts exhausted - emit permanent failure
                     error!(target: LOG_TARGET, "All {} startup attempts failed for {}: {}", max_attempts, name, e);
+                    
+                    // Record failure in circuit breaker
+                    self.circuit_breaker.record_failure();
                     
                     EventsEmitter::emit_binary_permanent_failure(BinaryRetryPayload {
                         process_name: name.clone(),
@@ -350,7 +373,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         let task_tracker = task_tracker.clone();
         let stop_on_exit_codes = self.stop_on_exit_codes.clone();
         let stats_broadcast = self.stats_broadcast.clone();
-        let retry_config = self.retry_config.clone();
+        let process_specific_config = self.process_specific_config.clone();
         let runtime_restart_count = Arc::new(AtomicU8::new(0));
         let has_been_healthy = Arc::new(AtomicBool::new(false));
         
@@ -390,7 +413,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                             &mut warning_count,
                             &stop_on_exit_codes,
                             &mut stats,
-                            &retry_config,
+                            &process_specific_config,
                             runtime_restart_count.clone(),
                             has_been_healthy.clone(),
                         ).await? {
@@ -462,7 +485,7 @@ async fn do_health_check<TStatusMonitor: StatusMonitor, TProcessInstance: Proces
     warning_count: &mut u32,
     stop_on_exit_codes: &[i32],
     stats: &mut ProcessWatcherStats,
-    retry_config: &ConfigProcessRetryContent,
+    process_specific_config: &ProcessSpecificConfig,
     runtime_restart_count: Arc<AtomicU8>,
     has_been_healthy: Arc<AtomicBool>,
 ) -> Result<Option<i32>, anyhow::Error> {
@@ -553,7 +576,7 @@ async fn do_health_check<TStatusMonitor: StatusMonitor, TProcessInstance: Proces
                 uptime,
                 task_tracker,
                 stats,
-                retry_config,
+                process_specific_config,
                 runtime_restart_count,
                 has_been_healthy,
             ).await {
@@ -583,7 +606,7 @@ async fn handle_runtime_restart<TStatusMonitor: StatusMonitor, TProcessInstance:
     uptime: &mut Instant,
     task_tracker: TaskTracker,
     stats: &mut ProcessWatcherStats,
-    retry_config: &ConfigProcessRetryContent,
+    process_config: &ProcessSpecificConfig,
     runtime_restart_count: Arc<AtomicU8>,
     has_been_healthy: Arc<AtomicBool>,
 ) -> Result<bool, anyhow::Error> {
@@ -611,7 +634,7 @@ async fn handle_runtime_restart<TStatusMonitor: StatusMonitor, TProcessInstance:
     
     // This is a runtime failure - check retry limits
     let current_restart_count = runtime_restart_count.load(Ordering::SeqCst);
-    let max_attempts = *retry_config.max_runtime_restart_attempts();
+    let max_attempts = process_config.max_runtime_restart_attempts;
     
     if current_restart_count >= max_attempts {
         // All runtime restart attempts exhausted
@@ -633,7 +656,7 @@ async fn handle_runtime_restart<TStatusMonitor: StatusMonitor, TProcessInstance:
     runtime_restart_count.store(new_count, Ordering::SeqCst);
     
     // Emit runtime restart event
-    let retry_delay = retry_config.runtime_restart_delay();
+    let retry_delay = process_config.runtime_restart_delay();
     EventsEmitter::emit_binary_runtime_restart(BinaryRetryPayload {
         process_name: name.to_string(),
         attempt_number: new_count,
