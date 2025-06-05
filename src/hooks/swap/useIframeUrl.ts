@@ -24,11 +24,13 @@ export const useIframeUrl = () => {
 
     useEffect(() => {
         const interval = setInterval(() => {
-            console.info('Fetching swaps url');
             if (!urlRef.current && url === null) {
+                console.info('Fetching swaps url');
                 handleFetchUrl(() => {
                     clearInterval(interval);
                 });
+            } else {
+                clearInterval(interval);
             }
         }, 1000);
         return () => clearInterval(interval);
