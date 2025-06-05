@@ -188,51 +188,50 @@ impl BinaryIntegrityChecker {
     }
 }
 
-// Tests temporarily disabled - missing tempfile dependency
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     use std::io::Write;
-//     use tempfile::NamedTempFile;
-//
-//     #[tokio::test]
-//     async fn test_calculate_file_hash() {
-//         // Create a temporary file with known content
-//         let mut temp_file = NamedTempFile::new().unwrap();
-//         temp_file.write_all(b"test content").unwrap();
-//         temp_file.flush().unwrap();
-//
-//         let hash = BinaryIntegrityChecker::calculate_file_hash(temp_file.path())
-//             .await
-//             .unwrap();
-//
-//         // Verify the hash is calculated correctly
-//         assert!(!hash.is_empty());
-//         assert_eq!(hash.len(), 64); // SHA256 produces 64 character hex string
-//     }
-//
-//     #[tokio::test]
-//     async fn test_verify_cached_integrity() {
-//         // Create a temporary file
-//         let mut temp_file = NamedTempFile::new().unwrap();
-//         temp_file.write_all(b"test content").unwrap();
-//         temp_file.flush().unwrap();
-//
-//         // Calculate initial hash
-//         let initial_hash = BinaryIntegrityChecker::cache_binary_hash(temp_file.path())
-//             .await
-//             .unwrap();
-//
-//         // Verify integrity with correct hash
-//         let is_valid = BinaryIntegrityChecker::verify_cached_integrity(temp_file.path(), &initial_hash)
-//             .await
-//             .unwrap();
-//         assert!(is_valid);
-//
-//         // Verify integrity fails with wrong hash
-//         let is_invalid = BinaryIntegrityChecker::verify_cached_integrity(temp_file.path(), "wrong_hash")
-//             .await
-//             .unwrap();
-//         assert!(!is_invalid);
-//     }
-// }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Write;
+    use tempfile::NamedTempFile;
+
+    #[tokio::test]
+    async fn test_calculate_file_hash() {
+        // Create a temporary file with known content
+        let mut temp_file = NamedTempFile::new().unwrap();
+        temp_file.write_all(b"test content").unwrap();
+        temp_file.flush().unwrap();
+
+        let hash = BinaryIntegrityChecker::calculate_file_hash(temp_file.path())
+            .await
+            .unwrap();
+
+        // Verify the hash is calculated correctly
+        assert!(!hash.is_empty());
+        assert_eq!(hash.len(), 64); // SHA256 produces 64 character hex string
+    }
+
+    #[tokio::test]
+    async fn test_verify_cached_integrity() {
+        // Create a temporary file
+        let mut temp_file = NamedTempFile::new().unwrap();
+        temp_file.write_all(b"test content").unwrap();
+        temp_file.flush().unwrap();
+
+        // Calculate initial hash
+        let initial_hash = BinaryIntegrityChecker::cache_binary_hash(temp_file.path())
+            .await
+            .unwrap();
+
+        // Verify cached integrity with correct hash
+        let is_valid = BinaryIntegrityChecker::verify_cached_integrity(temp_file.path(), &initial_hash)
+            .await
+            .unwrap();
+        assert!(is_valid);
+
+        // Verify integrity fails with wrong hash
+        let is_invalid = BinaryIntegrityChecker::verify_cached_integrity(temp_file.path(), "wrong_hash")
+            .await
+            .unwrap();
+        assert!(!is_invalid);
+    }
+}
