@@ -29,8 +29,12 @@ use serde_json::json;
 use tauri::{AppHandle, Manager};
 
 use log::warn;
+use tokio::sync::watch::Sender;
 
-use crate::{events_emitter::EventsEmitter, UniverseAppState};
+use crate::{
+    events::ProgressTrackerUpdatePayload, events_emitter::EventsEmitter,
+    setup::utils::timeout_watcher::hash_value, UniverseAppState,
+};
 
 use super::progress_plans::{ProgressEvent, ProgressPlans, ProgressStep};
 
@@ -41,6 +45,7 @@ pub struct ChanneledStepUpdate {
     step: ProgressPlans,
     step_percentage: f64,
     next_step_percentage: Option<f64>,
+    timeout_watcher_sender: Sender<u64>,
 }
 
 impl ChanneledStepUpdate {
@@ -52,21 +57,33 @@ impl ChanneledStepUpdate {
                 - self.step_percentage)
                 * current_step_percentage;
 
-        EventsEmitter::emit_progress_tracker_update(
-            self.step.get_event_type(),
-            self.step.get_phase_title(),
-            self.step.get_title(),
-            resolved_percentage.round(),
-            Some(params),
-            false,
-        )
-        .await;
+        let payload = ProgressTrackerUpdatePayload {
+            phase_title: self.step.get_phase_title(),
+            title: self.step.get_title(),
+            progress: resolved_percentage.round(),
+            title_params: Some(params.clone()),
+            is_complete: false,
+        };
+
+        let _unused = &self
+            .timeout_watcher_sender
+            .send(hash_value(&payload))
+            .inspect_err(|e| {
+                warn!(
+                    target: LOG_TARGET,
+                    "Failed to send timeout watcher signal: {}",
+                    e
+                );
+            });
+
+        EventsEmitter::emit_progress_tracker_update(self.step.get_event_type(), payload).await;
     }
 }
 pub struct ProgressStepper {
     plan: Vec<ProgressPlans>,
     percentage_steps: Vec<f64>,
     app_handle: AppHandle,
+    timeout_watcher_sender: Sender<u64>,
 }
 
 impl ProgressStepper {
@@ -79,15 +96,26 @@ impl ProgressStepper {
 
             let is_completed = self.plan.is_empty();
 
-            EventsEmitter::emit_progress_tracker_update(
-                event.get_event_type(),
-                resolved_step.get_phase_title(),
-                event.get_title(),
-                resolved_percentage,
-                None,
-                is_completed,
-            )
-            .await;
+            let payload = ProgressTrackerUpdatePayload {
+                phase_title: resolved_step.get_phase_title(),
+                title: event.get_title(),
+                progress: resolved_percentage,
+                title_params: None,
+                is_complete: is_completed,
+            };
+
+            let _unused = &self
+                .timeout_watcher_sender
+                .send(hash_value(&payload))
+                .inspect_err(|e| {
+                    warn!(
+                        target: LOG_TARGET,
+                        "Failed to send timeout watcher signal: {}",
+                        e
+                    );
+                });
+
+            EventsEmitter::emit_progress_tracker_update(event.get_event_type(), payload).await;
             let app_state = self.app_handle.state::<UniverseAppState>();
             let _unused = app_state
                 .telemetry_service
@@ -128,6 +156,7 @@ impl ProgressStepper {
                         step: resolved_step.clone(),
                         step_percentage: resolved_percentage,
                         next_step_percentage,
+                        timeout_watcher_sender: self.timeout_watcher_sender.clone(),
                     };
 
                     return Some(channel_step_update);
@@ -137,6 +166,7 @@ impl ProgressStepper {
                     step: resolved_step.clone(),
                     step_percentage: resolved_percentage,
                     next_step_percentage: None,
+                    timeout_watcher_sender: self.timeout_watcher_sender.clone(),
                 };
 
                 return Some(channel_step_update);
@@ -201,12 +231,17 @@ impl ProgressStepperBuilder {
         self
     }
 
-    pub fn build(&mut self, app_handle: AppHandle) -> ProgressStepper {
+    pub fn build(
+        &mut self,
+        app_handle: AppHandle,
+        timeout_watcher_sender: Sender<u64>,
+    ) -> ProgressStepper {
         self.calculate_percentage_steps();
         ProgressStepper {
             plan: self.plan.clone().into_iter().rev().collect(),
             percentage_steps: self.percentage_steps.clone().into_iter().rev().collect(),
             app_handle,
+            timeout_watcher_sender,
         }
     }
 }
