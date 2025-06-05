@@ -46,7 +46,6 @@ use crate::p2pool::models::{Connections, P2poolStats};
 use crate::setup::setup_manager::{SetupManager, SetupPhase};
 use crate::tapplets::interface::ActiveTapplet;
 use crate::tapplets::tapplet_server::start_tapplet;
-use crate::tapplets::{TappletResolver, Tapplets};
 use crate::tasks_tracker::TasksTrackers;
 use crate::tor_adapter::TorConfig;
 use crate::utils::address_utils::verify_send;
@@ -2068,10 +2067,10 @@ pub async fn set_warmup_seen(warmup_seen: bool) -> Result<(), String> {
 
 #[tauri::command]
 pub async fn launch_builtin_tapplet() -> Result<ActiveTapplet, String> {
-    let tapplet_resolver = TappletResolver::current().read().await;
+    let binaries_resolver = BinaryResolver::current().read().await;
 
-    let tapp_dest_dir = tapplet_resolver
-        .resolve_path_to_tapplet_files(Tapplets::Bridge)
+    let tapp_dest_dir = binaries_resolver
+        .resolve_path_to_binary_files(Binaries::BridgeTapplet)
         .await
         .map_err(|e| e.to_string())?;
 

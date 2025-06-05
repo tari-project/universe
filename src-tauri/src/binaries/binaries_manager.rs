@@ -23,7 +23,7 @@ use anyhow::{anyhow, Error};
 use log::{debug, error, info, warn};
 use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, ops::Div, path::PathBuf, str::FromStr};
+use std::{collections::HashMap, path::PathBuf, str::FromStr};
 use tari_common::configuration::Network;
 use tauri_plugin_sentry::sentry;
 use tokio::sync::watch::{channel, Sender};
@@ -374,12 +374,14 @@ impl BinaryManager {
             let binary_file = version_folder
                 .join(Binaries::from_name(&self.binary_name).binary_file_name(version));
             let binary_file_with_exe = binary_file.with_extension("exe");
+            let binary_file_with_html = version_folder.join("index.html");
 
             debug!(target: LOG_TARGET, "Binary folder path: {:?}", binary_folder);
             debug!(target: LOG_TARGET, "Version folder path: {:?}", version_folder);
             debug!(target: LOG_TARGET, "Binary file path: {:?}", binary_file);
 
-            let binary_file_exists = binary_file.exists() || binary_file_with_exe.exists();
+            let binary_file_exists = binary_file.exists() || binary_file_with_exe.exists() ||
+                binary_file_with_html.exists();
 
             debug!(target: LOG_TARGET, "Binary file exists: {:?}", binary_file_exists);
 
@@ -458,6 +460,7 @@ impl BinaryManager {
                 Binaries::Tor => &TasksTrackers::current().common,
                 Binaries::MergeMiningProxy => &TasksTrackers::current().unknown_phase,
                 Binaries::ShaP2pool => &TasksTrackers::current().unknown_phase,
+                Binaries::BridgeTapplet => &TasksTrackers::current().wallet_phase,
             };
             let binary_name = self.binary_name.clone();
             let shutdown_signal = task_tacker.get_signal().await;
@@ -471,10 +474,7 @@ impl BinaryManager {
                     receiver.changed().await.expect("Failed to receive progress update");
 
                     let last_percentage = *receiver.borrow();
-                    if last_percentage.ge(&100.0)  {
-                        info!(target: LOG_TARGET, "Progress channel completed for binary: {:?}", binary_name);
-                        break;
-                    }
+
 
                     info!(target: LOG_TARGET, "Sending progress update for binary: {:?} with percentage: {}", binary_name, last_percentage);
 
@@ -487,7 +487,14 @@ impl BinaryManager {
                         .send_update(params, (last_percentage / 100.0).round())
                         .await;
 
+
+
                     tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+
+                    if last_percentage.ge(&100.0)  {
+                        info!(target: LOG_TARGET, "Progress channel completed for binary: {:?}", binary_name);
+                        break;
+                    }
                 }
             });
 

@@ -34,7 +34,7 @@ use regex::Regex;
 use tari_common::configuration::Network;
 use tokio::{fs::File, io::AsyncReadExt};
 
-use super::tapplets_resolver::LatestVersionApiAdapter;
+use super::binaries_resolver::LatestVersionApiAdapter;
 
 const LOG_TARGET: &str = "tari::universe::tapplet_bridge";
 
@@ -116,7 +116,7 @@ impl LatestVersionApiAdapter for BridgeTappletAdapter {
         }
     }
 
-    fn get_tapplet_folder(&self) -> Result<PathBuf, Error> {
+    fn get_binary_folder(&self) -> Result<PathBuf, Error> {
         let cache_path =
             dirs::cache_dir().ok_or_else(|| anyhow::anyhow!("Failed to get cache directory"))?;
 

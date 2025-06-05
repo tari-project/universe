@@ -23,15 +23,12 @@
 use futures::StreamExt;
 use std::path::Path;
 use std::path::PathBuf;
-use std::sync::atomic::AtomicU64;
-use std::sync::atomic::Ordering;
 use std::sync::LazyLock;
 use std::time::Duration;
 use tokio::fs;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 use tokio::sync::watch::Sender;
-use tokio_util::io::ReaderStream;
 
 use super::Release;
 use anyhow::{anyhow, Error};
@@ -403,14 +400,13 @@ impl RequestClient {
         let head_reponse_content_length =
             self.get_content_length_from_head_response(&head_response);
 
-        let _unused = self
-            .send_get_file_request(
-                url,
-                destination,
-                head_reponse_content_length,
-                chunk_progress_sender,
-            )
-            .await?;
+        self.send_get_file_request(
+            url,
+            destination,
+            head_reponse_content_length,
+            chunk_progress_sender,
+        )
+        .await?;
 
         let destination_file_size = self
             .get_content_size_from_file(destination.to_path_buf())

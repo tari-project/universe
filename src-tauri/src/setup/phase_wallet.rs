@@ -33,7 +33,6 @@ use crate::{
         ProgressStepper,
     },
     setup::setup_manager::SetupPhase,
-    tapplets::{TappletResolver, Tapplets},
     tasks_tracker::TasksTrackers,
     wallet_manager::WalletStartupConfig,
     UniverseAppState,
@@ -160,15 +159,14 @@ impl SetupPhaseImpl for WalletSetupPhase {
         let state = self.app_handle.state::<UniverseAppState>();
 
         let binary_resolver = BinaryResolver::current().read().await;
-        let tapplet_resolver = TappletResolver::current().read().await;
 
-        let mmproxy_binary_progress_tracker = progress_stepper.channel_step_range_updates(
+        let wallet_binary_progress_tracker = progress_stepper.channel_step_range_updates(
             ProgressPlans::Wallet(ProgressSetupWalletPlan::BinariesWallet),
             Some(ProgressPlans::Wallet(ProgressSetupWalletPlan::StartWallet)),
         );
 
         binary_resolver
-            .initialize_binary(Binaries::Wallet, mmproxy_binary_progress_tracker)
+            .initialize_binary(Binaries::Wallet, wallet_binary_progress_tracker)
             .await?;
 
         progress_stepper
@@ -215,12 +213,13 @@ impl SetupPhaseImpl for WalletSetupPhase {
             .await?;
         drop(spend_wallet_manager);
 
-        progress_stepper
-            .resolve_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::SetupBridge))
-            .await;
+        let bridge_binary_progress_tracker = progress_stepper.channel_step_range_updates(
+            ProgressPlans::Wallet(ProgressSetupWalletPlan::SetupBridge),
+            Some(ProgressPlans::Wallet(ProgressSetupWalletPlan::Done)),
+        );
 
-        tapplet_resolver
-            .initialize_tapplet(Tapplets::Bridge)
+        binary_resolver
+            .initialize_binary(Binaries::BridgeTapplet, bridge_binary_progress_tracker)
             .await?;
 
         Ok(())

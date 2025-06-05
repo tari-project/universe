@@ -36,6 +36,7 @@ use std::time::{Duration, SystemTime};
 use tari_common::configuration::Network;
 use tokio::sync::{Mutex, RwLock};
 
+use super::adapter_bridge::BridgeTappletAdapter;
 use super::adapter_github::GithubReleasesAdapter;
 use super::adapter_tor::TorReleaseAdapter;
 use super::adapter_xmrig::XmrigVersionApiAdapter;
@@ -112,6 +113,21 @@ impl BinaryResolver {
                 Network::Igor => ("pre", gpu_miner_testnet_regex),
                 Network::LocalNet => ("pre", gpu_miner_testnet_regex),
             };
+
+        binary_manager.insert(
+            Binaries::BridgeTapplet,
+            Mutex::new(BinaryManager::new(
+                Binaries::BridgeTapplet.name().to_string(),
+                None,
+                Box::new(BridgeTappletAdapter {
+                    repo: "wxtm-bridge-frontend".to_string(),
+                    owner: "tari-project".to_string(),
+                    specific_name: None,
+                }),
+                None,
+                false,
+            )),
+        );
 
         binary_manager.insert(
             Binaries::Xmrig,
