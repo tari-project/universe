@@ -22,7 +22,7 @@ import { useTranslation } from 'react-i18next';
 export default function BlockSolved({ id, minersSolved, reward, timeAgo, blocks }: BlockData) {
     const { t } = useTranslation(['mining-view', 'sidebar']);
     const [isHovering, setIsHovering] = useState(false);
-    const title = minersSolved > 1 ? `${minersSolved} ${t('bubbles.miners')}` : t('bubbles.pool');
+    const title = minersSolved > 100 ? `${minersSolved} ${t('bubbles.miners')}` : t('bubbles.pool');
     return (
         <Wrapper
             layout="position"

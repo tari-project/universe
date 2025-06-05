@@ -10,7 +10,7 @@ import { useTranslation } from 'react-i18next';
 
 export default function BlockSolving({ id, minersSolved, timeAgo, reward, isSolved }: BlockData) {
     const { t } = useTranslation('mining-view');
-    const title = minersSolved > 1 ? `${minersSolved} ${t('bubbles.miners')}` : t('bubbles.pool');
+    const title = minersSolved > 100 ? `${minersSolved} ${t('bubbles.miners')}` : t('bubbles.pool');
     const titleMarkup = (
         <Title>
             <strong>{title}</strong>
