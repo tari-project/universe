@@ -655,4 +655,21 @@ impl BinaryManager {
             })
             .map_err(|e| anyhow!("Error getting binary folder. Error: {:?}", e))
     }
+
+    pub fn get_expected_checksum(&self) -> Option<String> {
+        if let Some(version) = &self.used_version {
+            // Find the download info for the current version
+            for download_info in &self.online_versions_list {
+                if download_info.version == *version {
+                    // Find the asset for the current platform
+                    if let Ok(asset) = self.adapter.find_version_for_platform(download_info) {
+                        // TODO: Extract the checksum from the asset or download info
+                        // For now, we return None as the checksum structure needs to be defined
+                        return None;
+                    }
+                }
+            }
+        }
+        None
+    }
 }

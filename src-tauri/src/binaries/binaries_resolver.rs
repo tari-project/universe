@@ -415,4 +415,19 @@ impl BinaryResolver {
             .map(|v| v.to_string())
             .unwrap_or_else(|| "Not Installed".to_string())
     }
+
+    pub async fn get_binary_checksum(&self, binary: Binaries) -> Result<String, Error> {
+        let manager = self
+            .managers
+            .get(&binary)
+            .ok_or_else(|| anyhow!("No manager found for binary {}", binary.name()))?;
+        
+        let manager_lock = manager.lock().await;
+        
+        // Get the expected checksum from the manager
+        match manager_lock.get_expected_checksum() {
+            Some(checksum) => Ok(checksum),
+            None => Err(anyhow!("No checksum available for binary {}", binary.name())),
+        }
+    }
 }
