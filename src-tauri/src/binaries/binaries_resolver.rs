@@ -425,7 +425,7 @@ impl BinaryResolver {
         let manager_lock = manager.lock().await;
         
         // Get the expected checksum from the manager
-        match manager_lock.get_expected_checksum() {
+        match manager_lock.get_expected_checksum().await {
             Some(checksum) => Ok(checksum),
             None => Err(anyhow!("No checksum available for binary {}", binary.name())),
         }

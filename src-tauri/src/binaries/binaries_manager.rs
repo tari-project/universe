@@ -656,16 +656,35 @@ impl BinaryManager {
             .map_err(|e| anyhow!("Error getting binary folder. Error: {:?}", e))
     }
 
-    pub fn get_expected_checksum(&self) -> Option<String> {
+    pub async fn get_expected_checksum(&self) -> Option<String> {
         if let Some(version) = &self.used_version {
             // Find the download info for the current version
             for download_info in &self.online_versions_list {
                 if download_info.version == *version {
                     // Find the asset for the current platform
                     if let Ok(asset) = self.adapter.find_version_for_platform(download_info) {
-                        // TODO: Extract the checksum from the asset or download info
-                        // For now, we return None as the checksum structure needs to be defined
-                        return None;
+                        // Create temporary directory for checksum download
+                        if let Ok(base_dir) = self.get_base_dir() {
+                            let temp_dir = base_dir.join("temp_checksum");
+                            if std::fs::create_dir_all(&temp_dir).is_ok() {
+                                // Reuse existing download_and_get_checksum_path method
+                                if let Ok(checksum_path) = self.adapter
+                                    .download_and_get_checksum_path(temp_dir.clone(), download_info.clone())
+                                    .await
+                                {
+                                    // Reuse existing get_expected_checksum method from adapter
+                                    let expected_checksum = self.adapter
+                                        .get_expected_checksum(checksum_path, &asset.name)
+                                        .await
+                                        .ok();
+                                    
+                                    // Cleanup temp directory
+                                    let _ = std::fs::remove_dir_all(&temp_dir);
+                                    
+                                    return expected_checksum;
+                                }
+                            }
+                        }
                     }
                 }
             }
