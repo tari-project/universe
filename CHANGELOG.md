@@ -1,5 +1,7 @@
 🚀 TARI UNIVERSE v1.2.7: The Crown of Every Heart
 
+_June 5, 2025_
+
 Hey everyone,
 
 🎉 Tari Mainnet is nearly a month old! Tari Universe v1.2.7, also known as "The Crown of Every Heart," focuses on making the world's easiest-to-use crypto app smoother, faster, and more consistent. Our goal is for Tari Universe to become a "set it and forget" type of application. A well-oiled machine. With the release of "The Crown of Every Heart, we take a significant step together towards this goal!
