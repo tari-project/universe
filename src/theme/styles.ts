@@ -15,8 +15,6 @@ export const DashboardContainer = styled.div`
     padding: 10px;
     gap: 10px;
     max-height: 100%;
-
-    background-color: ${({ theme }) => theme.palette.background.main};
     background-image: ${({ theme }) =>
         `linear-gradient(to top, transparent -90px, ${convertHexToRGBA(theme.palette.background.main, 0.6)} 130px, transparent 230px)`};
 `;
