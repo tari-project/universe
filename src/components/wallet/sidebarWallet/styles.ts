@@ -1,4 +1,5 @@
-import styled from 'styled-components';
+import styled, { keyframes } from 'styled-components';
+import * as m from 'motion/react-m';
 
 export const WalletWrapper = styled.div`
     border-radius: 20px;
@@ -9,4 +10,42 @@ export const WalletWrapper = styled.div`
     align-items: center;
     justify-content: center;
     width: 100%;
+`;
+
+export const DetailsCard = styled(m.div)`
+    display: flex;
+    border-radius: 20px;
+    padding: 14px;
+    width: 100%;
+    min-height: 170px;
+    box-shadow: 10px 10px 40px 0 rgba(0, 0, 0, 0.06);
+    position: relative;
+    overflow: hidden;
+`;
+
+const spin = keyframes`
+  100% {
+    transform: translate(-50%, -50%)  rotate(-360deg);
+  }
+`;
+
+export const AnimatedBG = styled.div<{ $col1: string; $col2: string }>`
+    background-image: ${({ $col1, $col2 }) => `linear-gradient(15deg, ${$col1} 0%, ${$col2} 140%)`};
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 150%;
+    height: 300%;
+    transform: translate(-50%, -50%);
+    animation: ${spin} 15s linear infinite;
+    z-index: 0;
+`;
+
+export const DetailsCardContent = styled.div`
+    z-index: 1;
+    justify-content: space-between;
+    flex-direction: column;
+    display: flex;
+    width: 100%;
+    height: 100%;
 `;
