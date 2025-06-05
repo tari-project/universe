@@ -4,6 +4,7 @@ import { BinaryRetryEvent, BinaryCorruptionEvent, AlertSeverity } from '../../..
 import { LinearProgress } from '../../../../components/elements/LinearProgress';
 import { Typography } from '../../../../components/elements/Typography';
 import { Button } from '../../../../components/elements/buttons/Button';
+import { TECHNICAL_MESSAGES, STATUS_ICONS } from './ProcessRetryIndicator.constants';
 
 const Container = styled.div`
     position: fixed;
@@ -216,12 +217,12 @@ export function ProcessRetryIndicator() {
         switch (severity) {
             case AlertSeverity.Critical:
             case AlertSeverity.Error:
-                return <StatusIcon $severity={severity}>!</StatusIcon>;
+                return <StatusIcon $severity={severity}>{STATUS_ICONS.ERROR}</StatusIcon>;
             case AlertSeverity.Warning:
-                return <StatusIcon $severity={severity}>⚠</StatusIcon>;
+                return <StatusIcon $severity={severity}>{STATUS_ICONS.WARNING}</StatusIcon>;
             case AlertSeverity.Info:
             default:
-                return <StatusIcon $severity={severity}>i</StatusIcon>;
+                return <StatusIcon $severity={severity}>{STATUS_ICONS.INFO}</StatusIcon>;
         }
     };
 
@@ -245,10 +246,10 @@ export function ProcessRetryIndicator() {
         <Container>
             <FlexBetween>
                 <Typography variant="h6" style={{ fontWeight: 'bold' }}>
-                    Process Status
+                    {TECHNICAL_MESSAGES.PROCESS_STATUS}
                 </Typography>
                 <Button onClick={() => setIsMinimized(!isMinimized)} variant="secondary" size="small">
-                    {isMinimized ? '▼' : '▲'}
+                    {isMinimized ? STATUS_ICONS.EXPAND : STATUS_ICONS.COLLAPSE}
                 </Button>
             </FlexBetween>
 
@@ -269,7 +270,7 @@ export function ProcessRetryIndicator() {
                             </FlexRow>
 
                             <Typography variant="span" style={{ color: 'inherit', opacity: 0.7, fontSize: '0.8rem' }}>
-                                {retry.retry_reason} - Attempt {retry.attempt_number} of {retry.max_attempts}
+                                {retry.retry_reason}{TECHNICAL_MESSAGES.RETRY_REASON_SEPARATOR}{TECHNICAL_MESSAGES.ATTEMPT_TEMPLATE(retry.attempt_number, retry.max_attempts)}
                             </Typography>
 
                             {retry.next_retry_in_seconds && (
@@ -286,14 +287,14 @@ export function ProcessRetryIndicator() {
                 {corruptionEvents.map((corruption) => (
                     <RetryItem key={corruption.id} $severity={AlertSeverity.Error}>
                         <FlexRow>
-                            <StatusIcon $severity={AlertSeverity.Error}>!</StatusIcon>
+                            <StatusIcon $severity={AlertSeverity.Error}>{STATUS_ICONS.ERROR}</StatusIcon>
                             <Typography variant="p" style={{ fontWeight: 'bold' }}>
                                 {corruption.process_name}
                             </Typography>
                         </FlexRow>
 
                         <Typography variant="span" style={{ color: 'inherit', opacity: 0.7, fontSize: '0.8rem' }}>
-                            Binary corruption detected
+                            {TECHNICAL_MESSAGES.BINARY_CORRUPTION_DETECTED}
                         </Typography>
 
                         {corruption.redownload_initiated && (
@@ -307,9 +308,9 @@ export function ProcessRetryIndicator() {
                                             backgroundColor: '#4caf50',
                                         }}
                                     >
-                                        ✓
+                                        {STATUS_ICONS.SUCCESS}
                                     </StatusIcon>
-                                    Re-download initiated
+                                    {TECHNICAL_MESSAGES.REDOWNLOAD_INITIATED}
                                 </Typography>
                             </div>
                         )}
