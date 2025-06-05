@@ -25,7 +25,7 @@ import { GpuThreads } from '@app/types/app-status.ts';
 import { displayMode, modeType } from '../types';
 import { ConfigBackendInMemory, ConfigCore, ConfigMining, ConfigUI, ConfigWallet } from '@app/types/configs.ts';
 import { NodeType, updateNodeType as updateNodeTypeForNodeStore } from '../useNodeStore.ts';
-import { fetchExchangeContent, fetchExchangeMiners, setShowUniversalModal } from '../useExchangeStore.ts';
+import { fetchExchangeContent } from '../useExchangeStore.ts';
 
 import { AppInMemoryConfigChangedPayload } from '@app/types/events-payloads.ts';
 
@@ -326,19 +326,9 @@ export const fetchBackendInMemoryConfig = async () => {
         const res = await invoke('get_app_in_memory_config');
         if (res) {
             useConfigBEInMemoryStore.setState({ ...res, isUniversalMiner });
-            const universalMinerExchangeId = await invoke('get_universal_miner_initialized_exchange_id'); // It has to be a command instead of getter from appConfigStore since store is not initialized yet
-            const isUniversalUninitialized = isUniversalMiner && !universalMinerExchangeId;
-            const isUniversalInitialized = isUniversalMiner && universalMinerExchangeId;
             const isExchangeMode = res.exchangeId && !isUniversalMiner && res.exchangeId !== 'universal';
-            if (isUniversalUninitialized) {
-                await fetchExchangeMiners();
-                setShowUniversalModal(true);
-            }
             if (isExchangeMode) {
                 await fetchExchangeContent(res.exchangeId);
-            }
-            if (isUniversalInitialized) {
-                await fetchExchangeContent(universalMinerExchangeId);
             }
         }
     } catch (e) {

@@ -670,7 +670,7 @@ fn main() {
             commands::set_monerod_config,
             commands::set_tari_address,
             commands::confirm_exchange_address,
-            commands::user_selected_exchange,
+            commands::select_exchange_miner,
             commands::is_universal_miner,
             commands::set_p2pool_enabled,
             commands::set_show_experimental_settings,
@@ -716,7 +716,7 @@ fn main() {
             commands::get_bridge_envs,
             commands::parse_tari_address,
             commands::refresh_wallet_history,
-            commands::get_universal_miner_initialized_exchange_id,
+            commands::get_universal_miner_exchange_id,
         ])
         .build(tauri::generate_context!())
         .inspect_err(|e| {

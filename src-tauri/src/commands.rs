@@ -207,7 +207,7 @@ pub async fn is_universal_miner(state: tauri::State<'_, UniverseAppState>) -> Re
 }
 
 #[tauri::command]
-pub async fn user_selected_exchange(
+pub async fn select_exchange_miner(
     app_handle: tauri::AppHandle,
     exchange_miner: ExchangeMiner,
 ) -> Result<(), String> {
@@ -219,7 +219,7 @@ pub async fn user_selected_exchange(
 
     EventsEmitter::emit_app_in_memory_config_changed(new_config_cloned, true).await;
     let _unused = ConfigCore::update_field(
-        ConfigCoreContent::set_universal_miner_initialized_exchange_id,
+        ConfigCoreContent::set_universal_miner_exchange_id,
         Some(exchange_miner.id.clone()),
     )
     .await;
@@ -556,10 +556,10 @@ pub async fn get_used_p2pool_stats_server_port(
 }
 
 #[tauri::command]
-pub async fn get_universal_miner_initialized_exchange_id() -> Result<Option<String>, String> {
+pub async fn get_universal_miner_exchange_id() -> Result<Option<String>, String> {
     Ok(ConfigCore::content()
         .await
-        .universal_miner_initialized_exchange_id()
+        .universal_miner_exchange_id()
         .clone())
 }
 
