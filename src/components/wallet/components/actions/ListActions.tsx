@@ -19,7 +19,7 @@ export default function ListActions() {
     }
 
     return (
-        <Wrapper style={{ padding: `0 0 4px` }}>
+        <Wrapper style={{ marginBottom: `-4px` }}>
             <NavWrapper>
                 <FilterWrapper>
                     {FILTER_TYPES.map((type) => (

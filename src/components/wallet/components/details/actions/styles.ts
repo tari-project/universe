@@ -21,4 +21,8 @@ export const ActionButton = styled.button`
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(77px);
     color: #fff;
+
+    svg {
+        max-width: 14px;
+    }
 `;

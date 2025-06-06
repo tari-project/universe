@@ -64,7 +64,7 @@ export const AnimatedBG = styled.div<{ $col1: string; $col2: string }>`
     top: 50%;
     left: 50%;
     width: 400px;
-    height: 500px;
+    height: 400px;
     transform: translate(-50%, -50%);
     animation: ${spin} 15s linear infinite;
     z-index: 0;
