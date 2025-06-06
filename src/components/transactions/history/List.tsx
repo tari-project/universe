@@ -108,6 +108,7 @@ export default function List() {
                 {emptyMarkup}
                 {baseMarkup}
             </ListWrapper>
+
             {detailsItem && (
                 <TransactionDetails
                     item={detailsItem}

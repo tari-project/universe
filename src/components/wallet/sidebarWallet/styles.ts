@@ -1,5 +1,6 @@
 import styled, { keyframes } from 'styled-components';
 import * as m from 'motion/react-m';
+import { Button } from '@app/components/elements/buttons/Button.tsx';
 
 export const WalletWrapper = styled(m.div)``;
 export const Wrapper = styled.div`
@@ -7,14 +8,39 @@ export const Wrapper = styled.div`
     background: ${({ theme }) => (theme.mode === 'dark' ? '#2E2E2E' : '#E9E9E9')};
     padding: 15px 11px 11px 11px;
     display: flex;
+    position: relative;
     flex-direction: column;
+    overflow: hidden;
     width: 100%;
     height: 455px;
     gap: 10px;
-    position: relative;
-    overflow: scroll;
 `;
 
+export const NavWrapper = styled.div`
+    display: flex;
+    flex-flow: row;
+    align-items: center;
+    width: 100%;
+    gap: 10px;
+`;
+
+export const NavButton = styled(Button).attrs({
+    size: 'medium',
+})<{ $isActive?: boolean }>`
+    line-height: 1.05;
+    width: 100%;
+    color: ${({ theme }) => theme.palette.text.primary};
+    background-color: ${({ theme }) => theme.palette.base};
+    text-transform: capitalize;
+    &:hover {
+        opacity: 0.85;
+    }
+
+    &:disabled {
+        opacity: 0.2;
+        pointer-events: none;
+    }
+`;
 export const DetailsCard = styled(m.div)`
     display: flex;
     border-radius: 20px;

@@ -2,9 +2,11 @@ import { invoke } from '@tauri-apps/api/core';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { TransactionInfo } from '@app/types/app-status.ts';
 
+const KEY_TX = `transactions`;
+
 export function useFetchTxHistory() {
     return useInfiniteQuery<TransactionInfo[]>({
-        queryKey: ['aightbet'],
+        queryKey: [KEY_TX],
         queryFn: async ({ pageParam }) => {
             const limit = 6;
             const offset = limit * (pageParam as number);

@@ -6,8 +6,14 @@ export const HistoryListWrapper = styled(m.div)`
     width: 100%;
     height: 220px;
     flex-grow: 1;
+    overflow: hidden;
     overflow-y: auto;
     align-items: flex-end;
-    mask-image: linear-gradient(to bottom, transparent 0px, black 6px, black calc(100% - 30px), transparent 100%);
+    justify-content: flex-end;
     position: relative;
+    padding: 0 0 10px;
+
+    mask-image: linear-gradient(to bottom, transparent 0px, black 6px, black calc(100% - 30px), transparent 100%);
+    mask-position: bottom;
+    mask-size: 100% 100%;
 `;
