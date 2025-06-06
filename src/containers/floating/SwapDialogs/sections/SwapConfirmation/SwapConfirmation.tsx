@@ -124,7 +124,6 @@ export const SwapConfirmation = ({
         return baseItems.filter((item) => item.value !== null && item.value !== undefined);
     }, [executionPrice, networkFee, minimumReceived, priceImpact, t, transactionId, paidTransactionFee]);
 
-    console.log('toTokenDisplay', toTokenDisplay);
     const xtmOptionMarkup = useMemo(() => {
         return (
             <SwapOption>
