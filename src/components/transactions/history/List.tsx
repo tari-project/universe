@@ -1,5 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
-import { useCallback, useState } from 'react';
+import { useInView } from 'motion/react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useWalletStore } from '@app/store';
 import { ListItemWrapper, ListWrapper } from './List.styles.ts';
@@ -9,12 +10,18 @@ import { TransactionInfo } from '@app/types/app-status.ts';
 import { PlaceholderItem } from '@app/components/transactions/history/ListItem.styles.ts';
 import ListLoadingAnimation from '@app/containers/navigation/components/Wallet/ListLoadingAnimation/ListLoadingAnimation.tsx';
 import { LoadingText } from '@app/containers/navigation/components/Wallet/ListLoadingAnimation/styles.ts';
+import { useFetchTxHistory } from '@app/hooks/wallet/useFetchTxHistory.ts';
+import { TransactionDetails } from '@app/components/transactions/history/details/TransactionDetails.tsx';
 
 export default function List() {
     const { t } = useTranslation('wallet');
-    const is_transactions_history_loading = useWalletStore((s) => s.is_transactions_history_loading);
     const walletScanning = useWalletStore((s) => s.wallet_scanning);
-    const transactions = useWalletStore((s) => s.transactions);
+    const lastItemRef = useRef<HTMLDivElement>(null);
+    const isInView = useInView(lastItemRef);
+
+    const { data, fetchNextPage } = useFetchTxHistory();
+    const transactions = data?.pages.flatMap((p) => p);
+
     const [detailsItem, setDetailsItem] = useState<TransactionDetailsItem | null>(null);
     const handleDetailsChange = useCallback(async (tx: TransactionInfo | null) => {
         if (!tx) {
@@ -43,6 +50,11 @@ export default function List() {
         });
     }, []);
 
+    useEffect(() => {
+        if (isInView) {
+            fetchNextPage();
+        }
+    }, [fetchNextPage, isInView]);
     // Calculate how many placeholder items we need to add
     const transactionsCount = transactions?.length || 0;
     const placeholdersNeeded = Math.max(0, 5 - transactionsCount);
@@ -66,7 +78,7 @@ export default function List() {
             ))}
 
             {/* added last placeholder so the user can scroll above the bottom mask */}
-            <PlaceholderItem />
+            <PlaceholderItem ref={lastItemRef} />
         </ListItemWrapper>
     );
 
@@ -89,9 +101,18 @@ export default function List() {
     const isEmpty = !walletScanning.is_scanning && !transactions?.length;
     const emptyMarkup = isEmpty ? <LoadingText>{t('empty-tx')}</LoadingText> : null;
     return (
-        <ListWrapper>
-            {emptyMarkup}
-            {baseMarkup}
-        </ListWrapper>
+        <>
+            <ListWrapper>
+                {emptyMarkup}
+                {baseMarkup}
+            </ListWrapper>
+            {detailsItem && (
+                <TransactionDetails
+                    item={detailsItem}
+                    expanded={Boolean(detailsItem)}
+                    handleClose={() => setDetailsItem(null)}
+                />
+            )}
+        </>
     );
 }

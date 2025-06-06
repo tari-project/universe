@@ -7,7 +7,7 @@ import { setError } from './appStateStoreActions';
 import { setExchangeContent } from '@app/store/useExchangeStore.ts';
 import { TransactionDirection, TransactionStatus } from '@app/types/transactions';
 
-interface TxArgs {
+export interface TxArgs {
     offset?: number;
     limit?: number;
 }
