@@ -39,13 +39,3 @@ export const IframeContainer = styled.div`
     justify-content: center;
     align-items: center;
 `;
-
-export const Header = styled.div`
-    display: flex;
-    width: 100%;
-    text-transform: capitalize;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0 10px;
-    border: none;
-`;
