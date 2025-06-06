@@ -113,6 +113,9 @@ getset = "0.1.5"
 console-subscriber = "0.4.1"
 const_format = "0.2.34"
 
+[dev-dependencies]
+tempfile = "3.0"
+
 [target.'cfg(windows)'.dependencies]
 planif = "1.0.0"
 whoami = "1.5.2"
