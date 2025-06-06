@@ -40,7 +40,7 @@ const AIRDROP_API_BASE_URL: &str = std::env!(
 const TELEMETRY_API_URL: &str =
     std::env!("TELEMETRY_API_URL", "TELEMETRY_API_URL env var not defined");
 
-pub const DEFAULT_EXCHANGE_ID: &str = "classic";
+pub const DEFAULT_EXCHANGE_ID: &str = "universal";
 pub const EXCHANGE_ID: &str = match option_env!("EXCHANGE_ID") {
     Some(val) => val,
     None => DEFAULT_EXCHANGE_ID,
@@ -151,18 +151,46 @@ impl AppInMemoryConfig {
         )))]
         AppInMemoryConfig::default()
     }
+    pub fn init_with_exchange(exchange_id: &str) -> Self {
+        #[cfg(feature = "airdrop-env")]
+        return AppInMemoryConfig {
+            airdrop_url: AIRDROP_BASE_URL.into(),
+            airdrop_api_url: AIRDROP_API_BASE_URL.into(),
+            telemetry_api_url: TELEMETRY_API_URL.into(),
+            exchange_id: exchange_id.into(),
+            wallet_connect_project_id: WALLET_CONNECT_PROJECT_ID.into(),
+        };
+
+        #[cfg(all(feature = "airdrop-local", not(feature = "airdrop-env")))]
+        return AppInMemoryConfig {
+            airdrop_url: "http://localhost:4000".into(),
+            airdrop_api_url: "http://localhost:3004".into(),
+            telemetry_api_url: "http://localhost:3004".into(),
+            exchange_id: exchange_id.into(),
+            wallet_connect_project_id: WALLET_CONNECT_PROJECT_ID.into(),
+        };
+
+        #[cfg(not(any(
+            feature = "airdrop-local",
+            feature = "airdrop-env",
+            feature = "telemetry-env",
+        )))]
+        return AppInMemoryConfig {
+            exchange_id: exchange_id.into(),
+            ..AppInMemoryConfig::default()
+        };
+    }
 }
 
 #[derive(Debug)]
 pub enum MinerType {
-    Classic,
     Universal,
     ExchangeMode,
 }
 impl MinerType {
     fn from_str(s: &str) -> Self {
         match s {
-            DEFAULT_EXCHANGE_ID => MinerType::Classic,
+            DEFAULT_EXCHANGE_ID => MinerType::Universal,
             _ => MinerType::ExchangeMode,
         }
     }
@@ -186,17 +214,9 @@ pub struct ExchangeMinersListResponse {
 }
 
 impl DynamicMemoryConfig {
-    pub async fn init() -> Self {
+    pub fn init() -> Self {
         let in_memory_config = AppInMemoryConfig::init();
         let miner_type = MinerType::from_str(&in_memory_config.exchange_id);
-
-        // Hard coded universal miner ID fix this later
-        if &in_memory_config.exchange_id == "1eff0ada-8358-4511-99f8-9ec2820aa37e" {
-            return Self {
-                in_memory_config,
-                miner_type: MinerType::Universal,
-            };
-        }
 
         Self {
             in_memory_config,
@@ -204,23 +224,12 @@ impl DynamicMemoryConfig {
         }
     }
 
-    pub fn init_universal(exchange_miner: &ExchangeMiner) -> Self {
+    pub fn init_with_exchange_id(exchange_id: &str) -> Self {
+        let in_memory_config = AppInMemoryConfig::init_with_exchange(exchange_id);
+        let miner_type = MinerType::Universal;
         Self {
-            miner_type: MinerType::Universal,
-            in_memory_config: AppInMemoryConfig {
-                exchange_id: exchange_miner.id.clone(),
-                ..AppInMemoryConfig::init()
-            },
-        }
-    }
-
-    pub fn init_classic() -> Self {
-        Self {
-            miner_type: MinerType::Classic,
-            in_memory_config: AppInMemoryConfig {
-                exchange_id: "classic".to_string(),
-                ..AppInMemoryConfig::init()
-            },
+            in_memory_config,
+            miner_type,
         }
     }
 

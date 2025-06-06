@@ -128,7 +128,7 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'set_tari_address', payload: { address: string }): Promise<void>;
     function invoke(param: 'confirm_exchange_address', payload: { address: string }): Promise<void>;
     function invoke(param: 'get_app_in_memory_config'): Promise<ConfigBackendInMemory>;
-    function invoke(param: 'user_selected_exchange', payload: { exchange_miner: ExchangeMiner }): Promise<void>;
+    function invoke(param: 'select_exchange_miner', payload: { exchange_miner: ExchangeMiner }): Promise<void>;
     function invoke(param: 'is_universal_miner'): Promise<boolean>;
     function invoke(param: 'launch_builtin_tapplet'): Promise<ActiveTapplet>;
     function invoke(param: 'get_tari_wallet_address'): Promise<string>;
@@ -136,5 +136,5 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'get_bridge_envs'): Promise<BridgeEnvs>;
     function invoke(param: 'parse_tari_address', payload: { address: string }): Promise<TariAddressVariants>;
     function invoke(param: 'refresh_wallet_history'): Promise<void>;
-    function invoke(param: 'get_universal_miner_initialized_exchange_id'): Promise<string | undefiend>;
+    function invoke(param: 'get_universal_miner_exchange_id'): Promise<string | undefiend>;
 }

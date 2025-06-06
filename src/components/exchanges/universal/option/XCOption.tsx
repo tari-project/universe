@@ -17,7 +17,7 @@ export const XCOption = ({ content, isCurrent = false }: XCOptionProps) => {
             slug: content.slug,
             name: content.name,
         };
-        await invoke('user_selected_exchange', { exchangeMiner: selectedExchangeMiner });
+        await invoke('select_exchange_miner', { exchangeMiner: selectedExchangeMiner });
         setShowUniversalModal(false);
         setShowExchangeModal(true);
     };

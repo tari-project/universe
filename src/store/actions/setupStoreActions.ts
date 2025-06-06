@@ -150,6 +150,7 @@ export const updateDisabledPhases = (payload: DisabledPhasesPayload) => {
 };
 
 export const handleUpdateDisabledPhases = (payload: DisabledPhasesPayload) => {
+    console.info('[DEBUG EXCHANGE MINER] handleUpdateDisabledPhases ', payload);
     updateDisabledPhases(payload);
     if (payload.disabled_phases.includes(SetupPhase.Wallet)) {
         useTappletsStore.setState({ uiBridgeSwapsEnabled: false });
