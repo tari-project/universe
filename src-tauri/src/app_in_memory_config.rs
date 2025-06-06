@@ -224,7 +224,7 @@ impl DynamicMemoryConfig {
         }
     }
 
-    pub fn change_exchange_miner(exchange_id: &str) -> Self {
+    pub fn init_with_exchange_id(exchange_id: &str) -> Self {
         let in_memory_config = AppInMemoryConfig::init_with_exchange(exchange_id);
         let miner_type = MinerType::Universal;
         Self {
