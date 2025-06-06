@@ -18,8 +18,9 @@ import ResumeApplicationModal from './ResumeApplicationModal/ResumeApplicationMo
 import XSpaceEventBanner from './XSpaceBanner/XSpaceBanner.tsx';
 import { CustomPowerLevelsDialogContainer } from '@app/containers/navigation/components/Miner/components/CustomPowerLevels/CustomPowerLevelsDialogContainer.tsx';
 import WarmupDialog from './Warmup/WarmupDialog.tsx';
-import EXModal from '@app/containers/floating/EXModal/EXModal.tsx';
-import UniversalEXSelectorModal from '@app/containers/floating/UniversalEXSelectorModal/UniversalEXSelectorModal.tsx';
+import EXModal from './EXModal/EXModal.tsx';
+import UniversalEXSelectorModal from './UniversalEXSelectorModal/UniversalEXSelectorModal.tsx';
+import KeychainDialog from './Keychain/KeychainDialog.tsx';
 
 const environment = import.meta.env.MODE;
 
@@ -45,6 +46,7 @@ const FloatingElements = () => {
             <EXModal />
             <UniversalEXSelectorModal />
             <ResumeApplicationModal />
+            <KeychainDialog />
         </FloatingTree>
     );
 };
