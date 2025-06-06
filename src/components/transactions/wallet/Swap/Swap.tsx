@@ -1,5 +1,5 @@
-import { BackButton, IframeContainer, SectionHeaderWrapper, SwapsContainer, SwapsIframe } from './Swap.styles';
-import { HeaderLabel, TabHeader } from '../../components/Tabs/tab.styles';
+import { BackButton, IframeContainer, SectionHeaderWrapper, SwapsContainer, SwapsIframe, Header } from './Swap.styles';
+import { HeaderLabel } from '../../components/Tabs/tab.styles';
 import {
     SwapConfirmation,
     SwapConfirmationTransactionProps,
@@ -106,12 +106,12 @@ export const Swap = memo(function Swap() {
 
     return (
         <SwapsContainer>
-            <TabHeader $noBorder>
+            <Header>
                 <SectionHeaderWrapper>
                     <HeaderLabel>{t('swap.buy-tari')}</HeaderLabel>
                     <BackButton onClick={() => setIsSwapping(false)}>{t('swap.back-button')}</BackButton>
                 </SectionHeaderWrapper>
-            </TabHeader>
+            </Header>
             <IframeContainer>
                 {iframeUrl ? (
                     <SwapsIframe
