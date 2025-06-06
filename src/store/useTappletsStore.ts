@@ -10,7 +10,7 @@ interface State {
     isFetching: boolean;
     activeTapplet: ActiveTapplet | undefined;
     uiBridgeSwapsEnabled: boolean;
-    pendingBridgeTx: BridgeTxDetails | undefined;
+    ongoingBridgeTx: BridgeTxDetails | undefined;
     isPendingTappletTx: boolean;
 }
 
@@ -20,8 +20,8 @@ interface Actions {
     deactivateTapplet: () => Promise<void>;
     setUiBridgeSwaps: (enabled: boolean) => Promise<void>;
     fetchUiBridgeFeatureFlag: () => Promise<boolean>;
-    addPendingTappletTx: (tx: BridgeTxDetails) => void;
-    removePendingTappletTx: (paymentId: string) => void;
+    setOngoingBridgeTx: (tx: BridgeTxDetails) => void;
+    removeOngoingBridgeTx: () => void;
 }
 
 type TappletsStoreState = State & Actions;
@@ -31,7 +31,7 @@ const initialState: State = {
     isInitialized: false,
     activeTapplet: undefined,
     uiBridgeSwapsEnabled: true,
-    pendingBridgeTx: undefined,
+    ongoingBridgeTx: undefined,
     isPendingTappletTx: false,
 };
 
@@ -68,15 +68,15 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
         // run the Ootle dev/registed tapplet below
         return;
     },
-    addPendingTappletTx: (tx: BridgeTxDetails) => {
+    setOngoingBridgeTx: (tx: BridgeTxDetails) => {
         set({
-            pendingBridgeTx: tx,
+            ongoingBridgeTx: tx,
             isPendingTappletTx: true,
         });
     },
-    removePendingTappletTx: () => {
+    removeOngoingBridgeTx: () => {
         set({
-            pendingBridgeTx: undefined,
+            ongoingBridgeTx: undefined,
             isPendingTappletTx: false,
         });
     },

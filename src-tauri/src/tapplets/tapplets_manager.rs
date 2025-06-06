@@ -363,7 +363,7 @@ impl TappletManager {
         );
 
         if highest_version == Version::new(0, 0, 0) {
-            warn!(target: LOG_TARGET,"No version selected for tapplet: {:?}", self.tapplet_name);
+            warn!(target: LOG_TARGET,"No highest version selected for {:?} tapplet", self.tapplet_name);
             return None;
         }
 
@@ -472,9 +472,9 @@ impl TappletManager {
         let version = match selected_version {
             Some(version) => version,
             None => {
-                warn!(target: LOG_TARGET, "No version selected for tapplet: {:?}", self.tapplet_name);
+                warn!(target: LOG_TARGET, "Download {:?} tapplet version: no version selected", self.tapplet_name);
                 return Err(anyhow!(format!(
-                    "No version selected for tapplet: {:?}",
+                    "Download {:?} tapplet version: no version selected",
                     self.tapplet_name
                 )));
             }

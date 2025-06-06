@@ -36,8 +36,15 @@ export class TappletSigner {
 
     /* eslint-disable @typescript-eslint/no-explicit-any */
     async runOne(method: any, args: any[]): Promise<any> {
-        const res = (this[method] as (...args: any) => Promise<any>)(...args);
-        return res;
+        // Check if method exists on the class prototype
+        if (method in TappletSigner.prototype) {
+            // Call the method with the correct 'this' context and args
+            const res = (this[method] as (...args: any) => Promise<any>)(...args);
+            return res;
+        } else {
+            console.warn(`Method "${method}" does not exist on TappletSigner.`);
+            return undefined;
+        }
     }
 
     public async getAccount(): Promise<AccountData> {
@@ -52,18 +59,18 @@ export class TappletSigner {
         return true;
     }
 
-    public async addPendingTappletTx(tx: BridgeTxDetails): Promise<void> {
-        const addTx = useTappletsStore.getState().addPendingTappletTx;
-        addTx(tx);
+    public async setOngoingBridgeTx(tx: BridgeTxDetails): Promise<void> {
+        const setTx = useTappletsStore.getState().setOngoingBridgeTx;
+        setTx(tx);
     }
 
-    public async removePendingTappletTx(paymentId: string): Promise<void> {
-        const removeTx = useTappletsStore.getState().removePendingTappletTx;
-        removeTx(paymentId);
+    public async removeOngoingBridgeTx(): Promise<void> {
+        const removeTx = useTappletsStore.getState().removeOngoingBridgeTx;
+        removeTx();
     }
 
-    public async getPendingTappletTx(): Promise<BridgeTxDetails | undefined> {
-        const bridgeTx = useTappletsStore.getState().pendingBridgeTx;
+    public async getOngoingBridgeTx(): Promise<BridgeTxDetails | undefined> {
+        const bridgeTx = useTappletsStore.getState().ongoingBridgeTx;
         return bridgeTx;
     }
 

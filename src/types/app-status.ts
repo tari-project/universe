@@ -221,6 +221,7 @@ export interface ApplicationsVersions {
     mm_proxy: string;
     wallet: string;
     sha_p2pool: string;
+    bridge: string;
 }
 
 export interface PaperWalletDetails {

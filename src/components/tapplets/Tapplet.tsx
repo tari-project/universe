@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useTappletSignerStore } from '@app/store/useTappletSignerStore';
 import { MiningViewContainer } from '@app/containers/main/Dashboard/MiningView/MiningView.styles';
+import { open } from '@tauri-apps/plugin-shell';
 
 interface TappletProps {
     source: string;
@@ -24,6 +25,19 @@ export const Tapplet: React.FC<TappletProps> = ({ source }) => {
         }
     }, [provider]);
 
+    const openExternalLink = useCallback(async (event: MessageEvent) => {
+        if (!event.data.url || typeof event.data.url !== 'string') {
+            console.error('Invalid external tapplet URL');
+        }
+        const url = event.data.url;
+        console.info('Opening external tapplet URL:', url);
+        try {
+            await open(url);
+        } catch (e) {
+            console.error('Open tapplet URL error: ', e);
+        }
+    }, []);
+
     const runTappletTx = useCallback(
         async (event: MessageEvent) => {
             await runTransaction(event);
@@ -37,9 +51,11 @@ export const Tapplet: React.FC<TappletProps> = ({ source }) => {
                 sendWindowSize();
             } else if (event.data.type === 'signer-call') {
                 runTappletTx(event);
+            } else if (event.data.type === 'open-external-link') {
+                openExternalLink(event);
             }
         },
-        [sendWindowSize, runTappletTx]
+        [sendWindowSize, runTappletTx, openExternalLink]
     );
 
     useEffect(() => {
