@@ -36,7 +36,6 @@
         "react-hook-form": "^7.56.3",
         "react-i18next": "^15.5.2",
         "react-icons": "^5.5.0",
-        "react-infinite-scroll-component": "^6.1.0",
         "react-markdown": "^9.1.0",
         "styled-components": "^6.1.18",
         "use-sync-external-store": "^1.4.0",

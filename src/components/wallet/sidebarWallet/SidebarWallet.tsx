@@ -1,5 +1,5 @@
 import { AnimatePresence, useMotionValueEvent, useScroll } from 'motion/react';
-import { useAirdropStore, usePaperWalletStore, useWalletStore } from '@app/store';
+import { usePaperWalletStore, useWalletStore } from '@app/store';
 import { swapTransition } from '@app/components/transactions/wallet/transitions.ts';
 import { Swap } from '@app/components/transactions/wallet/Swap/Swap.tsx';
 import WalletBalance from '../components/balance/WalletBalance.tsx';
@@ -21,6 +21,7 @@ import List from '@app/components/transactions/history/List.tsx';
 
 import { useTranslation } from 'react-i18next';
 import { ArrowRightSVG } from '@app/assets/icons/arrow-right.tsx';
+import SyncTooltip from '@app/containers/navigation/components/Wallet/SyncTooltip/SyncTooltip.tsx';
 
 interface SidebarWalletProps {
     section: string;
@@ -33,7 +34,7 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
     const [offset, setOffset] = useState(0);
 
     const setShowPaperWalletModal = usePaperWalletStore((s) => s.setShowModal);
-    const swapUiEnabled = useAirdropStore((s) => s.swapsEnabled);
+    const swapUiEnabled = true; //useAirdropStore((s) => s.swapsEnabled);
     const isSwapping = useWalletStore((s) => s.is_swapping);
 
     useMotionValueEvent(scrollY, 'change', (latest) => {
@@ -72,9 +73,16 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
                                 {t('tabs.receive')}
                             </NavButton>
                         </NavWrapper>
-                        <SyncButton onClick={() => setShowPaperWalletModal(true)}>
-                            {t('history.sync-with-phone')} <ArrowRightSVG />
-                        </SyncButton>
+
+                        <SyncTooltip
+                            title={t('paper-wallet-tooltip-title', { ns: 'sidebar' })}
+                            text={t('paper-wallet-tooltip-message', { ns: 'sidebar' })}
+                            trigger={
+                                <SyncButton onClick={() => setShowPaperWalletModal(true)}>
+                                    {t('history.sync-with-phone')} <ArrowRightSVG />
+                                </SyncButton>
+                            }
+                        />
                         <HistoryListWrapper ref={targetRef}>
                             <List />
                         </HistoryListWrapper>
