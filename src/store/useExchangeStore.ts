@@ -59,7 +59,6 @@ export async function fetchExchangeContent(exchangeId: string) {
         const walletIsGenerated = useWalletStore.getState().is_tari_address_generated;
         if (xcContent) {
             setExchangeContent(xcContent);
-            console.debug(`isUniversalMiner= `, isUniversalMiner);
             setSeedlessUI(!isUniversalMiner);
             if (!isUniversalMiner) setShowExchangeModal(!!walletIsGenerated);
         }

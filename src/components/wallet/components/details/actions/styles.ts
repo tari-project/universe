@@ -26,6 +26,11 @@ export const ActionButton = styled.button`
     svg {
         max-width: 14px;
     }
+
+    &:disabled {
+        opacity: 0.8;
+        pointer-events: none;
+    }
 `;
 
 export const AddressTooltip = styled(m.div)`
@@ -35,7 +40,17 @@ export const AddressTooltip = styled(m.div)`
     align-items: center;
     justify-content: center;
     border-radius: 72px;
-    background: #fff;
+    background: ${({ theme }) => theme.palette.background.paper};
     z-index: 1;
     font-weight: 600;
+`;
+
+export const Menu = styled(m.div)`
+    padding: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 20px;
+    background: ${({ theme }) => theme.palette.background.paper};
+    z-index: 1;
 `;
