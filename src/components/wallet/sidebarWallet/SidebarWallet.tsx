@@ -1,6 +1,6 @@
 import { AnimatePresence, useMotionValueEvent, useScroll } from 'motion/react';
 import { useAirdropStore, useWalletStore } from '@app/store';
-import { swapTransition, walletTransition } from '@app/components/transactions/wallet/transitions.ts';
+import { swapTransition } from '@app/components/transactions/wallet/transitions.ts';
 import { Swap } from '@app/components/transactions/wallet/Swap/Swap.tsx';
 import WalletBalance from '../components/balance/WalletBalance.tsx';
 import WalletDetails from '../components/details/WalletDetails.tsx';
@@ -40,16 +40,20 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
         setOffset(latest);
     });
 
+    const showSwaps = swapUiEnabled && isSwapping;
+
     return (
         <>
-            <Wrapper>
-                <AnimatePresence mode="wait">
-                    {isSwapping && swapUiEnabled ? (
-                        <SwapsWrapper {...swapTransition} key="swap">
+            <AnimatePresence initial={false} mode="wait">
+                {showSwaps ? (
+                    <SwapsWrapper key="swap" variants={swapTransition} initial="hide" exit="hide" animate="show">
+                        <Wrapper $swapsPanel>
                             <Swap />
-                        </SwapsWrapper>
-                    ) : (
-                        <WalletWrapper {...walletTransition} key="wallet">
+                        </Wrapper>
+                    </SwapsWrapper>
+                ) : (
+                    <WalletWrapper key="wallet" variants={swapTransition} initial="dhow" exit="hide" animate="show">
+                        <Wrapper>
                             <DetailsCard style={{ height: 170 - offset }} transition={{ duration: 0.3 }}>
                                 <AnimatedBG $col1={`#0B0A0D`} $col2={`#6F8309`} />
                                 <DetailsCardContent>
@@ -67,10 +71,10 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
                             {swapUiEnabled && (
                                 <BuyTariButton onClick={() => setIsSwapping(true)}>{'Buy Tari (wXTM)'}</BuyTariButton>
                             )}
-                        </WalletWrapper>
-                    )}
-                </AnimatePresence>
-            </Wrapper>
+                        </Wrapper>
+                    </WalletWrapper>
+                )}
+            </AnimatePresence>
             {detailsItem && (
                 <TransactionDetails
                     item={detailsItem}

@@ -1,15 +1,14 @@
 import * as m from 'motion/react-m';
-import styled, { keyframes } from 'styled-components';
+import styled, { css, keyframes } from 'styled-components';
 
 export const SwapsWrapper = styled(m.div)``;
 export const WalletWrapper = styled(m.div)`
     width: 100%;
     flex-direction: column;
     display: flex;
-    gap: 8px;
 `;
 
-export const Wrapper = styled.div`
+export const Wrapper = styled.div<{ $swapsPanel?: boolean }>`
     border-radius: 20px;
     background: ${({ theme }) => (theme.mode === 'dark' ? '#2E2E2E' : '#E9E9E9')};
     padding: 15px 11px 11px 11px;
@@ -17,7 +16,9 @@ export const Wrapper = styled.div`
     position: relative;
     flex-direction: column;
     overflow: hidden;
+    overflow-y: auto;
     width: 100%;
+    gap: 8px;
     height: 565px;
 
     @media (max-height: 815px) {
@@ -26,6 +27,12 @@ export const Wrapper = styled.div`
     @media (max-height: 690px) {
         height: 385px;
     }
+
+    ${({ $swapsPanel }) =>
+        $swapsPanel &&
+        css`
+            height: unset;
+        `}
 `;
 
 export const WalletActionWrapper = styled(m.div)`
