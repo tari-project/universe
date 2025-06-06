@@ -1,6 +1,7 @@
 import styled, { keyframes } from 'styled-components';
 import * as m from 'motion/react-m';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
+import { convertHexToRGBA } from '@app/utils';
 
 export const WalletWrapper = styled(m.div)``;
 export const Wrapper = styled.div`
@@ -78,3 +79,35 @@ export const DetailsCardContent = styled.div`
     width: 100%;
 `;
 export const SwapsWrapper = styled(m.div)``;
+export const SyncButton = styled.button`
+    color: ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.5)};
+    font-family: Poppins, sans-serif;
+    font-size: 11px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: normal;
+    letter-spacing: -0.44px;
+
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    background: transparent;
+    border: none;
+    cursor: pointer;
+
+    transition: color 0.2s ease-in-out;
+
+    svg {
+        stroke: ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.5)};
+        transition: stroke 0.2s ease-in-out;
+    }
+
+    &:hover {
+        color: ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 1)};
+
+        svg {
+            stroke: ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 1)};
+        }
+    }
+`;

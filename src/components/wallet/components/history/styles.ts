@@ -13,7 +13,7 @@ export const HistoryListWrapper = styled(m.div)`
     position: relative;
     padding: 0 0 10px;
 
-    mask-image: linear-gradient(to bottom, transparent 0px, black 6px, black calc(100% - 30px), transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent -10px, black 10px, black calc(100% - 40px), transparent 100%);
     mask-position: bottom;
     mask-size: 100% 100%;
 `;

@@ -1,5 +1,5 @@
 import { AnimatePresence, useMotionValueEvent, useScroll } from 'motion/react';
-import { useAirdropStore, useWalletStore } from '@app/store';
+import { useAirdropStore, usePaperWalletStore, useWalletStore } from '@app/store';
 import { swapTransition } from '@app/components/transactions/wallet/transitions.ts';
 import { Swap } from '@app/components/transactions/wallet/Swap/Swap.tsx';
 import WalletBalance from '../components/balance/WalletBalance.tsx';
@@ -13,12 +13,14 @@ import {
     Wrapper,
     NavWrapper,
     NavButton,
+    SyncButton,
 } from './styles.ts';
 import { useRef, useState } from 'react';
 import { HistoryListWrapper } from '@app/components/wallet/components/history/styles.ts';
 import List from '@app/components/transactions/history/List.tsx';
 
 import { useTranslation } from 'react-i18next';
+import { ArrowRightSVG } from '@app/assets/icons/arrow-right.tsx';
 
 interface SidebarWalletProps {
     section: string;
@@ -29,6 +31,8 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
     const targetRef = useRef<HTMLDivElement>(null);
     const { scrollY } = useScroll({ container: targetRef });
     const [offset, setOffset] = useState(0);
+
+    const setShowPaperWalletModal = usePaperWalletStore((s) => s.setShowModal);
     const swapUiEnabled = useAirdropStore((s) => s.swapsEnabled);
     const isSwapping = useWalletStore((s) => s.is_swapping);
 
@@ -68,6 +72,9 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
                                 {t('tabs.receive')}
                             </NavButton>
                         </NavWrapper>
+                        <SyncButton onClick={() => setShowPaperWalletModal(true)}>
+                            {t('history.sync-with-phone')} <ArrowRightSVG />
+                        </SyncButton>
                         <HistoryListWrapper ref={targetRef}>
                             <List />
                         </HistoryListWrapper>
