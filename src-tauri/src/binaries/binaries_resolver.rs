@@ -23,10 +23,9 @@
 use crate::configs::config_core::{ConfigCore, ConfigCoreContent};
 use crate::configs::trait_config::ConfigImpl;
 use crate::github::ReleaseSource;
-use crate::ProgressTracker;
+use crate::progress_trackers::progress_stepper::ChanneledStepUpdate;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
-use log::error;
 use regex::Regex;
 use semver::Version;
 use serde::{Deserialize, Serialize};
@@ -35,11 +34,9 @@ use std::path::PathBuf;
 use std::sync::LazyLock;
 use std::time::{Duration, SystemTime};
 use tari_common::configuration::Network;
-use tauri_plugin_sentry::sentry;
-use tokio::sync::watch::Receiver;
 use tokio::sync::{Mutex, RwLock};
-use tokio::time::timeout;
 
+use super::adapter_bridge::BridgeTappletAdapter;
 use super::adapter_github::GithubReleasesAdapter;
 use super::adapter_tor::TorReleaseAdapter;
 use super::adapter_xmrig::XmrigVersionApiAdapter;
@@ -116,6 +113,21 @@ impl BinaryResolver {
                 Network::Igor => ("pre", gpu_miner_testnet_regex),
                 Network::LocalNet => ("pre", gpu_miner_testnet_regex),
             };
+
+        binary_manager.insert(
+            Binaries::BridgeTapplet,
+            Mutex::new(BinaryManager::new(
+                Binaries::BridgeTapplet.name().to_string(),
+                None,
+                Box::new(BridgeTappletAdapter {
+                    repo: "wxtm-bridge-frontend".to_string(),
+                    owner: "tari-project".to_string(),
+                    specific_name: None,
+                }),
+                None,
+                false,
+            )),
+        );
 
         binary_manager.insert(
             Binaries::Xmrig,
@@ -271,33 +283,10 @@ impl BinaryResolver {
         Ok(base_dir.join(binary.binary_file_name(version)))
     }
 
-    pub async fn initialize_binary_timeout(
-        &self,
-        binary: Binaries,
-        progress_tracker: ProgressTracker,
-        timeout_channel: Receiver<String>,
-    ) -> Result<(), Error> {
-        match timeout(
-            Duration::from_secs(60 * 5),
-            self.initialize_binary(binary, progress_tracker.clone()),
-        )
-        .await
-        {
-            Err(_) => {
-                let last_msg = timeout_channel.borrow().clone();
-                error!(target: "tari::universe::main", "Setup took too long: {:?}", last_msg);
-                let error_msg = format!("Setup took too long: {}", last_msg);
-                sentry::capture_message(&error_msg, sentry::Level::Error);
-                Err(anyhow!(error_msg))
-            }
-            Ok(result) => result,
-        }
-    }
-
     pub async fn initialize_binary(
         &self,
         binary: Binaries,
-        progress_tracker: ProgressTracker,
+        progress_channel: Option<ChanneledStepUpdate>,
     ) -> Result<(), Error> {
         let mut manager = self
             .managers
@@ -320,7 +309,7 @@ impl BinaryResolver {
         if highest_version.is_none() {
             highest_version = manager.select_highest_version();
             manager
-                .download_version_with_retries(highest_version.clone(), progress_tracker.clone())
+                .download_version_with_retries(highest_version.clone(), progress_channel.clone())
                 .await?;
         }
 
@@ -329,63 +318,11 @@ impl BinaryResolver {
             manager.check_if_files_for_version_exist(highest_version.clone());
         if !check_if_files_exist {
             manager
-                .download_version_with_retries(highest_version.clone(), progress_tracker.clone())
+                .download_version_with_retries(highest_version.clone(), progress_channel)
                 .await?;
         }
 
         // Throw error if files still do not exist
-        let check_if_files_exist =
-            manager.check_if_files_for_version_exist(highest_version.clone());
-        if !check_if_files_exist {
-            return Err(anyhow!("Failed to download binaries"));
-        }
-
-        match highest_version {
-            Some(version) => manager.set_used_version(version),
-            None => return Err(anyhow!("No version selected for binary {}", binary.name())),
-        }
-
-        Ok(())
-    }
-
-    pub async fn update_binary(
-        &self,
-        binary: Binaries,
-        progress_tracker: ProgressTracker,
-    ) -> Result<(), Error> {
-        let mut manager = self
-            .managers
-            .get(&binary)
-            .ok_or_else(|| anyhow!("Couldn't find manager for binary: {}", binary.name()))?
-            .lock()
-            .await;
-
-        manager.check_for_updates().await;
-        let highest_version = manager.select_highest_version();
-
-        progress_tracker
-            .send_last_action(format!(
-                "Checking if files exist before download: {} {}",
-                binary.name(),
-                highest_version.clone().unwrap_or(Version::new(0, 0, 0))
-            ))
-            .await;
-
-        let check_if_files_exist =
-            manager.check_if_files_for_version_exist(highest_version.clone());
-        if !check_if_files_exist {
-            manager
-                .download_version_with_retries(highest_version.clone(), progress_tracker.clone())
-                .await?;
-        }
-
-        progress_tracker
-            .send_last_action(format!(
-                "Checking if files exist after download: {} {}",
-                binary.name(),
-                highest_version.clone().unwrap_or(Version::new(0, 0, 0))
-            ))
-            .await;
         let check_if_files_exist =
             manager.check_if_files_for_version_exist(highest_version.clone());
         if !check_if_files_exist {

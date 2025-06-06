@@ -20,14 +20,6 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-mod bridge_adapter;
-mod tapplets_manager;
-
 pub mod error;
 pub mod interface;
 pub mod tapplet_server;
-pub mod tapplets_list;
-pub mod tapplets_resolver;
-
-pub use tapplets_list::Tapplets;
-pub use tapplets_resolver::TappletResolver;
