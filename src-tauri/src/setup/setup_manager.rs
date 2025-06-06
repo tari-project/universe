@@ -25,10 +25,9 @@ use super::{
     phase_unknown::UnknownSetupPhase, phase_wallet::WalletSetupPhase,
     trait_setup_phase::SetupPhaseImpl, utils::phase_builder::PhaseBuilder,
 };
-use crate::app_in_memory_config::EXCHANGE_ID;
-use crate::configs::config_core::ConfigCoreContent;
+use crate::app_in_memory_config::{DynamicMemoryConfig, EXCHANGE_ID};
 use crate::{
-    app_in_memory_config::{DynamicMemoryConfig, ExchangeMiner, DEFAULT_EXCHANGE_ID},
+    app_in_memory_config::DEFAULT_EXCHANGE_ID,
     configs::{
         config_core::ConfigCore, config_mining::ConfigMining, config_ui::ConfigUI,
         config_wallet::ConfigWallet, trait_config::ConfigImpl,
@@ -221,7 +220,6 @@ pub struct SetupManager {
     wallet_phase_status: Sender<PhaseStatus>,
     unknown_phase_status: Sender<PhaseStatus>,
     exchange_modal_status: Sender<ExchangeModalStatus>,
-    universal_modal_status: Sender<ExchangeMiner>,
     is_app_unlocked: Mutex<bool>,
     is_wallet_unlocked: Mutex<bool>,
     is_cpu_mining_unlocked: Mutex<bool>,
@@ -311,6 +309,15 @@ impl SetupManager {
         ConfigMining::initialize(app_handle.clone()).await;
         ConfigUI::initialize(app_handle.clone()).await;
 
+        let universal_miner_exchange_id = ConfigCore::content()
+            .await
+            .universal_miner_exchange_id()
+            .clone();
+        if let Some(exchange_id) = universal_miner_exchange_id {
+            let mut config = state.in_memory_config.write().await;
+            let new_config = DynamicMemoryConfig::init_with_exchange_id(&exchange_id);
+            *config = new_config;
+        }
         let node_type = ConfigCore::content().await.node_type().clone();
         info!(target: LOG_TARGET, "Retrieved initial node type: {:?}", node_type);
         state.node_manager.set_node_type(node_type).await;
@@ -402,8 +409,10 @@ impl SetupManager {
         let setup_features = self.features.read().await.clone();
         let state = app_handle.state::<UniverseAppState>();
         // TODO: Add option to disable specific phases and handle it properly on frontend
-        let in_memory_config = state.in_memory_config.clone();
-        if in_memory_config.read().await.exchange_id != DEFAULT_EXCHANGE_ID {
+        let in_memory_config = state.in_memory_config.read().await;
+        if in_memory_config.exchange_id != DEFAULT_EXCHANGE_ID
+            && !in_memory_config.is_universal_miner()
+        {
             self.unlock_wallet().await;
             return;
         }
@@ -881,7 +890,6 @@ impl SetupManager {
     }
 
     pub async fn start_setup(&self, app_handle: AppHandle) {
-        self.await_selected_exchange_miner(app_handle.clone()).await;
         self.pre_setup(app_handle.clone()).await;
         let _unused = self.resolve_setup_features()
             .await
@@ -895,48 +903,6 @@ impl SetupManager {
         self.setup_node_phase(app_handle.clone()).await;
         self.setup_wallet_phase(app_handle.clone()).await;
         self.setup_unknown_phase(app_handle.clone()).await;
-    }
-
-    async fn await_selected_exchange_miner(&self, app_handle: AppHandle) {
-        let state = app_handle.state::<UniverseAppState>();
-        let memory_config = state.in_memory_config.read().await;
-        let universal_miner_initialized_exchange_id = ConfigCore::content()
-            .await
-            .universal_miner_initialized_exchange_id()
-            .clone();
-        if !memory_config.is_universal_miner() || universal_miner_initialized_exchange_id.is_some()
-        {
-            return;
-        }
-        drop(memory_config);
-        let _unused = self.universal_modal_status.subscribe().changed().await;
-    }
-
-    pub async fn select_exchange_miner(
-        &self,
-        selected_miner: ExchangeMiner,
-        app_handle: AppHandle,
-    ) -> Result<(), String> {
-        let state = app_handle.state::<UniverseAppState>();
-        let mut config = state.in_memory_config.write().await;
-        let new_config = DynamicMemoryConfig::init_universal(&selected_miner);
-        let new_config_cloned = new_config.clone();
-        *config = new_config;
-
-        EventsEmitter::emit_app_in_memory_config_changed(new_config_cloned, true).await;
-        let _unused = ConfigCore::update_field(
-            ConfigCoreContent::set_universal_miner_initialized_exchange_id,
-            Some(selected_miner.id.clone()),
-        )
-        .await;
-        EventsEmitter::emit_universal_miner_initialized_exchange_id_changed(
-            selected_miner.id.clone(),
-        )
-        .await;
-        self.universal_modal_status
-            .send(selected_miner.clone())
-            .map_err(|e| e.to_string())?;
-        Ok(())
     }
 
     pub async fn handle_switch_to_local_node(&self) {

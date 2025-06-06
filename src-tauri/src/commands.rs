@@ -21,7 +21,8 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::app_in_memory_config::{
-    get_der_encode_pub_key, get_websocket_key, AirdropInMemoryConfig, ExchangeMiner,
+    get_der_encode_pub_key, get_websocket_key, AirdropInMemoryConfig, DynamicMemoryConfig,
+    ExchangeMiner,
 };
 use crate::auto_launcher::AutoLauncher;
 use crate::binaries::{Binaries, BinaryResolver};
@@ -206,13 +207,22 @@ pub async fn is_universal_miner(state: tauri::State<'_, UniverseAppState>) -> Re
 }
 
 #[tauri::command]
-pub async fn user_selected_exchange(
+pub async fn select_exchange_miner(
     app_handle: tauri::AppHandle,
     exchange_miner: ExchangeMiner,
 ) -> Result<(), String> {
-    SetupManager::get_instance()
-        .select_exchange_miner(exchange_miner, app_handle.clone())
-        .await?;
+    let state = app_handle.state::<UniverseAppState>();
+    let mut config = state.in_memory_config.write().await;
+    let new_config = DynamicMemoryConfig::init_with_exchange_id(&exchange_miner.id);
+    let new_config_cloned = new_config.clone();
+    *config = new_config;
+
+    EventsEmitter::emit_app_in_memory_config_changed(new_config_cloned, true).await;
+    let _unused = ConfigCore::update_field(
+        ConfigCoreContent::set_universal_miner_exchange_id,
+        Some(exchange_miner.id.clone()),
+    )
+    .await;
     Ok(())
 }
 
@@ -546,10 +556,10 @@ pub async fn get_used_p2pool_stats_server_port(
 }
 
 #[tauri::command]
-pub async fn get_universal_miner_initialized_exchange_id() -> Result<Option<String>, String> {
+pub async fn get_universal_miner_exchange_id() -> Result<Option<String>, String> {
     Ok(ConfigCore::content()
         .await
-        .universal_miner_initialized_exchange_id()
+        .universal_miner_exchange_id()
         .clone())
 }
 
