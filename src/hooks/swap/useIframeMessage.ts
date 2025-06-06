@@ -10,12 +10,20 @@ export enum MessageType {
     CONFIRM_REQUEST = 'CONFIRM_REQUEST',
     PROCESSING_STATUS = 'PROCESSING_STATUS',
     SWAP_HEIGHT_CHANGE = 'SWAP_HEIGHT_CHANGE',
+    SET_FULLSCREEN = 'SET_FULLSCREEN',
 }
 
 interface SwapHeightChangeMessage {
     type: MessageType.SWAP_HEIGHT_CHANGE;
     payload: {
         height: number;
+    };
+}
+
+interface SetFullscreenMessage {
+    type: MessageType.SET_FULLSCREEN;
+    payload: {
+        open: boolean;
     };
 }
 
@@ -89,6 +97,7 @@ export type IframeMessage =
     | SuccessMessage
     | WalletConnectMessage
     | SwapHeightChangeMessage
+    | SetFullscreenMessage
     | ProcessingMessage;
 
 // Hook to listen for messages from the parent window

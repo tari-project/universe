@@ -30,6 +30,7 @@ export const Swap = memo(function Swap() {
     const [swapHeight, setSwapHeight] = useState(0);
     const iframeUrl = useIframeUrl();
     const iframeRef = useRef<HTMLIFrameElement | null>(null);
+    const [isFullscreen, setIsFullscreen] = useState(false);
 
     const { t } = useTranslation(['wallet'], { useSuspense: false });
 
@@ -72,6 +73,9 @@ export const Swap = memo(function Swap() {
             case MessageType.APPROVE_REQUEST:
                 setApproving(true);
                 break;
+            case MessageType.SET_FULLSCREEN:
+                setIsFullscreen(event.data.payload.open);
+                break;
             case MessageType.APPROVE_SUCCESS:
                 setApproving(false);
                 break;
@@ -106,7 +110,7 @@ export const Swap = memo(function Swap() {
 
     return (
         <SwapsContainer>
-            <TabHeader $noBorder>
+            <TabHeader $noBorder $hidden={isFullscreen}>
                 <SectionHeaderWrapper>
                     <HeaderLabel>{t('swap.buy-tari')}</HeaderLabel>
                     <BackButton onClick={() => setIsSwapping(false)}>{t('swap.back-button')}</BackButton>
@@ -140,6 +144,10 @@ export const Swap = memo(function Swap() {
                 status={processingTransaction?.status}
                 isOpen={processingOpen}
                 setIsOpen={setProcessingOpen}
+                fromTokenSymbol={processingTransaction?.fromTokenSymbol}
+                fromTokenAmount={processingTransaction?.fromTokenAmount}
+                toTokenSymbol={processingTransaction?.toTokenSymbol}
+                toTokenAmount={processingTransaction?.toTokenAmount}
                 fees={{
                     approval: processingTransaction?.fees?.approval ?? null,
                     swap: processingTransaction?.fees?.swap ?? null,
