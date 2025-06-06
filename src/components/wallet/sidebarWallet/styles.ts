@@ -1,7 +1,5 @@
-import styled, { keyframes } from 'styled-components';
 import * as m from 'motion/react-m';
-import { Button } from '@app/components/elements/buttons/Button.tsx';
-import { convertHexToRGBA } from '@app/utils';
+import styled, { keyframes } from 'styled-components';
 
 export const WalletWrapper = styled(m.div)``;
 export const Wrapper = styled.div`
@@ -14,34 +12,13 @@ export const Wrapper = styled.div`
     overflow: hidden;
     width: 100%;
     height: 455px;
-    gap: 10px;
-`;
+    gap: 8px;
 
-export const NavWrapper = styled.div`
-    display: flex;
-    flex-flow: row;
-    align-items: center;
-    width: 100%;
-    gap: 10px;
-`;
-
-export const NavButton = styled(Button).attrs({
-    size: 'medium',
-})<{ $isActive?: boolean }>`
-    line-height: 1.05;
-    width: 100%;
-    color: ${({ theme }) => theme.palette.text.primary};
-    background-color: ${({ theme }) => theme.palette.base};
-    text-transform: capitalize;
-    &:hover {
-        opacity: 0.85;
-    }
-
-    &:disabled {
-        opacity: 0.2;
-        pointer-events: none;
+    @media (max-height: 690px) {
+        height: 385px;
     }
 `;
+
 export const DetailsCard = styled(m.div)`
     display: flex;
     border-radius: 20px;
@@ -79,35 +56,3 @@ export const DetailsCardContent = styled.div`
     width: 100%;
 `;
 export const SwapsWrapper = styled(m.div)``;
-export const SyncButton = styled.button`
-    color: ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.5)};
-    font-family: Poppins, sans-serif;
-    font-size: 11px;
-    font-style: normal;
-    font-weight: 500;
-    line-height: normal;
-    letter-spacing: -0.44px;
-
-    display: flex;
-    align-items: center;
-    gap: 6px;
-
-    background: transparent;
-    border: none;
-    cursor: pointer;
-
-    transition: color 0.2s ease-in-out;
-
-    svg {
-        stroke: ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.5)};
-        transition: stroke 0.2s ease-in-out;
-    }
-
-    &:hover {
-        color: ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 1)};
-
-        svg {
-            stroke: ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 1)};
-        }
-    }
-`;

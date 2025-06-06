@@ -1,18 +1,21 @@
-import { invoke } from '@tauri-apps/api/core';
-import { useInView } from 'motion/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useWalletStore } from '@app/store';
-import { ListItemWrapper, ListWrapper } from './List.styles.ts';
+import { invoke } from '@tauri-apps/api/core';
+import { useInView } from 'motion/react';
 
-import { HistoryListItem } from '@app/components/transactions/history/ListItem.tsx';
+import { useWalletStore } from '@app/store';
+
 import { TransactionInfo } from '@app/types/app-status.ts';
-import { PlaceholderItem } from '@app/components/transactions/history/ListItem.styles.ts';
+import { TransactionDetailsItem } from '@app/types/transactions.ts';
+import { useFetchTxHistory } from '@app/hooks/wallet/useFetchTxHistory.ts';
+
 import ListLoadingAnimation from '@app/containers/navigation/components/Wallet/ListLoadingAnimation/ListLoadingAnimation.tsx';
 import { LoadingText } from '@app/containers/navigation/components/Wallet/ListLoadingAnimation/styles.ts';
-import { useFetchTxHistory } from '@app/hooks/wallet/useFetchTxHistory.ts';
-import { TransactionDetails } from '@app/components/transactions/history/details/TransactionDetails.tsx';
-import { TransactionDetailsItem } from '@app/types/transactions.ts';
+
+import { TransactionDetails } from './details/TransactionDetails.tsx';
+import { HistoryListItem } from './ListItem.tsx';
+import { PlaceholderItem } from './ListItem.styles.ts';
+import { ListItemWrapper, ListWrapper } from './List.styles.ts';
 
 export default function List() {
     const { t } = useTranslation('wallet');

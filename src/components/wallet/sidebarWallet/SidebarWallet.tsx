@@ -1,39 +1,26 @@
 import { AnimatePresence, useMotionValueEvent, useScroll } from 'motion/react';
-import { usePaperWalletStore, useWalletStore } from '@app/store';
+import { useWalletStore } from '@app/store';
 import { swapTransition } from '@app/components/transactions/wallet/transitions.ts';
 import { Swap } from '@app/components/transactions/wallet/Swap/Swap.tsx';
 import WalletBalance from '../components/balance/WalletBalance.tsx';
 import WalletDetails from '../components/details/WalletDetails.tsx';
-import {
-    AnimatedBG,
-    DetailsCard,
-    DetailsCardContent,
-    WalletWrapper,
-    SwapsWrapper,
-    Wrapper,
-    NavWrapper,
-    NavButton,
-    SyncButton,
-} from './styles.ts';
+import { AnimatedBG, DetailsCard, DetailsCardContent, WalletWrapper, SwapsWrapper, Wrapper } from './styles.ts';
 import { useRef, useState } from 'react';
 import { HistoryListWrapper } from '@app/components/wallet/components/history/styles.ts';
 import List from '@app/components/transactions/history/List.tsx';
 
-import { useTranslation } from 'react-i18next';
-import { ArrowRightSVG } from '@app/assets/icons/arrow-right.tsx';
-import SyncTooltip from '@app/containers/navigation/components/Wallet/SyncTooltip/SyncTooltip.tsx';
+import WalletActions from '@app/components/wallet/components/actions/WalletActions.tsx';
+import ListActions from '@app/components/wallet/components/actions/ListActions.tsx';
 
 interface SidebarWalletProps {
     section: string;
     setSection: (section: string) => void;
 }
 export default function SidebarWallet({ section, setSection }: SidebarWalletProps) {
-    const { t } = useTranslation(['wallet', 'common', 'sidebar']);
     const targetRef = useRef<HTMLDivElement>(null);
     const { scrollY } = useScroll({ container: targetRef });
     const [offset, setOffset] = useState(0);
 
-    const setShowPaperWalletModal = usePaperWalletStore((s) => s.setShowModal);
     const swapUiEnabled = true; //useAirdropStore((s) => s.swapsEnabled);
     const isSwapping = useWalletStore((s) => s.is_swapping);
 
@@ -57,32 +44,8 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
                                 <WalletBalance />
                             </DetailsCardContent>
                         </DetailsCard>
-                        <NavWrapper>
-                            <NavButton
-                                $isActive={section === 'send'}
-                                aria-selected={section === 'send'}
-                                onClick={() => setSection('send')}
-                            >
-                                {t('tabs.send')}
-                            </NavButton>
-                            <NavButton
-                                $isActive={section === 'receive'}
-                                aria-selected={section === 'receive'}
-                                onClick={() => setSection('receive')}
-                            >
-                                {t('tabs.receive')}
-                            </NavButton>
-                        </NavWrapper>
-
-                        <SyncTooltip
-                            title={t('paper-wallet-tooltip-title', { ns: 'sidebar' })}
-                            text={t('paper-wallet-tooltip-message', { ns: 'sidebar' })}
-                            trigger={
-                                <SyncButton onClick={() => setShowPaperWalletModal(true)}>
-                                    {t('history.sync-with-phone')} <ArrowRightSVG />
-                                </SyncButton>
-                            }
-                        />
+                        <WalletActions section={section} setSection={setSection} />
+                        <ListActions />
                         <HistoryListWrapper ref={targetRef}>
                             <List />
                         </HistoryListWrapper>

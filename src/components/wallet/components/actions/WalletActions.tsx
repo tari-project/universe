@@ -1,17 +1,34 @@
-import { ActionButton, Wrapper } from './styles.ts';
+import { useTranslation } from 'react-i18next';
 import { AnimatePresence } from 'motion/react';
-import { CopySVG } from '@app/assets/icons/copy.tsx';
-import { MenuDotsSVG } from '@app/assets/icons/menu-dots.tsx';
-export default function WalletActions() {
+
+import { Wrapper, NavWrapper, NavButton } from './styles.ts';
+
+interface WalletActionsProps {
+    section: string;
+    setSection: (section: string) => void;
+}
+export default function WalletActions({ section, setSection }: WalletActionsProps) {
+    const { t } = useTranslation(['wallet', 'sidebar']);
+
     return (
         <AnimatePresence>
             <Wrapper>
-                <ActionButton>
-                    <CopySVG />
-                </ActionButton>
-                <ActionButton>
-                    <MenuDotsSVG />
-                </ActionButton>
+                <NavWrapper>
+                    <NavButton
+                        $isActive={section === 'send'}
+                        aria-selected={section === 'send'}
+                        onClick={() => setSection('send')}
+                    >
+                        {t('tabs.send')}
+                    </NavButton>
+                    <NavButton
+                        $isActive={section === 'receive'}
+                        aria-selected={section === 'receive'}
+                        onClick={() => setSection('receive')}
+                    >
+                        {t('tabs.receive')}
+                    </NavButton>
+                </NavWrapper>
             </Wrapper>
         </AnimatePresence>
     );

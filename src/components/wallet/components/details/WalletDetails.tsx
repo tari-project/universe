@@ -1,6 +1,7 @@
-import { Actions, DetailsLeft, LogoWrapper, Name, Wrapper } from './styles.ts';
 import { TariOutlineSVG } from '@app/assets/icons/tari-outline.tsx';
-import WalletActions from '@app/components/wallet/components/actions/WalletActions.tsx';
+
+import { Actions, DetailsLeft, LogoWrapper, Name, Wrapper } from './styles.ts';
+import WalletCardActions from './actions/WalletCardActions.tsx';
 
 export default function WalletDetails() {
     const { name } = {
@@ -15,7 +16,7 @@ export default function WalletDetails() {
                 <Name>{name}</Name>
             </DetailsLeft>
             <Actions>
-                <WalletActions />
+                <WalletCardActions />
             </Actions>
         </Wrapper>
     );
