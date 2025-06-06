@@ -71,10 +71,10 @@ export const AnimatedBG = styled.div<{ $col1: string; $col2: string }>`
 `;
 
 export const DetailsCardContent = styled.div`
-    z-index: 1;
     justify-content: space-between;
     flex-direction: column;
     display: flex;
+    position: relative;
     width: 100%;
 `;
 
