@@ -8,10 +8,8 @@ export const Wrapper = styled.div`
     padding: 15px 11px 11px 11px;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    align-items: center;
     width: 100%;
-    max-height: clamp(10vh, 600px, 55vh);
+    height: 455px;
     gap: 10px;
     position: relative;
     overflow: scroll;
@@ -22,7 +20,7 @@ export const DetailsCard = styled(m.div)`
     border-radius: 20px;
     padding: 14px;
     width: 100%;
-
+    min-height: 95px;
     box-shadow: 10px 10px 40px 0 rgba(0, 0, 0, 0.06);
     position: relative;
     overflow: hidden;
@@ -39,8 +37,8 @@ export const AnimatedBG = styled.div<{ $col1: string; $col2: string }>`
     position: absolute;
     top: 50%;
     left: 50%;
-    width: 150%;
-    height: 300%;
+    width: 400px;
+    height: 500px;
     transform: translate(-50%, -50%);
     animation: ${spin} 15s linear infinite;
     z-index: 0;

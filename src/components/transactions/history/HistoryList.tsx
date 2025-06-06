@@ -127,7 +127,7 @@ const HistoryList = memo(function HistoryList() {
 
     return (
         <>
-            <ListWrapper id="list">
+            <ListWrapper id="1list">
                 {emptyMarkup}
                 {baseMarkup}
             </ListWrapper>
