@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/core';
 import { useInView } from 'motion/react';
@@ -6,20 +6,19 @@ import { useInView } from 'motion/react';
 import { useWalletStore } from '@app/store';
 
 import { TransactionInfo } from '@app/types/app-status.ts';
-import { TransactionDetailsItem } from '@app/types/transactions.ts';
+
 import { useFetchTxHistory } from '@app/hooks/wallet/useFetchTxHistory.ts';
 
 import ListLoadingAnimation from '@app/containers/navigation/components/Wallet/ListLoadingAnimation/ListLoadingAnimation.tsx';
 import { LoadingText } from '@app/containers/navigation/components/Wallet/ListLoadingAnimation/styles.ts';
 
-import { TransactionDetails } from './details/TransactionDetails.tsx';
 import { HistoryListItem } from './ListItem.tsx';
 import { PlaceholderItem } from './ListItem.styles.ts';
 import { ListItemWrapper, ListWrapper } from './List.styles.ts';
+import { setDetailsItem } from '@app/store/actions/walletStoreActions.ts';
 
 export default function List() {
     const { t } = useTranslation('wallet');
-    const [detailsItem, setDetailsItem] = useState<TransactionDetailsItem | null>(null);
     const walletScanning = useWalletStore((s) => s.wallet_scanning);
 
     const lastItemRef = useRef<HTMLDivElement>(null);
@@ -56,7 +55,7 @@ export default function List() {
 
     useEffect(() => {
         if (isInView && !isFetching && !isFetchingNextPage) {
-            fetchNextPage();
+            void fetchNextPage();
         }
     }, [fetchNextPage, isFetching, isFetchingNextPage, isInView]);
 
@@ -111,14 +110,6 @@ export default function List() {
                 {emptyMarkup}
                 {baseMarkup}
             </ListWrapper>
-
-            {detailsItem && (
-                <TransactionDetails
-                    item={detailsItem}
-                    expanded={Boolean(detailsItem)}
-                    handleClose={() => setDetailsItem(null)}
-                />
-            )}
         </>
     );
 }

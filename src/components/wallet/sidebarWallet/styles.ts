@@ -1,7 +1,14 @@
 import * as m from 'motion/react-m';
 import styled, { keyframes } from 'styled-components';
 
-export const WalletWrapper = styled(m.div)``;
+export const SwapsWrapper = styled(m.div)``;
+export const WalletWrapper = styled(m.div)`
+    width: 100%;
+    flex-direction: column;
+    display: flex;
+    gap: 8px;
+`;
+
 export const Wrapper = styled.div`
     border-radius: 20px;
     background: ${({ theme }) => (theme.mode === 'dark' ? '#2E2E2E' : '#E9E9E9')};
@@ -11,14 +18,22 @@ export const Wrapper = styled.div`
     flex-direction: column;
     overflow: hidden;
     width: 100%;
-    height: 455px;
-    gap: 8px;
+    height: 565px;
 
+    @media (max-height: 815px) {
+        height: 425px;
+    }
     @media (max-height: 690px) {
         height: 385px;
     }
 `;
 
+export const WalletActionWrapper = styled(m.div)`
+    overflow: hidden;
+    flex-shrink: 0;
+    display: flex;
+    width: 100%;
+`;
 export const DetailsCard = styled(m.div)`
     display: flex;
     border-radius: 20px;
@@ -55,4 +70,25 @@ export const DetailsCardContent = styled.div`
     display: flex;
     width: 100%;
 `;
-export const SwapsWrapper = styled(m.div)``;
+
+export const BuyTariButton = styled.button`
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    font-size: 13px;
+    line-height: 100%;
+    text-align: center;
+    padding: 16px;
+    border-radius: 72px;
+    background: #000;
+    color: white;
+    cursor: pointer;
+    height: 50px;
+    transition: all 0.2s ease-in-out;
+
+    &:hover {
+        opacity: 0.9;
+    }
+`;

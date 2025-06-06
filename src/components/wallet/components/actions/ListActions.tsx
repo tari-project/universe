@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AnimatePresence } from 'motion/react';
 
 import { ArrowRightSVG } from '@app/assets/icons/arrow-right.tsx';
 import SyncTooltip from '@app/containers/navigation/components/Wallet/SyncTooltip/SyncTooltip.tsx';
@@ -20,27 +19,25 @@ export default function ListActions() {
     }
 
     return (
-        <AnimatePresence>
-            <Wrapper>
-                <NavWrapper>
-                    <FilterWrapper>
-                        {FILTER_TYPES.map((type) => (
-                            <FilterCTA key={type} $isActive={filter === type} onClick={() => handleFilterChange(type)}>
-                                {type}
-                            </FilterCTA>
-                        ))}
-                    </FilterWrapper>
-                    <SyncTooltip
-                        title={t('sidebar:paper-wallet-tooltip-title')}
-                        text={t('sidebar:paper-wallet-tooltip-message')}
-                        trigger={
-                            <SyncButton onClick={() => setShowPaperWalletModal(true)}>
-                                {t('history.sync-with-phone')} <ArrowRightSVG />
-                            </SyncButton>
-                        }
-                    />
-                </NavWrapper>
-            </Wrapper>
-        </AnimatePresence>
+        <Wrapper style={{ padding: `0 0 4px` }}>
+            <NavWrapper>
+                <FilterWrapper>
+                    {FILTER_TYPES.map((type) => (
+                        <FilterCTA key={type} $isActive={filter === type} onClick={() => handleFilterChange(type)}>
+                            {type}
+                        </FilterCTA>
+                    ))}
+                </FilterWrapper>
+                <SyncTooltip
+                    title={t('sidebar:paper-wallet-tooltip-title')}
+                    text={t('sidebar:paper-wallet-tooltip-message')}
+                    trigger={
+                        <SyncButton onClick={() => setShowPaperWalletModal(true)}>
+                            {t('history.sync-with-phone')} <ArrowRightSVG />
+                        </SyncButton>
+                    }
+                />
+            </NavWrapper>
+        </Wrapper>
     );
 }
