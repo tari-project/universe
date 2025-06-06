@@ -251,8 +251,6 @@ struct UniverseAppState {
     gpu_latest_status: Arc<watch::Receiver<GpuMinerStatus>>,
     p2pool_latest_status: Arc<watch::Receiver<Option<P2poolStats>>>,
     is_getting_p2pool_connections: Arc<AtomicBool>,
-    is_getting_transactions_history: Arc<AtomicBool>,
-    is_getting_coinbase_history: Arc<AtomicBool>,
     in_memory_config: Arc<RwLock<DynamicMemoryConfig>>,
     tari_address: Arc<RwLock<TariAddress>>,
     cpu_miner: Arc<RwLock<CpuMiner>>,
@@ -379,7 +377,12 @@ fn main() {
         pool_status_url: None,
     }));
 
-    let dynamic_memory_config = block_on(async { DynamicMemoryConfig::init().await });
+    let dynamic_memory_config =
+        if std::env::var("EXCHANGE_ID").unwrap_or_else(|_| "classic".to_string()) == "classic" {
+            DynamicMemoryConfig::init_classic()
+        } else {
+            block_on(async { DynamicMemoryConfig::init().await })
+        };
     let app_in_memory_config = Arc::new(RwLock::new(dynamic_memory_config));
 
     let cpu_miner: Arc<RwLock<CpuMiner>> = Arc::new(
@@ -450,8 +453,6 @@ fn main() {
         cpu_miner_status_watch_rx: Arc::new(cpu_miner_status_watch_rx),
         gpu_latest_status: Arc::new(gpu_status_rx),
         p2pool_latest_status: Arc::new(p2pool_stats_rx),
-        is_getting_transactions_history: Arc::new(AtomicBool::new(false)),
-        is_getting_coinbase_history: Arc::new(AtomicBool::new(false)),
         in_memory_config: app_in_memory_config.clone(),
         tari_address: Arc::new(RwLock::new(TariAddress::default())),
         cpu_miner: cpu_miner.clone(),
@@ -648,8 +649,7 @@ fn main() {
             commands::get_seed_words,
             commands::get_tor_config,
             commands::get_tor_entry_guards,
-            commands::get_transactions_history,
-            commands::get_coinbase_transactions,
+            commands::get_transactions,
             commands::import_seed_words,
             commands::log_web_message,
             commands::open_log_dir,

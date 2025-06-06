@@ -40,17 +40,17 @@ export default function useAirdropWebsocket() {
     }, [startWebsocket, setupComplete]);
 
     useEffect(() => {
-        const ul = listen('ws-status-change', (event) => {
+        const unlistenPromise = listen('ws-status-change', (event) => {
             console.info(`websocket status changed: `, event);
         });
 
         return () => {
-            ul.then((unlisten) => unlisten());
+            unlistenPromise.then((unlisten) => unlisten());
         };
     }, []);
 
     useEffect(() => {
-        listen<unknown>('ws-rx', (event) => {
+        const unlistenPromise = listen<unknown>('ws-rx', (event) => {
             const payload: WebsocketEventType = event.payload as WebsocketEventType;
             const data = JSON.parse(payload?.data as string);
             switch (payload.event) {
@@ -68,5 +68,9 @@ export default function useAirdropWebsocket() {
                 }
             }
         });
+
+        return () => {
+            unlistenPromise.then((unlisten) => unlisten());
+        };
     }, [globalEventHandler, userEventHandler, userId]);
 }

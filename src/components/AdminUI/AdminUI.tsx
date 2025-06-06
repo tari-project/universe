@@ -53,8 +53,8 @@ const AdminUI = memo(function AdminUI() {
                                     <ThemeGroup />
                                     <DialogsGroup />
                                     <GreenModalsGroup />
-                                    <SwapsGroup />
                                     <OtherUIGroup />
+                                    <SwapsGroup />
                                 </MenuContent>
                             </MenuWrapper>
                         )}
