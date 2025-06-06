@@ -22,6 +22,7 @@ import { SelectableTokenInfo, SwapDirection as SwapDirectionType } from '@app/ho
 
 export interface SwapConfirmationTransactionProps {
     fromTokenDisplay?: SelectableTokenInfo;
+    toTokenDisplay?: SelectableTokenInfo;
     toTokenSymbol?: string; // Added to determine the "Receive" token symbol
     transaction?: {
         amount: string;
@@ -50,6 +51,7 @@ export const SwapConfirmation = ({
     transaction,
     onConfirm,
     fromTokenDisplay,
+    toTokenDisplay,
     toTokenSymbol,
 }: Props) => {
     const {
@@ -122,6 +124,41 @@ export const SwapConfirmation = ({
         return baseItems.filter((item) => item.value !== null && item.value !== undefined);
     }, [executionPrice, networkFee, minimumReceived, priceImpact, t, transactionId, paidTransactionFee]);
 
+    console.log('toTokenDisplay', toTokenDisplay);
+    const xtmOptionMarkup = useMemo(() => {
+        return (
+            <SwapOption>
+                <span> {direction === 'toXtm' ? t('swap.receive-estimated') : t('swap.sell')} </span>
+                <SwapOptionAmount>
+                    <SwapAmountInput disabled type="text" inputMode="decimal" placeholder="0.00" value={targetAmount} />
+                    <SwapOptionCurrency>
+                        {getCurrencyIcon({ symbol: receiveTokenSymbol, width: 25 })}
+                        <span>{receiveTokenSymbol}</span>
+                    </SwapOptionCurrency>
+                </SwapOptionAmount>
+                <span>{toTokenDisplay?.balance}</span>
+            </SwapOption>
+        );
+    }, [direction, receiveTokenSymbol, t, targetAmount, toTokenDisplay?.balance]);
+
+    const ethOptionMarkup = useMemo(() => {
+        return (
+            <SwapOption>
+                <span> {direction === 'toXtm' ? t('swap.sell') : t('swap.receive-estimated')} </span>
+                <SwapOptionAmount>
+                    <SwapAmountInput disabled type="text" inputMode="decimal" placeholder="0.00" value={amount} />
+                    <SwapOptionCurrency>
+                        {fromTokenDisplay?.symbol
+                            ? getCurrencyIcon({ symbol: fromTokenDisplay?.symbol, width: 25 })
+                            : null}
+                        <span>{fromTokenDisplay?.symbol}</span>
+                    </SwapOptionCurrency>
+                </SwapOptionAmount>
+                <span>{fromTokenDisplay?.balance}</span>
+            </SwapOption>
+        );
+    }, [direction, t, amount, fromTokenDisplay?.symbol, fromTokenDisplay?.balance]);
+
     return (
         <TransactionModal show={isOpen} handleClose={() => setIsOpen(false)} noHeader>
             <div>
@@ -136,40 +173,15 @@ export const SwapConfirmation = ({
                     </SelectedChain>
                 </WalletConnectHeader>
 
-                <SwapOption>
-                    <span> {direction === 'toXtm' ? t('swap.sell') : t('swap.receive-estimated')} </span>
-                    <SwapOptionAmount>
-                        <SwapAmountInput disabled type="text" inputMode="decimal" placeholder="0.00" value={amount} />
-                        <SwapOptionCurrency>
-                            {fromTokenDisplay?.symbol
-                                ? getCurrencyIcon({ symbol: fromTokenDisplay?.symbol, width: 25 })
-                                : null}
-                            <span>{fromTokenDisplay?.symbol}</span>
-                        </SwapOptionCurrency>
-                    </SwapOptionAmount>
-                    <span>{fromTokenDisplay?.balance}</span>
-                </SwapOption>
+                {direction === 'toXtm' ? ethOptionMarkup : xtmOptionMarkup}
+
                 <SwapDirection>
-                    <SwapDirectionWrapper $direction={direction || 'toXtm'}>
+                    <SwapDirectionWrapper $direction={'toXtm'}>
                         <ArrowIcon width={15} />
                     </SwapDirectionWrapper>
                 </SwapDirection>
-                <SwapOption>
-                    <span> {direction === 'toXtm' ? t('swap.receive-estimated') : t('swap.sell')} </span>
-                    <SwapOptionAmount>
-                        <SwapAmountInput
-                            disabled
-                            type="text"
-                            inputMode="decimal"
-                            placeholder="0.00"
-                            value={targetAmount}
-                        />
-                        <SwapOptionCurrency>
-                            {getCurrencyIcon({ symbol: receiveTokenSymbol, width: 25 })}
-                            <span>{receiveTokenSymbol}</span>
-                        </SwapOptionCurrency>
-                    </SwapOptionAmount>
-                </SwapOption>
+
+                {direction === 'toXtm' ? xtmOptionMarkup : ethOptionMarkup}
 
                 <SwapDetails>
                     <StatusList entries={items} />

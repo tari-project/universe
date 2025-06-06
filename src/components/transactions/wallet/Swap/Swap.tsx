@@ -64,6 +64,7 @@ export const Swap = memo(function Swap() {
                 setConfirming(true);
                 setConfirmingTransaction({
                     fromTokenDisplay: event.data.payload.fromTokenDisplay,
+                    toTokenDisplay: event.data.payload.toTokenDisplay,
                     toTokenSymbol: event.data.payload.toTokenSymbol,
                     transaction: event.data.payload.transaction,
                 });
@@ -132,6 +133,7 @@ export const Swap = memo(function Swap() {
                 onConfirm={handleConfirmTransaction}
                 transaction={confirmingTransaction?.transaction}
                 fromTokenDisplay={confirmingTransaction?.fromTokenDisplay}
+                toTokenDisplay={confirmingTransaction?.toTokenDisplay}
                 toTokenSymbol={confirmingTransaction?.toTokenSymbol}
             />
             <ProcessingTransaction
