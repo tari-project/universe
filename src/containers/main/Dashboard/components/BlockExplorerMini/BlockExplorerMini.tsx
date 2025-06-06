@@ -4,16 +4,17 @@ import { BlockData, useBlocks } from './useBlocks';
 import BlockEntry from './BlockEntry/BlockEntry';
 import BlockScrollList from './BlockScrollList/BlockScrollList';
 import { timeAgo } from './utils/formatting';
+import MinerCount from '@app/containers/main/Dashboard/components/BlockExplorerMini/MinerCount/MinerCount.tsx';
 
 export default function BlockExplorerMini() {
     const { data, isLoading, isError } = useBlocks();
-
     const [stickyEntry, setStickyEntry] = useState<BlockData | null>(null);
     const [scrollList, setScrollList] = useState<BlockData[]>([]);
     const containerRef = useRef<HTMLDivElement>(null);
     const isFirstRender = useRef(true);
 
     useEffect(() => {
+        let stickyTimeout: NodeJS.Timeout;
         const updateStickyEntry = (isSolved: boolean) => {
             if (!data || data.length === 0) return null;
             return {
@@ -39,10 +40,10 @@ export default function BlockExplorerMini() {
                 isFirstRender.current = false;
             } else {
                 setStickyEntry(updateStickyEntry(true));
-                setTimeout(() => {
+                stickyTimeout = setTimeout(() => {
                     setStickyEntry((prev) => (prev ? { ...prev, isSolved: false } : null));
                     setScrollList(updateScrollList());
-                }, 4000);
+                }, 3 * 1000);
             }
         }
 
@@ -50,9 +51,14 @@ export default function BlockExplorerMini() {
             if (data && data.length > 0) {
                 setScrollList(updateScrollList());
             }
-        }, 30000);
+        }, 30 * 1000);
 
-        return () => clearInterval(interval);
+        return () => {
+            clearInterval(interval);
+            if (stickyTimeout) {
+                clearTimeout(stickyTimeout);
+            }
+        };
     }, [data]);
 
     if (isLoading) {
@@ -65,6 +71,7 @@ export default function BlockExplorerMini() {
 
     return (
         <Wrapper ref={containerRef}>
+            <MinerCount />
             <InsideHolder>
                 <StickyEntryWrapper>
                     {stickyEntry && (

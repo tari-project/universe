@@ -3,10 +3,10 @@ import styled, { css } from 'styled-components';
 
 // don't need theming for this file as the colours are the same in dark/light mode (black and white)
 
-export const BannerContent = styled(m.div)`
+export const BannerContent = styled(m.div)<{ $shiftDown?: boolean }>`
     position: fixed;
-    top: 16px;
-    right: 32px;
+    top: ${({ $shiftDown }) => ($shiftDown ? `102px` : `16px`)};
+    right: 20px;
     z-index: 99999;
     display: flex;
     align-items: center;

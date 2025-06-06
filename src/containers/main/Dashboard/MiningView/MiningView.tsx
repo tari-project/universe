@@ -12,10 +12,17 @@ export default function MiningView() {
 
     return (
         <MiningViewContainer>
-            <BlockHeightAccent />
-            <Ruler />
             <Earnings />
-            {blockBubblesEnabled ? <BlockExplorerMini /> : <BlockTime />}
+
+            {!blockBubblesEnabled ? (
+                <>
+                    <BlockHeightAccent />
+                    <Ruler />
+                    <BlockTime />
+                </>
+            ) : (
+                <BlockExplorerMini />
+            )}
         </MiningViewContainer>
     );
 }

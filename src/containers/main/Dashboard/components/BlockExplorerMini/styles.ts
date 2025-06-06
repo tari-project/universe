@@ -3,10 +3,11 @@ import styled from 'styled-components';
 export const Wrapper = styled.div`
     display: flex;
     align-items: center;
+    justify-content: center;
+    flex-direction: column;
     width: 100%;
-
-    padding: 0px 0px 20px 30px;
-
+    padding: 0 0 10px 10px;
+    gap: 16px;
     position: absolute;
     bottom: 0;
     right: 0;
@@ -22,8 +23,6 @@ export const InsideHolder = styled.div`
     display: flex;
     align-items: center;
     position: relative;
-
-    padding-right: 60px;
 `;
 
 export const StickyEntryWrapper = styled.div`

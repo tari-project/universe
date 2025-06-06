@@ -60,6 +60,6 @@ export function useBlocks() {
             }));
         },
         refetchOnWindowFocus: true,
-        refetchInterval: 30000,
+        refetchInterval: 30 * 1000,
     });
 }

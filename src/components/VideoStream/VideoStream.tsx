@@ -62,7 +62,7 @@ const VideoStream: React.FC<VideoStreamProps> = ({
                 onLoadedData?.();
 
                 video.play().catch((err) => {
-                    console.debug('Autoplay failed:', err);
+                    console.warn('Autoplay failed:', err);
                 });
             });
 

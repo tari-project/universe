@@ -1,4 +1,14 @@
 {
+  "bubbles": {
+    "active-miners": "active miners",
+    "ago": "ago",
+    "block": "block",
+    "got-rewarded": "got rewarded",
+    "miners": "miners",
+    "pool": "Pool",
+    "solved": "solved",
+    "solving": "is being solved"
+  },
   "connection-to-node-lost": "माइनर से कनेक्शन खो गया। कृपया माइनर के पुनः कनेक्ट होने या पुनः आरंभ करने की प्रतीक्षा करें।",
   "cpu-power": "CPU पावर",
   "current-block-time": "वर्तमान ब्लॉक समय",
