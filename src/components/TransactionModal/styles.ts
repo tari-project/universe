@@ -42,7 +42,7 @@ export const Cover = styled(m.div)<{ $noClose?: boolean }>`
 
 export const BoxWrapper = styled(m.div)`
     width: 100%;
-    max-width: 481px;
+    max-width: 500px;
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
