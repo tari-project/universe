@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useWalletStore } from '@app/store';
 import { ListItemWrapper, ListWrapper } from './List.styles.ts';
-import { TransactionDetailsItem } from '@app/components/transactions/history/HistoryList.tsx';
+
 import { HistoryListItem } from '@app/components/transactions/history/ListItem.tsx';
 import { TransactionInfo } from '@app/types/app-status.ts';
 import { PlaceholderItem } from '@app/components/transactions/history/ListItem.styles.ts';
@@ -12,17 +12,18 @@ import ListLoadingAnimation from '@app/containers/navigation/components/Wallet/L
 import { LoadingText } from '@app/containers/navigation/components/Wallet/ListLoadingAnimation/styles.ts';
 import { useFetchTxHistory } from '@app/hooks/wallet/useFetchTxHistory.ts';
 import { TransactionDetails } from '@app/components/transactions/history/details/TransactionDetails.tsx';
+import { TransactionDetailsItem } from '@app/types/transactions.ts';
 
 export default function List() {
     const { t } = useTranslation('wallet');
+    const [detailsItem, setDetailsItem] = useState<TransactionDetailsItem | null>(null);
     const walletScanning = useWalletStore((s) => s.wallet_scanning);
+
     const lastItemRef = useRef<HTMLDivElement>(null);
     const isInView = useInView(lastItemRef);
 
-    const { data, fetchNextPage } = useFetchTxHistory();
+    const { data, fetchNextPage, isFetching, isFetchingNextPage } = useFetchTxHistory();
     const transactions = data?.pages.flatMap((p) => p);
-
-    const [detailsItem, setDetailsItem] = useState<TransactionDetailsItem | null>(null);
     const handleDetailsChange = useCallback(async (tx: TransactionInfo | null) => {
         if (!tx) {
             setDetailsItem(null);
@@ -51,10 +52,11 @@ export default function List() {
     }, []);
 
     useEffect(() => {
-        if (isInView) {
+        if (isInView && !isFetching && !isFetchingNextPage) {
             fetchNextPage();
         }
-    }, [fetchNextPage, isInView]);
+    }, [fetchNextPage, isFetching, isFetchingNextPage, isInView]);
+
     // Calculate how many placeholder items we need to add
     const transactionsCount = transactions?.length || 0;
     const placeholdersNeeded = Math.max(0, 5 - transactionsCount);

@@ -8,7 +8,6 @@ import {
     StyledIconButton,
     TabHeader,
 } from '../components/Tabs/tab.styles.ts';
-import HistoryList from '../history/HistoryList.tsx';
 import WalletBalanceMarkup from '@app/containers/navigation/components/Wallet/WalletBalanceMarkup.tsx';
 import { IoCheckmarkOutline, IoCopyOutline } from 'react-icons/io5';
 import { truncateMiddle } from '@app/utils/truncateString.ts';
@@ -83,8 +82,6 @@ const Wallet = memo(function Wallet({ section, setSection }: Props) {
                                 </SyncButton>
                             </TabsWrapper>
                         )}
-
-                        <HistoryList />
 
                         {uiSendRecvEnabled ? (
                             <>

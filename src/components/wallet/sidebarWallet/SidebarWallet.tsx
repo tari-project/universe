@@ -1,4 +1,4 @@
-import { AnimatePresence, useMotionValue, useMotionValueEvent, useScroll, useSpring } from 'motion/react';
+import { AnimatePresence, useMotionValueEvent, useScroll } from 'motion/react';
 import { useAirdropStore, useWalletStore } from '@app/store';
 import { swapTransition } from '@app/components/transactions/wallet/transitions.ts';
 import { Swap } from '@app/components/transactions/wallet/Swap/Swap.tsx';

@@ -6,7 +6,7 @@ import { StatusListEntry } from '@app/components/transactions/components/StatusL
 import { getExplorerUrl, Network } from '@app/utils/network.ts';
 import { useMiningStore } from '@app/store';
 import { getTxStatusTitleKey, getTxTitle } from '@app/utils/getTxStatus.ts';
-import { TransactionDetailsItem } from '../HistoryList';
+import { TransactionDetailsItem } from '@app/types/transactions.ts';
 
 type Key = keyof TransactionDetailsItem;
 type Entry = {
