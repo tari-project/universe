@@ -20,12 +20,28 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod setup_manager;
-mod trait_setup_phase;
-pub mod utils;
+use anyhow::Error;
+use log::{info, warn};
+use std::fs;
+use std::path::{Path, PathBuf};
+use tari_common::configuration::Network;
 
-mod phase_core;
-mod phase_hardware;
-mod phase_node;
-mod phase_unknown;
-mod phase_wallet;
+const LOG_TARGET: &str = "tari::universe::process_adapter_utils";
+
+/// Setup common directory structure and cleanup
+pub fn setup_working_directory(data_dir: &Path, working_dir_name: &str) -> Result<PathBuf, Error> {
+    let working_dir = data_dir.join(working_dir_name);
+    let network_dir = working_dir.join(Network::get_current().to_string().to_lowercase());
+    std::fs::create_dir_all(&working_dir)?;
+
+    // Remove peerdb on every restart as requested by Protocol team
+    let peer_db_dir = network_dir.join("peer_db");
+    if peer_db_dir.exists() {
+        info!(target: LOG_TARGET, "Removing peer db at {:?}", peer_db_dir);
+        let _unused = fs::remove_dir_all(peer_db_dir).inspect_err(|e| {
+            warn!(target: LOG_TARGET, "Failed to remove peer db: {:?}", e);
+        });
+    }
+
+    Ok(working_dir)
+}

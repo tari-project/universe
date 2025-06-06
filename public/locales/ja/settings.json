@@ -104,6 +104,8 @@
   "pre-release-note": "アプリケーションのプレリリース版に切り替えようとしています。このバージョンは、エキサイティングな新機能や改善を提供する可能性がありますが、まだ改良中の部分に遭遇する可能性もあります。",
   "randomx-network-hash-rate": "Randomxネットワークのハッシュレート",
   "refresh-versions": "バージョンを更新",
+  "refresh-wallet-history": "Refresh wallet history",
+  "refresh-wallet-history-description": "Scan and validate all your transactions",
   "release-notes": {
     "loading": "リリースノートを読み込み中...",
     "upgrade-available": "⚠️ アップグレード可能"

@@ -18,10 +18,6 @@ import { useUIStore } from '@app/store';
 import { useIframeUrl } from '@app/hooks/swap/useIframeUrl';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots';
 
-// TODO: Replace with the actual URL
-// const SWAPS_IFRAME_URL = 'https://feat-swaps.tari-dot-com-2025.pages.dev/swaps';
-// const SWAPS_IFRAME_URL = 'http://localhost:3000/swaps';
-
 export const Swap = memo(function Swap() {
     const theme = useUIStore((s) => s.theme);
     const [processingOpen, setProcessingOpen] = useState(false);
@@ -45,7 +41,6 @@ export const Swap = memo(function Swap() {
             }
         }, 1000);
     }, [iframeUrl, theme]);
-
     useEffect(() => {
         // Keep the iframe theme in sync with the app theme
         handleSetTheme();
