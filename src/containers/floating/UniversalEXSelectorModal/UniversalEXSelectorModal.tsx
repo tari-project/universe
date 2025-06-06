@@ -1,4 +1,4 @@
-import { useExchangeStore } from '@app/store/useExchangeStore.ts';
+import { setShowUniversalModal, useExchangeStore } from '@app/store/useExchangeStore.ts';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import { useTranslation } from 'react-i18next';
 import { HeaderSection, Heading, Wrapper } from './styles';
@@ -9,7 +9,7 @@ export default function UniversalEXSelectorModal() {
     const showModal = useExchangeStore((s) => s.showUniversalModal);
 
     return (
-        <Dialog open={!!showModal} disableClose>
+        <Dialog open={!!showModal} onOpenChange={setShowUniversalModal}>
             <DialogContent $disableOverflow $borderRadius="40px">
                 <Wrapper>
                     <HeaderSection>

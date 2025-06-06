@@ -1,6 +1,7 @@
 import { create } from './create';
 import { TransactionInfo, WalletBalance } from '../types/app-status.ts';
 import { refreshTransactions } from './actions/walletStoreActions.ts';
+import { TransactionDetailsItem } from '@app/types/transactions.ts';
 
 interface WalletStoreState {
     tari_address_base58: string;
@@ -16,6 +17,7 @@ interface WalletStoreState {
     is_transactions_history_loading: boolean;
     is_wallet_importing: boolean;
     is_swapping?: boolean;
+    detailsItem?: TransactionDetailsItem | null;
     wallet_scanning: {
         is_scanning: boolean;
         scanned_height: number;

@@ -136,4 +136,4 @@ export function formatHashrate(hashrate: number, joinUnit = true): string {
     }
 }
 
-export { formatDecimalCompact, roundToTwoDecimals, removeDecimals };
+export { formatDecimalCompact, roundToTwoDecimals, removeDecimals, removeXTMCryptoDecimals };

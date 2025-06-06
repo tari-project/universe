@@ -19,13 +19,13 @@ export const SquareWrapper = styled.div`
 export const Square = styled(m.div)`
     width: 24px;
     height: 31px;
-    background: ${({ theme }) => (theme.mode === 'dark' ? '#222223' : '#F3F3F3')};
+    background: ${({ theme }) => (theme.mode === 'dark' ? '#121212' : '#f4f4f4')};
     border-radius: 5px;
 `;
 
 export const Circle = styled(m.div)`
     width: 22px;
     height: 22px;
-    background: ${({ theme }) => (theme.mode === 'dark' ? '#222223' : '#F3F3F3')};
+    background: ${({ theme }) => (theme.mode === 'dark' ? '#121212' : '#f4f4f4')};
     border-radius: 50%;
 `;

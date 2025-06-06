@@ -5,9 +5,9 @@ import { useWalletStore } from '../useWalletStore';
 import { restartMining } from './miningStoreActions';
 import { setError } from './appStateStoreActions';
 import { setExchangeContent } from '@app/store/useExchangeStore.ts';
-import { TransactionDirection, TransactionStatus } from '@app/types/transactions';
+import { TransactionDetailsItem, TransactionDirection, TransactionStatus } from '@app/types/transactions';
 
-interface TxArgs {
+export interface TxArgs {
     offset?: number;
     limit?: number;
 }
@@ -108,3 +108,5 @@ export const setWalletBalance = async (balance: WalletBalance) => {
 export const setIsSwapping = (isSwapping: boolean) => {
     useWalletStore.setState({ is_swapping: isSwapping });
 };
+
+export const setDetailsItem = (detailsItem: TransactionDetailsItem | null) => useWalletStore.setState({ detailsItem });
