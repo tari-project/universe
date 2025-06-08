@@ -309,6 +309,8 @@ impl SetupManager {
         ConfigMining::initialize(app_handle.clone()).await;
         ConfigUI::initialize(app_handle.clone()).await;
 
+        let is_on_exchange_miner_build =
+            in_memory_config.read().await.exchange_id != DEFAULT_EXCHANGE_ID;
         let universal_miner_exchange_id = ConfigCore::content()
             .await
             .universal_miner_exchange_id()
@@ -331,8 +333,6 @@ impl SetupManager {
             .await
             .expect("Could not load or create internal wallet");
         let is_address_generated = internal_wallet.get_is_tari_address_generated();
-        let is_on_exchange_miner_build =
-            in_memory_config.read().await.exchange_id != DEFAULT_EXCHANGE_ID;
 
         if is_on_exchange_miner_build {
             EventsEmitter::emit_disabled_phases_changed(vec![SetupPhase::Wallet]).await;
