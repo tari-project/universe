@@ -33,3 +33,20 @@ export const XCContent = styled.div`
     align-items: center;
     gap: 8px;
 `;
+
+export const CaptionWrapper = styled.div`
+    border-radius: 30px;
+    gap: 5px;
+    padding: 9px;
+    background-color: #188750;
+`;
+
+export const CaptionText = styled(Typography).attrs({ variant: 'p' })`
+    color: white;
+`;
+
+export const SelectOptionWrapper = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 8px;
+`;
