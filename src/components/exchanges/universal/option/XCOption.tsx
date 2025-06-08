@@ -2,17 +2,17 @@ import { ContentWrapper, Heading, Wrapper, XCContent } from '@app/components/exc
 import { ExchangeMinerAssets, ExchangeMiner } from '@app/types/exchange.ts';
 import { ImgWrapper, OpenButton } from '../../commonStyles.ts';
 import { ChevronSVG } from '@app/assets/icons/chevron.tsx';
-import { setShowExchangeModal, setShowUniversalModal } from '@app/store/useExchangeStore.ts';
+import { setCurrentExchangeMiner, setShowExchangeModal, setShowUniversalModal } from '@app/store/useExchangeStore.ts';
 import { invoke } from '@tauri-apps/api/core';
 
 interface XCOptionProps {
-    content: Partial<ExchangeMinerAssets>;
+    content: ExchangeMinerAssets;
     isCurrent?: boolean;
 }
 
 export const XCOption = ({ content, isCurrent = false }: XCOptionProps) => {
     const confirmExchangeMiner = async () => {
-        const selectedExchangeMiner: Partial<ExchangeMiner> = {
+        const selectedExchangeMiner: ExchangeMiner = {
             id: content.id,
             slug: content.slug,
             name: content.name,
@@ -20,6 +20,7 @@ export const XCOption = ({ content, isCurrent = false }: XCOptionProps) => {
         await invoke('select_exchange_miner', { exchangeMiner: selectedExchangeMiner });
         setShowUniversalModal(false);
         setShowExchangeModal(true);
+        setCurrentExchangeMiner(content);
     };
 
     return (

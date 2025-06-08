@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { ExchangeContent, ExchangeMiner, ExchangeMinerAssets } from '@app/types/exchange.ts';
+import { ExchangeContent, ExchangeMinerAssets } from '@app/types/exchange.ts';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
 import { useConfigBEInMemoryStore } from '@app/store/useAppConfigStore.ts';
 import { setSeedlessUI } from '@app/store/actions/uiStoreActions.ts';
@@ -7,13 +7,22 @@ import { setSeedlessUI } from '@app/store/actions/uiStoreActions.ts';
 interface ExchangeStoreState {
     content?: ExchangeContent | null;
     showExchangeAddressModal: boolean | null;
-    exchangeMiners?: ExchangeMiner[];
+    exchangeMiners?: ExchangeMinerAssets[];
+    currentExchangeMiner: ExchangeMinerAssets;
     showUniversalModal: boolean | null;
 }
+
+const universalExchangeMinerOption: ExchangeMinerAssets = {
+    id: 'universal',
+    slug: 'universal',
+    name: 'Tari Universe',
+    logoImgUrl: '/assets/img/TU-logo.svg',
+};
 
 const initialState = {
     showExchangeAddressModal: null,
     showUniversalModal: null,
+    currentExchangeMiner: universalExchangeMinerOption,
 };
 export const useExchangeStore = create<ExchangeStoreState>()(() => ({ ...initialState }));
 
@@ -29,8 +38,12 @@ export const setShowUniversalModal = (showUniversalModal: boolean) => {
     useExchangeStore.setState({ showUniversalModal: showUniversalModal });
 };
 
-export const setExchangeMiners = (exchangeMiners?: ExchangeMiner[]) => {
+export const setExchangeMiners = (exchangeMiners?: ExchangeMinerAssets[]) => {
     useExchangeStore.setState({ exchangeMiners });
+};
+
+export const setCurrentExchangeMiner = (currentExchangeMiner: ExchangeMinerAssets) => {
+    useExchangeStore.setState({ currentExchangeMiner });
 };
 
 export async function fetchExchangeMiners() {
@@ -42,6 +55,7 @@ export async function fetchExchangeMiners() {
             const list = (await res.json()) as {
                 exchanges: ExchangeMinerAssets[];
             };
+            list.exchanges.push(universalExchangeMinerOption);
             setExchangeMiners(list.exchanges.filter((ex) => ex.name !== 'Universal'));
         }
     } catch (e) {
