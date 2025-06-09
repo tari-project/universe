@@ -158,9 +158,9 @@ impl WalletAdapter {
             .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
         let res = client
             .get_all_completed_transactions(GetAllCompletedTransactionsRequest {
-                offset: offset.unwrap_or(0) as u64,
-                limit: limit.unwrap_or(0) as u64,
-                status_bitflag: status.unwrap_or(0) as u64,
+                offset: u64::from(offset.unwrap_or(0)),
+                limit: u64::from(limit.unwrap_or(0)),
+                status_bitflag: u64::from(status.unwrap_or(0)),
             })
             .await
             .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?;
