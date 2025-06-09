@@ -26,7 +26,6 @@
 use commands::CpuMinerStatus;
 use cpu_miner::CpuMinerConfig;
 use events_emitter::EventsEmitter;
-use events_manager::EventsManager;
 use gpu_miner_adapter::GpuMinerStatus;
 use log::{error, info, warn};
 use mining_status_manager::MiningStatusManager;
@@ -58,15 +57,13 @@ use log4rs::config::RawConfig;
 use std::fs;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use std::time::{Duration, SystemTime};
+use std::time::SystemTime;
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tauri::async_runtime::block_on;
 use tauri::{Manager, RunEvent};
 use tauri_plugin_sentry::{minidump, sentry};
-use tokio::select;
 use tokio::sync::{Mutex, RwLock};
-use tokio::time;
 use utils::logging_utils::setup_logging;
 
 use app_in_memory_config::DynamicMemoryConfig;
@@ -172,73 +169,6 @@ const APPLICATION_FOLDER_ID: &str = "com.tari.universe";
 const APPLICATION_FOLDER_ID: &str = "com.tari.universe.beta";
 #[cfg(all(feature = "exchange-ci", not(feature = "release-ci")))]
 const APPLICATION_FOLDER_ID: &str = const_format::formatcp!("com.tari.universe.{}", EXCHANGE_ID);
-
-#[allow(clippy::too_many_lines)]
-async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyhow::Error> {
-    let move_app = app.clone();
-    TasksTrackers::current().common.get_task_tracker().await.spawn(async move {
-        let app_state = move_app.state::<UniverseAppState>().clone();
-
-        let mut node_status_watch_rx = (*app_state.node_status_watch_rx).clone();
-        let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
-
-        let init_node_status = *node_status_watch_rx.borrow();
-        EventsEmitter::emit_base_node_update(init_node_status).await;
-
-        let mut latest_updated_block_height = init_node_status.block_height;
-        loop {
-            select! {
-                _ = node_status_watch_rx.changed() => {
-                    let node_status = *node_status_watch_rx.borrow();
-                    let initial_sync_finished = app_state.wallet_manager.is_initial_scan_completed();
-
-                    if node_status.block_height > latest_updated_block_height && initial_sync_finished {
-                        while latest_updated_block_height < node_status.block_height {
-                            latest_updated_block_height += 1;
-                            let _ = EventsManager::handle_new_block_height(&move_app, latest_updated_block_height).await;
-                        }
-                    }
-                    if node_status.block_height > latest_updated_block_height && !initial_sync_finished {
-                        EventsEmitter::emit_base_node_update(node_status).await;
-                        latest_updated_block_height = node_status.block_height;
-                    }
-                },
-                _ = shutdown_signal.wait() => {
-                    break;
-                },
-            }
-        }
-    });
-
-    let move_app = app.clone();
-
-    TasksTrackers::current().node_phase.get_task_tracker().await.spawn(async move {
-        let app_state = move_app.state::<UniverseAppState>().clone();
-        let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
-        let mut interval = time::interval(Duration::from_secs(10));
-
-        loop {
-            select! {
-                _ = interval.tick() => {
-                    if let Ok(connected_peers) = app_state
-                        .node_manager
-                        .list_connected_peers()
-                        .await {
-                            EventsEmitter::emit_connected_peers_update(connected_peers.clone()).await;
-                        } else {
-                            let err_msg = "Error getting connected peers";
-                            error!(target: LOG_TARGET, "{}", err_msg);
-                        }
-                },
-                _ = shutdown_signal.wait() => {
-                    break;
-                },
-            }
-        }
-    });
-
-    Ok(())
-}
 
 #[derive(Clone)]
 struct UniverseAppState {

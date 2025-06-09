@@ -26,8 +26,9 @@ use tauri::AppHandle;
 use tokio::sync::watch::{Receiver, Sender};
 
 use crate::setup::{
-    setup_manager::{PhaseStatus, SetupFeaturesList},
+    setup_manager::PhaseStatus,
     trait_setup_phase::{SetupConfiguration, SetupPhaseImpl},
+    listeners::SetupFeaturesList,
 };
 
 pub struct PhaseBuilder {

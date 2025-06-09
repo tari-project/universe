@@ -50,8 +50,9 @@ use tokio::sync::{
 use tokio_util::task::TaskTracker;
 
 use super::{
-    setup_manager::{PhaseStatus, SetupFeaturesList},
+    setup_manager::PhaseStatus,
     trait_setup_phase::{SetupConfiguration, SetupPhaseImpl},
+    listeners::SetupFeaturesList,
     utils::{setup_default_adapter::SetupDefaultAdapter, timeout_watcher::TimeoutWatcher},
 };
 
