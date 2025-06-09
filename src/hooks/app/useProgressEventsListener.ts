@@ -2,7 +2,7 @@ import {
     updateCoreSetupPhaseInfo,
     updateHardwareSetupPhaseInfo,
     updateNodeSetupPhaseInfo,
-    updateUnknownSetupPhaseInfo,
+    updateMiningSetupPhaseInfo,
     updateWalletSetupPhaseInfo,
 } from '@app/store/actions/setupStoreActions';
 import { PhaseTitle } from '@app/store/useSetupStore';
@@ -34,7 +34,7 @@ export type ProgressStateUpdateEvent =
           payload: ProgressTrackerUpdatePayload;
       }
     | {
-          event_type: 'Unknown';
+          event_type: 'Mining';
           payload: ProgressTrackerUpdatePayload;
       }
     | {
@@ -42,7 +42,7 @@ export type ProgressStateUpdateEvent =
           payload: ProgressTrackerUpdatePayload;
       };
 
-// const LOG_EVENT_TYPES = ['Core', 'Node', 'Wallet', 'Hardware', 'Unknown'];
+// const LOG_EVENT_TYPES = ['Core', 'Node', 'Wallet', 'Hardware', 'Mining'];
 const LOG_EVENT_TYPES = [''];
 
 export const useProgressEventsListener = () => {
@@ -72,8 +72,8 @@ export const useProgressEventsListener = () => {
                     case 'Hardware':
                         updateHardwareSetupPhaseInfo(event.payload);
                         break;
-                    case 'Unknown':
-                        updateUnknownSetupPhaseInfo(event.payload);
+                    case 'Mining':
+                        updateMiningSetupPhaseInfo(event.payload);
                         break;
                     case 'Wallet':
                         updateWalletSetupPhaseInfo(event.payload);
