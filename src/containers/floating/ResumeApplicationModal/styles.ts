@@ -7,13 +7,13 @@ export const Wrapper = styled.div`
     background: ${({ theme }) => theme.palette.background.paper};
     border-radius: 10px;
     border: 1px solid rgba(0, 0, 0, 0.05);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18);
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
-    z-index: 101;
+    z-index: 10;
     position: fixed;
-    bottom: 20px;
+    top: 20px;
     right: 20px;
     margin: auto;
     gap: 16px;
