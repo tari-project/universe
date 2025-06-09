@@ -5,5 +5,6 @@
   "select": {
     "modal-title": "Start mining Tari (XTM) directly to your wallet on a supported exchange"
   },
-  "selected-exchange-miner": "You're mining here"
+  "selected-exchange-miner": "You're mining here",
+  "wallet-address": "Wallet Address"
 }

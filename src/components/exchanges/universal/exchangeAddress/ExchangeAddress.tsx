@@ -7,11 +7,14 @@ import { Controller, useForm } from 'react-hook-form';
 import { IoCheckmarkOutline, IoCloseOutline } from 'react-icons/io5';
 import { StyledForm, StyledInput } from './styles';
 import ClipboardViewer from '../clipboardViewer/ClipboardViewer';
+import { IconContainer } from '@app/containers/floating/XSpaceBanner/XSpaceBanner.style';
+import { useTranslation } from 'react-i18next';
 
 interface ExchangeAddressProps {
     handleIsAddressValid: (isValid: boolean) => void;
 }
 export const ExchangeAddress = ({ handleIsAddressValid }: ExchangeAddressProps) => {
+    const { t } = useTranslation('exchange');
     const {
         control,
         watch,
@@ -66,6 +69,7 @@ export const ExchangeAddress = ({ handleIsAddressValid }: ExchangeAddressProps) 
                                 <StyledInput
                                     {...field}
                                     type="text"
+                                    placeholder={t('wallet-address')}
                                     hasError={!!errors.address}
                                     onFocus={handleFocus}
                                     onBlur={handleBlur}
@@ -73,12 +77,10 @@ export const ExchangeAddress = ({ handleIsAddressValid }: ExchangeAddressProps) 
                             );
                         }}
                     />
-                    <div>
+                    <IconContainer>
                         {errors.address ? (
                             <IconButton
                                 style={{
-                                    width: 30,
-                                    height: 30,
                                     fontSize: 24,
                                     backgroundColor: '#0000001A',
                                 }}
@@ -90,8 +92,6 @@ export const ExchangeAddress = ({ handleIsAddressValid }: ExchangeAddressProps) 
                         ) : (
                             <IconButton
                                 style={{
-                                    width: 30,
-                                    height: 30,
                                     fontSize: 24,
                                     backgroundColor: '#00800020',
                                 }}
@@ -100,7 +100,7 @@ export const ExchangeAddress = ({ handleIsAddressValid }: ExchangeAddressProps) 
                                 <IoCheckmarkOutline />
                             </IconButton>
                         )}
-                    </div>
+                    </IconContainer>
                 </InputArea>
             </StyledForm>
             {showClipboard && <ClipboardViewer />}
