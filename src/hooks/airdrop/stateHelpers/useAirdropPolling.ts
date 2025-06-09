@@ -7,7 +7,6 @@ import {
     fetchPollingFeatureFlag,
     fetchWarmupFeatureFlag,
     fetchUiSendRecvFeatureFlag,
-    fetchSwapsEnabledFeatureFlag,
     fetchBlockBubblesFeatureFlag,
 } from '@app/store/actions/airdropStoreActions';
 import { listen, UnlistenFn } from '@tauri-apps/api/event';
@@ -17,8 +16,8 @@ const DEBOUNCE_DELAY = 1000; // 1 second delay
 
 export const useAirdropPolling = () => {
     const pollingEnabled = useAirdropStore((s) => s.pollingEnabled);
-    const airdropTimeoutRef = useRef<NodeJS.Timeout>();
-    const featureFlagTimeoutRef = useRef<NodeJS.Timeout>();
+    const airdropTimeoutRef = useRef<NodeJS.Timeout>(undefined);
+    const featureFlagTimeoutRef = useRef<NodeJS.Timeout>(undefined);
 
     const fetchAirdropDataDebounced = useCallback(() => {
         if (airdropTimeoutRef.current) {
@@ -36,7 +35,6 @@ export const useAirdropPolling = () => {
         fetchPollingFeatureFlag();
         fetchUiSendRecvFeatureFlag();
         fetchWarmupFeatureFlag();
-        fetchSwapsEnabledFeatureFlag();
         fetchBlockBubblesFeatureFlag();
     }, []);
 

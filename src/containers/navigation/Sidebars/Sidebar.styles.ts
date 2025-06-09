@@ -43,14 +43,14 @@ export const GridAreaTop = styled.div`
     gap: 8px;
 `;
 
-export const GridAreaBottom = styled.div<{ $overflowVisible?: boolean }>`
+export const GridAreaBottom = styled.div<{ $swapsEnabled?: boolean }>`
     display: flex;
     flex-direction: column;
     position: relative;
     gap: 4px;
     overflow: hidden;
     overflow-y: auto;
-    ${({ $overflowVisible: $swapsEnabled }) =>
+    ${({ $swapsEnabled }) =>
         $swapsEnabled &&
         css`
             overflow: visible;

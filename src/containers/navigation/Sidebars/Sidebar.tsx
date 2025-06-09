@@ -3,17 +3,17 @@ import { memo } from 'react';
 import WalletSection from './sections/Wallet.tsx';
 import MiningSection from './sections/Mining.tsx';
 import { GridAreaBottom, GridAreaTop, WrapperGrid, SidebarWrapper } from './Sidebar.styles.ts';
-import { useAirdropStore } from '@app/store/useAirdropStore.ts';
+import { useWalletStore } from '@app/store/useWalletStore.ts';
 
 const Sidebar = memo(function Sidebar() {
-    const swapUiEnabled = useAirdropStore((s) => s.swapsEnabled);
+    const isSwapping = useWalletStore((s) => s.is_swapping);
     return (
         <SidebarWrapper key="sidebar">
             <WrapperGrid>
                 <GridAreaTop>
                     <MiningSection />
                 </GridAreaTop>
-                <GridAreaBottom $overflowVisible={swapUiEnabled}>
+                <GridAreaBottom $overflowVisible={isSwapping}>
                     <WalletSection />
                 </GridAreaBottom>
             </WrapperGrid>
