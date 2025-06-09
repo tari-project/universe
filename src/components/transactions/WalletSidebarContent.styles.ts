@@ -1,4 +1,4 @@
-import styled, { css } from 'styled-components';
+import styled from 'styled-components';
 
 export const WalletSections = styled.div`
     padding: 10px 0 0 0;
