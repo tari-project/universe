@@ -1,11 +1,12 @@
 import styled from 'styled-components';
 import clouds from '@app/assets/backgrounds/clouds.png';
+import { convertHexToRGBA } from '@app/utils';
 
 export const SB_MINI_WIDTH = 78;
 export const SB_WIDTH = 356;
 export const SB_SPACING = 15;
 
-export const DashboardContainer = styled.div<{ $disableBackground?: boolean }>`
+export const DashboardContainer = styled.div`
     display: flex;
     flex-direction: column;
     position: relative;
@@ -14,12 +15,9 @@ export const DashboardContainer = styled.div<{ $disableBackground?: boolean }>`
     padding: 10px;
     gap: 10px;
     max-height: 100%;
-    background: ${({ theme, $disableBackground }) =>
-        $disableBackground
-            ? 'none'
-            : `radial-gradient(140% 90% at 35% 20%, transparent 93%,  ${theme.palette.background.main} 98%)`};
+    background-image: ${({ theme }) =>
+        `linear-gradient(to top, transparent -90px, ${convertHexToRGBA(theme.palette.background.main, 0.6)} 130px, transparent 230px)`};
 `;
-
 export const DashboardContent = styled.div`
     width: 100%;
     height: 100%;
