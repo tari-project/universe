@@ -144,6 +144,15 @@ pub async fn set_permissions(file_path: &Path) -> Result<(), anyhow::Error> {
     let current_mode = perms.mode();
     perms.set_mode(current_mode | 0o111);
     fs::set_permissions(file_path, perms).await?;
+    let after_mode = fs::metadata(file_path).await?.permissions().mode();
+    if after_mode != (current_mode | 0o111) {
+        return Err(anyhow!(
+            "failed to set permissions for file: {}. Mode before: {:o}, after: {:o}",
+            file_path.display(),
+            current_mode,
+            after_mode
+        ));
+    }
     Ok(())
 }
 

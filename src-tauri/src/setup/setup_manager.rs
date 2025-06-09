@@ -21,9 +21,9 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use super::{
-    phase_core::CoreSetupPhase, phase_hardware::HardwareSetupPhase, phase_node::NodeSetupPhase,
-    phase_unknown::UnknownSetupPhase, phase_wallet::WalletSetupPhase,
-    trait_setup_phase::SetupPhaseImpl, utils::phase_builder::PhaseBuilder,
+    phase_core::CoreSetupPhase, phase_hardware::HardwareSetupPhase, phase_mining::MiningSetupPhase,
+    phase_node::NodeSetupPhase, phase_wallet::WalletSetupPhase, trait_setup_phase::SetupPhaseImpl,
+    utils::phase_builder::PhaseBuilder,
 };
 use crate::app_in_memory_config::{DynamicMemoryConfig, EXCHANGE_ID};
 use crate::{
@@ -129,7 +129,7 @@ pub enum SetupPhase {
     Wallet,
     Hardware,
     Node,
-    Unknown,
+    Mining,
 }
 
 impl Display for SetupPhase {
@@ -139,7 +139,7 @@ impl Display for SetupPhase {
             SetupPhase::Wallet => write!(f, "Wallet"),
             SetupPhase::Hardware => write!(f, "Hardware"),
             SetupPhase::Node => write!(f, "Node"),
-            SetupPhase::Unknown => write!(f, "Unknown"),
+            SetupPhase::Mining => write!(f, "Mining"),
         }
     }
 }
@@ -151,7 +151,7 @@ impl SetupPhase {
             SetupPhase::Hardware,
             SetupPhase::Node,
             SetupPhase::Wallet,
-            SetupPhase::Unknown,
+            SetupPhase::Mining,
         ]
     }
     pub fn get_critical_problem_title(&self) -> String {
@@ -160,7 +160,7 @@ impl SetupPhase {
             SetupPhase::Hardware => "phase-hardware-critical-problem-title".to_string(),
             SetupPhase::Node => "phase-node-critical-problem-title".to_string(),
             SetupPhase::Wallet => "phase-wallet-critical-problem-title".to_string(),
-            SetupPhase::Unknown => "phase-unknown-critical-problem-title".to_string(),
+            SetupPhase::Mining => "phase-mining-critical-problem-title".to_string(),
         }
     }
 
@@ -170,7 +170,7 @@ impl SetupPhase {
             SetupPhase::Hardware => "phase-hardware-critical-problem-description".to_string(),
             SetupPhase::Node => "phase-node-critical-problem-description".to_string(),
             SetupPhase::Wallet => "phase-wallet-critical-problem-description".to_string(),
-            SetupPhase::Unknown => "phase-unknown-critical-problem-description".to_string(),
+            SetupPhase::Mining => "phase-mining-critical-problem-description".to_string(),
         }
     }
 }
@@ -218,7 +218,7 @@ pub struct SetupManager {
     hardware_phase_status: Sender<PhaseStatus>,
     node_phase_status: Sender<PhaseStatus>,
     wallet_phase_status: Sender<PhaseStatus>,
-    unknown_phase_status: Sender<PhaseStatus>,
+    mining_phase_status: Sender<PhaseStatus>,
     exchange_modal_status: Sender<ExchangeModalStatus>,
     is_app_unlocked: Mutex<bool>,
     is_wallet_unlocked: Mutex<bool>,
@@ -428,21 +428,21 @@ impl SetupManager {
         wallet_phase_setup.setup().await;
     }
 
-    async fn setup_unknown_phase(&self, app_handle: AppHandle) {
+    async fn setup_mining_phase(&self, app_handle: AppHandle) {
         let setup_features = self.features.read().await.clone();
-        let unknown_phase_setup = PhaseBuilder::new()
+        let mining_phase_setup = PhaseBuilder::new()
             .with_setup_timeout_duration(Duration::from_secs(60 * 10)) // 10 minutes
             .with_listeners_for_required_phases_statuses(vec![
                 self.node_phase_status.subscribe(),
                 self.hardware_phase_status.subscribe(),
             ])
-            .build::<UnknownSetupPhase>(
+            .build::<MiningSetupPhase>(
                 app_handle.clone(),
-                self.unknown_phase_status.clone(),
+                self.mining_phase_status.clone(),
                 setup_features,
             )
             .await;
-        unknown_phase_setup.setup().await;
+        mining_phase_setup.setup().await;
     }
 
     pub async fn mark_exchange_modal_as_completed(&self) -> Result<(), anyhow::Error> {
@@ -457,7 +457,7 @@ impl SetupManager {
         let mut hardware_phase_status_subscriber = self.hardware_phase_status.subscribe();
         let mut node_phase_status_subscriber = self.node_phase_status.subscribe();
         let mut wallet_phase_status_subscriber = self.wallet_phase_status.subscribe();
-        let mut unknown_phase_status_subscriber = self.unknown_phase_status.subscribe();
+        let mut mining_phase_status_subscriber = self.mining_phase_status.subscribe();
         let mut exchange_modal_status_subscriber = self.exchange_modal_status.subscribe();
 
         let cacellation_token = self.cancellation_token.lock().await.clone();
@@ -476,15 +476,15 @@ impl SetupManager {
                     let is_hardware_phase_succeeded = hardware_phase_status_subscriber.borrow().is_success();
                     let is_node_phase_succeeded = node_phase_status_subscriber.borrow().is_success();
                     let is_wallet_phase_succeeded = wallet_phase_status_subscriber.borrow().is_success();
-                    let is_unknown_phase_succeeded = unknown_phase_status_subscriber.borrow().is_success();
+                    let is_mining_phase_succeeded = mining_phase_status_subscriber.borrow().is_success();
                     let is_exchange_modal_completed = exchange_modal_status_subscriber.borrow().is_completed();
 
-                    info!(target: LOG_TARGET, "Checking unlock conditions: Core: {}, Hardware: {}, Node: {}, Wallet: {}, Unknown: {}",
+                    info!(target: LOG_TARGET, "Checking unlock conditions: Core: {}, Hardware: {}, Node: {}, Wallet: {}, Mining: {}",
                         is_core_phase_succeeded,
                         is_hardware_phase_succeeded,
                         is_node_phase_succeeded,
                         is_wallet_phase_succeeded,
-                        is_unknown_phase_succeeded);
+                        is_mining_phase_succeeded);
 
                     let is_app_unlocked =
                         *SetupManager::get_instance().is_app_unlocked.lock().await;
@@ -500,7 +500,7 @@ impl SetupManager {
                     if is_core_phase_succeeded
                         && is_hardware_phase_succeeded
                         && is_node_phase_succeeded
-                        && is_unknown_phase_succeeded
+                        && is_mining_phase_succeeded
                         && is_exchange_modal_completed
                         && !is_app_unlocked
                         && setup_features.is_feature_disabled(SetupFeature::CentralizedPool)
@@ -513,7 +513,7 @@ impl SetupManager {
 
                     if is_hardware_phase_succeeded
                         && is_node_phase_succeeded
-                        && is_unknown_phase_succeeded
+                        && is_mining_phase_succeeded
                         && !is_cpu_mining_unlocked
                         && !is_gpu_mining_unlocked
                         && setup_features.is_feature_disabled(SetupFeature::CentralizedPool)
@@ -545,7 +545,7 @@ impl SetupManager {
                     if is_core_phase_succeeded
                         && is_hardware_phase_succeeded
                         && is_node_phase_succeeded
-                        && is_unknown_phase_succeeded
+                        && is_mining_phase_succeeded
                         && is_exchange_modal_completed
                         && !is_app_unlocked
                         && setup_features.is_feature_disabled(SetupFeature::CentralizedPool)
@@ -559,7 +559,7 @@ impl SetupManager {
                     if is_core_phase_succeeded
                         && is_hardware_phase_succeeded
                         && is_node_phase_succeeded
-                        && is_unknown_phase_succeeded
+                        && is_mining_phase_succeeded
                         && !is_cpu_mining_unlocked
                         && !is_gpu_mining_unlocked
                         && setup_features.is_feature_disabled(SetupFeature::CentralizedPool)
@@ -599,7 +599,7 @@ impl SetupManager {
                     if is_core_phase_succeeded
                         && is_hardware_phase_succeeded
                         && is_node_phase_succeeded
-                        && is_unknown_phase_succeeded
+                        && is_mining_phase_succeeded
                         && !is_gpu_mining_unlocked
                         && setup_features.is_feature_enabled(SetupFeature::CentralizedPool)
                         && setup_features.is_feature_disabled(SetupFeature::ExchangeMiner)
@@ -649,7 +649,7 @@ impl SetupManager {
                     if is_core_phase_succeeded
                         && is_hardware_phase_succeeded
                         && is_node_phase_succeeded
-                        && is_unknown_phase_succeeded
+                        && is_mining_phase_succeeded
                         && !is_gpu_mining_unlocked
                         && setup_features.is_feature_enabled(SetupFeature::CentralizedPool)
                         && setup_features.is_feature_enabled(SetupFeature::ExchangeMiner)
@@ -708,7 +708,7 @@ impl SetupManager {
                         _ = hardware_phase_status_subscriber.changed() => { continue; }
                         _ = node_phase_status_subscriber.changed() => { continue; }
                         _ = wallet_phase_status_subscriber.changed() => { continue; }
-                        _ = unknown_phase_status_subscriber.changed() => { continue; }
+                        _ = mining_phase_status_subscriber.changed() => { continue; }
                         _ = exchange_modal_status_subscriber.changed() => { continue; }
                     }
                 }
@@ -754,16 +754,16 @@ impl SetupManager {
                     TasksTrackers::current().wallet_phase.replace().await;
                     let _unused = self.wallet_phase_status.send_replace(PhaseStatus::None);
                 }
-                SetupPhase::Unknown => {
+                SetupPhase::Mining => {
                     if features.is_feature_enabled(SetupFeature::CentralizedPool) {
                         self.lock_gpu_mining().await;
                     } else {
                         self.lock_gpu_mining().await;
                         self.lock_cpu_mining().await;
                     }
-                    TasksTrackers::current().unknown_phase.close().await;
-                    TasksTrackers::current().unknown_phase.replace().await;
-                    let _unused = self.unknown_phase_status.send_replace(PhaseStatus::None);
+                    TasksTrackers::current().mining_phase.close().await;
+                    TasksTrackers::current().mining_phase.replace().await;
+                    let _unused = self.mining_phase_status.send_replace(PhaseStatus::None);
                 }
             }
         }
@@ -791,8 +791,8 @@ impl SetupManager {
                 SetupPhase::Wallet => {
                     self.setup_wallet_phase(app_handle.clone()).await;
                 }
-                SetupPhase::Unknown => {
-                    self.setup_unknown_phase(app_handle.clone()).await;
+                SetupPhase::Mining => {
+                    self.setup_mining_phase(app_handle.clone()).await;
                 }
             }
         }
@@ -902,7 +902,7 @@ impl SetupManager {
         self.setup_hardware_phase(app_handle.clone()).await;
         self.setup_node_phase(app_handle.clone()).await;
         self.setup_wallet_phase(app_handle.clone()).await;
-        self.setup_unknown_phase(app_handle.clone()).await;
+        self.setup_mining_phase(app_handle.clone()).await;
     }
 
     pub async fn handle_switch_to_local_node(&self) {
@@ -913,12 +913,12 @@ impl SetupManager {
             info!(target: LOG_TARGET, "Restarting Phases");
             self.shutdown_phases(
                 app_handle.clone(),
-                vec![SetupPhase::Wallet, SetupPhase::Unknown],
+                vec![SetupPhase::Wallet, SetupPhase::Mining],
             )
             .await;
 
             self.setup_wallet_phase(app_handle.clone()).await;
-            self.setup_unknown_phase(app_handle.clone()).await;
+            self.setup_mining_phase(app_handle.clone()).await;
         } else {
             error!(target: LOG_TARGET, "Failed to reset phases after switching to Local Node: app_handle not defined");
         }

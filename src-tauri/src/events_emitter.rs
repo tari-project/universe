@@ -539,17 +539,17 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_unknown_phase_finished(status: bool) {
+    pub async fn emit_mining_phase_finished(status: bool) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
-            event_type: EventType::UnknownPhaseFinished,
+            event_type: EventType::MiningPhaseFinished,
             payload: status,
         };
         if let Err(e) = Self::get_app_handle()
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit UnknownPhaseFinished event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit MiningPhaseFinished event: {:?}", e);
         }
     }
 

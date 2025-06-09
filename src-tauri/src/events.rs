@@ -60,7 +60,7 @@ pub enum EventType {
     WalletPhaseFinished,
     HardwarePhaseFinished,
     NodePhaseFinished,
-    UnknownPhaseFinished,
+    MiningPhaseFinished,
     InitialSetupFinished,
     UnlockApp,
     UnlockWallet,
@@ -89,7 +89,7 @@ pub enum ProgressEvents {
     Wallet,
     Hardware,
     Node,
-    Unknown,
+    Mining,
 }
 #[derive(Clone, Debug, Serialize)]
 pub struct ProgressTrackerUpdatePayload {

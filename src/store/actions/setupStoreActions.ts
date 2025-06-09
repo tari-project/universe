@@ -138,8 +138,8 @@ export const updateWalletSetupPhaseInfo = (payload: ProgressTrackerUpdatePayload
     useSetupStore.setState({ wallet_phase_setup_payload: payload });
 };
 
-export const updateUnknownSetupPhaseInfo = (payload: ProgressTrackerUpdatePayload | undefined) => {
-    useSetupStore.setState({ unknown_phase_setup_payload: payload });
+export const updateMiningSetupPhaseInfo = (payload: ProgressTrackerUpdatePayload | undefined) => {
+    useSetupStore.setState({ mining_phase_setup_payload: payload });
 };
 
 export const updateDisabledPhases = (payload: DisabledPhasesPayload) => {

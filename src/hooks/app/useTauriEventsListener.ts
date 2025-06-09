@@ -86,7 +86,7 @@ const useTauriEventsListener = () => {
                             break;
                         case 'NodePhaseFinished':
                             break;
-                        case 'UnknownPhaseFinished':
+                        case 'MiningPhaseFinished':
                             break;
                         case 'WalletPhaseFinished':
                             break;
