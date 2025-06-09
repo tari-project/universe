@@ -54,7 +54,7 @@ const AddressInner = styled.div`
     display: flex;
 `;
 
-const CopyToClipboard = ({ text }: { text: string | undefined }) => {
+export const CopyToClipboard = ({ text }: { text: string | undefined }) => {
     const { copyToClipboard, isCopied } = useCopyToClipboard();
     const handleCopy = useCallback(
         (text?: string) => {

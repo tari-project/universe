@@ -1,9 +1,15 @@
 import {
     CaptionText,
     CaptionWrapper,
+    ConfirmButton,
     ContentBodyWrapper,
     ContentHeaderWrapper,
+    Countdown,
+    CountdownText,
     Heading,
+    SeasonReward,
+    SeasonRewardIcon,
+    SeasonRewardText,
     SelectOptionWrapper,
     Wrapper,
     XCContent,
@@ -14,8 +20,9 @@ import { ChevronSVG } from '@app/assets/icons/chevron.tsx';
 import { setCurrentExchangeMiner, setShowUniversalModal } from '@app/store/useExchangeStore.ts';
 import { invoke } from '@tauri-apps/api/core';
 import { useTranslation } from 'react-i18next';
-import { useCallback, useState } from 'react';
-import AddressEditor from '@app/containers/floating/Settings/sections/wallet/components/AddressEditor.tsx';
+import { ExchangeAddress } from '../exchangeAddress/ExchangeAddress.tsx';
+import { useState } from 'react';
+import { Typography } from '@app/components/elements/Typography.tsx';
 
 interface XCOptionProps {
     content: ExchangeMinerAssets;
@@ -23,7 +30,7 @@ interface XCOptionProps {
 }
 
 export const XCOption = ({ content, isCurrent = false }: XCOptionProps) => {
-    const { t } = useTranslation('exchange', { useSuspense: false });
+    const { t } = useTranslation(['exchange', 'settings'], { useSuspense: false });
     const [isActive, setIsActive] = useState(false);
     const confirmExchangeMiner = async () => {
         const selectedExchangeMiner: ExchangeMiner = {
@@ -34,23 +41,6 @@ export const XCOption = ({ content, isCurrent = false }: XCOptionProps) => {
         await invoke('select_exchange_miner', { exchangeMiner: selectedExchangeMiner });
         setShowUniversalModal(false);
         setCurrentExchangeMiner(content);
-    };
-
-    const validateAddress = useCallback(async (value: string) => {
-        try {
-            await invoke('verify_address_for_send', { address: value });
-            return true;
-        } catch (_) {
-            return false;
-        }
-    }, []);
-
-    const validationRules = {
-        validate: async (value) => {
-            const isValid = await validateAddress(value);
-
-            return isValid || 'Invalid address format';
-        },
     };
 
     return (
@@ -84,7 +74,24 @@ export const XCOption = ({ content, isCurrent = false }: XCOptionProps) => {
                 </SelectOptionWrapper>
             </ContentHeaderWrapper>
             <ContentBodyWrapper $isActive={isActive}>
-                <AddressEditor initialAddress={'test'} onApply={confirmExchangeMiner} rules={validationRules} />
+                <ExchangeAddress initialAddress="test" confirmExchangeMiner={confirmExchangeMiner} />
+                <SeasonReward>
+                    <SeasonRewardIcon src="/assets/img/wrapped_gift.svg" alt="gift" />
+                    <SeasonRewardText>
+                        <Typography variant="p" fontWeight="bold" style={{ display: 'inline' }}>
+                            {t('season-one-reward')}
+                        </Typography>
+                        <Typography variant="p" style={{ display: 'inline' }}>
+                            Season one bonus: Earn 12% bonus XTM when you mine to Kraken.
+                        </Typography>
+                    </SeasonRewardText>
+                    <Countdown>
+                        <CountdownText>36D 21H 22M</CountdownText>
+                    </Countdown>
+                </SeasonReward>
+                <ConfirmButton onClick={confirmExchangeMiner}>
+                    <Typography variant="h4">{t('confirm')}</Typography>
+                </ConfirmButton>
             </ContentBodyWrapper>
         </Wrapper>
     );
