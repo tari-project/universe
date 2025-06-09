@@ -22,12 +22,14 @@ import WalletActions from '@app/components/wallet/components/actions/WalletActio
 import ListActions from '@app/components/wallet/components/actions/ListActions.tsx';
 import { TransactionDetails } from '@app/components/transactions/history/details/TransactionDetails.tsx';
 import { setDetailsItem, setIsSwapping } from '@app/store/actions/walletStoreActions.ts';
+import { useExchangeStore } from '@app/store/useExchangeStore.ts';
 
 interface SidebarWalletProps {
     section: string;
     setSection: (section: string) => void;
 }
 export default function SidebarWallet({ section, setSection }: SidebarWalletProps) {
+    const xcData = useExchangeStore((s) => s.content);
     const detailsItem = useWalletStore((s) => s.detailsItem);
     const targetRef = useRef<HTMLDivElement>(null);
     const { scrollY } = useScroll({ container: targetRef });
@@ -58,7 +60,10 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
                                 style={{ height: 170 - offset }}
                                 transition={{ duration: 0.2, ease: 'linear' }}
                             >
-                                <AnimatedBG $col1={`#0B0A0D`} $col2={`#6F8309`} />
+                                <AnimatedBG
+                                    $col1={xcData?.primary_colour || `#0B0A0D`}
+                                    $col2={xcData?.secondary_colour || `#6F8309`}
+                                />
                                 <DetailsCardContent>
                                     <WalletDetails />
                                     <WalletBalance />
