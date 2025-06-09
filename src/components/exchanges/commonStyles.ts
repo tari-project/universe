@@ -1,4 +1,4 @@
-import styled, { css } from 'styled-components';
+import styled, { css, keyframes } from 'styled-components';
 import { convertHexToRGBA } from '@app/utils';
 import * as m from 'motion/react-m';
 
@@ -20,7 +20,16 @@ export const OpenButton = styled.button<{ $isOpen?: boolean }>`
               `}
 `;
 
-export const ImgWrapper = styled.div<{ $isLogo?: boolean; $border?: boolean }>`
+const rotateKeyframes = keyframes`
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(90deg);
+    }
+`;
+
+export const ImgWrapper = styled.div<{ $isLogo?: boolean; $border?: boolean; $isActive?: boolean }>`
     width: 40px;
     height: 40px;
     border-radius: 50%;
@@ -49,6 +58,12 @@ export const ImgWrapper = styled.div<{ $isLogo?: boolean; $border?: boolean }>`
         $border &&
         css`
             border: 1px solid ${({ theme }) => theme.colorsAlpha.greyscaleAlpha[10]};
+        `}
+
+        ${({ $isActive }) =>
+        $isActive &&
+        css`
+            animation: ${rotateKeyframes} 0.2s forwards;
         `}
 `;
 

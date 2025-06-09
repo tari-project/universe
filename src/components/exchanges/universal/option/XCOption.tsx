@@ -1,7 +1,8 @@
 import {
     CaptionText,
     CaptionWrapper,
-    ContentWrapper,
+    ContentBodyWrapper,
+    ContentHeaderWrapper,
     Heading,
     SelectOptionWrapper,
     Wrapper,
@@ -10,10 +11,11 @@ import {
 import { ExchangeMinerAssets, ExchangeMiner } from '@app/types/exchange.ts';
 import { ImgWrapper, OpenButton } from '../../commonStyles.ts';
 import { ChevronSVG } from '@app/assets/icons/chevron.tsx';
-import { setCurrentExchangeMiner, setShowExchangeModal, setShowUniversalModal } from '@app/store/useExchangeStore.ts';
+import { setCurrentExchangeMiner, setShowUniversalModal } from '@app/store/useExchangeStore.ts';
 import { invoke } from '@tauri-apps/api/core';
 import { useTranslation } from 'react-i18next';
-import { Typography } from '@app/components/elements/Typography.tsx';
+import { useCallback, useState } from 'react';
+import AddressEditor from '@app/containers/floating/Settings/sections/wallet/components/AddressEditor.tsx';
 
 interface XCOptionProps {
     content: ExchangeMinerAssets;
@@ -22,6 +24,7 @@ interface XCOptionProps {
 
 export const XCOption = ({ content, isCurrent = false }: XCOptionProps) => {
     const { t } = useTranslation('exchange', { useSuspense: false });
+    const [isActive, setIsActive] = useState(false);
     const confirmExchangeMiner = async () => {
         const selectedExchangeMiner: ExchangeMiner = {
             id: content.id,
@@ -30,13 +33,29 @@ export const XCOption = ({ content, isCurrent = false }: XCOptionProps) => {
         };
         await invoke('select_exchange_miner', { exchangeMiner: selectedExchangeMiner });
         setShowUniversalModal(false);
-        setShowExchangeModal(true);
         setCurrentExchangeMiner(content);
+    };
+
+    const validateAddress = useCallback(async (value: string) => {
+        try {
+            await invoke('verify_address_for_send', { address: value });
+            return true;
+        } catch (_) {
+            return false;
+        }
+    }, []);
+
+    const validationRules = {
+        validate: async (value) => {
+            const isValid = await validateAddress(value);
+
+            return isValid || 'Invalid address format';
+        },
     };
 
     return (
         <Wrapper $isCurrent={isCurrent}>
-            <ContentWrapper>
+            <ContentHeaderWrapper>
                 <XCContent>
                     {content.logoImgUrl && (
                         <ImgWrapper $isLogo>
@@ -52,14 +71,21 @@ export const XCOption = ({ content, isCurrent = false }: XCOptionProps) => {
                         </CaptionWrapper>
                     )}
                     {content.id && (
-                        <OpenButton onClick={() => confirmExchangeMiner()}>
-                            <ImgWrapper $border>
+                        <OpenButton
+                            onClick={() => {
+                                setIsActive(!isActive);
+                            }}
+                        >
+                            <ImgWrapper $border $isActive={isActive}>
                                 <ChevronSVG />
                             </ImgWrapper>
                         </OpenButton>
                     )}
                 </SelectOptionWrapper>
-            </ContentWrapper>
+            </ContentHeaderWrapper>
+            <ContentBodyWrapper $isActive={isActive}>
+                <AddressEditor initialAddress={'test'} onApply={confirmExchangeMiner} rules={validationRules} />
+            </ContentBodyWrapper>
         </Wrapper>
     );
 };

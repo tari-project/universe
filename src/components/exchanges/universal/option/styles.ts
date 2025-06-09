@@ -1,4 +1,4 @@
-import styled from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { convertHexToRGBA } from '@app/utils';
 
@@ -22,9 +22,44 @@ export const Heading = styled(Typography).attrs({ variant: 'h5' })`
 
 export const ContentWrapper = styled.div`
     display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+`;
+
+export const ContentHeaderWrapper = styled.div`
+    display: flex;
     justify-content: space-between;
     align-items: center;
     width: 100%;
+`;
+
+export const Dot = styled.div`
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background-color: #b6b7c3;
+`;
+
+export const DotContainer = styled.div`
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 2px;
+    margin: 0 4px;
+`;
+
+export const ContentBodyWrapper = styled.div<{ $isActive?: boolean }>`
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+    width: 100%;
+    overflow: hidden;
+    max-height: ${({ $isActive }) => ($isActive ? '1000px' : '0')};
+    opacity: ${({ $isActive }) => ($isActive ? '1' : '0')};
+    transition:
+        max-height 0.3s ease,
+        opacity 0.3s ease;
 `;
 
 export const XCContent = styled.div`
