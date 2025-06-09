@@ -55,7 +55,7 @@ export default function List() {
 
     useEffect(() => {
         if (isInView && !isFetching && !isFetchingNextPage) {
-            void fetchNextPage();
+            fetchNextPage();
         }
     }, [fetchNextPage, isFetching, isFetchingNextPage, isInView]);
 
@@ -76,13 +76,16 @@ export default function List() {
                     />
                 );
             })}
+            {/* added placeholder so the scroll can trigger fetch*/}
+            <PlaceholderItem ref={lastItemRef} />
+
             {/* fill the list with placeholders if there are less than 4 entries */}
             {Array.from({ length: placeholdersNeeded }).map((_, index) => (
                 <PlaceholderItem key={`placeholder-${index}`} />
             ))}
 
             {/* added last placeholder so the user can scroll above the bottom mask */}
-            <PlaceholderItem ref={lastItemRef} />
+            <PlaceholderItem />
         </ListItemWrapper>
     );
 
