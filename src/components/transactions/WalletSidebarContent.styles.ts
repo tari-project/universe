@@ -18,6 +18,7 @@ export const WalletGreyBox = styled.div<{ $absolute?: boolean }>`
     ${({ $absolute }) =>
         $absolute &&
         css`
+            z-index: 4;
             position: absolute;
             bottom: 0;
             left: 0;
