@@ -20,5 +20,5 @@ export const ListItemWrapper = styled.div`
     width: calc(100% - 4px);
     position: relative;
     gap: 4px;
-    padding-top: 6px;
+    padding: 6px 0 0;
 `;

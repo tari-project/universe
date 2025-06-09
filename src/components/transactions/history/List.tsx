@@ -24,7 +24,7 @@ export default function List() {
     const lastItemRef = useRef<HTMLDivElement>(null);
     const isInView = useInView(lastItemRef);
 
-    const { data, fetchNextPage, isFetching, isFetchingNextPage } = useFetchTxHistory();
+    const { data, fetchNextPage, isFetching } = useFetchTxHistory();
     const transactions = data?.pages.flatMap((p) => p);
     const handleDetailsChange = useCallback(async (tx: TransactionInfo | null) => {
         if (!tx) {
@@ -54,15 +54,14 @@ export default function List() {
     }, []);
 
     useEffect(() => {
-        if (isInView && !isFetching && !isFetchingNextPage) {
+        if (isInView && !isFetching) {
             fetchNextPage();
         }
-    }, [fetchNextPage, isFetching, isFetchingNextPage, isInView]);
+    }, [fetchNextPage, isFetching, isInView]);
 
     // Calculate how many placeholder items we need to add
     const transactionsCount = transactions?.length || 0;
     const placeholdersNeeded = Math.max(0, 5 - transactionsCount);
-
     const listMarkup = (
         <ListItemWrapper>
             {transactions?.map((tx, i) => {
@@ -77,15 +76,12 @@ export default function List() {
                 );
             })}
             {/* added placeholder so the scroll can trigger fetch*/}
-            <PlaceholderItem ref={lastItemRef} />
+            <PlaceholderItem ref={lastItemRef} $isLast />
 
             {/* fill the list with placeholders if there are less than 4 entries */}
             {Array.from({ length: placeholdersNeeded }).map((_, index) => (
                 <PlaceholderItem key={`placeholder-${index}`} />
             ))}
-
-            {/* added last placeholder so the user can scroll above the bottom mask */}
-            <PlaceholderItem />
         </ListItemWrapper>
     );
 
