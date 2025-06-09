@@ -67,12 +67,12 @@ export const ProcessingTransaction = ({
         items.push({
             label: t('swap.transaction-id'),
             externalLink: transactionId ? `${explorerUrl}/tx/${transactionId}` : undefined,
-            value: transactionId ? truncateMiddle(transactionId, 22) : <LoadingDots />,
+            value: transactionId ? truncateMiddle(transactionId, 15) : <LoadingDots />,
         });
         items.push({
             label: t('swap.block-hash'),
             externalLink: txBlockHash ? `${explorerUrl}/block/${txBlockHash}` : undefined,
-            value: txBlockHash ? truncateMiddle(txBlockHash, 22) : <LoadingDots />,
+            value: txBlockHash ? truncateMiddle(txBlockHash, 15) : <LoadingDots />,
         });
 
         if (status === 'error' && errorMessage) {
