@@ -102,4 +102,18 @@ pub trait UnlockStrategyTrait {
 
         Ok(true)
     }
+
+    fn is_any_phase_restarting(&self, channels: UnlockConditionsStatusChannels) -> bool {
+        for phase in self.required_channels().iter() {
+            if let Ok(channel) = channels.get(phase) {
+                if channel.borrow().is_restarting() {
+                    return true;
+                }
+            } else {
+                warn!(target: LOG_TARGET, "Channel for phase {:?} not found", phase);
+                return true;
+            }
+        }
+        false
+    }
 }
