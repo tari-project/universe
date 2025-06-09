@@ -6,6 +6,7 @@ import { restartMining } from './miningStoreActions';
 import { setError } from './appStateStoreActions';
 import { setExchangeContent } from '@app/store/useExchangeStore.ts';
 import { TransactionDetailsItem, TransactionDirection, TransactionStatus } from '@app/types/transactions';
+import { queryClient } from '@app/App/queryClient.ts';
 
 export interface TxArgs {
     offset?: number;
@@ -47,7 +48,7 @@ export const importSeedWords = async (seedWords: string[]) => {
         useWalletStore.setState({ is_wallet_importing: false });
     }
 };
-export const initialFetchTxs = () =>
+const _initialFetchTxs = () =>
     fetchTransactionsHistory({ offset: 0, limit: 20 }).then((tx) => {
         if (tx?.length) {
             useWalletStore.setState({ newestTxIdOnInitialFetch: tx[0]?.tx_id });
@@ -55,8 +56,8 @@ export const initialFetchTxs = () =>
     });
 
 export const refreshTransactions = async () => {
-    const limit = useWalletStore.getState().transactions.length;
-    return fetchTransactionsHistory({ offset: 0, limit: Math.max(limit, 20) });
+    // TODO - move out of store actions
+    await queryClient.invalidateQueries({ queryKey: ['transactions'] });
 };
 
 export const setGeneratedTariAddress = async (newAddress: string) => {

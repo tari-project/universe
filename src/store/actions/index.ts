@@ -63,7 +63,6 @@ export {
 export {
     fetchTransactionsHistory,
     importSeedWords,
-    initialFetchTxs,
     refreshTransactions,
     setWalletAddress,
     setWalletBalance,
