@@ -64,11 +64,13 @@ export const ProcessingTransaction = ({
             label: t('swap.total-fees-swap'),
             value: fees?.swap ?? <LoadingDots />,
         });
+
         items.push({
             label: t('swap.transaction-id'),
             externalLink: transactionId ? `${explorerUrl}/tx/${transactionId}` : undefined,
             value: transactionId ? truncateMiddle(transactionId, 15) : <LoadingDots />,
         });
+
         items.push({
             label: t('swap.block-hash'),
             externalLink: txBlockHash ? `${explorerUrl}/block/${txBlockHash}` : undefined,
@@ -101,7 +103,7 @@ export const ProcessingTransaction = ({
         switch (status) {
             case 'processingapproval':
             case 'processingswap':
-                return `Please sign and approve the transaction request in your connected wallet.`;
+                return `Please approve the transaction request in your connected wallet.`;
             case 'success':
                 return `You’ve successfully swapped ${fromTokenAmount} ${fromTokenSymbol} for ${toTokenAmount} ${toTokenSymbol}`;
             case 'error':
