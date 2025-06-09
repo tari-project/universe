@@ -17,10 +17,12 @@ import {
 import { AnimatePresence } from 'motion/react';
 import { BlockData } from '../../useBlocks';
 import { formatBlockNumber, formatReward } from '../../utils/formatting';
+import { useTranslation } from 'react-i18next';
 
 export default function BlockSolved({ id, minersSolved, reward, timeAgo, blocks }: BlockData) {
+    const { t } = useTranslation(['mining-view', 'sidebar']);
     const [isHovering, setIsHovering] = useState(false);
-
+    const title = minersSolved > 100 ? `${minersSolved} ${t('bubbles.miners')}` : t('bubbles.pool');
     return (
         <Wrapper
             layout="position"
@@ -38,13 +40,13 @@ export default function BlockSolved({ id, minersSolved, reward, timeAgo, blocks 
                     <Divider />
                     <ContentWrapper>
                         <BlockTitle>
-                            {`Block: #`}
+                            {`${t('sidebar:block')}: #`}
                             <strong>{formatBlockNumber(id)}</strong>
                         </BlockTitle>
                         <MinersSolved>
                             <PeopleIcon />
-                            {minersSolved} {minersSolved > 1 ? 'miners' : 'pool'}
-                            {` solved`}
+                            {title}
+                            {` ${t('bubbles.solved')}`}
                         </MinersSolved>
 
                         <MetaData>
@@ -63,7 +65,7 @@ export default function BlockSolved({ id, minersSolved, reward, timeAgo, blocks 
                             {timeAgo && (
                                 <TimeAgo>
                                     {timeAgo}
-                                    {` ago`}
+                                    {` ${t('bubbles.ago')}`}
                                 </TimeAgo>
                             )}
                         </MetaData>

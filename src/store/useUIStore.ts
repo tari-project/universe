@@ -23,6 +23,7 @@ interface UIStoreState {
     towerSidebarOffset: number;
     showTapplet: boolean;
     blockBubblesEnabled: boolean;
+    resumeModalIsOpen: boolean;
 }
 const preferredTheme = window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 
@@ -45,6 +46,7 @@ const initialState: UIStoreState = {
     towerSidebarOffset: sidebarTowerOffset,
     showTapplet: false,
     blockBubblesEnabled: false,
+    resumeModalIsOpen: false,
 };
 
 export const useUIStore = create<UIStoreState>()(() => ({
