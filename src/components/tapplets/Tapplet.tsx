@@ -62,7 +62,7 @@ export const Tapplet: React.FC<TappletProps> = ({ source }) => {
                 height="100%"
                 ref={tappletRef}
                 onLoad={sendWindowSize}
-                style={{ border: 'none' }}
+                style={{ border: 'none', pointerEvents: 'all' }}
             />
         </MiningViewContainer>
     );

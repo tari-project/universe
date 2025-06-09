@@ -9,6 +9,7 @@ import {
     AddressInputWrapper,
     AddressInput,
     AddressInputLabel,
+    OptInWrapper,
 } from './connect.styles.ts';
 import { useCallback, useEffect, useState } from 'react';
 import useDebouncedValue from '@app/hooks/helpers/useDebounce.ts';
@@ -17,6 +18,9 @@ import { CheckIconWrapper } from '@app/components/transactions/components/TxInpu
 import CheckIcon from '@app/components/transactions/components/CheckIcon.tsx';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 import { setSeedlessUI } from '@app/store/actions/uiStoreActions.ts';
+import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
+import { setAllowTelemetry, useConfigCoreStore } from '@app/store';
+import { Typography } from '@app/components/elements/Typography.tsx';
 
 interface ConnectFormFields {
     address: string;
@@ -28,12 +32,16 @@ export const Connect = () => {
     const [isFocused, setIsFocused] = useState(false);
     const [addressIsValid, setAddressIsValid] = useState(false);
     const [displayAddress, setDisplayAddress] = useState(address);
-
+    const allowTelemetry = useConfigCoreStore((s) => s.allow_telemetry);
     const debouncedAddress = useDebouncedValue(address, 350);
 
     const { register, handleSubmit, setError, formState } = useForm<ConnectFormFields>({
         defaultValues: { address: '' },
     });
+
+    async function handleToggle() {
+        await setAllowTelemetry(!allowTelemetry);
+    }
 
     function handleAddressChange(e) {
         const address = e.target.value;
@@ -98,10 +106,14 @@ export const Connect = () => {
                         </CheckIconWrapper>
                     )}
                 </AddressInputWrapper>
+                <OptInWrapper>
+                    <Typography variant="p">{`Tari Universe would like to use analytics to improve your experience.`}</Typography>
+                    <ToggleSwitch checked={allowTelemetry} onChange={handleToggle} />
+                </OptInWrapper>
                 <CTA
                     $backgroundCol={data?.primary_colour}
                     type="submit"
-                    disabled={formState.isSubmitting || !formState.isValid}
+                    disabled={!allowTelemetry || formState.isSubmitting || !formState.isValid}
                 >
                     {formState.isSubmitting || formState.isLoading ? (
                         <LoadingDots />

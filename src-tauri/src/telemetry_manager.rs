@@ -277,7 +277,6 @@ impl TelemetryManager {
         let anon_id = ConfigCore::content().await.anon_id().clone();
         let airdrop_tokens = ConfigCore::content().await.airdrop_tokens().clone();
 
-        // TODO: remove before mainnet
         if !allow_telemetry {
             return "".to_string();
         }

@@ -223,7 +223,6 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                 return Err(anyhow::anyhow!("Process watcher task has already finished"));
             }
         }
-        //TODO
         Ok(())
     }
 

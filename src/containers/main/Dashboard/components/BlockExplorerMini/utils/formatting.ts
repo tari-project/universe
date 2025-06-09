@@ -28,8 +28,7 @@ export const formatReward = (number: number): string => {
 
 export const formatBlockNumber = (number: string): string => {
     if (number.length > 3) {
-        const formattedNumber = number.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,');
-        return formattedNumber;
+        return number.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,');
     }
     return number;
 };

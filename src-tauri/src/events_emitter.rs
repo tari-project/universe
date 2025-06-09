@@ -89,21 +89,11 @@ impl EventsEmitter {
     }
     pub async fn emit_progress_tracker_update(
         event_type: ProgressEvents,
-        phase_title: String,
-        title: String,
-        progress: f64,
-        title_params: Option<HashMap<String, String>>,
-        is_complete: bool,
+        payload: ProgressTrackerUpdatePayload,
     ) {
         let event = Event {
             event_type,
-            payload: ProgressTrackerUpdatePayload {
-                phase_title,
-                title,
-                progress,
-                title_params,
-                is_complete,
-            },
+            payload,
         };
         if let Err(e) = Self::get_app_handle()
             .await

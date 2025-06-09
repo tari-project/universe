@@ -23,7 +23,7 @@
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use futures_util::future::FusedFuture;
-use log::{info, warn};
+use log::{error, info, warn};
 use std::collections::HashMap;
 use std::ffi::OsStr;
 use std::fs;
@@ -31,13 +31,14 @@ use std::path::{Path, PathBuf};
 use std::time::Duration;
 use sysinfo::System;
 use tari_shutdown::Shutdown;
+use tauri_plugin_sentry::sentry;
 use tokio::runtime::Handle;
 use tokio::select;
 use tokio::task::JoinHandle;
 use tokio_util::task::TaskTracker;
 
 use crate::process_killer::kill_process;
-use crate::process_utils::launch_child_process;
+use crate::process_utils::{launch_child_process, write_pid_file};
 
 const LOG_TARGET: &str = "tari::universe::process_adapter";
 
@@ -217,10 +218,12 @@ impl ProcessInstanceTrait for ProcessInstance {
             )?;
 
             if let Some(id) = child.id() {
-                fs::write(
-                    spec.data_dir.join(spec.pid_file_name.clone()),
-                    id.to_string(),
-                )?;
+                let pid_file_res = write_pid_file(&spec, id);
+                if let Err(e) = pid_file_res {
+                    let error_msg = format!("Failed to write PID file: {}", e);
+                    error!(target: LOG_TARGET, "{}", error_msg);
+                    sentry::capture_message(&error_msg, sentry::Level::Error);
+                }
             }
             let exit_code;
 
