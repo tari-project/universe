@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ClipboardIcon, ClipboardText, Container, ContentContainer, ErrorText, TextContainer, Title } from './styles';
 import { useTranslation } from 'react-i18next';
+import { readText } from '@tauri-apps/plugin-clipboard-manager';
 
 export const ClipboardViewer: React.FC = () => {
     const [clipboardText, setClipboardText] = useState<string>('');
@@ -9,15 +10,11 @@ export const ClipboardViewer: React.FC = () => {
     useEffect(() => {
         const readClipboard = async () => {
             try {
-                if (navigator.clipboard && navigator.clipboard.readText) {
-                    const text = await navigator.clipboard.readText();
-                    setClipboardText(text);
-                    setError('');
-                } else {
-                    setError('Clipboard API not supported');
-                }
+                const text = await readText();
+                setClipboardText(text);
+                setError('');
             } catch (err) {
-                setError('Unable to read clipboard');
+                setError('Unable to read clipboard: ' + err);
             }
         };
 

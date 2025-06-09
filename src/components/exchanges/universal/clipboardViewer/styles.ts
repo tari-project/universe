@@ -5,7 +5,7 @@ export const Container = styled.div`
     flex-direction: row;
     align-items: flex-start;
     gap: 12px;
-    padding: 16px;
+    padding: 5px 20px;
     background-color: white;
     border-radius: 8px;
     box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
@@ -14,26 +14,30 @@ export const Container = styled.div`
 `;
 
 export const ClipboardIcon = styled.img`
-    width: 24px;
-    height: 24px;
+    width: 41px;
+    height: 41px;
     color: #3b82f6;
     flex-shrink: 0;
+    align-self: center;
 `;
 
 export const ContentContainer = styled.div`
     display: flex;
     flex-direction: column;
-    flex: 1;
+    justify-content: flex-end;
+    align-items: flex-start;
 `;
 
 export const Title = styled.h3`
     font-size: 14px;
     font-weight: 500;
     color: #111827;
-    margin-bottom: 8px;
 `;
 
 export const TextContainer = styled.div`
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
     flex: 1;
 `;
 

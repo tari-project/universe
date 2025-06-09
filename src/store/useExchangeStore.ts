@@ -55,9 +55,9 @@ export async function fetchExchangeMiners() {
             const list = (await res.json()) as {
                 exchanges: ExchangeMinerAssets[];
             };
-            console.info(list);
-            list.exchanges.push(universalExchangeMinerOption);
-            setExchangeMiners(list.exchanges.filter((ex) => ex.name !== 'Tari Universe'));
+            const filteredList = list.exchanges.filter((ex) => ex.name !== 'Tari Universe' || ex.is_hidden);
+            filteredList.push(universalExchangeMinerOption);
+            setExchangeMiners(filteredList);
         }
     } catch (e) {
         console.error('Could not fetch exchange miners', e);

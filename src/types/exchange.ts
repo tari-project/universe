@@ -30,4 +30,5 @@ export interface ExchangeMinerAssets extends ExchangeMiner {
     campaign_description?: string;
     reward_percentage?: number;
     reward_expiry_date?: string;
+    is_hidden: boolean;
 }
