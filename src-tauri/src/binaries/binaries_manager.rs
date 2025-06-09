@@ -580,16 +580,17 @@ impl BinaryManager {
                 progress_tracker.clone(),
             )
             .await?;
-            
+
             // After extraction, also validate the extracted binary if possible
             let binary_type = crate::binaries::Binaries::from_name(&self.binary_name);
-            let extracted_binary_path = destination_dir.join(binary_type.binary_file_name(version.clone()));
-            
+            let extracted_binary_path =
+                destination_dir.join(binary_type.binary_file_name(version.clone()));
+
             if extracted_binary_path.exists() {
                 info!(target: LOG_TARGET, "Validating extracted binary integrity for: {:?}", extracted_binary_path);
                 match crate::binary_integrity::BinaryIntegrityChecker::validate_binary_integrity_smart(
-                    &extracted_binary_path, 
-                    binary_type, 
+                    &extracted_binary_path,
+                    binary_type,
                     Some(&in_progress_file_zip)
                 ).await {
                     Ok(true) => {
@@ -686,45 +687,50 @@ impl BinaryManager {
 
     pub async fn get_expected_checksum(&self) -> Option<String> {
         info!(target: LOG_TARGET, "Getting expected checksum for binary: {}", self.binary_name);
-        
+
         if let Some(version) = &self.used_version {
             info!(target: LOG_TARGET, "Using version: {} for checksum lookup", version);
-            
+
             // Find the download info for the current version
             for download_info in &self.online_versions_list {
                 if download_info.version == *version {
                     info!(target: LOG_TARGET, "Found matching download info for version: {}", version);
-                    
+
                     // Find the asset for the current platform
                     match self.adapter.find_version_for_platform(download_info) {
                         Ok(asset) => {
                             info!(target: LOG_TARGET, "Found platform asset: {} for version: {}", asset.name, version);
-                            
+
                             // Create temporary directory for checksum download
                             if let Ok(base_dir) = self.get_base_dir() {
                                 let temp_dir = base_dir.join("temp_checksum");
                                 info!(target: LOG_TARGET, "Creating temp directory for checksum: {:?}", temp_dir);
-                                
+
                                 if std::fs::create_dir_all(&temp_dir).is_ok() {
                                     // Reuse existing download_and_get_checksum_path method
-                                    match self.adapter
-                                        .download_and_get_checksum_path(temp_dir.clone(), download_info.clone())
+                                    match self
+                                        .adapter
+                                        .download_and_get_checksum_path(
+                                            temp_dir.clone(),
+                                            download_info.clone(),
+                                        )
                                         .await
                                     {
                                         Ok(checksum_path) => {
                                             info!(target: LOG_TARGET, "Downloaded checksum file to: {:?}", checksum_path);
-                                            
+
                                             // Reuse existing get_expected_checksum method from adapter
-                                            match self.adapter
+                                            match self
+                                                .adapter
                                                 .get_expected_checksum(checksum_path, &asset.name)
                                                 .await
                                             {
                                                 Ok(expected_checksum) => {
                                                     info!(target: LOG_TARGET, "Successfully extracted expected checksum: {} for asset: {}", expected_checksum, asset.name);
-                                                    
+
                                                     // Cleanup temp directory
                                                     let _ = std::fs::remove_dir_all(&temp_dir);
-                                                    
+
                                                     return Some(expected_checksum);
                                                 }
                                                 Err(e) => {
@@ -736,7 +742,7 @@ impl BinaryManager {
                                             error!(target: LOG_TARGET, "Failed to download checksum file: {}", e);
                                         }
                                     }
-                                    
+
                                     // Cleanup temp directory on error
                                     let _ = std::fs::remove_dir_all(&temp_dir);
                                 } else {
@@ -752,12 +758,12 @@ impl BinaryManager {
                     }
                 }
             }
-            
+
             warn!(target: LOG_TARGET, "No matching download info found for version: {}", version);
         } else {
             warn!(target: LOG_TARGET, "No version set for binary: {}", self.binary_name);
         }
-        
+
         None
     }
 }

@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use log::{info, warn, error};
+use log::{error, info, warn};
 use serde::{Deserialize, Serialize};
 use std::time::{Duration, Instant};
 
@@ -28,9 +28,9 @@ const LOG_TARGET: &str = "tari::universe::circuit_breaker";
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum CircuitState {
-    Closed,     // Normal operation
-    Open,       // Failure threshold exceeded, stop retrying
-    HalfOpen,   // Testing if service recovered
+    Closed,   // Normal operation
+    Open,     // Failure threshold exceeded, stop retrying
+    HalfOpen, // Testing if service recovered
 }
 
 #[derive(Debug, Clone)]
@@ -74,7 +74,8 @@ impl ProcessCircuitBreaker {
                         self.consecutive_successes = 0;
                         true
                     } else {
-                        let remaining = self.recovery_timeout.saturating_sub(last_failure.elapsed());
+                        let remaining =
+                            self.recovery_timeout.saturating_sub(last_failure.elapsed());
                         warn!(target: LOG_TARGET, "Circuit open for {}, blocking retry for {:?} more", 
                               self.process_name, remaining);
                         false
@@ -91,7 +92,7 @@ impl ProcessCircuitBreaker {
             }
         }
     }
-    
+
     pub fn record_success(&mut self) {
         match self.state {
             CircuitState::Closed => {
@@ -105,7 +106,7 @@ impl ProcessCircuitBreaker {
                 self.consecutive_successes += 1;
                 info!(target: LOG_TARGET, "Success recorded for {} in half-open state ({}/{})", 
                       self.process_name, self.consecutive_successes, self.success_threshold);
-                
+
                 if self.consecutive_successes >= self.success_threshold {
                     info!(target: LOG_TARGET, "Circuit closing for {} after {} consecutive successes", 
                           self.process_name, self.consecutive_successes);
@@ -121,12 +122,12 @@ impl ProcessCircuitBreaker {
             }
         }
     }
-    
+
     pub fn record_failure(&mut self) {
         self.failure_count += 1;
         self.last_failure_time = Some(Instant::now());
         self.consecutive_successes = 0; // Reset on any failure
-        
+
         match self.state {
             CircuitState::Closed => {
                 if self.failure_count >= self.failure_threshold {
@@ -199,7 +200,7 @@ impl Default for ProcessCircuitBreaker {
     fn default() -> Self {
         Self::new(
             "unknown".to_string(),
-            5, // Default failure threshold
+            5,                       // Default failure threshold
             Duration::from_secs(60), // Default recovery timeout: 1 minute
         )
     }
@@ -213,20 +214,20 @@ mod tests {
     #[test]
     fn test_circuit_breaker_closed_to_open() {
         let mut cb = ProcessCircuitBreaker::new("test".to_string(), 3, Duration::from_secs(60));
-        
+
         // Should start closed
         assert_eq!(cb.get_state(), &CircuitState::Closed);
         assert!(cb.should_attempt_retry());
-        
+
         // Record failures
         cb.record_failure();
         assert_eq!(cb.get_state(), &CircuitState::Closed);
         assert!(cb.should_attempt_retry());
-        
+
         cb.record_failure();
         assert_eq!(cb.get_state(), &CircuitState::Closed);
         assert!(cb.should_attempt_retry());
-        
+
         cb.record_failure();
         assert_eq!(cb.get_state(), &CircuitState::Open);
         assert!(!cb.should_attempt_retry());
@@ -235,16 +236,16 @@ mod tests {
     #[test]
     fn test_circuit_breaker_open_to_half_open() {
         let mut cb = ProcessCircuitBreaker::new("test".to_string(), 2, Duration::from_millis(100));
-        
+
         // Force to open state
         cb.record_failure();
         cb.record_failure();
         assert_eq!(cb.get_state(), &CircuitState::Open);
         assert!(!cb.should_attempt_retry());
-        
+
         // Wait for recovery timeout
         thread::sleep(Duration::from_millis(150));
-        
+
         // Should transition to half-open
         assert!(cb.should_attempt_retry());
         assert_eq!(cb.get_state(), &CircuitState::HalfOpen);
@@ -253,17 +254,17 @@ mod tests {
     #[test]
     fn test_circuit_breaker_half_open_to_closed() {
         let mut cb = ProcessCircuitBreaker::new("test".to_string(), 2, Duration::from_secs(60));
-        
+
         // Manually set to half-open
         cb.state = CircuitState::HalfOpen;
-        
+
         // Record successes
         cb.record_success();
         assert_eq!(cb.get_state(), &CircuitState::HalfOpen);
-        
+
         cb.record_success();
         assert_eq!(cb.get_state(), &CircuitState::HalfOpen);
-        
+
         cb.record_success();
         assert_eq!(cb.get_state(), &CircuitState::Closed);
     }
@@ -271,10 +272,10 @@ mod tests {
     #[test]
     fn test_circuit_breaker_half_open_to_open_on_failure() {
         let mut cb = ProcessCircuitBreaker::new("test".to_string(), 2, Duration::from_secs(60));
-        
+
         // Manually set to half-open
         cb.state = CircuitState::HalfOpen;
-        
+
         // Record a failure
         cb.record_failure();
         assert_eq!(cb.get_state(), &CircuitState::Open);

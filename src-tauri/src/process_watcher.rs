@@ -22,13 +22,15 @@
 
 use crate::binaries::{Binaries, BinaryResolver};
 use crate::binary_integrity::BinaryIntegrityChecker;
-use crate::configs::config_process_retry::{ConfigProcessRetry, ConfigProcessRetryContent, ProcessSpecificConfig};
-use crate::process_circuit_breaker::ProcessCircuitBreaker;
+use crate::configs::config_process_retry::{
+    ConfigProcessRetry, ConfigProcessRetryContent, ProcessSpecificConfig,
+};
 use crate::configs::trait_config::ConfigImpl;
 use crate::events::{BinaryCorruptionPayload, BinaryRetryPayload, RetryReason};
 use crate::events_emitter::EventsEmitter;
 use crate::process_adapter::ProcessInstanceTrait;
 use crate::process_adapter::{HealthStatus, ProcessAdapter, StatusMonitor};
+use crate::process_circuit_breaker::ProcessCircuitBreaker;
 use futures_util::future::FusedFuture;
 use log::{error, info, warn};
 use std::path::{Path, PathBuf};
@@ -68,11 +70,11 @@ pub struct ProcessWatcher<TAdapter: ProcessAdapter> {
     pub stop_on_exit_codes: Vec<i32>,
     stats_broadcast: watch::Sender<ProcessWatcherStats>,
     is_first_start: Arc<AtomicBool>,
-    
+
     // Retry configuration
     retry_config: ConfigProcessRetryContent,
     process_specific_config: ProcessSpecificConfig,
-    
+
     // State tracking
     startup_attempt_count: Arc<AtomicU8>,
     #[allow(dead_code)]
@@ -109,7 +111,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
             binary_type: None,
             circuit_breaker: ProcessCircuitBreaker::new(
                 adapter_name,
-                5, // Default failure threshold
+                5,                       // Default failure threshold
                 Duration::from_secs(60), // Default recovery timeout
             ),
         }
@@ -119,14 +121,15 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         let config_instance = ConfigProcessRetry::current().await;
         let config_lock = config_instance.read().await;
         let process_name = self.adapter.name();
-        
+
         // Get process-specific config or fall back to defaults
-        let process_config = config_lock._get_content()
+        let process_config = config_lock
+            ._get_content()
             .get_config_for_process(process_name);
-        
+
         self.retry_config = config_lock._get_content().clone();
         self.process_specific_config = process_config.clone();
-        
+
         info!(target: LOG_TARGET, "Loaded retry config for process {}: {:?}", process_name, self.process_specific_config);
         Ok(())
     }
@@ -135,7 +138,10 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         self.binary_type = Some(binary_type);
     }
 
-    async fn get_binary_with_integrity_check(&mut self, binary: Binaries) -> Result<PathBuf, anyhow::Error> {
+    async fn get_binary_with_integrity_check(
+        &mut self,
+        binary: Binaries,
+    ) -> Result<PathBuf, anyhow::Error> {
         let binary_path = BinaryResolver::current()
             .read()
             .await
@@ -149,13 +155,14 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
 
         // Check binary integrity if corruption detection is enabled
         let use_lenient = *self.retry_config.use_lenient_checksum_validation();
-        
+
         let validation_result = if use_lenient {
-            BinaryIntegrityChecker::validate_binary_integrity_smart(&binary_path, binary, None).await
+            BinaryIntegrityChecker::validate_binary_integrity_smart(&binary_path, binary, None)
+                .await
         } else {
             BinaryIntegrityChecker::validate_binary_integrity(&binary_path, binary).await
         };
-        
+
         match validation_result {
             Ok(true) => {
                 info!(target: LOG_TARGET, "Binary integrity check passed for {:?}", binary_path);
@@ -171,7 +178,9 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                 if *self.retry_config.corruption_redownload_enabled() {
                     self.handle_binary_corruption(binary, &binary_path).await
                 } else {
-                    Err(anyhow::anyhow!("Binary corruption detected and re-download is disabled"))
+                    Err(anyhow::anyhow!(
+                        "Binary corruption detected and re-download is disabled"
+                    ))
                 }
             }
             Err(e) => {
@@ -183,9 +192,13 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         }
     }
 
-    async fn handle_binary_corruption(&mut self, binary: Binaries, corrupted_path: &Path) -> Result<PathBuf, anyhow::Error> {
+    async fn handle_binary_corruption(
+        &mut self,
+        binary: Binaries,
+        corrupted_path: &Path,
+    ) -> Result<PathBuf, anyhow::Error> {
         let process_name = self.adapter.name().to_string();
-        
+
         // Emit corruption detected event
         EventsEmitter::emit_binary_corruption_detected(BinaryCorruptionPayload {
             process_name: process_name.clone(),
@@ -193,27 +206,31 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
             expected_hash: None, // Could be enhanced to include expected hash
             actual_hash: "unknown".to_string(), // Could be enhanced to include actual hash
             redownload_initiated: *self.retry_config.corruption_redownload_enabled(),
-        }).await;
+        })
+        .await;
 
         if !*self.retry_config.corruption_redownload_enabled() {
-            return Err(anyhow::anyhow!("Binary corruption detected but re-download is disabled"));
+            return Err(anyhow::anyhow!(
+                "Binary corruption detected but re-download is disabled"
+            ));
         }
 
         info!(target: LOG_TARGET, "Attempting to recover from binary corruption for {}", process_name);
-        
-        match BinaryIntegrityChecker::handle_corruption(binary, corrupted_path, &process_name).await {
+
+        match BinaryIntegrityChecker::handle_corruption(binary, corrupted_path, &process_name).await
+        {
             Ok(new_path) => {
                 info!(target: LOG_TARGET, "Successfully recovered from binary corruption for {}", process_name);
-                
+
                 // Cache new binary hash
                 if let Ok(hash) = BinaryIntegrityChecker::cache_binary_hash(&new_path).await {
                     self.last_binary_hash = Some(hash);
                 }
                 self.binary_path = Some(new_path.clone());
-                
+
                 // Emit integrity restored event
                 EventsEmitter::emit_binary_integrity_restored(process_name).await;
-                
+
                 Ok(new_path)
             }
             Err(e) => {
@@ -240,7 +257,10 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
             if !self.circuit_breaker.should_attempt_retry() {
                 if let Some(recovery_time) = self.circuit_breaker.get_time_until_recovery() {
                     warn!(target: LOG_TARGET, "Circuit breaker open for {}, blocking retry for {:?}", name, recovery_time);
-                    return Err(anyhow::anyhow!("Circuit breaker open, retry blocked for {:?}", recovery_time));
+                    return Err(anyhow::anyhow!(
+                        "Circuit breaker open, retry blocked for {:?}",
+                        recovery_time
+                    ));
                 }
             }
 
@@ -256,7 +276,8 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                     } else {
                         None
                     },
-                }).await;
+                })
+                .await;
             }
 
             // Attempt to spawn the process
@@ -265,7 +286,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                 config_path.clone(),
                 log_path.clone(),
                 binary_path.clone(),
-                first_start
+                first_start,
             ) {
                 Ok(result) => {
                     info!(target: LOG_TARGET, "Successfully spawned {} on attempt {}", name, attempt);
@@ -278,32 +299,38 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                 Err(e) if attempt < max_attempts => {
                     warn!(target: LOG_TARGET, "Startup attempt {} failed for {}: {}, retrying in {:?}", 
                           attempt, name, e, retry_delay);
-                    
+
                     // Record failure in circuit breaker
                     self.circuit_breaker.record_failure();
-                    
+
                     // Update attempt counter
                     self.startup_attempt_count.store(attempt, Ordering::SeqCst);
-                    
+
                     // Wait before retrying
                     tokio::time::sleep(retry_delay).await;
                 }
                 Err(e) => {
                     // All attempts exhausted - emit permanent failure
                     error!(target: LOG_TARGET, "All {} startup attempts failed for {}: {}", max_attempts, name, e);
-                    
+
                     // Record failure in circuit breaker
                     self.circuit_breaker.record_failure();
-                    
+
                     EventsEmitter::emit_binary_permanent_failure(BinaryRetryPayload {
                         process_name: name.clone(),
                         attempt_number: attempt,
                         max_attempts,
                         retry_reason: RetryReason::StartupFailure,
                         next_retry_in_seconds: None,
-                    }).await;
-                    
-                    return Err(anyhow::anyhow!("Failed to start {} after {} attempts: {}", name, max_attempts, e));
+                    })
+                    .await;
+
+                    return Err(anyhow::anyhow!(
+                        "Failed to start {} after {} attempts: {}",
+                        name,
+                        max_attempts,
+                        e
+                    ));
                 }
             }
         }
@@ -343,11 +370,11 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
             self.stop().await?;
         }
         info!(target: LOG_TARGET, "Starting process watcher for {}", name);
-        
+
         // Load retry configuration
         self.load_retry_config().await?;
         self.set_binary_type(binary);
-        
+
         // Try to get binary with corruption checking and retries
         let binary_path = self.get_binary_with_integrity_check(binary).await?;
         self.kill_previous_instances(base_path.clone(), &binary_path)
@@ -360,19 +387,12 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         let health_timeout = self.health_timeout;
 
         info!(target: LOG_TARGET, "Using {:?} for {}", binary_path, name);
-        let first_start = self
-            .is_first_start
-            .load(Ordering::SeqCst);
-        let (mut child, status_monitor) = self.spawn_with_startup_retries(
-            base_path, 
-            config_path, 
-            log_path, 
-            binary_path, 
-            first_start
-        ).await?;
+        let first_start = self.is_first_start.load(Ordering::SeqCst);
+        let (mut child, status_monitor) = self
+            .spawn_with_startup_retries(base_path, config_path, log_path, binary_path, first_start)
+            .await?;
         if first_start {
-            self.is_first_start
-                .store(false, Ordering::SeqCst);
+            self.is_first_start.store(false, Ordering::SeqCst);
         }
         let status_monitor2 = status_monitor.clone();
         self.status_monitor = Some(status_monitor);
@@ -385,7 +405,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         let process_specific_config = self.process_specific_config.clone();
         let runtime_restart_count = Arc::new(AtomicU8::new(0));
         let has_been_healthy = Arc::new(AtomicBool::new(false));
-        
+
         self.watcher_task = Some(task_tracker.clone().spawn(async move {
             child.start(task_tracker.clone()).await?;
             let mut uptime = Instant::now();
@@ -588,7 +608,9 @@ async fn do_health_check<TStatusMonitor: StatusMonitor, TProcessInstance: Proces
                 process_specific_config,
                 runtime_restart_count,
                 has_been_healthy,
-            ).await {
+            )
+            .await
+            {
                 Ok(should_continue) => {
                     if !should_continue {
                         // Permanent failure - exit the watcher
@@ -608,7 +630,10 @@ async fn do_health_check<TStatusMonitor: StatusMonitor, TProcessInstance: Proces
 }
 
 #[allow(clippy::too_many_arguments)]
-async fn handle_runtime_restart<TStatusMonitor: StatusMonitor, TProcessInstance: ProcessInstanceTrait>(
+async fn handle_runtime_restart<
+    TStatusMonitor: StatusMonitor,
+    TProcessInstance: ProcessInstanceTrait,
+>(
     child: &mut TProcessInstance,
     status_monitor: TStatusMonitor,
     name: &str,
@@ -621,49 +646,50 @@ async fn handle_runtime_restart<TStatusMonitor: StatusMonitor, TProcessInstance:
 ) -> Result<bool, anyhow::Error> {
     // Only count as runtime failure if the process has been healthy before
     let is_runtime_failure = has_been_healthy.load(Ordering::SeqCst);
-    
+
     if !is_runtime_failure {
         // This is still startup phase, use normal restart without counting against runtime retries
         warn!(target: LOG_TARGET, "Restarting {} during startup phase", name);
         *uptime = Instant::now();
         stats.num_restarts += 1;
         stats.current_uptime = uptime.elapsed();
-        
+
         match status_monitor.handle_unhealthy().await {
             Ok(_) => {}
             Err(e) => {
                 error!(target: LOG_TARGET, "Failed to handle unhealthy {} status: {}", name, e)
             }
         }
-        
+
         child.start(task_tracker).await?;
         sleep(Duration::from_secs(1)).await;
         return Ok(true);
     }
-    
+
     // This is a runtime failure - check retry limits
     let current_restart_count = runtime_restart_count.load(Ordering::SeqCst);
     let max_attempts = process_config.max_runtime_restart_attempts;
-    
+
     if current_restart_count >= max_attempts {
         // All runtime restart attempts exhausted
         error!(target: LOG_TARGET, "All {} runtime restart attempts exhausted for {}", max_attempts, name);
-        
+
         EventsEmitter::emit_binary_permanent_failure(BinaryRetryPayload {
             process_name: name.to_string(),
             attempt_number: current_restart_count + 1,
             max_attempts,
             retry_reason: RetryReason::RuntimeCrash,
             next_retry_in_seconds: None,
-        }).await;
-        
+        })
+        .await;
+
         return Ok(false); // Don't continue - permanent failure
     }
-    
+
     // Increment restart count
     let new_count = current_restart_count + 1;
     runtime_restart_count.store(new_count, Ordering::SeqCst);
-    
+
     // Emit runtime restart event
     let retry_delay = process_config.runtime_restart_delay();
     EventsEmitter::emit_binary_runtime_restart(BinaryRetryPayload {
@@ -672,18 +698,19 @@ async fn handle_runtime_restart<TStatusMonitor: StatusMonitor, TProcessInstance:
         max_attempts,
         retry_reason: RetryReason::RuntimeCrash,
         next_retry_in_seconds: Some(retry_delay.as_secs()),
-    }).await;
-    
+    })
+    .await;
+
     warn!(target: LOG_TARGET, "Runtime restart attempt {} of {} for {}", new_count, max_attempts, name);
-    
+
     // Wait for the configured delay
     sleep(retry_delay).await;
-    
+
     // Reset uptime and stats
     *uptime = Instant::now();
     stats.num_restarts += 1;
     stats.current_uptime = uptime.elapsed();
-    
+
     // Handle unhealthy status
     match status_monitor.handle_unhealthy().await {
         Ok(_) => {}
@@ -691,9 +718,9 @@ async fn handle_runtime_restart<TStatusMonitor: StatusMonitor, TProcessInstance:
             error!(target: LOG_TARGET, "Failed to handle unhealthy {} status: {}", name, e)
         }
     }
-    
+
     // Start the process again
     child.start(task_tracker).await?;
-    
+
     Ok(true) // Continue monitoring
 }

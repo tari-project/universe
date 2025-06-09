@@ -29,7 +29,8 @@ use tokio::sync::RwLock;
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
 
-static INSTANCE: LazyLock<RwLock<ConfigProcessRetry>> = LazyLock::new(|| RwLock::new(ConfigProcessRetry::new()));
+static INSTANCE: LazyLock<RwLock<ConfigProcessRetry>> =
+    LazyLock::new(|| RwLock::new(ConfigProcessRetry::new()));
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 #[serde(rename_all = "snake_case")]
@@ -99,7 +100,8 @@ impl ProcessSpecificConfig {
 
 impl ConfigProcessRetryContent {
     pub fn get_config_for_process(&self, process_name: &str) -> &ProcessSpecificConfig {
-        self.process_overrides.get(process_name)
+        self.process_overrides
+            .get(process_name)
             .unwrap_or(&self.default_config)
     }
 
@@ -117,8 +119,6 @@ impl ConfigProcessRetryContent {
     pub fn get_process_names(&self) -> Vec<String> {
         self.process_overrides.keys().cloned().collect()
     }
-
-
 }
 
 impl ConfigContentImpl for ConfigProcessRetryContent {}

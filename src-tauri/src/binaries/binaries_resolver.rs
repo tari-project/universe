@@ -421,13 +421,16 @@ impl BinaryResolver {
             .managers
             .get(&binary)
             .ok_or_else(|| anyhow!("No manager found for binary {}", binary.name()))?;
-        
+
         let manager_lock = manager.lock().await;
-        
+
         // Get the expected checksum from the manager
         match manager_lock.get_expected_checksum().await {
             Some(checksum) => Ok(checksum),
-            None => Err(anyhow!("No checksum available for binary {}", binary.name())),
+            None => Err(anyhow!(
+                "No checksum available for binary {}",
+                binary.name()
+            )),
         }
     }
 }

@@ -54,7 +54,7 @@ impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
     ) -> Result<String, Error> {
         info!(target: LOG_TARGET, "Reading SHA256SUMS file from: {:?}", checksum_path);
         info!(target: LOG_TARGET, "Looking for checksum for asset: {}", asset_name);
-        
+
         let mut file_sha256 = File::open(checksum_path.clone()).await?;
         let mut buffer_sha256 = Vec::new();
         file_sha256.read_to_end(&mut buffer_sha256).await?;
@@ -62,7 +62,7 @@ impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
             String::from_utf8(buffer_sha256).expect("Failed to read file contents as UTF-8");
 
         info!(target: LOG_TARGET, "SHA256SUMS file contents:\n{}", contents);
-        
+
         // Log all lines to understand the format
         for (i, line) in contents.lines().enumerate() {
             info!(target: LOG_TARGET, "SHA256SUMS line {}: {}", i + 1, line);
@@ -85,23 +85,23 @@ impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
             info!(target: LOG_TARGET, "Successfully found checksum for exact asset name '{}': {}", asset_name, hash);
         } else {
             warn!(target: LOG_TARGET, "Could not find exact match for asset '{}', trying alternative patterns", asset_name);
-            
+
             // Fallback: try alternative binary name patterns (for edge cases)
             let potential_binary_names = [
-                "xmrig",                                          // Generic pattern
-                "xmrig.exe",                                      // Windows executable
+                "xmrig",                                                          // Generic pattern
+                "xmrig.exe", // Windows executable
                 &format!("xmrig-{}", asset_name.split('-').nth(1).unwrap_or("")), // versioned binary
             ];
-            
+
             info!(target: LOG_TARGET, "Looking for xmrig binary checksums with potential names: {:?}", potential_binary_names);
-            
+
             for binary_name in &potential_binary_names {
                 for line in contents.lines() {
                     let parts: Vec<&str> = line.split_whitespace().collect();
                     if parts.len() >= 2 {
                         let hash = parts[0];
                         let filename = parts[1];
-                        
+
                         // Only match if the filename ends with the binary name (to avoid cross-platform matches)
                         if filename.ends_with(binary_name) {
                             info!(target: LOG_TARGET, "Found alternative match for '{}' in SHA256SUMS: {}", filename, hash);
@@ -110,7 +110,7 @@ impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
                         }
                     }
                 }
-                
+
                 if xmrig_hash.is_some() {
                     info!(target: LOG_TARGET, "Successfully found checksum using alternative pattern: {}", binary_name);
                     break;
@@ -118,7 +118,10 @@ impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
             }
         }
 
-        xmrig_hash.ok_or(anyhow!("No checksum was found for xmrig asset: {}", asset_name))
+        xmrig_hash.ok_or(anyhow!(
+            "No checksum was found for xmrig asset: {}",
+            asset_name
+        ))
     }
 
     async fn download_and_get_checksum_path(
@@ -173,7 +176,7 @@ impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
         _version: &VersionDownloadInfo,
     ) -> Result<VersionAsset, anyhow::Error> {
         info!(target: LOG_TARGET, "Finding platform asset for xmrig version: {}", _version.version);
-        
+
         let mut name_suffix = "";
         if cfg!(target_os = "windows") {
             name_suffix = r".*msvc-win64\.zip";
@@ -215,7 +218,7 @@ impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
                 matches
             })
             .ok_or(anyhow::anyhow!("Failed to get platform asset for pattern: {}", name_suffix))?;
-            
+
         info!(target: LOG_TARGET, "Selected platform asset: {}", platform.name);
         Ok(platform.clone())
     }

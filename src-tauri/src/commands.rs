@@ -2258,10 +2258,13 @@ pub async fn set_process_retry_config(
 pub async fn set_max_startup_attempts(max_attempts: u8) -> Result<(), InvokeError> {
     let config_instance = ConfigProcessRetry::current().await;
     let mut config_lock = config_instance.write().await;
-    config_lock._get_content_mut().default_config.max_startup_attempts = max_attempts;
+    config_lock
+        ._get_content_mut()
+        .default_config
+        .max_startup_attempts = max_attempts;
     let config = config_lock._get_content().clone();
     drop(config_lock);
-    
+
     ConfigProcessRetry::_save_config(config).map_err(InvokeError::from_anyhow)?;
     Ok(())
 }
@@ -2270,10 +2273,13 @@ pub async fn set_max_startup_attempts(max_attempts: u8) -> Result<(), InvokeErro
 pub async fn set_startup_retry_delay_secs(delay_secs: u64) -> Result<(), InvokeError> {
     let config_instance = ConfigProcessRetry::current().await;
     let mut config_lock = config_instance.write().await;
-    config_lock._get_content_mut().default_config.startup_retry_delay_secs = delay_secs;
+    config_lock
+        ._get_content_mut()
+        .default_config
+        .startup_retry_delay_secs = delay_secs;
     let config = config_lock._get_content().clone();
     drop(config_lock);
-    
+
     ConfigProcessRetry::_save_config(config).map_err(InvokeError::from_anyhow)?;
     Ok(())
 }
@@ -2282,10 +2288,13 @@ pub async fn set_startup_retry_delay_secs(delay_secs: u64) -> Result<(), InvokeE
 pub async fn set_max_runtime_restart_attempts(max_attempts: u8) -> Result<(), InvokeError> {
     let config_instance = ConfigProcessRetry::current().await;
     let mut config_lock = config_instance.write().await;
-    config_lock._get_content_mut().default_config.max_runtime_restart_attempts = max_attempts;
+    config_lock
+        ._get_content_mut()
+        .default_config
+        .max_runtime_restart_attempts = max_attempts;
     let config = config_lock._get_content().clone();
     drop(config_lock);
-    
+
     ConfigProcessRetry::_save_config(config).map_err(InvokeError::from_anyhow)?;
     Ok(())
 }
@@ -2294,10 +2303,13 @@ pub async fn set_max_runtime_restart_attempts(max_attempts: u8) -> Result<(), In
 pub async fn set_runtime_restart_delay_secs(delay_secs: u64) -> Result<(), InvokeError> {
     let config_instance = ConfigProcessRetry::current().await;
     let mut config_lock = config_instance.write().await;
-    config_lock._get_content_mut().default_config.runtime_restart_delay_secs = delay_secs;
+    config_lock
+        ._get_content_mut()
+        .default_config
+        .runtime_restart_delay_secs = delay_secs;
     let config = config_lock._get_content().clone();
     drop(config_lock);
-    
+
     ConfigProcessRetry::_save_config(config).map_err(InvokeError::from_anyhow)?;
     Ok(())
 }
