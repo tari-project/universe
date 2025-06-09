@@ -56,9 +56,7 @@ export const initialFetchTxs = () =>
     });
 
 export const refreshTransactions = async () => {
-    // const limit = useWalletStore.getState().transactions.length;
-    // return fetchTransactionsHistory({ offset: 0, limit: Math.max(limit, 20) });
-
+    // TODO - move out of store actions
     await queryClient.invalidateQueries({ queryKey: ['transactions'] });
 };
 

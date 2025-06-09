@@ -15,8 +15,7 @@ export const Name = styled(Typography).attrs({
     variant: 'h6',
 })`
     display: flex;
-    color: ${({ theme }) => theme.colorsAlpha.lightAlpha[50]};
-
+    color: ${({ theme }) => theme.colors.greyscale[100]};
     font-size: 12px;
     font-weight: 500;
     letter-spacing: -0.36px;
