@@ -222,6 +222,15 @@ const useTauriEventsListener = () => {
                         case 'UniversalMinerInitializedExchangeIdChanged':
                             handleUniversalMinerInitializedExchangeIdChanged(event.payload);
                             break;
+                        case 'BinaryStartupAttempt':
+                        case 'BinaryRuntimeRestart':
+                        case 'BinaryPermanentFailure':
+                        case 'BinaryCorruptionDetected':
+                        case 'BinaryIntegrityRestored':
+                            // These events are handled by the ProcessRetryIndicator component
+                            // For now, just forward them to any listening components
+                            window.dispatchEvent(new CustomEvent('backend_state_update', { detail: event }));
+                            break;
                         default:
                             console.warn('Unknown event', JSON.stringify(event));
                             break;
