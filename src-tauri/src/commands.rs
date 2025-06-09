@@ -527,7 +527,7 @@ pub async fn set_p2pool_stats_server_port(
     ConfigCore::update_field_requires_restart(
         ConfigCoreContent::set_p2pool_stats_server_port,
         port,
-        vec![SetupPhase::Unknown],
+        vec![SetupPhase::Mining],
     )
     .await
     .map_err(InvokeError::from_anyhow)?;
@@ -648,7 +648,7 @@ pub async fn set_tari_address(address: String, app_handle: tauri::AppHandle) -> 
 
     // mm_proxy is using wallet address
     SetupManager::get_instance()
-        .add_phases_to_restart_queue(vec![SetupPhase::Unknown])
+        .add_phases_to_restart_queue(vec![SetupPhase::Mining])
         .await;
 
     SetupManager::get_instance()
@@ -1232,7 +1232,7 @@ pub async fn set_monero_address(
     ConfigWallet::update_field_requires_restart(
         ConfigWalletContent::set_user_monero_address,
         monero_address,
-        vec![SetupPhase::Unknown],
+        vec![SetupPhase::Mining],
     )
     .await
     .map_err(InvokeError::from_anyhow)?;
@@ -1257,7 +1257,7 @@ pub async fn set_monerod_config(
     ConfigCore::update_field_requires_restart(
         ConfigCoreContent::set_mmproxy_monero_nodes,
         monero_nodes.clone(),
-        vec![SetupPhase::Unknown],
+        vec![SetupPhase::Mining],
     )
     .await
     .map_err(InvokeError::from_anyhow)?;
@@ -1265,7 +1265,7 @@ pub async fn set_monerod_config(
     ConfigCore::update_field_requires_restart(
         ConfigCoreContent::set_mmproxy_use_monero_failover,
         use_monero_fail,
-        vec![SetupPhase::Unknown],
+        vec![SetupPhase::Mining],
     )
     .await
     .map_err(InvokeError::from_anyhow)?;
@@ -1290,7 +1290,7 @@ pub async fn set_p2pool_enabled(
     ConfigCore::update_field_requires_restart(
         ConfigCoreContent::set_is_p2pool_enabled,
         p2pool_enabled,
-        vec![SetupPhase::Unknown],
+        vec![SetupPhase::Mining],
     )
     .await
     .map_err(InvokeError::from_anyhow)?;
@@ -1369,7 +1369,7 @@ pub async fn set_tor_config(
         .add_phases_to_restart_queue(vec![
             SetupPhase::Node,
             SetupPhase::Wallet,
-            SetupPhase::Unknown,
+            SetupPhase::Mining,
         ])
         .await;
 
@@ -1389,7 +1389,7 @@ pub async fn set_use_tor(use_tor: bool, app_handle: tauri::AppHandle) -> Result<
     ConfigCore::update_field_requires_restart(
         ConfigCoreContent::set_use_tor,
         use_tor,
-        vec![SetupPhase::Node, SetupPhase::Wallet, SetupPhase::Unknown],
+        vec![SetupPhase::Node, SetupPhase::Wallet, SetupPhase::Mining],
     )
     .await
     .map_err(InvokeError::from_anyhow)?;
@@ -2091,7 +2091,7 @@ pub async fn set_node_type(
         ConfigCore::update_field_requires_restart(
             ConfigCoreContent::set_node_type,
             node_type.clone(),
-            vec![SetupPhase::Node, SetupPhase::Wallet, SetupPhase::Unknown],
+            vec![SetupPhase::Node, SetupPhase::Wallet, SetupPhase::Mining],
         )
         .await
         .map_err(InvokeError::from_anyhow)?;

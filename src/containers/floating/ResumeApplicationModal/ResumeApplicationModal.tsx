@@ -22,7 +22,7 @@ const ResumeApplicationModal = memo(function ResumeApplicationModal() {
     const corePhaseInfoPayload = useSetupStore((state) => state.core_phase_setup_payload);
     const hardwarePhaseInfoPayload = useSetupStore((state) => state.hardware_phase_setup_payload);
     const nodePhaseInfoPayload = useSetupStore((state) => state.node_phase_setup_payload);
-    const unknownPhaseInfoPayload = useSetupStore((state) => state.unknown_phase_setup_payload);
+    const miningPhaseInfoPayload = useSetupStore((state) => state.mining_phase_setup_payload);
     const walletPhaseInfoPayload = useSetupStore((state) => state.wallet_phase_setup_payload);
 
     const isAppUnlocked = useSetupStore((state) => state.appUnlocked);
@@ -39,10 +39,10 @@ const ResumeApplicationModal = memo(function ResumeApplicationModal() {
     const currentPhaseToShow = useMemo(() => {
         if (
             walletPhaseInfoPayload?.is_complete &&
-            Boolean(unknownPhaseInfoPayload) &&
-            !disabledPhases.includes(SetupPhase.Unknown)
+            Boolean(miningPhaseInfoPayload) &&
+            !disabledPhases.includes(SetupPhase.Mining)
         ) {
-            return unknownPhaseInfoPayload;
+            return miningPhaseInfoPayload;
         }
 
         if (
@@ -74,13 +74,13 @@ const ResumeApplicationModal = memo(function ResumeApplicationModal() {
         corePhaseInfoPayload,
         hardwarePhaseInfoPayload,
         nodePhaseInfoPayload,
-        unknownPhaseInfoPayload,
+        miningPhaseInfoPayload,
         walletPhaseInfoPayload,
         disabledPhases,
     ]);
 
     const [stageProgress, stageTotal] = useMemo(() => {
-        if (unknownPhaseInfoPayload?.is_complete && walletPhaseInfoPayload?.is_complete) {
+        if (miningPhaseInfoPayload?.is_complete && walletPhaseInfoPayload?.is_complete) {
             setShowResumeAppModal(false);
             return [5, 5];
         }
@@ -106,7 +106,7 @@ const ResumeApplicationModal = memo(function ResumeApplicationModal() {
         corePhaseInfoPayload?.is_complete,
         hardwarePhaseInfoPayload?.is_complete,
         nodePhaseInfoPayload?.is_complete,
-        unknownPhaseInfoPayload?.is_complete,
+        miningPhaseInfoPayload?.is_complete,
         walletPhaseInfoPayload?.is_complete,
     ]);
 
