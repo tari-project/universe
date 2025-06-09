@@ -1,12 +1,27 @@
 import { setShowUniversalModal, useExchangeStore } from '@app/store/useExchangeStore.ts';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import { useTranslation } from 'react-i18next';
-import { HeaderSection, Heading, Wrapper } from './styles';
+import {
+    HeaderSection,
+    Heading,
+    MainLogoTitle,
+    Wrapper,
+    MainLogoDescription,
+    MainLogoContainer,
+    MainLogoImage,
+    MainLogoOverlay,
+    MainLogoBottomRow,
+} from './styles';
 import { XCOptions } from '@app/components/exchanges/universal/options/Options.tsx';
+import { Countdown, CountdownText } from '@app/components/exchanges/universal/option/styles';
+import { formatCountdown } from '@app/utils';
+import { Typography } from '@app/components/elements/Typography';
 
 export default function UniversalEXSelectorModal() {
     const { t } = useTranslation(['exchange', 'common'], { useSuspense: false });
     const showModal = useExchangeStore((s) => s.showUniversalModal);
+    const currentExchangeMiner = useExchangeStore((s) => s.currentExchangeMiner);
+    const isUniversalExchange = currentExchangeMiner.id === 'universal';
 
     return (
         <Dialog open={!!showModal} onOpenChange={setShowUniversalModal}>
@@ -14,6 +29,53 @@ export default function UniversalEXSelectorModal() {
                 <Wrapper>
                     <HeaderSection>
                         <Heading>{t('select.modal-title')}</Heading>
+                        {!isUniversalExchange && (
+                            <MainLogoContainer>
+                                <MainLogoImage
+                                    src="/assets/img/exchange_miner_header_logo.png"
+                                    alt="Exchange Miner Header Logo"
+                                    style={{ width: '100%' }}
+                                />
+                                <MainLogoOverlay
+                                    style={{
+                                        position: 'absolute',
+                                        top: 0,
+                                        left: 0,
+                                        width: '100%',
+                                        height: '100%',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'flex-start',
+                                        color: 'white',
+                                        padding: '20px',
+                                        gap: '10px',
+                                    }}
+                                >
+                                    <MainLogoTitle>{t('main-logo-title', { ns: 'exchange' })}</MainLogoTitle>
+                                    <MainLogoDescription>
+                                        {currentExchangeMiner.campaign_description}
+                                    </MainLogoDescription>
+                                    <MainLogoBottomRow
+                                        style={{
+                                            display: 'flex',
+                                            flexDirection: 'row',
+                                            gap: '20px',
+                                            alignItems: 'center',
+                                        }}
+                                    >
+                                        <Countdown style={{ backgroundColor: 'white' }}>
+                                            <CountdownText>
+                                                {currentExchangeMiner.reward_expiry_date
+                                                    ? formatCountdown(currentExchangeMiner.reward_expiry_date)
+                                                    : 'no expiry date'}
+                                            </CountdownText>
+                                        </Countdown>
+                                        <Typography variant="p">{t('time-left', { ns: 'exchange' })}</Typography>
+                                    </MainLogoBottomRow>
+                                </MainLogoOverlay>
+                            </MainLogoContainer>
+                        )}
                     </HeaderSection>
                     <XCOptions />
                 </Wrapper>

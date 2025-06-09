@@ -23,27 +23,12 @@ import { useTranslation } from 'react-i18next';
 import { ExchangeAddress } from '../exchangeAddress/ExchangeAddress.tsx';
 import { useState } from 'react';
 import { Typography } from '@app/components/elements/Typography.tsx';
+import { formatCountdown } from '@app/utils/formatters.ts';
 
 interface XCOptionProps {
     content: ExchangeMinerAssets;
     isCurrent?: boolean;
 }
-
-const formatCountdown = (targetDate: string): string => {
-    const now = new Date().getTime();
-    const target = new Date(targetDate).getTime();
-    const difference = target - now;
-
-    if (difference <= 0) {
-        return '0D 0H 0M';
-    }
-
-    const days = Math.floor(difference / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
-
-    return `${days}D ${hours}H ${minutes}M`;
-};
 
 export const XCOption = ({ content, isCurrent = false }: XCOptionProps) => {
     const { t } = useTranslation(['exchange', 'settings'], { useSuspense: false });

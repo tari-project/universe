@@ -9,4 +9,5 @@ export const ListWrapper = styled.div`
     background-color: ${({ theme }) => theme.palette.background.paper};
     width: 100%;
     padding: 20px;
+    padding-top: 5px;
 `;
