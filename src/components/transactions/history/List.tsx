@@ -23,7 +23,7 @@ export default function List() {
     const walletScanning = useWalletStore((s) => s.wallet_scanning);
 
     const lastItemRef = useRef<HTMLDivElement>(null);
-    const isInView = useInView(lastItemRef);
+    const isInView = useInView(lastItemRef, { initial: undefined });
 
     const { data, fetchNextPage, isFetchingNextPage, isFetching } = useFetchTxHistory();
     const transactions = data?.pages.flatMap((p) => p);
@@ -76,8 +76,6 @@ export default function List() {
                 <PlaceholderItem key={`placeholder-${index}`} />
             ))}
             {isFetchingNextPage || isFetching ? <LoadingDots /> : null}
-            {/*added placeholder so the scroll can trigger fetch*/}
-            <PlaceholderItem ref={lastItemRef} $isLast />
         </ListItemWrapper>
     );
 
@@ -110,6 +108,9 @@ export default function List() {
             <ListWrapper>
                 {emptyMarkup}
                 {baseMarkup}
+                {/*added placeholder so the scroll can trigger fetch*/}
+
+                <PlaceholderItem ref={lastItemRef} $isLast />
             </ListWrapper>
         </>
     );

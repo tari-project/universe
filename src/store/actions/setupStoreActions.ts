@@ -19,7 +19,6 @@ import { setSeedlessUI } from '@app/store/actions/uiStoreActions.ts';
 import { fetchExchangeContent, useExchangeStore } from '@app/store/useExchangeStore.ts';
 import { SetupPhase } from '@app/types/backend-state';
 import { useTappletsStore } from '../useTappletsStore';
-import { queryClient } from '@app/App/queryClient.ts';
 
 export interface DisabledPhasesPayload {
     disabled_phases: SetupPhase[];
@@ -48,8 +47,6 @@ export const handleAppUnlocked = async () => {
 };
 export const handleWalletUnlocked = () => {
     useSetupStore.setState({ walletUnlocked: true });
-    // moved initialFetchTxs here so we don't call it constantly on sidebar open/close
-    queryClient.prefetchQuery({ queryKey: ['transactions'] });
 };
 export const handleWalletUpdate = async (addressPayload: WalletAddress) => {
     const addressIsGenerated = addressPayload.is_tari_address_generated;

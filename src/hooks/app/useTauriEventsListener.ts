@@ -29,7 +29,7 @@ import {
     setIsStuckOnOrphanChain,
     setNetworkStatus,
 } from '@app/store/actions/appStateStoreActions';
-import { refreshTransactions, setWalletBalance, updateWalletScanningProgress } from '@app/store';
+import { setWalletBalance, updateWalletScanningProgress } from '@app/store';
 import { deepEqual } from '@app/utils/objectDeepEqual.ts';
 import {
     handleAppUnlocked,
@@ -55,6 +55,7 @@ import {
 } from '@app/store/actions/appConfigStoreActions';
 import { invoke } from '@tauri-apps/api/core';
 import { handleShowStagedSecurityModal } from '@app/store/actions/stagedSecurityActions';
+import { refreshTransactions } from '@app/hooks/wallet/useFetchTxHistory.ts';
 
 const LOG_EVENT_TYPES = ['WalletAddressUpdate', 'CriticalProblem', 'MissingApplications'];
 
