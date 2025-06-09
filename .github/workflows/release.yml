@@ -21,7 +21,7 @@ concurrency:
 permissions: {}
 
 env:
-  TS_FEATURES: release-ci
+  TS_FEATURES: release
   BETA_STRING: '(Beta)'
 
 jobs:
