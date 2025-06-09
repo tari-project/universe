@@ -47,6 +47,7 @@ const formatCountdown = (targetDate: string): string => {
 
 export const XCOption = ({ content, isCurrent = false }: XCOptionProps) => {
     const { t } = useTranslation(['exchange', 'settings'], { useSuspense: false });
+    const [isAddressValid, setIsAddressValid] = useState(false);
     const [isActive, setIsActive] = useState(false);
     const handleExchangeMiner = async () => {
         const selectedExchangeMiner: ExchangeMiner = {
@@ -90,7 +91,7 @@ export const XCOption = ({ content, isCurrent = false }: XCOptionProps) => {
                 </SelectOptionWrapper>
             </ContentHeaderWrapper>
             <ContentBodyWrapper isActive={isActive}>
-                <ExchangeAddress initialAddress="test" confirmExchangeMiner={handleExchangeMiner} />
+                <ExchangeAddress handleIsAddressValid={setIsAddressValid} />
                 <SeasonReward>
                     <SeasonRewardIcon src="/assets/img/wrapped_gift.svg" alt="gift" />
                     <SeasonRewardText>
@@ -104,9 +105,18 @@ export const XCOption = ({ content, isCurrent = false }: XCOptionProps) => {
                         </CountdownText>
                     </Countdown>
                 </SeasonReward>
-                <ConfirmButton onClick={handleExchangeMiner}>
-                    <Typography variant="h4">{t('confirm', { ns: 'settings' })}</Typography>
-                </ConfirmButton>
+                {isAddressValid ? (
+                    <ConfirmButton onClick={handleExchangeMiner}>
+                        <Typography variant="h4">{t('confirm', { ns: 'settings' })}</Typography>
+                    </ConfirmButton>
+                ) : (
+                    <>
+                        <div style={{ height: '1px', backgroundColor: '#e0e0e0', margin: '16px 0' }} />
+                        <Typography variant="p" style={{ color: '#0066cc', cursor: 'pointer' }}>
+                            {t('help-find-address', { exchange: content.name, ns: 'exchange' })}
+                        </Typography>
+                    </>
+                )}
             </ContentBodyWrapper>
         </Wrapper>
     );

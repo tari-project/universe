@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { IconButton } from '@app/components/elements/buttons/IconButton';
 import { InputArea } from '@app/containers/floating/Settings/sections/wallet/styles';
 import { invoke } from '@tauri-apps/api/core';
@@ -8,23 +9,21 @@ import { StyledForm, StyledInput } from './styles';
 import ClipboardViewer from '../clipboardViewer/ClipboardViewer';
 
 interface ExchangeAddressProps {
-    initialAddress: string;
-    confirmExchangeMiner: (newAddress) => Promise<void>;
+    handleIsAddressValid: (isValid: boolean) => void;
 }
-export const ExchangeAddress = ({ initialAddress, confirmExchangeMiner }: ExchangeAddressProps) => {
+export const ExchangeAddress = ({ handleIsAddressValid }: ExchangeAddressProps) => {
     const {
         control,
         watch,
-        handleSubmit,
-        setValue,
-        setFocus,
         reset,
         trigger,
-        formState: { errors, isDirty },
-    } = useForm({
-        defaultValues: { address: initialAddress },
-    });
+        formState: { errors },
+    } = useForm();
     const [showClipboard, setShowClipboard] = useState(false);
+    const address = watch('address');
+    useEffect(() => {
+        trigger('address');
+    }, [address, trigger]);
     const validateAddress = useCallback(async (value: string) => {
         try {
             await invoke('verify_address_for_send', { address: value });
@@ -35,9 +34,9 @@ export const ExchangeAddress = ({ initialAddress, confirmExchangeMiner }: Exchan
     }, []);
 
     const validationRules = {
-        validate: async (value) => {
+        validate: async (value: string) => {
             const isValid = await validateAddress(value);
-
+            handleIsAddressValid(isValid);
             return isValid || 'Invalid address format';
         },
     };
@@ -56,7 +55,7 @@ export const ExchangeAddress = ({ initialAddress, confirmExchangeMiner }: Exchan
 
     return (
         <div style={{ width: '100%' }}>
-            <StyledForm onSubmit={handleSubmit(confirmExchangeMiner)} onReset={handleReset}>
+            <StyledForm onReset={handleReset}>
                 <InputArea>
                     <Controller
                         name="address"
@@ -75,7 +74,7 @@ export const ExchangeAddress = ({ initialAddress, confirmExchangeMiner }: Exchan
                         }}
                     />
                     <div>
-                        {!errors.address ? (
+                        {errors.address ? (
                             <IconButton
                                 style={{
                                     width: 30,
@@ -103,8 +102,6 @@ export const ExchangeAddress = ({ initialAddress, confirmExchangeMiner }: Exchan
                         )}
                     </div>
                 </InputArea>
-
-                {errors.address && <span style={{ color: 'red', fontSize: '12px' }}>{errors.address.message}</span>}
             </StyledForm>
             {showClipboard && <ClipboardViewer />}
         </div>
