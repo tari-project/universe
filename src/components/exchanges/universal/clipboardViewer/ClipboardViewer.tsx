@@ -3,7 +3,11 @@ import { ClipboardIcon, ClipboardText, Container, ContentContainer, ErrorText, T
 import { useTranslation } from 'react-i18next';
 import { readText } from '@tauri-apps/plugin-clipboard-manager';
 
-export const ClipboardViewer: React.FC = () => {
+export interface ClipboardViewerProps {
+    handlePaste: (text: string) => void;
+}
+
+export const ClipboardViewer: React.FC<ClipboardViewerProps> = ({ handlePaste }) => {
     const [clipboardText, setClipboardText] = useState<string>('');
     const [error, setError] = useState<string>('');
     const { t } = useTranslation('exchange');
@@ -28,7 +32,11 @@ export const ClipboardViewer: React.FC = () => {
 
     return (
         <Container>
-            <ClipboardIcon src="/assets/img/copy-clipboard.svg" alt="Clipboard" />
+            <ClipboardIcon
+                src="/assets/img/copy-clipboard.svg"
+                alt="Clipboard"
+                onClick={() => handlePaste(clipboardText)}
+            />
             <ContentContainer>
                 <Title>{t('paste-from-clipboard')}</Title>
                 <TextContainer>

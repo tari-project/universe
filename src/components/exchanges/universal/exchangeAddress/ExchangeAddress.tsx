@@ -20,6 +20,7 @@ export const ExchangeAddress = ({ handleIsAddressValid }: ExchangeAddressProps) 
         watch,
         reset,
         trigger,
+        setValue,
         formState: { errors },
     } = useForm();
     const [showClipboard, setShowClipboard] = useState(false);
@@ -27,6 +28,13 @@ export const ExchangeAddress = ({ handleIsAddressValid }: ExchangeAddressProps) 
     useEffect(() => {
         trigger('address');
     }, [address, trigger]);
+    const handlePaste = useCallback(
+        (value: string) => {
+            console.info('Pasted value:', value);
+            setValue('address', value);
+        },
+        [setValue]
+    );
     const validateAddress = useCallback(async (value: string) => {
         try {
             await invoke('verify_address_for_send', { address: value });
@@ -52,10 +60,6 @@ export const ExchangeAddress = ({ handleIsAddressValid }: ExchangeAddressProps) 
         setShowClipboard(true);
     }, []);
 
-    const handleBlur = useCallback(() => {
-        setShowClipboard(false);
-    }, []);
-
     return (
         <div style={{ width: '100%' }}>
             <StyledForm onReset={handleReset}>
@@ -72,7 +76,6 @@ export const ExchangeAddress = ({ handleIsAddressValid }: ExchangeAddressProps) 
                                     placeholder={t('wallet-address')}
                                     hasError={!!errors.address}
                                     onFocus={handleFocus}
-                                    onBlur={handleBlur}
                                 />
                             );
                         }}
@@ -103,7 +106,7 @@ export const ExchangeAddress = ({ handleIsAddressValid }: ExchangeAddressProps) 
                     </IconContainer>
                 </InputArea>
             </StyledForm>
-            {showClipboard && <ClipboardViewer />}
+            {showClipboard && <ClipboardViewer handlePaste={handlePaste} />}
         </div>
     );
 };
