@@ -192,7 +192,7 @@ export const GemImage = styled.img`
 
 export const PlaceholderItem = styled.div<{ $isLast?: boolean }>`
     width: 100%;
-    height: ${({ $isLast }) => ($isLast ? '15px' : '48px')};
+    height: ${({ $isLast }) => ($isLast ? '35px' : '48px')};
     background: ${({ theme }) => (theme.mode === 'dark' ? '#222223' : '#F3F3F3')};
     border-radius: 10px;
     flex-shrink: 0;

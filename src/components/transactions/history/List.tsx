@@ -16,6 +16,7 @@ import { HistoryListItem } from './ListItem.tsx';
 import { PlaceholderItem } from './ListItem.styles.ts';
 import { ListItemWrapper, ListWrapper } from './List.styles.ts';
 import { setDetailsItem } from '@app/store/actions/walletStoreActions.ts';
+import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 
 export default function List() {
     const { t } = useTranslation('wallet');
@@ -24,7 +25,7 @@ export default function List() {
     const lastItemRef = useRef<HTMLDivElement>(null);
     const isInView = useInView(lastItemRef);
 
-    const { data, fetchNextPage, isFetching } = useFetchTxHistory();
+    const { data, fetchNextPage, isFetchingNextPage, isFetching } = useFetchTxHistory();
     const transactions = data?.pages.flatMap((p) => p);
     const handleDetailsChange = useCallback(async (tx: TransactionInfo | null) => {
         if (!tx) {
@@ -53,12 +54,6 @@ export default function List() {
         });
     }, []);
 
-    useEffect(() => {
-        if (isInView && !isFetching) {
-            fetchNextPage();
-        }
-    }, [fetchNextPage, isFetching, isInView]);
-
     // Calculate how many placeholder items we need to add
     const transactionsCount = transactions?.length || 0;
     const placeholdersNeeded = Math.max(0, 5 - transactionsCount);
@@ -75,13 +70,14 @@ export default function List() {
                     />
                 );
             })}
-            {/* added placeholder so the scroll can trigger fetch*/}
-            <PlaceholderItem ref={lastItemRef} $isLast />
 
             {/* fill the list with placeholders if there are less than 4 entries */}
             {Array.from({ length: placeholdersNeeded }).map((_, index) => (
                 <PlaceholderItem key={`placeholder-${index}`} />
             ))}
+            {isFetchingNextPage || isFetching ? <LoadingDots /> : null}
+            {/*added placeholder so the scroll can trigger fetch*/}
+            <PlaceholderItem ref={lastItemRef} $isLast />
         </ListItemWrapper>
     );
 
@@ -103,6 +99,12 @@ export default function List() {
 
     const isEmpty = !walletScanning.is_scanning && !transactions?.length;
     const emptyMarkup = isEmpty ? <LoadingText>{t('empty-tx')}</LoadingText> : null;
+
+    useEffect(() => {
+        if (isInView) {
+            fetchNextPage();
+        }
+    }, [fetchNextPage, isInView]);
     return (
         <>
             <ListWrapper>

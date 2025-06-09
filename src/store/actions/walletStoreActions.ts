@@ -48,7 +48,7 @@ export const importSeedWords = async (seedWords: string[]) => {
         useWalletStore.setState({ is_wallet_importing: false });
     }
 };
-export const initialFetchTxs = () =>
+const _initialFetchTxs = () =>
     fetchTransactionsHistory({ offset: 0, limit: 20 }).then((tx) => {
         if (tx?.length) {
             useWalletStore.setState({ newestTxIdOnInitialFetch: tx[0]?.tx_id });
