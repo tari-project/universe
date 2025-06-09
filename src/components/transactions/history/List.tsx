@@ -110,7 +110,7 @@ export default function List() {
                 {baseMarkup}
                 {/*added placeholder so the scroll can trigger fetch*/}
 
-                <PlaceholderItem ref={lastItemRef} $isLast />
+                {transactions?.length ? <PlaceholderItem ref={lastItemRef} $isLast /> : null}
             </ListWrapper>
         </>
     );
