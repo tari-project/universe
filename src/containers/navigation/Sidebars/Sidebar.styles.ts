@@ -1,4 +1,4 @@
-import styled, { css } from 'styled-components';
+import styled from 'styled-components';
 import * as m from 'motion/react-m';
 import { SB_WIDTH } from '@app/theme/styles.ts';
 
@@ -43,17 +43,11 @@ export const GridAreaTop = styled.div`
     gap: 8px;
 `;
 
-export const GridAreaBottom = styled.div<{ $swapsEnabled?: boolean }>`
+export const GridAreaBottom = styled.div`
     display: flex;
     flex-direction: column;
     position: relative;
     gap: 4px;
     overflow: hidden;
     overflow-y: auto;
-    ${({ $swapsEnabled }) =>
-        $swapsEnabled &&
-        css`
-            overflow: visible;
-            position: relative;
-        `}
 `;
