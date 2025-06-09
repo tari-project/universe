@@ -29,10 +29,26 @@ interface XCOptionProps {
     isCurrent?: boolean;
 }
 
+const formatCountdown = (targetDate: string): string => {
+    const now = new Date().getTime();
+    const target = new Date(targetDate).getTime();
+    const difference = target - now;
+
+    if (difference <= 0) {
+        return '0D 0H 0M';
+    }
+
+    const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+
+    return `${days}D ${hours}H ${minutes}M`;
+};
+
 export const XCOption = ({ content, isCurrent = false }: XCOptionProps) => {
     const { t } = useTranslation(['exchange', 'settings'], { useSuspense: false });
     const [isActive, setIsActive] = useState(false);
-    const confirmExchangeMiner = async () => {
+    const handleExchangeMiner = async () => {
         const selectedExchangeMiner: ExchangeMiner = {
             id: content.id,
             slug: content.slug,
@@ -44,12 +60,12 @@ export const XCOption = ({ content, isCurrent = false }: XCOptionProps) => {
     };
 
     return (
-        <Wrapper $isCurrent={isCurrent}>
+        <Wrapper isCurrent={isCurrent}>
             <ContentHeaderWrapper>
                 <XCContent>
-                    {content.logoImgUrl && (
+                    {content.logo_img_url && (
                         <ImgWrapper $isLogo>
-                            <img src={content.logoImgUrl} alt={content.name} />
+                            <img src={content.logo_img_url} alt={content.name} />
                         </ImgWrapper>
                     )}
                     <Heading>{content.name}</Heading>
@@ -57,7 +73,7 @@ export const XCOption = ({ content, isCurrent = false }: XCOptionProps) => {
                 <SelectOptionWrapper>
                     {isCurrent && (
                         <CaptionWrapper>
-                            <CaptionText>{t('selected-exchange-miner')}</CaptionText>
+                            <CaptionText>{t('selected-exchange-miner', { ns: 'exchange' })}</CaptionText>
                         </CaptionWrapper>
                     )}
                     {content.id && (
@@ -73,24 +89,23 @@ export const XCOption = ({ content, isCurrent = false }: XCOptionProps) => {
                     )}
                 </SelectOptionWrapper>
             </ContentHeaderWrapper>
-            <ContentBodyWrapper $isActive={isActive}>
-                <ExchangeAddress initialAddress="test" confirmExchangeMiner={confirmExchangeMiner} />
+            <ContentBodyWrapper isActive={isActive}>
+                <ExchangeAddress initialAddress="test" confirmExchangeMiner={handleExchangeMiner} />
                 <SeasonReward>
                     <SeasonRewardIcon src="/assets/img/wrapped_gift.svg" alt="gift" />
                     <SeasonRewardText>
-                        <Typography variant="p" fontWeight="bold" style={{ display: 'inline' }}>
-                            {t('season-one-reward')}
-                        </Typography>
-                        <Typography variant="p" style={{ display: 'inline' }}>
-                            Season one bonus: Earn 12% bonus XTM when you mine to Kraken.
-                        </Typography>
+                        <b>{t('season-one-reward', { ns: 'exchange' })}:</b> {content.campaign_description}
                     </SeasonRewardText>
                     <Countdown>
-                        <CountdownText>36D 21H 22M</CountdownText>
+                        <CountdownText>
+                            {content.reward_expiry_date
+                                ? formatCountdown(content.reward_expiry_date)
+                                : 'no expiry date'}
+                        </CountdownText>
                     </Countdown>
                 </SeasonReward>
-                <ConfirmButton onClick={confirmExchangeMiner}>
-                    <Typography variant="h4">{t('confirm')}</Typography>
+                <ConfirmButton onClick={handleExchangeMiner}>
+                    <Typography variant="h4">{t('confirm', { ns: 'settings' })}</Typography>
                 </ConfirmButton>
             </ContentBodyWrapper>
         </Wrapper>

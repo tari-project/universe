@@ -2,13 +2,14 @@ import styled from 'styled-components';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { convertHexToRGBA } from '@app/utils';
 
-export const Wrapper = styled.div<{ $isCurrent?: boolean }>`
+export const Wrapper = styled.div<{ isCurrent?: boolean }>`
     display: flex;
     border-radius: 10px;
     width: 100%;
     flex-direction: column;
-    border: 1px solid ${({ theme, $isCurrent }) => ($isCurrent ? theme.colors.green[400] : theme.palette.divider)};
-    background-color: ${({ theme, $isCurrent }) =>
+    border: 1px solid
+        ${({ theme, isCurrent: $isCurrent }) => ($isCurrent ? theme.colors.green[400] : theme.palette.divider)};
+    background-color: ${({ theme, isCurrent: $isCurrent }) =>
         $isCurrent ? convertHexToRGBA(theme.colors.green[400], 0.1) : theme.palette.background.paper};
     padding: 15px;
     gap: 14px;
@@ -48,7 +49,7 @@ export const DotContainer = styled.div`
     margin: 0 4px;
 `;
 
-export const ContentBodyWrapper = styled.div<{ $isActive?: boolean }>`
+export const ContentBodyWrapper = styled.div<{ isActive?: boolean }>`
     display: flex;
     justify-content: space-evenly;
     align-items: center;
@@ -56,8 +57,8 @@ export const ContentBodyWrapper = styled.div<{ $isActive?: boolean }>`
     width: 100%;
     gap: 15px;
     overflow: hidden;
-    max-height: ${({ $isActive }) => ($isActive ? '1000px' : '0')};
-    opacity: ${({ $isActive }) => ($isActive ? '1' : '0')};
+    max-height: ${({ isActive: $isActive }) => ($isActive ? '1000px' : '0')};
+    opacity: ${({ isActive: $isActive }) => ($isActive ? '1' : '0')};
     transition:
         max-height 0.3s ease,
         opacity 0.3s ease;
@@ -95,9 +96,14 @@ export const SeasonReward = styled.div`
     width: 100%;
 `;
 
+export const SeasonRewardIcon = styled.img`
+    width: 32px;
+    height: 32px;
+`;
+
 export const SeasonRewardText = styled(Typography).attrs({ variant: 'p' })`
     color: black;
-    fontweight: 700;
+    line-height: 15px;
 `;
 
 export const Countdown = styled.div`
@@ -112,12 +118,7 @@ export const Countdown = styled.div`
 
 export const CountdownText = styled(Typography).attrs({ variant: 'p' })`
     color: black;
-    fontweight: 700;
-`;
-
-export const SeasonRewardIcon = styled.img`
-    width: 24px;
-    height: 24px;
+    font-weight: 700;
 `;
 
 export const ConfirmButton = styled.button`

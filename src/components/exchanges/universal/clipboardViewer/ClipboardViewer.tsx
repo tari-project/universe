@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { ClipboardIcon, ClipboardText, Container, ContentContainer, ErrorText, TextContainer, Title } from './styles';
+import { useTranslation } from 'react-i18next';
 
 export const ClipboardViewer: React.FC = () => {
     const [clipboardText, setClipboardText] = useState<string>('');
     const [error, setError] = useState<string>('');
-
+    const { t } = useTranslation('exchange');
     useEffect(() => {
         const readClipboard = async () => {
             try {
@@ -28,72 +30,19 @@ export const ClipboardViewer: React.FC = () => {
     }, []);
 
     return (
-        <div
-            style={{
-                display: 'flex',
-                flexDirection: 'row',
-                alignItems: 'flex-start',
-                gap: '12px',
-                padding: '16px',
-                backgroundColor: 'white',
-                borderRadius: '8px',
-                boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
-                border: '1px solid #e5e7eb',
-                width: '100%',
-            }}
-        >
-            <img
-                src="/assets/img/copy-clipboard.svg"
-                alt="Clipboard"
-                style={{
-                    width: '24px',
-                    height: '24px',
-                    color: '#3b82f6',
-                    flexShrink: 0,
-                }}
-            />
-            <div
-                style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    flex: 1,
-                }}
-            >
-                <h3
-                    style={{
-                        fontSize: '14px',
-                        fontWeight: '500',
-                        color: '#111827',
-                        marginBottom: '8px',
-                    }}
-                >
-                    Current Clipboard
-                </h3>
-                <div style={{ flex: 1 }}>
+        <Container>
+            <ClipboardIcon src="/assets/img/copy-clipboard.svg" alt="Clipboard" />
+            <ContentContainer>
+                <Title>{t('paste-from-clipboard')}</Title>
+                <TextContainer>
                     {error ? (
-                        <p
-                            style={{
-                                fontSize: '14px',
-                                color: '#ef4444',
-                            }}
-                        >
-                            {error}
-                        </p>
+                        <ErrorText>{error}</ErrorText>
                     ) : (
-                        <p
-                            style={{
-                                fontSize: '14px',
-                                color: '#374151',
-                                whiteSpace: 'pre-wrap',
-                                wordBreak: 'break-word',
-                            }}
-                        >
-                            {clipboardText || 'Clipboard is empty'}
-                        </p>
+                        <ClipboardText>{clipboardText || 'Clipboard is empty'}</ClipboardText>
                     )}
-                </div>
-            </div>
-        </div>
+                </TextContainer>
+            </ContentContainer>
+        </Container>
     );
 };
 

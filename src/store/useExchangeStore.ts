@@ -16,7 +16,7 @@ const universalExchangeMinerOption: ExchangeMinerAssets = {
     id: 'universal',
     slug: 'universal',
     name: 'Tari Universe',
-    logoImgUrl: '/assets/img/TU-logo.svg',
+    logo_img_url: '/assets/img/TU-logo.svg',
 };
 
 const initialState = {
@@ -55,8 +55,9 @@ export async function fetchExchangeMiners() {
             const list = (await res.json()) as {
                 exchanges: ExchangeMinerAssets[];
             };
+            console.info(list);
             list.exchanges.push(universalExchangeMinerOption);
-            setExchangeMiners(list.exchanges.filter((ex) => ex.name !== 'Universal'));
+            setExchangeMiners(list.exchanges.filter((ex) => ex.name !== 'Tari Universe'));
         }
     } catch (e) {
         console.error('Could not fetch exchange miners', e);

@@ -25,6 +25,9 @@ export interface ExchangeMiner {
 }
 
 export interface ExchangeMinerAssets extends ExchangeMiner {
-    logoImgUrl?: string;
-    logoImgUrlSmall?: string;
+    logo_img_url?: string;
+    logo_img_url_small?: string;
+    campaign_description?: string;
+    reward_percentage?: number;
+    reward_expiry_date?: string;
 }
