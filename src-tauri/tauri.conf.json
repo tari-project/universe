@@ -1,5 +1,5 @@
 {
-    "version": "1.2.3",
+    "version": "1.2.7",
     "productName": "Tari Universe (Alpha)",
     "mainBinaryName": "Tari Universe (Alpha)",
     "identifier": "com.tari.universe.alpha",
@@ -72,7 +72,9 @@
             },
             "assetProtocol": {
                 "enable": true,
-                "scope": ["**"]
+                "scope": [
+                    "**"
+                ]
             },
             "pattern": {
                 "use": "isolation",

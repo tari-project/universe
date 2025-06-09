@@ -122,6 +122,7 @@ mod p2pool_manager;
 mod pool_status_watcher;
 mod port_allocator;
 mod process_adapter;
+mod process_adapter_utils;
 mod process_killer;
 mod process_stats_collector;
 mod process_utils;

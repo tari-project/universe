@@ -1,3 +1,31 @@
+🚀 TARI UNIVERSE v1.2.7: The Crown of Every Heart
+
+_June 5, 2025_
+
+Hey everyone,
+
+🎉 Tari Mainnet is nearly a month old! Tari Universe v1.2.7, also known as "The Crown of Every Heart," focuses on making the world's easiest-to-use crypto app smoother, faster, and more consistent. Our goal is for Tari Universe to become a "set it and forget" type of application. A well-oiled machine. With the release of "The Crown of Every Heart, we take a significant step together towards this goal!
+
+✨ What's New  
+- 🔡 **Improved message rendering**: Fixed garbled character issues when displaying messages from exchanges and third-party sources.  
+- 🛡️ **Enhanced transaction error handling**: Clearer error messages for failed transactions and significantly reduced false "pending sends".  
+- ⚡ **Faster balance updates**: Wallet balances now update in near real-time to reflect on-chain states.  
+- 🔍 **Clearer transaction status display**: Transactions now clearly indicate whether they're pending, mined, confirmed, or completed—no more confusion around "Completed" meaning "still in mempool".
+
+---
+
+🚀 TARI UNIVERSE v1.2.6: The Second Song of Soon
+
+_June 3, 2025_
+
+Hey everyone,
+
+This is the hotfix you've been looking for. Introducing the "Second Song of Soon." The first song was an "acquired taste" as folks in the music business would call it, but this song is a hit. This release should fix the network sync challenges many of you have been facing, including the dreaded "stuck at 3 of 5", mining orphan blocks, and wallet sync issues.
+
+Note: Tari Universe will display the “3 / 5 Starting Minotari node” message for ~30 minutes the first time while it re-syncs the chain. Don’t worry, you will be CPU mining on Hatchling pool in the meantime!
+
+---
+
 🚀 TARI UNIVERSE v1.2.2: The Song of Soon
 
 _June 2, 2025_

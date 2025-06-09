@@ -25,7 +25,6 @@ use std::{collections::HashMap, time::Duration};
 use crate::{
     binaries::{Binaries, BinaryResolver},
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
-    events::CriticalProblemPayload,
     events_emitter::EventsEmitter,
     events_manager::EventsManager,
     node::node_manager::{NodeManagerError, STOP_ON_ERROR_CODES},
@@ -35,26 +34,27 @@ use crate::{
         progress_stepper::ProgressStepperBuilder,
         ProgressStepper,
     },
-    setup::{setup_manager::SetupPhase, utils::conditional_sleeper},
+    setup::setup_manager::SetupPhase,
     tasks_tracker::TasksTrackers,
     UniverseAppState,
 };
 use anyhow::Error;
 use log::{error, info, warn};
+use tari_shutdown::ShutdownSignal;
 use tauri::{AppHandle, Manager};
-use tauri_plugin_sentry::sentry;
 use tokio::{
-    select,
     sync::{
         watch::{self, Sender},
         Mutex,
     },
     time::{interval, Interval},
 };
+use tokio_util::task::TaskTracker;
 
 use super::{
     setup_manager::{PhaseStatus, SetupFeaturesList},
     trait_setup_phase::{SetupConfiguration, SetupPhaseImpl},
+    utils::{setup_default_adapter::SetupDefaultAdapter, timeout_watcher::TimeoutWatcher},
 };
 
 static LOG_TARGET: &str = "tari::universe::phase_hardware";
@@ -76,6 +76,7 @@ pub struct NodeSetupPhase {
     status_sender: Sender<PhaseStatus>,
     #[allow(dead_code)]
     setup_features: SetupFeaturesList,
+    timeout_watcher: TimeoutWatcher,
 }
 
 impl SetupPhaseImpl for NodeSetupPhase {
@@ -87,13 +88,18 @@ impl SetupPhaseImpl for NodeSetupPhase {
         configuration: SetupConfiguration,
         setup_features: SetupFeaturesList,
     ) -> Self {
+        let timeout_watcher = TimeoutWatcher::new(configuration.setup_timeout_duration);
         Self {
             app_handle: app_handle.clone(),
-            progress_stepper: Mutex::new(Self::create_progress_stepper(app_handle)),
+            progress_stepper: Mutex::new(Self::create_progress_stepper(
+                app_handle,
+                timeout_watcher.get_sender(),
+            )),
             app_configuration: Self::load_app_configuration().await.unwrap_or_default(),
             setup_configuration: configuration,
             status_sender,
             setup_features,
+            timeout_watcher,
         }
     }
 
@@ -101,7 +107,28 @@ impl SetupPhaseImpl for NodeSetupPhase {
         &self.app_handle
     }
 
-    fn create_progress_stepper(app_handle: AppHandle) -> ProgressStepper {
+    async fn get_shutdown_signal(&self) -> ShutdownSignal {
+        TasksTrackers::current().core_phase.get_signal().await
+    }
+    async fn get_task_tracker(&self) -> TaskTracker {
+        TasksTrackers::current().core_phase.get_task_tracker().await
+    }
+    fn get_phase_dependencies(&self) -> Vec<tokio::sync::watch::Receiver<PhaseStatus>> {
+        self.setup_configuration
+            .listeners_for_required_phases_statuses
+            .clone()
+    }
+    fn get_phase_id(&self) -> SetupPhase {
+        SetupPhase::Node
+    }
+    fn get_timeout_watcher(&self) -> &TimeoutWatcher {
+        &self.timeout_watcher
+    }
+
+    fn create_progress_stepper(
+        app_handle: AppHandle,
+        timeout_watcher_sender: Sender<u64>,
+    ) -> ProgressStepper {
         ProgressStepperBuilder::new()
             .add_step(ProgressPlans::Node(ProgressSetupNodePlan::BinariesTor))
             .add_step(ProgressPlans::Node(ProgressSetupNodePlan::BinariesNode))
@@ -117,7 +144,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
                 ProgressSetupNodePlan::WaitingForBlockSync,
             ))
             .add_step(ProgressPlans::Node(ProgressSetupNodePlan::Done))
-            .build(app_handle.clone())
+            .build(app_handle.clone(), timeout_watcher_sender)
     }
 
     async fn load_app_configuration() -> Result<Self::AppConfiguration, Error> {
@@ -133,56 +160,8 @@ impl SetupPhaseImpl for NodeSetupPhase {
         })
     }
 
-    async fn setup(mut self) {
-        info!(target: LOG_TARGET, "[ {} Phase ] Starting setup", SetupPhase::Node);
-
-        TasksTrackers::current().node_phase.get_task_tracker().await.spawn(async move {
-            let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
-            for subscriber in &mut self.setup_configuration.listeners_for_required_phases_statuses.iter_mut() {
-                select! {
-                    _ = subscriber.wait_for(|value| value.is_success()) => {}
-                    _ = shutdown_signal.wait() => {
-                        warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Node);
-                        return;
-                    }
-                }
-            };
-            tokio::select! {
-                result = conditional_sleeper(self.setup_configuration.setup_timeout_duration) => {
-                   if result.is_some() {
-                        error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Node);
-                        let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::Node);
-                        sentry::capture_message(&error_message, sentry::Level::Error);
-                        EventsEmitter::emit_critical_problem(CriticalProblemPayload {
-                            title: Some(SetupPhase::Node.get_critical_problem_title()),
-                            description: Some(SetupPhase::Node.get_critical_problem_description()),
-                            error_message: Some(error_message),
-                        }).await;
-                    }
-                }
-                result = self.setup_inner() => {
-                    match result {
-                        Ok(_) => {
-                            info!(target: LOG_TARGET, "[ {} Phase ] Setup completed successfully", SetupPhase::Node);
-                            let __unused = self.finalize_setup().await;
-                        }
-                        Err(error) => {
-                            error!(target: LOG_TARGET, "[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Node,error);
-                            let error_message = format!("[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Node,error);
-                            sentry::capture_message(&error_message, sentry::Level::Error);
-                            EventsEmitter::emit_critical_problem(CriticalProblemPayload {
-                                title: Some(SetupPhase::Node.get_critical_problem_title()),
-                                description: Some(SetupPhase::Node.get_critical_problem_description()),
-                                error_message: Some(error_message),
-                            }).await;
-                        }
-                    }
-                }
-                _ = shutdown_signal.wait() => {
-                    warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Node);
-                }
-            };
-        });
+    async fn setup(self) {
+        let _unused = SetupDefaultAdapter::setup(self).await;
     }
 
     #[allow(clippy::too_many_lines)]

@@ -1,3 +1,4 @@
+import i18n from 'i18next';
 import { useConfigMiningStore, useConfigUIStore, useMiningMetricsStore } from '@app/store';
 
 import {
@@ -30,12 +31,18 @@ import { MiningTime } from '@app/components/mining/timer/MiningTime.tsx';
 import { useMiningTime } from '@app/hooks/mining/useMiningTime.ts';
 import { SuccessAnimation } from './SuccessAnimation/SuccessAnimation';
 import { setAnimationState } from '@tari-project/tari-tower';
-import i18n from 'i18next';
+
 import { ProgressAnimation } from './ProgressAnimation/ProgressAnimation';
 
 const REWARD_THRESHOLD_STR = `2 XTM`;
 const REWARD_THRESHOLD = 2 * 1_000_000;
-
+const fmtMatch = (value: number) =>
+    Intl.NumberFormat(i18n.language, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 4,
+        notation: 'standard',
+        style: 'decimal',
+    }).format(value);
 export const PoolStatsTile = () => {
     const { t } = useTranslation('p2p');
     const { daysString, hoursString, minutes, seconds } = useMiningTime();
@@ -46,23 +53,13 @@ export const PoolStatsTile = () => {
     const loading = isMining && !pool_status;
     const [expanded, setExpanded] = useState(false);
     const [unpaid, setUnpaid] = useState(pool_status?.unpaid || 0);
-
-    const prevFloored = useRef(Math.floor((pool_status?.unpaid || 0) / 1_000_000));
-
-    // ================== Animations ==================
+    const [unpaidFMT, setUnpaidFTM] = useState(fmtMatch(unpaid));
+    const [prevUnpaid, setPrevUnpaid] = useState(unpaidFMT);
 
     const [showProgressAnimation, setShowProgressAnimation] = useState(false);
     const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
 
-    const fmtMatch = (value: number) =>
-        Intl.NumberFormat(i18n.language, {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 4,
-            notation: 'standard',
-            style: 'decimal',
-        }).format(value);
-    const [unpaidFMT, setUnpaidFTM] = useState(fmtMatch(unpaid));
-    const [prevUnpaid, setPrevUnpaid] = useState(unpaidFMT);
+    const prevFloored = useRef(Math.floor((pool_status?.unpaid || 0) / 1_000_000));
 
     useEffect(() => {
         setUnpaid(pool_status?.unpaid || 0);
@@ -82,8 +79,7 @@ export const PoolStatsTile = () => {
         const unpaidAboveThreshold = unpaid >= REWARD_THRESHOLD;
         if (!unpaidAboveThreshold) return;
         const floored = Math.floor(unpaid / 1_000_000);
-
-        const canShowSuccess = floored % 2 === 0 && prevFloored.current !== floored;
+        const canShowSuccess = floored === 2 && prevFloored.current !== floored && prevUnpaid !== '0.00';
         if (canShowSuccess) {
             setShowSuccessAnimation(true);
             if (visualMode) {
@@ -92,7 +88,7 @@ export const PoolStatsTile = () => {
 
             prevFloored.current = floored;
         }
-    }, [unpaid, visualMode]);
+    }, [unpaid, visualMode, prevUnpaid]);
 
     // ================== Floating UI ==================
 
@@ -126,6 +122,7 @@ export const PoolStatsTile = () => {
                                     <Values>
                                         <BalanceVal>
                                             <NumberFlow
+                                                locales={i18n.language}
                                                 format={{
                                                     minimumFractionDigits: 1,
                                                     maximumFractionDigits: 4,

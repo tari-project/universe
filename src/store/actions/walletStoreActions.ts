@@ -106,8 +106,8 @@ const getPendingOutgoingBalance = async () => {
                 tx.direction == TransactionDirection.Outbound &&
                 [TransactionStatus.Completed, TransactionStatus.Broadcast].includes(tx.status)
         );
-    if (!pendingTxs.length) {
-        console.info('No pending outgoing transactions');
+    if (pendingTxs.length) {
+        console.info('Pending txs: ', pendingTxs);
     }
     return pendingTxs.reduce((acc, tx) => acc + tx.amount, 0);
 };
