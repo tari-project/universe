@@ -68,7 +68,7 @@ export default function List() {
             {transactions?.map((tx, i) => {
                 return (
                     <HistoryListItem
-                        key={tx.tx_id}
+                        key={`item-${i}-${tx.tx_id}`}
                         item={tx}
                         index={i}
                         itemIsNew={false}
