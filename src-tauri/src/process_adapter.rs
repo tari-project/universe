@@ -28,8 +28,6 @@ use std::collections::HashMap;
 use std::ffi::OsStr;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicI64, AtomicU32};
-use std::sync::Arc;
 use std::time::Duration;
 use sysinfo::System;
 use tari_shutdown::Shutdown;
@@ -49,7 +47,6 @@ pub(crate) trait ProcessAdapter {
     type StatusMonitor: StatusMonitor;
     type ProcessInstance: ProcessInstanceTrait;
 
-    // fn spawn(&self) -> Result<(Receiver<()>, TInstance), anyhow::Error>;
     fn spawn_inner(
         &self,
         base_folder: PathBuf,
@@ -80,7 +77,7 @@ pub(crate) trait ProcessAdapter {
     fn pid_file_name(&self) -> &str;
 
     #[allow(dead_code)]
-    fn pid_file_exisits(&self, base_folder: PathBuf) -> bool {
+    fn pid_file_exists(&self, base_folder: PathBuf) -> bool {
         std::path::Path::new(&base_folder)
             .join(self.pid_file_name())
             .exists()
@@ -264,6 +261,27 @@ impl ProcessInstanceTrait for ProcessInstance {
         Ok(())
     }
 
+    async fn stop(&mut self) -> Result<i32, anyhow::Error> {
+        self.shutdown.trigger();
+        let handle = self.handle.take();
+        handle
+            .ok_or_else(|| anyhow!("Handle is not present"))?
+            .await?
+    }
+
+    fn is_shutdown_triggered(&self) -> bool {
+        self.shutdown.is_triggered()
+    }
+
+    async fn wait(&mut self) -> Result<i32, anyhow::Error> {
+        let handle = self.handle.take();
+
+        match handle {
+            Some(handle) => handle.await?,
+            None => Err(anyhow!("No process handle available")),
+        }
+    }
+
     async fn start_and_wait_for_output(
         &mut self,
         _task_tracker: TaskTracker,
@@ -314,27 +332,6 @@ impl ProcessInstanceTrait for ProcessInstance {
         }
 
         Ok((exit_code, stdout_lines, stderr_lines))
-    }
-
-    async fn stop(&mut self) -> Result<i32, anyhow::Error> {
-        self.shutdown.trigger();
-        let handle = self.handle.take();
-        handle
-            .ok_or_else(|| anyhow!("Handle is not present"))?
-            .await?
-    }
-
-    fn is_shutdown_triggered(&self) -> bool {
-        self.shutdown.is_triggered()
-    }
-
-    async fn wait(&mut self) -> Result<i32, anyhow::Error> {
-        let handle = self.handle.take();
-
-        match handle {
-            Some(handle) => handle.await?,
-            None => Err(anyhow!("No process handle available")),
-        }
     }
 }
 

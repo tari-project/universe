@@ -21,16 +21,16 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::binaries::{Binaries, BinaryResolver};
+use crate::process_adapter::ProcessInstanceTrait;
 use crate::process_adapter::{HealthStatus, ProcessAdapter, StatusMonitor};
-use crate::process_adapter::{ProcessInstance, ProcessInstanceTrait};
 use futures_util::future::FusedFuture;
 use log::{error, info, warn};
-use std::alloc::System;
+
 use std::path::{Path, PathBuf};
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use std::time::Duration;
-use sysinfo::{MemoryRefreshKind, Pid, RefreshKind};
+use sysinfo::Pid;
 use tari_shutdown::{Shutdown, ShutdownSignal};
 use tokio::task::JoinHandle;
 
@@ -150,10 +150,12 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         let task_tracker = task_tracker.clone();
         let stop_on_exit_codes = self.stop_on_exit_codes.clone();
         let stats_broadcast = self.stats_broadcast.clone();
+        let binary_name = binary.name();
+        let pid = TAdapter::find_process_pid_by_name(binary_name.as_ref());
         self.watcher_task = Some(task_tracker.clone().spawn(async move {
             child.start(task_tracker.clone()).await?;
             let mut uptime = Instant::now();
-            let (process_mem, process_vmem) = get_memory_stats(&child);
+            let (process_mem, process_vmem) = get_memory_stats(pid);
             let mut stats = ProcessWatcherStats {
                 current_uptime: Duration::from_secs(0),
                 total_health_checks: 0,
@@ -188,7 +190,8 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                             inner_shutdown.clone(),
                             &mut warning_count,
                             &stop_on_exit_codes,
-                            &mut stats
+                            &mut stats,
+                            pid
                         ).await? {
                             return Ok(exit_code);
                         }
@@ -219,7 +222,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
 
     #[allow(dead_code)]
     pub fn is_pid_file_exists(&self, base_path: PathBuf) -> bool {
-        self.adapter.pid_file_exisits(base_path)
+        self.adapter.pid_file_exists(base_path)
     }
 
     pub async fn wait_ready(&self) -> Result<(), anyhow::Error> {
@@ -244,10 +247,10 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
     }
 }
 
-fn get_memory_stats(child: &ProcessInstance) -> (u64, u64) {
+fn get_memory_stats(pid: Option<u32>) -> (u64, u64) {
     let mut process_mem = 0;
     let mut process_vmem = 0;
-    if let Some(pid) = child.pid() {
+    if let Some(pid) = pid {
         let mut s = sysinfo::System::new_all();
         s.refresh_all();
         if let Some(process) = s.process(Pid::from_u32(pid)) {
@@ -272,6 +275,7 @@ async fn do_health_check<TStatusMonitor: StatusMonitor, TProcessInstance: Proces
     warning_count: &mut u32,
     stop_on_exit_codes: &[i32],
     stats: &mut ProcessWatcherStats,
+    pid: Option<u32>,
 ) -> Result<Option<i32>, anyhow::Error> {
     let mut is_healthy = false;
     let mut ping_failed = false;
@@ -292,7 +296,7 @@ async fn do_health_check<TStatusMonitor: StatusMonitor, TProcessInstance: Proces
             HealthStatus::Healthy => {
                 *warning_count = 0;
                 is_healthy = true;
-                let (mem, vmem) = get_memory_stats(&child);
+                let (mem, vmem) = get_memory_stats(pid);
                 stats.memory_usage = mem;
                 stats.virtual_memory_usage = vmem;
             }
@@ -305,7 +309,7 @@ async fn do_health_check<TStatusMonitor: StatusMonitor, TProcessInstance: Proces
                 } else {
                     is_healthy = true;
                 }
-                let (mem, vmem) = get_memory_stats(&child);
+                let (mem, vmem) = get_memory_stats(pid);
                 stats.memory_usage = mem;
                 stats.virtual_memory_usage = vmem;
             }
