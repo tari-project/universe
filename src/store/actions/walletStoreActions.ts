@@ -5,6 +5,8 @@ import { useWalletStore } from '../useWalletStore';
 import { restartMining } from './miningStoreActions';
 import { setError } from './appStateStoreActions';
 import { setExchangeContent } from '@app/store/useExchangeStore.ts';
+import { WrapTokenService, OpenAPI } from '@tari-project/wxtm-bridge-backend-api';
+import { useConfigBEInMemoryStore } from '../useAppConfigStore';
 import { TransactionDirection, TransactionStatus } from '@app/types/transactions';
 
 interface TxArgs {
@@ -38,6 +40,35 @@ export const fetchTransactionsHistory = async ({ offset = 0, limit }: TxArgs) =>
         useWalletStore.setState({ is_transactions_history_loading: false });
     }
 };
+
+export const fetchBridgeTransactionsHistory = async () => {
+    try {
+        OpenAPI.BASE = useConfigBEInMemoryStore.getState().bridgeBackendApiUrl;
+        await WrapTokenService.getUserTransactions(useWalletStore.getState().tari_address_base58).then((response) => {
+            console.log('Bridge transactions fetched successfully:', response);
+            useWalletStore.setState({
+                bridge_transactions: response.transactions,
+            });
+        });
+    } catch (error) {
+        console.error('Could not get bridge transaction history: ', error);
+    }
+};
+
+export const fetchBridgeColdWalletAddress = async () => {
+    try {
+        OpenAPI.BASE = useConfigBEInMemoryStore.getState().bridgeBackendApiUrl;
+        await WrapTokenService.getWrapTokenParams().then((response) => {
+            console.log('Bridge safe wallet address fetched successfully:', response);
+            useWalletStore.setState({
+                cold_wallet_address: response.coldWalletAddress,
+            });
+        });
+    } catch (error) {
+        console.error('Could not get bridge safe wallet address: ', error);
+    }
+};
+
 export const importSeedWords = async (seedWords: string[]) => {
     try {
         useWalletStore.setState({ is_wallet_importing: true });
