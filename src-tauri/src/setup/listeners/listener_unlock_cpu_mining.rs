@@ -22,10 +22,15 @@
 
 use std::{sync::LazyLock, time::Duration};
 
-use tokio::{sync::{watch::Receiver, Mutex},time::sleep};
+use tokio::{
+    sync::{watch::Receiver, Mutex},
+    time::sleep,
+};
 
 use crate::{
-    setup::setup_manager::{PhaseStatus, SetupPhase}, tasks_tracker::TasksTrackers, EventsEmitter
+    setup::setup_manager::{PhaseStatus, SetupPhase},
+    tasks_tracker::TasksTrackers,
+    EventsEmitter,
 };
 
 use log::info;
@@ -33,7 +38,8 @@ use log::info;
 use super::{
     trait_listener::{
         UnlockConditionsListenerTrait, UnlockConditionsStatusChannels, UnlockStrategyTrait,
-    }, SetupFeature, SetupFeaturesList
+    },
+    SetupFeature, SetupFeaturesList,
 };
 
 static LOG_TARGET: &str = "tari::universe::unlock_conditions::listener_unlock_cpu_mining";
@@ -64,13 +70,12 @@ impl UnlockConditionsListenerTrait for ListenerUnlockCpuMining {
     }
 
     async fn stop_listener(&self) {
-            if let Some(listener_task) = self.listener.lock().await.take() {
-                info!(target: LOG_TARGET, "Stopping listener task");
-                listener_task.abort();
-            } else {
-                info!(target: LOG_TARGET, "No listener task to stop");
-            }
-        
+        if let Some(listener_task) = self.listener.lock().await.take() {
+            info!(target: LOG_TARGET, "Stopping listener task");
+            listener_task.abort();
+        } else {
+            info!(target: LOG_TARGET, "No listener task to stop");
+        }
     }
 
     async fn start_listener(&self) {
@@ -79,7 +84,7 @@ impl UnlockConditionsListenerTrait for ListenerUnlockCpuMining {
         let unlock_strategy = self.select_unlock_strategy().await;
         let channels = self.status_channels.lock().await.clone();
 
-        if !unlock_strategy.are_all_channels_loaded(&channels){
+        if !unlock_strategy.are_all_channels_loaded(&channels) {
             info!(target: LOG_TARGET, "Not all listeners are ready, skipping listener start");
             return;
         }
@@ -103,7 +108,6 @@ impl UnlockConditionsListenerTrait for ListenerUnlockCpuMining {
                     } else {
                         info!(target: LOG_TARGET, "Conditions not met, waiting for next check");
                     }
-                    
                     sleep(Duration::from_secs(5)).await;
                 }
             });
@@ -141,15 +145,12 @@ impl UnlockConditionsListenerTrait for ListenerUnlockCpuMining {
     }
 }
 
-
-
 impl ListenerUnlockCpuMining {
     async fn lock(&self) {
         info!(target: LOG_TARGET, "Locking Mining");
         EventsEmitter::emit_lock_cpu_mining().await;
     }
 }
-
 
 struct DefaultStrategy;
 impl UnlockStrategyTrait for DefaultStrategy {
@@ -165,9 +166,6 @@ impl UnlockStrategyTrait for DefaultStrategy {
 struct CentralizedPoolStrategy;
 impl UnlockStrategyTrait for CentralizedPoolStrategy {
     fn required_channels(&self) -> Vec<SetupPhase> {
-        vec![
-            SetupPhase::Core,
-            SetupPhase::Hardware,
-        ]
+        vec![SetupPhase::Core, SetupPhase::Hardware]
     }
 }

@@ -22,18 +22,25 @@
 
 use std::{sync::LazyLock, time::Duration};
 
-use tokio::{sync::{watch::Receiver, Mutex},time::sleep};
-
-use crate::{
-    events::ConnectionStatusPayload, setup::setup_manager::{PhaseStatus, SetupPhase}, tasks_tracker::TasksTrackers, EventsEmitter
+use tokio::{
+    sync::{watch::Receiver, Mutex},
+    time::sleep,
 };
 
-use log::{info};
+use crate::{
+    events::ConnectionStatusPayload,
+    setup::setup_manager::{PhaseStatus, SetupPhase},
+    tasks_tracker::TasksTrackers,
+    EventsEmitter,
+};
+
+use log::info;
 
 use super::{
     trait_listener::{
         UnlockConditionsListenerTrait, UnlockConditionsStatusChannels, UnlockStrategyTrait,
-    }, SetupFeature, SetupFeaturesList
+    },
+    SetupFeature, SetupFeaturesList,
 };
 
 static LOG_TARGET: &str = "tari::universe::unlock_conditions::listener_setup_finished";
@@ -64,13 +71,12 @@ impl UnlockConditionsListenerTrait for ListenerSetupFinished {
     }
 
     async fn stop_listener(&self) {
-            if let Some(listener_task) = self.listener.lock().await.take() {
-                info!(target: LOG_TARGET, "Stopping listener task");
-                listener_task.abort();
-            } else {
-                info!(target: LOG_TARGET, "No listener task to stop");
-            }
-        
+        if let Some(listener_task) = self.listener.lock().await.take() {
+            info!(target: LOG_TARGET, "Stopping listener task");
+            listener_task.abort();
+        } else {
+            info!(target: LOG_TARGET, "No listener task to stop");
+        }
     }
 
     async fn start_listener(&self) {
@@ -79,7 +85,7 @@ impl UnlockConditionsListenerTrait for ListenerSetupFinished {
         let unlock_strategy = self.select_unlock_strategy().await;
         let channels = self.status_channels.lock().await.clone();
 
-        if !unlock_strategy.are_all_channels_loaded(&channels){
+        if !unlock_strategy.are_all_channels_loaded(&channels) {
             info!(target: LOG_TARGET, "Not all listeners are ready, skipping listener start");
             return;
         }
@@ -103,7 +109,6 @@ impl UnlockConditionsListenerTrait for ListenerSetupFinished {
                     } else {
                         info!(target: LOG_TARGET, "Conditions not met, waiting for next check");
                     }
-                    
                     sleep(Duration::from_secs(5)).await;
                 }
             });
@@ -117,7 +122,7 @@ impl UnlockConditionsListenerTrait for ListenerSetupFinished {
         if setup_features.is_feature_enabled(SetupFeature::Restarting) {
             info!(target: LOG_TARGET, "App Restarted");
             EventsEmitter::emit_connection_status_changed(ConnectionStatusPayload::Succeed).await;
-        }else {
+        } else {
             EventsEmitter::emit_initial_setup_finished().await;
         }
     }
@@ -129,7 +134,6 @@ impl UnlockConditionsListenerTrait for ListenerSetupFinished {
         Box::new(DefaultStrategy)
     }
 }
-
 
 struct DefaultStrategy;
 impl UnlockStrategyTrait for DefaultStrategy {

@@ -22,10 +22,15 @@
 
 use std::{sync::LazyLock, time::Duration};
 
-use tokio::{sync::{watch::Receiver, Mutex},time::sleep};
+use tokio::{
+    sync::{watch::Receiver, Mutex},
+    time::sleep,
+};
 
 use crate::{
-    setup::setup_manager::{PhaseStatus, SetupPhase}, tasks_tracker::TasksTrackers, EventsEmitter
+    setup::setup_manager::{PhaseStatus, SetupPhase},
+    tasks_tracker::TasksTrackers,
+    EventsEmitter,
 };
 
 use log::info;
@@ -33,7 +38,8 @@ use log::info;
 use super::{
     trait_listener::{
         UnlockConditionsListenerTrait, UnlockConditionsStatusChannels, UnlockStrategyTrait,
-    }, SetupFeature, SetupFeaturesList
+    },
+    SetupFeature, SetupFeaturesList,
 };
 
 static LOG_TARGET: &str = "tari::universe::unlock_conditions::listener_unlock_wallet";
@@ -57,21 +63,20 @@ impl UnlockConditionsListenerTrait for ListenerUnlockWallet {
     fn current() -> &'static Self {
         &INSTANCE
     }
-    
+
     async fn add_status_channel(&self, key: SetupPhase, value: Receiver<PhaseStatus>) {
         let mut channels = self.status_channels.lock().await;
         channels.insert(key, value);
     }
 
-async fn stop_listener(&self) {
+    async fn stop_listener(&self) {
         if let Some(listener_task) = self.listener.lock().await.take() {
             info!(target: LOG_TARGET, "Stopping listener task");
             listener_task.abort();
         } else {
             info!(target: LOG_TARGET, "No listener task to stop");
         }
-    
-}
+    }
 
     async fn start_listener(&self) {
         self.stop_listener().await;
@@ -84,7 +89,7 @@ async fn stop_listener(&self) {
             return;
         }
 
-        if !unlock_strategy.are_all_channels_loaded(&channels){
+        if !unlock_strategy.are_all_channels_loaded(&channels) {
             info!(target: LOG_TARGET, "Not all listeners are ready, skipping listener start");
             return;
         }
@@ -108,7 +113,6 @@ async fn stop_listener(&self) {
                     } else {
                         info!(target: LOG_TARGET, "Conditions not met, waiting for next check");
                     }
-                    
                     sleep(Duration::from_secs(5)).await;
                 }
             });
@@ -129,7 +133,6 @@ async fn stop_listener(&self) {
             self.lock().await;
         }
     }
-
 
     async fn load_setup_features(&self, features: SetupFeaturesList) {
         *self.features_list.lock().await = features;
@@ -153,15 +156,10 @@ impl ListenerUnlockWallet {
     }
 }
 
-
 struct DefaultStrategy;
 impl UnlockStrategyTrait for DefaultStrategy {
     fn required_channels(&self) -> Vec<SetupPhase> {
-        vec![
-            SetupPhase::Core,
-            SetupPhase::Node,
-            SetupPhase::Wallet,
-        ]
+        vec![SetupPhase::Core, SetupPhase::Node, SetupPhase::Wallet]
     }
 }
 struct ExternalWalletAddressStrategy;

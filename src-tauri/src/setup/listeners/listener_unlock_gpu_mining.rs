@@ -1,4 +1,3 @@
-
 // Copyright 2024. The Tari Project
 //
 // Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -23,10 +22,15 @@
 
 use std::{sync::LazyLock, time::Duration};
 
-use tokio::{sync::{watch::Receiver, Mutex},time::sleep};
+use tokio::{
+    sync::{watch::Receiver, Mutex},
+    time::sleep,
+};
 
 use crate::{
-    setup::setup_manager::{PhaseStatus, SetupPhase}, tasks_tracker::TasksTrackers, EventsEmitter
+    setup::setup_manager::{PhaseStatus, SetupPhase},
+    tasks_tracker::TasksTrackers,
+    EventsEmitter,
 };
 
 use log::info;
@@ -34,7 +38,8 @@ use log::info;
 use super::{
     trait_listener::{
         UnlockConditionsListenerTrait, UnlockConditionsStatusChannels, UnlockStrategyTrait,
-    },  SetupFeaturesList
+    },
+    SetupFeaturesList,
 };
 
 static LOG_TARGET: &str = "tari::universe::unlock_conditions::listener_unlock_gpu_mining";
@@ -64,15 +69,14 @@ impl UnlockConditionsListenerTrait for ListenerUnlockGpuMining {
         channels.insert(key, value);
     }
 
-async fn stop_listener(&self) {
+    async fn stop_listener(&self) {
         if let Some(listener_task) = self.listener.lock().await.take() {
             info!(target: LOG_TARGET, "Stopping listener task");
             listener_task.abort();
         } else {
             info!(target: LOG_TARGET, "No listener task to stop");
         }
-    
-}
+    }
 
     async fn start_listener(&self) {
         self.stop_listener().await;
@@ -80,7 +84,7 @@ async fn stop_listener(&self) {
         let unlock_strategy = self.select_unlock_strategy().await;
         let channels = self.status_channels.lock().await.clone();
 
-        if !unlock_strategy.are_all_channels_loaded(&channels){
+        if !unlock_strategy.are_all_channels_loaded(&channels) {
             info!(target: LOG_TARGET, "Not all listeners are ready, skipping listener start");
             return;
         }
@@ -109,7 +113,6 @@ async fn stop_listener(&self) {
                     } else {
                         info!(target: LOG_TARGET, "Conditions not met, waiting for next check");
                     }
-                    
                     sleep(Duration::from_secs(5)).await;
                 }
             });
@@ -145,7 +148,6 @@ impl ListenerUnlockGpuMining {
         EventsEmitter::emit_lock_gpu_mining().await;
     }
 }
-
 
 struct DefaultStrategy;
 impl UnlockStrategyTrait for DefaultStrategy {
