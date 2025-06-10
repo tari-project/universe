@@ -51,7 +51,6 @@ const Wallet = memo(function Wallet({ section, setSection }: Props) {
     const displayAddress = truncateMiddle(walletAddress, 4);
     const swapUiEnabled = useAirdropStore((s) => s.swapsEnabled);
     const isSwapping = useWalletStore((s) => s.is_swapping);
-
     const { isWalletScanning, formattedAvailableBalance } = useTariBalance();
 
     return (
@@ -74,7 +73,6 @@ const Wallet = memo(function Wallet({ section, setSection }: Props) {
                         </TabHeader>
 
                         <WalletBalanceMarkup />
-
                         {uiSendRecvEnabled && !isWalletScanning && (
                             <TabsWrapper>
                                 <TabsTitle>{`${t('history.available-balance')}: ${formattedAvailableBalance} ${t('common:xtm')}`}</TabsTitle>
