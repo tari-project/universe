@@ -316,7 +316,6 @@ pub async fn get_applications_versions(
 ) -> Result<ApplicationsVersions, String> {
     let timer = Instant::now();
     let binary_resolver = BinaryResolver::current().read().await;
-    let tapplet_resolver = TappletResolver::current().read().await;
 
     let tari_universe_version = app.package_info().version.clone();
     let xmrig_version = binary_resolver
@@ -338,8 +337,8 @@ pub async fn get_applications_versions(
     let xtrgpuminer_version = binary_resolver
         .get_binary_version_string(Binaries::GpuMiner)
         .await;
-    let bridge_version = tapplet_resolver
-        .get_tapplet_version_string(Tapplets::Bridge)
+    let bridge_version = binary_resolver
+        .get_binary_version_string(Binaries::BridgeTapplet)
         .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
