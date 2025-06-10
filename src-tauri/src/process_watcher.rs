@@ -21,8 +21,8 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::binaries::{Binaries, BinaryResolver};
-use crate::process_adapter::ProcessInstanceTrait;
 use crate::process_adapter::{HealthStatus, ProcessAdapter, StatusMonitor};
+use crate::process_adapter::{ProcessInstance, ProcessInstanceTrait};
 use futures_util::future::FusedFuture;
 use log::{error, info, warn};
 use std::alloc::System;
@@ -292,26 +292,25 @@ async fn do_health_check<TStatusMonitor: StatusMonitor, TProcessInstance: Proces
             _ = inner_shutdown2.wait() => HealthStatus::Healthy,
             _ = app_shutdown2.wait() => HealthStatus::Healthy
         } {
-
-                HealthStatus::Healthy => {
+            HealthStatus::Healthy => {
+                *warning_count = 0;
+                is_healthy = true;
+                let (mem, vmem) = get_memory_stats(child);
+                stats.memory_usage = mem;
+                stats.virtual_memory_usage = vmem;
+            }
+            HealthStatus::Warning => {
+                stats.num_warnings += 1;
+                *warning_count += 1;
+                if *warning_count > 10 {
+                    error!(target: LOG_TARGET, "{} is not healthy. Health check returned warning", name);
                     *warning_count = 0;
+                } else {
                     is_healthy = true;
-                    let (mem, vmem) = get_memory_stats(child);
-                    stats.memory_usage = mem;
-                    stats.virtual_memory_usage = vmem;
                 }
-                HealthStatus::Warning => {
-                    stats.num_warnings += 1;
-                    *warning_count += 1;
-                    if *warning_count > 10 {
-                        error!(target: LOG_TARGET, "{} is not healthy. Health check returned warning", name);
-                        *warning_count = 0;
-                    } else {
-                        is_healthy = true;
-                    }
-                    let (mem, vmem) = get_memory_stats(child);
-                    stats.memory_usage = mem;
-                    stats.virtual_memory_usage = vmem;
+                let (mem, vmem) = get_memory_stats(child);
+                stats.memory_usage = mem;
+                stats.virtual_memory_usage = vmem;
             }
             HealthStatus::Unhealthy => {
                 warn!(target: LOG_TARGET, "{} is not healthy. Health check returned false", name);

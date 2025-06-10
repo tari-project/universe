@@ -282,19 +282,21 @@ impl ProcessAdapter for TorAdapter {
             args.push("--UseBridges".to_string());
             args.push("1".to_string());
         }
+        let instance = ProcessInstance {
+            shutdown: inner_shutdown,
+            handle: None,
+            startup_spec: ProcessStartupSpec {
+                file_path: binary_version_path,
+                envs,
+                args,
+                data_dir: data_dir.clone(),
+                pid_file_name: self.pid_file_name().to_string(),
+                name: self.name().to_string(),
+            },
+        };
 
         Ok((
-            ProcessInstance::new(
-                inner_shutdown,
-                ProcessStartupSpec {
-                    file_path: binary_version_path,
-                    envs,
-                    args,
-                    data_dir: data_dir.clone(),
-                    pid_file_name: self.pid_file_name().to_string(),
-                    name: self.name().to_string(),
-                },
-            ),
+            instance,
             TorStatusMonitor {
                 control_port,
                 status_broadcast: self.status_broadcast.clone(),

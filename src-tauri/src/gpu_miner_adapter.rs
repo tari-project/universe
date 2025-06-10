@@ -30,6 +30,7 @@ use crate::process_adapter::ProcessStartupSpec;
 use anyhow::anyhow;
 use anyhow::Error;
 use async_trait::async_trait;
+use futures_util::task::Spawn;
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -226,19 +227,20 @@ impl ProcessAdapter for GpuMinerAdapter {
 
         #[cfg(target_os = "windows")]
         add_firewall_rule("glytex.exe".to_string(), binary_version_path.clone())?;
-
+        let instance = ProcessInstance {
+            shutdown: inner_shutdown,
+            handle: None,
+            startup_spec: ProcessStartupSpec {
+                file_path: binary_version_path,
+                envs: Some(envs),
+                args,
+                data_dir,
+                pid_file_name: self.pid_file_name().to_string(),
+                name: self.name().to_string(),
+            },
+        };
         Ok((
-            ProcessInstance::new(
-                inner_shutdown,
-                ProcessStartupSpec {
-                    file_path: binary_version_path,
-                    envs: Some(envs),
-                    args,
-                    data_dir,
-                    pid_file_name: self.pid_file_name().to_string(),
-                    name: self.name().to_string(),
-                },
-            ),
+            instance,
             GpuMinerStatusMonitor {
                 http_api_port,
                 gpu_raw_status_broadcast: self.gpu_raw_status_broadcast.clone(),

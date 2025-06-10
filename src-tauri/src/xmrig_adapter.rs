@@ -192,19 +192,20 @@ impl ProcessAdapter for XmrigAdapter {
         for extra_option in &self.extra_options {
             args.push(extra_option.clone());
         }
-
+        let instance = ProcessInstance {
+            shutdown: xmrig_shutdown,
+            handle: None,
+            startup_spec: ProcessStartupSpec {
+                file_path: binary_version_path,
+                envs: None,
+                args,
+                data_dir,
+                pid_file_name: self.pid_file_name().to_string(),
+                name: self.name().to_string(),
+            },
+        };
         Ok((
-            ProcessInstance::new(
-                xmrig_shutdown,
-                ProcessStartupSpec {
-                    file_path: binary_version_path,
-                    envs: None,
-                    args,
-                    data_dir,
-                    pid_file_name: self.pid_file_name().to_string(),
-                    name: self.name().to_string(),
-                },
-            ),
+            instance,
             XmrigStatusMonitor {
                 summary_broadcast: self.summary_broadcast.clone(),
                 client: XmrigHttpApiClient::new(

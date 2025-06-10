@@ -252,7 +252,7 @@ impl ProcessInstanceTrait for ProcessInstance {
                         }
                     }
                 },
-            };
+            }
             info!(target: LOG_TARGET, "Stopping {} process with exit code: {}", spec.name, exit_code);
 
             if let Err(error) = fs::remove_file(spec.data_dir.join(spec.pid_file_name)) {
