@@ -68,7 +68,7 @@ impl TaskTrackerUtil {
 pub struct TasksTrackers {
     pub wallet_phase: TaskTrackerUtil,
     pub hardware_phase: TaskTrackerUtil,
-    pub unknown_phase: TaskTrackerUtil,
+    pub mining_phase: TaskTrackerUtil,
     pub node_phase: TaskTrackerUtil,
     pub core_phase: TaskTrackerUtil,
     pub common: TaskTrackerUtil,
@@ -79,7 +79,7 @@ impl TasksTrackers {
         Self {
             wallet_phase: TaskTrackerUtil::new("Wallet phase"),
             hardware_phase: TaskTrackerUtil::new("Hardware phase"),
-            unknown_phase: TaskTrackerUtil::new("Unknown phase"),
+            mining_phase: TaskTrackerUtil::new("Mining phase"),
             node_phase: TaskTrackerUtil::new("Node phase"),
             core_phase: TaskTrackerUtil::new("Core phase"),
             common: TaskTrackerUtil::new("Common"),
@@ -95,7 +95,7 @@ impl TasksTrackers {
         self.core_phase.close().await;
         self.wallet_phase.close().await;
         self.hardware_phase.close().await;
-        self.unknown_phase.close().await;
+        self.mining_phase.close().await;
         self.node_phase.close().await;
     }
 }

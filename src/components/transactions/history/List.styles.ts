@@ -17,8 +17,7 @@ export const ListItemWrapper = styled.div`
     display: flex;
     flex-direction: column;
     align-items: center;
-    width: calc(100% - 4px);
     position: relative;
     gap: 4px;
-    padding-top: 6px;
+    padding: 6px 0 0;
 `;

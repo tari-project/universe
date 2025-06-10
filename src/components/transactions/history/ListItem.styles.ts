@@ -190,11 +190,11 @@ export const GemImage = styled.img`
     width: 11px;
 `;
 
-export const PlaceholderItem = styled.div`
+export const PlaceholderItem = styled.div<{ $isLast?: boolean }>`
     width: 100%;
-    height: 48px;
+    height: ${({ $isLast }) => ($isLast ? '35px' : '48px')};
     background: ${({ theme }) => (theme.mode === 'dark' ? '#222223' : '#F3F3F3')};
     border-radius: 10px;
     flex-shrink: 0;
-    opacity: 0.75;
+    opacity: ${({ $isLast }) => ($isLast ? 0 : 0.75)};
 `;

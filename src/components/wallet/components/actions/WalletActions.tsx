@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { AnimatePresence } from 'motion/react';
 
 import { Wrapper, NavWrapper, NavButton } from './styles.ts';
+import { useWalletStore } from '@app/store';
 
 interface WalletActionsProps {
     section: string;
@@ -9,6 +10,7 @@ interface WalletActionsProps {
 }
 export default function WalletActions({ section, setSection }: WalletActionsProps) {
     const { t } = useTranslation(['wallet', 'sidebar']);
+    const isScanning = useWalletStore((s) => s.wallet_scanning.is_scanning);
 
     return (
         <AnimatePresence>
@@ -18,6 +20,7 @@ export default function WalletActions({ section, setSection }: WalletActionsProp
                         $isActive={section === 'send'}
                         aria-selected={section === 'send'}
                         onClick={() => setSection('send')}
+                        disabled={isScanning}
                     >
                         {t('tabs.send')}
                     </NavButton>

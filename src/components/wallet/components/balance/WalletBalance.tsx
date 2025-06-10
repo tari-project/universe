@@ -1,5 +1,5 @@
 import i18n from 'i18next';
-import { type Format } from '@number-flow/react';
+import NumberFlow, { type Format } from '@number-flow/react';
 import { useTranslation } from 'react-i18next';
 import { useTariBalance } from '@app/hooks/wallet/useTariBalance.ts';
 import { IoEyeOffOutline, IoEyeOutline } from 'react-icons/io5';
@@ -8,15 +8,7 @@ import { useUIStore, useWalletStore } from '@app/store';
 import { roundToTwoDecimals, removeXTMCryptoDecimals } from '@app/utils';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import NumbersLoadingAnimation from '@app/containers/navigation/components/Wallet/NumbersLoadingAnimation/NumbersLoadingAnimation.tsx';
-import {
-    AvailableWrapper,
-    BalanceTextWrapper,
-    BalanceWrapper,
-    Hidden,
-    StyledNumberFlow,
-    SuffixWrapper,
-    Wrapper,
-} from './styles.ts';
+import { AvailableWrapper, BalanceTextWrapper, BalanceWrapper, Hidden, SuffixWrapper, Wrapper } from './styles.ts';
 import { toggleHideWalletBalance } from '@app/store/actions/uiStoreActions.ts';
 import { useState } from 'react';
 import { ActionButton } from '@app/components/wallet/components/details/actions/styles.ts';
@@ -51,12 +43,7 @@ export default function WalletBalance() {
                             {hideWalletBalance ? (
                                 <Hidden>{`*******`}</Hidden>
                             ) : (
-                                <StyledNumberFlow
-                                    isolate
-                                    locales={i18n.language}
-                                    format={formatOptions}
-                                    value={balanceValue}
-                                />
+                                <NumberFlow locales={i18n.language} format={formatOptions} value={balanceValue} />
                             )}
                             <SuffixWrapper>{` XTM`}</SuffixWrapper>
                         </BalanceTextWrapper>
