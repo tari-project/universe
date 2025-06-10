@@ -127,7 +127,10 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'set_tari_address', payload: { address: string }): Promise<void>;
     function invoke(param: 'confirm_exchange_address', payload: { address: string }): Promise<void>;
     function invoke(param: 'get_app_in_memory_config'): Promise<ConfigBackendInMemory>;
-    function invoke(param: 'select_exchange_miner', payload: { exchange_miner: ExchangeMiner }): Promise<void>;
+    function invoke(
+        param: 'select_exchange_miner',
+        payload: { exchange_miner: ExchangeMiner; mining_address: string }
+    ): Promise<void>;
     function invoke(param: 'is_universal_miner'): Promise<boolean>;
     function invoke(param: 'launch_builtin_tapplet'): Promise<ActiveTapplet>;
     function invoke(param: 'get_tari_wallet_address'): Promise<string>;

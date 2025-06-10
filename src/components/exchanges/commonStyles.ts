@@ -20,7 +20,13 @@ export const OpenButton = styled.button<{ $isOpen?: boolean }>`
               `}
 `;
 
-export const ImgWrapper = styled.div<{ $isLogo?: boolean; $border?: boolean; $col1?: string; $col2?: string }>`
+export const ImgWrapper = styled.div<{
+    $isLogo?: boolean;
+    $border?: boolean;
+    $col1?: string;
+    $col2?: string;
+    $isActive?: boolean;
+}>`
     width: 40px;
     height: 40px;
     border-radius: 50%;
@@ -29,7 +35,7 @@ export const ImgWrapper = styled.div<{ $isLogo?: boolean; $border?: boolean; $co
     justify-content: center;
     color: ${({ theme }) => theme.palette.text.primary};
     box-shadow: -2px 1px 32px -7px ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.1)};
-
+    transition: transform 0.2s ease;
     img,
     svg {
         display: flex;
@@ -41,7 +47,7 @@ export const ImgWrapper = styled.div<{ $isLogo?: boolean; $border?: boolean; $co
         css`
             background-color: ${$col1 || theme.colors.greyscale[50]};
             img {
-                max-width: 26px;
+                max-width: 100%;
             }
         `}
 
@@ -50,12 +56,35 @@ export const ImgWrapper = styled.div<{ $isLogo?: boolean; $border?: boolean; $co
         css`
             border: 1px solid ${({ theme }) => theme.colorsAlpha.greyscaleAlpha[10]};
         `}
+    ${({ $isActive }) =>
+        $isActive &&
+        css`
+            transform: rotate(90deg);
+        `}
 `;
 
 export const AddressWrapper = styled(m.div)<{ $isOpen: boolean }>`
     overflow: hidden;
 `;
-
+export const CloseButton = styled.button`
+    display: flex;
+    width: 30px;
+    height: 30px;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+    background: ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.1)};
+    transition: transform 0.2s ease;
+    &:hover {
+        transform: scale(1.05);
+    }
+`;
+export const CloseWrapper = styled.div`
+    display: flex;
+    width: 100%;
+    justify-content: flex-end;
+`;
 export const AddressDisplay = styled.div`
     border-radius: 24px;
     font-weight: 900;

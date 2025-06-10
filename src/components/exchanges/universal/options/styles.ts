@@ -4,7 +4,6 @@ export const ListWrapper = styled.div`
     display: flex;
     flex-direction: column;
     gap: 12px;
-    margin-bottom: 24px;
     border-radius: 24px;
     background-color: ${({ theme }) => theme.palette.background.paper};
     width: 100%;

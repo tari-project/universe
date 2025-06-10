@@ -136,4 +136,20 @@ export function formatHashrate(hashrate: number, joinUnit = true): string {
     }
 }
 
+export const formatCountdown = (targetDate: string): string => {
+    const now = new Date().getTime();
+    const target = new Date(targetDate).getTime();
+    const difference = target - now;
+
+    if (difference <= 0) {
+        return '0D 0H 0M';
+    }
+
+    const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+
+    return `${days}D ${hours}H ${minutes}M`;
+};
+
 export { formatDecimalCompact, roundToTwoDecimals, removeDecimals, removeXTMCryptoDecimals };

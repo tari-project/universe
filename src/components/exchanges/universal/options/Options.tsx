@@ -5,13 +5,16 @@ import { Divider } from '@app/components/elements/Divider.tsx';
 
 export const XCOptions = () => {
     const exchangeMiners = useExchangeStore((s) => s.exchangeMiners);
-    const listItems = exchangeMiners?.map((item) => {
-        return <XCOption key={item.id} content={item} />;
-    });
+    const currentExchangeMiner = useExchangeStore((s) => s.currentExchangeMiner);
+    const listItems = exchangeMiners
+        ?.filter((em) => em.id !== currentExchangeMiner.id)
+        ?.map((item) => {
+            return <XCOption key={item.id} content={item} />;
+        });
 
     return (
         <ListWrapper>
-            <XCOption isCurrent content={{ name: 'Tari Universe' }} />
+            <XCOption isCurrent content={currentExchangeMiner} />
             {exchangeMiners?.length ? <Divider /> : null}
             {listItems}
         </ListWrapper>

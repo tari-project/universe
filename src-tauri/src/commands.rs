@@ -209,12 +209,14 @@ pub async fn is_universal_miner(state: tauri::State<'_, UniverseAppState>) -> Re
 pub async fn select_exchange_miner(
     app_handle: tauri::AppHandle,
     exchange_miner: ExchangeMiner,
+    mining_address: String,
 ) -> Result<(), String> {
     let state = app_handle.state::<UniverseAppState>();
     let mut config = state.in_memory_config.write().await;
     let new_config = DynamicMemoryConfig::init_with_exchange_id(&exchange_miner.id);
     let new_config_cloned = new_config.clone();
     *config = new_config;
+    drop(config);
 
     EventsEmitter::emit_app_in_memory_config_changed(new_config_cloned, true).await;
     let _unused = ConfigCore::update_field(
@@ -222,6 +224,14 @@ pub async fn select_exchange_miner(
         Some(exchange_miner.id.clone()),
     )
     .await;
+
+    set_tari_address(mining_address, app_handle)
+        .await
+        .map_err(|e| {
+            error!(target: LOG_TARGET, "Error setting Tari address: {:?}", e);
+            e.to_string()
+        })?;
+
     Ok(())
 }
 

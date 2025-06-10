@@ -5,15 +5,26 @@ import { useConfigBEInMemoryStore } from '@app/store/useAppConfigStore.ts';
 import { setSeedlessUI } from '@app/store/actions/uiStoreActions.ts';
 
 interface ExchangeStoreState {
-    content?: ExchangeContent | null;
+    content?: ExchangeMinerAssets | null;
     showExchangeAddressModal: boolean | null;
     exchangeMiners?: ExchangeMinerAssets[];
+    currentExchangeMiner: ExchangeContent;
     showUniversalModal: boolean | null;
 }
+
+const universalExchangeMinerOption: ExchangeMinerAssets = {
+    id: 'universal',
+    slug: 'universal',
+    name: 'Tari Universe',
+    logo_img_url: '/assets/img/TU-logo.svg',
+    is_hidden: false,
+    exchange_id: 'universal',
+};
 
 const initialState = {
     showExchangeAddressModal: null,
     showUniversalModal: null,
+    currentExchangeMiner: universalExchangeMinerOption,
 };
 export const useExchangeStore = create<ExchangeStoreState>()(() => ({ ...initialState }));
 
@@ -33,17 +44,24 @@ export const setExchangeMiners = (exchangeMiners?: ExchangeMinerAssets[]) => {
     useExchangeStore.setState({ exchangeMiners });
 };
 
+export const setCurrentExchangeMiner = (currentExchangeMiner?: ExchangeContent) => {
+    if (!currentExchangeMiner) return;
+    useExchangeStore.setState({ currentExchangeMiner });
+};
+
 export async function fetchExchangeMiners() {
     const apiUrl = useConfigBEInMemoryStore.getState().airdropApiUrl;
     if (!apiUrl) return;
     const endpoint = `${apiUrl}/miner/exchanges`;
     try {
-        const res = await fetch(`${endpoint}?includeLogo=true`);
+        const res = await fetch(`${endpoint}`);
         if (res.ok) {
             const list = (await res.json()) as {
-                exchanges: ExchangeMinerAssets[];
+                exchanges: ExchangeContent[];
             };
-            setExchangeMiners(list.exchanges.filter((ex) => ex.name !== 'Universal'));
+            const filteredList = list.exchanges.filter((ex) => ex.name !== 'Tari Universe' || ex.is_hidden);
+            filteredList.push(universalExchangeMinerOption);
+            setExchangeMiners(filteredList);
         }
     } catch (e) {
         console.error('Could not fetch exchange miners', e);
@@ -63,6 +81,7 @@ export async function fetchExchangeContent(exchangeId: string) {
             setSeedlessUI(!isUniversalMiner);
             if (!isUniversalMiner) setShowExchangeModal(!!walletIsGenerated);
         }
+        return xcContent;
     } catch (e) {
         console.error('Could not fetch exchange content', e);
     }

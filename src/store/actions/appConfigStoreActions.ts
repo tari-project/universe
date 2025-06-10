@@ -25,7 +25,7 @@ import { GpuThreads } from '@app/types/app-status.ts';
 import { displayMode, modeType } from '../types';
 import { ConfigBackendInMemory, ConfigCore, ConfigMining, ConfigUI, ConfigWallet } from '@app/types/configs.ts';
 import { NodeType, updateNodeType as updateNodeTypeForNodeStore } from '../useNodeStore.ts';
-import { fetchExchangeContent, fetchExchangeMiners } from '../useExchangeStore.ts';
+import { fetchExchangeContent, fetchExchangeMiners, setCurrentExchangeMiner } from '../useExchangeStore.ts';
 
 import { AppInMemoryConfigChangedPayload } from '@app/types/events-payloads.ts';
 
@@ -338,8 +338,7 @@ export const fetchBackendInMemoryConfig = async () => {
     }
 };
 
-export const handleAppInMemoryConfigChanged = (payload: AppInMemoryConfigChangedPayload) => {
-    console.info('[DEBUG EXCHANGE MINER] AppInMemoryConfigChangedPayload ', payload);
+export const handleAppInMemoryConfigChanged = async (payload: AppInMemoryConfigChangedPayload) => {
     const newConfig: ConfigBackendInMemory = {
         airdropApiUrl: payload.app_in_memory_config.airdrop_api_url,
         airdropUrl: payload.app_in_memory_config.airdrop_url,
@@ -350,4 +349,7 @@ export const handleAppInMemoryConfigChanged = (payload: AppInMemoryConfigChanged
         walletConnectProjectId: payload.app_in_memory_config.wallet_connect_project_id,
     };
     useConfigBEInMemoryStore.setState(newConfig);
+
+    const exchangeContent = await fetchExchangeContent(newConfig.exchangeId);
+    setCurrentExchangeMiner(exchangeContent);
 };

@@ -309,6 +309,8 @@ impl SetupManager {
         ConfigMining::initialize(app_handle.clone()).await;
         ConfigUI::initialize(app_handle.clone()).await;
 
+        let is_on_exchange_miner_build =
+            in_memory_config.read().await.exchange_id != DEFAULT_EXCHANGE_ID;
         let universal_miner_exchange_id = ConfigCore::content()
             .await
             .universal_miner_exchange_id()
@@ -316,7 +318,9 @@ impl SetupManager {
         if let Some(exchange_id) = universal_miner_exchange_id {
             let mut config = state.in_memory_config.write().await;
             let new_config = DynamicMemoryConfig::init_with_exchange_id(&exchange_id);
+            let new_config_cloned = new_config.clone();
             *config = new_config;
+            EventsEmitter::emit_app_in_memory_config_changed(new_config_cloned, true).await;
         }
         let node_type = ConfigCore::content().await.node_type().clone();
         info!(target: LOG_TARGET, "Retrieved initial node type: {:?}", node_type);
@@ -331,8 +335,6 @@ impl SetupManager {
             .await
             .expect("Could not load or create internal wallet");
         let is_address_generated = internal_wallet.get_is_tari_address_generated();
-        let is_on_exchange_miner_build =
-            in_memory_config.read().await.exchange_id != DEFAULT_EXCHANGE_ID;
 
         if is_on_exchange_miner_build {
             EventsEmitter::emit_disabled_phases_changed(vec![SetupPhase::Wallet]).await;
