@@ -216,28 +216,22 @@ pub async fn select_exchange_miner(
     let new_config = DynamicMemoryConfig::init_with_exchange_id(&exchange_miner.id);
     let new_config_cloned = new_config.clone();
     *config = new_config;
+    drop(config);
 
-    let config_path = app_handle
-        .path()
-        .app_config_dir()
-        .expect("Could not get config dir");
-    let mut internal_wallet = InternalWallet::load_or_create(config_path.clone(), state.clone())
-        .await
-        .map_err(|e| e.to_string())?;
-    let new_address = internal_wallet
-        .set_tari_address(mining_address.clone(), config_path)
-        .await?;
-    EventsEmitter::emit_wallet_address_update(
-        new_address,
-        internal_wallet.get_is_tari_address_generated(),
-    )
-    .await;
     EventsEmitter::emit_app_in_memory_config_changed(new_config_cloned, true).await;
     let _unused = ConfigCore::update_field(
         ConfigCoreContent::set_universal_miner_exchange_id,
         Some(exchange_miner.id.clone()),
     )
     .await;
+
+    set_tari_address(mining_address, app_handle)
+        .await
+        .map_err(|e| {
+            error!(target: LOG_TARGET, "Error setting Tari address: {:?}", e);
+            e.to_string()
+        })?;
+
     Ok(())
 }
 

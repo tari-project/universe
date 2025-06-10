@@ -52,6 +52,7 @@ use log::error;
 use tari_common_types::tari_address::TariAddress;
 use tauri::{AppHandle, Emitter};
 use tokio::sync::RwLock;
+use tokio::time::sleep;
 
 const LOG_TARGET: &str = "tari::universe::events_emitter";
 const BACKEND_STATE_UPDATE: &str = "backend_state_update";
@@ -327,6 +328,10 @@ impl EventsEmitter {
                 is_tari_address_generated,
             },
         };
+
+        // TODO: Have Shannon fix it. It'll get squash merged as her anyway.
+        sleep(std::time::Duration::from_millis(100)).await;
+
         if let Err(e) = Self::get_app_handle()
             .await
             .emit(BACKEND_STATE_UPDATE, event)
