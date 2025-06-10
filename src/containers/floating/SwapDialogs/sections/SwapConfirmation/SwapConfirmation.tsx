@@ -1,15 +1,9 @@
 import { WalletButton } from '../../components/WalletButton/WalletButton';
-// import { setWalletConnectModalStep } from '@app/store/actions/walletStoreActions';
-// import { SwapStep } from '@app/store';
 import {
     SelectedChain,
     SelectedChainInfo,
     SwapAmountInput,
     SwapDetails,
-    // NewOutputAmount,
-    // NewOutputWrapper,
-    // SwapDetailsKey,
-    // SwapDetailsValue,
     SwapDirection,
     SwapDirectionWrapper,
     SwapOption,
@@ -22,20 +16,15 @@ import { getCurrencyIcon } from '../../helpers/getIcon';
 import { ArrowIcon } from '../../icons/elements/ArrowIcon';
 import { StatusList, StatusListEntry } from '@app/components/transactions/components/StatusList/StatusList';
 import TransactionModal from '@app/components/TransactionModal/TransactionModal';
-import { useAccount } from 'wagmi';
 import { useMemo } from 'react';
-import { SelectableTokenInfo } from '@app/components/transactions/wallet/Swap/useSwapData';
 import { useTranslation } from 'react-i18next';
-import { SwapDirection as SwapDirectionType } from '@app/hooks/swap/lib/types';
-import { EnabledTokensEnum } from '@app/hooks/swap/lib/constants';
+import { SelectableTokenInfo, SwapDirection as SwapDirectionType } from '@app/hooks/swap/lib/types';
 
-interface Props {
-    isOpen: boolean;
-    setIsOpen: (isOpen: boolean) => void;
-    onConfirm: () => void;
+export interface SwapConfirmationTransactionProps {
     fromTokenDisplay?: SelectableTokenInfo;
+    toTokenDisplay?: SelectableTokenInfo;
     toTokenSymbol?: string; // Added to determine the "Receive" token symbol
-    transaction: {
+    transaction?: {
         amount: string;
         targetAmount: string;
         direction: SwapDirectionType;
@@ -46,14 +35,23 @@ interface Props {
         executionPrice?: string | null; // Added
         transactionId?: string | null;
         paidTransactionFee?: string | null; // Added: Actual fee paid
+        destinationAddress?: string | null;
     };
 }
+
+interface Props extends SwapConfirmationTransactionProps {
+    isOpen: boolean;
+    setIsOpen: (isOpen: boolean) => void;
+    onConfirm: () => void;
+}
+
 export const SwapConfirmation = ({
     isOpen,
     setIsOpen,
     transaction,
     onConfirm,
     fromTokenDisplay,
+    toTokenDisplay,
     toTokenSymbol,
 }: Props) => {
     const {
@@ -66,21 +64,21 @@ export const SwapConfirmation = ({
         executionPrice,
         paidTransactionFee,
         transactionId,
-    } = transaction;
+    } = transaction || {};
+
     const { t } = useTranslation(['wallet'], { useSuspense: false });
 
-    const dataAcc = useAccount();
     const activeChainIcon = useMemo(() => {
         if (!fromTokenDisplay?.symbol) return null;
         return getCurrencyIcon({
-            symbol: fromTokenDisplay.symbol,
+            symbol: 'eth',
             width: 20,
         });
     }, [fromTokenDisplay?.symbol]);
 
     const receiveTokenSymbol = useMemo(() => {
         if (toTokenSymbol) return toTokenSymbol;
-        return direction === 'toXtm' ? EnabledTokensEnum.WXTM : (fromTokenDisplay?.symbol ?? '');
+        return direction === 'toXtm' ? 'wXTM' : (fromTokenDisplay?.symbol ?? '');
     }, [direction, fromTokenDisplay?.symbol, toTokenSymbol]);
 
     const items = useMemo(() => {
@@ -95,8 +93,9 @@ export const SwapConfirmation = ({
 
         if (networkFee) {
             baseItems.push({
-                label: t('swap.network-cost'), // Estimated Network Cost
-                value: networkFee,
+                label: t('swap.network-cost'),
+                value: `${networkFee}`,
+
                 helpText: networkFee,
             });
         }
@@ -125,6 +124,40 @@ export const SwapConfirmation = ({
         return baseItems.filter((item) => item.value !== null && item.value !== undefined);
     }, [executionPrice, networkFee, minimumReceived, priceImpact, t, transactionId, paidTransactionFee]);
 
+    const xtmOptionMarkup = useMemo(() => {
+        return (
+            <SwapOption>
+                <span> {direction === 'toXtm' ? t('swap.receive-estimated') : t('swap.sell')} </span>
+                <SwapOptionAmount>
+                    <SwapAmountInput disabled type="text" inputMode="decimal" placeholder="0.00" value={targetAmount} />
+                    <SwapOptionCurrency>
+                        {getCurrencyIcon({ symbol: receiveTokenSymbol, width: 25 })}
+                        <span>{receiveTokenSymbol}</span>
+                    </SwapOptionCurrency>
+                </SwapOptionAmount>
+                <span>{toTokenDisplay?.balance}</span>
+            </SwapOption>
+        );
+    }, [direction, receiveTokenSymbol, t, targetAmount, toTokenDisplay?.balance]);
+
+    const ethOptionMarkup = useMemo(() => {
+        return (
+            <SwapOption>
+                <span> {direction === 'toXtm' ? t('swap.sell') : t('swap.receive-estimated')} </span>
+                <SwapOptionAmount>
+                    <SwapAmountInput disabled type="text" inputMode="decimal" placeholder="0.00" value={amount} />
+                    <SwapOptionCurrency>
+                        {fromTokenDisplay?.symbol
+                            ? getCurrencyIcon({ symbol: fromTokenDisplay?.symbol, width: 25 })
+                            : null}
+                        <span>{fromTokenDisplay?.symbol}</span>
+                    </SwapOptionCurrency>
+                </SwapOptionAmount>
+                <span>{fromTokenDisplay?.balance}</span>
+            </SwapOption>
+        );
+    }, [direction, t, amount, fromTokenDisplay?.symbol, fromTokenDisplay?.balance]);
+
     return (
         <TransactionModal show={isOpen} handleClose={() => setIsOpen(false)} noHeader>
             <div>
@@ -133,66 +166,23 @@ export const SwapConfirmation = ({
                     <SelectedChain>
                         {activeChainIcon}
                         <SelectedChainInfo>
-                            <span className="address">{truncateMiddle(dataAcc.address || '', 6)}</span>
-                            <span className="chain">
-                                {fromTokenDisplay?.symbol} {dataAcc.chain?.testnet ? '(TESTNET)' : 'MAINNET'}
-                            </span>
+                            <span className="address">{truncateMiddle(transaction?.destinationAddress || '', 6)}</span>
+                            <span className="chain">{'ETH'}</span>
                         </SelectedChainInfo>
                     </SelectedChain>
                 </WalletConnectHeader>
 
-                <SwapOption>
-                    <span> {t('swap.sell')} </span>
-                    <SwapOptionAmount>
-                        <SwapAmountInput disabled type="text" inputMode="decimal" placeholder="0.00" value={amount} />
-                        <SwapOptionCurrency>
-                            {fromTokenDisplay?.symbol
-                                ? getCurrencyIcon({ symbol: fromTokenDisplay?.symbol, width: 25 })
-                                : null}
-                            <span>{fromTokenDisplay?.symbol}</span>
-                        </SwapOptionCurrency>
-                    </SwapOptionAmount>
-                    <span>{fromTokenDisplay?.balance}</span>
-                </SwapOption>
+                {direction === 'toXtm' ? ethOptionMarkup : xtmOptionMarkup}
+
                 <SwapDirection>
-                    <SwapDirectionWrapper $direction={direction}>
+                    <SwapDirectionWrapper $direction={'toXtm'}>
                         <ArrowIcon width={15} />
                     </SwapDirectionWrapper>
                 </SwapDirection>
-                <SwapOption>
-                    <span> {t('swap.receive-estimated')} </span>
-                    <SwapOptionAmount>
-                        <SwapAmountInput
-                            disabled
-                            type="text"
-                            inputMode="decimal"
-                            placeholder="0.00"
-                            value={targetAmount}
-                        />
-                        <SwapOptionCurrency>
-                            {getCurrencyIcon({ symbol: receiveTokenSymbol as EnabledTokensEnum, width: 25 })}
-                            <span>{receiveTokenSymbol}</span>
-                        </SwapOptionCurrency>
-                    </SwapOptionAmount>
-                </SwapOption>
+
+                {direction === 'toXtm' ? xtmOptionMarkup : ethOptionMarkup}
 
                 <SwapDetails>
-                    {
-                        // <NewOutputWrapper>
-                        //     <NewOutputAmount>
-                        //         <SwapDetailsKey>{t('swap.new-output')}</SwapDetailsKey>
-                        //         <SwapDetailsValue>{1.074234}</SwapDetailsValue>
-                        //     </NewOutputAmount>
-                        //     <WalletButton
-                        //         variant="success"
-                        //         onClick={() => setWalletConnectModalStep(SwapStep.WalletContents)}
-                        //         size="medium"
-                        //     >
-                        //         {t('swap.accept')}
-                        //     </WalletButton>
-                        // </NewOutputWrapper>
-                    }
-
                     <StatusList entries={items} />
                 </SwapDetails>
 

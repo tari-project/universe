@@ -1,3 +1,35 @@
+🚀 TARI UNIVERSE v1.2.8: The Feast of Light
+
+_June 9, 2025_
+
+🔄 Rolling out via auto-update
+
+Hey everyone,
+
+Introducing Tari Universe v1.2.8 "The Feast of Light." This release of Tari Universe adds an awesome new feature to the mix: now you can buy wXTM natively in Tari Universe with ETH, USDT, or USDC (!!!) 
+
+✨ What's New in "The Feast of Light"
+- 🌌 **Buy wXTM natively in Tari Universe**: Purchase wXTM directly using ETH, USDT, or USDC within the application
+- 🔄 **Bridge Status View**: We've significantly improved status updates throughout the bridging journey
+
+---
+
+🚀 TARI UNIVERSE v1.2.7: The Crown of Every Heart
+
+_June 5, 2025_
+
+Hey everyone,
+
+🎉 Tari Mainnet is nearly a month old! Tari Universe v1.2.7, also known as "The Crown of Every Heart," focuses on making the world's easiest-to-use crypto app smoother, faster, and more consistent. Our goal is for Tari Universe to become a "set it and forget" type of application. A well-oiled machine. With the release of "The Crown of Every Heart, we take a significant step together towards this goal!
+
+✨ What's New  
+- 🔡 **Improved message rendering**: Fixed garbled character issues when displaying messages from exchanges and third-party sources.  
+- 🛡️ **Enhanced transaction error handling**: Clearer error messages for failed transactions and significantly reduced false "pending sends".  
+- ⚡ **Faster balance updates**: Wallet balances now update in near real-time to reflect on-chain states.  
+- 🔍 **Clearer transaction status display**: Transactions now clearly indicate whether they're pending, mined, confirmed, or completed—no more confusion around "Completed" meaning "still in mempool".
+
+---
+
 🚀 TARI UNIVERSE v1.2.6: The Second Song of Soon
 
 _June 3, 2025_

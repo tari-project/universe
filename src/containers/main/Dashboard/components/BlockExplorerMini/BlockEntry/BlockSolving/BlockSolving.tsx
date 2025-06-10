@@ -6,8 +6,17 @@ import { MetaData, TimeAgo, BottomWrapper, RewardPillBlack } from '../BlockSolve
 import { AnimatePresence } from 'motion/react';
 import { formatReward, formatBlockNumber } from '../../utils/formatting';
 import { BlockData } from '../../useBlocks';
+import { useTranslation } from 'react-i18next';
 
 export default function BlockSolving({ id, minersSolved, timeAgo, reward, isSolved }: BlockData) {
+    const { t } = useTranslation('mining-view');
+    const title = minersSolved > 100 ? `${minersSolved} ${t('bubbles.miners')}` : t('bubbles.pool');
+    const titleMarkup = (
+        <Title>
+            <strong>{title}</strong>
+            {` ${t('bubbles.got-rewarded')}`}
+        </Title>
+    );
     return (
         <Wrapper
             layout="position"
@@ -34,9 +43,10 @@ export default function BlockSolving({ id, minersSolved, timeAgo, reward, isSolv
                             <ContentWrapper $isSolved={isSolved}>
                                 <Title>
                                     <strong>#{formatBlockNumber(id)}</strong>
-                                    {` block`}
+                                    {` `}
+                                    {t('bubbles.block')}
                                     <br />
-                                    {`is being solved`}
+                                    {t('bubbles.solving')}
                                 </Title>
                                 <BottomWrapper>
                                     {reward && (
@@ -66,18 +76,13 @@ export default function BlockSolving({ id, minersSolved, timeAgo, reward, isSolv
                                 <BlockVideo isSolved={isSolved} />
                             </VideoWrapper>
                             <ContentWrapper $isSolved={isSolved}>
-                                <Title>
-                                    <strong>
-                                        {minersSolved} {minersSolved > 1 ? 'miners' : 'pool'}
-                                    </strong>
-                                    {` got rewarded`}
-                                </Title>
+                                {titleMarkup}
                                 <MetaData>
                                     <RewardPillBlack $isSolved={isSolved}>{reward} XTM</RewardPillBlack>
                                     {timeAgo && (
                                         <TimeAgo>
                                             {timeAgo}
-                                            {` ago`}
+                                            {` ${t('bubbles.ago')}`}
                                         </TimeAgo>
                                     )}
                                 </MetaData>

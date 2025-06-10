@@ -8,40 +8,43 @@ import { StatusHero } from '@app/components/transactions/components/StatusHero/S
 import ProcessingIcon from '@app/components/transactions/send/SendReview/icons/ProcessingIcon';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots';
 import CompletedIcon from '@app/components/transactions/send/SendReview/icons/CompletedIcon';
-import { useAccount } from 'wagmi';
-import { ChainId } from '@uniswap/sdk-core';
+import { SwapStatus } from '@app/hooks/swap/lib/types';
+import { truncateMiddle } from '@app/utils';
 
-export type SwapStatus = 'processingapproval' | 'processingswap' | 'success' | 'error';
-
-interface Props {
-    status: SwapStatus;
-    isOpen: boolean;
+export interface ProccessingTransactionProps {
+    status?: SwapStatus;
     fees?: { approval: string | null; swap: string | null };
-    setIsOpen: (isOpen: boolean) => void;
     transactionId?: string | null; // Hash of the swap transaction
     txBlockHash?: `0x${string}` | null;
     errorMessage?: string | null; // Added for error status
+    fromTokenSymbol?: string;
+    fromTokenAmount?: string;
+    toTokenSymbol?: string;
+    toTokenAmount?: string;
 }
 
-const sepoliaExplorerUrl = 'https://sepolia.etherscan.io';
+interface Props extends ProccessingTransactionProps {
+    isOpen: boolean;
+    setIsOpen: (isOpen: boolean) => void;
+}
+
 const mainnetExplorerUrl = 'https://etherscan.io';
-const ExplorerUrls = {
-    [ChainId.SEPOLIA]: sepoliaExplorerUrl,
-    [ChainId.MAINNET]: mainnetExplorerUrl,
-};
 
 export const ProcessingTransaction = ({
     status,
     isOpen,
     setIsOpen,
     transactionId,
+    fromTokenSymbol,
+    fromTokenAmount,
+    toTokenSymbol,
+    toTokenAmount,
     fees,
     txBlockHash,
     errorMessage,
 }: Props) => {
     const { t } = useTranslation(['wallet'], { useSuspense: false });
-    const { chain } = useAccount();
-    const explorerUrl = ExplorerUrls[chain?.id ?? ChainId.MAINNET];
+    const explorerUrl = mainnetExplorerUrl;
 
     const statusItems: StatusListEntry[] = useMemo(() => {
         const items: StatusListEntry[] = [];
@@ -58,40 +61,18 @@ export const ProcessingTransaction = ({
         });
 
         items.push({
-            label: t('swap.total-fees-approval'),
-            value: fees?.approval ?? <LoadingDots />,
-        });
-        items.push({
             label: t('swap.total-fees-swap'),
             value: fees?.swap ?? <LoadingDots />,
         });
         items.push({
             label: t('swap.transaction-id'),
-            value: transactionId ? (
-                explorerUrl ? (
-                    <a href={`${explorerUrl}/tx/${transactionId}`} target="_blank" rel="noopener noreferrer">
-                        {transactionId}
-                    </a>
-                ) : (
-                    transactionId
-                )
-            ) : (
-                <LoadingDots />
-            ),
+            externalLink: transactionId ? `${explorerUrl}/tx/${transactionId}` : undefined,
+            value: transactionId ? truncateMiddle(transactionId, 15) : <LoadingDots />,
         });
         items.push({
             label: t('swap.block-hash'),
-            value: txBlockHash ? (
-                explorerUrl ? (
-                    <a href={`${explorerUrl}/block/${txBlockHash}`} target="_blank" rel="noopener noreferrer">
-                        {txBlockHash}
-                    </a>
-                ) : (
-                    txBlockHash
-                )
-            ) : (
-                <LoadingDots />
-            ),
+            externalLink: txBlockHash ? `${explorerUrl}/block/${txBlockHash}` : undefined,
+            value: txBlockHash ? truncateMiddle(txBlockHash, 15) : <LoadingDots />,
         });
 
         if (status === 'error' && errorMessage) {
@@ -107,11 +88,10 @@ export const ProcessingTransaction = ({
     const heroTitle = useMemo(() => {
         switch (status) {
             case 'processingapproval':
-                return t('swap.approving-spend');
             case 'processingswap':
-                return t('swap.processing-swap');
+                return 'Confirm swap in wallet';
             case 'success':
-                return t('swap.swap-successful');
+                return 'Swapped!';
             case 'error':
                 return t('swap.swap-failed');
         }
@@ -120,15 +100,14 @@ export const ProcessingTransaction = ({
     const heroMessage = useMemo(() => {
         switch (status) {
             case 'processingapproval':
-                return t('swap.please-confirm-approval-in-wallet');
             case 'processingswap':
-                return t('swap.your-transaction-is-being-processed');
+                return `Please sign and approve the transaction request in your connected wallet.`;
             case 'success':
-                return t('swap.your-tokens-have-been-swapped');
+                return `You’ve successfully swapped ${fromTokenAmount} ${fromTokenSymbol} for ${toTokenAmount} ${toTokenSymbol}`;
             case 'error':
                 return t('swap.transaction-could-not-be-completed');
         }
-    }, [status, t]);
+    }, [fromTokenAmount, fromTokenSymbol, status, t, toTokenAmount, toTokenSymbol]);
 
     const ctaMessage = useMemo(() => {
         switch (status) {
@@ -156,7 +135,7 @@ export const ProcessingTransaction = ({
 
     return (
         <TransactionModal show={isOpen} handleClose={() => setIsOpen(false)}>
-            <StatusHero icon={statusIcon} title={heroTitle}>
+            <StatusHero icon={statusIcon} title={heroTitle || ''}>
                 <p>{heroMessage}</p>
             </StatusHero>
 

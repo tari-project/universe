@@ -12,6 +12,9 @@ import ListLoadingAnimation from '@app/containers/navigation/components/Wallet/L
 import { PlaceholderItem } from './ListItem.styles.ts';
 import { LoadingText } from '@app/containers/navigation/components/Wallet/ListLoadingAnimation/styles.ts';
 import { TransactionDetails } from '@app/components/transactions/history/details/TransactionDetails.tsx';
+import { invoke } from '@tauri-apps/api/core';
+
+export type TransactionDetailsItem = TransactionInfo & { dest_address_emoji?: string };
 import { UserTransactionDTO } from '@tari-project/wxtm-bridge-backend-api';
 import {
     findByTransactionId,
@@ -26,26 +29,20 @@ const HistoryList = memo(function HistoryList() {
     const { t } = useTranslation('wallet');
     const is_transactions_history_loading = useWalletStore((s) => s.is_transactions_history_loading);
     const newestTxIdOnInitialFetch = useWalletStore((s) => s.newestTxIdOnInitialFetch);
-    const pendingTransactions = useWalletStore((s) => s.pending_transactions);
     const walletScanning = useWalletStore((s) => s.wallet_scanning);
     const hasMore = useWalletStore((s) => s.has_more_transactions);
     const transactions = useWalletStore((s) => s.transactions);
     const bridgeTransactions = useWalletStore((s) => s.bridge_transactions);
     const coldWalletAddress = useWalletStore((s) => s.cold_wallet_address);
 
-    const [detailsItem, setDetailsItem] = useState<TransactionInfo | BackendBridgeTransaction | null>(null);
+    const [detailsItem, setDetailsItem] = useState<TransactionDetailsItem | BackendBridgeTransaction | null>(null);
 
     const combinedTransactions = useMemo(
         () =>
-            (
-                [...pendingTransactions, ...transactions, ...bridgeTransactions] as (
-                    | TransactionInfo
-                    | UserTransactionDTO
-                )[]
-            ).sort((a, b) => {
+            ([...transactions, ...bridgeTransactions] as (TransactionInfo | UserTransactionDTO)[]).sort((a, b) => {
                 return getTimestampFromTransaction(b) - getTimestampFromTransaction(a);
             }),
-        [pendingTransactions, transactions, bridgeTransactions]
+        [transactions, bridgeTransactions]
     );
 
     const adjustedTransactions = useMemo(() => {
@@ -89,9 +86,36 @@ const HistoryList = memo(function HistoryList() {
 
     const handleNext = useCallback(async () => {
         if (!is_transactions_history_loading) {
-            await fetchTransactionsHistory({ continuation: true, limit: 20 });
+            await fetchTransactionsHistory({ offset: transactions.length, limit: 20 });
         }
-    }, [is_transactions_history_loading]);
+    }, [is_transactions_history_loading, transactions.length]);
+
+    const handleDetailsChange = useCallback(async (tx: TransactionInfo | null) => {
+        if (!tx) {
+            setDetailsItem(null);
+            return;
+        }
+        const dest_address_emoji = await invoke('parse_tari_address', { address: tx.dest_address })
+            .then((result) => result?.emoji_string)
+            .catch(() => undefined);
+        // Specify order here
+        setDetailsItem({
+            tx_id: tx.tx_id,
+            amount: tx.amount,
+            payment_id: tx.payment_id,
+            status: tx.status,
+            source_address: tx.source_address,
+            dest_address: tx.dest_address,
+            dest_address_emoji,
+            message: tx.message,
+            direction: tx.direction,
+            fee: tx.fee,
+            is_cancelled: tx.is_cancelled,
+            excess_sig: tx.excess_sig,
+            timestamp: tx.timestamp,
+            mined_in_block_height: tx.mined_in_block_height,
+        });
+    }, []);
 
     const listMarkup = useMemo(() => {
         const latestTxId = findFirstNonBridgeTransaction(adjustedTransactions)?.tx_id;
@@ -125,7 +149,7 @@ const HistoryList = memo(function HistoryList() {
                                     item={tx}
                                     index={i}
                                     itemIsNew={isNew}
-                                    setDetailsItem={setDetailsItem}
+                                    setDetailsItem={handleDetailsChange}
                                 />
                             );
                         }
@@ -157,7 +181,7 @@ const HistoryList = memo(function HistoryList() {
                 </ListItemWrapper>
             </InfiniteScroll>
         );
-    }, [adjustedTransactions, handleNext, hasMore, newestTxIdOnInitialFetch]);
+    }, [adjustedTransactions, handleDetailsChange, handleNext, hasMore, newestTxIdOnInitialFetch]);
 
     const baseMarkup = walletScanning.is_scanning ? (
         <ListLoadingAnimation

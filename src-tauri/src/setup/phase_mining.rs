@@ -23,48 +23,43 @@
 use crate::{
     binaries::{Binaries, BinaryResolver},
     configs::{config_core::ConfigCore, config_mining::ConfigMining, trait_config::ConfigImpl},
-    events::CriticalProblemPayload,
     events_emitter::EventsEmitter,
     p2pool_manager::P2poolConfig,
     progress_tracker_old::ProgressTracker,
     progress_trackers::{
-        progress_plans::{ProgressPlans, ProgressSetupUnknownPlan},
+        progress_plans::{ProgressPlans, ProgressSetupMiningPlan},
         progress_stepper::ProgressStepperBuilder,
         ProgressStepper,
     },
-    setup::{
-        setup_manager::{SetupFeature, SetupPhase},
-        utils::conditional_sleeper,
-    },
+    setup::setup_manager::{SetupFeature, SetupPhase},
     tasks_tracker::TasksTrackers,
     StartConfig, UniverseAppState,
 };
 use anyhow::Error;
-use log::{error, info, warn};
+use log::info;
+use tari_shutdown::ShutdownSignal;
 use tauri::{AppHandle, Manager};
-use tauri_plugin_sentry::sentry;
-use tokio::{
-    select,
-    sync::{
-        watch::{self, Sender},
-        Mutex,
-    },
+use tokio::sync::{
+    watch::{self, Receiver, Sender},
+    Mutex,
 };
+use tokio_util::task::TaskTracker;
 
 use super::{
     setup_manager::{PhaseStatus, SetupFeaturesList},
     trait_setup_phase::{SetupConfiguration, SetupPhaseImpl},
+    utils::{setup_default_adapter::SetupDefaultAdapter, timeout_watcher::TimeoutWatcher},
 };
 
 static LOG_TARGET: &str = "tari::universe::phase_hardware";
 
 #[derive(Clone, Default)]
-pub struct UnknownSetupPhaseOutput {}
+pub struct MiningSetupPhaseOutput {}
 #[derive(Clone, Default)]
-pub struct UnknownSetupPhaseSessionConfiguration {}
+pub struct MiningSetupPhaseSessionConfiguration {}
 
 #[derive(Clone, Default)]
-pub struct UnknownSetupPhaseAppConfiguration {
+pub struct MiningSetupPhaseAppConfiguration {
     p2pool_enabled: bool,
     p2pool_stats_server_port: Option<u16>,
     mmproxy_monero_nodes: Vec<String>,
@@ -72,17 +67,18 @@ pub struct UnknownSetupPhaseAppConfiguration {
     squad_override: Option<String>,
 }
 
-pub struct UnknownSetupPhase {
+pub struct MiningSetupPhase {
     app_handle: AppHandle,
     progress_stepper: Mutex<ProgressStepper>,
-    app_configuration: UnknownSetupPhaseAppConfiguration,
+    app_configuration: MiningSetupPhaseAppConfiguration,
     setup_configuration: SetupConfiguration,
     status_sender: Sender<PhaseStatus>,
     setup_features: SetupFeaturesList,
+    timeout_watcher: TimeoutWatcher,
 }
 
-impl SetupPhaseImpl for UnknownSetupPhase {
-    type AppConfiguration = UnknownSetupPhaseAppConfiguration;
+impl SetupPhaseImpl for MiningSetupPhase {
+    type AppConfiguration = MiningSetupPhaseAppConfiguration;
 
     async fn new(
         app_handle: AppHandle,
@@ -90,13 +86,18 @@ impl SetupPhaseImpl for UnknownSetupPhase {
         configuration: SetupConfiguration,
         setup_features: SetupFeaturesList,
     ) -> Self {
+        let timeout_watcher = TimeoutWatcher::new(configuration.setup_timeout_duration);
         Self {
             app_handle: app_handle.clone(),
-            progress_stepper: Mutex::new(Self::create_progress_stepper(app_handle.clone())),
+            progress_stepper: Mutex::new(Self::create_progress_stepper(
+                app_handle.clone(),
+                timeout_watcher.get_sender(),
+            )),
             app_configuration: Self::load_app_configuration().await.unwrap_or_default(),
             setup_configuration: configuration,
             status_sender,
             setup_features,
+            timeout_watcher,
         }
     }
 
@@ -104,18 +105,39 @@ impl SetupPhaseImpl for UnknownSetupPhase {
         &self.app_handle
     }
 
-    fn create_progress_stepper(app_handle: AppHandle) -> ProgressStepper {
+    async fn get_shutdown_signal(&self) -> ShutdownSignal {
+        TasksTrackers::current().core_phase.get_signal().await
+    }
+    async fn get_task_tracker(&self) -> TaskTracker {
+        TasksTrackers::current().core_phase.get_task_tracker().await
+    }
+    fn get_phase_dependencies(&self) -> Vec<Receiver<PhaseStatus>> {
+        self.setup_configuration
+            .listeners_for_required_phases_statuses
+            .clone()
+    }
+    fn get_phase_id(&self) -> SetupPhase {
+        SetupPhase::Mining
+    }
+    fn get_timeout_watcher(&self) -> &TimeoutWatcher {
+        &self.timeout_watcher
+    }
+
+    fn create_progress_stepper(
+        app_handle: AppHandle,
+        timeout_watcher_sender: Sender<u64>,
+    ) -> ProgressStepper {
         ProgressStepperBuilder::new()
-            .add_step(ProgressPlans::Unknown(
-                ProgressSetupUnknownPlan::BinariesMergeMiningProxy,
+            .add_step(ProgressPlans::Mining(
+                ProgressSetupMiningPlan::BinariesMergeMiningProxy,
             ))
-            .add_step(ProgressPlans::Unknown(
-                ProgressSetupUnknownPlan::BinariesP2pool,
+            .add_step(ProgressPlans::Mining(
+                ProgressSetupMiningPlan::BinariesP2pool,
             ))
-            .add_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::P2Pool))
-            .add_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::MMProxy))
-            .add_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::Done))
-            .build(app_handle.clone())
+            .add_step(ProgressPlans::Mining(ProgressSetupMiningPlan::P2Pool))
+            .add_step(ProgressPlans::Mining(ProgressSetupMiningPlan::MMProxy))
+            .add_step(ProgressPlans::Mining(ProgressSetupMiningPlan::Done))
+            .build(app_handle.clone(), timeout_watcher_sender)
     }
 
     async fn load_app_configuration() -> Result<Self::AppConfiguration, Error> {
@@ -125,7 +147,7 @@ impl SetupPhaseImpl for UnknownSetupPhase {
         let mmproxy_use_monero_fail = *ConfigCore::content().await.mmproxy_use_monero_failover();
         let squad_override = ConfigMining::content().await.squad_override().clone();
 
-        Ok(UnknownSetupPhaseAppConfiguration {
+        Ok(MiningSetupPhaseAppConfiguration {
             p2pool_enabled,
             mmproxy_use_monero_fail,
             mmproxy_monero_nodes,
@@ -134,61 +156,13 @@ impl SetupPhaseImpl for UnknownSetupPhase {
         })
     }
 
-    async fn setup(mut self) {
-        info!(target: LOG_TARGET, "[ {} Phase ] Starting setup", SetupPhase::Unknown);
-
-        TasksTrackers::current().unknown_phase.get_task_tracker().await.spawn(async move {
-            let mut shutdown_signal = TasksTrackers::current().unknown_phase.get_signal().await;
-            for subscriber in &mut self.setup_configuration.listeners_for_required_phases_statuses.iter_mut() {
-                select! {
-                    _ = subscriber.wait_for(|value| value.is_success()) => {}
-                    _ = shutdown_signal.wait() => {
-                        warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Unknown);
-                        return;
-                    }
-                }
-            };
-            tokio::select! {
-                result = conditional_sleeper(self.setup_configuration.setup_timeout_duration) => {
-                    if result.is_some() {
-                        error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Unknown);
-                        let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::Unknown);
-                        sentry::capture_message(&error_message, sentry::Level::Error);
-                        EventsEmitter::emit_critical_problem(CriticalProblemPayload {
-                            title: Some(SetupPhase::Unknown.get_critical_problem_title()),
-                            description: Some(SetupPhase::Unknown.get_critical_problem_description()),
-                            error_message: Some(error_message),
-                        }).await;
-                    }
-                }
-                result = self.setup_inner() => {
-                    match result {
-                        Ok(_) => {
-                            info!(target: LOG_TARGET, "[ {} Phase ] Setup completed successfully", SetupPhase::Unknown);
-                            let _unused = self.finalize_setup().await;
-                        }
-                        Err(error) => {
-                            error!(target: LOG_TARGET, "[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Unknown,error);
-                            let error_message = format!("[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Unknown,error);
-                            sentry::capture_message(&error_message, sentry::Level::Error);
-                            EventsEmitter::emit_critical_problem(CriticalProblemPayload {
-                                title: Some(SetupPhase::Unknown.get_critical_problem_title()),
-                                description: Some(SetupPhase::Unknown.get_critical_problem_description()),
-                                error_message: Some(error_message),
-                            }).await;
-                        }
-                    }
-                }
-                _ = shutdown_signal.wait() => {
-                    warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Core);
-                }
-            };
-        });
+    async fn setup(self) {
+        let _unused = SetupDefaultAdapter::setup(self).await;
     }
 
     #[allow(clippy::too_many_lines)]
     async fn setup_inner(&self) -> Result<(), Error> {
-        info!(target: LOG_TARGET, "[ {} Phase ] Starting setup inner", SetupPhase::Unknown);
+        info!(target: LOG_TARGET, "[ {} Phase ] Starting setup inner", SetupPhase::Mining);
         let mut progress_stepper = self.progress_stepper.lock().await;
         let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
         let state = self.app_handle.state::<UniverseAppState>();
@@ -207,8 +181,8 @@ impl SetupPhaseImpl for UnknownSetupPhase {
         let binary_resolver = BinaryResolver::current().read().await;
 
         progress_stepper
-            .resolve_step(ProgressPlans::Unknown(
-                ProgressSetupUnknownPlan::BinariesMergeMiningProxy,
+            .resolve_step(ProgressPlans::Mining(
+                ProgressSetupMiningPlan::BinariesMergeMiningProxy,
             ))
             .await;
 
@@ -217,8 +191,8 @@ impl SetupPhaseImpl for UnknownSetupPhase {
             .await?;
 
         progress_stepper
-            .resolve_step(ProgressPlans::Unknown(
-                ProgressSetupUnknownPlan::BinariesP2pool,
+            .resolve_step(ProgressPlans::Mining(
+                ProgressSetupMiningPlan::BinariesP2pool,
             ))
             .await;
 
@@ -229,7 +203,7 @@ impl SetupPhaseImpl for UnknownSetupPhase {
         let base_node_grpc_address = state.node_manager.get_grpc_address().await?;
         if self.app_configuration.p2pool_enabled {
             progress_stepper
-                .resolve_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::P2Pool))
+                .resolve_step(ProgressPlans::Mining(ProgressSetupMiningPlan::P2Pool))
                 .await;
 
             let p2pool_config = P2poolConfig::builder()
@@ -254,7 +228,7 @@ impl SetupPhaseImpl for UnknownSetupPhase {
                 )
                 .await?;
         } else {
-            progress_stepper.skip_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::P2Pool));
+            progress_stepper.skip_step(ProgressPlans::Mining(ProgressSetupMiningPlan::P2Pool));
         }
 
         if self
@@ -262,7 +236,7 @@ impl SetupPhaseImpl for UnknownSetupPhase {
             .is_feature_disabled(SetupFeature::CentralizedPool)
         {
             progress_stepper
-                .resolve_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::MMProxy))
+                .resolve_step(ProgressPlans::Mining(ProgressSetupMiningPlan::MMProxy))
                 .await;
 
             let use_local_p2pool_node =
@@ -289,7 +263,7 @@ impl SetupPhaseImpl for UnknownSetupPhase {
 
             state.mm_proxy_manager.wait_ready().await?;
         } else {
-            progress_stepper.skip_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::MMProxy));
+            progress_stepper.skip_step(ProgressPlans::Mining(ProgressSetupMiningPlan::MMProxy));
         }
 
         Ok(())
@@ -300,10 +274,10 @@ impl SetupPhaseImpl for UnknownSetupPhase {
         self.progress_stepper
             .lock()
             .await
-            .resolve_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::Done))
+            .resolve_step(ProgressPlans::Mining(ProgressSetupMiningPlan::Done))
             .await;
 
-        EventsEmitter::emit_unknown_phase_finished(true).await;
+        EventsEmitter::emit_mining_phase_finished(true).await;
 
         Ok(())
     }

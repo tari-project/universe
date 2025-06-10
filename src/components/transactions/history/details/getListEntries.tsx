@@ -1,5 +1,4 @@
 import i18n from 'i18next';
-import { TransactionInfo } from '@app/types/app-status.ts';
 import { formatTimeStamp, isTransactionInfo } from '@app/components/transactions/history/helpers.ts';
 import { ReactNode } from 'react';
 import { formatNumber, FormatPreset } from '@app/utils';
@@ -7,14 +6,16 @@ import { StatusListEntry } from '@app/components/transactions/components/StatusL
 import { getExplorerUrl, Network } from '@app/utils/network.ts';
 import { BackendBridgeTransaction, useMiningStore } from '@app/store';
 import { getTxStatusTitleKey, getTxTitle } from '@app/utils/getTxStatus.ts';
+import { TransactionDetailsItem } from '../HistoryList';
+import { EmojiAddressWrapper } from '@app/components/transactions/history/details/styles.ts';
 
-type TransactionKey = keyof TransactionInfo;
+type TransactionKey = keyof TransactionDetailsItem;
 type TransactionEntry = {
-    [K in keyof TransactionInfo]-?: {
+    [K in keyof TransactionDetailsItem]-?: {
         key: K;
-        value: TransactionInfo[K];
+        value: TransactionDetailsItem[K];
     };
-}[keyof TransactionInfo];
+}[keyof TransactionDetailsItem];
 
 type BridgeTransactionKey = keyof BackendBridgeTransaction;
 type BridgeTransactionEntry = {
@@ -47,7 +48,7 @@ function parseTransactionValues({
     key,
     value,
     transaction,
-}: TransactionEntry & { transaction: TransactionInfo }): Partial<StatusListEntry> & {
+}: TransactionEntry & { transaction: TransactionDetailsItem }): Partial<StatusListEntry> & {
     value: ReactNode;
 } {
     const rest: Partial<StatusListEntry> = {};
@@ -61,7 +62,7 @@ function parseTransactionValues({
         const tKey = getTxStatusTitleKey(transaction);
         return { value: i18n.t(`common:${tKey}`), valueRight: value };
     }
-    if (key === 'amount') {
+    if (key === 'amount' || key === 'fee') {
         const preset = value.toString().length > 5 ? FormatPreset.XTM_LONG : FormatPreset.XTM_DECIMALS;
         const valueMarkup = (
             <>
@@ -71,13 +72,17 @@ function parseTransactionValues({
         );
         return {
             value: valueMarkup,
-            valueRight: `${formatNumber(value, FormatPreset.DECIMAL_COMPACT)} µT`,
+            valueRight: `${formatNumber(value, FormatPreset.DECIMAL_COMPACT)} µXTM`,
         };
     }
 
     if (key === 'mined_in_block_height' && value) {
         const explorerURL = getExplorerUrl(network === Network.MainNet);
         rest['externalLink'] = `${explorerURL}/blocks/${value}`;
+    }
+
+    if (key === `dest_address_emoji`) {
+        return { value: <EmojiAddressWrapper>{value}</EmojiAddressWrapper> };
     }
 
     return { value, ...rest };
@@ -124,7 +129,7 @@ function parseBridgeTransactionValues({
     return { value, ...rest };
 }
 
-export function getListEntries(item: TransactionInfo | BackendBridgeTransaction, showHidden = false) {
+export function getListEntries(item: TransactionDetailsItem | BackendBridgeTransaction, showHidden = false) {
     const hiddenKeys = isTransactionInfo(item) ? HIDDEN_KEYS : BRIDGE_HIDDEN_KEYS;
     const entries = Object.entries(item).filter(([key]) => showHidden || !hiddenKeys.includes(key));
     return entries.map(([key, _value]) => {
