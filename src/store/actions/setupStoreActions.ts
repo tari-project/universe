@@ -6,7 +6,6 @@ import {
     fetchApplicationsVersionsWithRetry,
     initialFetchTxs,
     setWalletAddress,
-    TOWER_CANVAS_ID,
     useConfigBEInMemoryStore,
     useConfigMiningStore,
     useConfigUIStore,
@@ -20,6 +19,7 @@ import { setSeedlessUI } from '@app/store/actions/uiStoreActions.ts';
 import { fetchExchangeContent, useExchangeStore } from '@app/store/useExchangeStore.ts';
 import { SetupPhase } from '@app/types/backend-state';
 import { useTappletsStore } from '../useTappletsStore';
+import { TOWER_CANVAS_ID } from '../types/ui';
 
 export interface DisabledPhasesPayload {
     disabled_phases: SetupPhase[];
