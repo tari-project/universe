@@ -7,7 +7,7 @@ import { setSeedlessUI } from '@app/store/actions/uiStoreActions.ts';
 interface ExchangeStoreState {
     content?: ExchangeMinerAssets | null;
     showExchangeAddressModal: boolean | null;
-    exchangeMiners?: ExchangeContent[];
+    exchangeMiners?: ExchangeMinerAssets[];
     currentExchangeMiner: ExchangeContent;
     showUniversalModal: boolean | null;
 }
@@ -40,7 +40,7 @@ export const setShowUniversalModal = (showUniversalModal: boolean) => {
     useExchangeStore.setState({ showUniversalModal: showUniversalModal });
 };
 
-export const setExchangeMiners = (exchangeMiners?: ExchangeContent[]) => {
+export const setExchangeMiners = (exchangeMiners?: ExchangeMinerAssets[]) => {
     useExchangeStore.setState({ exchangeMiners });
 };
 
@@ -51,6 +51,7 @@ export const setCurrentExchangeMiner = (currentExchangeMiner?: ExchangeContent) 
 
 export async function fetchExchangeMiners() {
     const apiUrl = useConfigBEInMemoryStore.getState().airdropApiUrl;
+    if (!apiUrl) return;
     const endpoint = `${apiUrl}/miner/exchanges`;
     try {
         const res = await fetch(`${endpoint}`);

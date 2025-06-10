@@ -1,5 +1,5 @@
 import { AnimatePresence, useMotionValueEvent, useScroll } from 'motion/react';
-import { useAirdropStore, useWalletStore } from '@app/store';
+import { useWalletStore } from '@app/store';
 import { swapTransition } from '@app/components/transactions/wallet/transitions.ts';
 import { Swap } from '@app/components/transactions/wallet/Swap/Swap.tsx';
 import WalletBalance from '../components/balance/WalletBalance.tsx';
@@ -23,6 +23,7 @@ import ListActions from '@app/components/wallet/components/actions/ListActions.t
 import { TransactionDetails } from '@app/components/transactions/history/details/TransactionDetails.tsx';
 import { setDetailsItem, setIsSwapping } from '@app/store/actions/walletStoreActions.ts';
 import { useExchangeStore } from '@app/store/useExchangeStore.ts';
+import ExchangesUrls from '@app/components/transactions/wallet/Exchanges/ExchangesUrls.tsx';
 
 interface SidebarWalletProps {
     section: string;
@@ -35,22 +36,20 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
     const { scrollY } = useScroll({ container: targetRef });
     const [offset, setOffset] = useState(0);
 
-    const swapUiEnabled = useAirdropStore((s) => s.swapsEnabled);
     const isSwapping = useWalletStore((s) => s.is_swapping);
 
     useMotionValueEvent(scrollY, 'change', (latest) => {
         setOffset(latest);
     });
 
-    const showSwaps = swapUiEnabled && isSwapping;
-
     return (
         <>
             <AnimatePresence initial={false} mode="wait">
-                {showSwaps ? (
+                {isSwapping ? (
                     <SwapsWrapper key="swap" variants={swapTransition} initial="hide" exit="hide" animate="show">
                         <Wrapper $swapsPanel>
                             <Swap />
+                            <ExchangesUrls />
                         </Wrapper>
                     </SwapsWrapper>
                 ) : (
@@ -76,9 +75,7 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
                             <HistoryListWrapper ref={targetRef}>
                                 <List />
                             </HistoryListWrapper>
-                            {swapUiEnabled && (
-                                <BuyTariButton onClick={() => setIsSwapping(true)}>{'Buy Tari (wXTM)'}</BuyTariButton>
-                            )}
+                            <BuyTariButton onClick={() => setIsSwapping(true)}>{'Buy Tari (wXTM)'}</BuyTariButton>
                         </Wrapper>
                     </WalletWrapper>
                 )}
