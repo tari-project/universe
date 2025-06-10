@@ -25,7 +25,7 @@ export default function UniversalEXSelectorModal() {
 
     return (
         <Dialog open={!!showModal} onOpenChange={setShowUniversalModal}>
-            <DialogContent $disableOverflow $borderRadius="40px">
+            <DialogContent $borderRadius="40px">
                 <Wrapper>
                     <HeaderSection>
                         <Heading>{t('select.modal-title')}</Heading>
