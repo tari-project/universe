@@ -459,8 +459,8 @@ impl BinaryManager {
                 Binaries::Wallet => &TasksTrackers::current().wallet_phase,
                 Binaries::MinotariNode => &TasksTrackers::current().node_phase,
                 Binaries::Tor => &TasksTrackers::current().common,
-                Binaries::MergeMiningProxy => &TasksTrackers::current().unknown_phase,
-                Binaries::ShaP2pool => &TasksTrackers::current().unknown_phase,
+                Binaries::MergeMiningProxy => &TasksTrackers::current().mining_phase,
+                Binaries::ShaP2pool => &TasksTrackers::current().mining_phase,
                 Binaries::BridgeTapplet => &TasksTrackers::current().wallet_phase,
             };
             let binary_name = self.binary_name.clone();
