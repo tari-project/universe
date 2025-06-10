@@ -1,9 +1,19 @@
 {
+  "bubbles": {
+    "active-miners": "active miners",
+    "ago": "ago",
+    "block": "block",
+    "got-rewarded": "got rewarded",
+    "miners": "miners",
+    "pool": "Pool",
+    "solved": "solved",
+    "solving": "is being solved"
+  },
   "connection-to-node-lost": "Connexion au mineur perdue. Attends que le mineur se reconnecte ou redémarre le mineur.",
   "cpu-power": "Puissance CPU",
   "current-block-time": "Temps actuelle du bloc",
   "day": "day",
-  "estimated-day": "Est tXTM/jour",
+  "estimated-day": "Est XTM/jour",
   "estimated-earnings": "Gains estimés",
   "floor": "Étage",
   "gpu-power": "Puissance GPU",
@@ -24,6 +34,12 @@
     "step_4": "Essayez d\"utiliser un pont Tor (dans les paramètres)",
     "step_5": "Essayez de désactiver Tor (dans les paramètres)",
     "step_6": "Essayez de réinitialiser l\"application (dans les paramètres)"
+  },
+  "pool": {
+    "accepted_shares": "Parts acceptées",
+    "balance": "Total earnings",
+    "min_payout": "Paiement minimum",
+    "unpaid": "Non payé"
   },
   "you-earn-rewards-separately": "Vous gagnez des récompenses pour le minage CPU et GPU séparément",
   "you-won-block": "Vous avez gagné le <span>bloc #{{ blockHeight }}</span>",

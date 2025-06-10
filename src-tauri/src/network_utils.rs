@@ -26,20 +26,12 @@ use tari_common::configuration::Network;
 
 fn get_text_explore_blocks_url(network: Network, block_height: u64) -> String {
     match network {
-        Network::StageNet => format!(
-            "https://textexplore-stagenet.tari.com/blocks/{}?json",
-            block_height
-        ),
-        Network::NextNet => format!(
-            "https://textexplore-nextnet.tari.com/blocks/{}?json",
-            block_height
-        ),
-        Network::Esmeralda => format!(
-            "https://textexplore-esmeralda.tari.com/blocks/{}?json",
-            block_height
-        ),
+        Network::MainNet => {
+            format!("https://textexplore.tari.com/blocks/{}?json", block_height)
+        }
         _ => format!(
-            "https://textexplore-esmeralda.tari.com/blocks/{}?json",
+            "https://textexplore-{}.tari.com/blocks/{}?json",
+            network.as_key_str(),
             block_height
         ),
     }
@@ -47,10 +39,11 @@ fn get_text_explore_blocks_url(network: Network, block_height: u64) -> String {
 
 fn get_text_explore_url(network: Network) -> String {
     match network {
-        Network::StageNet => "https://textexplore-stagenet.tari.com/?json".to_string(),
-        Network::NextNet => "https://textexplore-nextnet.tari.com/?json".to_string(),
-        Network::Esmeralda => "https://textexplore-esmeralda.tari.com/?json".to_string(),
-        _ => "https://textexplore-esmeralda.tari.com/?json".to_string(),
+        Network::MainNet => "https://textexplore.tari.com/?json".to_string(),
+        _ => format!(
+            "https://textexplore-{}.tari.com/?json",
+            network.as_key_str()
+        ),
     }
 }
 
@@ -71,10 +64,11 @@ pub(crate) async fn get_best_block_from_block_scan(network: Network) -> Result<u
         best_block_height: String,
     }
 
-    let response = reqwest::get(&get_text_explore_url(network))
-        .await?
-        .json::<BlockScanResponse>()
-        .await?;
+    let response = reqwest::get(&get_text_explore_url(network)).await?;
+    if response.status() == reqwest::StatusCode::NOT_FOUND {
+        return Err(anyhow::anyhow!("Block scan API not found"));
+    }
+    let response = response.json::<BlockScanResponse>().await?;
 
     let best_block_height = response
         .tip_info
@@ -105,10 +99,14 @@ pub(crate) async fn get_block_info_from_block_scan(
         header: BlockHeader,
     }
 
-    let response = reqwest::get(&get_text_explore_blocks_url(network, *block_height))
-        .await?
-        .json::<BlockResponse>()
-        .await?;
+    let response = reqwest::get(&get_text_explore_blocks_url(network, *block_height)).await?;
+    if response.status() == reqwest::StatusCode::NOT_FOUND {
+        return Err(anyhow::anyhow!(
+            "Block {} not found on block scan",
+            block_height
+        ));
+    }
+    let response = response.json::<BlockResponse>().await?;
 
     let hash = response
         .header

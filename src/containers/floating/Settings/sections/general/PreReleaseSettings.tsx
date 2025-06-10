@@ -1,6 +1,5 @@
 import { useTranslation } from 'react-i18next';
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch';
-import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import { useCallback, useState } from 'react';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import {
@@ -11,11 +10,11 @@ import {
     SettingsGroupAction,
 } from '../../components/SettingsGroup.styles';
 import ConfirmationDialog from '@app/components/dialogs/ConfirmationDialog';
-import { setPreRelease } from '@app/store';
+import { setPreRelease, useConfigCoreStore } from '@app/store';
 
 export default function PreReleaseSettings() {
     const { t } = useTranslation('settings', { useSuspense: false });
-    const isPreRelease = useAppConfigStore((s) => s.pre_release);
+    const isPreRelease = useConfigCoreStore((s) => s.pre_release);
     const [isDialogOpen, setDialogOpen] = useState(false);
 
     const closeDialog = useCallback(() => {

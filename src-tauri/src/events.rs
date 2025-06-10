@@ -21,40 +21,185 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use serde::Serialize;
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    hash::{Hash, Hasher},
+};
 
-use crate::gpu_status_file::GpuDevice;
+use crate::{
+    app_in_memory_config::AppInMemoryConfig,
+    gpu_status_file::GpuDevice,
+    node::{node_adapter::NodeIdentity, node_manager::NodeType},
+    setup::setup_manager::SetupPhase,
+    wallet_adapter::{TransactionInfo, WalletBalance},
+};
 
-#[derive(Debug, Serialize, Clone)]
-pub struct SetupStatusEvent {
-    pub event_type: String,
+#[derive(Clone, Debug, Serialize)]
+pub enum EventType {
+    WalletAddressUpdate,
+    WalletBalanceUpdate,
+    BaseNodeUpdate,
+    GpuDevicesUpdate,
+    PoolStatusUpdate,
+    CpuMiningUpdate,
+    GpuMiningUpdate,
+    ConnectedPeersUpdate,
+    NewBlockHeight,
+    CloseSplashscreen,
+    DetectedDevices,
+    DetectedAvailableGpuEngines,
+    RestartingPhases,
+    AskForRestart,
+    ShowReleaseNotes,
+    CriticalProblem,
+    #[cfg(target_os = "windows")]
+    MissingApplications,
+    StuckOnOrphanChain,
+    NetworkStatus,
+    CorePhaseFinished,
+    WalletPhaseFinished,
+    HardwarePhaseFinished,
+    NodePhaseFinished,
+    MiningPhaseFinished,
+    InitialSetupFinished,
+    UnlockApp,
+    UnlockWallet,
+    UnlockCpuMining,
+    UnlockGpuMining,
+    LockWallet,
+    LockCpuMining,
+    LockGpuMining,
+    NodeTypeUpdate,
+    ConfigCoreLoaded,
+    ConfigUILoaded,
+    ConfigWalletLoaded,
+    ConfigMiningLoaded,
+    BackgroundNodeSyncUpdate,
+    InitWalletScanningProgress,
+    ConnectionStatus,
+    ShowStageSecurityModal,
+    MiningTime,
+    AppInMemoryConfigChanged,
+    DisabledPhasesChanged,
+    UniversalMinerInitializedExchangeIdChanged,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub enum ProgressEvents {
+    Core,
+    Wallet,
+    Hardware,
+    Node,
+    Mining,
+}
+#[derive(Clone, Debug, Serialize)]
+pub struct ProgressTrackerUpdatePayload {
+    pub phase_title: String,
     pub title: String,
-    pub title_params: Option<HashMap<String, String>>,
     pub progress: f64,
+    pub title_params: Option<HashMap<String, String>>,
+    pub is_complete: bool,
+}
+
+impl Hash for ProgressTrackerUpdatePayload {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.phase_title.hash(state);
+        self.title.hash(state);
+        self.progress.to_bits().hash(state);
+        if let Some(params) = &self.title_params {
+            params.hasher();
+        }
+        self.is_complete.hash(state);
+    }
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct NetworkStatusPayload {
+    pub download_speed: f64,
+    pub upload_speed: f64,
+    pub latency: f64,
+    pub is_too_low: bool,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct DetectedAvailableGpuEnginesPayload {
+    pub engines: Vec<String>,
+    pub selected_engine: String,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct DetectedDevicesPayload {
+    pub devices: Vec<GpuDevice>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct Event<T, E> {
+    pub event_type: E,
+    pub payload: T,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct WalletAddressUpdatePayload {
+    pub tari_address_base58: String,
+    pub tari_address_emoji: String,
+    pub is_tari_address_generated: bool,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct NewBlockHeightPayload {
+    pub block_height: u64,
+    pub coinbase_transaction: Option<TransactionInfo>,
+    pub balance: Option<WalletBalance>,
 }
 
 #[derive(Debug, Serialize, Clone)]
-pub struct ReleaseNotesHandlerEvent {
+pub struct ShowReleaseNotesPayload {
     pub release_notes: String,
     pub is_app_update_available: bool,
     pub should_show_dialog: bool,
 }
 
 #[derive(Debug, Serialize, Clone)]
-pub struct ResumingAllProcessesPayload {
-    pub title: String,
-    pub stage_progress: u32,
-    pub stage_total: u32,
-    pub is_resuming: bool,
+pub struct CriticalProblemPayload {
+    pub title: Option<String>,
+    pub description: Option<String>,
+    pub error_message: Option<String>,
 }
 
 #[derive(Debug, Serialize, Clone)]
-pub struct DetectedAvailableGpuEngines {
-    pub engines: Vec<String>,
-    pub selected_engine: String,
+pub struct NodeTypeUpdatePayload {
+    pub node_type: Option<NodeType>,
+    pub node_identity: Option<NodeIdentity>,
+    pub node_connection_address: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct InitWalletScanningProgressPayload {
+    pub scanned_height: u64,
+    pub total_height: u64,
+    pub progress: f64,
+}
+
+#[derive(Serialize, Clone, Debug)]
+pub enum ConnectionStatusPayload {
+    InProgress,
+    Succeed,
+    #[allow(dead_code)]
+    Failed,
 }
 
 #[derive(Debug, Serialize, Clone)]
-pub struct DetectedDevices {
-    pub devices: Vec<GpuDevice>,
+pub struct AppInMemoryConfigChangedPayload {
+    pub app_in_memory_config: AppInMemoryConfig,
+    pub is_universal_exchange: bool,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct DisabledPhasesPayload {
+    pub disabled_phases: Vec<SetupPhase>,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct UniversalMinerInitializedExchangeIdChangedPayload {
+    pub universal_miner_initialized_exchange_id: String,
 }

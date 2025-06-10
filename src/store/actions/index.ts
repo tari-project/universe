@@ -9,12 +9,10 @@ export {
     setUserPoints,
 } from './airdropStoreActions.ts';
 export {
-    fetchAppConfig,
     setAirdropTokensInConfig,
     setAllowTelemetry,
     setApplicationLanguage,
     setAutoUpdate,
-    setCpuMiningEnabled,
     setCustomStatsServerPort,
     setGpuMiningEnabled,
     setMineOnAppStart,
@@ -26,7 +24,6 @@ export {
     setShouldAlwaysUseSystemLanguage,
     setShouldAutoLaunch,
     setShowExperimentalSettings,
-    setTheme,
     setUseTor,
     setVisualMode,
 } from './appConfigStoreActions.ts';
@@ -43,20 +40,15 @@ export {
     setIsSettingsOpen,
     setIssueReference,
     setReleaseNotes,
-    setSetupComplete,
-    setSetupParams,
-    setSetupProgress,
-    setSetupTitle,
     updateApplicationsVersions,
 } from './appStateStoreActions.ts';
 
 export {
     changeMiningMode,
     getMaxAvailableThreads,
-    pauseMining,
     setCustomLevelsDialogOpen,
     setMiningControlsEnabled,
-    setMiningNetwork,
+    getMiningNetwork,
     startMining,
     stopMining,
     toggleDeviceExclusion,
@@ -66,5 +58,21 @@ export {
     setUITheme,
     setDialogToShow,
     setIsWebglNotSupported,
-    setAdminShow,
 } from './uiStoreActions.ts';
+
+export {
+    fetchTransactionsHistory,
+    importSeedWords,
+    initialFetchTxs,
+    refreshTransactions,
+    setWalletAddress,
+    setWalletBalance,
+} from './walletStoreActions';
+export {
+    setGpuDevices,
+    setGpuMiningStatus,
+    setCpuMiningStatus,
+    handleConnectedPeersUpdate,
+    handleBaseNodeStatusUpdate,
+    handleMiningModeChange,
+} from './miningMetricsStoreActions.ts';

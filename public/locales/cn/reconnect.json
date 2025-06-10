@@ -1,0 +1,11 @@
+{
+  "auto-reconnect": "尝试重新连接中：",
+  "connect-now": "立即连接",
+  "disconnect-severe-subtitle": "我们将继续尝试连接您到Tari网络。您也可以尝试重启您的矿机，或在Telegram上寻求支持，如果问题仍然存在。",
+  "disconnect-severe-title": "我们在连接您时遇到了问题",
+  "disconnect-subtitle": "请稍等，我们正在尝试重新连接到网络。",
+  "disconnect-title": "哦哦，您未连接到Tari网络",
+  "go-to-telegram": "在Telegram上获取帮助",
+  "reconnect-in-progress": "重新连接中...",
+  "restart-app": "重启Tari Universe"
+}

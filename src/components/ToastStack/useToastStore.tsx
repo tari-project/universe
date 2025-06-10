@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 
-export type ToastType = 'default' | 'error' | 'warning' | 'success';
+export type ToastType = 'default' | 'error' | 'warning' | 'success' | 'info';
 
 interface Toast {
     id?: number | string;

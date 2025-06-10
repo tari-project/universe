@@ -1,85 +1,100 @@
 import { create } from './create';
-import { WalletAddress, TransactionInfo, WalletBalance } from '../types/app-status.ts';
-import { invoke } from '@tauri-apps/api/core';
-import { ALREADY_FETCHING } from '@app/App/sentryIgnore.ts';
+import { TransactionInfo, WalletBalance } from '../types/app-status.ts';
+import { refreshTransactions } from './actions/walletStoreActions.ts';
 
-interface State {
+interface WalletStoreState {
     tari_address_base58: string;
     tari_address_emoji: string;
+    is_tari_address_generated: boolean | null;
     balance?: WalletBalance;
     calculated_balance?: number;
     coinbase_transactions: TransactionInfo[];
+    transactions: TransactionInfo[];
     is_reward_history_loading: boolean;
     has_more_coinbase_transactions: boolean;
+    has_more_transactions: boolean;
+    is_transactions_history_loading: boolean;
     is_wallet_importing: boolean;
+    is_swapping?: boolean;
+    wallet_scanning: {
+        is_scanning: boolean;
+        scanned_height: number;
+        total_height: number;
+        progress: number;
+    };
+    newestTxIdOnInitialFetch?: TransactionInfo['tx_id']; // only set once - needed to check against truly "new" txs for the badge
 }
 
-interface Actions {
-    setWalletAddress: (wallet_address: WalletAddress) => void;
-    setWalletBalance: (wallet_balance: WalletBalance) => void;
-    importSeedWords: (seedWords: string[]) => Promise<void>;
-    fetchCoinbaseTransactions: (continuation: boolean, limit?: number) => Promise<TransactionInfo[]>;
-    refreshCoinbaseTransactions: () => Promise<TransactionInfo[]>;
-}
-
-type WalletStoreState = State & Actions;
-
-const initialState: State = {
+const initialState: WalletStoreState = {
     tari_address_base58: '',
     tari_address_emoji: '',
+    is_tari_address_generated: null,
     coinbase_transactions: [],
+    transactions: [],
     has_more_coinbase_transactions: true,
+    has_more_transactions: true,
     is_reward_history_loading: false,
+    is_transactions_history_loading: false,
     is_wallet_importing: false,
+    wallet_scanning: {
+        is_scanning: true,
+        scanned_height: 0,
+        total_height: 0,
+        progress: 0,
+    },
 };
 
-export const useWalletStore = create<WalletStoreState>()((set, getState) => ({
+// Configuration for memory management
+const MAX_TRANSACTIONS_IN_MEMORY = 1000; // Keep only the latest 1000 transactions
+const MAX_COINBASE_TRANSACTIONS_IN_MEMORY = 500; // Keep only the latest 500 coinbase transactions
+// const MAX_PENDING_TRANSACTIONS = 100; // Keep only the latest 100 pending transactions
+
+export const useWalletStore = create<WalletStoreState>()(() => ({
     ...initialState,
-    setWalletAddress: (wallet_address) => {
-        set({ ...wallet_address });
-    },
-    setWalletBalance: (balance) => {
-        const calculated_balance =
-            balance.available_balance + balance.timelocked_balance + balance.pending_incoming_balance;
-        set({ balance, calculated_balance });
-    },
-    fetchCoinbaseTransactions: async (continuation, limit) => {
-        if (useWalletStore.getState().is_reward_history_loading) {
-            return [];
-        }
-
-        try {
-            useWalletStore.setState({ is_reward_history_loading: true });
-
-            const fetchedTxs = await invoke('get_coinbase_transactions', { continuation, limit });
-            const coinbase_transactions = continuation
-                ? [...getState().coinbase_transactions, ...fetchedTxs]
-                : fetchedTxs;
-            const has_more_coinbase_transactions = fetchedTxs.length > 0 && (!limit || fetchedTxs.length === limit);
-            set({
-                has_more_coinbase_transactions,
-                coinbase_transactions,
-            });
-            return coinbase_transactions;
-        } catch (error) {
-            if (error !== ALREADY_FETCHING.HISTORY) {
-                console.error('Could not get transaction history: ', error);
-            }
-            return [];
-        } finally {
-            useWalletStore.setState({ is_reward_history_loading: false });
-        }
-    },
-    refreshCoinbaseTransactions: async () => {
-        const limit = getState().coinbase_transactions.length;
-        return getState().fetchCoinbaseTransactions(false, Math.max(limit, 20));
-    },
-    importSeedWords: async (seedWords: string[]) => {
-        try {
-            set({ is_wallet_importing: true });
-            await invoke('import_seed_words', { seedWords });
-        } catch (error) {
-            console.error('Could not import seed words: ', error);
-        }
-    },
 }));
+
+// Helper function to prune large arrays
+const pruneTransactionArray = <T extends { timestamp?: number; tx_id?: number }>(array: T[], maxSize: number): T[] => {
+    if (array.length <= maxSize) return array;
+
+    // Sort by timestamp (newest first) or tx_id as fallback, then take the latest
+    return array
+        .sort((a, b) => {
+            const aTime = a.timestamp || a.tx_id || 0;
+            const bTime = b.timestamp || b.tx_id || 0;
+            return bTime - aTime;
+        })
+        .slice(0, maxSize);
+};
+
+export const updateWalletScanningProgress = (payload: {
+    scanned_height: number;
+    total_height: number;
+    progress: number;
+}) => {
+    const is_scanning = payload.scanned_height < payload.total_height;
+    useWalletStore.setState({
+        wallet_scanning: {
+            is_scanning,
+            ...payload,
+        },
+    });
+
+    if (!is_scanning) {
+        refreshTransactions();
+    }
+};
+
+// New function to prune transaction arrays when they get too large
+export const pruneTransactionHistory = () => {
+    useWalletStore.setState((state) => ({
+        transactions: pruneTransactionArray(state.transactions, MAX_TRANSACTIONS_IN_MEMORY),
+        coinbase_transactions: pruneTransactionArray(state.coinbase_transactions, MAX_COINBASE_TRANSACTIONS_IN_MEMORY),
+    }));
+};
+
+// Function to clear old transaction data (can be called periodically or on certain events)
+const _clearOldTransactionData = () => {
+    console.info('Clearing old transaction data to free memory');
+    pruneTransactionHistory();
+};

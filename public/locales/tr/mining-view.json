@@ -1,9 +1,19 @@
 {
+  "bubbles": {
+    "active-miners": "active miners",
+    "ago": "ago",
+    "block": "block",
+    "got-rewarded": "got rewarded",
+    "miners": "miners",
+    "pool": "Pool",
+    "solved": "solved",
+    "solving": "is being solved"
+  },
   "connection-to-node-lost": "Madenciyle bağlantı kesildi. Lütfen madencinin yeniden bağlanmasını bekleyin veya madenciyi yeniden başlatın.",
   "cpu-power": "CPU Gücü",
   "current-block-time": "Geçerli blok zamanı",
   "day": "day",
-  "estimated-day": "Est tXTM/gün",
+  "estimated-day": "Est XTM/gün",
   "estimated-earnings": "Tahmini kazançlar",
   "floor": "Zemin",
   "gpu-power": "GPU Gücü",
@@ -25,6 +35,12 @@
     "step_4": "Tor Köprüsü kullanmayı deneyin (Ayarlar\"da)",
     "step_5": "Tor\"u devre dışı bırakmayı deneyin (Ayarlar\"da)",
     "step_6": "Uygulama sıfırlamayı deneyin (Ayarlar\"da)"
+  },
+  "pool": {
+    "accepted_shares": "Kabul Edilen Paylar",
+    "balance": "Total earnings",
+    "min_payout": "Minimum ödeme",
+    "unpaid": "Ödenmemiş"
   },
   "you-earn-rewards-separately": "CPU ve GPU madenciliği için ayrı ayrı ödüller kazanırsınız",
   "you-won-block": "<span>blok #{{ blockHeight }}</span> kazananı siz oldunuz",

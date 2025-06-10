@@ -2,16 +2,10 @@
 import { Button, ButtonGroup, CategoryLabel } from '../styles';
 
 import { useAppStateStore } from '@app/store/appStateStore';
-import {
-    setCriticalError,
-    setCriticalProblem,
-    setDialogToShow,
-    setShowExternalDependenciesDialog,
-} from '@app/store/actions';
+import { setCriticalProblem, setDialogToShow, setShowExternalDependenciesDialog } from '@app/store/actions';
 import { useUIStore } from '@app/store/useUIStore.ts';
 
 export function DialogsGroup() {
-    const criticalError = useAppStateStore((s) => s.criticalError);
     const criticalProblem = useAppStateStore((s) => s.criticalProblem);
     const dialogToShow = useUIStore((s) => s.dialogToShow);
     const showExternalDependenciesDialog = useUIStore((s) => s.showExternalDependenciesDialog);
@@ -20,12 +14,6 @@ export function DialogsGroup() {
         <>
             <CategoryLabel>Dialogs</CategoryLabel>
             <ButtonGroup>
-                <Button
-                    onClick={() => setCriticalError(criticalError ? undefined : 'This is a critical error')}
-                    $isActive={!!criticalError}
-                >
-                    Critical Error
-                </Button>
                 <Button
                     onClick={() =>
                         setCriticalProblem(
@@ -41,31 +29,18 @@ export function DialogsGroup() {
                 >
                     Critical Problem
                 </Button>
+
                 <Button
                     onClick={() => setDialogToShow(dialogToShow === 'autoUpdate' ? undefined : 'autoUpdate')}
                     $isActive={dialogToShow === 'autoUpdate'}
                 >
-                    Auto Update Dialog
+                    Auto Update
                 </Button>
                 <Button
                     onClick={() => setShowExternalDependenciesDialog(!showExternalDependenciesDialog)}
                     $isActive={showExternalDependenciesDialog}
                 >
-                    External Dependencies
-                </Button>
-                <Button
-                    onClick={() => setDialogToShow(dialogToShow === 'releaseNotes' ? undefined : 'releaseNotes')}
-                    $isActive={dialogToShow === 'releaseNotes'}
-                >
-                    Release Notes
-                </Button>
-                <Button
-                    onClick={() =>
-                        setDialogToShow(dialogToShow === 'ludicrousConfirmation' ? undefined : 'ludicrousConfirmation')
-                    }
-                    $isActive={dialogToShow === 'ludicrousConfirmation'}
-                >
-                    Ludicrous Confirmation
+                    External Deps
                 </Button>
             </ButtonGroup>
         </>

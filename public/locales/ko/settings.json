@@ -5,7 +5,6 @@
   "application-info": "애플리케이션 정보",
   "applyInviteCode": "초대 코드 적용",
   "cancel": "취소",
-  "gpu-engine": "GPU 엔진",
   "change-language": "언어",
   "confirm": "확인",
   "confirm-action": "작업 확인",
@@ -30,6 +29,7 @@
   "debug-info": "디버그",
   "disconnect": "에어드롭 연결 해제",
   "errors": {
+    "fetch-tor-bridges": "Tor 브리지를 가져오지 못했습니다. 인터넷 연결을 확인하거나 나중에 다시 시도하세요.",
     "invalid-bridge": "브리지 구성 설정이 잘못되었습니다",
     "invalid-control-port": "제어 포트 구성 설정이 잘못되었습니다"
   },
@@ -39,6 +39,7 @@
   "gpu-device-enabled": "GPU 채굴 장치",
   "gpu-device-enabled-description": "특정 GPU 장치를 활성화하거나 비활성화합니다.",
   "gpu-device-no-found": "⚠️ GPU 장치를 찾을 수 없습니다",
+  "gpu-engine": "GPU 엔진",
   "gpu-mining-enabled": "GPU 채굴",
   "gpu-unavailable": "⚠️ 하드웨어가 지원하지 않아 GPU가 비활성화되었습니다",
   "hardware-status": "하드웨어 상태",
@@ -56,6 +57,8 @@
   "inviteCode": "초대 코드",
   "is-on-orphan-chain": "당신은 포크에 연결된 것 같으며, 메인 체인이 아닙니다. 당신이 획득한 블록은 무효화될 수 있습니다.",
   "last-block-added-time": "마지막 블록 체인 추가 시간",
+  "license-agreement": "라이선스 계약",
+  "local-node-sync-progress": "로컬 노드 동기화 진행",
   "logs": "로그",
   "low-hash-rate-warning": "해시레이트가 매우 낮습니다. Tari Universe 외의 모든 앱을 닫아보세요",
   "mine-on-app-start": {
@@ -64,6 +67,7 @@
   },
   "miners": "마이너",
   "mining-toggle-warning": "변경 사항이 적용되는 동안 채굴이 일시 중지됩니다.",
+  "minotari-node": "Minotari 노드",
   "monero-address": {
     "placeholder": "모네로 주소 입력",
     "title": "모네로 주소"
@@ -71,6 +75,12 @@
   "monero-seed-words": "모네로 시드 단어",
   "network": "네트워크",
   "no-entry-guard": "엔트리 가드가 연결되지 않았습니다!",
+  "node-configuration": "노드 구성",
+  "node-configuration-description": "로컬이 준비될 때까지 원격, 로컬 또는 둘 다 연결",
+  "node-connection-address": "연결 주소",
+  "node-public-address": "공개 주소",
+  "node-public-key": "공개 키",
+  "node-type": "유형",
   "not-connected-to-tari": "Tari 네트워크에 연결되지 않음",
   "open-logs-directory": "로그 디렉토리 열기",
   "p2pool-chain-tip": "체인의 끝",
@@ -81,7 +91,7 @@
   "paper-wallet": {
     "connect-wallet-to-phone": "Tari Universe 지갑을 휴대폰에 연결하세요",
     "do-not-share-this-code": "이 코드를 누구와도 공유하지 마세요",
-    "link-tari-aurora": "Tari Aurora 연결",
+    "link-tari-aurora": "Tari Universe Mobile 연결",
     "load-qr-code": "QR 코드 불러오기",
     "passphrase": "암호 구문"
   },
@@ -94,6 +104,8 @@
   "pre-release-note": "애플리케이션의 사전 릴리스 버전으로 전환하려고 합니다. 이 버전은 흥미로운 새로운 기능과 개선 사항을 제공할 수 있으며, 아직 개선 중인 부분을 만날 가능성이 있습니다.",
   "randomx-network-hash-rate": "Randomx 네트워크 해시레이트",
   "refresh-versions": "버전 새로고침",
+  "refresh-wallet-history": "Refresh wallet history",
+  "refresh-wallet-history-description": "Scan and validate all your transactions",
   "release-notes": {
     "loading": "릴리스 노트 로딩 중...",
     "upgrade-available": "⚠️ 업그레이드 가능"
@@ -150,10 +162,12 @@
     "title": "Tari Universe 자동 업데이트"
   },
   "use-dynamic-fail-data": "동적 실패 데이터 사용",
+  "use-p2p": "P2pool 사용",
   "use-random-control-port": "랜덤 제어 포트 사용",
   "use-random-port": "임의의 포트 사용",
   "use-tor": "Tor 사용하기",
   "use-tor-bridges": "Tor 브리지 사용",
+  "user-agreement": "사용자 계약",
   "visual-mode": "시각 모드",
   "yes": "예",
   "your-feedback": "문제를 설명해 주세요",

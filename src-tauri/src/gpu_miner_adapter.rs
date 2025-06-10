@@ -20,7 +20,8 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::app_config::GpuThreads;
+use crate::configs::config_mining::GpuThreads;
+use crate::configs::config_mining::MiningMode;
 use crate::gpu_miner::EngineType;
 use crate::gpu_status_file::GpuDevice;
 use crate::port_allocator::PortAllocator;
@@ -33,7 +34,7 @@ use log::{info, warn};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
-use std::time::Instant;
+use std::time::Duration;
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
@@ -42,16 +43,13 @@ use tokio::sync::watch;
 #[cfg(target_os = "windows")]
 use crate::utils::windows_setup_utils::add_firewall_rule;
 
-use crate::{
-    app_config::MiningMode,
-    process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor},
-};
+use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 
 const LOG_TARGET: &str = "tari::universe::gpu_miner_adapter";
 
 pub enum GpuNodeSource {
-    BaseNode { port: u16 },
-    P2Pool { port: u16 },
+    BaseNode { grpc_address: String },
+    P2Pool { grpc_address: String },
 }
 
 pub(crate) struct GpuMinerAdapter {
@@ -116,6 +114,7 @@ impl GpuMinerAdapter {
 
 impl ProcessAdapter for GpuMinerAdapter {
     type StatusMonitor = GpuMinerStatusMonitor;
+    type ProcessInstance = ProcessInstance;
 
     #[allow(clippy::too_many_lines)]
     fn spawn_inner(
@@ -124,6 +123,7 @@ impl ProcessAdapter for GpuMinerAdapter {
         config_dir: PathBuf,
         log_dir: PathBuf,
         binary_version_path: PathBuf,
+        _is_first_start: bool,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         info!(target: LOG_TARGET, "Gpu miner spawn inner");
         let inner_shutdown = Shutdown::new();
@@ -137,9 +137,9 @@ impl ProcessAdapter for GpuMinerAdapter {
             return Err(anyhow!("GpuMinerAdapter node_source is not set"));
         }
 
-        let tari_node_port = match self.node_source.as_ref() {
-            Some(GpuNodeSource::BaseNode { port }) => port,
-            Some(GpuNodeSource::P2Pool { port }) => port,
+        let tari_node_address = match self.node_source.as_ref() {
+            Some(GpuNodeSource::BaseNode { grpc_address }) => grpc_address.clone(),
+            Some(GpuNodeSource::P2Pool { grpc_address }) => grpc_address.clone(),
             None => {
                 return Err(anyhow!("GpuMinerAdapter node_source is not set"));
             }
@@ -163,7 +163,7 @@ impl ProcessAdapter for GpuMinerAdapter {
             "--tari-address".to_string(),
             self.tari_address.to_base58(),
             "--tari-node-url".to_string(),
-            format!("http://127.0.0.1:{}", tari_node_port),
+            tari_node_address,
             "--config".to_string(),
             config_dir
                 .join("gpuminer")
@@ -185,7 +185,7 @@ impl ProcessAdapter for GpuMinerAdapter {
             "--log-dir".to_string(),
             log_dir.to_string_lossy().to_string(),
             "--template-timeout-secs".to_string(),
-            "1".to_string(),
+            "5".to_string(),
             "--engine".to_string(),
             self.curent_selected_engine.to_string(),
         ];
@@ -210,8 +210,17 @@ impl ProcessAdapter for GpuMinerAdapter {
             Network::NextNet => {
                 envs.insert("TARI_NETWORK".to_string(), "nextnet".to_string());
             }
-            _ => {
-                return Err(anyhow!("Unsupported network"));
+            Network::Igor => {
+                envs.insert("TARI_NETWORK".to_string(), "igor".to_string());
+            }
+            Network::MainNet => {
+                envs.insert("TARI_NETWORK".to_string(), "mainnet".to_string());
+            }
+            Network::StageNet => {
+                envs.insert("TARI_NETWORK".to_string(), "stagenet".to_string());
+            }
+            Network::LocalNet => {
+                envs.insert("TARI_NETWORK".to_string(), "localnet".to_string());
             }
         }
 
@@ -232,7 +241,6 @@ impl ProcessAdapter for GpuMinerAdapter {
             ),
             GpuMinerStatusMonitor {
                 http_api_port,
-                start_time: Instant::now(),
                 gpu_raw_status_broadcast: self.gpu_raw_status_broadcast.clone(),
             },
         ))
@@ -250,24 +258,35 @@ impl ProcessAdapter for GpuMinerAdapter {
 #[derive(Clone)]
 pub struct GpuMinerStatusMonitor {
     http_api_port: u16,
-    start_time: Instant,
     gpu_raw_status_broadcast: watch::Sender<Option<GpuMinerStatus>>,
 }
 
 #[async_trait]
 impl StatusMonitor for GpuMinerStatusMonitor {
-    async fn check_health(&self) -> HealthStatus {
-        if let Ok(status) = self.status().await {
-            let _result = self.gpu_raw_status_broadcast.send(Some(status.clone()));
-            // GPU returns 0 for first 10 seconds until it has an average
-            if status.hash_rate > 0.0 || self.start_time.elapsed().as_secs() < 11 {
-                HealthStatus::Healthy
-            } else {
-                HealthStatus::Warning
+    async fn check_health(&self, uptime: Duration, timeout_duration: Duration) -> HealthStatus {
+        let status = match tokio::time::timeout(timeout_duration, self.status()).await {
+            Ok(inner) => inner,
+            Err(_) => {
+                warn!(target: LOG_TARGET, "Timeout error in GpuMinerAdapter check_health");
+                let _ = self.gpu_raw_status_broadcast.send(None);
+                return HealthStatus::Warning;
             }
-        } else {
-            let _result = self.gpu_raw_status_broadcast.send(None);
-            HealthStatus::Unhealthy
+        };
+
+        match status {
+            Ok(status) => {
+                let _ = self.gpu_raw_status_broadcast.send(Some(status.clone()));
+                // GPU returns 0 for first 10 seconds until it has an average
+                if status.hash_rate > 0.0 || uptime.as_secs() < 11 {
+                    HealthStatus::Healthy
+                } else {
+                    HealthStatus::Warning
+                }
+            }
+            Err(_) => {
+                let _ = self.gpu_raw_status_broadcast.send(None);
+                HealthStatus::Unhealthy
+            }
         }
     }
 }

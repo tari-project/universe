@@ -5,7 +5,6 @@
   "application-info": "Anwendungsinformationen",
   "applyInviteCode": "Einladungscode anwenden",
   "cancel": "Abbrechen",
-  "gpu-engine": "GPU-Engine",
   "change-language": "Sprache",
   "confirm": "Bestätigen",
   "confirm-action": "Aktion bestätigen",
@@ -30,6 +29,7 @@
   "debug-info": "Debuggen",
   "disconnect": "Von Airdrop trennen",
   "errors": {
+    "fetch-tor-bridges": "Abrufen der Tor-Brücken fehlgeschlagen. Überprüfen Sie Ihre Internetverbindung oder versuchen Sie es später erneut.",
     "invalid-bridge": "Bridge-Konfiguration ist ungültig",
     "invalid-control-port": "Steuerport-Konfiguration ist ungültig"
   },
@@ -39,6 +39,7 @@
   "gpu-device-enabled": "GPU-Mining-Geräte",
   "gpu-device-enabled-description": "Bestimmtes GPU-Gerät aktivieren oder deaktivieren.",
   "gpu-device-no-found": "⚠️ Keine GPU-Geräte gefunden",
+  "gpu-engine": "GPU-Engine",
   "gpu-mining-enabled": "GPU-Mining",
   "gpu-unavailable": "⚠️ GPU deaktiviert, da deine Hardware dies nicht unterstützt",
   "hardware-status": "Hardware-Status",
@@ -56,6 +57,8 @@
   "inviteCode": "Einladungscode",
   "is-on-orphan-chain": "Sie scheinen mit einem Fork verbunden zu sein und nicht mit der Hauptkette. Alle gewonnenen Blöcke könnten ungültig werden.",
   "last-block-added-time": "Letzte Blockzeit, die zur Kette hinzugefügt wurde",
+  "license-agreement": "Lizenzvereinbarung",
+  "local-node-sync-progress": "Synchronisierungsfortschritt des lokalen Knotens",
   "logs": "Protokolle",
   "low-hash-rate-warning": "Ihre Hashrate ist sehr niedrig. Versuchen Sie, alle Apps außer Tari Universe zu schließen",
   "mine-on-app-start": {
@@ -64,6 +67,7 @@
   },
   "miners": "Miner",
   "mining-toggle-warning": "Mining wird pausiert, während die Änderungen wirksam werden.",
+  "minotari-node": "Minotari-Knoten",
   "monero-address": {
     "placeholder": "Gib die Monero-Adresse ein",
     "title": "Monero-Adresse"
@@ -71,6 +75,12 @@
   "monero-seed-words": "Monero Seed-Wörter",
   "network": "Netzwerk",
   "no-entry-guard": "Kein Eingangswächter verbunden!",
+  "node-configuration": "Knotenkonfiguration",
+  "node-configuration-description": "Verbinden Sie sich mit Remote, Lokal oder beidem, bis Ihr Lokal einsatzbereit ist",
+  "node-connection-address": "Verbindungsadresse",
+  "node-public-address": "Öffentliche Adresse",
+  "node-public-key": "Öffentlicher Schlüssel",
+  "node-type": "Typ",
   "not-connected-to-tari": "Nicht mit dem Tari-Netzwerk verbunden",
   "open-logs-directory": "Protokollverzeichnis öffnen",
   "p2pool-chain-tip": "Spitze der Ketten",
@@ -81,7 +91,7 @@
   "paper-wallet": {
     "connect-wallet-to-phone": "Verbinden Sie Ihr Tari-Universum-Wallet mit Ihrem Telefon",
     "do-not-share-this-code": "Teilen Sie diesen Code mit niemandem",
-    "link-tari-aurora": "Tari Aurora verknüpfen",
+    "link-tari-aurora": "Tari Universe Mobile verknüpfen",
     "load-qr-code": "QR-Code laden",
     "passphrase": "Passphrase"
   },
@@ -94,6 +104,8 @@
   "pre-release-note": "Du bist dabei, zur Vorabversion der Anwendung zu wechseln. Diese Version kann spannende neue Funktionen und Verbesserungen bieten, mit der Möglichkeit, auf Bereiche zu stoßen, die noch in der Verfeinerung sind.",
   "randomx-network-hash-rate": "Randomx-Netzwerk-Hashrate",
   "refresh-versions": "Versionen aktualisieren",
+  "refresh-wallet-history": "Refresh wallet history",
+  "refresh-wallet-history-description": "Scan and validate all your transactions",
   "release-notes": {
     "loading": "Lade Versionshinweise...",
     "upgrade-available": "⚠️ Upgrade verfügbar"
@@ -150,10 +162,12 @@
     "title": "Tari-Universum automatisch aktualisieren"
   },
   "use-dynamic-fail-data": "Dynamische Fehlerdaten verwenden",
+  "use-p2p": "P2pool verwenden",
   "use-random-control-port": "Zufälligen Steuerport verwenden",
   "use-random-port": "Zufälligen Port verwenden",
   "use-tor": "Tor verwenden",
   "use-tor-bridges": "Tor-Brücken verwenden",
+  "user-agreement": "Nutzungsvereinbarung",
   "visual-mode": "Visueller Modus",
   "yes": "Ja",
   "your-feedback": "Beschreibe dein Problem, einschließlich deines Telegram-Namens, falls vorhanden, damit wir dich mit Updates kontaktieren können.",

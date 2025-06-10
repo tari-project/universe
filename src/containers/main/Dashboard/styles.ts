@@ -1,18 +1,11 @@
-import styled from 'styled-components';
 import * as m from 'motion/react-m';
+import styled from 'styled-components';
 
-export const DashboardContentContainer = styled(m.div)`
-    display: flex;
-    align-items: center;
-    flex-direction: column;
-    justify-content: center;
+export const DashboardContentContainer = styled(m.div)<{ $tapplet?: boolean }>`
     height: 100%;
-    flex-grow: 1;
-    position: relative;
-`;
-
-export const ProgressWrapper = styled.div`
-    margin: 20px 0;
-    display: flex;
+    flex-shrink: 1;
     width: 100%;
+    will-change: width;
+    position: relative;
+    pointer-events: ${({ $tapplet }) => ($tapplet ? 'auto' : 'none')};
 `;

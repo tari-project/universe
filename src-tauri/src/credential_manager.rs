@@ -20,7 +20,8 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::internal_wallet::WalletConfig;
+use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent};
+use crate::configs::trait_config::ConfigImpl;
 use crate::APPLICATION_FOLDER_ID;
 use keyring::{Entry, Error as KeyringError};
 use log::info;
@@ -29,6 +30,7 @@ use std::fs::OpenOptions;
 use std::io::{self, Read, Write};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
+use tari_common::configuration::Network;
 use tari_utilities::SafePassword;
 use thiserror::Error;
 
@@ -56,10 +58,7 @@ pub enum CredentialError {
 
 const FALLBACK_FILE_PATH: &str = "credentials_backup.bin";
 
-const KEYCHAIN_USERNAME_LEGACY: &str = "internal_wallet";
 const KEYCHAIN_USERNAME: &str = "inner_wallet_credentials";
-
-pub static KEYRING_ACCESSED: AtomicBool = AtomicBool::new(false);
 
 pub struct CredentialManager {
     service_name: String,
@@ -70,8 +69,10 @@ pub struct CredentialManager {
 
 impl CredentialManager {
     fn new(service_name: String, username: String, fallback_dir: PathBuf) -> Self {
-        let fallback_file_exists = fallback_dir.join(FALLBACK_FILE_PATH).exists();
-        let fallback_mode = AtomicBool::new(fallback_file_exists);
+        let file_path = fallback_dir.join(FALLBACK_FILE_PATH);
+
+        let fallback_mode = AtomicBool::new(file_path.exists());
+
         CredentialManager {
             service_name,
             username,
@@ -81,49 +82,45 @@ impl CredentialManager {
     }
 
     pub fn default_with_dir(fallback_dir: PathBuf) -> Self {
+        let network_specific_name = format!(
+            "{}_{}",
+            KEYCHAIN_USERNAME,
+            Network::get_current().as_key_str()
+        );
+
         CredentialManager::new(
             APPLICATION_FOLDER_ID.into(),
-            KEYCHAIN_USERNAME.into(),
-            fallback_dir,
+            network_specific_name.clone(),
+            fallback_dir.join(Network::get_current().as_key_str()),
         )
     }
 
-    pub fn migrate(&self, wallet_config: &WalletConfig) -> Result<(), CredentialError> {
+    pub async fn migrate(&self) -> Result<(), CredentialError> {
         // Shortcut and do nothing if we already have new credential format
-        let creds = self.get_credentials();
-        if let Ok(creds) = &creds {
+        let creds = self.get_credentials().await;
+        if let Ok(creds) = creds {
             info!(target: LOG_TARGET, "Found credentials");
             if creds.tari_seed_passphrase.is_some() {
                 info!(target: LOG_TARGET, "Credentials already migrated. Skipping.");
                 return Ok(());
             }
-        }
-
-        let passphrase = if wallet_config.passphrase.is_some() {
-            info!(target: LOG_TARGET, "Found wallet passphrase");
-            wallet_config.passphrase.clone()
-        } else if let Ok(legacy) = self.load_from_legacy() {
-            info!(target: LOG_TARGET, "Found legacy keyring passphrase");
-            Some(legacy)
-        } else {
-            info!(target: LOG_TARGET, "No credentials in a new format, and no legacy passphrase found, skipping migration");
-            None
         };
 
-        if let Some(safe_password) = passphrase {
-            info!(target: LOG_TARGET, "Migrating passphrase to new credential format");
-            let credential = match creds {
-                Ok(mut cred) => {
-                    cred.tari_seed_passphrase = Some(safe_password);
-                    cred
-                }
-                Err(_) => Credential {
-                    tari_seed_passphrase: Some(safe_password),
-                    monero_seed: None,
-                },
-            };
+        info!(target: LOG_TARGET, "No credentials found, migrating credentials");
+        let parent_dir = self.fallback_dir.parent().ok_or_else(|| {
+            CredentialError::Io(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Fallback directory has no parent",
+            ))
+        })?;
+        let old_credential_manager = CredentialManager::new(
+            APPLICATION_FOLDER_ID.into(),
+            KEYCHAIN_USERNAME.into(),
+            parent_dir.to_path_buf(),
+        );
 
-            self.set_credentials(&credential)?;
+        if let Ok(credential) = old_credential_manager.get_credentials().await {
+            self.set_credentials(&credential).await?
         }
 
         Ok(())
@@ -133,10 +130,10 @@ impl CredentialManager {
         self.fallback_mode.load(Ordering::SeqCst) || self.fallback_file().exists()
     }
 
-    fn set_fallback_mode(&self) -> bool {
+    async fn set_fallback_mode(&self) -> bool {
         // Only allow shifting to fallback mode if the keyring hasn't been successfully stored to.
         // If it already contains data, the user must provide access to the existing data.
-        if !Self::has_keyring_been_accessed() {
+        if !*ConfigWallet::content().await.keyring_accessed() {
             self.fallback_mode.store(true, Ordering::SeqCst);
             return true;
         }
@@ -144,15 +141,7 @@ impl CredentialManager {
         false
     }
 
-    fn has_keyring_been_accessed() -> bool {
-        KEYRING_ACCESSED.load(Ordering::SeqCst)
-    }
-
-    fn set_keyring_accessed() {
-        KEYRING_ACCESSED.store(true, Ordering::SeqCst);
-    }
-
-    pub fn set_credentials(&self, credential: &Credential) -> Result<(), CredentialError> {
+    pub async fn set_credentials(&self, credential: &Credential) -> Result<(), CredentialError> {
         if self.use_fallback() {
             self.save_to_file(credential)?;
             return Ok(());
@@ -160,11 +149,13 @@ impl CredentialManager {
 
         match self.save_to_keyring(credential) {
             Ok(_) => {
-                Self::set_keyring_accessed();
+                let _unused =
+                    ConfigWallet::update_field(ConfigWalletContent::set_keyring_accessed, true)
+                        .await;
                 Ok(())
             }
             Err(CredentialError::Keyring(e)) => {
-                if self.set_fallback_mode() {
+                if self.set_fallback_mode().await {
                     self.save_to_file(credential)?;
                     Ok(())
                 } else {
@@ -175,18 +166,20 @@ impl CredentialManager {
         }
     }
 
-    pub fn get_credentials(&self) -> Result<Credential, CredentialError> {
+    pub async fn get_credentials(&self) -> Result<Credential, CredentialError> {
         if self.use_fallback() {
             return self.load_from_file();
         }
 
         match self.load_from_keyring() {
             Ok(credential) => {
-                Self::set_keyring_accessed();
+                let _unused =
+                    ConfigWallet::update_field(ConfigWalletContent::set_keyring_accessed, true)
+                        .await;
                 Ok(credential)
             }
             Err(CredentialError::Keyring(_)) => {
-                if self.set_fallback_mode() {
+                if self.set_fallback_mode().await {
                     self.load_from_file()
                 } else {
                     Err(CredentialError::PreviouslyUsedKeyring)
@@ -241,12 +234,6 @@ impl CredentialManager {
         file.read_to_end(&mut buffer)?;
         let credential: Credential = serde_cbor::from_slice(&buffer)?;
         Ok(credential)
-    }
-
-    fn load_from_legacy(&self) -> Result<SafePassword, CredentialError> {
-        let entry = Entry::new(&self.service_name, KEYCHAIN_USERNAME_LEGACY)?;
-        let pw = SafePassword::from(entry.get_password()?);
-        Ok(pw)
     }
 
     fn fallback_file(&self) -> PathBuf {

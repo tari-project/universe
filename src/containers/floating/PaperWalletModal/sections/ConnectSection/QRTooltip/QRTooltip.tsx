@@ -1,7 +1,7 @@
 import { AnimatePresence } from 'motion/react';
 import { Image, Menu, Text, Trigger, Wrapper } from './styles';
-import { useState } from 'react';
-import { autoUpdate, safePolygon, useFloating, useHover, useInteractions } from '@floating-ui/react';
+import { useState, type JSX } from 'react';
+import { autoUpdate, flip, offset, safePolygon, useFloating, useHover, useInteractions } from '@floating-ui/react';
 
 interface Props {
     trigger: JSX.Element;
@@ -12,9 +12,16 @@ interface Props {
 export default function QRTooltip({ trigger, text, codeImage }: Props) {
     const [expanded, setExpanded] = useState(false);
 
-    const { refs, context } = useFloating({
+    const { refs, context, floatingStyles } = useFloating({
         open: expanded,
         onOpenChange: setExpanded,
+        placement: 'bottom',
+        middleware: [
+            offset(7),
+            flip({
+                fallbackPlacements: ['top', 'bottom'],
+            }),
+        ],
 
         whileElementsMounted(referenceEl, floatingEl, update) {
             return autoUpdate(referenceEl, floatingEl, update, {
@@ -41,6 +48,7 @@ export default function QRTooltip({ trigger, text, codeImage }: Props) {
                     <Menu
                         ref={refs.setFloating}
                         {...getFloatingProps()}
+                        style={floatingStyles}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}

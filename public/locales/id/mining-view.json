@@ -1,9 +1,19 @@
 {
+  "bubbles": {
+    "active-miners": "active miners",
+    "ago": "ago",
+    "block": "block",
+    "got-rewarded": "got rewarded",
+    "miners": "miners",
+    "pool": "Pool",
+    "solved": "solved",
+    "solving": "is being solved"
+  },
   "connection-to-node-lost": "Koneksi ke penambang terputus. Harap tunggu penambang untuk menyambung kembali atau mulai ulang penambang.",
   "cpu-power": "Daya CPU",
   "current-block-time": "Waktu blok saat ini",
   "day": "day",
-  "estimated-day": "Perkiraan tXTM/hari",
+  "estimated-day": "Perkiraan XTM/hari",
   "estimated-earnings": "Perkiraan penghasilan",
   "floor": "Batas Bawah",
   "gpu-power": "Daya GPU",
@@ -25,6 +35,12 @@
     "step_4": "Coba gunakan Tor Bridge (di Pengaturan)",
     "step_5": "Coba nonaktifkan Tor (di Pengaturan)",
     "step_6": "Coba atur ulang aplikasi (di Pengaturan)"
+  },
+  "pool": {
+    "accepted_shares": "Saham Diterima",
+    "balance": "Total earnings",
+    "min_payout": "Pembayaran minimum",
+    "unpaid": "Belum Dibayar"
   },
   "you-earn-rewards-separately": "Anda mendapatkan hadiah untuk menambang CPU dan GPU secara terpisah",
   "you-won-block": "Anda adalah pemenang dari <span>blok #{{ blockHeight }}</span>",

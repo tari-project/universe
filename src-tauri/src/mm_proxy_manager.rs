@@ -22,32 +22,33 @@
 
 use std::path::PathBuf;
 use std::sync::Arc;
+use std::time::Instant;
 
 use anyhow::anyhow;
 use log::info;
 use tari_common_types::tari_address::TariAddress;
-use tari_shutdown::ShutdownSignal;
 use tokio::sync::RwLock;
 use tokio::time::sleep;
 
 use crate::mm_proxy_adapter::{MergeMiningProxyAdapter, MergeMiningProxyConfig};
 use crate::port_allocator::PortAllocator;
+use crate::process_adapter::{HealthStatus, StatusMonitor};
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
+use crate::tasks_tracker::TasksTrackers;
 
 const LOG_TARGET: &str = "tari::universe::mm_proxy_manager";
 
 #[derive(Clone)]
 pub(crate) struct StartConfig {
-    pub app_shutdown: ShutdownSignal,
     pub base_path: PathBuf,
     pub config_path: PathBuf,
     pub log_path: PathBuf,
     pub tari_address: TariAddress,
-    pub base_node_grpc_port: u16,
+    pub base_node_grpc_address: String,
     pub coinbase_extra: String,
     pub p2pool_enabled: bool,
-    pub p2pool_port: u16,
+    pub p2pool_node_grpc_address: String,
     pub monero_nodes: Vec<String>,
     pub use_monero_fail: bool,
 }
@@ -57,8 +58,8 @@ impl StartConfig {
         let cloned = self.clone();
         Self {
             p2pool_enabled: override_by.p2pool_enabled,
-            base_node_grpc_port: override_by.base_node_grpc_port,
-            p2pool_port: override_by.p2pool_grpc_port,
+            base_node_grpc_address: override_by.base_node_grpc_address,
+            p2pool_node_grpc_address: override_by.p2pool_node_grpc_address,
             coinbase_extra: override_by.coinbase_extra,
             tari_address: override_by.tari_address,
             use_monero_fail: override_by.use_monero_fail,
@@ -89,6 +90,7 @@ impl MmProxyManager {
             ProcessWatcher::new(sidecar_adapter, stats_collector.take_mm_proxy());
         process_watcher.health_timeout = std::time::Duration::from_secs(28);
         process_watcher.poll_time = std::time::Duration::from_secs(30);
+        process_watcher.expected_startup_time = std::time::Duration::from_secs(120);
 
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),
@@ -126,17 +128,23 @@ impl MmProxyManager {
     }
 
     pub async fn start(&self, config: StartConfig) -> Result<(), anyhow::Error> {
+        let shutdown_signal = TasksTrackers::current().mining_phase.get_signal().await;
+        let task_tracker = TasksTrackers::current()
+            .mining_phase
+            .get_task_tracker()
+            .await;
+
         let mut current_start_config = self.start_config.write().await;
         *current_start_config = Some(config.clone());
         let mut process_watcher = self.watcher.write().await;
 
         let new_config = MergeMiningProxyConfig {
             tari_address: config.tari_address.clone(),
-            base_node_grpc_port: config.base_node_grpc_port,
+            base_node_grpc_address: config.base_node_grpc_address.clone(),
             coinbase_extra: config.coinbase_extra.clone(),
             p2pool_enabled: config.p2pool_enabled,
             port: PortAllocator::new().assign_port_with_fallback(),
-            p2pool_grpc_port: config.p2pool_port,
+            p2pool_node_grpc_address: config.p2pool_node_grpc_address,
             monero_nodes: config.monero_nodes.clone(),
             use_monero_fail: config.use_monero_fail,
         };
@@ -144,11 +152,12 @@ impl MmProxyManager {
         info!(target: LOG_TARGET, "Starting mmproxy");
         process_watcher
             .start(
-                config.app_shutdown,
                 config.base_path,
                 config.config_path,
                 config.log_path,
                 crate::binaries::Binaries::MergeMiningProxy,
+                shutdown_signal,
+                task_tracker,
             )
             .await?;
 
@@ -156,12 +165,28 @@ impl MmProxyManager {
     }
 
     pub async fn wait_ready(&self) -> Result<(), anyhow::Error> {
-        // TODO: I'm ready when the http health service says so
-        self.watcher.read().await.wait_ready().await?;
-        // TODO: Currently the mmproxy takes a long time to connect to all the monero daemons. This should be changed to waiting for the http or grpc service to
-        // say it is online
-        sleep(std::time::Duration::from_secs(20)).await;
-        Ok(())
+        let lock = self.watcher.read().await;
+        let start_time = Instant::now();
+        for i in 0..90 {
+            if lock.is_running() {
+                if let Some(status) = lock.status_monitor.as_ref() {
+                    if status
+                        // Not sure what timeout to use
+                        .check_health(start_time.elapsed(), std::time::Duration::from_secs(10))
+                        .await
+                        == HealthStatus::Healthy
+                    {
+                        info!(target: LOG_TARGET, "MM proxy is healthy");
+                        return Ok(());
+                    } else {
+                        info!(target: LOG_TARGET, "Waiting for mmproxy to be healthy... {}/90", i + 1);
+                    }
+                }
+            }
+            info!(target: LOG_TARGET, "Waiting for mmproxy to start... {}/90", i + 1);
+            sleep(std::time::Duration::from_secs(1)).await;
+        }
+        Err(anyhow!("MM proxy did not start in 90sec"))
     }
 
     pub async fn get_monero_port(&self) -> Result<u16, anyhow::Error> {
@@ -171,18 +196,18 @@ impl MmProxyManager {
             None => Err(anyhow!("MM proxy not started")),
         }
     }
-
+    #[allow(dead_code)]
     pub async fn stop(&self) -> Result<(), anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;
         process_watcher.stop().await?;
         Ok(())
     }
-
+    #[allow(dead_code)]
     pub async fn is_running(&self) -> bool {
         let lock = self.watcher.read().await;
         lock.is_running()
     }
-
+    #[allow(dead_code)]
     pub async fn is_pid_file_exists(&self, base_path: PathBuf) -> bool {
         let lock = self.watcher.read().await;
         lock.is_pid_file_exists(base_path)

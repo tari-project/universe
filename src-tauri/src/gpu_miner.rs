@@ -21,6 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use log::{info, warn};
+use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use std::fs::read_dir;
 use std::path::Path;
@@ -29,19 +30,18 @@ use std::{path::PathBuf, sync::Arc};
 use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::ShutdownSignal;
-use tauri::{AppHandle, Emitter};
 use tokio::select;
 use tokio::sync::{watch, RwLock};
 
-use crate::app_config::GpuThreads;
 use crate::binaries::{Binaries, BinaryResolver};
-use crate::events::{DetectedAvailableGpuEngines, DetectedDevices};
+use crate::configs::config_mining::{GpuThreads, MiningMode};
+use crate::events_emitter::EventsEmitter;
 use crate::gpu_miner_adapter::GpuNodeSource;
 use crate::gpu_status_file::{GpuDevice, GpuStatusFile};
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
+use crate::tasks_tracker::TasksTrackers;
 use crate::utils::math_utils::estimate_earning;
 use crate::{
-    app_config::MiningMode,
     gpu_miner_adapter::{GpuMinerAdapter, GpuMinerStatus},
     process_watcher::ProcessWatcher,
 };
@@ -49,10 +49,11 @@ use crate::{process_utils, BaseNodeStatus};
 
 const LOG_TARGET: &str = "tari::universe::gpu_miner";
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize, Default)]
 pub enum EngineType {
-    Cuda,
+    #[default]
     OpenCL,
+    Cuda,
     Metal,
 }
 
@@ -113,7 +114,6 @@ impl GpuMiner {
     #[allow(clippy::too_many_arguments)]
     pub async fn start(
         &mut self,
-        app_shutdown: ShutdownSignal,
         tari_address: TariAddress,
         node_source: GpuNodeSource,
         base_path: PathBuf,
@@ -123,6 +123,12 @@ impl GpuMiner {
         coinbase_extra: String,
         custom_gpu_grid_size: Vec<GpuThreads>,
     ) -> Result<(), anyhow::Error> {
+        let shutdown_signal = TasksTrackers::current().hardware_phase.get_signal().await;
+        let task_tracker = TasksTrackers::current()
+            .hardware_phase
+            .get_task_tracker()
+            .await;
+
         let mut process_watcher = self.watcher.write().await;
         process_watcher.adapter.tari_address = tari_address;
         process_watcher.adapter.gpu_devices = self.gpu_devices.clone();
@@ -134,16 +140,17 @@ impl GpuMiner {
         info!(target: LOG_TARGET, "Starting xtrgpuminer");
         process_watcher
             .start(
-                app_shutdown.clone(),
                 base_path,
                 config_path,
                 log_path,
                 Binaries::GpuMiner,
+                shutdown_signal.clone(),
+                task_tracker,
             )
             .await?;
         info!(target: LOG_TARGET, "xtrgpuminer started");
 
-        self.initialize_status_updates(app_shutdown).await;
+        self.initialize_status_updates(shutdown_signal).await;
 
         Ok(())
     }
@@ -164,7 +171,7 @@ impl GpuMiner {
         let process_watcher = self.watcher.read().await;
         process_watcher.is_running()
     }
-
+    #[allow(dead_code)]
     pub async fn is_pid_file_exists(&self, base_path: PathBuf) -> bool {
         let lock = self.watcher.read().await;
         lock.is_pid_file_exists(base_path)
@@ -172,7 +179,6 @@ impl GpuMiner {
 
     pub async fn detect(
         &mut self,
-        app: AppHandle,
         config_dir: PathBuf,
         engine: EngineType,
     ) -> Result<(), anyhow::Error> {
@@ -201,11 +207,13 @@ impl GpuMiner {
         let gpuminer_bin = BinaryResolver::current()
             .read()
             .await
-            .resolve_path_to_binary_files(Binaries::GpuMiner)?;
+            .resolve_path_to_binary_files(Binaries::GpuMiner)
+            .await?;
 
         info!(target: LOG_TARGET, "Gpu miner binary file path {:?}", gpuminer_bin.clone());
         crate::download_utils::set_permissions(&gpuminer_bin).await?;
-        let child = process_utils::launch_child_process(&gpuminer_bin, &config_dir, None, &args)?;
+        let child =
+            process_utils::launch_child_process(&gpuminer_bin, &config_dir, None, &args, false)?;
         let output = child.wait_with_output().await?;
         info!(target: LOG_TARGET, "Gpu detect exit code: {:?}", output.status.code().unwrap_or_default());
 
@@ -218,25 +226,17 @@ impl GpuMiner {
         match output.status.code() {
             Some(0) => {
                 self.is_available = true;
-                app.emit(
-                    "detected-available-gpu-engines",
-                    DetectedAvailableGpuEngines {
-                        engines: self
-                            .get_available_gpu_engines(config_dir)
-                            .await?
-                            .iter()
-                            .map(|x| x.to_string())
-                            .collect(),
-                        selected_engine: self.curent_selected_engine.to_string(),
-                    },
-                )?;
-                app.emit(
-                    "detected-devices",
-                    DetectedDevices {
-                        devices: self.gpu_devices.clone(),
-                    },
-                )?;
+                EventsEmitter::emit_detected_available_gpu_engines(
+                    self.get_available_gpu_engines(config_dir)
+                        .await?
+                        .iter()
+                        .map(|x| x.to_string())
+                        .collect(),
+                    self.curent_selected_engine.to_string(),
+                )
+                .await;
 
+                EventsEmitter::emit_detected_devices(self.gpu_devices.clone()).await;
                 Ok(())
             }
             _ => {
@@ -296,7 +296,7 @@ impl GpuMiner {
             loop {
                 select! {
                     _ = gpu_raw_status_rx.changed() => {
-                        let node_status = node_status_watch_rx.borrow().clone();
+                        let node_status = *node_status_watch_rx.borrow();
                         let gpu_raw_status = gpu_raw_status_rx.borrow().clone();
 
                         let gpu_status = match gpu_raw_status {
@@ -363,7 +363,6 @@ impl GpuMiner {
         &mut self,
         engine: EngineType,
         config_dir: PathBuf,
-        app: AppHandle,
     ) -> Result<(), anyhow::Error> {
         self.curent_selected_engine = engine.clone();
         let mut process_watcher = self.watcher.write().await;
@@ -376,12 +375,7 @@ impl GpuMiner {
 
         self.gpu_devices = gpu_settings.gpu_devices;
 
-        app.emit(
-            "detected-devices",
-            DetectedDevices {
-                devices: self.gpu_devices.clone(),
-            },
-        )?;
+        EventsEmitter::emit_detected_devices(self.gpu_devices.clone()).await;
 
         Ok(())
     }

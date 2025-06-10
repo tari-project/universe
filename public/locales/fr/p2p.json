@@ -1,4 +1,7 @@
 {
+  "connected-since": "Connecté depuis",
+  "connections": "connexions",
+  "established": "Établi",
   "listener-addresses": "Adresses des auditeurs",
   "miners": "Mineurs",
   "network-info": "Infos réseau",
@@ -7,8 +10,16 @@
   "p2pool-connection-info": "Connexion",
   "p2pool-connection-info-more": "Détails de la connexion",
   "p2pool-peers": "Pairs P2pool",
-  "p2pool-stats": "Statistiques de minage en pool",
+  "p2pool-stats": "Statistiques P2pool",
+  "pending": "En attente",
   "randomx-stats": "Statistiques RandomX",
   "sha3-stats": "Statistiques SHA3",
+  "stats": {
+    "earned": "You earned",
+    "tile-heading": "Récompenses en cours",
+    "tile-loading": "Le pool se réchauffe",
+    "tooltip-copy": "Les récompenses sont « En cours » jusqu\"à ce que vous gagniez un minimum de <strong>{{amount}}</strong>. Une fois le seuil atteint, les récompenses en cours seront automatiquement envoyées à votre portefeuille Tari Universe. Cela peut prendre encore 2 heures pour qu\"elles arrivent.",
+    "tooltip-tile-heading": "Seuil de récompenses"
+  },
   "tribe": "Tribu"
 }

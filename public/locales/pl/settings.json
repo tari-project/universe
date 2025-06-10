@@ -5,7 +5,6 @@
   "application-info": "Informacje o aplikacji",
   "applyInviteCode": "Zastosuj Kod Zaproszenia",
   "cancel": "Anuluj",
-  "gpu-engine": "Silnik GPU",
   "change-language": "Zmień język",
   "confirm": "Potwierdź",
   "confirm-action": "Potwierdź działanie",
@@ -31,6 +30,7 @@
   "debug-info": "Informacje debugowania",
   "disconnect": "Odłącz od Airdrop",
   "errors": {
+    "fetch-tor-bridges": "Nie udało się pobrać mostów Tor. Sprawdź połączenie internetowe lub spróbuj ponownie później.",
     "invalid-bridge": "Konfiguracja mostu jest nieprawidłowa",
     "invalid-control-port": "Konfiguracja portu kontrolnego jest nieprawidłowa"
   },
@@ -40,6 +40,7 @@
   "gpu-device-enabled": "Urządzenia do kopania GPU",
   "gpu-device-enabled-description": "Włącz lub wyłącz konkretne urządzenie GPU.",
   "gpu-device-no-found": "⚠️ Nie znaleziono urządzeń GPU",
+  "gpu-engine": "Silnik GPU",
   "gpu-mining-enabled": "Wydobycie GPU",
   "gpu-unavailable": "⚠️ Kopanie GPU niedostępne ponieważ Twój sprzęt go nie obsługuje",
   "hardware-status": "Status sprzętu",
@@ -57,6 +58,8 @@
   "inviteCode": "Kod Zaproszenia",
   "is-on-orphan-chain": "Wygląda na to, że jesteś połączony z rozwidleniem, a nie z głównym łańcuchem. Wszelkie wygrane bloki mogą zostać unieważnione.",
   "last-block-added-time": "Czas dodania ostatniego bloku do łańcucha",
+  "license-agreement": "Umowa licencyjna",
+  "local-node-sync-progress": "Postęp synchronizacji lokalnego węzła",
   "logs": "Logi",
   "low-hash-rate-warning": "Twój hash rate jest bardzo niski. Spróbuj zamknąć wszystkie aplikacje poza Tari Universe",
   "mine-on-app-start": {
@@ -65,6 +68,7 @@
   },
   "miners": "Górnicy",
   "mining-toggle-warning": "Wydobycie zostanie wstrzymane, gdy zmiany wejdą w życie.",
+  "minotari-node": "Węzeł Minotari",
   "monero-address": {
     "placeholder": "Wprowadź address Monero",
     "title": "Address Monero"
@@ -72,6 +76,12 @@
   "monero-seed-words": "Słowa kluczowe Monero",
   "network": "Sieć",
   "no-entry-guard": "Brak połączenia z Entry Guardami!",
+  "node-configuration": "Konfiguracja węzła",
+  "node-configuration-description": "Połącz zdalnie, lokalnie lub obie opcje, dopóki Twój lokalny węzeł nie będzie gotowy do użycia",
+  "node-connection-address": "Adres połączenia",
+  "node-public-address": "Adres publiczny",
+  "node-public-key": "Klucz publiczny",
+  "node-type": "Typ",
   "not-connected-to-tari": "Nie połączono z siecią Tari",
   "not-connected-to-tari-network": null,
   "open-logs-directory": "Otwórz katalog logów",
@@ -83,7 +93,7 @@
   "paper-wallet": {
     "connect-wallet-to-phone": "Połącz swój portfel Tari Universe z telefonem",
     "do-not-share-this-code": "Nie udostępniaj tego kodu nikomu",
-    "link-tari-aurora": "Połącz z Tari Aurora",
+    "link-tari-aurora": "Połącz z Tari Universe Mobile",
     "load-qr-code": "Załaduj kod QR",
     "passphrase": "Hasło"
   },
@@ -96,6 +106,8 @@
   "pre-release-note": "Zamierzasz przełączyć się na wersję przedpremierową aplikacji. Ta wersja może oferować ekscytujące nowe funkcje i ulepszenia, z możliwością napotkania obszarów, które mogą być jeszcze w trakcie dopracowywania.",
   "randomx-network-hash-rate": "Hashrate sieci Randomx",
   "refresh-versions": "Odśwież wersje",
+  "refresh-wallet-history": "Refresh wallet history",
+  "refresh-wallet-history-description": "Scan and validate all your transactions",
   "release-notes": {
     "loading": "Ładowanie notatek o wydaniu...",
     "upgrade-available": "⚠️ Dostępna aktualizacja"
@@ -152,10 +164,12 @@
     "title": "Automatyczna aktualizacja Tari Universe"
   },
   "use-dynamic-fail-data": "Użyj dynamicznych danych o błędach",
+  "use-p2p": "Użyj P2pool",
   "use-random-control-port": "Użyj losowego portu kontrolnego",
   "use-random-port": "Użyj losowego portu",
   "use-tor": "Używaj Tor",
   "use-tor-bridges": "Użyj mostów Tor",
+  "user-agreement": "Umowa użytkownika",
   "visual-mode": "Tryb wizualny",
   "yes": "Tak",
   "your-feedback": "Proszę opisać swój problem",

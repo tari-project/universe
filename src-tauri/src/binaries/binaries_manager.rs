@@ -19,16 +19,18 @@
 // SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 use anyhow::{anyhow, Error};
+use log::{debug, error, info, warn};
 use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, path::PathBuf, str::FromStr};
 use tari_common::configuration::Network;
+use tauri_plugin_sentry::sentry;
 
 use crate::{
-    download_utils::{download_file_with_retries, extract, validate_checksum},
-    progress_tracker::ProgressTracker,
+    download_utils::{extract, validate_checksum},
+    github::request_client::RequestClient,
+    progress_tracker_old::ProgressTracker,
 };
 
 use super::{
@@ -36,13 +38,11 @@ use super::{
     Binaries,
 };
 
-use log::{debug, error, warn};
-
 pub const LOG_TARGET: &str = "tari::universe::binary_manager";
 
 #[derive(Deserialize, Serialize, Default)]
-struct BinaryVersionsJsonContent {
-    binaries: HashMap<String, String>,
+pub struct BinaryVersionsJsonContent {
+    pub binaries: HashMap<String, String>,
 }
 pub(crate) struct BinaryManager {
     binary_name: String,
@@ -65,9 +65,24 @@ impl BinaryManager {
         should_validate_checksum: bool,
     ) -> Self {
         let versions_requirements_data = match Network::get_current_or_user_setting_or_default() {
-            Network::NextNet => include_str!("../../binaries_versions_nextnet.json"),
-            Network::Esmeralda => include_str!("../../binaries_versions_esmeralda.json"),
-            _ => panic!("Unsupported network"),
+            Network::NextNet => {
+                include_str!("../../binaries-versions/binaries_versions_nextnet.json")
+            }
+            Network::Esmeralda => {
+                include_str!("../../binaries-versions/binaries_versions_testnets.json")
+            }
+            Network::StageNet => {
+                include_str!("../../binaries-versions/binaries_versions_mainnet.json")
+            }
+            Network::MainNet => {
+                include_str!("../../binaries-versions/binaries_versions_mainnet.json")
+            }
+            Network::LocalNet => {
+                include_str!("../../binaries-versions/binaries_versions_testnets.json")
+            }
+            Network::Igor => {
+                include_str!("../../binaries-versions/binaries_versions_testnets.json")
+            }
         };
         let version_requirements = BinaryManager::read_version_requirements(
             binary_name.clone(),
@@ -254,7 +269,7 @@ impl BinaryManager {
         in_progress_file_zip: PathBuf,
         progress_tracker: ProgressTracker,
     ) -> Result<(), Error> {
-        debug!(target: LOG_TARGET, "Validating checksum for version: {:?}", version);
+        info!(target: LOG_TARGET, "Validating checksum for binary: {} with version: {:?}", self.binary_name, version);
         let version_download_info = VersionDownloadInfo {
             version: version.clone(),
             assets: vec![asset.clone()],
@@ -270,7 +285,6 @@ impl BinaryManager {
             .download_and_get_checksum_path(
                 destination_dir.clone().to_path_buf(),
                 version_download_info,
-                progress_tracker.clone(),
             )
             .await
             .map_err(|e| {
@@ -282,25 +296,26 @@ impl BinaryManager {
                 )
             })?;
 
-        debug!(target: LOG_TARGET, "Validating checksum for version: {:?}", version);
-        debug!(target: LOG_TARGET, "Checksum file: {:?}", checksum_file);
-        debug!(target: LOG_TARGET, "In progress file: {:?}", in_progress_file_zip);
+        let expected_checksum = self
+            .adapter
+            .get_expected_checksum(checksum_file.clone(), &asset.name)
+            .await?;
+
         progress_tracker
             .send_last_action(format!(
                 "Validating checksum for checksum file: {:?} and in progress file: {:?}",
                 checksum_file, in_progress_file_zip
             ))
             .await;
-        match validate_checksum(
-            in_progress_file_zip.clone(),
-            checksum_file,
-            asset.name.clone(),
-        )
-        .await
-        {
-            Ok(_) => {
-                debug!(target: LOG_TARGET, "Checksum validation succeeded for version: {:?}", version);
-                Ok(())
+        match validate_checksum(in_progress_file_zip.clone(), expected_checksum).await {
+            Ok(validate_checksum) => {
+                if validate_checksum {
+                    info!(target: LOG_TARGET, "Checksum validation succeeded for binary: {} with version: {:?}", self.binary_name, version);
+                    Ok(())
+                } else {
+                    std::fs::remove_dir_all(destination_dir.clone()).ok();
+                    Err(anyhow!("Checksums mismatched!"))
+                }
             }
             Err(e) => {
                 std::fs::remove_dir_all(destination_dir.clone()).ok();
@@ -315,6 +330,7 @@ impl BinaryManager {
 
     fn check_if_version_meet_requirements(&self, version: &Version) -> bool {
         debug!(target: LOG_TARGET,"Checking if version meets requirements: {:?}", version);
+        debug!(target: LOG_TARGET,"Version requirements: {:?}", self.version_requirements);
         let is_meet_semver = self.version_requirements.matches(version);
         let did_meet_network_prerelease = self
             .network_prerelease_prefix
@@ -419,7 +435,35 @@ impl BinaryManager {
         self.online_versions_list.reverse();
     }
 
-    pub async fn download_selected_version(
+    pub async fn download_version_with_retries(
+        &self,
+        selected_version: Option<Version>,
+        progress_tracker: ProgressTracker,
+    ) -> Result<(), Error> {
+        let mut last_error_message = String::new();
+        for retry in 0..3 {
+            match self
+                .download_selected_version(selected_version.clone(), progress_tracker.clone())
+                .await
+            {
+                Ok(_) => return Ok(()),
+                Err(error) => {
+                    last_error_message = format!(
+                        "Failed to download binary: {}. Error: {:?}",
+                        self.binary_name, error
+                    );
+                    warn!(target: LOG_TARGET, "Failed to download binary: {} at retry: {}", self.binary_name, retry);
+                    continue;
+                }
+            }
+        }
+        sentry::capture_message(&last_error_message, sentry::Level::Error);
+        error!(target: LOG_TARGET, "{}", last_error_message);
+        Err(anyhow!(last_error_message))
+    }
+
+    #[allow(clippy::too_many_lines)]
+    async fn download_selected_version(
         &self,
         selected_version: Option<Version>,
         progress_tracker: ProgressTracker,
@@ -466,21 +510,53 @@ impl BinaryManager {
             .map_err(|e| anyhow!("Error creating in progress folder. Error: {:?}", e))?;
         let in_progress_file_zip = in_progress_dir.join(asset.name.clone());
 
+        let download_url = asset.clone().url;
+        let fallback_url = asset.clone().fallback_url;
+
+        info!(target: LOG_TARGET, "Downloading binary: {} from url: {}", self.binary_name, download_url);
         progress_tracker
             .send_last_action(format!(
                 "Downloading binary: {} with version: {}",
                 self.binary_name, version
             ))
             .await;
-        download_file_with_retries(
-            asset.url.as_str(),
-            &in_progress_file_zip,
-            progress_tracker.clone(),
-        )
-        .await
-        .map_err(|e| anyhow!("Error downloading version: {:?}. Error: {:?}", version, e))?;
 
-        debug!(target: LOG_TARGET, "Downloaded version: {:?}", version);
+        if RequestClient::current()
+            .download_file(
+                download_url.as_str(),
+                &in_progress_file_zip,
+                asset.source.is_mirror(),
+            )
+            .await
+            .map_err(|e| anyhow!("Error downloading version: {:?}. Error: {:?}", version, e))
+            .is_err()
+        {
+            if let Some(fallback_url) = fallback_url {
+                info!(target: LOG_TARGET, "Downloading binary: {} from fallback url: {}", self.binary_name, fallback_url);
+                progress_tracker
+                    .send_last_action(format!(
+                        "Downloading binary: {} with version: {} from fallback url",
+                        self.binary_name, version
+                    ))
+                    .await;
+
+                RequestClient::current()
+                    .download_file(
+                        fallback_url.as_str(),
+                        &in_progress_file_zip,
+                        asset.source.is_mirror(),
+                    )
+                    .await
+                    .map_err(|e| {
+                        anyhow!("Error downloading version: {:?}. Error: {:?}", version, e)
+                    })?;
+            } else {
+                return Err(anyhow!(
+                    "Error downloading version: {:?}. No fallback url provided",
+                    version
+                ));
+            }
+        }
 
         progress_tracker
             .send_last_action(format!(

@@ -4,14 +4,25 @@ import Earnings from './components/Earnings';
 import BlockTime from './components/BlockTime';
 
 import { MiningViewContainer } from './MiningView.styles.ts';
+import BlockExplorerMini from '../components/BlockExplorerMini/BlockExplorerMini.tsx';
+import { useUIStore } from '@app/store/useUIStore.ts';
 
 export default function MiningView() {
+    const blockBubblesEnabled = useUIStore((s) => s.blockBubblesEnabled);
+
     return (
         <MiningViewContainer>
-            <BlockHeightAccent />
-            <Ruler />
             <Earnings />
-            <BlockTime />
+
+            {!blockBubblesEnabled ? (
+                <>
+                    <BlockHeightAccent />
+                    <Ruler />
+                    <BlockTime />
+                </>
+            ) : (
+                <BlockExplorerMini />
+            )}
         </MiningViewContainer>
     );
 }

@@ -1,14 +1,15 @@
-// import { X } from 'lucide-react';
 import { useAirdropStore } from '@app/store/useAirdropStore';
 import {
     BannerContent,
-    IconContainer,
+    ContentContainer,
+    DateLabel,
     FlexWrapper,
-    LiveBadgePoint,
-    TimeBadge,
-    Title,
+    IconContainer,
+    JoinSpaceWrapper,
     LiveBadgeText,
     LiveBadgeWrapper,
+    LiveWrapper,
+    Title,
     TitleContainer,
 } from './XSpaceBanner.style';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -16,8 +17,12 @@ import XSpaceSvg from '@app/components/svgs/XSpaceSvg';
 import { open } from '@tauri-apps/plugin-shell';
 import { XSpaceEventType } from '@app/utils/XSpaceEventType';
 import { useTranslation } from 'react-i18next';
+import { formatDateForEvent } from './formatDate';
+import { AnimatePresence } from 'motion/react';
+import { useUIStore } from '@app/store';
 
 const XSpaceEventBanner = () => {
+    const resumeModalIsOpen = useUIStore((s) => s.resumeModalIsOpen);
     const latestXSpaceEvent = useAirdropStore((state) => state.latestXSpaceEvent);
     const [isTextTooLong, setIsTextTooLong] = useState(false);
     const [transitionPixelWidth, setTransitionPixelWidth] = useState(0);
@@ -37,10 +42,9 @@ const XSpaceEventBanner = () => {
 
             if (!latestXSpaceEvent.goingLive || latestXSpaceEvent.type !== XSpaceEventType.event) return;
             const currentDate = new Date();
-            setIsLive(
-                new Date(latestXSpaceEvent.visibilityEnd) >= currentDate &&
-                    new Date(latestXSpaceEvent.goingLive) <= currentDate
-            );
+            const visibilityDate = new Date(latestXSpaceEvent.visibilityEnd);
+            const goLiveDate = new Date(latestXSpaceEvent.goingLive);
+            setIsLive(visibilityDate >= currentDate && goLiveDate <= currentDate);
         };
 
         checkVisibility();
@@ -49,81 +53,100 @@ const XSpaceEventBanner = () => {
     }, [latestXSpaceEvent]);
 
     useEffect(() => {
-        if (titleRef.current && containerRef.current) {
-            const titleWidth = titleRef.current.scrollWidth;
-            const containerWidth = containerRef.current.clientWidth;
-            setIsTextTooLong(titleWidth > containerWidth);
+        const isTextTooLong = (latestXSpaceEvent?.text.length || 0) > 25;
+        setIsTextTooLong(isTextTooLong);
+        if (isTextTooLong && titleRef.current && containerRef.current) {
+            const titleWidth = titleRef.current.scrollWidth || 0;
             setTransitionPixelWidth(titleWidth / 2);
         }
     }, [latestXSpaceEvent]); // Re-run the effect when the event changes
 
     const displayedDate = useMemo(() => {
-        if (!latestXSpaceEvent || isLive || !latestXSpaceEvent.goingLive) {
-            return undefined;
+        try {
+            return latestXSpaceEvent?.goingLive ? formatDateForEvent(new Date(latestXSpaceEvent.goingLive)) : null;
+        } catch (error) {
+            console.error('Invalid date format for event:', error);
+            return null;
         }
-        const dateFormatted = new Date(latestXSpaceEvent.goingLive)
-            .toLocaleString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                hour: 'numeric',
-                hour12: true,
-                timeZoneName: 'short',
-            })
-            .replace(', ', ' @')
-            .toUpperCase();
-        return dateFormatted;
-    }, [latestXSpaceEvent, isLive]);
+    }, [latestXSpaceEvent]);
 
-    if (!latestXSpaceEvent || !isVisible) {
-        return undefined;
-    }
-
-    const liveBadge = (
-        <LiveBadgeWrapper>
-            <LiveBadgePoint />
-            <LiveBadgeText>{t('live').toUpperCase()}</LiveBadgeText>
-        </LiveBadgeWrapper>
-    );
-
-    const displayDate = displayedDate ? <TimeBadge>{displayedDate}</TimeBadge> : null;
     return (
-        <BannerContent
-            onClick={() => {
-                open(latestXSpaceEvent.link);
-            }}
-        >
-            <FlexWrapper>
-                <IconContainer>
-                    <XSpaceSvg></XSpaceSvg>
-                </IconContainer>
-                <TitleContainer ref={containerRef}>
-                    <Title
-                        ref={titleRef}
-                        animate={
-                            isTextTooLong
-                                ? {
-                                      x: ['0px', `-${transitionPixelWidth}px`],
-                                  }
-                                : { x: '0%' }
-                        }
-                        transition={
-                            isTextTooLong
-                                ? {
-                                      repeat: Infinity,
-                                      repeatType: 'loop',
-                                      duration: 10,
-                                      delay: 2,
-                                      ease: 'linear',
-                                  }
-                                : {}
-                        }
-                    >
-                        {`${latestXSpaceEvent.text} ${isTextTooLong ? latestXSpaceEvent.text : ''}`}
-                    </Title>
-                </TitleContainer>
-                {isLive ? liveBadge : displayDate}
-            </FlexWrapper>
-        </BannerContent>
+        <AnimatePresence>
+            {latestXSpaceEvent && isVisible && (
+                <BannerContent
+                    $shiftDown={resumeModalIsOpen}
+                    onClick={() => {
+                        open(latestXSpaceEvent.link);
+                    }}
+                >
+                    <FlexWrapper>
+                        <IconContainer>
+                            <XSpaceSvg></XSpaceSvg>
+                        </IconContainer>
+                        <ContentContainer
+                            initial={{ width: 0, opacity: 0, marginLeft: 0 }}
+                            animate={{ width: 'auto', marginLeft: 12, opacity: 1 }}
+                            exit={{ width: 0, opacity: 0 }}
+                            transition={{
+                                duration: 0.5,
+                                delay: 0.5,
+                            }}
+                        >
+                            {isLive ? (
+                                <LiveWrapper
+                                    key="live"
+                                    initial={{ opacity: 0, y: -20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: 20 }}
+                                    transition={{ duration: 0.3 }}
+                                >
+                                    <LiveBadgeWrapper>
+                                        <LiveBadgeText>{t('live').toUpperCase()}</LiveBadgeText>
+                                    </LiveBadgeWrapper>
+                                    <JoinSpaceWrapper>{t('join_the_space')}</JoinSpaceWrapper>
+                                </LiveWrapper>
+                            ) : (
+                                <DateLabel
+                                    key="date"
+                                    initial={{ opacity: 0, y: -20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: 20 }}
+                                    transition={{ duration: 0.3 }}
+                                >
+                                    {displayedDate ? displayedDate : t('coming_soon').toUpperCase()}
+                                </DateLabel>
+                            )}
+
+                            <TitleContainer ref={containerRef} $hasTextOverflow={isTextTooLong}>
+                                <Title
+                                    ref={titleRef}
+                                    animate={
+                                        isTextTooLong
+                                            ? {
+                                                  x: ['0px', `-${transitionPixelWidth}px`],
+                                              }
+                                            : { x: '0%' }
+                                    }
+                                    transition={
+                                        isTextTooLong
+                                            ? {
+                                                  repeat: Infinity,
+                                                  repeatType: 'loop',
+                                                  duration: 10,
+                                                  delay: 1,
+                                                  ease: 'linear',
+                                              }
+                                            : {}
+                                    }
+                                >
+                                    {`${latestXSpaceEvent.text} ${isTextTooLong ? latestXSpaceEvent.text : ''}`}
+                                </Title>
+                            </TitleContainer>
+                        </ContentContainer>
+                    </FlexWrapper>
+                </BannerContent>
+            )}
+        </AnimatePresence>
     );
 };
 

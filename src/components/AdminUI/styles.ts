@@ -4,7 +4,7 @@ import styled, { css } from 'styled-components';
 export const ToggleButton = styled('button')<{ $isOpen?: boolean }>`
     background: #444;
     color: white;
-    padding: 8px 20px;
+    padding: 4px 6px;
     border-radius: 4px;
     cursor: pointer;
 
@@ -35,23 +35,22 @@ export const ToggleButton = styled('button')<{ $isOpen?: boolean }>`
 
 export const MenuWrapper = styled(m.div)`
     position: fixed;
-    top: 20px;
+    top: 10px;
     right: 30px;
     z-index: 99999;
-
-    max-width: 350px;
+    max-width: 360px;
 `;
 
 export const MenuContent = styled(m.div)`
     background: rgba(0, 0, 0, 0.8);
-    padding: 20px;
+    padding: 12px 10px;
     border-radius: 8px;
 
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
 
-    min-width: 200px;
+    min-width: 260px;
     max-height: calc(100vh - 100px);
     overflow-y: auto;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
@@ -61,12 +60,13 @@ export const Button = styled('button')<{ $isActive?: boolean }>`
     background: ${({ $isActive }) => ($isActive ? '#666' : '#444')};
     color: white;
     border: 1px solid #666;
-    padding: 4px 8px;
+    padding: 4px 6px;
     border-radius: 4px;
     cursor: pointer;
     pointer-events: all;
     font-size: 11px;
     transition: background-color 0.2s ease;
+    letter-spacing: -0.02rem;
 
     &:hover {
         background: ${({ $isActive }) => ($isActive ? '#666' : '#555')};
@@ -75,7 +75,7 @@ export const Button = styled('button')<{ $isActive?: boolean }>`
 
 export const CategoryLabel = styled('div')`
     color: #999;
-    font-size: 11px;
+    font-size: 10px;
     text-transform: uppercase;
     padding-bottom: 2px;
     border-bottom: 1px solid #666;
@@ -83,9 +83,10 @@ export const CategoryLabel = styled('div')`
 
 export const ButtonGroup = styled('div')`
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 6px;
-    padding-bottom: 10px;
+    grid-auto-flow: row;
+    grid-template-columns: repeat(auto-fit, minmax(30%, 1fr));
+    gap: 4px;
+    padding-bottom: 4px;
 
     &:last-child {
         padding-bottom: 0;

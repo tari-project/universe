@@ -5,7 +5,6 @@
   "application-info": "应用信息",
   "applyInviteCode": "应用邀请代码",
   "cancel": "取消",
-  "gpu-engine": "Gpu 引擎",
   "change-language": "更改语言",
   "confirm": "确认",
   "confirm-action": "确认操作",
@@ -30,6 +29,7 @@
   "debug-info": "调试信息",
   "disconnect": "断开与空投的连接",
   "errors": {
+    "fetch-tor-bridges": "获取 Tor 桥接失败。请检查您的互联网连接或稍后再试。",
     "invalid-bridge": "桥接配置无效",
     "invalid-control-port": "控制端口配置无效"
   },
@@ -39,6 +39,7 @@
   "gpu-device-enabled": "GPU 挖矿设备",
   "gpu-device-enabled-description": "启用或禁用特定的 GPU 设备。",
   "gpu-device-no-found": "⚠️ 未找到 GPU 设备",
+  "gpu-engine": "Gpu 引擎",
   "gpu-mining-enabled": "GPU 挖矿",
   "gpu-unavailable": "⚠️ GPU已禁用，因为您的硬件不支持",
   "hardware-status": "硬件状态",
@@ -56,6 +57,8 @@
   "inviteCode": "邀请代码",
   "is-on-orphan-chain": "您似乎连接到了一个分叉，而不是主链。您赢得的任何区块可能会被作废。",
   "last-block-added-time": "最后添加到链的块时间",
+  "license-agreement": "许可协议",
+  "local-node-sync-progress": "本地节点同步进度",
   "logs": "日志",
   "low-hash-rate-warning": "您的哈希率非常低。尝试关闭除Tari Universe以外的所有应用程序",
   "mine-on-app-start": {
@@ -64,6 +67,7 @@
   },
   "miners": "矿工",
   "mining-toggle-warning": "更改生效时，挖矿将暂停。",
+  "minotari-node": "Minotari 节点",
   "monero-address": {
     "placeholder": "输入 Monero 地址",
     "title": "Monero 地址"
@@ -71,6 +75,12 @@
   "monero-seed-words": "Monero 种子词",
   "network": "网络",
   "no-entry-guard": "未连接入口守卫！",
+  "node-configuration": "节点配置",
+  "node-configuration-description": "连接远程、本地或两者，直到您的本地节点准备好使用",
+  "node-connection-address": "连接地址",
+  "node-public-address": "公共地址",
+  "node-public-key": "公钥",
+  "node-type": "类型",
   "not-connected-to-tari": "未连接到Tari网络",
   "open-logs-directory": "打开日志目录",
   "p2pool-chain-tip": "链尖端",
@@ -81,7 +91,7 @@
   "paper-wallet": {
     "connect-wallet-to-phone": "将您的 Tari 宇宙钱包连接到手机",
     "do-not-share-this-code": "不要与任何人分享此代码",
-    "link-tari-aurora": "链接 Tari Aurora",
+    "link-tari-aurora": "链接 Tari Universe Mobile",
     "load-qr-code": "加载二维码",
     "passphrase": "密码短语"
   },
@@ -94,6 +104,8 @@
   "pre-release-note": "您即将切换到应用程序的预发布版本。此版本可能提供令人兴奋的新功能和增强，但可能会遇到仍在改进的区域。",
   "randomx-network-hash-rate": "Randomx 网络算力",
   "refresh-versions": "刷新版本",
+  "refresh-wallet-history": "Refresh wallet history",
+  "refresh-wallet-history-description": "Scan and validate all your transactions",
   "release-notes": {
     "loading": "正在加载发布说明...",
     "upgrade-available": "⚠️ 可用升级"
@@ -150,10 +162,12 @@
     "title": "自动更新 Tari 宇宙"
   },
   "use-dynamic-fail-data": "使用动态失败数据",
+  "use-p2p": "使用P2pool",
   "use-random-control-port": "使用随机控制端口",
   "use-random-port": "使用随机端口",
   "use-tor": "使用Tor",
   "use-tor-bridges": "使用Tor桥接",
+  "user-agreement": "用户协议",
   "visual-mode": "视觉模式",
   "yes": "是",
   "your-feedback": "请描述您的问题，包括您的Telegram账号（如果有），以便我们能够联系您并提供更新。",

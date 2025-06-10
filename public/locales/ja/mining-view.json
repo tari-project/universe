@@ -1,9 +1,19 @@
 {
+  "bubbles": {
+    "active-miners": "active miners",
+    "ago": "ago",
+    "block": "block",
+    "got-rewarded": "got rewarded",
+    "miners": "miners",
+    "pool": "Pool",
+    "solved": "solved",
+    "solving": "is being solved"
+  },
   "connection-to-node-lost": "マイナーへの接続が失われました。マイナーが再接続するか、再起動するのをお待ちください。",
   "cpu-power": "CPUパワー",
   "current-block-time": "現在のブロック時間",
   "day": "day",
-  "estimated-day": "推定 tXTM/日",
+  "estimated-day": "推定 XTM/日",
   "estimated-earnings": "推定収益",
   "floor": "フロア",
   "gpu-power": "GPUパワー",
@@ -25,6 +35,12 @@
     "step_4": "Torブリッジを使用してみてください（設定で）",
     "step_5": "Torを無効にしてみてください（設定で）",
     "step_6": "アプリをリセットしてみてください（設定で）"
+  },
+  "pool": {
+    "accepted_shares": "受け入れられたシェア",
+    "balance": "Total earnings",
+    "min_payout": "最低支払い額",
+    "unpaid": "未払い"
   },
   "you-earn-rewards-separately": "CPUとGPUのマイニングで別々に報酬を得ます",
   "you-won-block": "<span>ブロック #{{ blockHeight }}</span> の勝者です",

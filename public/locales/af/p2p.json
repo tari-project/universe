@@ -1,4 +1,7 @@
 {
+  "connected-since": "Gekoppel sedert",
+  "connections": "verbindings",
+  "established": "Gevestig",
   "listener-addresses": "Luisteraaradresse",
   "miners": "Myners",
   "network-info": "Netwerkinligting",
@@ -7,8 +10,16 @@
   "p2pool-connection-info": "Verbinding",
   "p2pool-connection-info-more": "Verbindingsbesonderhede",
   "p2pool-peers": "P2pool eweknieë",
-  "p2pool-stats": "Poel mynbou statistieke",
+  "p2pool-stats": "P2pool statistieke",
+  "pending": "Hangende",
   "randomx-stats": "RandomX Statistieke",
   "sha3-stats": "SHA3 Statistieke",
+  "stats": {
+    "earned": "You earned",
+    "tile-heading": "Belonings in Proses",
+    "tile-loading": "Swembad is besig om op te warm",
+    "tooltip-copy": "Belonings is \"In Proses\" totdat jy \"n minimum van <strong>{{amount}}</strong> verdien. Nadat jy die drempel bereik het, sal belonings wat in proses is, outomaties na jou Tari Heelal beursie gestuur word. Dit kan \"n verdere 2 uur neem om aan te kom.",
+    "tooltip-tile-heading": "Beloningsdrempel"
+  },
   "tribe": "Stam"
 }

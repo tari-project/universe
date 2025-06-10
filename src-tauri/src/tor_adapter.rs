@@ -20,10 +20,11 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::collections::HashMap;
 use std::path::PathBuf;
-
-use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
-use tokio::net::TcpStream;
+#[cfg(target_os = "linux")]
+use std::process::Command;
+use std::time::Duration;
 
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
@@ -31,6 +32,8 @@ use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
 use tari_shutdown::Shutdown;
 use tokio::fs;
+use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+use tokio::net::TcpStream;
 use tokio::sync::watch;
 use tokio::time::timeout;
 
@@ -49,11 +52,11 @@ pub(crate) struct TorAdapter {
     socks_port: u16,
     config_file: Option<PathBuf>,
     config: TorConfig,
-    status_broadcast: watch::Sender<Option<TorStatus>>,
+    status_broadcast: watch::Sender<TorStatus>,
 }
 
 impl TorAdapter {
-    pub fn new(status_broadcast: watch::Sender<Option<TorStatus>>) -> Self {
+    pub fn new(status_broadcast: watch::Sender<TorStatus>) -> Self {
         let port = PortAllocator::new().assign_port_with_fallback();
 
         Self {
@@ -73,7 +76,7 @@ impl TorAdapter {
 
         if file.exists() {
             debug!(target: LOG_TARGET, "Loading tor config from file: {:?}", file);
-            let config = fs::read_to_string(&file).await?;
+            let config = tokio::fs::read_to_string(&file).await?;
             self.apply_loaded_config(config);
         } else {
             info!(target: LOG_TARGET, "App config does not exist or is corrupt. Creating new one");
@@ -101,7 +104,7 @@ impl TorAdapter {
 
         let config = serde_json::to_string(&self.config)?;
         debug!(target: LOG_TARGET, "Updating tor config file: {:?} {:?}", file, self.config.clone());
-        fs::write(file, config).await?;
+        tokio::fs::write(file, config).await?;
 
         Ok(())
     }
@@ -198,6 +201,7 @@ impl TorAdapter {
 
 impl ProcessAdapter for TorAdapter {
     type StatusMonitor = TorStatusMonitor;
+    type ProcessInstance = ProcessInstance;
 
     #[allow(clippy::too_many_lines)]
     fn spawn_inner(
@@ -206,6 +210,7 @@ impl ProcessAdapter for TorAdapter {
         _config_dir: PathBuf,
         log_dir: PathBuf,
         binary_version_path: PathBuf,
+        is_first_start: bool,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
 
@@ -225,6 +230,17 @@ impl ProcessAdapter for TorAdapter {
         let mut control_port = self.config.control_port;
         if control_port == 0 {
             control_port = PortAllocator::new().assign_port_with_fallback();
+        }
+        if is_first_start {
+            info!(target: LOG_TARGET, "Clearing tor data directory on first start");
+            if std::fs::exists(data_dir.join("tor-data"))? {
+                match std::fs::remove_dir_all(data_dir.join("tor-data")) {
+                    Ok(_) => info!(target: LOG_TARGET, "Removed tor data directory"),
+                    Err(e) => {
+                        warn!(target: LOG_TARGET, "Failed to remove tor data directory: {}", e);
+                    }
+                }
+            }
         }
 
         let mut args: Vec<String> = vec![
@@ -246,6 +262,8 @@ impl ProcessAdapter for TorAdapter {
             "--Log".to_string(),
             format!("notice file {}", log_dir_string),
         ];
+
+        let envs = get_libevent_envs(&binary_version_path);
 
         if self.config.use_bridges {
             // Used by tor bridges
@@ -270,9 +288,9 @@ impl ProcessAdapter for TorAdapter {
                 inner_shutdown,
                 ProcessStartupSpec {
                     file_path: binary_version_path,
-                    envs: None,
+                    envs,
                     args,
-                    data_dir,
+                    data_dir: data_dir.clone(),
                     pid_file_name: self.pid_file_name().to_string(),
                     name: self.name().to_string(),
                 },
@@ -280,6 +298,7 @@ impl ProcessAdapter for TorAdapter {
             TorStatusMonitor {
                 control_port,
                 status_broadcast: self.status_broadcast.clone(),
+                base_path: data_dir,
             },
         ))
     }
@@ -296,31 +315,39 @@ impl ProcessAdapter for TorAdapter {
 #[derive(Clone)]
 pub(crate) struct TorStatusMonitor {
     pub control_port: u16,
-    status_broadcast: watch::Sender<Option<TorStatus>>,
+    status_broadcast: watch::Sender<TorStatus>,
+    base_path: PathBuf,
 }
 
 #[async_trait]
 impl StatusMonitor for TorStatusMonitor {
-    async fn check_health(&self) -> HealthStatus {
+    async fn check_health(&self, _uptime: Duration, timeout_duration: Duration) -> HealthStatus {
         let client = TorControlClient::new(self.control_port);
-        match timeout(std::time::Duration::from_secs(1), client.get_info()).await {
+        match timeout(timeout_duration, client.get_info()).await {
             Ok(Ok(status)) => {
-                let _res = self.status_broadcast.send(Some(status.clone()));
+                let _res = self.status_broadcast.send(status);
                 if status.is_bootstrapped && status.network_liveness {
                     HealthStatus::Healthy
                 } else {
+                    warn!(target: LOG_TARGET, "Tor Healthcheck status: {:?}", status);
                     HealthStatus::Warning
                 }
             }
             Ok(Err(e)) => {
-                warn!(target: LOG_TARGET, "Failed to get Tor status: {}", e);
+                warn!(target: LOG_TARGET, "Failed to get Tor Healthcheck status: {}", e);
                 HealthStatus::Unhealthy
             }
             Err(_) => {
-                warn!(target: LOG_TARGET, "Timed out getting Tor status");
+                warn!(target: LOG_TARGET, "Tor Healthcheck timeout");
                 HealthStatus::Unhealthy
             }
         }
+    }
+
+    async fn handle_unhealthy(&self) -> Result<(), anyhow::Error> {
+        fs::remove_dir_all(self.base_path.join("tor-data")).await?;
+
+        Ok(())
     }
 }
 
@@ -343,4 +370,45 @@ impl Default for TorConfig {
             bridges: Vec::new(),
         }
     }
+}
+
+fn get_libevent_envs(_binary_version_path: &std::path::Path) -> Option<HashMap<String, String>> {
+    #[cfg(target_os = "linux")]
+    {
+        if !check_libevent_exists() {
+            let mut tor_bundle_path = _binary_version_path.to_path_buf();
+            tor_bundle_path.pop();
+            let mut envs = HashMap::new();
+            envs.insert(
+                "LD_PRELOAD".to_string(),
+                format!("{}/libevent-2.1.so.7", tor_bundle_path.display()),
+            );
+            log::warn!(target: LOG_TARGET, "Using LD_PRELOAD, libevent-2.1.so.7 not found.");
+            return Some(envs);
+        }
+    }
+    // For non-Linux, or if libevent exists, return None
+    None
+}
+
+#[cfg(target_os = "linux")]
+fn check_libevent_exists() -> bool {
+    let output = Command::new("find")
+        .arg("/usr/lib")
+        .arg("/usr/local/lib")
+        .arg("-name")
+        .arg("libevent-2.1.so.7")
+        .output()
+        .expect("Failed to execute find libevent-2.1.so.7 command");
+
+    if output.status.success() {
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let lines: Vec<&str> = stdout.split('\n').collect();
+        for line in lines {
+            if line.contains("libevent-2.1.so.7") {
+                return true;
+            }
+        }
+    }
+    false
 }

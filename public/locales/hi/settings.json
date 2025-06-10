@@ -5,7 +5,6 @@
   "application-info": "एप्लिकेशन जानकारी",
   "applyInviteCode": "आमंत्रण कोड लागू करें",
   "cancel": "रद्द करें",
-  "gpu-engine": "जीपीयू इंजन",
   "change-language": "भाषा",
   "confirm": "पुष्टि करें",
   "confirm-action": "क्रिया की पुष्टि करें",
@@ -30,6 +29,7 @@
   "debug-info": "डीबग",
   "disconnect": "एयरड्रॉप से डिस्कनेक्ट करें",
   "errors": {
+    "fetch-tor-bridges": "टोर ब्रिज प्राप्त करने में विफल। अपनी इंटरनेट कनेक्शन की जाँच करें या बाद में पुनः प्रयास करें।",
     "invalid-bridge": "ब्रिज कॉन्फ़िगरेशन अमान्य है",
     "invalid-control-port": "कंट्रोल पोर्ट कॉन्फ़िगरेशन अमान्य है"
   },
@@ -39,6 +39,7 @@
   "gpu-device-enabled": "GPU माइनिंग डिवाइस",
   "gpu-device-enabled-description": "विशिष्ट GPU डिवाइस को सक्षम या अक्षम करें।",
   "gpu-device-no-found": "⚠️ कोई GPU डिवाइस नहीं मिला",
+  "gpu-engine": "जीपीयू इंजन",
   "gpu-mining-enabled": "जीपीयू माइनिंग",
   "gpu-unavailable": "⚠️ जीपीयू अक्षम है क्योंकि आपका हार्डवेयर इसे समर्थन नहीं करता",
   "hardware-status": "हार्डवेयर स्थिति",
@@ -56,6 +57,8 @@
   "inviteCode": "आमंत्रण कोड",
   "is-on-orphan-chain": "आप एक फोर्क से जुड़े हुए प्रतीत होते हैं, और मुख्य चेन से नहीं। आपके द्वारा जीते गए किसी भी ब्लॉक को अमान्य किया जा सकता है।",
   "last-block-added-time": "श्रृंखला में जोड़ा गया अंतिम ब्लॉक समय",
+  "license-agreement": "लाइसेंस समझौता",
+  "local-node-sync-progress": "स्थानीय नोड सिंकिंग प्रगति",
   "logs": "लॉग्स",
   "low-hash-rate-warning": "आपकी हैश रेट बहुत कम है। Tari Universe के अलावा सभी ऐप्स को बंद करने का प्रयास करें",
   "mine-on-app-start": {
@@ -64,6 +67,7 @@
   },
   "miners": "माइनर्स",
   "mining-toggle-warning": "परिवर्तनों के प्रभावी होने के दौरान माइनिंग रोक दी जाएगी।",
+  "minotari-node": "मिनोटारी नोड",
   "monero-address": {
     "placeholder": "मोनरो पता दर्ज करें",
     "title": "मोनरो पता"
@@ -71,6 +75,12 @@
   "monero-seed-words": "मोनरो सीड शब्द",
   "network": "नेटवर्क",
   "no-entry-guard": "कोई एंट्री गार्ड कनेक्ट नहीं है!",
+  "node-configuration": "नोड कॉन्फ़िगरेशन",
+  "node-configuration-description": "जब तक आपका लोकल उपयोग के लिए तैयार नहीं हो जाता, तब तक रिमोट, लोकल या दोनों से कनेक्ट करें",
+  "node-connection-address": "कनेक्शन पता",
+  "node-public-address": "सार्वजनिक पता",
+  "node-public-key": "सार्वजनिक कुंजी",
+  "node-type": "प्रकार",
   "not-connected-to-tari": "Tari नेटवर्क से जुड़ा नहीं",
   "open-logs-directory": "लॉग्स निर्देशिका खोलें",
   "p2pool-chain-tip": "श्रृंखलाओं की नोक",
@@ -94,6 +104,8 @@
   "pre-release-note": "आप एप्लिकेशन के पूर्व-रिलीज़ संस्करण पर स्विच करने वाले हैं। यह संस्करण रोमांचक नई सुविधाएँ और संवर्द्धन प्रदान कर सकता है, जिसमें उन क्षेत्रों का सामना करने की संभावना है जो अभी भी परिष्कृत हो सकते हैं।",
   "randomx-network-hash-rate": "Randomx नेटवर्क हैशरेट",
   "refresh-versions": "संस्करण ताज़ा करें",
+  "refresh-wallet-history": "Refresh wallet history",
+  "refresh-wallet-history-description": "Scan and validate all your transactions",
   "release-notes": {
     "loading": "रिलीज़ नोट्स लोड हो रहे हैं...",
     "upgrade-available": "⚠️ उन्नयन उपलब्ध"
@@ -150,10 +162,12 @@
     "title": "तारी यूनिवर्स को स्वचालित रूप से अपडेट करें"
   },
   "use-dynamic-fail-data": "डायनामिक फेल डेटा का उपयोग करें",
+  "use-p2p": "P2pool का उपयोग करें",
   "use-random-control-port": "रैंडम कंट्रोल पोर्ट का उपयोग करें",
   "use-random-port": "रैंडम पोर्ट का उपयोग करें",
   "use-tor": "टोर का उपयोग करें",
   "use-tor-bridges": "टोर ब्रिज का उपयोग करें",
+  "user-agreement": "उपयोगकर्ता समझौता",
   "visual-mode": "दृश्य मोड",
   "yes": "हाँ",
   "your-feedback": "कृपया अपनी समस्या का वर्णन करें",

@@ -24,9 +24,12 @@ export const HeaderContainer = styled.div`
     align-items: center;
     padding: 30px;
     text-transform: capitalize;
-    position: sticky;
-    top: 0;
-    z-index: 1;
+`;
+
+export const EndContainer = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 10px;
 `;
 
 export const ContentContainer = styled.div`
@@ -34,8 +37,8 @@ export const ContentContainer = styled.div`
     max-width: min(450px, max-content);
     display: flex;
     flex-direction: column;
-    overflow-y: auto;
     position: relative;
+    overflow: hidden;
 `;
 
 export const SectionWrapper = styled.div`
@@ -43,4 +46,5 @@ export const SectionWrapper = styled.div`
     display: flex;
     flex-direction: column;
     padding: 0 30px 20px;
+    overflow-y: auto;
 `;

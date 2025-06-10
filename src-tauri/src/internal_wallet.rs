@@ -29,7 +29,7 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::{TariAddress, TariAddressError, TariAddressFeatures};
-use tari_crypto::keys::PublicKey;
+use tari_common_types::types::CompressedPublicKey;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_key_manager::cipher_seed::CipherSeed;
 use tari_key_manager::key_manager::KeyManager;
@@ -39,7 +39,7 @@ use tari_utilities::SafePassword;
 use tokio::fs;
 use urlencoding::encode;
 
-use tari_core::transactions::key_manager::{
+use tari_core::transactions::transaction_key_manager::{
     create_memory_db_key_manager_from_seed, SecretTransactionKeyManagerInterface,
     TransactionKeyManagerInterface,
 };
@@ -50,6 +50,7 @@ use tari_utilities::hex::Hex;
 
 use crate::credential_manager::{Credential, CredentialError, CredentialManager};
 use crate::wallet_adapter::WalletBalance;
+use crate::UniverseAppState;
 
 const KEY_MANAGER_COMMS_SECRET_KEY_BRANCH_KEY: &str = "comms";
 const LOG_TARGET: &str = "tari::universe::internal_wallet";
@@ -60,7 +61,10 @@ pub struct InternalWallet {
 }
 
 impl InternalWallet {
-    pub async fn load_or_create(config_path: PathBuf) -> Result<Self, anyhow::Error> {
+    pub async fn load_or_create(
+        config_path: PathBuf,
+        state: tauri::State<'_, UniverseAppState>,
+    ) -> Result<Self, anyhow::Error> {
         let network = Network::get_current_or_user_setting_or_default()
             .to_string()
             .to_lowercase();
@@ -82,7 +86,7 @@ impl InternalWallet {
                     config.config_path = Some(file_parent.to_path_buf());
 
                     let cm = CredentialManager::default_with_dir(config_path.clone());
-                    if let Err(e) = cm.migrate(&config) {
+                    if let Err(e) = cm.migrate().await {
                         warn!(target: LOG_TARGET, "Failed to migrate wallet credentials: {}", e.to_string());
                     }
 
@@ -98,6 +102,10 @@ impl InternalWallet {
         }
         info!(target: LOG_TARGET, "Wallet config does not exist or is corrupt. Creating new wallet");
         let (wallet, config) = InternalWallet::create_new_wallet(None, config_path).await?;
+        let mut tari_address_guard = state.tari_address.write().await;
+        *tari_address_guard = wallet.tari_address.clone();
+        drop(tari_address_guard);
+
         let config = serde_json::to_string(&config)?;
         fs::write(file, config).await?;
         Ok(wallet)
@@ -128,6 +136,28 @@ impl InternalWallet {
     pub fn get_tari_address(&self) -> TariAddress {
         self.tari_address.clone()
     }
+    pub fn get_is_tari_address_generated(&self) -> bool {
+        self.config.is_tari_address_generated
+    }
+
+    pub async fn set_tari_address(
+        &mut self,
+        address: String,
+        config_path: PathBuf,
+    ) -> Result<TariAddress, String> {
+        let network = Network::get_current_or_user_setting_or_default()
+            .to_string()
+            .to_lowercase();
+        let tari_address = TariAddress::from_str(&address).map_err(|e| e.to_string())?;
+        let file = config_path.join(network).join("wallet_config.json");
+        self.tari_address = tari_address.clone();
+        self.config.is_tari_address_generated = false;
+        self.config.tari_address_base58 = tari_address.to_base58();
+
+        let config = serde_json::to_string(&self.config).map_err(|e| e.to_string())?;
+        fs::write(file, config).await.map_err(|e| e.to_string())?;
+        Ok(tari_address)
+    }
 
     pub async fn get_paper_wallet_details(
         &self,
@@ -135,23 +165,7 @@ impl InternalWallet {
         wallet_balance: Option<WalletBalance>,
         auth_uuid: Option<String>,
     ) -> Result<PaperWalletConfig, anyhow::Error> {
-        let path = match &self.config.config_path {
-            Some(p) => p.clone(),
-            None => return Err(anyhow!("No config path found")),
-        };
-
-        let path_parent = path
-            .parent()
-            .ok_or_else(|| anyhow!("Failed to get parent directory of wallet config file"))?;
-
-        let passphrase = CredentialManager::default_with_dir(path_parent.to_path_buf())
-            .get_credentials()?
-            .tari_seed_passphrase;
-
-        let seed_binary = Vec::<u8>::from_monero_base58(&self.config.seed_words_encrypted_base58)
-            .map_err(|e| anyhow!(e.to_string()))?;
-        let seed = CipherSeed::from_enciphered_bytes(&seed_binary, passphrase)?;
-
+        let seed = self.get_seed().await?;
         let raw_passphrase = phraze::generate_a_passphrase(5, "-", false, &MNEMONIC_ENGLISH_WORDS);
         let seed_file = seed.encipher(Some(SafePassword::from(&raw_passphrase)))?;
         let seed_words_encrypted_base58 = seed_file.to_monero_base58();
@@ -203,15 +217,16 @@ impl InternalWallet {
             spend_public_key_hex: "".to_string(),
             config_path: Some(path.to_path_buf()),
             passphrase: None,
+            is_tari_address_generated: true,
         };
 
         let cm = CredentialManager::default_with_dir(path);
-        let passphrase = match cm.get_credentials() {
+        let passphrase = match cm.get_credentials().await {
             Ok(mut creds) => match creds.tari_seed_passphrase {
                 Some(p) => Some(p),
                 None => {
                     creds.tari_seed_passphrase = Some(SafePassword::from(generate_password(32)));
-                    cm.set_credentials(&creds)?;
+                    cm.set_credentials(&creds).await?;
                     creds.tari_seed_passphrase
                 }
             },
@@ -220,7 +235,7 @@ impl InternalWallet {
                     tari_seed_passphrase: Some(SafePassword::from(generate_password(32))),
                     monero_seed: None,
                 };
-                cm.set_credentials(&credentials)?;
+                cm.set_credentials(&credentials).await?;
                 credentials.tari_seed_passphrase
             }
             Err(_) => {
@@ -254,7 +269,7 @@ impl InternalWallet {
             .derive_key(0)
             .map_err(|e| anyhow!(e.to_string()))?
             .key;
-        let comms_pub_key = RistrettoPublicKey::from_secret_key(&comms_key);
+        let comms_pub_key = CompressedPublicKey::from_secret_key(&comms_key);
         let network = Network::default();
 
         let tx_key_manager = create_memory_db_key_manager_from_seed(seed.clone(), 64)?;
@@ -266,7 +281,9 @@ impl InternalWallet {
             comms_pub_key.clone(),
             network,
             TariAddressFeatures::create_one_sided_only(),
-        );
+            None,
+        )
+        .map_err(|e| anyhow!(e.to_string()))?;
 
         config.tari_address_base58 = tari_address.to_base58();
         config.view_key_private_hex = view_key_private.to_hex();
@@ -280,22 +297,8 @@ impl InternalWallet {
         ))
     }
 
-    pub fn decrypt_seed_words(&self) -> Result<SeedWords, anyhow::Error> {
-        let path = match &self.config.config_path {
-            Some(p) => match p.parent() {
-                Some(p) => p.to_path_buf(),
-                None => return Err(anyhow!("No config path found")),
-            },
-            None => return Err(anyhow!("No config path found")),
-        };
-
-        let passphrase = CredentialManager::default_with_dir(path)
-            .get_credentials()?
-            .tari_seed_passphrase;
-
-        let seed_binary = Vec::<u8>::from_monero_base58(&self.config.seed_words_encrypted_base58)
-            .map_err(|e| anyhow!(e.to_string()))?;
-        let seed = CipherSeed::from_enciphered_bytes(&seed_binary, passphrase)?;
+    pub async fn decrypt_seed_words(&self) -> Result<SeedWords, anyhow::Error> {
+        let seed = self.get_seed().await?;
         let seed_words = seed.to_mnemonic(MnemonicLanguage::English, None)?;
         Ok(seed_words)
     }
@@ -305,6 +308,30 @@ impl InternalWallet {
     }
     pub fn get_spend_key(&self) -> String {
         self.config.spend_public_key_hex.clone()
+    }
+
+    async fn get_seed(&self) -> Result<CipherSeed, anyhow::Error> {
+        let path = match &self.config.config_path {
+            Some(p) => p.clone(),
+            None => return Err(anyhow!("No config path found")),
+        };
+        let path_parent = path
+            .parent()
+            .ok_or_else(|| anyhow!("Failed to get parent directory of wallet config file"))?;
+        let passphrase = CredentialManager::default_with_dir(path_parent.to_path_buf())
+            .get_credentials()
+            .await?
+            .tari_seed_passphrase;
+        let seed_binary = Vec::<u8>::from_monero_base58(&self.config.seed_words_encrypted_base58)
+            .map_err(|e| anyhow!(e.to_string()))?;
+        let seed = CipherSeed::from_enciphered_bytes(&seed_binary, passphrase)?;
+
+        Ok(seed)
+    }
+
+    pub async fn get_birthday(&self) -> Result<u16, anyhow::Error> {
+        let seed = self.get_seed().await?;
+        Ok(seed.birthday())
     }
 
     #[allow(dead_code)]
@@ -349,10 +376,16 @@ pub struct WalletConfig {
     // TODO: "This is for Universe users < v0.5.x who wouldn't be migrated yet. Once we're confident that all users have been migrated, we can remove this."
     pub(crate) passphrase: Option<SafePassword>,
     config_path: Option<PathBuf>,
+    #[serde(default = "default_true")]
+    is_tari_address_generated: bool,
 }
 
 #[derive(Debug, Serialize, Clone)]
 pub struct PaperWalletConfig {
     qr_link: String,
     password: String,
+}
+
+fn default_true() -> bool {
+    true
 }

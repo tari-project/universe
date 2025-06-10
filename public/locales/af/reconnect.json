@@ -1,0 +1,11 @@
+{
+  "auto-reconnect": "Probeer om weer te koppel in:",
+  "connect-now": "Koppel Nou",
+  "disconnect-severe-subtitle": "Ons sal aanhou probeer om jou aan die Tari-netwerk te koppel. Jy kan ook probeer om jou myner te herbegin, of ondersteuning op Telegram te soek as die probleem voortduur.",
+  "disconnect-severe-title": "Ons het probleme om jou te koppel",
+  "disconnect-subtitle": "Hou vas terwyl ons probeer om jou weer aan die netwerk te koppel.",
+  "disconnect-title": "Oeps, jy is nie aan die Tari-netwerk gekoppel nie",
+  "go-to-telegram": "Kry Hulp op Telegram",
+  "reconnect-in-progress": "Herverbinding...",
+  "restart-app": "Herbegin Tari Universe"
+}

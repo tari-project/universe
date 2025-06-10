@@ -6,8 +6,11 @@ import { useMiningMetricsStore } from '../useMiningMetricsStore.ts';
 import { useMiningStore } from '../useMiningStore.ts';
 import { modeType } from '../types.ts';
 import { setGpuMiningEnabled, setMode } from './appConfigStoreActions.ts';
-import { useAppConfigStore } from '../useAppConfigStore.ts';
 import { setError } from './appStateStoreActions.ts';
+import { handleMiningModeChange, setGpuDevices } from '../actions/miningMetricsStoreActions.ts';
+import { useSetupStore } from '@app/store/useSetupStore.ts';
+import { useConfigMiningStore } from '../useAppConfigStore.ts';
+import { Network } from '@app/utils/network.ts';
 
 interface ChangeMiningModeArgs {
     mode: modeType;
@@ -20,11 +23,13 @@ export const changeMiningMode = async (params: ChangeMiningModeArgs) => {
     console.info(`Changing mode to ${mode}...`);
     const metricsState = useMiningMetricsStore.getState();
     useMiningStore.setState({ isChangingMode: true });
-    useMiningMetricsStore.getState().handleMiningModeChange();
+    handleMiningModeChange();
+    const wasCpuMiningInitiated = useMiningStore.getState().isCpuMiningInitiated;
+    const wasGpuMiningInitiated = useMiningStore.getState().isGpuMiningInitiated;
 
     if (metricsState.cpu_mining_status.is_mining || metricsState.gpu_mining_status.is_mining) {
         console.info('Pausing mining...');
-        await pauseMining();
+        await stopMining();
     }
     try {
         await setMode({
@@ -33,9 +38,12 @@ export const changeMiningMode = async (params: ChangeMiningModeArgs) => {
             customCpuLevels,
         });
         console.info(`Mode changed to ${mode}`);
-        if (useMiningStore.getState().miningInitiated) {
-            console.info('Restarting mining...');
-            await startMining();
+        if (wasCpuMiningInitiated) {
+            await startCpuMining();
+        }
+
+        if (wasGpuMiningInitiated) {
+            await startGpuMining();
         }
     } catch (e) {
         console.error('Failed to change mode: ', e);
@@ -53,17 +61,6 @@ export const getMaxAvailableThreads = async () => {
         setError(e as string);
     }
 };
-export const pauseMining = async () => {
-    console.info('Mining pausing...');
-    try {
-        await invoke('stop_mining', {});
-        console.info('Mining paused.');
-    } catch (e) {
-        console.error('Failed to pause (stop) mining: ', e);
-        setError(e as string);
-        useMiningStore.setState({ miningInitiated: true });
-    }
-};
 export const restartMining = async () => {
     const isMining =
         useMiningMetricsStore.getState().cpu_mining_status.is_mining ||
@@ -72,7 +69,7 @@ export const restartMining = async () => {
     if (isMining) {
         console.info('Restarting mining...');
         try {
-            await pauseMining();
+            await stopMining();
         } catch (e) {
             console.error('Failed to pause(restart) mining: ', e);
         }
@@ -103,56 +100,122 @@ export const setEngine = async (engine) => {
 
 export const setMiningControlsEnabled = (miningControlsEnabled: boolean) =>
     useMiningStore.setState((state) => {
-        const gpu_mining_enabled = useAppConfigStore.getState().gpu_mining_enabled;
-        const cpu_mining_enabled = useAppConfigStore.getState().cpu_mining_enabled;
+        const gpu_mining_enabled = useConfigMiningStore.getState().gpu_mining_enabled;
+        const cpu_mining_enabled = useConfigMiningStore.getState().cpu_mining_enabled;
         return {
             miningControlsEnabled:
                 state.isChangingMode || (!gpu_mining_enabled && !cpu_mining_enabled) ? false : miningControlsEnabled,
         };
     });
-export const setMiningNetwork = async () => {
+export const getMiningNetwork = async () => {
     try {
-        const network = (await invoke('get_network', {})) as string;
+        const network = (await invoke('get_network', {})) as Network;
         useMiningStore.setState({ network });
+        return network;
     } catch (e) {
         console.error('Could not get network: ', e);
         setError(e as string);
         useMiningStore.setState({ network: undefined });
     }
 };
+
+export const startCpuMining = async () => {
+    if (!useSetupStore.getState().cpuMiningUnlocked) return;
+    if (!useConfigMiningStore.getState().cpu_mining_enabled) return;
+    if (useMiningStore.getState().isCpuMiningInitiated) return;
+
+    useMiningStore.setState({ isCpuMiningInitiated: true });
+    console.info('CPU Mining starting....');
+    try {
+        await invoke('start_cpu_mining', {});
+        useBlockchainVisualisationStore
+            .getState()
+            .setDisplayBlockTime({ daysString: '', hoursString: '', minutes: '00', seconds: '00' });
+        console.info('CPU Mining started.');
+    } catch (e) {
+        console.error('Failed to start CPU mining: ', e);
+        setError(e as string);
+        useMiningStore.setState({ isCpuMiningInitiated: false });
+    }
+};
+export const startGpuMining = async () => {
+    if (!useSetupStore.getState().gpuMiningUnlocked) return;
+    if (!useConfigMiningStore.getState().gpu_mining_enabled) return;
+    if (useMiningStore.getState().isGpuMiningInitiated) return;
+
+    useMiningStore.setState({ isGpuMiningInitiated: true });
+    console.info('GPU Mining starting....');
+    try {
+        await invoke('start_gpu_mining', {});
+        useBlockchainVisualisationStore
+            .getState()
+            .setDisplayBlockTime({ daysString: '', hoursString: '', minutes: '00', seconds: '00' });
+        console.info('GPU Mining started.');
+    } catch (e) {
+        console.error('Failed to start GPU mining: ', e);
+        setError(e as string);
+        useMiningStore.setState({ isGpuMiningInitiated: false });
+    }
+};
+export const stopCpuMining = async () => {
+    if (!useMiningStore.getState().isCpuMiningInitiated) return;
+
+    console.info('CPU Mining stopping...');
+    useMiningStore.setState({ isCpuMiningInitiated: false });
+    try {
+        await invoke('stop_cpu_mining', {});
+        console.info('CPU Mining stopped.');
+    } catch (e) {
+        console.error('Failed to stop CPU mining: ', e);
+        setError(e as string);
+        useMiningStore.setState({ isCpuMiningInitiated: true });
+    }
+};
+export const stopGpuMining = async () => {
+    if (!useMiningStore.getState().isGpuMiningInitiated) return;
+
+    console.info('GPU Mining stopping...');
+    useMiningStore.setState({ isGpuMiningInitiated: false });
+    try {
+        await invoke('stop_gpu_mining', {});
+        console.info('GPU Mining stopped.');
+    } catch (e) {
+        console.error('Failed to stop GPU mining: ', e);
+        setError(e as string);
+        useMiningStore.setState({ isGpuMiningInitiated: true });
+    }
+};
+
 export const startMining = async () => {
     console.info('Mining starting....');
-    useMiningStore.setState({ miningInitiated: true });
-    useBlockchainVisualisationStore
-        .getState()
-        .setDisplayBlockTime({ daysString: '', hoursString: '', minutes: '00', seconds: '00' });
+
     try {
-        await invoke('start_mining', {});
+        await startCpuMining();
+        await startGpuMining();
         console.info('Mining started.');
     } catch (e) {
         console.error('Failed to start mining: ', e);
         setError(e as string);
-        useMiningStore.setState({ miningInitiated: false });
     }
 };
 export const stopMining = async () => {
     console.info('Mining stopping...');
-    useMiningStore.setState({ miningInitiated: false });
     try {
-        await invoke('stop_mining', {});
+        await stopCpuMining();
+        await stopGpuMining();
         console.info('Mining stopped.');
     } catch (e) {
         console.error('Failed to stop mining: ', e);
         setError(e as string);
-        useMiningStore.setState({ miningInitiated: true });
     }
 };
 export const toggleDeviceExclusion = async (deviceIndex: number, excluded: boolean) => {
     try {
+        const wasGpuMiningInitiated = useMiningStore.getState().isGpuMiningInitiated;
         const metricsState = useMiningMetricsStore.getState();
-        if (metricsState.cpu_mining_status.is_mining || metricsState.gpu_mining_status.is_mining) {
-            console.info('Pausing mining...');
-            await pauseMining();
+        if (metricsState.gpu_mining_status.is_mining) {
+            console.info('Stoping mining...');
+            await stopGpuMining();
         }
         await invoke('toggle_device_exclusion', { deviceIndex, excluded });
         const devices = metricsState.gpu_devices;
@@ -166,10 +229,10 @@ export const toggleDeviceExclusion = async (deviceIndex: number, excluded: boole
         if (isAllExcluded) {
             setGpuMiningEnabled(false);
         }
-        useMiningMetricsStore.getState().setGpuDevices(updatedDevices);
-        if (useMiningStore.getState().miningInitiated) {
+        setGpuDevices(updatedDevices);
+        if (wasGpuMiningInitiated) {
             console.info('Restarting mining...');
-            await startMining();
+            await startGpuMining();
         }
         useMiningStore.setState({ isExcludingGpuDevices: false });
     } catch (e) {

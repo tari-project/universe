@@ -1,17 +1,23 @@
-import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
-import WalletAddressMarkup from './WalletAddressMarkup.tsx';
+import WalletAddressMarkup from './WalletAddressMarkup';
 import MoneroAddressMarkup from './MoneroAddressMarkup';
-import SeedWordsMarkup from './SeedWordsMarkup/SeedWordsMarkup.tsx';
+import TariSeedWords from './TariSeedWords/TariSeedWords.tsx';
 import MoneroSeedWordSettings from './MoneroSeedWords/MoneroSeedWordSettings.tsx';
+import { RefreshWalletHistory } from './RefreshWalletHistory.tsx';
+import { DEFAULT_EXCHANGE_ID, useConfigBEInMemoryStore, useConfigWalletStore } from '@app/store/useAppConfigStore.ts';
 
 export const WalletSettings = () => {
-    const monero_address_is_generated = useAppConfigStore((s) => s.monero_address_is_generated);
+    const monero_address_is_generated = useConfigWalletStore((s) => s.monero_address_is_generated);
+    const exchangeID = useConfigBEInMemoryStore((s) => s.exchangeId);
+    const isExchangeMiner = exchangeID === DEFAULT_EXCHANGE_ID;
     return (
         <>
             <WalletAddressMarkup />
-            <SeedWordsMarkup />
+            {isExchangeMiner ? <TariSeedWords /> : undefined}
             <MoneroAddressMarkup />
-            {monero_address_is_generated ? <MoneroSeedWordSettings /> : null}
+
+            {monero_address_is_generated ? <MoneroSeedWordSettings /> : undefined}
+
+            <RefreshWalletHistory />
         </>
     );
 };

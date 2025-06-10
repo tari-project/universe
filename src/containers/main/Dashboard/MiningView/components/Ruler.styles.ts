@@ -11,6 +11,7 @@ export const Wrapper = styled.div`
     height: calc(100% - 80px);
     position: fixed;
     right: 10px;
+    user-select: none;
 `;
 
 export const Column = styled.div<{ $isNumber?: boolean }>`

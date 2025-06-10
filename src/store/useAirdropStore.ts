@@ -1,8 +1,8 @@
 import { XSpaceEvent } from '@app/types/ws';
 import { create } from './create';
+import { ConfigBackendInMemory } from '@app/types/configs.ts';
 
 export const GIFT_GEMS = 5000;
-export const REFERRAL_GEMS = 5000;
 
 export interface BonusTier {
     id: string;
@@ -73,29 +73,42 @@ export interface AirdropTokens {
     installReward?: boolean;
 }
 
-export interface BackendInMemoryConfig {
-    airdropUrl: string;
-    airdropApiUrl: string;
-    airdropTwitterAuthUrl: string;
-}
 export type AnimationType = 'GoalComplete' | 'FriendAccepted' | 'BonusGems';
 
 interface MiningPoint {
     blockHeight: string;
     reward: number;
 }
-//////////////////////////////////////////
 
+export type MessageType = 'info' | 'warning' | 'error';
+
+export interface CommunityMessage {
+    id: string;
+    message: string;
+    isVisible: boolean;
+    createdAt: string;
+    textHtml: string;
+    type: MessageType;
+}
+
+export type AirdropConfigBackendInMemory = Omit<ConfigBackendInMemory, 'exchangeId'>;
+
+//////////////////////////////////////////
 export interface AirdropStoreState {
     authUuid?: string;
     airdropTokens?: AirdropTokens;
     userDetails?: UserDetails;
     userPoints?: UserPoints;
-    backendInMemoryConfig?: BackendInMemoryConfig;
+    backendInMemoryConfig?: AirdropConfigBackendInMemory;
     flareAnimationType?: AnimationType;
     bonusTiers?: BonusTier[];
     miningRewardPoints?: MiningPoint;
     latestXSpaceEvent?: XSpaceEvent | null;
+    pollingEnabled?: boolean;
+    orphanChainUiDisabled?: boolean;
+    swapsEnabled?: boolean;
+    uiSendRecvEnabled: boolean;
+    communityMessages?: CommunityMessage[];
 }
 
 const initialState: AirdropStoreState = {
@@ -107,6 +120,8 @@ const initialState: AirdropStoreState = {
     bonusTiers: undefined,
     flareAnimationType: undefined,
     latestXSpaceEvent: null,
+    pollingEnabled: undefined,
+    uiSendRecvEnabled: true,
 };
 
 export const useAirdropStore = create<AirdropStoreState>()(() => ({ ...initialState }));

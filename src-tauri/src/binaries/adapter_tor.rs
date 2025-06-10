@@ -23,15 +23,17 @@
 use crate::binaries::binaries_resolver::{
     LatestVersionApiAdapter, VersionAsset, VersionDownloadInfo,
 };
-use crate::download_utils::download_file_with_retries;
-use crate::progress_tracker::ProgressTracker;
+use crate::github::request_client::RequestClient;
+use crate::github::ReleaseSource;
 use crate::APPLICATION_FOLDER_ID;
-use anyhow::Error;
+use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use log::{error, info};
 use regex::Regex;
 use std::path::PathBuf;
 use tari_common::configuration::Network;
+use tokio::fs::File;
+use tokio::io::AsyncReadExt;
 
 pub const LOG_TARGET: &str = "tari::universe::adapter_tor";
 pub(crate) struct TorReleaseAdapter {}
@@ -40,31 +42,38 @@ pub(crate) struct TorReleaseAdapter {}
 impl LatestVersionApiAdapter for TorReleaseAdapter {
     async fn fetch_releases_list(&self) -> Result<Vec<VersionDownloadInfo>, Error> {
         let platform = get_platform_name();
-        let cdn_tor_bundle_url = format!(
-            "https://cdn-universe.tari.com/torbrowser/13.5.7/tor-expert-bundle-{}-13.5.7.tar.gz",
+        let cdn_tor_bundle_url: String = format!(
+            "https://cdn-universe.tari.com/tor-package-archive/torbrowser/14.5.1/tor-expert-bundle-{}-14.5.1.tar.gz",
             platform
         );
-        let mut cdn_responded = false;
+        let original_tor_bundle_url: String = format!(
+            "https://dist.torproject.org/torbrowser/14.5.1/tor-expert-bundle-{}-14.5.1.tar.gz",
+            platform
+        );
 
-        let client = reqwest::Client::new();
-        for _ in 0..3 {
-            let cloned_cdn_tor_bundle_url = cdn_tor_bundle_url.clone();
-            let response = client.head(cloned_cdn_tor_bundle_url).send().await;
+        info!(target: LOG_TARGET, "Checking if CDN is available");
 
-            if let Ok(resp) = response {
-                if resp.status().is_success() {
-                    cdn_responded = true;
-                    break;
-                }
+        let cdn_responded = match RequestClient::current()
+            .send_head_request(&cdn_tor_bundle_url)
+            .await
+        {
+            Ok(response) => response.status().is_success(),
+            Err(e) => {
+                error!(target: LOG_TARGET, "Failed to check CDN availability: {}", e);
+                false
             }
-        }
+        };
+
+        info!(target: LOG_TARGET, "CDN responded: {}", cdn_responded);
 
         if cdn_responded {
             let version = VersionDownloadInfo {
-                version: "13.5.7".parse().expect("Bad tor version"),
+                version: "14.5.1".parse().expect("Bad tor version"),
                 assets: vec![VersionAsset {
                     url: cdn_tor_bundle_url.to_string(),
-                    name: format!("tor-expert-bundle-{}-13.5.7.tar.gz", platform),
+                    fallback_url: Some(original_tor_bundle_url),
+                    name: format!("tor-expert-bundle-{}-14.5.1.tar.gz", platform),
+                    source: ReleaseSource::Mirror,
                 }],
             };
             return Ok(vec![version]);
@@ -72,32 +81,67 @@ impl LatestVersionApiAdapter for TorReleaseAdapter {
 
         // Tor doesn't have a nice API for this so just return specific ones
         let version = VersionDownloadInfo {
-            version: "13.5.7".parse().expect("Bad tor version"),
+            version: "14.5.1".parse().expect("Bad tor version"),
             assets: vec![VersionAsset {
-                url: format!("https://dist.torproject.org/torbrowser/13.5.7/tor-expert-bundle-{}-13.5.7.tar.gz", platform),
-                name: format!("tor-expert-bundle-{}-13.5.7.tar.gz", platform),
-            }]
+                url: original_tor_bundle_url,
+                fallback_url: None,
+                name: format!("tor-expert-bundle-{}-14.5.1.tar.gz", platform),
+                source: ReleaseSource::Github,
+            }],
         };
         Ok(vec![version])
+    }
+
+    async fn get_expected_checksum(
+        &self,
+        checksum_path: PathBuf,
+        asset_name: &str,
+    ) -> Result<String, Error> {
+        let mut file_sha256 = File::open(checksum_path.clone()).await?;
+        let mut buffer_sha256 = Vec::new();
+        file_sha256.read_to_end(&mut buffer_sha256).await?;
+        let contents =
+            String::from_utf8(buffer_sha256).expect("Failed to read file contents as UTF-8");
+
+        let tor_hash = contents
+            .lines()
+            .find(|line| line.contains(asset_name))
+            .and_then(|line| line.split_whitespace().next())
+            .map(|hash| hash.to_string());
+
+        tor_hash.ok_or(anyhow!("No checksum was found for xmrig"))
     }
 
     async fn download_and_get_checksum_path(
         &self,
         directory: PathBuf,
         download_info: VersionDownloadInfo,
-        progress_tracker: ProgressTracker,
     ) -> Result<PathBuf, Error> {
         let asset = self.find_version_for_platform(&download_info)?;
         let checksum_path = directory
             .join("in_progress")
-            .join(format!("{}.asc", asset.name));
-        let checksum_url = format!("{}.asc", asset.url);
+            .join("sha256sums-signed-build.txt");
+        let checksum_url = match asset.url.rfind('/') {
+            Some(pos) => format!("{}/{}", &asset.url[..pos], "sha256sums-signed-build.txt"),
+            None => asset.url,
+        };
 
-        match download_file_with_retries(&checksum_url, &checksum_path, progress_tracker).await {
+        match RequestClient::current()
+            .download_file_with_retries(&checksum_url, &checksum_path, asset.source.is_mirror())
+            .await
+        {
             Ok(_) => Ok(checksum_path),
             Err(e) => {
-                error!(target: LOG_TARGET, "Failed to download checksum file: {}", e);
-                Err(e)
+                if let Some(fallback_url) = asset.fallback_url {
+                    let checksum_fallback_url = format!("{}.asc", fallback_url);
+                    info!(target: LOG_TARGET, "Fallback URL: {}", checksum_fallback_url);
+                    RequestClient::current()
+                        .download_file_with_retries(&checksum_fallback_url, &checksum_path, false)
+                        .await?;
+                    Ok(checksum_path)
+                } else {
+                    Err(anyhow::anyhow!("Failed to download checksum file: {}", e))
+                }
             }
         }
     }

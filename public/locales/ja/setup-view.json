@@ -1,19 +1,30 @@
 {
+  "actions": {
+    "earn-gems": "ジェムを獲得",
+    "earn-gems-copy": "友達を招待してジェムを獲得するためにソーシャルアカウントを接続",
+    "earn-gems-cta": "Xアカウントを接続",
+    "mode": "モードをカスタマイズ",
+    "mode-copy": "マシンのマイニングの強度をカスタマイズできることをご存知ですか？"
+  },
   "could-not-auto-update": "マシンがロックされているかスリープモード中にTari Universeを{{version}}に自動更新できませんでした。",
   "dont-worry": "心配しないでください、次回はそれほど時間がかかりません",
   "installing-latest-version": "Tari Universeの{{version}}バージョンをインストール中",
   "new-tari-version-available": "Tari Universeの新しいバージョンが利用可能です！",
   "no": "いいえ",
   "setting-up": "Tariトゥルースマシンを設定中...",
+  "sync": {
+    "header": "Tariネットワークに接続中",
+    "subheader": "Tariネットワークと同期中"
+  },
   "this-might-take-a-few-minutes": "数分かかる場合があります",
   "title": {
     "application-started": "アプリケーションが開始されました",
-    "benchmarking-network": "Network Benchmark",
+    "benchmarking-network": "ネットワークベンチマーク",
     "checking-latest-version-gpuminer": "xtrgpuminerの最新バージョンを確認中",
     "checking-latest-version-mmproxy": "mmproxyの最新バージョンを確認中",
     "checking-latest-version-node": "ノードの最新バージョンを確認中",
     "checking-latest-version-sha-p2pool": "sha-p2poolの最新バージョンを確認中",
-    "checking-latest-version-tor": "Checking latest version of tor",
+    "checking-latest-version-tor": "Torの最新バージョンを確認中",
     "checking-latest-version-wallet": "ウォレットの最新バージョンを確認中",
     "checking-latest-version-xmrig": "xmrigの最新バージョンを確認中",
     "download-completed": "ダウンロードが完了しました",

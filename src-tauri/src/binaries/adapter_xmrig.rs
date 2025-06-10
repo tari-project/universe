@@ -22,13 +22,17 @@
 
 use std::path::PathBuf;
 
-use anyhow::Error;
+use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use log::error;
 use regex::Regex;
 use tari_common::configuration::Network;
+use tokio::{fs::File, io::AsyncReadExt};
 
-use crate::{github, progress_tracker::ProgressTracker, APPLICATION_FOLDER_ID};
+use crate::{
+    github::{self, request_client::RequestClient},
+    APPLICATION_FOLDER_ID,
+};
 
 use super::binaries_resolver::{LatestVersionApiAdapter, VersionAsset, VersionDownloadInfo};
 
@@ -43,22 +47,48 @@ impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
         Ok(releases.clone())
     }
 
+    async fn get_expected_checksum(
+        &self,
+        checksum_path: PathBuf,
+        asset_name: &str,
+    ) -> Result<String, Error> {
+        let mut file_sha256 = File::open(checksum_path.clone()).await?;
+        let mut buffer_sha256 = Vec::new();
+        file_sha256.read_to_end(&mut buffer_sha256).await?;
+        let contents =
+            String::from_utf8(buffer_sha256).expect("Failed to read file contents as UTF-8");
+
+        let xmrig_hash = contents
+            .lines()
+            .find(|line| line.contains(asset_name))
+            .and_then(|line| line.split_whitespace().next())
+            .map(|hash| hash.to_string());
+
+        xmrig_hash.ok_or(anyhow!("No checksum was found for xmrig"))
+    }
+
     async fn download_and_get_checksum_path(
         &self,
         directory: PathBuf,
         download_info: VersionDownloadInfo,
-        _: ProgressTracker,
     ) -> Result<PathBuf, Error> {
-        // When xmrig is downloaded checksum will be already in its folder so there is no need to download it
-        // directory parameter should point to folder where xmrig is extracted
-        // file with checksum should be in the same folder as xmrig
-        // file name is SHA256SUMS
-        // let platform = self.find_version_for_platform(version)?;
-        let checksum_path = directory
-            .join(format!("xmrig-{}", download_info.version))
-            .join("SHA256SUMS");
+        let asset = self.find_version_for_platform(&download_info)?;
+        let checksum_path = directory.join("in_progress").join("SHA256SUMS");
+        let checksum_url = match asset.url.rfind('/') {
+            Some(pos) => format!("{}/{}", &asset.url[..pos], "SHA256SUMS"),
+            None => asset.url,
+        };
 
-        Ok(checksum_path)
+        match RequestClient::current()
+            .download_file_with_retries(&checksum_url, &checksum_path, false)
+            .await
+        {
+            Ok(_) => Ok(checksum_path),
+            Err(e) => {
+                error!(target: LOG_TARGET, "Failed to download checksum file: {}", e);
+                Err(e)
+            }
+        }
     }
 
     fn get_binary_folder(&self) -> Result<PathBuf, Error> {

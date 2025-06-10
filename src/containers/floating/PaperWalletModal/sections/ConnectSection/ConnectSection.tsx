@@ -2,10 +2,7 @@ import { ContentWrapper, HeroImage, StoreWrapper, Text, Title, Wrapper } from '.
 import paperWalletImage from '../../images/paper-wallet-phone.png';
 import AppleStoreIcon from '../../icons/AppleStoreIcon';
 import GoogleStoreIcon from '../../icons/GoogleStoreIcon';
-import {
-    BlackButton,
-    // TextButton
-} from '../../styles';
+import { BlackButton } from '../../styles';
 import { PaperWalletModalSectionType } from '../../PaperWalletModal';
 import QRTooltip from './QRTooltip/QRTooltip';
 import qrTooltipImage from '../../images/qr-tooltip.png';
@@ -26,10 +23,6 @@ export default function ConnectSection({ setSection }: Props) {
     const { setQrCodeValue, setIdentificationCode } = usePaperWalletStore();
     const setTokenToUuid = useAirdropSetTokenToUuid();
 
-    // const handleTextButtonClick = () => {
-    //     console.log('Learn more about Tari Aurora');
-    // };
-
     const handleBlackButtonClick = () => {
         loadPaperWalletData();
     };
@@ -39,7 +32,7 @@ export default function ConnectSection({ setSection }: Props) {
 
         try {
             const authUuid = await setTokenToUuid();
-            const r = await invoke('get_paper_wallet_details', { authUuid: authUuid });
+            const r = await invoke('get_paper_wallet_details', { authUuid });
 
             if (r) {
                 const url = r.qr_link;
@@ -58,7 +51,7 @@ export default function ConnectSection({ setSection }: Props) {
 
     return (
         <Wrapper>
-            <HeroImage src={paperWalletImage} alt="" />
+            <HeroImage src={paperWalletImage} alt="Wallet image" />
 
             <ContentWrapper>
                 <Title>{t('connect.title')}</Title>

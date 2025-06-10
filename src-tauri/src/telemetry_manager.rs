@@ -21,17 +21,25 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::airdrop;
-use crate::app_config::{AppConfig, MiningMode};
-use crate::app_in_memory_config::AppInMemoryConfig;
+use crate::airdrop::get_wallet_view_key_hashed;
+use crate::app_in_memory_config::DynamicMemoryConfig;
+
 use crate::commands::CpuMinerStatus;
+use crate::configs::config_core::ConfigCore;
+use crate::configs::config_mining::ConfigMining;
+use crate::configs::config_mining::MiningMode;
+use crate::configs::trait_config::ConfigImpl;
 use crate::gpu_miner_adapter::GpuMinerStatus;
 use crate::hardware::hardware_status_monitor::HardwareStatusMonitor;
-use crate::node_adapter::BaseNodeStatus;
+use crate::node::node_adapter::BaseNodeStatus;
+use crate::node::node_manager::NodeManager;
 use crate::p2pool::models::P2poolStats;
 use crate::process_stats_collector::ProcessStatsCollector;
 use crate::process_utils::retry_with_backoff;
 use crate::tor_control_client::TorStatus;
+use crate::utils::address_utils::extract_payment_id;
 use crate::utils::network_status::NetworkStatus;
+use crate::TasksTrackers;
 use anyhow::Result;
 use base64::prelude::*;
 use blake2::digest::Update;
@@ -45,13 +53,14 @@ use sha2::Digest;
 use std::collections::HashMap;
 use std::ops::Div;
 use std::time::Instant;
-use std::{sync::Arc, thread::sleep, time::Duration};
-use sysinfo::System;
+use std::{sync::Arc, time::Duration};
+use sysinfo::{Disks, System};
 use tari_common::configuration::Network;
+use tari_shutdown::ShutdownSignal;
 use tari_utilities::encoding::MBase58;
-use tauri::Emitter;
+use tauri::{Emitter, Manager};
 use tokio::sync::{watch, RwLock};
-use tokio_util::sync::CancellationToken;
+use tokio::time::interval;
 
 const LOG_TARGET: &str = "tari::universe::telemetry_manager";
 
@@ -100,6 +109,9 @@ pub enum TelemetryManagerError {
 
     #[error("Reqwest error: {0}")]
     ReqwestError(#[from] reqwest::Error),
+
+    #[error("TelemetryManagerError::Cancelled")]
+    Cancelled,
 }
 
 impl From<Network> for TelemetryNetwork {
@@ -190,38 +202,65 @@ pub struct TelemetryData {
     pub download_speed: f64,
     pub upload_speed: f64,
     pub latency: f64,
+    pub wallet_view_key_hashed: String,
+    pub exchange_id: String,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct NotificationData {
+    pub app_id: String,
+    pub network: Option<TelemetryNetwork>,
+    pub version: String,
+    pub is_mining_active: bool,
+    pub wallet_view_key_hashed: String,
+    pub is_orphan: bool,
+}
+
+impl From<TelemetryData> for NotificationData {
+    fn from(data: TelemetryData) -> Self {
+        Self {
+            app_id: data.app_id,
+            network: data.network,
+            version: data.version,
+            is_mining_active: data.is_mining_active,
+            wallet_view_key_hashed: data.wallet_view_key_hashed,
+            is_orphan: data
+                .extra_data
+                .get("is_orphan")
+                .unwrap_or(&"false".to_string())
+                == "true",
+        }
+    }
 }
 
 pub struct TelemetryManager {
     cpu_miner_status_watch_rx: watch::Receiver<CpuMinerStatus>,
-    config: Arc<RwLock<AppConfig>>,
-    in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
-    pub cancellation_token: CancellationToken,
+    in_memory_config: Arc<RwLock<DynamicMemoryConfig>>,
     node_network: Option<Network>,
     gpu_status: watch::Receiver<GpuMinerStatus>,
     node_status: watch::Receiver<BaseNodeStatus>,
     p2pool_status: watch::Receiver<Option<P2poolStats>>,
-    tor_status: watch::Receiver<Option<TorStatus>>,
+    tor_status: watch::Receiver<TorStatus>,
     process_stats_collector: ProcessStatsCollector,
+    node_manager: NodeManager,
 }
 
 impl TelemetryManager {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         cpu_miner_status_watch_rx: watch::Receiver<CpuMinerStatus>,
-        config: Arc<RwLock<AppConfig>>,
-        in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
+        in_memory_config: Arc<RwLock<DynamicMemoryConfig>>,
         network: Option<Network>,
         gpu_status: watch::Receiver<GpuMinerStatus>,
         node_status: watch::Receiver<BaseNodeStatus>,
         p2pool_status: watch::Receiver<Option<P2poolStats>>,
-        tor_status: watch::Receiver<Option<TorStatus>>,
+        tor_status: watch::Receiver<TorStatus>,
         process_stats_collector: ProcessStatsCollector,
+        node_manager: NodeManager,
     ) -> Self {
-        let cancellation_token = CancellationToken::new();
         Self {
             cpu_miner_status_watch_rx,
-            config,
-            cancellation_token,
             node_network: network,
             in_memory_config,
             gpu_status,
@@ -229,17 +268,20 @@ impl TelemetryManager {
             p2pool_status,
             tor_status,
             process_stats_collector,
+            node_manager,
         }
     }
 
     pub async fn get_unique_string(&self) -> String {
-        // TODO: remove before mainnet
-        let config = self.config.read().await;
-        if !config.allow_telemetry() {
+        let allow_telemetry = *ConfigCore::content().await.allow_telemetry();
+        let anon_id = ConfigCore::content().await.anon_id().clone();
+        let airdrop_tokens = ConfigCore::content().await.airdrop_tokens().clone();
+
+        if !allow_telemetry {
             return "".to_string();
         }
+
         // let os = std::env::consts::OS;
-        let anon_id = config.anon_id();
         let mut hasher = Blake2bVar::new(20).expect("Failed to create hasher");
         hasher.update(anon_id.as_bytes());
         let mut buf = [0u8; 20];
@@ -249,7 +291,7 @@ impl TelemetryManager {
         let version = env!("CARGO_PKG_VERSION");
         // let mode = MiningMode::to_str(config.mode());
 
-        let airdrop_access_token = config.airdrop_tokens().map(|tokens| tokens.token);
+        let airdrop_access_token = airdrop_tokens.map(|tokens| tokens.token);
         let id: Option<String> = airdrop_access_token
             .and_then(|token| airdrop::decode_jwt_claims(&token).map(|claim| claim.id));
 
@@ -294,31 +336,36 @@ impl TelemetryManager {
         let node_status = self.node_status.clone();
         let p2pool_status = self.p2pool_status.clone();
         let tor_status = self.tor_status.clone();
-        let config = self.config.clone();
-        let cancellation_token: CancellationToken = self.cancellation_token.clone();
         let network = self.node_network;
-        let config_cloned = self.config.clone();
         let in_memory_config_cloned = self.in_memory_config.clone();
         let stats_collector = self.process_stats_collector.clone();
-        tokio::spawn(async move {
-            tokio::select! {
-                _ = async {
-                    debug!(target: LOG_TARGET, "TelemetryManager::start_telemetry_process has  been started");
-                    loop {
-                        let telemetry_collection_enabled = config_cloned.read().await.allow_telemetry();
-                        let airdrop_access_token = config_cloned.read().await.airdrop_tokens().map(|tokens| tokens.token);
-                        if telemetry_collection_enabled {
-                            let airdrop_access_token_validated = airdrop::validate_jwt(airdrop_access_token).await;
-                            let telemetry_data = get_telemetry_data(&cpu_miner_status_watch_rx, &gpu_status, &node_status, &p2pool_status,
-                                &tor_status, &config, network, uptime, &stats_collector).await;
-                            let airdrop_api_url = in_memory_config_cloned.read().await.airdrop_api_url.clone();
-                            handle_telemetry_data(telemetry_data, airdrop_api_url, airdrop_access_token_validated, app_handle.clone()).await;
-                        }
-                        sleep(timeout);
+        let node_manager = self.node_manager.clone();
+        let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
+        let mut interval = interval(timeout);
+        interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+
+        TasksTrackers::current().common.get_task_tracker().await.spawn(async move {
+            loop {
+                let airdrop_tokens = ConfigCore::content().await.airdrop_tokens().clone();
+                let allow_telemetry = *ConfigCore::content().await.allow_telemetry();
+                let allow_notifications = *ConfigCore::content().await.allow_notifications();
+                tokio::select! {
+                    _ = interval.tick() => {
+                        debug!(target: LOG_TARGET, "TelemetryManager::start_telemetry_process has  been started");
+                        let airdrop_access_token = airdrop_tokens.map(|tokens| tokens.token);
+                        let airdrop_access_token_validated = airdrop::validate_jwt(airdrop_access_token).await;
+                        let memory_config = in_memory_config_cloned.read().await;
+                        let exchange_id = memory_config.exchange_id.clone();
+                        let telemetry_data = cancellable_get_telemetry_data(app_handle.clone(),&cpu_miner_status_watch_rx, &gpu_status, &node_status, &p2pool_status,
+                            &tor_status, network, exchange_id, uptime, &stats_collector, &node_manager, &mut (shutdown_signal.clone())).await;
+                        let airdrop_api_url = in_memory_config_cloned.read().await.airdrop_api_url.clone();
+                        handle_data(telemetry_data, airdrop_api_url, airdrop_access_token_validated, app_handle.clone(), &mut (shutdown_signal.clone()), allow_telemetry, allow_notifications).await;
+
+                    },
+                    _ = shutdown_signal.wait() => {
+                        info!(target: LOG_TARGET,"TelemetryManager::start_telemetry_process has been cancelled by app shutdown");
+                        break;
                     }
-                } => {},
-                _ = cancellation_token.cancelled() => {
-                    debug!(target: LOG_TARGET,"TelemetryManager::start_telemetry_process has been cancelled");
                 }
             }
         });
@@ -326,23 +373,56 @@ impl TelemetryManager {
     }
 }
 
-#[allow(clippy::too_many_lines)]
-async fn get_telemetry_data(
+#[allow(clippy::too_many_arguments)]
+async fn cancellable_get_telemetry_data(
+    app_handle: tauri::AppHandle,
     cpu_miner_status_watch_rx: &watch::Receiver<CpuMinerStatus>,
     gpu_latest_miner_stats: &watch::Receiver<GpuMinerStatus>,
     node_latest_status: &watch::Receiver<BaseNodeStatus>,
     p2pool_latest_status: &watch::Receiver<Option<P2poolStats>>,
-    tor_latest_status: &watch::Receiver<Option<TorStatus>>,
-    config: &RwLock<AppConfig>,
+    tor_latest_status: &watch::Receiver<TorStatus>,
+    network: Option<Network>,
+    exchange_id: String,
+    started: Instant,
+    stats_collector: &ProcessStatsCollector,
+    node_manager: &NodeManager,
+    shutdown_signal: &mut ShutdownSignal,
+) -> Result<TelemetryData, TelemetryManagerError> {
+    tokio::select! {result = get_telemetry_data_inner(app_handle.clone(),cpu_miner_status_watch_rx, gpu_latest_miner_stats, node_latest_status, p2pool_latest_status, tor_latest_status, network, started, stats_collector, node_manager, exchange_id) => {
+            result
+        }
+        _ = shutdown_signal.wait() => {
+            info!(target: LOG_TARGET,"TelemetryManager::start_telemetry_process has been cancelled by app shutdown");
+            Err(TelemetryManagerError::Cancelled)
+        }
+    }
+}
+#[allow(clippy::too_many_lines)]
+#[allow(clippy::too_many_arguments)]
+async fn get_telemetry_data_inner(
+    app_handle: tauri::AppHandle,
+    cpu_miner_status_watch_rx: &watch::Receiver<CpuMinerStatus>,
+    gpu_latest_miner_stats: &watch::Receiver<GpuMinerStatus>,
+    node_latest_status: &watch::Receiver<BaseNodeStatus>,
+    p2pool_latest_status: &watch::Receiver<Option<P2poolStats>>,
+    tor_latest_status: &watch::Receiver<TorStatus>,
     network: Option<Network>,
     started: Instant,
     stats_collector: &ProcessStatsCollector,
+    node_manager: &NodeManager,
+    exchange_id: String,
 ) -> Result<TelemetryData, TelemetryManagerError> {
-    let BaseNodeStatus { block_height, .. } = node_latest_status.borrow().clone();
+    let BaseNodeStatus {
+        block_height,
+        is_synced,
+        num_connections,
+        ..
+    } = *node_latest_status.borrow();
 
+    let wallet_view_key_hashed = get_wallet_view_key_hashed(app_handle.clone()).await;
     let cpu_miner_status = cpu_miner_status_watch_rx.borrow().clone();
     let gpu_status = gpu_latest_miner_stats.borrow().clone();
-
+    let config = ConfigCore::content().await;
     let gpu_hardware_parameters = HardwareStatusMonitor::current()
         .get_gpu_public_properties()
         .await
@@ -353,9 +433,8 @@ async fn get_telemetry_data(
         .ok();
 
     let p2pool_stats = p2pool_latest_status.borrow().clone();
-    let tor_status = tor_latest_status.borrow().clone();
+    let tor_status = *tor_latest_status.borrow();
 
-    let config_guard = config.read().await;
     let is_mining_active = cpu_miner_status.hash_rate > 0.0 || gpu_status.hash_rate > 0.0;
     let cpu_hash_rate = Some(cpu_miner_status.hash_rate);
 
@@ -414,11 +493,13 @@ async fn get_telemetry_data(
         } else {
             (None, vec![])
         }; //TODO refactor - now is JUST WIP to meet the String type
+
+    let mining_config = ConfigMining::content().await;
     let version = env!("CARGO_PKG_VERSION").to_string();
     let gpu_mining_used =
-        config_guard.gpu_mining_enabled() && gpu_make.is_some() && gpu_hash_rate.is_some();
+        *mining_config.gpu_mining_enabled() && gpu_make.is_some() && gpu_hash_rate.is_some();
     let cpu_resource_used =
-        config_guard.cpu_mining_enabled() && cpu_make.is_some() && cpu_hash_rate.is_some();
+        *mining_config.cpu_mining_enabled() && cpu_make.is_some() && cpu_hash_rate.is_some();
     let resource_used = match (gpu_mining_used, cpu_resource_used) {
         (true, true) => TelemetryResource::CpuGpu,
         (true, false) => TelemetryResource::Gpu,
@@ -426,24 +507,40 @@ async fn get_telemetry_data(
         (false, false) => TelemetryResource::None,
     };
 
-    let p2pool_enabled = config_guard.p2pool_enabled() && p2pool_stats.is_some();
+    let p2pool_enabled = *config.is_p2pool_enabled() && p2pool_stats.is_some();
     let mut extra_data = HashMap::new();
+    let is_orphan = node_manager
+        .check_if_is_orphan_chain()
+        .await
+        .unwrap_or(false);
+    extra_data.insert("is_orphan".to_string(), is_orphan.to_string());
     extra_data.insert(
         "config_cpu_enabled".to_string(),
-        config_guard.cpu_mining_enabled().to_string(),
+        mining_config.cpu_mining_enabled().to_string(),
     );
     extra_data.insert(
         "config_gpu_enabled".to_string(),
-        config_guard.gpu_mining_enabled().to_string(),
+        mining_config.gpu_mining_enabled().to_string(),
     );
     extra_data.insert(
         "config_p2pool_enabled".to_string(),
-        config_guard.p2pool_enabled().to_string(),
+        config.is_p2pool_enabled().to_string(),
     );
     extra_data.insert(
         "config_tor_enabled".to_string(),
-        config_guard.use_tor().to_string(),
+        config.use_tor().to_string(),
     );
+
+    // Add payment ID from current tari address
+    if let Some(state) = app_handle.try_state::<crate::UniverseAppState>() {
+        let tari_address = state.tari_address.read().await;
+        let address_str = tari_address.to_base58();
+        if let Ok(Some(payment_id)) = extract_payment_id(&address_str) {
+            extra_data.insert("mining_address_payment_id".to_string(), payment_id);
+        }
+        // Note: If no payment ID, we don't add the field (saves space vs empty string)
+    }
+
     let mut squad = None;
     if let Some(stats) = p2pool_stats.as_ref() {
         extra_data.insert(
@@ -462,21 +559,22 @@ async fn get_telemetry_data(
         squad = Some(stats.squad.clone());
     }
 
-    if let Some(stats) = tor_status.as_ref() {
-        extra_data.insert(
-            "tor_bootstrap_phase".to_string(),
-            stats.bootstrap_phase.to_string(),
-        );
-        extra_data.insert(
-            "tor_is_bootstrapped".to_string(),
-            stats.is_bootstrapped.to_string(),
-        );
-        extra_data.insert(
-            "tor_network_liveness".to_string(),
-            stats.network_liveness.to_string(),
-        );
-        extra_data.insert("tor_circuit_ok".to_string(), stats.circuit_ok.to_string());
-    }
+    extra_data.insert(
+        "tor_bootstrap_phase".to_string(),
+        tor_status.bootstrap_phase.to_string(),
+    );
+    extra_data.insert(
+        "tor_is_bootstrapped".to_string(),
+        tor_status.is_bootstrapped.to_string(),
+    );
+    extra_data.insert(
+        "tor_network_liveness".to_string(),
+        tor_status.network_liveness.to_string(),
+    );
+    extra_data.insert(
+        "tor_circuit_ok".to_string(),
+        tor_status.circuit_ok.to_string(),
+    );
 
     if !all_cpus.is_empty() {
         extra_data.insert("all_cpus".to_string(), all_cpus.join(","));
@@ -485,21 +583,34 @@ async fn get_telemetry_data(
         extra_data.insert("all_gpus".to_string(), all_gpus.join(","));
     }
 
-    let system = System::new_all();
+    let mut system = System::new_all();
+    std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
+    // Refresh CPUs again.
+    system.refresh_cpu_usage();
     extra_data.insert(
         "cpu_usage".to_string(),
         system.global_cpu_usage().to_string(),
     );
+    system.refresh_memory();
     extra_data.insert(
-        "total_memory".to_string(),
-        system.total_memory().to_string(),
+        "total_memory_gb".to_string(),
+        system
+            .total_memory()
+            .saturating_div(1_000_000_000)
+            .to_string(),
     );
     let memory_utilization = (system.used_memory() as f64 / system.total_memory() as f64) * 100.0;
     extra_data.insert(
         "memory_utilization".to_string(),
         memory_utilization.round().to_string(),
     );
-    extra_data.insert("free_memory".to_string(), system.free_memory().to_string());
+    extra_data.insert(
+        "free_memory_gb".to_string(),
+        system
+            .free_memory()
+            .saturating_div(1_000_000_000)
+            .to_string(),
+    );
     if let Some(core_count) = system.physical_core_count() {
         extra_data.insert("physical_core_count".to_string(), core_count.to_string());
     }
@@ -508,8 +619,13 @@ async fn get_telemetry_data(
         "uptime".to_string(),
         started.elapsed().as_secs().to_string(),
     );
-
+    extra_data.insert("node_is_synced".to_string(), is_synced.to_string());
+    extra_data.insert(
+        "node_num_connections".to_string(),
+        num_connections.to_string(),
+    );
     extra_data.insert("current_os".to_string(), std::env::consts::OS.to_string());
+    extra_data.insert("ab_test".to_string(), config.ab_group().to_string());
 
     add_process_stats(
         &mut extra_data,
@@ -548,12 +664,48 @@ async fn get_telemetry_data(
         .get_network_speeds_receiver()
         .borrow();
 
+    extra_data.insert(
+        "download_speed".to_string(),
+        download_speed.round().to_string(),
+    );
+    extra_data.insert("upload_speed".to_string(), upload_speed.round().to_string());
+    extra_data.insert("network_latency".to_string(), latency.round().to_string());
+    extra_data.insert("exchange_id".to_string(), exchange_id.to_string());
+
+    let disks = Disks::new_with_refreshed_list();
+    for (i, disk) in disks.list().iter().enumerate() {
+        extra_data.insert(
+            format!("disk_{}_total_gb", i),
+            disk.total_space().saturating_div(1_000_000_000).to_string(),
+        );
+        extra_data.insert(
+            format!("disk_{}_free_gb", i),
+            disk.available_space()
+                .saturating_div(1_000_000_000)
+                .to_string(),
+        );
+        extra_data.insert(
+            format!("disk_{}_used_gb", i),
+            (disk.total_space().saturating_sub(disk.available_space()))
+                .saturating_div(1_000_000_000)
+                .to_string(),
+        );
+        extra_data.insert(
+            format!("disk_{}_kind", i),
+            match disk.kind() {
+                sysinfo::DiskKind::HDD => "HDD".to_string(),
+                sysinfo::DiskKind::SSD => "SSD".to_string(),
+                sysinfo::DiskKind::Unknown(_) => "Unknown".to_string(),
+            },
+        );
+    }
+
     let data = TelemetryData {
-        app_id: config_guard.anon_id().to_string(),
+        app_id: config.anon_id().to_string(),
         block_height,
         is_mining_active,
         network: network.map(|n| n.into()),
-        mode: config_guard.mode().into(),
+        mode: (*mining_config.mode()).into(),
         cpu_hash_rate,
         cpu_utilization,
         cpu_make,
@@ -572,8 +724,9 @@ async fn get_telemetry_data(
         download_speed,
         upload_speed,
         latency,
+        wallet_view_key_hashed,
+        exchange_id,
     };
-    // info!(target: LOG_TARGET,"Telemetry data collected: {:?}", &data);
     Ok(data)
 }
 
@@ -626,56 +779,89 @@ fn add_process_stats(
     );
 }
 
-async fn handle_telemetry_data(
-    telemetry: Result<TelemetryData, TelemetryManagerError>,
+async fn handle_data(
+    data: Result<TelemetryData, TelemetryManagerError>,
     airdrop_api_url: String,
     airdrop_access_token: Option<String>,
     app_handle: tauri::AppHandle,
+    shutdown_signal: &mut ShutdownSignal,
+    allow_telemetry: bool,
+    allow_notifications: bool,
 ) {
-    match telemetry {
+    match data {
         Ok(telemetry) => {
-            let telemetry_response = retry_with_backoff(
-                || {
-                    Box::pin(send_telemetry_data(
-                        telemetry.clone(),
-                        airdrop_access_token.clone(),
-                        airdrop_api_url.clone(),
-                    ))
-                },
-                3,
-                2,
-                "send_telemetry_data",
-            )
-            .await;
+            if allow_telemetry {
+                let telemetry_response = tokio::select! {
+                    response = retry_with_backoff(
+                        || {
+                            Box::pin(send_telemetry_data(
+                                telemetry.clone(),
+                                airdrop_access_token.clone(),
+                                airdrop_api_url.clone(),
+                            ))
+                        },
+                        3,
+                        2,
+                        "send_telemetry_data",
+                    ) => response,
+                    _ = shutdown_signal.wait() => {
+                        info!(target: LOG_TARGET, "Telemetry data sending cancelled by shutdown signal");
+                        return;
+                    }
+                };
 
-            match telemetry_response {
-                Ok(response) => {
-                    if let Some(response_inner) = response {
-                        if let Some(user_points) = response_inner.user_points {
-                            debug!(target: LOG_TARGET,"emitting UserPoints event{:?}", user_points);
-                            let response_inner =
-                                response_inner.referral_count.unwrap_or(ReferralCount {
-                                    gems: 0.0,
-                                    count: 0,
-                                });
-                            let emit_data = TelemetryDataResponseEvent {
-                                base: user_points,
-                                referral_count: response_inner,
-                            };
+                match telemetry_response {
+                    Ok(response) => {
+                        if let Some(response_inner) = response {
+                            if let Some(user_points) = response_inner.user_points {
+                                debug!(target: LOG_TARGET,"emitting UserPoints event{:?}", user_points);
+                                let response_inner =
+                                    response_inner.referral_count.unwrap_or(ReferralCount {
+                                        gems: 0.0,
+                                        count: 0,
+                                    });
+                                let emit_data = TelemetryDataResponseEvent {
+                                    base: user_points,
+                                    referral_count: response_inner,
+                                };
 
-                            app_handle
-                                .emit("UserPoints", emit_data)
-                                .map_err(|e| {
-                                    error!("could not send user points as an event: {}", e)
-                                })
-                                .unwrap_or(());
+                                app_handle
+                                    .emit("UserPoints", emit_data)
+                                    .map_err(|e| {
+                                        error!("could not send user points as an event: {}", e)
+                                    })
+                                    .unwrap_or(());
+                            }
                         }
                     }
-                }
-                Err(e) => {
-                    error!(target: LOG_TARGET,"Error sending telemetry data: {}", e);
+                    Err(e) => {
+                        error!(target: LOG_TARGET,"Error sending telemetry data: {}", e);
+                    }
                 }
             }
+
+            if allow_notifications {
+                let notification_data_response = tokio::select! {
+                    response = send_notification_data(telemetry.into(), airdrop_access_token, airdrop_api_url)
+                        =>response,
+                    _ = shutdown_signal.wait() => {
+                        debug!(target: LOG_TARGET, "mining status notification data sending cancelled by shutdown signal");
+                        return;
+                    }
+                };
+                match notification_data_response {
+                    Ok(_) => {
+                        debug!(target: LOG_TARGET,"successfully sent emitting mining status notification event");
+                    }
+                    Err(e) => {
+                        warn!(target: LOG_TARGET,"emitting mining status notification data sending error {:?}", e.to_string());
+                    }
+                }
+            }
+        }
+
+        Err(TelemetryManagerError::Cancelled) => {
+            debug!(target: LOG_TARGET, "Telemetry manager shutdown – no data sent");
         }
         Err(e) => {
             error!(target: LOG_TARGET,"Error getting telemetry data: {}", e);
@@ -727,4 +913,46 @@ async fn send_telemetry_data(
         return Ok(Some(data));
     }
     Ok(None)
+}
+
+async fn send_notification_data(
+    data: NotificationData,
+    airdrop_access_token: Option<String>,
+    airdrop_api_url: String,
+) -> Result<(), TelemetryManagerError> {
+    let request = reqwest::Client::new();
+
+    let mut request_builder = request
+        .post(format!("{}/miner/notifications", airdrop_api_url))
+        .timeout(Duration::from_secs(5))
+        .header(
+            "User-Agent".to_string(),
+            format!("tari-universe/{}", data.version.clone()),
+        )
+        .json(&data);
+
+    if let Some(token) = airdrop_access_token.clone() {
+        request_builder = request_builder.header("Authorization", format!("Bearer {}", token));
+    }
+
+    let response = request_builder.send().await?;
+
+    if response.status() == 429 {
+        warn!(target: LOG_TARGET,"notification data rate limited by http {:?}", response.status());
+        return Ok(());
+    }
+
+    if response.status() != 200 {
+        let status = response.status();
+        let response = response.text().await?;
+        let response_as_json: Result<Value, serde_json::Error> = serde_json::from_str(&response);
+        return Err(anyhow::anyhow!(
+            "notification data sending error. Status {:?} response text: {:?}",
+            status.to_string(),
+            response_as_json.unwrap_or(response.into()),
+        )
+        .into());
+    }
+
+    Ok(())
 }

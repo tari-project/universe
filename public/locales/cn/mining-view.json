@@ -1,9 +1,19 @@
 {
+  "bubbles": {
+    "active-miners": "active miners",
+    "ago": "ago",
+    "block": "block",
+    "got-rewarded": "got rewarded",
+    "miners": "miners",
+    "pool": "Pool",
+    "solved": "solved",
+    "solving": "is being solved"
+  },
   "connection-to-node-lost": "与矿工的连接丢失。请等待矿机重新连接或重启矿机.",
   "cpu-power": "CPU 功率",
   "current-block-time": "当前区块时间",
   "day": "day",
-  "estimated-day": "预估 tXTM/天",
+  "estimated-day": "预估 XTM/天",
   "estimated-earnings": "预计收益",
   "floor": "地板",
   "gpu-power": "GPU 功率",
@@ -25,6 +35,12 @@
     "step_4": "尝试使用 Tor 桥接（在设置中）",
     "step_5": "尝试禁用 Tor（在设置中）",
     "step_6": "尝试重置应用程序（在设置中）"
+  },
+  "pool": {
+    "accepted_shares": "已接受份额",
+    "balance": "Total earnings",
+    "min_payout": "最低支付",
+    "unpaid": "未支付"
   },
   "you-earn-rewards-separately": "您分别为 CPU 和 GPU 挖矿获得奖励",
   "you-won-block": "您赢得了<span>区块 #{{ blockHeight }}</span>",

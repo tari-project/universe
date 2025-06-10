@@ -8,7 +8,7 @@ const lightTheme: DefaultTheme = {
     ...componentSettings,
 };
 
-const darkTheme = {
+const darkTheme: DefaultTheme = {
     ...darkPalette,
     ...componentSettings,
 };

@@ -1,4 +1,7 @@
 {
+  "connected-since": "Verbunden seit",
+  "connections": "Verbindungen",
+  "established": "Etabliert",
   "listener-addresses": "Listener-Adressen",
   "miners": "Miner",
   "network-info": "Netzwerkinformationen",
@@ -7,8 +10,16 @@
   "p2pool-connection-info": "Verbindung",
   "p2pool-connection-info-more": "Verbindungsdetails",
   "p2pool-peers": "P2pool-Peers",
-  "p2pool-stats": "Pool-Mining-Statistiken",
+  "p2pool-stats": "P2pool-Statistiken",
+  "pending": "Ausstehend",
   "randomx-stats": "RandomX-Statistiken",
   "sha3-stats": "SHA3-Statistiken",
+  "stats": {
+    "earned": "You earned",
+    "tile-heading": "Belohnungen in Bearbeitung",
+    "tile-loading": "Pool wird aufgewärmt",
+    "tooltip-copy": "Belohnungen sind „In Bearbeitung“, bis Sie ein Minimum von <strong>{{amount}}</strong> verdienen. Nachdem Sie die Schwelle erreicht haben, werden die in Bearbeitung befindlichen Belohnungen automatisch an Ihr Tari Universe Wallet gesendet. Es kann weitere 2 Stunden dauern, bis sie ankommen.",
+    "tooltip-tile-heading": "Belohnungsschwelle"
+  },
   "tribe": "Stamm"
 }

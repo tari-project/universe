@@ -5,7 +5,6 @@
   "application-info": "アプリケーション情報",
   "applyInviteCode": "招待コードを適用",
   "cancel": "キャンセル",
-  "gpu-engine": "GPUエンジン",
   "change-language": "言語",
   "confirm": "確認",
   "confirm-action": "アクションを確認",
@@ -30,6 +29,7 @@
   "debug-info": "デバッグ",
   "disconnect": "エアドロップから切断",
   "errors": {
+    "fetch-tor-bridges": "Torブリッジの取得に失敗しました。インターネット接続を確認するか、後でもう一度お試しください。",
     "invalid-bridge": "ブリッジ設定が無効です",
     "invalid-control-port": "コントロールポートの設定が無効です"
   },
@@ -39,6 +39,7 @@
   "gpu-device-enabled": "GPUマイニングデバイス",
   "gpu-device-enabled-description": "特定のGPUデバイスを有効または無効にします。",
   "gpu-device-no-found": "⚠️ GPUデバイスが見つかりません",
+  "gpu-engine": "GPUエンジン",
   "gpu-mining-enabled": "GPUマイニング",
   "gpu-unavailable": "⚠️ ハードウェアがサポートしていないため、GPUが無効です",
   "hardware-status": "ハードウェアの状態",
@@ -56,6 +57,8 @@
   "inviteCode": "招待コード",
   "is-on-orphan-chain": "フォークに接続されているようです。メインチェーンではありません。獲得したブロックは無効になる可能性があります。",
   "last-block-added-time": "最後のブロックがチェーンに追加された時間",
+  "license-agreement": "ライセンス契約",
+  "local-node-sync-progress": "ローカルノードの同期進行状況",
   "logs": "ログ",
   "low-hash-rate-warning": "ハッシュレートが非常に低いです。Tari Universe以外のすべてのアプリを閉じてみてください",
   "mine-on-app-start": {
@@ -64,6 +67,7 @@
   },
   "miners": "マイナー",
   "mining-toggle-warning": "変更が適用される間、マイニングは一時停止されます。",
+  "minotari-node": "Minotariノード",
   "monero-address": {
     "placeholder": "Moneroアドレスを入力",
     "title": "Moneroアドレス"
@@ -71,6 +75,12 @@
   "monero-seed-words": "Monero シードワード",
   "network": "ネットワーク",
   "no-entry-guard": "エントリーガードが接続されていません！",
+  "node-configuration": "ノード設定",
+  "node-configuration-description": "ローカルが使用可能になるまで、リモート、ローカル、または両方で接続します",
+  "node-connection-address": "接続アドレス",
+  "node-public-address": "公開アドレス",
+  "node-public-key": "公開鍵",
+  "node-type": "タイプ",
   "not-connected-to-tari": "Tariネットワークに接続されていません",
   "open-logs-directory": "ログディレクトリを開く",
   "p2pool-chain-tip": "チェーンの先端",
@@ -81,7 +91,7 @@
   "paper-wallet": {
     "connect-wallet-to-phone": "Tari Universeウォレットを電話に接続",
     "do-not-share-this-code": "このコードを誰とも共有しないでください",
-    "link-tari-aurora": "Tari Auroraをリンク",
+    "link-tari-aurora": "Tari Universe Mobileをリンク",
     "load-qr-code": "QRコードを読み込む",
     "passphrase": "パスフレーズ"
   },
@@ -94,6 +104,8 @@
   "pre-release-note": "アプリケーションのプレリリース版に切り替えようとしています。このバージョンは、エキサイティングな新機能や改善を提供する可能性がありますが、まだ改良中の部分に遭遇する可能性もあります。",
   "randomx-network-hash-rate": "Randomxネットワークのハッシュレート",
   "refresh-versions": "バージョンを更新",
+  "refresh-wallet-history": "Refresh wallet history",
+  "refresh-wallet-history-description": "Scan and validate all your transactions",
   "release-notes": {
     "loading": "リリースノートを読み込み中...",
     "upgrade-available": "⚠️ アップグレード可能"
@@ -150,10 +162,12 @@
     "title": "Tari Universeを自動更新"
   },
   "use-dynamic-fail-data": "動的フェイルデータを使用",
+  "use-p2p": "P2poolを使用",
   "use-random-control-port": "ランダムな制御ポートを使用",
   "use-random-port": "ランダムポートを使用",
   "use-tor": "Torを使用する",
   "use-tor-bridges": "Torブリッジを使用",
+  "user-agreement": "ユーザー契約",
   "visual-mode": "ビジュアルモード",
   "yes": "はい",
   "your-feedback": "問題を説明してください",

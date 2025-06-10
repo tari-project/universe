@@ -1,5 +1,4 @@
 import {
-    AppConfig,
     ApplicationsVersions,
     ExternalDependency,
     P2poolStatsResult,
@@ -8,13 +7,23 @@ import {
     MaxConsumptionLevels,
     GpuThreads,
     P2poolConnections,
+    WalletBalance,
+    BridgeEnvs,
+    TariAddressVariants,
 } from './app-status';
 import { Language } from '@app/i18initializer';
 import { PaperWalletDetails } from '@app/types/app-status.ts';
 import { displayMode, modeType } from '@app/store/types.ts';
 import { SignData } from '@app/types/ws.ts';
+import { ConfigBackendInMemory } from '@app/types/configs.ts';
+import { ExchangeMiner } from './exchange';
+import { ActiveTapplet } from '@app/types/tapplets/tapplet.types';
 
 declare module '@tauri-apps/api/core' {
+    function invoke(
+        param: 'send_one_sided_to_stealth_address',
+        payload: { amount: string; destination: string; paymentId?: string }
+    ): Promise<void>;
     function invoke(
         param: 'set_should_always_use_system_language',
         payload: { shouldAlwaysUseSystemLanguage: boolean }
@@ -22,17 +31,19 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'set_should_auto_launch', payload: { shouldAutoLaunch: boolean }): Promise<void>;
     function invoke(param: 'set_selected_engine', payload: { selectedEngine: string }): Promise<void>;
     function invoke(param: 'set_application_language', payload: { applicationLanguage: Language }): Promise<void>;
+    function invoke(param: 'frontend_ready'): Promise<void>;
     function invoke(
         param: 'download_and_start_installer',
         payload: { missingDependency: ExternalDependency }
     ): Promise<void>;
     function invoke(param: 'get_external_dependencies'): Promise<ExternalDependency[]>;
     function invoke(param: 'get_paper_wallet_details', payload?: { authUuid?: string }): Promise<PaperWalletDetails>;
-    function invoke(param: 'resolve_application_language'): Promise<Language>;
     function invoke(param: 'set_mine_on_app_start', payload: { mineOnAppStart: boolean }): Promise<void>;
     function invoke(param: 'open_log_dir'): Promise<void>;
-    function invoke(param: 'start_mining'): Promise<void>;
-    function invoke(param: 'stop_mining'): Promise<void>;
+    function invoke(param: 'start_cpu_mining'): Promise<void>;
+    function invoke(param: 'start_gpu_mining'): Promise<void>;
+    function invoke(param: 'stop_cpu_mining'): Promise<void>;
+    function invoke(param: 'stop_gpu_mining'): Promise<void>;
     function invoke(param: 'set_allow_telemetry', payload: { allow_telemetry: boolean }): Promise<void>;
     function invoke(param: 'send_data_telemetry_service', payload: { eventName: string; data: object }): Promise<void>;
     function invoke(param: 'set_user_inactivity_timeout', payload: { timeout: number }): Promise<void>;
@@ -49,7 +60,6 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'set_monero_address', payload: { moneroAddress: string }): Promise<void>;
     function invoke(param: 'send_feedback', payload: { feedback: string; includeLogs: boolean }): Promise<string>;
     function invoke(param: 'reset_settings', payload: { resetWallet: boolean }): Promise<string>;
-    function invoke(param: 'get_app_config'): Promise<AppConfig>;
     function invoke(param: 'set_p2pool_enabled', payload: { p2pool_enabled: boolean }): Promise<void>;
     function invoke(param: 'get_p2pool_stats'): Promise<P2poolStatsResult>;
     function invoke(param: 'get_p2pool_connections'): Promise<P2poolConnections>;
@@ -63,11 +73,17 @@ declare module '@tauri-apps/api/core' {
         param: 'get_coinbase_transactions',
         payload: { continuation: boolean; limit?: number }
     ): Promise<TransactionInfo[]>;
+    function invoke(
+        param: 'get_transactions_history',
+        payload: { offset?: number; limit?: number }
+    ): Promise<TransactionInfo[]>;
     function invoke(param: 'import_seed_words', payload: { seedWords: string[] }): Promise<void>;
     function invoke(param: 'get_tor_config'): Promise<TorConfig>;
     function invoke(param: 'set_tor_config', payload: { config: TorConfig }): Promise<TorConfig>;
     function invoke(param: 'fetch_tor_bridges'): Promise<string[]>;
     function invoke(param: 'get_tor_entry_guards'): Promise<string[]>;
+    function invoke(param: 'start_mining_status'): Promise<string[]>;
+    function invoke(param: 'stop_mining_status'): Promise<string[]>;
     function invoke(param: 'set_visual_mode', payload: { enabled: boolean }): Promise<void>;
     function invoke(param: 'set_pre_release', payload: { preRelease: boolean }): Promise<void>;
     function invoke(param: 'proceed_with_update'): Promise<void>;
@@ -86,6 +102,8 @@ declare module '@tauri-apps/api/core' {
         param: 'set_show_experimental_settings',
         payload: { showExperimentalSettings: boolean }
     ): Promise<void>;
+    function invoke(param: 'websocket_connect'): Promise<void>;
+    function invoke(param: 'websocket_close'): Promise<void>;
     function invoke(
         param: 'set_monerod_config',
         payload: {
@@ -98,4 +116,25 @@ declare module '@tauri-apps/api/core' {
         payload: { level: 'log' | 'error' | 'warn' | 'info'; message: string }
     ): Promise<ApplicationsVersions>;
     function invoke(param: 'sign_ws_data', payload: { data: string }): Promise<SignData>;
+    function invoke(param: 'reconnect'): Promise<void>;
+    function invoke(
+        param: 'verify_address_for_send',
+        payload: { address: string; sendingMethod?: number }
+    ): Promise<void>;
+    function invoke(param: 'validate_minotari_amount', payload: { amount: string }): Promise<string>;
+    function invoke(param: 'trigger_phases_restart'): Promise<void>;
+    function invoke(param: 'set_node_type', payload: { nodeType: NodeType }): Promise<void>;
+    function invoke(param: 'set_warmup_seen', payload: { warmupSeen: boolean }): Promise<void>;
+    function invoke(param: 'set_tari_address', payload: { address: string }): Promise<void>;
+    function invoke(param: 'confirm_exchange_address', payload: { address: string }): Promise<void>;
+    function invoke(param: 'get_app_in_memory_config'): Promise<ConfigBackendInMemory>;
+    function invoke(param: 'user_selected_exchange', payload: { exchange_miner: ExchangeMiner }): Promise<void>;
+    function invoke(param: 'is_universal_miner'): Promise<boolean>;
+    function invoke(param: 'launch_builtin_tapplet'): Promise<ActiveTapplet>;
+    function invoke(param: 'get_tari_wallet_address'): Promise<string>;
+    function invoke(param: 'get_tari_wallet_balance'): Promise<WalletBalance>;
+    function invoke(param: 'get_bridge_envs'): Promise<BridgeEnvs>;
+    function invoke(param: 'parse_tari_address', payload: { address: string }): Promise<TariAddressVariants>;
+    function invoke(param: 'refresh_wallet_history'): Promise<void>;
+    function invoke(param: 'get_universal_miner_initialized_exchange_id'): Promise<string | undefiend>;
 }
