@@ -30,7 +30,6 @@ use crate::process_adapter::ProcessStartupSpec;
 use anyhow::anyhow;
 use anyhow::Error;
 use async_trait::async_trait;
-use futures_util::task::Spawn;
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

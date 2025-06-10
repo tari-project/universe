@@ -248,9 +248,6 @@ fn get_memory_stats(child: &ProcessInstance) -> (u64, u64) {
     let mut process_mem = 0;
     let mut process_vmem = 0;
     if let Some(pid) = child.pid() {
-        // let s = sysinfo::System::new_with_specifics(
-        // RefreshKind::nothing().with_memory(MemoryRefreshKind::everything()),
-        // );
         let mut s = sysinfo::System::new_all();
         s.refresh_all();
         if let Some(process) = s.process(Pid::from_u32(pid)) {
@@ -295,7 +292,7 @@ async fn do_health_check<TStatusMonitor: StatusMonitor, TProcessInstance: Proces
             HealthStatus::Healthy => {
                 *warning_count = 0;
                 is_healthy = true;
-                let (mem, vmem) = get_memory_stats(child);
+                let (mem, vmem) = get_memory_stats(&child);
                 stats.memory_usage = mem;
                 stats.virtual_memory_usage = vmem;
             }
@@ -308,7 +305,7 @@ async fn do_health_check<TStatusMonitor: StatusMonitor, TProcessInstance: Proces
                 } else {
                     is_healthy = true;
                 }
-                let (mem, vmem) = get_memory_stats(child);
+                let (mem, vmem) = get_memory_stats(&child);
                 stats.memory_usage = mem;
                 stats.virtual_memory_usage = vmem;
             }
