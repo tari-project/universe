@@ -243,7 +243,6 @@ impl RequestClient {
                             let progress_percentage = (file.metadata().await?.len() as f64
                                 / expected_size as f64)
                                 * 100.0;
-                            info!(target: LOG_TARGET, "Progress: {:.2}%", progress_percentage);
                             if let Some(sender) = &progress_status_sender {
                                 if let Err(e) = sender.send(progress_percentage.round()) {
                                     warn!(target: LOG_TARGET, "Failed to send progress update: {}", e);

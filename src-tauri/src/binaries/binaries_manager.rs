@@ -475,9 +475,6 @@ impl BinaryManager {
 
                     let last_percentage = *receiver.borrow();
 
-
-                    info!(target: LOG_TARGET, "Sending progress update for binary: {:?} with percentage: {}", binary_name, last_percentage);
-
                     let mut params = HashMap::new();
                     params.insert(
                         "progress".to_string(),
@@ -486,8 +483,6 @@ impl BinaryManager {
                     step_update_channel
                         .send_update(params, (last_percentage / 100.0).round())
                         .await;
-
-
 
                     tokio::time::sleep(std::time::Duration::from_millis(10)).await;
 
