@@ -88,7 +88,9 @@ pub(crate) trait ProcessAdapter {
         sys.refresh_all();
 
         for (pid, process) in sys.processes() {
+            info!(target: LOG_TARGET, "SHAN MEM process.name = {:?} binary_name = {:?}", process.name(), binary_name);
             if process.name() == binary_name {
+                info!(target: LOG_TARGET, "SHAN MEM pid  {:?} process {:?} for {:?}", pid, process, binary_name);
                 return Some(pid.as_u32());
             }
         }

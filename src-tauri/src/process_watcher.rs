@@ -25,7 +25,6 @@ use crate::process_adapter::ProcessInstanceTrait;
 use crate::process_adapter::{HealthStatus, ProcessAdapter, StatusMonitor};
 use futures_util::future::FusedFuture;
 use log::{error, info, warn};
-
 use std::path::{Path, PathBuf};
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
@@ -135,9 +134,13 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         let first_start = self
             .is_first_start
             .load(std::sync::atomic::Ordering::SeqCst);
-        let (mut child, status_monitor) =
-            self.adapter
-                .spawn(base_path, config_path, log_path, binary_path, first_start)?;
+        let (mut child, status_monitor) = self.adapter.spawn(
+            base_path.clone(),
+            config_path,
+            log_path,
+            binary_path.clone(),
+            first_start,
+        )?;
         if first_start {
             self.is_first_start
                 .store(false, std::sync::atomic::Ordering::SeqCst);
@@ -150,8 +153,14 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         let task_tracker = task_tracker.clone();
         let stop_on_exit_codes = self.stop_on_exit_codes.clone();
         let stats_broadcast = self.stats_broadcast.clone();
-        let binary_name = binary.name();
-        let pid = TAdapter::find_process_pid_by_name(binary_name.as_ref());
+
+        let binary_name = binary_path
+            .file_name()
+            .expect("binary path must have a file name");
+        let pid = TAdapter::find_process_pid_by_name(binary_name);
+
+        info!(target: LOG_TARGET, "SHAN MEM binary_name {:?} pid {:?}", binary_name, pid);
+
         self.watcher_task = Some(task_tracker.clone().spawn(async move {
             child.start(task_tracker.clone()).await?;
             let mut uptime = Instant::now();
@@ -256,6 +265,7 @@ fn get_memory_stats(pid: Option<u32>) -> (u64, u64) {
         if let Some(process) = s.process(Pid::from_u32(pid)) {
             process_mem = process.memory();
             process_vmem = process.virtual_memory();
+            info!(target: LOG_TARGET, "SHAN MEM pid  {:?} process_mem {:?} process_vmem {:?}", pid, process_mem, process_vmem);
         }
     }
     (process_mem, process_vmem)
