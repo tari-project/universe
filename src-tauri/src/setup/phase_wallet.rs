@@ -27,14 +27,12 @@ use crate::{
         trait_config::ConfigImpl,
     },
     events_emitter::EventsEmitter,
-    progress_tracker_old::ProgressTracker,
     progress_trackers::{
         progress_plans::{ProgressPlans, ProgressSetupWalletPlan},
         progress_stepper::ProgressStepperBuilder,
         ProgressStepper,
     },
     setup::setup_manager::SetupPhase,
-    tapplets::{TappletResolver, Tapplets},
     tasks_tracker::TasksTrackers,
     wallet_manager::WalletStartupConfig,
     UniverseAppState,
@@ -44,7 +42,7 @@ use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::ShutdownSignal;
 use tauri::{AppHandle, Manager};
 use tokio::sync::{
-    watch::{self, Receiver, Sender},
+    watch::{Receiver, Sender},
     Mutex,
 };
 use tokio_util::task::TaskTracker;
@@ -160,21 +158,15 @@ impl SetupPhaseImpl for WalletSetupPhase {
         let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
         let state = self.app_handle.state::<UniverseAppState>();
 
-        // TODO Remove once not needed
-        let (tx, rx) = watch::channel("".to_string());
-        let progress = ProgressTracker::new(self.app_handle.clone(), Some(tx));
-
         let binary_resolver = BinaryResolver::current().read().await;
-        let tapplet_resolver = TappletResolver::current().read().await;
 
-        progress_stepper
-            .resolve_step(ProgressPlans::Wallet(
-                ProgressSetupWalletPlan::BinariesWallet,
-            ))
-            .await;
+        let wallet_binary_progress_tracker = progress_stepper.channel_step_range_updates(
+            ProgressPlans::Wallet(ProgressSetupWalletPlan::BinariesWallet),
+            Some(ProgressPlans::Wallet(ProgressSetupWalletPlan::StartWallet)),
+        );
 
         binary_resolver
-            .initialize_binary_timeout(Binaries::Wallet, progress.clone(), rx.clone())
+            .initialize_binary(Binaries::Wallet, wallet_binary_progress_tracker)
             .await?;
 
         progress_stepper
@@ -221,12 +213,13 @@ impl SetupPhaseImpl for WalletSetupPhase {
             .await?;
         drop(spend_wallet_manager);
 
-        progress_stepper
-            .resolve_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::SetupBridge))
-            .await;
+        let bridge_binary_progress_tracker = progress_stepper.channel_step_range_updates(
+            ProgressPlans::Wallet(ProgressSetupWalletPlan::SetupBridge),
+            Some(ProgressPlans::Wallet(ProgressSetupWalletPlan::Done)),
+        );
 
-        tapplet_resolver
-            .initialize_tapplet_timeout(Tapplets::Bridge, progress.clone(), rx.clone())
+        binary_resolver
+            .initialize_binary(Binaries::BridgeTapplet, bridge_binary_progress_tracker)
             .await?;
 
         Ok(())
