@@ -12,26 +12,13 @@ import { PlaceholderItem } from './ListItem.styles.ts';
 import { LoadingText } from '@app/containers/navigation/components/Wallet/ListLoadingAnimation/styles.ts';
 import { TransactionDetails } from '@app/components/transactions/history/details/TransactionDetails.tsx';
 import { invoke } from '@tauri-apps/api/core';
-import { TxArgs } from '@app/store/actions/walletStoreActions.ts';
-import { fetchCoinbaseTransactions, fetchNonCoinbaseTransactions } from '@app/store';
+import { fetchTransactions } from '@app/store/actions/walletStoreActions.ts';
+import { TxHistoryFilter } from './FilterSelect.tsx';
 
 export type TransactionDetailsItem = TransactionInfo & { dest_address_emoji?: string };
 
 const TX_FETCH_LIMIT = 20;
 const IS_NEW_TIMEOUT = 15 * 60 * 1000; // 15min
-
-export type TxHistoryFilter = 'rewards' | 'transactions';
-
-const fetchTransactionsHistory = async (filter: TxHistoryFilter, tx_args: TxArgs) => {
-    if (filter === 'rewards') {
-        return fetchCoinbaseTransactions(tx_args);
-    }
-    if (filter === 'transactions') {
-        return fetchNonCoinbaseTransactions(tx_args);
-    }
-    console.error('Invalid tx history filter: ', filter);
-    return Promise.resolve([]);
-};
 
 const HistoryList = memo(function HistoryList({ filter }: { filter: TxHistoryFilter }) {
     const { t } = useTranslation('wallet');
@@ -39,28 +26,25 @@ const HistoryList = memo(function HistoryList({ filter }: { filter: TxHistoryFil
     const [hasMore, setHasMore] = useState(true);
     const [detailsItem, setDetailsItem] = useState<TransactionDetailsItem | null>(null);
     const walletScanning = useWalletStore((s) => s.wallet_scanning);
-    const regularTransactions = useWalletStore((state) => state.transactions);
-    const rewardsTransactions = useWalletStore((state) => state.coinbase_transactions);
-
-    const transactionsToShow = filter === 'rewards' ? rewardsTransactions : regularTransactions;
+    const transactions = useWalletStore((state) => state.tx_history);
 
     useEffect(() => {
-        setHasMore(false);
+        setHasMore(true);
     }, [filter]);
 
     const handleNext = useCallback(async () => {
         if (isFetchingTxs) return;
         setIsFetchingTxs(true);
         try {
-            const offset = transactionsToShow.length;
-            const txs = await fetchTransactionsHistory(filter, { offset, limit: TX_FETCH_LIMIT });
+            const offset = transactions.length;
+            const txs = await fetchTransactions({ filter, offset, limit: TX_FETCH_LIMIT });
             setHasMore(txs.length >= offset + TX_FETCH_LIMIT);
         } catch (error) {
             console.error('Failed to fetch transaction history:', error);
         } finally {
             setIsFetchingTxs(false);
         }
-    }, [filter, isFetchingTxs, transactionsToShow]);
+    }, [filter, isFetchingTxs, transactions]);
 
     const handleDetailsChange = useCallback(async (tx: TransactionInfo | null) => {
         if (!tx) {
@@ -91,7 +75,7 @@ const HistoryList = memo(function HistoryList({ filter }: { filter: TxHistoryFil
 
     const listMarkup = useMemo(() => {
         // Calculate how many placeholder items we need to add
-        const transactionsCount = transactionsToShow?.length || 0;
+        const transactionsCount = transactions?.length || 0;
         const placeholdersNeeded = Math.max(0, 5 - transactionsCount);
 
         return (
@@ -103,7 +87,7 @@ const HistoryList = memo(function HistoryList({ filter }: { filter: TxHistoryFil
                 scrollableTarget="list"
             >
                 <ListItemWrapper>
-                    {transactionsToShow?.map((tx, i) => {
+                    {transactions?.map((tx, i) => {
                         const isNew = Date.now() - tx.timestamp * 1000 < IS_NEW_TIMEOUT;
                         return (
                             <HistoryListItem
@@ -126,7 +110,7 @@ const HistoryList = memo(function HistoryList({ filter }: { filter: TxHistoryFil
                 </ListItemWrapper>
             </InfiniteScroll>
         );
-    }, [transactionsToShow, handleNext, hasMore, handleDetailsChange]);
+    }, [transactions, handleNext, hasMore, handleDetailsChange]);
 
     const baseMarkup = walletScanning.is_scanning ? (
         <ListLoadingAnimation
@@ -144,7 +128,7 @@ const HistoryList = memo(function HistoryList({ filter }: { filter: TxHistoryFil
         listMarkup
     );
 
-    const isEmpty = !walletScanning.is_scanning && !transactionsToShow?.length;
+    const isEmpty = !walletScanning.is_scanning && !transactions?.length;
     const emptyMarkup = isEmpty ? <LoadingText>{t('empty-tx')}</LoadingText> : null;
 
     return (

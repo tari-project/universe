@@ -8,7 +8,7 @@ import {
     StyledIconButton,
     TabHeader,
 } from '../components/Tabs/tab.styles.ts';
-import HistoryList, { TxHistoryFilter } from '../history/HistoryList.tsx';
+import HistoryList from '../history/HistoryList.tsx';
 import WalletBalanceMarkup from '@app/containers/navigation/components/Wallet/WalletBalanceMarkup.tsx';
 import { IoCheckmarkOutline, IoCopyOutline } from 'react-icons/io5';
 import { truncateMiddle } from '@app/utils/truncateString.ts';
@@ -28,16 +28,14 @@ import {
     WalletWrapper,
     SwapsWrapper,
 } from './wallet.styles.ts';
-import { memo, useState } from 'react';
+import { memo } from 'react';
 import { useTariBalance } from '@app/hooks/wallet/useTariBalance.ts';
 import ArrowRight from './ArrowRight.tsx';
 import { Swap } from './Swap/Swap.tsx';
 import { AnimatePresence } from 'motion/react';
 import { swapTransition, walletTransition } from './transitions.ts';
-import { setIsSwapping } from '@app/store/actions/walletStoreActions.ts';
-import { FilterCTA, FilterWrapper } from '@app/components/transactions/history/TxHistory.styles.ts';
-
-const FILTER_TYPES: TxHistoryFilter[] = ['rewards', 'transactions'] as const;
+import { fetchTransactions, setIsSwapping, setTxHistoryFilter } from '@app/store/actions/walletStoreActions.ts';
+import { FilterSelect, TxHistoryFilter } from '../history/FilterSelect.tsx';
 
 interface Props {
     section: string;
@@ -54,12 +52,13 @@ const Wallet = memo(function Wallet({ section, setSection }: Props) {
     const displayAddress = truncateMiddle(walletAddress, 4);
     const swapUiEnabled = useAirdropStore((s) => s.swapsEnabled);
     const isSwapping = useWalletStore((s) => s.is_swapping);
-    const [filter, setFilter] = useState<TxHistoryFilter>('rewards');
+    const filter = useWalletStore((s) => s.tx_history_filter);
 
     const { isWalletScanning, formattedAvailableBalance } = useTariBalance();
 
     function handleFilterChange(newFilter: TxHistoryFilter) {
-        setFilter(newFilter);
+        setTxHistoryFilter(newFilter);
+        fetchTransactions({ offset: 0, limit: 20, filter: newFilter });
     }
 
     return (
@@ -88,17 +87,7 @@ const Wallet = memo(function Wallet({ section, setSection }: Props) {
                                 <TabsTitle>{`${t('history.available-balance')}: ${formattedAvailableBalance} ${t('common:xtm')}`}</TabsTitle>
 
                                 <TabsWrapper>
-                                    <FilterWrapper>
-                                        {FILTER_TYPES.map((type) => (
-                                            <FilterCTA
-                                                key={type}
-                                                $isActive={filter === type}
-                                                onClick={() => handleFilterChange(type)}
-                                            >
-                                                {type}
-                                            </FilterCTA>
-                                        ))}
-                                    </FilterWrapper>
+                                    <FilterSelect filter={filter} handleFilterChange={handleFilterChange} />
                                     <SyncButton onClick={() => setShowPaperWalletModal(true)}>
                                         {t('history.sync-with-phone')} <ArrowRight />
                                     </SyncButton>

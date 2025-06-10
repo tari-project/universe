@@ -4,8 +4,7 @@ import { useSetupStore } from '../useSetupStore';
 import { startCpuMining, startGpuMining, stopCpuMining, stopGpuMining } from './miningStoreActions';
 import {
     fetchApplicationsVersionsWithRetry,
-    fetchCoinbaseTransactions,
-    fetchNonCoinbaseTransactions,
+    fetchTransactions,
     setWalletAddress,
     TOWER_CANVAS_ID,
     useConfigBEInMemoryStore,
@@ -13,6 +12,7 @@ import {
     useConfigUIStore,
     useMiningStore,
     useUIStore,
+    useWalletStore,
 } from '@app/store';
 import { ProgressTrackerUpdatePayload } from '@app/hooks/app/useProgressEventsListener';
 
@@ -50,8 +50,14 @@ export const handleAppUnlocked = async () => {
 export const handleWalletUnlocked = () => {
     useSetupStore.setState({ walletUnlocked: true });
     // Initial fetch of transactions
-    fetchCoinbaseTransactions({ offset: 0, limit: 20 });
-    fetchNonCoinbaseTransactions({ offset: 0, limit: 20 });
+    const { tx_history_filter } = useWalletStore.getState();
+    fetchTransactions({ offset: 0, limit: 20, filter: tx_history_filter });
+    fetchTransactions({
+        offset: 0,
+        limit: 20,
+        filter: 'rewards',
+        storeKey: 'coinbase_transactions',
+    });
 };
 export const handleWalletUpdate = async (addressPayload: WalletAddress) => {
     const addressIsGenerated = addressPayload.is_tari_address_generated;

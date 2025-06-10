@@ -1,15 +1,17 @@
 import { create } from './create';
 import { TransactionInfo, WalletBalance } from '../types/app-status.ts';
 import { refreshTransactions } from './actions/walletStoreActions.ts';
+import { TxHistoryFilter } from '@app/components/transactions/history/FilterSelect.tsx';
 
-interface WalletStoreState {
+export interface WalletStoreState {
     tari_address_base58: string;
     tari_address_emoji: string;
     is_tari_address_generated: boolean | null;
     balance?: WalletBalance;
     calculated_balance?: number;
     coinbase_transactions: TransactionInfo[];
-    transactions: TransactionInfo[];
+    tx_history_filter: TxHistoryFilter;
+    tx_history: TransactionInfo[];
     is_wallet_importing: boolean;
     is_swapping?: boolean;
     wallet_scanning: {
@@ -25,7 +27,8 @@ const initialState: WalletStoreState = {
     tari_address_emoji: '',
     is_tari_address_generated: null,
     coinbase_transactions: [],
-    transactions: [],
+    tx_history_filter: 'all-activity',
+    tx_history: [],
     is_wallet_importing: false,
     wallet_scanning: {
         is_scanning: true,
@@ -79,7 +82,7 @@ export const updateWalletScanningProgress = (payload: {
 // New function to prune transaction arrays when they get too large
 export const pruneTransactionHistory = () => {
     useWalletStore.setState((state) => ({
-        transactions: pruneTransactionArray(state.transactions, MAX_TRANSACTIONS_IN_MEMORY),
+        transactions: pruneTransactionArray(state.tx_history, MAX_TRANSACTIONS_IN_MEMORY),
         coinbase_transactions: pruneTransactionArray(state.coinbase_transactions, MAX_COINBASE_TRANSACTIONS_IN_MEMORY),
     }));
 };
