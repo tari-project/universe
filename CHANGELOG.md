@@ -1,3 +1,19 @@
+🚀 TARI UNIVERSE v1.2.8: The Feast of Light
+
+_June 9, 2025_
+
+🔄 Rolling out via auto-update
+
+Hey everyone,
+
+Introducing Tari Universe v1.2.8 "The Feast of Light." This release of Tari Universe adds an awesome new feature to the mix: now you can buy wXTM natively in Tari Universe with ETH, USDT, or USDC (!!!) 
+
+✨ What's New in "The Feast of Light"
+- 🌌 **Buy wXTM natively in Tari Universe**: Purchase wXTM directly using ETH, USDT, or USDC within the application
+- 🔄 **Bridge Status View**: We've significantly improved status updates throughout the bridging journey
+
+---
+
 🚀 TARI UNIVERSE v1.2.7: The Crown of Every Heart
 
 _June 5, 2025_
