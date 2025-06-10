@@ -41,10 +41,12 @@ pub async fn kill_process(pid: i32) -> Result<(), anyhow::Error> {
 
     #[cfg(not(target_os = "windows"))]
     {
+        use log::info;
         use nix::sys::signal::{self, Signal};
         use nix::unistd::Pid;
-
+        const LOG_TARGET: &str = "tari::universe::process_killer";
         let pid = Pid::from_raw(pid);
+        info!(target: LOG_TARGET, "Killing process {}", pid);
 
         let _ = signal::kill(pid, Signal::SIGTERM);
     }

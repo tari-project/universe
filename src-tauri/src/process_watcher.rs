@@ -153,14 +153,6 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         let task_tracker = task_tracker.clone();
         let stop_on_exit_codes = self.stop_on_exit_codes.clone();
         let stats_broadcast = self.stats_broadcast.clone();
-
-        let binary_name = binary_path
-            .file_name()
-            .expect("binary path must have a file name");
-        let pid = TAdapter::find_process_pid_by_name(binary_name);
-
-        info!(target: LOG_TARGET, "SHAN MEM binary_name {:?} pid {:?}", binary_name, pid);
-
         self.watcher_task = Some(task_tracker.clone().spawn(async move {
             child.start(task_tracker.clone()).await?;
             let mut uptime = Instant::now();
@@ -218,6 +210,11 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                 }
             }
         }));
+
+        let binary_name = binary_path
+            .file_name()
+            .expect("binary path must have a file name");
+        let _ = TAdapter::find_process_pid_by_name(binary_name);
         Ok(())
     }
 
