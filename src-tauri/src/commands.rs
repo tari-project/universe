@@ -104,6 +104,7 @@ pub struct ApplicationsVersions {
     wallet: String,
     sha_p2pool: String,
     xtrgpuminer: String,
+    bridge: String,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -327,6 +328,7 @@ pub async fn get_applications_versions(
 ) -> Result<ApplicationsVersions, String> {
     let timer = Instant::now();
     let binary_resolver = BinaryResolver::current().read().await;
+    let tapplet_resolver = TappletResolver::current().read().await;
 
     let tari_universe_version = app.package_info().version.clone();
     let xmrig_version = binary_resolver
@@ -348,6 +350,9 @@ pub async fn get_applications_versions(
     let xtrgpuminer_version = binary_resolver
         .get_binary_version_string(Binaries::GpuMiner)
         .await;
+    let bridge_version = tapplet_resolver
+        .get_tapplet_version_string(Tapplets::Bridge)
+        .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET,
@@ -366,6 +371,7 @@ pub async fn get_applications_versions(
         wallet: wallet_version,
         sha_p2pool: sha_p2pool_version,
         xtrgpuminer: xtrgpuminer_version,
+        bridge: bridge_version,
     })
 }
 
