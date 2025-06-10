@@ -7,6 +7,7 @@ import { getExplorerUrl, Network } from '@app/utils/network.ts';
 import { useMiningStore } from '@app/store';
 import { getTxStatusTitleKey, getTxTitle } from '@app/utils/getTxStatus.ts';
 import { TransactionDetailsItem } from '@app/types/transactions.ts';
+import { EmojiAddressWrapper } from '@app/components/transactions/history/details/styles.ts';
 
 type Key = keyof TransactionDetailsItem;
 type Entry = {
@@ -50,7 +51,7 @@ function parseValues({
         const tKey = getTxStatusTitleKey(transaction);
         return { value: i18n.t(`common:${tKey}`), valueRight: value };
     }
-    if (key === 'amount') {
+    if (key === 'amount' || key === 'fee') {
         const preset = value.toString().length > 5 ? FormatPreset.XTM_LONG : FormatPreset.XTM_DECIMALS;
         const valueMarkup = (
             <>
@@ -60,12 +61,16 @@ function parseValues({
         );
         return {
             value: valueMarkup,
-            valueRight: `${formatNumber(value, FormatPreset.DECIMAL_COMPACT)} µT`,
+            valueRight: `${formatNumber(value, FormatPreset.DECIMAL_COMPACT)} µXTM`,
         };
     }
     if (key === 'mined_in_block_height' && value) {
         const explorerURL = getExplorerUrl(network === Network.MainNet);
         rest['externalLink'] = `${explorerURL}/blocks/${value}`;
+    }
+
+    if (key === `dest_address_emoji`) {
+        return { value: <EmojiAddressWrapper>{value}</EmojiAddressWrapper> };
     }
 
     return { value, ...rest };

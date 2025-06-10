@@ -4,7 +4,6 @@ import { useSetupStore } from '../useSetupStore';
 import { startCpuMining, startGpuMining, stopCpuMining, stopGpuMining } from './miningStoreActions';
 import {
     fetchApplicationsVersionsWithRetry,
-    initialFetchTxs,
     setWalletAddress,
     TOWER_CANVAS_ID,
     useConfigBEInMemoryStore,
@@ -48,8 +47,6 @@ export const handleAppUnlocked = async () => {
 };
 export const handleWalletUnlocked = () => {
     useSetupStore.setState({ walletUnlocked: true });
-    // moved initialFetchTxs here so we don't call it constantly on sidebar open/close
-    initialFetchTxs();
 };
 export const handleWalletUpdate = async (addressPayload: WalletAddress) => {
     const addressIsGenerated = addressPayload.is_tari_address_generated;
@@ -141,8 +138,8 @@ export const updateWalletSetupPhaseInfo = (payload: ProgressTrackerUpdatePayload
     useSetupStore.setState({ wallet_phase_setup_payload: payload });
 };
 
-export const updateUnknownSetupPhaseInfo = (payload: ProgressTrackerUpdatePayload | undefined) => {
-    useSetupStore.setState({ unknown_phase_setup_payload: payload });
+export const updateMiningSetupPhaseInfo = (payload: ProgressTrackerUpdatePayload | undefined) => {
+    useSetupStore.setState({ mining_phase_setup_payload: payload });
 };
 
 export const updateDisabledPhases = (payload: DisabledPhasesPayload) => {

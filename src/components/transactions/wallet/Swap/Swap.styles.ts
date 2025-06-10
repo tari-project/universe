@@ -28,7 +28,7 @@ export const SwapsIframe = styled.iframe<{ $walletConnectOpen: boolean; $swapHei
     pointer-events: all;
     border-radius: ${({ $walletConnectOpen }) => ($walletConnectOpen ? '30px' : '20px')};
     overflow: hidden;
-    transition: all 0.3s ease-in-out;
+    transition: all 0.1s ease;
 `;
 
 export const IframeContainer = styled.div`

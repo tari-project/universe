@@ -28,7 +28,7 @@ export enum SetupPhase {
     Wallet = 'Wallet',
     Hardware = 'Hardware',
     Node = 'Node',
-    Unknown = 'Unknown',
+    Mining = 'Mining',
 }
 
 export const BACKEND_STATE_UPDATE = 'backend_state_update';
@@ -110,7 +110,7 @@ export type BackendStateUpdateEvent =
           payload: boolean;
       }
     | {
-          event_type: 'UnknownPhaseFinished';
+          event_type: 'MiningPhaseFinished';
           payload: boolean;
       }
     | {

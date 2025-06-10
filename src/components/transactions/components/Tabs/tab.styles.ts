@@ -10,7 +10,7 @@ export const HeaderLabel = styled(Typography).attrs({
     text-transform: none;
 `;
 
-export const TabHeader = styled.div<{ $noBorder?: boolean }>`
+export const TabHeader = styled.div<{ $noBorder?: boolean; $hidden?: boolean }>`
     display: flex;
     width: 100%;
     text-transform: capitalize;
@@ -18,11 +18,20 @@ export const TabHeader = styled.div<{ $noBorder?: boolean }>`
     align-items: center;
     padding: 0 0 15px 0;
     border-bottom: ${({ theme }) => `1px solid ${theme.colorsAlpha.greyscaleAlpha[10]}`};
+    transition: all 0.2s ease-in-out;
 
     ${({ $noBorder }) =>
         $noBorder &&
         css`
             padding: 0;
             border: none;
+        `}
+
+    ${({ $hidden }) =>
+        $hidden &&
+        css`
+            opacity: 0;
+            pointer-events: none;
+            height: 0;
         `}
 `;

@@ -26,6 +26,6 @@ pub mod utils;
 
 mod phase_core;
 mod phase_hardware;
+mod phase_mining;
 mod phase_node;
-mod phase_unknown;
 mod phase_wallet;

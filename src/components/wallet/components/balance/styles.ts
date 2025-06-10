@@ -1,5 +1,4 @@
 import styled from 'styled-components';
-import { convertHexToRGBA } from '@app/utils';
 import NumberFlow from '@number-flow/react';
 
 export const Wrapper = styled.div`
@@ -44,5 +43,5 @@ export const AvailableWrapper = styled.div`
     display: flex;
     font-size: 11px;
     font-weight: 500;
-    color: ${({ theme }) => convertHexToRGBA(theme.colors.greyscale[100], 0.5)};
+    color: ${({ theme }) => theme.colors.greyscale[150]};
 `;

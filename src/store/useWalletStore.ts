@@ -1,7 +1,8 @@
 import { create } from './create';
 import { TransactionInfo, WalletBalance } from '../types/app-status.ts';
-import { refreshTransactions } from './actions/walletStoreActions.ts';
+
 import { TransactionDetailsItem } from '@app/types/transactions.ts';
+import { refreshTransactions } from '@app/hooks/wallet/useFetchTxHistory.ts';
 
 interface WalletStoreState {
     tari_address_base58: string;
