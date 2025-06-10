@@ -36,6 +36,11 @@ export const useIframeUrl = () => {
         return () => clearInterval(interval);
     }, [handleFetchUrl, url]);
 
+<<<<<<< Updated upstream
     // return 'http://localhost:3000/swaps';
     return url || urlRef.current;
+=======
+    return 'http://localhost:3000/swaps';
+    // return url || urlRef.current || 'https://tari.com/swaps';
+>>>>>>> Stashed changes
 };
