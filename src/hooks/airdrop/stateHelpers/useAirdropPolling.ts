@@ -7,7 +7,6 @@ import {
     fetchPollingFeatureFlag,
     fetchWarmupFeatureFlag,
     fetchUiSendRecvFeatureFlag,
-    fetchSwapsEnabledFeatureFlag,
     fetchBlockBubblesFeatureFlag,
 } from '@app/store/actions/airdropStoreActions';
 import { listen, UnlistenFn } from '@tauri-apps/api/event';
@@ -36,7 +35,6 @@ export const useAirdropPolling = () => {
         fetchPollingFeatureFlag();
         fetchUiSendRecvFeatureFlag();
         fetchWarmupFeatureFlag();
-        fetchSwapsEnabledFeatureFlag();
         fetchBlockBubblesFeatureFlag();
     }, []);
 
