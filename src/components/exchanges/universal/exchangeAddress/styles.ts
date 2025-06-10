@@ -12,12 +12,3 @@ export const StyledInput = styled(Input)`
 export const StyledForm = styled.form`
     width: 100%;
 `;
-
-export const IconContainer = styled.div`
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-`;

@@ -6,7 +6,7 @@ import { useCallback, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { IoCheckmarkOutline, IoCloseOutline } from 'react-icons/io5';
 import { StyledForm, StyledInput } from './styles';
-import ClipboardViewer from '../clipboardViewer/ClipboardViewer';
+import { ClipboardViewer } from '../clipboardViewer/ClipboardViewer';
 import { IconContainer } from '@app/containers/floating/XSpaceBanner/XSpaceBanner.style';
 import { useTranslation } from 'react-i18next';
 

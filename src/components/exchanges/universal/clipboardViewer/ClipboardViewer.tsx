@@ -50,5 +50,3 @@ export const ClipboardViewer: React.FC<ClipboardViewerProps> = ({ handlePaste })
         </Container>
     );
 };
-
-export default ClipboardViewer;

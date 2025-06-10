@@ -20,33 +20,11 @@ export const Heading = styled(Typography).attrs({ variant: 'h5' })`
     letter-spacing: -1px;
 `;
 
-export const ContentWrapper = styled.div`
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-`;
-
 export const ContentHeaderWrapper = styled.div`
     display: flex;
     justify-content: space-between;
     align-items: center;
     width: 100%;
-`;
-
-export const Dot = styled.div`
-    width: 4px;
-    height: 4px;
-    border-radius: 50%;
-    background-color: #b6b7c3;
-`;
-
-export const DotContainer = styled.div`
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 2px;
-    margin: 0 4px;
 `;
 
 export const ContentBodyWrapper = styled.div<{ isActive?: boolean }>`
