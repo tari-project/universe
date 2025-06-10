@@ -35,6 +35,7 @@ import { Swap } from './Swap/Swap.tsx';
 import { AnimatePresence } from 'motion/react';
 import { swapTransition, walletTransition } from './transitions.ts';
 import { setIsSwapping } from '@app/store/actions/walletStoreActions.ts';
+import ExchangesUrls from '@app/components/transactions/wallet/Exchanges/ExchangesUrls.tsx';
 
 interface Props {
     section: string;
@@ -58,6 +59,7 @@ const Wallet = memo(function Wallet({ section, setSection }: Props) {
             {isSwapping && swapUiEnabled ? (
                 <SwapsWrapper {...swapTransition} key="swap">
                     <Swap />
+                    <ExchangesUrls />
                 </SwapsWrapper>
             ) : (
                 <WalletWrapper {...walletTransition} key="wallet">
