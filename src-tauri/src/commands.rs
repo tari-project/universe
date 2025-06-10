@@ -1446,8 +1446,7 @@ pub async fn set_visual_mode<'r>(enabled: bool) -> Result<(), InvokeError> {
 #[tauri::command]
 pub async fn set_airdrop_tokens<'r>(
     airdrop_tokens: Option<AirdropTokens>,
-    state: tauri::State<'_, UniverseAppState>,
-    app: tauri::AppHandle,
+    app_handle: tauri::AppHandle,
 ) -> Result<(), InvokeError> {
     let old_id = ConfigCore::content()
         .await
@@ -1468,31 +1467,14 @@ pub async fn set_airdrop_tokens<'r>(
 
     info!(target: LOG_TARGET, "New Airdrop tokens saved, user id changed:{:?}", user_id_changed);
     if user_id_changed {
-        let currently_mining = {
-            let cpu_mining_status = state.cpu_miner_status_watch_rx.borrow().clone();
-            let gpu_mining_status = state.gpu_latest_status.borrow().clone();
-            cpu_mining_status.is_mining || gpu_mining_status.is_mining
-        };
+        // If the user id changed, we need to restart the mining phases to ensure that the new telemetry_id ( unique_string value )is used
+        SetupManager::get_instance()
+            .add_phases_to_restart_queue(vec![SetupPhase::Mining])
+            .await;
 
-        if currently_mining {
-            stop_cpu_mining(state.clone())
-                .await
-                .map_err(|e| e.to_string())?;
-            stop_gpu_mining(state.clone())
-                .await
-                .map_err(|e| e.to_string())?;
-
-            airdrop::restart_mm_proxy_with_new_telemetry_id(state.clone()).await?;
-
-            start_cpu_mining(state.clone(), app.clone())
-                .await
-                .map_err(|e| e.to_string())?;
-            start_gpu_mining(state, app)
-                .await
-                .map_err(|e| e.to_string())?;
-        } else {
-            airdrop::restart_mm_proxy_with_new_telemetry_id(state.clone()).await?;
-        }
+        SetupManager::get_instance()
+            .restart_phases_from_queue(app_handle.clone())
+            .await;
     }
     Ok(())
 }

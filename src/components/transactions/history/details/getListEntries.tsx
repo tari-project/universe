@@ -1,25 +1,34 @@
 import i18n from 'i18next';
-import { formatTimeStamp } from '@app/components/transactions/history/helpers.ts';
+import { formatTimeStamp, isTransactionInfo } from '@app/components/transactions/history/helpers.ts';
 import { ReactNode } from 'react';
 import { formatNumber, FormatPreset } from '@app/utils';
 import { StatusListEntry } from '@app/components/transactions/components/StatusList/StatusList.tsx';
 import { getExplorerUrl, Network } from '@app/utils/network.ts';
-import { useMiningStore } from '@app/store';
+import { BackendBridgeTransaction, useMiningStore } from '@app/store';
 import { getTxStatusTitleKey, getTxTitle } from '@app/utils/getTxStatus.ts';
 import { TransactionDetailsItem } from '@app/types/transactions.ts';
 import { EmojiAddressWrapper } from '@app/components/transactions/history/details/styles.ts';
 
-type Key = keyof TransactionDetailsItem;
-type Entry = {
+type TransactionKey = keyof TransactionDetailsItem;
+type TransactionEntry = {
     [K in keyof TransactionDetailsItem]-?: {
         key: K;
         value: TransactionDetailsItem[K];
     };
 }[keyof TransactionDetailsItem];
 
+type BridgeTransactionKey = keyof BackendBridgeTransaction;
+type BridgeTransactionEntry = {
+    [K in keyof BackendBridgeTransaction]-?: {
+        key: K;
+        value: BackendBridgeTransaction[K];
+    };
+}[keyof BackendBridgeTransaction];
+
 const network = useMiningStore.getState().network;
 
 const HIDDEN_KEYS = ['direction', 'excess_sig', 'tx_id'];
+const BRIDGE_HIDDEN_KEYS = ['paymentId'];
 
 const keyTranslations: Record<string, string> = {
     tx_id: 'wallet:send.transaction-id',
@@ -35,11 +44,13 @@ function getLabel(key: string): string {
     return key in keyTranslations ? i18n.t(keyTranslations[key]) : capitalizeKey(key);
 }
 
-function parseValues({
+function parseTransactionValues({
     key,
     value,
     transaction,
-}: Entry & { transaction: TransactionDetailsItem }): Partial<StatusListEntry> & { value: ReactNode } {
+}: TransactionEntry & { transaction: TransactionDetailsItem }): Partial<StatusListEntry> & {
+    value: ReactNode;
+} {
     const rest: Partial<StatusListEntry> = {};
     if (key === 'timestamp') {
         return { value: formatTimeStamp(value) };
@@ -64,6 +75,7 @@ function parseValues({
             valueRight: `${formatNumber(value, FormatPreset.DECIMAL_COMPACT)} µXTM`,
         };
     }
+
     if (key === 'mined_in_block_height' && value) {
         const explorerURL = getExplorerUrl(network === Network.MainNet);
         rest['externalLink'] = `${explorerURL}/blocks/${value}`;
@@ -76,14 +88,73 @@ function parseValues({
     return { value, ...rest };
 }
 
-export function getListEntries(item: TransactionDetailsItem, showHidden = false) {
-    const entries = Object.entries(item).filter(([key]) => showHidden || !HIDDEN_KEYS.includes(key));
-    return entries.map(([key, _value]) => {
-        const { value, ...rest } = parseValues({ key: key as Key, value: _value, transaction: item });
+function parseBridgeTransactionValues({
+    key,
+    value,
+    transaction,
+}: BridgeTransactionEntry & { transaction: BackendBridgeTransaction }): Partial<StatusListEntry> & {
+    value: ReactNode;
+} {
+    const rest: Partial<StatusListEntry> = {};
+    if (key === 'status') {
+        const tKey = getTxStatusTitleKey(transaction);
+        return { value: i18n.t(`common:${tKey}`), valueRight: value };
+    }
+    if (key === 'tokenAmount') {
+        const preset = value.toString().length > 5 ? FormatPreset.XTM_LONG : FormatPreset.XTM_DECIMALS;
         return {
-            label: getLabel(key),
-            value,
-            ...rest,
+            value: formatNumber(Number(value), preset),
+            valueRight: `${formatNumber(Number(value), FormatPreset.DECIMAL_COMPACT)} µT`,
         };
+    }
+    if (key === 'amountAfterFee') {
+        const preset = value.toString().length > 5 ? FormatPreset.XTM_LONG : FormatPreset.XTM_DECIMALS;
+        return {
+            value: formatNumber(Number(value), preset),
+            valueRight: `${formatNumber(Number(value), FormatPreset.DECIMAL_COMPACT)} µT`,
+        };
+    }
+    if (key === 'feeAmount') {
+        const preset = value.toString().length > 5 ? FormatPreset.XTM_LONG : FormatPreset.XTM_DECIMALS;
+        return {
+            value: formatNumber(Number(value), preset),
+            valueRight: `${formatNumber(Number(value), FormatPreset.DECIMAL_COMPACT)} µT`,
+        };
+    }
+
+    if (key === 'destinationAddress') {
+        return { label: 'Destination address [ ETH ]', value: transaction.destinationAddress };
+    }
+
+    return { value, ...rest };
+}
+
+export function getListEntries(item: TransactionDetailsItem | BackendBridgeTransaction, showHidden = false) {
+    const hiddenKeys = isTransactionInfo(item) ? HIDDEN_KEYS : BRIDGE_HIDDEN_KEYS;
+    const entries = Object.entries(item).filter(([key]) => showHidden || !hiddenKeys.includes(key));
+    return entries.map(([key, _value]) => {
+        if (isTransactionInfo(item)) {
+            const { value, ...rest } = parseTransactionValues({
+                key: key as TransactionKey,
+                value: _value,
+                transaction: item,
+            });
+            return {
+                label: getLabel(key),
+                value,
+                ...rest,
+            };
+        } else {
+            const { value, ...rest } = parseBridgeTransactionValues({
+                key: key as BridgeTransactionKey,
+                value: _value,
+                transaction: item,
+            });
+            return {
+                label: getLabel(key),
+                value,
+                ...rest,
+            };
+        }
     });
 }

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/core';
 import { useInView } from 'motion/react';
 
-import { useWalletStore } from '@app/store';
+import { BackendBridgeTransaction, useWalletStore } from '@app/store';
 
 import { TransactionInfo } from '@app/types/app-status.ts';
 
@@ -17,16 +17,64 @@ import { PlaceholderItem } from './ListItem.styles.ts';
 import { ListItemWrapper, ListWrapper } from './List.styles.ts';
 import { setDetailsItem } from '@app/store/actions/walletStoreActions.ts';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
+import { getTimestampFromTransaction, isBridgeTransaction, isTransactionInfo } from './helpers.ts';
+import { UserTransactionDTO } from '@tari-project/wxtm-bridge-backend-api';
+import { BridgeHistoryListItem } from '@app/components/transactions/history/BridgeListItem.tsx';
 
 export default function List() {
     const { t } = useTranslation('wallet');
     const walletScanning = useWalletStore((s) => s.wallet_scanning);
-
+    const bridgeTransactions = useWalletStore((s) => s.bridge_transactions);
+    const coldWalletAddress = useWalletStore((s) => s.cold_wallet_address);
     const lastItemRef = useRef<HTMLDivElement>(null);
     const isInView = useInView(lastItemRef, { initial: undefined });
 
     const { data, fetchNextPage, isFetchingNextPage, isFetching } = useFetchTxHistory();
-    const transactions = data?.pages.flatMap((p) => p);
+    const baseTx = data?.pages.flatMap((p) => p) || [];
+
+    const combinedTransactions = ([...baseTx, ...bridgeTransactions] as (TransactionInfo | UserTransactionDTO)[]).sort(
+        (a, b) => {
+            return getTimestampFromTransaction(b) - getTimestampFromTransaction(a);
+        }
+    );
+
+    const adjustedTransactions = combinedTransactions.reduce(
+        (acc, tx, index) => {
+            if (isBridgeTransaction(tx) && index > 0) {
+                const previousTransactions = acc.slice(-5); // Get up to the last 5 transactions
+                const matchingTransaction = previousTransactions.find(
+                    (prevTx) =>
+                        isTransactionInfo(prevTx) &&
+                        prevTx.amount === Number(tx.tokenAmount) &&
+                        prevTx.payment_id === tx.paymentId &&
+                        prevTx.dest_address === coldWalletAddress
+                );
+
+                if (matchingTransaction) {
+                    const removedBridgeTransaction = acc.splice(acc.indexOf(matchingTransaction), 1)[0];
+                    if (removedBridgeTransaction && isTransactionInfo(removedBridgeTransaction)) {
+                        const updatedTransaction: BackendBridgeTransaction = {
+                            sourceAddress: removedBridgeTransaction.source_address,
+                            destinationAddress: tx.destinationAddress,
+                            status: tx.status,
+                            createdAt: tx.createdAt,
+                            tokenAmount: tx.tokenAmount,
+                            amountAfterFee: tx.amountAfterFee,
+                            feeAmount: tx.feeAmount,
+                            paymentId: tx.paymentId,
+                            mined_in_block_height: removedBridgeTransaction.mined_in_block_height,
+                        };
+                        acc.push(updatedTransaction);
+                        return acc;
+                    }
+                }
+            }
+            acc.push(tx);
+            return acc;
+        },
+        [] as (TransactionInfo | UserTransactionDTO)[]
+    );
+
     const handleDetailsChange = useCallback(async (tx: TransactionInfo | null) => {
         if (!tx) {
             setDetailsItem(null);
@@ -55,20 +103,36 @@ export default function List() {
     }, []);
 
     // Calculate how many placeholder items we need to add
-    const transactionsCount = transactions?.length || 0;
+    const transactionsCount = adjustedTransactions?.length || 0;
     const placeholdersNeeded = Math.max(0, 5 - transactionsCount);
     const listMarkup = (
         <ListItemWrapper>
-            {transactions?.map((tx, i) => {
-                return (
-                    <HistoryListItem
-                        key={`item-${i}-${tx.tx_id}`}
-                        item={tx}
-                        index={i}
-                        itemIsNew={false}
-                        setDetailsItem={handleDetailsChange}
-                    />
-                );
+            {adjustedTransactions?.map((tx, i) => {
+                if (isTransactionInfo(tx)) {
+                    return (
+                        <HistoryListItem
+                            key={`item-${i}-${tx.tx_id}`}
+                            item={tx}
+                            index={i}
+                            itemIsNew={false}
+                            setDetailsItem={handleDetailsChange}
+                        />
+                    );
+                }
+                if (isBridgeTransaction(tx)) {
+                    return (
+                        <BridgeHistoryListItem
+                            key={tx.createdAt}
+                            item={tx}
+                            index={i}
+                            itemIsNew={i === 0}
+                            setDetailsItem={() => setDetailsItem(tx)}
+                        />
+                    );
+                }
+                // If we reach here, it means the transaction is neither a TransactionInfo nor a UserTransactionDTO
+                console.warn('Unexpected transaction type:', tx);
+                return null; // or handle accordingly
             })}
 
             {/* fill the list with placeholders if there are less than 4 entries */}
@@ -95,7 +159,7 @@ export default function List() {
         listMarkup
     );
 
-    const isEmpty = !walletScanning.is_scanning && !transactions?.length;
+    const isEmpty = !walletScanning.is_scanning && !adjustedTransactions?.length;
     const emptyMarkup = isEmpty ? <LoadingText>{t('empty-tx')}</LoadingText> : null;
 
     useEffect(() => {
@@ -110,7 +174,7 @@ export default function List() {
                 {baseMarkup}
                 {/*added placeholder so the scroll can trigger fetch*/}
 
-                {transactions?.length ? <PlaceholderItem ref={lastItemRef} $isLast /> : null}
+                {adjustedTransactions?.length ? <PlaceholderItem ref={lastItemRef} $isLast /> : null}
             </ListWrapper>
         </>
     );

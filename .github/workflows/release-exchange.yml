@@ -103,6 +103,7 @@ jobs:
           BASE_TLD: ${{ secrets.BASE_TLD }}
           BASE_URL: ${{ secrets.BASE_URL }}
           IDENTIFIER: ${{ inputs.destination == 'github' && 'com.tari.universe.alpha' || 'com.tari.universe' }}
+          BRIDGE_BACKEND_API_URL: ${{ inputs.network == 'mainnet' && secrets.BRIDGE_BACKEND_API_URL || secrets.ESMERALDA_BRIDGE_BACKEND_API_URL }}
         shell: bash
         run: |
           #set -xueo pipefail
@@ -110,6 +111,7 @@ jobs:
           echo "TARI_TARGET_NETWORK=${{ inputs.network }}" >> $GITHUB_ENV
           echo "TARI_TARGET_NETWORK=${{ inputs.network }}" >> $GITHUB_ENV
           echo "AIRDROP_WEBSOCKET_CRYPTO_KEY=${{ env.AIRDROP_WEBSOCKET_CRYPTO_KEY }}" >> $GITHUB_ENV
+          echo "BRIDGE_BACKEND_API_URL=${{ env.BRIDGE_BACKEND_API_URL }}" >> $GITHUB_ENV
           cd "${GITHUB_WORKSPACE}/src-tauri"
           TU_VERSION=$(jq -r .version tauri.conf.json)
           # Don't mess with the double quotes and inner escaped quotes

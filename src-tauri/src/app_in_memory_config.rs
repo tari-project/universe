@@ -40,6 +40,11 @@ const AIRDROP_API_BASE_URL: &str = std::env!(
 const TELEMETRY_API_URL: &str =
     std::env!("TELEMETRY_API_URL", "TELEMETRY_API_URL env var not defined");
 
+const BRIDGE_BACKEND_API_URL: &str = match option_env!("BRIDGE_BACKEND_API_URL") {
+    Some(val) => val,
+    None => "BRIDGE_BACKEND_API_URL env var not defined",
+};
+
 pub const DEFAULT_EXCHANGE_ID: &str = "universal";
 pub const EXCHANGE_ID: &str = match option_env!("EXCHANGE_ID") {
     Some(val) => val,
@@ -56,6 +61,7 @@ pub struct AppInMemoryConfig {
     pub airdrop_api_url: String,
     pub telemetry_api_url: String,
     pub exchange_id: String,
+    pub bridge_backend_api_url: String,
     pub wallet_connect_project_id: String,
 }
 
@@ -65,6 +71,7 @@ pub struct AirdropInMemoryConfig {
     pub airdrop_url: String,
     pub airdrop_api_url: String,
     pub exchange_id: Option<String>,
+    pub bridge_backend_api_url: String,
     pub wallet_connect_project_id: Option<String>,
 }
 
@@ -74,6 +81,7 @@ impl From<AppInMemoryConfig> for AirdropInMemoryConfig {
             airdrop_url: app_config.airdrop_url,
             airdrop_api_url: app_config.airdrop_api_url,
             exchange_id: Some(app_config.exchange_id),
+            bridge_backend_api_url: app_config.bridge_backend_api_url,
             wallet_connect_project_id: Some(app_config.wallet_connect_project_id),
         }
     }
@@ -86,6 +94,7 @@ impl Default for AppInMemoryConfig {
             airdrop_api_url: "https://ut.tari.com".into(),
             telemetry_api_url: "https://ut.tari.com/push".into(),
             exchange_id: EXCHANGE_ID.into(),
+            bridge_backend_api_url: BRIDGE_BACKEND_API_URL.into(),
             wallet_connect_project_id: WALLET_CONNECT_PROJECT_ID.into(),
         }
     }
@@ -132,6 +141,7 @@ impl AppInMemoryConfig {
             airdrop_api_url: AIRDROP_API_BASE_URL.into(),
             telemetry_api_url: TELEMETRY_API_URL.into(),
             exchange_id: EXCHANGE_ID.into(),
+            bridge_backend_api_url: BRIDGE_BACKEND_API_URL.into(),
             wallet_connect_project_id: WALLET_CONNECT_PROJECT_ID.into(),
         };
 
@@ -141,6 +151,7 @@ impl AppInMemoryConfig {
             airdrop_api_url: "http://localhost:3004".into(),
             telemetry_api_url: "http://localhost:3004".into(),
             exchange_id: EXCHANGE_ID.into(),
+            bridge_backend_api_url: BRIDGE_BACKEND_API_URL.into(),
             wallet_connect_project_id: WALLET_CONNECT_PROJECT_ID.into(),
         };
 

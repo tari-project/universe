@@ -1,10 +1,40 @@
 import { invoke } from '@tauri-apps/api/core';
 import { WalletAddress, WalletBalance } from '@app/types/app-status.ts';
-import { useWalletStore } from '../useWalletStore';
+import { BackendBridgeTransaction, useWalletStore } from '../useWalletStore';
 import { restartMining } from './miningStoreActions';
 import { setError } from './appStateStoreActions';
 import { setExchangeContent } from '@app/store/useExchangeStore.ts';
+import { WrapTokenService, OpenAPI } from '@tari-project/wxtm-bridge-backend-api';
+import { useConfigBEInMemoryStore } from '../useAppConfigStore';
 import { TransactionDetailsItem, TransactionDirection, TransactionStatus } from '@app/types/transactions';
+
+export const fetchBridgeTransactionsHistory = async () => {
+    try {
+        OpenAPI.BASE = useConfigBEInMemoryStore.getState().bridgeBackendApiUrl;
+        await WrapTokenService.getUserTransactions(useWalletStore.getState().tari_address_base58).then((response) => {
+            console.info('Bridge transactions fetched successfully:', response);
+            useWalletStore.setState({
+                bridge_transactions: response.transactions,
+            });
+        });
+    } catch (error) {
+        console.error('Could not get bridge transaction history: ', error);
+    }
+};
+
+export const fetchBridgeColdWalletAddress = async () => {
+    try {
+        OpenAPI.BASE = useConfigBEInMemoryStore.getState().bridgeBackendApiUrl;
+        await WrapTokenService.getWrapTokenParams().then((response) => {
+            console.info('Bridge safe wallet address fetched successfully:', response);
+            useWalletStore.setState({
+                cold_wallet_address: response.coldWalletAddress,
+            });
+        });
+    } catch (error) {
+        console.error('Could not get bridge safe wallet address: ', error);
+    }
+};
 
 export const importSeedWords = async (seedWords: string[]) => {
     try {
@@ -54,7 +84,7 @@ const getPendingOutgoingBalance = async () => {
 
 export const setWalletBalance = async (balance: WalletBalance) => {
     const pendingOutgoingBalance = await getPendingOutgoingBalance();
-
+    console.info('Setting new wallet balance: ', { balance, pendingOutgoingBalance });
     const available_balance = balance.available_balance - pendingOutgoingBalance;
     const pending_outgoing_balance = balance.pending_outgoing_balance + pendingOutgoingBalance;
 
@@ -69,4 +99,5 @@ export const setIsSwapping = (isSwapping: boolean) => {
     useWalletStore.setState({ is_swapping: isSwapping });
 };
 
-export const setDetailsItem = (detailsItem: TransactionDetailsItem | null) => useWalletStore.setState({ detailsItem });
+export const setDetailsItem = (detailsItem: TransactionDetailsItem | BackendBridgeTransaction | null) =>
+    useWalletStore.setState({ detailsItem });

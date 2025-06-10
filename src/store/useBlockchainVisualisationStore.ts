@@ -12,6 +12,7 @@ import { setMiningControlsEnabled } from './actions/miningStoreActions.ts';
 import { updateWalletScanningProgress, useWalletStore } from './useWalletStore.ts';
 import { useConfigUIStore } from '@app/store/useAppConfigStore.ts';
 import { refreshTransactions } from '@app/hooks/wallet/useFetchTxHistory.ts';
+import { fetchBridgeTransactionsHistory } from '@app/store/actions/walletStoreActions.ts';
 
 const appWindow = getCurrentWindow();
 
@@ -225,6 +226,9 @@ export const handleNewBlock = async (payload: {
     coinbase_transaction?: TransactionInfo;
     balance: WalletBalance;
 }) => {
+    await fetchBridgeTransactionsHistory().catch((error) => {
+        console.error('Could not fetch bridge transactions history:', error);
+    });
     latestBlockPayload = payload;
 
     const isWalletScanned = !useWalletStore.getState().wallet_scanning?.is_scanning;

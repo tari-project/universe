@@ -347,6 +347,8 @@ export const handleAppInMemoryConfigChanged = (payload: AppInMemoryConfigChanged
         airdropTwitterAuthUrl: payload.app_in_memory_config.airdrop_twitter_auth_url,
         exchangeId: payload.app_in_memory_config.exchange_id,
         isUniversalMiner: payload.is_universal_exchange || false,
+        bridgeBackendApiUrl: payload.app_in_memory_config.bridge_backend_api_url,
+        walletConnectProjectId: payload.app_in_memory_config.wallet_connect_project_id,
     };
     useConfigBEInMemoryStore.setState(newConfig);
 };

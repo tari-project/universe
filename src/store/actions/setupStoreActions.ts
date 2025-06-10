@@ -17,6 +17,7 @@ import { ProgressTrackerUpdatePayload } from '@app/hooks/app/useProgressEventsLi
 import { WalletAddress } from '@app/types/app-status.ts';
 import { setSeedlessUI } from '@app/store/actions/uiStoreActions.ts';
 import { fetchExchangeContent, useExchangeStore } from '@app/store/useExchangeStore.ts';
+import { fetchBridgeTransactionsHistory } from './walletStoreActions';
 import { SetupPhase } from '@app/types/backend-state';
 import { useTappletsStore } from '../useTappletsStore';
 
@@ -26,6 +27,10 @@ export interface DisabledPhasesPayload {
 
 export const handleAppUnlocked = async () => {
     useSetupStore.setState({ appUnlocked: true });
+    await fetchBridgeTransactionsHistory().catch((error) => {
+        console.error('Could not fetch bridge transactions history:', error);
+    });
+
     const visual_mode = useConfigUIStore.getState().visual_mode;
     const offset = useUIStore.getState().towerSidebarOffset;
     if (visual_mode) {
