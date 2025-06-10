@@ -15,8 +15,10 @@ export const ClipboardViewer: React.FC<ClipboardViewerProps> = ({ handlePaste })
         const readClipboard = async () => {
             try {
                 const text = await readText();
-                setClipboardText(text);
-                setError('');
+                if (text) {
+                    setClipboardText(text);
+                    setError('');
+                }
             } catch (err) {
                 setError('Unable to read clipboard: ' + err);
             }

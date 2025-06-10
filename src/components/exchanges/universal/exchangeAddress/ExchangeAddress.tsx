@@ -63,7 +63,7 @@ export const ExchangeAddress = ({
     }, []);
 
     return (
-        <div style={{ width: '100%' }}>
+        <>
             <StyledForm onReset={handleReset}>
                 <InputArea>
                     <Controller
@@ -87,7 +87,7 @@ export const ExchangeAddress = ({
                     />
                 </InputArea>
             </StyledForm>
-            {showClipboard && <ClipboardViewer handlePaste={handlePaste} />}
-        </div>
+            {showClipboard && !address && <ClipboardViewer handlePaste={handlePaste} />}
+        </>
     );
 };

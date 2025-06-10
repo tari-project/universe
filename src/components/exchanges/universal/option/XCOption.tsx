@@ -45,13 +45,15 @@ export const XCOption = ({ content, isCurrent = false }: XCOptionProps) => {
         setShowUniversalModal(false);
     };
 
+    const logoSrc = content.logo_img_url || content.logo_img_small_url;
+
     return (
         <Wrapper $isCurrent={isCurrent}>
             <ContentHeaderWrapper>
                 <XCContent>
-                    {content.logo_img_url && (
+                    {logoSrc && (
                         <ImgWrapper $isLogo>
-                            <img src={content.logo_img_url} alt={content.name} />
+                            <img src={logoSrc} alt={content.name} />
                         </ImgWrapper>
                     )}
                     <Heading>{content.name}</Heading>
@@ -82,13 +84,11 @@ export const XCOption = ({ content, isCurrent = false }: XCOptionProps) => {
                     <SeasonRewardText>
                         <b>{t('season-one-reward', { ns: 'exchange' })}:</b> {content.campaign_description}
                     </SeasonRewardText>
-                    <Countdown>
-                        <CountdownText>
-                            {content.reward_expiry_date
-                                ? formatCountdown(content.reward_expiry_date)
-                                : 'no expiry date'}
-                        </CountdownText>
-                    </Countdown>
+                    {content.reward_expiry_date ? (
+                        <Countdown>
+                            <CountdownText>{formatCountdown(content.reward_expiry_date)}</CountdownText>
+                        </Countdown>
+                    ) : null}
                 </SeasonReward>
                 {isAddressValid ? (
                     <ConfirmButton onClick={handleExchangeMiner} disabled={!isAddressValid}>

@@ -1,18 +1,18 @@
 import { create } from 'zustand';
-import { ExchangeContent } from '@app/types/exchange.ts';
+import { ExchangeContent, ExchangeMinerAssets } from '@app/types/exchange.ts';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
 import { useConfigBEInMemoryStore } from '@app/store/useAppConfigStore.ts';
 import { setSeedlessUI } from '@app/store/actions/uiStoreActions.ts';
 
 interface ExchangeStoreState {
-    content?: ExchangeContent | null;
+    content?: ExchangeMinerAssets | null;
     showExchangeAddressModal: boolean | null;
     exchangeMiners?: ExchangeContent[];
     currentExchangeMiner: ExchangeContent;
     showUniversalModal: boolean | null;
 }
 
-const universalExchangeMinerOption: ExchangeContent = {
+const universalExchangeMinerOption: ExchangeMinerAssets = {
     id: 'universal',
     slug: 'universal',
     name: 'Tari Universe',

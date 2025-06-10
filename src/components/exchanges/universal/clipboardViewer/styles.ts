@@ -1,34 +1,32 @@
 import styled from 'styled-components';
+import { Typography } from '@app/components/elements/Typography.tsx';
 
 export const Container = styled.div`
     display: flex;
     flex-direction: row;
-    align-items: flex-start;
-    gap: 12px;
-    padding: 5px 20px;
+    gap: 6px;
+    padding: 10px;
     background-color: white;
-    border-radius: 8px;
+    border-radius: 10px;
     box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
     border: 1px solid #e5e7eb;
     width: 100%;
 `;
 
 export const ClipboardIcon = styled.img`
-    width: 41px;
-    height: 41px;
+    width: 36px;
+    height: 36px;
     color: #3b82f6;
-    flex-shrink: 0;
-    align-self: center;
 `;
 
 export const ContentContainer = styled.div`
     display: flex;
     flex-direction: column;
-    justify-content: flex-end;
-    align-items: flex-start;
+    width: 100%;
+    gap: 6px;
 `;
 
-export const Title = styled.h3`
+export const Title = styled(Typography).attrs({ variant: 'h3' })`
     font-size: 14px;
     font-weight: 500;
     color: #111827;
@@ -37,18 +35,18 @@ export const Title = styled.h3`
 export const TextContainer = styled.div`
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
-    flex: 1;
 `;
 
-export const ErrorText = styled.p`
+export const ErrorText = styled(Typography)`
     font-size: 14px;
     color: #ef4444;
 `;
 
-export const ClipboardText = styled.p`
-    font-size: 14px;
-    color: #374151;
+export const ClipboardText = styled(Typography)`
+    font-size: 13px;
+    letter-spacing: 0.05rem;
     white-space: pre-wrap;
     word-break: break-word;
+    color: #374151;
+    line-height: 1.3;
 `;

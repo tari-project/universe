@@ -6,26 +6,36 @@ export const Wrapper = styled.div`
     flex-direction: column;
     align-items: center;
     justify-content: space-between;
-    width: max(200px, 40vw);
+    width: min(480px, 40vw);
+    padding: 20px;
+    gap: 20px;
 `;
 export const HeaderSection = styled.div`
     display: flex;
-    padding: 30px 30px 20px;
+    padding: 0 20px;
     flex-direction: column;
     gap: 15px;
 `;
-export const Heading = styled(Typography).attrs({ variant: 'h4' })`
+export const Heading = styled(Typography)`
     line-height: 1.2;
-    letter-spacing: -1px;
+    font-size: 20px;
+    font-weight: 500;
 `;
 
 export const MainLogoContainer = styled.div`
     width: 100%;
     position: relative;
+    border-radius: 24px;
+    height: 144px;
+    overflow: hidden;
 `;
 
-export const MainLogoImage = styled.img`
+export const MainLogoImageWrapper = styled.div`
     width: 100%;
+
+    img {
+        max-width: 100%;
+    }
 `;
 
 export const MainLogoOverlay = styled.div`

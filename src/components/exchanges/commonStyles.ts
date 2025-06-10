@@ -50,7 +50,7 @@ export const ImgWrapper = styled.div<{ $isLogo?: boolean; $border?: boolean; $is
         css`
             background-color: ${({ theme }) => theme.colors.greyscale[50]};
             img {
-                max-width: 26px;
+                max-width: 100%;
             }
         `}
 
@@ -82,4 +82,24 @@ export const AddressDisplay = styled.div`
     align-items: center;
     justify-content: center;
     display: flex;
+`;
+
+export const CloseButton = styled.button`
+    display: flex;
+    width: 30px;
+    height: 30px;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+    background: ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.1)};
+    transition: transform 0.2s ease;
+    &:hover {
+        transform: scale(1.05);
+    }
+`;
+export const CloseWrapper = styled.div`
+    display: flex;
+    width: 100%;
+    justify-content: flex-end;
 `;

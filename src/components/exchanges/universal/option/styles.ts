@@ -7,12 +7,13 @@ export const Wrapper = styled.div<{ $isCurrent?: boolean }>`
     border-radius: 10px;
     width: 100%;
     flex-direction: column;
+    align-items: center;
     border: 1px solid
         ${({ theme, $isCurrent: isCurrent }) => (isCurrent ? theme.colors.green[400] : theme.palette.divider)};
     background-color: ${({ theme, $isCurrent: isCurrent }) =>
         isCurrent ? convertHexToRGBA(theme.colors.green[400], 0.1) : theme.palette.background.paper};
     padding: 15px;
-    gap: 14px;
+    min-height: 70px;
 `;
 
 export const Heading = styled(Typography).attrs({ variant: 'h5' })`
@@ -34,12 +35,13 @@ export const ContentBodyWrapper = styled.div<{ $isActive?: boolean }>`
     flex-direction: column;
     width: 100%;
     gap: 15px;
+    padding: ${({ $isActive }) => ($isActive ? `14px 0 0 0` : 0)};
     overflow: hidden;
     max-height: ${({ $isActive: $isActive }) => ($isActive ? '1000px' : '0')};
     opacity: ${({ $isActive: $isActive }) => ($isActive ? '1' : '0')};
     transition:
-        max-height 0.3s ease,
-        opacity 0.3s ease;
+        max-height 0.2s linear,
+        opacity 0.2s linear;
 `;
 
 export const XCContent = styled.div`
@@ -87,10 +89,7 @@ export const SeasonRewardText = styled(Typography).attrs({ variant: 'p' })`
 export const Countdown = styled.div`
     border-radius: 20px;
     gap: 10px;
-    padding-top: 5px;
-    padding-right: 12px;
-    padding-bottom: 5px;
-    padding-left: 12px;
+    padding: 5px 12px;
     background-color: #1111110d;
 `;
 
@@ -100,12 +99,12 @@ export const CountdownText = styled(Typography).attrs({ variant: 'p' })`
 `;
 
 export const ConfirmButton = styled.button`
-    border-radius: 112px;
-    padding: 20px 20px;
+    height: 50px;
+    width: 100%;
+    border-radius: 111px;
     background-color: #5841d8;
     color: white;
     font-weight: bold;
     cursor: pointer;
-    width: 100%;
     text-align: center;
 `;

@@ -13,7 +13,13 @@ export default function Content({ data }: ContentProps) {
                 <LogoImg src={data.logo_img_url} alt={`${data.name} Logo`} />
             </LogoContainer>
             <ContentContainer>
-                <GradientText colors={[data.secondary_colour, data.primary_colour, data.secondary_colour]}>
+                <GradientText
+                    colors={[
+                        data.secondary_colour || '#C9EB00',
+                        data.primary_colour || '#FFFFFF',
+                        data.secondary_colour || '#C9EB00',
+                    ]}
+                >
                     <Heading>{data.campaign_title}</Heading>
                 </GradientText>
                 <BodyCopy>
