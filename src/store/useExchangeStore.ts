@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { ExchangeContent, ExchangeMiner, ExchangeMinerAssets } from '@app/types/exchange.ts';
+import { ExchangeContent, ExchangeMinerAssets } from '@app/types/exchange.ts';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
 import { useConfigBEInMemoryStore } from '@app/store/useAppConfigStore.ts';
 import { setSeedlessUI } from '@app/store/actions/uiStoreActions.ts';
@@ -7,7 +7,7 @@ import { setSeedlessUI } from '@app/store/actions/uiStoreActions.ts';
 interface ExchangeStoreState {
     content?: ExchangeContent | null;
     showExchangeAddressModal: boolean | null;
-    exchangeMiners?: ExchangeMiner[];
+    exchangeMiners?: ExchangeMinerAssets[];
     showUniversalModal: boolean | null;
 }
 
@@ -29,12 +29,13 @@ export const setShowUniversalModal = (showUniversalModal: boolean) => {
     useExchangeStore.setState({ showUniversalModal: showUniversalModal });
 };
 
-export const setExchangeMiners = (exchangeMiners?: ExchangeMiner[]) => {
+export const setExchangeMiners = (exchangeMiners?: ExchangeMinerAssets[]) => {
     useExchangeStore.setState({ exchangeMiners });
 };
 
 export async function fetchExchangeMiners() {
     const apiUrl = useConfigBEInMemoryStore.getState().airdropApiUrl;
+    if (!apiUrl) return;
     const endpoint = `${apiUrl}/miner/exchanges`;
     try {
         const res = await fetch(`${endpoint}?includeLogo=true`);

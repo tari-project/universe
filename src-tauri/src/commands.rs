@@ -44,11 +44,9 @@ use crate::gpu_status_file::GpuStatus;
 use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
 use crate::node::node_manager::NodeType;
 use crate::p2pool::models::{Connections, P2poolStats};
-use crate::progress_tracker_old::ProgressTracker;
 use crate::setup::setup_manager::{SetupManager, SetupPhase};
 use crate::tapplets::interface::ActiveTapplet;
 use crate::tapplets::tapplet_server::start_tapplet;
-use crate::tapplets::{TappletResolver, Tapplets};
 use crate::tasks_tracker::TasksTrackers;
 use crate::tor_adapter::TorConfig;
 use crate::utils::address_utils::verify_send;
@@ -328,7 +326,6 @@ pub async fn get_applications_versions(
 ) -> Result<ApplicationsVersions, String> {
     let timer = Instant::now();
     let binary_resolver = BinaryResolver::current().read().await;
-    let tapplet_resolver = TappletResolver::current().read().await;
 
     let tari_universe_version = app.package_info().version.clone();
     let xmrig_version = binary_resolver
@@ -350,8 +347,8 @@ pub async fn get_applications_versions(
     let xtrgpuminer_version = binary_resolver
         .get_binary_version_string(Binaries::GpuMiner)
         .await;
-    let bridge_version = tapplet_resolver
-        .get_tapplet_version_string(Tapplets::Bridge)
+    let bridge_version = binary_resolver
+        .get_binary_version_string(Binaries::BridgeTapplet)
         .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
@@ -1695,59 +1692,6 @@ pub async fn stop_gpu_mining<'r>(state: tauri::State<'_, UniverseAppState>) -> R
 }
 
 #[tauri::command]
-pub async fn update_applications(app: tauri::AppHandle) -> Result<(), InvokeError> {
-    let timer = Instant::now();
-    let binary_resolver = BinaryResolver::current().read().await;
-    let tapplet_resolver = TappletResolver::current().read().await;
-
-    ConfigCore::update_field(
-        ConfigCoreContent::set_last_binaries_update_timestamp,
-        SystemTime::now(),
-    )
-    .await
-    .map_err(InvokeError::from_anyhow)?;
-
-    let progress_tracker = ProgressTracker::new(app.clone(), None);
-    binary_resolver
-        .update_binary(Binaries::Xmrig, progress_tracker.clone())
-        .await
-        .map_err(|e| e.to_string())?;
-    sleep(Duration::from_secs(1));
-    binary_resolver
-        .update_binary(Binaries::MinotariNode, progress_tracker.clone())
-        .await
-        .map_err(|e| e.to_string())?;
-    sleep(Duration::from_secs(1));
-    binary_resolver
-        .update_binary(Binaries::MergeMiningProxy, progress_tracker.clone())
-        .await
-        .map_err(|e| e.to_string())?;
-    sleep(Duration::from_secs(1));
-    binary_resolver
-        .update_binary(Binaries::Wallet, progress_tracker.clone())
-        .await
-        .map_err(|e| e.to_string())?;
-    binary_resolver
-        .update_binary(Binaries::ShaP2pool, progress_tracker.clone())
-        .await
-        .map_err(|e| e.to_string())?;
-    sleep(Duration::from_secs(1));
-    tapplet_resolver
-        .update_tapplet(Tapplets::Bridge, progress_tracker.clone())
-        .await
-        .map_err(|e| e.to_string())?;
-    sleep(Duration::from_secs(1));
-
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "update_applications took too long: {:?}", timer.elapsed());
-    }
-
-    drop(binary_resolver);
-
-    Ok(())
-}
-
-#[tauri::command]
 pub async fn set_pre_release(
     app: tauri::AppHandle,
     pre_release: bool,
@@ -2120,10 +2064,10 @@ pub async fn set_warmup_seen(warmup_seen: bool) -> Result<(), String> {
 
 #[tauri::command]
 pub async fn launch_builtin_tapplet() -> Result<ActiveTapplet, String> {
-    let tapplet_resolver = TappletResolver::current().read().await;
+    let binaries_resolver = BinaryResolver::current().read().await;
 
-    let tapp_dest_dir = tapplet_resolver
-        .resolve_path_to_tapplet_files(Tapplets::Bridge)
+    let tapp_dest_dir = binaries_resolver
+        .resolve_path_to_binary_files(Binaries::BridgeTapplet)
         .await
         .map_err(|e| e.to_string())?;
 

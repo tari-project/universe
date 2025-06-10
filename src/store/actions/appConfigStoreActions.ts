@@ -329,8 +329,7 @@ export const fetchBackendInMemoryConfig = async () => {
             const isExchangeMode = res.exchangeId && !isUniversalMiner && res.exchangeId !== 'universal';
             if (isExchangeMode) {
                 await fetchExchangeContent(res.exchangeId);
-            }
-            if (isUniversalMiner) {
+            } else {
                 await fetchExchangeMiners();
             }
         }
