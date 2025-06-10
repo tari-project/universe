@@ -26,11 +26,13 @@ use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, path::PathBuf, str::FromStr};
 use tari_common::configuration::Network;
 use tauri_plugin_sentry::sentry;
+use tokio::sync::watch::{channel, Sender};
 
 use crate::{
     download_utils::{extract, validate_checksum},
     github::request_client::RequestClient,
-    progress_tracker_old::ProgressTracker,
+    progress_trackers::progress_stepper::ChanneledStepUpdate,
+    tasks_tracker::TasksTrackers,
 };
 
 use super::{
@@ -181,7 +183,6 @@ impl BinaryManager {
     async fn delete_in_progress_folder_for_selected_version(
         &self,
         selected_version: Version,
-        progress_tracker: ProgressTracker,
     ) -> Result<(), Error> {
         debug!(target: LOG_TARGET,"Deleting in progress folder for version: {:?}", selected_version);
 
@@ -194,12 +195,6 @@ impl BinaryManager {
             .join(selected_version.to_string())
             .join("in_progress");
 
-        progress_tracker
-            .send_last_action(format!(
-                "Removing in progress folder: {:?}",
-                in_progress_folder
-            ))
-            .await;
         if in_progress_folder.exists() {
             debug!(target: LOG_TARGET,"Removing in progress folder: {:?}", in_progress_folder);
             if let Err(error) = std::fs::remove_dir_all(&in_progress_folder) {
@@ -267,19 +262,12 @@ impl BinaryManager {
         asset: VersionAsset,
         destination_dir: PathBuf,
         in_progress_file_zip: PathBuf,
-        progress_tracker: ProgressTracker,
     ) -> Result<(), Error> {
         info!(target: LOG_TARGET, "Validating checksum for binary: {} with version: {:?}", self.binary_name, version);
         let version_download_info = VersionDownloadInfo {
             version: version.clone(),
             assets: vec![asset.clone()],
         };
-        progress_tracker
-            .send_last_action(format!(
-                "Downloading checksum file for dest: {:?}",
-                destination_dir
-            ))
-            .await;
         let checksum_file = self
             .adapter
             .download_and_get_checksum_path(
@@ -301,12 +289,6 @@ impl BinaryManager {
             .get_expected_checksum(checksum_file.clone(), &asset.name)
             .await?;
 
-        progress_tracker
-            .send_last_action(format!(
-                "Validating checksum for checksum file: {:?} and in progress file: {:?}",
-                checksum_file, in_progress_file_zip
-            ))
-            .await;
         match validate_checksum(in_progress_file_zip.clone(), expected_checksum).await {
             Ok(validate_checksum) => {
                 if validate_checksum {
@@ -392,12 +374,15 @@ impl BinaryManager {
             let binary_file = version_folder
                 .join(Binaries::from_name(&self.binary_name).binary_file_name(version));
             let binary_file_with_exe = binary_file.with_extension("exe");
+            let binary_file_with_html = version_folder.join("index.html");
 
             debug!(target: LOG_TARGET, "Binary folder path: {:?}", binary_folder);
             debug!(target: LOG_TARGET, "Version folder path: {:?}", version_folder);
             debug!(target: LOG_TARGET, "Binary file path: {:?}", binary_file);
 
-            let binary_file_exists = binary_file.exists() || binary_file_with_exe.exists();
+            let binary_file_exists = binary_file.exists()
+                || binary_file_with_exe.exists()
+                || binary_file_with_html.exists();
 
             debug!(target: LOG_TARGET, "Binary file exists: {:?}", binary_file_exists);
 
@@ -438,12 +423,12 @@ impl BinaryManager {
     pub async fn download_version_with_retries(
         &self,
         selected_version: Option<Version>,
-        progress_tracker: ProgressTracker,
+        progress_channel: Option<ChanneledStepUpdate>,
     ) -> Result<(), Error> {
         let mut last_error_message = String::new();
         for retry in 0..3 {
             match self
-                .download_selected_version(selected_version.clone(), progress_tracker.clone())
+                .download_selected_version(selected_version.clone(), progress_channel.clone())
                 .await
             {
                 Ok(_) => return Ok(()),
@@ -462,11 +447,63 @@ impl BinaryManager {
         Err(anyhow!(last_error_message))
     }
 
+    async fn resolve_progress_channel(
+        &self,
+        progress_channel: Option<ChanneledStepUpdate>,
+    ) -> Result<Option<Sender<f64>>, Error> {
+        if let Some(step_update_channel) = progress_channel {
+            let (sender, mut receiver) = channel::<f64>(0.0);
+            let task_tacker = match Binaries::from_name(&self.binary_name) {
+                Binaries::GpuMiner => &TasksTrackers::current().hardware_phase,
+                Binaries::Xmrig => &TasksTrackers::current().hardware_phase,
+                Binaries::Wallet => &TasksTrackers::current().wallet_phase,
+                Binaries::MinotariNode => &TasksTrackers::current().node_phase,
+                Binaries::Tor => &TasksTrackers::current().common,
+                Binaries::MergeMiningProxy => &TasksTrackers::current().mining_phase,
+                Binaries::ShaP2pool => &TasksTrackers::current().mining_phase,
+                Binaries::BridgeTapplet => &TasksTrackers::current().wallet_phase,
+            };
+            let binary_name = self.binary_name.clone();
+            let shutdown_signal = task_tacker.get_signal().await;
+            task_tacker.get_task_tracker().await.spawn(async move {
+                loop {
+                    if shutdown_signal.is_triggered() {
+                        info!(target: LOG_TARGET, "Shutdown signal received. Stopping progress channel for binary: {:?}", binary_name);
+                        break;
+                    }
+                    receiver.changed().await.expect("Failed to receive progress update");
+
+                    let last_percentage = *receiver.borrow();
+
+                    let mut params = HashMap::new();
+                    params.insert(
+                        "progress".to_string(),
+                        last_percentage.clone().to_string(),
+                    );
+                    step_update_channel
+                        .send_update(params, (last_percentage / 100.0).round())
+                        .await;
+
+                    tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+
+                    if last_percentage.ge(&100.0)  {
+                        info!(target: LOG_TARGET, "Progress channel completed for binary: {:?}", binary_name);
+                        break;
+                    }
+                }
+            });
+
+            Ok(Some(sender))
+        } else {
+            Ok(None)
+        }
+    }
+
     #[allow(clippy::too_many_lines)]
     async fn download_selected_version(
         &self,
         selected_version: Option<Version>,
-        progress_tracker: ProgressTracker,
+        progress_channel: Option<ChanneledStepUpdate>,
     ) -> Result<(), Error> {
         debug!(target: LOG_TARGET,"Downloading version: {:?}", selected_version);
 
@@ -514,18 +551,18 @@ impl BinaryManager {
         let fallback_url = asset.clone().fallback_url;
 
         info!(target: LOG_TARGET, "Downloading binary: {} from url: {}", self.binary_name, download_url);
-        progress_tracker
-            .send_last_action(format!(
-                "Downloading binary: {} with version: {}",
-                self.binary_name, version
-            ))
-            .await;
+
+        let chunk_progress_sender = self
+            .resolve_progress_channel(progress_channel.clone())
+            .await
+            .map_err(|e| anyhow!("Error resolving progress channel: {:?}", e))?;
 
         if RequestClient::current()
             .download_file(
                 download_url.as_str(),
                 &in_progress_file_zip,
                 asset.source.is_mirror(),
+                chunk_progress_sender.clone(),
             )
             .await
             .map_err(|e| anyhow!("Error downloading version: {:?}. Error: {:?}", version, e))
@@ -533,18 +570,18 @@ impl BinaryManager {
         {
             if let Some(fallback_url) = fallback_url {
                 info!(target: LOG_TARGET, "Downloading binary: {} from fallback url: {}", self.binary_name, fallback_url);
-                progress_tracker
-                    .send_last_action(format!(
-                        "Downloading binary: {} with version: {} from fallback url",
-                        self.binary_name, version
-                    ))
-                    .await;
+
+                let chunk_progress_sender = self
+                    .resolve_progress_channel(progress_channel.clone())
+                    .await
+                    .map_err(|e| anyhow!("Error resolving progress channel: {:?}", e))?;
 
                 RequestClient::current()
                     .download_file(
                         fallback_url.as_str(),
                         &in_progress_file_zip,
                         asset.source.is_mirror(),
+                        chunk_progress_sender,
                     )
                     .await
                     .map_err(|e| {
@@ -558,33 +595,17 @@ impl BinaryManager {
             }
         }
 
-        progress_tracker
-            .send_last_action(format!(
-                "Extracting file: {} to dest: {}",
-                in_progress_file_zip.to_str().unwrap_or_default(),
-                destination_dir.to_str().unwrap_or_default()
-            ))
-            .await;
         extract(&in_progress_file_zip, &destination_dir)
             .await
             .map_err(|e| anyhow!("Error extracting version: {:?}. Error: {:?}", version, e))?;
 
         if self.should_validate_checksum {
-            self.validate_checksum(
-                &version,
-                asset,
-                destination_dir,
-                in_progress_file_zip,
-                progress_tracker.clone(),
-            )
-            .await?;
+            self.validate_checksum(&version, asset, destination_dir, in_progress_file_zip)
+                .await?;
         }
 
-        self.delete_in_progress_folder_for_selected_version(
-            version.clone(),
-            progress_tracker.clone(),
-        )
-        .await?;
+        self.delete_in_progress_folder_for_selected_version(version.clone())
+            .await?;
         Ok(())
     }
 

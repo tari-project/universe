@@ -9,7 +9,7 @@ import { Environment, useEnvironment } from '@app/hooks';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { useAppStateStore } from '@app/store/appStateStore';
 import { TextButton } from '@app/components/elements/buttons/TextButton.tsx';
-import { fetchApplicationsVersions, updateApplicationsVersions } from '@app/store/actions/appStateStoreActions.ts';
+import { fetchApplicationsVersions } from '@app/store/actions/appStateStoreActions.ts';
 
 export default function AppVersions() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
@@ -21,11 +21,6 @@ export default function AppVersions() {
             <Stack direction="row" alignItems="center" justifyContent="space-between">
                 <Typography variant="h6">{t('versions', { ns: 'common' })}</Typography>
                 <Stack direction="row" alignItems="center" justifyContent="space-between">
-                    {currentEnvironment === Environment.Development && (
-                        <TextButton size="small" onClick={() => updateApplicationsVersions()}>
-                            {t('update-versions', { ns: 'settings' })}
-                        </TextButton>
-                    )}
                     <TextButton size="small" onClick={() => fetchApplicationsVersions()}>
                         {t('refresh-versions', { ns: 'settings' })}
                     </TextButton>
