@@ -15,7 +15,7 @@ export interface ExchangeContent {
     hero_img_url: string;
     logo_img_small_url?: string;
     reward_percentage: number;
-    listing_url?: string;
+    exchange_url?: string;
 }
 
 // Must match struct ExchangeMiner in app_in_memory_config.rs
@@ -26,7 +26,7 @@ export interface ExchangeMiner {
 }
 type ExchangeBranding = Pick<
     ExchangeContent,
-    'logo_img_small_url' | 'logo_img_url' | 'primary_colour' | 'secondary_colour' | 'hero_img_url' | 'listing_url'
+    'logo_img_small_url' | 'logo_img_url' | 'primary_colour' | 'secondary_colour' | 'hero_img_url' | 'exchange_url'
 >;
 export interface ExchangeMinerAssets extends ExchangeMiner, ExchangeBranding {
     logoImgUrl?: string; // are these needed?

@@ -17,7 +17,7 @@ import { useTranslation } from 'react-i18next';
 export default function ExchangesUrls() {
     const { t } = useTranslation('wallet');
     const exchanges = useExchangeStore((s) => s.exchangeMiners);
-    return exchanges?.length ? (
+    return exchanges?.length && !!exchanges?.some((x) => x.exchange_url) ? (
         <XCWrapper>
             <SectionDivider>
                 <p>{t('xc.or')}</p>

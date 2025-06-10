@@ -23,14 +23,15 @@ export default function XCLinkModal() {
     const { t } = useTranslation(['wallet']);
     const exchangeMiners = useExchangeStore((s) => s.exchangeMiners);
     const dialog = useUIStore((s) => s.dialogToShow);
-    const isOpen = dialog === 'xc_url';
+    const isOpen = dialog === 'xc_url' && !!exchangeMiners?.some((x) => x.exchange_url);
 
     function handleClose() {
         setDialogToShow(null);
     }
     const listMarkup = exchangeMiners?.map((x) => {
         const logoSrc = x.logo_img_small_url || x.logo_img_url;
-        const url = x.listing_url || 'https://tari.com';
+        const url = x.exchange_url;
+        if (!url) return null;
         return (
             <OptionWrapper key={x.id}>
                 <InfoWrapper>
@@ -41,11 +42,10 @@ export default function XCLinkModal() {
                     )}
                     {x.name}
                 </InfoWrapper>
-                {url && (
-                    <LinkButton onClick={() => open(url)}>
-                        <ExternalLinkSVG />
-                    </LinkButton>
-                )}
+
+                <LinkButton onClick={() => open(url)}>
+                    <ExternalLinkSVG />
+                </LinkButton>
             </OptionWrapper>
         );
     });
