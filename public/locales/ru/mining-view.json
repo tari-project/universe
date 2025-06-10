@@ -1,4 +1,14 @@
 {
+  "bubbles": {
+    "active-miners": "active miners",
+    "ago": "ago",
+    "block": "block",
+    "got-rewarded": "got rewarded",
+    "miners": "miners",
+    "pool": "Pool",
+    "solved": "solved",
+    "solving": "is being solved"
+  },
   "connection-to-node-lost": "Соединение с майнером потеряно. Пожалуйста, подождите, пока майнер переподключится, или перезапустите его.",
   "cpu-power": "CPU Мощность",
   "current-block-time": "Текущее время блока",

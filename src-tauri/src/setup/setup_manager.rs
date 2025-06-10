@@ -96,7 +96,7 @@ pub enum SetupPhase {
     Wallet,
     Hardware,
     Node,
-    Unknown,
+    Mining,
 }
 
 impl Display for SetupPhase {
@@ -106,7 +106,7 @@ impl Display for SetupPhase {
             SetupPhase::Wallet => write!(f, "Wallet"),
             SetupPhase::Hardware => write!(f, "Hardware"),
             SetupPhase::Node => write!(f, "Node"),
-            SetupPhase::Unknown => write!(f, "Unknown"),
+            SetupPhase::Mining => write!(f, "Mining"),
         }
     }
 }
@@ -118,7 +118,7 @@ impl SetupPhase {
             SetupPhase::Hardware,
             SetupPhase::Node,
             SetupPhase::Wallet,
-            SetupPhase::Unknown,
+            SetupPhase::Mining,
         ]
     }
     pub fn get_critical_problem_title(&self) -> String {
@@ -127,7 +127,7 @@ impl SetupPhase {
             SetupPhase::Hardware => "phase-hardware-critical-problem-title".to_string(),
             SetupPhase::Node => "phase-node-critical-problem-title".to_string(),
             SetupPhase::Wallet => "phase-wallet-critical-problem-title".to_string(),
-            SetupPhase::Unknown => "phase-unknown-critical-problem-title".to_string(),
+            SetupPhase::Mining => "phase-mining-critical-problem-title".to_string(),
         }
     }
 
@@ -137,7 +137,7 @@ impl SetupPhase {
             SetupPhase::Hardware => "phase-hardware-critical-problem-description".to_string(),
             SetupPhase::Node => "phase-node-critical-problem-description".to_string(),
             SetupPhase::Wallet => "phase-wallet-critical-problem-description".to_string(),
-            SetupPhase::Unknown => "phase-unknown-critical-problem-description".to_string(),
+            SetupPhase::Mining => "phase-mining-critical-problem-description".to_string(),
         }
     }
 }
@@ -188,7 +188,7 @@ pub struct SetupManager {
     hardware_phase_status: Sender<PhaseStatus>,
     node_phase_status: Sender<PhaseStatus>,
     wallet_phase_status: Sender<PhaseStatus>,
-    unknown_phase_status: Sender<PhaseStatus>,
+    mining_phase_status: Sender<PhaseStatus>,
     exchange_modal_status: Sender<ExchangeModalStatus>,
     universal_modal_status: Sender<ExchangeMiner>,
     phases_to_restart_queue: Mutex<Vec<SetupPhase>>,
@@ -382,21 +382,21 @@ impl SetupManager {
         wallet_phase_setup.setup().await;
     }
 
-    async fn setup_unknown_phase(&self, app_handle: AppHandle) {
+    async fn setup_mining_phase(&self, app_handle: AppHandle) {
         let setup_features = self.features.read().await.clone();
-        let unknown_phase_setup = PhaseBuilder::new()
+        let mining_phase_setup = PhaseBuilder::new()
             .with_setup_timeout_duration(Duration::from_secs(60 * 10)) // 10 minutes
             .with_listeners_for_required_phases_statuses(vec![
                 self.node_phase_status.subscribe(),
                 self.hardware_phase_status.subscribe(),
             ])
-            .build::<UnknownSetupPhase>(
+            .build::<MiningSetupPhase>(
                 app_handle.clone(),
-                self.unknown_phase_status.clone(),
+                self.mining_phase_status.clone(),
                 setup_features,
             )
             .await;
-        unknown_phase_setup.setup().await;
+        mining_phase_setup.setup().await;
     }
 
     pub async fn mark_exchange_modal_as_completed(&self) -> Result<(), anyhow::Error> {
@@ -607,7 +607,7 @@ impl SetupManager {
         self.setup_hardware_phase(app_handle.clone()).await;
         self.setup_node_phase(app_handle.clone()).await;
         self.setup_wallet_phase(app_handle.clone()).await;
-        self.setup_unknown_phase(app_handle.clone()).await;
+        self.setup_mining_phase(app_handle.clone()).await;
     }
 
     async fn await_selected_exchange_miner(&self, app_handle: AppHandle) {
@@ -660,12 +660,12 @@ impl SetupManager {
             info!(target: LOG_TARGET, "Restarting Phases");
             self.shutdown_phases(
                 app_handle.clone(),
-                vec![SetupPhase::Wallet, SetupPhase::Unknown],
+                vec![SetupPhase::Wallet, SetupPhase::Mining],
             )
             .await;
 
             self.setup_wallet_phase(app_handle.clone()).await;
-            self.setup_unknown_phase(app_handle.clone()).await;
+            self.setup_mining_phase(app_handle.clone()).await;
         } else {
             error!(target: LOG_TARGET, "Failed to reset phases after switching to Local Node: app_handle not defined");
         }
