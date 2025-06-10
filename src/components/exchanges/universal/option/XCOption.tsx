@@ -34,19 +34,20 @@ export const XCOption = ({ content, isCurrent = false }: XCOptionProps) => {
     const { t } = useTranslation(['exchange', 'settings'], { useSuspense: false });
     const [isAddressValid, setIsAddressValid] = useState(false);
     const [isActive, setIsActive] = useState(false);
+    const [miningAddress, setMiningAddress] = useState('');
     const handleExchangeMiner = async () => {
         const selectedExchangeMiner: ExchangeMiner = {
             id: content.id,
             slug: content.slug,
             name: content.name,
         };
-        await invoke('select_exchange_miner', { exchangeMiner: selectedExchangeMiner });
+        await invoke('select_exchange_miner', { exchangeMiner: selectedExchangeMiner, miningAddress });
         setShowUniversalModal(false);
         setCurrentExchangeMiner(content);
     };
 
     return (
-        <Wrapper isCurrent={isCurrent}>
+        <Wrapper $isCurrent={isCurrent}>
             <ContentHeaderWrapper>
                 <XCContent>
                     {content.logo_img_url && (
@@ -75,8 +76,8 @@ export const XCOption = ({ content, isCurrent = false }: XCOptionProps) => {
                     )}
                 </SelectOptionWrapper>
             </ContentHeaderWrapper>
-            <ContentBodyWrapper isActive={isActive}>
-                <ExchangeAddress handleIsAddressValid={setIsAddressValid} />
+            <ContentBodyWrapper $isActive={isActive}>
+                <ExchangeAddress handleIsAddressValid={setIsAddressValid} handleAddressChanged={setMiningAddress} />
                 <SeasonReward>
                     <SeasonRewardIcon src="/assets/img/wrapped_gift.svg" alt="gift" />
                     <SeasonRewardText>
@@ -91,7 +92,7 @@ export const XCOption = ({ content, isCurrent = false }: XCOptionProps) => {
                     </Countdown>
                 </SeasonReward>
                 {isAddressValid ? (
-                    <ConfirmButton onClick={handleExchangeMiner}>
+                    <ConfirmButton onClick={handleExchangeMiner} disabled={!isAddressValid}>
                         <Typography variant="h4">{t('confirm', { ns: 'settings' })}</Typography>
                     </ConfirmButton>
                 ) : (

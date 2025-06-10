@@ -18,7 +18,7 @@ export default function WalletDisplay() {
         <WalletDisplayWrapper>
             <HeaderSection>
                 <XCInfo>
-                    <ImgWrapper isLogo>
+                    <ImgWrapper $isLogo>
                         <img src={data.logo_img_url} alt={`${data.name} logo`} />
                     </ImgWrapper>
                     <Typography variant="h5">{data.name}</Typography>
@@ -29,7 +29,7 @@ export default function WalletDisplay() {
                     aria-label="Open Wallet"
                     aria-expanded={open ? 'true' : 'false'}
                 >
-                    <ImgWrapper border>
+                    <ImgWrapper $border>
                         <ChevronSVG />
                     </ImgWrapper>
                 </OpenButton>

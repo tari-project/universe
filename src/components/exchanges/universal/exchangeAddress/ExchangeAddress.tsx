@@ -9,8 +9,12 @@ import { useTranslation } from 'react-i18next';
 
 interface ExchangeAddressProps {
     handleIsAddressValid: (isValid: boolean) => void;
+    handleAddressChanged: (address: string) => void;
 }
-export const ExchangeAddress = ({ handleIsAddressValid }: ExchangeAddressProps) => {
+export const ExchangeAddress = ({
+    handleIsAddressValid,
+    handleAddressChanged: handleAddressChange,
+}: ExchangeAddressProps) => {
     const { t } = useTranslation('exchange');
     const {
         control,
@@ -24,7 +28,8 @@ export const ExchangeAddress = ({ handleIsAddressValid }: ExchangeAddressProps) 
     const address = watch('address');
     useEffect(() => {
         trigger('address');
-    }, [address, trigger]);
+        handleAddressChange(address || '');
+    }, [address, trigger, handleAddressChange]);
     const handlePaste = useCallback(
         (value: string) => {
             console.info('Pasted value:', value);

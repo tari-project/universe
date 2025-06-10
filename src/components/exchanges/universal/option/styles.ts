@@ -2,15 +2,15 @@ import styled from 'styled-components';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { convertHexToRGBA } from '@app/utils';
 
-export const Wrapper = styled.div<{ isCurrent?: boolean }>`
+export const Wrapper = styled.div<{ $isCurrent?: boolean }>`
     display: flex;
     border-radius: 10px;
     width: 100%;
     flex-direction: column;
     border: 1px solid
-        ${({ theme, isCurrent: $isCurrent }) => ($isCurrent ? theme.colors.green[400] : theme.palette.divider)};
-    background-color: ${({ theme, isCurrent: $isCurrent }) =>
-        $isCurrent ? convertHexToRGBA(theme.colors.green[400], 0.1) : theme.palette.background.paper};
+        ${({ theme, $isCurrent: isCurrent }) => (isCurrent ? theme.colors.green[400] : theme.palette.divider)};
+    background-color: ${({ theme, $isCurrent: isCurrent }) =>
+        isCurrent ? convertHexToRGBA(theme.colors.green[400], 0.1) : theme.palette.background.paper};
     padding: 15px;
     gap: 14px;
 `;
@@ -27,7 +27,7 @@ export const ContentHeaderWrapper = styled.div`
     width: 100%;
 `;
 
-export const ContentBodyWrapper = styled.div<{ isActive?: boolean }>`
+export const ContentBodyWrapper = styled.div<{ $isActive?: boolean }>`
     display: flex;
     justify-content: space-evenly;
     align-items: center;
@@ -35,8 +35,8 @@ export const ContentBodyWrapper = styled.div<{ isActive?: boolean }>`
     width: 100%;
     gap: 15px;
     overflow: hidden;
-    max-height: ${({ isActive: $isActive }) => ($isActive ? '1000px' : '0')};
-    opacity: ${({ isActive: $isActive }) => ($isActive ? '1' : '0')};
+    max-height: ${({ $isActive: $isActive }) => ($isActive ? '1000px' : '0')};
+    opacity: ${({ $isActive: $isActive }) => ($isActive ? '1' : '0')};
     transition:
         max-height 0.3s ease,
         opacity 0.3s ease;
