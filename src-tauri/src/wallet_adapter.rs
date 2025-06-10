@@ -499,19 +499,20 @@ impl ProcessAdapter for WalletAdapter {
             self.spend_key.clone(),
         );
 
-        Ok((
-            ProcessInstance {
-                shutdown: inner_shutdown,
-                handle: None,
-                startup_spec: ProcessStartupSpec {
-                    file_path: binary_version_path,
-                    envs: Some(envs),
-                    args,
-                    data_dir,
-                    pid_file_name: self.pid_file_name().to_string(),
-                    name: self.name().to_string(),
-                },
+        let wallet_instance = ProcessInstance {
+            shutdown: inner_shutdown,
+            handle: None,
+            startup_spec: ProcessStartupSpec {
+                file_path: binary_version_path,
+                envs: Some(envs),
+                args,
+                data_dir,
+                pid_file_name: self.pid_file_name().to_string(),
+                name: self.name().to_string(),
             },
+        };
+        Ok((
+            wallet_instance,
             WalletStatusMonitor {
                 grpc_port: self.grpc_port,
                 state_broadcast: self.state_broadcast.clone(),

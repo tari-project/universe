@@ -47,7 +47,6 @@ pub(crate) trait ProcessAdapter {
     type StatusMonitor: StatusMonitor;
     type ProcessInstance: ProcessInstanceTrait;
 
-    // fn spawn(&self) -> Result<(Receiver<()>, TInstance), anyhow::Error>;
     fn spawn_inner(
         &self,
         base_folder: PathBuf,
@@ -78,18 +77,22 @@ pub(crate) trait ProcessAdapter {
     fn pid_file_name(&self) -> &str;
 
     #[allow(dead_code)]
-    fn pid_file_exisits(&self, base_folder: PathBuf) -> bool {
+    fn pid_file_exists(&self, base_folder: PathBuf) -> bool {
         std::path::Path::new(&base_folder)
             .join(self.pid_file_name())
             .exists()
     }
 
-    fn find_process_pid_by_name(binary_name: &OsStr) -> Option<u32> {
+    fn find_process_pid_by_name(binary_name: &OsStr, parent_pid: Option<u32>) -> Option<u32> {
         let mut sys = System::new_all();
         sys.refresh_all();
-
+        info!(target: LOG_TARGET, "CONTROL MEM binary_name {:?}", binary_name);
         for (pid, process) in sys.processes() {
             if process.name() == binary_name {
+                info!(target: LOG_TARGET, "CONTROL MEM pid:{:?}", pid);
+                info!(target: LOG_TARGET, "CONTROL MEM name:{:?}", process.name());
+                info!(target: LOG_TARGET, "CONTROL MEM root:{:?}", process.root());
+                info!(target: LOG_TARGET, "CONTROL MEM parent:{:?}", process.parent());
                 return Some(pid.as_u32());
             }
         }
@@ -250,7 +253,7 @@ impl ProcessInstanceTrait for ProcessInstance {
                         }
                     }
                 },
-            };
+            }
             info!(target: LOG_TARGET, "Stopping {} process with exit code: {}", spec.name, exit_code);
 
             if let Err(error) = fs::remove_file(spec.data_dir.join(spec.pid_file_name)) {
