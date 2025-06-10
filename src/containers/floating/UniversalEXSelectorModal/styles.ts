@@ -56,6 +56,10 @@ export const MainLogoTitle = styled(Typography).attrs({ variant: 'h1' })`
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    font-family: 'Fugaz One', sans-serif;
 `;
 
-export const MainLogoDescription = styled(Typography).attrs({ variant: 'p' })``;
+export const MainLogoDescription = styled(Typography).attrs({ variant: 'p' })`
+    font-weight: 600;
+    max-width: 50%;
+`;

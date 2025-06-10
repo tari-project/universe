@@ -71,7 +71,9 @@ export default function UniversalEXSelectorModal() {
                                                     : 'no expiry date'}
                                             </CountdownText>
                                         </Countdown>
-                                        <Typography variant="p">{t('time-left', { ns: 'exchange' })}</Typography>
+                                        <Typography variant="p" style={{ fontWeight: 500 }}>
+                                            {t('time-left', { ns: 'exchange' })}
+                                        </Typography>
                                     </MainLogoBottomRow>
                                 </MainLogoOverlay>
                             </MainLogoContainer>
