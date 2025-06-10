@@ -54,6 +54,7 @@ pub(crate) struct StartConfig {
 }
 
 impl StartConfig {
+    #[allow(dead_code)]
     fn override_by(&self, override_by: MergeMiningProxyConfig) -> Self {
         let cloned = self.clone();
         Self {

@@ -28,7 +28,6 @@ use tauri::{AppHandle, Manager};
 
 use crate::{
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
-    mm_proxy_adapter::MergeMiningProxyConfig,
     tasks_tracker::TasksTrackers,
     UniverseAppState,
 };
