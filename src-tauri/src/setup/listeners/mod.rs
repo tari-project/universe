@@ -56,6 +56,7 @@ impl SetupFeaturesList {
         }
     }
 
+    #[allow(dead_code)]
     pub fn get_features(&self) -> Vec<SetupFeature> {
         self.0.clone()
     }

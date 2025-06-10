@@ -84,6 +84,7 @@ impl Display for ExchangeModalStatus {
 }
 
 impl ExchangeModalStatus {
+    #[allow(dead_code)]
     pub fn is_completed(&self) -> bool {
         matches!(self, ExchangeModalStatus::Completed) | matches!(self, ExchangeModalStatus::None)
     }
@@ -404,7 +405,7 @@ impl SetupManager {
         Ok(())
     }
 
-    pub async fn shutdown_phases(&self, app_handle: AppHandle, phases: Vec<SetupPhase>) {
+    pub async fn shutdown_phases(&self, phases: Vec<SetupPhase>) {
         for phase in phases {
             match phase {
                 SetupPhase::Core => {
@@ -496,6 +497,7 @@ impl SetupManager {
         }
     }
 
+    #[allow(clippy::too_many_lines)]
     pub async fn start_setup(&self, app_handle: AppHandle) {
         self.await_selected_exchange_miner(app_handle.clone()).await;
         self.pre_setup(app_handle.clone()).await;
@@ -657,11 +659,8 @@ impl SetupManager {
             EventsManager::handle_node_type_update(&app_handle).await;
 
             info!(target: LOG_TARGET, "Restarting Phases");
-            self.shutdown_phases(
-                app_handle.clone(),
-                vec![SetupPhase::Wallet, SetupPhase::Mining],
-            )
-            .await;
+            self.shutdown_phases(vec![SetupPhase::Wallet, SetupPhase::Mining])
+                .await;
 
             self.setup_wallet_phase(app_handle.clone()).await;
             self.setup_mining_phase(app_handle.clone()).await;
@@ -686,7 +685,7 @@ impl SetupManager {
                         }
                         if !last_state && current_state {
                             info!(target: LOG_TARGET, "System entered sleep mode");
-                            SetupManager::get_instance().shutdown_phases(app_handle.clone(),SetupPhase::all()).await;
+                            SetupManager::get_instance().shutdown_phases(SetupPhase::all()).await;
                         }
                         last_state = current_state;
                     }
@@ -714,8 +713,7 @@ impl SetupManager {
             return;
         }
         info!(target: LOG_TARGET, "Restarting phases from queue: {:?}", queue);
-        self.shutdown_phases(app_handle.clone(), queue.clone())
-            .await;
+        self.shutdown_phases(queue.clone()).await;
         self.resume_phases(app_handle.clone(), queue.clone()).await;
         queue.clear();
     }

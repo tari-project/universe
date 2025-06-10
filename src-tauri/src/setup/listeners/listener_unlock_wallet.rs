@@ -37,7 +37,7 @@ use super::{
 };
 
 static LOG_TARGET: &str = "tari::universe::unlock_conditions::listener_unlock_wallet";
-static INSTANCE: LazyLock<ListenerUnlockWallet> = LazyLock::new(|| ListenerUnlockWallet::new());
+static INSTANCE: LazyLock<ListenerUnlockWallet> = LazyLock::new(ListenerUnlockWallet::new);
 
 pub struct ListenerUnlockWallet {
     listener: Mutex<Option<tokio::task::JoinHandle<()>>>,

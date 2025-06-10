@@ -37,7 +37,7 @@ use super::{
 };
 
 static LOG_TARGET: &str = "tari::universe::unlock_conditions::listener_setup_finished";
-static INSTANCE: LazyLock<ListenerSetupFinished> = LazyLock::new(|| ListenerSetupFinished::new());
+static INSTANCE: LazyLock<ListenerSetupFinished> = LazyLock::new(ListenerSetupFinished::new);
 
 pub struct ListenerSetupFinished {
     listener: Mutex<Option<tokio::task::JoinHandle<()>>>,

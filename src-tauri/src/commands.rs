@@ -643,7 +643,7 @@ pub async fn set_tari_address(address: String, app_handle: tauri::AppHandle) -> 
 
     // For non exchange miner cases to stop wallet services
     SetupManager::get_instance()
-        .shutdown_phases(app_handle.clone(), vec![SetupPhase::Wallet])
+        .shutdown_phases(vec![SetupPhase::Wallet])
         .await;
 
     // mm_proxy is using wallet address
@@ -2207,7 +2207,7 @@ pub async fn refresh_wallet_history(
     app_handle: tauri::AppHandle,
 ) -> Result<(), String> {
     SetupManager::get_instance()
-        .shutdown_phases(app_handle.clone(), vec![SetupPhase::Wallet])
+        .shutdown_phases(vec![SetupPhase::Wallet])
         .await;
 
     let base_path = app_handle

@@ -23,7 +23,6 @@
 
 use std::{sync::LazyLock, time::Duration};
 
-use tauri::AppHandle;
 use tokio::{sync::{watch::Receiver, Mutex},time::sleep};
 
 use crate::{
@@ -39,7 +38,7 @@ use super::{
 };
 
 static LOG_TARGET: &str = "tari::universe::unlock_conditions::listener_unlock_gpu_mining";
-static INSTANCE: LazyLock<ListenerUnlockGpuMining> = LazyLock::new(|| ListenerUnlockGpuMining::new());
+static INSTANCE: LazyLock<ListenerUnlockGpuMining> = LazyLock::new(ListenerUnlockGpuMining::new);
 
 pub struct ListenerUnlockGpuMining {
     listener: Mutex<Option<tokio::task::JoinHandle<()>>>,

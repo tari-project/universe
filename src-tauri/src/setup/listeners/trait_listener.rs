@@ -26,13 +26,7 @@ use crate::setup::setup_manager::{PhaseStatus, SetupPhase};
 
 use super::SetupFeaturesList;
 use log::warn;
-use tokio::{
-    sync::{
-        watch::{error::RecvError, Receiver},
-        Mutex,
-    },
-    task::JoinHandle,
-};
+use tokio::sync::watch::{error::RecvError, Receiver};
 
 static LOG_TARGET: &str = "tari::universe::unlock_conditions::listener_trait";
 
@@ -53,6 +47,7 @@ impl UnlockConditionsStatusChannels {
             .ok_or_else(|| anyhow::anyhow!("Channel for phase {:?} not found", key))
     }
 
+    #[allow(dead_code)]
     pub fn get_mut(
         &mut self,
         key: &SetupPhase,
@@ -66,6 +61,7 @@ impl UnlockConditionsStatusChannels {
         self.0.contains_key(key)
     }
 
+    #[allow(dead_code)]
     pub async fn changed(&mut self, key: &SetupPhase) -> Result<(), anyhow::Error> {
         if let Ok(receiver) = self.get_mut(key) {
             receiver.changed().await.map_err(|e: RecvError| {
@@ -99,9 +95,7 @@ pub trait UnlockStrategyTrait {
         self.required_channels().is_empty()
     }
     fn are_all_channels_loaded(&self, channels: &UnlockConditionsStatusChannels) -> bool {
-        let required_channels = self.required_channels();
-
-        for phase in required_channels.iter() {
+        for phase in &self.required_channels() {
             if !channels.contains_key(phase) {
                 warn!(target: LOG_TARGET, "Missing channel for phase: {:?}", phase);
                 return false;
@@ -113,7 +107,7 @@ pub trait UnlockStrategyTrait {
         &self,
         channels: &UnlockConditionsStatusChannels,
     ) -> Result<bool, anyhow::Error> {
-        for phase in self.required_channels().iter() {
+        for phase in &self.required_channels() {
             let channel = channels.get(phase)?;
             let status = channel.borrow();
             if !status.is_success() {
@@ -126,7 +120,7 @@ pub trait UnlockStrategyTrait {
     }
 
     fn is_any_phase_restarting(&self, channels: UnlockConditionsStatusChannels) -> bool {
-        for phase in self.required_channels().iter() {
+        for phase in &self.required_channels() {
             if let Ok(channel) = channels.get(phase) {
                 if channel.borrow().is_restarting() {
                     return true;
