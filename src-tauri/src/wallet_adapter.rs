@@ -177,6 +177,17 @@ impl WalletAdapter {
             }
             let source_address = TariAddress::from_bytes(&tx.source_address)?;
             let dest_address = TariAddress::from_bytes(&tx.dest_address)?;
+            let payment_reference = match tx.direction {
+                1 => tx
+                    .payment_references_received
+                    .get(0)
+                    .and_then(|r| to_fixed_hash(r)),
+                2 => tx
+                    .payment_references_sent
+                    .get(0)
+                    .and_then(|r| to_fixed_hash(r)),
+                _ => None,
+            };
 
             transactions.push(TransactionInfo {
                 tx_id: tx.tx_id.to_string(),
@@ -191,9 +202,7 @@ impl WalletAdapter {
                 timestamp: tx.timestamp,
                 payment_id: PaymentId::stringify_bytes(&tx.user_payment_id),
                 mined_in_block_height: tx.mined_in_block_height,
-                payment_references_sent: to_fixed_hash_vec(&tx.payment_references_sent),
-                payment_references_received: to_fixed_hash_vec(&tx.payment_references_received),
-                payment_references_change: to_fixed_hash_vec(&tx.payment_references_change),
+                payment_reference,
             });
             if let Some(limit) = limit {
                 if transactions.len() >= limit as usize {
@@ -245,6 +254,18 @@ impl WalletAdapter {
                 // Consider only COINBASE_UNCONFIRMED and COINBASE_UNCONFIRMED
                 continue;
             }
+            let payment_reference = match tx.direction {
+                1 => tx
+                    .payment_references_received
+                    .get(0)
+                    .and_then(|r| to_fixed_hash(r)),
+                2 => tx
+                    .payment_references_sent
+                    .get(0)
+                    .and_then(|r| to_fixed_hash(r)),
+                _ => None,
+            };
+
             transactions.push(TransactionInfo {
                 tx_id: tx.tx_id.to_string(),
                 source_address: tx.source_address.to_hex(),
@@ -258,9 +279,7 @@ impl WalletAdapter {
                 timestamp: tx.timestamp,
                 payment_id: PaymentId::stringify_bytes(&tx.user_payment_id),
                 mined_in_block_height: tx.mined_in_block_height,
-                payment_references_sent: to_fixed_hash_vec(&tx.payment_references_sent),
-                payment_references_received: to_fixed_hash_vec(&tx.payment_references_received),
-                payment_references_change: to_fixed_hash_vec(&tx.payment_references_change),
+                payment_reference,
             });
             if let Some(limit) = limit {
                 if transactions.len() >= limit as usize {
@@ -715,9 +734,7 @@ pub struct TransactionInfo {
     pub timestamp: u64,
     pub payment_id: String,
     pub mined_in_block_height: u64,
-    pub payment_references_sent: Vec<FixedHash>,
-    pub payment_references_received: Vec<FixedHash>,
-    pub payment_references_change: Vec<FixedHash>,
+    pub payment_reference: Option<FixedHash>,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -727,19 +744,12 @@ pub struct TariAddressVariants {
     pub hex: String,
 }
 
-fn to_fixed_hash_vec<'a, I>(refs: I) -> Vec<FixedHash>
-where
-    I: IntoIterator<Item = &'a Vec<u8>>,
-{
-    refs.into_iter()
-        .filter_map(|pay_ref| {
-            if pay_ref.len() == 32 {
-                let mut arr = [0u8; 32];
-                arr.copy_from_slice(pay_ref);
-                Some(FixedHash::from(arr))
-            } else {
-                None
-            }
-        })
-        .collect()
+fn to_fixed_hash(pay_ref: &[u8]) -> Option<FixedHash> {
+    if pay_ref.len() == 32 {
+        let mut arr = [0u8; 32];
+        arr.copy_from_slice(pay_ref);
+        Some(FixedHash::from(arr))
+    } else {
+        None
+    }
 }

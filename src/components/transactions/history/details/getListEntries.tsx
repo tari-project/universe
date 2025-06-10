@@ -93,12 +93,8 @@ function parseTransactionValues({
         return { value: <EmojiAddressWrapper>{value}</EmojiAddressWrapper> };
     }
 
-    if (key === `payment_references_sent` && value?.length === 0) {
-        return { value: 'Not available' };
-    }
-
-    if (key === `payment_references_received` && value?.length === 0) {
-        return { value: 'Not available' };
+    if (key === `payment_reference` && !value) {
+        return { value: i18n.t('common:not-available') };
     }
 
     return { value, ...rest };

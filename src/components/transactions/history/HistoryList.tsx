@@ -102,10 +102,7 @@ const HistoryList = memo(function HistoryList() {
         // Specify order here
         setDetailsItem({
             tx_id: tx.tx_id,
-            payment_references_sent:
-                tx.direction == TransactionDirection.Outbound ? tx.payment_references_sent : undefined,
-            payment_references_received:
-                tx.direction == TransactionDirection.Inbound ? tx.payment_references_received : undefined,
+            payment_reference: tx.payment_reference,
             amount: tx.amount,
             payment_id: tx.payment_id,
             status: tx.status,

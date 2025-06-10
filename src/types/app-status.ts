@@ -84,9 +84,7 @@ export interface TransactionInfo {
     message: string;
     payment_id: string;
     mined_in_block_height?: number;
-    payment_references_sent?: string[];
-    payment_references_received?: string[];
-    payment_references_change?: string[];
+    payment_reference?: string;
 }
 
 export interface P2poolStatsResult {
