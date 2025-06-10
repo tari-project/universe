@@ -29,9 +29,8 @@ use super::listeners::trait_listener::UnlockConditionsListenerTrait;
 use super::listeners::{SetupFeature, SetupFeaturesList};
 use super::trait_setup_phase::SetupPhaseImpl;
 use super::{
-    phase_core::CoreSetupPhase, phase_hardware::HardwareSetupPhase, phase_node::NodeSetupPhase,
-    phase_unknown::UnknownSetupPhase, phase_wallet::WalletSetupPhase,
-    utils::phase_builder::PhaseBuilder,
+    phase_core::CoreSetupPhase, phase_hardware::HardwareSetupPhase, phase_mining::MiningSetupPhase,
+    phase_node::NodeSetupPhase, phase_wallet::WalletSetupPhase, utils::phase_builder::PhaseBuilder,
 };
 use crate::app_in_memory_config::EXCHANGE_ID;
 use crate::configs::config_core::ConfigCoreContent;
@@ -428,10 +427,10 @@ impl SetupManager {
                     TasksTrackers::current().wallet_phase.replace().await;
                     let _unused = self.wallet_phase_status.send_replace(PhaseStatus::None);
                 }
-                SetupPhase::Unknown => {
-                    TasksTrackers::current().unknown_phase.close().await;
-                    TasksTrackers::current().unknown_phase.replace().await;
-                    let _unused = self.unknown_phase_status.send_replace(PhaseStatus::None);
+                SetupPhase::Mining => {
+                    TasksTrackers::current().mining_phase.close().await;
+                    TasksTrackers::current().mining_phase.replace().await;
+                    let _unused = self.mining_phase_status.send_replace(PhaseStatus::None);
                 }
             }
         }
@@ -490,8 +489,8 @@ impl SetupManager {
                 SetupPhase::Wallet => {
                     self.setup_wallet_phase(app_handle.clone()).await;
                 }
-                SetupPhase::Unknown => {
-                    self.setup_unknown_phase(app_handle.clone()).await;
+                SetupPhase::Mining => {
+                    self.setup_mining_phase(app_handle.clone()).await;
                 }
             }
         }
@@ -510,7 +509,7 @@ impl SetupManager {
         let hardware_phase_status = self.hardware_phase_status.subscribe();
         let node_phase_status = self.node_phase_status.subscribe();
         let wallet_phase_status = self.wallet_phase_status.subscribe();
-        let unknown_phase_status = self.unknown_phase_status.subscribe();
+        let unknown_phase_status = self.mining_phase_status.subscribe();
 
         ListenerUnlockApp::current()
             .load_app_handle(app_handle.clone())
@@ -531,7 +530,7 @@ impl SetupManager {
             .add_status_channel(SetupPhase::Wallet, wallet_phase_status.clone())
             .await;
         ListenerUnlockApp::current()
-            .add_status_channel(SetupPhase::Unknown, unknown_phase_status.clone())
+            .add_status_channel(SetupPhase::Mining, unknown_phase_status.clone())
             .await;
         ListenerUnlockApp::current().start_listener().await;
 
@@ -551,7 +550,7 @@ impl SetupManager {
             .add_status_channel(SetupPhase::Wallet, wallet_phase_status.clone())
             .await;
         ListenerSetupFinished::current()
-            .add_status_channel(SetupPhase::Unknown, unknown_phase_status.clone())
+            .add_status_channel(SetupPhase::Mining, unknown_phase_status.clone())
             .await;
         ListenerSetupFinished::current().start_listener().await;
 
@@ -568,7 +567,7 @@ impl SetupManager {
             .add_status_channel(SetupPhase::Node, node_phase_status.clone())
             .await;
         ListenerUnlockCpuMining::current()
-            .add_status_channel(SetupPhase::Unknown, unknown_phase_status.clone())
+            .add_status_channel(SetupPhase::Mining, unknown_phase_status.clone())
             .await;
         ListenerUnlockCpuMining::current().start_listener().await;
 
@@ -585,7 +584,7 @@ impl SetupManager {
             .add_status_channel(SetupPhase::Node, node_phase_status.clone())
             .await;
         ListenerUnlockGpuMining::current()
-            .add_status_channel(SetupPhase::Unknown, unknown_phase_status.clone())
+            .add_status_channel(SetupPhase::Mining, unknown_phase_status.clone())
             .await;
         ListenerUnlockGpuMining::current().start_listener().await;
 

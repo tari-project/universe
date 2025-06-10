@@ -136,7 +136,7 @@ impl UnlockStrategyTrait for DefaultStrategy {
             SetupPhase::Core,
             SetupPhase::Hardware,
             SetupPhase::Node,
-            SetupPhase::Unknown,
+            SetupPhase::Mining,
         ]
     }
 }
