@@ -131,9 +131,13 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         let first_start = self
             .is_first_start
             .load(std::sync::atomic::Ordering::SeqCst);
-        let (mut child, status_monitor) =
-            self.adapter
-                .spawn(base_path, config_path, log_path, binary_path, first_start)?;
+        let (mut child, status_monitor) = self.adapter.spawn(
+            base_path,
+            config_path,
+            log_path,
+            binary_path.clone(),
+            first_start,
+        )?;
         if first_start {
             self.is_first_start
                 .store(false, std::sync::atomic::Ordering::SeqCst);
@@ -199,6 +203,11 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                 }
             }
         }));
+
+        let binary_name = binary_path
+            .file_name()
+            .expect("binary path must have a file name");
+        let _ = TAdapter::find_process_pid_by_name(binary_name);
         Ok(())
     }
 
