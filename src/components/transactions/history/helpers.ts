@@ -51,7 +51,7 @@ function isBridgeTransaction(
 }
 
 function isTransactionInfo(transaction: TransactionInfo | BackendBridgeTransaction): transaction is TransactionInfo {
-    return 'tx_id' in transaction && typeof transaction.tx_id === 'number';
+    return 'tx_id' in transaction && typeof transaction.tx_id === 'string';
 }
 
 export {
