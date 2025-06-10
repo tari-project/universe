@@ -50,13 +50,12 @@ const Wallet = memo(function Wallet({ section, setSection }: Props) {
     const walletAddress = useWalletStore((state) => state.tari_address_base58);
     const availableBalance = useWalletStore((s) => s.balance?.available_balance);
     const displayAddress = truncateMiddle(walletAddress, 4);
-    const swapUiEnabled = useAirdropStore((s) => s.swapsEnabled);
     const isSwapping = useWalletStore((s) => s.is_swapping);
     const { isWalletScanning, formattedAvailableBalance } = useTariBalance();
 
     return (
         <AnimatePresence mode="wait">
-            {isSwapping && swapUiEnabled ? (
+            {isSwapping ? (
                 <SwapsWrapper {...swapTransition} key="swap">
                     <Swap />
                     <ExchangesUrls />
@@ -88,11 +87,7 @@ const Wallet = memo(function Wallet({ section, setSection }: Props) {
 
                         {uiSendRecvEnabled ? (
                             <>
-                                {swapUiEnabled ? (
-                                    <BuyTariButton onClick={() => setIsSwapping(true)}>
-                                        {'Buy Tari (wXTM)'}
-                                    </BuyTariButton>
-                                ) : null}
+                                <BuyTariButton onClick={() => setIsSwapping(true)}>{'Buy Tari (wXTM)'}</BuyTariButton>
                                 <BottomNavWrapper>
                                     <NavButton
                                         onClick={() => setSection('send')}
