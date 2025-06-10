@@ -20,7 +20,7 @@ export const OpenButton = styled.button<{ $isOpen?: boolean }>`
               `}
 `;
 
-export const ImgWrapper = styled.div<{ $isLogo?: boolean; $border?: boolean }>`
+export const ImgWrapper = styled.div<{ $isLogo?: boolean; $border?: boolean; $col1?: string; $col2?: string }>`
     width: 40px;
     height: 40px;
     border-radius: 50%;
@@ -36,10 +36,10 @@ export const ImgWrapper = styled.div<{ $isLogo?: boolean; $border?: boolean }>`
         max-width: 100%;
     }
 
-    ${({ $isLogo }) =>
+    ${({ $isLogo, $col1, theme }) =>
         $isLogo &&
         css`
-            background-color: ${({ theme }) => theme.colors.greyscale[50]};
+            background-color: ${$col1 || theme.colors.greyscale[50]};
             img {
                 max-width: 26px;
             }
@@ -67,4 +67,13 @@ export const AddressDisplay = styled.div`
     align-items: center;
     justify-content: center;
     display: flex;
+`;
+export const ListWrapper = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    border-radius: 24px;
+    background-color: ${({ theme }) => theme.palette.background.paper};
+    width: 100%;
+    padding: 20px;
 `;
