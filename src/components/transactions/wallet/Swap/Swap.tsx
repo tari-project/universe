@@ -15,9 +15,8 @@ import { useTranslation } from 'react-i18next';
 import { setIsSwapping } from '@app/store/actions/walletStoreActions';
 import { MessageType, useIframeMessage } from '@app/hooks/swap/useIframeMessage';
 import { useUIStore } from '@app/store';
-
-// TODO: Replace with the actual URL
-const SWAPS_IFRAME_URL = 'https://feat-swaps.tari-dot-com-2025.pages.dev/swaps';
+import { useIframeUrl } from '@app/hooks/swap/useIframeUrl';
+import LoadingDots from '@app/components/elements/loaders/LoadingDots';
 
 export const Swap = memo(function Swap() {
     const theme = useUIStore((s) => s.theme);
@@ -29,17 +28,20 @@ export const Swap = memo(function Swap() {
     const [error, setError] = useState<string | null>(null);
     const [walletConnectOpen, setWalletConnectOpen] = useState(false);
     const [swapHeight, setSwapHeight] = useState(0);
-
+    const iframeUrl = useIframeUrl();
     const iframeRef = useRef<HTMLIFrameElement | null>(null);
+    const [isFullscreen, setIsFullscreen] = useState(false);
 
     const { t } = useTranslation(['wallet'], { useSuspense: false });
 
     const handleSetTheme = useCallback(() => {
-        if (iframeRef.current) {
-            iframeRef.current.contentWindow?.postMessage({ type: 'SET_THEME', payload: { theme } }, '*');
-        }
-    }, [theme]);
-
+        if (!iframeUrl) return;
+        setTimeout(() => {
+            if (iframeRef.current) {
+                iframeRef.current.contentWindow?.postMessage({ type: 'SET_THEME', payload: { theme } }, '*');
+            }
+        }, 1000);
+    }, [iframeUrl, theme]);
     useEffect(() => {
         // Keep the iframe theme in sync with the app theme
         handleSetTheme();
@@ -52,6 +54,7 @@ export const Swap = memo(function Swap() {
     const handleClearState = () => {
         setApproving(false);
         setConfirming(false);
+        setProcessingOpen(false);
         setConfirmingTransaction(null);
         setProcessingTransaction(null);
     };
@@ -62,6 +65,7 @@ export const Swap = memo(function Swap() {
                 setConfirming(true);
                 setConfirmingTransaction({
                     fromTokenDisplay: event.data.payload.fromTokenDisplay,
+                    toTokenDisplay: event.data.payload.toTokenDisplay,
                     toTokenSymbol: event.data.payload.toTokenSymbol,
                     transaction: event.data.payload.transaction,
                 });
@@ -69,12 +73,18 @@ export const Swap = memo(function Swap() {
             case MessageType.APPROVE_REQUEST:
                 setApproving(true);
                 break;
+            case MessageType.SET_FULLSCREEN:
+                setIsFullscreen(event.data.payload.open);
+                break;
             case MessageType.APPROVE_SUCCESS:
                 setApproving(false);
                 break;
             case MessageType.PROCESSING_STATUS: {
+                setApproving(false);
                 setProcessingTransaction(event.data.payload);
-                setProcessingOpen(true);
+                if (processingTransaction?.status !== 'error') {
+                    setProcessingOpen(true);
+                }
                 break;
             }
             case MessageType.WALLET_CONNECT:
@@ -93,27 +103,32 @@ export const Swap = memo(function Swap() {
     const handleConfirmTransaction = async () => {
         if (iframeRef.current) {
             handleClearState();
+            setApproving(true);
             iframeRef.current.contentWindow?.postMessage({ type: 'EXECUTE_SWAP' }, '*');
         }
     };
 
     return (
         <SwapsContainer>
-            <TabHeader $noBorder>
+            <TabHeader $noBorder $hidden={isFullscreen}>
                 <SectionHeaderWrapper>
                     <HeaderLabel>{t('swap.buy-tari')}</HeaderLabel>
                     <BackButton onClick={() => setIsSwapping(false)}>{t('swap.back-button')}</BackButton>
                 </SectionHeaderWrapper>
             </TabHeader>
             <IframeContainer>
-                <SwapsIframe
-                    $swapHeight={swapHeight}
-                    $walletConnectOpen={walletConnectOpen}
-                    ref={iframeRef}
-                    src={SWAPS_IFRAME_URL}
-                    title="Swap Iframe"
-                    onLoad={handleSetTheme}
-                />
+                {iframeUrl ? (
+                    <SwapsIframe
+                        $swapHeight={swapHeight}
+                        $walletConnectOpen={walletConnectOpen}
+                        ref={iframeRef}
+                        src={iframeUrl}
+                        title="Swap Iframe"
+                        onLoad={handleSetTheme}
+                    />
+                ) : (
+                    <LoadingDots />
+                )}
             </IframeContainer>
             {/* Floating Elements */}
             <SwapConfirmation
@@ -122,12 +137,17 @@ export const Swap = memo(function Swap() {
                 onConfirm={handleConfirmTransaction}
                 transaction={confirmingTransaction?.transaction}
                 fromTokenDisplay={confirmingTransaction?.fromTokenDisplay}
+                toTokenDisplay={confirmingTransaction?.toTokenDisplay}
                 toTokenSymbol={confirmingTransaction?.toTokenSymbol}
             />
             <ProcessingTransaction
                 status={processingTransaction?.status}
                 isOpen={processingOpen}
                 setIsOpen={setProcessingOpen}
+                fromTokenSymbol={processingTransaction?.fromTokenSymbol}
+                fromTokenAmount={processingTransaction?.fromTokenAmount}
+                toTokenSymbol={processingTransaction?.toTokenSymbol}
+                toTokenAmount={processingTransaction?.toTokenAmount}
                 fees={{
                     approval: processingTransaction?.fees?.approval ?? null,
                     swap: processingTransaction?.fees?.swap ?? null,

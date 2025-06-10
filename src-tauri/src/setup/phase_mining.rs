@@ -26,7 +26,7 @@ use crate::{
     events_emitter::EventsEmitter,
     p2pool_manager::P2poolConfig,
     progress_trackers::{
-        progress_plans::{ProgressPlans, ProgressSetupUnknownPlan},
+        progress_plans::{ProgressPlans, ProgressSetupMiningPlan},
         progress_stepper::ProgressStepperBuilder,
         ProgressStepper,
     },
@@ -53,12 +53,12 @@ use super::{
 static LOG_TARGET: &str = "tari::universe::phase_hardware";
 
 #[derive(Clone, Default)]
-pub struct UnknownSetupPhaseOutput {}
+pub struct MiningSetupPhaseOutput {}
 #[derive(Clone, Default)]
-pub struct UnknownSetupPhaseSessionConfiguration {}
+pub struct MiningSetupPhaseSessionConfiguration {}
 
 #[derive(Clone, Default)]
-pub struct UnknownSetupPhaseAppConfiguration {
+pub struct MiningSetupPhaseAppConfiguration {
     p2pool_enabled: bool,
     p2pool_stats_server_port: Option<u16>,
     mmproxy_monero_nodes: Vec<String>,
@@ -66,18 +66,18 @@ pub struct UnknownSetupPhaseAppConfiguration {
     squad_override: Option<String>,
 }
 
-pub struct UnknownSetupPhase {
+pub struct MiningSetupPhase {
     app_handle: AppHandle,
     progress_stepper: Mutex<ProgressStepper>,
-    app_configuration: UnknownSetupPhaseAppConfiguration,
+    app_configuration: MiningSetupPhaseAppConfiguration,
     setup_configuration: SetupConfiguration,
     status_sender: Sender<PhaseStatus>,
     setup_features: SetupFeaturesList,
     timeout_watcher: TimeoutWatcher,
 }
 
-impl SetupPhaseImpl for UnknownSetupPhase {
-    type AppConfiguration = UnknownSetupPhaseAppConfiguration;
+impl SetupPhaseImpl for MiningSetupPhase {
+    type AppConfiguration = MiningSetupPhaseAppConfiguration;
 
     async fn new(
         app_handle: AppHandle,
@@ -116,7 +116,7 @@ impl SetupPhaseImpl for UnknownSetupPhase {
             .clone()
     }
     fn get_phase_id(&self) -> SetupPhase {
-        SetupPhase::Unknown
+        SetupPhase::Mining
     }
     fn get_timeout_watcher(&self) -> &TimeoutWatcher {
         &self.timeout_watcher
@@ -127,15 +127,15 @@ impl SetupPhaseImpl for UnknownSetupPhase {
         timeout_watcher_sender: Sender<u64>,
     ) -> ProgressStepper {
         ProgressStepperBuilder::new()
-            .add_step(ProgressPlans::Unknown(
-                ProgressSetupUnknownPlan::BinariesMergeMiningProxy,
+            .add_step(ProgressPlans::Mining(
+                ProgressSetupMiningPlan::BinariesMergeMiningProxy,
             ))
-            .add_step(ProgressPlans::Unknown(
-                ProgressSetupUnknownPlan::BinariesP2pool,
+            .add_step(ProgressPlans::Mining(
+                ProgressSetupMiningPlan::BinariesP2pool,
             ))
-            .add_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::P2Pool))
-            .add_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::MMProxy))
-            .add_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::Done))
+            .add_step(ProgressPlans::Mining(ProgressSetupMiningPlan::P2Pool))
+            .add_step(ProgressPlans::Mining(ProgressSetupMiningPlan::MMProxy))
+            .add_step(ProgressPlans::Mining(ProgressSetupMiningPlan::Done))
             .build(app_handle.clone(), timeout_watcher_sender)
     }
 
@@ -146,7 +146,7 @@ impl SetupPhaseImpl for UnknownSetupPhase {
         let mmproxy_use_monero_fail = *ConfigCore::content().await.mmproxy_use_monero_failover();
         let squad_override = ConfigMining::content().await.squad_override().clone();
 
-        Ok(UnknownSetupPhaseAppConfiguration {
+        Ok(MiningSetupPhaseAppConfiguration {
             p2pool_enabled,
             mmproxy_use_monero_fail,
             mmproxy_monero_nodes,
@@ -161,7 +161,7 @@ impl SetupPhaseImpl for UnknownSetupPhase {
 
     #[allow(clippy::too_many_lines)]
     async fn setup_inner(&self) -> Result<(), Error> {
-        info!(target: LOG_TARGET, "[ {} Phase ] Starting setup inner", SetupPhase::Unknown);
+        info!(target: LOG_TARGET, "[ {} Phase ] Starting setup inner", SetupPhase::Mining);
         let mut progress_stepper = self.progress_stepper.lock().await;
         let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
         let state = self.app_handle.state::<UniverseAppState>();
@@ -176,9 +176,9 @@ impl SetupPhaseImpl for UnknownSetupPhase {
         let binary_resolver = BinaryResolver::current().read().await;
 
         let mmproxy_binary_progress_tracker = progress_stepper.channel_step_range_updates(
-            ProgressPlans::Unknown(ProgressSetupUnknownPlan::BinariesMergeMiningProxy),
-            Some(ProgressPlans::Unknown(
-                ProgressSetupUnknownPlan::BinariesP2pool,
+            ProgressPlans::Mining(ProgressSetupMiningPlan::BinariesMergeMiningProxy),
+            Some(ProgressPlans::Mining(
+                ProgressSetupMiningPlan::BinariesP2pool,
             )),
         );
 
@@ -187,8 +187,8 @@ impl SetupPhaseImpl for UnknownSetupPhase {
             .await?;
 
         let p2pool_binary_progress_tracker = progress_stepper.channel_step_range_updates(
-            ProgressPlans::Unknown(ProgressSetupUnknownPlan::BinariesP2pool),
-            Some(ProgressPlans::Unknown(ProgressSetupUnknownPlan::P2Pool)),
+            ProgressPlans::Mining(ProgressSetupMiningPlan::BinariesP2pool),
+            Some(ProgressPlans::Mining(ProgressSetupMiningPlan::P2Pool)),
         );
 
         binary_resolver
@@ -198,7 +198,7 @@ impl SetupPhaseImpl for UnknownSetupPhase {
         let base_node_grpc_address = state.node_manager.get_grpc_address().await?;
         if self.app_configuration.p2pool_enabled {
             progress_stepper
-                .resolve_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::P2Pool))
+                .resolve_step(ProgressPlans::Mining(ProgressSetupMiningPlan::P2Pool))
                 .await;
 
             let p2pool_config = P2poolConfig::builder()
@@ -223,7 +223,7 @@ impl SetupPhaseImpl for UnknownSetupPhase {
                 )
                 .await?;
         } else {
-            progress_stepper.skip_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::P2Pool));
+            progress_stepper.skip_step(ProgressPlans::Mining(ProgressSetupMiningPlan::P2Pool));
         }
 
         if self
@@ -231,7 +231,7 @@ impl SetupPhaseImpl for UnknownSetupPhase {
             .is_feature_disabled(SetupFeature::CentralizedPool)
         {
             progress_stepper
-                .resolve_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::MMProxy))
+                .resolve_step(ProgressPlans::Mining(ProgressSetupMiningPlan::MMProxy))
                 .await;
 
             let use_local_p2pool_node =
@@ -258,7 +258,7 @@ impl SetupPhaseImpl for UnknownSetupPhase {
 
             state.mm_proxy_manager.wait_ready().await?;
         } else {
-            progress_stepper.skip_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::MMProxy));
+            progress_stepper.skip_step(ProgressPlans::Mining(ProgressSetupMiningPlan::MMProxy));
         }
 
         Ok(())
@@ -269,10 +269,10 @@ impl SetupPhaseImpl for UnknownSetupPhase {
         self.progress_stepper
             .lock()
             .await
-            .resolve_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::Done))
+            .resolve_step(ProgressPlans::Mining(ProgressSetupMiningPlan::Done))
             .await;
 
-        EventsEmitter::emit_unknown_phase_finished(true).await;
+        EventsEmitter::emit_mining_phase_finished(true).await;
 
         Ok(())
     }

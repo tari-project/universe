@@ -12,6 +12,6 @@ export interface SetupState {
     hardware_phase_setup_payload?: ProgressTrackerUpdatePayload;
     node_phase_setup_payload?: ProgressTrackerUpdatePayload;
     wallet_phase_setup_payload?: ProgressTrackerUpdatePayload;
-    unknown_phase_setup_payload?: ProgressTrackerUpdatePayload;
+    mining_phase_setup_payload?: ProgressTrackerUpdatePayload;
     disabled_phases: SetupPhase[];
 }

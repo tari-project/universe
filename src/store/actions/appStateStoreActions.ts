@@ -9,7 +9,7 @@ import {
     updateCoreSetupPhaseInfo,
     updateHardwareSetupPhaseInfo,
     updateNodeSetupPhaseInfo,
-    updateUnknownSetupPhaseInfo,
+    updateMiningSetupPhaseInfo,
     updateWalletSetupPhaseInfo,
 } from './setupStoreActions.ts';
 import { setIsReconnecting, setShowResumeAppModal } from './uiStoreActions.ts';
@@ -110,8 +110,8 @@ export const handleRestartingPhases = async (phasesToRestart: SetupPhase[]) => {
             case SetupPhase.Hardware:
                 updateHardwareSetupPhaseInfo(undefined);
                 break;
-            case SetupPhase.Unknown:
-                updateUnknownSetupPhaseInfo(undefined);
+            case SetupPhase.Mining:
+                updateMiningSetupPhaseInfo(undefined);
                 break;
             case SetupPhase.Wallet:
                 updateWalletSetupPhaseInfo(undefined);
