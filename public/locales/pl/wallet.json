@@ -124,5 +124,10 @@
   "tari": "Tari",
   "wallet-connected": "Portfel połączony",
   "wallet-is-scanning": "Portfel skanuje...",
-  "wallet-scanning-with-progress": "Portfel skanuje: {{scanned}}/{{total}} ({{percent}}%)"
+  "wallet-scanning-with-progress": "Portfel skanuje: {{scanned}}/{{total}} ({{percent}}%)",
+  "xc": {
+    "buy-tari": "Buy Tari from an exchange",
+    "buy-tari-subtitle": "Available on selected exchanges.",
+    "or": "or"
+  }
 }

@@ -17,11 +17,17 @@ import {
 } from './styles.ts';
 import { ExternalLinkSVG } from '@app/assets/icons/external-link.tsx';
 import { IoClose } from 'react-icons/io5';
+import { setDialogToShow, useUIStore } from '@app/store';
 
 export default function XCLinkModal() {
     const { t } = useTranslation(['wallet']);
     const exchangeMiners = useExchangeStore((s) => s.exchangeMiners);
+    const dialog = useUIStore((s) => s.dialogToShow);
+    const isOpen = dialog === 'xc_url';
 
+    function handleClose() {
+        setDialogToShow(null);
+    }
     const listMarkup = exchangeMiners?.map((x) => {
         const logoSrc = x.logo_img_small_url || x.logo_img_url;
         const url = x.listing_url || 'https://tari.com';
@@ -44,11 +50,11 @@ export default function XCLinkModal() {
         );
     });
     return (
-        <Dialog open={true}>
+        <Dialog open={isOpen} onOpenChange={handleClose}>
             <DialogContent $transparentBg $unPadded>
                 <Wrapper>
                     <CloseWrapper>
-                        <CloseButton>
+                        <CloseButton onClick={handleClose}>
                             <IoClose />
                         </CloseButton>
                     </CloseWrapper>

@@ -19,7 +19,7 @@ export const BuyTariButton = styled.button`
     border-radius: 72px;
     background: #188750;
     color: white;
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease-in-out;
 
@@ -27,8 +27,6 @@ export const BuyTariButton = styled.button`
         opacity: 0.9;
     }
 
-    font-family: Poppins;
-    font-weight: 600;
     font-size: 13px;
     line-height: 100%;
     text-align: center;

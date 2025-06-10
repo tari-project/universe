@@ -124,5 +124,10 @@
   "tari": "Tari",
   "wallet-connected": "Portefeuille connecté",
   "wallet-is-scanning": "Le portefeuille est en cours de scan...",
-  "wallet-scanning-with-progress": "Le portefeuille est en cours de scan : {{scanned}}/{{total}} ({{percent}}%)"
+  "wallet-scanning-with-progress": "Le portefeuille est en cours de scan : {{scanned}}/{{total}} ({{percent}}%)",
+  "xc": {
+    "buy-tari": "Buy Tari from an exchange",
+    "buy-tari-subtitle": "Available on selected exchanges.",
+    "or": "or"
+  }
 }

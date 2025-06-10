@@ -35,6 +35,7 @@ export const setExchangeMiners = (exchangeMiners?: ExchangeMinerAssets[]) => {
 
 export async function fetchExchangeMiners() {
     const apiUrl = useConfigBEInMemoryStore.getState().airdropApiUrl;
+    if (!apiUrl) return;
     const endpoint = `${apiUrl}/miner/exchanges`;
     try {
         const res = await fetch(`${endpoint}?includeLogo=true`);
