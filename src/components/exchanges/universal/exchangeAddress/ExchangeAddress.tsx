@@ -1,13 +1,10 @@
 import { useEffect } from 'react';
-import { IconButton } from '@app/components/elements/buttons/IconButton';
 import { InputArea } from '@app/containers/floating/Settings/sections/wallet/styles';
 import { invoke } from '@tauri-apps/api/core';
 import { useCallback, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { IoCheckmarkOutline, IoCloseOutline } from 'react-icons/io5';
-import { StyledForm, StyledInput } from './styles';
+import { CheckmarkIcon, ClearIcon, StyledForm, StyledInput, StyledInputWrapper } from './styles';
 import { ClipboardViewer } from '../clipboardViewer/ClipboardViewer';
-import { IconContainer } from '@app/containers/floating/XSpaceBanner/XSpaceBanner.style';
 import { useTranslation } from 'react-i18next';
 
 interface ExchangeAddressProps {
@@ -70,40 +67,19 @@ export const ExchangeAddress = ({ handleIsAddressValid }: ExchangeAddressProps) 
                         rules={validationRules}
                         render={({ field }) => {
                             return (
-                                <StyledInput
-                                    {...field}
-                                    type="text"
-                                    placeholder={t('wallet-address')}
-                                    hasError={!!errors.address}
-                                    onFocus={handleFocus}
-                                />
+                                <StyledInputWrapper>
+                                    <StyledInput
+                                        {...field}
+                                        type="text"
+                                        placeholder={t('wallet-address')}
+                                        hasError={!!errors.address}
+                                        onFocus={handleFocus}
+                                    />
+                                    {errors.address ? <ClearIcon onClick={handleReset} /> : <CheckmarkIcon />}
+                                </StyledInputWrapper>
                             );
                         }}
                     />
-                    <IconContainer>
-                        {errors.address ? (
-                            <IconButton
-                                style={{
-                                    fontSize: 24,
-                                    backgroundColor: '#0000001A',
-                                }}
-                                aria-label="Clear"
-                                type="reset"
-                            >
-                                <IoCloseOutline />
-                            </IconButton>
-                        ) : (
-                            <IconButton
-                                style={{
-                                    fontSize: 24,
-                                    backgroundColor: '#00800020',
-                                }}
-                                aria-label="Valid"
-                            >
-                                <IoCheckmarkOutline />
-                            </IconButton>
-                        )}
-                    </IconContainer>
                 </InputArea>
             </StyledForm>
             {showClipboard && <ClipboardViewer handlePaste={handlePaste} />}

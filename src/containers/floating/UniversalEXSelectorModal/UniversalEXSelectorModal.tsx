@@ -56,25 +56,25 @@ export default function UniversalEXSelectorModal() {
                                     <MainLogoDescription>
                                         {currentExchangeMiner.campaign_description}
                                     </MainLogoDescription>
-                                    <MainLogoBottomRow
-                                        style={{
-                                            display: 'flex',
-                                            flexDirection: 'row',
-                                            gap: '20px',
-                                            alignItems: 'center',
-                                        }}
-                                    >
-                                        <Countdown style={{ backgroundColor: 'white' }}>
-                                            <CountdownText>
-                                                {currentExchangeMiner.reward_expiry_date
-                                                    ? formatCountdown(currentExchangeMiner.reward_expiry_date)
-                                                    : 'no expiry date'}
-                                            </CountdownText>
-                                        </Countdown>
-                                        <Typography variant="p" style={{ fontWeight: 500 }}>
-                                            {t('time-left', { ns: 'exchange' })}
-                                        </Typography>
-                                    </MainLogoBottomRow>
+                                    {currentExchangeMiner.reward_expiry_date && (
+                                        <MainLogoBottomRow
+                                            style={{
+                                                display: 'flex',
+                                                flexDirection: 'row',
+                                                gap: '20px',
+                                                alignItems: 'center',
+                                            }}
+                                        >
+                                            <Countdown style={{ backgroundColor: 'white' }}>
+                                                <CountdownText>
+                                                    {formatCountdown(currentExchangeMiner.reward_expiry_date)}
+                                                </CountdownText>
+                                            </Countdown>
+                                            <Typography variant="p" style={{ fontWeight: 500 }}>
+                                                {t('time-left', { ns: 'exchange' })}
+                                            </Typography>
+                                        </MainLogoBottomRow>
+                                    )}
                                 </MainLogoOverlay>
                             </MainLogoContainer>
                         )}
