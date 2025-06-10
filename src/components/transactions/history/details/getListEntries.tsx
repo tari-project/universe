@@ -27,7 +27,7 @@ type BridgeTransactionEntry = {
 
 const network = useMiningStore.getState().network;
 
-const HIDDEN_KEYS = ['direction', 'excess_sig', 'tx_id'];
+const HIDDEN_KEYS = ['direction', 'excess_sig', 'tx_id', 'payment_references_change'];
 const BRIDGE_HIDDEN_KEYS = ['paymentId'];
 
 const keyTranslations: Record<string, string> = {
@@ -91,6 +91,14 @@ function parseTransactionValues({
 
     if (key === `dest_address_emoji`) {
         return { value: <EmojiAddressWrapper>{value}</EmojiAddressWrapper> };
+    }
+
+    if (key === `payment_references_sent` && value?.length === 0) {
+        return { value: 'Not available' };
+    }
+
+    if (key === `payment_references_received` && value?.length === 0) {
+        return { value: 'Not available' };
     }
 
     return { value, ...rest };

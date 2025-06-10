@@ -42,6 +42,7 @@ use std::path::PathBuf;
 use std::time::Duration;
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::{TariAddress, TariAddressError};
+use tari_common_types::types::FixedHash;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_core::transactions::transaction_components::encrypted_data::PaymentId;
 use tari_crypto::ristretto::RistrettoPublicKey;
@@ -162,6 +163,7 @@ impl WalletAdapter {
             .get_all_completed_transactions(GetAllCompletedTransactionsRequest {
                 offset: offset.unwrap_or(0) as u64,
                 limit: limit.unwrap_or(0) as u64,
+                status_bitflag: 0,
             })
             .await
             .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?;
@@ -189,6 +191,9 @@ impl WalletAdapter {
                 timestamp: tx.timestamp,
                 payment_id: PaymentId::stringify_bytes(&tx.user_payment_id),
                 mined_in_block_height: tx.mined_in_block_height,
+                payment_references_sent: to_fixed_hash_vec(&tx.payment_references_sent),
+                payment_references_received: to_fixed_hash_vec(&tx.payment_references_received),
+                payment_references_change: to_fixed_hash_vec(&tx.payment_references_change),
             });
             if let Some(limit) = limit {
                 if transactions.len() >= limit as usize {
@@ -253,6 +258,9 @@ impl WalletAdapter {
                 timestamp: tx.timestamp,
                 payment_id: PaymentId::stringify_bytes(&tx.user_payment_id),
                 mined_in_block_height: tx.mined_in_block_height,
+                payment_references_sent: to_fixed_hash_vec(&tx.payment_references_sent),
+                payment_references_received: to_fixed_hash_vec(&tx.payment_references_received),
+                payment_references_change: to_fixed_hash_vec(&tx.payment_references_change),
             });
             if let Some(limit) = limit {
                 if transactions.len() >= limit as usize {
@@ -707,6 +715,9 @@ pub struct TransactionInfo {
     pub timestamp: u64,
     pub payment_id: String,
     pub mined_in_block_height: u64,
+    pub payment_references_sent: Vec<FixedHash>,
+    pub payment_references_received: Vec<FixedHash>,
+    pub payment_references_change: Vec<FixedHash>,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -714,4 +725,21 @@ pub struct TariAddressVariants {
     pub emoji_string: String,
     pub base58: String,
     pub hex: String,
+}
+
+fn to_fixed_hash_vec<'a, I>(refs: I) -> Vec<FixedHash>
+where
+    I: IntoIterator<Item = &'a Vec<u8>>,
+{
+    refs.into_iter()
+        .filter_map(|pay_ref| {
+            if pay_ref.len() == 32 {
+                let mut arr = [0u8; 32];
+                arr.copy_from_slice(pay_ref);
+                Some(FixedHash::from(arr))
+            } else {
+                None
+            }
+        })
+        .collect()
 }
