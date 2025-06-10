@@ -17,7 +17,7 @@ import {
 import { ExchangeMinerAssets, ExchangeMiner } from '@app/types/exchange.ts';
 import { ImgWrapper, OpenButton } from '../../commonStyles.ts';
 import { ChevronSVG } from '@app/assets/icons/chevron.tsx';
-import { setCurrentExchangeMiner, setShowUniversalModal } from '@app/store/useExchangeStore.ts';
+import { setShowUniversalModal } from '@app/store/useExchangeStore.ts';
 import { invoke } from '@tauri-apps/api/core';
 import { useTranslation } from 'react-i18next';
 import { ExchangeAddress } from '../exchangeAddress/ExchangeAddress.tsx';
@@ -43,7 +43,6 @@ export const XCOption = ({ content, isCurrent = false }: XCOptionProps) => {
         };
         await invoke('select_exchange_miner', { exchangeMiner: selectedExchangeMiner, miningAddress });
         setShowUniversalModal(false);
-        setCurrentExchangeMiner(content);
     };
 
     return (

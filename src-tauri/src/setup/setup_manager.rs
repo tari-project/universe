@@ -318,7 +318,9 @@ impl SetupManager {
         if let Some(exchange_id) = universal_miner_exchange_id {
             let mut config = state.in_memory_config.write().await;
             let new_config = DynamicMemoryConfig::init_with_exchange_id(&exchange_id);
+            let new_config_cloned = new_config.clone();
             *config = new_config;
+            EventsEmitter::emit_app_in_memory_config_changed(new_config_cloned, true).await;
         }
         let node_type = ConfigCore::content().await.node_type().clone();
         info!(target: LOG_TARGET, "Retrieved initial node type: {:?}", node_type);
