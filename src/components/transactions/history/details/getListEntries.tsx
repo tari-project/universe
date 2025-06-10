@@ -33,6 +33,14 @@ const BRIDGE_HIDDEN_KEYS = ['paymentId'];
 const keyTranslations: Record<string, string> = {
     tx_id: 'wallet:send.transaction-id',
     payment_id: 'wallet:send.transaction-description',
+    amount: 'wallet:send.label-amount',
+    source_address: 'wallet:receive.label-address',
+    dest_address: 'wallet:send.destination-address',
+    dest_address_emoji: 'wallet:receive.tooltip-emoji-id-title',
+    fee: 'wallet:send.network-fee',
+    dest_address_eth: 'Destination address [ ETH ]',
+    amount_after_fee: 'Amount after fee',
+    created_at: 'Created at',
 };
 function capitalizeKey(key: string): string {
     return key
@@ -96,34 +104,66 @@ function parseBridgeTransactionValues({
     value: ReactNode;
 } {
     const rest: Partial<StatusListEntry> = {};
+    if (key === 'sourceAddress') {
+        return { label: getLabel('source_address'), value: value };
+    }
+    if (key === 'createdAt') {
+        return { label: getLabel('created_at'), value: value };
+    }
     if (key === 'status') {
         const tKey = getTxStatusTitleKey(transaction);
         return { value: i18n.t(`common:${tKey}`), valueRight: value };
     }
     if (key === 'tokenAmount') {
         const preset = value.toString().length > 5 ? FormatPreset.XTM_LONG : FormatPreset.XTM_DECIMALS;
+        const valueMarkup = (
+            <>
+                {formatNumber(Number(value), preset)}
+                <span>{` XTM`}</span>
+            </>
+        );
         return {
-            value: formatNumber(Number(value), preset),
-            valueRight: `${formatNumber(Number(value), FormatPreset.DECIMAL_COMPACT)} µT`,
+            label: getLabel('amount'),
+            value: valueMarkup,
+            valueRight: `${formatNumber(Number(value), FormatPreset.DECIMAL_COMPACT)} µXTM`,
         };
     }
     if (key === 'amountAfterFee') {
         const preset = value.toString().length > 5 ? FormatPreset.XTM_LONG : FormatPreset.XTM_DECIMALS;
+        const valueMarkup = (
+            <>
+                {formatNumber(Number(value), preset)}
+                <span>{` XTM`}</span>
+            </>
+        );
         return {
-            value: formatNumber(Number(value), preset),
-            valueRight: `${formatNumber(Number(value), FormatPreset.DECIMAL_COMPACT)} µT`,
+            label: getLabel('amount_after_fee'),
+            value: valueMarkup,
+            valueRight: `${formatNumber(Number(value), FormatPreset.DECIMAL_COMPACT)} µXTM`,
         };
     }
     if (key === 'feeAmount') {
         const preset = value.toString().length > 5 ? FormatPreset.XTM_LONG : FormatPreset.XTM_DECIMALS;
+        const valueMarkup = (
+            <>
+                {formatNumber(Number(value), preset)}
+                <span>{` XTM`}</span>
+            </>
+        );
         return {
-            value: formatNumber(Number(value), preset),
-            valueRight: `${formatNumber(Number(value), FormatPreset.DECIMAL_COMPACT)} µT`,
+            label: getLabel('fee'),
+            value: valueMarkup,
+            valueRight: `${formatNumber(Number(value), FormatPreset.DECIMAL_COMPACT)} µXTM`,
         };
     }
 
     if (key === 'destinationAddress') {
-        return { label: 'Destination address [ ETH ]', value: transaction.destinationAddress };
+        return { label: getLabel('dest_address_eth'), value: transaction.destinationAddress };
+    }
+
+    if (key === 'mined_in_block_height' && value) {
+        const explorerURL = getExplorerUrl(network === Network.MainNet);
+        rest['externalLink'] = `${explorerURL}/blocks/${value}`;
     }
 
     return { value, ...rest };
