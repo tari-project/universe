@@ -101,6 +101,7 @@ pub struct ApplicationsVersions {
     wallet: String,
     sha_p2pool: String,
     xtrgpuminer: String,
+    bridge: String,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -315,6 +316,7 @@ pub async fn get_applications_versions(
 ) -> Result<ApplicationsVersions, String> {
     let timer = Instant::now();
     let binary_resolver = BinaryResolver::current().read().await;
+    let tapplet_resolver = TappletResolver::current().read().await;
 
     let tari_universe_version = app.package_info().version.clone();
     let xmrig_version = binary_resolver
@@ -336,6 +338,9 @@ pub async fn get_applications_versions(
     let xtrgpuminer_version = binary_resolver
         .get_binary_version_string(Binaries::GpuMiner)
         .await;
+    let bridge_version = tapplet_resolver
+        .get_tapplet_version_string(Tapplets::Bridge)
+        .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET,
@@ -354,6 +359,7 @@ pub async fn get_applications_versions(
         wallet: wallet_version,
         sha_p2pool: sha_p2pool_version,
         xtrgpuminer: xtrgpuminer_version,
+        bridge: bridge_version,
     })
 }
 
@@ -1434,8 +1440,7 @@ pub async fn set_visual_mode<'r>(enabled: bool) -> Result<(), InvokeError> {
 #[tauri::command]
 pub async fn set_airdrop_tokens<'r>(
     airdrop_tokens: Option<AirdropTokens>,
-    state: tauri::State<'_, UniverseAppState>,
-    app: tauri::AppHandle,
+    app_handle: tauri::AppHandle,
 ) -> Result<(), InvokeError> {
     let old_id = ConfigCore::content()
         .await
@@ -1456,31 +1461,14 @@ pub async fn set_airdrop_tokens<'r>(
 
     info!(target: LOG_TARGET, "New Airdrop tokens saved, user id changed:{:?}", user_id_changed);
     if user_id_changed {
-        let currently_mining = {
-            let cpu_mining_status = state.cpu_miner_status_watch_rx.borrow().clone();
-            let gpu_mining_status = state.gpu_latest_status.borrow().clone();
-            cpu_mining_status.is_mining || gpu_mining_status.is_mining
-        };
+        // If the user id changed, we need to restart the mining phases to ensure that the new telemetry_id ( unique_string value )is used
+        SetupManager::get_instance()
+            .add_phases_to_restart_queue(vec![SetupPhase::Mining])
+            .await;
 
-        if currently_mining {
-            stop_cpu_mining(state.clone())
-                .await
-                .map_err(|e| e.to_string())?;
-            stop_gpu_mining(state.clone())
-                .await
-                .map_err(|e| e.to_string())?;
-
-            airdrop::restart_mm_proxy_with_new_telemetry_id(state.clone()).await?;
-
-            start_cpu_mining(state.clone(), app.clone())
-                .await
-                .map_err(|e| e.to_string())?;
-            start_gpu_mining(state, app)
-                .await
-                .map_err(|e| e.to_string())?;
-        } else {
-            airdrop::restart_mm_proxy_with_new_telemetry_id(state.clone()).await?;
-        }
+        SetupManager::get_instance()
+            .restart_phases_from_queue(app_handle.clone())
+            .await;
     }
     Ok(())
 }

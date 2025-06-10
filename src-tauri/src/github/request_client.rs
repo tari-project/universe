@@ -411,7 +411,6 @@ impl RequestClient {
             .get_content_size_from_file(destination.to_path_buf())
             .await?;
 
-        info!(target: LOG_TARGET, "[ DOWNLOAD ] File size {:?}", &destination_file_size);
         if check_cache {
             let head_reposnse_cache_status =
                 self.get_cf_cache_status_from_head_response(&head_response);

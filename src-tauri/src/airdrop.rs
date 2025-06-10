@@ -28,7 +28,6 @@ use tauri::{AppHandle, Manager};
 
 use crate::{
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
-    mm_proxy_adapter::MergeMiningProxyConfig,
     tasks_tracker::TasksTrackers,
     UniverseAppState,
 };
@@ -103,33 +102,6 @@ pub async fn validate_jwt(airdrop_access_token: Option<String>) -> Option<String
             None
         }
     })
-}
-
-pub async fn restart_mm_proxy_with_new_telemetry_id(
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<(), String> {
-    info!(target: LOG_TARGET, "Restarting mm_proxy");
-    let telemetry_id = state
-        .telemetry_manager
-        .read()
-        .await
-        .get_unique_string()
-        .await;
-    let mm_proxy_manager_config = state
-        .mm_proxy_manager
-        .config()
-        .await
-        .ok_or("mm proxy config could not be found")?;
-    let _unused = state
-        .mm_proxy_manager
-        .change_config(MergeMiningProxyConfig {
-            coinbase_extra: telemetry_id.clone(),
-            ..mm_proxy_manager_config
-        })
-        .await
-        .map_err(|e| e.to_string());
-    info!(target: LOG_TARGET, "mm_proxy restarted");
-    Ok(())
 }
 
 pub async fn get_wallet_view_key_hashed(app: AppHandle) -> String {
