@@ -157,7 +157,6 @@ impl RequestClient {
     }
 
     pub async fn send_head_request(&self, url: &str) -> Result<Response, Error> {
-        info!(target: LOG_TARGET, "[ DOWNLOAD HEAD ] Downloading from url");
         let head_response = self
             .client
             .head(url)
@@ -165,7 +164,6 @@ impl RequestClient {
             .send()
             .await;
 
-        info!(target: LOG_TARGET, "[ DOWNLOAD HEAD ] response {:?}", &head_response);
         if let Ok(response) = head_response {
             if response.status().is_success() {
                 return Ok(response);
@@ -176,7 +174,6 @@ impl RequestClient {
                 ));
             }
         };
-        info!(target: LOG_TARGET, "[ DOWNLOAD HEAD ] end ");
         head_response.map_err(|e| anyhow!("HEAD request failed with error: {}", e))
     }
 
@@ -325,16 +322,13 @@ impl RequestClient {
             //TODO (2/2) bring it back once cloudflare stops returning dynamic status
             // self.check_if_cache_hits(url).await?;
         }
-        info!(target: LOG_TARGET, "[ DOWNLOAD ] Downloading from url: {:?} to dest: {:?}", &url, &destination);
         let head_response = self.send_head_request(url).await?;
-        info!(target: LOG_TARGET, "[ DOWNLOAD ] Head response {:?}", &head_response);
         let head_reponse_content_length =
             self.get_content_length_from_head_response(&head_response);
         let head_reponse_etag = self.get_etag_from_head_response(&head_response);
 
         let get_response: reqwest::Response = self.send_get_request(url).await?;
         let get_reposnse_etag = self.get_etag_from_head_response(&get_response);
-        info!(target: LOG_TARGET, "[ DOWNLOAD ] Response etag");
         // Ensure the directory exists
         if let Some(parent) = destination.parent() {
             fs::create_dir_all(parent).await?;
@@ -342,19 +336,16 @@ impl RequestClient {
 
         // Open a file for writing
         let mut destination_path = File::create(destination).await?;
-        info!(target: LOG_TARGET, "[ DOWNLOAD ] Dest {:?}", &destination_path);
         // Stream the response body directly to the file
         let mut stream = get_response.bytes_stream();
         while let Some(item) = stream.next().await {
             destination_path.write_all(&item?).await?;
         }
-        info!(target: LOG_TARGET, "[ DOWNLOAD ] Stream done");
 
         let destination_file_size = self
             .get_content_size_from_file(destination.to_path_buf())
             .await?;
 
-        info!(target: LOG_TARGET, "[ DOWNLOAD ] File size {:?}", &destination_file_size);
         if check_cache {
             let head_reposnse_cache_status =
                 self.get_cf_cache_status_from_head_response(&head_response);

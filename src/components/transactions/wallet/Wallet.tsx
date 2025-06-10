@@ -81,7 +81,6 @@ const Wallet = memo(function Wallet({ section, setSection }: Props) {
                         </TabHeader>
 
                         <WalletBalanceMarkup />
-
                         {uiSendRecvEnabled && !isWalletScanning && (
                             <>
                                 <TabsTitle>{`${t('history.available-balance')}: ${formattedAvailableBalance} ${t('common:xtm')}`}</TabsTitle>

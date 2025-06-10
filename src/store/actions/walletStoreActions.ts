@@ -5,8 +5,10 @@ import { useWalletStore } from '../useWalletStore';
 import { restartMining } from './miningStoreActions';
 import { setError } from './appStateStoreActions';
 import { setExchangeContent } from '@app/store/useExchangeStore.ts';
-import { TransactionDirection } from '@app/types/transactions';
 import { TxHistoryFilter } from '@app/components/transactions/history/FilterSelect';
+import { WrapTokenService, OpenAPI } from '@tari-project/wxtm-bridge-backend-api';
+import { useConfigBEInMemoryStore } from '../useAppConfigStore';
+import { TransactionDirection, TransactionStatus } from '@app/types/transactions';
 
 // NOTE: Tx status differ for core and proto(grpc)
 export const COINBASE_BITFLAG = 6144;
@@ -49,6 +51,34 @@ export const fetchTransactions = async ({
             console.error(`Could not get transaction history for ${filter}: `, error);
         }
         return [];
+    }
+};
+
+export const fetchBridgeTransactionsHistory = async () => {
+    try {
+        OpenAPI.BASE = useConfigBEInMemoryStore.getState().bridgeBackendApiUrl;
+        await WrapTokenService.getUserTransactions(useWalletStore.getState().tari_address_base58).then((response) => {
+            console.log('Bridge transactions fetched successfully:', response);
+            useWalletStore.setState({
+                bridge_transactions: response.transactions,
+            });
+        });
+    } catch (error) {
+        console.error('Could not get bridge transaction history: ', error);
+    }
+};
+
+export const fetchBridgeColdWalletAddress = async () => {
+    try {
+        OpenAPI.BASE = useConfigBEInMemoryStore.getState().bridgeBackendApiUrl;
+        await WrapTokenService.getWrapTokenParams().then((response) => {
+            console.log('Bridge safe wallet address fetched successfully:', response);
+            useWalletStore.setState({
+                cold_wallet_address: response.coldWalletAddress,
+            });
+        });
+    } catch (error) {
+        console.error('Could not get bridge safe wallet address: ', error);
     }
 };
 

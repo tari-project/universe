@@ -54,6 +54,7 @@ pub(crate) struct StartConfig {
 }
 
 impl StartConfig {
+    #[allow(dead_code)]
     fn override_by(&self, override_by: MergeMiningProxyConfig) -> Self {
         let cloned = self.clone();
         Self {
@@ -98,39 +99,10 @@ impl MmProxyManager {
         }
     }
 
-    pub async fn config(&self) -> Option<MergeMiningProxyConfig> {
-        let lock = self.watcher.read().await;
-        lock.adapter.config.clone()
-    }
-
-    pub async fn change_config(&self, config: MergeMiningProxyConfig) -> Result<(), anyhow::Error> {
-        if self.watcher.read().await.is_running() {
-            let mut lock = self.watcher.write().await;
-            lock.stop().await?;
-            drop(lock);
-        }
-        let start_config_read = self.start_config.read().await;
-        match start_config_read.as_ref() {
-            Some(start_config) => {
-                let config_with_override = start_config.override_by(config);
-                drop(start_config_read);
-                self.start(config_with_override).await?;
-                self.wait_ready().await?;
-            }
-            None => {
-                return Err(anyhow!(
-                    "Missing start config! MM proxy manager must be started at least once!"
-                ));
-            }
-        }
-
-        Ok(())
-    }
-
     pub async fn start(&self, config: StartConfig) -> Result<(), anyhow::Error> {
-        let shutdown_signal = TasksTrackers::current().unknown_phase.get_signal().await;
+        let shutdown_signal = TasksTrackers::current().mining_phase.get_signal().await;
         let task_tracker = TasksTrackers::current()
-            .unknown_phase
+            .mining_phase
             .get_task_tracker()
             .await;
 

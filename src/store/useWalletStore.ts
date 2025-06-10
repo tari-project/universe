@@ -2,6 +2,12 @@ import { create } from './create';
 import { TransactionInfo, WalletBalance } from '../types/app-status.ts';
 import { refreshTransactions } from './actions/walletStoreActions.ts';
 import { TxHistoryFilter } from '@app/components/transactions/history/FilterSelect.tsx';
+import { UserTransactionDTO } from '@tari-project/wxtm-bridge-backend-api';
+
+export interface BackendBridgeTransaction extends UserTransactionDTO {
+    sourceAddress?: string;
+    mined_in_block_height?: number;
+}
 
 export interface WalletStoreState {
     tari_address_base58: string;
@@ -12,6 +18,9 @@ export interface WalletStoreState {
     coinbase_transactions: TransactionInfo[];
     tx_history_filter: TxHistoryFilter;
     tx_history: TransactionInfo[];
+    // TODO: decide later for the best place to store this data
+    bridge_transactions: BackendBridgeTransaction[];
+    cold_wallet_address?: string;
     is_wallet_importing: boolean;
     is_swapping?: boolean;
     wallet_scanning: {
@@ -29,6 +38,8 @@ const initialState: WalletStoreState = {
     coinbase_transactions: [],
     tx_history_filter: 'all-activity',
     tx_history: [],
+    bridge_transactions: [],
+    cold_wallet_address: undefined,
     is_wallet_importing: false,
     wallet_scanning: {
         is_scanning: true,
