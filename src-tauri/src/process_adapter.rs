@@ -83,7 +83,7 @@ pub(crate) trait ProcessAdapter {
             .exists()
     }
 
-    fn find_process_pid_by_name(binary_name: &OsStr) -> Option<u32> {
+    fn find_process_pid_by_name(binary_name: &OsStr, parent_pid: Option<u32>) -> Option<u32> {
         let mut sys = System::new_all();
         sys.refresh_all();
         info!(target: LOG_TARGET, "CONTROL MEM binary_name {:?}", binary_name);

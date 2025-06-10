@@ -74,8 +74,10 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
             adapter,
             watcher_task: None,
             internal_shutdown: Shutdown::new(),
-            poll_time: tokio::time::Duration::from_secs(5),
-            health_timeout: tokio::time::Duration::from_secs(4),
+            // poll_time: tokio::time::Duration::from_secs(5),
+            poll_time: tokio::time::Duration::from_secs(2),
+            // health_timeout: tokio::time::Duration::from_secs(4),
+            health_timeout: tokio::time::Duration::from_secs(1),
             expected_startup_time: tokio::time::Duration::from_secs(20),
             status_monitor: None,
             stop_on_exit_codes: Vec::new(),
@@ -153,6 +155,13 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         let task_tracker = task_tracker.clone();
         let stop_on_exit_codes = self.stop_on_exit_codes.clone();
         let stats_broadcast = self.stats_broadcast.clone();
+
+        let tari_pid = TAdapter::find_process_pid_by_name("tari-universe".as_ref());
+        let binary_name = binary_path
+            .file_name()
+            .expect("binary path must have a file name");
+        let pid = TAdapter::find_process_pid_by_name(binary_name);
+
         self.watcher_task = Some(task_tracker.clone().spawn(async move {
             child.start(task_tracker.clone()).await?;
             let mut uptime = Instant::now();
@@ -168,11 +177,11 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                 memory_usage: process_mem,
                 virtual_memory_usage: process_vmem,
             };
-            // sleep(Duration::from_secs(10)).await;
             info!(target: LOG_TARGET, "Starting process watcher for {}", name);
             let mut watch_timer = tokio::time::interval(poll_time);
             watch_timer.set_missed_tick_behavior(MissedTickBehavior::Delay);
             let mut warning_count = 0;
+
             // read events such as stdout
             loop {
                 select! {
@@ -211,10 +220,6 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
             }
         }));
 
-        let binary_name = binary_path
-            .file_name()
-            .expect("binary path must have a file name");
-        let _ = TAdapter::find_process_pid_by_name(binary_name);
         Ok(())
     }
 
