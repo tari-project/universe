@@ -17,17 +17,21 @@ export default function ListActions() {
     function handleFilterChange(newFilter: TxHistoryFilter) {
         setFilter(newFilter);
     }
+    // removed for now until we decide on how we're filtering the list
+    const _filters = (
+        <FilterWrapper>
+            {FILTER_TYPES.map((type) => (
+                <FilterCTA key={type} $isActive={filter === type} onClick={() => handleFilterChange(type)}>
+                    {type}
+                </FilterCTA>
+            ))}
+        </FilterWrapper>
+    );
 
     return (
         <Wrapper style={{ marginBottom: `-4px` }}>
             <NavWrapper>
-                <FilterWrapper>
-                    {FILTER_TYPES.map((type) => (
-                        <FilterCTA key={type} $isActive={filter === type} onClick={() => handleFilterChange(type)}>
-                            {type}
-                        </FilterCTA>
-                    ))}
-                </FilterWrapper>
+                <div />
                 <SyncTooltip
                     title={t('sidebar:paper-wallet-tooltip-title')}
                     text={t('sidebar:paper-wallet-tooltip-message')}
