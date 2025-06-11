@@ -12,7 +12,7 @@ interface ExchangeStoreState {
     showUniversalModal: boolean | null;
 }
 
-const universalExchangeMinerOption: ExchangeMinerAssets = {
+export const universalExchangeMinerOption: ExchangeMinerAssets = {
     id: 'universal',
     slug: 'universal',
     name: 'Tari Universe',

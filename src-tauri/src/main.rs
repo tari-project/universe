@@ -667,6 +667,7 @@ fn main() {
             commands::set_tari_address,
             commands::confirm_exchange_address,
             commands::select_exchange_miner,
+            commands::switch_exchange_miner,
             commands::is_universal_miner,
             commands::set_p2pool_enabled,
             commands::set_show_experimental_settings,
