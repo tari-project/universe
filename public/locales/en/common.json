@@ -19,6 +19,7 @@
   "max-temperature": "Max temperature",
   "minimize": "Minimize",
   "mode": "Mode",
+  "not-available": "Not available",
   "not-installed-in-applications-directory": "Oops! Tari Universe needs to live in the Applications directory. Mind installing it there?",
   "pending": "Pending",
   "please-try-again-later": "Please try again later. If the problem persists, please contact us.",
@@ -43,6 +44,7 @@
   "utilization": "Utilization",
   "version": "Version",
   "versions": "Versions",
+  "waiting-for-confirmations": "Waiting for {{ total }} block confirmations ({{ confirmations }} of {{ total }} confirmed)",
   "webgl-not-supported": "WebGL not supported. Disabled visual mode.",
   "xtm": "XTM"
 }

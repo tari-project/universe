@@ -19,6 +19,7 @@
   "max-temperature": "Maksymalna temperatura",
   "minimize": "Zminimalizuj",
   "mode": "Tryb",
+  "not-available": "Not available",
   "not-installed-in-applications-directory": "Ups! Tari Universe musi być zainstalowane w katalogu Aplikacje. Czy możesz je tam zainstalować?",
   "pending": "Pending",
   "please-try-again-later": "Spróbuj ponownie później. Jeśli problem będzie się powtarzał, skontaktuj się z nami.",
@@ -43,6 +44,7 @@
   "utilization": "Wykorzystanie",
   "version": "Wersja",
   "versions": "Wersje",
+  "waiting-for-confirmations": "Waiting for {{ total }} block confirmations ({{ confirmations }} of {{ total }} confirmed)",
   "webgl-not-supported": "WebGL nie jest obsługiwany. Tryb wizualny wyłączony.",
   "xtm": "XTM"
 }
