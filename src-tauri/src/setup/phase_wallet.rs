@@ -24,6 +24,7 @@ use crate::{
     configs::{
         config_core::ConfigCore,
         config_ui::{ConfigUI, ConfigUIContent},
+        config_wallet::{ConfigWallet, ConfigWalletContent},
         trait_config::ConfigImpl,
     },
     events_emitter::EventsEmitter,
@@ -53,7 +54,10 @@ use super::{
     utils::{setup_default_adapter::SetupDefaultAdapter, timeout_watcher::TimeoutWatcher},
 };
 
-// static LOG_TARGET: &str = "tari::universe::phase_hardware";
+static LOG_TARGET: &str = "tari::universe::phase_wallet";
+
+// Bump to force wallet full scan
+const WALLET_MIGRATION_NONCE: u64 = 1;
 
 #[derive(Clone, Default)]
 pub struct WalletSetupPhaseOutput {}
@@ -172,6 +176,22 @@ impl SetupPhaseImpl for WalletSetupPhase {
         progress_stepper
             .resolve_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::StartWallet))
             .await;
+
+        let latest_wallet_migration_nonce = *ConfigWallet::content().await.wallet_migration_nonce();
+        if latest_wallet_migration_nonce < WALLET_MIGRATION_NONCE {
+            log::info!(target: LOG_TARGET, "Wallet migration required(Nonce {} => {})", latest_wallet_migration_nonce, WALLET_MIGRATION_NONCE);
+            if let Err(e) = state.wallet_manager.clean_data_folder(&data_dir).await {
+                log::warn!(target: LOG_TARGET, "Failed to clean wallet data folder: {}", e);
+            }
+            if let Err(e) = ConfigWallet::update_field(
+                ConfigWalletContent::set_wallet_migration_nonce,
+                WALLET_MIGRATION_NONCE,
+            )
+            .await
+            {
+                log::warn!(target: LOG_TARGET, "Failed to update wallet migration nonce: {}", e);
+            }
+        }
 
         let app_state = self.get_app_handle().state::<UniverseAppState>().clone();
         let is_local_node = app_state.node_manager.is_local_current().await?;
