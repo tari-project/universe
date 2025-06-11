@@ -110,7 +110,7 @@ impl EventsManager {
             .get_connection_details()
             .await
             .ok()
-            .map(|(_, address)| address);
+            .map(|c| c.tcp_address.clone());
         let payload = NodeTypeUpdatePayload {
             node_type,
             node_identity,

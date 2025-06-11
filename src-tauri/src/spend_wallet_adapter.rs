@@ -53,6 +53,7 @@ const LOG_TARGET: &str = "tari::universe::spend_wallet_adapter";
 pub struct SpendWalletAdapter {
     pub(crate) base_node_public_key: Option<RistrettoPublicKey>,
     pub(crate) base_node_address: Option<String>,
+    pub(crate) base_node_http_address: Option<String>,
     pub(crate) tcp_listener_port: u16,
     app_shutdown: Option<ShutdownSignal>,
     data_dir: Option<PathBuf>,
@@ -68,6 +69,7 @@ impl SpendWalletAdapter {
         Self {
             base_node_address: None,
             base_node_public_key: None,
+            base_node_http_address: None,
             tcp_listener_port,
             app_shutdown: None,
             data_dir: None,
@@ -153,6 +155,7 @@ impl SpendWalletAdapter {
     ) -> Result<(i32, Vec<String>, Vec<String>), Error> {
         let base_node_public_key = self.get_base_node_public_key_hex();
         let base_node_address = self.get_base_node_address();
+        let base_node_http_address = self.get_base_node_http_address();
         let command = ExecutionCommand::new("recovery")
             .with_extra_args(vec![
                 "-p".to_string(),
@@ -160,6 +163,8 @@ impl SpendWalletAdapter {
                     "wallet.custom_base_node={}::{}",
                     base_node_public_key, base_node_address
                 ),
+                "-p".to_string(),
+                format!("wallet.http_client_address={}", base_node_http_address),
                 "--recovery".to_string(),
             ])
             .with_extra_envs(HashMap::from([(
@@ -173,12 +178,15 @@ impl SpendWalletAdapter {
     async fn execute_sync_command(&self) -> Result<(i32, Vec<String>, Vec<String>), Error> {
         let base_node_public_key = self.get_base_node_public_key_hex();
         let base_node_address = self.get_base_node_address();
+        let base_node_http_address = self.get_base_node_http_address();
         let command = ExecutionCommand::new("sync").with_extra_args(vec![
             "-p".to_string(),
             format!(
                 "wallet.custom_base_node={}::{}",
                 base_node_public_key, base_node_address
             ),
+            "-p".to_string(),
+            format!("wallet.http_client_address={}", base_node_http_address),
             "sync".to_string(),
         ]);
 
@@ -198,6 +206,7 @@ impl SpendWalletAdapter {
             "/ip4/127.0.0.1/tcp/{:?}",
             PortAllocator::new().assign_port_with_fallback()
         );
+
         let mut args = vec![
             "-p".to_string(),
             format!(
@@ -428,6 +437,12 @@ impl SpendWalletAdapter {
         self.base_node_address
             .as_ref()
             .expect("Base node address not set")
+    }
+
+    fn get_base_node_http_address(&self) -> &str {
+        self.base_node_http_address
+            .as_ref()
+            .expect("Base node HTTP address not set")
     }
 
     async fn get_seed_words(

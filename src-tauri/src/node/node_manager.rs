@@ -41,7 +41,7 @@ use crate::configs::config_core::ConfigCore;
 use crate::configs::trait_config::ConfigImpl;
 use crate::events_emitter::EventsEmitter;
 use crate::node::node_adapter::{
-    NodeAdapter, NodeAdapterService, NodeIdentity, NodeStatusMonitorError,
+    NodeAdapter, NodeAdapterService, NodeConnectionDetails, NodeIdentity, NodeStatusMonitorError,
 };
 use crate::process_adapter::ProcessAdapter;
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
@@ -347,9 +347,7 @@ impl NodeManager {
         })
     }
 
-    pub async fn get_connection_details(
-        &self,
-    ) -> Result<(RistrettoPublicKey, String), anyhow::Error> {
+    pub async fn get_connection_details(&self) -> Result<NodeConnectionDetails, anyhow::Error> {
         let current_adapter = self.current_adapter.read().await;
         current_adapter.get_connection_details().await
     }
