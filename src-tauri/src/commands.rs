@@ -218,7 +218,6 @@ pub async fn select_exchange_miner(
     *config = new_config;
     drop(config);
 
-    EventsEmitter::emit_app_in_memory_config_changed(new_config_cloned, true).await;
     let _unused = ConfigCore::update_field(
         ConfigCoreContent::set_universal_miner_exchange_id,
         Some(exchange_miner.id.clone()),
@@ -231,6 +230,7 @@ pub async fn select_exchange_miner(
             error!(target: LOG_TARGET, "Error setting Tari address: {:?}", e);
             e.to_string()
         })?;
+    EventsEmitter::emit_app_in_memory_config_changed(new_config_cloned, true).await;
 
     Ok(())
 }
@@ -658,11 +658,7 @@ pub async fn set_tari_address(address: String, app_handle: tauri::AppHandle) -> 
     let state = app_handle.state::<UniverseAppState>();
     let mut tari_adress_guard = state.tari_address.write().await;
     *tari_adress_guard = new_address.clone();
-    EventsEmitter::emit_wallet_address_update(
-        new_address,
-        internal_wallet.get_is_tari_address_generated(),
-    )
-    .await;
+    EventsEmitter::emit_wallet_address_update(new_address, false).await;
 
     // For non exchange miner cases to stop wallet services
     SetupManager::get_instance()
