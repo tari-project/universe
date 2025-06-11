@@ -212,11 +212,13 @@ pub async fn select_exchange_miner(
     mining_address: String,
 ) -> Result<(), String> {
     let state = app_handle.state::<UniverseAppState>();
-    let mut config = state.in_memory_config.write().await;
-    let new_config = DynamicMemoryConfig::init_with_exchange_id(&exchange_miner.id);
-    let new_config_cloned = new_config.clone();
-    *config = new_config;
-    drop(config);
+    let new_config = {
+        let mut config = state.in_memory_config.write().await;
+        let new_config = DynamicMemoryConfig::init_with_exchange_id(&exchange_miner.id);
+        let new_config_cloned = new_config.clone();
+        *config = new_config;
+        new_config_cloned
+    };
 
     let _unused = ConfigCore::update_field(
         ConfigCoreContent::set_universal_miner_exchange_id,
@@ -230,7 +232,8 @@ pub async fn select_exchange_miner(
             error!(target: LOG_TARGET, "Error setting Tari address: {:?}", e);
             e.to_string()
         })?;
-    EventsEmitter::emit_app_in_memory_config_changed(new_config_cloned, true).await;
+
+    EventsEmitter::emit_app_in_memory_config_changed(new_config, true).await;
 
     Ok(())
 }
