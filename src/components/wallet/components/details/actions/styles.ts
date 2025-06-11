@@ -44,13 +44,3 @@ export const AddressTooltip = styled(m.div)`
     z-index: 1;
     font-weight: 600;
 `;
-
-export const Menu = styled(m.div)`
-    padding: 15px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 20px;
-    background: ${({ theme }) => theme.palette.background.paper};
-    z-index: 1;
-`;

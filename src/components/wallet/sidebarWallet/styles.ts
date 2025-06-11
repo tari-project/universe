@@ -8,7 +8,7 @@ export const WalletWrapper = styled(m.div)`
     display: flex;
 `;
 
-export const Wrapper = styled.div<{ $swapsPanel?: boolean }>`
+export const Wrapper = styled.div<{ $swapsPanel?: boolean; $seedlessUI?: boolean }>`
     border-radius: 20px;
     background: ${({ theme }) => (theme.mode === 'dark' ? '#2E2E2E' : '#E9E9E9')};
     padding: 15px 11px 11px 11px;
@@ -23,16 +23,28 @@ export const Wrapper = styled.div<{ $swapsPanel?: boolean }>`
 
     @media (max-height: 815px) {
         height: 425px;
+        padding: 10px;
+
+        ${({ $swapsPanel, $seedlessUI }) =>
+            ($swapsPanel || $seedlessUI) &&
+            css`
+                height: unset;
+            `};
     }
     @media (max-height: 690px) {
-        height: 385px;
+        height: 380px;
+        ${({ $swapsPanel, $seedlessUI }) =>
+            ($swapsPanel || $seedlessUI) &&
+            css`
+                height: unset;
+            `};
     }
 
-    ${({ $swapsPanel }) =>
-        $swapsPanel &&
+    ${({ $swapsPanel, $seedlessUI }) =>
+        ($swapsPanel || $seedlessUI) &&
         css`
             height: unset;
-        `}
+        `};
 `;
 
 export const WalletActionWrapper = styled(m.div)`
@@ -46,10 +58,13 @@ export const DetailsCard = styled(m.div)`
     border-radius: 20px;
     padding: 14px;
     width: 100%;
-    min-height: 95px;
+    min-height: 140px;
     box-shadow: 10px 10px 40px 0 rgba(0, 0, 0, 0.06);
     position: relative;
     overflow: hidden;
+    @media (max-height: 690px) {
+        padding: 8px 10px;
+    }
 `;
 
 const spin = keyframes`
@@ -70,6 +85,11 @@ export const AnimatedBG = styled.div<{ $col1: string; $col2: string }>`
     z-index: 0;
 `;
 
+export const DetailsCardBottomContent = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+`;
 export const DetailsCardContent = styled.div`
     justify-content: space-between;
     flex-direction: column;

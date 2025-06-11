@@ -1,5 +1,5 @@
 import { AnimatePresence, useMotionValueEvent, useScroll } from 'motion/react';
-import { useWalletStore } from '@app/store';
+import { useUIStore, useWalletStore } from '@app/store';
 import { swapTransition } from '@app/components/transactions/wallet/transitions.ts';
 import { Swap } from '@app/components/transactions/wallet/Swap/Swap.tsx';
 import WalletBalance from '../components/balance/WalletBalance.tsx';
@@ -13,6 +13,7 @@ import {
     Wrapper,
     WalletActionWrapper,
     BuyTariButton,
+    DetailsCardBottomContent,
 } from './styles.ts';
 import { useRef, useState } from 'react';
 import { HistoryListWrapper } from '@app/components/wallet/components/history/styles.ts';
@@ -24,6 +25,7 @@ import { TransactionDetails } from '@app/components/transactions/history/details
 import { setDetailsItem, setIsSwapping } from '@app/store/actions/walletStoreActions.ts';
 import { useExchangeStore } from '@app/store/useExchangeStore.ts';
 import ExchangesUrls from '@app/components/transactions/wallet/Exchanges/ExchangesUrls.tsx';
+import ExchangeButton from '@app/components/transactions/wallet/Exchanges/exchange-button/ExchangeButton.tsx';
 
 interface SidebarWalletProps {
     section: string;
@@ -37,6 +39,7 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
     const [offset, setOffset] = useState(0);
 
     const isSwapping = useWalletStore((s) => s.is_swapping);
+    const seedlessUI = useUIStore((s) => s.seedlessUI);
 
     useMotionValueEvent(scrollY, 'change', (latest) => {
         setOffset(latest);
@@ -53,9 +56,9 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
                     </SwapsWrapper>
                 ) : (
                     <WalletWrapper key="wallet" variants={swapTransition} initial="show" exit="hide" animate="show">
-                        <Wrapper>
+                        <Wrapper $seedlessUI={seedlessUI}>
                             <DetailsCard
-                                style={{ height: 170 - offset }}
+                                style={{ height: 210 - offset }}
                                 transition={{ duration: 0.2, ease: 'linear' }}
                             >
                                 <AnimatedBG
@@ -64,16 +67,24 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
                                 />
                                 <DetailsCardContent>
                                     <WalletDetails />
-                                    <WalletBalance />
+                                    <DetailsCardBottomContent>
+                                        {!seedlessUI && <WalletBalance />}
+                                        <ExchangeButton />
+                                    </DetailsCardBottomContent>
                                 </DetailsCardContent>
                             </DetailsCard>
-                            <WalletActionWrapper style={{ height: offset > 1 ? '0' : 'auto' }}>
-                                <WalletActions section={section} setSection={setSection} />
-                            </WalletActionWrapper>
-                            <ListActions />
-                            <HistoryListWrapper ref={targetRef}>
-                                <List />
-                            </HistoryListWrapper>
+                            {!seedlessUI && (
+                                <>
+                                    <WalletActionWrapper style={{ height: offset > 1 ? '0' : 'auto' }}>
+                                        <WalletActions section={section} setSection={setSection} />
+                                    </WalletActionWrapper>
+                                    <ListActions />
+
+                                    <HistoryListWrapper ref={targetRef}>
+                                        <List />
+                                    </HistoryListWrapper>
+                                </>
+                            )}
                             <BuyTariButton onClick={() => setIsSwapping(true)}>{'Buy Tari (wXTM)'}</BuyTariButton>
                         </Wrapper>
                     </WalletWrapper>

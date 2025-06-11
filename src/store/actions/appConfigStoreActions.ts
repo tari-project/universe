@@ -322,11 +322,12 @@ export const setNodeType = async (nodeType: NodeType) => {
 export const fetchBackendInMemoryConfig = async () => {
     try {
         const isUniversalMiner = await invoke('is_universal_miner');
-
         const res = await invoke('get_app_in_memory_config');
         if (res) {
             useConfigBEInMemoryStore.setState({ ...res, isUniversalMiner });
+
             const isExchangeMode = res.exchangeId && !isUniversalMiner && res.exchangeId !== 'universal';
+
             if (isExchangeMode) {
                 await fetchExchangeContent(res.exchangeId);
             } else {
