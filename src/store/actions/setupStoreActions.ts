@@ -56,13 +56,12 @@ export const handleWalletUnlocked = () => {
 export const handleWalletUpdate = async (addressPayload: WalletAddress) => {
     const addressIsGenerated = addressPayload.is_tari_address_generated;
     const xcID = useConfigBEInMemoryStore.getState().exchangeId;
-
     setWalletAddress(addressPayload);
     setSeedlessUI(!addressIsGenerated);
 
     if (xcID) {
         const currentID = useExchangeStore.getState().content?.exchange_id;
-        const canFetchXCContent = xcID && currentID !== xcID && xcID !== 'classic';
+        const canFetchXCContent = xcID && currentID !== xcID;
         if (canFetchXCContent) {
             await fetchExchangeContent(xcID);
         }

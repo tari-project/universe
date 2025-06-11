@@ -1,6 +1,5 @@
 import styled, { css } from 'styled-components';
 import { convertHexToRGBA } from '@app/utils';
-import * as m from 'motion/react-m';
 
 export const OpenButton = styled.button<{ $isOpen?: boolean }>`
     display: flex;

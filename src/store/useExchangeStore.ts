@@ -59,7 +59,7 @@ export async function fetchExchangeMiners() {
             const list = (await res.json()) as {
                 exchanges: ExchangeContent[];
             };
-            const filteredList = list.exchanges.filter((ex) => ex.name !== 'Tari Universe' || ex.is_hidden);
+            const filteredList = list.exchanges.filter((ex) => ex.slug !== 'universal' || ex.is_hidden);
             filteredList.push(universalExchangeMinerOption);
             setExchangeMiners(filteredList);
         }
@@ -78,10 +78,9 @@ export async function fetchExchangeContent(exchangeId: string) {
         const walletIsGenerated = useWalletStore.getState().is_tari_address_generated;
         if (xcContent) {
             setExchangeContent(xcContent);
-            setSeedlessUI(!isUniversalMiner);
+            setSeedlessUI(true);
             if (!isUniversalMiner) setShowExchangeModal(!!walletIsGenerated);
         }
-        return xcContent;
     } catch (e) {
         console.error('Could not fetch exchange content', e);
     }

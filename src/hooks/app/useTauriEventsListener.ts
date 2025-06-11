@@ -119,8 +119,8 @@ const useTauriEventsListener = () => {
                             break;
                         }
                         case 'WalletBalanceUpdate':
-                            await refreshTransactions();
                             await setWalletBalance(event.payload);
+                            await refreshTransactions();
                             break;
                         case 'BaseNodeUpdate':
                             handleBaseNodeStatusUpdate(event.payload);

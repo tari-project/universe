@@ -3,6 +3,7 @@ import { TransactionInfo, WalletBalance } from '../types/app-status.ts';
 
 import { TransactionDetailsItem } from '@app/types/transactions.ts';
 import { UserTransactionDTO } from '@tari-project/wxtm-bridge-backend-api';
+import { refreshTransactions } from '@app/hooks/wallet/useFetchTxHistory.ts';
 
 export interface BackendBridgeTransaction extends UserTransactionDTO {
     sourceAddress?: string;
@@ -92,6 +93,9 @@ export const updateWalletScanningProgress = (payload: {
             ...payload,
         },
     });
+    if (!is_scanning) {
+        refreshTransactions();
+    }
 };
 
 // New function to prune transaction arrays when they get too large

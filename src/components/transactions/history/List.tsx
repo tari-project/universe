@@ -164,11 +164,9 @@ export function List() {
     const emptyMarkup = isEmpty ? <LoadingText>{t('empty-tx')}</LoadingText> : null;
 
     useEffect(() => {
-        console.debug(`isInView= `, isInView, baseTx.length);
-        if (isInView && !!baseTx.length) {
-            setInView(isInView);
-        }
-    }, [baseTx.length, inView, isInView]);
+        console.debug(`isInView= `, isInView);
+        setInView(isInView);
+    }, [isInView]);
 
     useEffect(() => {
         console.debug(`inView= `, inView);

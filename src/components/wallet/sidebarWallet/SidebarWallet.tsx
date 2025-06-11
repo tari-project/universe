@@ -41,7 +41,6 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
     useMotionValueEvent(scrollY, 'change', (latest) => {
         setOffset(latest);
     });
-
     return (
         <>
             <AnimatePresence initial={false} mode="wait">
