@@ -40,7 +40,6 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
 
     const isSwapping = useWalletStore((s) => s.is_swapping);
     const seedlessUI = useUIStore((s) => s.seedlessUI);
-
     useMotionValueEvent(scrollY, 'change', (latest) => {
         setOffset(latest);
     });
@@ -79,7 +78,6 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
                                         <WalletActions section={section} setSection={setSection} />
                                     </WalletActionWrapper>
                                     <ListActions />
-
                                     <HistoryListWrapper ref={targetRef}>
                                         <List />
                                     </HistoryListWrapper>
