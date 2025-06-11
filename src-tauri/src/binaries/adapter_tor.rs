@@ -127,12 +127,7 @@ impl LatestVersionApiAdapter for TorReleaseAdapter {
         };
 
         match RequestClient::current()
-            .download_file_with_retries(
-                &checksum_url,
-                &checksum_path,
-                asset.source.is_mirror(),
-                None,
-            )
+            .download_file_with_retries(&checksum_url, &checksum_path, asset.source.is_mirror())
             .await
         {
             Ok(_) => Ok(checksum_path),
@@ -141,12 +136,7 @@ impl LatestVersionApiAdapter for TorReleaseAdapter {
                     let checksum_fallback_url = format!("{}.asc", fallback_url);
                     info!(target: LOG_TARGET, "Fallback URL: {}", checksum_fallback_url);
                     RequestClient::current()
-                        .download_file_with_retries(
-                            &checksum_fallback_url,
-                            &checksum_path,
-                            false,
-                            None,
-                        )
+                        .download_file_with_retries(&checksum_fallback_url, &checksum_path, false)
                         .await?;
                     Ok(checksum_path)
                 } else {

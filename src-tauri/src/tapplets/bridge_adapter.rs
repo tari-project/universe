@@ -34,7 +34,7 @@ use regex::Regex;
 use tari_common::configuration::Network;
 use tokio::{fs::File, io::AsyncReadExt};
 
-use super::binaries_resolver::LatestVersionApiAdapter;
+use super::tapplets_resolver::LatestVersionApiAdapter;
 
 const LOG_TARGET: &str = "tari::universe::tapplet_bridge";
 
@@ -87,12 +87,7 @@ impl LatestVersionApiAdapter for BridgeTappletAdapter {
         let checksum_url = format!("{}.sha256", asset.url);
 
         match RequestClient::current()
-            .download_file_with_retries(
-                &checksum_url,
-                &checksum_path,
-                asset.source.is_mirror(),
-                None,
-            )
+            .download_file_with_retries(&checksum_url, &checksum_path, asset.source.is_mirror())
             .await
         {
             Ok(_) => Ok(checksum_path),
@@ -101,12 +96,7 @@ impl LatestVersionApiAdapter for BridgeTappletAdapter {
                     let checksum_fallback_url = format!("{}.sha256", fallback_url);
                     info!(target: LOG_TARGET, "Fallback URL: {}", checksum_fallback_url);
                     RequestClient::current()
-                        .download_file_with_retries(
-                            &checksum_fallback_url,
-                            &checksum_path,
-                            false,
-                            None,
-                        )
+                        .download_file_with_retries(&checksum_fallback_url, &checksum_path, false)
                         .await?;
                     Ok(checksum_path)
                 } else {
@@ -116,7 +106,7 @@ impl LatestVersionApiAdapter for BridgeTappletAdapter {
         }
     }
 
-    fn get_binary_folder(&self) -> Result<PathBuf, Error> {
+    fn get_tapplet_folder(&self) -> Result<PathBuf, Error> {
         let cache_path =
             dirs::cache_dir().ok_or_else(|| anyhow::anyhow!("Failed to get cache directory"))?;
 
