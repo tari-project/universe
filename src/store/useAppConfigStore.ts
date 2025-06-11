@@ -1,7 +1,6 @@
 import { ConfigBackendInMemory, ConfigCore, ConfigMining, ConfigUI, ConfigWallet } from '@app/types/configs';
 import { create } from './create';
 
-export const DEFAULT_EXCHANGE_ID = 'universal';
 type UIConfigStoreState = Partial<ConfigUI> & {
     visualModeToggleLoading: boolean;
 };
