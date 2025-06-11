@@ -9,7 +9,7 @@ import { Wrapper } from './styles.ts';
 import { CTASArea, InputArea, WalletSettingsGrid } from '@app/containers/floating/Settings/sections/wallet/styles.ts';
 import { Edit } from '@app/components/wallet/seedwords/components/Edit.tsx';
 import { FormProvider, useForm } from 'react-hook-form';
-import { importSeedWords, useWalletStore } from '@app/store';
+import { importSeedWords, useConfigBEInMemoryStore, useWalletStore } from '@app/store';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
@@ -17,6 +17,8 @@ import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { useTranslation } from 'react-i18next';
 import { Form } from '@app/components/wallet/seedwords/components/edit.styles.ts';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
+import { invoke } from '@tauri-apps/api/core';
+import { ExchangeMiner } from '@app/types/exchange.ts';
 
 // Controller component for edit/view seed words (both Tari & Monero)
 
@@ -32,6 +34,7 @@ export default function SeedWords({ isMonero = false, isGenerated }: SeedWordsPr
     const [newSeedWords, setNewSeedWords] = useState<string[]>();
     const [showConfirm, setShowConfirm] = useState(false);
     const [copyFetchLoading, setCopyFetchLoading] = useState(false);
+    const isUniversalMiner = useConfigBEInMemoryStore((s) => s.isUniversalMiner);
 
     const { t } = useTranslation('settings', { useSuspense: false });
     const { copyToClipboard, isCopied } = useCopyToClipboard();
@@ -46,8 +49,16 @@ export default function SeedWords({ isMonero = false, isGenerated }: SeedWordsPr
     const handleConfirmed = useCallback(async () => {
         if (!isValid || !newSeedWords) return;
 
+        if (isUniversalMiner) {
+            const universalExchangeMinerOption: ExchangeMiner = {
+                id: 'universal',
+                name: 'Tari Universe',
+                slug: 'universal',
+            };
+            await invoke('switch_exchange_miner', { exchangeMiner: universalExchangeMinerOption });
+        }
         await importSeedWords(newSeedWords).finally(() => setShowConfirm(false));
-    }, [isValid, newSeedWords]);
+    }, [isValid, newSeedWords, isUniversalMiner]);
 
     const handleApply = (data: { seedWords: string }) => {
         setNewSeedWords(data.seedWords.split(' '));

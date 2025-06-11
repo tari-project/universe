@@ -206,6 +206,29 @@ pub async fn is_universal_miner(state: tauri::State<'_, UniverseAppState>) -> Re
 }
 
 #[tauri::command]
+pub async fn switch_exchange_miner(
+    app_handle: tauri::AppHandle,
+    exchange_miner: ExchangeMiner,
+) -> Result<(), String> {
+    let state = app_handle.state::<UniverseAppState>();
+    let mut config = state.in_memory_config.write().await;
+    let new_config = DynamicMemoryConfig::init_with_exchange_id(&exchange_miner.id);
+    let new_config_cloned = new_config.clone();
+    *config = new_config;
+    drop(config);
+
+    let _unused = ConfigCore::update_field(
+        ConfigCoreContent::set_universal_miner_exchange_id,
+        Some(exchange_miner.id.clone()),
+    )
+    .await;
+
+    EventsEmitter::emit_app_in_memory_config_changed(new_config_cloned, true).await;
+
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn select_exchange_miner(
     app_handle: tauri::AppHandle,
     exchange_miner: ExchangeMiner,
