@@ -29,6 +29,7 @@ export const LogoWrapper = styled.div`
     color: #c2ff28;
     align-items: center;
     justify-content: center;
+    overflow: hidden;
     svg,
     img {
         height: 11px;

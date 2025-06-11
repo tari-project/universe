@@ -26,7 +26,6 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 import { formatCountdown } from '@app/utils/formatters.ts';
 import { restartMining } from '@app/store/actions/miningStoreActions.ts';
 import { setError } from '@app/store';
-import { setSeedlessUI } from '@app/store/actions/uiStoreActions.ts';
 
 interface XCOptionProps {
     content: ExchangeMinerAssets;
@@ -46,7 +45,6 @@ export const XCOption = ({ content, isCurrent = false }: XCOptionProps) => {
         };
         await invoke('select_exchange_miner', { exchangeMiner: selectedExchangeMiner, miningAddress })
             .then(() => {
-                setSeedlessUI(true);
                 setShowUniversalModal(false);
                 restartMining();
                 console.info('New Tari address set successfully to:', miningAddress);
