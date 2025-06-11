@@ -22,7 +22,7 @@ interface NavButtonProps {
     onClick?: () => void;
 }
 
-const NavButton = memo(function NavButton({ children, isActive, onClick }: NavButtonProps) {
+export const NavButton = memo(function NavButton({ children, isActive, onClick }: NavButtonProps) {
     const sidebarOpen = useUIStore((s) => s.sidebarOpen);
     const [showArrow, setShowArrow] = useState(false);
 
