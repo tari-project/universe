@@ -223,7 +223,7 @@ impl WalletAdapter {
         &self,
         continuation: bool,
         limit: Option<u32>,
-        current_block_height: u64,
+        _current_block_height: u64,
     ) -> Result<Vec<TransactionInfo>, WalletStatusMonitorError> {
         // TODO: Implement starting point instead of continuation
         let mut stream = if continuation && self.coinbase_transactions_stream.lock().await.is_some()

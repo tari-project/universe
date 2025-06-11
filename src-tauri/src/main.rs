@@ -315,7 +315,7 @@ fn main() {
             release: sentry::release_name!(),
             attach_stacktrace: true,
             before_send: Some(Arc::new(|event| {
-                if event.logentry.as_ref().map_or(false, |entry| {
+                if event.logentry.as_ref().is_some_and(|entry| {
                     IGNORED_SENTRY_ERRORS.iter().any(|ignored| entry.message.starts_with(ignored))
                 }) {
                     None

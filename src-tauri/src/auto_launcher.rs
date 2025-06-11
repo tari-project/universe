@@ -60,28 +60,28 @@ impl AutoLauncher {
 
         match PlatformUtils::detect_current_os() {
             CurrentOperatingSystem::Windows => {
-                return AutoLaunchBuilder::new()
+                AutoLaunchBuilder::new()
                     .set_app_name(app_name)
                     .set_app_path(app_path)
                     .set_use_launch_agent(false)
                     .build()
-                    .map_err(|e| e.into());
+                    .map_err(|e| e.into())
             }
             CurrentOperatingSystem::Linux => {
-                return AutoLaunchBuilder::new()
+                AutoLaunchBuilder::new()
                     .set_app_name(app_name)
                     .set_app_path(app_path)
                     .set_use_launch_agent(false)
                     .build()
-                    .map_err(|e| e.into());
+                    .map_err(|e| e.into())
             }
             CurrentOperatingSystem::MacOS => {
-                return AutoLaunchBuilder::new()
+                AutoLaunchBuilder::new()
                     .set_app_name(app_name)
                     .set_app_path(app_path)
                     .set_use_launch_agent(true)
                     .build()
-                    .map_err(|e| e.into());
+                    .map_err(|e| e.into())
             }
         }
     }
