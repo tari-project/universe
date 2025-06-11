@@ -418,6 +418,7 @@ impl SetupManager {
             self.unlock_wallet().await;
             return;
         }
+        drop(in_memory_config);
         let wallet_phase_setup = PhaseBuilder::new()
             .with_setup_timeout_duration(Duration::from_secs(60 * 10)) // 10 minutes
             .with_listeners_for_required_phases_statuses(vec![self.node_phase_status.subscribe()])
