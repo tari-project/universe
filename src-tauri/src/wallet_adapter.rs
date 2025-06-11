@@ -162,6 +162,7 @@ impl WalletAdapter {
             .get_all_completed_transactions(GetAllCompletedTransactionsRequest {
                 offset: offset.unwrap_or(0) as u64,
                 limit: limit.unwrap_or(0) as u64,
+                status_bitflag: 0,
             })
             .await
             .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?;
