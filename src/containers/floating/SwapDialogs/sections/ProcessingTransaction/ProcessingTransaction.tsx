@@ -72,7 +72,7 @@ export const ProcessingTransaction = ({
         if (status === 'processingswap') {
             items.push({
                 label: 'Official wXTM Contract Address',
-                value: '0xfD36fA88bb3feA8D1264fc89d70723b6a2B56958',
+                value: CONTRACT_ADDRESS,
             });
         }
 
