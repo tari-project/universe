@@ -1,12 +1,12 @@
 import { Receive } from './receive/Receive';
 import { WalletSections } from './WalletSidebarContent.styles.ts';
-import { memo, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import TransactionModal from '@app/components/TransactionModal/TransactionModal.tsx';
 import SendModal from '@app/components/transactions/send/SendModal.tsx';
 import SidebarWallet from '@app/components/wallet/sidebarWallet/SidebarWallet.tsx';
 
-const WalletSidebarContent = memo(function WalletSidebarContent() {
+export default function WalletSidebarContent() {
     const { t } = useTranslation('wallet');
     const [section, setSection] = useState('history');
     return (
@@ -26,6 +26,4 @@ const WalletSidebarContent = memo(function WalletSidebarContent() {
             </TransactionModal>
         </>
     );
-});
-
-export default WalletSidebarContent;
+}

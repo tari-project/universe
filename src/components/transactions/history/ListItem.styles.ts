@@ -196,5 +196,6 @@ export const PlaceholderItem = styled.div<{ $isLast?: boolean }>`
     background: ${({ theme }) => (theme.mode === 'dark' ? '#222223' : '#F3F3F3')};
     border-radius: 10px;
     flex-shrink: 0;
-    opacity: ${({ $isLast }) => ($isLast ? 0 : 0.75)};
+    border: 1px solid pink;
+    opacity: ${({ $isLast }) => ($isLast ? 1 : 0.75)};
 `;

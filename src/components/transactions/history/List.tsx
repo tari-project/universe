@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/core';
 import { useInView } from 'motion/react';
@@ -23,6 +23,7 @@ import { BridgeHistoryListItem } from '@app/components/transactions/history/Brid
 
 export function List() {
     const { t } = useTranslation('wallet');
+    const [inView, setInView] = useState(false);
     const walletScanning = useWalletStore((s) => s.wallet_scanning);
     const bridgeTransactions = useWalletStore((s) => s.bridge_transactions);
     const coldWalletAddress = useWalletStore((s) => s.cold_wallet_address);
@@ -161,14 +162,21 @@ export function List() {
 
     const isEmpty = !walletScanning.is_scanning && !adjustedTransactions?.length;
     const emptyMarkup = isEmpty ? <LoadingText>{t('empty-tx')}</LoadingText> : null;
+
     useEffect(() => {
-        console.debug(`isInView= `, isInView);
-        console.debug(`hasNextPage= `, hasNextPage);
-        console.debug(`!!baseTx.length= `, baseTx.length);
+        console.debug(`isInView= `, isInView, baseTx.length);
         if (isInView && !!baseTx.length) {
-            fetchNextPage({ cancelRefetch: false }).then((r) => console.debug(r));
+            setInView(isInView);
         }
-    }, [baseTx.length, fetchNextPage, hasNextPage, isInView]);
+    }, [baseTx.length, inView, isInView]);
+
+    useEffect(() => {
+        console.debug(`inView= `, inView);
+        console.debug(`hasNextPage= `, hasNextPage);
+        if (inView) {
+            fetchNextPage().then((r) => console.debug(r));
+        }
+    }, [fetchNextPage, hasNextPage, inView]);
 
     return (
         <>
