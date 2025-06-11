@@ -24,6 +24,7 @@ import {
     isTransactionInfo,
 } from './helpers.ts';
 import { BridgeHistoryListItem } from './BridgeListItem.tsx';
+import { TransactionDirection } from '@app/types/transactions.ts';
 
 const HistoryList = memo(function HistoryList() {
     const { t } = useTranslation('wallet');
@@ -101,6 +102,7 @@ const HistoryList = memo(function HistoryList() {
         // Specify order here
         setDetailsItem({
             tx_id: tx.tx_id,
+            payment_reference: tx.payment_reference,
             amount: tx.amount,
             payment_id: tx.payment_id,
             status: tx.status,
