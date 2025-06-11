@@ -21,7 +21,7 @@ import { getTimestampFromTransaction, isBridgeTransaction, isTransactionInfo } f
 import { UserTransactionDTO } from '@tari-project/wxtm-bridge-backend-api';
 import { BridgeHistoryListItem } from '@app/components/transactions/history/BridgeListItem.tsx';
 
-export default function List() {
+export function List() {
     const { t } = useTranslation('wallet');
     const walletScanning = useWalletStore((s) => s.wallet_scanning);
     const bridgeTransactions = useWalletStore((s) => s.bridge_transactions);
@@ -29,7 +29,7 @@ export default function List() {
     const lastItemRef = useRef<HTMLDivElement>(null);
     const isInView = useInView(lastItemRef, { initial: undefined });
 
-    const { data, fetchNextPage, isFetchingNextPage, isFetching } = useFetchTxHistory();
+    const { data, fetchNextPage, isFetchingNextPage, isFetching, hasNextPage } = useFetchTxHistory();
     const baseTx = data?.pages.flatMap((p) => p) || [];
 
     const combinedTransactions = ([...baseTx, ...bridgeTransactions] as (TransactionInfo | UserTransactionDTO)[]).sort(
@@ -161,12 +161,15 @@ export default function List() {
 
     const isEmpty = !walletScanning.is_scanning && !adjustedTransactions?.length;
     const emptyMarkup = isEmpty ? <LoadingText>{t('empty-tx')}</LoadingText> : null;
-
     useEffect(() => {
-        if (isInView) {
-            fetchNextPage();
+        console.debug(`isInView= `, isInView);
+        console.debug(`hasNextPage= `, hasNextPage);
+        console.debug(`!!baseTx.length= `, baseTx.length);
+        if (isInView && !!baseTx.length) {
+            fetchNextPage({ cancelRefetch: false }).then((r) => console.debug(r));
         }
-    }, [fetchNextPage, isInView]);
+    }, [baseTx.length, fetchNextPage, hasNextPage, isInView]);
+
     return (
         <>
             <ListWrapper>
