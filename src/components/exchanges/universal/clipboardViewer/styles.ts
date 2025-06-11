@@ -37,11 +37,6 @@ export const TextContainer = styled.div`
     flex-direction: column;
 `;
 
-export const ErrorText = styled(Typography)`
-    font-size: 14px;
-    color: #ef4444;
-`;
-
 export const ClipboardText = styled(Typography)`
     font-size: 13px;
     letter-spacing: 0.05rem;

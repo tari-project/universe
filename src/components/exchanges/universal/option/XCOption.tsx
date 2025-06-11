@@ -102,7 +102,8 @@ export const XCOption = ({ content, isCurrent = false }: XCOptionProps) => {
                     <LeftContent>
                         <SeasonRewardIcon src="/assets/img/wrapped_gift.png" alt="gift" />
                         <SeasonRewardText>
-                            <b>{t('season-one-reward', { ns: 'exchange' })}:</b> {content.campaign_description}
+                            <b>{t('season-one-reward', { ns: 'exchange' })}:</b>{' '}
+                            <span> {content.campaign_description} </span>
                         </SeasonRewardText>
                     </LeftContent>
                     {content.reward_expiry_date ? (

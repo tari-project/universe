@@ -3,9 +3,11 @@ import { InputArea } from '@app/containers/floating/Settings/sections/wallet/sty
 import { invoke } from '@tauri-apps/api/core';
 import { useCallback, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { CheckmarkIcon, ClearIcon, StyledForm, StyledInput, StyledInputWrapper } from './styles';
+import { IconWrapper, ClearIcon, StyledForm, StyledInput, StyledInputWrapper } from './styles';
 import { ClipboardViewer } from '../clipboardViewer/ClipboardViewer';
 import { useTranslation } from 'react-i18next';
+import CheckIcon from '@app/components/transactions/components/CheckIcon.tsx';
+import { IoClose } from 'react-icons/io5';
 
 interface ExchangeAddressProps {
     handleIsAddressValid: (isValid: boolean) => void;
@@ -22,7 +24,7 @@ export const ExchangeAddress = ({
         reset,
         trigger,
         setValue,
-        formState: { errors },
+        formState: { errors, isValid },
     } = useForm();
     const [showClipboard, setShowClipboard] = useState(false);
     const address = watch('address');
@@ -59,9 +61,8 @@ export const ExchangeAddress = ({
     }, [reset]);
 
     const handleFocus = useCallback(() => {
-        setShowClipboard(true);
+        setShowClipboard((c) => !c);
     }, []);
-
     return (
         <>
             <StyledForm onReset={handleReset}>
@@ -80,7 +81,15 @@ export const ExchangeAddress = ({
                                         hasError={!!errors.address}
                                         onFocus={handleFocus}
                                     />
-                                    {errors.address ? <ClearIcon onClick={handleReset} /> : <CheckmarkIcon />}
+                                    <IconWrapper>
+                                        {errors.address ? (
+                                            <ClearIcon onClick={handleReset}>
+                                                <IoClose size={18} />
+                                            </ClearIcon>
+                                        ) : isValid ? (
+                                            <CheckIcon />
+                                        ) : null}
+                                    </IconWrapper>
                                 </StyledInputWrapper>
                             );
                         }}
