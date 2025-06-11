@@ -178,21 +178,22 @@ impl WalletAdapter {
             let source_address = TariAddress::from_bytes(&tx.source_address)?;
             let dest_address = TariAddress::from_bytes(&tx.dest_address)?;
 
-            let mut payment_reference: Option<String> = None;
-            let confirmations = current_block_height - 1 - tx.mined_in_block_height;
-            if confirmations >= 5 {
-                payment_reference = match tx.direction {
-                    1 => tx
-                        .payment_references_received
-                        .last()
-                        .and_then(|r| Some(hex::encode(r))),
-                    2 => tx
-                        .payment_references_sent
-                        .last()
-                        .and_then(|r| Some(hex::encode(r))),
+            let confirmations = if current_block_height > 0
+                && tx.mined_in_block_height <= current_block_height - 1
+            {
+                current_block_height - 1 - tx.mined_in_block_height
+            } else {
+                0
+            };
+            let payment_reference = if confirmations >= 5 {
+                match tx.direction {
+                    1 => tx.payment_references_received.last().map(hex::encode),
+                    2 => tx.payment_references_sent.last().map(hex::encode),
                     _ => None,
-                };
-            }
+                }
+            } else {
+                None
+            };
 
             transactions.push(TransactionInfo {
                 tx_id: tx.tx_id.to_string(),
@@ -260,21 +261,6 @@ impl WalletAdapter {
                 // Consider only COINBASE_UNCONFIRMED and COINBASE_UNCONFIRMED
                 continue;
             }
-            let mut payment_reference: Option<String> = None;
-            if current_block_height > tx.mined_in_block_height + 5 {
-                log::info!(target: LOG_TARGET, "current_block_height: {} | mined_in_block_height: {}", current_block_height, tx.mined_in_block_height);
-                payment_reference = match tx.direction {
-                    1 => tx
-                        .payment_references_received
-                        .last()
-                        .and_then(|r| Some(hex::encode(r))),
-                    2 => tx
-                        .payment_references_sent
-                        .last()
-                        .and_then(|r| Some(hex::encode(r))),
-                    _ => None,
-                };
-            }
 
             transactions.push(TransactionInfo {
                 tx_id: tx.tx_id.to_string(),
@@ -289,7 +275,7 @@ impl WalletAdapter {
                 timestamp: tx.timestamp,
                 payment_id: PaymentId::stringify_bytes(&tx.user_payment_id),
                 mined_in_block_height: tx.mined_in_block_height,
-                payment_reference,
+                payment_reference: None,
             });
             if let Some(limit) = limit {
                 if transactions.len() >= limit as usize {
