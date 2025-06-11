@@ -193,15 +193,19 @@ export const ProcessingTransaction = ({
                     <HelperText>
                         <div className="strong">{'How to view wXTM in your wallet?'}</div>
                         <div>
-                            {'To see your balance, add wXTM to your wallet by '}
-                            <span className="btn" onClick={handleAddXtmToWallet}>
-                                {'clicking here'}
-                            </span>
-                            {' or importing the '}
+                            {
+                                'To see your balance, add wXTM to your wallet by and adding it on your mobile app or importing the '
+                            }
                             <span className="strong">{'token address'}</span>
                             {' on the '}
                             <span className="strong">{'Ethereum mainnet'}</span>
-                            {' network.'}
+                            {' network. Alternatively, '}
+                            <span className="btn" onClick={handleAddXtmToWallet}>
+                                {'click here'}
+                            </span>
+                            {
+                                " to send the request directly to your mobile wallet app—you'll need to approve it on your phone."
+                            }
                         </div>
                     </HelperText>
                 </>
