@@ -14,7 +14,7 @@ export const ExchangeNavigationButton = memo(function NavigationButton() {
         <>
             {isUniversalMiner && (
                 <NavigationWrapper>
-                    <NavButton onClick={handleClick} isActive={true}>
+                    <NavButton onClick={handleClick} isActive>
                         <ExchangeNavIcon />
                     </NavButton>
                 </NavigationWrapper>

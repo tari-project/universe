@@ -59,54 +59,11 @@ function ActionAddress() {
         </>
     );
 }
-function ActionMenu() {
-    const [open, setOpen] = useState(false);
 
-    const { refs, context, floatingStyles } = useFloating({
-        open,
-        onOpenChange: setOpen,
-        placement: 'right',
-        strategy: 'fixed',
-        middleware: [offset({ mainAxis: 10 })],
-    });
-
-    function handleClick() {
-        setShowUniversalModal(true);
-    }
-
-    const hover = useHover(context, {
-        move: !open,
-        handleClose: safePolygon(),
-    });
-    const { getFloatingProps } = useInteractions([hover]);
-
-    return (
-        <>
-            <AnimatePresence>
-                {open && (
-                    <Menu
-                        ref={refs.setFloating}
-                        {...getFloatingProps()}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        style={floatingStyles}
-                    >
-                        <button onClick={handleClick}>{`Mine to an Exchange`}</button>
-                    </Menu>
-                )}
-            </AnimatePresence>
-            <ActionButton ref={refs.setReference}>
-                <MenuDotsSVG />
-            </ActionButton>
-        </>
-    );
-}
 export default function WalletCardActions() {
     return (
         <Wrapper>
             <ActionAddress />
-            <ActionMenu />
         </Wrapper>
     );
 }
