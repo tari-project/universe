@@ -214,7 +214,7 @@ const useTauriEventsListener = () => {
                             handleMiningTimeUpdate(event.payload);
                             break;
                         case 'AppInMemoryConfigChanged':
-                            handleAppInMemoryConfigChanged(event.payload);
+                            await handleAppInMemoryConfigChanged(event.payload);
                             break;
                         case 'DisabledPhasesChanged':
                             handleUpdateDisabledPhases(event.payload);

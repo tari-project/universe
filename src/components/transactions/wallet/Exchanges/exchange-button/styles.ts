@@ -13,4 +13,5 @@ export const XCButton = styled.button`
     padding: 0 10px;
     font-weight: 600;
     width: 100%;
+    color: ${({ theme }) => theme.colors.greyscale[100]};
 `;

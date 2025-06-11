@@ -7,6 +7,7 @@ import {
     Countdown,
     CountdownText,
     Heading,
+    LeftContent,
     SeasonReward,
     SeasonRewardIcon,
     SeasonRewardText,
@@ -29,6 +30,7 @@ import { setError } from '@app/store';
 import { ExchangeBranding, ExchangeMiner } from '@app/types/exchange.ts';
 import { TariOutlineSVG } from '@app/assets/icons/tari-outline.tsx';
 import { setSeedlessUI } from '@app/store/actions/uiStoreActions.ts';
+import { Divider } from '@app/components/elements/Divider.tsx';
 
 interface XCOptionProps {
     content: ExchangeBranding;
@@ -97,11 +99,12 @@ export const XCOption = ({ content, isCurrent = false }: XCOptionProps) => {
             <ContentBodyWrapper $isActive={isActive}>
                 <ExchangeAddress handleIsAddressValid={setIsAddressValid} handleAddressChanged={setMiningAddress} />
                 <SeasonReward>
-                    <SeasonRewardIcon src="/assets/img/wrapped_gift.png" alt="gift" />
-
-                    <SeasonRewardText>
-                        <b>{t('season-one-reward', { ns: 'exchange' })}:</b> {content.campaign_description}
-                    </SeasonRewardText>
+                    <LeftContent>
+                        <SeasonRewardIcon src="/assets/img/wrapped_gift.png" alt="gift" />
+                        <SeasonRewardText>
+                            <b>{t('season-one-reward', { ns: 'exchange' })}:</b> {content.campaign_description}
+                        </SeasonRewardText>
+                    </LeftContent>
                     {content.reward_expiry_date ? (
                         <Countdown>
                             <CountdownText>{formatCountdown(content.reward_expiry_date)}</CountdownText>
@@ -114,6 +117,7 @@ export const XCOption = ({ content, isCurrent = false }: XCOptionProps) => {
                     </ConfirmButton>
                 ) : (
                     <>
+                        <Divider />
                         <Typography variant="p">
                             {t('help-find-address', { exchange: content.name, ns: 'exchange' })}
                         </Typography>

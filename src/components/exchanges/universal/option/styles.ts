@@ -34,8 +34,8 @@ export const ContentBodyWrapper = styled.div<{ $isActive?: boolean }>`
     align-items: center;
     flex-direction: column;
     width: 100%;
-    gap: 15px;
-    padding: ${({ $isActive }) => ($isActive ? `14px 0 0 0` : 0)};
+    gap: 8px;
+    padding: ${({ $isActive }) => ($isActive ? `14px 0 4px 0` : 0)};
     overflow: hidden;
     max-height: ${({ $isActive: $isActive }) => ($isActive ? '1000px' : '0')};
     opacity: ${({ $isActive: $isActive }) => ($isActive ? '1' : '0')};
@@ -76,14 +76,22 @@ export const SeasonReward = styled.div`
     width: 100%;
 `;
 
+export const LeftContent = styled.div`
+    display: flex;
+    gap: 10px;
+    align-items: center;
+`;
+
 export const SeasonRewardIcon = styled.img`
     width: 32px;
     height: 32px;
+    display: flex;
 `;
 
 export const SeasonRewardText = styled(Typography).attrs({ variant: 'p' })`
-    color: black;
     line-height: 15px;
+    display: flex;
+    flex-direction: column;
 `;
 
 export const Countdown = styled.div`
@@ -94,7 +102,6 @@ export const Countdown = styled.div`
 `;
 
 export const CountdownText = styled(Typography).attrs({ variant: 'p' })`
-    color: black;
     font-weight: 700;
 `;
 
