@@ -44,6 +44,7 @@
   "utilization": "Utilization",
   "version": "Version",
   "versions": "Versions",
+  "waiting-for-confirmations": "Waiting for {{ total }} block confirmations ({{ confirmations }} of {{ total }} confirmed)",
   "webgl-not-supported": "WebGL not supported. Disabled visual mode.",
   "xtm": "XTM"
 }

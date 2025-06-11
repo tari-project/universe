@@ -44,6 +44,7 @@
   "utilization": "Fayda",
   "version": "Versiyon",
   "versions": "Versiyon",
+  "waiting-for-confirmations": "Waiting for {{ total }} block confirmations ({{ confirmations }} of {{ total }} confirmed)",
   "webgl-not-supported": "WebGL desteklenmiyor. Görsel mod devre dışı bırakıldı.",
   "xtm": "XTM"
 }

@@ -44,6 +44,7 @@
   "utilization": "Benutting",
   "version": "Weergawe",
   "versions": "Weergawes",
+  "waiting-for-confirmations": "Waiting for {{ total }} block confirmations ({{ confirmations }} of {{ total }} confirmed)",
   "webgl-not-supported": "WebGL word nie ondersteun nie. Visuele modus gedeaktiveer.",
   "xtm": "XTM"
 }

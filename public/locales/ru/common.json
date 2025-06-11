@@ -44,6 +44,7 @@
   "utilization": "Использование",
   "version": "Версия",
   "versions": "Версии",
+  "waiting-for-confirmations": "Waiting for {{ total }} block confirmations ({{ confirmations }} of {{ total }} confirmed)",
   "webgl-not-supported": "WebGL не поддерживается. Визуальный режим отключен.",
   "xtm": "XTM"
 }

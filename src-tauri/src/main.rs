@@ -360,6 +360,7 @@ fn main() {
         node_manager.clone(),
         wallet_state_watch_tx,
         &mut stats_collector,
+        base_node_watch_rx.clone()
     );
     let spend_wallet_manager =
         SpendWalletManager::new(node_manager.clone(), base_node_watch_rx.clone());

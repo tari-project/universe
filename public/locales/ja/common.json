@@ -44,6 +44,7 @@
   "utilization": "利用率",
   "version": "バージョン",
   "versions": "バージョン",
+  "waiting-for-confirmations": "Waiting for {{ total }} block confirmations ({{ confirmations }} of {{ total }} confirmed)",
   "webgl-not-supported": "WebGLがサポートされていません。ビジュアルモードが無効になりました。",
   "xtm": "XTM"
 }

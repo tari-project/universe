@@ -44,6 +44,7 @@
   "utilization": "利用率",
   "version": "版本",
   "versions": "版本",
+  "waiting-for-confirmations": "Waiting for {{ total }} block confirmations ({{ confirmations }} of {{ total }} confirmed)",
   "webgl-not-supported": "不支持 WebGL。已禁用视觉模式。",
   "xtm": "XTM"
 }

@@ -42,7 +42,6 @@ use std::path::PathBuf;
 use std::time::Duration;
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::{TariAddress, TariAddressError};
-use tari_common_types::types::FixedHash;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_core::transactions::transaction_components::encrypted_data::PaymentId;
 use tari_crypto::ristretto::RistrettoPublicKey;
@@ -155,6 +154,7 @@ impl WalletAdapter {
         &self,
         offset: Option<i32>,
         limit: Option<i32>,
+        current_block_height: u64,
     ) -> Result<Vec<TransactionInfo>, WalletStatusMonitorError> {
         let mut client = WalletClient::connect(self.wallet_grpc_address())
             .await
@@ -177,17 +177,22 @@ impl WalletAdapter {
             }
             let source_address = TariAddress::from_bytes(&tx.source_address)?;
             let dest_address = TariAddress::from_bytes(&tx.dest_address)?;
-            let payment_reference = match tx.direction {
-                1 => tx
-                    .payment_references_received
-                    .get(0)
-                    .and_then(|r| to_fixed_hash(r)),
-                2 => tx
-                    .payment_references_sent
-                    .get(0)
-                    .and_then(|r| to_fixed_hash(r)),
-                _ => None,
-            };
+
+            let mut payment_reference: Option<String> = None;
+            let confirmations = current_block_height - 1 - tx.mined_in_block_height;
+            if confirmations >= 5 {
+                payment_reference = match tx.direction {
+                    1 => tx
+                        .payment_references_received
+                        .last()
+                        .and_then(|r| Some(hex::encode(r))),
+                    2 => tx
+                        .payment_references_sent
+                        .last()
+                        .and_then(|r| Some(hex::encode(r))),
+                    _ => None,
+                };
+            }
 
             transactions.push(TransactionInfo {
                 tx_id: tx.tx_id.to_string(),
@@ -218,6 +223,7 @@ impl WalletAdapter {
         &self,
         continuation: bool,
         limit: Option<u32>,
+        current_block_height: u64,
     ) -> Result<Vec<TransactionInfo>, WalletStatusMonitorError> {
         // TODO: Implement starting point instead of continuation
         let mut stream = if continuation && self.coinbase_transactions_stream.lock().await.is_some()
@@ -254,17 +260,21 @@ impl WalletAdapter {
                 // Consider only COINBASE_UNCONFIRMED and COINBASE_UNCONFIRMED
                 continue;
             }
-            let payment_reference = match tx.direction {
-                1 => tx
-                    .payment_references_received
-                    .get(0)
-                    .and_then(|r| to_fixed_hash(r)),
-                2 => tx
-                    .payment_references_sent
-                    .get(0)
-                    .and_then(|r| to_fixed_hash(r)),
-                _ => None,
-            };
+            let mut payment_reference: Option<String> = None;
+            if current_block_height > tx.mined_in_block_height + 5 {
+                log::info!(target: LOG_TARGET, "current_block_height: {} | mined_in_block_height: {}", current_block_height, tx.mined_in_block_height);
+                payment_reference = match tx.direction {
+                    1 => tx
+                        .payment_references_received
+                        .last()
+                        .and_then(|r| Some(hex::encode(r))),
+                    2 => tx
+                        .payment_references_sent
+                        .last()
+                        .and_then(|r| Some(hex::encode(r))),
+                    _ => None,
+                };
+            }
 
             transactions.push(TransactionInfo {
                 tx_id: tx.tx_id.to_string(),
@@ -360,7 +370,9 @@ impl WalletAdapter {
         block_height: u64,
     ) -> Result<Option<TransactionInfo>, WalletStatusMonitorError> {
         // Get a small batch of recent coinbase transactions
-        let transactions = self.get_coinbase_transactions(false, Some(10)).await?;
+        let transactions = self
+            .get_coinbase_transactions(false, Some(10), block_height)
+            .await?;
 
         // Find one matching the specified block height
         let matching_tx = transactions
@@ -734,7 +746,7 @@ pub struct TransactionInfo {
     pub timestamp: u64,
     pub payment_id: String,
     pub mined_in_block_height: u64,
-    pub payment_reference: Option<FixedHash>,
+    pub payment_reference: Option<String>,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -742,14 +754,4 @@ pub struct TariAddressVariants {
     pub emoji_string: String,
     pub base58: String,
     pub hex: String,
-}
-
-fn to_fixed_hash(pay_ref: &[u8]) -> Option<FixedHash> {
-    if pay_ref.len() == 32 {
-        let mut arr = [0u8; 32];
-        arr.copy_from_slice(pay_ref);
-        Some(FixedHash::from(arr))
-    } else {
-        None
-    }
 }
