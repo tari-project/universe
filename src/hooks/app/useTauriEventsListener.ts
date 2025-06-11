@@ -46,7 +46,7 @@ import {
 } from '@app/store/actions/setupStoreActions';
 import { setBackgroundNodeState, setNodeStoreState } from '@app/store/useNodeStore';
 import {
-    handleAppInMemoryConfigChanged,
+    handleExchangeIdChanged,
     handleConfigCoreLoaded,
     handleConfigMiningLoaded,
     handleConfigUILoaded,
@@ -213,10 +213,10 @@ const useTauriEventsListener = () => {
                         case 'MiningTime':
                             handleMiningTimeUpdate(event.payload);
                             break;
-                        case 'AppInMemoryConfigChanged':
-                            handleAppInMemoryConfigChanged(event.payload);
+                        case 'ExchangeIdChanged':
+                            handleExchangeIdChanged(event.payload);
                             break;
-                        case 'DisabledPhasesChanged':
+                        case 'DisabledPhases':
                             handleUpdateDisabledPhases(event.payload);
                             break;
                         default:

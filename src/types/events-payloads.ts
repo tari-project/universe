@@ -73,8 +73,4 @@ export interface SnakeCaseAppInMemoryConfig {
     wallet_connect_project_id: string;
     exchange_id: string;
 }
-export interface AppInMemoryConfigChangedPayload {
-    app_in_memory_config: SnakeCaseAppInMemoryConfig;
-    is_universal_exchange: boolean;
-}
 export type ConnectionStatusPayload = 'InProgress' | 'Succeed' | 'Failed';

@@ -154,5 +154,7 @@ export const handleUpdateDisabledPhases = (payload: DisabledPhasesPayload) => {
     updateDisabledPhases(payload);
     if (payload.disabled_phases.includes(SetupPhase.Wallet)) {
         useTappletsStore.setState({ uiBridgeSwapsEnabled: false });
+    } else if (!useTappletsStore.getState().uiBridgeSwapsEnabled) {
+        useTappletsStore.getState().fetchUiBridgeFeatureFlag();
     }
 };
