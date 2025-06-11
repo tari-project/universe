@@ -22,7 +22,7 @@
 
 use std::time::Duration;
 
-use log::error;
+use log::{error, info};
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tauri::{AppHandle, Manager};
 
@@ -42,10 +42,13 @@ pub struct EventsManager;
 impl EventsManager {
     pub async fn handle_new_block_height(app: &AppHandle, block_height: u64) {
         let state = app.state::<UniverseAppState>();
+        info!(target: LOG_TARGET, "[DEBUG] Acquiring read lock on in_memory_config at {}:{}", file!(), line!());
         let in_memory_config = state.in_memory_config.read().await;
         if in_memory_config.exchange_id.ne(DEFAULT_EXCHANGE_ID) {
             return;
         }
+        drop(in_memory_config);
+        info!(target: LOG_TARGET, "[DEBUG] releasing read lock on in_memory_config at {}:{}", file!(), line!());
         let app_clone = app.clone();
         let wallet_manager = state.wallet_manager.clone();
 
