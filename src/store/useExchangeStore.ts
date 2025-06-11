@@ -81,6 +81,7 @@ export async function fetchExchangeContent(exchangeId: string) {
             setSeedlessUI(true);
             if (!isUniversalMiner) setShowExchangeModal(!!walletIsGenerated);
         }
+        return xcContent;
     } catch (e) {
         console.error('Could not fetch exchange content', e);
     }
