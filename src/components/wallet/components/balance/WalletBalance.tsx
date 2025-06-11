@@ -22,7 +22,6 @@ export default function WalletBalance() {
     const balanceValue = removeXTMCryptoDecimals(roundToTwoDecimals(calculated_balance || 0));
     const isWalletScanning = useWalletStore((s) => s.wallet_scanning?.is_scanning);
     const hideWalletBalance = useUIStore((s) => s.hideWalletBalance);
-
     const visibilityButton = (
         <ActionButton onClick={toggleHideWalletBalance}>
             {hideWalletBalance ? <IoEyeOutline /> : <IoEyeOffOutline />}

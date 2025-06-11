@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback } from 'react';
+import { useInView } from 'react-intersection-observer';
 import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/core';
-import { useInView } from 'motion/react';
 
 import { BackendBridgeTransaction, useWalletStore } from '@app/store';
 
@@ -21,15 +21,18 @@ import { getTimestampFromTransaction, isBridgeTransaction, isTransactionInfo } f
 import { UserTransactionDTO } from '@tari-project/wxtm-bridge-backend-api';
 import { BridgeHistoryListItem } from '@app/components/transactions/history/BridgeListItem.tsx';
 
-export default function List() {
+export function List() {
     const { t } = useTranslation('wallet');
     const walletScanning = useWalletStore((s) => s.wallet_scanning);
     const bridgeTransactions = useWalletStore((s) => s.bridge_transactions);
     const coldWalletAddress = useWalletStore((s) => s.cold_wallet_address);
-    const lastItemRef = useRef<HTMLDivElement>(null);
-    const isInView = useInView(lastItemRef, { initial: undefined });
+    const { data, fetchNextPage, isFetchingNextPage, isFetching, hasNextPage } = useFetchTxHistory();
 
-    const { data, fetchNextPage, isFetchingNextPage, isFetching } = useFetchTxHistory();
+    const { ref } = useInView({
+        initialInView: false,
+        onChange: () => hasNextPage && fetchNextPage(),
+    });
+
     const baseTx = data?.pages.flatMap((p) => p) || [];
 
     const combinedTransactions = ([...baseTx, ...bridgeTransactions] as (TransactionInfo | UserTransactionDTO)[]).sort(
@@ -162,11 +165,6 @@ export default function List() {
     const isEmpty = !walletScanning.is_scanning && !adjustedTransactions?.length;
     const emptyMarkup = isEmpty ? <LoadingText>{t('empty-tx')}</LoadingText> : null;
 
-    useEffect(() => {
-        if (isInView) {
-            fetchNextPage();
-        }
-    }, [fetchNextPage, isInView]);
     return (
         <>
             <ListWrapper>
@@ -174,7 +172,7 @@ export default function List() {
                 {baseMarkup}
                 {/*added placeholder so the scroll can trigger fetch*/}
 
-                {adjustedTransactions?.length ? <PlaceholderItem ref={lastItemRef} $isLast /> : null}
+                {adjustedTransactions?.length ? <PlaceholderItem ref={ref} $isLast /> : null}
             </ListWrapper>
         </>
     );

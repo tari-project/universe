@@ -9,8 +9,10 @@ import { useConfigBEInMemoryStore } from '../useAppConfigStore';
 import { TransactionDetailsItem, TransactionDirection, TransactionStatus } from '@app/types/transactions';
 
 export const fetchBridgeTransactionsHistory = async () => {
+    const baseUrl = useConfigBEInMemoryStore.getState().bridgeBackendApiUrl;
+    if (baseUrl?.includes('env var not defined')) return;
     try {
-        OpenAPI.BASE = useConfigBEInMemoryStore.getState().bridgeBackendApiUrl;
+        OpenAPI.BASE = baseUrl;
         await WrapTokenService.getUserTransactions(useWalletStore.getState().tari_address_base58).then((response) => {
             console.info('Bridge transactions fetched successfully:', response);
             useWalletStore.setState({
@@ -23,8 +25,10 @@ export const fetchBridgeTransactionsHistory = async () => {
 };
 
 export const fetchBridgeColdWalletAddress = async () => {
+    const baseUrl = useConfigBEInMemoryStore.getState().bridgeBackendApiUrl;
+    if (baseUrl?.includes('env var not defined')) return;
     try {
-        OpenAPI.BASE = useConfigBEInMemoryStore.getState().bridgeBackendApiUrl;
+        OpenAPI.BASE = baseUrl;
         await WrapTokenService.getWrapTokenParams().then((response) => {
             console.info('Bridge safe wallet address fetched successfully:', response);
             useWalletStore.setState({

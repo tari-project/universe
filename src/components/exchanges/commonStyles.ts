@@ -81,6 +81,7 @@ export const CloseWrapper = styled.div`
     width: 100%;
     justify-content: flex-end;
 `;
+
 export const ListWrapper = styled.div`
     display: flex;
     flex-direction: column;
