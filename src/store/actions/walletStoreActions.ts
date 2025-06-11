@@ -10,7 +10,7 @@ import { TransactionDetailsItem, TransactionDirection, TransactionStatus } from 
 
 export const fetchBridgeTransactionsHistory = async () => {
     const baseUrl = useConfigBEInMemoryStore.getState().bridgeBackendApiUrl;
-    if (!baseUrl.length) return;
+    if (baseUrl?.includes('env var not defined')) return;
     try {
         OpenAPI.BASE = baseUrl;
         await WrapTokenService.getUserTransactions(useWalletStore.getState().tari_address_base58).then((response) => {
@@ -26,7 +26,7 @@ export const fetchBridgeTransactionsHistory = async () => {
 
 export const fetchBridgeColdWalletAddress = async () => {
     const baseUrl = useConfigBEInMemoryStore.getState().bridgeBackendApiUrl;
-    if (!baseUrl.length) return;
+    if (baseUrl?.includes('env var not defined')) return;
     try {
         OpenAPI.BASE = baseUrl;
         await WrapTokenService.getWrapTokenParams().then((response) => {

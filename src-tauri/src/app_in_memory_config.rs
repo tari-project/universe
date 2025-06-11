@@ -42,7 +42,7 @@ const TELEMETRY_API_URL: &str =
 
 const BRIDGE_BACKEND_API_URL: &str = match option_env!("BRIDGE_BACKEND_API_URL") {
     Some(val) => val,
-    None => "",
+    None => "BRIDGE_BACKEND_API_URL env var not defined",
 };
 
 pub const DEFAULT_EXCHANGE_ID: &str = "universal";
@@ -183,10 +183,15 @@ impl AppInMemoryConfig {
             bridge_backend_api_url: BRIDGE_BACKEND_API_URL.into(),
         };
 
-        AppInMemoryConfig {
+        #[cfg(not(any(
+            feature = "airdrop-local",
+            feature = "airdrop-env",
+            feature = "telemetry-env",
+        )))]
+        return AppInMemoryConfig {
             exchange_id: exchange_id.into(),
             ..AppInMemoryConfig::default()
-        }
+        };
     }
 }
 
