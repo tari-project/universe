@@ -329,9 +329,6 @@ impl EventsEmitter {
             },
         };
 
-        // TODO: Have Shannon fix it. It'll get squash merged as her anyway.
-        sleep(std::time::Duration::from_millis(100)).await;
-
         if let Err(e) = Self::get_app_handle()
             .await
             .emit(BACKEND_STATE_UPDATE, event)
