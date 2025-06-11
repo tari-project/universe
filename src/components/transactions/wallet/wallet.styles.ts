@@ -19,11 +19,14 @@ export const BuyTariButton = styled.button`
     border-radius: 72px;
     background: #188750;
     color: white;
+    font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease-in-out;
 
-    font-family: Poppins;
-    font-weight: 600;
+    &:hover {
+        opacity: 0.9;
+    }
+
     font-size: 13px;
     line-height: 100%;
     text-align: center;

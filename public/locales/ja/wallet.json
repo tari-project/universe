@@ -71,6 +71,7 @@
     "balance": "残高",
     "block-hash": "ブロックハッシュ",
     "buy-tari": "Tariを購入",
+    "buy-tari-subtitle": "Buy Tari from any of these supported exchanges.",
     "buy-tari-wxtm": "Tari (wXTM) を購入",
     "completed": "完了",
     "connect-not-supported": "WalletConnectコネクタが見つかりません。",
@@ -126,5 +127,10 @@
   "transactions": "Transactions",
   "wallet-connected": "ウォレット接続済み",
   "wallet-is-scanning": "ウォレットをスキャン中...",
-  "wallet-scanning-with-progress": "ウォレットをスキャン中: {{scanned}}/{{total}} ({{percent}}%)"
+  "wallet-scanning-with-progress": "ウォレットをスキャン中: {{scanned}}/{{total}} ({{percent}}%)",
+  "xc": {
+    "buy-tari": "Buy Tari from an exchange",
+    "buy-tari-subtitle": "Available on selected exchanges.",
+    "or": "or"
+  }
 }

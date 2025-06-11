@@ -71,6 +71,7 @@
     "balance": "余额",
     "block-hash": "区块哈希",
     "buy-tari": "购买 Tari",
+    "buy-tari-subtitle": "Buy Tari from any of these supported exchanges.",
     "buy-tari-wxtm": "购买 Tari (wXTM)",
     "completed": "已完成",
     "connect-not-supported": "未找到 WalletConnect 连接器。",
@@ -126,5 +127,10 @@
   "transactions": "Transactions",
   "wallet-connected": "钱包已连接",
   "wallet-is-scanning": "钱包正在扫描...",
-  "wallet-scanning-with-progress": "钱包正在扫描：{{scanned}}/{{total}} ({{percent}}%)"
+  "wallet-scanning-with-progress": "钱包正在扫描：{{scanned}}/{{total}} ({{percent}}%)",
+  "xc": {
+    "buy-tari": "Buy Tari from an exchange",
+    "buy-tari-subtitle": "Available on selected exchanges.",
+    "or": "or"
+  }
 }

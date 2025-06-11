@@ -71,6 +71,7 @@
     "balance": "Баланс",
     "block-hash": "Хэш блока",
     "buy-tari": "Купить Tari",
+    "buy-tari-subtitle": "Buy Tari from any of these supported exchanges.",
     "buy-tari-wxtm": "Купить Tari (wXTM)",
     "completed": "Завершено",
     "connect-not-supported": "Коннектор WalletConnect не найден.",
@@ -126,5 +127,10 @@
   "transactions": "Transactions",
   "wallet-connected": "Кошелек подключен",
   "wallet-is-scanning": "Кошелек сканируется...",
-  "wallet-scanning-with-progress": "Кошелек сканируется: {{scanned}}/{{total}} ({{percent}}%)"
+  "wallet-scanning-with-progress": "Кошелек сканируется: {{scanned}}/{{total}} ({{percent}}%)",
+  "xc": {
+    "buy-tari": "Buy Tari from an exchange",
+    "buy-tari-subtitle": "Available on selected exchanges.",
+    "or": "or"
+  }
 }

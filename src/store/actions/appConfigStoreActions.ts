@@ -333,8 +333,8 @@ export const fetchBackendInMemoryConfig = async () => {
             const isUniversalUninitialized = isUniversalMiner && !universalMinerExchangeId;
             const isUniversalInitialized = isUniversalMiner && universalMinerExchangeId;
             const isExchangeMode = res.exchangeId && !isUniversalMiner && res.exchangeId !== 'classic';
+            await fetchExchangeMiners();
             if (isUniversalUninitialized) {
-                await fetchExchangeMiners();
                 setShowUniversalModal(true);
             }
             if (isExchangeMode) {

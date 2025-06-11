@@ -71,6 +71,7 @@
     "balance": "शेष",
     "block-hash": "ब्लॉक हैश",
     "buy-tari": "तारी खरीदें",
+    "buy-tari-subtitle": "Buy Tari from any of these supported exchanges.",
     "buy-tari-wxtm": "तारी खरीदें (wXTM)",
     "completed": "पूर्ण",
     "connect-not-supported": "WalletConnect कनेक्टर नहीं मिला।",
@@ -126,5 +127,10 @@
   "transactions": "Transactions",
   "wallet-connected": "वॉलेट कनेक्टेड",
   "wallet-is-scanning": "वॉलेट स्कैन कर रहा है...",
-  "wallet-scanning-with-progress": "वॉलेट स्कैन कर रहा है: {{scanned}}/{{total}} ({{percent}}%)"
+  "wallet-scanning-with-progress": "वॉलेट स्कैन कर रहा है: {{scanned}}/{{total}} ({{percent}}%)",
+  "xc": {
+    "buy-tari": "Buy Tari from an exchange",
+    "buy-tari-subtitle": "Available on selected exchanges.",
+    "or": "or"
+  }
 }

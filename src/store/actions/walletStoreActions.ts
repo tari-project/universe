@@ -58,7 +58,7 @@ export const fetchBridgeTransactionsHistory = async () => {
     try {
         OpenAPI.BASE = useConfigBEInMemoryStore.getState().bridgeBackendApiUrl;
         await WrapTokenService.getUserTransactions(useWalletStore.getState().tari_address_base58).then((response) => {
-            console.log('Bridge transactions fetched successfully:', response);
+            console.info('Bridge transactions fetched successfully:', response);
             useWalletStore.setState({
                 bridge_transactions: response.transactions,
             });
@@ -72,7 +72,7 @@ export const fetchBridgeColdWalletAddress = async () => {
     try {
         OpenAPI.BASE = useConfigBEInMemoryStore.getState().bridgeBackendApiUrl;
         await WrapTokenService.getWrapTokenParams().then((response) => {
-            console.log('Bridge safe wallet address fetched successfully:', response);
+            console.info('Bridge safe wallet address fetched successfully:', response);
             useWalletStore.setState({
                 cold_wallet_address: response.coldWalletAddress,
             });

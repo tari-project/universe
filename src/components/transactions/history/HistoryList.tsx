@@ -88,7 +88,7 @@ const HistoryList = memo(function HistoryList({ filter }: { filter: TxHistoryFil
             },
             [] as (TransactionInfo | UserTransactionDTO)[]
         );
-    }, [combinedTransactions]);
+    }, [coldWalletAddress, combinedTransactions]);
 
     const handleNext = useCallback(async () => {
         if (isFetchingTxs) return;

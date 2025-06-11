@@ -36,6 +36,7 @@ import { AnimatePresence } from 'motion/react';
 import { swapTransition, walletTransition } from './transitions.ts';
 import { fetchTransactions, setIsSwapping, setTxHistoryFilter } from '@app/store/actions/walletStoreActions.ts';
 import { FilterSelect, TxHistoryFilter } from '../history/FilterSelect.tsx';
+import ExchangesUrls from '@app/components/transactions/wallet/Exchanges/ExchangesUrls.tsx';
 
 interface Props {
     section: string;
@@ -50,7 +51,6 @@ const Wallet = memo(function Wallet({ section, setSection }: Props) {
     const walletAddress = useWalletStore((state) => state.tari_address_base58);
     const availableBalance = useWalletStore((s) => s.balance?.available_balance);
     const displayAddress = truncateMiddle(walletAddress, 4);
-    const swapUiEnabled = useAirdropStore((s) => s.swapsEnabled);
     const isSwapping = useWalletStore((s) => s.is_swapping);
     const filter = useWalletStore((s) => s.tx_history_filter);
 
@@ -63,9 +63,10 @@ const Wallet = memo(function Wallet({ section, setSection }: Props) {
 
     return (
         <AnimatePresence mode="wait">
-            {isSwapping && swapUiEnabled ? (
+            {isSwapping ? (
                 <SwapsWrapper {...swapTransition} key="swap">
                     <Swap />
+                    <ExchangesUrls />
                 </SwapsWrapper>
             ) : (
                 <WalletWrapper {...walletTransition} key="wallet">
@@ -98,11 +99,7 @@ const Wallet = memo(function Wallet({ section, setSection }: Props) {
 
                         {uiSendRecvEnabled ? (
                             <>
-                                {swapUiEnabled ? (
-                                    <BuyTariButton onClick={() => setIsSwapping(true)}>
-                                        {'Buy Tari (wXTM)'}
-                                    </BuyTariButton>
-                                ) : null}
+                                <BuyTariButton onClick={() => setIsSwapping(true)}>{'Buy Tari (wXTM)'}</BuyTariButton>
                                 <BottomNavWrapper>
                                     <NavButton
                                         onClick={() => setSection('send')}

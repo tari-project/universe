@@ -71,6 +71,7 @@
     "balance": "Balans",
     "block-hash": "Blok Hash",
     "buy-tari": "Koop Tari",
+    "buy-tari-subtitle": "Buy Tari from any of these supported exchanges.",
     "buy-tari-wxtm": "Koop Tari (wXTM)",
     "completed": "Voltooi",
     "connect-not-supported": "WalletConnect-konnektor nie gevind nie.",
@@ -126,5 +127,10 @@
   "transactions": "Transactions",
   "wallet-connected": "Beursie gekoppel",
   "wallet-is-scanning": "Beursie skandeer...",
-  "wallet-scanning-with-progress": "Beursie skandeer: {{scanned}}/{{total}} ({{percent}}%)"
+  "wallet-scanning-with-progress": "Beursie skandeer: {{scanned}}/{{total}} ({{percent}}%)",
+  "xc": {
+    "buy-tari": "Buy Tari from an exchange",
+    "buy-tari-subtitle": "Available on selected exchanges.",
+    "or": "or"
+  }
 }

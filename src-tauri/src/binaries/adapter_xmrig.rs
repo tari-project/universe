@@ -80,7 +80,7 @@ impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
         };
 
         match RequestClient::current()
-            .download_file_with_retries(&checksum_url, &checksum_path, false)
+            .download_file_with_retries(&checksum_url, &checksum_path, false, None)
             .await
         {
             Ok(_) => Ok(checksum_path),

@@ -71,6 +71,7 @@
     "balance": "Solde",
     "block-hash": "Hash du bloc",
     "buy-tari": "Acheter Tari",
+    "buy-tari-subtitle": "Buy Tari from any of these supported exchanges.",
     "buy-tari-wxtm": "Acheter Tari (wXTM)",
     "completed": "Terminé",
     "connect-not-supported": "Connecteur WalletConnect non trouvé.",
@@ -126,5 +127,10 @@
   "transactions": "Transactions",
   "wallet-connected": "Portefeuille connecté",
   "wallet-is-scanning": "Le portefeuille est en cours de scan...",
-  "wallet-scanning-with-progress": "Le portefeuille est en cours de scan : {{scanned}}/{{total}} ({{percent}}%)"
+  "wallet-scanning-with-progress": "Le portefeuille est en cours de scan : {{scanned}}/{{total}} ({{percent}}%)",
+  "xc": {
+    "buy-tari": "Buy Tari from an exchange",
+    "buy-tari-subtitle": "Available on selected exchanges.",
+    "or": "or"
+  }
 }
