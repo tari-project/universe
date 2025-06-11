@@ -20,13 +20,36 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-mod adapter_github;
-mod adapter_tor;
-mod adapter_xmrig;
-mod binaries_manager;
+use std::path::PathBuf;
 
-pub mod binaries_list;
-pub mod binaries_resolver;
+use semver::Version;
 
-pub use binaries_list::Binaries;
-pub use binaries_resolver::BinaryResolver;
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Tapplets {
+    Bridge,
+}
+
+impl Tapplets {
+    pub fn name(&self) -> &str {
+        match self {
+            Tapplets::Bridge => "bridge",
+        }
+    }
+
+    #[allow(dead_code)]
+    pub fn from_name(name: &str) -> Self {
+        match name {
+            "bridge" => Tapplets::Bridge,
+            _ => panic!("Unknown tapplet name: {}", name),
+        }
+    }
+
+    pub fn tapplet_file_name(self, version: Version) -> PathBuf {
+        match self {
+            Tapplets::Bridge => {
+                let file_name = format!("bridge-{}", version);
+                PathBuf::from(file_name).join("bridge")
+            }
+        }
+    }
+}

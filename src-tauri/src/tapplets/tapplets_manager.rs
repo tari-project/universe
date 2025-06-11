@@ -28,25 +28,23 @@ use tari_common::configuration::Network;
 use tauri_plugin_sentry::sentry;
 
 use crate::{
+    binaries::binaries_resolver::{VersionAsset, VersionDownloadInfo},
     download_utils::{extract, validate_checksum},
     github::request_client::RequestClient,
     progress_tracker_old::ProgressTracker,
 };
 
-use super::{
-    binaries_resolver::{LatestVersionApiAdapter, VersionAsset, VersionDownloadInfo},
-    Binaries,
-};
+use super::tapplets_resolver::LatestVersionApiAdapter;
 
-pub const LOG_TARGET: &str = "tari::universe::binary_manager";
+pub const LOG_TARGET: &str = "tari::universe::tapplet_manager";
 
 #[derive(Deserialize, Serialize, Default)]
-pub struct BinaryVersionsJsonContent {
-    pub binaries: HashMap<String, String>,
+pub struct TappletVersionsJsonContent {
+    pub tapplets: HashMap<String, String>,
 }
-pub(crate) struct BinaryManager {
-    binary_name: String,
-    binary_subfolder: Option<String>,
+pub(crate) struct TappletManager {
+    tapplet_name: String,
+    tapplet_subfolder: Option<String>,
     version_requirements: VersionReq,
     network_prerelease_prefix: Option<String>,
     should_validate_checksum: bool,
@@ -56,42 +54,42 @@ pub(crate) struct BinaryManager {
     adapter: Box<dyn LatestVersionApiAdapter>,
 }
 
-impl BinaryManager {
+impl TappletManager {
     pub fn new(
-        binary_name: String,
-        binary_subfolder: Option<String>,
+        tapplet_name: String,
+        tapplet_subfolder: Option<String>,
         adapter: Box<dyn LatestVersionApiAdapter>,
         network_prerelease_prefix: Option<String>,
         should_validate_checksum: bool,
     ) -> Self {
         let versions_requirements_data = match Network::get_current_or_user_setting_or_default() {
             Network::NextNet => {
-                include_str!("../../binaries-versions/binaries_versions_nextnet.json")
+                include_str!("../../tapplets-versions/tapplets_versions_nextnet.json")
             }
             Network::Esmeralda => {
-                include_str!("../../binaries-versions/binaries_versions_testnets.json")
+                include_str!("../../tapplets-versions/tapplets_versions_testnets.json")
             }
             Network::StageNet => {
-                include_str!("../../binaries-versions/binaries_versions_mainnet.json")
+                include_str!("../../tapplets-versions/tapplets_versions_mainnet.json")
             }
             Network::MainNet => {
-                include_str!("../../binaries-versions/binaries_versions_mainnet.json")
+                include_str!("../../tapplets-versions/tapplets_versions_mainnet.json")
             }
             Network::LocalNet => {
-                include_str!("../../binaries-versions/binaries_versions_testnets.json")
+                include_str!("../../tapplets-versions/tapplets_versions_testnets.json")
             }
             Network::Igor => {
-                include_str!("../../binaries-versions/binaries_versions_testnets.json")
+                include_str!("../../tapplets-versions/tapplets_versions_testnets.json")
             }
         };
-        let version_requirements = BinaryManager::read_version_requirements(
-            binary_name.clone(),
+        let version_requirements = TappletManager::read_version_requirements(
+            tapplet_name.clone(),
             versions_requirements_data,
         );
 
         Self {
-            binary_name: binary_name.clone(),
-            binary_subfolder,
+            tapplet_name: tapplet_name.clone(),
+            tapplet_subfolder,
             should_validate_checksum,
             network_prerelease_prefix,
             version_requirements,
@@ -102,31 +100,31 @@ impl BinaryManager {
         }
     }
 
-    pub fn binary_subfolder(&self) -> Option<&String> {
-        self.binary_subfolder.as_ref()
+    pub fn tapplet_subfolder(&self) -> Option<&String> {
+        self.tapplet_subfolder.as_ref()
     }
 
-    fn read_version_requirements(binary_name: String, data_str: &str) -> VersionReq {
-        let json_content: BinaryVersionsJsonContent =
+    fn read_version_requirements(tapplet_name: String, data_str: &str) -> VersionReq {
+        let json_content: TappletVersionsJsonContent =
             serde_json::from_str(data_str).unwrap_or_default();
-        let version_requirement = json_content.binaries.get(&binary_name)
+        let version_requirement = json_content.tapplets.get(&tapplet_name)
             .and_then(|version_req| VersionReq::from_str(version_req).ok())
             .unwrap_or_else(|| {
-                error!(target: LOG_TARGET, "Error parsing version requirements for binary: {:?}", binary_name);
+                error!(target: LOG_TARGET, "Error parsing version requirements for tapplet: {:?}", tapplet_name);
                 debug!(target: LOG_TARGET, "App will try to run with highest version found");
                 VersionReq::default()
             });
 
-        debug!(target: LOG_TARGET, "Version requirements for {:?}: {:?}", binary_name, version_requirement);
+        debug!(target: LOG_TARGET, "Version requirements for {:?}: {:?}", tapplet_name, version_requirement);
 
         version_requirement
     }
 
     fn select_highest_local_version(&mut self) -> Option<Version> {
-        debug!(target: LOG_TARGET,"Selecting highest local version for binary: {:?}", self.binary_name);
+        info!(target: LOG_TARGET,"Selecting highest local version for tapplet: {:?}", self.tapplet_name);
 
         if self.local_aviailable_versions_list.is_empty() {
-            warn!(target: LOG_TARGET,"No local versions found for binary: {:?}", self.binary_name);
+            warn!(target: LOG_TARGET,"No local versions found for tapplet: {:?}", self.tapplet_name);
             return None;
         }
 
@@ -137,10 +135,10 @@ impl BinaryManager {
     }
 
     fn select_highest_online_version(&mut self) -> Option<Version> {
-        debug!(target: LOG_TARGET,"Selecting highest online version for binary: {:?}", self.binary_name);
+        debug!(target: LOG_TARGET,"Selecting highest online version for tapplet: {:?}", self.tapplet_name);
 
         if self.online_versions_list.is_empty() {
-            warn!(target: LOG_TARGET,"No online versions found for binary: {:?}", self.binary_name);
+            warn!(target: LOG_TARGET,"No online versions found for tapplet: {:?}", self.tapplet_name);
             return None;
         }
 
@@ -156,12 +154,12 @@ impl BinaryManager {
     ) -> Result<PathBuf, Error> {
         debug!(target: LOG_TARGET,"Creating in progress folder for version: {:?}", selected_version);
 
-        let binary_folder = self.adapter.get_binary_folder().map_err(|error| {
-            error!(target: LOG_TARGET, "Error getting binary folder. Error: {:?}", error);
-            anyhow!("Error getting binary folder: {:?}", error)
+        let tapplet_folder = self.adapter.get_tapplet_folder().map_err(|error| {
+            error!(target: LOG_TARGET, "Error getting tapplet folder. Error: {:?}", error);
+            anyhow!("Error getting tapplet folder: {:?}", error)
         })?;
 
-        let in_progress_folder = binary_folder
+        let in_progress_folder = tapplet_folder
             .join(selected_version.to_string())
             .join("in_progress");
 
@@ -185,12 +183,12 @@ impl BinaryManager {
     ) -> Result<(), Error> {
         debug!(target: LOG_TARGET,"Deleting in progress folder for version: {:?}", selected_version);
 
-        let binary_folder = self.adapter.get_binary_folder().map_err(|error| {
-            error!(target: LOG_TARGET, "Error getting binary folder. Error: {:?}", error);
-            anyhow!("Error getting binary folder: {:?}", error)
+        let tapplet_folder = self.adapter.get_tapplet_folder().map_err(|error| {
+            error!(target: LOG_TARGET, "Error getting tapplet folder. Error: {:?}", error);
+            anyhow!("Error getting tapplet folder: {:?}", error)
         })?;
 
-        let in_progress_folder = binary_folder
+        let in_progress_folder = tapplet_folder
             .join(selected_version.to_string())
             .join("in_progress");
 
@@ -269,7 +267,7 @@ impl BinaryManager {
         in_progress_file_zip: PathBuf,
         progress_tracker: ProgressTracker,
     ) -> Result<(), Error> {
-        info!(target: LOG_TARGET, "Validating checksum for binary: {} with version: {:?}", self.binary_name, version);
+        info!(target: LOG_TARGET, "Validating checksum for tapplet: {} with version: {:?}", self.tapplet_name, version);
         let version_download_info = VersionDownloadInfo {
             version: version.clone(),
             assets: vec![asset.clone()],
@@ -310,7 +308,7 @@ impl BinaryManager {
         match validate_checksum(in_progress_file_zip.clone(), expected_checksum).await {
             Ok(validate_checksum) => {
                 if validate_checksum {
-                    info!(target: LOG_TARGET, "Checksum validation succeeded for binary: {} with version: {:?}", self.binary_name, version);
+                    info!(target: LOG_TARGET, "Checksum validation succeeded for tapplet: {} with version: {:?}", self.tapplet_name, version);
                     Ok(())
                 } else {
                     std::fs::remove_dir_all(destination_dir.clone()).ok();
@@ -329,8 +327,8 @@ impl BinaryManager {
     }
 
     fn check_if_version_meet_requirements(&self, version: &Version) -> bool {
-        debug!(target: LOG_TARGET,"Checking if version meets requirements: {:?}", version);
-        debug!(target: LOG_TARGET,"Version requirements: {:?}", self.version_requirements);
+        info!(target: LOG_TARGET,"Checking if version meets requirements: {:?}", version);
+        info!(target: LOG_TARGET,"Version requirements: {:?}", self.version_requirements);
         let is_meet_semver = self.version_requirements.matches(version);
         let did_meet_network_prerelease = self
             .network_prerelease_prefix
@@ -351,7 +349,7 @@ impl BinaryManager {
     }
 
     pub fn select_highest_version(&mut self) -> Option<Version> {
-        debug!(target: LOG_TARGET,"Selecting version for binary: {:?}", self.binary_name);
+        debug!(target: LOG_TARGET,"Selecting version for tapplet: {:?}", self.tapplet_name);
 
         let online_selected_version = self.select_highest_online_version();
         let local_selected_version = self.select_highest_local_version();
@@ -365,7 +363,7 @@ impl BinaryManager {
         );
 
         if highest_version == Version::new(0, 0, 0) {
-            warn!(target: LOG_TARGET,"No version selected for binary: {:?}", self.binary_name);
+            warn!(target: LOG_TARGET,"No highest version selected for {:?} tapplet", self.tapplet_name);
             return None;
         }
 
@@ -376,46 +374,47 @@ impl BinaryManager {
 
     pub fn check_if_files_for_version_exist(&self, version: Option<Version>) -> bool {
         debug!(target: LOG_TARGET,"Checking if files for selected version exist: {:?}", version);
+        info!(target: LOG_TARGET,"Checking if files for selected version exist: {:?}", version);
 
         if let Some(version) = version {
-            debug!(target: LOG_TARGET, "Selected version: {:?}", version);
+            info!(target: LOG_TARGET, "Selected version: {:?}", version);
 
-            let binary_folder = match self.adapter.get_binary_folder() {
+            let tapplet_folder = match self.adapter.get_tapplet_folder() {
                 Ok(path) => path,
                 Err(e) => {
-                    error!(target: LOG_TARGET, "Error getting binary folder. Error: {:?}", e);
+                    error!(target: LOG_TARGET, "Error getting tapplet folder. Error: {:?}", e);
                     return false;
                 }
             };
 
-            let version_folder = binary_folder.join(version.to_string());
-            let binary_file = version_folder
-                .join(Binaries::from_name(&self.binary_name).binary_file_name(version));
-            let binary_file_with_exe = binary_file.with_extension("exe");
+            info!(target: LOG_TARGET, "Tapplet folder path: {:?}", tapplet_folder);
+            let version_folder = tapplet_folder.join(version.to_string());
 
-            debug!(target: LOG_TARGET, "Binary folder path: {:?}", binary_folder);
-            debug!(target: LOG_TARGET, "Version folder path: {:?}", version_folder);
-            debug!(target: LOG_TARGET, "Binary file path: {:?}", binary_file);
+            // difference between binaries process: for a tapplet just check if index.html exists
+            let tapplet_file_with_html = version_folder.join("index.html");
 
-            let binary_file_exists = binary_file.exists() || binary_file_with_exe.exists();
+            info!(target: LOG_TARGET, "Version folder path: {:?}", version_folder);
+            info!(target: LOG_TARGET, "Tapplet file path with html: {:?}", tapplet_file_with_html);
 
-            debug!(target: LOG_TARGET, "Binary file exists: {:?}", binary_file_exists);
+            let tapplet_file_exists = tapplet_file_with_html.exists();
 
-            return binary_file_exists;
+            info!(target: LOG_TARGET, "tapplet file exists: {:?}", tapplet_file_exists);
+
+            return tapplet_file_exists;
         }
         warn!(target: LOG_TARGET, "No version selected");
         false
     }
 
     pub async fn check_for_updates(&mut self) {
-        debug!(target: LOG_TARGET,"Checking for updates for binary: {:?}", self.binary_name);
+        debug!(target: LOG_TARGET,"Checking for updates for tapplet: {:?}", self.tapplet_name);
 
         let versions_info = self.adapter.fetch_releases_list().await.unwrap_or_default();
 
         debug!(target: LOG_TARGET,
-            "Found {:?} versions for binary: {:?}",
+            "Found {:?} versions for tapplet: {:?}",
             versions_info.len(),
-            self.binary_name
+            self.tapplet_name
         );
 
         for version_info in versions_info {
@@ -449,10 +448,10 @@ impl BinaryManager {
                 Ok(_) => return Ok(()),
                 Err(error) => {
                     last_error_message = format!(
-                        "Failed to download binary: {}. Error: {:?}",
-                        self.binary_name, error
+                        "Failed to download tapplet: {}. Error: {:?}",
+                        self.tapplet_name, error
                     );
-                    warn!(target: LOG_TARGET, "Failed to download binary: {} at retry: {}", self.binary_name, retry);
+                    warn!(target: LOG_TARGET, "Failed to download tapplet: {} at retry: {}", self.tapplet_name, retry);
                     continue;
                 }
             }
@@ -473,10 +472,10 @@ impl BinaryManager {
         let version = match selected_version {
             Some(version) => version,
             None => {
-                warn!(target: LOG_TARGET, "No version selected for binary: {:?}", self.binary_name);
+                warn!(target: LOG_TARGET, "Download {:?} tapplet version: no version selected", self.tapplet_name);
                 return Err(anyhow!(format!(
-                    "No version selected for binary: {:?}",
-                    self.binary_name
+                    "Download {:?} tapplet version: no version selected",
+                    self.tapplet_name
                 )));
             }
         };
@@ -491,17 +490,17 @@ impl BinaryManager {
                 )
             })?;
 
-        let binary_folder = self
+        let tapplet_folder = self
             .adapter
-            .get_binary_folder()
-            .map_err(|e| anyhow!("Error getting binary folder: {:?}", e))?;
+            .get_tapplet_folder()
+            .map_err(|e| anyhow!("Error getting tapplet folder: {:?}", e))?;
 
-        let destination_dir = binary_folder.join(version.to_string());
+        let destination_dir = tapplet_folder.join(version.to_string());
 
         // This is a safety check to ensure that the destination directory is empty
-        // Its special case for tari repo, where zip will inclue mutliple binaries
+        // Its special case for tari repo, where zip will inclue mutliple tapplets
         // So when one of them is deleted, and we need to download it again
-        // We in fact will download zip with multiple binaries, and when other binaries are present in destination dir
+        // We in fact will download zip with multiple tapplets, and when other tapplets are present in destination dir
         // extract will fail, so we need to remove all files from destination dir
         self.ensure_empty_directory(destination_dir.clone())?;
 
@@ -513,11 +512,11 @@ impl BinaryManager {
         let download_url = asset.clone().url;
         let fallback_url = asset.clone().fallback_url;
 
-        info!(target: LOG_TARGET, "Downloading binary: {} from url: {}", self.binary_name, download_url);
+        info!(target: LOG_TARGET, "Downloading tapplet: {} from url: {}", self.tapplet_name, download_url);
         progress_tracker
             .send_last_action(format!(
-                "Downloading binary: {} with version: {}",
-                self.binary_name, version
+                "Downloading tapplet: {} with version: {}",
+                self.tapplet_name, version
             ))
             .await;
 
@@ -532,11 +531,11 @@ impl BinaryManager {
             .is_err()
         {
             if let Some(fallback_url) = fallback_url {
-                info!(target: LOG_TARGET, "Downloading binary: {} from fallback url: {}", self.binary_name, fallback_url);
+                info!(target: LOG_TARGET, "Downloading tapplet: {} from fallback url: {}", self.tapplet_name, fallback_url);
                 progress_tracker
                     .send_last_action(format!(
-                        "Downloading binary: {} with version: {} from fallback url",
-                        self.binary_name, version
+                        "Downloading tapplet: {} with version: {} from fallback url",
+                        self.tapplet_name, version
                     ))
                     .await;
 
@@ -589,20 +588,20 @@ impl BinaryManager {
     }
 
     pub async fn read_local_versions(&mut self) {
-        debug!(target: LOG_TARGET,"Reading local versions for binary: {:?}", self.binary_name);
+        debug!(target: LOG_TARGET,"Reading local versions for tapplet: {:?}", self.tapplet_name);
 
-        let binary_folder = match self.adapter.get_binary_folder() {
+        let tapplet_folder = match self.adapter.get_tapplet_folder() {
             Ok(path) => path,
             Err(e) => {
-                error!(target: LOG_TARGET,"Error getting binary folder. Error: {:?}", e);
+                error!(target: LOG_TARGET,"Error getting tapplet folder. Error: {:?}", e);
                 return;
             }
         };
 
-        let version_folders_list = match std::fs::read_dir(binary_folder) {
+        let version_folders_list = match std::fs::read_dir(tapplet_folder) {
             Ok(list) => list,
             Err(e) => {
-                error!(target: LOG_TARGET, "Error reading binary folder. Error: {:?}", e);
+                error!(target: LOG_TARGET, "Error reading tapplet folder. Error: {:?}", e);
                 return;
             }
         };
@@ -646,13 +645,13 @@ impl BinaryManager {
 
     pub fn get_base_dir(&self) -> Result<PathBuf, Error> {
         self.adapter
-            .get_binary_folder()
+            .get_tapplet_folder()
             .and_then(|path| {
                 self.used_version
                     .clone()
                     .map(|version| path.join(version.to_string()))
                     .ok_or_else(|| anyhow!("No version selected"))
             })
-            .map_err(|e| anyhow!("Error getting binary folder. Error: {:?}", e))
+            .map_err(|e| anyhow!("Error getting tapplet folder. Error: {:?}", e))
     }
 }
