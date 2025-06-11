@@ -178,13 +178,12 @@ impl WalletAdapter {
             let source_address = TariAddress::from_bytes(&tx.source_address)?;
             let dest_address = TariAddress::from_bytes(&tx.dest_address)?;
 
-            let confirmations = if current_block_height > 0
-                && tx.mined_in_block_height <= current_block_height - 1
-            {
-                current_block_height - 1 - tx.mined_in_block_height
-            } else {
-                0
-            };
+            let confirmations =
+                if current_block_height > 0 && tx.mined_in_block_height <= current_block_height {
+                    current_block_height - tx.mined_in_block_height
+                } else {
+                    0
+                };
             let payment_reference = if confirmations >= 5 {
                 match tx.direction {
                     1 => tx.payment_references_received.last().map(hex::encode),

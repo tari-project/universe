@@ -59,7 +59,7 @@ function getPaymentReferenceValue(transaction: TransactionDetailsItem): ReactNod
     if (!transaction.mined_in_block_height || !currentBlockHeight) {
         return i18n.t('common:pending');
     }
-    const confirmations = currentBlockHeight - 1 - transaction.mined_in_block_height;
+    const confirmations = currentBlockHeight - transaction.mined_in_block_height;
     if (confirmations < 5) {
         return i18n.t('common:waiting-for-confirmations', { confirmations, total: 5 });
     }
