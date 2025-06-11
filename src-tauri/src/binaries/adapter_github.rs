@@ -87,7 +87,12 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
         let checksum_url = format!("{}.sha256", asset.url);
 
         match RequestClient::current()
-            .download_file_with_retries(&checksum_url, &checksum_path, asset.source.is_mirror())
+            .download_file_with_retries(
+                &checksum_url,
+                &checksum_path,
+                asset.source.is_mirror(),
+                None,
+            )
             .await
         {
             Ok(_) => Ok(checksum_path),
@@ -96,7 +101,12 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
                     let checksum_fallback_url = format!("{}.sha256", fallback_url);
                     info!(target: LOG_TARGET, "Fallback URL: {}", checksum_fallback_url);
                     RequestClient::current()
-                        .download_file_with_retries(&checksum_fallback_url, &checksum_path, false)
+                        .download_file_with_retries(
+                            &checksum_fallback_url,
+                            &checksum_path,
+                            false,
+                            None,
+                        )
                         .await?;
                     Ok(checksum_path)
                 } else {

@@ -28,7 +28,6 @@ use crate::{
     events_emitter::EventsEmitter,
     gpu_miner::EngineType,
     hardware::hardware_status_monitor::HardwareStatusMonitor,
-    progress_tracker_old::ProgressTracker,
     progress_trackers::{
         progress_plans::{ProgressPlans, ProgressSetupHardwarePlan},
         progress_stepper::ProgressStepperBuilder,
@@ -48,7 +47,7 @@ use tauri_plugin_sentry::sentry;
 use tokio::{
     select,
     sync::{
-        watch::{self, Receiver, Sender},
+        watch::{Receiver, Sender},
         Mutex,
     },
 };
@@ -162,30 +161,28 @@ impl SetupPhaseImpl for HardwareSetupPhase {
         let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
         let state = self.app_handle.state::<UniverseAppState>();
 
-        // TODO Remove once not needed
-        let (tx, rx) = watch::channel("".to_string());
-        let progress = ProgressTracker::new(self.app_handle.clone(), Some(tx));
-
         let binary_resolver = BinaryResolver::current().read().await;
 
-        progress_stepper
-            .resolve_step(ProgressPlans::Hardware(
-                ProgressSetupHardwarePlan::BinariesGpuMiner,
-            ))
-            .await;
+        let gpu_miner_binary_progress_tracker = progress_stepper.channel_step_range_updates(
+            ProgressPlans::Hardware(ProgressSetupHardwarePlan::BinariesGpuMiner),
+            Some(ProgressPlans::Hardware(
+                ProgressSetupHardwarePlan::BinariesCpuMiner,
+            )),
+        );
 
         binary_resolver
-            .initialize_binary_timeout(Binaries::GpuMiner, progress.clone(), rx.clone())
+            .initialize_binary(Binaries::GpuMiner, gpu_miner_binary_progress_tracker)
             .await?;
 
-        progress_stepper
-            .resolve_step(ProgressPlans::Hardware(
-                ProgressSetupHardwarePlan::BinariesCpuMiner,
-            ))
-            .await;
+        let cpu_miner_binary_progress_tracker = progress_stepper.channel_step_range_updates(
+            ProgressPlans::Hardware(ProgressSetupHardwarePlan::BinariesCpuMiner),
+            Some(ProgressPlans::Hardware(
+                ProgressSetupHardwarePlan::DetectGPU,
+            )),
+        );
 
         binary_resolver
-            .initialize_binary_timeout(Binaries::Xmrig, progress.clone(), rx.clone())
+            .initialize_binary(Binaries::Xmrig, cpu_miner_binary_progress_tracker)
             .await?;
 
         progress_stepper

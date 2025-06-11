@@ -82,7 +82,7 @@ const HistoryList = memo(function HistoryList() {
             },
             [] as (TransactionInfo | UserTransactionDTO)[]
         );
-    }, [combinedTransactions]);
+    }, [coldWalletAddress, combinedTransactions]);
 
     const handleNext = useCallback(async () => {
         if (!is_transactions_history_loading) {
