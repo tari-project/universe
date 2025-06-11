@@ -22,6 +22,7 @@
 
 use crate::events_emitter::EventsEmitter;
 use crate::internal_wallet::InternalWallet;
+use crate::node::node_adapter::NodeConnectionDetails;
 use crate::node::node_manager::{NodeManager, NodeManagerError};
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
@@ -116,9 +117,14 @@ impl WalletManager {
             return Ok(());
         }
 
-        let (public_key, public_address) = self.node_manager.get_connection_details().await?;
+        let NodeConnectionDetails {
+            public_key,
+            tcp_address,
+            http_address,
+        } = self.node_manager.get_connection_details().await?;
         process_watcher.adapter.base_node_public_key = Some(public_key.clone());
-        process_watcher.adapter.base_node_address = Some(public_address.clone());
+        process_watcher.adapter.base_node_address = Some(tcp_address.clone());
+        process_watcher.adapter.base_node_http_address = Some(http_address.clone());
         process_watcher.adapter.use_tor(config.use_tor);
         process_watcher
             .adapter

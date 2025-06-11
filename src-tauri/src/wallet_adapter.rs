@@ -60,6 +60,7 @@ pub struct WalletAdapter {
     connect_with_local_node: bool,
     pub(crate) base_node_public_key: Option<RistrettoPublicKey>,
     pub(crate) base_node_address: Option<String>,
+    pub(crate) base_node_http_address: Option<String>,
     pub(crate) view_private_key: String,
     pub(crate) spend_key: String,
     pub(crate) tcp_listener_port: u16,
@@ -78,6 +79,7 @@ impl WalletAdapter {
             connect_with_local_node: false,
             base_node_address: None,
             base_node_public_key: None,
+            base_node_http_address: None,
             view_private_key: "".to_string(),
             spend_key: "".to_string(),
             tcp_listener_port,
@@ -402,6 +404,13 @@ impl ProcessAdapter for WalletAdapter {
                 self.base_node_address
                     .as_ref()
                     .ok_or_else(|| anyhow::anyhow!("Base node address not set"))?
+            ),
+            "-p".to_string(),
+            format!(
+                "wallet.http_client_url={}",
+                self.base_node_http_address
+                    .as_ref()
+                    .ok_or_else(|| anyhow::anyhow!("Base node HTTP address not set"))?
             ),
         ];
 

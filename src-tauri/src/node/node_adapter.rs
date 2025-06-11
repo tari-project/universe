@@ -54,12 +54,18 @@ use crate::network_utils::{get_best_block_from_block_scan, get_block_info_from_b
 
 const LOG_TARGET: &str = "tari::universe::minotari_node_adapter";
 
+pub struct NodeConnectionDetails {
+    pub public_key: RistrettoPublicKey,
+    pub tcp_address: String,
+    pub http_address: String,
+}
+
 #[async_trait]
 pub trait NodeAdapter {
     fn get_grpc_address(&self) -> Option<(String, u16)>;
     fn set_grpc_address(&mut self, grpc_address: String) -> Result<(), anyhow::Error>;
     fn get_service(&self) -> Option<NodeAdapterService>;
-    async fn get_connection_details(&self) -> Result<(RistrettoPublicKey, String), anyhow::Error>;
+    async fn get_connection_details(&self) -> Result<NodeConnectionDetails, anyhow::Error>;
     fn use_tor(&mut self, use_tor: bool);
     fn set_tor_control_port(&mut self, tor_control_port: Option<u16>);
     fn set_ab_group(&mut self, ab_group: ABTestSelector);

@@ -22,6 +22,7 @@
 
 use crate::binaries::Binaries;
 use crate::binaries::BinaryResolver;
+use crate::node::node_adapter::NodeConnectionDetails;
 use crate::node::node_manager::NodeManager;
 use crate::spend_wallet_adapter::SpendWalletAdapter;
 use crate::tasks_tracker::TasksTrackers;
@@ -126,10 +127,15 @@ impl SpendWalletManager {
         state: tauri::State<'_, UniverseAppState>,
     ) -> Result<(), Error> {
         self.node_manager.wait_ready().await?;
-        let (public_key, public_address) = self.node_manager.get_connection_details().await?;
+        let NodeConnectionDetails {
+            public_key,
+            tcp_address,
+            http_address,
+        } = self.node_manager.get_connection_details().await?;
         self.adapter.base_node_public_key = Some(public_key.clone());
-        self.adapter.base_node_address = Some(public_address.clone());
-        info!(target: LOG_TARGET, "[send_one_sided_to_stealth_address] with node {:?}:{:?}", public_key, public_address);
+        self.adapter.base_node_address = Some(tcp_address.clone());
+        self.adapter.base_node_http_address = Some(http_address.clone());
+        info!(target: LOG_TARGET, "[send_one_sided_to_stealth_address] with node {:?}:{:?}", public_key, tcp_address);
 
         // Prevent from erasing wallet data when sending in progress
         self.set_next_wallet_data_erasure_block(None)?;
