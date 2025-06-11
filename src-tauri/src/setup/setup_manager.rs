@@ -309,6 +309,7 @@ impl SetupManager {
         ConfigMining::initialize(app_handle.clone()).await;
         ConfigUI::initialize(app_handle.clone()).await;
 
+        info!("[DEBUG] Acquiring read lock for in_memory_config");
         let is_on_exchange_miner_build =
             in_memory_config.read().await.exchange_id != DEFAULT_EXCHANGE_ID;
         let universal_miner_exchange_id = ConfigCore::content()
@@ -345,6 +346,7 @@ impl SetupManager {
                 .send_replace(ExchangeModalStatus::WaitForCompletion);
         }
 
+        info!(target: LOG_TARGET, "[DEBUG] releasing read lock on in_memory_config at {}:{}", file!(), line!());
         info!(target: LOG_TARGET, "Pre Setup Finished");
     }
 
@@ -411,6 +413,7 @@ impl SetupManager {
         let setup_features = self.features.read().await.clone();
         let state = app_handle.state::<UniverseAppState>();
         // TODO: Add option to disable specific phases and handle it properly on frontend
+        info!(target: LOG_TARGET, "[DEBUG] Acquiring read lock on in_memory_config [{}:{}]", file!(), line!());
         let in_memory_config = state.in_memory_config.read().await;
         if in_memory_config.exchange_id != DEFAULT_EXCHANGE_ID
             && !in_memory_config.is_universal_miner()
@@ -418,6 +421,8 @@ impl SetupManager {
             self.unlock_wallet().await;
             return;
         }
+        drop(in_memory_config);
+        info!(target: LOG_TARGET, "[DEBUG] releasing read lock on in_memory_config at {}:{}", file!(), line!());
         let wallet_phase_setup = PhaseBuilder::new()
             .with_setup_timeout_duration(Duration::from_secs(60 * 10)) // 10 minutes
             .with_listeners_for_required_phases_statuses(vec![self.node_phase_status.subscribe()])
