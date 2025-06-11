@@ -10,9 +10,7 @@ export const StyledInputWrapper = styled.div`
 export const StyledInput = styled(Input)`
     border-radius: 20px;
     justify-content: space-between;
-    padding: 10px;
-    padding-left: 30px;
-    padding-right: 40px;
+    padding: 10px 40px 10px 30px;
     margin: 10px;
     width: 100%;
 `;
@@ -27,7 +25,7 @@ export const ClearIcon = styled.div`
     height: 30px;
     font-size: 24px;
     opacity: 0.6;
-    background-color: #0000001a;
+    background-color: ${({ theme }) => theme.palette.background.accent};
     border-radius: 50%;
 
     &:hover {
@@ -66,14 +64,14 @@ export const CheckmarkIcon = styled.div`
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #009e54;
+    background-color: ${({ theme }) => theme.palette.success.main};
     border-radius: 50%;
     color: white;
 
     &::before {
         content: '✓';
         font-weight: bold;
-        font-size: 16px;
+        font-size: 14px;
         line-height: 1;
     }
 `;

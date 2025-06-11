@@ -28,6 +28,7 @@ import { restartMining } from '@app/store/actions/miningStoreActions.ts';
 import { setError } from '@app/store';
 import { ExchangeBranding, ExchangeMiner } from '@app/types/exchange.ts';
 import { TariOutlineSVG } from '@app/assets/icons/tari-outline.tsx';
+import { setSeedlessUI } from '@app/store/actions/uiStoreActions.ts';
 
 interface XCOptionProps {
     content: ExchangeBranding;
@@ -50,6 +51,7 @@ export const XCOption = ({ content, isCurrent = false }: XCOptionProps) => {
             .then(() => {
                 setShowUniversalModal(false);
                 restartMining();
+                setSeedlessUI(true);
                 console.info('New Tari address set successfully to:', miningAddress);
             })
             .catch((e) => {
@@ -95,7 +97,8 @@ export const XCOption = ({ content, isCurrent = false }: XCOptionProps) => {
             <ContentBodyWrapper $isActive={isActive}>
                 <ExchangeAddress handleIsAddressValid={setIsAddressValid} handleAddressChanged={setMiningAddress} />
                 <SeasonReward>
-                    <SeasonRewardIcon src="/assets/img/wrapped_gift.svg" alt="gift" />
+                    <SeasonRewardIcon src="/assets/img/wrapped_gift.png" alt="gift" />
+
                     <SeasonRewardText>
                         <b>{t('season-one-reward', { ns: 'exchange' })}:</b> {content.campaign_description}
                     </SeasonRewardText>
@@ -111,8 +114,7 @@ export const XCOption = ({ content, isCurrent = false }: XCOptionProps) => {
                     </ConfirmButton>
                 ) : (
                     <>
-                        <div style={{ height: '1px', backgroundColor: '#e0e0e0', margin: '16px 0' }} />
-                        <Typography variant="p" style={{ color: '#0066cc', cursor: 'pointer' }}>
+                        <Typography variant="p">
                             {t('help-find-address', { exchange: content.name, ns: 'exchange' })}
                         </Typography>
                     </>
