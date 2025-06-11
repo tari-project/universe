@@ -3,7 +3,6 @@ import styled from 'styled-components';
 export const Wrapper = styled.div`
     display: flex;
     flex-direction: column;
-    gap: 4px;
 `;
 export const Hidden = styled.div`
     font-size: 26px;
@@ -13,7 +12,6 @@ export const Hidden = styled.div`
 export const BalanceWrapper = styled.div`
     display: flex;
     align-items: center;
-    gap: 10px;
 `;
 export const BalanceTextWrapper = styled.div`
     display: flex;
@@ -40,4 +38,18 @@ export const AvailableWrapper = styled.div`
     font-size: 11px;
     font-weight: 500;
     color: ${({ theme }) => theme.colors.greyscale[150]};
+`;
+
+export const XCButton = styled.button`
+    display: flex;
+    height: 34px;
+    border-radius: 50px;
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(42px);
+    -webkit-backdrop-filter: blur(42px);
+    align-items: center;
+    font-size: 11px;
+    padding: 0 10px;
+    margin: 8px 0 0;
+    font-weight: 600;
 `;

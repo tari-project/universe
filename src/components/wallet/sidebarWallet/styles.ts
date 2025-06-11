@@ -23,9 +23,10 @@ export const Wrapper = styled.div<{ $swapsPanel?: boolean }>`
 
     @media (max-height: 815px) {
         height: 425px;
+        padding: 10px;
     }
     @media (max-height: 690px) {
-        height: 385px;
+        height: 380px;
     }
 
     ${({ $swapsPanel }) =>
@@ -46,10 +47,13 @@ export const DetailsCard = styled(m.div)`
     border-radius: 20px;
     padding: 14px;
     width: 100%;
-    min-height: 95px;
+    min-height: 140px;
     box-shadow: 10px 10px 40px 0 rgba(0, 0, 0, 0.06);
     position: relative;
     overflow: hidden;
+    @media (max-height: 690px) {
+        padding: 8px 10px;
+    }
 `;
 
 const spin = keyframes`

@@ -55,7 +55,7 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
                     <WalletWrapper key="wallet" variants={swapTransition} initial="show" exit="hide" animate="show">
                         <Wrapper>
                             <DetailsCard
-                                style={{ height: 170 - offset }}
+                                style={{ height: 210 - offset }}
                                 transition={{ duration: 0.2, ease: 'linear' }}
                             >
                                 <AnimatedBG

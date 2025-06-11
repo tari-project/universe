@@ -8,10 +8,19 @@ import { useUIStore, useWalletStore } from '@app/store';
 import { roundToTwoDecimals, removeXTMCryptoDecimals } from '@app/utils';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import NumbersLoadingAnimation from '@app/containers/navigation/components/Wallet/NumbersLoadingAnimation/NumbersLoadingAnimation.tsx';
-import { AvailableWrapper, BalanceTextWrapper, BalanceWrapper, Hidden, SuffixWrapper, Wrapper } from './styles.ts';
+import {
+    AvailableWrapper,
+    BalanceTextWrapper,
+    BalanceWrapper,
+    Hidden,
+    SuffixWrapper,
+    Wrapper,
+    XCButton,
+} from './styles.ts';
 import { toggleHideWalletBalance } from '@app/store/actions/uiStoreActions.ts';
 import { useState } from 'react';
 import { ActionButton } from '@app/components/wallet/components/details/actions/styles.ts';
+import { setShowUniversalModal } from '@app/store/useExchangeStore.ts';
 
 export default function WalletBalance() {
     const { t } = useTranslation('wallet');
@@ -32,6 +41,10 @@ export default function WalletBalance() {
         notation: 'standard',
         style: 'decimal',
     };
+
+    function handleClick() {
+        setShowUniversalModal(true);
+    }
 
     return (
         <Wrapper onMouseEnter={() => setHovering(true)} onMouseLeave={() => setHovering(false)}>
@@ -56,6 +69,7 @@ export default function WalletBalance() {
             ) : (
                 <NumbersLoadingAnimation />
             )}
+            <XCButton onClick={handleClick}>{t('xc.mine-directly-to')}</XCButton>
         </Wrapper>
     );
 }
