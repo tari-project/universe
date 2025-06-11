@@ -9,8 +9,9 @@ import { useTappletsStore } from '@app/store/useTappletsStore.ts';
 import { useUIStore } from '@app/store';
 
 const SidebarMini = memo(function SidebarMini() {
-    const { uiBridgeSwapsEnabled } = useTappletsStore();
-    const { seedlessUI } = useUIStore();
+    const uiBridgeSwapsEnabled = useTappletsStore((s) => s.uiBridgeSwapsEnabled);
+    const seedlessUI = useUIStore((s) => s.seedlessUI);
+
     return (
         <MiniWrapper>
             <GridTop>

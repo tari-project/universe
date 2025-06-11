@@ -4,7 +4,6 @@ import { Text, Title, Wrapper, ProgressWrapper, TextWrapper } from './styles';
 import { useTranslation } from 'react-i18next';
 import { useUIStore } from '@app/store';
 import { useSetupStore } from '@app/store/useSetupStore';
-import { setShowResumeAppModal } from '@app/store/actions/uiStoreActions';
 import { FloatingNode, FloatingPortal, useFloating, useFloatingNodeId } from '@floating-ui/react';
 import { SetupPhase } from '@app/types/backend-state';
 
@@ -72,16 +71,15 @@ const ResumeApplicationModal = memo(function ResumeApplicationModal() {
         return corePhaseInfoPayload;
     }, [
         corePhaseInfoPayload,
-        hardwarePhaseInfoPayload,
-        nodePhaseInfoPayload,
-        miningPhaseInfoPayload,
-        walletPhaseInfoPayload,
         disabledPhases,
+        hardwarePhaseInfoPayload,
+        miningPhaseInfoPayload,
+        nodePhaseInfoPayload,
+        walletPhaseInfoPayload,
     ]);
 
     const [stageProgress, stageTotal] = useMemo(() => {
         if (miningPhaseInfoPayload?.is_complete && walletPhaseInfoPayload?.is_complete) {
-            setShowResumeAppModal(false);
             return [5, 5];
         }
 
@@ -105,8 +103,8 @@ const ResumeApplicationModal = memo(function ResumeApplicationModal() {
     }, [
         corePhaseInfoPayload?.is_complete,
         hardwarePhaseInfoPayload?.is_complete,
-        nodePhaseInfoPayload?.is_complete,
         miningPhaseInfoPayload?.is_complete,
+        nodePhaseInfoPayload?.is_complete,
         walletPhaseInfoPayload?.is_complete,
     ]);
 
@@ -114,17 +112,17 @@ const ResumeApplicationModal = memo(function ResumeApplicationModal() {
     const setupTitle = currentPhaseToShow?.title;
     const setupParams = currentPhaseToShow?.title_params ? { ...currentPhaseToShow.title_params } : {};
 
-    console.info({
-        setupPhaseTitle,
-        setupTitle,
-        setupParams,
-    });
-
     useEffect(() => {
         const isOpen = showModal && Boolean(currentPhaseToShow);
         setOpen(isOpen);
         useUIStore.setState({ resumeModalIsOpen: isOpen });
     }, [currentPhaseToShow, showModal]);
+
+    useEffect(() => {
+        if (miningPhaseInfoPayload?.is_complete && walletPhaseInfoPayload?.is_complete) {
+            useUIStore.setState({ showResumeAppModal: false });
+        }
+    }, [miningPhaseInfoPayload?.is_complete, walletPhaseInfoPayload?.is_complete]);
 
     return (
         <FloatingNode id={nodeId}>

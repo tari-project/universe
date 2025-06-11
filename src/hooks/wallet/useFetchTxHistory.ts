@@ -10,7 +10,7 @@ export const KEY_TX = `transactions`;
 export function useFetchTxHistory() {
     const isWalletScanning = useWalletStore((s) => s.wallet_scanning.is_scanning);
     return useInfiniteQuery<TransactionInfo[]>({
-        queryKey: [KEY_TX, `scanning=${isWalletScanning}`],
+        queryKey: [KEY_TX],
         queryFn: async ({ pageParam }) => {
             const limit = 20;
             const offset = limit * (pageParam as number);
@@ -21,6 +21,7 @@ export function useFetchTxHistory() {
         getNextPageParam: (_lastPage, _allPages, _lastPageParam, _allPageParams) => {
             return (_lastPageParam as number) + 1;
         },
+        enabled: !isWalletScanning,
     });
 }
 

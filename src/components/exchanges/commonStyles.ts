@@ -1,6 +1,5 @@
 import styled, { css } from 'styled-components';
 import { convertHexToRGBA } from '@app/utils';
-import * as m from 'motion/react-m';
 
 export const OpenButton = styled.button<{ $isOpen?: boolean }>`
     display: flex;
@@ -63,9 +62,6 @@ export const ImgWrapper = styled.div<{
         `}
 `;
 
-export const AddressWrapper = styled(m.div)<{ $isOpen: boolean }>`
-    overflow: hidden;
-`;
 export const CloseButton = styled.button`
     display: flex;
     width: 30px;
@@ -85,18 +81,7 @@ export const CloseWrapper = styled.div`
     width: 100%;
     justify-content: flex-end;
 `;
-export const AddressDisplay = styled.div`
-    border-radius: 24px;
-    font-weight: 900;
-    white-space: nowrap;
-    background-color: ${({ theme }) => theme.palette.background.default};
-    letter-spacing: 0.1rem;
-    padding: 10px 0;
-    margin: 0 0 15px 0;
-    align-items: center;
-    justify-content: center;
-    display: flex;
-`;
+
 export const ListWrapper = styled.div`
     display: flex;
     flex-direction: column;

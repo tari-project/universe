@@ -16,7 +16,7 @@ import {
 } from './styles.ts';
 import { useRef, useState } from 'react';
 import { HistoryListWrapper } from '@app/components/wallet/components/history/styles.ts';
-import List from '@app/components/transactions/history/List.tsx';
+import { List } from '@app/components/transactions/history/List.tsx';
 
 import WalletActions from '@app/components/wallet/components/actions/WalletActions.tsx';
 import ListActions from '@app/components/wallet/components/actions/ListActions.tsx';
@@ -41,7 +41,6 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
     useMotionValueEvent(scrollY, 'change', (latest) => {
         setOffset(latest);
     });
-
     return (
         <>
             <AnimatePresence initial={false} mode="wait">
