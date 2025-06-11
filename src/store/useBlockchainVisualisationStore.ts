@@ -104,7 +104,7 @@ const handleWin = async (coinbase_transaction: TransactionInfo, balance: WalletB
             clearTimeout(winTimeout);
         }
         winTimeout = setTimeout(async () => {
-            useBlockchainVisualisationStore.setState({ earnings: undefined });
+            useBlockchainVisualisationStore.setState({ displayBlockHeight: blockHeight, earnings: undefined });
             await refreshTransactions();
             setWalletBalance(balance);
             setMiningControlsEnabled(true);
@@ -113,6 +113,7 @@ const handleWin = async (coinbase_transaction: TransactionInfo, balance: WalletB
         await refreshTransactions();
         useBlockchainVisualisationStore.setState((curr) => ({
             recapIds: [...curr.recapIds, coinbase_transaction.tx_id],
+            displayBlockHeight: blockHeight,
             earnings: undefined,
         }));
     }
@@ -206,10 +207,10 @@ async function processNewBlock(payload: {
             };
 
             useBlockchainVisualisationStore.setState((prev) => ({
-                displayBlockHeight: payload.block_height,
                 pendingWins: [...prev.pendingWins, pendingWin],
             }));
-            console.info(`Block #${payload.block_height} win queued - will show in 3 blocks | Updating block height`);
+
+            console.info(`Block #${payload.block_height} win queued - will show in 3 blocks`);
         } else {
             await handleFail(payload.block_height, payload.balance, canAnimate);
         }
