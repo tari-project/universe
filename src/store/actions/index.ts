@@ -60,10 +60,9 @@ export {
 } from './uiStoreActions.ts';
 
 export {
-    fetchTransactionsHistory,
     importSeedWords,
-    initialFetchTxs,
     refreshTransactions,
+    fetchTransactions,
     setWalletAddress,
     setWalletBalance,
 } from './walletStoreActions';

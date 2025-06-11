@@ -30,22 +30,25 @@ export const BuyTariButton = styled.button`
     font-size: 13px;
     line-height: 100%;
     text-align: center;
+
+    &:hover {
+        opacity: 0.9;
+    }
 `;
 
 export const TabsWrapper = styled.div`
     display: flex;
     justify-content: space-between;
     align-items: center;
-    transform: translateY(-3px);
     padding-right: 4px;
 `;
 
 export const TabsTitle = styled.div`
     color: ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.5)};
-    font-family: Poppins, sans-serif;
     font-size: 11px;
     font-style: normal;
     font-weight: 500;
+    transform: translateY(-5px);
     line-height: normal;
 `;
 

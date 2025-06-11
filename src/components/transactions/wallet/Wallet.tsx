@@ -34,7 +34,8 @@ import ArrowRight from './ArrowRight.tsx';
 import { Swap } from './Swap/Swap.tsx';
 import { AnimatePresence } from 'motion/react';
 import { swapTransition, walletTransition } from './transitions.ts';
-import { setIsSwapping } from '@app/store/actions/walletStoreActions.ts';
+import { fetchTransactions, setIsSwapping, setTxHistoryFilter } from '@app/store/actions/walletStoreActions.ts';
+import { FilterSelect, TxHistoryFilter } from '../history/FilterSelect.tsx';
 import ExchangesUrls from '@app/components/transactions/wallet/Exchanges/ExchangesUrls.tsx';
 
 interface Props {
@@ -51,7 +52,14 @@ const Wallet = memo(function Wallet({ section, setSection }: Props) {
     const availableBalance = useWalletStore((s) => s.balance?.available_balance);
     const displayAddress = truncateMiddle(walletAddress, 4);
     const isSwapping = useWalletStore((s) => s.is_swapping);
+    const filter = useWalletStore((s) => s.tx_history_filter);
+
     const { isWalletScanning, formattedAvailableBalance } = useTariBalance();
+
+    function handleFilterChange(newFilter: TxHistoryFilter) {
+        setTxHistoryFilter(newFilter);
+        fetchTransactions({ offset: 0, limit: 20, filter: newFilter });
+    }
 
     return (
         <AnimatePresence mode="wait">
@@ -75,15 +83,19 @@ const Wallet = memo(function Wallet({ section, setSection }: Props) {
 
                         <WalletBalanceMarkup />
                         {uiSendRecvEnabled && !isWalletScanning && (
-                            <TabsWrapper>
+                            <>
                                 <TabsTitle>{`${t('history.available-balance')}: ${formattedAvailableBalance} ${t('common:xtm')}`}</TabsTitle>
-                                <SyncButton onClick={() => setShowPaperWalletModal(true)}>
-                                    {t('history.sync-with-phone')} <ArrowRight />
-                                </SyncButton>
-                            </TabsWrapper>
+
+                                <TabsWrapper>
+                                    <FilterSelect filter={filter} handleFilterChange={handleFilterChange} />
+                                    <SyncButton onClick={() => setShowPaperWalletModal(true)}>
+                                        {t('history.sync-with-phone')} <ArrowRight />
+                                    </SyncButton>
+                                </TabsWrapper>
+                            </>
                         )}
 
-                        <HistoryList />
+                        <HistoryList filter={filter} />
 
                         {uiSendRecvEnabled ? (
                             <>

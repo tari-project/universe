@@ -1,4 +1,5 @@
 {
+  "all-activity": "All activity",
   "confirmation-message": "거래가 제출되었습니다!\n몇 개의 블록을 채굴한 후 기록에 표시됩니다.",
   "empty-tx": "거래를 찾을 수 없음",
   "history": {
@@ -18,6 +19,7 @@
     "tooltip-emoji-id-text2": "Yat 지원이 곧 제공됩니다!",
     "tooltip-emoji-id-title": "이모지 ID"
   },
+  "rewards": "Rewards",
   "send": {
     "balance": "잔액",
     "broadcast": "전송 중",
@@ -122,6 +124,7 @@
     "send": "보내기"
   },
   "tari": "타리",
+  "transactions": "Transactions",
   "wallet-connected": "지갑 연결됨",
   "wallet-is-scanning": "지갑 스캔 중...",
   "wallet-scanning-with-progress": "지갑 스캔 중: {{scanned}}/{{total}} ({{percent}}%)",

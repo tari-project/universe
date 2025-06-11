@@ -4586,8 +4586,8 @@ dependencies = [
 
 [[package]]
 name = "minotari_app_grpc"
-version = "4.1.0-rc.0"
-source = "git+https://github.com/tari-project/tari.git?tag=v4.1.0-rc.0#16e2f56dd236b736baac0a41b393219e16d6a310"
+version = "4.3.1"
+source = "git+https://github.com/tari-project/tari.git?tag=v4.3.1#3fc236d913eb0432f3aa1cb9ce8235d17182ac20"
 dependencies = [
  "argon2",
  "base64 0.13.1",
@@ -4616,8 +4616,8 @@ dependencies = [
 
 [[package]]
 name = "minotari_ledger_wallet_common"
-version = "4.1.0-rc.0"
-source = "git+https://github.com/tari-project/tari.git?tag=v4.1.0-rc.0#16e2f56dd236b736baac0a41b393219e16d6a310"
+version = "4.3.1"
+source = "git+https://github.com/tari-project/tari.git?tag=v4.3.1#3fc236d913eb0432f3aa1cb9ce8235d17182ac20"
 dependencies = [
  "bs58 0.5.1",
 ]
@@ -4625,7 +4625,7 @@ dependencies = [
 [[package]]
 name = "minotari_node_grpc_client"
 version = "0.1.0"
-source = "git+https://github.com/tari-project/tari.git?tag=v4.1.0-rc.0#16e2f56dd236b736baac0a41b393219e16d6a310"
+source = "git+https://github.com/tari-project/tari.git?tag=v4.3.1#3fc236d913eb0432f3aa1cb9ce8235d17182ac20"
 dependencies = [
  "minotari_app_grpc",
 ]
@@ -4633,7 +4633,7 @@ dependencies = [
 [[package]]
 name = "minotari_wallet_grpc_client"
 version = "0.1.0"
-source = "git+https://github.com/tari-project/tari.git?tag=v4.1.0-rc.0#16e2f56dd236b736baac0a41b393219e16d6a310"
+source = "git+https://github.com/tari-project/tari.git?tag=v4.3.1#3fc236d913eb0432f3aa1cb9ce8235d17182ac20"
 dependencies = [
  "minotari_app_grpc",
  "tari_common",
@@ -8218,8 +8218,8 @@ dependencies = [
 
 [[package]]
 name = "tari_common"
-version = "4.1.0-rc.0"
-source = "git+https://github.com/tari-project/tari.git?tag=v4.1.0-rc.0#16e2f56dd236b736baac0a41b393219e16d6a310"
+version = "4.3.1"
+source = "git+https://github.com/tari-project/tari.git?tag=v4.3.1#3fc236d913eb0432f3aa1cb9ce8235d17182ac20"
 dependencies = [
  "anyhow",
  "cargo_toml 0.20.5",
@@ -8243,8 +8243,8 @@ dependencies = [
 
 [[package]]
 name = "tari_common_sqlite"
-version = "4.1.0-rc.0"
-source = "git+https://github.com/tari-project/tari.git?tag=v4.1.0-rc.0#16e2f56dd236b736baac0a41b393219e16d6a310"
+version = "4.3.1"
+source = "git+https://github.com/tari-project/tari.git?tag=v4.3.1#3fc236d913eb0432f3aa1cb9ce8235d17182ac20"
 dependencies = [
  "diesel",
  "diesel_migrations",
@@ -8260,8 +8260,8 @@ dependencies = [
 
 [[package]]
 name = "tari_common_types"
-version = "4.1.0-rc.0"
-source = "git+https://github.com/tari-project/tari.git?tag=v4.1.0-rc.0#16e2f56dd236b736baac0a41b393219e16d6a310"
+version = "4.3.1"
+source = "git+https://github.com/tari-project/tari.git?tag=v4.3.1#3fc236d913eb0432f3aa1cb9ce8235d17182ac20"
 dependencies = [
  "base64 0.21.7",
  "bitflags 2.9.0",
@@ -8287,8 +8287,8 @@ dependencies = [
 
 [[package]]
 name = "tari_comms"
-version = "4.1.0-rc.0"
-source = "git+https://github.com/tari-project/tari.git?tag=v4.1.0-rc.0#16e2f56dd236b736baac0a41b393219e16d6a310"
+version = "4.3.1"
+source = "git+https://github.com/tari-project/tari.git?tag=v4.3.1#3fc236d913eb0432f3aa1cb9ce8235d17182ac20"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -8333,8 +8333,8 @@ dependencies = [
 
 [[package]]
 name = "tari_comms_dht"
-version = "4.1.0-rc.0"
-source = "git+https://github.com/tari-project/tari.git?tag=v4.1.0-rc.0#16e2f56dd236b736baac0a41b393219e16d6a310"
+version = "4.3.1"
+source = "git+https://github.com/tari-project/tari.git?tag=v4.3.1#3fc236d913eb0432f3aa1cb9ce8235d17182ac20"
 dependencies = [
  "anyhow",
  "bitflags 2.9.0",
@@ -8366,8 +8366,8 @@ dependencies = [
 
 [[package]]
 name = "tari_comms_rpc_macros"
-version = "4.1.0-rc.0"
-source = "git+https://github.com/tari-project/tari.git?tag=v4.1.0-rc.0#16e2f56dd236b736baac0a41b393219e16d6a310"
+version = "4.3.1"
+source = "git+https://github.com/tari-project/tari.git?tag=v4.3.1#3fc236d913eb0432f3aa1cb9ce8235d17182ac20"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -8376,8 +8376,8 @@ dependencies = [
 
 [[package]]
 name = "tari_core"
-version = "4.1.0-rc.0"
-source = "git+https://github.com/tari-project/tari.git?tag=v4.1.0-rc.0#16e2f56dd236b736baac0a41b393219e16d6a310"
+version = "4.3.1"
+source = "git+https://github.com/tari-project/tari.git?tag=v4.3.1#3fc236d913eb0432f3aa1cb9ce8235d17182ac20"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -8471,13 +8471,13 @@ dependencies = [
 
 [[package]]
 name = "tari_features"
-version = "4.1.0-rc.0"
-source = "git+https://github.com/tari-project/tari.git?tag=v4.1.0-rc.0#16e2f56dd236b736baac0a41b393219e16d6a310"
+version = "4.3.1"
+source = "git+https://github.com/tari-project/tari.git?tag=v4.3.1#3fc236d913eb0432f3aa1cb9ce8235d17182ac20"
 
 [[package]]
 name = "tari_hashing"
-version = "4.1.0-rc.0"
-source = "git+https://github.com/tari-project/tari.git?tag=v4.1.0-rc.0#16e2f56dd236b736baac0a41b393219e16d6a310"
+version = "4.3.1"
+source = "git+https://github.com/tari-project/tari.git?tag=v4.3.1#3fc236d913eb0432f3aa1cb9ce8235d17182ac20"
 dependencies = [
  "borsh",
  "digest",
@@ -8486,8 +8486,8 @@ dependencies = [
 
 [[package]]
 name = "tari_key_manager"
-version = "4.1.0-rc.0"
-source = "git+https://github.com/tari-project/tari.git?tag=v4.1.0-rc.0#16e2f56dd236b736baac0a41b393219e16d6a310"
+version = "4.3.1"
+source = "git+https://github.com/tari-project/tari.git?tag=v4.3.1#3fc236d913eb0432f3aa1cb9ce8235d17182ac20"
 dependencies = [
  "argon2",
  "async-trait",
@@ -8519,8 +8519,8 @@ dependencies = [
 
 [[package]]
 name = "tari_max_size"
-version = "4.1.0-rc.0"
-source = "git+https://github.com/tari-project/tari.git?tag=v4.1.0-rc.0#16e2f56dd236b736baac0a41b393219e16d6a310"
+version = "4.3.1"
+source = "git+https://github.com/tari-project/tari.git?tag=v4.3.1#3fc236d913eb0432f3aa1cb9ce8235d17182ac20"
 dependencies = [
  "borsh",
  "serde",
@@ -8530,8 +8530,8 @@ dependencies = [
 
 [[package]]
 name = "tari_mmr"
-version = "4.1.0-rc.0"
-source = "git+https://github.com/tari-project/tari.git?tag=v4.1.0-rc.0#16e2f56dd236b736baac0a41b393219e16d6a310"
+version = "4.3.1"
+source = "git+https://github.com/tari-project/tari.git?tag=v4.3.1#3fc236d913eb0432f3aa1cb9ce8235d17182ac20"
 dependencies = [
  "borsh",
  "digest",
@@ -8544,8 +8544,8 @@ dependencies = [
 
 [[package]]
 name = "tari_p2p"
-version = "4.1.0-rc.0"
-source = "git+https://github.com/tari-project/tari.git?tag=v4.1.0-rc.0#16e2f56dd236b736baac0a41b393219e16d6a310"
+version = "4.3.1"
+source = "git+https://github.com/tari-project/tari.git?tag=v4.3.1#3fc236d913eb0432f3aa1cb9ce8235d17182ac20"
 dependencies = [
  "anyhow",
  "futures 0.3.31",
@@ -8570,8 +8570,8 @@ dependencies = [
 
 [[package]]
 name = "tari_script"
-version = "4.1.0-rc.0"
-source = "git+https://github.com/tari-project/tari.git?tag=v4.1.0-rc.0#16e2f56dd236b736baac0a41b393219e16d6a310"
+version = "4.3.1"
+source = "git+https://github.com/tari-project/tari.git?tag=v4.3.1#3fc236d913eb0432f3aa1cb9ce8235d17182ac20"
 dependencies = [
  "blake2",
  "borsh",
@@ -8588,8 +8588,8 @@ dependencies = [
 
 [[package]]
 name = "tari_service_framework"
-version = "4.1.0-rc.0"
-source = "git+https://github.com/tari-project/tari.git?tag=v4.1.0-rc.0#16e2f56dd236b736baac0a41b393219e16d6a310"
+version = "4.3.1"
+source = "git+https://github.com/tari-project/tari.git?tag=v4.3.1#3fc236d913eb0432f3aa1cb9ce8235d17182ac20"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -8603,16 +8603,16 @@ dependencies = [
 
 [[package]]
 name = "tari_shutdown"
-version = "4.1.0-rc.0"
-source = "git+https://github.com/tari-project/tari.git?tag=v4.1.0-rc.0#16e2f56dd236b736baac0a41b393219e16d6a310"
+version = "4.3.1"
+source = "git+https://github.com/tari-project/tari.git?tag=v4.3.1#3fc236d913eb0432f3aa1cb9ce8235d17182ac20"
 dependencies = [
  "futures 0.3.31",
 ]
 
 [[package]]
 name = "tari_storage"
-version = "4.1.0-rc.0"
-source = "git+https://github.com/tari-project/tari.git?tag=v4.1.0-rc.0#16e2f56dd236b736baac0a41b393219e16d6a310"
+version = "4.3.1"
+source = "git+https://github.com/tari-project/tari.git?tag=v4.3.1#3fc236d913eb0432f3aa1cb9ce8235d17182ac20"
 dependencies = [
  "bincode",
  "lmdb-zero",
@@ -8623,8 +8623,8 @@ dependencies = [
 
 [[package]]
 name = "tari_test_utils"
-version = "4.1.0-rc.0"
-source = "git+https://github.com/tari-project/tari.git?tag=v4.1.0-rc.0#16e2f56dd236b736baac0a41b393219e16d6a310"
+version = "4.3.1"
+source = "git+https://github.com/tari-project/tari.git?tag=v4.3.1#3fc236d913eb0432f3aa1cb9ce8235d17182ac20"
 dependencies = [
  "futures 0.3.31",
  "rand 0.8.5",

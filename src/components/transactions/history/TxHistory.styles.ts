@@ -26,3 +26,8 @@ export const ListItemWrapper = styled.div`
     gap: 4px;
     padding-top: 6px;
 `;
+
+export const FilterWrapper = styled.div`
+    display: flex;
+    gap: 12px;
+`;
