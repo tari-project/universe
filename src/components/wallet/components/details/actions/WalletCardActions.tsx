@@ -1,14 +1,12 @@
-import { ActionButton, AddressTooltip, Menu, Wrapper } from './styles.ts';
+import { ActionButton, AddressTooltip, Wrapper } from './styles.ts';
 import { AnimatePresence } from 'motion/react';
 import { CopySVG } from '@app/assets/icons/copy.tsx';
-import { MenuDotsSVG } from '@app/assets/icons/menu-dots.tsx';
 import { useCopyToClipboard } from '@app/hooks';
 import { useWalletStore } from '@app/store';
 import { truncateMiddle } from '@app/utils';
 import { useState } from 'react';
 import { offset, safePolygon, useFloating, useHover, useInteractions } from '@floating-ui/react';
 import { useTranslation } from 'react-i18next';
-import { setShowUniversalModal } from '@app/store/useExchangeStore.ts';
 
 function ActionAddress() {
     const { t } = useTranslation('wallet');
