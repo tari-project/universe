@@ -14,7 +14,7 @@ import {
     Wrapper,
     XCContent,
 } from '@app/components/exchanges/universal/option/styles.ts';
-import { ExchangeMinerAssets, ExchangeMiner } from '@app/types/exchange.ts';
+
 import { ImgWrapper, OpenButton } from '../../commonStyles.ts';
 import { ChevronSVG } from '@app/assets/icons/chevron.tsx';
 import { setShowUniversalModal } from '@app/store/useExchangeStore.ts';
@@ -26,9 +26,11 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 import { formatCountdown } from '@app/utils/formatters.ts';
 import { restartMining } from '@app/store/actions/miningStoreActions.ts';
 import { setError } from '@app/store';
+import { ExchangeBranding, ExchangeMiner } from '@app/types/exchange.ts';
+import { TariOutlineSVG } from '@app/assets/icons/tari-outline.tsx';
 
 interface XCOptionProps {
-    content: ExchangeMinerAssets;
+    content: ExchangeBranding;
     isCurrent?: boolean;
 }
 
@@ -37,6 +39,7 @@ export const XCOption = ({ content, isCurrent = false }: XCOptionProps) => {
     const [isAddressValid, setIsAddressValid] = useState(false);
     const [isActive, setIsActive] = useState(false);
     const [miningAddress, setMiningAddress] = useState('');
+
     const handleExchangeMiner = async () => {
         const selectedExchangeMiner: ExchangeMiner = {
             id: content.id,
@@ -55,15 +58,17 @@ export const XCOption = ({ content, isCurrent = false }: XCOptionProps) => {
             });
     };
 
-    const logoSrc = content.logo_img_url || content.logo_img_small_url;
+    const isTari = content.slug === 'universal' && content.id === 'universal';
+    const logoSrc = content.logo_img_small_url || content.logo_img_url;
+    const logoMarkup = isTari ? <TariOutlineSVG /> : logoSrc && <img src={logoSrc} alt={content.name} />;
 
     return (
         <Wrapper $isCurrent={isCurrent}>
             <ContentHeaderWrapper>
                 <XCContent>
-                    {logoSrc && (
-                        <ImgWrapper $isLogo>
-                            <img src={logoSrc} alt={content.name} />
+                    {(isTari || logoSrc) && (
+                        <ImgWrapper $isLogo $col1={isTari ? '#000' : content.primary_colour}>
+                            {logoMarkup}
                         </ImgWrapper>
                     )}
                     <Heading>{content.name}</Heading>

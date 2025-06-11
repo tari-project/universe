@@ -1,5 +1,5 @@
 import { Logo, Wrapper } from './styles.ts';
-import { ExchangeMinerAssets } from '@app/types/exchange.ts';
+import { ExchangeBranding } from '@app/types/exchange.ts';
 
 interface LogoItem {
     src: string;
@@ -7,7 +7,7 @@ interface LogoItem {
     colour?: string;
 }
 interface LogosProps {
-    exchanges: ExchangeMinerAssets[];
+    exchanges: ExchangeBranding[];
     variant?: 'primary' | 'mini';
     maxItems?: number;
 }

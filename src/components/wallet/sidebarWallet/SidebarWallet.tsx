@@ -79,7 +79,6 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
                                         <WalletActions section={section} setSection={setSection} />
                                     </WalletActionWrapper>
                                     <ListActions />
-
                                     <HistoryListWrapper ref={targetRef}>
                                         <List />
                                     </HistoryListWrapper>

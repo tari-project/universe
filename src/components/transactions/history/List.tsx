@@ -163,16 +163,15 @@ export function List() {
     );
 
     const isEmpty = !walletScanning.is_scanning && !adjustedTransactions?.length;
+    const isLoading = walletScanning.is_scanning || !adjustedTransactions?.length;
     const emptyMarkup = isEmpty ? <LoadingText>{t('empty-tx')}</LoadingText> : null;
-
     return (
         <>
             <ListWrapper>
                 {emptyMarkup}
                 {baseMarkup}
                 {/*added placeholder so the scroll can trigger fetch*/}
-
-                {adjustedTransactions?.length ? <PlaceholderItem ref={ref} $isLast /> : null}
+                {!isLoading ? <PlaceholderItem ref={ref} $isLast /> : null}
             </ListWrapper>
         </>
     );
