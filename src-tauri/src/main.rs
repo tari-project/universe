@@ -23,6 +23,7 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use app_in_memory_config::AppInMemoryConfig;
 use commands::CpuMinerStatus;
 use cpu_miner::CpuMinerConfig;
 use events_emitter::EventsEmitter;
@@ -60,7 +61,6 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 use tari_common::configuration::Network;
-use tari_common_types::tari_address::TariAddress;
 use tauri::async_runtime::block_on;
 use tauri::{Manager, RunEvent};
 use tauri_plugin_sentry::{minidump, sentry};
@@ -69,7 +69,6 @@ use tokio::sync::{Mutex, RwLock};
 use tokio::time;
 use utils::logging_utils::setup_logging;
 
-use app_in_memory_config::DynamicMemoryConfig;
 #[cfg(all(feature = "exchange-ci", not(feature = "release-ci")))]
 use app_in_memory_config::EXCHANGE_ID;
 
@@ -250,8 +249,7 @@ struct UniverseAppState {
     is_getting_p2pool_connections: Arc<AtomicBool>,
     is_getting_transactions_history: Arc<AtomicBool>,
     is_getting_coinbase_history: Arc<AtomicBool>,
-    in_memory_config: Arc<RwLock<DynamicMemoryConfig>>,
-    tari_address: Arc<RwLock<TariAddress>>,
+    in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
     cpu_miner: Arc<RwLock<CpuMiner>>,
     gpu_miner: Arc<RwLock<GpuMiner>>,
     cpu_miner_config: Arc<RwLock<CpuMinerConfig>>,
@@ -376,9 +374,7 @@ fn main() {
         pool_status_url: None,
     }));
 
-    let dynamic_memory_config = DynamicMemoryConfig::init();
-    let app_in_memory_config = Arc::new(RwLock::new(dynamic_memory_config));
-
+    let app_in_memory_config = Arc::new(RwLock::new(AppInMemoryConfig::init()));
     let cpu_miner: Arc<RwLock<CpuMiner>> = Arc::new(
         CpuMiner::new(
             &mut stats_collector,
@@ -450,7 +446,6 @@ fn main() {
         is_getting_transactions_history: Arc::new(AtomicBool::new(false)),
         is_getting_coinbase_history: Arc::new(AtomicBool::new(false)),
         in_memory_config: app_in_memory_config.clone(),
-        tari_address: Arc::new(RwLock::new(TariAddress::default())),
         cpu_miner: cpu_miner.clone(),
         gpu_miner: gpu_miner.clone(),
         cpu_miner_config: cpu_config.clone(),

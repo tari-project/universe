@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use std::sync::LazyLock;
 
-use crate::app_in_memory_config::AppInMemoryConfig;
 // Copyright 2024. The Tari Project
 //
 // Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -24,8 +23,8 @@ use crate::app_in_memory_config::AppInMemoryConfig;
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 use crate::events::{
-    AppInMemoryConfigChangedPayload, ConnectionStatusPayload, CriticalProblemPayload,
-    DisabledPhasesPayload, InitWalletScanningProgressPayload,
+    ConnectionStatusPayload, CriticalProblemPayload, DisabledPhasesPayload,
+    InitWalletScanningProgressPayload,
 };
 #[cfg(target_os = "windows")]
 use crate::external_dependencies::RequiredExternalDependency;
@@ -52,7 +51,6 @@ use log::error;
 use tari_common_types::tari_address::TariAddress;
 use tauri::{AppHandle, Emitter};
 use tokio::sync::RwLock;
-use tokio::time::sleep;
 
 const LOG_TARGET: &str = "tari::universe::events_emitter";
 const BACKEND_STATE_UPDATE: &str = "backend_state_update";
@@ -729,30 +727,24 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_app_in_memory_config_changed(
-        app_in_memory_config: AppInMemoryConfig,
-        is_universal_exchange: bool,
-    ) {
+    pub async fn emit_exchange_id_changed(exchange_id: String) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
-            event_type: EventType::AppInMemoryConfigChanged,
-            payload: AppInMemoryConfigChangedPayload {
-                app_in_memory_config,
-                is_universal_exchange,
-            },
+            event_type: EventType::ExchangeIdChanged,
+            payload: exchange_id,
         };
         if let Err(e) = Self::get_app_handle()
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit AppInMemoryConfigChanged event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit ExchangeIdChanged event: {:?}", e);
         }
     }
 
-    pub async fn emit_disabled_phases_changed(disabled_phases: Vec<SetupPhase>) {
+    pub async fn emit_disabled_phases(disabled_phases: Vec<SetupPhase>) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
-            event_type: EventType::DisabledPhasesChanged,
+            event_type: EventType::DisabledPhases,
             payload: DisabledPhasesPayload { disabled_phases },
         };
         if let Err(e) = Self::get_app_handle()

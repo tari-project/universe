@@ -21,8 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::app_in_memory_config::{
-    get_der_encode_pub_key, get_websocket_key, AirdropInMemoryConfig, DynamicMemoryConfig,
-    ExchangeMiner,
+    get_der_encode_pub_key, get_websocket_key, AirdropInMemoryConfig, ExchangeMiner,
 };
 use crate::auto_launcher::AutoLauncher;
 use crate::binaries::{Binaries, BinaryResolver};
@@ -678,7 +677,7 @@ pub async fn set_tari_address(address: String, app_handle: tauri::AppHandle) -> 
         .app_config_dir()
         .expect("Could not get config dir");
     let state = app_handle.state::<UniverseAppState>();
-    let mut internal_wallet = InternalWallet::load_or_create(config_path.clone(), state)
+    let mut internal_wallet = InternalWallet::load_or_create(config_path.clone())
         .await
         .map_err(|e| e.to_string())?;
     let new_address = internal_wallet

@@ -33,7 +33,7 @@ use tokio::sync::RwLock;
 use zip::write::SimpleFileOptions;
 use zip::ZipWriter;
 
-use crate::app_in_memory_config::DynamicMemoryConfig;
+use crate::app_in_memory_config::AppInMemoryConfig;
 use crate::configs::config_core::ConfigCore;
 use crate::configs::trait_config::ConfigImpl;
 use crate::utils::file_utils::{make_relative_path, path_as_string};
@@ -41,11 +41,11 @@ use crate::utils::file_utils::{make_relative_path, path_as_string};
 const LOG_TARGET: &str = "tari::universe::feedback";
 
 pub struct Feedback {
-    in_memory_config: Arc<RwLock<DynamicMemoryConfig>>,
+    in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
 }
 
 impl Feedback {
-    pub fn new(in_memory_config: Arc<RwLock<DynamicMemoryConfig>>) -> Self {
+    pub fn new(in_memory_config: Arc<RwLock<AppInMemoryConfig>>) -> Self {
         Self { in_memory_config }
     }
 

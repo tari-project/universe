@@ -25,6 +25,7 @@ use std::{sync::LazyLock, time::SystemTime};
 use getset::{Getters, Setters};
 use log::error;
 use serde::{Deserialize, Serialize};
+use tari_common_types::tari_address::TariAddress;
 use tauri::{AppHandle, Manager};
 use tokio::sync::RwLock;
 
@@ -54,6 +55,10 @@ pub struct ConfigWalletContent {
     monero_address_is_generated: bool,
     #[getset(get = "pub", set = "pub")]
     keyring_accessed: bool,
+    #[getset(get = "pub", set = "pub")]
+    external_tari_address: Option<String>,
+    #[getset(get = "pub", set = "pub")]
+    tari_address: Option<TariAddress>,
 }
 
 impl Default for ConfigWalletContent {
@@ -64,6 +69,8 @@ impl Default for ConfigWalletContent {
             monero_address: "".to_string(),
             monero_address_is_generated: false,
             keyring_accessed: false,
+            external_tari_address: None,
+            tari_address: None,
         }
     }
 }
@@ -128,13 +135,6 @@ impl ConfigWallet {
                         wallet.get_spend_key(),
                     )
                     .await;
-                let tari_address = wallet.get_tari_address();
-                *state.tari_address.write().await = tari_address.clone();
-                EventsEmitter::emit_wallet_address_update(
-                    tari_address,
-                    wallet.get_is_tari_address_generated(),
-                )
-                .await;
             }
             Err(e) => {
                 error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);

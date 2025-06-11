@@ -35,7 +35,7 @@ use tokio::{
 
 use crate::{
     airdrop::decode_jwt_claims_without_exp,
-    app_in_memory_config::DynamicMemoryConfig,
+    app_in_memory_config::AppInMemoryConfig,
     commands::{sign_ws_data, CpuMinerStatus, SignWsDataResponse},
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
     tasks_tracker::TasksTrackers,
@@ -60,7 +60,7 @@ pub struct MiningStatusManager {
     node_latest_status: watch::Receiver<BaseNodeStatus>,
     close_channel_tx: tokio::sync::broadcast::Sender<bool>,
     is_started: Arc<Mutex<bool>>,
-    app_in_memory_config: Arc<RwLock<DynamicMemoryConfig>>,
+    app_in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
 }
 
 impl MiningStatusManager {
@@ -68,7 +68,7 @@ impl MiningStatusManager {
         cpu_miner_status_watch_rx: watch::Receiver<CpuMinerStatus>,
         gpu_latest_miner_stats: watch::Receiver<GpuMinerStatus>,
         node_latest_status: watch::Receiver<BaseNodeStatus>,
-        app_in_memory_config: Arc<RwLock<DynamicMemoryConfig>>,
+        app_in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
     ) -> Self {
         let (close_channel_tx, _) = tokio::sync::broadcast::channel::<bool>(1);
         MiningStatusManager {

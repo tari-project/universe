@@ -79,8 +79,8 @@ pub enum EventType {
     ConnectionStatus,
     ShowStageSecurityModal,
     MiningTime,
-    AppInMemoryConfigChanged,
-    DisabledPhasesChanged,
+    ExchangeIdChanged,
+    DisabledPhases,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -185,12 +185,6 @@ pub enum ConnectionStatusPayload {
     Succeed,
     #[allow(dead_code)]
     Failed,
-}
-
-#[derive(Debug, Serialize, Clone)]
-pub struct AppInMemoryConfigChangedPayload {
-    pub app_in_memory_config: AppInMemoryConfig,
-    pub is_universal_exchange: bool,
 }
 
 #[derive(Debug, Serialize, Clone)]
