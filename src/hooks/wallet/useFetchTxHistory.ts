@@ -12,8 +12,7 @@ export function useFetchTxHistory() {
     return useInfiniteQuery<TransactionInfo[]>({
         queryKey: [KEY_TX],
         queryFn: async ({ pageParam }) => {
-            const limit = 7;
-            // const limit = 20;
+            const limit = 20;
             const offset = limit * (pageParam as number);
 
             return await invoke('get_transactions_history', { offset, limit });
