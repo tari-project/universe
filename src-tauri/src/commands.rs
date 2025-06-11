@@ -870,7 +870,7 @@ pub fn open_log_dir(app: tauri::AppHandle) {
 }
 
 #[tauri::command]
-pub async fn reset_settings<'r>(
+pub async fn reset_settings(
     reset_wallet: bool,
     _window: tauri::Window,
     app: tauri::AppHandle,
@@ -1080,7 +1080,7 @@ pub async fn set_auto_update(auto_update: bool) -> Result<(), InvokeError> {
 }
 
 #[tauri::command]
-pub async fn set_cpu_mining_enabled<'r>(enabled: bool) -> Result<(), String> {
+pub async fn set_cpu_mining_enabled(enabled: bool) -> Result<(), String> {
     let timer = Instant::now();
     let _unused =
         ConfigMining::update_field(ConfigMiningContent::set_cpu_mining_enabled, enabled).await;
@@ -1423,7 +1423,7 @@ pub async fn set_use_tor(use_tor: bool, app_handle: tauri::AppHandle) -> Result<
 }
 
 #[tauri::command]
-pub async fn set_visual_mode<'r>(enabled: bool) -> Result<(), InvokeError> {
+pub async fn set_visual_mode(enabled: bool) -> Result<(), InvokeError> {
     let timer = Instant::now();
     ConfigUI::update_field(ConfigUIContent::set_visual_mode, enabled)
         .await
@@ -1440,7 +1440,7 @@ pub async fn set_visual_mode<'r>(enabled: bool) -> Result<(), InvokeError> {
 
 #[allow(clippy::too_many_lines)]
 #[tauri::command]
-pub async fn set_airdrop_tokens<'r>(
+pub async fn set_airdrop_tokens(
     airdrop_tokens: Option<AirdropTokens>,
     app_handle: tauri::AppHandle,
 ) -> Result<(), InvokeError> {
@@ -1476,7 +1476,7 @@ pub async fn set_airdrop_tokens<'r>(
 }
 
 #[tauri::command]
-pub async fn start_cpu_mining<'r>(
+pub async fn start_cpu_mining(
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
@@ -1540,7 +1540,7 @@ pub async fn start_cpu_mining<'r>(
     Ok(())
 }
 #[tauri::command]
-pub async fn start_gpu_mining<'r>(
+pub async fn start_gpu_mining(
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
@@ -1632,7 +1632,7 @@ pub async fn start_gpu_mining<'r>(
 }
 
 #[tauri::command]
-pub async fn stop_cpu_mining<'r>(state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
+pub async fn stop_cpu_mining(state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
     let _lock = state.cpu_miner_stop_start_mutex.lock().await;
     let timer = Instant::now();
     state
@@ -1665,7 +1665,7 @@ pub async fn stop_cpu_mining<'r>(state: tauri::State<'_, UniverseAppState>) -> R
     Ok(())
 }
 #[tauri::command]
-pub async fn stop_gpu_mining<'r>(state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
+pub async fn stop_gpu_mining(state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
     let _lock = state.gpu_miner_stop_start_mutex.lock().await;
     let timer = Instant::now();
 
