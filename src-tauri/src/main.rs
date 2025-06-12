@@ -23,6 +23,7 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use app_in_memory_config::AppInMemoryConfig;
 use commands::CpuMinerStatus;
 use cpu_miner::CpuMinerConfig;
 use events_emitter::EventsEmitter;
@@ -60,7 +61,6 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 use tari_common::configuration::Network;
-use tari_common_types::tari_address::TariAddress;
 use tauri::async_runtime::block_on;
 use tauri::{Manager, RunEvent};
 use tauri_plugin_sentry::{minidump, sentry};
@@ -69,7 +69,6 @@ use tokio::sync::{Mutex, RwLock};
 use tokio::time;
 use utils::logging_utils::setup_logging;
 
-use app_in_memory_config::DynamicMemoryConfig;
 #[cfg(all(feature = "exchange-ci", not(feature = "release-ci")))]
 use app_in_memory_config::EXCHANGE_ID;
 
@@ -252,8 +251,7 @@ struct UniverseAppState {
     is_getting_p2pool_connections: Arc<AtomicBool>,
     is_getting_transactions_history: Arc<AtomicBool>,
     is_getting_coinbase_history: Arc<AtomicBool>,
-    in_memory_config: Arc<RwLock<DynamicMemoryConfig>>,
-    tari_address: Arc<RwLock<TariAddress>>,
+    in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
     cpu_miner: Arc<RwLock<CpuMiner>>,
     gpu_miner: Arc<RwLock<GpuMiner>>,
     cpu_miner_config: Arc<RwLock<CpuMinerConfig>>,
@@ -379,9 +377,7 @@ fn main() {
         pool_status_url: None,
     }));
 
-    let dynamic_memory_config = DynamicMemoryConfig::init();
-    let app_in_memory_config = Arc::new(RwLock::new(dynamic_memory_config));
-
+    let app_in_memory_config = Arc::new(RwLock::new(AppInMemoryConfig::init()));
     let cpu_miner: Arc<RwLock<CpuMiner>> = Arc::new(
         CpuMiner::new(
             &mut stats_collector,
@@ -453,7 +449,6 @@ fn main() {
         is_getting_transactions_history: Arc::new(AtomicBool::new(false)),
         is_getting_coinbase_history: Arc::new(AtomicBool::new(false)),
         in_memory_config: app_in_memory_config.clone(),
-        tari_address: Arc::new(RwLock::new(TariAddress::default())),
         cpu_miner: cpu_miner.clone(),
         gpu_miner: gpu_miner.clone(),
         cpu_miner_config: cpu_config.clone(),
@@ -633,7 +628,7 @@ fn main() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            commands::close_splashscreen,
+            commands::close_splashscreen, // TODO: Unused
             commands::download_and_start_installer,
             commands::exit_application,
             commands::fetch_tor_bridges,
@@ -649,7 +644,7 @@ fn main() {
             commands::get_tor_config,
             commands::get_tor_entry_guards,
             commands::get_transactions_history,
-            commands::get_coinbase_transactions,
+            commands::get_coinbase_transactions, // TODO: Unused
             commands::import_seed_words,
             commands::log_web_message,
             commands::open_log_dir,
@@ -657,7 +652,7 @@ fn main() {
             commands::restart_application,
             commands::send_feedback,
             commands::set_allow_telemetry,
-            commands::send_data_telemetry_service,
+            commands::send_data_telemetry_service, // TODO: Unused
             commands::set_application_language,
             commands::set_auto_update,
             commands::set_cpu_mining_enabled,
@@ -667,11 +662,9 @@ fn main() {
             commands::set_mode,
             commands::set_monero_address,
             commands::set_monerod_config,
-            commands::set_tari_address,
+            commands::set_external_tari_address,
             commands::confirm_exchange_address,
             commands::select_exchange_miner,
-            commands::switch_exchange_miner,
-            commands::is_universal_miner,
             commands::set_p2pool_enabled,
             commands::set_show_experimental_settings,
             commands::set_should_always_use_system_language,
@@ -693,7 +686,7 @@ fn main() {
             commands::try_update,
             commands::toggle_device_exclusion,
             commands::get_network,
-            commands::sign_ws_data,
+            commands::sign_ws_data, // TODO: Unused
             commands::set_airdrop_tokens,
             commands::get_airdrop_tokens,
             commands::set_selected_engine,
@@ -711,12 +704,10 @@ fn main() {
             commands::set_warmup_seen,
             commands::set_allow_notifications,
             commands::launch_builtin_tapplet,
-            commands::get_tari_wallet_address,
             commands::get_tari_wallet_balance,
             commands::get_bridge_envs,
             commands::parse_tari_address,
             commands::refresh_wallet_history,
-            commands::get_universal_miner_exchange_id,
         ])
         .build(tauri::generate_context!())
         .inspect_err(|e| {

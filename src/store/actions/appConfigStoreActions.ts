@@ -20,14 +20,12 @@ import {
     toggleDeviceExclusion,
 } from './miningStoreActions';
 import { setError } from './appStateStoreActions.ts';
-import { setUITheme } from './uiStoreActions';
+import { setIsAppExchangeSpecific, setUITheme } from './uiStoreActions';
 import { GpuThreads } from '@app/types/app-status.ts';
 import { displayMode, modeType } from '../types';
-import { ConfigBackendInMemory, ConfigCore, ConfigMining, ConfigUI, ConfigWallet } from '@app/types/configs.ts';
+import { ConfigCore, ConfigMining, ConfigUI, ConfigWallet } from '@app/types/configs.ts';
 import { NodeType, updateNodeType as updateNodeTypeForNodeStore } from '../useNodeStore.ts';
 import { fetchExchangeContent, fetchExchangeMiners, setCurrentExchangeMiner } from '../useExchangeStore.ts';
-
-import { AppInMemoryConfigChangedPayload } from '@app/types/events-payloads.ts';
 
 interface SetModeProps {
     mode: modeType;
@@ -321,14 +319,16 @@ export const setNodeType = async (nodeType: NodeType) => {
 
 export const fetchBackendInMemoryConfig = async () => {
     try {
-        const isUniversalMiner = await invoke('is_universal_miner');
-        const res = await invoke('get_app_in_memory_config');
+        const appInMemoryConfig = await invoke('get_app_in_memory_config');
+        if (appInMemoryConfig) {
+            useConfigBEInMemoryStore.setState({ ...appInMemoryConfig });
+            const isAppExchangeSpecific = Boolean(
+                appInMemoryConfig.exchangeId && appInMemoryConfig.exchangeId !== 'universal'
+            );
+            setIsAppExchangeSpecific(isAppExchangeSpecific);
 
-        if (res) {
-            useConfigBEInMemoryStore.setState({ ...res, isUniversalMiner });
-            const isExchangeMode = res.exchangeId && !isUniversalMiner && res.exchangeId !== 'universal';
-            if (isExchangeMode) {
-                await fetchExchangeContent(res.exchangeId);
+            if (isAppExchangeSpecific) {
+                await fetchExchangeContent(appInMemoryConfig.exchangeId);
             } else {
                 await fetchExchangeMiners();
             }
@@ -338,18 +338,7 @@ export const fetchBackendInMemoryConfig = async () => {
     }
 };
 
-export const handleAppInMemoryConfigChanged = async (payload: AppInMemoryConfigChangedPayload) => {
-    const newConfig: ConfigBackendInMemory = {
-        airdropApiUrl: payload.app_in_memory_config.airdrop_api_url,
-        airdropUrl: payload.app_in_memory_config.airdrop_url,
-        airdropTwitterAuthUrl: payload.app_in_memory_config.airdrop_twitter_auth_url,
-        exchangeId: payload.app_in_memory_config.exchange_id,
-        isUniversalMiner: payload.is_universal_exchange || false,
-        bridgeBackendApiUrl: payload.app_in_memory_config.bridge_backend_api_url,
-        walletConnectProjectId: payload.app_in_memory_config.wallet_connect_project_id,
-    };
-    useConfigBEInMemoryStore.setState(newConfig);
-
-    const exchangeContent = await fetchExchangeContent(newConfig.exchangeId);
+export const handleExchangeIdChanged = async (payload: string) => {
+    const exchangeContent = await fetchExchangeContent(payload);
     setCurrentExchangeMiner(exchangeContent);
 };

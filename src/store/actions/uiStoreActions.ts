@@ -93,6 +93,10 @@ export const setSidebarOpen = (sidebarOpen: boolean) =>
     });
 
 export const setSeedlessUI = (seedlessUI: boolean) => useUIStore.setState({ seedlessUI });
+export const setIsAppExchangeSpecific = (isAppExchangeSpecific: boolean) =>
+    useUIStore.setState({ isAppExchangeSpecific });
+export const setShouldShowExchangeSpecificModal = (shouldShowExchangeSpecificModal: boolean) =>
+    useUIStore.setState({ shouldShowExchangeSpecificModal });
 export const handleCloseSplashscreen = () => useUIStore.setState({ showSplashscreen: false });
 export const handleAskForRestart = () => {
     setDialogToShow('restart');

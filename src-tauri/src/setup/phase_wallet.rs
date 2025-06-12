@@ -111,10 +111,13 @@ impl SetupPhaseImpl for WalletSetupPhase {
     }
 
     async fn get_shutdown_signal(&self) -> ShutdownSignal {
-        TasksTrackers::current().core_phase.get_signal().await
+        TasksTrackers::current().wallet_phase.get_signal().await
     }
     async fn get_task_tracker(&self) -> TaskTracker {
-        TasksTrackers::current().core_phase.get_task_tracker().await
+        TasksTrackers::current()
+            .wallet_phase
+            .get_task_tracker()
+            .await
     }
     fn get_phase_dependencies(&self) -> Vec<Receiver<PhaseStatus>> {
         self.setup_configuration
@@ -215,7 +218,6 @@ impl SetupPhaseImpl for WalletSetupPhase {
             .ensure_started(
                 TasksTrackers::current().wallet_phase.get_signal().await,
                 wallet_config,
-                app_state.clone(),
             )
             .await?;
 
@@ -236,7 +238,6 @@ impl SetupPhaseImpl for WalletSetupPhase {
                 data_dir,
                 config_dir,
                 log_dir,
-                app_state.clone(),
             )
             .await?;
         drop(spend_wallet_manager);

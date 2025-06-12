@@ -1,5 +1,4 @@
 import {
-    AppInMemoryConfigChangedPayload,
     BackgroundNodeSyncUpdatePayload,
     ConnectedPeersUpdatePayload,
     ConnectionStatusPayload,
@@ -9,7 +8,7 @@ import {
     NewBlockHeightPayload,
     NodeTypeUpdatePayload,
     ShowReleaseNotesPayload,
-    WalletAddressUpdatePayload,
+    TariAddressUpdatePayload,
 } from './events-payloads.ts';
 import {
     BaseNodeStatus,
@@ -33,10 +32,6 @@ export enum SetupPhase {
 
 export const BACKEND_STATE_UPDATE = 'backend_state_update';
 export type BackendStateUpdateEvent =
-    | {
-          event_type: 'WalletAddressUpdate';
-          payload: WalletAddressUpdatePayload;
-      }
     | {
           event_type: 'BaseNodeUpdate';
           payload: BaseNodeStatus;
@@ -202,10 +197,22 @@ export type BackendStateUpdateEvent =
           payload: PoolStatus;
       }
     | {
-          event_type: 'AppInMemoryConfigChanged';
-          payload: AppInMemoryConfigChangedPayload;
+          event_type: 'ExchangeIdChanged';
+          payload: string;
       }
     | {
-          event_type: 'DisabledPhasesChanged';
+          event_type: 'DisabledPhases';
           payload: DisabledPhasesPayload;
+      }
+    | {
+          event_type: 'ExternalTariAddressChanged';
+          payload?: TariAddressUpdatePayload;
+      }
+    | {
+          event_type: 'BaseTariAddressChanged';
+          payload: TariAddressUpdatePayload;
+      }
+    | {
+          event_type: 'ShouldShowExchangeMinerModal';
+          payload: undefined;
       };

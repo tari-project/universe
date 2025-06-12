@@ -25,6 +25,7 @@ use std::{sync::LazyLock, time::SystemTime};
 use getset::{Getters, Setters};
 use log::error;
 use serde::{Deserialize, Serialize};
+use tari_common_types::tari_address::TariAddress;
 use tauri::{AppHandle, Manager};
 use tokio::sync::RwLock;
 
@@ -55,6 +56,10 @@ pub struct ConfigWalletContent {
     #[getset(get = "pub", set = "pub")]
     keyring_accessed: bool,
     #[getset(get = "pub", set = "pub")]
+    external_tari_address: Option<TariAddress>,
+    #[getset(get = "pub", set = "pub")]
+    tari_address: Option<TariAddress>,
+    #[getset(get = "pub", set = "pub")]
     wallet_migration_nonce: u64,
 }
 
@@ -66,6 +71,8 @@ impl Default for ConfigWalletContent {
             monero_address: "".to_string(),
             monero_address_is_generated: false,
             keyring_accessed: false,
+            external_tari_address: None,
+            tari_address: None,
             wallet_migration_nonce: 0,
         }
     }
@@ -86,6 +93,16 @@ impl ConfigWalletContent {
         self.monero_address_is_generated = true;
 
         self
+    }
+
+    pub fn get_current_used_tari_address(&self) -> TariAddress {
+        if let Some(address) = &self.tari_address {
+            address.clone()
+        } else {
+            self.external_tari_address
+                .clone()
+                .expect("No Tari address set in ConfigWalletContent")
+        }
     }
 }
 
@@ -122,7 +139,7 @@ impl ConfigWallet {
             cpu_config.load_from_config_wallet(&ConfigWallet::content().await);
         }
 
-        match InternalWallet::load_or_create(old_config_path.clone(), state.clone()).await {
+        match InternalWallet::load_or_create(old_config_path.clone()).await {
             Ok(wallet) => {
                 state
                     .wallet_manager
@@ -131,19 +148,30 @@ impl ConfigWallet {
                         wallet.get_spend_key(),
                     )
                     .await;
-                let tari_address = wallet.get_tari_address();
-                *state.tari_address.write().await = tari_address.clone();
-                EventsEmitter::emit_wallet_address_update(
-                    tari_address,
-                    wallet.get_is_tari_address_generated(),
+
+                ConfigWallet::update_field(
+                    ConfigWalletContent::set_tari_address,
+                    Some(wallet.get_tari_address()),
                 )
-                .await;
+                .await
+                .expect("Failed to set Tari address in ConfigWallet");
+
+                // Currently it easier to send extra event then handle TariAddress in emit_wallet_config_loaded
+                EventsEmitter::emit_base_tari_address_changed(wallet.get_tari_address().clone())
+                    .await;
             }
             Err(e) => {
                 error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);
             }
         };
-
+        // Currently it easier to send extra event then handle TariAddress in emit_wallet_config_loaded
+        EventsEmitter::emit_external_tari_address_changed(
+            ConfigWallet::content()
+                .await
+                .external_tari_address()
+                .clone(),
+        )
+        .await;
         EventsEmitter::emit_wallet_config_loaded(Self::current().write().await.content.clone())
             .await;
     }

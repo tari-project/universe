@@ -20,8 +20,6 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::ops::Deref;
-
 use anyhow::anyhow;
 use der::{self, asn1::BitString, oid::ObjectIdentifier, Encode};
 use ring::signature::{Ed25519KeyPair, KeyPair};
@@ -162,56 +160,6 @@ impl AppInMemoryConfig {
         )))]
         AppInMemoryConfig::default()
     }
-    pub fn init_with_exchange(exchange_id: &str) -> Self {
-        #[cfg(feature = "airdrop-env")]
-        return AppInMemoryConfig {
-            airdrop_url: AIRDROP_BASE_URL.into(),
-            airdrop_api_url: AIRDROP_API_BASE_URL.into(),
-            telemetry_api_url: TELEMETRY_API_URL.into(),
-            exchange_id: exchange_id.into(),
-            wallet_connect_project_id: WALLET_CONNECT_PROJECT_ID.into(),
-            bridge_backend_api_url: BRIDGE_BACKEND_API_URL.into(),
-        };
-
-        #[cfg(all(feature = "airdrop-local", not(feature = "airdrop-env")))]
-        return AppInMemoryConfig {
-            airdrop_url: "http://localhost:4000".into(),
-            airdrop_api_url: "http://localhost:3004".into(),
-            telemetry_api_url: "http://localhost:3004".into(),
-            exchange_id: exchange_id.into(),
-            wallet_connect_project_id: WALLET_CONNECT_PROJECT_ID.into(),
-            bridge_backend_api_url: BRIDGE_BACKEND_API_URL.into(),
-        };
-
-        #[cfg(not(any(
-            feature = "airdrop-local",
-            feature = "airdrop-env",
-            feature = "telemetry-env",
-        )))]
-        return AppInMemoryConfig {
-            exchange_id: exchange_id.into(),
-            ..AppInMemoryConfig::default()
-        };
-    }
-}
-
-#[derive(Debug)]
-pub enum MinerType {
-    Universal,
-    ExchangeMode,
-}
-impl MinerType {
-    fn from_str(s: &str) -> Self {
-        match s {
-            DEFAULT_EXCHANGE_ID => MinerType::Universal,
-            _ => MinerType::ExchangeMode,
-        }
-    }
-}
-#[derive(Debug)]
-pub struct DynamicMemoryConfig {
-    pub in_memory_config: AppInMemoryConfig,
-    pub miner_type: MinerType,
 }
 
 #[derive(Default, Serialize, Deserialize, Clone, Debug)]
@@ -221,39 +169,19 @@ pub struct ExchangeMiner {
     pub slug: String,
 }
 
-#[derive(Default, Serialize, Deserialize, Clone, Debug)]
-pub struct ExchangeMinersListResponse {
-    pub exchanges: Vec<ExchangeMiner>,
+#[derive(Debug)]
+pub enum MinerType {
+    Universal,
+    ExchangeMode,
 }
-
-impl DynamicMemoryConfig {
-    pub fn init() -> Self {
-        let in_memory_config = AppInMemoryConfig::init();
-        let miner_type = MinerType::from_str(&in_memory_config.exchange_id);
-
-        Self {
-            in_memory_config,
-            miner_type,
+impl MinerType {
+    pub fn from_str(string: &str) -> Self {
+        match string {
+            DEFAULT_EXCHANGE_ID => MinerType::Universal,
+            _ => MinerType::ExchangeMode,
         }
     }
-
-    pub fn init_with_exchange_id(exchange_id: &str) -> Self {
-        let in_memory_config = AppInMemoryConfig::init_with_exchange(exchange_id);
-        let miner_type = MinerType::Universal;
-        Self {
-            in_memory_config,
-            miner_type,
-        }
-    }
-
-    pub fn is_universal_miner(&self) -> bool {
-        matches!(self.miner_type, MinerType::Universal)
-    }
-}
-
-impl Deref for DynamicMemoryConfig {
-    type Target = AppInMemoryConfig;
-    fn deref(&self) -> &Self::Target {
-        &self.in_memory_config
+    pub fn is_exchange_mode(&self) -> bool {
+        matches!(self, MinerType::ExchangeMode)
     }
 }

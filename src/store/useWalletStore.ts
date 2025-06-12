@@ -4,6 +4,7 @@ import { TransactionInfo, WalletBalance } from '../types/app-status.ts';
 import { TransactionDetailsItem } from '@app/types/transactions.ts';
 import { UserTransactionDTO } from '@tari-project/wxtm-bridge-backend-api';
 import { refreshTransactions } from '@app/hooks/wallet/useFetchTxHistory.ts';
+import { useUIStore } from './useUIStore.ts';
 
 export interface BackendBridgeTransaction extends UserTransactionDTO {
     sourceAddress?: string;
@@ -13,7 +14,8 @@ export interface BackendBridgeTransaction extends UserTransactionDTO {
 interface WalletStoreState {
     tari_address_base58: string;
     tari_address_emoji: string;
-    is_tari_address_generated: boolean | null;
+    external_tari_address_base58?: string;
+    external_tari_address_emoji?: string;
     balance?: WalletBalance;
     calculated_balance?: number;
     coinbase_transactions: TransactionInfo[];
@@ -37,10 +39,15 @@ interface WalletStoreState {
     newestTxIdOnInitialFetch?: TransactionInfo['tx_id']; // only set once - needed to check against truly "new" txs for the badge
 }
 
+interface WalletStoreSelectors {
+    getActiveTariAddress: () => [string, string];
+}
+
 const initialState: WalletStoreState = {
     tari_address_base58: '',
     tari_address_emoji: '',
-    is_tari_address_generated: null,
+    external_tari_address_base58: undefined,
+    external_tari_address_emoji: undefined,
     coinbase_transactions: [],
     transactions: [],
     bridge_transactions: [],
@@ -63,8 +70,19 @@ const MAX_TRANSACTIONS_IN_MEMORY = 1000; // Keep only the latest 1000 transactio
 const MAX_COINBASE_TRANSACTIONS_IN_MEMORY = 500; // Keep only the latest 500 coinbase transactions
 // const MAX_PENDING_TRANSACTIONS = 100; // Keep only the latest 100 pending transactions
 
-export const useWalletStore = create<WalletStoreState>()(() => ({
+export const useWalletStore = create<WalletStoreState & WalletStoreSelectors>()((_, get) => ({
     ...initialState,
+    getActiveTariAddress: () => {
+        const baseAddress = get().tari_address_base58;
+        const baseAddressEmoji = get().tari_address_emoji;
+        const externalAddress = get().external_tari_address_base58;
+        const externalAddressEmoji = get().external_tari_address_emoji;
+        const isSeedlessUI = useUIStore.getState().seedlessUI;
+        if (isSeedlessUI && externalAddress && externalAddressEmoji) {
+            return [externalAddress, externalAddressEmoji];
+        }
+        return [baseAddress, baseAddressEmoji];
+    },
 }));
 
 // Helper function to prune large arrays

@@ -13,8 +13,8 @@ function ActionAddress() {
 
     const [showAdress, setShowAddress] = useState(false);
     const { copyToClipboard, isCopied } = useCopyToClipboard();
-    const address = useWalletStore((state) => state.tari_address_base58);
-    const displayAddress = truncateMiddle(address, 5);
+    const [walletAddress, _walletAddressEmoji] = useWalletStore((state) => state.getActiveTariAddress());
+    const displayAddress = truncateMiddle(walletAddress, 5);
 
     const { refs, context, floatingStyles } = useFloating({
         open: showAdress,
@@ -25,11 +25,11 @@ function ActionAddress() {
     });
 
     function handleCopyClick() {
-        copyToClipboard(address);
+        copyToClipboard(walletAddress);
     }
 
     const hover = useHover(context, {
-        enabled: !!address,
+        enabled: !!walletAddress,
         move: !showAdress,
         handleClose: safePolygon(),
     });
@@ -51,7 +51,7 @@ function ActionAddress() {
                     </AddressTooltip>
                 )}
             </AnimatePresence>
-            <ActionButton ref={refs.setReference} onClick={handleCopyClick} disabled={!address}>
+            <ActionButton ref={refs.setReference} onClick={handleCopyClick} disabled={!walletAddress}>
                 <CopySVG />
             </ActionButton>
         </>

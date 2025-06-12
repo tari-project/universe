@@ -67,7 +67,7 @@ pub struct ConfigCoreContent {
     airdrop_tokens: Option<AirdropTokens>,
     remote_base_node_address: String,
     node_type: NodeType,
-    universal_miner_exchange_id: Option<String>,
+    exchange_id: Option<String>,
 }
 
 fn default_monero_nodes() -> Vec<String> {
@@ -121,7 +121,7 @@ impl Default for ConfigCoreContent {
             airdrop_tokens: None,
             remote_base_node_address,
             node_type: NodeType::Local,
-            universal_miner_exchange_id: None,
+            exchange_id: None,
         }
     }
 }

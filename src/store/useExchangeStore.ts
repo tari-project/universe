@@ -1,8 +1,7 @@
 import { create } from 'zustand';
 
-import { useWalletStore } from '@app/store/useWalletStore.ts';
 import { useConfigBEInMemoryStore } from '@app/store/useAppConfigStore.ts';
-import { setSeedlessUI } from '@app/store/actions/uiStoreActions.ts';
+import { useUIStore } from './useUIStore';
 import { ExchangeBranding } from '@app/types/exchange.ts';
 
 interface ExchangeStoreState {
@@ -71,16 +70,14 @@ export async function fetchExchangeMiners() {
 
 export async function fetchExchangeContent(exchangeId: string) {
     const apiUrl = useConfigBEInMemoryStore.getState().airdropApiUrl;
-    const isUniversalMiner = useConfigBEInMemoryStore.getState().isUniversalMiner;
     const endpoint = `${apiUrl}/miner/exchanges`;
     try {
         const content = await fetch(`${endpoint}/${exchangeId}`);
         const xcContent = (await content.json()) as ExchangeBranding;
-        const walletIsGenerated = useWalletStore.getState().is_tari_address_generated;
+        const shouldShowExchangeSpecificModal = useUIStore.getState().shouldShowExchangeSpecificModal;
         if (xcContent) {
             setExchangeContent(xcContent);
-            setSeedlessUI(!isUniversalMiner);
-            if (!isUniversalMiner) setShowExchangeModal(!!walletIsGenerated);
+            setShowExchangeModal(shouldShowExchangeSpecificModal);
         }
         return xcContent;
     } catch (e) {

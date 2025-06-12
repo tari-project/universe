@@ -48,7 +48,7 @@ use tungstenite::Message;
 use tungstenite::Utf8Bytes;
 use urlencoding::encode;
 
-use crate::app_in_memory_config::DynamicMemoryConfig;
+use crate::app_in_memory_config::AppInMemoryConfig;
 use crate::configs::config_core::ConfigCore;
 use crate::configs::trait_config::ConfigImpl;
 use crate::tasks_tracker::TasksTrackers;
@@ -100,7 +100,7 @@ pub struct WebsocketStoredMessage {
 }
 
 pub struct WebsocketManager {
-    app_in_memory_config: Arc<RwLock<DynamicMemoryConfig>>,
+    app_in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
     app: Option<AppHandle>,
     message_receiver_channel: Arc<Mutex<mpsc::Receiver<WebsocketMessage>>>,
     status_update_channel_tx: watch::Sender<WebsocketManagerStatusMessage>,
@@ -110,7 +110,7 @@ pub struct WebsocketManager {
 
 impl WebsocketManager {
     pub fn new(
-        app_in_memory_config: Arc<RwLock<DynamicMemoryConfig>>,
+        app_in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
         websocket_manager_rx: mpsc::Receiver<WebsocketMessage>,
         status_update_channel_tx: watch::Sender<WebsocketManagerStatusMessage>,
         status_update_channel_rx: watch::Receiver<WebsocketManagerStatusMessage>,
@@ -151,7 +151,7 @@ impl WebsocketManager {
     }
 
     async fn connect_to_url(
-        in_memory_config: &Arc<RwLock<DynamicMemoryConfig>>,
+        in_memory_config: &Arc<RwLock<AppInMemoryConfig>>,
     ) -> Result<WebSocketStream<MaybeTlsStream<TcpStream>>, anyhow::Error> {
         info!(target:LOG_TARGET,"connecting to websocket... [{}:{}]", file!(), line!());
         info!(target:LOG_TARGET,"[DEBUG] acquiring read lock on in_memory_config [{}:{}]", file!(), line!());

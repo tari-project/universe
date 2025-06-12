@@ -31,7 +31,7 @@ use tokio::sync::{
 use tokio_util::sync::CancellationToken;
 
 use crate::{
-    app_in_memory_config::DynamicMemoryConfig,
+    app_in_memory_config::AppInMemoryConfig,
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
     hardware::hardware_status_monitor::HardwareStatusMonitor,
     process_utils::retry_with_backoff,
@@ -74,11 +74,11 @@ pub struct TelemetryService {
     version: String,
     tx_channel: Option<Sender<TelemetryData>>,
     cancellation_token: CancellationToken,
-    in_memory_config: Arc<RwLock<DynamicMemoryConfig>>,
+    in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
 }
 
 impl TelemetryService {
-    pub fn new(in_memory_config: Arc<RwLock<DynamicMemoryConfig>>) -> Self {
+    pub fn new(in_memory_config: Arc<RwLock<AppInMemoryConfig>>) -> Self {
         let cancellation_token = CancellationToken::new();
         TelemetryService {
             version: "0.0.0".to_string(),
@@ -190,7 +190,7 @@ async fn send_telemetry_data(
     api_url: String,
     system_info: SystemInfo,
     app_id: String,
-    memory_config: Arc<RwLock<DynamicMemoryConfig>>,
+    memory_config: Arc<RwLock<AppInMemoryConfig>>,
 ) -> Result<(), TelemetryServiceError> {
     let config_read_guard = memory_config.read().await;
     let request = reqwest::Client::new();

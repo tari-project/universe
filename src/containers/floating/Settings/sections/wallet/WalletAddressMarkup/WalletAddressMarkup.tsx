@@ -14,7 +14,7 @@ import { useWalletStore } from '@app/store/useWalletStore';
 
 import { useCopyToClipboard } from '@app/hooks';
 import { useTranslation } from 'react-i18next';
-import { setGeneratedTariAddress } from '@app/store/actions/walletStoreActions';
+import { setExternalTariAddress } from '@app/store/actions/walletStoreActions';
 import { invoke } from '@tauri-apps/api/core';
 import AddressEditor from '../components/AddressEditor';
 import { CTASArea, InputArea, WalletSettingsGrid } from '@app/containers/floating/Settings/sections/wallet/styles.ts';
@@ -74,8 +74,7 @@ export const CopyToClipboard = ({ text }: { text: string | undefined }) => {
 const WalletAddressMarkup = () => {
     const [isCondensed, setIsCondensed] = useState(true);
     const { t } = useTranslation('settings', { useSuspense: false });
-    const walletAddress = useWalletStore((state) => state.tari_address_base58);
-    const walletAddressEmoji = useWalletStore((state) => state.tari_address_emoji);
+    const [walletAddress, walletAddressEmoji] = useWalletStore((state) => state.getActiveTariAddress());
 
     function condenseEmojiAddress(emojiAddress: string | undefined) {
         const regex = emojiRegex();
@@ -127,7 +126,7 @@ const WalletAddressMarkup = () => {
             <SettingsGroupTitle>
                 <Typography variant="h6">{t('tari-wallet-address')}</Typography>
             </SettingsGroupTitle>
-            <AddressEditor initialAddress={walletAddress} onApply={setGeneratedTariAddress} rules={validationRules} />
+            <AddressEditor initialAddress={walletAddress} onApply={setExternalTariAddress} rules={validationRules} />
             <WalletSettingsGrid>
                 <InputArea>
                     <AddressContainer style={{ height: isCondensed ? '40px' : 'auto' }}>
