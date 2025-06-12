@@ -61,14 +61,12 @@ export const XCLogo = styled.div<{ $index: number; $bgColour?: string }>`
     width: 33px;
     height: 33px;
     position: absolute;
-    border: 2px solid white;
     left: ${({ $index }) => `${$index * 15}px`};
     z-index: ${({ $index }) => $index + 1};
     top: 0;
     background-color: ${({ theme, $bgColour }) => $bgColour || theme.colors.greyscale[50]};
     img {
-        height: 24px;
-        width: auto;
+        max-width: 100%;
     }
 `;
 

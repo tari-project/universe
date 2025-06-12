@@ -114,12 +114,6 @@ const ResumeApplicationModal = memo(function ResumeApplicationModal() {
     const setupTitle = currentPhaseToShow?.title;
     const setupParams = currentPhaseToShow?.title_params ? { ...currentPhaseToShow.title_params } : {};
 
-    console.log({
-        setupPhaseTitle,
-        setupTitle,
-        setupParams,
-    });
-
     useEffect(() => {
         const isOpen = showModal && Boolean(currentPhaseToShow);
         setOpen(isOpen);
@@ -133,9 +127,7 @@ const ResumeApplicationModal = memo(function ResumeApplicationModal() {
                     <Wrapper ref={refs.setFloating}>
                         <TextWrapper>
                             <Title>{t(`phase-title.${setupPhaseTitle}`)}</Title>
-                            <Text>
-                                {t(`title.${setupTitle}${setupParams.progress ? '-download' : ''}`, { ...setupParams })}
-                            </Text>
+                            <Text>{t(`title.${setupTitle}`, { ...setupParams })}</Text>
                         </TextWrapper>
                         <ProgressWrapper>
                             <Title>
