@@ -100,14 +100,12 @@ impl WalletManager {
         app_shutdown: ShutdownSignal,
         config: WalletStartupConfig,
     ) -> Result<(), WalletManagerError> {
-        info!(target: LOG_TARGET, "Starting wallet with config: {:?}", config);
         let shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
         let task_tracker = TasksTrackers::current()
             .wallet_phase
             .get_task_tracker()
             .await;
 
-        info!(target: LOG_TARGET, "Waiting for node manager to be ready");
         self.node_manager.wait_ready().await?;
 
         let mut process_watcher = self.watcher.write().await;
@@ -118,7 +116,6 @@ impl WalletManager {
             return Ok(());
         }
 
-        info!(target: LOG_TARGET, "Node manager is ready, starting wallet process");
         let (public_key, public_address) = self.node_manager.get_connection_details().await?;
         process_watcher.adapter.base_node_public_key = Some(public_key.clone());
         process_watcher.adapter.base_node_address = Some(public_address.clone());
@@ -127,13 +124,11 @@ impl WalletManager {
         process_watcher
             .adapter
             .connect_with_local_node(config.connect_with_local_node);
-        info!(target: LOG_TARGET, "Connect with local node: {}", config.connect_with_local_node);
         process_watcher.adapter.wallet_birthday = self
             .get_wallet_birthday(config.config_path.clone())
             .await
             .ok();
 
-        info!(target: LOG_TARGET, "Wallet birthday: {:?}", process_watcher.adapter.wallet_birthday);
         process_watcher
             .start(
                 config.base_path,

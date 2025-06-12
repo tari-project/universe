@@ -164,26 +164,18 @@ impl SetupPhaseImpl for WalletSetupPhase {
 
         let binary_resolver = BinaryResolver::current().read().await;
 
-        info!(target: LOG_TARGET, "I' here");
-
         let wallet_binary_progress_tracker = progress_stepper.channel_step_range_updates(
             ProgressPlans::Wallet(ProgressSetupWalletPlan::BinariesWallet),
             Some(ProgressPlans::Wallet(ProgressSetupWalletPlan::StartWallet)),
         );
 
-        info!(target: LOG_TARGET, "Initializing wallet binaries");
-
         binary_resolver
             .initialize_binary(Binaries::Wallet, wallet_binary_progress_tracker)
             .await?;
 
-        info!(target: LOG_TARGET, "Wallet binaries initialized");
-
         progress_stepper
             .resolve_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::StartWallet))
             .await;
-
-        info!(target: LOG_TARGET, "Starting wallet manager");
 
         let app_state = self.get_app_handle().state::<UniverseAppState>().clone();
         let is_local_node = app_state.node_manager.is_local_current().await?;
@@ -194,8 +186,6 @@ impl SetupPhaseImpl for WalletSetupPhase {
             use_tor: self.app_configuration.use_tor,
             connect_with_local_node: is_local_node,
         };
-
-        info!(target: LOG_TARGET, "Ensuring wallet manager is started");
         state
             .wallet_manager
             .ensure_started(
@@ -204,14 +194,11 @@ impl SetupPhaseImpl for WalletSetupPhase {
             )
             .await?;
 
-        info!(target: LOG_TARGET, "Wallet manager started");
-
         progress_stepper
             .resolve_step(ProgressPlans::Wallet(
                 ProgressSetupWalletPlan::InitializeSpendingWallet,
             ))
             .await;
-        info!(target: LOG_TARGET, "Initializing spending wallet manager");
 
         let mut spend_wallet_manager = state.spend_wallet_manager.write().await;
         spend_wallet_manager
@@ -227,9 +214,6 @@ impl SetupPhaseImpl for WalletSetupPhase {
             )
             .await?;
         drop(spend_wallet_manager);
-
-        info!(target: LOG_TARGET, "Spending wallet manager initialized");
-
         let bridge_binary_progress_tracker = progress_stepper.channel_step_range_updates(
             ProgressPlans::Wallet(ProgressSetupWalletPlan::SetupBridge),
             Some(ProgressPlans::Wallet(ProgressSetupWalletPlan::Done)),
