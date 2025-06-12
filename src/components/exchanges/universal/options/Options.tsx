@@ -1,4 +1,3 @@
-import { universalExchangeMinerOption } from '@app/store/useExchangeStore.ts';
 import { XCOption } from '@app/components/exchanges/universal/option/XCOption.tsx';
 import { ListWrapper, ScrollWrapper } from '@app/components/exchanges/universal/options/styles.ts';
 import { Divider } from '@app/components/elements/Divider.tsx';
@@ -11,7 +10,7 @@ export const XCOptions = () => {
     const { data: currentExchangeMiner } = useFetchExchangeBranding();
     const [activeId, setActiveId] = useState('');
 
-    function handleClick(id) {
+    function handleClick(id: string) {
         setActiveId(id);
     }
 
@@ -25,12 +24,14 @@ export const XCOptions = () => {
 
     return (
         <ListWrapper>
-            <XCOption
-                isCurrent
-                content={currentExchangeMiner ?? universalExchangeMinerOption}
-                isActive={activeId === (currentExchangeMiner?.id ?? universalExchangeMinerOption.id)}
-                onActiveClick={handleClick}
-            />
+            {currentExchangeMiner && (
+                <XCOption
+                    isCurrent
+                    content={currentExchangeMiner}
+                    isActive={activeId === currentExchangeMiner?.id}
+                    onActiveClick={handleClick}
+                />
+            )}
             {exchangeMiners?.length ? <Divider /> : null}
             <ScrollWrapper>{listItems}</ScrollWrapper>
         </ListWrapper>

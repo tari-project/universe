@@ -89,7 +89,7 @@ export const XCOption = ({ content, isCurrent = false, isActive, onActiveClick }
                         <OpenButton
                             $isOpen={isActive}
                             onClick={() => {
-                                onActiveClick(content.id);
+                                onActiveClick(!isActive ? content.id : '');
                             }}
                         >
                             <ImgWrapper $border $isActive={isActive}>

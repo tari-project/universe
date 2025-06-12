@@ -1,6 +1,5 @@
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 import { Typography } from '@app/components/elements/Typography.tsx';
-import { convertHexToRGBA } from '@app/utils';
 
 export const Wrapper = styled.div<{ $isCurrent?: boolean; $isActive?: boolean }>`
     display: flex;
@@ -10,10 +9,19 @@ export const Wrapper = styled.div<{ $isCurrent?: boolean; $isActive?: boolean }>
     align-items: center;
     border: 1px solid
         ${({ theme, $isCurrent: isCurrent }) => (isCurrent ? theme.colors.green[400] : theme.palette.divider)};
-    background-color: ${({ theme, $isCurrent: isCurrent }) =>
-        isCurrent ? convertHexToRGBA(theme.colors.green[400], 0.1) : theme.palette.background.paper};
     padding: 15px;
     height: ${({ $isActive }) => ($isActive ? 'auto' : '70px')};
+
+    ${({ theme, $isCurrent }) =>
+        $isCurrent
+            ? css`
+                  background: ${theme.mode === 'dark'
+                      ? `linear-gradient(-99deg, #1a2d28 8.49%, #233c34 100.54%), #1a2d28`
+                      : `linear-gradient(99deg, #10C6712F 2.49%, #10C6712D 45%), #fff`};
+              `
+            : css`
+                  background: ${theme.palette.background.paper};
+              `}
 `;
 
 export const Heading = styled(Typography).attrs({ variant: 'h5' })`
