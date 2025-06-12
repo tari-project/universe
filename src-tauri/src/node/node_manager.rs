@@ -416,8 +416,7 @@ fn construct_process_watcher<T: NodeAdapter + ProcessAdapter + Send + Sync + 'st
         process_watcher.poll_time = Duration::from_secs(10);
         process_watcher.health_timeout = Duration::from_secs(9);
     }
-    // NODE: Temporary solution to process payrefs in TU v1.2.9
-    process_watcher.expected_startup_time = Duration::from_secs(540); // 9mins
+    process_watcher.expected_startup_time = Duration::from_secs(30);
 
     process_watcher
 }
@@ -585,8 +584,7 @@ where
                     return Ok(());
                 }
                 Err(err) => {
-                    // NODE: Temporary solution to process payrefs in TU v1.2.9
-                    if retries > 420 {
+                    if retries > 20 {
                         warn!(
                             target: LOG_TARGET,
                             "Max retries exceeded for {} node identity readiness. Stopping watcher. Error: {}",
