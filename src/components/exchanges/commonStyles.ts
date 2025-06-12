@@ -30,6 +30,7 @@ export const ImgWrapper = styled.div<{
     height: 40px;
     border-radius: 50%;
     display: flex;
+    overflow: hidden;
     align-items: center;
     justify-content: center;
     color: ${({ theme }) => theme.palette.text.primary};
@@ -45,8 +46,10 @@ export const ImgWrapper = styled.div<{
         $isLogo &&
         css`
             background-color: ${$col1 || theme.colors.greyscale[50]};
+            color: #c2ff28;
+            svg,
             img {
-                max-width: 100%;
+                max-width: 28px;
             }
         `}
 

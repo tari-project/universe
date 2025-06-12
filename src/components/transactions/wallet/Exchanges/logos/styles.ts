@@ -17,7 +17,6 @@ export const Logo = styled.div<Props & { $index: number; $bgColour?: string }>`
     width: 33px;
     height: 33px;
     position: absolute;
-    left: ${({ $index }) => `${$index * 15}px`};
     z-index: ${({ $index }) => $index + 1};
     top: 0;
     background-color: ${({ theme, $bgColour }) => $bgColour || theme.colors.greyscale[50]};
@@ -32,7 +31,7 @@ export const Logo = styled.div<Props & { $index: number; $bgColour?: string }>`
                 return css`
                     width: 20px;
                     height: 20px;
-                    left: ${`${$index * 10}px`};
+                    right: ${`${$index * 10}px`};
                 `;
             }
             case 'primary':
