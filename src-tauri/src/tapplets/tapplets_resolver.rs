@@ -19,17 +19,15 @@
 // SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
+use crate::binaries::binaries_resolver::{VersionAsset, VersionDownloadInfo};
 use crate::configs::config_core::{ConfigCore, ConfigCoreContent};
 use crate::configs::trait_config::ConfigImpl;
-use crate::github::ReleaseSource;
 use crate::ProgressTracker;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use log::error;
 use regex::Regex;
 use semver::Version;
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::LazyLock;
@@ -40,30 +38,14 @@ use tokio::sync::watch::Receiver;
 use tokio::sync::{Mutex, RwLock};
 use tokio::time::timeout;
 
-use super::adapter_github::GithubReleasesAdapter;
-use super::adapter_tor::TorReleaseAdapter;
-use super::adapter_xmrig::XmrigVersionApiAdapter;
-use super::binaries_manager::BinaryManager;
-use super::Binaries;
+use super::bridge_adapter::BridgeTappletAdapter;
+use super::tapplets_manager::TappletManager;
+use super::Tapplets;
 
-const TIME_BETWEEN_BINARIES_UPDATES: Duration = Duration::from_secs(60 * 60 * 6); // 6 hours
+const TIME_BETWEEN_TAPPLETS_UPDATES: Duration = Duration::from_secs(60 * 60 * 6); // 6 hours
 
-static INSTANCE: LazyLock<RwLock<BinaryResolver>> =
-    LazyLock::new(|| RwLock::new(BinaryResolver::new()));
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct VersionDownloadInfo {
-    pub(crate) version: Version,
-    pub(crate) assets: Vec<VersionAsset>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct VersionAsset {
-    pub(crate) url: String,
-    pub(crate) fallback_url: Option<String>,
-    pub(crate) name: String,
-    pub(crate) source: ReleaseSource,
-}
+static INSTANCE: LazyLock<RwLock<TappletResolver>> =
+    LazyLock::new(|| RwLock::new(TappletResolver::new()));
 
 #[async_trait]
 pub trait LatestVersionApiAdapter: Send + Sync + 'static {
@@ -80,7 +62,7 @@ pub trait LatestVersionApiAdapter: Send + Sync + 'static {
         download_info: VersionDownloadInfo,
     ) -> Result<PathBuf, Error>;
 
-    fn get_binary_folder(&self) -> Result<PathBuf, Error>;
+    fn get_tapplet_folder(&self) -> Result<PathBuf, Error>;
 
     fn find_version_for_platform(
         &self,
@@ -88,139 +70,56 @@ pub trait LatestVersionApiAdapter: Send + Sync + 'static {
     ) -> Result<VersionAsset, Error>;
 }
 
-pub struct BinaryResolver {
-    managers: HashMap<Binaries, Mutex<BinaryManager>>,
+pub struct TappletResolver {
+    managers: HashMap<Tapplets, Mutex<TappletManager>>,
 }
 
-impl BinaryResolver {
+impl TappletResolver {
     #[allow(clippy::too_many_lines)]
     pub fn new() -> Self {
-        let mut binary_manager = HashMap::<Binaries, Mutex<BinaryManager>>::new();
+        let mut tapplet_manager = HashMap::<Tapplets, Mutex<TappletManager>>::new();
 
-        let mut gpu_miner_nextnet_regex = Regex::new(r"opencl.*nextnet").ok();
-        let mut gpu_miner_testnet_regex = Regex::new(r"opencl.*testnet").ok();
-        let mut gpu_miner_mainnet_regex = Regex::new(r"opencl.*mainnet").ok();
+        let mut bridge_nextnet_regex = Regex::new(r"tapplet.*nextnet").ok();
+        let mut bridge_testnet_regex = Regex::new(r"tapplet.*testnet").ok();
+        let mut bridge_mainnet_regex = Regex::new(r"tapplet.*mainnet").ok();
 
         if cfg!(target_os = "macos") && cfg!(target_arch = "aarch64") {
-            gpu_miner_nextnet_regex = Regex::new(r"combined.*nextnet").ok();
-            gpu_miner_testnet_regex = Regex::new(r"combined.*testnet").ok();
-            gpu_miner_mainnet_regex = Regex::new(r"combined.*mainnet").ok();
+            bridge_nextnet_regex = Regex::new(r"combined.*nextnet").ok();
+            bridge_testnet_regex = Regex::new(r"combined.*testnet").ok();
+            bridge_mainnet_regex = Regex::new(r"combined.*mainnet").ok();
         }
 
-        let (tari_prerelease_prefix, gpuminer_specific_name) =
+        let (_tari_prerelease_prefix, _bridge_specific_name) =
             match Network::get_current_or_user_setting_or_default() {
-                Network::MainNet => ("", gpu_miner_mainnet_regex),
-                Network::StageNet => ("", gpu_miner_nextnet_regex),
-                Network::NextNet => ("rc", gpu_miner_nextnet_regex),
-                Network::Esmeralda => ("pre", gpu_miner_testnet_regex),
-                Network::Igor => ("pre", gpu_miner_testnet_regex),
-                Network::LocalNet => ("pre", gpu_miner_testnet_regex),
+                Network::MainNet => ("", bridge_mainnet_regex),
+                Network::StageNet => ("", bridge_nextnet_regex),
+                Network::NextNet => ("rc", bridge_nextnet_regex),
+                Network::Esmeralda => ("pre", bridge_testnet_regex),
+                Network::Igor => ("pre", bridge_testnet_regex),
+                Network::LocalNet => ("pre", bridge_testnet_regex),
             };
 
-        binary_manager.insert(
-            Binaries::Xmrig,
-            Mutex::new(BinaryManager::new(
-                Binaries::Xmrig.name().to_string(),
-                // Some("xmrig-6.22.0".to_string()),
+        tapplet_manager.insert(
+            Tapplets::Bridge,
+            Mutex::new(TappletManager::new(
+                Tapplets::Bridge.name().to_string(),
                 None,
-                Box::new(XmrigVersionApiAdapter {}),
-                None,
-                true,
-            )),
-        );
-
-        binary_manager.insert(
-            Binaries::GpuMiner,
-            Mutex::new(BinaryManager::new(
-                Binaries::GpuMiner.name().to_string(),
-                None,
-                Box::new(GithubReleasesAdapter {
-                    repo: "glytex".to_string(),
-                    owner: "tari-project".to_string(),
-                    specific_name: gpuminer_specific_name,
-                }),
-                None,
-                true,
-            )),
-        );
-
-        binary_manager.insert(
-            Binaries::MergeMiningProxy,
-            Mutex::new(BinaryManager::new(
-                Binaries::MergeMiningProxy.name().to_string(),
-                None,
-                Box::new(GithubReleasesAdapter {
-                    repo: "tari".to_string(),
+                Box::new(BridgeTappletAdapter {
+                    repo: "wxtm-bridge-frontend".to_string(),
                     owner: "tari-project".to_string(),
                     specific_name: None,
                 }),
-                Some(tari_prerelease_prefix.to_string()),
-                true,
-            )),
-        );
-
-        binary_manager.insert(
-            Binaries::MinotariNode,
-            Mutex::new(BinaryManager::new(
-                Binaries::MinotariNode.name().to_string(),
-                None,
-                Box::new(GithubReleasesAdapter {
-                    repo: "tari".to_string(),
-                    owner: "tari-project".to_string(),
-                    specific_name: None,
-                }),
-                Some(tari_prerelease_prefix.to_string()),
-                true,
-            )),
-        );
-
-        binary_manager.insert(
-            Binaries::Wallet,
-            Mutex::new(BinaryManager::new(
-                Binaries::Wallet.name().to_string(),
-                None,
-                Box::new(GithubReleasesAdapter {
-                    repo: "tari".to_string(),
-                    owner: "tari-project".to_string(),
-                    specific_name: None,
-                }),
-                Some(tari_prerelease_prefix.to_string()),
-                true,
-            )),
-        );
-
-        binary_manager.insert(
-            Binaries::ShaP2pool,
-            Mutex::new(BinaryManager::new(
-                Binaries::ShaP2pool.name().to_string(),
-                None,
-                Box::new(GithubReleasesAdapter {
-                    repo: "sha-p2pool".to_string(),
-                    owner: "tari-project".to_string(),
-                    specific_name: None,
-                }),
-                None,
-                true,
-            )),
-        );
-
-        binary_manager.insert(
-            Binaries::Tor,
-            Mutex::new(BinaryManager::new(
-                Binaries::Tor.name().to_string(),
-                Some("tor".to_string()),
-                Box::new(TorReleaseAdapter {}),
                 None,
                 true,
             )),
         );
 
         Self {
-            managers: binary_manager,
+            managers: tapplet_manager,
         }
     }
 
-    pub fn current() -> &'static RwLock<BinaryResolver> {
+    pub fn current() -> &'static RwLock<TappletResolver> {
         &INSTANCE
     }
 
@@ -230,7 +129,7 @@ impl BinaryResolver {
         let should_check_for_update = now
             .duration_since(*ConfigCore::content().await.last_binaries_update_timestamp())
             .unwrap_or(Duration::from_secs(0))
-            .gt(&TIME_BETWEEN_BINARIES_UPDATES);
+            .gt(&TIME_BETWEEN_TAPPLETS_UPDATES);
 
         if should_check_for_update {
             let _unused = ConfigCore::update_field(
@@ -243,43 +142,45 @@ impl BinaryResolver {
         should_check_for_update
     }
 
-    pub async fn resolve_path_to_binary_files(&self, binary: Binaries) -> Result<PathBuf, Error> {
-        let manager = self
-            .managers
-            .get(&binary)
-            .ok_or_else(|| anyhow!("No latest version manager for this binary"))?;
+    pub async fn resolve_path_to_tapplet_files(&self, tapplet: Tapplets) -> Result<PathBuf, Error> {
+        let manager = self.managers.get(&tapplet).ok_or_else(|| {
+            anyhow!(
+                "No latest version manager for the {} tapplet",
+                tapplet.name()
+            )
+        })?;
 
         let version = manager
             .lock()
             .await
             .get_used_version()
-            .ok_or_else(|| anyhow!("No version selected for binary {}", binary.name()))?;
+            .ok_or_else(|| anyhow!("No version found for the {} tapplet", tapplet.name()))?;
 
         let base_dir = manager.lock().await.get_base_dir().map_err(|error| {
             anyhow!(
-                "No base directory for binary {}, Error: {}",
-                binary.name(),
+                "No base directory for tapplet {}, Error: {}",
+                tapplet.name(),
                 error
             )
         })?;
 
-        if let Some(sub_folder) = manager.lock().await.binary_subfolder() {
+        if let Some(sub_folder) = manager.lock().await.tapplet_subfolder() {
             return Ok(base_dir
                 .join(sub_folder)
-                .join(binary.binary_file_name(version)));
+                .join(tapplet.tapplet_file_name(version)));
         }
-        Ok(base_dir.join(binary.binary_file_name(version)))
+        Ok(base_dir)
     }
 
-    pub async fn initialize_binary_timeout(
+    pub async fn initialize_tapplet_timeout(
         &self,
-        binary: Binaries,
+        tapplet: Tapplets,
         progress_tracker: ProgressTracker,
         timeout_channel: Receiver<String>,
     ) -> Result<(), Error> {
         match timeout(
             Duration::from_secs(60 * 5),
-            self.initialize_binary(binary, progress_tracker.clone()),
+            self.initialize_tapplet(tapplet, progress_tracker.clone()),
         )
         .await
         {
@@ -294,15 +195,15 @@ impl BinaryResolver {
         }
     }
 
-    pub async fn initialize_binary(
+    pub async fn initialize_tapplet(
         &self,
-        binary: Binaries,
+        tapplet: Tapplets,
         progress_tracker: ProgressTracker,
     ) -> Result<(), Error> {
         let mut manager = self
             .managers
-            .get(&binary)
-            .ok_or_else(|| anyhow!("Couldn't find manager for binary: {}", binary.name()))?
+            .get(&tapplet)
+            .ok_or_else(|| anyhow!("Couldn't find manager for tapplet: {}", tapplet.name()))?
             .lock()
             .await;
 
@@ -337,26 +238,34 @@ impl BinaryResolver {
         let check_if_files_exist =
             manager.check_if_files_for_version_exist(highest_version.clone());
         if !check_if_files_exist {
-            return Err(anyhow!("Failed to download binaries"));
+            return Err(anyhow!(
+                "Failed to download tapplets while initializing: files for version {:?} does not exist",
+                highest_version.clone()
+            ));
         }
 
         match highest_version {
             Some(version) => manager.set_used_version(version),
-            None => return Err(anyhow!("No version selected for binary {}", binary.name())),
+            None => {
+                return Err(anyhow!(
+                    "Initialize {} tapplet version: no version selected",
+                    tapplet.name()
+                ))
+            }
         }
 
         Ok(())
     }
 
-    pub async fn update_binary(
+    pub async fn update_tapplet(
         &self,
-        binary: Binaries,
+        tapplet: Tapplets,
         progress_tracker: ProgressTracker,
     ) -> Result<(), Error> {
         let mut manager = self
             .managers
-            .get(&binary)
-            .ok_or_else(|| anyhow!("Couldn't find manager for binary: {}", binary.name()))?
+            .get(&tapplet)
+            .ok_or_else(|| anyhow!("Couldn't find manager for tapplet: {}", tapplet.name()))?
             .lock()
             .await;
 
@@ -366,7 +275,7 @@ impl BinaryResolver {
         progress_tracker
             .send_last_action(format!(
                 "Checking if files exist before download: {} {}",
-                binary.name(),
+                tapplet.name(),
                 highest_version.clone().unwrap_or(Version::new(0, 0, 0))
             ))
             .await;
@@ -382,35 +291,43 @@ impl BinaryResolver {
         progress_tracker
             .send_last_action(format!(
                 "Checking if files exist after download: {} {}",
-                binary.name(),
+                tapplet.name(),
                 highest_version.clone().unwrap_or(Version::new(0, 0, 0))
             ))
             .await;
         let check_if_files_exist =
             manager.check_if_files_for_version_exist(highest_version.clone());
         if !check_if_files_exist {
-            return Err(anyhow!("Failed to download binaries"));
+            return Err(anyhow!(
+                "Failed to download tapplet while updating: files for version {:?} does not exist",
+                highest_version.clone()
+            ));
         }
 
         match highest_version {
             Some(version) => manager.set_used_version(version),
-            None => return Err(anyhow!("No version selected for binary {}", binary.name())),
+            None => {
+                return Err(anyhow!(
+                    "Update {} tapplet version: no version selected",
+                    tapplet.name()
+                ))
+            }
         }
 
         Ok(())
     }
 
-    pub async fn get_binary_version(&self, binary: Binaries) -> Option<Version> {
+    pub async fn get_tapplet_version(&self, tapplet: Tapplets) -> Option<Version> {
         self.managers
-            .get(&binary)
-            .unwrap_or_else(|| panic!("Couldn't find manager for binary: {}", binary.name()))
+            .get(&tapplet)
+            .unwrap_or_else(|| panic!("Couldn't find manager for tapplet: {}", tapplet.name()))
             .lock()
             .await
             .get_used_version()
     }
 
-    pub async fn get_binary_version_string(&self, binary: Binaries) -> String {
-        let version = self.get_binary_version(binary).await;
+    pub async fn get_tapplet_version_string(&self, tapplet: Tapplets) -> String {
+        let version = self.get_tapplet_version(tapplet).await;
         version
             .map(|v| v.to_string())
             .unwrap_or_else(|| "Not Installed".to_string())

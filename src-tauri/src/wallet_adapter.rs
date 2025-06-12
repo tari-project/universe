@@ -152,6 +152,7 @@ impl WalletAdapter {
         offset: Option<u32>,
         limit: Option<u32>,
         status: Option<u32>,
+        current_block_height: u64,
     ) -> Result<Vec<TransactionInfo>, WalletStatusMonitorError> {
         let mut client = WalletClient::connect(self.wallet_grpc_address())
             .await
@@ -164,6 +165,23 @@ impl WalletAdapter {
             })
             .await
             .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?;
+
+        let confirmations =
+            if current_block_height > 0 && tx.mined_in_block_height <= current_block_height {
+                current_block_height - tx.mined_in_block_height
+            } else {
+                0
+            };
+        let payment_reference = if confirmations >= 5 {
+            match tx.direction {
+                1 => tx.payment_references_received.last().map(hex::encode),
+                2 => tx.payment_references_sent.last().map(hex::encode),
+                _ => None,
+            }
+        } else {
+            None
+        };
+
         let transactions = res
             .into_inner()
             .transactions
@@ -182,6 +200,7 @@ impl WalletAdapter {
                     timestamp: tx.timestamp,
                     payment_id: PaymentId::stringify_bytes(&tx.user_payment_id),
                     mined_in_block_height: tx.mined_in_block_height,
+                    payment_reference
                 })
             })
             .collect::<Result<Vec<_>, TariAddressError>>()?;
@@ -612,6 +631,7 @@ pub struct TransactionInfo {
     pub timestamp: u64,
     pub payment_id: String,
     pub mined_in_block_height: u64,
+    pub payment_reference: Option<String>,
 }
 
 #[derive(Debug, Serialize, Clone)]

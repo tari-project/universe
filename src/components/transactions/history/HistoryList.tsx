@@ -25,6 +25,7 @@ import {
     isTransactionInfo,
 } from './helpers.ts';
 import { BridgeHistoryListItem } from './BridgeListItem.tsx';
+import { TransactionDirection } from '@app/types/transactions.ts';
 
 const TX_FETCH_LIMIT = 20;
 const IS_NEW_TIMEOUT = 15 * 60 * 1000; // 15min
@@ -114,6 +115,7 @@ const HistoryList = memo(function HistoryList({ filter }: { filter: TxHistoryFil
             .catch(() => undefined);
         // Specify order here
         setDetailsItem({
+            payment_reference: tx.payment_reference,
             source_address: tx.source_address,
             dest_address: tx.dest_address,
             dest_address_emoji,

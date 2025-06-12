@@ -66,6 +66,7 @@ pub struct WalletManager {
     watcher: Arc<RwLock<ProcessWatcher<WalletAdapter>>>,
     node_manager: NodeManager,
     initial_scan_completed: Arc<AtomicBool>,
+    base_node_watch_rx: watch::Receiver<BaseNodeStatus>,
 }
 
 impl Clone for WalletManager {
@@ -74,6 +75,7 @@ impl Clone for WalletManager {
             watcher: self.watcher.clone(),
             node_manager: self.node_manager.clone(),
             initial_scan_completed: self.initial_scan_completed.clone(),
+            base_node_watch_rx: self.base_node_watch_rx.clone(),
         }
     }
 }
@@ -83,6 +85,7 @@ impl WalletManager {
         node_manager: NodeManager,
         wallet_state_watch_tx: watch::Sender<Option<WalletState>>,
         stats_collector: &mut ProcessStatsCollectorBuilder,
+        base_node_watch_rx: watch::Receiver<BaseNodeStatus>,
     ) -> Self {
         let adapter = WalletAdapter::new(wallet_state_watch_tx);
         let process_watcher = ProcessWatcher::new(adapter, stats_collector.take_wallet());
@@ -91,6 +94,7 @@ impl WalletManager {
             watcher: Arc::new(RwLock::new(process_watcher)),
             node_manager,
             initial_scan_completed: Arc::new(AtomicBool::new(false)),
+            base_node_watch_rx,
         }
     }
 
@@ -195,10 +199,12 @@ impl WalletManager {
         limit: Option<u32>,
         status_bitflag: Option<u32>,
     ) -> Result<Vec<TransactionInfo>, WalletManagerError> {
+        let node_status = *self.base_node_watch_rx.borrow();
+        let current_block_height = node_status.block_height;
         let process_watcher = self.watcher.read().await;
         process_watcher
             .adapter
-            .get_transactions(offset, limit, status_bitflag)
+            .get_transactions(offset, limit, status_bitflag, current_block_height)
             .await
             .map_err(|e| match e {
                 WalletStatusMonitorError::WalletNotStarted => WalletManagerError::WalletNotStarted,
