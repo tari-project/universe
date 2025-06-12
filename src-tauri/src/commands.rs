@@ -22,6 +22,7 @@
 
 use crate::app_in_memory_config::{
     get_der_encode_pub_key, get_websocket_key, AirdropInMemoryConfig, ExchangeMiner,
+    DEFAULT_EXCHANGE_ID,
 };
 use crate::auto_launcher::AutoLauncher;
 use crate::binaries::{Binaries, BinaryResolver};
@@ -840,6 +841,14 @@ pub async fn import_seed_words(
             .await
             .map_err(InvokeError::from_anyhow)?;
             EventsEmitter::emit_base_tari_address_changed(wallet.get_tari_address()).await;
+            ConfigCore::update_field(
+                ConfigCoreContent::set_exchange_id,
+                Some(DEFAULT_EXCHANGE_ID.to_string()),
+            )
+            .await
+            .map_err(InvokeError::from_anyhow)?;
+            EventsEmitter::emit_exchange_id_changed(DEFAULT_EXCHANGE_ID.to_string()).await;
+
             SetupManager::get_instance()
                 .resume_phases(app, vec![SetupPhase::Wallet, SetupPhase::Mining])
                 .await;
