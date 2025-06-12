@@ -333,7 +333,7 @@ impl TappletManager {
         let did_meet_network_prerelease = self
             .network_prerelease_prefix
             .as_ref()
-            .map_or(true, |prefix| version.pre.matches(prefix).any(|_| true));
+            .is_none_or(|prefix| version.pre.matches(prefix).any(|_| true));
 
         debug!(target: LOG_TARGET,"Version meets semver requirements: {:?}", is_meet_semver);
         debug!(target: LOG_TARGET,"Version meets network prerelease requirements: {:?}", did_meet_network_prerelease);
