@@ -20,27 +20,17 @@ import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 import { invoke } from '@tauri-apps/api/core';
 import { ExchangeMiner } from '@app/types/exchange.ts';
 
-// Controller component for edit/view seed words (both Tari & Monero)
-
-interface SeedWordsProps {
-    isMonero?: boolean;
-}
-export default function SeedWords({ isMonero = false }: SeedWordsProps) {
-    console.log('SeedWords rendered');
+export default function EmptySeedWords() {
+    console.log('EmptySeedWords rendered');
     const isWalletImporting = useWalletStore((s) => s.is_wallet_importing);
 
     const [isEditView, setIsEditView] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
     const [newSeedWords, setNewSeedWords] = useState<string[]>();
     const [showConfirm, setShowConfirm] = useState(false);
-    const [copyFetchLoading, setCopyFetchLoading] = useState(false);
 
     const { t } = useTranslation('settings', { useSuspense: false });
-    const { copyToClipboard, isCopied } = useCopyToClipboard();
-    const { seedWords, getSeedWords, seedWordsFetched, seedWordsFetching } = useGetSeedWords({
-        fetchMoneroSeeds: isMonero,
-    });
-    const methods = useForm({ defaultValues: { seedWords: seedWords?.join(' ').trim() } });
+
+    const methods = useForm<{ seedWords: string }>({ defaultValues: { seedWords: '' } });
     const { isValid } = methods.formState;
 
     const handleConfirmed = useCallback(async () => {
@@ -50,17 +40,11 @@ export default function SeedWords({ isMonero = false }: SeedWordsProps) {
     }, [isValid, newSeedWords]);
 
     const handleApply = (data: { seedWords: string }) => {
-        setNewSeedWords(data.seedWords.split(' '));
+        const resolvedSeedWords = data.seedWords.split(' ');
+        setNewSeedWords(resolvedSeedWords);
         setShowConfirm(true);
     };
 
-    async function onToggleVisibility() {
-        setIsLoading(!isLoading);
-        if (!seedWords?.length || !seedWordsFetched) {
-            await getSeedWords();
-            setIsLoading(false);
-        }
-    }
     function onToggleEdit() {
         setIsEditView((c) => !c);
     }
@@ -68,37 +52,16 @@ export default function SeedWords({ isMonero = false }: SeedWordsProps) {
         methods.reset();
         onToggleEdit();
     }
-    const handleCopyClick = useCallback(async () => {
-        if (seedWords && seedWordsFetched) {
-            copyToClipboard(seedWords.join(' '));
-        } else {
-            setCopyFetchLoading(true);
-            getSeedWords().then((r) => {
-                setCopyFetchLoading(false);
-
-                if (r?.length) {
-                    copyToClipboard(r.join(' '));
-                }
-            });
-        }
-    }, [copyToClipboard, getSeedWords, seedWords, seedWordsFetched]);
 
     const displayCTAs = (
-        <>
-            {!isMonero ? (
-                <IconButton size="small" onClick={onToggleEdit} type="button">
-                    <IoPencil />
-                </IconButton>
-            ) : null}
-            <IconButton size="small" type="button" onClick={() => handleCopyClick()}>
-                {!isCopied ? copyFetchLoading ? <CircularProgress /> : <IoCopyOutline /> : <IoCheckmarkOutline />}
-            </IconButton>
-        </>
+        <IconButton size="small" onClick={onToggleEdit} type="button">
+            <IoAddCircleOutline />
+        </IconButton>
     );
 
     const editCTAs = (
         <>
-            <IconButton size="small" type="submit" disabled={!isValid || !seedWords}>
+            <IconButton size="small" type="submit" disabled={!isValid}>
                 <IoCheckmarkOutline />
             </IconButton>
             <IconButton size="small" type="reset">
@@ -109,20 +72,12 @@ export default function SeedWords({ isMonero = false }: SeedWordsProps) {
 
     return (
         <>
-            <Wrapper key={isMonero ? 'monero' : 'tari'}>
+            <Wrapper key={'tari'}>
                 <FormProvider {...methods}>
                     <Form onSubmit={methods.handleSubmit(handleApply)} onReset={handleReset}>
                         <WalletSettingsGrid>
                             <InputArea>
-                                {isEditView ? (
-                                    <Edit />
-                                ) : (
-                                    <Display
-                                        words={seedWords}
-                                        isLoading={isLoading || seedWordsFetching || copyFetchLoading}
-                                        onToggleClick={onToggleVisibility}
-                                    />
-                                )}
+                                {isEditView ? <Edit /> : <Display words={[]} isSeedlessUI isLoading={false} />}
                             </InputArea>
                             <CTASArea>{isEditView ? editCTAs : displayCTAs}</CTASArea>
                         </WalletSettingsGrid>

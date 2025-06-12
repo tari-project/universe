@@ -145,12 +145,30 @@ impl ConfigWallet {
                         wallet.get_spend_key(),
                     )
                     .await;
+
+                ConfigWallet::update_field(
+                    ConfigWalletContent::set_tari_address,
+                    Some(wallet.get_tari_address()),
+                )
+                .await
+                .expect("Failed to set Tari address in ConfigWallet");
+
+                // Currently it easier to send extra event then handle TariAddress in emit_wallet_config_loaded
+                EventsEmitter::emit_base_tari_address_changed(wallet.get_tari_address().clone())
+                    .await;
             }
             Err(e) => {
                 error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);
             }
         };
-
+        // Currently it easier to send extra event then handle TariAddress in emit_wallet_config_loaded
+        EventsEmitter::emit_external_tari_address_changed(
+            ConfigWallet::content()
+                .await
+                .external_tari_address()
+                .clone(),
+        )
+        .await;
         EventsEmitter::emit_wallet_config_loaded(Self::current().write().await.content.clone())
             .await;
     }

@@ -15,14 +15,12 @@ export const fetchBridgeTransactionsHistory = async () => {
     if (baseUrl?.includes('env var not defined')) return;
     try {
         OpenAPI.BASE = baseUrl;
-        await WrapTokenService.getUserTransactions(useWalletStore.getState().base_tari_address_base58).then(
-            (response) => {
-                console.info('Bridge transactions fetched successfully:', response);
-                useWalletStore.setState({
-                    bridge_transactions: response.transactions,
-                });
-            }
-        );
+        await WrapTokenService.getUserTransactions(useWalletStore.getState().tari_address_base58).then((response) => {
+            console.info('Bridge transactions fetched successfully:', response);
+            useWalletStore.setState({
+                bridge_transactions: response.transactions,
+            });
+        });
     } catch (error) {
         console.error('Could not get bridge transaction history: ', error);
     }
@@ -67,13 +65,6 @@ export const setExternalTariAddress = async (newAddress: string) => {
         });
 };
 
-export const setWalletAddress = (addresses: Partial<WalletAddress>) => {
-    useWalletStore.setState({
-        base_tari_address_base58: addresses.tari_address_base58,
-        base_tari_address_emoji: addresses.tari_address_emoji,
-    });
-};
-
 const getPendingOutgoingBalance = async () => {
     const pendingTxs = useWalletStore
         .getState()
@@ -110,7 +101,9 @@ export const setDetailsItem = (detailsItem: TransactionDetailsItem | BackendBrid
     useWalletStore.setState({ detailsItem });
 
 export const handleExternalWalletAddressUpdate = (payload?: WalletAddress) => {
+    console.log('handleExternalWalletAddressUpdate called with payload:', payload);
     const isSeedlessUI = useUIStore.getState().seedlessUI;
+    console.log('Current seedlessUI state:', isSeedlessUI);
     if (payload) {
         useWalletStore.setState({
             external_tari_address_base58: payload.tari_address_base58,
@@ -118,6 +111,7 @@ export const handleExternalWalletAddressUpdate = (payload?: WalletAddress) => {
         });
 
         if (!isSeedlessUI) {
+            console.log('Setting seedlessUI to true');
             setSeedlessUI(true);
         }
     } else {
@@ -126,6 +120,7 @@ export const handleExternalWalletAddressUpdate = (payload?: WalletAddress) => {
             external_tari_address_emoji: undefined,
         });
         if (isSeedlessUI) {
+            console.log('Setting seedlessUI to false');
             setSeedlessUI(false);
         }
     }
@@ -133,14 +128,14 @@ export const handleExternalWalletAddressUpdate = (payload?: WalletAddress) => {
 
 export const handleBaseWalletUpate = (payload: WalletAddress) => {
     useWalletStore.setState({
-        base_tari_address_base58: payload.tari_address_base58,
-        base_tari_address_emoji: payload.tari_address_emoji,
+        tari_address_base58: payload.tari_address_base58,
+        tari_address_emoji: payload.tari_address_emoji,
     });
 };
 
 export const getCurrentActiveTariAddress = (): [string, string] => {
-    const baseAddress = useWalletStore.getState().base_tari_address_base58;
-    const baseAddressEmoji = useWalletStore.getState().base_tari_address_emoji;
+    const baseAddress = useWalletStore.getState().tari_address_base58;
+    const baseAddressEmoji = useWalletStore.getState().tari_address_emoji;
     const externalAddress = useWalletStore.getState().external_tari_address_base58;
     const externalAddressEmoji = useWalletStore.getState().external_tari_address_emoji;
     const isSeedlessUI = useUIStore.getState().seedlessUI;

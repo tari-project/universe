@@ -48,7 +48,8 @@ use crate::{
     BaseNodeStatus, GpuMinerStatus,
 };
 use log::error;
-use tari_common_types::tari_address::TariAddress;
+use tari_common_types::tari_address::{self, TariAddress};
+use tauri::utils::acl::resolved;
 use tauri::{AppHandle, Emitter};
 use tokio::sync::RwLock;
 
@@ -287,9 +288,12 @@ impl EventsEmitter {
 
     pub async fn emit_wallet_config_loaded(payload: ConfigWalletContent) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+
         let event = Event {
             event_type: EventType::ConfigWalletLoaded,
-            payload,
+            payload: {
+                ..payload // Use the entire payload as
+            },
         };
         if let Err(e) = Self::get_app_handle()
             .await

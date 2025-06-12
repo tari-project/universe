@@ -48,8 +48,6 @@ use tari_key_manager::mnemonic_wordlists::MNEMONIC_ENGLISH_WORDS;
 use tari_key_manager::SeedWords;
 use tari_utilities::hex::Hex;
 
-use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent};
-use crate::configs::trait_config::ConfigImpl;
 use crate::credential_manager::{Credential, CredentialError, CredentialManager};
 use crate::wallet_adapter::WalletBalance;
 
@@ -100,11 +98,6 @@ impl InternalWallet {
         }
         info!(target: LOG_TARGET, "Wallet config does not exist or is corrupt. Creating new wallet");
         let (wallet, config) = InternalWallet::create_new_wallet(None, config_path).await?;
-        ConfigWallet::update_field(
-            ConfigWalletContent::set_tari_address,
-            Some(wallet.get_tari_address()),
-        )
-        .await?;
 
         let config = serde_json::to_string(&config)?;
         fs::write(file, config).await?;

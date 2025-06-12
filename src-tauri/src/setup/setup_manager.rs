@@ -370,13 +370,16 @@ impl SetupManager {
             .external_tari_address()
             .clone();
 
+        info!(target: LOG_TARGET, "Resolving setup features");
         // clear existing features
         features.0.clear();
 
         if cpu_mining_pool_url.is_some() && cpu_mining_pool_status_url.is_some() {
+            info!(target: LOG_TARGET, "Centralized pool feature enabled");
             features.add_feature(SetupFeature::CentralizedPool);
         }
         if external_tari_address.is_some() {
+            info!(target: LOG_TARGET, "Seedless wallet feature enabled");
             features.add_feature(SetupFeature::SeedlessWallet);
             EventsEmitter::emit_disabled_phases(vec![SetupPhase::Wallet]).await;
         } else {
@@ -782,6 +785,7 @@ impl SetupManager {
             }
         }
 
+        let _unused = self.resolve_setup_features().await;
         *self.cancellation_token.lock().await = CancellationToken::new();
         self.wait_for_unlock_conditions(app_handle.clone()).await;
     }
@@ -791,7 +795,6 @@ impl SetupManager {
             EventsEmitter::emit_restarting_phases(phases.clone()).await;
         }
 
-        let _unused = self.resolve_setup_features().await;
         let features = self.features.read().await.clone();
 
         for phase in phases {

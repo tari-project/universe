@@ -6,8 +6,8 @@ import { CopyAddressButton } from './Address.style';
 export function CopyAddress({ useEmoji }: { useEmoji: boolean }) {
     const { t } = useTranslation('wallet');
     const { copyToClipboard, isCopied } = useCopyToClipboard();
-    const walletAddress = useWalletStore((state) => state.base_tari_address_base58);
-    const emojiAddress = useWalletStore((state) => state.base_tari_address_emoji);
+    const walletAddress = useWalletStore((state) => state.tari_address_base58);
+    const emojiAddress = useWalletStore((state) => state.tari_address_emoji);
 
     function handleCopyClick() {
         copyToClipboard(useEmoji ? emojiAddress : walletAddress);

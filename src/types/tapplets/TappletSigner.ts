@@ -50,7 +50,8 @@ export class TappletSigner {
     public async getAccount(): Promise<AccountData> {
         return {
             account_id: 0, // default id - currently we don't support multi accounts
-            address: useWalletStore.getState().base_tari_address_base58,
+            // Use only base address that have seed words
+            address: useWalletStore.getState().tari_address_base58,
         };
     }
 

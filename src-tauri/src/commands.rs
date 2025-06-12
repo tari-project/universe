@@ -201,6 +201,7 @@ pub async fn close_splashscreen(app: tauri::AppHandle) {
 
 #[tauri::command]
 pub async fn select_exchange_miner(
+    app_handle: tauri::AppHandle,
     exchange_miner: ExchangeMiner,
     mining_address: String,
 ) -> Result<(), InvokeError> {
@@ -219,8 +220,23 @@ pub async fn select_exchange_miner(
     .await
     .map_err(InvokeError::from_anyhow)?;
 
+    ConfigCore::update_field(
+        ConfigCoreContent::set_exchange_id,
+        Some(exchange_miner.id.clone()),
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
+
     EventsEmitter::emit_external_tari_address_changed(Some(new_external_tari_address)).await;
     EventsEmitter::emit_exchange_id_changed(exchange_miner.id.clone()).await;
+
+    SetupManager::get_instance()
+        .add_phases_to_restart_queue(vec![SetupPhase::Wallet, SetupPhase::Mining])
+        .await;
+
+    SetupManager::get_instance()
+        .restart_phases_from_queue(app_handle)
+        .await;
 
     Ok(())
 }
@@ -598,6 +614,7 @@ pub async fn get_paper_wallet_details(
 #[tauri::command]
 pub async fn get_seed_words(app: tauri::AppHandle) -> Result<Vec<String>, String> {
     let timer = Instant::now();
+
     let config_path = app
         .path()
         .app_config_dir()
@@ -815,7 +832,6 @@ pub async fn import_seed_words(
             InternalWallet::clear_wallet_local_data(data_dir)
                 .await
                 .map_err(|e| e.to_string())?;
-            info!(target: LOG_TARGET, "[import_seed_words] Restarting the app");
             ConfigWallet::update_field(ConfigWalletContent::set_external_tari_address, None)
                 .await
                 .map_err(InvokeError::from_anyhow)?;

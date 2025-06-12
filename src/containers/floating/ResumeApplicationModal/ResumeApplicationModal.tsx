@@ -37,7 +37,7 @@ const ResumeApplicationModal = memo(function ResumeApplicationModal() {
 
     const currentPhaseToShow = useMemo(() => {
         if (
-            walletPhaseInfoPayload?.is_complete &&
+            (walletPhaseInfoPayload?.is_complete || disabledPhases.includes(SetupPhase.Wallet)) &&
             Boolean(miningPhaseInfoPayload) &&
             !disabledPhases.includes(SetupPhase.Mining)
         ) {
@@ -79,7 +79,10 @@ const ResumeApplicationModal = memo(function ResumeApplicationModal() {
     ]);
 
     const [stageProgress, stageTotal] = useMemo(() => {
-        if (miningPhaseInfoPayload?.is_complete && walletPhaseInfoPayload?.is_complete) {
+        if (
+            miningPhaseInfoPayload?.is_complete &&
+            (walletPhaseInfoPayload?.is_complete || disabledPhases.includes(SetupPhase.Wallet))
+        ) {
             return [5, 5];
         }
 
@@ -119,10 +122,13 @@ const ResumeApplicationModal = memo(function ResumeApplicationModal() {
     }, [currentPhaseToShow, showModal]);
 
     useEffect(() => {
-        if (miningPhaseInfoPayload?.is_complete && walletPhaseInfoPayload?.is_complete) {
+        if (
+            miningPhaseInfoPayload?.is_complete &&
+            (walletPhaseInfoPayload?.is_complete || disabledPhases.includes(SetupPhase.Wallet))
+        ) {
             useUIStore.setState({ showResumeAppModal: false });
         }
-    }, [miningPhaseInfoPayload?.is_complete, walletPhaseInfoPayload?.is_complete]);
+    }, [miningPhaseInfoPayload?.is_complete, walletPhaseInfoPayload?.is_complete, disabledPhases]);
 
     return (
         <FloatingNode id={nodeId}>

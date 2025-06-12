@@ -8,15 +8,16 @@ import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 interface DisplayProps {
     words: string[];
     isLoading?: boolean;
-    onToggleClick: () => void;
-    isGenerated?: boolean;
-    isMonero?: boolean;
+    onToggleClick?: () => void;
+    isSeedlessUI?: boolean;
 }
-const Display = memo(function Display({ words, onToggleClick, isLoading, isGenerated, isMonero }: DisplayProps) {
+const Display = memo(function Display({ words, onToggleClick, isLoading, isSeedlessUI }: DisplayProps) {
     const [isVisible, setIsVisible] = useState(false);
 
     function handleToggleClick() {
-        onToggleClick();
+        if (onToggleClick) {
+            onToggleClick();
+        }
         setIsVisible((c) => !c);
     }
 
@@ -43,6 +44,12 @@ const Display = memo(function Display({ words, onToggleClick, isLoading, isGener
         </HiddenWrapper>
     );
 
+    const emptySeedWords = (
+        <AddSeedWordsWrapper>
+            <Typography variant="p">{`Add seedwords to restore another Tari Address`}</Typography>
+        </AddSeedWordsWrapper>
+    );
+
     const toggleIcon = isVisible ? <IoEyeOffOutline /> : <IoEyeOutline />;
 
     const toggleCTA = (
@@ -54,17 +61,11 @@ const Display = memo(function Display({ words, onToggleClick, isLoading, isGener
     );
 
     const generatedDisplay = isVisible && !isLoading ? wordMarkup : hiddenMarkup;
-    const notGeneratedDisplay = (
-        <AddSeedWordsWrapper>
-            <Typography variant="p">{`Add seedwords to restore another Tari Address`}</Typography>
-        </AddSeedWordsWrapper>
-    );
 
-    const markup = !isMonero && !isGenerated ? notGeneratedDisplay : generatedDisplay;
     return (
         <DisplayWrapper $rows={rowCount} $isHidden={!isVisible || isLoading}>
-            {(isMonero || isGenerated) && toggleCTA}
-            {markup}
+            {!isSeedlessUI && toggleCTA}
+            {isSeedlessUI ? emptySeedWords : generatedDisplay}
         </DisplayWrapper>
     );
 });
