@@ -2,7 +2,11 @@ import { invoke } from '@tauri-apps/api/core';
 import { WalletAddress, WalletBalance } from '@app/types/app-status.ts';
 import { BackendBridgeTransaction, useWalletStore } from '../useWalletStore';
 import { setError } from './appStateStoreActions';
-import { setCurrentExchangeMiner, universalExchangeMinerOption } from '@app/store/useExchangeStore.ts';
+import {
+    setCurrentExchangeMiner,
+    setCurrentExchangeMiner,
+    universalExchangeMinerOption,
+} from '@app/store/useExchangeStore.ts';
 import { WrapTokenService, OpenAPI } from '@tari-project/wxtm-bridge-backend-api';
 import { useConfigBEInMemoryStore } from '../useAppConfigStore';
 import { TransactionDetailsItem, TransactionDirection, TransactionStatus } from '@app/types/transactions';
@@ -42,11 +46,14 @@ export const fetchBridgeColdWalletAddress = async () => {
 };
 
 export const importSeedWords = async (seedWords: string[]) => {
+    useWalletStore.setState({ is_wallet_importing: true });
     try {
-        useWalletStore.setState({ is_wallet_importing: true });
         await invoke('import_seed_words', { seedWords });
+        useWalletStore.setState({ is_wallet_importing: false });
     } catch (error) {
         setError(`Could not import seed words: ${error}`, true);
+        useWalletStore.setState({ is_wallet_importing: false });
+    } finally {
         useWalletStore.setState({ is_wallet_importing: false });
     }
 };
@@ -115,6 +122,7 @@ export const handleExternalWalletAddressUpdate = (payload?: WalletAddress) => {
         });
         if (isSeedlessUI) {
             setSeedlessUI(false);
+            setCurrentExchangeMiner(universalExchangeMinerOption);
             setCurrentExchangeMiner(universalExchangeMinerOption);
         }
     }

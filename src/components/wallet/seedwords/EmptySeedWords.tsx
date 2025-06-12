@@ -29,7 +29,6 @@ export default function EmptySeedWords() {
 
     const handleConfirmed = useCallback(async () => {
         if (!isValid || !newSeedWords) return;
-
         await importSeedWords(newSeedWords).finally(() => setShowConfirm(false));
     }, [isValid, newSeedWords]);
 
