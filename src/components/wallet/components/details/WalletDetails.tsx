@@ -1,12 +1,11 @@
+import { useFetchXCContent } from '@app/hooks/exchanges/fetchExchangeContent.ts';
 import { TariOutlineSVG } from '@app/assets/icons/tari-outline.tsx';
-
-import { Actions, DetailsLeft, LogoWrapper, Name, Wrapper } from './styles.ts';
 import WalletCardActions from './actions/WalletCardActions.tsx';
-import { useExchangeStore } from '@app/store/useExchangeStore.ts';
+import { Actions, DetailsLeft, LogoWrapper, Name, Wrapper } from './styles.ts';
 
 export default function WalletDetails() {
-    const xcData = useExchangeStore((s) => s.currentExchangeMiner);
-    const { name, logo_img_url } = xcData || { name: 'Tari Universe' };
+    const { data } = useFetchXCContent();
+    const { name, logo_img_url } = data || {};
     return (
         <Wrapper>
             <DetailsLeft>

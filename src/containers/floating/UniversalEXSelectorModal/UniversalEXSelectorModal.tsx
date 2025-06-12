@@ -18,11 +18,12 @@ import { formatCountdown } from '@app/utils';
 import { Typography } from '@app/components/elements/Typography';
 import { CloseButton, CloseWrapper } from '@app/components/exchanges/commonStyles.ts';
 import { IoClose } from 'react-icons/io5';
+import { useFetchXCContent } from '@app/hooks/exchanges/fetchExchangeContent.ts';
 
 export default function UniversalEXSelectorModal() {
     const { t } = useTranslation(['exchange', 'common'], { useSuspense: false });
     const showModal = useExchangeStore((s) => s.showUniversalModal);
-    const currentExchangeMiner = useExchangeStore((s) => s.currentExchangeMiner);
+    const { data: currentExchangeMiner } = useFetchXCContent();
 
     function handleClose() {
         setShowUniversalModal(false);
@@ -47,8 +48,8 @@ export default function UniversalEXSelectorModal() {
                         </MainLogoImageWrapper>
                         <MainLogoOverlay>
                             <MainLogoTitle>{t('main-logo-title', { ns: 'exchange' })}</MainLogoTitle>
-                            <MainLogoDescription>{currentExchangeMiner.campaign_description}</MainLogoDescription>
-                            {currentExchangeMiner.reward_expiry_date && (
+                            <MainLogoDescription>{currentExchangeMiner?.campaign_description}</MainLogoDescription>
+                            {currentExchangeMiner?.reward_expiry_date && (
                                 <MainLogoBottomRow>
                                     <Countdown>
                                         <CountdownText>
