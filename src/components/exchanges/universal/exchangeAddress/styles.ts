@@ -13,7 +13,6 @@ export const StyledInput = styled(Input)`
     border-radius: 20px;
     justify-content: space-between;
     padding: 10px 40px 10px 10px;
-    margin: 10px;
     width: 100%;
     position: relative;
 `;
@@ -36,7 +35,7 @@ export const ClearIcon = styled.button`
 export const IconWrapper = styled.div`
     position: absolute;
     display: flex;
-    right: 15px;
+    right: 5px;
 `;
 
 export const StyledForm = styled.form`

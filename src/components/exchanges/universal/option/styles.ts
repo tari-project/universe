@@ -1,4 +1,4 @@
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { convertHexToRGBA } from '@app/utils';
 
@@ -35,12 +35,12 @@ export const ContentBodyWrapper = styled.div<{ $isActive?: boolean }>`
     flex-direction: column;
     width: 100%;
     gap: 8px;
-    padding: ${({ $isActive }) => ($isActive ? `14px 0 4px 0` : 0)};
+    padding: ${({ $isActive }) => ($isActive ? `14px 0 4px ` : 0)};
     overflow: hidden;
-    max-height: ${({ $isActive: $isActive }) => ($isActive ? '1000px' : '0')};
+    height: ${({ $isActive: $isActive }) => ($isActive ? 'auto' : '0')};
     opacity: ${({ $isActive: $isActive }) => ($isActive ? '1' : '0')};
     transition:
-        max-height 0.2s linear,
+        height 0.2s linear,
         opacity 0.2s linear;
 `;
 
@@ -102,14 +102,18 @@ export const SeasonRewardText = styled(Typography).attrs({ variant: 'p' })`
 export const Countdown = styled.div`
     border-radius: 20px;
     gap: 10px;
-    padding: 5px 12px;
+    padding: 0 12px;
     display: flex;
+    align-items: center;
+    justify-content: center;
     flex-shrink: 0;
     background-color: ${({ theme }) => theme.palette.background.main};
+    height: 30px;
 `;
 
 export const CountdownText = styled(Typography).attrs({ variant: 'p' })`
     font-weight: 700;
+    line-height: 1;
 `;
 
 export const ConfirmButton = styled.button`

@@ -86,6 +86,7 @@ export const XCOption = ({ content, isCurrent = false }: XCOptionProps) => {
                     )}
                     {showExpand && (
                         <OpenButton
+                            $isOpen={isActive}
                             onClick={() => {
                                 setIsActive(!isActive);
                             }}
@@ -101,11 +102,15 @@ export const XCOption = ({ content, isCurrent = false }: XCOptionProps) => {
                 <ExchangeAddress handleIsAddressValid={setIsAddressValid} handleAddressChanged={setMiningAddress} />
                 <SeasonReward>
                     <LeftContent>
-                        <SeasonRewardIcon src="/assets/img/wrapped_gift.png" alt="gift" />
-                        <SeasonRewardText>
-                            <b>{t('season-one-reward', { ns: 'exchange' })}:</b>{' '}
-                            <span> {content.campaign_description} </span>
-                        </SeasonRewardText>
+                        {content.campaign_description ? (
+                            <>
+                                <SeasonRewardIcon src="/assets/img/wrapped_gift.png" alt="gift" />
+                                <SeasonRewardText>
+                                    <b>{t('season-one-reward', { ns: 'exchange' })}:</b>{' '}
+                                    <span>{content.campaign_description}</span>
+                                </SeasonRewardText>
+                            </>
+                        ) : null}
                     </LeftContent>
                     {content.reward_expiry_date ? (
                         <Countdown>
