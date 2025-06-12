@@ -187,7 +187,6 @@ impl SetupPhaseImpl for WalletSetupPhase {
             .ensure_started(
                 TasksTrackers::current().wallet_phase.get_signal().await,
                 wallet_config,
-                app_state.clone(),
             )
             .await?;
 
@@ -208,7 +207,6 @@ impl SetupPhaseImpl for WalletSetupPhase {
                 data_dir,
                 config_dir,
                 log_dir,
-                app_state.clone(),
             )
             .await?;
         drop(spend_wallet_manager);

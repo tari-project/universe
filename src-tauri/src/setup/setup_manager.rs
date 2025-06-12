@@ -26,6 +26,7 @@ use super::{
     utils::phase_builder::PhaseBuilder,
 };
 use crate::app_in_memory_config::MinerType;
+use crate::configs::config_core::ConfigCoreContent;
 use crate::{
     configs::{
         config_core::ConfigCore, config_mining::ConfigMining, config_ui::ConfigUI,
@@ -35,7 +36,6 @@ use crate::{
     events_emitter::EventsEmitter,
     events_manager::EventsManager,
     initialize_frontend_updates,
-    internal_wallet::InternalWallet,
     release_notes::ReleaseNotes,
     tasks_tracker::TasksTrackers,
     utils::system_status::SystemStatus,
@@ -309,29 +309,48 @@ impl SetupManager {
         ConfigUI::initialize(app_handle.clone()).await;
 
         info!("[DEBUG] Acquiring read lock for in_memory_config");
+        let build_in_exchange_id = in_memory_config.read().await.exchange_id.clone();
         let is_on_exchange_miner_build =
-            MinerType::from_str(&in_memory_config.read().await.exchange_id).is_exchange_mode();
+            MinerType::from_str(&build_in_exchange_id).is_exchange_mode();
         let node_type = ConfigCore::content().await.node_type().clone();
         info!(target: LOG_TARGET, "Retrieved initial node type: {:?}", node_type);
         state.node_manager.set_node_type(node_type).await;
         EventsManager::handle_node_type_update(&app_handle).await;
 
-        let config_path = app_handle
-            .path()
-            .app_config_dir()
-            .expect("Could not get config dir");
-        let internal_wallet = InternalWallet::load_or_create(config_path, state)
-            .await
-            .expect("Could not load or create internal wallet");
+        let last_config_exchange_id = ConfigCore::content().await.exchange_id().clone();
 
         let does_not_have_external_tari_address = ConfigWallet::content()
             .await
             .external_tari_address()
             .is_none();
 
+        // If we open different specific exchange miner build then previous one we always want to prompt user to provide tari address
+        if let Some(config_exchange_id) = &last_config_exchange_id {
+            if is_on_exchange_miner_build
+                && build_in_exchange_id.ne(config_exchange_id)
+                && !does_not_have_external_tari_address
+            {
+                info!(target: LOG_TARGET, "Exchange ID changed from {} to {}", config_exchange_id, build_in_exchange_id);
+                self.exchange_modal_status
+                    .send_replace(ExchangeModalStatus::WaitForCompletion);
+                EventsEmitter::emit_should_show_exchange_miner_modal().await;
+            }
+        }
+
+        // If we are on exchange miner build we require external tari address to be set
         if is_on_exchange_miner_build && does_not_have_external_tari_address {
             self.exchange_modal_status
                 .send_replace(ExchangeModalStatus::WaitForCompletion);
+            EventsEmitter::emit_should_show_exchange_miner_modal().await;
+        }
+
+        if is_on_exchange_miner_build {
+            let _unused = ConfigCore::update_field(
+                ConfigCoreContent::set_exchange_id,
+                Some(build_in_exchange_id.clone()),
+            )
+            .await;
+            EventsEmitter::emit_exchange_id_changed(build_in_exchange_id).await;
         }
 
         info!(target: LOG_TARGET, "[DEBUG] releasing read lock on in_memory_config at {}:{}", file!(), line!());
@@ -411,7 +430,6 @@ impl SetupManager {
 
     async fn setup_wallet_phase(&self, app_handle: AppHandle) {
         let setup_features = self.features.read().await.clone();
-        let state = app_handle.state::<UniverseAppState>();
         let wallet_phase_setup = PhaseBuilder::new()
             .with_setup_timeout_duration(Duration::from_secs(60 * 10)) // 10 minutes
             .with_listeners_for_required_phases_statuses(vec![self.node_phase_status.subscribe()])
@@ -773,6 +791,9 @@ impl SetupManager {
             EventsEmitter::emit_restarting_phases(phases.clone()).await;
         }
 
+        let _unused = self.resolve_setup_features().await;
+        let features = self.features.read().await.clone();
+
         for phase in phases {
             match phase {
                 SetupPhase::Core => {
@@ -785,6 +806,10 @@ impl SetupManager {
                     self.setup_node_phase(app_handle.clone()).await;
                 }
                 SetupPhase::Wallet => {
+                    if features.is_feature_enabled(SetupFeature::SeedlessWallet) {
+                        info!(target: LOG_TARGET, "Skipping Wallet Phase as Seedless Wallet is enabled");
+                        continue;
+                    }
                     self.setup_wallet_phase(app_handle.clone()).await;
                 }
                 SetupPhase::Mining => {
@@ -910,7 +935,9 @@ impl SetupManager {
                 }
             });
 
-        let _unused = task.await;
+        let _unused = task
+            .await
+            .inspect_err(|e| error!(target: LOG_TARGET, "Error in start_setup task: {}", e));
 
         let _unused = self.resolve_setup_features()
             .await

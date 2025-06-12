@@ -29,8 +29,8 @@ interface Props {
 
 export function Address({ useEmoji, setUseEmoji }: Props) {
     const { t } = useTranslation('wallet');
-    const walletAddress = useWalletStore((state) => state.tari_address_base58);
-    const emojiAddress = useWalletStore((state) => state.tari_address_emoji);
+    const walletAddress = useWalletStore((state) => state.base_tari_address_base58);
+    const emojiAddress = useWalletStore((state) => state.base_tari_address_emoji);
     const displayAddress = truncateMiddle(walletAddress, 6);
 
     const regexExp = emojiRegex();

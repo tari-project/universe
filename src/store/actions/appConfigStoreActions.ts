@@ -20,7 +20,7 @@ import {
     toggleDeviceExclusion,
 } from './miningStoreActions';
 import { setError } from './appStateStoreActions.ts';
-import { setUITheme } from './uiStoreActions';
+import { setIsAppExchangeSpecific, setUITheme } from './uiStoreActions';
 import { GpuThreads } from '@app/types/app-status.ts';
 import { displayMode, modeType } from '../types';
 import { ConfigCore, ConfigMining, ConfigUI, ConfigWallet } from '@app/types/configs.ts';
@@ -319,15 +319,16 @@ export const setNodeType = async (nodeType: NodeType) => {
 
 export const fetchBackendInMemoryConfig = async () => {
     try {
-        const isUniversalMiner = await invoke('is_universal_miner');
-        const res = await invoke('get_app_in_memory_config');
-        if (res) {
-            useConfigBEInMemoryStore.setState({ ...res, isUniversalMiner });
+        const appInMemoryConfig = await invoke('get_app_in_memory_config');
+        if (appInMemoryConfig) {
+            useConfigBEInMemoryStore.setState({ ...appInMemoryConfig });
+            const isAppExchangeSpecific = Boolean(
+                appInMemoryConfig.exchangeId && appInMemoryConfig.exchangeId !== 'universal'
+            );
+            setIsAppExchangeSpecific(isAppExchangeSpecific);
 
-            const isExchangeMode = res.exchangeId && !isUniversalMiner && res.exchangeId !== 'universal';
-
-            if (isExchangeMode) {
-                await fetchExchangeContent(res.exchangeId);
+            if (isAppExchangeSpecific) {
+                await fetchExchangeContent(appInMemoryConfig.exchangeId);
             } else {
                 await fetchExchangeMiners();
             }

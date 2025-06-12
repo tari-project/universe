@@ -38,7 +38,7 @@ use crate::{
     events::{
         DetectedAvailableGpuEnginesPayload, DetectedDevicesPayload, Event, EventType,
         NetworkStatusPayload, NewBlockHeightPayload, NodeTypeUpdatePayload, ProgressEvents,
-        ProgressTrackerUpdatePayload, ShowReleaseNotesPayload, WalletAddressUpdatePayload,
+        ProgressTrackerUpdatePayload, ShowReleaseNotesPayload, TariAddressUpdatePayload,
     },
     gpu_status_file::GpuDevice,
     hardware::hardware_status_monitor::PublicDeviceProperties,
@@ -310,28 +310,6 @@ impl EventsEmitter {
             .emit(BACKEND_STATE_UPDATE, event)
         {
             error!(target: LOG_TARGET, "Failed to emit MiningConfigLoaded event: {:?}", e);
-        }
-    }
-
-    pub async fn emit_wallet_address_update(
-        wallet_address: TariAddress,
-        is_tari_address_generated: bool,
-    ) {
-        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
-        let event = Event {
-            event_type: EventType::WalletAddressUpdate,
-            payload: WalletAddressUpdatePayload {
-                tari_address_base58: wallet_address.to_base58(),
-                tari_address_emoji: wallet_address.to_emoji_string(),
-                is_tari_address_generated,
-            },
-        };
-
-        if let Err(e) = Self::get_app_handle()
-            .await
-            .emit(BACKEND_STATE_UPDATE, event)
-        {
-            error!(target: LOG_TARGET, "Failed to emit WalletAddressUpdate event: {:?}", e);
         }
     }
 
@@ -740,6 +718,42 @@ impl EventsEmitter {
             error!(target: LOG_TARGET, "Failed to emit ExchangeIdChanged event: {:?}", e);
         }
     }
+    pub async fn emit_external_tari_address_changed(payload: Option<TariAddress>) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+
+        let resolved_payload: Option<TariAddressUpdatePayload> =
+            payload.as_ref().map(|address| TariAddressUpdatePayload {
+                tari_address_base58: address.to_base58(),
+                tari_address_emoji: address.to_emoji_string(),
+            });
+
+        let event = Event {
+            event_type: EventType::ExternalTariAddressChanged,
+            payload: resolved_payload,
+        };
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
+            error!(target: LOG_TARGET, "Failed to emit ExternalTariAddressChanged event: {:?}", e);
+        }
+    }
+    pub async fn emit_base_tari_address_changed(payload: TariAddress) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::BaseTariAddressChanged,
+            payload: TariAddressUpdatePayload {
+                tari_address_base58: payload.to_base58(),
+                tari_address_emoji: payload.to_emoji_string(),
+            },
+        };
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
+            error!(target: LOG_TARGET, "Failed to emit BaseTariAddressChanged event: {:?}", e);
+        }
+    }
 
     pub async fn emit_disabled_phases(disabled_phases: Vec<SetupPhase>) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
@@ -752,6 +766,19 @@ impl EventsEmitter {
             .emit(BACKEND_STATE_UPDATE, event)
         {
             error!(target: LOG_TARGET, "Failed to emit DisabledPhasesChanged event: {:?}", e);
+        }
+    }
+    pub async fn emit_should_show_exchange_miner_modal() {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::ShouldShowExchangeMinerModal,
+            payload: (),
+        };
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
+            error!(target: LOG_TARGET, "Failed to emit ShouldShowExchangeMinerModal event: {:?}", e);
         }
     }
 }

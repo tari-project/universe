@@ -13,7 +13,7 @@ function ActionAddress() {
 
     const [showAdress, setShowAddress] = useState(false);
     const { copyToClipboard, isCopied } = useCopyToClipboard();
-    const address = useWalletStore((state) => state.tari_address_base58);
+    const address = useWalletStore((state) => state.base_tari_address_base58);
     const displayAddress = truncateMiddle(address, 5);
 
     const { refs, context, floatingStyles } = useFloating({

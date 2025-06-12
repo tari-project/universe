@@ -87,7 +87,6 @@ impl SpendWalletAdapter {
         config_dir: PathBuf,
         log_dir: PathBuf,
         wallet_binary: PathBuf,
-        app_state: tauri::State<'_, UniverseAppState>,
     ) -> Result<(), Error> {
         info!(target: LOG_TARGET, "Initializing spend wallet adapter");
 
@@ -105,9 +104,7 @@ impl SpendWalletAdapter {
             include_str!("../log4rs/spend_wallet_sample.yml"),
         )?;
 
-        let wallet_birthday = self
-            .get_wallet_birthday(config_dir.clone(), app_state)
-            .await;
+        let wallet_birthday = self.get_wallet_birthday(config_dir.clone()).await;
         self.wallet_birthday = wallet_birthday.ok();
 
         Ok(())
@@ -120,9 +117,7 @@ impl SpendWalletAdapter {
         payment_id: Option<String>,
         state: tauri::State<'_, UniverseAppState>,
     ) -> Result<(), Error> {
-        let seed_words = self
-            .get_seed_words(self.get_config_dir(), state.clone())
-            .await?;
+        let seed_words = self.get_seed_words(self.get_config_dir()).await?;
         let t_amount = Minotari::from_str(_amount.as_str())?;
         let converted_amount = MicroMinotari::from(t_amount);
         let amount = converted_amount.to_string();
@@ -430,22 +425,14 @@ impl SpendWalletAdapter {
             .expect("Base node address not set")
     }
 
-    async fn get_seed_words(
-        &self,
-        config_path: PathBuf,
-        state: tauri::State<'_, UniverseAppState>,
-    ) -> Result<String, Error> {
-        let internal_wallet = InternalWallet::load_or_create(config_path, state).await?;
+    async fn get_seed_words(&self, config_path: PathBuf) -> Result<String, Error> {
+        let internal_wallet = InternalWallet::load_or_create(config_path).await?;
         let seed_words = internal_wallet.decrypt_seed_words().await?;
         Ok(seed_words.join(" ").reveal().to_string())
     }
 
-    pub async fn get_wallet_birthday(
-        &self,
-        config_path: PathBuf,
-        state: tauri::State<'_, UniverseAppState>,
-    ) -> Result<u16, anyhow::Error> {
-        let internal_wallet = InternalWallet::load_or_create(config_path, state).await?;
+    pub async fn get_wallet_birthday(&self, config_path: PathBuf) -> Result<u16, anyhow::Error> {
+        let internal_wallet = InternalWallet::load_or_create(config_path).await?;
         internal_wallet.get_birthday().await
     }
 

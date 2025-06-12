@@ -56,7 +56,7 @@ pub struct ConfigWalletContent {
     #[getset(get = "pub", set = "pub")]
     keyring_accessed: bool,
     #[getset(get = "pub", set = "pub")]
-    external_tari_address: Option<String>,
+    external_tari_address: Option<TariAddress>,
     #[getset(get = "pub", set = "pub")]
     tari_address: Option<TariAddress>,
 }
@@ -90,6 +90,16 @@ impl ConfigWalletContent {
         self.monero_address_is_generated = true;
 
         self
+    }
+
+    pub fn get_current_used_tari_address(&self) -> TariAddress {
+        if let Some(address) = &self.tari_address {
+            address.clone()
+        } else {
+            self.external_tari_address
+                .clone()
+                .expect("No Tari address set in ConfigWalletContent")
+        }
     }
 }
 
@@ -126,7 +136,7 @@ impl ConfigWallet {
             cpu_config.load_from_config_wallet(&ConfigWallet::content().await);
         }
 
-        match InternalWallet::load_or_create(old_config_path.clone(), state.clone()).await {
+        match InternalWallet::load_or_create(old_config_path.clone()).await {
             Ok(wallet) => {
                 state
                     .wallet_manager

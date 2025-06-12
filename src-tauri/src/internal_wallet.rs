@@ -52,7 +52,6 @@ use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent};
 use crate::configs::trait_config::ConfigImpl;
 use crate::credential_manager::{Credential, CredentialError, CredentialManager};
 use crate::wallet_adapter::WalletBalance;
-use crate::UniverseAppState;
 
 const KEY_MANAGER_COMMS_SECRET_KEY_BRANCH_KEY: &str = "comms";
 const LOG_TARGET: &str = "tari::universe::internal_wallet";
@@ -104,7 +103,8 @@ impl InternalWallet {
         ConfigWallet::update_field(
             ConfigWalletContent::set_tari_address,
             Some(wallet.get_tari_address()),
-        );
+        )
+        .await?;
 
         let config = serde_json::to_string(&config)?;
         fs::write(file, config).await?;
@@ -135,24 +135,6 @@ impl InternalWallet {
 
     pub fn get_tari_address(&self) -> TariAddress {
         self.tari_address.clone()
-    }
-
-    pub async fn set_tari_address(
-        &mut self,
-        address: String,
-        config_path: PathBuf,
-    ) -> Result<TariAddress, String> {
-        let network = Network::get_current_or_user_setting_or_default()
-            .to_string()
-            .to_lowercase();
-        let tari_address = TariAddress::from_str(&address).map_err(|e| e.to_string())?;
-        let file = config_path.join(network).join("wallet_config.json");
-        self.tari_address = tari_address.clone();
-        self.config.tari_address_base58 = tari_address.to_base58();
-
-        let config = serde_json::to_string(&self.config).map_err(|e| e.to_string())?;
-        fs::write(file, config).await.map_err(|e| e.to_string())?;
-        Ok(tari_address)
     }
 
     pub async fn get_paper_wallet_details(
@@ -377,8 +359,4 @@ pub struct WalletConfig {
 pub struct PaperWalletConfig {
     qr_link: String,
     password: String,
-}
-
-fn default_true() -> bool {
-    true
 }

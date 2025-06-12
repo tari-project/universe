@@ -59,7 +59,7 @@ use sysinfo::{Disks, System};
 use tari_common::configuration::Network;
 use tari_shutdown::ShutdownSignal;
 use tari_utilities::encoding::MBase58;
-use tauri::{Emitter, Manager};
+use tauri::Emitter;
 use tokio::sync::{watch, RwLock};
 use tokio::time::interval;
 

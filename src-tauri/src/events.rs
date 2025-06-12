@@ -27,7 +27,6 @@ use std::{
 };
 
 use crate::{
-    app_in_memory_config::AppInMemoryConfig,
     gpu_status_file::GpuDevice,
     node::{node_adapter::NodeIdentity, node_manager::NodeType},
     setup::setup_manager::SetupPhase,
@@ -36,7 +35,6 @@ use crate::{
 
 #[derive(Clone, Debug, Serialize)]
 pub enum EventType {
-    WalletAddressUpdate,
     WalletBalanceUpdate,
     BaseNodeUpdate,
     GpuDevicesUpdate,
@@ -81,6 +79,9 @@ pub enum EventType {
     MiningTime,
     ExchangeIdChanged,
     DisabledPhases,
+    ExternalTariAddressChanged,
+    ShouldShowExchangeMinerModal,
+    BaseTariAddressChanged,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -138,13 +139,6 @@ pub struct Event<T, E> {
 }
 
 #[derive(Clone, Debug, Serialize)]
-pub struct WalletAddressUpdatePayload {
-    pub tari_address_base58: String,
-    pub tari_address_emoji: String,
-    pub is_tari_address_generated: bool,
-}
-
-#[derive(Clone, Debug, Serialize)]
 pub struct NewBlockHeightPayload {
     pub block_height: u64,
     pub coinbase_transaction: Option<TransactionInfo>,
@@ -190,4 +184,10 @@ pub enum ConnectionStatusPayload {
 #[derive(Debug, Serialize, Clone)]
 pub struct DisabledPhasesPayload {
     pub disabled_phases: Vec<SetupPhase>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct TariAddressUpdatePayload {
+    pub tari_address_base58: String,
+    pub tari_address_emoji: String,
 }

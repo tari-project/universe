@@ -625,7 +625,7 @@ fn main() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            commands::close_splashscreen,
+            commands::close_splashscreen, // TODO: Unused
             commands::download_and_start_installer,
             commands::exit_application,
             commands::fetch_tor_bridges,
@@ -641,7 +641,7 @@ fn main() {
             commands::get_tor_config,
             commands::get_tor_entry_guards,
             commands::get_transactions_history,
-            commands::get_coinbase_transactions,
+            commands::get_coinbase_transactions, // TODO: Unused
             commands::import_seed_words,
             commands::log_web_message,
             commands::open_log_dir,
@@ -649,7 +649,7 @@ fn main() {
             commands::restart_application,
             commands::send_feedback,
             commands::set_allow_telemetry,
-            commands::send_data_telemetry_service,
+            commands::send_data_telemetry_service, // TODO: Unused
             commands::set_application_language,
             commands::set_auto_update,
             commands::set_cpu_mining_enabled,
@@ -659,11 +659,9 @@ fn main() {
             commands::set_mode,
             commands::set_monero_address,
             commands::set_monerod_config,
-            commands::set_tari_address,
+            commands::set_external_tari_address,
             commands::confirm_exchange_address,
             commands::select_exchange_miner,
-            commands::switch_exchange_miner,
-            commands::is_universal_miner,
             commands::set_p2pool_enabled,
             commands::set_show_experimental_settings,
             commands::set_should_always_use_system_language,
@@ -684,7 +682,7 @@ fn main() {
             commands::try_update,
             commands::toggle_device_exclusion,
             commands::get_network,
-            commands::sign_ws_data,
+            commands::sign_ws_data, // TODO: Unused
             commands::set_airdrop_tokens,
             commands::get_airdrop_tokens,
             commands::set_selected_engine,
@@ -702,12 +700,10 @@ fn main() {
             commands::set_warmup_seen,
             commands::set_allow_notifications,
             commands::launch_builtin_tapplet,
-            commands::get_tari_wallet_address,
             commands::get_tari_wallet_balance,
             commands::get_bridge_envs,
             commands::parse_tari_address,
             commands::refresh_wallet_history,
-            commands::get_universal_miner_exchange_id,
         ])
         .build(tauri::generate_context!())
         .inspect_err(|e| {

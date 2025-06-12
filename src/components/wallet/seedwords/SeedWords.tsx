@@ -34,7 +34,6 @@ export default function SeedWords({ isMonero = false, isGenerated }: SeedWordsPr
     const [newSeedWords, setNewSeedWords] = useState<string[]>();
     const [showConfirm, setShowConfirm] = useState(false);
     const [copyFetchLoading, setCopyFetchLoading] = useState(false);
-    const isUniversalMiner = useConfigBEInMemoryStore((s) => s.isUniversalMiner);
 
     const { t } = useTranslation('settings', { useSuspense: false });
     const { copyToClipboard, isCopied } = useCopyToClipboard();
@@ -49,16 +48,8 @@ export default function SeedWords({ isMonero = false, isGenerated }: SeedWordsPr
     const handleConfirmed = useCallback(async () => {
         if (!isValid || !newSeedWords) return;
 
-        if (isUniversalMiner) {
-            const universalExchangeMinerOption: ExchangeMiner = {
-                id: 'universal',
-                name: 'Tari Universe',
-                slug: 'universal',
-            };
-            await invoke('switch_exchange_miner', { exchangeMiner: universalExchangeMinerOption });
-        }
         await importSeedWords(newSeedWords).finally(() => setShowConfirm(false));
-    }, [isValid, newSeedWords, isUniversalMiner]);
+    }, [isValid, newSeedWords]);
 
     const handleApply = (data: { seedWords: string }) => {
         setNewSeedWords(data.seedWords.split(' '));

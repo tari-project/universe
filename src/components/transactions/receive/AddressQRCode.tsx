@@ -9,7 +9,7 @@ interface Props {
 }
 
 export function AddressQRCode({ useEmoji, setUseEmoji }: Props) {
-    const walletAddress = useWalletStore((state) => state.tari_address_base58);
+    const walletAddress = useWalletStore((state) => state.base_tari_address_base58);
     const network = useMiningStore((state) => state.network);
 
     return (

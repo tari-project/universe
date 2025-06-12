@@ -181,9 +181,6 @@ impl MinerType {
             _ => MinerType::ExchangeMode,
         }
     }
-    pub fn is_universal(&self) -> bool {
-        matches!(self, MinerType::Universal)
-    }
     pub fn is_exchange_mode(&self) -> bool {
         matches!(self, MinerType::ExchangeMode)
     }

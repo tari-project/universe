@@ -11,9 +11,10 @@ export interface BackendBridgeTransaction extends UserTransactionDTO {
 }
 
 interface WalletStoreState {
-    tari_address_base58: string;
-    tari_address_emoji: string;
-    is_tari_address_generated: boolean | null;
+    base_tari_address_base58: string;
+    base_tari_address_emoji: string;
+    external_tari_address_base58?: string;
+    external_tari_address_emoji?: string;
     balance?: WalletBalance;
     calculated_balance?: number;
     coinbase_transactions: TransactionInfo[];
@@ -38,9 +39,10 @@ interface WalletStoreState {
 }
 
 const initialState: WalletStoreState = {
-    tari_address_base58: '',
-    tari_address_emoji: '',
-    is_tari_address_generated: null,
+    base_tari_address_base58: '',
+    base_tari_address_emoji: '',
+    external_tari_address_base58: undefined,
+    external_tari_address_emoji: undefined,
     coinbase_transactions: [],
     transactions: [],
     bridge_transactions: [],

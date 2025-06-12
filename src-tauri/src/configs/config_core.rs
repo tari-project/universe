@@ -25,13 +25,11 @@ use semver::Version;
 use serde::{Deserialize, Serialize};
 use std::{sync::LazyLock, time::SystemTime};
 use tari_common::configuration::Network;
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
 use tokio::sync::RwLock;
 
-use crate::app_in_memory_config::MinerType;
 use crate::events_emitter::EventsEmitter;
 use crate::node::node_manager::NodeType;
-use crate::UniverseAppState;
 use crate::{ab_test_selector::ABTestSelector, internal_wallet::generate_password};
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
@@ -136,17 +134,6 @@ pub struct ConfigCore {
 
 impl ConfigCore {
     pub async fn initialize(app_handle: AppHandle) {
-        let state = app_handle.state::<UniverseAppState>();
-        let exchange_id = state.in_memory_config.read().await.exchange_id.clone();
-        let miner_type = MinerType::from_str(&state.in_memory_config.read().await.exchange_id);
-
-        let mut config = Self::current().write().await;
-        if miner_type.is_exchange_mode() {
-            config.content.exchange_id = Some(exchange_id);
-            let _unsed = ConfigCore::_save_config(config.content.clone());
-            EventsEmitter::emit_exchange_id_changed(exchange_id).await;
-        }
-
         let mut config = Self::current().write().await;
         config.load_app_handle(app_handle.clone()).await;
 
