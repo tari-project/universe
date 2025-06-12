@@ -38,6 +38,7 @@ use crate::{
     UniverseAppState,
 };
 use anyhow::Error;
+use log::{info, warn};
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::ShutdownSignal;
 use tauri::{AppHandle, Manager};
@@ -53,7 +54,7 @@ use super::{
     utils::{setup_default_adapter::SetupDefaultAdapter, timeout_watcher::TimeoutWatcher},
 };
 
-// static LOG_TARGET: &str = "tari::universe::phase_hardware";
+static LOG_TARGET: &str = "tari::universe::phase_wallet";
 
 #[derive(Clone, Default)]
 pub struct WalletSetupPhaseOutput {}
@@ -105,10 +106,13 @@ impl SetupPhaseImpl for WalletSetupPhase {
     }
 
     async fn get_shutdown_signal(&self) -> ShutdownSignal {
-        TasksTrackers::current().core_phase.get_signal().await
+        TasksTrackers::current().wallet_phase.get_signal().await
     }
     async fn get_task_tracker(&self) -> TaskTracker {
-        TasksTrackers::current().core_phase.get_task_tracker().await
+        TasksTrackers::current()
+            .wallet_phase
+            .get_task_tracker()
+            .await
     }
     fn get_phase_dependencies(&self) -> Vec<Receiver<PhaseStatus>> {
         self.setup_configuration
@@ -160,18 +164,26 @@ impl SetupPhaseImpl for WalletSetupPhase {
 
         let binary_resolver = BinaryResolver::current().read().await;
 
+        info!(target: LOG_TARGET, "I' here");
+
         let wallet_binary_progress_tracker = progress_stepper.channel_step_range_updates(
             ProgressPlans::Wallet(ProgressSetupWalletPlan::BinariesWallet),
             Some(ProgressPlans::Wallet(ProgressSetupWalletPlan::StartWallet)),
         );
 
+        info!(target: LOG_TARGET, "Initializing wallet binaries");
+
         binary_resolver
             .initialize_binary(Binaries::Wallet, wallet_binary_progress_tracker)
             .await?;
 
+        info!(target: LOG_TARGET, "Wallet binaries initialized");
+
         progress_stepper
             .resolve_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::StartWallet))
             .await;
+
+        info!(target: LOG_TARGET, "Starting wallet manager");
 
         let app_state = self.get_app_handle().state::<UniverseAppState>().clone();
         let is_local_node = app_state.node_manager.is_local_current().await?;
@@ -182,6 +194,8 @@ impl SetupPhaseImpl for WalletSetupPhase {
             use_tor: self.app_configuration.use_tor,
             connect_with_local_node: is_local_node,
         };
+
+        info!(target: LOG_TARGET, "Ensuring wallet manager is started");
         state
             .wallet_manager
             .ensure_started(
@@ -190,11 +204,14 @@ impl SetupPhaseImpl for WalletSetupPhase {
             )
             .await?;
 
+        info!(target: LOG_TARGET, "Wallet manager started");
+
         progress_stepper
             .resolve_step(ProgressPlans::Wallet(
                 ProgressSetupWalletPlan::InitializeSpendingWallet,
             ))
             .await;
+        info!(target: LOG_TARGET, "Initializing spending wallet manager");
 
         let mut spend_wallet_manager = state.spend_wallet_manager.write().await;
         spend_wallet_manager
@@ -211,10 +228,16 @@ impl SetupPhaseImpl for WalletSetupPhase {
             .await?;
         drop(spend_wallet_manager);
 
+        info!(target: LOG_TARGET, "Spending wallet manager initialized");
+
         let bridge_binary_progress_tracker = progress_stepper.channel_step_range_updates(
             ProgressPlans::Wallet(ProgressSetupWalletPlan::SetupBridge),
             Some(ProgressPlans::Wallet(ProgressSetupWalletPlan::Done)),
         );
+
+        progress_stepper
+            .resolve_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::SetupBridge))
+            .await;
 
         binary_resolver
             .initialize_binary(Binaries::BridgeTapplet, bridge_binary_progress_tracker)
