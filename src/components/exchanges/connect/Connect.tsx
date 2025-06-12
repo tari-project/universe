@@ -27,7 +27,7 @@ interface ConnectFormFields {
 }
 
 export const Connect = () => {
-    const data = useExchangeStore((s) => s.content);
+    const data = useExchangeStore((s) => s.currentExchangeMiner);
     const [address, setAddress] = useState('');
     const [isFocused, setIsFocused] = useState(false);
     const [addressIsValid, setAddressIsValid] = useState(false);

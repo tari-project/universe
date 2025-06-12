@@ -5,7 +5,7 @@ import WalletCardActions from './actions/WalletCardActions.tsx';
 import { useExchangeStore } from '@app/store/useExchangeStore.ts';
 
 export default function WalletDetails() {
-    const xcData = useExchangeStore((s) => s.content);
+    const xcData = useExchangeStore((s) => s.currentExchangeMiner);
     const { name, logo_img_url } = xcData || { name: 'Tari Universe' };
     return (
         <Wrapper>

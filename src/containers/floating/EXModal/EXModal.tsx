@@ -7,7 +7,7 @@ import { Wrapper } from './styles.ts';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 
 export default function EXModal() {
-    const data = useExchangeStore((s) => s.content);
+    const data = useExchangeStore((s) => s.currentExchangeMiner);
     const showModal = useExchangeStore((s) => s.showExchangeAddressModal);
 
     return (
