@@ -193,9 +193,7 @@ export const ProcessingTransaction = ({
                     <HelperText>
                         <div className="strong">{'How to view wXTM in your wallet?'}</div>
                         <div>
-                            {
-                                'To see your balance, add wXTM to your wallet by and adding it on your mobile app or importing the '
-                            }
+                            {'To see your balance, add wXTM to your wallet by importing the '}
                             <span className="strong">{'token address'}</span>
                             {' on the '}
                             <span className="strong">{'Ethereum mainnet'}</span>
