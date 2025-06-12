@@ -25,12 +25,7 @@ import { GpuThreads } from '@app/types/app-status.ts';
 import { displayMode, modeType } from '../types';
 import { ConfigCore, ConfigMining, ConfigUI, ConfigWallet } from '@app/types/configs.ts';
 import { NodeType, updateNodeType as updateNodeTypeForNodeStore } from '../useNodeStore.ts';
-import {
-    fetchExchangeMiners,
-    setCurrentExchangeMinerId,
-    universalExchangeMinerOption,
-    useExchangeStore,
-} from '../useExchangeStore.ts';
+import { fetchExchangeMiners, setCurrentExchangeMinerId, useExchangeStore } from '../useExchangeStore.ts';
 import { fetchExchangeContent, refreshXCContent } from '@app/hooks/exchanges/fetchExchangeContent.ts';
 
 interface SetModeProps {
@@ -350,7 +345,6 @@ export const fetchBackendInMemoryConfig = async () => {
 };
 
 export const handleExchangeIdChanged = async (payload: string) => {
-    console.debug(`setCurrentExchangeMinerId in handleExchangeIdChanged`, payload);
     setCurrentExchangeMinerId(payload);
     await refreshXCContent(payload);
 };

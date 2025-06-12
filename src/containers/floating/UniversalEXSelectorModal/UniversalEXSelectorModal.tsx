@@ -18,12 +18,12 @@ import { formatCountdown } from '@app/utils';
 import { Typography } from '@app/components/elements/Typography';
 import { CloseButton, CloseWrapper } from '@app/components/exchanges/commonStyles.ts';
 import { IoClose } from 'react-icons/io5';
-import { useFetchXCContent } from '@app/hooks/exchanges/fetchExchangeContent.ts';
+import { useFetchExchangeBranding } from '@app/hooks/exchanges/fetchExchangeContent.ts';
 
 export default function UniversalEXSelectorModal() {
     const { t } = useTranslation(['exchange', 'common'], { useSuspense: false });
     const showModal = useExchangeStore((s) => s.showUniversalModal);
-    const { data: currentExchangeMiner } = useFetchXCContent();
+    const { data: currentExchangeMiner } = useFetchExchangeBranding();
 
     function handleClose() {
         setShowUniversalModal(false);

@@ -118,10 +118,6 @@ export const handleExternalWalletAddressUpdate = (payload?: WalletAddress) => {
         });
         if (isSeedlessUI) {
             setSeedlessUI(false);
-            console.debug(
-                `setCurrentExchangeMinerId in handleExternalWalletAddressUpdate`,
-                universalExchangeMinerOption.exchange_id
-            );
             setCurrentExchangeMinerId(universalExchangeMinerOption.exchange_id);
         }
     }

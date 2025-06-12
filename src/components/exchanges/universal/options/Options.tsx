@@ -2,11 +2,11 @@ import { universalExchangeMinerOption, useExchangeStore } from '@app/store/useEx
 import { XCOption } from '@app/components/exchanges/universal/option/XCOption.tsx';
 import { ListWrapper } from '@app/components/exchanges/universal/options/styles.ts';
 import { Divider } from '@app/components/elements/Divider.tsx';
-import { useFetchXCContent } from '@app/hooks/exchanges/fetchExchangeContent.ts';
+import { useFetchExchangeBranding } from '@app/hooks/exchanges/fetchExchangeContent.ts';
 
 export const XCOptions = () => {
     const exchangeMiners = useExchangeStore((s) => s.exchangeMiners);
-    const { data: currentExchangeMiner } = useFetchXCContent();
+    const { data: currentExchangeMiner } = useFetchExchangeBranding();
 
     const listItems = exchangeMiners
         ?.filter((em) => em.id !== currentExchangeMiner?.id)

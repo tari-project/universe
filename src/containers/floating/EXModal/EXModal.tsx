@@ -5,10 +5,10 @@ import Content from './components/Content.tsx';
 
 import { Wrapper } from './styles.ts';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
-import { useFetchXCContent } from '@app/hooks/exchanges/fetchExchangeContent.ts';
+import { useFetchExchangeBranding } from '@app/hooks/exchanges/fetchExchangeContent.ts';
 
 export default function EXModal() {
-    const { data } = useFetchXCContent();
+    const { data } = useFetchExchangeBranding();
     const showModal = useExchangeStore((s) => s.showExchangeAddressModal);
 
     return (

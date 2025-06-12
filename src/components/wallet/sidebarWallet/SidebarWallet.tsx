@@ -26,14 +26,14 @@ import { setDetailsItem, setIsSwapping } from '@app/store/actions/walletStoreAct
 
 import ExchangesUrls from '@app/components/transactions/wallet/Exchanges/ExchangesUrls.tsx';
 import ExchangeButton from '@app/components/transactions/wallet/Exchanges/exchange-button/ExchangeButton.tsx';
-import { useFetchXCContent } from '@app/hooks/exchanges/fetchExchangeContent.ts';
+import { useFetchExchangeBranding } from '@app/hooks/exchanges/fetchExchangeContent.ts';
 
 interface SidebarWalletProps {
     section: string;
     setSection: (section: string) => void;
 }
 export default function SidebarWallet({ section, setSection }: SidebarWalletProps) {
-    const { data: xcData } = useFetchXCContent();
+    const { data: xcData } = useFetchExchangeBranding();
     const detailsItem = useWalletStore((s) => s.detailsItem);
     const targetRef = useRef<HTMLDivElement>(null);
     const { scrollY } = useScroll({ container: targetRef });

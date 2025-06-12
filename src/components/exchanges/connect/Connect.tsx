@@ -21,14 +21,14 @@ import { setSeedlessUI } from '@app/store/actions/uiStoreActions.ts';
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
 import { setAllowTelemetry, useConfigCoreStore } from '@app/store';
 import { Typography } from '@app/components/elements/Typography.tsx';
-import { useFetchXCContent } from '@app/hooks/exchanges/fetchExchangeContent.ts';
+import { useFetchExchangeBranding } from '@app/hooks/exchanges/fetchExchangeContent.ts';
 
 interface ConnectFormFields {
     address: string;
 }
 
 export const Connect = () => {
-    const { data } = useFetchXCContent();
+    const { data } = useFetchExchangeBranding();
     const [address, setAddress] = useState('');
     const [isFocused, setIsFocused] = useState(false);
     const [addressIsValid, setAddressIsValid] = useState(false);
