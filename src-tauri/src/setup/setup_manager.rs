@@ -403,7 +403,8 @@ impl SetupManager {
     async fn setup_hardware_phase(&self, app_handle: AppHandle) {
         let setup_features = self.features.read().await.clone();
         let hardware_phase_setup = PhaseBuilder::new()
-            .with_setup_timeout_duration(Duration::from_secs(60 * 10)) // 10 minutes
+            // NODE: Temporary solution to process payrefs in TU v1.2.9
+            .with_setup_timeout_duration(Duration::from_secs(60 * 15)) // 15 minutes
             .with_listeners_for_required_phases_statuses(vec![self.core_phase_status.subscribe()])
             .build::<HardwareSetupPhase>(
                 app_handle.clone(),

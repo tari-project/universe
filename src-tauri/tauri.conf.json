@@ -65,7 +65,7 @@
                 ],
                 "script-src": "'self' 'unsafe-eval'",
                 "worker-src": "'self' blob: https://cdn.npmjs.com/@tari-project/tari-tower",
-                "img-src": "'self' data: blob: base64: https://*.twimg.com https://cdn.npmjs.com/@tari-project/tari-tower http://127.0.0.1 http://127.0.0.1/ http://127.0.0.1:* http://localhost http://localhost/ http://localhost:*",
+                "img-src": "'self' data: blob: base64: https://*.twimg.com https://cdn.npmjs.com/@tari-project/tari-tower http://127.0.0.1 http://127.0.0.1/ http://127.0.0.1:* http://localhost http://localhost/ http://localhost:* https://static.tari.com https://static.tari.com/*",
                 "object-src": "'self' data: blob:",
                 "media-src": "'self' data: blob: tauri: https:",
                 "script-src-elem": "'self' 'unsafe-inline' 'unsafe-eval'"
