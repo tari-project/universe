@@ -83,6 +83,7 @@ export interface TransactionInfo {
     message: string;
     payment_id: string;
     mined_in_block_height?: number;
+    payment_reference?: string;
 }
 
 export interface P2poolStatsResult {

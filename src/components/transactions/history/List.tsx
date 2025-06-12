@@ -89,6 +89,7 @@ export function List() {
         // Specify order here
         setDetailsItem({
             tx_id: tx.tx_id,
+            payment_reference: tx.payment_reference,
             amount: tx.amount,
             payment_id: tx.payment_id,
             status: tx.status,
@@ -129,7 +130,7 @@ export function List() {
                             item={tx}
                             index={i}
                             itemIsNew={i === 0}
-                            setDetailsItem={() => setDetailsItem(tx)}
+                            setDetailsItem={setDetailsItem}
                         />
                     );
                 }

@@ -28,6 +28,7 @@ use crate::{
     },
     events_emitter::EventsEmitter,
     p2pool_manager::P2poolConfig,
+    progress_tracker_old::ProgressTracker,
     progress_trackers::{
         progress_plans::{ProgressPlans, ProgressSetupMiningPlan},
         progress_stepper::ProgressStepperBuilder,
@@ -43,7 +44,7 @@ use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::ShutdownSignal;
 use tauri::{AppHandle, Manager};
 use tokio::sync::{
-    watch::{Receiver, Sender},
+    watch::{self, Receiver, Sender},
     Mutex,
 };
 use tokio_util::task::TaskTracker;
@@ -185,26 +186,30 @@ impl SetupPhaseImpl for MiningSetupPhase {
             .get_unique_string()
             .await;
 
+        // TODO Remove once not needed
+        let (tx, rx) = watch::channel("".to_string());
+        let progress = ProgressTracker::new(self.app_handle.clone(), Some(tx));
+
         let binary_resolver = BinaryResolver::current().read().await;
 
-        let mmproxy_binary_progress_tracker = progress_stepper.channel_step_range_updates(
-            ProgressPlans::Mining(ProgressSetupMiningPlan::BinariesMergeMiningProxy),
-            Some(ProgressPlans::Mining(
-                ProgressSetupMiningPlan::BinariesP2pool,
-            )),
-        );
+        progress_stepper
+            .resolve_step(ProgressPlans::Mining(
+                ProgressSetupMiningPlan::BinariesMergeMiningProxy,
+            ))
+            .await;
 
         binary_resolver
-            .initialize_binary(Binaries::MergeMiningProxy, mmproxy_binary_progress_tracker)
+            .initialize_binary_timeout(Binaries::MergeMiningProxy, progress.clone(), rx.clone())
             .await?;
 
-        let p2pool_binary_progress_tracker = progress_stepper.channel_step_range_updates(
-            ProgressPlans::Mining(ProgressSetupMiningPlan::BinariesP2pool),
-            Some(ProgressPlans::Mining(ProgressSetupMiningPlan::P2Pool)),
-        );
+        progress_stepper
+            .resolve_step(ProgressPlans::Mining(
+                ProgressSetupMiningPlan::BinariesP2pool,
+            ))
+            .await;
 
         binary_resolver
-            .initialize_binary(Binaries::ShaP2pool, p2pool_binary_progress_tracker)
+            .initialize_binary_timeout(Binaries::ShaP2pool, progress.clone(), rx.clone())
             .await?;
 
         let base_node_grpc_address = state.node_manager.get_grpc_address().await?;

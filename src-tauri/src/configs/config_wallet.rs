@@ -59,6 +59,8 @@ pub struct ConfigWalletContent {
     external_tari_address: Option<TariAddress>,
     #[getset(get = "pub", set = "pub")]
     tari_address: Option<TariAddress>,
+    #[getset(get = "pub", set = "pub")]
+    wallet_migration_nonce: u64,
 }
 
 impl Default for ConfigWalletContent {
@@ -71,6 +73,7 @@ impl Default for ConfigWalletContent {
             keyring_accessed: false,
             external_tari_address: None,
             tari_address: None,
+            wallet_migration_nonce: 0,
         }
     }
 }

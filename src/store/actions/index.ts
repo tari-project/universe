@@ -40,6 +40,7 @@ export {
     setIsSettingsOpen,
     setIssueReference,
     setReleaseNotes,
+    updateApplicationsVersions,
 } from './appStateStoreActions.ts';
 
 export {

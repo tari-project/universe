@@ -19,6 +19,7 @@
   "max-temperature": "Maks. Sıcaklık",
   "minimize": "Küçült",
   "mode": "Mod",
+  "not-available": "Not available",
   "not-installed-in-applications-directory": "Hata! Tari Universe, Uygulamalar dizininde bulunmalıdır. Oraya kurmayı düşünür müsünüz?",
   "pending": "Pending",
   "please-try-again-later": "Lütfen daha sonra tekrar deneyin. Sorun devam ederse, lütfen bizimle iletişime geçin.",
@@ -43,6 +44,7 @@
   "utilization": "Fayda",
   "version": "Versiyon",
   "versions": "Versiyon",
+  "waiting-for-confirmations": "Waiting for {{ total }} block confirmations ({{ confirmations }} of {{ total }} confirmed)",
   "webgl-not-supported": "WebGL desteklenmiyor. Görsel mod devre dışı bırakıldı.",
   "xtm": "XTM"
 }

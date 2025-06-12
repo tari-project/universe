@@ -21,8 +21,7 @@ export const Logo = styled.div<Props & { $index: number; $bgColour?: string }>`
     top: 0;
     background-color: ${({ theme, $bgColour }) => $bgColour || theme.colors.greyscale[50]};
     img {
-        height: 24px;
-        width: auto;
+        max-width: 100%;
     }
 
     ${({ $variant, $index }) => {
@@ -40,7 +39,6 @@ export const Logo = styled.div<Props & { $index: number; $bgColour?: string }>`
                     width: 33px;
                     height: 33px;
                     left: ${`${$index * 15}px`};
-                    border: 2px solid white;
                 `;
         }
     }}

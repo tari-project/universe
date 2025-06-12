@@ -19,6 +19,7 @@
   "max-temperature": "最高温度",
   "minimize": "最小化",
   "mode": "模式",
+  "not-available": "Not available",
   "not-installed-in-applications-directory": "哎呀！Tari Universe 需要安装在应用程序目录中。请考虑安装在那里？",
   "pending": "Pending",
   "please-try-again-later": "请稍后再试。如果问题仍然存在，请联系我们。",
@@ -43,6 +44,7 @@
   "utilization": "利用率",
   "version": "版本",
   "versions": "版本",
+  "waiting-for-confirmations": "Waiting for {{ total }} block confirmations ({{ confirmations }} of {{ total }} confirmed)",
   "webgl-not-supported": "不支持 WebGL。已禁用视觉模式。",
   "xtm": "XTM"
 }
