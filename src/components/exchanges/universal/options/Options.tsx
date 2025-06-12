@@ -1,6 +1,6 @@
 import { universalExchangeMinerOption } from '@app/store/useExchangeStore.ts';
 import { XCOption } from '@app/components/exchanges/universal/option/XCOption.tsx';
-import { ListWrapper } from '@app/components/exchanges/universal/options/styles.ts';
+import { ListWrapper, ScrollWrapper } from '@app/components/exchanges/universal/options/styles.ts';
 import { Divider } from '@app/components/elements/Divider.tsx';
 import { useFetchExchangeBranding } from '@app/hooks/exchanges/fetchExchangeContent.ts';
 import { useFetchExchangeList } from '@app/hooks/exchanges/fetchExchanges.ts';
@@ -19,7 +19,7 @@ export const XCOptions = () => {
         <ListWrapper>
             <XCOption isCurrent content={currentExchangeMiner ?? universalExchangeMinerOption} />
             {exchangeMiners?.length ? <Divider /> : null}
-            {listItems}
+            <ScrollWrapper>{listItems}</ScrollWrapper>
         </ListWrapper>
     );
 };

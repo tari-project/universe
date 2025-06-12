@@ -9,6 +9,8 @@ export const KEY_XC_LIST = 'exchanges';
 export const queryFn = async () => {
     const apiUrl = useConfigBEInMemoryStore.getState().airdropApiUrl;
     const endpoint = `${apiUrl}/miner/exchanges`;
+
+    if (!apiUrl.length) return [];
     try {
         const res = await fetch(`${endpoint}`);
         if (res.ok) {

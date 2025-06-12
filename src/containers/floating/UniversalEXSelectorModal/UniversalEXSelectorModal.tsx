@@ -8,7 +8,6 @@ import {
     Wrapper,
     MainLogoDescription,
     MainLogoContainer,
-    MainLogoOverlay,
     MainLogoBottomRow,
     MainLogoImageWrapper,
 } from './styles';
@@ -46,22 +45,20 @@ export default function UniversalEXSelectorModal() {
                         <MainLogoImageWrapper>
                             <img src="/assets/img/exchange_miner_header.png" alt="Exchange Miner Header Logo" />
                         </MainLogoImageWrapper>
-                        <MainLogoOverlay>
-                            <MainLogoTitle>{t('main-logo-title', { ns: 'exchange' })}</MainLogoTitle>
-                            <MainLogoDescription>{currentExchangeMiner?.campaign_description}</MainLogoDescription>
-                            {currentExchangeMiner?.reward_expiry_date && (
-                                <MainLogoBottomRow>
-                                    <Countdown>
-                                        <CountdownText>
-                                            {formatCountdown(currentExchangeMiner.reward_expiry_date)}
-                                        </CountdownText>
-                                    </Countdown>
-                                    <Typography variant="p" style={{ fontWeight: 500 }}>
-                                        {t('time-left', { ns: 'exchange' })}
-                                    </Typography>
-                                </MainLogoBottomRow>
-                            )}
-                        </MainLogoOverlay>
+                        <MainLogoTitle>{t('main-logo-title', { ns: 'exchange' })}</MainLogoTitle>
+                        <MainLogoDescription>{currentExchangeMiner?.campaign_description}</MainLogoDescription>
+                        {currentExchangeMiner?.reward_expiry_date && (
+                            <MainLogoBottomRow>
+                                <Countdown>
+                                    <CountdownText>
+                                        {formatCountdown(currentExchangeMiner.reward_expiry_date)}
+                                    </CountdownText>
+                                </Countdown>
+                                <Typography variant="p" style={{ fontWeight: 500 }}>
+                                    {t('time-left', { ns: 'exchange' })}
+                                </Typography>
+                            </MainLogoBottomRow>
+                        )}
                     </MainLogoContainer>
                     <XCOptions />
                 </Wrapper>

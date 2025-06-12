@@ -2,7 +2,7 @@ import styled from 'styled-components';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { convertHexToRGBA } from '@app/utils';
 
-export const Wrapper = styled.div<{ $isCurrent?: boolean }>`
+export const Wrapper = styled.div<{ $isCurrent?: boolean; $isActive?: boolean }>`
     display: flex;
     border-radius: 10px;
     width: 100%;
@@ -13,7 +13,7 @@ export const Wrapper = styled.div<{ $isCurrent?: boolean }>`
     background-color: ${({ theme, $isCurrent: isCurrent }) =>
         isCurrent ? convertHexToRGBA(theme.colors.green[400], 0.1) : theme.palette.background.paper};
     padding: 15px;
-    min-height: 70px;
+    height: ${({ $isActive }) => ($isActive ? 'auto' : '70px')};
 `;
 
 export const Heading = styled(Typography).attrs({ variant: 'h5' })`
@@ -33,10 +33,10 @@ export const ContentBodyWrapper = styled.div<{ $isActive?: boolean }>`
     justify-content: space-evenly;
     align-items: center;
     flex-direction: column;
+    flex-shrink: 0;
     width: 100%;
     gap: 8px;
     padding: ${({ $isActive }) => ($isActive ? `14px 0 4px ` : 0)};
-    overflow: hidden;
     height: ${({ $isActive: $isActive }) => ($isActive ? 'auto' : '0')};
     opacity: ${({ $isActive: $isActive }) => ($isActive ? '1' : '0')};
     transition:

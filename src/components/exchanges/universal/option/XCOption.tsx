@@ -68,7 +68,7 @@ export const XCOption = ({ content, isCurrent = false }: XCOptionProps) => {
     const showExpand = isTari ? !isCurrent && content.id : content.id;
 
     return (
-        <Wrapper $isCurrent={isCurrent}>
+        <Wrapper $isCurrent={isCurrent} $isActive={isActive}>
             <ContentHeaderWrapper>
                 <XCContent>
                     {(isTari || logoSrc) && (
@@ -98,39 +98,41 @@ export const XCOption = ({ content, isCurrent = false }: XCOptionProps) => {
                     )}
                 </SelectOptionWrapper>
             </ContentHeaderWrapper>
-            <ContentBodyWrapper $isActive={isActive}>
-                <ExchangeAddress handleIsAddressValid={setIsAddressValid} handleAddressChanged={setMiningAddress} />
-                <SeasonReward>
-                    <LeftContent>
-                        {content.campaign_description ? (
-                            <>
-                                <SeasonRewardIcon src="/assets/img/wrapped_gift.png" alt="gift" />
-                                <SeasonRewardText>
-                                    <b>{t('season-one-reward', { ns: 'exchange' })}:</b>{' '}
-                                    <span>{content.campaign_description}</span>
-                                </SeasonRewardText>
-                            </>
+            {isActive && (
+                <ContentBodyWrapper $isActive={isActive}>
+                    <ExchangeAddress handleIsAddressValid={setIsAddressValid} handleAddressChanged={setMiningAddress} />
+                    <SeasonReward>
+                        <LeftContent>
+                            {content.campaign_description ? (
+                                <>
+                                    <SeasonRewardIcon src="/assets/img/wrapped_gift.png" alt="gift" />
+                                    <SeasonRewardText>
+                                        <b>{t('season-one-reward', { ns: 'exchange' })}:</b>{' '}
+                                        <span>{content.campaign_description}</span>
+                                    </SeasonRewardText>
+                                </>
+                            ) : null}
+                        </LeftContent>
+                        {content.reward_expiry_date ? (
+                            <Countdown>
+                                <CountdownText>{formatCountdown(content.reward_expiry_date)}</CountdownText>
+                            </Countdown>
                         ) : null}
-                    </LeftContent>
-                    {content.reward_expiry_date ? (
-                        <Countdown>
-                            <CountdownText>{formatCountdown(content.reward_expiry_date)}</CountdownText>
-                        </Countdown>
-                    ) : null}
-                </SeasonReward>
-                {isAddressValid ? (
-                    <ConfirmButton onClick={handleExchangeMiner} disabled={!isAddressValid}>
-                        <Typography variant="h4">{t('confirm', { ns: 'settings' })}</Typography>
-                    </ConfirmButton>
-                ) : (
-                    <>
-                        <Divider />
-                        <Typography variant="p">
-                            {t('help-find-address', { exchange: content.name, ns: 'exchange' })}
-                        </Typography>
-                    </>
-                )}
-            </ContentBodyWrapper>
+                    </SeasonReward>
+                    {isAddressValid ? (
+                        <ConfirmButton onClick={handleExchangeMiner} disabled={!isAddressValid}>
+                            <Typography variant="h4">{t('confirm', { ns: 'settings' })}</Typography>
+                        </ConfirmButton>
+                    ) : (
+                        <>
+                            <Divider />
+                            <Typography variant="p">
+                                {t('help-find-address', { exchange: content.name, ns: 'exchange' })}
+                            </Typography>
+                        </>
+                    )}
+                </ContentBodyWrapper>
+            )}
         </Wrapper>
     );
 };
