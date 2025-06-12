@@ -732,7 +732,7 @@ impl SetupManager {
             });
     }
 
-    pub async fn shutdown_phases(&self, app_handle: AppHandle, phases: Vec<SetupPhase>) {
+    pub async fn shutdown_phases(&self, phases: Vec<SetupPhase>) {
         // We are cancelling the wait_for_unlock_conditions listener to avoid it from triggering
         // As we are shutting down the phases one by one which could lead to unwanted unlocks
         self.cancellation_token.lock().await.cancel();
@@ -784,10 +784,6 @@ impl SetupManager {
                 }
             }
         }
-
-        let _unused = self.resolve_setup_features().await;
-        *self.cancellation_token.lock().await = CancellationToken::new();
-        self.wait_for_unlock_conditions(app_handle.clone()).await;
     }
 
     pub async fn resume_phases(&self, app_handle: AppHandle, phases: Vec<SetupPhase>) {
@@ -795,6 +791,9 @@ impl SetupManager {
             EventsEmitter::emit_restarting_phases(phases.clone()).await;
         }
 
+        let _unused = self.resolve_setup_features().await;
+        *self.cancellation_token.lock().await = CancellationToken::new();
+        self.wait_for_unlock_conditions(app_handle.clone()).await;
         let features = self.features.read().await.clone();
 
         for phase in phases {
@@ -820,6 +819,12 @@ impl SetupManager {
                 }
             }
         }
+    }
+
+    pub async fn restart_phases(&self, app_handle: AppHandle, phases: Vec<SetupPhase>) {
+        info!(target: LOG_TARGET, "Restarting phases: {:?}", phases);
+        self.shutdown_phases(phases.clone()).await;
+        self.resume_phases(app_handle, phases).await;
     }
 
     async fn unlock_app(&self, app_handle: AppHandle) {
@@ -962,14 +967,11 @@ impl SetupManager {
             EventsManager::handle_node_type_update(&app_handle).await;
 
             info!(target: LOG_TARGET, "Restarting Phases");
-            self.shutdown_phases(
+            self.restart_phases(
                 app_handle.clone(),
                 vec![SetupPhase::Wallet, SetupPhase::Mining],
             )
             .await;
-
-            self.setup_wallet_phase(app_handle.clone()).await;
-            self.setup_mining_phase(app_handle.clone()).await;
         } else {
             error!(target: LOG_TARGET, "Failed to reset phases after switching to Local Node: app_handle not defined");
         }
@@ -991,7 +993,7 @@ impl SetupManager {
                         }
                         if !last_state && current_state {
                             info!(target: LOG_TARGET, "System entered sleep mode");
-                            SetupManager::get_instance().shutdown_phases(app_handle.clone(),SetupPhase::all()).await;
+                            SetupManager::get_instance().shutdown_phases(SetupPhase::all()).await;
                         }
                         last_state = current_state;
                     }
@@ -1019,9 +1021,7 @@ impl SetupManager {
             return;
         }
         info!(target: LOG_TARGET, "Restarting phases from queue: {:?}", queue);
-        self.shutdown_phases(app_handle.clone(), queue.clone())
-            .await;
-        self.resume_phases(app_handle.clone(), queue.clone()).await;
+        self.restart_phases(app_handle, queue.clone()).await;
         queue.clear();
     }
 }

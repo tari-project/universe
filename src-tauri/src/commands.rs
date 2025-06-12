@@ -233,11 +233,7 @@ pub async fn select_exchange_miner(
     EventsEmitter::emit_exchange_id_changed(exchange_miner.id.clone()).await;
 
     SetupManager::get_instance()
-        .add_phases_to_restart_queue(vec![SetupPhase::Wallet, SetupPhase::Mining])
-        .await;
-
-    SetupManager::get_instance()
-        .restart_phases_from_queue(app_handle)
+        .restart_phases(app_handle, vec![SetupPhase::Wallet, SetupPhase::Mining])
         .await;
 
     Ok(())
@@ -665,16 +661,12 @@ pub async fn set_external_tari_address(
 
     // For non exchange miner cases to stop wallet services
     SetupManager::get_instance()
-        .shutdown_phases(app_handle.clone(), vec![SetupPhase::Wallet])
+        .shutdown_phases(vec![SetupPhase::Wallet])
         .await;
 
     // mm_proxy is using wallet address
     SetupManager::get_instance()
-        .add_phases_to_restart_queue(vec![SetupPhase::Mining])
-        .await;
-
-    SetupManager::get_instance()
-        .restart_phases_from_queue(app_handle.clone())
+        .restart_phases(app_handle.clone(), vec![SetupPhase::Mining])
         .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
@@ -832,7 +824,7 @@ pub async fn import_seed_words(
     match InternalWallet::create_from_seed(config_path, seed_words).await {
         Ok(wallet) => {
             SetupManager::get_instance()
-                .shutdown_phases(app.clone(), vec![SetupPhase::Wallet, SetupPhase::Mining])
+                .shutdown_phases(vec![SetupPhase::Wallet, SetupPhase::Mining])
                 .await;
             InternalWallet::clear_wallet_local_data(data_dir)
                 .await
@@ -1386,15 +1378,10 @@ pub async fn set_tor_config(
         .map_err(|e| e.to_string())?;
 
     SetupManager::get_instance()
-        .add_phases_to_restart_queue(vec![
-            SetupPhase::Node,
-            SetupPhase::Wallet,
-            SetupPhase::Mining,
-        ])
-        .await;
-
-    SetupManager::get_instance()
-        .restart_phases_from_queue(app_handle)
+        .restart_phases(
+            app_handle,
+            vec![SetupPhase::Node, SetupPhase::Wallet, SetupPhase::Mining],
+        )
         .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
@@ -1479,11 +1466,7 @@ pub async fn set_airdrop_tokens(
     if user_id_changed {
         // If the user id changed, we need to restart the mining phases to ensure that the new telemetry_id ( unique_string value )is used
         SetupManager::get_instance()
-            .add_phases_to_restart_queue(vec![SetupPhase::Mining])
-            .await;
-
-        SetupManager::get_instance()
-            .restart_phases_from_queue(app_handle.clone())
+            .restart_phases(app_handle.clone(), vec![SetupPhase::Mining])
             .await;
     }
     Ok(())
@@ -1952,9 +1935,8 @@ pub async fn reconnect(app_handle: tauri::AppHandle) -> Result<(), String> {
     EventsEmitter::emit_connection_status_changed(ConnectionStatusPayload::InProgress).await;
     let setup_manager = SetupManager::get_instance();
     setup_manager
-        .add_phases_to_restart_queue(SetupPhase::all())
+        .restart_phases(app_handle, SetupPhase::all())
         .await;
-    setup_manager.restart_phases_from_queue(app_handle).await;
     Ok(())
 }
 
@@ -2204,7 +2186,7 @@ pub async fn refresh_wallet_history(
     app_handle: tauri::AppHandle,
 ) -> Result<(), String> {
     SetupManager::get_instance()
-        .shutdown_phases(app_handle.clone(), vec![SetupPhase::Wallet])
+        .shutdown_phases(vec![SetupPhase::Wallet])
         .await;
 
     let base_path = app_handle
