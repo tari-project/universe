@@ -211,7 +211,7 @@ const useTauriEventsListener = () => {
                             handleMiningTimeUpdate(event.payload);
                             break;
                         case 'ExchangeIdChanged':
-                            handleExchangeIdChanged(event.payload);
+                            await handleExchangeIdChanged(event.payload);
                             break;
                         case 'DisabledPhases':
                             handleUpdateDisabledPhases(event.payload);
