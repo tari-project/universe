@@ -51,10 +51,12 @@ export default function SeedWords({ isMonero = false }: SeedWordsProps) {
         setShowConfirm(true);
     };
 
-    async function onToggleVisibility() {
-        setIsLoading(!isLoading);
+    async function onToggleVisibility(currentVisibilty?: boolean) {
+        setIsLoading(!currentVisibilty);
         if (!seedWords?.length || !seedWordsFetched) {
             await getSeedWords();
+            setIsLoading(false);
+        } else {
             setIsLoading(false);
         }
     }
