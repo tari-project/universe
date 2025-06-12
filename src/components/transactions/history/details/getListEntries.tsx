@@ -4,7 +4,7 @@ import { ReactNode } from 'react';
 import { formatNumber, FormatPreset } from '@app/utils';
 import { StatusListEntry } from '@app/components/transactions/components/StatusList/StatusList.tsx';
 import { getExplorerUrl, Network } from '@app/utils/network.ts';
-import { BackendBridgeTransaction, useMiningStore } from '@app/store';
+import { BackendBridgeTransaction, useBlockchainVisualisationStore, useMiningStore } from '@app/store';
 import { getTxStatusTitleKey, getTxTitle } from '@app/utils/getTxStatus.ts';
 import { TransactionDetailsItem } from '@app/types/transactions.ts';
 import { EmojiAddressWrapper } from '@app/components/transactions/history/details/styles.ts';
@@ -27,7 +27,7 @@ type BridgeTransactionEntry = {
 
 const network = useMiningStore.getState().network;
 
-const HIDDEN_KEYS = ['direction', 'excess_sig', 'tx_id'];
+const HIDDEN_KEYS = ['direction', 'excess_sig', 'tx_id', 'payment_references_change'];
 const BRIDGE_HIDDEN_KEYS = ['paymentId'];
 
 const keyTranslations: Record<string, string> = {
@@ -50,6 +50,20 @@ function capitalizeKey(key: string): string {
 }
 function getLabel(key: string): string {
     return key in keyTranslations ? i18n.t(keyTranslations[key]) : capitalizeKey(key);
+}
+function getPaymentReferenceValue(transaction: TransactionDetailsItem): ReactNode {
+    if (transaction.payment_reference) {
+        return transaction.payment_reference;
+    }
+    const currentBlockHeight = useBlockchainVisualisationStore.getState().displayBlockHeight;
+    if (!transaction.mined_in_block_height || !currentBlockHeight) {
+        return i18n.t('common:pending');
+    }
+    const confirmations = currentBlockHeight - transaction.mined_in_block_height;
+    if (confirmations < 5) {
+        return i18n.t('common:waiting-for-confirmations', { confirmations, total: 5 });
+    }
+    return i18n.t('common:not-available');
 }
 
 function parseTransactionValues({
@@ -91,6 +105,10 @@ function parseTransactionValues({
 
     if (key === `dest_address_emoji`) {
         return { value: <EmojiAddressWrapper>{value}</EmojiAddressWrapper> };
+    }
+
+    if (key === `payment_reference`) {
+        return { value: getPaymentReferenceValue(transaction) };
     }
 
     return { value, ...rest };

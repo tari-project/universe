@@ -73,6 +73,7 @@ use app_in_memory_config::DynamicMemoryConfig;
 #[cfg(all(feature = "exchange-ci", not(feature = "release-ci")))]
 use app_in_memory_config::EXCHANGE_ID;
 
+use progress_tracker_old::ProgressTracker;
 use telemetry_manager::TelemetryManager;
 
 use crate::cpu_miner::CpuMiner;
@@ -126,6 +127,7 @@ mod process_killer;
 mod process_stats_collector;
 mod process_utils;
 mod process_watcher;
+mod progress_tracker_old;
 mod progress_trackers;
 mod release_notes;
 mod setup;
@@ -311,7 +313,7 @@ fn main() {
             release: sentry::release_name!(),
             attach_stacktrace: true,
             before_send: Some(Arc::new(|event| {
-                if event.logentry.as_ref().map_or(false, |entry| {
+                if event.logentry.as_ref().is_some_and(|entry| {
                     IGNORED_SENTRY_ERRORS.iter().any(|ignored| entry.message.starts_with(ignored))
                 }) {
                     None
@@ -357,6 +359,7 @@ fn main() {
         node_manager.clone(),
         wallet_state_watch_tx,
         &mut stats_collector,
+        base_node_watch_rx.clone(),
     );
     let spend_wallet_manager =
         SpendWalletManager::new(node_manager.clone(), base_node_watch_rx.clone());
@@ -680,6 +683,7 @@ fn main() {
             commands::start_gpu_mining,
             commands::stop_cpu_mining,
             commands::stop_gpu_mining,
+            commands::update_applications,
             commands::get_p2pool_connections,
             commands::set_p2pool_stats_server_port,
             commands::get_used_p2pool_stats_server_port,

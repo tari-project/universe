@@ -46,22 +46,12 @@ export const ImgWrapper = styled.div<{
         $isLogo &&
         css`
             background-color: ${$col1 || theme.colors.greyscale[50]};
-            color: #c2ff28;
-            svg,
-            img {
-                max-width: 28px;
-            }
         `}
 
     ${({ $border }) =>
         $border &&
         css`
             border: 1px solid ${({ theme }) => theme.colorsAlpha.greyscaleAlpha[10]};
-        `}
-    ${({ $isActive }) =>
-        $isActive &&
-        css`
-            transform: rotate(90deg);
         `}
 `;
 

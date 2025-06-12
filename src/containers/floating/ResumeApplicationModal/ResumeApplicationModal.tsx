@@ -131,9 +131,7 @@ const ResumeApplicationModal = memo(function ResumeApplicationModal() {
                     <Wrapper ref={refs.setFloating}>
                         <TextWrapper>
                             <Title>{t(`phase-title.${setupPhaseTitle}`)}</Title>
-                            <Text>
-                                {t(`title.${setupTitle}${setupParams.progress ? '-download' : ''}`, { ...setupParams })}
-                            </Text>
+                            <Text>{t(`title.${setupTitle}`, { ...setupParams })}</Text>
                         </TextWrapper>
                         <ProgressWrapper>
                             <Title>

@@ -33,7 +33,6 @@ pub enum Binaries {
     ShaP2pool,
     GpuMiner,
     Tor,
-    BridgeTapplet,
 }
 
 impl Binaries {
@@ -46,7 +45,6 @@ impl Binaries {
             Binaries::ShaP2pool => "sha-p2pool",
             Binaries::GpuMiner => "glytex",
             Binaries::Tor => "tor",
-            Binaries::BridgeTapplet => "bridge",
         }
     }
 
@@ -59,7 +57,6 @@ impl Binaries {
             "sha-p2pool" => Binaries::ShaP2pool,
             "glytex" => Binaries::GpuMiner,
             "tor" => Binaries::Tor,
-            "bridge" => Binaries::BridgeTapplet,
             _ => panic!("Unknown binary name: {}", name),
         }
     }
@@ -94,10 +91,6 @@ impl Binaries {
                 let file_name = "tor";
                 PathBuf::from(file_name)
             }
-            Binaries::BridgeTapplet => {
-                let file_name = format!("bridge-{}", version);
-                PathBuf::from(file_name).join("bridge")
-            }
         }
     }
 
@@ -111,7 +104,6 @@ impl Binaries {
             Binaries::ShaP2pool,
             Binaries::GpuMiner,
             Binaries::Tor,
-            Binaries::BridgeTapplet,
         ]
         .iter()
         .copied()
