@@ -35,16 +35,6 @@ const ResumeApplicationModal = memo(function ResumeApplicationModal() {
         return shouldShowModalForResume || shouldShowModalForInitialSetup;
     }, [isAppUnlocked, isSetupFinished, shouldShowModal, status]);
 
-    console.log('ResumeApplicationModal render', {
-        corePhaseInfoPayload,
-        hardwarePhaseInfoPayload,
-        nodePhaseInfoPayload,
-        miningPhaseInfoPayload,
-        walletPhaseInfoPayload,
-        disabledPhases,
-        showModal,
-    });
-
     const currentPhaseToShow = useMemo(() => {
         if (
             (walletPhaseInfoPayload?.is_complete || disabledPhases.includes(SetupPhase.Wallet)) &&

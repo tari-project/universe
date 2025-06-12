@@ -17,7 +17,6 @@ const validationRules = {
 const MoneroAddressMarkup = () => {
     const { t } = useTranslation('settings', { useSuspense: false });
     const moneroAddress = useConfigWalletStore((s) => s.monero_address);
-
     const handleMoneroAddressChange = useCallback(async (moneroAddress: string) => {
         await setMoneroAddress(moneroAddress);
     }, []);

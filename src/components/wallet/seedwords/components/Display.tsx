@@ -8,16 +8,14 @@ import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 interface DisplayProps {
     words: string[];
     isLoading?: boolean;
-    onToggleClick?: () => void;
+    onToggleClick?: (currentVisibilty?: boolean) => void;
     isSeedlessUI?: boolean;
 }
 const Display = memo(function Display({ words, onToggleClick, isLoading, isSeedlessUI }: DisplayProps) {
     const [isVisible, setIsVisible] = useState(false);
 
     function handleToggleClick() {
-        if (onToggleClick) {
-            onToggleClick();
-        }
+        onToggleClick?.(isVisible);
         setIsVisible((c) => !c);
     }
 

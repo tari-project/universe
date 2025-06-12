@@ -290,9 +290,7 @@ impl EventsEmitter {
 
         let event = Event {
             event_type: EventType::ConfigWalletLoaded,
-            payload: {
-                ..payload // Use the entire payload as
-            },
+            payload,
         };
         if let Err(e) = Self::get_app_handle()
             .await

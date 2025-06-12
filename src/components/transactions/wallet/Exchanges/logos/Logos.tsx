@@ -16,17 +16,19 @@ export function Logos({ exchanges, variant = 'primary', maxItems = 3 }: LogosPro
         (x) =>
             ({
                 name: x.name,
-                src: x.logo_img_small_url || x.logo_img_url || '',
+                src: x.logo_img_small_url || x.logo_img_url,
                 colour: x.primary_colour,
             }) as LogoItem
     );
     return !items?.length ? null : (
         <Wrapper $variant={variant}>
-            {items?.map(({ src, name, colour }, i) => (
-                <Logo $variant={variant} key={name} $index={i} $bgColour={colour}>
-                    <img src={src} alt={name} />
-                </Logo>
-            ))}
+            {items?.map(({ src, name, colour }, i) =>
+                src ? (
+                    <Logo $variant={variant} key={name} $index={i} $bgColour={colour}>
+                        <img src={src} alt={name} />
+                    </Logo>
+                ) : null
+            )}
         </Wrapper>
     );
 }
