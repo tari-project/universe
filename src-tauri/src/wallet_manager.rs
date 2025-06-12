@@ -221,7 +221,6 @@ impl WalletManager {
             .adapter
             .import_transaction(tx_output_file)
             .await
-            .map_err(anyhow::Error::from)
     }
 
     pub async fn get_coinbase_transactions(

@@ -40,9 +40,6 @@ export const ImgWrapper = styled.div<{ $isLogo?: boolean; $border?: boolean; $co
         $isLogo &&
         css`
             background-color: ${$col1 || theme.colors.greyscale[50]};
-            img {
-                max-width: 26px;
-            }
         `}
 
     ${({ $border }) =>
