@@ -325,16 +325,14 @@ impl SetupManager {
             .is_none();
 
         // If we open different specific exchange miner build then previous one we always want to prompt user to provide tari address
-        if let Some(config_exchange_id) = &last_config_exchange_id {
-            if is_on_exchange_miner_build
-                && build_in_exchange_id.ne(config_exchange_id)
-                && !does_not_have_external_tari_address
-            {
-                info!(target: LOG_TARGET, "Exchange ID changed from {} to {}", config_exchange_id, build_in_exchange_id);
-                self.exchange_modal_status
-                    .send_replace(ExchangeModalStatus::WaitForCompletion);
-                EventsEmitter::emit_should_show_exchange_miner_modal().await;
-            }
+        if is_on_exchange_miner_build
+            && build_in_exchange_id.ne(&last_config_exchange_id)
+            && !does_not_have_external_tari_address
+        {
+            info!(target: LOG_TARGET, "Exchange ID changed from {} to {}", last_config_exchange_id, build_in_exchange_id);
+            self.exchange_modal_status
+                .send_replace(ExchangeModalStatus::WaitForCompletion);
+            EventsEmitter::emit_should_show_exchange_miner_modal().await;
         }
 
         // If we are on exchange miner build we require external tari address to be set
@@ -347,7 +345,7 @@ impl SetupManager {
         if is_on_exchange_miner_build {
             let _unused = ConfigCore::update_field(
                 ConfigCoreContent::set_exchange_id,
-                Some(build_in_exchange_id.clone()),
+                build_in_exchange_id.clone(),
             )
             .await;
             EventsEmitter::emit_exchange_id_changed(build_in_exchange_id).await;

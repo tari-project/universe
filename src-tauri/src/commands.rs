@@ -210,7 +210,7 @@ pub async fn select_exchange_miner(
 ) -> Result<(), InvokeError> {
     ConfigCore::update_field(
         ConfigCoreContent::set_exchange_id,
-        Some(exchange_miner.clone().id),
+        exchange_miner.clone().id,
     )
     .await
     .map_err(InvokeError::from_anyhow)?;
@@ -225,7 +225,7 @@ pub async fn select_exchange_miner(
 
     ConfigCore::update_field(
         ConfigCoreContent::set_exchange_id,
-        Some(exchange_miner.id.clone()),
+        exchange_miner.id.clone(),
     )
     .await
     .map_err(InvokeError::from_anyhow)?;
@@ -843,7 +843,7 @@ pub async fn import_seed_words(
             EventsEmitter::emit_base_tari_address_changed(wallet.get_tari_address()).await;
             ConfigCore::update_field(
                 ConfigCoreContent::set_exchange_id,
-                Some(DEFAULT_EXCHANGE_ID.to_string()),
+                DEFAULT_EXCHANGE_ID.to_string(),
             )
             .await
             .map_err(InvokeError::from_anyhow)?;
