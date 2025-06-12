@@ -3,13 +3,13 @@ import { useGetSeedWords } from '@app/containers/floating/Settings/sections/wall
 import { useCopyToClipboard } from '@app/hooks';
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
-import { IoAddCircleOutline, IoCheckmarkOutline, IoCloseOutline, IoCopyOutline, IoPencil } from 'react-icons/io5';
+import { IoCheckmarkOutline, IoCloseOutline, IoCopyOutline, IoPencil } from 'react-icons/io5';
 import { useCallback, useState } from 'react';
 import { Wrapper } from './styles.ts';
 import { CTASArea, InputArea, WalletSettingsGrid } from '@app/containers/floating/Settings/sections/wallet/styles.ts';
 import { Edit } from '@app/components/wallet/seedwords/components/Edit.tsx';
 import { FormProvider, useForm } from 'react-hook-form';
-import { importSeedWords, useConfigBEInMemoryStore, useWalletStore } from '@app/store';
+import { importSeedWords, useWalletStore } from '@app/store';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
@@ -17,8 +17,6 @@ import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { useTranslation } from 'react-i18next';
 import { Form } from '@app/components/wallet/seedwords/components/edit.styles.ts';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
-import { invoke } from '@tauri-apps/api/core';
-import { ExchangeMiner } from '@app/types/exchange.ts';
 
 // Controller component for edit/view seed words (both Tari & Monero)
 
@@ -26,7 +24,6 @@ interface SeedWordsProps {
     isMonero?: boolean;
 }
 export default function SeedWords({ isMonero = false }: SeedWordsProps) {
-    console.log('SeedWords rendered');
     const isWalletImporting = useWalletStore((s) => s.is_wallet_importing);
 
     const [isEditView, setIsEditView] = useState(false);

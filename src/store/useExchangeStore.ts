@@ -1,8 +1,6 @@
 import { create } from 'zustand';
 
-import { useWalletStore } from '@app/store/useWalletStore.ts';
-import { useConfigBEInMemoryStore, useConfigUIStore } from '@app/store/useAppConfigStore.ts';
-import { setSeedlessUI } from '@app/store/actions/uiStoreActions.ts';
+import { useConfigBEInMemoryStore } from '@app/store/useAppConfigStore.ts';
 import { useUIStore } from './useUIStore';
 import { ExchangeBranding } from '@app/types/exchange.ts';
 

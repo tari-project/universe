@@ -9,8 +9,6 @@ export default function TariSeedWords() {
     const { t } = useTranslation('settings', { useSuspense: false });
     const isSeedlessUI = useUIStore((s) => s.seedlessUI);
 
-    console.log('TariSeedWords rendered', isSeedlessUI);
-
     return (
         <SettingsGroupWrapper $subGroup>
             <Typography variant="h6">{t('seed-words')}</Typography>

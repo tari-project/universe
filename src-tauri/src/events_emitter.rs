@@ -48,8 +48,7 @@ use crate::{
     BaseNodeStatus, GpuMinerStatus,
 };
 use log::error;
-use tari_common_types::tari_address::{self, TariAddress};
-use tauri::utils::acl::resolved;
+use tari_common_types::tari_address::TariAddress;
 use tauri::{AppHandle, Emitter};
 use tokio::sync::RwLock;
 

@@ -14,7 +14,7 @@ import { useWalletStore } from '@app/store/useWalletStore';
 
 import { useCopyToClipboard } from '@app/hooks';
 import { useTranslation } from 'react-i18next';
-import { getCurrentActiveTariAddress, setExternalTariAddress } from '@app/store/actions/walletStoreActions';
+import { setExternalTariAddress } from '@app/store/actions/walletStoreActions';
 import { invoke } from '@tauri-apps/api/core';
 import AddressEditor from '../components/AddressEditor';
 import { CTASArea, InputArea, WalletSettingsGrid } from '@app/containers/floating/Settings/sections/wallet/styles.ts';

@@ -109,6 +109,7 @@ const ResumeApplicationModal = memo(function ResumeApplicationModal() {
         miningPhaseInfoPayload?.is_complete,
         nodePhaseInfoPayload?.is_complete,
         walletPhaseInfoPayload?.is_complete,
+        disabledPhases,
     ]);
 
     const setupPhaseTitle = currentPhaseToShow?.phase_title;

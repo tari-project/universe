@@ -1,7 +1,6 @@
 import { modeType } from '@app/store';
 import { GpuThreads } from './app-status';
 import { NodeType } from '@app/store/useNodeStore';
-import { TariAddressUpdatePayload } from './events-payloads';
 
 export interface ConfigCore {
     created_at: string;
