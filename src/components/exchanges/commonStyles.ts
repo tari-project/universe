@@ -46,6 +46,10 @@ export const ImgWrapper = styled.div<{
         $isLogo &&
         css`
             background-color: ${$col1 || theme.colors.greyscale[50]};
+            color: #c9eb00;
+            svg {
+                max-width: 70%;
+            }
         `}
 
     ${({ $border }) =>

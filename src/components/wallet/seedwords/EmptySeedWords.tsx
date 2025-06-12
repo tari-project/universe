@@ -14,7 +14,6 @@ import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { useTranslation } from 'react-i18next';
 import { Form } from '@app/components/wallet/seedwords/components/edit.styles.ts';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
-import { refreshTransactions } from '@app/hooks/wallet/useFetchTxHistory.ts';
 
 export default function EmptySeedWords() {
     const isWalletImporting = useWalletStore((s) => s.is_wallet_importing);
@@ -30,12 +29,7 @@ export default function EmptySeedWords() {
 
     const handleConfirmed = useCallback(async () => {
         if (!isValid || !newSeedWords) return;
-        await importSeedWords(newSeedWords)
-            .then(async () => {
-                await refreshTransactions();
-            })
-            .catch((e) => console.error(e))
-            .finally(() => setShowConfirm(false));
+        await importSeedWords(newSeedWords).finally(() => setShowConfirm(false));
     }, [isValid, newSeedWords]);
 
     const handleApply = (data: { seedWords: string }) => {

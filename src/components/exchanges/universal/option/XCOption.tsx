@@ -65,6 +65,7 @@ export const XCOption = ({ content, isCurrent = false }: XCOptionProps) => {
     const isTari = content.slug === 'universal' && content.id === 'universal';
     const logoSrc = content.logo_img_small_url || content.logo_img_url;
     const logoMarkup = isTari ? <TariOutlineSVG /> : logoSrc && <img src={logoSrc} alt={content.name} />;
+    const showExpand = isTari ? !isCurrent && content.id : content.id;
 
     return (
         <Wrapper $isCurrent={isCurrent}>
@@ -83,7 +84,7 @@ export const XCOption = ({ content, isCurrent = false }: XCOptionProps) => {
                             <CaptionText>{t('selected-exchange-miner', { ns: 'exchange' })}</CaptionText>
                         </CaptionWrapper>
                     )}
-                    {content.id && (
+                    {showExpand && (
                         <OpenButton
                             onClick={() => {
                                 setIsActive(!isActive);
