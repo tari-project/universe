@@ -19,6 +19,7 @@
   "max-temperature": "Maximaltemperatur",
   "minimize": "Minimieren",
   "mode": "Modus",
+  "not-available": "Not available",
   "not-installed-in-applications-directory": "Ups! Tari Universe muss im Anwendungsverzeichnis installiert sein. Bitte dort installieren?",
   "pending": "Pending",
   "please-try-again-later": "Bitte versuche es später erneut. Wenn das Problem weiterhin besteht, kontaktiere uns bitte.",
@@ -43,6 +44,7 @@
   "utilization": "Auslastung",
   "version": "Version",
   "versions": "Versionen",
+  "waiting-for-confirmations": "Waiting for {{ total }} block confirmations ({{ confirmations }} of {{ total }} confirmed)",
   "webgl-not-supported": "WebGL wird nicht unterstützt. Visueller Modus deaktiviert.",
   "xtm": "XTM"
 }

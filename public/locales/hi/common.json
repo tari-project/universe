@@ -19,6 +19,7 @@
   "max-temperature": "अधिकतम तापमान",
   "minimize": "मिनिमाइज़",
   "mode": "मोड",
+  "not-available": "Not available",
   "not-installed-in-applications-directory": "ओह! Tari Universe को एप्लिकेशन डायरेक्टरी में होना चाहिए। क्या आप इसे वहां स्थापित करना चाहेंगे?",
   "pending": "Pending",
   "please-try-again-later": "कृपया बाद में पुनः प्रयास करें। यदि समस्या बनी रहती है, तो कृपया हमसे संपर्क करें।",
@@ -43,6 +44,7 @@
   "utilization": "उपयोग",
   "version": "संस्करण",
   "versions": "संस्करण",
+  "waiting-for-confirmations": "Waiting for {{ total }} block confirmations ({{ confirmations }} of {{ total }} confirmed)",
   "webgl-not-supported": "WebGL समर्थित नहीं है। दृश्य मोड अक्षम किया गया।",
   "xtm": "XTM"
 }
