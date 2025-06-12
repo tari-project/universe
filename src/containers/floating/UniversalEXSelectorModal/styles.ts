@@ -28,8 +28,11 @@ export const MainLogoContainer = styled.div`
     border-radius: 24px;
     height: 144px;
     display: flex;
-    flex-shrink: 0;
+    flex-shrink: 1;
     overflow: hidden;
+    @media (max-height: 690px) {
+        height: 110px;
+    }
 `;
 
 export const MainLogoImageWrapper = styled.div`

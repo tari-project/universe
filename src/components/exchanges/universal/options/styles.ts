@@ -7,9 +7,10 @@ export const ListWrapper = styled.div`
     border-radius: 24px;
     background-color: ${({ theme }) => theme.palette.background.paper};
     width: 100%;
-    max-height: 50vh;
-    padding: 20px;
+    height: auto;
+    max-height: 55vh;
     overflow: hidden;
+    padding: 20px;
 `;
 
 export const ScrollWrapper = styled.div`

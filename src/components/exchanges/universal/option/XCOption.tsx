@@ -35,12 +35,13 @@ import { Divider } from '@app/components/elements/Divider.tsx';
 interface XCOptionProps {
     content: ExchangeBranding;
     isCurrent?: boolean;
+    isActive?: boolean;
+    onActiveClick: (id: string) => void;
 }
 
-export const XCOption = ({ content, isCurrent = false }: XCOptionProps) => {
+export const XCOption = ({ content, isCurrent = false, isActive, onActiveClick }: XCOptionProps) => {
     const { t } = useTranslation(['exchange', 'settings'], { useSuspense: false });
     const [isAddressValid, setIsAddressValid] = useState(false);
-    const [isActive, setIsActive] = useState(false);
     const [miningAddress, setMiningAddress] = useState('');
 
     const handleExchangeMiner = async () => {
@@ -88,7 +89,7 @@ export const XCOption = ({ content, isCurrent = false }: XCOptionProps) => {
                         <OpenButton
                             $isOpen={isActive}
                             onClick={() => {
-                                setIsActive(!isActive);
+                                onActiveClick(content.id);
                             }}
                         >
                             <ImgWrapper $border $isActive={isActive}>
