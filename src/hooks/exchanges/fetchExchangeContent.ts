@@ -31,7 +31,6 @@ export const queryfn = async (exchangeId: string) => {
         return content;
     } catch (e) {
         console.error('Could not fetch exchange content', e);
-        return universalExchangeMinerOption;
     }
 };
 

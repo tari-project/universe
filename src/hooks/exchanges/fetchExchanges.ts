@@ -6,12 +6,11 @@ import { queryClient } from '@app/App/queryClient.ts';
 
 export const KEY_XC_LIST = 'exchanges';
 
-export const bl2 = async () => {
+export const queryFn = async () => {
     const apiUrl = useConfigBEInMemoryStore.getState().airdropApiUrl;
     const endpoint = `${apiUrl}/miner/exchanges`;
     try {
         const res = await fetch(`${endpoint}`);
-
         if (res.ok) {
             const list = (await res.json()) as {
                 exchanges: ExchangeBranding[];
@@ -27,18 +26,18 @@ export const bl2 = async () => {
     }
 };
 
-export function useFetchXCList() {
+export function useFetchExchangeList() {
     const isAppExchangeSpecific = useUIStore((s) => s.isAppExchangeSpecific);
 
     return useQuery({
         queryKey: [KEY_XC_LIST],
         enabled: !isAppExchangeSpecific,
-        queryFn: () => bl2(),
+        queryFn: () => queryFn(),
         refetchOnWindowFocus: true,
         refetchInterval: 60 * 1000 * 60 * 3, // every three hours
     });
 }
 
-export const refreshXCList = async () => {
-    await queryClient.invalidateQueries({ queryKey: [KEY_XC_LIST] });
-};
+export async function fetchExchangeList() {
+    return await queryClient.fetchQuery({ queryKey: [KEY_XC_LIST], queryFn: () => queryFn() });
+}

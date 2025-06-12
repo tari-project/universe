@@ -1,6 +1,6 @@
 import { useForm } from 'react-hook-form';
 import { invoke } from '@tauri-apps/api/core';
-import { setShowExchangeModal, useExchangeStore } from '@app/store/useExchangeStore.ts';
+import { setShowExchangeModal } from '@app/store/useExchangeStore.ts';
 import {
     Wrapper,
     CTA,
