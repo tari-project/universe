@@ -43,11 +43,14 @@ export const fetchBridgeColdWalletAddress = async () => {
 };
 
 export const importSeedWords = async (seedWords: string[]) => {
+    useWalletStore.setState({ is_wallet_importing: true });
     try {
-        useWalletStore.setState({ is_wallet_importing: true });
         await invoke('import_seed_words', { seedWords });
+        useWalletStore.setState({ is_wallet_importing: false });
     } catch (error) {
         setError(`Could not import seed words: ${error}`, true);
+        useWalletStore.setState({ is_wallet_importing: false });
+    } finally {
         useWalletStore.setState({ is_wallet_importing: false });
     }
 };
