@@ -69,6 +69,11 @@ export async function fetchExchangeMiners() {
 }
 
 export async function fetchExchangeContent(exchangeId: string) {
+    const currentExchangeContent = useExchangeStore.getState().content;
+    if (currentExchangeContent?.id === exchangeId) {
+        return currentExchangeContent;
+    }
+
     const apiUrl = useConfigBEInMemoryStore.getState().airdropApiUrl;
     const endpoint = `${apiUrl}/miner/exchanges`;
     try {
