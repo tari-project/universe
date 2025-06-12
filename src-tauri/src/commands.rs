@@ -828,7 +828,9 @@ pub async fn import_seed_words(
 
     match InternalWallet::create_from_seed(config_path, seed_words).await {
         Ok(wallet) => {
-            TasksTrackers::current().stop_all_processes().await;
+            SetupManager::get_instance()
+                .shutdown_phases(app.clone(), vec![SetupPhase::Wallet, SetupPhase::Mining])
+                .await;
             InternalWallet::clear_wallet_local_data(data_dir)
                 .await
                 .map_err(|e| e.to_string())?;
@@ -844,10 +846,7 @@ pub async fn import_seed_words(
             .map_err(InvokeError::from_anyhow)?;
             EventsEmitter::emit_base_tari_address_changed(wallet.get_tari_address()).await;
             SetupManager::get_instance()
-                .add_phases_to_restart_queue(vec![SetupPhase::Wallet, SetupPhase::Mining])
-                .await;
-            SetupManager::get_instance()
-                .restart_phases_from_queue(app.clone())
+                .resume_phases(app, vec![SetupPhase::Wallet, SetupPhase::Mining])
                 .await;
         }
         Err(e) => {
