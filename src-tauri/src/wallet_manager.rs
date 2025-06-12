@@ -31,7 +31,7 @@ use crate::wallet_adapter::{TransactionInfo, WalletBalance};
 use crate::wallet_adapter::{WalletAdapter, WalletState};
 use crate::BaseNodeStatus;
 use futures_util::future::FusedFuture;
-use log::{info, warn};
+use log::info;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;

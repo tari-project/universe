@@ -38,7 +38,6 @@ use crate::{
     UniverseAppState,
 };
 use anyhow::Error;
-use log::{info, warn};
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::ShutdownSignal;
 use tauri::{AppHandle, Manager};
@@ -54,6 +53,7 @@ use super::{
     utils::{setup_default_adapter::SetupDefaultAdapter, timeout_watcher::TimeoutWatcher},
 };
 
+#[allow(dead_code)]
 static LOG_TARGET: &str = "tari::universe::phase_wallet";
 
 #[derive(Clone, Default)]
