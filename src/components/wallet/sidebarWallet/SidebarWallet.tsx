@@ -32,7 +32,7 @@ interface SidebarWalletProps {
     setSection: (section: string) => void;
 }
 export default function SidebarWallet({ section, setSection }: SidebarWalletProps) {
-    const xcData = useExchangeStore((s) => s.content);
+    const xcData = useExchangeStore((s) => s.currentExchangeMiner);
     const detailsItem = useWalletStore((s) => s.detailsItem);
     const targetRef = useRef<HTMLDivElement>(null);
     const { scrollY } = useScroll({ container: targetRef });

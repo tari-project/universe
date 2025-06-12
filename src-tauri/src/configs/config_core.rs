@@ -28,6 +28,7 @@ use tari_common::configuration::Network;
 use tauri::AppHandle;
 use tokio::sync::RwLock;
 
+use crate::app_in_memory_config::DEFAULT_EXCHANGE_ID;
 use crate::events_emitter::EventsEmitter;
 use crate::node::node_manager::NodeType;
 use crate::{ab_test_selector::ABTestSelector, internal_wallet::generate_password};
@@ -67,7 +68,7 @@ pub struct ConfigCoreContent {
     airdrop_tokens: Option<AirdropTokens>,
     remote_base_node_address: String,
     node_type: NodeType,
-    exchange_id: Option<String>,
+    exchange_id: String,
 }
 
 fn default_monero_nodes() -> Vec<String> {
@@ -121,7 +122,7 @@ impl Default for ConfigCoreContent {
             airdrop_tokens: None,
             remote_base_node_address,
             node_type: NodeType::Local,
-            exchange_id: None,
+            exchange_id: DEFAULT_EXCHANGE_ID.to_string(),
         }
     }
 }

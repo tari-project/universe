@@ -25,7 +25,12 @@ import { GpuThreads } from '@app/types/app-status.ts';
 import { displayMode, modeType } from '../types';
 import { ConfigCore, ConfigMining, ConfigUI, ConfigWallet } from '@app/types/configs.ts';
 import { NodeType, updateNodeType as updateNodeTypeForNodeStore } from '../useNodeStore.ts';
-import { fetchExchangeContent, fetchExchangeMiners, setCurrentExchangeMiner } from '../useExchangeStore.ts';
+import {
+    fetchExchangeContent,
+    fetchExchangeMiners,
+    setCurrentExchangeMiner,
+    useExchangeStore,
+} from '../useExchangeStore.ts';
 
 interface SetModeProps {
     mode: modeType;
@@ -33,8 +38,23 @@ interface SetModeProps {
     customCpuLevels?: number;
 }
 
-export const handleConfigCoreLoaded = (coreConfig: ConfigCore) => {
+export const handleConfigCoreLoaded = async (coreConfig: ConfigCore) => {
     useConfigCoreStore.setState(coreConfig);
+
+    const buildInExchangeId = useConfigBEInMemoryStore.getState().exchangeId;
+    const isAppExchangeSpecific = Boolean(buildInExchangeId !== 'universal');
+    setIsAppExchangeSpecific(isAppExchangeSpecific);
+
+    if (isAppExchangeSpecific) {
+        await fetchExchangeContent(coreConfig.exchange_id as string);
+    } else {
+        await fetchExchangeMiners();
+    }
+
+    const currentExchangeContent = useExchangeStore.getState().currentExchangeMiner;
+    if (currentExchangeContent.id !== coreConfig.exchange_id) {
+        await fetchExchangeContent(coreConfig.exchange_id as string);
+    }
 };
 export const handleConfigWalletLoaded = (walletConfig: ConfigWallet) => {
     useConfigWalletStore.setState(walletConfig);
@@ -322,16 +342,6 @@ export const fetchBackendInMemoryConfig = async () => {
         const appInMemoryConfig = await invoke('get_app_in_memory_config');
         if (appInMemoryConfig) {
             useConfigBEInMemoryStore.setState({ ...appInMemoryConfig });
-            const isAppExchangeSpecific = Boolean(
-                appInMemoryConfig.exchangeId && appInMemoryConfig.exchangeId !== 'universal'
-            );
-            setIsAppExchangeSpecific(isAppExchangeSpecific);
-
-            if (isAppExchangeSpecific) {
-                await fetchExchangeContent(appInMemoryConfig.exchangeId);
-            } else {
-                await fetchExchangeMiners();
-            }
         }
     } catch (e) {
         console.error('Could not fetch backend in memory config', e);

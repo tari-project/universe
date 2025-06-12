@@ -5,7 +5,6 @@ import { useUIStore } from './useUIStore';
 import { ExchangeBranding } from '@app/types/exchange.ts';
 
 interface ExchangeStoreState {
-    content?: ExchangeBranding | null;
     showExchangeAddressModal: boolean | null;
     exchangeMiners?: ExchangeBranding[];
     currentExchangeMiner: ExchangeBranding;
@@ -29,10 +28,6 @@ export const useExchangeStore = create<ExchangeStoreState>()(() => ({ ...initial
 
 export const setShowExchangeModal = (showExchangeAddressModal: boolean) => {
     useExchangeStore.setState({ showExchangeAddressModal });
-};
-
-export const setExchangeContent = (content?: ExchangeBranding | null) => {
-    useExchangeStore.setState({ content });
 };
 
 export const setShowUniversalModal = (showUniversalModal: boolean) => {
@@ -69,7 +64,7 @@ export async function fetchExchangeMiners() {
 }
 
 export async function fetchExchangeContent(exchangeId: string) {
-    const currentExchangeContent = useExchangeStore.getState().content;
+    const currentExchangeContent = useExchangeStore.getState().currentExchangeMiner;
     if (currentExchangeContent?.id === exchangeId) {
         return currentExchangeContent;
     }
@@ -81,7 +76,7 @@ export async function fetchExchangeContent(exchangeId: string) {
         const xcContent = (await content.json()) as ExchangeBranding;
         const shouldShowExchangeSpecificModal = useUIStore.getState().shouldShowExchangeSpecificModal;
         if (xcContent) {
-            setExchangeContent(xcContent);
+            setCurrentExchangeMiner(xcContent);
             setShowExchangeModal(shouldShowExchangeSpecificModal);
         }
         return xcContent;
