@@ -65,6 +65,7 @@ export const XCOption = ({ content, isCurrent = false }: XCOptionProps) => {
     const isTari = content.slug === 'universal' && content.id === 'universal';
     const logoSrc = content.logo_img_small_url || content.logo_img_url;
     const logoMarkup = isTari ? <TariOutlineSVG /> : logoSrc && <img src={logoSrc} alt={content.name} />;
+    const showExpand = isTari ? !isCurrent && content.id : content.id;
 
     return (
         <Wrapper $isCurrent={isCurrent}>
@@ -83,8 +84,9 @@ export const XCOption = ({ content, isCurrent = false }: XCOptionProps) => {
                             <CaptionText>{t('selected-exchange-miner', { ns: 'exchange' })}</CaptionText>
                         </CaptionWrapper>
                     )}
-                    {content.id && (
+                    {showExpand && (
                         <OpenButton
+                            $isOpen={isActive}
                             onClick={() => {
                                 setIsActive(!isActive);
                             }}
@@ -100,11 +102,15 @@ export const XCOption = ({ content, isCurrent = false }: XCOptionProps) => {
                 <ExchangeAddress handleIsAddressValid={setIsAddressValid} handleAddressChanged={setMiningAddress} />
                 <SeasonReward>
                     <LeftContent>
-                        <SeasonRewardIcon src="/assets/img/wrapped_gift.png" alt="gift" />
-                        <SeasonRewardText>
-                            <b>{t('season-one-reward', { ns: 'exchange' })}:</b>{' '}
-                            <span> {content.campaign_description} </span>
-                        </SeasonRewardText>
+                        {content.campaign_description ? (
+                            <>
+                                <SeasonRewardIcon src="/assets/img/wrapped_gift.png" alt="gift" />
+                                <SeasonRewardText>
+                                    <b>{t('season-one-reward', { ns: 'exchange' })}:</b>{' '}
+                                    <span>{content.campaign_description}</span>
+                                </SeasonRewardText>
+                            </>
+                        ) : null}
                     </LeftContent>
                     {content.reward_expiry_date ? (
                         <Countdown>
