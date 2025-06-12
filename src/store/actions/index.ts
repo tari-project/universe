@@ -59,7 +59,7 @@ export {
     setIsWebglNotSupported,
 } from './uiStoreActions.ts';
 
-export { importSeedWords, setWalletBalance, getCurrentActiveTariAddress } from './walletStoreActions';
+export { importSeedWords, setWalletBalance } from './walletStoreActions';
 export {
     setGpuDevices,
     setGpuMiningStatus,
