@@ -8,6 +8,7 @@ import { useConfigBEInMemoryStore } from '../useAppConfigStore';
 import { TransactionDetailsItem, TransactionDirection, TransactionStatus } from '@app/types/transactions';
 import { useUIStore } from '../useUIStore';
 import { setSeedlessUI } from './uiStoreActions';
+import { refreshTransactions } from '@app/hooks/wallet/useFetchTxHistory.ts';
 
 export const fetchBridgeTransactionsHistory = async () => {
     const baseUrl = useConfigBEInMemoryStore.getState().bridgeBackendApiUrl;
@@ -119,6 +120,7 @@ export const handleExternalWalletAddressUpdate = (payload?: WalletAddress) => {
         if (isSeedlessUI) {
             setSeedlessUI(false);
             setCurrentExchangeMinerId(universalExchangeMinerOption.exchange_id);
+            refreshTransactions();
         }
     }
 };
