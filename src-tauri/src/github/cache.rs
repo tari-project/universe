@@ -174,7 +174,8 @@ impl CacheJsonFile {
         repo_name: &str,
         source: ReleaseSource,
     ) -> bool {
-        self.get_cache_entry(repo_owner, repo_name).is_some_and( |cache_entry| match source {
+        self.get_cache_entry(repo_owner, repo_name)
+            .is_some_and(|cache_entry| match source {
                 ReleaseSource::Github => cache_entry.github_file_path.exists(),
                 ReleaseSource::Mirror => cache_entry.mirror_file_path.exists(),
             })
