@@ -154,7 +154,6 @@ impl WebsocketManager {
         in_memory_config: &Arc<RwLock<AppInMemoryConfig>>,
     ) -> Result<WebSocketStream<MaybeTlsStream<TcpStream>>, anyhow::Error> {
         info!(target:LOG_TARGET,"connecting to websocket... [{}:{}]", file!(), line!());
-        info!(target:LOG_TARGET,"[DEBUG] acquiring read lock on in_memory_config [{}:{}]", file!(), line!());
         let config_read = in_memory_config.read().await;
         let mut adjusted_ws_url = config_read.airdrop_api_url.clone();
         if adjusted_ws_url.contains("https") {
@@ -163,7 +162,6 @@ impl WebsocketManager {
             adjusted_ws_url = config_read.airdrop_api_url.clone().replace("http", "ws");
         }
         drop(config_read);
-        info!(target:LOG_TARGET,"[DEBUG] releasing read lock on in_memory_config at {}:{}", file!(), line!());
 
         let app_id = ConfigCore::content().await.anon_id().clone();
         adjusted_ws_url.push_str(&format!("/v2/ws?app_id={}", encode(&app_id)));
