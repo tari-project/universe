@@ -47,6 +47,7 @@ export const Connect = () => {
     function handleAddressChange(e) {
         const address = e.target.value;
         setAddress(address);
+
         setDisplayAddress(truncateMiddle(address, 4));
     }
     function handleFocus(focused: boolean) {
@@ -95,7 +96,9 @@ export const Connect = () => {
                     <AddressInput
                         {...register('address', {
                             required: true,
-                            onBlur: () => handleFocus(false),
+                            onBlur: () => {
+                                handleFocus(false);
+                            },
                             onChange: handleAddressChange,
                         })}
                         onFocus={() => handleFocus(true)}
@@ -117,7 +120,7 @@ export const Connect = () => {
                 <CTA
                     $backgroundCol={data?.primary_colour}
                     type="submit"
-                    disabled={!allowTelemetry || formState.isSubmitting || !formState.isValid}
+                    disabled={!allowTelemetry || formState.isSubmitting || !addressIsValid}
                 >
                     {formState.isSubmitting || formState.isLoading ? (
                         <LoadingDots />
