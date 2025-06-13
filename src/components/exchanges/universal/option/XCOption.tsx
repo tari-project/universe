@@ -7,6 +7,8 @@ import {
     Countdown,
     CountdownText,
     Heading,
+    HelpButton,
+    HelpButtonWrapper,
     LeftContent,
     SeasonReward,
     SeasonRewardIcon,
@@ -31,6 +33,7 @@ import { ExchangeBranding, ExchangeMiner } from '@app/types/exchange.ts';
 
 import { setSeedlessUI } from '@app/store/actions/uiStoreActions.ts';
 import { Divider } from '@app/components/elements/Divider.tsx';
+import { ExternalLinkSVG } from '@app/assets/icons/external-link.tsx';
 
 interface XCOptionProps {
     content: ExchangeBranding;
@@ -66,6 +69,16 @@ export const XCOption = ({ content, isCurrent = false, isActive, onActiveClick }
     const isTari = content.slug === 'universal' && content.id === 'universal';
     const logoSrc = content.logo_img_small_url;
     const showExpand = isTari ? !isCurrent && content.id : content.id;
+
+    const helpMarkup = content.address_help_link ? (
+        <HelpButtonWrapper>
+            <Divider />
+            <HelpButton onClick={() => open(content.address_help_link)}>
+                <Typography>{t('help-find-address', { exchange: content.name, ns: 'exchange' })}</Typography>
+                <ExternalLinkSVG />
+            </HelpButton>
+        </HelpButtonWrapper>
+    ) : null;
 
     return (
         <Wrapper $isCurrent={isCurrent} $isActive={isActive}>
@@ -124,12 +137,7 @@ export const XCOption = ({ content, isCurrent = false, isActive, onActiveClick }
                             <Typography variant="h4">{t('confirm', { ns: 'settings' })}</Typography>
                         </ConfirmButton>
                     ) : (
-                        <>
-                            <Divider />
-                            <Typography variant="p">
-                                {t('help-find-address', { exchange: content.name, ns: 'exchange' })}
-                            </Typography>
-                        </>
+                        helpMarkup
                     )}
                 </ContentBodyWrapper>
             )}

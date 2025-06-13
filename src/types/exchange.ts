@@ -21,6 +21,8 @@ export interface ExchangeData extends ExchangeMiner {
 export interface ExchangeBranding extends ExchangeData {
     exchange_id: string; // used with internal app config state
 
+    address_help_link?: string;
+
     campaign_cta?: string;
     campaign_title?: string;
     campaign_tagline?: string;
