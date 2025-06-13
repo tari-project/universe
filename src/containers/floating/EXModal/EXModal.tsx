@@ -8,13 +8,14 @@ import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 import { useFetchExchangeBranding } from '@app/hooks/exchanges/fetchExchangeContent.ts';
 
 export default function EXModal() {
-    const { data } = useFetchExchangeBranding();
+    const { data, isPending } = useFetchExchangeBranding();
     const showModal = useExchangeStore((s) => s.showExchangeAddressModal);
 
     return (
         <Dialog open={!!showModal} disableClose onOpenChange={setShowExchangeModal}>
             <DialogContent $disableOverflow $borderRadius="40px">
-                {data ? (
+                {isPending && <LoadingDots />}
+                {data && (
                     <Wrapper>
                         <Hero
                             heroImgUrl={data.hero_img_url}
@@ -23,8 +24,6 @@ export default function EXModal() {
                         />
                         <Content data={data} />
                     </Wrapper>
-                ) : (
-                    <LoadingDots />
                 )}
             </DialogContent>
         </Dialog>

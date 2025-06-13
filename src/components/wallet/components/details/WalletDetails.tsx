@@ -7,7 +7,7 @@ export default function WalletDetails() {
     const { data } = useFetchExchangeBranding();
 
     const name = data?.name;
-    const logoSrc = data?.dark_logo_img_small_url;
+    const logoSrc = data?.logo_img_small_url;
 
     return (
         <Wrapper>

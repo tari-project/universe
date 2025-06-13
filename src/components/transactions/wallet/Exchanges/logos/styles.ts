@@ -14,14 +14,12 @@ export const Logo = styled.div<Props & { $index: number; $bgColour?: string }>`
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 33px;
-    height: 33px;
     position: absolute;
     z-index: ${({ $index }) => $index + 1};
     top: 0;
     background-color: ${({ theme, $bgColour }) => $bgColour || theme.colors.greyscale[50]};
     img {
-        max-width: 100%;
+        width: 100%;
     }
 
     ${({ $variant, $index }) => {
