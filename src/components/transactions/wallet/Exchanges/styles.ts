@@ -8,6 +8,7 @@ export const SectionDivider = styled.div`
     align-items: center;
     justify-content: center;
     width: 100%;
+    margin: 5px 0 10px;
     position: relative;
     p {
         color: ${({ theme }) => theme.colors.greyscale[theme.mode === 'dark' ? 100 : 500]};
