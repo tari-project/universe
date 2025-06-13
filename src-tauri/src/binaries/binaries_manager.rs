@@ -23,7 +23,7 @@ use anyhow::{anyhow, Error};
 use log::{debug, error, info, warn};
 use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, path::PathBuf, str::FromStr};
+use std::{collections::HashMap, io, path::PathBuf, str::FromStr};
 use tari_common::configuration::Network;
 use tauri_plugin_sentry::sentry;
 
@@ -31,6 +31,7 @@ use crate::{
     download_utils::{extract, validate_checksum},
     github::request_client::RequestClient,
     progress_tracker_old::ProgressTracker,
+    utils::error_utils::find_io_error,
 };
 
 use super::{
@@ -448,6 +449,13 @@ impl BinaryManager {
             {
                 Ok(_) => return Ok(()),
                 Err(error) => {
+                    if let Some(io_error) = find_io_error(&error) {
+                        if io_error.kind() == io::ErrorKind::PermissionDenied {
+                            error!(target: LOG_TARGET, "Permission denied error when downloading binary: {} Error: {:?}", self.binary_name, error);
+                            return Err(anyhow!(io_error.to_string()));
+                        }
+                    }
+
                     last_error_message = format!(
                         "Failed to download binary: {}. Error: {:?}",
                         self.binary_name, error
