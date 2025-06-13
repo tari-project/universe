@@ -20,9 +20,10 @@ export const LogoContainer = styled.div`
     gap: 10px;
     font-size: 30px;
     font-weight: 700;
+    width: 90%;
 `;
 export const LogoImg = styled.img`
-    max-height: 100%;
+    max-width: 100%;
     color: ${({ theme }) => theme.palette.text.primary};
 `;
 
