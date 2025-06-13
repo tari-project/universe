@@ -96,10 +96,10 @@ impl ConfigWalletContent {
     }
 
     pub fn get_current_used_tari_address(&self) -> TariAddress {
-        if let Some(address) = &self.tari_address {
+        if let Some(address) = &self.external_tari_address {
             address.clone()
         } else {
-            self.external_tari_address
+            self.tari_address
                 .clone()
                 .expect("No Tari address set in ConfigWalletContent")
         }

@@ -212,7 +212,7 @@ impl PhaseStatus {
 
 #[derive(Default)]
 pub struct SetupManager {
-    features: RwLock<SetupFeaturesList>,
+    pub features: RwLock<SetupFeaturesList>,
     core_phase_status: Sender<PhaseStatus>,
     hardware_phase_status: Sender<PhaseStatus>,
     node_phase_status: Sender<PhaseStatus>,
