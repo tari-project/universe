@@ -325,7 +325,6 @@ pub async fn get_app_in_memory_config(
     _app: tauri::AppHandle,
 ) -> Result<AirdropInMemoryConfig, ()> {
     let timer = Instant::now();
-    info!(target: LOG_TARGET, "[DEBUG] acquiring read lock on in_memory_config - {}:{}", file!(), line!());
     let res = state.in_memory_config.read().await.clone().into();
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET,
@@ -333,7 +332,6 @@ pub async fn get_app_in_memory_config(
             timer.elapsed()
         );
     }
-    info!(target: LOG_TARGET, "[DEBUG] releasing read lock on in_memory_config - {}:{}", file!(), line!());
     Ok(res)
 }
 
