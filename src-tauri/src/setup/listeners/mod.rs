@@ -20,56 +20,52 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::time::Duration;
+pub mod listener_setup_finished;
+pub mod listener_unlock_app;
+pub mod listener_unlock_cpu_mining;
+pub mod listener_unlock_gpu_mining;
+pub mod listener_unlock_wallet;
+pub mod trait_listener;
 
-use tauri::AppHandle;
-use tokio::sync::watch::{Receiver, Sender};
+use std::fmt::{Display, Formatter};
 
-use crate::setup::{
-    listeners::SetupFeaturesList,
-    setup_manager::PhaseStatus,
-    trait_setup_phase::{SetupConfiguration, SetupPhaseImpl},
-};
-
-pub struct PhaseBuilder {
-    configuration: SetupConfiguration,
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum SetupFeature {
+    ExternalWalletAddress,
+    CentralizedPool,
+    Restarting,
 }
 
-impl PhaseBuilder {
-    pub fn new() -> Self {
-        PhaseBuilder {
-            configuration: SetupConfiguration {
-                listeners_for_required_phases_statuses: Vec::new(),
-                setup_timeout_duration: None,
-            },
+impl Display for SetupFeature {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            SetupFeature::ExternalWalletAddress => write!(f, "External Wallet Address"),
+            SetupFeature::CentralizedPool => write!(f, "Centralized Pool"),
+            SetupFeature::Restarting => write!(f, "Restarting"),
+        }
+    }
+}
+
+#[derive(Clone, Default, PartialEq, Eq, Debug)]
+pub struct SetupFeaturesList(Vec<SetupFeature>);
+
+impl SetupFeaturesList {
+    pub fn add_feature(&mut self, feature: SetupFeature) {
+        if !self.0.contains(&feature) {
+            self.0.push(feature);
         }
     }
 
-    pub fn with_listeners_for_required_phases_statuses(
-        mut self,
-        listeners: Vec<Receiver<PhaseStatus>>,
-    ) -> Self {
-        self.configuration.listeners_for_required_phases_statuses = listeners;
-        self
+    #[allow(dead_code)]
+    pub fn get_features(&self) -> Vec<SetupFeature> {
+        self.0.clone()
     }
 
-    pub fn with_setup_timeout_duration(mut self, duration: Duration) -> Self {
-        self.configuration.setup_timeout_duration = Some(duration);
-        self
+    pub fn is_feature_enabled(&self, feature: SetupFeature) -> bool {
+        self.0.contains(&feature)
     }
 
-    pub async fn build<T: SetupPhaseImpl>(
-        &self,
-        app_handle: AppHandle,
-        status_sender: Sender<PhaseStatus>,
-        setup_features: SetupFeaturesList,
-    ) -> T {
-        T::new(
-            app_handle,
-            status_sender,
-            self.configuration.clone(),
-            setup_features,
-        )
-        .await
+    pub fn is_feature_disabled(&self, feature: SetupFeature) -> bool {
+        !self.0.contains(&feature)
     }
 }

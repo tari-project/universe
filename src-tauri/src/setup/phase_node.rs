@@ -52,7 +52,8 @@ use tokio::{
 use tokio_util::task::TaskTracker;
 
 use super::{
-    setup_manager::{PhaseStatus, SetupFeaturesList},
+    listeners::SetupFeaturesList,
+    setup_manager::PhaseStatus,
     trait_setup_phase::{SetupConfiguration, SetupPhaseImpl},
     utils::{setup_default_adapter::SetupDefaultAdapter, timeout_watcher::TimeoutWatcher},
 };
@@ -331,6 +332,42 @@ impl SetupPhaseImpl for NodeSetupPhase {
 
         let app_handle_clone: tauri::AppHandle = self.app_handle.clone();
         let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
+
+        TasksTrackers::current().common.get_task_tracker().await.spawn(async move {
+        let app_state = app_handle_clone.state::<UniverseAppState>().clone();
+
+        let mut node_status_watch_rx = (*app_state.node_status_watch_rx).clone();
+        let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
+
+        let init_node_status = *node_status_watch_rx.borrow();
+        EventsEmitter::emit_base_node_update(init_node_status).await;
+
+        let mut latest_updated_block_height = init_node_status.block_height;
+        loop {
+            tokio::select! {
+                _ = node_status_watch_rx.changed() => {
+                    let node_status = *node_status_watch_rx.borrow();
+                    let initial_sync_finished = app_state.wallet_manager.is_initial_scan_completed();
+
+                    if node_status.block_height > latest_updated_block_height && initial_sync_finished {
+                        while latest_updated_block_height < node_status.block_height {
+                            latest_updated_block_height += 1;
+                            let _ = EventsManager::handle_new_block_height(&app_handle_clone, latest_updated_block_height).await;
+                        }
+                    }
+                    if node_status.block_height > latest_updated_block_height && !initial_sync_finished {
+                        EventsEmitter::emit_base_node_update(node_status).await;
+                        latest_updated_block_height = node_status.block_height;
+                    }
+                },
+                _ = shutdown_signal.wait() => {
+                    break;
+                },
+            }
+        }
+    });
+
+        let app_handle_clone: tauri::AppHandle = self.app_handle.clone();
         TasksTrackers::current()
             .node_phase
             .get_task_tracker()
@@ -362,6 +399,32 @@ impl SetupPhaseImpl for NodeSetupPhase {
                     }
                 }
             });
+
+        let app_handle_clone: tauri::AppHandle = self.app_handle.clone();
+        TasksTrackers::current().node_phase.get_task_tracker().await.spawn(async move {
+        let app_state = app_handle_clone.state::<UniverseAppState>().clone();
+        let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
+        let mut interval = interval(Duration::from_secs(10));
+
+        loop {
+            tokio::select! {
+                _ = interval.tick() => {
+                    if let Ok(connected_peers) = app_state
+                        .node_manager
+                        .list_connected_peers()
+                        .await {
+                            EventsEmitter::emit_connected_peers_update(connected_peers.clone()).await;
+                        } else {
+                            let err_msg = "Error getting connected peers";
+                            error!(target: LOG_TARGET, "{}", err_msg);
+                        }
+                },
+                _ = shutdown_signal.wait() => {
+                    break;
+                },
+            }
+        }
+    });
 
         Ok(())
     }

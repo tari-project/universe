@@ -43,7 +43,8 @@ use crate::{
 };
 
 use super::{
-    setup_manager::{PhaseStatus, SetupFeaturesList},
+    listeners::SetupFeaturesList,
+    setup_manager::PhaseStatus,
     trait_setup_phase::{SetupConfiguration, SetupPhaseImpl},
     utils::{setup_default_adapter::SetupDefaultAdapter, timeout_watcher::TimeoutWatcher},
 };
