@@ -80,7 +80,6 @@ impl SpendWalletManager {
         base_path: PathBuf,
         config_path: PathBuf,
         log_path: PathBuf,
-        app_state: tauri::State<'_, UniverseAppState>,
     ) -> Result<(), Error> {
         let binary_path = BinaryResolver::current()
             .read()
@@ -92,14 +91,7 @@ impl SpendWalletManager {
         SpendWalletManager::erase_related_data(base_path.clone())?;
 
         self.adapter
-            .init(
-                app_shutdown,
-                base_path,
-                config_path,
-                log_path,
-                binary_path,
-                app_state,
-            )
+            .init(app_shutdown, base_path, config_path, log_path, binary_path)
             .await
     }
 

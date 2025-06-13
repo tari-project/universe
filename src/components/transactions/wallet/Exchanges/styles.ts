@@ -47,28 +47,6 @@ export const XCButton = styled.button`
         background-color: ${({ theme }) => convertHexToRGBA(theme.palette.background.main, 0.5)};
     }
 `;
-export const XCLogos = styled.div`
-    position: relative;
-    height: 33px;
-    width: 70px;
-`;
-export const XCLogo = styled.div<{ $index: number; $bgColour?: string }>`
-    overflow: hidden;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 33px;
-    height: 33px;
-    position: absolute;
-    left: ${({ $index }) => `${$index * 15}px`};
-    z-index: ${({ $index }) => $index + 1};
-    top: 0;
-    background-color: ${({ theme, $bgColour }) => $bgColour || theme.colors.greyscale[50]};
-    img {
-        max-width: 100%;
-    }
-`;
 
 export const CopyWrapper = styled.div`
     display: flex;

@@ -8,6 +8,7 @@ import { SendReview } from './SendReview/SendReview.tsx';
 import { StyledForm, Wrapper } from './Send.styles.ts';
 import { invoke } from '@tauri-apps/api/core';
 import { setError as setStoreError } from '@app/store';
+import { queryClient } from '@app/App/queryClient.ts';
 
 interface SendModalProps {
     section: string;
@@ -72,6 +73,7 @@ export default function SendModal({ section, setSection }: SendModalProps) {
                     ...payload,
                     amount: payload.amount.toString(),
                 });
+                await queryClient.invalidateQueries({ queryKey: ['transactions'] });
                 setStatus('completed');
             } catch (error) {
                 setStoreError(`Error sending transaction: ${error}`);

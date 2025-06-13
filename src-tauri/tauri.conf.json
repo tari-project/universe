@@ -72,9 +72,7 @@
             },
             "assetProtocol": {
                 "enable": true,
-                "scope": [
-                    "**"
-                ]
+                "scope": ["**"]
             },
             "pattern": {
                 "use": "isolation",
