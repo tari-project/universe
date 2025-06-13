@@ -25,7 +25,7 @@ use super::{
     phase_node::NodeSetupPhase, phase_wallet::WalletSetupPhase, trait_setup_phase::SetupPhaseImpl,
     utils::phase_builder::PhaseBuilder,
 };
-use crate::app_in_memory_config::{MinerType, DEFAULT_EXCHANGE_ID, EXCHANGE_ID};
+use crate::app_in_memory_config::{MinerType, DEFAULT_EXCHANGE_ID};
 use crate::configs::config_core::ConfigCoreContent;
 use crate::{
     configs::{
@@ -372,7 +372,8 @@ impl SetupManager {
         // clear existing features
         features.0.clear();
 
-        let is_exchange_miner_build = EXCHANGE_ID.ne(DEFAULT_EXCHANGE_ID);
+        let exchange_id = ConfigCore::content().await.exchange_id().clone();
+        let is_exchange_miner_build = exchange_id.ne(DEFAULT_EXCHANGE_ID);
         if cpu_mining_pool_url.is_some() && cpu_mining_pool_status_url.is_some() {
             info!(target: LOG_TARGET, "Centralized pool feature enabled");
             features.add_feature(SetupFeature::CentralizedPool);

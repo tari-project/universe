@@ -1,4 +1,4 @@
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 import { Typography } from '@app/components/elements/Typography.tsx';
 
 export const Wrapper = styled.div<{ $isCurrent?: boolean; $isActive?: boolean }>`
