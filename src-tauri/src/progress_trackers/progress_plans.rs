@@ -237,7 +237,7 @@ impl ProgressStep for ProgressSetupWalletPlan {
 }
 
 #[derive(Clone, PartialEq, Debug)]
-pub enum ProgressSetupUnknownPlan {
+pub enum ProgressSetupMiningPlan {
     BinariesP2pool,
     BinariesMergeMiningProxy,
     P2Pool,
@@ -245,32 +245,32 @@ pub enum ProgressSetupUnknownPlan {
     Done,
 }
 
-impl ProgressStep for ProgressSetupUnknownPlan {
+impl ProgressStep for ProgressSetupMiningPlan {
     type ChannelEvent = ProgressPlanEventPayload;
 
     fn get_event_type(&self) -> ProgressEvents {
-        ProgressEvents::Unknown
+        ProgressEvents::Mining
     }
 
     fn get_progress_weight(&self) -> u8 {
         match self {
-            ProgressSetupUnknownPlan::BinariesP2pool => 2,
-            ProgressSetupUnknownPlan::BinariesMergeMiningProxy => 2,
-            ProgressSetupUnknownPlan::P2Pool => 1,
-            ProgressSetupUnknownPlan::MMProxy => 1,
-            ProgressSetupUnknownPlan::Done => 1,
+            ProgressSetupMiningPlan::BinariesP2pool => 2,
+            ProgressSetupMiningPlan::BinariesMergeMiningProxy => 2,
+            ProgressSetupMiningPlan::P2Pool => 1,
+            ProgressSetupMiningPlan::MMProxy => 1,
+            ProgressSetupMiningPlan::Done => 1,
         }
     }
 
     fn get_title(&self) -> String {
         match self {
-            ProgressSetupUnknownPlan::BinariesP2pool => "binaries-p2pool".to_string(),
-            ProgressSetupUnknownPlan::BinariesMergeMiningProxy => {
+            ProgressSetupMiningPlan::BinariesP2pool => "binaries-p2pool".to_string(),
+            ProgressSetupMiningPlan::BinariesMergeMiningProxy => {
                 "binaries-merge-mining-proxy".to_string()
             }
-            ProgressSetupUnknownPlan::P2Pool => "p2pool".to_string(),
-            ProgressSetupUnknownPlan::MMProxy => "mm-proxy".to_string(),
-            ProgressSetupUnknownPlan::Done => "done".to_string(),
+            ProgressSetupMiningPlan::P2Pool => "p2pool".to_string(),
+            ProgressSetupMiningPlan::MMProxy => "mm-proxy".to_string(),
+            ProgressSetupMiningPlan::Done => "done".to_string(),
         }
     }
 
@@ -289,7 +289,7 @@ pub enum ProgressPlans {
     Node(ProgressSetupNodePlan),
     Hardware(ProgressSetupHardwarePlan),
     Wallet(ProgressSetupWalletPlan),
-    Unknown(ProgressSetupUnknownPlan),
+    Mining(ProgressSetupMiningPlan),
 }
 #[allow(dead_code)]
 impl ProgressPlans {
@@ -299,7 +299,7 @@ impl ProgressPlans {
             ProgressPlans::Node(plan) => plan.get_event_type(),
             ProgressPlans::Hardware(plan) => plan.get_event_type(),
             ProgressPlans::Wallet(plan) => plan.get_event_type(),
-            ProgressPlans::Unknown(plan) => plan.get_event_type(),
+            ProgressPlans::Mining(plan) => plan.get_event_type(),
         }
     }
 }
@@ -313,7 +313,7 @@ impl ProgressStep for ProgressPlans {
             ProgressPlans::Node(plan) => plan.get_event_type(),
             ProgressPlans::Hardware(plan) => plan.get_event_type(),
             ProgressPlans::Wallet(plan) => plan.get_event_type(),
-            ProgressPlans::Unknown(plan) => plan.get_event_type(),
+            ProgressPlans::Mining(plan) => plan.get_event_type(),
         }
     }
 
@@ -323,7 +323,7 @@ impl ProgressStep for ProgressPlans {
             ProgressPlans::Node(plan) => plan.get_title(),
             ProgressPlans::Hardware(plan) => plan.get_title(),
             ProgressPlans::Wallet(plan) => plan.get_title(),
-            ProgressPlans::Unknown(plan) => plan.get_title(),
+            ProgressPlans::Mining(plan) => plan.get_title(),
         }
     }
 
@@ -333,7 +333,7 @@ impl ProgressStep for ProgressPlans {
             ProgressPlans::Node(plan) => plan.resolve_to_event(),
             ProgressPlans::Hardware(plan) => plan.resolve_to_event(),
             ProgressPlans::Wallet(plan) => plan.resolve_to_event(),
-            ProgressPlans::Unknown(plan) => plan.resolve_to_event(),
+            ProgressPlans::Mining(plan) => plan.resolve_to_event(),
         }
     }
 
@@ -343,7 +343,7 @@ impl ProgressStep for ProgressPlans {
             ProgressPlans::Node(plan) => plan.get_progress_weight(),
             ProgressPlans::Hardware(plan) => plan.get_progress_weight(),
             ProgressPlans::Wallet(plan) => plan.get_progress_weight(),
-            ProgressPlans::Unknown(plan) => plan.get_progress_weight(),
+            ProgressPlans::Mining(plan) => plan.get_progress_weight(),
         }
     }
 }
@@ -355,7 +355,7 @@ impl ProgressPlans {
             ProgressPlans::Node(_) => "setup-local-node".to_string(),
             ProgressPlans::Hardware(_) => "setup-hardware".to_string(),
             ProgressPlans::Wallet(_) => "setup-wallet".to_string(),
-            ProgressPlans::Unknown(_) => "setup-unknown".to_string(),
+            ProgressPlans::Mining(_) => "setup-mining".to_string(),
         }
     }
 
@@ -365,7 +365,7 @@ impl ProgressPlans {
             ProgressPlans::Node(_) => 0.4,
             ProgressPlans::Hardware(_) => 0.1,
             ProgressPlans::Wallet(_) => 0.1,
-            ProgressPlans::Unknown(_) => 0.1,
+            ProgressPlans::Mining(_) => 0.1,
         }
     }
 
@@ -375,7 +375,7 @@ impl ProgressPlans {
             ProgressPlans::Node(_) => 20.0,
             ProgressPlans::Hardware(_) => 60.0,
             ProgressPlans::Wallet(_) => 80.0,
-            ProgressPlans::Unknown(_) => 90.0,
+            ProgressPlans::Mining(_) => 90.0,
         }
     }
 }

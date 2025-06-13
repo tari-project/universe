@@ -59,8 +59,6 @@ pub enum NodeManagerError {
     ExitCode(i32),
     #[error("Node failed with an unknown error: {0}")]
     UnknownError(#[from] anyhow::Error),
-    #[error("Maximum failed requests exceeded")]
-    MaxFailedRequestsExceeded,
 }
 
 pub const STOP_ON_ERROR_CODES: [i32; 2] = [114, 102];
@@ -286,8 +284,6 @@ impl NodeManager {
         progress_percentage_tx: &watch::Sender<f64>,
     ) -> Result<(), anyhow::Error> {
         let shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
-        let mut failed_request_counter = 0;
-        static MAX_FAILED_REQUESTS: u32 = 10;
         loop {
             let current_service = self.get_current_service().await?;
             match current_service
@@ -301,19 +297,10 @@ impl NodeManager {
                 Ok(_) => {
                     return Ok(());
                 }
-                Err(e) => match e {
-                    NodeStatusMonitorError::NodeNotStarted => {
-                        continue;
-                    }
-                    _ => {
-                        failed_request_counter += 1;
-                        if failed_request_counter >= MAX_FAILED_REQUESTS {
-                            return Err(NodeManagerError::MaxFailedRequestsExceeded.into());
-                        }
-                        sleep(Duration::from_millis(100)).await;
-                        continue;
-                    }
-                },
+                Err(_) => {
+                    sleep(Duration::from_secs(5)).await;
+                    continue;
+                }
             }
         }
     }
@@ -429,7 +416,8 @@ fn construct_process_watcher<T: NodeAdapter + ProcessAdapter + Send + Sync + 'st
         process_watcher.poll_time = Duration::from_secs(10);
         process_watcher.health_timeout = Duration::from_secs(9);
     }
-    process_watcher.expected_startup_time = Duration::from_secs(30);
+    // NODE: Temporary solution to process payrefs in TU v1.2.9
+    process_watcher.expected_startup_time = Duration::from_secs(540); // 9mins
 
     process_watcher
 }
@@ -597,7 +585,8 @@ where
                     return Ok(());
                 }
                 Err(err) => {
-                    if retries > 20 {
+                    // NODE: Temporary solution to process payrefs in TU v1.2.9
+                    if retries > 420 {
                         warn!(
                             target: LOG_TARGET,
                             "Max retries exceeded for {} node identity readiness. Stopping watcher. Error: {}",

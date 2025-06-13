@@ -24,6 +24,7 @@ use crate::port_allocator::PortAllocator;
 use crate::process_adapter::{
     HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
 };
+use crate::process_adapter_utils::setup_working_directory;
 use crate::tasks_tracker::TasksTrackers;
 use crate::utils::file_utils::convert_to_string;
 use crate::utils::logging_utils::setup_logging;
@@ -32,11 +33,11 @@ use async_trait::async_trait;
 use log::{info, warn};
 use minotari_node_grpc_client::grpc::wallet_client::WalletClient;
 use minotari_node_grpc_client::grpc::{
-    GetBalanceResponse, GetCompletedTransactionsRequest, GetCompletedTransactionsResponse,
-    GetStateRequest, NetworkStatusResponse,
+    GetAllCompletedTransactionsRequest, GetBalanceRequest, GetBalanceResponse,
+    GetCompletedTransactionsRequest, GetCompletedTransactionsResponse, GetStateRequest,
+    ImportTransactionsRequest, NetworkStatusResponse,
 };
 use serde::Serialize;
-use std::fs;
 use std::path::PathBuf;
 use std::time::Duration;
 use tari_common::configuration::Network;
@@ -65,7 +66,6 @@ pub struct WalletAdapter {
     pub(crate) grpc_port: u16,
     pub(crate) state_broadcast: watch::Sender<Option<WalletState>>,
     pub(crate) wallet_birthday: Option<u16>,
-    completed_transactions_stream: Mutex<Option<Streaming<GetCompletedTransactionsResponse>>>,
     coinbase_transactions_stream: Mutex<Option<Streaming<GetCompletedTransactionsResponse>>>,
 }
 
@@ -84,7 +84,6 @@ impl WalletAdapter {
             grpc_port,
             state_broadcast,
             wallet_birthday: None,
-            completed_transactions_stream: Mutex::new(None),
             coinbase_transactions_stream: Mutex::new(None),
         }
     }
@@ -97,44 +96,81 @@ impl WalletAdapter {
         self.connect_with_local_node = connect_with_local_node;
     }
 
+    pub async fn get_balance(&self) -> Result<WalletBalance, anyhow::Error> {
+        let mut client = WalletClient::connect(self.wallet_grpc_address())
+            .await
+            .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
+        let res = client
+            .get_balance(GetBalanceRequest { payment_id: None })
+            .await?;
+        let balance = res.into_inner();
+
+        Ok(WalletBalance::from_response(balance))
+    }
+
+    pub async fn import_transaction(&self, tx_output_file: PathBuf) -> Result<(), anyhow::Error> {
+        let tx_json = std::fs::read_to_string(&tx_output_file).map_err(|e| {
+            log::error!(
+                "[import_transaction] Failed to read transaction output file: {}, output_file:\n{:?}",
+                e,
+                tx_output_file
+            );
+            anyhow::anyhow!("Failed to read transaction output file: {}", e)
+        })?;
+
+        let mut client = WalletClient::connect(self.wallet_grpc_address())
+            .await
+            .map_err(|e| {
+                log::error!(
+                    "[import_transaction] Failed to connect to wallet client: {}",
+                    e
+                );
+                anyhow::anyhow!("Failed to connect to wallet client")
+            })?;
+
+        let res = client
+            .import_transactions(ImportTransactionsRequest {
+                txs: format!("[{}]", tx_json.trim()),
+            })
+            .await
+            .map_err(|e| {
+                log::error!(
+                    "[import_transaction] Failed to import transactions: {:?}",
+                    e
+                );
+                anyhow::anyhow!("Failed to import transactions: {:?}", e)
+            })?;
+
+        info!(
+            target: LOG_TARGET,
+            "Transaction imported to the view wallet successfully, tx_id: {:?}",
+            res.into_inner().tx_ids.first()
+        );
+
+        Ok(())
+    }
+
     pub async fn get_transactions_history(
         &self,
-        continuation: bool,
-        limit: Option<u32>,
+        offset: Option<i32>,
+        limit: Option<i32>,
+        current_block_height: u64,
     ) -> Result<Vec<TransactionInfo>, WalletStatusMonitorError> {
-        // TODO: Implement starting point instead of continuation
-        let mut stream =
-            if continuation && self.completed_transactions_stream.lock().await.is_some() {
-                self.completed_transactions_stream
-                    .lock()
-                    .await
-                    .take()
-                    .expect("completed_transactions_stream not found")
-            } else {
-                let mut client = WalletClient::connect(self.wallet_grpc_address())
-                    .await
-                    .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
-                let res = client
-                    .get_completed_transactions(GetCompletedTransactionsRequest {
-                        payment_id: None,
-                        block_hash: None,
-                        block_height: None,
-                    })
-                    .await
-                    .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?;
-                res.into_inner()
-            };
+        let mut client = WalletClient::connect(self.wallet_grpc_address())
+            .await
+            .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
+        let res = client
+            .get_all_completed_transactions(GetAllCompletedTransactionsRequest {
+                offset: offset.unwrap_or(0) as u64,
+                limit: limit.unwrap_or(0) as u64,
+                status_bitflag: 0,
+            })
+            .await
+            .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?;
+        let transactions_raw = res.into_inner().transactions;
 
         let mut transactions: Vec<TransactionInfo> = Vec::new();
-
-        while let Some(message) = stream
-            .message()
-            .await
-            .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?
-        {
-            let tx = message.transaction.ok_or_else(|| {
-                WalletStatusMonitorError::UnknownError(anyhow::anyhow!("Transaction not found"))
-            })?;
+        for tx in transactions_raw {
             if tx.status == 14 {
                 // Remove TRANSACTION_STATUS_COINBASE_NOT_IN_BLOCK_CHAIN
                 continue;
@@ -142,8 +178,24 @@ impl WalletAdapter {
             let source_address = TariAddress::from_bytes(&tx.source_address)?;
             let dest_address = TariAddress::from_bytes(&tx.dest_address)?;
 
+            let confirmations =
+                if current_block_height > 0 && tx.mined_in_block_height <= current_block_height {
+                    current_block_height - tx.mined_in_block_height
+                } else {
+                    0
+                };
+            let payment_reference = if confirmations >= 5 {
+                match tx.direction {
+                    1 => tx.payment_references_received.last().map(hex::encode),
+                    2 => tx.payment_references_sent.last().map(hex::encode),
+                    _ => None,
+                }
+            } else {
+                None
+            };
+
             transactions.push(TransactionInfo {
-                tx_id: tx.tx_id,
+                tx_id: tx.tx_id.to_string(),
                 source_address: source_address.to_base58(),
                 dest_address: dest_address.to_base58(),
                 status: tx.status,
@@ -155,6 +207,7 @@ impl WalletAdapter {
                 timestamp: tx.timestamp,
                 payment_id: PaymentId::stringify_bytes(&tx.user_payment_id),
                 mined_in_block_height: tx.mined_in_block_height,
+                payment_reference,
             });
             if let Some(limit) = limit {
                 if transactions.len() >= limit as usize {
@@ -163,10 +216,6 @@ impl WalletAdapter {
             }
         }
 
-        self.completed_transactions_stream
-            .lock()
-            .await
-            .replace(stream);
         Ok(transactions)
     }
 
@@ -174,6 +223,7 @@ impl WalletAdapter {
         &self,
         continuation: bool,
         limit: Option<u32>,
+        _current_block_height: u64,
     ) -> Result<Vec<TransactionInfo>, WalletStatusMonitorError> {
         // TODO: Implement starting point instead of continuation
         let mut stream = if continuation && self.coinbase_transactions_stream.lock().await.is_some()
@@ -210,8 +260,9 @@ impl WalletAdapter {
                 // Consider only COINBASE_UNCONFIRMED and COINBASE_UNCONFIRMED
                 continue;
             }
+
             transactions.push(TransactionInfo {
-                tx_id: tx.tx_id,
+                tx_id: tx.tx_id.to_string(),
                 source_address: tx.source_address.to_hex(),
                 dest_address: tx.dest_address.to_hex(),
                 status: tx.status,
@@ -223,6 +274,7 @@ impl WalletAdapter {
                 timestamp: tx.timestamp,
                 payment_id: PaymentId::stringify_bytes(&tx.user_payment_id),
                 mined_in_block_height: tx.mined_in_block_height,
+                payment_reference: None,
             });
             if let Some(limit) = limit {
                 if transactions.len() >= limit as usize {
@@ -303,7 +355,9 @@ impl WalletAdapter {
         block_height: u64,
     ) -> Result<Option<TransactionInfo>, WalletStatusMonitorError> {
         // Get a small batch of recent coinbase transactions
-        let transactions = self.get_coinbase_transactions(false, Some(10)).await?;
+        let transactions = self
+            .get_coinbase_transactions(false, Some(10), block_height)
+            .await?;
 
         // Find one matching the specified block height
         let matching_tx = transactions
@@ -331,22 +385,12 @@ impl ProcessAdapter for WalletAdapter {
         binary_version_path: PathBuf,
         _is_first_start: bool,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
-        // TODO: This was copied from node_adapter. This should be DRY'ed up
         let inner_shutdown = Shutdown::new();
 
         info!(target: LOG_TARGET, "Starting read only wallet");
-        let working_dir = data_dir.join("wallet");
-        let network_dir = working_dir.join(Network::get_current().to_string().to_lowercase());
-        std::fs::create_dir_all(&working_dir)?;
 
-        // Remove peerdb on every restart as requested by Protocol team
-        let peer_db_dir = network_dir.join("peer_db");
-        if peer_db_dir.exists() {
-            info!(target: LOG_TARGET, "Removing peer db at {:?}", peer_db_dir);
-            let _unused = fs::remove_dir_all(peer_db_dir).inspect_err(|e| {
-                warn!(target: LOG_TARGET, "Failed to remove peer db: {:?}", e);
-            });
-        }
+        // Setup working directory using shared utility
+        let working_dir = setup_working_directory(&data_dir, "wallet")?;
 
         let formatted_working_dir = convert_to_string(working_dir.clone())?;
         let config_dir = log_dir
@@ -564,7 +608,7 @@ impl WalletStatusMonitor {
 
         Ok(WalletState {
             scanned_height: status.scanned_height,
-            balance: WalletBalance::from(status.balance),
+            balance: WalletBalance::from_option(status.balance),
             network: NetworkStatus::from(status.network),
         })
     }
@@ -659,19 +703,23 @@ pub struct WalletBalance {
 }
 
 impl WalletBalance {
-    pub fn from(res: Option<GetBalanceResponse>) -> Option<Self> {
-        res.map(|balance| Self {
-            available_balance: MicroMinotari(balance.available_balance),
-            timelocked_balance: MicroMinotari(balance.timelocked_balance),
-            pending_incoming_balance: MicroMinotari(balance.pending_incoming_balance),
-            pending_outgoing_balance: MicroMinotari(balance.pending_outgoing_balance),
-        })
+    pub fn from_response(res: GetBalanceResponse) -> Self {
+        Self {
+            available_balance: MicroMinotari(res.available_balance),
+            timelocked_balance: MicroMinotari(res.timelocked_balance),
+            pending_incoming_balance: MicroMinotari(res.pending_incoming_balance),
+            pending_outgoing_balance: MicroMinotari(res.pending_outgoing_balance),
+        }
+    }
+
+    pub fn from_option(res: Option<GetBalanceResponse>) -> Option<Self> {
+        res.map(Self::from_response)
     }
 }
 
 #[derive(Debug, Serialize, Clone)]
 pub struct TransactionInfo {
-    pub tx_id: u64,
+    pub tx_id: String,
     pub source_address: String,
     pub dest_address: String,
     pub status: i32,
@@ -683,4 +731,12 @@ pub struct TransactionInfo {
     pub timestamp: u64,
     pub payment_id: String,
     pub mined_in_block_height: u64,
+    pub payment_reference: Option<String>,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct TariAddressVariants {
+    pub emoji_string: String,
+    pub base58: String,
+    pub hex: String,
 }

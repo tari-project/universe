@@ -1,249 +1,169 @@
-import {
-    BackButton,
-    ConnectedWalletWrapper,
-    CurrentStep,
-    HeaderItem,
-    HeaderWrapper,
-    SectionHeaderWrapper,
-    StepHeader,
-    SubmitButtonWrapper,
-    SwapAmountInput,
-    SwapDirection,
-    SwapDirectionWrapper,
-    SwapOption,
-    SwapOptionAmount,
-    SwapOptionCurrency,
-    SwapErrorMessage,
-    SwapsContainer,
-} from './Swap.styles';
-import { useAccount } from 'wagmi';
-import { getCurrencyIcon } from '@app/containers/floating/SwapDialogs/helpers/getIcon';
-import { ArrowIcon } from '@app/containers/floating/SwapDialogs/icons/elements/ArrowIcon';
-import { WalletButton } from '@app/containers/floating/SwapDialogs/components/WalletButton/WalletButton';
-import { ConnectWallet } from '@app/containers/floating/SwapDialogs/sections/ConnectWallet/ConnectWallet';
+import { BackButton, IframeContainer, SectionHeaderWrapper, SwapsContainer, SwapsIframe } from './Swap.styles';
 import { HeaderLabel, TabHeader } from '../../components/Tabs/tab.styles';
-import { SwapConfirmation } from '@app/containers/floating/SwapDialogs/sections/SwapConfirmation/SwapConfirmation';
-import { ProcessingTransaction } from '@app/containers/floating/SwapDialogs/sections/ProcessingTransaction/ProcessingTransaction';
+import {
+    SwapConfirmation,
+    SwapConfirmationTransactionProps,
+} from '@app/containers/floating/SwapDialogs/sections/SwapConfirmation/SwapConfirmation';
+import {
+    ProccessingTransactionProps,
+    ProcessingTransaction,
+} from '@app/containers/floating/SwapDialogs/sections/ProcessingTransaction/ProcessingTransaction';
 
-import { ChevronSVG } from '@app/assets/icons/chevron';
-import { useSwapData } from './useSwapData';
-import { TokenSelection } from '@app/containers/floating/SwapDialogs/sections/TokenSelection/TokenSelection';
-import { truncateMiddle } from '@app/utils';
-import { useMemo, useState, useRef, memo } from 'react'; // Added useRef
-import { WalletContents } from '@app/containers/floating/SwapDialogs/sections/WalletContents/WalletContents';
+import { useState, memo, useRef, useEffect, useCallback } from 'react'; // Added useRef
 import { SignApprovalMessage } from '@app/containers/floating/SwapDialogs/sections/SignMessage/SignApprovalMessage';
 import { useTranslation } from 'react-i18next';
 import { setIsSwapping } from '@app/store/actions/walletStoreActions';
-import { EnabledTokensEnum } from '@app/hooks/swap/lib/constants';
-import { useAdaptiveFontSize } from '@app/hooks/helpers/useAdaptiveFontSize';
-import { useAppKitWallet } from '@reown/appkit-wallet-button/react';
+import { MessageType, useIframeMessage } from '@app/hooks/swap/useIframeMessage';
+import { useUIStore } from '@app/store';
+import { useIframeUrl } from '@app/hooks/swap/useIframeUrl';
+import LoadingDots from '@app/components/elements/loaders/LoadingDots';
 
 export const Swap = memo(function Swap() {
-    const [openWallet, setOpenWallet] = useState(false);
-    const connectedAccount = useAccount();
-    const { connect } = useAppKitWallet();
+    const theme = useUIStore((s) => s.theme);
+    const [processingOpen, setProcessingOpen] = useState(false);
+    const [processingTransaction, setProcessingTransaction] = useState<ProccessingTransactionProps | null>(null);
+    const [approving, setApproving] = useState(false);
+    const [confirming, setConfirming] = useState(false);
+    const [confirmingTransaction, setConfirmingTransaction] = useState<SwapConfirmationTransactionProps | null>(null);
+    const [error, setError] = useState<string | null>(null);
+    const [walletConnectOpen, setWalletConnectOpen] = useState(false);
+    const [swapHeight, setSwapHeight] = useState(0);
+    const iframeUrl = useIframeUrl();
+    const iframeRef = useRef<HTMLIFrameElement | null>(null);
+    const [isFullscreen, setIsFullscreen] = useState(false);
+
     const { t } = useTranslation(['wallet'], { useSuspense: false });
 
-    const {
-        notEnoughBalance,
-        fromTokenDisplay,
-        toTokenDisplay,
-        reviewSwap,
-        isLoading,
-        processingOpen,
-        isProcessingApproval,
-        isProcessingSwap,
-        swapSuccess,
-        ethTokenAmount,
-        wxtmAmount,
-        uiDirection,
-        transaction,
-        tokenSelectOpen,
-        selectableFromTokens,
-        error,
-        useSwapError,
-        insufficientLiquidity,
-        lastUpdatedField,
-        customError,
-        setCustomError: setOnConnectError,
-        setProcessingOpen,
-        setFromAmount,
-        setTargetAmount,
-        setReviewSwap,
-        handleToggleUiDirection,
-        handleConfirm,
-        setTokenSelectOpen,
-        handleSelectFromToken,
-    } = useSwapData();
+    const handleSetTheme = useCallback(() => {
+        if (!iframeUrl) return;
+        setTimeout(() => {
+            if (iframeRef.current) {
+                iframeRef.current.contentWindow?.postMessage({ type: 'SET_THEME', payload: { theme } }, '*');
+            }
+        }, 1000);
+    }, [iframeUrl, theme]);
+    useEffect(() => {
+        // Keep the iframe theme in sync with the app theme
+        handleSetTheme();
+        const timeout = setTimeout(handleSetTheme, 1000);
+        return () => {
+            clearTimeout(timeout);
+        };
+    }, [handleSetTheme]);
 
-    const handleButtonClick = () => {
-        if (connectedAccount.address) {
-            setReviewSwap(true);
-        } else {
-            connect('walletConnect');
+    const handleClearState = () => {
+        setApproving(false);
+        setConfirming(false);
+        setProcessingOpen(false);
+        setConfirmingTransaction(null);
+        setProcessingTransaction(null);
+    };
+
+    useIframeMessage((event) => {
+        switch (event.data.type) {
+            case MessageType.CONFIRM_REQUEST:
+                setConfirming(true);
+                setConfirmingTransaction({
+                    fromTokenDisplay: event.data.payload.fromTokenDisplay,
+                    toTokenDisplay: event.data.payload.toTokenDisplay,
+                    toTokenSymbol: event.data.payload.toTokenSymbol,
+                    transaction: event.data.payload.transaction,
+                });
+                break;
+            case MessageType.APPROVE_REQUEST:
+                setApproving(true);
+                break;
+            case MessageType.SET_FULLSCREEN:
+                setIsFullscreen(event.data.payload.open);
+                break;
+            case MessageType.APPROVE_SUCCESS:
+                setApproving(false);
+                break;
+            case MessageType.PROCESSING_STATUS: {
+                setApproving(false);
+                setProcessingTransaction(event.data.payload);
+                if (processingTransaction?.status !== 'error') {
+                    setProcessingOpen(true);
+                }
+                break;
+            }
+            case MessageType.WALLET_CONNECT:
+                setWalletConnectOpen(event.data.payload.open);
+                break;
+            case MessageType.SWAP_HEIGHT_CHANGE:
+                setSwapHeight(event.data.payload.height);
+                break;
+            case MessageType.ERROR:
+                handleClearState();
+                setError(event.data.payload.message);
+                break;
+        }
+    });
+
+    const handleConfirmTransaction = async () => {
+        if (iframeRef.current) {
+            handleClearState();
+            setApproving(true);
+            iframeRef.current.contentWindow?.postMessage({ type: 'EXECUTE_SWAP' }, '*');
         }
     };
 
-    const errorMsg = useSwapError || error;
-
-    const disabled = useMemo(() => {
-        const hasAmount = Number(ethTokenAmount) > 0 || Number(wxtmAmount) > 0; // Check if either has a positive amount
-        return Boolean(isLoading || !hasAmount || insufficientLiquidity || notEnoughBalance);
-    }, [isLoading, notEnoughBalance, insufficientLiquidity, ethTokenAmount, wxtmAmount]);
-
-    // Refs for the input elements
-    const fromInputRef = useRef<HTMLInputElement>(null);
-    const toInputRef = useRef<HTMLInputElement>(null);
-
-    // Use the hook for each input
-    const fromInputFontSize = useAdaptiveFontSize({
-        inputValue: ethTokenAmount,
-        inputRef: fromInputRef,
-    });
-
-    const toInputFontSize = useAdaptiveFontSize({
-        inputValue: wxtmAmount,
-        inputRef: toInputRef,
-    });
+    const handleAddXtmToWallet = () => {
+        if (iframeRef.current) {
+            iframeRef.current.contentWindow?.postMessage({ type: 'ADD_XTM_TO_WALLET' }, '*');
+        }
+    };
 
     return (
         <SwapsContainer>
-            <TabHeader $noBorder>
+            <TabHeader $noBorder $hidden={isFullscreen}>
                 <SectionHeaderWrapper>
                     <HeaderLabel>{t('swap.buy-tari')}</HeaderLabel>
                     <BackButton onClick={() => setIsSwapping(false)}>{t('swap.back-button')}</BackButton>
                 </SectionHeaderWrapper>
             </TabHeader>
-            <HeaderWrapper>
-                <HeaderItem>
-                    <StepHeader>{t('swap.enter-amount')}</StepHeader>
-                    <CurrentStep>
-                        {t('swap.step')} <strong>{'1'}</strong> {'/2'}
-                    </CurrentStep>
-                </HeaderItem>
-                {fromTokenDisplay && connectedAccount.address ? (
-                    <ConnectedWalletWrapper onClick={() => setOpenWallet(true)}>
-                        <>
-                            {getCurrencyIcon({ symbol: EnabledTokensEnum.ETH, width: 20 })}
-                            {truncateMiddle((connectedAccount?.address as `0x${string}`) || '', 6)}
-                        </>
-                    </ConnectedWalletWrapper>
-                ) : null}
-            </HeaderWrapper>
-            <SwapOption $paddingBottom={25}>
-                <span>{uiDirection === 'toXtm' ? t('swap.sell') : t('swap.receive-estimated')}</span>
-                <SwapOptionAmount>
-                    <SwapAmountInput
-                        ref={fromInputRef} // Assign ref
-                        type="text"
-                        $error={uiDirection === 'toXtm' ? notEnoughBalance : false}
-                        $loading={isLoading && lastUpdatedField === 'wxtmField'}
-                        inputMode="decimal"
-                        placeholder="0.00"
-                        onChange={(e) => setFromAmount(e.target.value)}
-                        value={ethTokenAmount}
-                        $dynamicFontSize={fromInputFontSize} // Pass dynamic font size
+            <IframeContainer>
+                {iframeUrl ? (
+                    <SwapsIframe
+                        $swapHeight={swapHeight}
+                        $walletConnectOpen={walletConnectOpen}
+                        ref={iframeRef}
+                        src={iframeUrl}
+                        title="Swap Iframe"
+                        onLoad={handleSetTheme}
                     />
-                    <SwapOptionCurrency $clickable={true} onClick={() => setTokenSelectOpen(true)}>
-                        {getCurrencyIcon({ symbol: fromTokenDisplay?.symbol || EnabledTokensEnum.ETH, width: 25 })}
-                        <span>{fromTokenDisplay?.symbol || 'ETH'}</span>
-                        <ChevronSVG width={18} />
-                    </SwapOptionCurrency>
-                </SwapOptionAmount>
-                {connectedAccount.address ? <span>{`${t('swap.balance')}: ${fromTokenDisplay?.balance}`}</span> : null}
-            </SwapOption>
-            <SwapDirection>
-                <SwapDirectionWrapper $direction={uiDirection} onClick={handleToggleUiDirection}>
-                    <ArrowIcon width={15} />
-                </SwapDirectionWrapper>
-            </SwapDirection>
-            <SwapOption>
-                <span>{uiDirection === 'toXtm' ? t('swap.receive-estimated') : t('swap.sell')}</span>
-                <SwapOptionAmount>
-                    <SwapAmountInput
-                        ref={toInputRef} // Assign ref
-                        type="text"
-                        $error={uiDirection === 'fromXtm' ? notEnoughBalance : false}
-                        $loading={isLoading && lastUpdatedField === 'ethTokenField'}
-                        inputMode="decimal"
-                        placeholder="0.00"
-                        onChange={(e) => setTargetAmount(e.target.value)}
-                        value={wxtmAmount}
-                        $dynamicFontSize={toInputFontSize} // Pass dynamic font size
-                    />
-                    <SwapOptionCurrency>
-                        {getCurrencyIcon({ symbol: EnabledTokensEnum.WXTM, width: 25 })}
-                        <span>{'wXTM'}</span>
-                    </SwapOptionCurrency>
-                </SwapOptionAmount>
-                {connectedAccount.address ? <span>{`${t('swap.balance')}: ${toTokenDisplay?.balance}`}</span> : null}
-            </SwapOption>
-            {(errorMsg || customError) && <SwapErrorMessage> {errorMsg || customError} </SwapErrorMessage>}
-            {/* Show error only if it exists */}
-            <SubmitButtonWrapper>
-                <WalletButton
-                    variant="primary"
-                    onClick={handleButtonClick}
-                    size="xl"
-                    disabled={disabled && !!connectedAccount.address}
-                >
-                    {connectedAccount.address
-                        ? isLoading
-                            ? t('swap.loading')
-                            : t('swap.review-swap')
-                        : t('swap.connect-wallet')}
-                </WalletButton>
-            </SubmitButtonWrapper>
-            {/* ////////////////////////////////// */}
-            {/* Floating Elements */}
-            <ConnectWallet
-                isOpen={reviewSwap && !connectedAccount.address}
-                setIsOpen={setReviewSwap}
-                setError={setOnConnectError}
-            />
-            <SwapConfirmation
-                isOpen={Boolean(
-                    reviewSwap &&
-                        connectedAccount.address &&
-                        !notEnoughBalance &&
-                        (Number(ethTokenAmount) > 0 || Number(wxtmAmount) > 0)
+                ) : (
+                    <LoadingDots />
                 )}
-                setIsOpen={setReviewSwap}
-                onConfirm={handleConfirm}
-                transaction={transaction}
-                fromTokenDisplay={fromTokenDisplay}
-                toTokenSymbol={toTokenDisplay?.symbol}
+            </IframeContainer>
+            {/* Floating Elements */}
+            <SwapConfirmation
+                isOpen={confirming}
+                setIsOpen={setConfirming}
+                onConfirm={handleConfirmTransaction}
+                transaction={confirmingTransaction?.transaction}
+                fromTokenDisplay={confirmingTransaction?.fromTokenDisplay}
+                toTokenDisplay={confirmingTransaction?.toTokenDisplay}
+                toTokenSymbol={confirmingTransaction?.toTokenSymbol}
             />
             <ProcessingTransaction
-                status={
-                    isProcessingApproval
-                        ? 'processingapproval'
-                        : isProcessingSwap
-                          ? 'processingswap'
-                          : swapSuccess
-                            ? 'success'
-                            : errorMsg // If there's an error, set status to 'error'
-                              ? 'error'
-                              : 'processingapproval' // Default or handle appropriately
-                }
-                isOpen={processingOpen && !isProcessingApproval}
+                status={processingTransaction?.status}
+                isOpen={processingOpen}
                 setIsOpen={setProcessingOpen}
+                handleAddXtmToWallet={handleAddXtmToWallet}
+                fromTokenSymbol={processingTransaction?.fromTokenSymbol}
+                fromTokenAmount={processingTransaction?.fromTokenAmount}
+                toTokenSymbol={processingTransaction?.toTokenSymbol}
+                toTokenAmount={processingTransaction?.toTokenAmount}
                 fees={{
-                    approval: transaction?.paidTransactionFeeApproval ?? null,
-                    swap: transaction?.paidTransactionFeeSwap ?? null,
+                    approval: processingTransaction?.fees?.approval ?? null,
+                    swap: processingTransaction?.fees?.swap ?? null,
                 }}
-                txBlockHash={transaction?.txBlockHash ?? undefined}
-                transactionId={transaction?.transactionId ?? undefined}
-                errorMessage={errorMsg} // Pass the error message
+                txBlockHash={processingTransaction?.txBlockHash ?? undefined}
+                transactionId={processingTransaction?.transactionId ?? undefined}
+                errorMessage={error}
             />
-            <TokenSelection
-                isOpen={tokenSelectOpen}
-                setIsOpen={setTokenSelectOpen}
-                availableTokens={selectableFromTokens}
-                onSelectToken={handleSelectFromToken}
-            />
-            <WalletContents isOpen={openWallet} setIsOpen={setOpenWallet} availableTokens={selectableFromTokens} />
-            <SignApprovalMessage isOpen={isProcessingApproval && processingOpen} setIsOpen={setProcessingOpen} />
+            <SignApprovalMessage isOpen={approving} setIsOpen={setApproving} />
         </SwapsContainer>
     );
 });

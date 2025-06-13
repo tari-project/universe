@@ -178,9 +178,9 @@ impl P2poolManager {
         log_path: PathBuf,
     ) -> Result<(), anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;
-        let shutdown_signal = TasksTrackers::current().unknown_phase.get_signal().await;
+        let shutdown_signal = TasksTrackers::current().mining_phase.get_signal().await;
         let task_tracker = TasksTrackers::current()
-            .unknown_phase
+            .mining_phase
             .get_task_tracker()
             .await;
 
@@ -202,7 +202,7 @@ impl P2poolManager {
             )
             .await?;
         process_watcher.wait_ready().await?;
-        let shutdown_signal = TasksTrackers::current().unknown_phase.get_signal().await;
+        let shutdown_signal = TasksTrackers::current().mining_phase.get_signal().await;
         if let Some(status_monitor) = &process_watcher.status_monitor {
             loop {
                 if shutdown_signal.is_terminated() || shutdown_signal.is_triggered() {

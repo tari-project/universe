@@ -1,3 +1,53 @@
+🚀 TARI UNIVERSE v1.2.9: Colonies of Light
+
+_June 12, 2025_
+
+Hey everyone,
+
+Tari contributors continue to pull out all the stops to make Tari Universe the most beautiful and easiest-to-use crypto app in the world. Introducing the "Colonies of Light" release of Tari Universe, an awesome release filled to the brim with tweaks, bug fixes, and amazing updates
+
+✨ What's New in "Colonies of Light"
+- 🔗 **Link to Supported Exchanges**: We've introduced a new interface that makes it easy to see the list of CEXs that have listed XTM, and directly access them
+- 💎 **Revamped Transaction History**: We've completely revamped the Tari Universe transaction history (!!!). Now your TX history will include your bridge transactions and better formatting. It's clean, clear, and far easier to use than ever before
+- 🛡️ **Linux Tor Support**: We know the Tari Linux community will be hyped about this one: we've added missing library support for much smoother Linux installs
+- ⏱️ **Smarter Download Handling**: Many of you have reported "node setup failure" errors when running Tari Universe. Our new download handling system should make these errors a thing of the past in MOST cases (not all.. but we're getting closer!). We can't wait to hear how this new system works for you
+- ⚡ **Stability and Reliability Improvements**: For Tari Universe users on lower-end machines, Tari Universe should now be faster and more responsive for you
+- 🔄 **Airdrop Game**: We fixed a bug where the Start/Stop mining button was getting stuck when logged into the Tari Airdrop Game
+
+---
+
+🚀 TARI UNIVERSE v1.2.8: The Feast of Light
+
+_June 9, 2025_
+
+🔄 Rolling out via auto-update
+
+Hey everyone,
+
+Introducing Tari Universe v1.2.8 "The Feast of Light." This release of Tari Universe adds an awesome new feature to the mix: now you can buy wXTM natively in Tari Universe with ETH, USDT, or USDC (!!!) 
+
+✨ What's New in "The Feast of Light"
+- 🌌 **Buy wXTM natively in Tari Universe**: Purchase wXTM directly using ETH, USDT, or USDC within the application
+- 🔄 **Bridge Status View**: We've significantly improved status updates throughout the bridging journey
+
+---
+
+🚀 TARI UNIVERSE v1.2.7: The Crown of Every Heart
+
+_June 5, 2025_
+
+Hey everyone,
+
+🎉 Tari Mainnet is nearly a month old! Tari Universe v1.2.7, also known as "The Crown of Every Heart," focuses on making the world's easiest-to-use crypto app smoother, faster, and more consistent. Our goal is for Tari Universe to become a "set it and forget" type of application. A well-oiled machine. With the release of "The Crown of Every Heart, we take a significant step together towards this goal!
+
+✨ What's New  
+- 🔡 **Improved message rendering**: Fixed garbled character issues when displaying messages from exchanges and third-party sources.  
+- 🛡️ **Enhanced transaction error handling**: Clearer error messages for failed transactions and significantly reduced false "pending sends".  
+- ⚡ **Faster balance updates**: Wallet balances now update in near real-time to reflect on-chain states.  
+- 🔍 **Clearer transaction status display**: Transactions now clearly indicate whether they're pending, mined, confirmed, or completed—no more confusion around "Completed" meaning "still in mempool".
+
+---
+
 🚀 TARI UNIVERSE v1.2.6: The Second Song of Soon
 
 _June 3, 2025_

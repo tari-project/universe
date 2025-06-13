@@ -52,7 +52,7 @@ use crate::tasks_tracker::TasksTrackers;
 use crate::tor_adapter::TorConfig;
 use crate::utils::address_utils::verify_send;
 use crate::utils::app_flow_utils::FrontendReadyChannel;
-use crate::wallet_adapter::{TransactionInfo, WalletBalance};
+use crate::wallet_adapter::{TariAddressVariants, TransactionInfo, WalletBalance};
 use crate::wallet_manager::WalletManagerError;
 use crate::websocket_manager::WebsocketManagerStatusMessage;
 use crate::{airdrop, PoolStatus, UniverseAppState, APPLICATION_FOLDER_ID};
@@ -71,7 +71,7 @@ use std::sync::atomic::Ordering;
 use std::thread::{available_parallelism, sleep};
 use std::time::{Duration, Instant, SystemTime};
 use tari_common::configuration::Network;
-use tari_common_types::tari_address::TariAddressFeatures;
+use tari_common_types::tari_address::{TariAddress, TariAddressFeatures};
 use tari_core::transactions::tari_amount::{MicroMinotari, Minotari};
 use tauri::ipc::InvokeError;
 use tauri::{Manager, PhysicalPosition, PhysicalSize};
@@ -103,6 +103,7 @@ pub struct ApplicationsVersions {
     wallet: String,
     sha_p2pool: String,
     xtrgpuminer: String,
+    bridge: String,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -317,6 +318,7 @@ pub async fn get_applications_versions(
 ) -> Result<ApplicationsVersions, String> {
     let timer = Instant::now();
     let binary_resolver = BinaryResolver::current().read().await;
+    let tapplet_resolver = TappletResolver::current().read().await;
 
     let tari_universe_version = app.package_info().version.clone();
     let xmrig_version = binary_resolver
@@ -338,6 +340,9 @@ pub async fn get_applications_versions(
     let xtrgpuminer_version = binary_resolver
         .get_binary_version_string(Binaries::GpuMiner)
         .await;
+    let bridge_version = tapplet_resolver
+        .get_tapplet_version_string(Tapplets::Bridge)
+        .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET,
@@ -356,6 +361,7 @@ pub async fn get_applications_versions(
         wallet: wallet_version,
         sha_p2pool: sha_p2pool_version,
         xtrgpuminer: xtrgpuminer_version,
+        bridge: bridge_version,
     })
 }
 
@@ -527,7 +533,7 @@ pub async fn set_p2pool_stats_server_port(
     ConfigCore::update_field_requires_restart(
         ConfigCoreContent::set_p2pool_stats_server_port,
         port,
-        vec![SetupPhase::Unknown],
+        vec![SetupPhase::Mining],
     )
     .await
     .map_err(InvokeError::from_anyhow)?;
@@ -648,7 +654,7 @@ pub async fn set_tari_address(address: String, app_handle: tauri::AppHandle) -> 
 
     // mm_proxy is using wallet address
     SetupManager::get_instance()
-        .add_phases_to_restart_queue(vec![SetupPhase::Unknown])
+        .add_phases_to_restart_queue(vec![SetupPhase::Mining])
         .await;
 
     SetupManager::get_instance()
@@ -740,8 +746,8 @@ pub async fn get_airdrop_tokens(
 #[tauri::command]
 pub async fn get_transactions_history(
     state: tauri::State<'_, UniverseAppState>,
-    continuation: bool,
-    limit: Option<u32>,
+    offset: Option<i32>,
+    limit: Option<i32>,
 ) -> Result<Vec<TransactionInfo>, String> {
     let timer = Instant::now();
     if state.is_getting_transactions_history.load(Ordering::SeqCst) {
@@ -753,7 +759,7 @@ pub async fn get_transactions_history(
         .store(true, Ordering::SeqCst);
     let transactions = state
         .wallet_manager
-        .get_transactions_history(continuation, limit)
+        .get_transactions_history(offset, limit)
         .await
         .unwrap_or_else(|e| {
             if !matches!(e, WalletManagerError::WalletNotStarted) {
@@ -864,7 +870,7 @@ pub fn open_log_dir(app: tauri::AppHandle) {
 }
 
 #[tauri::command]
-pub async fn reset_settings<'r>(
+pub async fn reset_settings(
     reset_wallet: bool,
     _window: tauri::Window,
     app: tauri::AppHandle,
@@ -1074,7 +1080,7 @@ pub async fn set_auto_update(auto_update: bool) -> Result<(), InvokeError> {
 }
 
 #[tauri::command]
-pub async fn set_cpu_mining_enabled<'r>(enabled: bool) -> Result<(), String> {
+pub async fn set_cpu_mining_enabled(enabled: bool) -> Result<(), String> {
     let timer = Instant::now();
     let _unused =
         ConfigMining::update_field(ConfigMiningContent::set_cpu_mining_enabled, enabled).await;
@@ -1232,7 +1238,7 @@ pub async fn set_monero_address(
     ConfigWallet::update_field_requires_restart(
         ConfigWalletContent::set_user_monero_address,
         monero_address,
-        vec![SetupPhase::Unknown],
+        vec![SetupPhase::Mining],
     )
     .await
     .map_err(InvokeError::from_anyhow)?;
@@ -1257,7 +1263,7 @@ pub async fn set_monerod_config(
     ConfigCore::update_field_requires_restart(
         ConfigCoreContent::set_mmproxy_monero_nodes,
         monero_nodes.clone(),
-        vec![SetupPhase::Unknown],
+        vec![SetupPhase::Mining],
     )
     .await
     .map_err(InvokeError::from_anyhow)?;
@@ -1265,7 +1271,7 @@ pub async fn set_monerod_config(
     ConfigCore::update_field_requires_restart(
         ConfigCoreContent::set_mmproxy_use_monero_failover,
         use_monero_fail,
-        vec![SetupPhase::Unknown],
+        vec![SetupPhase::Mining],
     )
     .await
     .map_err(InvokeError::from_anyhow)?;
@@ -1290,7 +1296,7 @@ pub async fn set_p2pool_enabled(
     ConfigCore::update_field_requires_restart(
         ConfigCoreContent::set_is_p2pool_enabled,
         p2pool_enabled,
-        vec![SetupPhase::Unknown],
+        vec![SetupPhase::Mining],
     )
     .await
     .map_err(InvokeError::from_anyhow)?;
@@ -1369,7 +1375,7 @@ pub async fn set_tor_config(
         .add_phases_to_restart_queue(vec![
             SetupPhase::Node,
             SetupPhase::Wallet,
-            SetupPhase::Unknown,
+            SetupPhase::Mining,
         ])
         .await;
 
@@ -1389,7 +1395,7 @@ pub async fn set_use_tor(use_tor: bool, app_handle: tauri::AppHandle) -> Result<
     ConfigCore::update_field_requires_restart(
         ConfigCoreContent::set_use_tor,
         use_tor,
-        vec![SetupPhase::Node, SetupPhase::Wallet, SetupPhase::Unknown],
+        vec![SetupPhase::Node, SetupPhase::Wallet, SetupPhase::Mining],
     )
     .await
     .map_err(InvokeError::from_anyhow)?;
@@ -1417,7 +1423,7 @@ pub async fn set_use_tor(use_tor: bool, app_handle: tauri::AppHandle) -> Result<
 }
 
 #[tauri::command]
-pub async fn set_visual_mode<'r>(enabled: bool) -> Result<(), InvokeError> {
+pub async fn set_visual_mode(enabled: bool) -> Result<(), InvokeError> {
     let timer = Instant::now();
     ConfigUI::update_field(ConfigUIContent::set_visual_mode, enabled)
         .await
@@ -1434,10 +1440,9 @@ pub async fn set_visual_mode<'r>(enabled: bool) -> Result<(), InvokeError> {
 
 #[allow(clippy::too_many_lines)]
 #[tauri::command]
-pub async fn set_airdrop_tokens<'r>(
+pub async fn set_airdrop_tokens(
     airdrop_tokens: Option<AirdropTokens>,
-    state: tauri::State<'_, UniverseAppState>,
-    app: tauri::AppHandle,
+    app_handle: tauri::AppHandle,
 ) -> Result<(), InvokeError> {
     let old_id = ConfigCore::content()
         .await
@@ -1458,37 +1463,20 @@ pub async fn set_airdrop_tokens<'r>(
 
     info!(target: LOG_TARGET, "New Airdrop tokens saved, user id changed:{:?}", user_id_changed);
     if user_id_changed {
-        let currently_mining = {
-            let cpu_mining_status = state.cpu_miner_status_watch_rx.borrow().clone();
-            let gpu_mining_status = state.gpu_latest_status.borrow().clone();
-            cpu_mining_status.is_mining || gpu_mining_status.is_mining
-        };
+        // If the user id changed, we need to restart the mining phases to ensure that the new telemetry_id ( unique_string value )is used
+        SetupManager::get_instance()
+            .add_phases_to_restart_queue(vec![SetupPhase::Mining])
+            .await;
 
-        if currently_mining {
-            stop_cpu_mining(state.clone())
-                .await
-                .map_err(|e| e.to_string())?;
-            stop_gpu_mining(state.clone())
-                .await
-                .map_err(|e| e.to_string())?;
-
-            airdrop::restart_mm_proxy_with_new_telemetry_id(state.clone()).await?;
-
-            start_cpu_mining(state.clone(), app.clone())
-                .await
-                .map_err(|e| e.to_string())?;
-            start_gpu_mining(state, app)
-                .await
-                .map_err(|e| e.to_string())?;
-        } else {
-            airdrop::restart_mm_proxy_with_new_telemetry_id(state.clone()).await?;
-        }
+        SetupManager::get_instance()
+            .restart_phases_from_queue(app_handle.clone())
+            .await;
     }
     Ok(())
 }
 
 #[tauri::command]
-pub async fn start_cpu_mining<'r>(
+pub async fn start_cpu_mining(
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
@@ -1552,7 +1540,7 @@ pub async fn start_cpu_mining<'r>(
     Ok(())
 }
 #[tauri::command]
-pub async fn start_gpu_mining<'r>(
+pub async fn start_gpu_mining(
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
@@ -1644,7 +1632,7 @@ pub async fn start_gpu_mining<'r>(
 }
 
 #[tauri::command]
-pub async fn stop_cpu_mining<'r>(state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
+pub async fn stop_cpu_mining(state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
     let _lock = state.cpu_miner_stop_start_mutex.lock().await;
     let timer = Instant::now();
     state
@@ -1677,7 +1665,7 @@ pub async fn stop_cpu_mining<'r>(state: tauri::State<'_, UniverseAppState>) -> R
     Ok(())
 }
 #[tauri::command]
-pub async fn stop_gpu_mining<'r>(state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
+pub async fn stop_gpu_mining(state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
     let _lock = state.gpu_miner_stop_start_mutex.lock().await;
     let timer = Instant::now();
 
@@ -1964,9 +1952,15 @@ pub async fn send_one_sided_to_stealth_address(
     let state_clone = state.clone();
     let mut spend_wallet_manager = state_clone.spend_wallet_manager.write().await;
     spend_wallet_manager
-        .send_one_sided_to_stealth_address(amount, destination, payment_id, state)
+        .send_one_sided_to_stealth_address(amount, destination, payment_id, state.clone())
         .await
         .map_err(|e| e.to_string())?;
+
+    let balance = state.wallet_manager.get_balance().await;
+    if let Ok(balance) = balance {
+        EventsEmitter::emit_wallet_balance_update(balance).await;
+    }
+
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "send_one_sided_to_stealth_address took too long: {:?}", timer.elapsed());
     }
@@ -2085,7 +2079,7 @@ pub async fn set_node_type(
         ConfigCore::update_field_requires_restart(
             ConfigCoreContent::set_node_type,
             node_type.clone(),
-            vec![SetupPhase::Node, SetupPhase::Wallet, SetupPhase::Unknown],
+            vec![SetupPhase::Node, SetupPhase::Wallet, SetupPhase::Mining],
         )
         .await
         .map_err(InvokeError::from_anyhow)?;
@@ -2182,4 +2176,46 @@ pub async fn get_bridge_envs() -> Result<(String, String), String> {
         .to_string();
 
     Ok((walletconnect_id, backend_api))
+}
+
+#[tauri::command]
+pub async fn parse_tari_address(address: String) -> Result<TariAddressVariants, String> {
+    let tari_address = TariAddress::from_str(&address).map_err(|e| e.to_string())?;
+
+    Ok(TariAddressVariants {
+        emoji_string: tari_address.to_emoji_string(),
+        base58: tari_address.to_base58(),
+        hex: tari_address.to_hex(),
+    })
+}
+
+#[tauri::command]
+pub async fn refresh_wallet_history(
+    state: tauri::State<'_, UniverseAppState>,
+    app_handle: tauri::AppHandle,
+) -> Result<(), String> {
+    SetupManager::get_instance()
+        .shutdown_phases(app_handle.clone(), vec![SetupPhase::Wallet])
+        .await;
+
+    let base_path = app_handle
+        .path()
+        .app_local_data_dir()
+        .map_err(|_| "Could not find wallet data dir".to_string())?;
+    state
+        .wallet_manager
+        .clean_data_folder(&base_path)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    // Trigger it manually to immediately update the UI
+    let node_status_watch_rx = state.node_status_watch_rx.clone();
+    let node_status = *node_status_watch_rx.borrow();
+    EventsEmitter::emit_init_wallet_scanning_progress(0, node_status.block_height, 0.0).await;
+
+    SetupManager::get_instance()
+        .resume_phases(app_handle, vec![SetupPhase::Wallet])
+        .await;
+
+    Ok(())
 }

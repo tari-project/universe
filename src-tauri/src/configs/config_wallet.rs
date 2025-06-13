@@ -54,6 +54,8 @@ pub struct ConfigWalletContent {
     monero_address_is_generated: bool,
     #[getset(get = "pub", set = "pub")]
     keyring_accessed: bool,
+    #[getset(get = "pub", set = "pub")]
+    wallet_migration_nonce: u64,
 }
 
 impl Default for ConfigWalletContent {
@@ -64,6 +66,7 @@ impl Default for ConfigWalletContent {
             monero_address: "".to_string(),
             monero_address_is_generated: false,
             keyring_accessed: false,
+            wallet_migration_nonce: 0,
         }
     }
 }

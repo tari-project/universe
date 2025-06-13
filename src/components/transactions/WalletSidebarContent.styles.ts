@@ -1,4 +1,4 @@
-import styled, { css } from 'styled-components';
+import styled from 'styled-components';
 
 export const WalletSections = styled.div`
     padding: 10px 0 0 0;
@@ -15,11 +15,4 @@ export const WalletGreyBox = styled.div<{ $absolute?: boolean }>`
     align-items: center;
     justify-content: center;
     width: 100%;
-    ${({ $absolute }) =>
-        $absolute &&
-        css`
-            position: absolute;
-            bottom: 0;
-            left: 0;
-        `}
 `;

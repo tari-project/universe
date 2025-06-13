@@ -40,6 +40,11 @@ const AIRDROP_API_BASE_URL: &str = std::env!(
 const TELEMETRY_API_URL: &str =
     std::env!("TELEMETRY_API_URL", "TELEMETRY_API_URL env var not defined");
 
+const BRIDGE_BACKEND_API_URL: &str = match option_env!("BRIDGE_BACKEND_API_URL") {
+    Some(val) => val,
+    None => "BRIDGE_BACKEND_API_URL env var not defined",
+};
+
 pub const DEFAULT_EXCHANGE_ID: &str = "classic";
 pub const EXCHANGE_ID: &str = match option_env!("EXCHANGE_ID") {
     Some(val) => val,
@@ -56,6 +61,7 @@ pub struct AppInMemoryConfig {
     pub airdrop_api_url: String,
     pub telemetry_api_url: String,
     pub exchange_id: String,
+    pub bridge_backend_api_url: String,
     pub wallet_connect_project_id: String,
 }
 
@@ -65,6 +71,7 @@ pub struct AirdropInMemoryConfig {
     pub airdrop_url: String,
     pub airdrop_api_url: String,
     pub exchange_id: Option<String>,
+    pub bridge_backend_api_url: String,
     pub wallet_connect_project_id: Option<String>,
 }
 
@@ -74,6 +81,7 @@ impl From<AppInMemoryConfig> for AirdropInMemoryConfig {
             airdrop_url: app_config.airdrop_url,
             airdrop_api_url: app_config.airdrop_api_url,
             exchange_id: Some(app_config.exchange_id),
+            bridge_backend_api_url: app_config.bridge_backend_api_url,
             wallet_connect_project_id: Some(app_config.wallet_connect_project_id),
         }
     }
@@ -86,6 +94,7 @@ impl Default for AppInMemoryConfig {
             airdrop_api_url: "https://ut.tari.com".into(),
             telemetry_api_url: "https://ut.tari.com/push".into(),
             exchange_id: EXCHANGE_ID.into(),
+            bridge_backend_api_url: BRIDGE_BACKEND_API_URL.into(),
             wallet_connect_project_id: WALLET_CONNECT_PROJECT_ID.into(),
         }
     }
@@ -132,6 +141,7 @@ impl AppInMemoryConfig {
             airdrop_api_url: AIRDROP_API_BASE_URL.into(),
             telemetry_api_url: TELEMETRY_API_URL.into(),
             exchange_id: EXCHANGE_ID.into(),
+            bridge_backend_api_url: BRIDGE_BACKEND_API_URL.into(),
             wallet_connect_project_id: WALLET_CONNECT_PROJECT_ID.into(),
         };
 
@@ -141,6 +151,7 @@ impl AppInMemoryConfig {
             airdrop_api_url: "http://localhost:3004".into(),
             telemetry_api_url: "http://localhost:3004".into(),
             exchange_id: EXCHANGE_ID.into(),
+            bridge_backend_api_url: BRIDGE_BACKEND_API_URL.into(),
             wallet_connect_project_id: WALLET_CONNECT_PROJECT_ID.into(),
         };
 
@@ -189,23 +200,21 @@ impl DynamicMemoryConfig {
     pub async fn init() -> Self {
         let in_memory_config = AppInMemoryConfig::init();
         let miner_type = MinerType::from_str(&in_memory_config.exchange_id);
-        let miners_list =
-            DynamicMemoryConfig::get_exchange_miners(in_memory_config.airdrop_api_url.clone())
-                .await;
-        if miners_list
-            .iter()
-            .any(|miner| miner.id.eq(&in_memory_config.exchange_id) && miner.name.eq("Universal"))
-        {
+
+        // Hard coded universal miner ID fix this later
+        if &in_memory_config.exchange_id == "1eff0ada-8358-4511-99f8-9ec2820aa37e" {
             return Self {
                 in_memory_config,
                 miner_type: MinerType::Universal,
             };
         }
+
         Self {
             in_memory_config,
             miner_type,
         }
     }
+
     pub fn init_universal(exchange_miner: &ExchangeMiner) -> Self {
         Self {
             miner_type: MinerType::Universal,
@@ -228,34 +237,6 @@ impl DynamicMemoryConfig {
 
     pub fn is_universal_miner(&self) -> bool {
         matches!(self.miner_type, MinerType::Universal)
-    }
-    pub async fn get_exchange_miners(airdrop_api_url: String) -> Vec<ExchangeMiner> {
-        let endpoint = format!("{}{}", airdrop_api_url, "/miner/exchanges");
-        let mut last_err = None;
-        let mut response = None;
-        for _ in 0..3 {
-            match reqwest::get(endpoint.clone()).await {
-                Ok(resp) => {
-                    response = Some(resp);
-                    break;
-                }
-                Err(e) => {
-                    last_err = Some(e);
-                }
-            }
-        }
-        let response = response.unwrap_or_else(|| {
-            panic!(
-                "Failed to fetch exchange miners after 3 attempts: {:?}",
-                last_err
-            )
-        });
-        let miners: ExchangeMinersListResponse = response
-            .json()
-            .await
-            .unwrap_or_else(|e| panic!("Failed to parse exchange miners response: {:?}", e));
-
-        miners.exchanges
     }
 }
 

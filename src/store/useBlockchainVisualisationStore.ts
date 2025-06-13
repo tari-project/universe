@@ -9,8 +9,9 @@ import { BlockTimeData } from '@app/types/mining.ts';
 import { setAnimationState } from '@tari-project/tari-tower';
 import { TransactionInfo, WalletBalance } from '@app/types/app-status.ts';
 import { setMiningControlsEnabled } from './actions/miningStoreActions.ts';
-import { refreshPendingTransactions, updateWalletScanningProgress, useWalletStore } from './useWalletStore.ts';
+import { updateWalletScanningProgress, useWalletStore } from './useWalletStore.ts';
 import { useConfigUIStore } from '@app/store/useAppConfigStore.ts';
+import { fetchBridgeTransactionsHistory } from './actions/walletStoreActions.ts';
 
 const appWindow = getCurrentWindow();
 
@@ -18,13 +19,6 @@ interface Recap {
     count: number;
     totalEarnings: number;
 }
-interface PendingWin {
-    coinbase_transaction: TransactionInfo;
-    balance: WalletBalance;
-    canAnimate: boolean;
-    winBlockHeight: number;
-}
-
 interface State {
     displayBlockTime?: BlockTimeData;
     debugBlockTime?: BlockTimeData;
@@ -35,7 +29,6 @@ interface State {
     rewardCount?: number;
     recapIds: TransactionInfo['tx_id'][];
     replayItem?: TransactionInfo;
-    pendingWins: PendingWin[];
 }
 
 interface Actions {
@@ -62,7 +55,6 @@ const getSuccessTier = (earnings: number) => {
 
 export const useBlockchainVisualisationStore = create<BlockchainVisualisationStoreState>()((set) => ({
     recapIds: [],
-    pendingWins: [],
     setDisplayBlockHeight: (displayBlockHeight) => set({ displayBlockHeight }),
     setDisplayBlockTime: (displayBlockTime) => set({ displayBlockTime }),
     setDebugBlockTime: (debugBlockTime) => set({ debugBlockTime }),
@@ -105,13 +97,11 @@ const handleWin = async (coinbase_transaction: TransactionInfo, balance: WalletB
         winTimeout = setTimeout(async () => {
             useBlockchainVisualisationStore.setState({ displayBlockHeight: blockHeight, earnings: undefined });
             await refreshTransactions();
-            refreshPendingTransactions();
             setWalletBalance(balance);
             setMiningControlsEnabled(true);
         }, 2000);
     } else {
         await refreshTransactions();
-        refreshPendingTransactions();
         useBlockchainVisualisationStore.setState((curr) => ({
             recapIds: [...curr.recapIds, coinbase_transaction.tx_id],
             displayBlockHeight: blockHeight,
@@ -131,7 +121,6 @@ const handleFail = async (blockHeight: number, balance: WalletBalance, canAnimat
             useBlockchainVisualisationStore.setState({ displayBlockHeight: blockHeight });
             setMiningControlsEnabled(true);
             await refreshTransactions();
-            refreshPendingTransactions();
             setWalletBalance(balance);
         }, 1000);
     } else {
@@ -169,57 +158,23 @@ let latestBlockPayload:
       }
     | undefined = undefined;
 
-const checkPendingWins = async (currentBlockHeight: number) => {
-    const state = useBlockchainVisualisationStore.getState();
-    const winsToProcess = state.pendingWins.filter((win) => currentBlockHeight >= win.winBlockHeight + 3);
-
-    if (winsToProcess.length > 0) {
-        // Remove processed wins from pending
-        useBlockchainVisualisationStore.setState((prev) => ({
-            pendingWins: prev.pendingWins.filter((win) => currentBlockHeight < win.winBlockHeight + 3),
-        }));
-
-        // Process each pending win
-        for (const win of winsToProcess) {
-            await handleWin(win.coinbase_transaction, win.balance, win.canAnimate);
-        }
-    }
-};
-
 async function processNewBlock(payload: {
     block_height: number;
     coinbase_transaction?: TransactionInfo;
     balance: WalletBalance;
 }) {
-    // Always check for pending wins first
-    await checkPendingWins(payload.block_height);
-
     if (useMiningStore.getState().isCpuMiningInitiated || useMiningStore.getState().isGpuMiningInitiated) {
         const minimized = await appWindow?.isMinimized();
         const documentIsVisible = document?.visibilityState === 'visible' || false;
         const canAnimate = !minimized && documentIsVisible;
-
         if (payload.coinbase_transaction) {
-            // Instead of processing win immediately, queue it for 3 blocks later
-            const pendingWin: PendingWin = {
-                coinbase_transaction: payload.coinbase_transaction,
-                balance: payload.balance,
-                canAnimate,
-                winBlockHeight: payload.block_height,
-            };
-
-            useBlockchainVisualisationStore.setState((prev) => ({
-                pendingWins: [...prev.pendingWins, pendingWin],
-            }));
-
-            console.info(`Block #${payload.block_height} win queued - will show in 3 blocks`);
+            await handleWin(payload.coinbase_transaction, payload.balance, canAnimate);
         } else {
             await handleFail(payload.block_height, payload.balance, canAnimate);
         }
     } else {
         useBlockchainVisualisationStore.setState({ displayBlockHeight: payload.block_height });
         await refreshTransactions();
-        refreshPendingTransactions();
     }
 }
 
@@ -228,6 +183,9 @@ export const handleNewBlock = async (payload: {
     coinbase_transaction?: TransactionInfo;
     balance: WalletBalance;
 }) => {
+    await fetchBridgeTransactionsHistory().catch((error) => {
+        console.error('Could not fetch bridge transactions history:', error);
+    });
     latestBlockPayload = payload;
 
     const isWalletScanned = !useWalletStore.getState().wallet_scanning?.is_scanning;

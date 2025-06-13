@@ -24,9 +24,9 @@ use crate::{
     configs::{
         config_core::ConfigCore,
         config_ui::{ConfigUI, ConfigUIContent},
+        config_wallet::{ConfigWallet, ConfigWalletContent},
         trait_config::ConfigImpl,
     },
-    events::CriticalProblemPayload,
     events_emitter::EventsEmitter,
     progress_tracker_old::ProgressTracker,
     progress_trackers::{
@@ -34,30 +34,32 @@ use crate::{
         progress_stepper::ProgressStepperBuilder,
         ProgressStepper,
     },
-    setup::{setup_manager::SetupPhase, utils::conditional_sleeper},
+    setup::setup_manager::SetupPhase,
     tapplets::{TappletResolver, Tapplets},
     tasks_tracker::TasksTrackers,
+    wallet_manager::WalletStartupConfig,
     UniverseAppState,
 };
 use anyhow::Error;
-use log::{error, info, warn};
 use tari_core::transactions::tari_amount::MicroMinotari;
+use tari_shutdown::ShutdownSignal;
 use tauri::{AppHandle, Manager};
-use tauri_plugin_sentry::sentry;
-use tokio::{
-    select,
-    sync::{
-        watch::{self, Sender},
-        Mutex,
-    },
+use tokio::sync::{
+    watch::{self, Receiver, Sender},
+    Mutex,
 };
+use tokio_util::task::TaskTracker;
 
 use super::{
     setup_manager::{PhaseStatus, SetupFeaturesList},
     trait_setup_phase::{SetupConfiguration, SetupPhaseImpl},
+    utils::{setup_default_adapter::SetupDefaultAdapter, timeout_watcher::TimeoutWatcher},
 };
 
-static LOG_TARGET: &str = "tari::universe::phase_hardware";
+static LOG_TARGET: &str = "tari::universe::phase_wallet";
+
+// Bump to force wallet full scan
+const WALLET_MIGRATION_NONCE: u64 = 1;
 
 #[derive(Clone, Default)]
 pub struct WalletSetupPhaseOutput {}
@@ -77,6 +79,7 @@ pub struct WalletSetupPhase {
     status_sender: Sender<PhaseStatus>,
     #[allow(dead_code)]
     setup_features: SetupFeaturesList,
+    timeout_watcher: TimeoutWatcher,
 }
 
 impl SetupPhaseImpl for WalletSetupPhase {
@@ -88,13 +91,18 @@ impl SetupPhaseImpl for WalletSetupPhase {
         configuration: SetupConfiguration,
         setup_features: SetupFeaturesList,
     ) -> Self {
+        let timeout_watcher = TimeoutWatcher::new(configuration.setup_timeout_duration);
         Self {
             app_handle: app_handle.clone(),
-            progress_stepper: Mutex::new(Self::create_progress_stepper(app_handle.clone())),
+            progress_stepper: Mutex::new(Self::create_progress_stepper(
+                app_handle.clone(),
+                timeout_watcher.get_sender(),
+            )),
             app_configuration: Self::load_app_configuration().await.unwrap_or_default(),
             setup_configuration: configuration,
             status_sender,
             setup_features,
+            timeout_watcher,
         }
     }
 
@@ -102,7 +110,28 @@ impl SetupPhaseImpl for WalletSetupPhase {
         &self.app_handle
     }
 
-    fn create_progress_stepper(app_handle: AppHandle) -> ProgressStepper {
+    async fn get_shutdown_signal(&self) -> ShutdownSignal {
+        TasksTrackers::current().core_phase.get_signal().await
+    }
+    async fn get_task_tracker(&self) -> TaskTracker {
+        TasksTrackers::current().core_phase.get_task_tracker().await
+    }
+    fn get_phase_dependencies(&self) -> Vec<Receiver<PhaseStatus>> {
+        self.setup_configuration
+            .listeners_for_required_phases_statuses
+            .clone()
+    }
+    fn get_phase_id(&self) -> SetupPhase {
+        SetupPhase::Wallet
+    }
+    fn get_timeout_watcher(&self) -> &TimeoutWatcher {
+        &self.timeout_watcher
+    }
+
+    fn create_progress_stepper(
+        app_handle: AppHandle,
+        timeout_watcher_sender: Sender<u64>,
+    ) -> ProgressStepper {
         ProgressStepperBuilder::new()
             .add_step(ProgressPlans::Wallet(
                 ProgressSetupWalletPlan::BinariesWallet,
@@ -113,7 +142,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
             ))
             .add_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::SetupBridge))
             .add_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::Done))
-            .build(app_handle)
+            .build(app_handle, timeout_watcher_sender)
     }
 
     async fn load_app_configuration() -> Result<Self::AppConfiguration, Error> {
@@ -126,57 +155,8 @@ impl SetupPhaseImpl for WalletSetupPhase {
         })
     }
 
-    async fn setup(mut self) {
-        info!(target: LOG_TARGET, "[ {} Phase ] Starting setup", SetupPhase::Wallet);
-
-        TasksTrackers::current().wallet_phase.get_task_tracker().await.spawn(async move {
-            let mut shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
-            for subscriber in &mut self.setup_configuration.listeners_for_required_phases_statuses.iter_mut() {
-                select! {
-                    _ = subscriber.wait_for(|value| value.is_success()) => {}
-                    _ = shutdown_signal.wait() => {
-                        warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Wallet);
-                        return;
-                    }
-                }
-            };
-
-            tokio::select! {
-                result = conditional_sleeper(self.setup_configuration.setup_timeout_duration) => {
-                    if result.is_some() {
-                        error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Wallet);
-                        let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::Wallet);
-                        sentry::capture_message(&error_message, sentry::Level::Error);
-                        EventsEmitter::emit_critical_problem(CriticalProblemPayload {
-                            title: Some(SetupPhase::Wallet.get_critical_problem_title()),
-                            description: Some(SetupPhase::Wallet.get_critical_problem_description()),
-                            error_message: Some(error_message),
-                        }).await;
-                    }
-                }
-                result = self.setup_inner() => {
-                    match result {
-                        Ok(_) => {
-                            info!(target: LOG_TARGET, "[ {} Phase ] Setup completed successfully", SetupPhase::Wallet);
-                            let _unused = self.finalize_setup().await;
-                        }
-                        Err(error) => {
-                            error!(target: LOG_TARGET, "[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Wallet,error);
-                            let error_message = format!("[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Wallet,error);
-                            sentry::capture_message(&error_message, sentry::Level::Error);
-                            EventsEmitter::emit_critical_problem(CriticalProblemPayload {
-                                title: Some(SetupPhase::Wallet.get_critical_problem_title()),
-                                description: Some(SetupPhase::Wallet.get_critical_problem_description()),
-                                error_message: Some(error_message),
-                            }).await;
-                        }
-                    }
-                }
-                _ = shutdown_signal.wait() => {
-                    warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Wallet);
-                }
-            };
-        });
+    async fn setup(self) {
+        let _unused = SetupDefaultAdapter::setup(self).await;
     }
 
     async fn setup_inner(&self) -> Result<(), Error> {
@@ -205,17 +185,36 @@ impl SetupPhaseImpl for WalletSetupPhase {
             .resolve_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::StartWallet))
             .await;
 
+        let latest_wallet_migration_nonce = *ConfigWallet::content().await.wallet_migration_nonce();
+        if latest_wallet_migration_nonce < WALLET_MIGRATION_NONCE {
+            log::info!(target: LOG_TARGET, "Wallet migration required(Nonce {} => {})", latest_wallet_migration_nonce, WALLET_MIGRATION_NONCE);
+            if let Err(e) = state.wallet_manager.clean_data_folder(&data_dir).await {
+                log::warn!(target: LOG_TARGET, "Failed to clean wallet data folder: {}", e);
+            }
+            if let Err(e) = ConfigWallet::update_field(
+                ConfigWalletContent::set_wallet_migration_nonce,
+                WALLET_MIGRATION_NONCE,
+            )
+            .await
+            {
+                log::warn!(target: LOG_TARGET, "Failed to update wallet migration nonce: {}", e);
+            }
+        }
+
         let app_state = self.get_app_handle().state::<UniverseAppState>().clone();
         let is_local_node = app_state.node_manager.is_local_current().await?;
+        let wallet_config = WalletStartupConfig {
+            base_path: data_dir.clone(),
+            config_path: config_dir.clone(),
+            log_path: log_dir.clone(),
+            use_tor: self.app_configuration.use_tor,
+            connect_with_local_node: is_local_node,
+        };
         state
             .wallet_manager
             .ensure_started(
                 TasksTrackers::current().wallet_phase.get_signal().await,
-                data_dir.clone(),
-                config_dir.clone(),
-                log_dir.clone(),
-                self.app_configuration.use_tor,
-                is_local_node,
+                wallet_config,
                 app_state.clone(),
             )
             .await?;
@@ -237,6 +236,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
                 data_dir,
                 config_dir,
                 log_dir,
+                app_state.clone(),
             )
             .await?;
         drop(spend_wallet_manager);

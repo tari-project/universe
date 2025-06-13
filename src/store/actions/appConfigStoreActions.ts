@@ -26,7 +26,6 @@ import { displayMode, modeType } from '../types';
 import { ConfigBackendInMemory, ConfigCore, ConfigMining, ConfigUI, ConfigWallet } from '@app/types/configs.ts';
 import { NodeType, updateNodeType as updateNodeTypeForNodeStore } from '../useNodeStore.ts';
 import { fetchExchangeContent, fetchExchangeMiners, setShowUniversalModal } from '../useExchangeStore.ts';
-import { ChainId } from '@uniswap/sdk-core';
 
 import {
     AppInMemoryConfigChangedPayload,
@@ -323,10 +322,6 @@ export const setNodeType = async (nodeType: NodeType) => {
     });
 };
 
-export const setDefaultChain = (chain: ChainId) => {
-    useConfigCoreStore.setState({ default_chain: chain });
-};
-
 export const fetchBackendInMemoryConfig = async () => {
     try {
         const isUniversalMiner = await invoke('is_universal_miner');
@@ -338,8 +333,8 @@ export const fetchBackendInMemoryConfig = async () => {
             const isUniversalUninitialized = isUniversalMiner && !universalMinerExchangeId;
             const isUniversalInitialized = isUniversalMiner && universalMinerExchangeId;
             const isExchangeMode = res.exchangeId && !isUniversalMiner && res.exchangeId !== 'classic';
+            await fetchExchangeMiners();
             if (isUniversalUninitialized) {
-                await fetchExchangeMiners();
                 setShowUniversalModal(true);
             }
             if (isExchangeMode) {
@@ -372,6 +367,8 @@ export const handleAppInMemoryConfigChanged = (payload: AppInMemoryConfigChanged
         airdropTwitterAuthUrl: payload.app_in_memory_config.airdrop_twitter_auth_url,
         exchangeId: payload.app_in_memory_config.exchange_id,
         isUniversalMiner: payload.is_universal_exchange || false,
+        bridgeBackendApiUrl: payload.app_in_memory_config.bridge_backend_api_url,
+        walletConnectProjectId: payload.app_in_memory_config.wallet_connect_project_id,
     };
     useConfigBEInMemoryStore.setState(newConfig);
 };

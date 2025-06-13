@@ -86,7 +86,7 @@ const useTauriEventsListener = () => {
                             break;
                         case 'NodePhaseFinished':
                             break;
-                        case 'UnknownPhaseFinished':
+                        case 'MiningPhaseFinished':
                             break;
                         case 'WalletPhaseFinished':
                             break;
@@ -119,8 +119,8 @@ const useTauriEventsListener = () => {
                             break;
                         }
                         case 'WalletBalanceUpdate':
-                            setWalletBalance(event.payload);
                             await refreshTransactions();
+                            await setWalletBalance(event.payload);
                             break;
                         case 'BaseNodeUpdate':
                             handleBaseNodeStatusUpdate(event.payload);

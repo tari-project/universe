@@ -35,6 +35,7 @@ import { Swap } from './Swap/Swap.tsx';
 import { AnimatePresence } from 'motion/react';
 import { swapTransition, walletTransition } from './transitions.ts';
 import { setIsSwapping } from '@app/store/actions/walletStoreActions.ts';
+import ExchangesUrls from '@app/components/transactions/wallet/Exchanges/ExchangesUrls.tsx';
 
 interface Props {
     section: string;
@@ -49,16 +50,15 @@ const Wallet = memo(function Wallet({ section, setSection }: Props) {
     const walletAddress = useWalletStore((state) => state.tari_address_base58);
     const availableBalance = useWalletStore((s) => s.balance?.available_balance);
     const displayAddress = truncateMiddle(walletAddress, 4);
-    const swapUiEnabled = useAirdropStore((s) => s.swapsEnabled);
     const isSwapping = useWalletStore((s) => s.is_swapping);
-
     const { isWalletScanning, formattedAvailableBalance } = useTariBalance();
 
     return (
         <AnimatePresence mode="wait">
-            {isSwapping && swapUiEnabled ? (
+            {isSwapping ? (
                 <SwapsWrapper {...swapTransition} key="swap">
                     <Swap />
+                    <ExchangesUrls />
                 </SwapsWrapper>
             ) : (
                 <WalletWrapper {...walletTransition} key="wallet">
@@ -74,7 +74,6 @@ const Wallet = memo(function Wallet({ section, setSection }: Props) {
                         </TabHeader>
 
                         <WalletBalanceMarkup />
-
                         {uiSendRecvEnabled && !isWalletScanning && (
                             <TabsWrapper>
                                 <TabsTitle>{`${t('history.available-balance')}: ${formattedAvailableBalance} ${t('common:xtm')}`}</TabsTitle>
@@ -88,11 +87,7 @@ const Wallet = memo(function Wallet({ section, setSection }: Props) {
 
                         {uiSendRecvEnabled ? (
                             <>
-                                {swapUiEnabled ? (
-                                    <BuyTariButton onClick={() => setIsSwapping(true)}>
-                                        {'Buy Tari (wXTM)'}
-                                    </BuyTariButton>
-                                ) : null}
+                                <BuyTariButton onClick={() => setIsSwapping(true)}>{'Buy Tari (wXTM)'}</BuyTariButton>
                                 <BottomNavWrapper>
                                     <NavButton
                                         onClick={() => setSection('send')}

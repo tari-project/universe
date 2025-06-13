@@ -23,7 +23,6 @@ export interface ConfigCore {
     };
     remote_base_node_address: string;
     node_type?: NodeType;
-    default_chain: number;
     universal_miner_initialized_exchange_id?: string;
 }
 export interface ConfigWallet {
@@ -67,6 +66,7 @@ export interface ConfigBackendInMemory {
     airdropApiUrl: string;
     airdropTwitterAuthUrl: string;
     exchangeId: string;
+    bridgeBackendApiUrl: string;
     isUniversalMiner?: boolean;
     walletConnectProjectId?: string;
 }

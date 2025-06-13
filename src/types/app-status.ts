@@ -84,6 +84,7 @@ export interface TransactionInfo {
     message: string;
     payment_id: string;
     mined_in_block_height?: number;
+    payment_reference?: string;
 }
 
 export interface P2poolStatsResult {
@@ -221,6 +222,7 @@ export interface ApplicationsVersions {
     mm_proxy: string;
     wallet: string;
     sha_p2pool: string;
+    bridge: string;
 }
 
 export interface PaperWalletDetails {
@@ -247,4 +249,10 @@ export interface NetworkStatus {
 export interface BridgeEnvs {
     walletconnect_id: string;
     backend_api: string;
+}
+
+export interface TariAddressVariants {
+    emoji_string: string;
+    base58: string;
+    hex: string;
 }

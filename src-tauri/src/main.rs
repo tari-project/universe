@@ -79,8 +79,6 @@ use telemetry_manager::TelemetryManager;
 use crate::cpu_miner::CpuMiner;
 
 use crate::commands::CpuMinerConnection;
-#[cfg(target_os = "windows")]
-use crate::external_dependencies::{ExternalDependencies, RequiredExternalDependency};
 use crate::feedback::Feedback;
 use crate::gpu_miner::GpuMiner;
 use crate::mm_proxy_manager::{MmProxyManager, StartConfig};
@@ -124,6 +122,7 @@ mod p2pool_manager;
 mod pool_status_watcher;
 mod port_allocator;
 mod process_adapter;
+mod process_adapter_utils;
 mod process_killer;
 mod process_stats_collector;
 mod process_utils;
@@ -316,7 +315,7 @@ fn main() {
             release: sentry::release_name!(),
             attach_stacktrace: true,
             before_send: Some(Arc::new(|event| {
-                if event.logentry.as_ref().map_or(false, |entry| {
+                if event.logentry.as_ref().is_some_and(|entry| {
                     IGNORED_SENTRY_ERRORS.iter().any(|ignored| entry.message.starts_with(ignored))
                 }) {
                     None
@@ -362,8 +361,10 @@ fn main() {
         node_manager.clone(),
         wallet_state_watch_tx,
         &mut stats_collector,
+        base_node_watch_rx.clone(),
     );
-    let spend_wallet_manager = SpendWalletManager::new(node_manager.clone());
+    let spend_wallet_manager =
+        SpendWalletManager::new(node_manager.clone(), base_node_watch_rx.clone());
     let (p2pool_stats_tx, p2pool_stats_rx) = watch::channel(None);
     let p2pool_manager = P2poolManager::new(p2pool_stats_tx, &mut stats_collector);
 
@@ -719,6 +720,8 @@ fn main() {
             commands::get_tari_wallet_address,
             commands::get_tari_wallet_balance,
             commands::get_bridge_envs,
+            commands::parse_tari_address,
+            commands::refresh_wallet_history,
             commands::get_universal_miner_initialized_exchange_id,
         ])
         .build(tauri::generate_context!())
@@ -763,6 +766,11 @@ fn main() {
                     target: LOG_TARGET,
                     "App shutdown request caught with code: {:#?}", code
                 );
+                let base_path = app_handle.path().app_local_data_dir().expect("Could not get data dir");
+                match SpendWalletManager::erase_related_data(base_path) {
+                    Ok(_) => info!(target: LOG_TARGET, "Successfully erased related spend wallet data."),
+                    Err(e) => error!(target: LOG_TARGET, "Failed to erase related spend wallet data: {:?}", e),
+                }
                 if let Some(exit_code) = code {
                     if exit_code == RESTART_EXIT_CODE {
                         // RunEvent does not hold the exit code so we store it separately
