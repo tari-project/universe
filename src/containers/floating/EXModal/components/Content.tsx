@@ -1,10 +1,10 @@
-import { ExchangeContent } from '@app/types/exchange.ts';
 import GradientText from '@app/components/elements/gradientText/GradientText.tsx';
 import { Connect } from '@app/components/exchanges/connect/Connect.tsx';
 import { BodyCopy, Container, ContentContainer, Heading, LogoContainer, LogoImg } from './content.styles.ts';
+import { ExchangeBranding } from '@app/types/exchange.ts';
 
 interface ContentProps {
-    data: ExchangeContent;
+    data: ExchangeBranding;
 }
 export default function Content({ data }: ContentProps) {
     return (
@@ -13,7 +13,13 @@ export default function Content({ data }: ContentProps) {
                 <LogoImg src={data.logo_img_url} alt={`${data.name} Logo`} />
             </LogoContainer>
             <ContentContainer>
-                <GradientText colors={[data.secondary_colour, data.primary_colour, data.secondary_colour]}>
+                <GradientText
+                    colors={[
+                        data.secondary_colour || '#C9EB00',
+                        data.primary_colour || '#FFFFFF',
+                        data.secondary_colour || '#C9EB00',
+                    ]}
+                >
                     <Heading>{data.campaign_title}</Heading>
                 </GradientText>
                 <BodyCopy>

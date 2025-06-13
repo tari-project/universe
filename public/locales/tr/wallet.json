@@ -128,6 +128,8 @@
   "xc": {
     "buy-tari": "Buy Tari from an exchange",
     "buy-tari-subtitle": "Available on selected exchanges.",
+    "mine-directly-to": "Mine directly to an exchange",
+    "mine-directly-to-exchange": "{{exchangeName}}",
     "or": "or"
   }
 }

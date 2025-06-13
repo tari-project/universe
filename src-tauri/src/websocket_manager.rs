@@ -48,7 +48,7 @@ use tungstenite::Message;
 use tungstenite::Utf8Bytes;
 use urlencoding::encode;
 
-use crate::app_in_memory_config::DynamicMemoryConfig;
+use crate::app_in_memory_config::AppInMemoryConfig;
 use crate::configs::config_core::ConfigCore;
 use crate::configs::trait_config::ConfigImpl;
 use crate::tasks_tracker::TasksTrackers;
@@ -100,7 +100,7 @@ pub struct WebsocketStoredMessage {
 }
 
 pub struct WebsocketManager {
-    app_in_memory_config: Arc<RwLock<DynamicMemoryConfig>>,
+    app_in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
     app: Option<AppHandle>,
     message_receiver_channel: Arc<Mutex<mpsc::Receiver<WebsocketMessage>>>,
     status_update_channel_tx: watch::Sender<WebsocketManagerStatusMessage>,
@@ -110,7 +110,7 @@ pub struct WebsocketManager {
 
 impl WebsocketManager {
     pub fn new(
-        app_in_memory_config: Arc<RwLock<DynamicMemoryConfig>>,
+        app_in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
         websocket_manager_rx: mpsc::Receiver<WebsocketMessage>,
         status_update_channel_tx: watch::Sender<WebsocketManagerStatusMessage>,
         status_update_channel_rx: watch::Receiver<WebsocketManagerStatusMessage>,
@@ -151,9 +151,9 @@ impl WebsocketManager {
     }
 
     async fn connect_to_url(
-        in_memory_config: &Arc<RwLock<DynamicMemoryConfig>>,
+        in_memory_config: &Arc<RwLock<AppInMemoryConfig>>,
     ) -> Result<WebSocketStream<MaybeTlsStream<TcpStream>>, anyhow::Error> {
-        info!(target:LOG_TARGET,"connecting to websocket...");
+        info!(target:LOG_TARGET,"connecting to websocket... [{}:{}]", file!(), line!());
         let config_read = in_memory_config.read().await;
         let mut adjusted_ws_url = config_read.airdrop_api_url.clone();
         if adjusted_ws_url.contains("https") {
@@ -161,6 +161,7 @@ impl WebsocketManager {
         } else {
             adjusted_ws_url = config_read.airdrop_api_url.clone().replace("http", "ws");
         }
+        drop(config_read);
 
         let app_id = ConfigCore::content().await.anon_id().clone();
         adjusted_ws_url.push_str(&format!("/v2/ws?app_id={}", encode(&app_id)));

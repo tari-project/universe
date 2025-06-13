@@ -3,7 +3,7 @@ import { useGetSeedWords } from '@app/containers/floating/Settings/sections/wall
 import { useCopyToClipboard } from '@app/hooks';
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
-import { IoAddCircleOutline, IoCheckmarkOutline, IoCloseOutline, IoCopyOutline, IoPencil } from 'react-icons/io5';
+import { IoCheckmarkOutline, IoCloseOutline, IoCopyOutline, IoPencil } from 'react-icons/io5';
 import { useCallback, useState } from 'react';
 import { Wrapper } from './styles.ts';
 import { CTASArea, InputArea, WalletSettingsGrid } from '@app/containers/floating/Settings/sections/wallet/styles.ts';
@@ -22,9 +22,8 @@ import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 
 interface SeedWordsProps {
     isMonero?: boolean;
-    isGenerated?: boolean;
 }
-export default function SeedWords({ isMonero = false, isGenerated }: SeedWordsProps) {
+export default function SeedWords({ isMonero = false }: SeedWordsProps) {
     const isWalletImporting = useWalletStore((s) => s.is_wallet_importing);
 
     const [isEditView, setIsEditView] = useState(false);
@@ -41,8 +40,6 @@ export default function SeedWords({ isMonero = false, isGenerated }: SeedWordsPr
     const methods = useForm({ defaultValues: { seedWords: seedWords?.join(' ').trim() } });
     const { isValid } = methods.formState;
 
-    const disableCopy = !isGenerated && !isMonero;
-
     const handleConfirmed = useCallback(async () => {
         if (!isValid || !newSeedWords) return;
 
@@ -54,10 +51,12 @@ export default function SeedWords({ isMonero = false, isGenerated }: SeedWordsPr
         setShowConfirm(true);
     };
 
-    async function onToggleVisibility() {
-        setIsLoading(true);
+    async function onToggleVisibility(currentVisibilty?: boolean) {
+        setIsLoading(!currentVisibilty);
         if (!seedWords?.length || !seedWordsFetched) {
             await getSeedWords();
+            setIsLoading(false);
+        } else {
             setIsLoading(false);
         }
     }
@@ -87,10 +86,10 @@ export default function SeedWords({ isMonero = false, isGenerated }: SeedWordsPr
         <>
             {!isMonero ? (
                 <IconButton size="small" onClick={onToggleEdit} type="button">
-                    {isGenerated ? <IoPencil /> : <IoAddCircleOutline />}
+                    <IoPencil />
                 </IconButton>
             ) : null}
-            <IconButton size="small" type="button" onClick={() => handleCopyClick()} disabled={disableCopy}>
+            <IconButton size="small" type="button" onClick={() => handleCopyClick()}>
                 {!isCopied ? copyFetchLoading ? <CircularProgress /> : <IoCopyOutline /> : <IoCheckmarkOutline />}
             </IconButton>
         </>
@@ -121,8 +120,6 @@ export default function SeedWords({ isMonero = false, isGenerated }: SeedWordsPr
                                         words={seedWords}
                                         isLoading={isLoading || seedWordsFetching || copyFetchLoading}
                                         onToggleClick={onToggleVisibility}
-                                        isGenerated={isGenerated}
-                                        isMonero={isMonero}
                                     />
                                 )}
                             </InputArea>

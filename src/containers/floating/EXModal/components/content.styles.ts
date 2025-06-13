@@ -7,26 +7,22 @@ export const Container = styled.div`
     flex-direction: column;
     justify-content: space-between;
     padding: 24px;
+    gap: 12px;
 `;
 export const ContentContainer = styled.div`
     display: flex;
     flex-direction: column;
 `;
 export const LogoContainer = styled.div`
-    height: 70px;
+    height: 80px;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     font-size: 30px;
     font-weight: 700;
-    margin: 0 0 12px;
-    img {
-        width: 100%;
-        max-width: 100px;
-    }
 `;
 export const LogoImg = styled.img`
-    max-width: 100%;
+    max-height: 100%;
     color: ${({ theme }) => theme.palette.text.primary};
 `;
 

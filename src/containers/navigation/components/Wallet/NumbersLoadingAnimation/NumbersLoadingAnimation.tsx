@@ -48,7 +48,7 @@ export default function NumbersLoadingAnimation() {
                         key={index}
                         initial={{ scale: 0.75, opacity: 0.5 }}
                         animate={
-                            activeSquares.includes(index) ? { scale: 1, opacity: 1 } : { scale: 0.75, opacity: 0.5 }
+                            activeSquares.includes(index) ? { scale: 1, opacity: 0.8 } : { scale: 0.75, opacity: 0.5 }
                         }
                         transition={{
                             duration: 0.5,

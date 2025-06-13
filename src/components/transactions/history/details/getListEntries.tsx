@@ -6,7 +6,7 @@ import { StatusListEntry } from '@app/components/transactions/components/StatusL
 import { getExplorerUrl, Network } from '@app/utils/network.ts';
 import { BackendBridgeTransaction, useBlockchainVisualisationStore, useMiningStore } from '@app/store';
 import { getTxStatusTitleKey, getTxTitle } from '@app/utils/getTxStatus.ts';
-import { TransactionDetailsItem } from '../HistoryList';
+import { TransactionDetailsItem } from '@app/types/transactions.ts';
 import { EmojiAddressWrapper } from '@app/components/transactions/history/details/styles.ts';
 
 type TransactionKey = keyof TransactionDetailsItem;
