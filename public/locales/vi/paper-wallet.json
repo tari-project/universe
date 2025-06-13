@@ -1,0 +1,18 @@
+{
+  "connect": {
+    "blackButton": "Tôi đã có ứng dụng",
+    "scan": "Quét mã QR",
+    "text": "Tải Tari Universe Mobile và theo dõi số dư XTM của bạn mọi lúc, mọi nơi. Tải ngay cho iOS hoặc Android.",
+    "textButton": "Tìm hiểu thêm về Tari Universe Mobile",
+    "title": "Theo dõi số dư XTM trên điện thoại"
+  },
+  "qrcode": {
+    "blackButton": "Xong",
+    "copied": "Đã sao chép!",
+    "inputLabel": "Mã nhận diện",
+    "text": "Quét mã QR để đồng bộ ví Universe với Tari Universe Mobile trên điện thoại. Khi được yêu cầu, nhập mã bảo mật bên dưới vào Tari Universe Mobile và làm theo hướng dẫn trong ứng dụng.",
+    "textButton": "Tôi cần trợ giúp",
+    "title": "Đồng bộ Universe với Tari Universe Mobile",
+    "warning": "Không chia sẻ mã QR này"
+  }
+}
