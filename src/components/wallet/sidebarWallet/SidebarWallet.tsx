@@ -84,7 +84,7 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
                                     </HistoryListWrapper>
                                 </>
                             )}
-                            <BuyTariButton onClick={() => setIsSwapping(true)}>{'Buy Tari (wXTM)'}</BuyTariButton>
+                            <BuyTariButton onClick={() => setIsSwapping(true)}>{'Buy Tari (XTM)'}</BuyTariButton>
                         </Wrapper>
                     </WalletWrapper>
                 )}
