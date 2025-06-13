@@ -8,7 +8,7 @@ export const ListWrapper = styled.div`
     background-color: ${({ theme }) => theme.palette.background.paper};
     width: 100%;
     height: auto;
-    max-height: 55vh;
+    max-height: 100%;
     overflow: hidden;
     padding: 20px;
 `;
@@ -16,6 +16,7 @@ export const ListWrapper = styled.div`
 export const ScrollWrapper = styled.div`
     flex-direction: column;
     display: flex;
+    justify-content: end;
     gap: 12px;
     overflow: hidden;
     overflow-y: auto;
