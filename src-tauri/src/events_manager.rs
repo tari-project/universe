@@ -51,11 +51,7 @@ impl EventsManager {
         {
             info!(target: LOG_TARGET, "Firing new block height event but skipping wallet scan for seedless wallet feature");
 
-            EventsEmitter::emit_new_block_mined(
-                block_height,
-                None,
-                None,
-            ).await;
+            EventsEmitter::emit_new_block_mined(block_height, None, None).await;
 
             return;
         }
