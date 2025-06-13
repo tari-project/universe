@@ -72,7 +72,7 @@ export const XCOption = ({ content, isCurrent = false, isActive, onActiveClick }
             <ContentHeaderWrapper>
                 <XCContent>
                     {!!logoSrc && (
-                        <ImgWrapper $isLogo $col1={content.primary_colour}>
+                        <ImgWrapper>
                             <img src={logoSrc} alt={`${content.name} logo`} />
                         </ImgWrapper>
                     )}

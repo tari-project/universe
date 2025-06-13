@@ -8,7 +8,7 @@ interface ExchangeStoreState {
     showUniversalModal: boolean | null;
 }
 
-const UNIVERSE_LOGO_PATH = '/assets/img/tari_green.png';
+const UNIVERSE_LOGO_PATH = '/assets/img/tari_round.png';
 export const universalExchangeMinerOption: ExchangeBranding = {
     id: 'universal',
     slug: 'universal',

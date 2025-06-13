@@ -36,7 +36,7 @@ export default function XCLinkModal() {
             <OptionWrapper key={x.id}>
                 <InfoWrapper>
                     {logoSrc && (
-                        <ImgWrapper $isLogo $col1={x.primary_colour}>
+                        <ImgWrapper>
                             <img src={logoSrc} alt={x.name} />
                         </ImgWrapper>
                     )}

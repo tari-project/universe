@@ -17,7 +17,6 @@ export const Logo = styled.div<Props & { $index: number; $bgColour?: string }>`
     position: absolute;
     z-index: ${({ $index }) => $index + 1};
     top: 0;
-    background-color: ${({ theme, $bgColour }) => $bgColour || theme.colors.greyscale[50]};
     img {
         width: 100%;
     }
@@ -36,6 +35,7 @@ export const Logo = styled.div<Props & { $index: number; $bgColour?: string }>`
                 return css`
                     width: 33px;
                     height: 33px;
+                    border: 2px solid #fff;
                     left: ${`${$index * 15}px`};
                 `;
         }
