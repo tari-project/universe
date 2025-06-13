@@ -28,7 +28,7 @@ interface ConnectFormFields {
 }
 
 export const Connect = () => {
-    const { data } = useFetchExchangeBranding();
+    const { data, isPending } = useFetchExchangeBranding();
     const [address, setAddress] = useState('');
     const [isFocused, setIsFocused] = useState(false);
     const [addressIsValid, setAddressIsValid] = useState(false);
@@ -85,7 +85,9 @@ export const Connect = () => {
         }
     }
 
-    return (
+    return isPending ? (
+        <LoadingDots />
+    ) : (
         <Wrapper>
             <ConnectForm onSubmit={handleSubmit(onSubmit)}>
                 <AddressInputLabel>{`Enter your ${data?.name} Tari Address`}</AddressInputLabel>

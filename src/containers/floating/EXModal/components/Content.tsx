@@ -1,10 +1,10 @@
-import { ExchangeContent } from '@app/types/exchange.ts';
 import GradientText from '@app/components/elements/gradientText/GradientText.tsx';
 import { Connect } from '@app/components/exchanges/connect/Connect.tsx';
 import { BodyCopy, Container, ContentContainer, Heading, LogoContainer, LogoImg } from './content.styles.ts';
+import { ExchangeBranding } from '@app/types/exchange.ts';
 
 interface ContentProps {
-    data: ExchangeContent;
+    data: ExchangeBranding;
 }
 export default function Content({ data }: ContentProps) {
     return (

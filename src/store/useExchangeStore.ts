@@ -8,12 +8,14 @@ interface ExchangeStoreState {
     showUniversalModal: boolean | null;
 }
 
+const UNIVERSE_LOGO_PATH = '/assets/img/tari_round.png';
 export const universalExchangeMinerOption: ExchangeBranding = {
     id: 'universal',
     slug: 'universal',
     name: 'Tari Universe',
     is_hidden: false,
     exchange_id: 'universal',
+    logo_img_small_url: UNIVERSE_LOGO_PATH,
 };
 
 const initialState = {

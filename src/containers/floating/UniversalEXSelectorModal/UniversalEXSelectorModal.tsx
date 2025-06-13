@@ -20,8 +20,8 @@ import { IoClose } from 'react-icons/io5';
 import { useFetchExchangeBranding } from '@app/hooks/exchanges/fetchExchangeContent.ts';
 
 export default function UniversalEXSelectorModal() {
-    const { t } = useTranslation(['exchange', 'common'], { useSuspense: false });
     const showModal = useExchangeStore((s) => s.showUniversalModal);
+    const { t } = useTranslation(['exchange', 'common'], { useSuspense: false });
     const { data: currentExchangeMiner } = useFetchExchangeBranding();
 
     function handleClose() {

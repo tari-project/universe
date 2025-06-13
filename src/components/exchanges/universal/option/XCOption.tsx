@@ -28,7 +28,7 @@ import { formatCountdown } from '@app/utils/formatters.ts';
 import { restartMining } from '@app/store/actions/miningStoreActions.ts';
 import { setError } from '@app/store';
 import { ExchangeBranding, ExchangeMiner } from '@app/types/exchange.ts';
-import { TariOutlineSVG } from '@app/assets/icons/tari-outline.tsx';
+
 import { setSeedlessUI } from '@app/store/actions/uiStoreActions.ts';
 import { Divider } from '@app/components/elements/Divider.tsx';
 
@@ -64,17 +64,16 @@ export const XCOption = ({ content, isCurrent = false, isActive, onActiveClick }
     };
 
     const isTari = content.slug === 'universal' && content.id === 'universal';
-    const logoSrc = content.logo_img_small_url || content.logo_img_url;
-    const logoMarkup = isTari ? <TariOutlineSVG /> : logoSrc && <img src={logoSrc} alt={content.name} />;
+    const logoSrc = content.logo_img_small_url;
     const showExpand = isTari ? !isCurrent && content.id : content.id;
 
     return (
         <Wrapper $isCurrent={isCurrent} $isActive={isActive}>
             <ContentHeaderWrapper>
                 <XCContent>
-                    {(isTari || logoSrc) && (
-                        <ImgWrapper $isLogo $col1={isTari ? '#000' : content.primary_colour}>
-                            {logoMarkup}
+                    {!!logoSrc && (
+                        <ImgWrapper>
+                            <img src={logoSrc} alt={`${content.name} logo`} />
                         </ImgWrapper>
                     )}
                     <Heading>{content.name}</Heading>

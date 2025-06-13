@@ -5,13 +5,14 @@ import { Actions, DetailsLeft, LogoWrapper, Name, Wrapper } from './styles.ts';
 
 export default function WalletDetails() {
     const { data } = useFetchExchangeBranding();
-    const { name, logo_img_small_url } = data || {};
+
+    const name = data?.name;
+    const logoSrc = data?.logo_img_small_url;
+
     return (
         <Wrapper>
             <DetailsLeft>
-                <LogoWrapper>
-                    {logo_img_small_url ? <img src={logo_img_small_url} alt={`${name} logo`} /> : <TariOutlineSVG />}
-                </LogoWrapper>
+                <LogoWrapper>{logoSrc ? <img src={logoSrc} alt={`${name} logo`} /> : <TariOutlineSVG />}</LogoWrapper>
                 <Name>{name}</Name>
             </DetailsLeft>
             <Actions>

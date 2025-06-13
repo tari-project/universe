@@ -20,10 +20,7 @@ export const OpenButton = styled.button<{ $isOpen?: boolean }>`
 `;
 
 export const ImgWrapper = styled.div<{
-    $isLogo?: boolean;
     $border?: boolean;
-    $col1?: string;
-    $col2?: string;
     $isActive?: boolean;
 }>`
     width: 40px;
@@ -41,16 +38,6 @@ export const ImgWrapper = styled.div<{
         display: flex;
         max-width: 100%;
     }
-
-    ${({ $isLogo, $col1, theme }) =>
-        $isLogo &&
-        css`
-            background-color: ${$col1 || theme.colors.greyscale[50]};
-            color: #c9eb00;
-            svg {
-                max-width: 70%;
-            }
-        `}
 
     ${({ $border }) =>
         $border &&
