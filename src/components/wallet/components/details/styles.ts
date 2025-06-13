@@ -32,8 +32,8 @@ export const LogoWrapper = styled.div`
     overflow: hidden;
     svg,
     img {
-        height: 11px;
         display: flex;
+        max-width: 100%;
     }
 `;
 export const Actions = styled.div`

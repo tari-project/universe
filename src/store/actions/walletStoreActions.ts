@@ -2,12 +2,13 @@ import { invoke } from '@tauri-apps/api/core';
 import { WalletAddress, WalletBalance } from '@app/types/app-status.ts';
 import { BackendBridgeTransaction, useWalletStore } from '../useWalletStore';
 import { setError } from './appStateStoreActions';
-import { setCurrentExchangeMiner, universalExchangeMinerOption } from '@app/store/useExchangeStore.ts';
+import { setCurrentExchangeMinerId, universalExchangeMinerOption } from '@app/store/useExchangeStore.ts';
 import { WrapTokenService, OpenAPI } from '@tari-project/wxtm-bridge-backend-api';
 import { useConfigBEInMemoryStore } from '../useAppConfigStore';
 import { TransactionDetailsItem, TransactionDirection, TransactionStatus } from '@app/types/transactions';
 import { useUIStore } from '../useUIStore';
 import { setSeedlessUI } from './uiStoreActions';
+import { refreshTransactions } from '@app/hooks/wallet/useFetchTxHistory.ts';
 
 export const fetchBridgeTransactionsHistory = async () => {
     const baseUrl = useConfigBEInMemoryStore.getState().bridgeBackendApiUrl;
@@ -118,7 +119,8 @@ export const handleExternalWalletAddressUpdate = (payload?: WalletAddress) => {
         });
         if (isSeedlessUI) {
             setSeedlessUI(false);
-            setCurrentExchangeMiner(universalExchangeMinerOption);
+            setCurrentExchangeMinerId(universalExchangeMinerOption.exchange_id);
+            refreshTransactions();
         }
     }
 };

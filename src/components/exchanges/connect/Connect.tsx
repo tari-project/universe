@@ -1,6 +1,6 @@
 import { useForm } from 'react-hook-form';
 import { invoke } from '@tauri-apps/api/core';
-import { setShowExchangeModal, useExchangeStore } from '@app/store/useExchangeStore.ts';
+import { setShowExchangeModal } from '@app/store/useExchangeStore.ts';
 import {
     Wrapper,
     CTA,
@@ -21,13 +21,14 @@ import { setSeedlessUI } from '@app/store/actions/uiStoreActions.ts';
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
 import { setAllowTelemetry, useConfigCoreStore } from '@app/store';
 import { Typography } from '@app/components/elements/Typography.tsx';
+import { useFetchExchangeBranding } from '@app/hooks/exchanges/fetchExchangeContent.ts';
 
 interface ConnectFormFields {
     address: string;
 }
 
 export const Connect = () => {
-    const data = useExchangeStore((s) => s.currentExchangeMiner);
+    const { data } = useFetchExchangeBranding();
     const [address, setAddress] = useState('');
     const [isFocused, setIsFocused] = useState(false);
     const [addressIsValid, setAddressIsValid] = useState(false);

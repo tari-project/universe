@@ -2,7 +2,6 @@ import { useTranslation } from 'react-i18next';
 import { open } from '@tauri-apps/plugin-shell';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 
-import { useExchangeStore } from '@app/store/useExchangeStore.ts';
 import { ImgWrapper, ListWrapper } from '@app/components/exchanges/commonStyles.ts';
 import {
     CloseButton,
@@ -18,10 +17,11 @@ import {
 import { ExternalLinkSVG } from '@app/assets/icons/external-link.tsx';
 import { IoClose } from 'react-icons/io5';
 import { setDialogToShow, useUIStore } from '@app/store';
+import { useFetchExchangeList } from '@app/hooks/exchanges/fetchExchanges.ts';
 
 export default function XCLinkModal() {
     const { t } = useTranslation(['wallet']);
-    const exchangeMiners = useExchangeStore((s) => s.exchangeMiners);
+    const { data: exchangeMiners } = useFetchExchangeList();
     const dialog = useUIStore((s) => s.dialogToShow);
     const isOpen = dialog === 'xc_url' && !!exchangeMiners?.some((x) => x.exchange_url);
 

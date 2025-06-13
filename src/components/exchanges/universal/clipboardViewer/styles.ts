@@ -6,17 +6,17 @@ export const Container = styled.div`
     flex-direction: row;
     gap: 6px;
     padding: 10px;
-    background-color: white;
+    background-color: ${({ theme }) => theme.palette.background.default};
     border-radius: 10px;
     box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-    border: 1px solid #e5e7eb;
+    border: 1px solid ${({ theme }) => theme.palette.divider};
     width: 100%;
 `;
 
 export const ClipboardIcon = styled.img`
     width: 36px;
     height: 36px;
-    color: #3b82f6;
+    cursor: pointer;
 `;
 
 export const ContentContainer = styled.div`
@@ -29,7 +29,6 @@ export const ContentContainer = styled.div`
 export const Title = styled(Typography).attrs({ variant: 'h3' })`
     font-size: 14px;
     font-weight: 500;
-    color: #111827;
 `;
 
 export const TextContainer = styled.div`
@@ -42,6 +41,6 @@ export const ClipboardText = styled(Typography)`
     letter-spacing: 0.05rem;
     white-space: pre-wrap;
     word-break: break-word;
-    color: #374151;
+    color: ${({ theme }) => theme.palette.text.secondary};
     line-height: 1.3;
 `;

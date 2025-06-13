@@ -4,11 +4,11 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 export const Wrapper = styled.div`
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: space-between;
     width: min(480px, 40vw);
     padding: 20px;
-    gap: 20px;
+    overflow: hidden;
+    height: 100%;
+    gap: 10px;
 `;
 export const HeaderSection = styled.div`
     display: flex;
@@ -27,30 +27,21 @@ export const MainLogoContainer = styled.div`
     position: relative;
     border-radius: 24px;
     height: 144px;
+    display: flex;
+    flex-shrink: 1;
     overflow: hidden;
+    @media (max-height: 690px) {
+        height: 110px;
+    }
 `;
 
 export const MainLogoImageWrapper = styled.div`
     width: 100%;
-
+    display: flex;
+    flex-shrink: 0;
     img {
         max-width: 100%;
     }
-`;
-
-export const MainLogoOverlay = styled.div`
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    align-items: flex-start;
-    color: white;
-    padding: 20px;
-    gap: 10px;
 `;
 
 export const MainLogoBottomRow = styled.div`
