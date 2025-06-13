@@ -679,6 +679,12 @@ pub async fn confirm_exchange_address(address: String) -> Result<(), InvokeError
     let timer = Instant::now();
     let new_external_tari_address =
         TariAddress::from_str(&address).map_err(|e| format!("Invalid Tari address: {}", e))?;
+    ConfigWallet::update_field(
+        ConfigWalletContent::set_external_tari_address,
+        Some(new_external_tari_address.clone()),
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
     EventsEmitter::emit_external_tari_address_changed(Some(new_external_tari_address)).await;
     SetupManager::get_instance()
         .mark_exchange_modal_as_completed()
