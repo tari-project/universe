@@ -35,12 +35,13 @@ import { Divider } from '@app/components/elements/Divider.tsx';
 interface XCOptionProps {
     content: ExchangeBranding;
     isCurrent?: boolean;
+    isActive?: boolean;
+    onActiveClick: (id: string) => void;
 }
 
-export const XCOption = ({ content, isCurrent = false }: XCOptionProps) => {
+export const XCOption = ({ content, isCurrent = false, isActive, onActiveClick }: XCOptionProps) => {
     const { t } = useTranslation(['exchange', 'settings'], { useSuspense: false });
     const [isAddressValid, setIsAddressValid] = useState(false);
-    const [isActive, setIsActive] = useState(false);
     const [miningAddress, setMiningAddress] = useState('');
 
     const handleExchangeMiner = async () => {
@@ -68,7 +69,7 @@ export const XCOption = ({ content, isCurrent = false }: XCOptionProps) => {
     const showExpand = isTari ? !isCurrent && content.id : content.id;
 
     return (
-        <Wrapper $isCurrent={isCurrent}>
+        <Wrapper $isCurrent={isCurrent} $isActive={isActive}>
             <ContentHeaderWrapper>
                 <XCContent>
                     {(isTari || logoSrc) && (
@@ -88,7 +89,7 @@ export const XCOption = ({ content, isCurrent = false }: XCOptionProps) => {
                         <OpenButton
                             $isOpen={isActive}
                             onClick={() => {
-                                setIsActive(!isActive);
+                                onActiveClick(!isActive ? content.id : '');
                             }}
                         >
                             <ImgWrapper $border $isActive={isActive}>
@@ -98,39 +99,41 @@ export const XCOption = ({ content, isCurrent = false }: XCOptionProps) => {
                     )}
                 </SelectOptionWrapper>
             </ContentHeaderWrapper>
-            <ContentBodyWrapper $isActive={isActive}>
-                <ExchangeAddress handleIsAddressValid={setIsAddressValid} handleAddressChanged={setMiningAddress} />
-                <SeasonReward>
-                    <LeftContent>
-                        {content.campaign_description ? (
-                            <>
-                                <SeasonRewardIcon src="/assets/img/wrapped_gift.png" alt="gift" />
-                                <SeasonRewardText>
-                                    <b>{t('season-one-reward', { ns: 'exchange' })}:</b>{' '}
-                                    <span>{content.campaign_description}</span>
-                                </SeasonRewardText>
-                            </>
+            {isActive && (
+                <ContentBodyWrapper $isActive={isActive}>
+                    <ExchangeAddress handleIsAddressValid={setIsAddressValid} handleAddressChanged={setMiningAddress} />
+                    <SeasonReward>
+                        <LeftContent>
+                            {content.campaign_description ? (
+                                <>
+                                    <SeasonRewardIcon src="/assets/img/wrapped_gift.png" alt="gift" />
+                                    <SeasonRewardText>
+                                        <b>{t('season-one-reward', { ns: 'exchange' })}:</b>{' '}
+                                        <span>{content.campaign_description}</span>
+                                    </SeasonRewardText>
+                                </>
+                            ) : null}
+                        </LeftContent>
+                        {content.reward_expiry_date ? (
+                            <Countdown>
+                                <CountdownText>{formatCountdown(content.reward_expiry_date)}</CountdownText>
+                            </Countdown>
                         ) : null}
-                    </LeftContent>
-                    {content.reward_expiry_date ? (
-                        <Countdown>
-                            <CountdownText>{formatCountdown(content.reward_expiry_date)}</CountdownText>
-                        </Countdown>
-                    ) : null}
-                </SeasonReward>
-                {isAddressValid ? (
-                    <ConfirmButton onClick={handleExchangeMiner} disabled={!isAddressValid}>
-                        <Typography variant="h4">{t('confirm', { ns: 'settings' })}</Typography>
-                    </ConfirmButton>
-                ) : (
-                    <>
-                        <Divider />
-                        <Typography variant="p">
-                            {t('help-find-address', { exchange: content.name, ns: 'exchange' })}
-                        </Typography>
-                    </>
-                )}
-            </ContentBodyWrapper>
+                    </SeasonReward>
+                    {isAddressValid ? (
+                        <ConfirmButton onClick={handleExchangeMiner} disabled={!isAddressValid}>
+                            <Typography variant="h4">{t('confirm', { ns: 'settings' })}</Typography>
+                        </ConfirmButton>
+                    ) : (
+                        <>
+                            <Divider />
+                            <Typography variant="p">
+                                {t('help-find-address', { exchange: content.name, ns: 'exchange' })}
+                            </Typography>
+                        </>
+                    )}
+                </ContentBodyWrapper>
+            )}
         </Wrapper>
     );
 };

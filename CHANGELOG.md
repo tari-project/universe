@@ -1,3 +1,21 @@
+🚀 TARI UNIVERSE v1.2.9: Colonies of Light
+
+_June 12, 2025_
+
+Hey everyone,
+
+Tari contributors continue to pull out all the stops to make Tari Universe the most beautiful and easiest-to-use crypto app in the world. Introducing the "Colonies of Light" release of Tari Universe, an awesome release filled to the brim with tweaks, bug fixes, and amazing updates
+
+✨ What's New in "Colonies of Light"
+- 🔗 **Link to Supported Exchanges**: We've introduced a new interface that makes it easy to see the list of CEXs that have listed XTM, and directly access them
+- 💎 **Revamped Transaction History**: We've completely revamped the Tari Universe transaction history (!!!). Now your TX history will include your bridge transactions and better formatting. It's clean, clear, and far easier to use than ever before
+- 🛡️ **Linux Tor Support**: We know the Tari Linux community will be hyped about this one: we've added missing library support for much smoother Linux installs
+- ⏱️ **Smarter Download Handling**: Many of you have reported "node setup failure" errors when running Tari Universe. Our new download handling system should make these errors a thing of the past in MOST cases (not all.. but we're getting closer!). We can't wait to hear how this new system works for you
+- ⚡ **Stability and Reliability Improvements**: For Tari Universe users on lower-end machines, Tari Universe should now be faster and more responsive for you
+- 🔄 **Airdrop Game**: We fixed a bug where the Start/Stop mining button was getting stuck when logged into the Tari Airdrop Game
+
+---
+
 🚀 TARI UNIVERSE v1.2.8: The Feast of Light
 
 _June 9, 2025_

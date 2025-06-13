@@ -23,16 +23,17 @@ import WalletActions from '@app/components/wallet/components/actions/WalletActio
 import ListActions from '@app/components/wallet/components/actions/ListActions.tsx';
 import { TransactionDetails } from '@app/components/transactions/history/details/TransactionDetails.tsx';
 import { setDetailsItem, setIsSwapping } from '@app/store/actions/walletStoreActions.ts';
-import { useExchangeStore } from '@app/store/useExchangeStore.ts';
+
 import ExchangesUrls from '@app/components/transactions/wallet/Exchanges/ExchangesUrls.tsx';
 import ExchangeButton from '@app/components/transactions/wallet/Exchanges/exchange-button/ExchangeButton.tsx';
+import { useFetchExchangeBranding } from '@app/hooks/exchanges/fetchExchangeContent.ts';
 
 interface SidebarWalletProps {
     section: string;
     setSection: (section: string) => void;
 }
 export default function SidebarWallet({ section, setSection }: SidebarWalletProps) {
-    const xcData = useExchangeStore((s) => s.currentExchangeMiner);
+    const { data: xcData } = useFetchExchangeBranding();
     const detailsItem = useWalletStore((s) => s.detailsItem);
     const targetRef = useRef<HTMLDivElement>(null);
     const { scrollY } = useScroll({ container: targetRef });

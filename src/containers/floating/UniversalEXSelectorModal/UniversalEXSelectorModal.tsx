@@ -8,7 +8,6 @@ import {
     Wrapper,
     MainLogoDescription,
     MainLogoContainer,
-    MainLogoOverlay,
     MainLogoBottomRow,
     MainLogoImageWrapper,
 } from './styles';
@@ -18,11 +17,12 @@ import { formatCountdown } from '@app/utils';
 import { Typography } from '@app/components/elements/Typography';
 import { CloseButton, CloseWrapper } from '@app/components/exchanges/commonStyles.ts';
 import { IoClose } from 'react-icons/io5';
+import { useFetchExchangeBranding } from '@app/hooks/exchanges/fetchExchangeContent.ts';
 
 export default function UniversalEXSelectorModal() {
     const { t } = useTranslation(['exchange', 'common'], { useSuspense: false });
     const showModal = useExchangeStore((s) => s.showUniversalModal);
-    const currentExchangeMiner = useExchangeStore((s) => s.currentExchangeMiner);
+    const { data: currentExchangeMiner } = useFetchExchangeBranding();
 
     function handleClose() {
         setShowUniversalModal(false);
@@ -45,22 +45,20 @@ export default function UniversalEXSelectorModal() {
                         <MainLogoImageWrapper>
                             <img src="/assets/img/exchange_miner_header.png" alt="Exchange Miner Header Logo" />
                         </MainLogoImageWrapper>
-                        <MainLogoOverlay>
-                            <MainLogoTitle>{t('main-logo-title', { ns: 'exchange' })}</MainLogoTitle>
-                            <MainLogoDescription>{currentExchangeMiner.campaign_description}</MainLogoDescription>
-                            {currentExchangeMiner.reward_expiry_date && (
-                                <MainLogoBottomRow>
-                                    <Countdown>
-                                        <CountdownText>
-                                            {formatCountdown(currentExchangeMiner.reward_expiry_date)}
-                                        </CountdownText>
-                                    </Countdown>
-                                    <Typography variant="p" style={{ fontWeight: 500 }}>
-                                        {t('time-left', { ns: 'exchange' })}
-                                    </Typography>
-                                </MainLogoBottomRow>
-                            )}
-                        </MainLogoOverlay>
+                        <MainLogoTitle>{t('main-logo-title', { ns: 'exchange' })}</MainLogoTitle>
+                        <MainLogoDescription>{currentExchangeMiner?.campaign_description}</MainLogoDescription>
+                        {currentExchangeMiner?.reward_expiry_date && (
+                            <MainLogoBottomRow>
+                                <Countdown>
+                                    <CountdownText>
+                                        {formatCountdown(currentExchangeMiner.reward_expiry_date)}
+                                    </CountdownText>
+                                </Countdown>
+                                <Typography variant="p" style={{ fontWeight: 500 }}>
+                                    {t('time-left', { ns: 'exchange' })}
+                                </Typography>
+                            </MainLogoBottomRow>
+                        )}
                     </MainLogoContainer>
                     <XCOptions />
                 </Wrapper>

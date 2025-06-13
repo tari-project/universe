@@ -1,13 +1,13 @@
-import { useExchangeStore } from '@app/store/useExchangeStore.ts';
 import { ChevronSVG } from '@app/assets/icons/chevron.tsx';
 import { setDialogToShow } from '@app/store';
 import { useTranslation } from 'react-i18next';
 import { Logos } from './logos/Logos.tsx';
 import { ChevronCTA, CopyWrapper, SectionDivider, Subtitle, Title, XCButton, XCWrapper } from './styles.ts';
+import { useFetchExchangeList } from '@app/hooks/exchanges/fetchExchanges.ts';
 
 export default function ExchangesUrls() {
     const { t } = useTranslation('wallet');
-    const exchanges = useExchangeStore((s) => s.exchangeMiners);
+    const { data: exchanges } = useFetchExchangeList();
 
     return exchanges?.length && !!exchanges?.some((x) => x.exchange_url) ? (
         <XCWrapper>

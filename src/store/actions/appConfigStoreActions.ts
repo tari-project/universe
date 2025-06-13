@@ -25,12 +25,9 @@ import { GpuThreads } from '@app/types/app-status.ts';
 import { displayMode, modeType } from '../types';
 import { ConfigCore, ConfigMining, ConfigUI, ConfigWallet } from '@app/types/configs.ts';
 import { NodeType, updateNodeType as updateNodeTypeForNodeStore } from '../useNodeStore.ts';
-import {
-    fetchExchangeContent,
-    fetchExchangeMiners,
-    setCurrentExchangeMiner,
-    useExchangeStore,
-} from '../useExchangeStore.ts';
+import { setCurrentExchangeMinerId, useExchangeStore } from '../useExchangeStore.ts';
+import { fetchExchangeContent, refreshXCContent } from '@app/hooks/exchanges/fetchExchangeContent.ts';
+import { fetchExchangeList } from '@app/hooks/exchanges/fetchExchanges.ts';
 
 interface SetModeProps {
     mode: modeType;
@@ -48,11 +45,11 @@ export const handleConfigCoreLoaded = async (coreConfig: ConfigCore) => {
     if (isAppExchangeSpecific) {
         await fetchExchangeContent(coreConfig.exchange_id as string);
     } else {
-        await fetchExchangeMiners();
+        await fetchExchangeList();
     }
 
-    const currentExchangeContent = useExchangeStore.getState().currentExchangeMiner;
-    if (currentExchangeContent.id !== coreConfig.exchange_id) {
+    const currentExchangeMinerId = useExchangeStore.getState().currentExchangeMinerId;
+    if (currentExchangeMinerId !== coreConfig.exchange_id) {
         await fetchExchangeContent(coreConfig.exchange_id as string);
     }
 };
@@ -349,6 +346,6 @@ export const fetchBackendInMemoryConfig = async () => {
 };
 
 export const handleExchangeIdChanged = async (payload: string) => {
-    const exchangeContent = await fetchExchangeContent(payload);
-    setCurrentExchangeMiner(exchangeContent);
+    setCurrentExchangeMinerId(payload);
+    await refreshXCContent(payload);
 };
