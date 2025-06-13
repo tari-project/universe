@@ -308,7 +308,6 @@ impl SetupManager {
         ConfigMining::initialize(app_handle.clone()).await;
         ConfigUI::initialize(app_handle.clone()).await;
 
-        info!("[DEBUG] Acquiring read lock for in_memory_config");
         let build_in_exchange_id = in_memory_config.read().await.exchange_id.clone();
         let is_on_exchange_miner_build =
             MinerType::from_str(&build_in_exchange_id).is_exchange_mode();
@@ -351,7 +350,6 @@ impl SetupManager {
             EventsEmitter::emit_exchange_id_changed(build_in_exchange_id).await;
         }
 
-        info!(target: LOG_TARGET, "[DEBUG] releasing read lock on in_memory_config at {}:{}", file!(), line!());
         info!(target: LOG_TARGET, "Pre Setup Finished");
     }
 
