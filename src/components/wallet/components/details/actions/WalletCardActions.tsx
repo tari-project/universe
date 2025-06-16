@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { AnimatePresence } from 'motion/react';
 import { CopySVG } from '@app/assets/icons/copy.tsx';
 import { useCopyToClipboard } from '@app/hooks';
-import { useWalletStore } from '@app/store';
+import { useUIStore, useWalletStore } from '@app/store';
 import { truncateMiddle } from '@app/utils';
 import { ActionButton, AddressTooltip, Wrapper } from './styles.ts';
 import { setShowUniversalModal } from '@app/store/useExchangeStore.ts';
@@ -104,10 +104,11 @@ function ActionMenu() {
 }
 
 export default function WalletCardActions() {
+    const isAppExchangeSpecific = useUIStore((s) => s.isAppExchangeSpecific);
     return (
         <Wrapper>
             <ActionAddress />
-            <ActionMenu />
+            {!isAppExchangeSpecific && <ActionMenu />}
         </Wrapper>
     );
 }
