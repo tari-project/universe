@@ -34,6 +34,11 @@ export const ContentHeaderWrapper = styled.div`
     justify-content: space-between;
     align-items: center;
     width: 100%;
+    cursor: pointer;
+    transition: opacity 0.2s ease-in-out;
+    &:hover {
+        opacity: 0.6;
+    }
 `;
 
 export const ContentBodyWrapper = styled.div<{ $isActive?: boolean }>`

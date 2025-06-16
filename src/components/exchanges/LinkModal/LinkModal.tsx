@@ -33,7 +33,7 @@ export default function XCLinkModal() {
         const url = x.exchange_url;
         if (!url) return null;
         return (
-            <OptionWrapper key={x.id}>
+            <OptionWrapper key={x.id} onClick={() => open(url)}>
                 <InfoWrapper>
                     {logoSrc && (
                         <ImgWrapper>
@@ -43,7 +43,7 @@ export default function XCLinkModal() {
                     {x.name}
                 </InfoWrapper>
 
-                <LinkButton onClick={() => open(url)}>
+                <LinkButton>
                     <ExternalLinkSVG />
                 </LinkButton>
             </OptionWrapper>

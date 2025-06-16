@@ -68,8 +68,9 @@ export const ExchangeAddress = ({
     };
 
     const handleReset = useCallback(() => {
+        if (disabled) return;
         reset({ address: '' });
-    }, [reset]);
+    }, [reset, disabled]);
 
     const handleFocus = useCallback(() => {
         setShowClipboard((c) => !c);
@@ -95,9 +96,11 @@ export const ExchangeAddress = ({
                                     />
                                     <IconWrapper>
                                         {errors.address ? (
-                                            <ClearIcon onClick={handleReset}>
-                                                <IoClose size={18} />
-                                            </ClearIcon>
+                                            disabled ? null : (
+                                                <ClearIcon onClick={handleReset}>
+                                                    <IoClose size={18} />
+                                                </ClearIcon>
+                                            )
                                         ) : isValid ? (
                                             <CheckIcon />
                                         ) : null}
