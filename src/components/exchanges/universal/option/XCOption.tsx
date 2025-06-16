@@ -82,7 +82,11 @@ export const XCOption = ({ content, isCurrent = false, isActive, onActiveClick }
 
     return (
         <Wrapper $isCurrent={isCurrent} $isActive={isActive}>
-            <ContentHeaderWrapper>
+            <ContentHeaderWrapper
+                onClick={() => {
+                    onActiveClick(!isActive ? content.id : '');
+                }}
+            >
                 <XCContent>
                     {!!logoSrc && (
                         <ImgWrapper>
@@ -98,12 +102,7 @@ export const XCOption = ({ content, isCurrent = false, isActive, onActiveClick }
                         </CaptionWrapper>
                     )}
                     {showExpand && (
-                        <OpenButton
-                            $isOpen={isActive}
-                            onClick={() => {
-                                onActiveClick(!isActive ? content.id : '');
-                            }}
-                        >
+                        <OpenButton $isOpen={isActive}>
                             <ImgWrapper $border $isActive={isActive}>
                                 <ChevronSVG />
                             </ImgWrapper>

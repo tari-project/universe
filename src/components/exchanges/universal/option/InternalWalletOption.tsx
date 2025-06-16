@@ -57,7 +57,11 @@ export const InternalWalletOption = ({ isCurrent = false, isActive, onActiveClic
 
     return (
         <Wrapper $isCurrent={isCurrent} $isActive={isActive}>
-            <ContentHeaderWrapper>
+            <ContentHeaderWrapper
+                onClick={() => {
+                    onActiveClick(!isActive ? universalExchangeMinerOption.id : '');
+                }}
+            >
                 <XCContent>
                     {!!logoSrc && (
                         <ImgWrapper>
@@ -73,12 +77,7 @@ export const InternalWalletOption = ({ isCurrent = false, isActive, onActiveClic
                         </CaptionWrapper>
                     )}
                     {showExpand && (
-                        <OpenButton
-                            $isOpen={isActive}
-                            onClick={() => {
-                                onActiveClick(!isActive ? universalExchangeMinerOption.id : '');
-                            }}
-                        >
+                        <OpenButton $isOpen={isActive}>
                             <ImgWrapper $border $isActive={isActive}>
                                 <ChevronSVG />
                             </ImgWrapper>
