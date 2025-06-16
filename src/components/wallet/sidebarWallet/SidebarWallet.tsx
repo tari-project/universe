@@ -18,6 +18,7 @@ import {
 import { useCallback, useRef, useState } from 'react';
 import { HistoryListWrapper } from '@app/components/wallet/components/history/styles.ts';
 import { List } from '@app/components/transactions/history/List.tsx';
+import { open } from '@tauri-apps/plugin-shell';
 
 import WalletActions from '@app/components/wallet/components/actions/WalletActions.tsx';
 import ListActions from '@app/components/wallet/components/actions/ListActions.tsx';
@@ -49,7 +50,7 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
     });
     const openLink = useCallback(() => {
         if (xcData && xcData.wallet_app_link) {
-            open(xcData.wallet_app_link, '_blank');
+            open(xcData.wallet_app_link);
         }
     }, [xcData]);
     return (
