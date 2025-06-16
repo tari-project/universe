@@ -54,6 +54,7 @@ use crate::wallet_adapter::WalletBalance;
 const KEY_MANAGER_COMMS_SECRET_KEY_BRANCH_KEY: &str = "comms";
 const LOG_TARGET: &str = "tari::universe::internal_wallet";
 
+#[derive(Serialize, Deserialize)]
 pub struct InternalWallet {
     tari_address: TariAddress,
     config: WalletConfig,

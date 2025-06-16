@@ -36,6 +36,39 @@ use crate::{
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub enum TariSelectedWallet {
+    Internal(TariAddress),
+    External(TariAddress),
+}
+
+impl TariSelectedWallet {
+    pub fn get_tari_base58_address(&self) -> String {
+        match self {
+            TariSelectedWallet::Internal(tari_address) => tari_address.to_base58(),
+            TariSelectedWallet::External(tari_address) => tari_address.to_base58(),
+        }
+    }
+    pub fn get_tari_emoji_address(&self) -> String {
+        match self {
+            TariSelectedWallet::Internal(tari_address) => tari_address.to_emoji_string(),
+            TariSelectedWallet::External(tari_address) => tari_address.to_emoji_string(),
+        }
+    }
+    pub fn get_tari_address(&self) -> TariAddress {
+        match self {
+            TariSelectedWallet::Internal(tari_address) => tari_address.clone(),
+            TariSelectedWallet::External(tari_address) => tari_address.clone(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct ExternalAddressBookRecord {
+    pub tari_address_base58: String,
+    pub tari_address_emoji: String,
+}
+
 static LOG_TARGET: &str = "tari::universe::config_wallet";
 
 static INSTANCE: LazyLock<RwLock<ConfigWallet>> =
@@ -58,9 +91,9 @@ pub struct ConfigWalletContent {
     #[getset(get = "pub", set = "pub")]
     external_tari_address: Option<TariAddress>,
     #[getset(get = "pub", set = "pub")]
-    tari_address: Option<TariAddress>,
-    #[getset(get = "pub", set = "pub")]
     wallet_migration_nonce: u64,
+    #[getset(get = "pub", set = "pub")]
+    tari_wallet: Option<TariSelectedWallet>,
 }
 
 impl Default for ConfigWalletContent {
@@ -74,6 +107,7 @@ impl Default for ConfigWalletContent {
             external_tari_address: None,
             tari_address: None,
             wallet_migration_nonce: 0,
+            tari_wallet: None,
         }
     }
 }
@@ -156,6 +190,14 @@ impl ConfigWallet {
                 .await
                 .expect("Failed to set Tari address in ConfigWallet");
 
+                let _unused = ConfigWallet::update_field(
+                    ConfigWalletContent::set_tari_wallet,
+                    Some(TariSelectedWallet::Internal(
+                        wallet.get_tari_address().clone(),
+                    )),
+                )
+                .await;
+
                 // Currently it easier to send extra event then handle TariAddress in emit_wallet_config_loaded
                 EventsEmitter::emit_base_tari_address_changed(wallet.get_tari_address().clone())
                     .await;
@@ -172,6 +214,7 @@ impl ConfigWallet {
                 .clone(),
         )
         .await;
+
         EventsEmitter::emit_wallet_config_loaded(Self::current().write().await.content.clone())
             .await;
     }
