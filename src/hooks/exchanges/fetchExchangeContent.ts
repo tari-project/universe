@@ -57,9 +57,6 @@ export function useFetchExchangeBranding() {
                     ...data,
                     logo_img_url,
                     logo_img_small_url,
-                    wallet_app_label: 'Check your XTM on your XT wallet/app',
-                    wallet_app_link:
-                        'https://www.google.com/webhp?hl=en&sa=X&ved=0ahUKEwjf5Knu6PWNAxUj2gIHHfqXL0YQPAgI',
                 };
             }
         },
