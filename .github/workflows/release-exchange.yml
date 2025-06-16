@@ -121,7 +121,7 @@ jobs:
           yq eval ".mainBinaryName = \"${{ env.OS_BINARY_NAME }}-${{matrix.exchange.name}}\"" --output-format=json -i tauri.conf.json
           yq eval ".app.windows[0].title = \"Tari Universe v${TU_VERSION} - ${{ matrix.exchange.name }}\"" --output-format=json -i tauri.conf.json
           yq eval ".identifier = \"${{env.IDENTIFIER}}\"" --output-format=json -i tauri.conf.json
-          yq eval ".plugins.updater.endpoints = [\"https://${{ env.BASE_TLD }}/${{ env.BASE_URL }}/exchanges/${{ matrix.exchange.id }}/latest-${{matrix.exchange.id}}.json\"]" \
+          yq eval ".plugins.updater.endpoints = [\"https://raw.githubusercontent.com/tari-project/universe/main/.updater/latest-${{matrix.exchange.id}}.json\", \"https://cdn-universe.tari.com/tari-project/universe/updater/latest-${{matrix.exchange.id}}.json\"]" \
             --output-format=json -i tauri.conf.json
           echo "APP_VERSION=${TU_VERSION}" >> $GITHUB_OUTPUT
 
