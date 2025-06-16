@@ -7,15 +7,11 @@ import {
     Countdown,
     CountdownText,
     Heading,
-    HelpButton,
-    HelpButtonWrapper,
     LeftContent,
     SeasonReward,
     SeasonRewardIcon,
     SeasonRewardText,
     SelectOptionWrapper,
-    StyledAddress,
-    StyledAddressWrapper,
     Wrapper,
     XCContent,
 } from '@app/components/exchanges/universal/option/styles.ts';
@@ -26,14 +22,12 @@ import { setShowUniversalModal, universalExchangeMinerOption } from '@app/store/
 import { invoke } from '@tauri-apps/api/core';
 import { useTranslation } from 'react-i18next';
 import { ExchangeAddress } from '../exchangeAddress/ExchangeAddress.tsx';
-import { useState } from 'react';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { formatCountdown } from '@app/utils/formatters.ts';
 import { setError, useWalletStore } from '@app/store';
 
-import { Divider } from '@app/components/elements/Divider.tsx';
-import { ExternalLinkSVG } from '@app/assets/icons/external-link.tsx';
 import { refreshTransactions } from '@app/hooks/wallet/useFetchTxHistory.ts';
+import { truncateMiddle } from '@app/utils/truncateString.ts';
 
 interface XCOptionProps {
     isCurrent?: boolean;
@@ -97,7 +91,7 @@ export const InternalWalletOption = ({ isCurrent = false, isActive, onActiveClic
                     <ExchangeAddress
                         handleIsAddressValid={() => true}
                         handleAddressChanged={() => null}
-                        value={base_tari_address}
+                        value={truncateMiddle(base_tari_address, 7, ' ...')}
                         disabled
                     />
                     <SeasonReward>
