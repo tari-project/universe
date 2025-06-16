@@ -646,6 +646,7 @@ fn main() {
             commands::get_transactions_history,
             commands::get_coinbase_transactions, // TODO: Unused
             commands::import_seed_words,
+            commands::revert_to_internal_wallet,
             commands::log_web_message,
             commands::open_log_dir,
             commands::reset_settings,
