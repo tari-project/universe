@@ -50,3 +50,10 @@ export const MiningHereWrapper = styled.div`
     backdrop-filter: blur(154px);
     padding: 9px 10px 9px 10px;
 `;
+
+export const MiningHereText = styled(Typography).attrs({
+    variant: 'p',
+})`
+    color: ${({ theme }) => theme.colors.greyscale[100]};
+    font-size: 10px;
+`;
