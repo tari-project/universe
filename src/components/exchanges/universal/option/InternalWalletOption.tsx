@@ -43,7 +43,7 @@ interface XCOptionProps {
 
 export const InternalWalletOption = ({ isCurrent = false, isActive, onActiveClick }: XCOptionProps) => {
     const { t } = useTranslation(['exchange', 'settings'], { useSuspense: false });
-    const base_tari_address = useWalletStore((state) => state.tari_address_base58);
+    const base_tari_address = useWalletStore((state) => state.tari_address_emoji);
 
     const handleRevertToInternalWallet = async () => {
         await invoke('revert_to_internal_wallet')
@@ -94,9 +94,12 @@ export const InternalWalletOption = ({ isCurrent = false, isActive, onActiveClic
             </ContentHeaderWrapper>
             {isActive && (
                 <ContentBodyWrapper $isActive={isActive}>
-                    <StyledAddressWrapper>
-                        <StyledAddress>{base_tari_address}</StyledAddress>
-                    </StyledAddressWrapper>
+                    <ExchangeAddress
+                        handleIsAddressValid={() => true}
+                        handleAddressChanged={() => null}
+                        value={base_tari_address}
+                        disabled
+                    />
                     <SeasonReward>
                         <LeftContent>
                             {universalExchangeMinerOption.campaign_description ? (
