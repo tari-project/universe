@@ -12,10 +12,14 @@ import { IoClose } from 'react-icons/io5';
 interface ExchangeAddressProps {
     handleIsAddressValid: (isValid: boolean) => void;
     handleAddressChanged: (address: string) => void;
+    value?: string;
+    disabled?: boolean;
 }
 export const ExchangeAddress = ({
     handleIsAddressValid,
     handleAddressChanged: handleAddressChange,
+    value,
+    disabled,
 }: ExchangeAddressProps) => {
     const { t } = useTranslation('exchange');
     const {
@@ -32,6 +36,13 @@ export const ExchangeAddress = ({
         trigger('address');
         handleAddressChange(address || '');
     }, [address, trigger, handleAddressChange]);
+
+    useEffect(() => {
+        if (value) {
+            setValue('address', value);
+        }
+    }, [value, setValue]);
+
     const handlePaste = useCallback(
         (value: string) => {
             console.info('Pasted value:', value);
@@ -76,6 +87,7 @@ export const ExchangeAddress = ({
                                 <StyledInputWrapper>
                                     <StyledInput
                                         {...field}
+                                        disabled={disabled}
                                         type="text"
                                         placeholder={t('wallet-address')}
                                         hasError={!!errors.address}
