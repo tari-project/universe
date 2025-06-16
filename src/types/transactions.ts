@@ -1,3 +1,7 @@
+import { TransactionInfo } from '@app/types/app-status.ts';
+
+export type TransactionDetailsItem = TransactionInfo & { dest_address_emoji?: string };
+
 // based on the enums from tari.rpc.rs - update this file if there are changes there!
 
 export enum TransactionDirection {

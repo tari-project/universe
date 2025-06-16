@@ -22,6 +22,7 @@
 
 use crate::app_in_memory_config::{
     get_der_encode_pub_key, get_websocket_key, AirdropInMemoryConfig, ExchangeMiner,
+    DEFAULT_EXCHANGE_ID,
 };
 use crate::auto_launcher::AutoLauncher;
 use crate::binaries::{Binaries, BinaryResolver};
@@ -202,18 +203,40 @@ pub async fn close_splashscreen(app: tauri::AppHandle) {
 }
 
 #[tauri::command]
-pub async fn is_universal_miner(state: tauri::State<'_, UniverseAppState>) -> Result<bool, String> {
-    Ok(state.in_memory_config.read().await.is_universal_miner())
-}
-
-#[tauri::command]
-pub async fn user_selected_exchange(
+pub async fn select_exchange_miner(
     app_handle: tauri::AppHandle,
     exchange_miner: ExchangeMiner,
-) -> Result<(), String> {
+    mining_address: String,
+) -> Result<(), InvokeError> {
+    ConfigCore::update_field(
+        ConfigCoreContent::set_exchange_id,
+        exchange_miner.clone().id,
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
+    let new_external_tari_address = TariAddress::from_str(&mining_address)
+        .map_err(|e| format!("Invalid Tari address: {}", e))?;
+    ConfigWallet::update_field(
+        ConfigWalletContent::set_external_tari_address,
+        Some(new_external_tari_address.clone()),
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
+
+    ConfigCore::update_field(
+        ConfigCoreContent::set_exchange_id,
+        exchange_miner.id.clone(),
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
+
+    EventsEmitter::emit_external_tari_address_changed(Some(new_external_tari_address)).await;
+    EventsEmitter::emit_exchange_id_changed(exchange_miner.id.clone()).await;
+
     SetupManager::get_instance()
-        .select_exchange_miner(exchange_miner, app_handle.clone())
-        .await?;
+        .restart_phases(app_handle, vec![SetupPhase::Wallet, SetupPhase::Mining])
+        .await;
+
     Ok(())
 }
 
@@ -552,14 +575,6 @@ pub async fn get_used_p2pool_stats_server_port(
 }
 
 #[tauri::command]
-pub async fn get_universal_miner_initialized_exchange_id() -> Result<Option<String>, String> {
-    Ok(ConfigCore::content()
-        .await
-        .universal_miner_initialized_exchange_id()
-        .clone())
-}
-
-#[tauri::command]
 pub async fn get_paper_wallet_details(
     app: tauri::AppHandle,
     state: tauri::State<'_, UniverseAppState>,
@@ -576,7 +591,7 @@ pub async fn get_paper_wallet_details(
         .clone()
         .and_then(|state| state.balance);
 
-    let internal_wallet = InternalWallet::load_or_create(config_path, state)
+    let internal_wallet = InternalWallet::load_or_create(config_path)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -597,12 +612,12 @@ pub async fn get_paper_wallet_details(
 #[tauri::command]
 pub async fn get_seed_words(app: tauri::AppHandle) -> Result<Vec<String>, String> {
     let timer = Instant::now();
+
     let config_path = app
         .path()
         .app_config_dir()
         .expect("Could not get config dir");
-    let state = app.state::<UniverseAppState>();
-    let internal_wallet = InternalWallet::load_or_create(config_path, state)
+    let internal_wallet = InternalWallet::load_or_create(config_path)
         .await
         .map_err(|e| e.to_string())?;
     let seed_words = internal_wallet
@@ -625,40 +640,32 @@ pub async fn get_seed_words(app: tauri::AppHandle) -> Result<Vec<String>, String
 }
 
 #[tauri::command]
-pub async fn set_tari_address(address: String, app_handle: tauri::AppHandle) -> Result<(), String> {
+pub async fn set_external_tari_address(
+    address: String,
+    app_handle: tauri::AppHandle,
+) -> Result<(), InvokeError> {
     let timer = Instant::now();
-    let config_path = app_handle
-        .path()
-        .app_config_dir()
-        .expect("Could not get config dir");
-    let state = app_handle.state::<UniverseAppState>();
-    let mut internal_wallet = InternalWallet::load_or_create(config_path.clone(), state)
-        .await
-        .map_err(|e| e.to_string())?;
-    let new_address = internal_wallet
-        .set_tari_address(address, config_path)
-        .await?;
-    let state = app_handle.state::<UniverseAppState>();
-    let mut tari_adress_guard = state.tari_address.write().await;
-    *tari_adress_guard = new_address.clone();
-    EventsEmitter::emit_wallet_address_update(
-        new_address,
-        internal_wallet.get_is_tari_address_generated(),
+
+    let new_external_tari_address =
+        TariAddress::from_str(&address).map_err(|e| format!("Invalid Tari address: {}", e))?;
+
+    ConfigWallet::update_field(
+        ConfigWalletContent::set_external_tari_address,
+        Some(new_external_tari_address.clone()),
     )
-    .await;
+    .await
+    .map_err(InvokeError::from_anyhow)?;
+
+    EventsEmitter::emit_external_tari_address_changed(Some(new_external_tari_address)).await;
 
     // For non exchange miner cases to stop wallet services
     SetupManager::get_instance()
-        .shutdown_phases(app_handle.clone(), vec![SetupPhase::Wallet])
+        .shutdown_phases(vec![SetupPhase::Wallet])
         .await;
 
     // mm_proxy is using wallet address
     SetupManager::get_instance()
-        .add_phases_to_restart_queue(vec![SetupPhase::Mining])
-        .await;
-
-    SetupManager::get_instance()
-        .restart_phases_from_queue(app_handle.clone())
+        .restart_phases(app_handle.clone(), vec![SetupPhase::Mining])
         .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
@@ -668,27 +675,17 @@ pub async fn set_tari_address(address: String, app_handle: tauri::AppHandle) -> 
 }
 
 #[tauri::command]
-pub async fn confirm_exchange_address(
-    address: String,
-    app: tauri::AppHandle,
-) -> Result<(), InvokeError> {
+pub async fn confirm_exchange_address(address: String) -> Result<(), InvokeError> {
     let timer = Instant::now();
-    let config_path = app
-        .path()
-        .app_config_dir()
-        .expect("Could not get config dir");
-    let state = app.state::<UniverseAppState>();
-    let mut internal_wallet = InternalWallet::load_or_create(config_path.clone(), state)
-        .await
-        .map_err(|e| e.to_string())?;
-    let new_address = internal_wallet
-        .set_tari_address(address, config_path)
-        .await?;
-    EventsEmitter::emit_wallet_address_update(
-        new_address,
-        internal_wallet.get_is_tari_address_generated(),
+    let new_external_tari_address =
+        TariAddress::from_str(&address).map_err(|e| format!("Invalid Tari address: {}", e))?;
+    ConfigWallet::update_field(
+        ConfigWalletContent::set_external_tari_address,
+        Some(new_external_tari_address.clone()),
     )
-    .await;
+    .await
+    .map_err(InvokeError::from_anyhow)?;
+    EventsEmitter::emit_external_tari_address_changed(Some(new_external_tari_address)).await;
     SetupManager::get_instance()
         .mark_exchange_modal_as_completed()
         .await
@@ -818,7 +815,7 @@ pub async fn import_seed_words(
     seed_words: Vec<String>,
     _window: tauri::Window,
     app: tauri::AppHandle,
-) -> Result<(), String> {
+) -> Result<(), InvokeError> {
     let timer = Instant::now();
     let config_path = app
         .path()
@@ -830,13 +827,35 @@ pub async fn import_seed_words(
         .expect("Could not get data dir");
 
     match InternalWallet::create_from_seed(config_path, seed_words).await {
-        Ok(_wallet) => {
-            TasksTrackers::current().stop_all_processes().await;
+        Ok(wallet) => {
+            SetupManager::get_instance()
+                .shutdown_phases(vec![SetupPhase::Wallet, SetupPhase::Mining])
+                .await;
             InternalWallet::clear_wallet_local_data(data_dir)
                 .await
                 .map_err(|e| e.to_string())?;
-            info!(target: LOG_TARGET, "[import_seed_words] Restarting the app");
-            app.restart();
+            ConfigWallet::update_field(ConfigWalletContent::set_external_tari_address, None)
+                .await
+                .map_err(InvokeError::from_anyhow)?;
+            EventsEmitter::emit_external_tari_address_changed(None).await;
+            ConfigWallet::update_field(
+                ConfigWalletContent::set_tari_address,
+                Some(wallet.get_tari_address()),
+            )
+            .await
+            .map_err(InvokeError::from_anyhow)?;
+            EventsEmitter::emit_base_tari_address_changed(wallet.get_tari_address()).await;
+            ConfigCore::update_field(
+                ConfigCoreContent::set_exchange_id,
+                DEFAULT_EXCHANGE_ID.to_string(),
+            )
+            .await
+            .map_err(InvokeError::from_anyhow)?;
+            EventsEmitter::emit_exchange_id_changed(DEFAULT_EXCHANGE_ID.to_string()).await;
+
+            SetupManager::get_instance()
+                .resume_phases(app, vec![SetupPhase::Wallet, SetupPhase::Mining])
+                .await;
         }
         Err(e) => {
             error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);
@@ -846,6 +865,57 @@ pub async fn import_seed_words(
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "import_seed_words took too long: {:?}", timer.elapsed());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn revert_to_internal_wallet(
+    _window: tauri::Window,
+    app: tauri::AppHandle,
+) -> Result<(), InvokeError> {
+    let timer = Instant::now();
+    let config_path = app
+        .path()
+        .app_config_dir()
+        .expect("Could not get config dir");
+
+    match InternalWallet::load_or_create(config_path).await {
+        Ok(wallet) => {
+            SetupManager::get_instance()
+                .shutdown_phases(vec![SetupPhase::Wallet, SetupPhase::Mining])
+                .await;
+            ConfigWallet::update_field(ConfigWalletContent::set_external_tari_address, None)
+                .await
+                .map_err(InvokeError::from_anyhow)?;
+            EventsEmitter::emit_external_tari_address_changed(None).await;
+            ConfigWallet::update_field(
+                ConfigWalletContent::set_tari_address,
+                Some(wallet.get_tari_address()),
+            )
+            .await
+            .map_err(InvokeError::from_anyhow)?;
+            EventsEmitter::emit_base_tari_address_changed(wallet.get_tari_address()).await;
+            ConfigCore::update_field(
+                ConfigCoreContent::set_exchange_id,
+                DEFAULT_EXCHANGE_ID.to_string(),
+            )
+            .await
+            .map_err(InvokeError::from_anyhow)?;
+            EventsEmitter::emit_exchange_id_changed(DEFAULT_EXCHANGE_ID.to_string()).await;
+
+            SetupManager::get_instance()
+                .resume_phases(app, vec![SetupPhase::Wallet, SetupPhase::Mining])
+                .await;
+        }
+        Err(e) => {
+            error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);
+            e.to_string();
+        }
+    }
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "revert_to_internal_wallet took too long: {:?}", timer.elapsed());
     }
     Ok(())
 }
@@ -1372,15 +1442,10 @@ pub async fn set_tor_config(
         .map_err(|e| e.to_string())?;
 
     SetupManager::get_instance()
-        .add_phases_to_restart_queue(vec![
-            SetupPhase::Node,
-            SetupPhase::Wallet,
-            SetupPhase::Mining,
-        ])
-        .await;
-
-    SetupManager::get_instance()
-        .restart_phases_from_queue(app_handle)
+        .restart_phases(
+            app_handle,
+            vec![SetupPhase::Node, SetupPhase::Wallet, SetupPhase::Mining],
+        )
         .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
@@ -1465,11 +1530,7 @@ pub async fn set_airdrop_tokens(
     if user_id_changed {
         // If the user id changed, we need to restart the mining phases to ensure that the new telemetry_id ( unique_string value )is used
         SetupManager::get_instance()
-            .add_phases_to_restart_queue(vec![SetupPhase::Mining])
-            .await;
-
-        SetupManager::get_instance()
-            .restart_phases_from_queue(app_handle.clone())
+            .restart_phases(app_handle.clone(), vec![SetupPhase::Mining])
             .await;
     }
     Ok(())
@@ -1493,7 +1554,9 @@ pub async fn start_cpu_mining(
     let cpu_miner_running = cpu_miner.is_running().await;
     drop(cpu_miner);
     let cpu_miner_config = state.cpu_miner_config.read().await;
-    let tari_address = state.tari_address.read().await;
+    let tari_address = ConfigWallet::content()
+        .await
+        .get_current_used_tari_address();
     drop(cpu_miner_config);
 
     if cpu_mining_enabled && !cpu_miner_running {
@@ -1559,7 +1622,9 @@ pub async fn start_gpu_mining(
         .get_unique_string()
         .await;
 
-    let tari_address = state.tari_address.read().await;
+    let tari_address = ConfigWallet::content()
+        .await
+        .get_current_used_tari_address();
     let gpu_miner = state.gpu_miner.read().await;
     let gpu_miner_running = gpu_miner.is_running().await;
     let gpu_available = gpu_miner.is_gpu_mining_available();
@@ -1934,9 +1999,8 @@ pub async fn reconnect(app_handle: tauri::AppHandle) -> Result<(), String> {
     EventsEmitter::emit_connection_status_changed(ConnectionStatusPayload::InProgress).await;
     let setup_manager = SetupManager::get_instance();
     setup_manager
-        .add_phases_to_restart_queue(SetupPhase::all())
+        .restart_phases(app_handle, SetupPhase::all())
         .await;
-    setup_manager.restart_phases_from_queue(app_handle).await;
     Ok(())
 }
 
@@ -2137,15 +2201,6 @@ pub async fn launch_builtin_tapplet() -> Result<ActiveTapplet, String> {
 }
 
 #[tauri::command]
-pub async fn get_tari_wallet_address(
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<String, String> {
-    let tari_address = state.tari_address.clone();
-    let addr = tari_address.read().await.to_base58();
-    Ok(addr)
-}
-
-#[tauri::command]
 pub async fn get_tari_wallet_balance(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<WalletBalance, String> {
@@ -2195,7 +2250,7 @@ pub async fn refresh_wallet_history(
     app_handle: tauri::AppHandle,
 ) -> Result<(), String> {
     SetupManager::get_instance()
-        .shutdown_phases(app_handle.clone(), vec![SetupPhase::Wallet])
+        .shutdown_phases(vec![SetupPhase::Wallet])
         .await;
 
     let base_path = app_handle

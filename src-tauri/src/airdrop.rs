@@ -113,13 +113,14 @@ pub async fn get_wallet_view_key_hashed(app: AppHandle) -> String {
 pub async fn send_new_block_mined(app: AppHandle, block_height: u64) {
     TasksTrackers::current().wallet_phase.get_task_tracker().await.spawn(async move {
         let app_in_config_memory = app.state::<UniverseAppState>().in_memory_config.clone();
+        let base_url = app_in_config_memory.read().await.airdrop_api_url.clone();
+        drop(app_in_config_memory);
         let config = ConfigCore::content().await;
         let app_id = config.anon_id().to_string();
 
         let hashed_view_private_key = get_wallet_view_key_hashed(app.clone()).await;
 
         let client = reqwest::Client::new();
-        let base_url = app_in_config_memory.read().await.airdrop_api_url.clone();
         let url = format!("{}/miner/mined-block", base_url);
         let message = AirdropMinedBlockMessage {
             wallet_view_key_hashed: hashed_view_private_key,

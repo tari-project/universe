@@ -2,7 +2,6 @@ import { useTranslation } from 'react-i18next';
 import { open } from '@tauri-apps/plugin-shell';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 
-import { useExchangeStore } from '@app/store/useExchangeStore.ts';
 import { ImgWrapper, ListWrapper } from '@app/components/exchanges/commonStyles.ts';
 import {
     CloseButton,
@@ -18,10 +17,11 @@ import {
 import { ExternalLinkSVG } from '@app/assets/icons/external-link.tsx';
 import { IoClose } from 'react-icons/io5';
 import { setDialogToShow, useUIStore } from '@app/store';
+import { useFetchExchangeList } from '@app/hooks/exchanges/fetchExchanges.ts';
 
 export default function XCLinkModal() {
     const { t } = useTranslation(['wallet']);
-    const exchangeMiners = useExchangeStore((s) => s.exchangeMiners);
+    const { data: exchangeMiners } = useFetchExchangeList();
     const dialog = useUIStore((s) => s.dialogToShow);
     const isOpen = dialog === 'xc_url' && !!exchangeMiners?.some((x) => x.exchange_url);
 
@@ -33,17 +33,17 @@ export default function XCLinkModal() {
         const url = x.exchange_url;
         if (!url) return null;
         return (
-            <OptionWrapper key={x.id}>
+            <OptionWrapper key={x.id} onClick={() => open(url)}>
                 <InfoWrapper>
                     {logoSrc && (
-                        <ImgWrapper $isLogo $col1={x.primary_colour}>
+                        <ImgWrapper>
                             <img src={logoSrc} alt={x.name} />
                         </ImgWrapper>
                     )}
                     {x.name}
                 </InfoWrapper>
 
-                <LinkButton onClick={() => open(url)}>
+                <LinkButton>
                     <ExternalLinkSVG />
                 </LinkButton>
             </OptionWrapper>

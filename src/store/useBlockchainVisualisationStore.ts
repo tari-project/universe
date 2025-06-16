@@ -1,4 +1,4 @@
-import { refreshTransactions, setWalletBalance } from '@app/store/actions';
+import { setWalletBalance } from '@app/store/actions';
 
 let winTimeout: NodeJS.Timeout | undefined;
 let failTimeout: NodeJS.Timeout | undefined;
@@ -11,7 +11,8 @@ import { TransactionInfo, WalletBalance } from '@app/types/app-status.ts';
 import { setMiningControlsEnabled } from './actions/miningStoreActions.ts';
 import { updateWalletScanningProgress, useWalletStore } from './useWalletStore.ts';
 import { useConfigUIStore } from '@app/store/useAppConfigStore.ts';
-import { fetchBridgeTransactionsHistory } from './actions/walletStoreActions.ts';
+import { refreshTransactions } from '@app/hooks/wallet/useFetchTxHistory.ts';
+import { fetchBridgeTransactionsHistory } from '@app/store/actions/walletStoreActions.ts';
 
 const appWindow = getCurrentWindow();
 

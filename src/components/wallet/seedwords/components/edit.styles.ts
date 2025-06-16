@@ -7,13 +7,7 @@ export const EditWrapper = styled.div`
     flex-direction: column;
     gap: 14px;
 `;
-export const WarningText = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    color: ${({ theme }) => theme.palette.text.secondary};
-    font-size: 14px;
-`;
+
 export const StyledTextArea = styled(TextArea)<{ $hasError: boolean }>(({ $hasError, theme }) => ({
     backgroundColor: theme.palette.background.default,
     width: '100%',
