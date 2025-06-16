@@ -2,11 +2,13 @@ import { useFetchExchangeBranding } from '@app/hooks/exchanges/fetchExchangeCont
 import WalletCardActions from './actions/WalletCardActions.tsx';
 import { Actions, DetailsLeft, LogoWrapper, Name, Wrapper } from './styles.ts';
 import { Typography } from '@app/components/elements/Typography.tsx';
+import { useTranslation } from 'react-i18next';
 
 export default function WalletDetails() {
     const { data } = useFetchExchangeBranding();
     const name = data?.name;
     const logoSrc = data?.logo_img_small_url ?? data?.logo_img_url;
+    const { t } = useTranslation('wallet');
 
     return (
         <Wrapper>
@@ -29,7 +31,7 @@ export default function WalletDetails() {
                     }}
                 >
                     <Typography variant="p" style={{ fontSize: '10px' }}>
-                        Mining here
+                        {t('xc.mining-here')}
                     </Typography>
                 </div>
                 <WalletCardActions />

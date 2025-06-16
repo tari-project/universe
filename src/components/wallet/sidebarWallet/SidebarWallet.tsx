@@ -15,7 +15,7 @@ import {
     BuyTariButton,
     DetailsCardBottomContent,
 } from './styles.ts';
-import { useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { HistoryListWrapper } from '@app/components/wallet/components/history/styles.ts';
 import { List } from '@app/components/transactions/history/List.tsx';
 import { open } from '@tauri-apps/plugin-shell';
@@ -48,6 +48,11 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
     useMotionValueEvent(scrollY, 'change', (latest) => {
         setOffset(latest);
     });
+    const openLink = useCallback(() => {
+        if (xcData && xcData.wallet_app_link) {
+            open(xcData.wallet_app_link, '_blank');
+        }
+    }, [xcData]);
 
     return (
         <>
@@ -75,7 +80,7 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
                                     <DetailsCardBottomContent>
                                         {!seedlessUI ? <WalletBalance /> : <WalletBalanceHidden />}
                                         {xcData?.wallet_app_link && xcData?.wallet_app_label && (
-                                            <ExternalLink onClick={() => open(xcData.wallet_app_link)}>
+                                            <ExternalLink onClick={openLink}>
                                                 <Typography
                                                     variant="p"
                                                     style={{
