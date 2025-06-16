@@ -23,7 +23,6 @@ export const BalanceTextWrapper = styled.div`
     align-items: flex-end;
     font-weight: 500;
     letter-spacing: -0.84px;
-    text-transform: lowercase;
     vertical-align: bottom;
 `;
 export const SuffixWrapper = styled.span`

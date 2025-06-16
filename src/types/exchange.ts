@@ -43,4 +43,7 @@ export interface ExchangeBranding extends ExchangeData {
     reward_percentage?: number;
     reward_expiry_date?: string;
     reward_image?: string;
+
+    wallet_app_label?: string;
+    wallet_app_link?: string;
 }

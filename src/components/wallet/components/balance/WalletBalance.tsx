@@ -13,7 +13,7 @@ import { toggleHideWalletBalance } from '@app/store/actions/uiStoreActions.ts';
 import { useState } from 'react';
 import { ActionButton } from '@app/components/wallet/components/details/actions/styles.ts';
 
-export default function WalletBalance() {
+export const WalletBalance = () => {
     const { t } = useTranslation('wallet');
     const [hovering, setHovering] = useState(false);
 
@@ -58,4 +58,17 @@ export default function WalletBalance() {
             )}
         </Wrapper>
     );
-}
+};
+
+export const WalletBalanceHidden = () => {
+    return (
+        <Wrapper>
+            <BalanceWrapper>
+                <BalanceTextWrapper>
+                    <Hidden>{`*******`}</Hidden>
+                    <SuffixWrapper>{` XTM`}</SuffixWrapper>
+                </BalanceTextWrapper>
+            </BalanceWrapper>
+        </Wrapper>
+    );
+};
