@@ -28,12 +28,13 @@ import { useState } from 'react';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { formatCountdown } from '@app/utils/formatters.ts';
 import { restartMining } from '@app/store/actions/miningStoreActions.ts';
-import { setError } from '@app/store';
+import { setError, useWalletStore } from '@app/store';
 import { ExchangeBranding, ExchangeMiner } from '@app/types/exchange.ts';
 
 import { setSeedlessUI } from '@app/store/actions/uiStoreActions.ts';
 import { Divider } from '@app/components/elements/Divider.tsx';
 import { ExternalLinkSVG } from '@app/assets/icons/external-link.tsx';
+import { truncateMiddle } from '@app/utils';
 
 interface XCOptionProps {
     content: ExchangeBranding;
@@ -43,6 +44,7 @@ interface XCOptionProps {
 }
 
 export const XCOption = ({ content, isCurrent = false, isActive, onActiveClick }: XCOptionProps) => {
+    const base_tari_address = useWalletStore((state) => state.external_tari_address_emoji);
     const { t } = useTranslation(['exchange', 'settings'], { useSuspense: false });
     const [isAddressValid, setIsAddressValid] = useState(false);
     const [miningAddress, setMiningAddress] = useState('');
@@ -112,7 +114,11 @@ export const XCOption = ({ content, isCurrent = false, isActive, onActiveClick }
             </ContentHeaderWrapper>
             {isActive && (
                 <ContentBodyWrapper $isActive={isActive}>
-                    <ExchangeAddress handleIsAddressValid={setIsAddressValid} handleAddressChanged={setMiningAddress} />
+                    <ExchangeAddress
+                        handleIsAddressValid={setIsAddressValid}
+                        handleAddressChanged={setMiningAddress}
+                        value={isCurrent ? truncateMiddle(base_tari_address, 7, ' ...') : undefined}
+                    />
                     <SeasonReward>
                         <LeftContent>
                             {content.campaign_description ? (
