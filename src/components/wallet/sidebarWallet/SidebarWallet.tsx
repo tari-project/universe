@@ -2,7 +2,7 @@ import { AnimatePresence, useMotionValueEvent, useScroll } from 'motion/react';
 import { useUIStore, useWalletStore } from '@app/store';
 import { swapTransition } from '@app/components/transactions/wallet/transitions.ts';
 import { Swap } from '@app/components/transactions/wallet/Swap/Swap.tsx';
-import WalletBalance from '../components/balance/WalletBalance.tsx';
+import { WalletBalance, WalletBalanceHidden } from '../components/balance/WalletBalance.tsx';
 import WalletDetails from '../components/details/WalletDetails.tsx';
 import {
     AnimatedBG,
@@ -18,6 +18,7 @@ import {
 import { useRef, useState } from 'react';
 import { HistoryListWrapper } from '@app/components/wallet/components/history/styles.ts';
 import { List } from '@app/components/transactions/history/List.tsx';
+import { open } from '@tauri-apps/plugin-shell';
 
 import WalletActions from '@app/components/wallet/components/actions/WalletActions.tsx';
 import ListActions from '@app/components/wallet/components/actions/ListActions.tsx';
@@ -27,6 +28,9 @@ import { setDetailsItem, setIsSwapping } from '@app/store/actions/walletStoreAct
 import ExchangesUrls from '@app/components/transactions/wallet/Exchanges/ExchangesUrls.tsx';
 import ExchangeButton from '@app/components/transactions/wallet/Exchanges/exchange-button/ExchangeButton.tsx';
 import { useFetchExchangeBranding } from '@app/hooks/exchanges/fetchExchangeContent.ts';
+import { ExternalLink } from '@app/components/transactions/components/StatusList/styles.ts';
+import { Typography } from '@app/components/elements/Typography.tsx';
+import { ExternalLink2SVG } from '@app/assets/icons/external-link2.tsx';
 
 interface SidebarWalletProps {
     section: string;
@@ -44,6 +48,7 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
     useMotionValueEvent(scrollY, 'change', (latest) => {
         setOffset(latest);
     });
+
     return (
         <>
             <AnimatePresence initial={false} mode="wait">
@@ -68,7 +73,21 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
                                 <DetailsCardContent>
                                     <WalletDetails />
                                     <DetailsCardBottomContent>
-                                        {!seedlessUI && <WalletBalance />}
+                                        {!seedlessUI ? <WalletBalance /> : <WalletBalanceHidden />}
+                                        {xcData?.wallet_app_link && xcData?.wallet_app_label && (
+                                            <ExternalLink onClick={() => open(xcData.wallet_app_link)}>
+                                                <Typography
+                                                    variant="p"
+                                                    style={{
+                                                        fontSize: '10px',
+                                                        color: 'rgba(255, 255, 255, 0.7)',
+                                                    }}
+                                                >
+                                                    {xcData.wallet_app_label}
+                                                </Typography>
+                                                <ExternalLink2SVG />
+                                            </ExternalLink>
+                                        )}
                                         <ExchangeButton />
                                     </DetailsCardBottomContent>
                                 </DetailsCardContent>

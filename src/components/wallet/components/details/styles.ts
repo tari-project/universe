@@ -38,4 +38,7 @@ export const LogoWrapper = styled.div`
 `;
 export const Actions = styled.div`
     display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
 `;
