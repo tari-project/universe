@@ -1,7 +1,6 @@
 import { useFetchExchangeBranding } from '@app/hooks/exchanges/fetchExchangeContent.ts';
 import WalletCardActions from './actions/WalletCardActions.tsx';
-import { Actions, DetailsLeft, LogoWrapper, MiningHereWrapper, Name, Wrapper } from './styles.ts';
-import { Typography } from '@app/components/elements/Typography.tsx';
+import { Actions, DetailsLeft, LogoWrapper, MiningHereText, MiningHereWrapper, Name, Wrapper } from './styles.ts';
 import { useTranslation } from 'react-i18next';
 
 export default function WalletDetails() {
@@ -22,9 +21,7 @@ export default function WalletDetails() {
             </DetailsLeft>
             <Actions>
                 <MiningHereWrapper>
-                    <Typography variant="p" style={{ fontSize: '10px' }}>
-                        {t('xc.mining-here')}
-                    </Typography>
+                    <MiningHereText>{t('xc.mining-here')}</MiningHereText>
                 </MiningHereWrapper>
                 <WalletCardActions />
             </Actions>
