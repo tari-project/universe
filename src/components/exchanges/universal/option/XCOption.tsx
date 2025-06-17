@@ -112,12 +112,14 @@ export const XCOption = ({ content, isCurrent = false, isActive, onActiveClick }
                     )}
                 </SelectOptionWrapper>
             </ContentHeaderWrapper>
-            {isActive && base_tari_address && (
+            {isActive && (
                 <ContentBodyWrapper $isActive={isActive}>
                     <ExchangeAddress
                         handleIsAddressValid={setIsAddressValid}
                         handleAddressChanged={setMiningAddress}
-                        value={isCurrent ? truncateMiddle(base_tari_address, 7, ' ...') : undefined}
+                        value={
+                            isCurrent ? base_tari_address && truncateMiddle(base_tari_address, 7, ' ...') : undefined
+                        }
                     />
                     <SeasonReward>
                         <LeftContent>
