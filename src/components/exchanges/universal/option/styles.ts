@@ -115,13 +115,13 @@ export const SeasonRewardText = styled(Typography).attrs({ variant: 'p' })`
 export const Countdown = styled.div`
     border-radius: 20px;
     gap: 10px;
-    padding: 0 12px;
+    padding: 5px 12px;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
     background-color: ${({ theme }) => theme.palette.background.main};
-    height: 30px;
+    max-height: 30px;
 `;
 
 export const CountdownText = styled(Typography).attrs({ variant: 'p' })`
