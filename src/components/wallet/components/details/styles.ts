@@ -38,4 +38,22 @@ export const LogoWrapper = styled.div`
 `;
 export const Actions = styled.div`
     display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+`;
+
+export const MiningHereWrapper = styled.div`
+    border-radius: 85px;
+    border: 1px solid #dddddd0d;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(154px);
+    padding: 9px 10px 9px 10px;
+`;
+
+export const MiningHereText = styled(Typography).attrs({
+    variant: 'p',
+})`
+    color: ${({ theme }) => theme.colors.greyscale[100]};
+    font-size: 10px;
 `;

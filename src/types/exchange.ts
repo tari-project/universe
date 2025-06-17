@@ -21,6 +21,8 @@ export interface ExchangeData extends ExchangeMiner {
 export interface ExchangeBranding extends ExchangeData {
     exchange_id: string; // used with internal app config state
 
+    address_help_link?: string;
+
     campaign_cta?: string;
     campaign_title?: string;
     campaign_tagline?: string;
@@ -41,4 +43,7 @@ export interface ExchangeBranding extends ExchangeData {
     reward_percentage?: number;
     reward_expiry_date?: string;
     reward_image?: string;
+
+    wallet_app_label?: string;
+    wallet_app_link?: string;
 }

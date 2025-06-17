@@ -34,17 +34,22 @@ export const ContentHeaderWrapper = styled.div`
     justify-content: space-between;
     align-items: center;
     width: 100%;
+    cursor: pointer;
+    transition: opacity 0.2s ease-in-out;
+    &:hover {
+        opacity: 0.6;
+    }
 `;
 
 export const ContentBodyWrapper = styled.div<{ $isActive?: boolean }>`
     display: flex;
     justify-content: space-evenly;
-    align-items: center;
     flex-direction: column;
+    align-items: center;
     flex-shrink: 0;
     width: 100%;
-    gap: 8px;
-    padding: ${({ $isActive }) => ($isActive ? `14px 0 4px ` : 0)};
+    gap: 14px;
+    padding: ${({ $isActive }) => ($isActive ? `14px 0 0` : 0)};
     height: ${({ $isActive: $isActive }) => ($isActive ? 'auto' : '0')};
     opacity: ${({ $isActive: $isActive }) => ($isActive ? '1' : '0')};
     transition:
@@ -133,4 +138,46 @@ export const ConfirmButton = styled.button`
     font-weight: bold;
     cursor: pointer;
     text-align: center;
+`;
+
+export const HelpButtonWrapper = styled.div`
+    display: flex;
+    width: 100%;
+    flex-direction: column;
+    gap: 4px;
+`;
+export const HelpButton = styled.button`
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: #1457ff;
+    font-weight: 500;
+    font-size: 12px;
+    svg {
+        width: 10px;
+    }
+    &:hover {
+        opacity: 0.7;
+    }
+`;
+
+export const StyledAddressWrapper = styled.div`
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+`;
+
+export const StyledAddress = styled.span`
+    border-radius: 20px;
+    justify-content: space-between;
+    padding: 10px 40px 10px 10px;
+    width: 100%;
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: ${({ theme }) => theme.palette.text.primary};
 `;

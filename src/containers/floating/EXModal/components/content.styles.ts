@@ -14,15 +14,17 @@ export const ContentContainer = styled.div`
     flex-direction: column;
 `;
 export const LogoContainer = styled.div`
-    height: 80px;
+    height: 60px;
     display: flex;
     align-items: center;
     gap: 10px;
     font-size: 30px;
     font-weight: 700;
+    width: 90%;
 `;
 export const LogoImg = styled.img`
-    max-height: 100%;
+    max-width: 100%;
+    height: 100%;
     color: ${({ theme }) => theme.palette.text.primary};
 `;
 
