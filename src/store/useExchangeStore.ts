@@ -6,6 +6,8 @@ interface ExchangeStoreState {
     showExchangeAddressModal: boolean | null;
     currentExchangeMinerId: string;
     showUniversalModal: boolean | null;
+    reward_end_date?: string;
+    reward_earn_cap_percentage?: number;
 }
 
 const UNIVERSE_LOGO_PATH = '/assets/img/tari_round.png';
@@ -36,4 +38,14 @@ export const setShowUniversalModal = (showUniversalModal: boolean) => {
 export const setCurrentExchangeMinerId = (currentExchangeMinerId?: string) => {
     if (!currentExchangeMinerId) return;
     useExchangeStore.setState({ currentExchangeMinerId });
+};
+
+export const setRewardData = ({
+    reward_end_date,
+    reward_earn_cap_percentage,
+}: {
+    reward_end_date?: string;
+    reward_earn_cap_percentage?: number;
+}) => {
+    useExchangeStore.setState((c) => ({ ...c, reward_end_date, reward_earn_cap_percentage }));
 };

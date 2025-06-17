@@ -1,10 +1,22 @@
 import { useConfigBEInMemoryStore, useUIStore } from '@app/store';
 import { useQuery } from '@tanstack/react-query';
-import { universalExchangeMinerOption } from '@app/store/useExchangeStore.ts';
+import { setRewardData, universalExchangeMinerOption } from '@app/store/useExchangeStore.ts';
 import { ExchangeBranding } from '@app/types/exchange.ts';
 import { queryClient } from '@app/App/queryClient.ts';
 
 export const KEY_XC_LIST = 'exchanges';
+
+function handleRewardData(list: ExchangeBranding[]) {
+    const highestAmt = list.sort((a, b) => (b?.reward_percentage || 0) - (a?.reward_percentage || 0))?.[0]
+        ?.reward_percentage;
+    const latestDate = list.sort((a, b) => {
+        const timeStampA = a.reward_expiry_date ? new Date(a.reward_expiry_date).getTime() : 0;
+        const timeStampB = b.reward_expiry_date ? new Date(b.reward_expiry_date).getTime() : 0;
+        return timeStampB - timeStampA;
+    })?.[0]?.reward_expiry_date;
+
+    setRewardData({ reward_earn_cap_percentage: highestAmt, reward_end_date: latestDate });
+}
 
 export const queryFn = async () => {
     const apiUrl = useConfigBEInMemoryStore.getState().airdropApiUrl;
@@ -18,7 +30,11 @@ export const queryFn = async () => {
                 exchanges: ExchangeBranding[];
             };
             const filteredList = list.exchanges.filter((ex) => !ex.is_hidden);
+            if (filteredList.length) {
+                handleRewardData(filteredList);
+            }
             filteredList.push(universalExchangeMinerOption);
+
             return filteredList;
         } else {
             return [];
