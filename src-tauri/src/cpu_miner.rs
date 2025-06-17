@@ -145,7 +145,7 @@ impl CpuMiner {
                 },
                 None,
             ),
-            CpuMinerConnection::Pool { .. } => {
+            CpuMinerConnection::Pool => {
                 let (pool_address, port) =
                     match (&cpu_miner_config.pool_host_name, cpu_miner_config.pool_port) {
                         (Some(ref host_name), Some(port)) => (host_name.clone(), port),
@@ -173,7 +173,7 @@ impl CpuMiner {
                     status_watch,
                 )
             }
-            CpuMinerConnection::MergeMinedPool { .. } => {
+            CpuMinerConnection::MergeMinedPool => {
                 let (pool_address, port) =
                     match (&cpu_miner_config.pool_host_name, cpu_miner_config.pool_port) {
                         (Some(ref host_name), Some(port)) => (host_name.clone(), port),

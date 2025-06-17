@@ -333,7 +333,7 @@ impl TappletManager {
         let did_meet_network_prerelease = self
             .network_prerelease_prefix
             .as_ref()
-            .map_or(true, |prefix| version.pre.matches(prefix).any(|_| true));
+            .is_none_or(|prefix| version.pre.matches(prefix).any(|_| true));
 
         debug!(target: LOG_TARGET,"Version meets semver requirements: {:?}", is_meet_semver);
         debug!(target: LOG_TARGET,"Version meets network prerelease requirements: {:?}", did_meet_network_prerelease);
@@ -363,7 +363,7 @@ impl TappletManager {
         );
 
         if highest_version == Version::new(0, 0, 0) {
-            warn!(target: LOG_TARGET,"No version selected for tapplet: {:?}", self.tapplet_name);
+            warn!(target: LOG_TARGET,"No highest version selected for {:?} tapplet", self.tapplet_name);
             return None;
         }
 
@@ -472,9 +472,9 @@ impl TappletManager {
         let version = match selected_version {
             Some(version) => version,
             None => {
-                warn!(target: LOG_TARGET, "No version selected for tapplet: {:?}", self.tapplet_name);
+                warn!(target: LOG_TARGET, "Download {:?} tapplet version: no version selected", self.tapplet_name);
                 return Err(anyhow!(format!(
-                    "No version selected for tapplet: {:?}",
+                    "Download {:?} tapplet version: no version selected",
                     self.tapplet_name
                 )));
             }

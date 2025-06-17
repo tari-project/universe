@@ -17,6 +17,8 @@ interface UIStoreState {
     connectionStatus?: CONNECTION_STATUS;
     isReconnecting?: boolean;
     seedlessUI?: boolean;
+    isAppExchangeSpecific?: boolean;
+    shouldShowExchangeSpecificModal: boolean;
     showSplashscreen: boolean;
     hideWalletBalance: boolean;
     showResumeAppModal: boolean;
@@ -43,6 +45,8 @@ const initialState: UIStoreState = {
     showWarmup: false,
     showResumeAppModal: false,
     seedlessUI: false,
+    isAppExchangeSpecific: false,
+    shouldShowExchangeSpecificModal: false,
     towerSidebarOffset: sidebarTowerOffset,
     showTapplet: false,
     blockBubblesEnabled: false,

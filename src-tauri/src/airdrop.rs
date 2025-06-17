@@ -28,7 +28,6 @@ use tauri::{AppHandle, Manager};
 
 use crate::{
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
-    mm_proxy_adapter::MergeMiningProxyConfig,
     tasks_tracker::TasksTrackers,
     UniverseAppState,
 };
@@ -105,33 +104,6 @@ pub async fn validate_jwt(airdrop_access_token: Option<String>) -> Option<String
     })
 }
 
-pub async fn restart_mm_proxy_with_new_telemetry_id(
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<(), String> {
-    info!(target: LOG_TARGET, "Restarting mm_proxy");
-    let telemetry_id = state
-        .telemetry_manager
-        .read()
-        .await
-        .get_unique_string()
-        .await;
-    let mm_proxy_manager_config = state
-        .mm_proxy_manager
-        .config()
-        .await
-        .ok_or("mm proxy config could not be found")?;
-    let _unused = state
-        .mm_proxy_manager
-        .change_config(MergeMiningProxyConfig {
-            coinbase_extra: telemetry_id.clone(),
-            ..mm_proxy_manager_config
-        })
-        .await
-        .map_err(|e| e.to_string());
-    info!(target: LOG_TARGET, "mm_proxy restarted");
-    Ok(())
-}
-
 pub async fn get_wallet_view_key_hashed(app: AppHandle) -> String {
     let wallet_manager = app.state::<UniverseAppState>().wallet_manager.clone();
     let view_private_key = wallet_manager.get_view_private_key().await;
@@ -141,13 +113,14 @@ pub async fn get_wallet_view_key_hashed(app: AppHandle) -> String {
 pub async fn send_new_block_mined(app: AppHandle, block_height: u64) {
     TasksTrackers::current().wallet_phase.get_task_tracker().await.spawn(async move {
         let app_in_config_memory = app.state::<UniverseAppState>().in_memory_config.clone();
+        let base_url = app_in_config_memory.read().await.airdrop_api_url.clone();
+        drop(app_in_config_memory);
         let config = ConfigCore::content().await;
         let app_id = config.anon_id().to_string();
 
         let hashed_view_private_key = get_wallet_view_key_hashed(app.clone()).await;
 
         let client = reqwest::Client::new();
-        let base_url = app_in_config_memory.read().await.airdrop_api_url.clone();
         let url = format!("{}/miner/mined-block", base_url);
         let message = AirdropMinedBlockMessage {
             wallet_view_key_hashed: hashed_view_private_key,

@@ -1,7 +1,6 @@
 import { ConfigBackendInMemory, ConfigCore, ConfigMining, ConfigUI, ConfigWallet } from '@app/types/configs';
 import { create } from './create';
 
-export const DEFAULT_EXCHANGE_ID = 'classic';
 type UIConfigStoreState = Partial<ConfigUI> & {
     visualModeToggleLoading: boolean;
 };
@@ -22,7 +21,7 @@ const configCoreInitialState: ConfigCore = {
     airdrop_tokens: undefined,
     last_binaries_update_timestamp: '',
     p2pool_stats_server_port: undefined,
-    universal_miner_initialized_exchange_id: undefined,
+    exchange_id: undefined,
 };
 
 const configWalletInitialState: ConfigWallet = {
@@ -69,7 +68,7 @@ const configBEInMemoryInitialState: ConfigBackendInMemory = {
     airdropApiUrl: '',
     airdropTwitterAuthUrl: '',
     exchangeId: '',
-    isUniversalMiner: false,
+    bridgeBackendApiUrl: '',
 };
 
 export const useConfigCoreStore = create<ConfigCore>()(() => ({

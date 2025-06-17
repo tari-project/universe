@@ -17,6 +17,7 @@ import {
     handleCloseSplashscreen,
     handleConnectionStatusChanged,
     setConnectionStatus,
+    setShouldShowExchangeSpecificModal,
     setShowExternalDependenciesDialog,
 } from '@app/store/actions/uiStoreActions';
 import { setAvailableEngines } from '@app/store/actions/miningStoreActions';
@@ -29,7 +30,7 @@ import {
     setIsStuckOnOrphanChain,
     setNetworkStatus,
 } from '@app/store/actions/appStateStoreActions';
-import { refreshTransactions, setWalletBalance, updateWalletScanningProgress } from '@app/store';
+import { setWalletBalance, updateWalletScanningProgress } from '@app/store';
 import { deepEqual } from '@app/utils/objectDeepEqual.ts';
 import {
     handleAppUnlocked,
@@ -41,21 +42,21 @@ import {
     handleUpdateDisabledPhases,
     handleWalletLocked,
     handleWalletUnlocked,
-    handleWalletUpdate,
     setInitialSetupFinished,
 } from '@app/store/actions/setupStoreActions';
 import { setBackgroundNodeState, setNodeStoreState } from '@app/store/useNodeStore';
 import {
-    handleAppInMemoryConfigChanged,
+    handleExchangeIdChanged,
     handleConfigCoreLoaded,
     handleConfigMiningLoaded,
     handleConfigUILoaded,
     handleConfigWalletLoaded,
-    handleUniversalMinerInitializedExchangeIdChanged,
     handleMiningTimeUpdate,
 } from '@app/store/actions/appConfigStoreActions';
 import { invoke } from '@tauri-apps/api/core';
 import { handleShowStagedSecurityModal } from '@app/store/actions/stagedSecurityActions';
+import { refreshTransactions } from '@app/hooks/wallet/useFetchTxHistory.ts';
+import { handleBaseWalletUpate, handleExternalWalletAddressUpdate } from '@app/store/actions/walletStoreActions';
 
 const LOG_EVENT_TYPES = ['WalletAddressUpdate', 'CriticalProblem', 'MissingApplications'];
 
@@ -114,13 +115,9 @@ const useTauriEventsListener = () => {
                         case 'LockWallet':
                             handleWalletLocked();
                             break;
-                        case 'WalletAddressUpdate': {
-                            await handleWalletUpdate(event.payload);
-                            break;
-                        }
                         case 'WalletBalanceUpdate':
-                            await refreshTransactions();
                             await setWalletBalance(event.payload);
+                            await refreshTransactions();
                             break;
                         case 'BaseNodeUpdate':
                             handleBaseNodeStatusUpdate(event.payload);
@@ -213,14 +210,20 @@ const useTauriEventsListener = () => {
                         case 'MiningTime':
                             handleMiningTimeUpdate(event.payload);
                             break;
-                        case 'AppInMemoryConfigChanged':
-                            handleAppInMemoryConfigChanged(event.payload);
+                        case 'ExchangeIdChanged':
+                            await handleExchangeIdChanged(event.payload);
                             break;
-                        case 'DisabledPhasesChanged':
+                        case 'DisabledPhases':
                             handleUpdateDisabledPhases(event.payload);
                             break;
-                        case 'UniversalMinerInitializedExchangeIdChanged':
-                            handleUniversalMinerInitializedExchangeIdChanged(event.payload);
+                        case 'BaseTariAddressChanged':
+                            handleBaseWalletUpate(event.payload);
+                            break;
+                        case 'ExternalTariAddressChanged':
+                            handleExternalWalletAddressUpdate(event.payload);
+                            break;
+                        case 'ShouldShowExchangeMinerModal':
+                            setShouldShowExchangeSpecificModal(true);
                             break;
                         default:
                             console.warn('Unknown event', JSON.stringify(event));

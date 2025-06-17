@@ -108,10 +108,10 @@ impl SetupPhaseImpl for NodeSetupPhase {
     }
 
     async fn get_shutdown_signal(&self) -> ShutdownSignal {
-        TasksTrackers::current().core_phase.get_signal().await
+        TasksTrackers::current().node_phase.get_signal().await
     }
     async fn get_task_tracker(&self) -> TaskTracker {
-        TasksTrackers::current().core_phase.get_task_tracker().await
+        TasksTrackers::current().node_phase.get_task_tracker().await
     }
     fn get_phase_dependencies(&self) -> Vec<tokio::sync::watch::Receiver<PhaseStatus>> {
         self.setup_configuration

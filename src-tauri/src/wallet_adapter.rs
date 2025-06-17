@@ -154,6 +154,7 @@ impl WalletAdapter {
         &self,
         offset: Option<i32>,
         limit: Option<i32>,
+        current_block_height: u64,
     ) -> Result<Vec<TransactionInfo>, WalletStatusMonitorError> {
         let mut client = WalletClient::connect(self.wallet_grpc_address())
             .await
@@ -162,6 +163,7 @@ impl WalletAdapter {
             .get_all_completed_transactions(GetAllCompletedTransactionsRequest {
                 offset: offset.unwrap_or(0) as u64,
                 limit: limit.unwrap_or(0) as u64,
+                status_bitflag: 0,
             })
             .await
             .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?;
@@ -176,6 +178,22 @@ impl WalletAdapter {
             let source_address = TariAddress::from_bytes(&tx.source_address)?;
             let dest_address = TariAddress::from_bytes(&tx.dest_address)?;
 
+            let confirmations =
+                if current_block_height > 0 && tx.mined_in_block_height <= current_block_height {
+                    current_block_height - tx.mined_in_block_height
+                } else {
+                    0
+                };
+            let payment_reference = if confirmations >= 5 {
+                match tx.direction {
+                    1 => tx.payment_references_received.last().map(hex::encode),
+                    2 => tx.payment_references_sent.last().map(hex::encode),
+                    _ => None,
+                }
+            } else {
+                None
+            };
+
             transactions.push(TransactionInfo {
                 tx_id: tx.tx_id.to_string(),
                 source_address: source_address.to_base58(),
@@ -189,6 +207,7 @@ impl WalletAdapter {
                 timestamp: tx.timestamp,
                 payment_id: PaymentId::stringify_bytes(&tx.user_payment_id),
                 mined_in_block_height: tx.mined_in_block_height,
+                payment_reference,
             });
             if let Some(limit) = limit {
                 if transactions.len() >= limit as usize {
@@ -204,6 +223,7 @@ impl WalletAdapter {
         &self,
         continuation: bool,
         limit: Option<u32>,
+        _current_block_height: u64,
     ) -> Result<Vec<TransactionInfo>, WalletStatusMonitorError> {
         // TODO: Implement starting point instead of continuation
         let mut stream = if continuation && self.coinbase_transactions_stream.lock().await.is_some()
@@ -240,6 +260,7 @@ impl WalletAdapter {
                 // Consider only COINBASE_UNCONFIRMED and COINBASE_UNCONFIRMED
                 continue;
             }
+
             transactions.push(TransactionInfo {
                 tx_id: tx.tx_id.to_string(),
                 source_address: tx.source_address.to_hex(),
@@ -253,6 +274,7 @@ impl WalletAdapter {
                 timestamp: tx.timestamp,
                 payment_id: PaymentId::stringify_bytes(&tx.user_payment_id),
                 mined_in_block_height: tx.mined_in_block_height,
+                payment_reference: None,
             });
             if let Some(limit) = limit {
                 if transactions.len() >= limit as usize {
@@ -333,7 +355,9 @@ impl WalletAdapter {
         block_height: u64,
     ) -> Result<Option<TransactionInfo>, WalletStatusMonitorError> {
         // Get a small batch of recent coinbase transactions
-        let transactions = self.get_coinbase_transactions(false, Some(10)).await?;
+        let transactions = self
+            .get_coinbase_transactions(false, Some(10), block_height)
+            .await?;
 
         // Find one matching the specified block height
         let matching_tx = transactions
@@ -707,6 +731,7 @@ pub struct TransactionInfo {
     pub timestamp: u64,
     pub payment_id: String,
     pub mined_in_block_height: u64,
+    pub payment_reference: Option<String>,
 }
 
 #[derive(Debug, Serialize, Clone)]

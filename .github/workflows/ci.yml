@@ -19,7 +19,6 @@ concurrency:
   cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/v') || github.ref != 'refs/heads/development' || github.ref != 'refs/heads/nextnet' || github.ref != 'refs/heads/stagenet' }}
 
 permissions: {}
-
 jobs:
   cargo-checks:
     name: cargo checks (fmt, clippy, check)
@@ -67,7 +66,7 @@ jobs:
           AIRDROP_API_BASE_URL: http://localhost:3004
           AIRDROP_TWITTER_AUTH_URL: http://localhost:3004/auth/twitter
           TELEMETRY_API_URL: http://localhost:3004
-          EXCHANGE_ID: classic
+          EXCHANGE_ID: universal
         run: |
           rustup component add clippy
           cargo install cargo-lints
