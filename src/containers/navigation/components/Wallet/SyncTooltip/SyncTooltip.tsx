@@ -17,7 +17,7 @@ export default function SyncTooltip({ trigger, title, text }: Props) {
         onOpenChange: setExpanded,
         placement: 'right',
         strategy: 'fixed',
-        middleware: [offset(20), shift()],
+        middleware: [offset(10), shift()],
         whileElementsMounted(referenceEl, floatingEl, update) {
             return autoUpdate(referenceEl, floatingEl, update, {
                 layoutShift: false,
