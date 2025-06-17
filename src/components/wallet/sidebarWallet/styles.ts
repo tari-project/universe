@@ -47,21 +47,42 @@ export const Wrapper = styled.div<{ $swapsPanel?: boolean; $seedlessUI?: boolean
         `};
 `;
 
-export const WalletActionWrapper = styled(m.div)`
+export const WalletActionWrapper = styled(m.div)<{ $isScrolled: boolean }>`
     overflow: hidden;
     flex-shrink: 0;
     display: flex;
     width: 100%;
+
+    transition: height 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: height;
+
+    ${({ $isScrolled }) =>
+        $isScrolled &&
+        css`
+            height: 0;
+        `}
 `;
-export const DetailsCard = styled(m.div)`
+
+export const DetailsCard = styled(m.div)<{ $isScrolled: boolean }>`
     display: flex;
     border-radius: 20px;
     padding: 14px;
     width: 100%;
-    min-height: 140px;
+
     box-shadow: 10px 10px 40px 0 rgba(0, 0, 0, 0.06);
     position: relative;
     overflow: hidden;
+
+    transition: height 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: height;
+    height: 210px;
+
+    ${({ $isScrolled }) =>
+        $isScrolled &&
+        css`
+            height: 156px;
+        `}
+
     @media (max-height: 690px) {
         padding: 8px 10px;
     }
@@ -110,7 +131,7 @@ export const BuyTariButton = styled.button`
     padding: 16px;
     border-radius: 72px;
     background: #000;
-    color: white;
+    color: #fff;
     cursor: pointer;
     height: 50px;
     transition: all 0.2s ease-in-out;

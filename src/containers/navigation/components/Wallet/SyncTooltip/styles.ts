@@ -14,7 +14,7 @@ export const Trigger = styled('div')`
 export const Menu = styled(m.div)`
     height: min-content;
 
-    z-index: 2;
+    z-index: 1;
     display: flex;
     align-items: flex-start;
     flex-direction: column;
@@ -26,7 +26,14 @@ export const Menu = styled(m.div)`
     background: ${({ theme }) => theme.palette.background.default};
     box-shadow: 0 3px 25px 0 rgba(0, 0, 0, 0.25);
 
-    width: 216px;
+    width: 240px;
+`;
+
+export const MenuFloating = styled.div`
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 2;
 `;
 
 export const Title = styled('div')`

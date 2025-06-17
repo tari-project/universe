@@ -39,15 +39,18 @@ interface SidebarWalletProps {
 export default function SidebarWallet({ section, setSection }: SidebarWalletProps) {
     const { data: xcData } = useFetchExchangeBranding();
     const detailsItem = useWalletStore((s) => s.detailsItem);
+
     const targetRef = useRef<HTMLDivElement>(null);
     const { scrollY } = useScroll({ container: targetRef });
-    const [offset, setOffset] = useState(0);
+    const [isScrolled, setIsScrolled] = useState(false);
+
+    useMotionValueEvent(scrollY, 'change', (latest) => {
+        setIsScrolled(latest > 1);
+    });
 
     const isSwapping = useWalletStore((s) => s.is_swapping);
     const seedlessUI = useUIStore((s) => s.seedlessUI);
-    useMotionValueEvent(scrollY, 'change', (latest) => {
-        setOffset(latest);
-    });
+
     const openLink = useCallback(() => {
         if (xcData && xcData.wallet_app_link) {
             open(xcData.wallet_app_link);
@@ -66,10 +69,7 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
                 ) : (
                     <WalletWrapper key="wallet" variants={swapTransition} initial="show" exit="hide" animate="show">
                         <Wrapper $seedlessUI={seedlessUI}>
-                            <DetailsCard
-                                style={{ height: 210 - offset }}
-                                transition={{ duration: 0.2, ease: 'linear' }}
-                            >
+                            <DetailsCard $isScrolled={isScrolled}>
                                 <AnimatedBG
                                     $col1={xcData?.primary_colour || `#0B0A0D`}
                                     $col2={xcData?.secondary_colour || `#6F8309`}
@@ -98,7 +98,7 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
                             </DetailsCard>
                             {!seedlessUI && (
                                 <>
-                                    <WalletActionWrapper style={{ height: offset > 1 ? '0' : 'auto' }}>
+                                    <WalletActionWrapper $isScrolled={isScrolled}>
                                         <WalletActions section={section} setSection={setSection} />
                                     </WalletActionWrapper>
                                     <ListActions />
