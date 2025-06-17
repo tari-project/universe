@@ -47,7 +47,6 @@ export const PoolStatsTile = () => {
     const { t } = useTranslation('p2p');
     const { daysString, hoursString, minutes, seconds } = useMiningTime();
     const pool_status = useMiningMetricsStore((s) => s.cpu_mining_status.pool_status);
-    console.log('Pool Status:', pool_status);
     const isMining = useMiningMetricsStore((s) => s.cpu_mining_status.is_mining);
     const cpuMiningEnabled = useConfigMiningStore((s) => s.cpu_mining_enabled);
     const visualMode = useConfigUIStore((s) => s.visual_mode);
