@@ -30,14 +30,14 @@ export const RewardBanner = styled.div`
     border-radius: 24px;
     height: 144px;
     display: flex;
+    flex-direction: column;
+    justify-content: space-between;
     flex-shrink: 0;
     overflow: hidden;
     background-image: url('/assets/img/exchange_miner_header.png');
     background-size: cover;
     background-repeat: no-repeat;
-    padding: 10px;
-
-    gap: 8px;
+    padding: 18px;
 `;
 
 export const BannerHeading = styled(Typography)`
@@ -51,6 +51,19 @@ export const BannerHeading = styled(Typography)`
     margin: 0;
 `;
 
-export const BannerSubheading = styled(Typography).attrs({ variant: 'h4' })`
+export const BannerSubheading = styled(Typography).attrs({ variant: 'h5' })`
     color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+`;
+
+export const CountdownWrapper = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 12px;
+`;
+export const CountdownExplainerText = styled(Typography)`
+    color: #fff;
+    font-size: 12px;
+    font-weight: 500;
 `;
