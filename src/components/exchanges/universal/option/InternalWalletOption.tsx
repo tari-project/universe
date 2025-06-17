@@ -90,7 +90,7 @@ export const InternalWalletOption = ({ isCurrent = false, isActive, onActiveClic
                     <ExchangeAddress
                         handleIsAddressValid={() => true}
                         handleAddressChanged={() => null}
-                        value={truncateMiddle(base_tari_address, 7, ' ...')}
+                        value={truncateMiddle(base_tari_address, 7, ' ... ')}
                         disabled
                     />
                     <SeasonReward>

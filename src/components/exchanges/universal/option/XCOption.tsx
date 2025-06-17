@@ -117,9 +117,7 @@ export const XCOption = ({ content, isCurrent = false, isActive, onActiveClick }
                     <ExchangeAddress
                         handleIsAddressValid={setIsAddressValid}
                         handleAddressChanged={setMiningAddress}
-                        value={
-                            isCurrent ? base_tari_address && truncateMiddle(base_tari_address, 7, ' ...') : undefined
-                        }
+                        value={isCurrent && base_tari_address ? truncateMiddle(base_tari_address, 7, ' ... ') : ''}
                     />
                     <SeasonReward>
                         <LeftContent>
