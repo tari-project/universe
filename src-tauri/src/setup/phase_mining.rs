@@ -22,7 +22,10 @@
 
 use crate::{
     binaries::{Binaries, BinaryResolver},
-    configs::{config_core::ConfigCore, config_mining::ConfigMining, trait_config::ConfigImpl},
+    configs::{
+        config_core::ConfigCore, config_mining::ConfigMining, config_wallet::ConfigWallet,
+        trait_config::ConfigImpl,
+    },
     events_emitter::EventsEmitter,
     p2pool_manager::P2poolConfig,
     progress_tracker_old::ProgressTracker,
@@ -37,6 +40,7 @@ use crate::{
 };
 use anyhow::Error;
 use log::info;
+use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::ShutdownSignal;
 use tauri::{AppHandle, Manager};
 use tokio::sync::{
@@ -60,6 +64,7 @@ pub struct MiningSetupPhaseSessionConfiguration {}
 
 #[derive(Clone, Default)]
 pub struct MiningSetupPhaseAppConfiguration {
+    tari_address: TariAddress,
     p2pool_enabled: bool,
     p2pool_stats_server_port: Option<u16>,
     mmproxy_monero_nodes: Vec<String>,
@@ -106,10 +111,13 @@ impl SetupPhaseImpl for MiningSetupPhase {
     }
 
     async fn get_shutdown_signal(&self) -> ShutdownSignal {
-        TasksTrackers::current().core_phase.get_signal().await
+        TasksTrackers::current().mining_phase.get_signal().await
     }
     async fn get_task_tracker(&self) -> TaskTracker {
-        TasksTrackers::current().core_phase.get_task_tracker().await
+        TasksTrackers::current()
+            .mining_phase
+            .get_task_tracker()
+            .await
     }
     fn get_phase_dependencies(&self) -> Vec<Receiver<PhaseStatus>> {
         self.setup_configuration
@@ -146,6 +154,9 @@ impl SetupPhaseImpl for MiningSetupPhase {
         let mmproxy_monero_nodes = ConfigCore::content().await.mmproxy_monero_nodes().clone();
         let mmproxy_use_monero_fail = *ConfigCore::content().await.mmproxy_use_monero_failover();
         let squad_override = ConfigMining::content().await.squad_override().clone();
+        let tari_address = ConfigWallet::content()
+            .await
+            .get_current_used_tari_address();
 
         Ok(MiningSetupPhaseAppConfiguration {
             p2pool_enabled,
@@ -153,6 +164,7 @@ impl SetupPhaseImpl for MiningSetupPhase {
             mmproxy_monero_nodes,
             p2pool_stats_server_port,
             squad_override,
+            tari_address,
         })
     }
 
@@ -166,7 +178,7 @@ impl SetupPhaseImpl for MiningSetupPhase {
         let mut progress_stepper = self.progress_stepper.lock().await;
         let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
         let state = self.app_handle.state::<UniverseAppState>();
-        let tari_address = state.tari_address.read().await;
+        let tari_address = self.app_configuration.tari_address.clone();
         let telemetry_id = state
             .telemetry_manager
             .read()

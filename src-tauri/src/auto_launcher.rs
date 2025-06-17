@@ -59,30 +59,24 @@ impl AutoLauncher {
         info!(target: LOG_TARGET, "Building auto-launcher with app_name: {} and app_path: {}", app_name, app_path);
 
         match PlatformUtils::detect_current_os() {
-            CurrentOperatingSystem::Windows => {
-                return AutoLaunchBuilder::new()
-                    .set_app_name(app_name)
-                    .set_app_path(app_path)
-                    .set_use_launch_agent(false)
-                    .build()
-                    .map_err(|e| e.into());
-            }
-            CurrentOperatingSystem::Linux => {
-                return AutoLaunchBuilder::new()
-                    .set_app_name(app_name)
-                    .set_app_path(app_path)
-                    .set_use_launch_agent(false)
-                    .build()
-                    .map_err(|e| e.into());
-            }
-            CurrentOperatingSystem::MacOS => {
-                return AutoLaunchBuilder::new()
-                    .set_app_name(app_name)
-                    .set_app_path(app_path)
-                    .set_use_launch_agent(true)
-                    .build()
-                    .map_err(|e| e.into());
-            }
+            CurrentOperatingSystem::Windows => AutoLaunchBuilder::new()
+                .set_app_name(app_name)
+                .set_app_path(app_path)
+                .set_use_launch_agent(false)
+                .build()
+                .map_err(|e| e.into()),
+            CurrentOperatingSystem::Linux => AutoLaunchBuilder::new()
+                .set_app_name(app_name)
+                .set_app_path(app_path)
+                .set_use_launch_agent(false)
+                .build()
+                .map_err(|e| e.into()),
+            CurrentOperatingSystem::MacOS => AutoLaunchBuilder::new()
+                .set_app_name(app_name)
+                .set_app_path(app_path)
+                .set_use_launch_agent(true)
+                .build()
+                .map_err(|e| e.into()),
         }
     }
 

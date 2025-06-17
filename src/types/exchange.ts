@@ -1,22 +1,3 @@
-export interface ExchangeContent {
-    createdAt: string;
-    updatedAt: string;
-    id: string;
-    exchange_id: string;
-    name: string;
-    campaign_cta?: string;
-    campaign_title: string;
-    campaign_description: string;
-    campaign_tagline?: string;
-    wallet_label: string;
-    secondary_colour: string;
-    primary_colour: string;
-    logo_img_url: string;
-    hero_img_url: string;
-    logo_img_small_url?: string;
-    reward_percentage: number;
-}
-
 // Must match struct ExchangeMiner in app_in_memory_config.rs
 export interface ExchangeMiner {
     id: string;
@@ -24,7 +5,45 @@ export interface ExchangeMiner {
     slug: string;
 }
 
-export interface ExchangeMinerAssets extends ExchangeMiner {
-    logoImgUrl?: string;
-    logoImgUrlSmall?: string;
+export interface ExchangeData extends ExchangeMiner {
+    createdAt?: string | null;
+    updatedAt?: string | null;
+
+    exchange_url?: string | null;
+    is_hidden: boolean;
+    wallet_label?: string | null;
+
+    download_link_mac?: string | null;
+    download_link_win?: string | null;
+    download_link_linux?: string | null;
+}
+
+export interface ExchangeBranding extends ExchangeData {
+    exchange_id: string; // used with internal app config state
+
+    address_help_link?: string;
+
+    campaign_cta?: string;
+    campaign_title?: string;
+    campaign_tagline?: string;
+    campaign_description?: string;
+
+    dark_logo_img_url?: string;
+    dark_logo_img_small_url?: string;
+
+    hero_img?: string;
+    hero_img_url?: string;
+
+    logo_img_url?: string;
+    logo_img_small_url?: string;
+
+    primary_colour?: string;
+    secondary_colour?: string;
+
+    reward_percentage?: number;
+    reward_expiry_date?: string;
+    reward_image?: string;
+
+    wallet_app_label?: string;
+    wallet_app_link?: string;
 }

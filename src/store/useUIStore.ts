@@ -4,7 +4,15 @@ import { SB_MINI_WIDTH, SB_SPACING } from '@app/theme/styles.ts';
 
 export const sidebarTowerOffset = SB_SPACING + SB_MINI_WIDTH;
 export const TOWER_CANVAS_ID = 'tower-canvas';
-const _DIALOG_TYPES = ['logs', 'restart', 'autoUpdate', 'releaseNotes', 'ludicrousConfirmation', 'warmup'] as const;
+const _DIALOG_TYPES = [
+    'logs',
+    'restart',
+    'autoUpdate',
+    'releaseNotes',
+    'ludicrousConfirmation',
+    'warmup',
+    'xc_url',
+] as const;
 type DialogTypeTuple = typeof _DIALOG_TYPES;
 export type DialogType = DialogTypeTuple[number] | null;
 
@@ -30,6 +38,8 @@ interface UIStoreState {
     connectionStatus?: CONNECTION_STATUS;
     isReconnecting?: boolean;
     seedlessUI?: boolean;
+    isAppExchangeSpecific?: boolean;
+    shouldShowExchangeSpecificModal: boolean;
     showSplashscreen: boolean;
     hideWalletBalance: boolean;
     showResumeAppModal: boolean;
@@ -56,6 +66,8 @@ const initialState: UIStoreState = {
     showWarmup: false,
     showResumeAppModal: false,
     seedlessUI: false,
+    isAppExchangeSpecific: false,
+    shouldShowExchangeSpecificModal: false,
     towerSidebarOffset: sidebarTowerOffset,
     showTapplet: false,
     blockBubblesEnabled: false,

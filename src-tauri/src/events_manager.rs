@@ -22,14 +22,14 @@
 
 use std::time::Duration;
 
-use log::error;
+use log::{error, info};
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tauri::{AppHandle, Manager};
 
 use crate::airdrop::send_new_block_mined;
-use crate::app_in_memory_config::DEFAULT_EXCHANGE_ID;
 use crate::configs::config_core::ConfigCore;
 use crate::configs::trait_config::ConfigImpl;
+use crate::setup::setup_manager::{SetupFeature, SetupManager};
 use crate::{
     events::NodeTypeUpdatePayload, events_emitter::EventsEmitter, tasks_tracker::TasksTrackers,
     UniverseAppState,
@@ -43,9 +43,19 @@ impl EventsManager {
     pub async fn handle_new_block_height(app: &AppHandle, block_height: u64) {
         let state = app.state::<UniverseAppState>();
         let in_memory_config = state.in_memory_config.read().await;
-        if in_memory_config.exchange_id.ne(DEFAULT_EXCHANGE_ID) {
+        if SetupManager::get_instance()
+            .features
+            .read()
+            .await
+            .is_feature_enabled(SetupFeature::SeedlessWallet)
+        {
+            info!(target: LOG_TARGET, "Firing new block height event but skipping wallet scan for seedless wallet feature");
+
+            EventsEmitter::emit_new_block_mined(block_height, None, None).await;
+
             return;
         }
+        drop(in_memory_config);
         let app_clone = app.clone();
         let wallet_manager = state.wallet_manager.clone();
 
@@ -68,7 +78,6 @@ impl EventsManager {
                         };
 
                         EventsEmitter::emit_new_block_mined(
-
                             block_height,
                             coinbase_tx.clone(),
                             Some(balance),
