@@ -112,7 +112,7 @@ export const XCOption = ({ content, isCurrent = false, isActive, onActiveClick }
                     )}
                 </SelectOptionWrapper>
             </ContentHeaderWrapper>
-            {isActive && (
+            {isActive && base_tari_address && (
                 <ContentBodyWrapper $isActive={isActive}>
                     <ExchangeAddress
                         handleIsAddressValid={setIsAddressValid}
