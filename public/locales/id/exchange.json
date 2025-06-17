@@ -1,6 +1,7 @@
 {
+  "earn": "Earn up to {{amount}}% in bonus XTM",
   "help-find-address": "Help me find my {{ exchange }} address",
-  "main-logo-title": "Season One",
+  "main-logo-title": "Season\nOne",
   "paste-from-clipboard": "Paste from clipboard",
   "season-one-reward": "Season one bonus",
   "select": {

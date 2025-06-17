@@ -16,7 +16,6 @@ export const ListWrapper = styled.div`
 export const ScrollWrapper = styled.div`
     flex-direction: column;
     display: flex;
-    justify-content: end;
     gap: 12px;
     overflow: hidden;
     overflow-y: auto;
