@@ -10,8 +10,8 @@ interface ContentProps {
 export default function Content({ data }: ContentProps) {
     const theme = useTheme();
     const darkMode = theme.mode === 'dark';
-    const secondaryColor = (darkMode ? theme.palette.text.primary : data.secondary_colour) || '#C9EB00';
     const primaryColor = data.primary_colour || '#FFFFFF';
+    const secondaryColor = darkMode ? primaryColor : data.secondary_colour || '#C9EB00';
     return (
         <Container>
             <LogoContainer>
