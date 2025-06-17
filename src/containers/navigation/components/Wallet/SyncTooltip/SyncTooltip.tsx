@@ -1,7 +1,7 @@
 import { AnimatePresence } from 'motion/react';
 import { Menu, MenuFloating, Text, Title, Trigger, Wrapper } from './styles';
 import { ReactNode, useState } from 'react';
-import { autoUpdate, offset, safePolygon, shift, useFloating, useHover, useInteractions } from '@floating-ui/react';
+import { autoUpdate, offset, shift, useFloating, useHover, useInteractions } from '@floating-ui/react';
 
 interface Props {
     trigger: ReactNode;
@@ -27,7 +27,6 @@ export default function SyncTooltip({ trigger, title, text }: Props) {
 
     const hover = useHover(context, {
         move: !expanded,
-        handleClose: safePolygon(),
     });
 
     const { getReferenceProps, getFloatingProps } = useInteractions([hover]);

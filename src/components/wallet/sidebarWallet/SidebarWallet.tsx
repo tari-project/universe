@@ -21,7 +21,6 @@ import { List } from '@app/components/transactions/history/List.tsx';
 import { open } from '@tauri-apps/plugin-shell';
 
 import WalletActions from '@app/components/wallet/components/actions/WalletActions.tsx';
-import ListActions from '@app/components/wallet/components/actions/ListActions.tsx';
 import { TransactionDetails } from '@app/components/transactions/history/details/TransactionDetails.tsx';
 import { setDetailsItem, setIsSwapping } from '@app/store/actions/walletStoreActions.ts';
 
@@ -98,10 +97,18 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
                             </DetailsCard>
                             {!seedlessUI && (
                                 <>
-                                    <WalletActionWrapper $isScrolled={isScrolled}>
-                                        <WalletActions section={section} setSection={setSection} />
-                                    </WalletActionWrapper>
-                                    <ListActions />
+                                    <AnimatePresence>
+                                        {!isScrolled && (
+                                            <WalletActionWrapper
+                                                initial={{ height: 'auto' }}
+                                                animate={{ height: 'auto' }}
+                                                exit={{ height: 0 }}
+                                            >
+                                                <WalletActions section={section} setSection={setSection} />
+                                            </WalletActionWrapper>
+                                        )}
+                                    </AnimatePresence>
+
                                     <HistoryListWrapper ref={targetRef}>
                                         <List />
                                     </HistoryListWrapper>

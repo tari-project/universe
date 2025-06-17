@@ -47,20 +47,14 @@ export const Wrapper = styled.div<{ $swapsPanel?: boolean; $seedlessUI?: boolean
         `};
 `;
 
-export const WalletActionWrapper = styled(m.div)<{ $isScrolled: boolean }>`
+export const WalletActionWrapper = styled(m.div)`
     overflow: hidden;
     flex-shrink: 0;
     display: flex;
     width: 100%;
+    height: auto;
 
-    transition: height 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     will-change: height;
-
-    ${({ $isScrolled }) =>
-        $isScrolled &&
-        css`
-            height: 0;
-        `}
 `;
 
 export const DetailsCard = styled(m.div)<{ $isScrolled: boolean }>`
@@ -80,7 +74,7 @@ export const DetailsCard = styled(m.div)<{ $isScrolled: boolean }>`
     ${({ $isScrolled }) =>
         $isScrolled &&
         css`
-            height: 156px;
+            height: 141px;
         `}
 
     @media (max-height: 690px) {

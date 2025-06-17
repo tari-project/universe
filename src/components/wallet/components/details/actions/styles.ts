@@ -6,25 +6,26 @@ export const Wrapper = styled(m.div)`
     align-items: center;
     position: relative;
     justify-content: center;
-    gap: 4px;
+    gap: 6px;
 `;
 
 export const ActionButton = styled.button`
-    display: flex;
     width: 25px;
     height: 25px;
-    justify-content: center;
+
+    display: flex;
     align-items: center;
-    gap: 10px;
+    justify-content: center;
+
     position: relative;
-    border-radius: 85px;
+    border-radius: 100%;
     border: 1px solid rgba(221, 221, 221, 0.05);
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(77px);
     color: #fff;
 
     svg {
-        max-width: 14px;
+        max-width: 13px;
     }
 
     &:disabled {
@@ -35,12 +36,19 @@ export const ActionButton = styled.button`
 
 export const AddressTooltip = styled(m.div)`
     width: 140px;
-    height: 32px;
+
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 72px;
+
     background: ${({ theme }) => theme.palette.background.paper};
     z-index: 1;
-    font-weight: 600;
+
+    padding: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 116.667%;
+    letter-spacing: -0.36px;
+
+    border-radius: 20px;
 `;

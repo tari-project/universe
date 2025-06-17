@@ -32,35 +32,34 @@ export const FilterCTA = styled.button<{ $isActive?: boolean }>`
 `;
 
 export const SyncButton = styled.button`
-    color: ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.5)};
+    color: #fff;
     font-family: Poppins, sans-serif;
-    font-size: 11px;
+    font-size: 10px;
     font-style: normal;
     font-weight: 500;
     line-height: normal;
     letter-spacing: -0.44px;
 
+    color: #fff;
+
+    height: 25px;
+    padding: 0 10px;
+    border-radius: 100px;
+
     display: flex;
     align-items: center;
     gap: 6px;
 
-    background: transparent;
-    border: none;
     cursor: pointer;
 
-    transition: color 0.2s ease-in-out;
+    transition: all 0.2s ease-in-out;
 
-    svg {
-        stroke: ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.5)};
-        transition: stroke 0.2s ease-in-out;
-    }
+    border: 1px solid rgba(221, 221, 221, 0.05);
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(77px);
 
     &:hover {
-        color: ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 1)};
-
-        svg {
-            stroke: ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 1)};
-        }
+        background: rgba(255, 255, 255, 0.15);
     }
 `;
 
