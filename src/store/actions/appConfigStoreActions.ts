@@ -43,6 +43,7 @@ export const handleConfigCoreLoaded = async (coreConfig: ConfigCore) => {
 
     if (!isAppExchangeSpecific) {
         await fetchExchangeList();
+        setCurrentExchangeMinerId(coreConfig.exchange_id as string);
     } else {
         await fetchExchangeContent(coreConfig.exchange_id as string);
     }
