@@ -122,13 +122,14 @@ export const BuyTariButton = styled.button`
     font-size: 13px;
     line-height: 100%;
     text-align: center;
-    padding: 16px;
+    padding: 0 16px;
     border-radius: 72px;
     background: #000;
     color: #fff;
     cursor: pointer;
-    height: 50px;
+    height: 45px;
     transition: all 0.2s ease-in-out;
+    flex-shrink: 0;
 
     &:hover {
         opacity: 0.9;

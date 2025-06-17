@@ -9,7 +9,7 @@ export const Wrapper = styled(m.div)`
     gap: 6px;
 `;
 
-export const ActionButton = styled.button`
+export const ActionButton = styled(m.button)`
     width: 25px;
     height: 25px;
 
@@ -25,7 +25,8 @@ export const ActionButton = styled.button`
     color: #fff;
 
     svg {
-        max-width: 13px;
+        max-width: 14px;
+        max-height: 14px;
     }
 
     &:disabled {
@@ -51,4 +52,5 @@ export const AddressTooltip = styled(m.div)`
     letter-spacing: -0.36px;
 
     border-radius: 20px;
+    box-shadow: 0 3px 25px 0 rgba(0, 0, 0, 0.25);
 `;

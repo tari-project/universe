@@ -15,7 +15,7 @@ import {
     BuyTariButton,
     DetailsCardBottomContent,
 } from './styles.ts';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef, useState, useEffect } from 'react';
 import { HistoryListWrapper } from '@app/components/wallet/components/history/styles.ts';
 import { List } from '@app/components/transactions/history/List.tsx';
 import { open } from '@tauri-apps/plugin-shell';
@@ -40,12 +40,15 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
     const detailsItem = useWalletStore((s) => s.detailsItem);
 
     const targetRef = useRef<HTMLDivElement>(null);
-    const { scrollY } = useScroll({ container: targetRef });
     const [isScrolled, setIsScrolled] = useState(false);
 
-    useMotionValueEvent(scrollY, 'change', (latest) => {
-        setIsScrolled(latest > 1);
-    });
+    useEffect(() => {
+        const el = targetRef.current;
+        if (!el) return;
+        const onScroll = () => setIsScrolled(el.scrollTop > 1);
+        el.addEventListener('scroll', onScroll);
+        return () => el.removeEventListener('scroll', onScroll);
+    }, []);
 
     const isSwapping = useWalletStore((s) => s.is_swapping);
     const seedlessUI = useUIStore((s) => s.seedlessUI);
