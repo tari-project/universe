@@ -1,11 +1,16 @@
 import * as m from 'motion/react-m';
 import styled, { css, keyframes } from 'styled-components';
 
-export const SwapsWrapper = styled(m.div)``;
+export const SwapsWrapper = styled(m.div)`
+    display: flex;
+    height: 100%;
+    justify-content: flex-end;
+`;
 export const WalletWrapper = styled(m.div)`
     width: 100%;
     flex-direction: column;
     display: flex;
+    position: relative;
 `;
 
 export const Wrapper = styled.div<{ $swapsPanel?: boolean; $seedlessUI?: boolean }>`
@@ -16,6 +21,7 @@ export const Wrapper = styled.div<{ $swapsPanel?: boolean; $seedlessUI?: boolean
     position: relative;
     flex-direction: column;
     overflow: hidden;
+    max-height: 100%;
     overflow-y: auto;
     width: 100%;
     gap: 8px;
@@ -28,7 +34,7 @@ export const Wrapper = styled.div<{ $swapsPanel?: boolean; $seedlessUI?: boolean
         ${({ $swapsPanel, $seedlessUI }) =>
             ($swapsPanel || $seedlessUI) &&
             css`
-                height: unset;
+                height: auto;
             `};
     }
     @media (max-height: 690px) {
@@ -36,14 +42,14 @@ export const Wrapper = styled.div<{ $swapsPanel?: boolean; $seedlessUI?: boolean
         ${({ $swapsPanel, $seedlessUI }) =>
             ($swapsPanel || $seedlessUI) &&
             css`
-                height: unset;
+                height: auto;
             `};
     }
 
     ${({ $swapsPanel, $seedlessUI }) =>
         ($swapsPanel || $seedlessUI) &&
         css`
-            height: unset;
+            height: auto;
         `};
 `;
 
