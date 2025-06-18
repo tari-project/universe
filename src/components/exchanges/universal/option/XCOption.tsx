@@ -73,16 +73,18 @@ export const XCOption = ({ content, isCurrent = false, isActive, onActiveClick }
     const logoSrc = content.logo_img_small_url;
     const showExpand = isTari ? !isCurrent && content.id : content.id;
 
-    const helpMarkup =
-        content.address_help_link !== null ? (
-            <HelpButtonWrapper>
-                <Divider />
-                <HelpButton onClick={() => open(content.address_help_link)}>
-                    <Typography>{t('help-find-address', { exchange: content.name, ns: 'exchange' })}</Typography>
-                    <ExternalLinkSVG />
-                </HelpButton>
-            </HelpButtonWrapper>
-        ) : null;
+    const helpLink =
+        content.address_help_link && content.address_help_link.length > 0 ? content.address_help_link : null;
+
+    const helpMarkup = helpLink ? (
+        <HelpButtonWrapper>
+            <Divider />
+            <HelpButton onClick={() => open(helpLink)}>
+                <Typography>{t('help-find-address', { exchange: content.name, ns: 'exchange' })}</Typography>
+                <ExternalLinkSVG />
+            </HelpButton>
+        </HelpButtonWrapper>
+    ) : null;
 
     return (
         <Wrapper $isCurrent={isCurrent} $isActive={isActive}>
