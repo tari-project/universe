@@ -33,17 +33,17 @@ use crate::utils::math_utils::estimate_earning;
 use crate::xmrig::http_api::models::Summary;
 use crate::xmrig_adapter::{XmrigAdapter, XmrigNodeConnection};
 use crate::{mm_proxy_manager, BaseNodeStatus, PoolStatusWatcher};
-use log::{debug, error, warn};
+use log::{debug, error, info, warn};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
 use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
-use tari_shutdown::ShutdownSignal;
-use tokio::select;
+use tari_shutdown::{Shutdown, ShutdownSignal};
 use tokio::sync::{watch, RwLock};
 use tokio::time::{interval, sleep, timeout};
+use tokio::{select, spawn};
 
 const LOG_TARGET: &str = "tari::universe::cpu_miner";
 const ECO_MODE_CPU_USAGE: u32 = 30;
@@ -101,6 +101,7 @@ pub(crate) struct CpuMiner {
     node_status_watch_rx: watch::Receiver<BaseNodeStatus>,
     pub benchmarked_hashrate: u64,
     pool_status_watcher: Option<PoolStatusWatcher<SupportXmrStyleAdapter>>,
+    pub pool_status_shutdown_signal: Shutdown,
 }
 
 impl CpuMiner {
@@ -119,6 +120,7 @@ impl CpuMiner {
             node_status_watch_rx,
             benchmarked_hashrate: 0,
             pool_status_watcher: None,
+            pool_status_shutdown_signal: Shutdown::new(),
         }
     }
 
@@ -136,6 +138,8 @@ impl CpuMiner {
         custom_cpu_threads: Option<u32>,
         tari_address: &TariAddress,
     ) -> Result<(), anyhow::Error> {
+        self.pool_status_shutdown_signal = Shutdown::new();
+
         let (xmrig_node_connection, pool_watcher) = match cpu_miner_config.node_connection {
             CpuMinerConnection::BuiltInProxy => (
                 XmrigNodeConnection::LocalMmproxy {
@@ -367,6 +371,7 @@ impl CpuMiner {
         let _result = self
             .cpu_miner_status_watch_tx
             .send_replace(CpuMinerStatus::default());
+        self.pool_status_shutdown_signal.trigger();
         Ok(())
     }
 
@@ -388,7 +393,9 @@ impl CpuMiner {
         let mut pool_status_check = interval(Duration::from_secs(20));
         pool_status_check.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
 
-        TasksTrackers::current().hardware_phase.get_task_tracker().await.spawn(async move {
+        let mut inner_shutdown_signal = self.pool_status_shutdown_signal.to_signal();
+
+        spawn(async move {
             let mut last_pool_status = None;
             loop {
                 select! {
@@ -445,7 +452,12 @@ impl CpuMiner {
 
                         let _result = cpu_miner_status_watch_tx.send(cpu_status);
                     },
+                    _ = inner_shutdown_signal.wait() => {
+                        info!(target: LOG_TARGET, "CpuMiner shutdown signal received, stopping...");
+                        break;
+                    },
                     _ = app_shutdown.wait() => {
+                        info!(target: LOG_TARGET, "App shutdown signal received, stopping CpuMiner...");
                         break;
                     },
                 }
