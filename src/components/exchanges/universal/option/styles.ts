@@ -161,23 +161,3 @@ export const HelpButton = styled.button`
         opacity: 0.7;
     }
 `;
-
-export const StyledAddressWrapper = styled.div`
-    position: relative;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-`;
-
-export const StyledAddress = styled.span`
-    border-radius: 20px;
-    justify-content: space-between;
-    padding: 10px 40px 10px 10px;
-    width: 100%;
-    font-size: 14px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    color: ${({ theme }) => theme.palette.text.primary};
-`;
