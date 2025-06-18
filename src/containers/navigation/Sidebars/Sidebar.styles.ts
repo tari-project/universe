@@ -70,7 +70,7 @@ export const BuyOverlay = styled(m.div)`
     width: 100%;
     height: 100%;
     position: absolute;
-
+    z-index: 4;
     top: 0;
     left: 0;
 `;
