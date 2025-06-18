@@ -107,6 +107,7 @@ impl ConfigWalletContent {
         if let Some(address) = &self.external_tari_address {
             address.clone()
         } else {
+            // TODO: Get it from InternalWallet
             self.tari_address
                 .clone()
                 .expect("No Tari address set in ConfigWalletContent")
