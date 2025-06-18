@@ -12,6 +12,7 @@ import { AvailableWrapper, BalanceTextWrapper, BalanceWrapper, Hidden, SuffixWra
 import { toggleHideWalletBalance } from '@app/store/actions/uiStoreActions.ts';
 import { useState } from 'react';
 import { ActionButton } from '@app/components/wallet/components/details/actions/styles.ts';
+import { AnimatePresence } from 'motion/react';
 
 export const WalletBalance = () => {
     const { t } = useTranslation('wallet');
@@ -22,11 +23,7 @@ export const WalletBalance = () => {
     const balanceValue = removeXTMCryptoDecimals(roundToTwoDecimals(calculated_balance || 0));
     const isWalletScanning = useWalletStore((s) => s.wallet_scanning?.is_scanning);
     const hideWalletBalance = useUIStore((s) => s.hideWalletBalance);
-    const visibilityButton = (
-        <ActionButton onClick={toggleHideWalletBalance}>
-            {hideWalletBalance ? <IoEyeOutline /> : <IoEyeOffOutline />}
-        </ActionButton>
-    );
+
     const formatOptions: Format = {
         maximumFractionDigits: 2,
         notation: 'standard',
@@ -46,7 +43,18 @@ export const WalletBalance = () => {
                             )}
                             <SuffixWrapper>{` XTM`}</SuffixWrapper>
                         </BalanceTextWrapper>
-                        {hovering && visibilityButton}
+                        <AnimatePresence>
+                            {hovering && (
+                                <ActionButton
+                                    initial={{ opacity: 0, x: 10 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: 10 }}
+                                    onClick={toggleHideWalletBalance}
+                                >
+                                    {hideWalletBalance ? <IoEyeOutline /> : <IoEyeOffOutline />}
+                                </ActionButton>
+                            )}
+                        </AnimatePresence>
                     </BalanceWrapper>
 
                     <AvailableWrapper>
