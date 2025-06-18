@@ -1,4 +1,4 @@
-import { AnimatePresence, useMotionValueEvent, useScroll } from 'motion/react';
+import { AnimatePresence } from 'motion/react';
 import { useUIStore, useWalletStore } from '@app/store';
 import { swapTransition } from '@app/components/transactions/wallet/transitions.ts';
 import { Swap } from '@app/components/transactions/wallet/Swap/Swap.tsx';
@@ -15,13 +15,12 @@ import {
     BuyTariButton,
     DetailsCardBottomContent,
 } from './styles.ts';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef, useState, useEffect } from 'react';
 import { HistoryListWrapper } from '@app/components/wallet/components/history/styles.ts';
 import { List } from '@app/components/transactions/history/List.tsx';
 import { open } from '@tauri-apps/plugin-shell';
 
 import WalletActions from '@app/components/wallet/components/actions/WalletActions.tsx';
-import ListActions from '@app/components/wallet/components/actions/ListActions.tsx';
 import { TransactionDetails } from '@app/components/transactions/history/details/TransactionDetails.tsx';
 import { setDetailsItem, setIsSwapping } from '@app/store/actions/walletStoreActions.ts';
 
@@ -39,15 +38,21 @@ interface SidebarWalletProps {
 export default function SidebarWallet({ section, setSection }: SidebarWalletProps) {
     const { data: xcData } = useFetchExchangeBranding();
     const detailsItem = useWalletStore((s) => s.detailsItem);
+
     const targetRef = useRef<HTMLDivElement>(null);
-    const { scrollY } = useScroll({ container: targetRef });
-    const [offset, setOffset] = useState(0);
+    const [isScrolled, setIsScrolled] = useState(false);
+
+    useEffect(() => {
+        const el = targetRef.current;
+        if (!el) return;
+        const onScroll = () => setIsScrolled(el.scrollTop > 1);
+        el.addEventListener('scroll', onScroll);
+        return () => el.removeEventListener('scroll', onScroll);
+    }, []);
 
     const isSwapping = useWalletStore((s) => s.is_swapping);
     const seedlessUI = useUIStore((s) => s.seedlessUI);
-    useMotionValueEvent(scrollY, 'change', (latest) => {
-        setOffset(latest);
-    });
+
     const openLink = useCallback(() => {
         if (xcData && xcData.wallet_app_link) {
             open(xcData.wallet_app_link);
@@ -66,10 +71,7 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
                 ) : (
                     <WalletWrapper key="wallet" variants={swapTransition} initial="show" exit="hide" animate="show">
                         <Wrapper $seedlessUI={seedlessUI}>
-                            <DetailsCard
-                                style={{ height: 210 - offset }}
-                                transition={{ duration: 0.2, ease: 'linear' }}
-                            >
+                            <DetailsCard $isScrolled={isScrolled}>
                                 <AnimatedBG
                                     $col1={xcData?.primary_colour || `#0B0A0D`}
                                     $col2={xcData?.secondary_colour || `#6F8309`}
@@ -98,10 +100,18 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
                             </DetailsCard>
                             {!seedlessUI && (
                                 <>
-                                    <WalletActionWrapper style={{ height: offset > 1 ? '0' : 'auto' }}>
-                                        <WalletActions section={section} setSection={setSection} />
-                                    </WalletActionWrapper>
-                                    <ListActions />
+                                    <AnimatePresence>
+                                        {!isScrolled && (
+                                            <WalletActionWrapper
+                                                initial={{ height: 'auto' }}
+                                                animate={{ height: 'auto' }}
+                                                exit={{ height: 0 }}
+                                            >
+                                                <WalletActions section={section} setSection={setSection} />
+                                            </WalletActionWrapper>
+                                        )}
+                                    </AnimatePresence>
+
                                     <HistoryListWrapper ref={targetRef}>
                                         <List />
                                     </HistoryListWrapper>

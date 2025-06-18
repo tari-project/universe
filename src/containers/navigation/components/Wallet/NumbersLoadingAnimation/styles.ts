@@ -22,10 +22,3 @@ export const Square = styled(m.div)`
     background: rgba(255, 255, 255, 0.1);
     border-radius: 5px;
 `;
-
-export const Circle = styled(m.div)`
-    width: 22px;
-    height: 22px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 50%;
-`;
