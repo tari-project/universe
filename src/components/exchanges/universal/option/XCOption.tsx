@@ -22,6 +22,7 @@ import { ImgWrapper, OpenButton } from '../../commonStyles.ts';
 import { ChevronSVG } from '@app/assets/icons/chevron.tsx';
 import { setShowUniversalModal } from '@app/store/useExchangeStore.ts';
 import { invoke } from '@tauri-apps/api/core';
+import { open } from '@tauri-apps/plugin-shell';
 import { useTranslation } from 'react-i18next';
 import { ExchangeAddress } from '../exchangeAddress/ExchangeAddress.tsx';
 import { useState } from 'react';
@@ -72,10 +73,13 @@ export const XCOption = ({ content, isCurrent = false, isActive, onActiveClick }
     const logoSrc = content.logo_img_small_url;
     const showExpand = isTari ? !isCurrent && content.id : content.id;
 
-    const helpMarkup = content.address_help_link ? (
+    const helpLink =
+        content.address_help_link && content.address_help_link.length > 0 ? content.address_help_link : null;
+
+    const helpMarkup = helpLink ? (
         <HelpButtonWrapper>
             <Divider />
-            <HelpButton onClick={() => open(content.address_help_link)}>
+            <HelpButton onClick={() => open(helpLink)}>
                 <Typography>{t('help-find-address', { exchange: content.name, ns: 'exchange' })}</Typography>
                 <ExternalLinkSVG />
             </HelpButton>
