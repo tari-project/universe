@@ -56,10 +56,17 @@ export const CloseButton = styled.button`
     border-radius: 50%;
     background: ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.1)};
     transition: transform 0.2s ease;
+    flex-shrink: 0;
+
+    position: absolute;
+    top: 20px;
+    right: 20px;
+
     &:hover {
         transform: scale(1.05);
     }
 `;
+
 export const CloseWrapper = styled.div`
     display: flex;
     width: 100%;
