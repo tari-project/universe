@@ -36,9 +36,6 @@ export function List() {
 
     const baseTx = data?.pages.flatMap((p) => p) || [];
 
-    console.log('Base transactions:', baseTx);
-    console.log('Bridge transactions:', bridgeTransactions);
-
     useEffect(() => {
         const isThereANewBridgeTransaction = baseTx.find(
             (tx) =>
@@ -52,8 +49,6 @@ export function List() {
             (tx) => tx.dest_address === coldWalletAddress && bridgeTransactions.length === 0
         );
 
-        console.log('Checking for new bridge transactions:', isThereANewBridgeTransaction);
-
         if (isThereANewBridgeTransaction || isThereEmptyBridgeTransactionAndFoundInWallet) {
             fetchBridgeTransactionsHistory();
         }
@@ -64,8 +59,6 @@ export function List() {
             return getTimestampFromTransaction(b) - getTimestampFromTransaction(a);
         });
     }, [baseTx, bridgeTransactions]);
-
-    console.log('Combined transactions:', combinedTransactions);
 
     const adjustedTransactions = useMemo(() => {
         return combinedTransactions.reduce(
@@ -105,8 +98,6 @@ export function List() {
             [] as (TransactionInfo | UserTransactionDTO)[]
         );
     }, [combinedTransactions, coldWalletAddress]);
-
-    console.log('Adjusted transactions:', adjustedTransactions);
 
     const handleDetailsChange = useCallback(async (tx: TransactionInfo | null) => {
         if (!tx) {
