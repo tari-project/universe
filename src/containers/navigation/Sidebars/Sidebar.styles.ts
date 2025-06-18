@@ -23,7 +23,6 @@ export const SidebarWrapper = styled(m.div).attrs({
     flex-shrink: 0;
     padding: 15px 10px;
     position: relative;
-    overflow: hidden;
     width: ${SB_WIDTH}px;
 
     & * {
@@ -73,4 +72,5 @@ export const BuyOverlay = styled(m.div)`
     z-index: 4;
     top: 0;
     left: 0;
+    border-radius: 20px;
 `;
