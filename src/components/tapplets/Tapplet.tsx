@@ -71,11 +71,14 @@ export const Tapplet: React.FC<TappletProps> = ({ source }) => {
                 runTappletTx(event);
             } else if (event.data.type === 'open-external-link') {
                 openExternalLink(event);
+            } else if (event.data.type === 'GET_INIT_CONFIG') {
+                sendAppLanguage();
+                sendTheme();
             } else if (event.data.type === 'ERROR') {
                 setStoreError(`${event.data.payload.message}`, true);
             }
         },
-        [sendWindowSize, runTappletTx, openExternalLink]
+        [sendWindowSize, runTappletTx, openExternalLink, sendAppLanguage, sendTheme]
     );
 
     useEffect(() => {
