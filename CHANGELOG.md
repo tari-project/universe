@@ -1,4 +1,4 @@
-🚀 TARI UNIVERSE v1.2.11: The Bloom Beyond
+🚀 TARI UNIVERSE v1.2.12: The Bloom Beyond
 
 _June 18, 2025_
 
