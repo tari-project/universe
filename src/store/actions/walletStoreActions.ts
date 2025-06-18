@@ -43,7 +43,22 @@ export const fetchBridgeColdWalletAddress = async () => {
 };
 
 export const importSeedWords = async (seedWords: string[]) => {
-    useWalletStore.setState({ is_wallet_importing: true });
+    useWalletStore.setState({
+        is_wallet_importing: true,
+        coinbase_transactions: [],
+        transactions: [],
+        bridge_transactions: [],
+        has_more_coinbase_transactions: true,
+        has_more_transactions: true,
+        is_reward_history_loading: false,
+        is_transactions_history_loading: false,
+        wallet_scanning: {
+            is_scanning: true,
+            scanned_height: 0,
+            total_height: 0,
+            progress: 0,
+        },
+    });
     try {
         await invoke('import_seed_words', { seedWords });
         useWalletStore.setState({ is_wallet_importing: false });
