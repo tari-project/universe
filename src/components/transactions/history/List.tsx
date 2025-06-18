@@ -3,7 +3,7 @@ import { useInView } from 'react-intersection-observer';
 import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/core';
 
-import { BackendBridgeTransaction, useBlockchainVisualisationStore, useWalletStore } from '@app/store';
+import { BackendBridgeTransaction, useWalletStore } from '@app/store';
 
 import { TransactionInfo } from '@app/types/app-status.ts';
 
@@ -26,7 +26,6 @@ export function List() {
     const walletScanning = useWalletStore((s) => s.wallet_scanning);
     const bridgeTransactions = useWalletStore((s) => s.bridge_transactions);
     const coldWalletAddress = useWalletStore((s) => s.cold_wallet_address);
-    const currentBlockHeight = useBlockchainVisualisationStore((s) => s.displayBlockHeight);
     const { data, fetchNextPage, isFetchingNextPage, isFetching, hasNextPage } = useFetchTxHistory();
 
     const { ref } = useInView({
@@ -35,6 +34,9 @@ export function List() {
     });
 
     const baseTx = data?.pages.flatMap((p) => p) || [];
+
+    console.log('Base transactions:', baseTx);
+    console.log('Bridge transactions:', bridgeTransactions);
 
     useEffect(() => {
         const isThereANewBridgeTransaction = baseTx.find(
@@ -45,16 +47,20 @@ export function List() {
                 )
         );
 
+        console.log('Checking for new bridge transactions:', isThereANewBridgeTransaction);
+
         if (isThereANewBridgeTransaction) {
             fetchBridgeTransactionsHistory();
         }
-    }, [data, currentBlockHeight, coldWalletAddress]);
+    }, [baseTx, coldWalletAddress]);
 
     const combinedTransactions = useMemo(() => {
         return ([...baseTx, ...bridgeTransactions] as (TransactionInfo | UserTransactionDTO)[]).sort((a, b) => {
             return getTimestampFromTransaction(b) - getTimestampFromTransaction(a);
         });
     }, [baseTx, bridgeTransactions]);
+
+    console.log('Combined transactions:', combinedTransactions);
 
     const adjustedTransactions = useMemo(() => {
         return combinedTransactions.reduce(
@@ -93,7 +99,9 @@ export function List() {
             },
             [] as (TransactionInfo | UserTransactionDTO)[]
         );
-    }, [combinedTransactions, coldWalletAddress, currentBlockHeight]);
+    }, [combinedTransactions, coldWalletAddress]);
+
+    console.log('Adjusted transactions:', adjustedTransactions);
 
     const handleDetailsChange = useCallback(async (tx: TransactionInfo | null) => {
         if (!tx) {
