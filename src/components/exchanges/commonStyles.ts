@@ -67,12 +67,6 @@ export const CloseButton = styled.button`
     }
 `;
 
-export const CloseWrapper = styled.div`
-    display: flex;
-    width: 100%;
-    justify-content: flex-end;
-`;
-
 export const ListWrapper = styled.div`
     display: flex;
     flex-direction: column;
