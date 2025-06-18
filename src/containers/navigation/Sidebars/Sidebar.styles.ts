@@ -60,6 +60,7 @@ export const GridAreaBottom = styled.div<{ $swapsOpen?: boolean }>`
             width: calc(100% - 20px);
             left: 10px;
             bottom: 10px;
+            z-index: 5;
         `}
 `;
 
@@ -69,6 +70,7 @@ export const BuyOverlay = styled(m.div)`
     width: 100%;
     height: 100%;
     position: absolute;
+
     top: 0;
     left: 0;
 `;
