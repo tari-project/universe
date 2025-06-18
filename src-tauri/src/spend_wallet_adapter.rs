@@ -21,6 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::port_allocator::PortAllocator;
+use crate::process_adapter::HealthStatus;
 use crate::process_adapter::{
     ProcessAdapter, ProcessInstance, ProcessInstanceTrait, ProcessStartupSpec, StatusMonitor,
 };
@@ -28,7 +29,6 @@ use crate::tasks_tracker::TasksTrackers;
 use crate::utils::file_utils::convert_to_string;
 use crate::utils::logging_utils::setup_logging;
 use crate::UniverseAppState;
-use crate::{internal_wallet::InternalWallet, process_adapter::HealthStatus};
 use anyhow::Error;
 use log::info;
 use sentry::protocol::Event;
@@ -426,14 +426,18 @@ impl SpendWalletAdapter {
     }
 
     async fn get_seed_words(&self, config_path: PathBuf) -> Result<String, Error> {
-        let internal_wallet = InternalWallet::load_or_create(config_path).await?;
-        let seed_words = internal_wallet.decrypt_seed_words().await?;
-        Ok(seed_words.join(" ").reveal().to_string())
+        // let internal_wallet = InternalWallet::load_or_create(config_path, state).await?;
+
+        // let seed_words = internal_wallet.decrypt_seed_words().await?;
+        // Ok(seed_words.join(" ").reveal().to_string())
+        Ok(todo!())
     }
 
     pub async fn get_wallet_birthday(&self, config_path: PathBuf) -> Result<u16, anyhow::Error> {
-        let internal_wallet = InternalWallet::load_or_create(config_path).await?;
-        internal_wallet.get_birthday().await
+        // let internal_wallet = InternalWallet::load_or_create(config_path, state).await?;
+        // internal_wallet.get_birthday().await
+
+        Ok(0u16)
     }
 
     fn get_config_dir(&self) -> PathBuf {

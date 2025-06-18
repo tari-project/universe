@@ -533,10 +533,15 @@ async fn get_telemetry_data_inner(
     );
 
     // Add payment ID from current tari address
-    let tari_address = ConfigWallet::content().await.tari_address().clone();
-    if let Some(tari_address) = tari_address {
-        let address_str = tari_address.to_base58();
-        if let Ok(Some(payment_id)) = extract_payment_id(&address_str) {
+    if let Some(state) = app_handle.try_state::<crate::UniverseAppState>() {
+        let internal_wallet_guard = state.internal_wallet.read().await;
+        let tari_address = internal_wallet_guard
+            .as_ref()
+            .expect("Internal Wallet not initialized yet!")
+            .tari_address
+            .clone();
+        drop(internal_wallet_guard);
+        if let Ok(Some(payment_id)) = extract_payment_id(&tari_address.to_base58()) {
             extra_data.insert("mining_address_payment_id".to_string(), payment_id);
         }
         // Note: If no payment ID, we don't add the field (saves space vs empty string)

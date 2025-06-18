@@ -21,7 +21,6 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::events_emitter::EventsEmitter;
-use crate::internal_wallet::InternalWallet;
 use crate::node::node_manager::{NodeManager, NodeManagerError};
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
@@ -168,8 +167,10 @@ impl WalletManager {
     }
 
     pub async fn get_wallet_birthday(&self, config_path: PathBuf) -> Result<u16, anyhow::Error> {
-        let internal_wallet = InternalWallet::load_or_create(config_path).await?;
-        internal_wallet.get_birthday().await
+        // let internal_wallet = InternalWallet::load_or_create(config_path, state).await?;
+        // internal_wallet.get_birthday().await
+
+        Ok(0u16)
     }
 
     pub async fn clean_data_folder(&self, base_path: &Path) -> Result<(), anyhow::Error> {
