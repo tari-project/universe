@@ -80,6 +80,7 @@ use crate::cpu_miner::CpuMiner;
 use crate::commands::CpuMinerConnection;
 use crate::feedback::Feedback;
 use crate::gpu_miner::GpuMiner;
+use crate::internal_wallet::InternalWallet;
 use crate::mm_proxy_manager::{MmProxyManager, StartConfig};
 use crate::node::node_manager::NodeManager;
 use crate::p2pool::models::P2poolStats;
@@ -252,6 +253,7 @@ struct UniverseAppState {
     is_getting_transactions_history: Arc<AtomicBool>,
     is_getting_coinbase_history: Arc<AtomicBool>,
     in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
+    internal_wallet: Arc<RwLock<Option<InternalWallet>>>,
     cpu_miner: Arc<RwLock<CpuMiner>>,
     gpu_miner: Arc<RwLock<GpuMiner>>,
     cpu_miner_config: Arc<RwLock<CpuMinerConfig>>,
@@ -449,6 +451,7 @@ fn main() {
         is_getting_transactions_history: Arc::new(AtomicBool::new(false)),
         is_getting_coinbase_history: Arc::new(AtomicBool::new(false)),
         in_memory_config: app_in_memory_config.clone(),
+        internal_wallet: Arc::new(RwLock::new(None)),
         cpu_miner: cpu_miner.clone(),
         gpu_miner: gpu_miner.clone(),
         cpu_miner_config: cpu_config.clone(),

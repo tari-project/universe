@@ -31,7 +31,6 @@ use crate::configs::config_mining::{ConfigMining, ConfigMiningContent, GpuThread
 use crate::configs::config_ui::{ConfigUI, ConfigUIContent, DisplayMode};
 use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent};
 use crate::configs::trait_config::ConfigImpl;
-use crate::credential_manager::{CredentialError, CredentialManager};
 use crate::events::ConnectionStatusPayload;
 use crate::events_emitter::EventsEmitter;
 use crate::events_manager::EventsManager;
@@ -61,7 +60,6 @@ use crate::{airdrop, PoolStatus, UniverseAppState, APPLICATION_FOLDER_ID};
 use base64::prelude::*;
 use keyring::Entry;
 use log::{debug, error, info, warn};
-use monero_address_creator::Seed as MoneroSeed;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -452,44 +450,26 @@ pub async fn get_network(
     Ok(Network::get_current_or_user_setting_or_default().to_string())
 }
 
+// TODO: ADJUST
 #[tauri::command]
-pub async fn get_monero_seed_words(app: tauri::AppHandle) -> Result<Vec<String>, String> {
+pub async fn get_monero_seed_words(
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<Vec<String>, String> {
     let timer = Instant::now();
 
-    if !*ConfigWallet::content().await.monero_address_is_generated() {
-        return Err(
-            "Monero seed words are not available when a Monero address is provided".to_string(),
-        );
-    }
-
-    let config_path = app
-        .path()
-        .app_config_dir()
-        .expect("Could not get config dir");
-
-    let cm = CredentialManager::default_with_dir(config_path);
-    let cred = match cm.get_credentials().await {
-        Ok(cred) => cred,
-        Err(e @ CredentialError::PreviouslyUsedKeyring) => {
-            return Err(e.to_string());
-        }
-        Err(e) => {
-            error!(target: LOG_TARGET, "Could not get credentials: {:?}", e);
-            return Err(e.to_string());
-        }
-    };
-
-    let seed = cred
-        .monero_seed
-        .expect("Couldn't get seed from credentials");
-
-    let seed = MoneroSeed::new(seed);
+    let internal_wallet_guard = state.internal_wallet.read().await;
+    let monero_seed = internal_wallet_guard
+        .as_ref()
+        .expect("Internal Wallet not initialized yet!")
+        .get_monero_seed()
+        .await
+        .map_err(|e| e.to_string())?;
+    drop(internal_wallet_guard);
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "get_seed_words took too long: {:?}", timer.elapsed());
     }
-
-    seed.seed_words().map_err(|e| e.to_string())
+    monero_seed.seed_words().map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -580,63 +560,67 @@ pub async fn get_paper_wallet_details(
     state: tauri::State<'_, UniverseAppState>,
     auth_uuid: Option<String>,
 ) -> Result<PaperWalletConfig, InvokeError> {
-    let timer = Instant::now();
-    let config_path = app
-        .path()
-        .app_config_dir()
-        .expect("Could not get config dir");
-    let balance = state
-        .wallet_state_watch_rx
-        .borrow()
-        .clone()
-        .and_then(|state| state.balance);
+    // let timer = Instant::now();
+    // let config_path = app
+    //     .path()
+    //     .app_config_dir()
+    //     .expect("Could not get config dir");
+    // let balance = state
+    //     .wallet_state_watch_rx
+    //     .borrow()
+    //     .clone()
+    //     .and_then(|state| state.balance);
 
-    let internal_wallet = InternalWallet::load_or_create(config_path)
-        .await
-        .map_err(|e| e.to_string())?;
+    // let internal_wallet = InternalWallet::load_or_create(config_path)
+    //     .await
+    //     .map_err(|e| e.to_string())?;
 
-    warn!(target: LOG_TARGET, "auth_uuid {:?}", auth_uuid);
-    let anon_id = ConfigCore::content().await.anon_id().clone();
-    let result = internal_wallet
-        .get_paper_wallet_details(anon_id, balance, auth_uuid)
-        .await
-        .map_err(InvokeError::from_anyhow)?;
+    // warn!(target: LOG_TARGET, "auth_uuid {:?}", auth_uuid);
+    // let anon_id = ConfigCore::content().await.anon_id().clone();
+    // let result = internal_wallet
+    //     .get_paper_wallet_details(anon_id, balance, auth_uuid)
+    //     .await
+    //     .map_err(InvokeError::from_anyhow)?;
 
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "get_paper_wallet_details took too long: {:?}", timer.elapsed());
-    };
+    // if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+    //     warn!(target: LOG_TARGET, "get_paper_wallet_details took too long: {:?}", timer.elapsed());
+    // };
 
-    Ok(result)
+    // Ok(result)
+
+    return Ok(todo!());
 }
 
 #[tauri::command]
 pub async fn get_seed_words(app: tauri::AppHandle) -> Result<Vec<String>, String> {
-    let timer = Instant::now();
+    // let timer = Instant::now();
 
-    let config_path = app
-        .path()
-        .app_config_dir()
-        .expect("Could not get config dir");
-    let internal_wallet = InternalWallet::load_or_create(config_path)
-        .await
-        .map_err(|e| e.to_string())?;
-    let seed_words = internal_wallet
-        .decrypt_seed_words()
-        .await
-        .map_err(|e| e.to_string())?;
-    let mut res = vec![];
-    for i in 0..seed_words.len() {
-        match seed_words.get_word(i) {
-            Ok(word) => res.push(word.clone()),
-            Err(error) => {
-                error!(target: LOG_TARGET, "Could not get seed word: {:?}", error);
-            }
-        }
-    }
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "get_seed_words took too long: {:?}", timer.elapsed());
-    }
-    Ok(res)
+    // let config_path = app
+    //     .path()
+    //     .app_config_dir()
+    //     .expect("Could not get config dir");
+    // let internal_wallet = InternalWallet::load_or_create(config_path)
+    //     .await
+    //     .map_err(|e| e.to_string())?;
+    // let seed_words = internal_wallet
+    //     .decrypt_seed_words()
+    //     .await
+    //     .map_err(|e| e.to_string())?;
+    // let mut res = vec![];
+    // for i in 0..seed_words.len() {
+    //     match seed_words.get_word(i) {
+    //         Ok(word) => res.push(word.clone()),
+    //         Err(error) => {
+    //             error!(target: LOG_TARGET, "Could not get seed word: {:?}", error);
+    //         }
+    //     }
+    // }
+    // if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+    //     warn!(target: LOG_TARGET, "get_seed_words took too long: {:?}", timer.elapsed());
+    // }
+    // Ok(res)
+
+    Ok(todo!())
 }
 
 #[tauri::command]
@@ -816,56 +800,56 @@ pub async fn import_seed_words(
     _window: tauri::Window,
     app: tauri::AppHandle,
 ) -> Result<(), InvokeError> {
-    let timer = Instant::now();
-    let config_path = app
-        .path()
-        .app_config_dir()
-        .expect("Could not get config dir");
-    let data_dir = app
-        .path()
-        .app_local_data_dir()
-        .expect("Could not get data dir");
+    // let timer = Instant::now();
+    // let config_path = app
+    //     .path()
+    //     .app_config_dir()
+    //     .expect("Could not get config dir");
+    // let data_dir = app
+    //     .path()
+    //     .app_local_data_dir()
+    //     .expect("Could not get data dir");
 
-    match InternalWallet::create_from_seed(config_path, seed_words).await {
-        Ok(wallet) => {
-            SetupManager::get_instance()
-                .shutdown_phases(vec![SetupPhase::Wallet, SetupPhase::Mining])
-                .await;
-            InternalWallet::clear_wallet_local_data(data_dir)
-                .await
-                .map_err(|e| e.to_string())?;
-            ConfigWallet::update_field(ConfigWalletContent::set_external_tari_address, None)
-                .await
-                .map_err(InvokeError::from_anyhow)?;
-            EventsEmitter::emit_external_tari_address_changed(None).await;
-            ConfigWallet::update_field(
-                ConfigWalletContent::set_tari_address,
-                Some(wallet.get_tari_address()),
-            )
-            .await
-            .map_err(InvokeError::from_anyhow)?;
-            EventsEmitter::emit_base_tari_address_changed(wallet.get_tari_address()).await;
-            ConfigCore::update_field(
-                ConfigCoreContent::set_exchange_id,
-                DEFAULT_EXCHANGE_ID.to_string(),
-            )
-            .await
-            .map_err(InvokeError::from_anyhow)?;
-            EventsEmitter::emit_exchange_id_changed(DEFAULT_EXCHANGE_ID.to_string()).await;
+    // match InternalWallet::create_from_seed(config_path, seed_words).await {
+    //     Ok(wallet) => {
+    //         SetupManager::get_instance()
+    //             .shutdown_phases(vec![SetupPhase::Wallet, SetupPhase::Mining])
+    //             .await;
+    //         InternalWallet::clear_wallet_local_data(data_dir)
+    //             .await
+    //             .map_err(|e| e.to_string())?;
+    //         ConfigWallet::update_field(ConfigWalletContent::set_external_tari_address, None)
+    //             .await
+    //             .map_err(InvokeError::from_anyhow)?;
+    //         EventsEmitter::emit_external_tari_address_changed(None).await;
+    //         ConfigWallet::update_field(
+    //             ConfigWalletContent::set_tari_address,
+    //             Some(wallet.get_tari_address()),
+    //         )
+    //         .await
+    //         .map_err(InvokeError::from_anyhow)?;
+    //         EventsEmitter::emit_base_tari_address_changed(wallet.get_tari_address()).await;
+    //         ConfigCore::update_field(
+    //             ConfigCoreContent::set_exchange_id,
+    //             DEFAULT_EXCHANGE_ID.to_string(),
+    //         )
+    //         .await
+    //         .map_err(InvokeError::from_anyhow)?;
+    //         EventsEmitter::emit_exchange_id_changed(DEFAULT_EXCHANGE_ID.to_string()).await;
 
-            SetupManager::get_instance()
-                .resume_phases(app, vec![SetupPhase::Wallet, SetupPhase::Mining])
-                .await;
-        }
-        Err(e) => {
-            error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);
-            e.to_string();
-        }
-    }
+    //         SetupManager::get_instance()
+    //             .resume_phases(app, vec![SetupPhase::Wallet, SetupPhase::Mining])
+    //             .await;
+    //     }
+    //     Err(e) => {
+    //         error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);
+    //         e.to_string();
+    //     }
+    // }
 
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "import_seed_words took too long: {:?}", timer.elapsed());
-    }
+    // if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+    //     warn!(target: LOG_TARGET, "import_seed_words took too long: {:?}", timer.elapsed());
+    // }
     Ok(())
 }
 
@@ -874,49 +858,49 @@ pub async fn revert_to_internal_wallet(
     _window: tauri::Window,
     app: tauri::AppHandle,
 ) -> Result<(), InvokeError> {
-    let timer = Instant::now();
-    let config_path = app
-        .path()
-        .app_config_dir()
-        .expect("Could not get config dir");
+    // let timer = Instant::now();
+    // let config_path = app
+    //     .path()
+    //     .app_config_dir()
+    //     .expect("Could not get config dir");
 
-    match InternalWallet::load_or_create(config_path).await {
-        Ok(wallet) => {
-            SetupManager::get_instance()
-                .shutdown_phases(vec![SetupPhase::Wallet, SetupPhase::Mining])
-                .await;
-            ConfigWallet::update_field(ConfigWalletContent::set_external_tari_address, None)
-                .await
-                .map_err(InvokeError::from_anyhow)?;
-            EventsEmitter::emit_external_tari_address_changed(None).await;
-            ConfigWallet::update_field(
-                ConfigWalletContent::set_tari_address,
-                Some(wallet.get_tari_address()),
-            )
-            .await
-            .map_err(InvokeError::from_anyhow)?;
-            EventsEmitter::emit_base_tari_address_changed(wallet.get_tari_address()).await;
-            ConfigCore::update_field(
-                ConfigCoreContent::set_exchange_id,
-                DEFAULT_EXCHANGE_ID.to_string(),
-            )
-            .await
-            .map_err(InvokeError::from_anyhow)?;
-            EventsEmitter::emit_exchange_id_changed(DEFAULT_EXCHANGE_ID.to_string()).await;
+    // match InternalWallet::load_or_create(config_path).await {
+    //     Ok(wallet) => {
+    //         SetupManager::get_instance()
+    //             .shutdown_phases(vec![SetupPhase::Wallet, SetupPhase::Mining])
+    //             .await;
+    //         ConfigWallet::update_field(ConfigWalletContent::set_external_tari_address, None)
+    //             .await
+    //             .map_err(InvokeError::from_anyhow)?;
+    //         EventsEmitter::emit_external_tari_address_changed(None).await;
+    //         ConfigWallet::update_field(
+    //             ConfigWalletContent::set_tari_address,
+    //             Some(wallet.get_tari_address()),
+    //         )
+    //         .await
+    //         .map_err(InvokeError::from_anyhow)?;
+    //         EventsEmitter::emit_base_tari_address_changed(wallet.get_tari_address()).await;
+    //         ConfigCore::update_field(
+    //             ConfigCoreContent::set_exchange_id,
+    //             DEFAULT_EXCHANGE_ID.to_string(),
+    //         )
+    //         .await
+    //         .map_err(InvokeError::from_anyhow)?;
+    //         EventsEmitter::emit_exchange_id_changed(DEFAULT_EXCHANGE_ID.to_string()).await;
 
-            SetupManager::get_instance()
-                .resume_phases(app, vec![SetupPhase::Wallet, SetupPhase::Mining])
-                .await;
-        }
-        Err(e) => {
-            error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);
-            e.to_string();
-        }
-    }
+    //         SetupManager::get_instance()
+    //             .resume_phases(app, vec![SetupPhase::Wallet, SetupPhase::Mining])
+    //             .await;
+    //     }
+    //     Err(e) => {
+    //         error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);
+    //         e.to_string();
+    //     }
+    // }
 
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "revert_to_internal_wallet took too long: {:?}", timer.elapsed());
-    }
+    // if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+    //     warn!(target: LOG_TARGET, "revert_to_internal_wallet took too long: {:?}", timer.elapsed());
+    // }
     Ok(())
 }
 
@@ -1554,10 +1538,14 @@ pub async fn start_cpu_mining(
     let cpu_miner_running = cpu_miner.is_running().await;
     drop(cpu_miner);
     let cpu_miner_config = state.cpu_miner_config.read().await;
-    let tari_address = ConfigWallet::content()
-        .await
-        .get_current_used_tari_address();
     drop(cpu_miner_config);
+    let internal_wallet_guard = state.internal_wallet.read().await;
+    let tari_address = internal_wallet_guard
+        .as_ref()
+        .expect("Internal Wallet not initialized yet!")
+        .tari_address
+        .clone();
+    drop(internal_wallet_guard);
 
     if cpu_mining_enabled && !cpu_miner_running {
         let cpu_miner_config = state.cpu_miner_config.read().await;
@@ -1622,9 +1610,13 @@ pub async fn start_gpu_mining(
         .get_unique_string()
         .await;
 
-    let tari_address = ConfigWallet::content()
-        .await
-        .get_current_used_tari_address();
+    let internal_wallet_guard = state.internal_wallet.read().await;
+    let tari_address = internal_wallet_guard
+        .as_ref()
+        .expect("Internal Wallet not initialized yet!")
+        .tari_address
+        .clone();
+    drop(internal_wallet_guard);
     let gpu_miner = state.gpu_miner.read().await;
     let gpu_miner_running = gpu_miner.is_running().await;
     let gpu_available = gpu_miner.is_gpu_mining_available();

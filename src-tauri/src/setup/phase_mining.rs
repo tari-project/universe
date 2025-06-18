@@ -179,6 +179,13 @@ impl SetupPhaseImpl for MiningSetupPhase {
         let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
         let state = self.app_handle.state::<UniverseAppState>();
         let tari_address = self.app_configuration.tari_address.clone();
+        // let internal_wallet_guard = state.internal_wallet.read().await;
+        // let tari_address = internal_wallet_guard
+        //     .as_ref()
+        //     .expect("Internal Wallet not initialized yet!")
+        //     .tari_address
+        //     .clone();
+        // drop(internal_wallet_guard);
         let telemetry_id = state
             .telemetry_manager
             .read()

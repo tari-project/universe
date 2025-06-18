@@ -349,6 +349,25 @@ impl SetupManager {
                 .send_replace(ExchangeModalStatus::WaitForCompletion);
             EventsEmitter::emit_should_show_exchange_miner_modal().await;
         }
+        // let config_path = app_handle
+        //     .path()
+        //     .app_config_dir()
+        //     .expect("Could not get config dir");
+        // let internal_wallet = InternalWallet::load_or_create(config_path, state)
+        //     .await
+        //     .expect("Could not load or create internal wallet");
+        // let is_address_generated = internal_wallet.get_is_tari_address_generated();
+        // let is_on_exchange_miner_build =
+        //     in_memory_config.read().await.exchange_id != DEFAULT_EXCHANGE_ID;
+
+        // if is_on_exchange_miner_build {
+        //     EventsEmitter::emit_disabled_phases_changed(vec![SetupPhase::Wallet]).await;
+        // }
+
+        // if is_on_exchange_miner_build && is_address_generated {
+        //     self.exchange_modal_status
+        //         .send_replace(ExchangeModalStatus::WaitForCompletion);
+        // }
 
         info!(target: LOG_TARGET, "Pre Setup Finished");
     }
