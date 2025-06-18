@@ -46,7 +46,7 @@ interface XCOptionProps {
     ref?: Ref<HTMLDivElement>;
 }
 
-export function XCOption({ isCurrent = false, isActive, content, onActiveClick, ref }: XCOptionProps) {
+export const XCOption = ({ isCurrent = false, isActive, content, onActiveClick, ref }: XCOptionProps) => {
     const base_tari_address = useWalletStore((state) => state.external_tari_address_emoji);
     const { t } = useTranslation(['exchange', 'settings'], { useSuspense: false });
     const [isAddressValid, setIsAddressValid] = useState(false);
@@ -163,4 +163,4 @@ export function XCOption({ isCurrent = false, isActive, content, onActiveClick, 
             </AnimatePresence>
         </Wrapper>
     );
-}
+};

@@ -38,7 +38,7 @@ interface XCOptionProps {
     ref?: Ref<HTMLDivElement>;
 }
 
-export function InternalWalletOption({ isCurrent = false, isActive, onActiveClick, ref }: XCOptionProps) {
+export const InternalWalletOption = ({ isCurrent = false, isActive, onActiveClick, ref }: XCOptionProps) => {
     const { t } = useTranslation(['exchange', 'settings'], { useSuspense: false });
     const base_tari_address = useWalletStore((state) => state.tari_address_emoji);
 
@@ -124,4 +124,4 @@ export function InternalWalletOption({ isCurrent = false, isActive, onActiveClic
             )}
         </Wrapper>
     );
-}
+};
