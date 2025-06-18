@@ -3,7 +3,7 @@ import { useInView } from 'react-intersection-observer';
 import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/core';
 
-import { BackendBridgeTransaction, useWalletStore } from '@app/store';
+import { BackendBridgeTransaction, useBlockchainVisualisationStore, useWalletStore } from '@app/store';
 
 import { TransactionInfo } from '@app/types/app-status.ts';
 
@@ -25,6 +25,7 @@ export function List() {
     const { t } = useTranslation('wallet');
     const walletScanning = useWalletStore((s) => s.wallet_scanning);
     const bridgeTransactions = useWalletStore((s) => s.bridge_transactions);
+    const currentBlockHeight = useBlockchainVisualisationStore((s) => s.displayBlockHeight);
     const coldWalletAddress = useWalletStore((s) => s.cold_wallet_address);
     const { data, fetchNextPage, isFetchingNextPage, isFetching, hasNextPage } = useFetchTxHistory();
 
@@ -42,17 +43,21 @@ export function List() {
         const isThereANewBridgeTransaction = baseTx.find(
             (tx) =>
                 tx.dest_address === coldWalletAddress &&
-                bridgeTransactions.some(
+                !bridgeTransactions.some(
                     (bridgeTx) => bridgeTx.paymentId === tx.payment_id && Number(bridgeTx.tokenAmount) === tx.amount
                 )
         );
 
+        const isThereEmptyBridgeTransactionAndFoundInWallet = baseTx.find(
+            (tx) => tx.dest_address === coldWalletAddress && bridgeTransactions.length === 0
+        );
+
         console.log('Checking for new bridge transactions:', isThereANewBridgeTransaction);
 
-        if (isThereANewBridgeTransaction) {
+        if (isThereANewBridgeTransaction || isThereEmptyBridgeTransactionAndFoundInWallet) {
             fetchBridgeTransactionsHistory();
         }
-    }, [baseTx, coldWalletAddress]);
+    }, [baseTx, coldWalletAddress, currentBlockHeight]);
 
     const combinedTransactions = useMemo(() => {
         return ([...baseTx, ...bridgeTransactions] as (TransactionInfo | UserTransactionDTO)[]).sort((a, b) => {
