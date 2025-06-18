@@ -25,6 +25,7 @@ import { ExchangeAddress } from '../exchangeAddress/ExchangeAddress.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { formatCountdown } from '@app/utils/formatters.ts';
 import { setError, useWalletStore } from '@app/store';
+import { restartMining } from '@app/store/actions/miningStoreActions.ts';
 
 import { refreshTransactions } from '@app/hooks/wallet/useFetchTxHistory.ts';
 import { truncateMiddle } from '@app/utils/truncateString.ts';
@@ -44,6 +45,7 @@ export const InternalWalletOption = ({ isCurrent = false, isActive, onActiveClic
             .then(() => {
                 setShowUniversalModal(false);
                 refreshTransactions();
+                restartMining();
             })
             .catch((e) => {
                 console.error('Could not revert to internal wallet', e);
@@ -90,7 +92,7 @@ export const InternalWalletOption = ({ isCurrent = false, isActive, onActiveClic
                     <ExchangeAddress
                         handleIsAddressValid={() => true}
                         handleAddressChanged={() => null}
-                        value={truncateMiddle(base_tari_address, 7, ' ...')}
+                        value={truncateMiddle(base_tari_address, 7, ' ... ')}
                         disabled
                     />
                     <SeasonReward>

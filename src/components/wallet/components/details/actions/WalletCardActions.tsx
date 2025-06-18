@@ -7,9 +7,6 @@ import { useCopyToClipboard } from '@app/hooks';
 import { useWalletStore } from '@app/store';
 import { truncateMiddle } from '@app/utils';
 import { ActionButton, AddressTooltip, Wrapper } from './styles.ts';
-import { setShowUniversalModal } from '@app/store/useExchangeStore.ts';
-import { Menu } from '@app/containers/navigation/components/Wallet/SyncTooltip/styles.ts';
-import { MenuDotsSVG } from '@app/assets/icons/menu-dots.tsx';
 
 function ActionAddress() {
     const { t } = useTranslation('wallet');
@@ -60,54 +57,11 @@ function ActionAddress() {
         </>
     );
 }
-function ActionMenu() {
-    const [open, setOpen] = useState(false);
-    const { refs, context, floatingStyles } = useFloating({
-        open,
-        onOpenChange: setOpen,
-        placement: 'right',
-        strategy: 'fixed',
-        middleware: [offset({ mainAxis: 10 })],
-    });
-
-    function handleClick() {
-        setShowUniversalModal(true);
-    }
-
-    const hover = useHover(context, {
-        move: !open,
-        handleClose: safePolygon(),
-    });
-    const { getFloatingProps } = useInteractions([hover]);
-
-    return (
-        <>
-            <AnimatePresence>
-                {open && (
-                    <Menu
-                        ref={refs.setFloating}
-                        {...getFloatingProps()}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        style={floatingStyles}
-                    >
-                        <button onClick={handleClick}>{`Mine to an Exchange`}</button>
-                    </Menu>
-                )}
-            </AnimatePresence>
-            <ActionButton ref={refs.setReference}>
-                <MenuDotsSVG />
-            </ActionButton>
-        </>
-    );
-}
 
 export default function WalletCardActions() {
     return (
         <Wrapper>
             <ActionAddress />
-            <ActionMenu />
         </Wrapper>
     );
 }

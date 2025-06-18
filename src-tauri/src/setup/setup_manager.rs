@@ -323,6 +323,15 @@ impl SetupManager {
             .external_tari_address()
             .is_none();
 
+        if is_on_exchange_miner_build {
+            let _unused = ConfigCore::update_field(
+                ConfigCoreContent::set_exchange_id,
+                build_in_exchange_id.clone(),
+            )
+            .await;
+            EventsEmitter::emit_exchange_id_changed(build_in_exchange_id.clone()).await;
+        }
+
         // If we open different specific exchange miner build then previous one we always want to prompt user to provide tari address
         if is_on_exchange_miner_build
             && build_in_exchange_id.ne(&last_config_exchange_id)
@@ -339,15 +348,6 @@ impl SetupManager {
             self.exchange_modal_status
                 .send_replace(ExchangeModalStatus::WaitForCompletion);
             EventsEmitter::emit_should_show_exchange_miner_modal().await;
-        }
-
-        if is_on_exchange_miner_build {
-            let _unused = ConfigCore::update_field(
-                ConfigCoreContent::set_exchange_id,
-                build_in_exchange_id.clone(),
-            )
-            .await;
-            EventsEmitter::emit_exchange_id_changed(build_in_exchange_id).await;
         }
 
         info!(target: LOG_TARGET, "Pre Setup Finished");
@@ -945,6 +945,12 @@ impl SetupManager {
             .await
             .inspect_err(|e| error!(target: LOG_TARGET, "Error in start_setup task: {}", e));
 
+        let shutdown_signal = TasksTrackers::current().common.get_signal().await;
+        if shutdown_signal.is_triggered() {
+            info!(target: LOG_TARGET, "Shutdown signal already triggered, exiting start_setup");
+            return;
+        }
+
         let _unused = self.resolve_setup_features()
             .await
             .inspect_err(|e| error!(target: LOG_TARGET, "Failed to set setup features during start_setup: {}", e));
@@ -977,10 +983,15 @@ impl SetupManager {
 
     pub async fn spawn_sleep_mode_handler(app_handle: AppHandle) {
         info!(target: LOG_TARGET, "Spawning Sleep Mode Handler");
+        let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
+        if shutdown_signal.is_triggered() {
+            info!(target: LOG_TARGET, "Shutdown signal already triggered, exiting sleep mode handler");
+            return;
+        }
+
         TasksTrackers::current().common.get_task_tracker().await.spawn(async move {
             let mut receiver = SystemStatus::current().get_sleep_mode_watcher();
             let mut last_state = *receiver.borrow();
-            let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
             loop {
                 select! {
                     _ = receiver.changed() => {
