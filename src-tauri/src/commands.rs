@@ -2200,26 +2200,6 @@ pub async fn launch_builtin_tapplet() -> Result<ActiveTapplet, String> {
     })
 }
 
-#[tauri::command]
-pub async fn get_tari_wallet_balance(
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<WalletBalance, String> {
-    let balance = state
-        .wallet_state_watch_rx
-        .borrow()
-        .clone()
-        .and_then(|state| state.balance);
-
-    match balance {
-        Some(balance) => Ok(balance),
-        None => Ok(WalletBalance {
-            available_balance: MicroMinotari(0),
-            timelocked_balance: MicroMinotari(0),
-            pending_incoming_balance: MicroMinotari(0),
-            pending_outgoing_balance: MicroMinotari(0),
-        }),
-    }
-}
 
 #[tauri::command]
 pub async fn get_bridge_envs() -> Result<(String, String), String> {

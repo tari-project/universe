@@ -89,8 +89,15 @@ export class TappletSigner {
     }
 
     public async getTariBalance(): Promise<WalletBalance> {
-        const balance = await invoke('get_tari_wallet_balance');
-        return balance;
+        const bridgeTxs = useWalletStore.getState().balance;
+        return (
+            bridgeTxs ?? {
+                available_balance: 0,
+                timelocked_balance: 0,
+                pending_incoming_balance: 0,
+                pending_outgoing_balance: 0,
+            }
+        );
     }
 
     public async getAppLanguage(): Promise<string | undefined> {
