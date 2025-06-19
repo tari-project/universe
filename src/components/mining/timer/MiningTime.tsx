@@ -25,8 +25,10 @@ export const MiningTime = memo(function MiningTime({ variant = 'primary', timing
     const _minutes = isMini && minutes === '0' ? '00' : minutes;
     const _seconds = isMini && seconds === '0' ? '00' : seconds;
 
+    const renderDays = daysString && parseInt(daysString) > 0;
     const renderHours = hoursString && parseInt(hoursString) > 0;
-    const daysMarkup = daysString ? (
+
+    const daysMarkup = renderDays ? (
         <>
             {daysString}
             <TimerUnitWrapper />
