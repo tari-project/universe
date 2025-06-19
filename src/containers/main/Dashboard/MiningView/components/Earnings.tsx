@@ -1,11 +1,13 @@
 import { AnimatePresence } from 'motion/react';
 
-import { EarningsContainer, EarningsWrapper, RecapText, WinText, WinWrapper } from './Earnings.styles.ts';
+import { AmtWrapper, EarningsContainer, EarningsWrapper, RecapText, WinText, WinWrapper } from './Earnings.styles.ts';
 
-import CharSpinner from '@app/components/CharSpinner/CharSpinner.tsx';
 import { Trans, useTranslation } from 'react-i18next';
 import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore.ts';
-import { formatNumber, FormatPreset } from '@app/utils/formatters.ts';
+import { removeXTMCryptoDecimals } from '@app/utils/formatters.ts';
+import i18n from 'i18next';
+import NumberFlow from '@number-flow/react';
+import { useEffect, useState } from 'react';
 
 const variants = {
     visible: {
@@ -13,17 +15,17 @@ const variants = {
         y: '-150%',
         scale: 1.05,
         transition: {
-            duration: 1.25,
+            duration: 1,
             ease: 'linear',
             scale: {
-                duration: 0.9,
+                duration: 0.8,
             },
         },
     },
     hidden: {
         opacity: 0.2,
         y: '-100%',
-        transition: { duration: 0.2, delay: 3, ease: 'linear' },
+        transition: { duration: 0.2, delay: 2.4, ease: 'linear' },
     },
 };
 
@@ -33,10 +35,19 @@ export default function Earnings() {
     const replayItem = useBlockchainVisualisationStore((s) => s.replayItem);
     const earnings = useBlockchainVisualisationStore((s) => s.earnings);
     const recapData = useBlockchainVisualisationStore((s) => s.recapData);
-
     const displayEarnings = replayItem?.amount || recapData?.totalEarnings || earnings;
+    const [value, setValue] = useState(0);
 
-    const formatted = formatNumber(displayEarnings || 0, FormatPreset.XTM_COMPACT);
+    useEffect(() => {
+        if (displayEarnings && displayEarnings > 0) {
+            const minotari = removeXTMCryptoDecimals(displayEarnings);
+            const val = Math.floor(minotari / 10) * 10; // to match sidebar value's formatting
+
+            setValue(val);
+        } else {
+            setValue(0);
+        }
+    }, [displayEarnings]);
 
     const recapText = recapData?.totalEarnings ? (
         <RecapText>
@@ -74,7 +85,19 @@ export default function Earnings() {
                         {recapText}
                         <WinWrapper>
                             <WinText>{t('your-reward-is')}</WinText>
-                            <CharSpinner value={formatted.toString()} fontSize={76} XTMAlignment="center" />
+                            <AmtWrapper>
+                                <NumberFlow
+                                    locales={i18n.language}
+                                    format={{
+                                        minimumFractionDigits: 2,
+                                        maximumFractionDigits: 2,
+                                        notation: 'compact',
+                                        style: 'decimal',
+                                    }}
+                                    value={value}
+                                />
+                            </AmtWrapper>
+                            <WinText>{`XTM`}</WinText>
                         </WinWrapper>
                     </EarningsWrapper>
                 ) : null}
