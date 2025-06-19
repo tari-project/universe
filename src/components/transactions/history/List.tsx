@@ -34,7 +34,7 @@ export function List() {
         onChange: () => hasNextPage && fetchNextPage(),
     });
 
-    const baseTx = data?.pages.flatMap((p) => p) || [];
+    const baseTx = useMemo(() => data?.pages.flatMap((p) => p) || [], [data?.pages]);
 
     useEffect(() => {
         const isThereANewBridgeTransaction = baseTx.find(
@@ -52,7 +52,7 @@ export function List() {
         if (isThereANewBridgeTransaction || isThereEmptyBridgeTransactionAndFoundInWallet) {
             fetchBridgeTransactionsHistory();
         }
-    }, [baseTx, coldWalletAddress, currentBlockHeight]);
+    }, [baseTx, bridgeTransactions, coldWalletAddress, currentBlockHeight]);
 
     const combinedTransactions = useMemo(() => {
         return ([...baseTx, ...bridgeTransactions] as (TransactionInfo | UserTransactionDTO)[]).sort((a, b) => {
