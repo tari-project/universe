@@ -12,7 +12,6 @@ import { setMiningControlsEnabled } from './actions/miningStoreActions.ts';
 import { updateWalletScanningProgress, useWalletStore } from './useWalletStore.ts';
 import { useConfigUIStore } from '@app/store/useAppConfigStore.ts';
 import { refreshTransactions } from '@app/hooks/wallet/useFetchTxHistory.ts';
-import { fetchBridgeTransactionsHistory } from '@app/store/actions/walletStoreActions.ts';
 
 const appWindow = getCurrentWindow();
 

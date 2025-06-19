@@ -815,25 +815,41 @@ pub async fn import_seed_words(
     seed_words: Vec<String>,
     _window: tauri::Window,
     app: tauri::AppHandle,
+    state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), InvokeError> {
     let timer = Instant::now();
     let config_path = app
         .path()
         .app_config_dir()
         .expect("Could not get config dir");
-    let data_dir = app
-        .path()
-        .app_local_data_dir()
-        .expect("Could not get data dir");
 
-    match InternalWallet::create_from_seed(config_path, seed_words).await {
+    SetupManager::get_instance()
+        .shutdown_phases(vec![SetupPhase::Wallet, SetupPhase::Mining])
+        .await;
+
+    match InternalWallet::create_from_seed(config_path.clone(), seed_words).await {
         Ok(wallet) => {
-            SetupManager::get_instance()
-                .shutdown_phases(vec![SetupPhase::Wallet, SetupPhase::Mining])
+            // Trigger it manually to immediately update the UI
+            let node_status_watch_rx = state.node_status_watch_rx.clone();
+            let node_status = *node_status_watch_rx.borrow();
+            EventsEmitter::emit_init_wallet_scanning_progress(0, node_status.block_height, 0.0)
                 .await;
-            InternalWallet::clear_wallet_local_data(data_dir)
+
+            let data_dir = app
+                .path()
+                .app_local_data_dir()
+                .expect("Could not get data dir");
+
+            state
+                .wallet_manager
+                .clean_data_folder(&data_dir)
                 .await
                 .map_err(|e| e.to_string())?;
+            state
+                .wallet_manager
+                .set_view_private_key_and_spend_key(wallet.get_view_key(), wallet.get_spend_key())
+                .await;
+
             ConfigWallet::update_field(ConfigWalletContent::set_external_tari_address, None)
                 .await
                 .map_err(InvokeError::from_anyhow)?;
@@ -852,16 +868,16 @@ pub async fn import_seed_words(
             .await
             .map_err(InvokeError::from_anyhow)?;
             EventsEmitter::emit_exchange_id_changed(DEFAULT_EXCHANGE_ID.to_string()).await;
-
-            SetupManager::get_instance()
-                .resume_phases(app, vec![SetupPhase::Wallet, SetupPhase::Mining])
-                .await;
         }
         Err(e) => {
             error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);
             e.to_string();
         }
     }
+
+    SetupManager::get_instance()
+        .resume_phases(app, vec![SetupPhase::Wallet, SetupPhase::Mining])
+        .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "import_seed_words took too long: {:?}", timer.elapsed());
