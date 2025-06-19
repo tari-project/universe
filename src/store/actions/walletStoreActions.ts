@@ -11,6 +11,7 @@ import { setSeedlessUI } from './uiStoreActions';
 import { refreshTransactions } from '@app/hooks/wallet/useFetchTxHistory.ts';
 
 export const fetchBridgeTransactionsHistory = async () => {
+    console.info('Fetching bridge transactions history...');
     const baseUrl = useConfigBEInMemoryStore.getState().bridgeBackendApiUrl;
     if (baseUrl?.includes('env var not defined')) return;
     try {

@@ -1,9 +1,9 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useInView } from 'react-intersection-observer';
 import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/core';
 
-import { BackendBridgeTransaction, useWalletStore } from '@app/store';
+import { BackendBridgeTransaction, useBlockchainVisualisationStore, useWalletStore } from '@app/store';
 
 import { TransactionInfo } from '@app/types/app-status.ts';
 
@@ -15,7 +15,7 @@ import { LoadingText } from '@app/containers/navigation/components/Wallet/ListLo
 import { HistoryListItem } from './ListItem.tsx';
 import { PlaceholderItem } from './ListItem.styles.ts';
 import { ListItemWrapper, ListWrapper } from './List.styles.ts';
-import { setDetailsItem } from '@app/store/actions/walletStoreActions.ts';
+import { fetchBridgeTransactionsHistory, setDetailsItem } from '@app/store/actions/walletStoreActions.ts';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 import { getTimestampFromTransaction, isBridgeTransaction, isTransactionInfo } from './helpers.ts';
 import { UserTransactionDTO } from '@tari-project/wxtm-bridge-backend-api';
@@ -25,6 +25,7 @@ export function List() {
     const { t } = useTranslation('wallet');
     const walletScanning = useWalletStore((s) => s.wallet_scanning);
     const bridgeTransactions = useWalletStore((s) => s.bridge_transactions);
+    const currentBlockHeight = useBlockchainVisualisationStore((s) => s.displayBlockHeight);
     const coldWalletAddress = useWalletStore((s) => s.cold_wallet_address);
     const { data, fetchNextPage, isFetchingNextPage, isFetching, hasNextPage } = useFetchTxHistory();
 
@@ -35,48 +36,68 @@ export function List() {
 
     const baseTx = data?.pages.flatMap((p) => p) || [];
 
-    const combinedTransactions = ([...baseTx, ...bridgeTransactions] as (TransactionInfo | UserTransactionDTO)[]).sort(
-        (a, b) => {
-            return getTimestampFromTransaction(b) - getTimestampFromTransaction(a);
+    useEffect(() => {
+        const isThereANewBridgeTransaction = baseTx.find(
+            (tx) =>
+                tx.dest_address === coldWalletAddress &&
+                !bridgeTransactions.some(
+                    (bridgeTx) => bridgeTx.paymentId === tx.payment_id && Number(bridgeTx.tokenAmount) === tx.amount
+                )
+        );
+
+        const isThereEmptyBridgeTransactionAndFoundInWallet = baseTx.find(
+            (tx) => tx.dest_address === coldWalletAddress && bridgeTransactions.length === 0
+        );
+
+        if (isThereANewBridgeTransaction || isThereEmptyBridgeTransactionAndFoundInWallet) {
+            fetchBridgeTransactionsHistory();
         }
-    );
+    }, [baseTx, coldWalletAddress, currentBlockHeight]);
 
-    const adjustedTransactions = combinedTransactions.reduce(
-        (acc, tx, index) => {
-            if (isBridgeTransaction(tx) && index > 0) {
-                const previousTransactions = acc.slice(-5); // Get up to the last 5 transactions
-                const matchingTransaction = previousTransactions.find(
-                    (prevTx) =>
-                        isTransactionInfo(prevTx) &&
-                        prevTx.amount === Number(tx.tokenAmount) &&
-                        prevTx.payment_id === tx.paymentId &&
-                        prevTx.dest_address === coldWalletAddress
-                );
+    const combinedTransactions = useMemo(() => {
+        return ([...baseTx, ...bridgeTransactions] as (TransactionInfo | UserTransactionDTO)[]).sort((a, b) => {
+            return getTimestampFromTransaction(b) - getTimestampFromTransaction(a);
+        });
+    }, [baseTx, bridgeTransactions]);
 
-                if (matchingTransaction) {
-                    const removedBridgeTransaction = acc.splice(acc.indexOf(matchingTransaction), 1)[0];
-                    if (removedBridgeTransaction && isTransactionInfo(removedBridgeTransaction)) {
-                        const updatedTransaction: BackendBridgeTransaction = {
-                            sourceAddress: removedBridgeTransaction.source_address,
-                            destinationAddress: tx.destinationAddress,
-                            status: tx.status,
-                            createdAt: tx.createdAt,
-                            tokenAmount: tx.tokenAmount,
-                            amountAfterFee: tx.amountAfterFee,
-                            feeAmount: tx.feeAmount,
-                            paymentId: tx.paymentId,
-                            mined_in_block_height: removedBridgeTransaction.mined_in_block_height,
-                        };
-                        acc.push(updatedTransaction);
-                        return acc;
+    const adjustedTransactions = useMemo(() => {
+        return combinedTransactions.reduce(
+            (acc, tx, index) => {
+                if (isBridgeTransaction(tx) && index > 0) {
+                    const previousTransactions = acc.slice(-5); // Get up to the last 5 transactions
+                    const matchingTransaction = previousTransactions.find(
+                        (prevTx) =>
+                            isTransactionInfo(prevTx) &&
+                            prevTx.amount === Number(tx.tokenAmount) &&
+                            prevTx.payment_id === tx.paymentId &&
+                            prevTx.dest_address === coldWalletAddress
+                    );
+
+                    if (matchingTransaction) {
+                        const removedBridgeTransaction = acc.splice(acc.indexOf(matchingTransaction), 1)[0];
+                        if (removedBridgeTransaction && isTransactionInfo(removedBridgeTransaction)) {
+                            const updatedTransaction: BackendBridgeTransaction = {
+                                sourceAddress: removedBridgeTransaction.source_address,
+                                destinationAddress: tx.destinationAddress,
+                                status: tx.status,
+                                createdAt: tx.createdAt,
+                                tokenAmount: tx.tokenAmount,
+                                amountAfterFee: tx.amountAfterFee,
+                                feeAmount: tx.feeAmount,
+                                paymentId: tx.paymentId,
+                                mined_in_block_height: removedBridgeTransaction.mined_in_block_height,
+                            };
+                            acc.push(updatedTransaction);
+                            return acc;
+                        }
                     }
                 }
-            }
-            acc.push(tx);
-            return acc;
-        },
-        [] as (TransactionInfo | UserTransactionDTO)[]
-    );
+                acc.push(tx);
+                return acc;
+            },
+            [] as (TransactionInfo | UserTransactionDTO)[]
+        );
+    }, [combinedTransactions, coldWalletAddress]);
 
     const handleDetailsChange = useCallback(async (tx: TransactionInfo | null) => {
         if (!tx) {
