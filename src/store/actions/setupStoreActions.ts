@@ -4,7 +4,6 @@ import { useSetupStore } from '../useSetupStore';
 import { startCpuMining, startGpuMining, stopCpuMining, stopGpuMining } from './miningStoreActions';
 import {
     fetchApplicationsVersionsWithRetry,
-    TOWER_CANVAS_ID,
     useConfigMiningStore,
     useConfigUIStore,
     useMiningStore,
@@ -15,6 +14,7 @@ import { ProgressTrackerUpdatePayload } from '@app/hooks/app/useProgressEventsLi
 import { fetchBridgeTransactionsHistory } from './walletStoreActions';
 import { SetupPhase } from '@app/types/backend-state';
 import { useTappletsStore } from '../useTappletsStore';
+import { TOWER_CANVAS_ID } from '../types/ui';
 
 export interface DisabledPhasesPayload {
     disabled_phases: SetupPhase[];
