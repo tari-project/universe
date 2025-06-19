@@ -1,5 +1,8 @@
+import { Easing } from 'motion';
 import * as m from 'motion/react-m';
 import styled from 'styled-components';
+
+const ease: Easing = [0.43, 0.13, 0.23, 0.96];
 
 const variants = {
     hidden: {
@@ -21,7 +24,7 @@ const variants = {
         scale: 2,
         transition: {
             duration: 1,
-            ease: [0.43, 0.13, 0.23, 0.96],
+            ease,
         },
     },
     exit: {
@@ -29,7 +32,7 @@ const variants = {
         scale: 1.5,
         transition: {
             duration: 0.8,
-            ease: [0.43, 0.13, 0.23, 0.96],
+            ease,
         },
     },
 };
