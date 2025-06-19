@@ -74,7 +74,6 @@ const NavigationButton = memo(function NavigationButton() {
             setSidebarOpen(!sidebarOpen);
         }
     }
-
     useEffect(() => {
         setAnimationProperties([
             { property: 'offsetX', value: towerSidebarOffset },
