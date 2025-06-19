@@ -184,9 +184,6 @@ export const handleNewBlock = async (payload: {
     coinbase_transaction?: TransactionInfo;
     balance: WalletBalance;
 }) => {
-    await fetchBridgeTransactionsHistory().catch((error) => {
-        console.error('Could not fetch bridge transactions history:', error);
-    });
     latestBlockPayload = payload;
 
     const isWalletScanned = !useWalletStore.getState().wallet_scanning?.is_scanning;
