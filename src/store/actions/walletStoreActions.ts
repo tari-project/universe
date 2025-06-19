@@ -62,6 +62,7 @@ export const importSeedWords = async (seedWords: string[]) => {
     });
     try {
         await invoke('import_seed_words', { seedWords });
+        await refreshTransactions();
         useWalletStore.setState({ is_wallet_importing: false });
     } catch (error) {
         setError(`Could not import seed words: ${error}`, true);
@@ -120,19 +121,21 @@ export const setDetailsItem = (detailsItem: TransactionDetailsItem | BackendBrid
 export const handleExternalWalletAddressUpdate = (payload?: WalletAddress) => {
     const isSeedlessUI = useUIStore.getState().seedlessUI;
     if (payload) {
-        useWalletStore.setState({
+        useWalletStore.setState((c) => ({
+            ...c,
             external_tari_address_base58: payload.tari_address_base58,
             external_tari_address_emoji: payload.tari_address_emoji,
-        });
+        }));
 
         if (!isSeedlessUI) {
             setSeedlessUI(true);
         }
     } else {
-        useWalletStore.setState({
+        useWalletStore.setState((c) => ({
+            ...c,
             external_tari_address_base58: undefined,
             external_tari_address_emoji: undefined,
-        });
+        }));
         if (isSeedlessUI) {
             setSeedlessUI(false);
             setCurrentExchangeMinerId(universalExchangeMinerOption.exchange_id);
@@ -142,8 +145,9 @@ export const handleExternalWalletAddressUpdate = (payload?: WalletAddress) => {
 };
 
 export const handleBaseWalletUpate = (payload: WalletAddress) => {
-    useWalletStore.setState({
+    useWalletStore.setState((c) => ({
+        ...c,
         tari_address_base58: payload.tari_address_base58,
         tari_address_emoji: payload.tari_address_emoji,
-    });
+    }));
 };
