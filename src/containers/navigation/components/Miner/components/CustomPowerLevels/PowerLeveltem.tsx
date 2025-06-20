@@ -35,6 +35,7 @@ export const PowerLeveltem = ({
     const { t } = useTranslation('settings');
     // Check if the value is over 75% of the max level
     const hasWarning = convertToPercentage(value, maxLevel) > 75;
+
     return (
         <>
             <RangeLabel> {label}</RangeLabel>
