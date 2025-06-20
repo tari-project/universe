@@ -14,7 +14,7 @@ import { Divider } from '@app/components/elements/Divider.tsx';
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 import { IoClose } from 'react-icons/io5';
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
-import { modeType } from '@app/store/types.ts';
+
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { changeMiningMode } from '@app/store/actions/miningStoreActions.ts';
 import { useConfigMiningStore } from '@app/store/useAppConfigStore.ts';
@@ -31,49 +31,6 @@ interface FormValues {
     [FormFields.GPUS]: GpuThreads[];
 }
 
-const resolveCpuInitialThreads = (
-    configCpuLevels: number | undefined,
-    mode: modeType | undefined,
-    maxAvailableThreads: MaxConsumptionLevels
-) => {
-    switch (mode) {
-        case 'Eco':
-            return configCpuLevels || Math.round(maxAvailableThreads.max_cpu_threads * 0.3);
-        case 'Ludicrous':
-            return configCpuLevels || maxAvailableThreads.max_cpu_threads;
-        default:
-            return configCpuLevels || 0;
-    }
-};
-
-const resolveGpuInitialThreads = (
-    configGpuLevels: GpuThreads[] | undefined,
-    mode: modeType | undefined,
-    maxAvailableThreads: MaxConsumptionLevels
-) => {
-    if (configGpuLevels?.length) {
-        return configGpuLevels;
-    }
-
-    switch (mode) {
-        case 'Eco':
-            return maxAvailableThreads.max_gpus_threads.map((gpu) => ({
-                gpu_name: gpu.gpu_name,
-                max_gpu_threads: 2,
-            }));
-        case 'Ludicrous':
-            return maxAvailableThreads.max_gpus_threads.map((gpu) => ({
-                gpu_name: gpu.gpu_name,
-                max_gpu_threads: 1024,
-            }));
-        default:
-            return maxAvailableThreads?.max_gpus_threads?.map((gpu) => ({
-                gpu_name: gpu.gpu_name,
-                max_gpu_threads: gpu.max_gpu_threads ? gpu.max_gpu_threads / 4 : 4,
-            }));
-    }
-};
-
 interface CustomPowerLevelsDialogProps {
     maxAvailableThreads: MaxConsumptionLevels;
     handleClose: () => void;
@@ -85,12 +42,28 @@ export function CustomPowerLevelsDialog({ maxAvailableThreads, handleClose }: Cu
     const mode = useConfigMiningStore((s) => s.mode);
     const configCpuLevels = useConfigMiningStore((s) => s.custom_max_cpu_usage);
     const configGpuLevels = useConfigMiningStore((s) => s.custom_max_gpu_usage);
+    const ecoCpuLevels = useConfigMiningStore((s) => s.eco_mode_max_cpu_usage);
+    const ecoGpuLevels = useConfigMiningStore((s) => s.eco_mode_max_gpu_usage);
+    const ludicrousCpuLevels = useConfigMiningStore((s) => s.ludicrous_mode_max_cpu_usage);
+    const ludicrousGpuLevels = useConfigMiningStore((s) => s.ludicrous_mode_max_gpu_usage);
     const isChangingMode = useMiningStore((s) => s.isChangingMode);
-    console.debug(maxAvailableThreads);
+
+    const defaults = {
+        Eco: {
+            cpu: ecoCpuLevels,
+            gpu: ecoGpuLevels,
+        },
+        Ludicrous: {
+            cpu: ludicrousCpuLevels,
+            gpu: ludicrousGpuLevels,
+        },
+    };
+    console.debug(`configCpuLevels= `, configCpuLevels);
+
     const { control, handleSubmit, setValue } = useForm<FormValues>({
         defaultValues: {
-            [FormFields.CPU]: resolveCpuInitialThreads(configCpuLevels, mode, maxAvailableThreads),
-            [FormFields.GPUS]: resolveGpuInitialThreads(configGpuLevels, mode, maxAvailableThreads),
+            [FormFields.CPU]: configCpuLevels ?? defaults[mode].cpu,
+            [FormFields.GPUS]: configGpuLevels ?? defaults[mode].gpu,
         },
     });
 

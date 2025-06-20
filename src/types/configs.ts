@@ -51,7 +51,11 @@ export interface ConfigMining {
     mine_on_app_start: boolean;
     ludicrous_mode_cpu_threads: number;
     eco_mode_cpu_options: string[];
+    eco_mode_max_cpu_usage: number;
+    eco_mode_max_gpu_usage: GpuThreads[];
+    ludicrous_mode_max_gpu_usage: GpuThreads[];
     ludicrous_mode_cpu_options: string[];
+    ludicrous_mode_max_cpu_usage: number;
     custom_mode_cpu_options: string[];
     custom_max_cpu_usage: number;
     custom_max_gpu_usage: GpuThreads[];

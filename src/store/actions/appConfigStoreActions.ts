@@ -211,17 +211,42 @@ export const setMineOnAppStart = async (mineOnAppStart: boolean) => {
 export const setMode = async (params: SetModeProps) => {
     const { mode, customGpuLevels, customCpuLevels } = params;
     const prevMode = useConfigMiningStore.getState().mode;
-    useConfigMiningStore.setState({
-        mode,
-        custom_max_cpu_usage: customCpuLevels,
-        custom_max_gpu_usage: customGpuLevels,
-    });
     console.info('Setting mode', mode, customCpuLevels, customGpuLevels);
-    invoke('set_mode', { mode, customCpuUsage: customCpuLevels, customGpuUsage: customGpuLevels }).catch((e) => {
-        console.error('Could not set mode', e);
-        setError('Could not change mode');
-        useConfigMiningStore.setState({ mode: prevMode });
-    });
+    invoke('set_mode', { mode, customCpuUsage: customCpuLevels, customGpuUsage: customGpuLevels })
+        .then(() => {
+            switch (mode) {
+                case 'Custom': {
+                    useConfigMiningStore.setState({
+                        mode,
+                        custom_max_cpu_usage: customCpuLevels,
+                        custom_max_gpu_usage: customGpuLevels,
+                    });
+                    break;
+                }
+
+                case 'Ludicrous': {
+                    useConfigMiningStore.setState({
+                        mode,
+                        ludicrous_mode_max_cpu_usage: customCpuLevels,
+                        ludicrous_mode_max_gpu_usage: customGpuLevels,
+                    });
+                    break;
+                }
+                case 'Eco': {
+                    useConfigMiningStore.setState({
+                        mode,
+                        eco_mode_max_cpu_usage: customCpuLevels,
+                        eco_mode_max_gpu_usage: customGpuLevels,
+                    });
+                    break;
+                }
+            }
+        })
+        .catch((e) => {
+            console.error('Could not set mode', e);
+            setError('Could not change mode');
+            useConfigMiningStore.setState({ mode: prevMode });
+        });
 };
 export const setMoneroAddress = async (moneroAddress: string) => {
     const prevMoneroAddress = useConfigWalletStore.getState().monero_address;
