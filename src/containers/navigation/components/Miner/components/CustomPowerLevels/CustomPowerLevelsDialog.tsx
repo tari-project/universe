@@ -86,7 +86,7 @@ export function CustomPowerLevelsDialog({ maxAvailableThreads, handleClose }: Cu
     const configCpuLevels = useConfigMiningStore((s) => s.custom_max_cpu_usage);
     const configGpuLevels = useConfigMiningStore((s) => s.custom_max_gpu_usage);
     const isChangingMode = useMiningStore((s) => s.isChangingMode);
-
+    console.debug(maxAvailableThreads);
     const { control, handleSubmit, setValue } = useForm<FormValues>({
         defaultValues: {
             [FormFields.CPU]: resolveCpuInitialThreads(configCpuLevels, mode, maxAvailableThreads),
@@ -155,7 +155,6 @@ export function CustomPowerLevelsDialog({ maxAvailableThreads, handleClose }: Cu
                                 descriprion={'custom-power-levels.choose-gpu-power-level'}
                                 warning={t('custom-power-levels.gpu-warning')}
                                 onChange={(value: number) => {
-                                    console.debug(value);
                                     setValue(`${FormFields.GPUS}.${index}.max_gpu_threads`, value as never);
                                 }}
                                 isLoading={isChangingMode}

@@ -426,6 +426,7 @@ pub async fn get_max_consumption_levels(
         .map_err(|e| e.to_string())?;
 
     let mut max_gpus_threads = Vec::new();
+    debug!("shan gpu {:#?}", gpu_devices);
     for gpu_device in gpu_devices {
         // let max_gpu_threads = gpu_device.max_grid_size;
         // For some reason this is always return 256, even when the cards can do more like
@@ -1286,27 +1287,62 @@ pub async fn set_mode(
 ) -> Result<(), InvokeError> {
     let timer = Instant::now();
     info!(target: LOG_TARGET, "[set_mode] called with mode: {:?}", mode);
+
     if let Some(mode) = MiningMode::from_str(&mode) {
         ConfigMining::update_field(ConfigMiningContent::set_mode, mode)
             .await
             .map_err(InvokeError::from_anyhow)?;
+
+        match mode {
+            MiningMode::Eco => {
+                ConfigMining::update_field(
+                    ConfigMiningContent::set_eco_mode_max_cpu_usage,
+                    custom_cpu_usage,
+                )
+                .await
+                .map_err(InvokeError::from_anyhow)?;
+
+                ConfigMining::update_field(
+                    ConfigMiningContent::set_eco_mode_max_gpu_usage,
+                    custom_gpu_usage,
+                )
+                .await
+                .map_err(InvokeError::from_anyhow)?;
+            }
+            MiningMode::Ludicrous => {
+                ConfigMining::update_field(
+                    ConfigMiningContent::set_ludicrous_mode_max_cpu_usage,
+                    custom_cpu_usage,
+                )
+                .await
+                .map_err(InvokeError::from_anyhow)?;
+
+                ConfigMining::update_field(
+                    ConfigMiningContent::set_ludicrous_mode_max_gpu_usage,
+                    custom_gpu_usage,
+                )
+                .await
+                .map_err(InvokeError::from_anyhow)?;
+            }
+            MiningMode::Custom => {
+                ConfigMining::update_field(
+                    ConfigMiningContent::set_custom_max_cpu_usage,
+                    custom_cpu_usage,
+                )
+                .await
+                .map_err(InvokeError::from_anyhow)?;
+
+                ConfigMining::update_field(
+                    ConfigMiningContent::set_custom_max_gpu_usage,
+                    custom_gpu_usage,
+                )
+                .await
+                .map_err(InvokeError::from_anyhow)?;
+            }
+        }
     } else {
         return Err(InvokeError::from("Invalid mode".to_string()));
     }
-
-    ConfigMining::update_field(
-        ConfigMiningContent::set_custom_max_cpu_usage,
-        custom_cpu_usage,
-    )
-    .await
-    .map_err(InvokeError::from_anyhow)?;
-
-    ConfigMining::update_field(
-        ConfigMiningContent::set_custom_max_gpu_usage,
-        custom_gpu_usage,
-    )
-    .await
-    .map_err(InvokeError::from_anyhow)?;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "set_mode took too long: {:?}", timer.elapsed());
