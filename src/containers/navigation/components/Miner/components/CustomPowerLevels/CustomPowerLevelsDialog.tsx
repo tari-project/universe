@@ -13,7 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { Divider } from '@app/components/elements/Divider.tsx';
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 import { IoClose } from 'react-icons/io5';
-import { Controller, useFieldArray, useForm, useFormState } from 'react-hook-form';
+import { Controller, useFieldArray, useForm } from 'react-hook-form';
 
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { changeMiningMode } from '@app/store/actions/miningStoreActions.ts';
