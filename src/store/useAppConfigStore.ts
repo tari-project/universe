@@ -83,9 +83,7 @@ export const useConfigWalletStore = create<ConfigWallet>()(() => ({
     ...configWalletInitialState,
 }));
 
-export const useConfigMiningStore = create<ConfigMining>()(() => ({
-    ...configMininigInitialState,
-}));
+export const useConfigMiningStore = create<ConfigMining>()(() => configMininigInitialState);
 
 export const useConfigUIStore = create<UIConfigStoreState>()(() => ({
     ...configUIInitialState,

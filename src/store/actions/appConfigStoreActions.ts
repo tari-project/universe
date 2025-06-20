@@ -68,7 +68,8 @@ export const handleConfigUILoaded = async (uiConfig: ConfigUI) => {
     }
 };
 export const handleConfigMiningLoaded = (miningConfig: ConfigMining) => {
-    useConfigMiningStore.setState(miningConfig);
+    console.debug(`wen`);
+    useConfigMiningStore.setState((c) => ({ ...c, ...miningConfig }));
     useMiningStore.setState({ miningTime: miningConfig.mining_time });
 };
 
