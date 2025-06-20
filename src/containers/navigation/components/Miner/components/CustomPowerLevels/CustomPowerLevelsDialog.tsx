@@ -61,12 +61,12 @@ export function CustomPowerLevelsDialog({ maxAvailableThreads, handleClose }: Cu
     const { control, handleSubmit, setValue, formState } = useForm<FormValues>({
         reValidateMode: 'onSubmit',
         defaultValues: {
-            cpu: configCpuLevels > 0 ? configCpuLevels : defaults[mode].cpu,
+            cpu: configCpuLevels > 0 ? configCpuLevels : defaults[mode].cpu || 1,
             gpus: configGpuLevels?.length > 0 ? configGpuLevels : defaults[mode].gpu,
         },
     });
 
-    console.debug(ludicrousGpuLevels);
+    console.debug(configCpuLevels);
 
     const { fields } = useFieldArray({
         control,
