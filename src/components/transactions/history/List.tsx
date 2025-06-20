@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useInView } from 'react-intersection-observer';
 import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/core';
@@ -28,6 +28,7 @@ export function List() {
     const currentBlockHeight = useBlockchainVisualisationStore((s) => s.displayBlockHeight);
     const coldWalletAddress = useWalletStore((s) => s.cold_wallet_address);
     const { data, fetchNextPage, isFetchingNextPage, isFetching, hasNextPage } = useFetchTxHistory();
+    const isFetchBridgeTransactionsFailed = useRef(false);
 
     const { ref } = useInView({
         initialInView: false,
@@ -49,8 +50,15 @@ export function List() {
             (tx) => tx.dest_address === coldWalletAddress && bridgeTransactions.length === 0
         );
 
-        if (isThereANewBridgeTransaction || isThereEmptyBridgeTransactionAndFoundInWallet) {
-            fetchBridgeTransactionsHistory();
+        if (
+            !isFetchBridgeTransactionsFailed.current &&
+            (isThereANewBridgeTransaction || isThereEmptyBridgeTransactionAndFoundInWallet)
+        ) {
+            fetchBridgeTransactionsHistory().catch(() => {
+                if (!isFetchBridgeTransactionsFailed.current) {
+                    isFetchBridgeTransactionsFailed.current = true;
+                }
+            });
         }
     }, [baseTx, bridgeTransactions, coldWalletAddress, currentBlockHeight]);
 
