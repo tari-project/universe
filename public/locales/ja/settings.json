@@ -24,6 +24,7 @@
     "save-changes": "変更を保存",
     "saved": "変更を適用中",
     "title": "カスタムモード",
+    "use-custom": "Use Custom settings",
     "warning": "警告"
   },
   "debug-info": "デバッグ",

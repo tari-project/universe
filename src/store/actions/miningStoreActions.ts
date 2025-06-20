@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import { GpuThreads } from '@app/types/app-status.ts';
+import { GpuThreads, MaxConsumptionLevels } from '@app/types/app-status.ts';
 import { useBlockchainVisualisationStore } from '../useBlockchainVisualisationStore.ts';
 import { useMiningMetricsStore } from '../useMiningMetricsStore.ts';
 
@@ -18,6 +18,25 @@ interface ChangeMiningModeArgs {
     customCpuLevels?: number;
 }
 
+function setModeDefaults(maxLevels: MaxConsumptionLevels) {
+    console.debug(`wen def`);
+    useConfigMiningStore.setState((c) => ({
+        ...c,
+        eco_mode_cpu_threads: (maxLevels.max_cpu_threads || 3) * 0.3,
+        eco_mode_max_gpu_usage:
+            maxLevels?.max_gpus_threads.map((gpu) => ({
+                gpu_name: gpu.gpu_name,
+                max_gpu_threads: 2,
+            })) || [],
+        ludicrous_mode_max_cpu_usage: maxLevels.max_cpu_threads,
+        ludicrous_mode_max_gpu_usage:
+            maxLevels?.max_gpus_threads.map((gpu) => ({
+                gpu_name: gpu.gpu_name,
+                max_gpu_threads: 1024,
+            })) || [],
+    }));
+}
+
 export const changeMiningMode = async (params: ChangeMiningModeArgs) => {
     const { mode, customGpuLevels, customCpuLevels } = params;
     console.info(`Changing mode to ${mode}...`);
@@ -27,6 +46,28 @@ export const changeMiningMode = async (params: ChangeMiningModeArgs) => {
     const wasCpuMiningInitiated = useMiningStore.getState().isCpuMiningInitiated;
     const wasGpuMiningInitiated = useMiningStore.getState().isGpuMiningInitiated;
 
+    const maxLevels = useMiningStore.getState().maxAvailableThreads;
+
+    let gpuLevels = customGpuLevels || [];
+    let cpuLevels = customCpuLevels;
+
+    if (mode === 'Eco') {
+        gpuLevels =
+            maxLevels?.max_gpus_threads.map((gpu) => ({
+                gpu_name: gpu.gpu_name,
+                max_gpu_threads: 2,
+            })) || [];
+        cpuLevels = Math.round((maxLevels?.max_cpu_threads || 3) * 0.3);
+    }
+    if (mode === 'Ludicrous') {
+        gpuLevels =
+            maxLevels?.max_gpus_threads.map((gpu) => ({
+                gpu_name: gpu.gpu_name,
+                max_gpu_threads: 1024,
+            })) || [];
+        cpuLevels = maxLevels?.max_cpu_threads;
+    }
+
     if (metricsState.cpu_mining_status.is_mining || metricsState.gpu_mining_status.is_mining) {
         console.info('Pausing mining...');
         await stopMining();
@@ -34,8 +75,8 @@ export const changeMiningMode = async (params: ChangeMiningModeArgs) => {
     try {
         await setMode({
             mode: mode as modeType,
-            customGpuLevels: customGpuLevels || [],
-            customCpuLevels,
+            customGpuLevels: gpuLevels,
+            customCpuLevels: cpuLevels,
         });
         console.info(`Mode changed to ${mode}`);
         if (wasCpuMiningInitiated) {
@@ -56,6 +97,8 @@ export const getMaxAvailableThreads = async () => {
     try {
         const maxAvailableThreads = await invoke('get_max_consumption_levels');
         useMiningStore.setState({ maxAvailableThreads });
+        console.debug(`maxAvailableThreads= `, maxAvailableThreads);
+        setModeDefaults(maxAvailableThreads);
     } catch (e) {
         console.error('Failed to get max available threads: ', e);
         setError(e as string);
