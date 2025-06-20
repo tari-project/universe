@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import { GpuThreads } from '@app/types/app-status.ts';
+import { GpuThreads, MaxConsumptionLevels } from '@app/types/app-status.ts';
 import { useBlockchainVisualisationStore } from '../useBlockchainVisualisationStore.ts';
 import { useMiningMetricsStore } from '../useMiningMetricsStore.ts';
 
@@ -16,6 +16,23 @@ interface ChangeMiningModeArgs {
     mode: modeType;
     customGpuLevels?: GpuThreads[];
     customCpuLevels?: number;
+}
+
+function setModeDefaults(maxLevels: MaxConsumptionLevels) {
+    useConfigMiningStore.setState({
+        eco_mode_cpu_threads: (maxLevels.max_cpu_threads || 3) * 0.3,
+        eco_mode_max_gpu_usage:
+            maxLevels?.max_gpus_threads.map((gpu) => ({
+                gpu_name: gpu.gpu_name,
+                max_gpu_threads: 2,
+            })) || [],
+        ludicrous_mode_max_cpu_usage: maxLevels.max_cpu_threads,
+        ludicrous_mode_max_gpu_usage:
+            maxLevels?.max_gpus_threads.map((gpu) => ({
+                gpu_name: gpu.gpu_name,
+                max_gpu_threads: 1024,
+            })) || [],
+    });
 }
 
 export const changeMiningMode = async (params: ChangeMiningModeArgs) => {
@@ -78,6 +95,7 @@ export const getMaxAvailableThreads = async () => {
     try {
         const maxAvailableThreads = await invoke('get_max_consumption_levels');
         useMiningStore.setState({ maxAvailableThreads });
+        setModeDefaults(maxAvailableThreads);
     } catch (e) {
         console.error('Failed to get max available threads: ', e);
         setError(e as string);

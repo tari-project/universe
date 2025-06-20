@@ -95,18 +95,20 @@ export function CustomPowerLevelsDialog({ maxAvailableThreads, handleClose }: Cu
         <Controller
             control={control}
             name={FormFields.CPU}
-            render={({ field }) => (
-                <PowerLeveltem
-                    value={field.value}
-                    maxLevel={maxAvailableThreads.max_cpu_threads}
-                    onChange={field.onChange}
-                    label={t('custom-power-levels.cpu-power-level')}
-                    descriprion={'custom-power-levels.choose-cpu-power-level'}
-                    warning={t('custom-power-levels.cpu-warning')}
-                    isLoading={isChangingMode}
-                    minLevel={1}
-                />
-            )}
+            render={({ field }) => {
+                return (
+                    <PowerLeveltem
+                        value={field.value}
+                        maxLevel={maxAvailableThreads.max_cpu_threads}
+                        onChange={field.onChange}
+                        label={t('custom-power-levels.cpu-power-level')}
+                        descriprion={'custom-power-levels.choose-cpu-power-level'}
+                        warning={t('custom-power-levels.cpu-warning')}
+                        isLoading={isChangingMode}
+                        minLevel={1}
+                    />
+                );
+            }}
         />
     );
     const gpuMarkup = fields?.map((gpu, index) => {

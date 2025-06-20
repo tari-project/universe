@@ -39,7 +39,7 @@ const configMininigInitialState: ConfigMining = {
     custom_max_gpu_usage: [],
     eco_mode_cpu_threads: 0,
     eco_mode_cpu_options: [],
-    eco_mode_max_cpu_usage: 0,
+    eco_mode_max_cpu_usage: 2,
     eco_mode_max_gpu_usage: [],
     gpu_engine: '',
     gpu_mining_enabled: true,
