@@ -13,7 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { Divider } from '@app/components/elements/Divider.tsx';
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 import { IoClose } from 'react-icons/io5';
-import { Controller, useFieldArray, useForm } from 'react-hook-form';
+import { Controller, useFieldArray, useForm, useFormState } from 'react-hook-form';
 
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { changeMiningMode } from '@app/store/actions/miningStoreActions.ts';
@@ -38,7 +38,6 @@ interface CustomPowerLevelsDialogProps {
 export function CustomPowerLevelsDialog({ maxAvailableThreads, handleClose }: CustomPowerLevelsDialogProps) {
     const { t } = useTranslation('settings', { useSuspense: false });
     const [saved, setSaved] = useState(false);
-    const [hasChanges, setHasChanges] = useState(false);
 
     const mode = useConfigMiningStore((s) => s.mode);
     const configCpuLevels = useConfigMiningStore((s) => s.custom_max_cpu_usage);
@@ -59,14 +58,8 @@ export function CustomPowerLevelsDialog({ maxAvailableThreads, handleClose }: Cu
         },
     };
 
-    const {
-        control,
-
-        reset,
-        handleSubmit,
-        setValue,
-        formState: { isDirty },
-    } = useForm<FormValues>({
+    const { control, handleSubmit, setValue, formState } = useForm<FormValues>({
+        reValidateMode: 'onSubmit',
         defaultValues: {
             cpu: configCpuLevels ?? defaults[mode].cpu,
             gpus: configGpuLevels ?? defaults[mode].gpu,
@@ -84,23 +77,18 @@ export function CustomPowerLevelsDialog({ maxAvailableThreads, handleClose }: Cu
         if (saved) {
             const timeout = setTimeout(() => {
                 setSaved(false);
-
-                reset();
-            }, 3000);
+            }, 2000);
             return () => clearTimeout(timeout);
         }
-    }, [reset, saved]);
+    }, [saved]);
 
-    useEffect(() => {
-        setHasChanges(isDirty);
-    }, [isDirty]);
-
-    const onSubmit = useCallback((data: FormValues) => {
-        changeMiningMode({
+    const onSubmit = useCallback(async (data: FormValues) => {
+        await changeMiningMode({
             mode: 'Custom',
             customCpuLevels: data[FormFields.CPU],
             customGpuLevels: data[FormFields.GPUS],
-        }).then(() => setSaved(true));
+        });
+        setSaved(true);
     }, []);
 
     const cpuMarkup = (
@@ -174,9 +162,9 @@ export function CustomPowerLevelsDialog({ maxAvailableThreads, handleClose }: Cu
                 <Divider />
                 <Button
                     onClick={handleSubmit(onSubmit)}
-                    disabled={isChangingMode || (mode === 'Custom' && !hasChanges)}
+                    disabled={isChangingMode || (mode === 'Custom' && !formState.isDirty)}
                 >
-                    {t(`custom-power-levels.${hasChanges ? 'save-changes' : 'use-custom'}`)}
+                    {t(`custom-power-levels.${formState.isDirty ? 'save-changes' : 'use-custom'}`)}
                 </Button>
             </CustomLevelsContent>
         </>
