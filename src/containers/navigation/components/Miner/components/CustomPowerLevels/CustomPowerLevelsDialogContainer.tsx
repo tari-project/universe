@@ -21,6 +21,8 @@ export const CustomPowerLevelsDialogContainer = () => {
         }
     }, [isHardwarePhaseFinished, maxThreads]);
 
+    console.debug(maxThreads);
+
     return (
         <Dialog
             open={customLevelsDialogOpen && Boolean(maxThreads)}

@@ -2,7 +2,7 @@ import { Typography } from '@app/components/elements/Typography';
 import { useMiningStore } from '@app/store/useMiningStore';
 import { useCallback, useEffect, useState } from 'react';
 import { GpuThreads, MaxConsumptionLevels } from '@app/types/app-status';
-import { RangeInputComponent } from './RangeInput';
+
 import {
     CustomLevelsHeader,
     CustomLevelsContent,
@@ -18,6 +18,8 @@ import { modeType } from '@app/store/types.ts';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { changeMiningMode } from '@app/store/actions/miningStoreActions.ts';
 import { useConfigMiningStore } from '@app/store/useAppConfigStore.ts';
+
+import { PowerLeveltem } from '@app/containers/navigation/components/Miner/components/CustomPowerLevels/PowerLeveltem.tsx';
 
 enum FormFields {
     CPU = 'cpu',
@@ -119,14 +121,15 @@ export function CustomPowerLevelsDialog({ maxAvailableThreads, handleClose }: Cu
             control={control}
             name={FormFields.CPU}
             render={({ field }) => (
-                <RangeInputComponent
-                    label={t('custom-power-levels.cpu-power-level')}
-                    maxLevel={maxAvailableThreads.max_cpu_threads}
+                <PowerLeveltem
                     value={field.value}
-                    desc={'custom-power-levels.choose-cpu-power-level'}
-                    warning={t('custom-power-levels.cpu-warning')}
+                    maxLevel={maxAvailableThreads.max_cpu_threads}
                     onChange={field.onChange}
+                    label={t('custom-power-levels.cpu-power-level')}
+                    descriprion={'custom-power-levels.choose-cpu-power-level'}
+                    warning={t('custom-power-levels.cpu-warning')}
                     isLoading={isChangingMode}
+                    minLevel={1}
                 />
             )}
         />
@@ -142,15 +145,17 @@ export function CustomPowerLevelsDialog({ maxAvailableThreads, handleClose }: Cu
                     return (
                         <>
                             <Divider />
-                            <RangeInputComponent
+                            <PowerLeveltem
                                 key={gpu.id}
                                 label={`${t('custom-power-levels.gpu-power-level', { index: index + 1 })}: ${gpu.gpu_name}`}
                                 maxLevel={maxAvailableThreads?.max_gpus_threads?.[index]?.max_gpu_threads}
                                 value={gpu.max_gpu_threads}
+                                minLevel={2}
                                 step={2}
-                                desc={'custom-power-levels.choose-gpu-power-level'}
+                                descriprion={'custom-power-levels.choose-gpu-power-level'}
                                 warning={t('custom-power-levels.gpu-warning')}
                                 onChange={(value: number) => {
+                                    console.debug(value);
                                     setValue(`${FormFields.GPUS}.${index}.max_gpu_threads`, value as never);
                                 }}
                                 isLoading={isChangingMode}
