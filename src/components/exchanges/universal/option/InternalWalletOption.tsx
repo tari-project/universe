@@ -29,14 +29,16 @@ import { restartMining } from '@app/store/actions/miningStoreActions.ts';
 
 import { refreshTransactions } from '@app/hooks/wallet/useFetchTxHistory.ts';
 import { truncateMiddle } from '@app/utils/truncateString.ts';
+import { Ref } from 'react';
 
 interface XCOptionProps {
     isCurrent?: boolean;
     isActive?: boolean;
     onActiveClick: (id: string) => void;
+    ref?: Ref<HTMLDivElement>;
 }
 
-export const InternalWalletOption = ({ isCurrent = false, isActive, onActiveClick }: XCOptionProps) => {
+export const InternalWalletOption = ({ isCurrent = false, isActive, onActiveClick, ref }: XCOptionProps) => {
     const { t } = useTranslation(['exchange', 'settings'], { useSuspense: false });
     const base_tari_address = useWalletStore((state) => state.tari_address_emoji);
 
@@ -58,7 +60,7 @@ export const InternalWalletOption = ({ isCurrent = false, isActive, onActiveClic
     const showExpand = isTari ? !isCurrent && universalExchangeMinerOption.id : universalExchangeMinerOption.id;
 
     return (
-        <Wrapper $isCurrent={isCurrent} $isActive={isActive}>
+        <Wrapper ref={ref} $isCurrent={isCurrent} $isActive={isActive}>
             <ContentHeaderWrapper
                 onClick={() => {
                     onActiveClick(!isActive ? universalExchangeMinerOption.id : '');
@@ -88,7 +90,7 @@ export const InternalWalletOption = ({ isCurrent = false, isActive, onActiveClic
                 </SelectOptionWrapper>
             </ContentHeaderWrapper>
             {isActive && (
-                <ContentBodyWrapper $isActive={isActive}>
+                <ContentBodyWrapper>
                     <ExchangeAddress
                         handleIsAddressValid={() => true}
                         handleAddressChanged={() => null}

@@ -14,10 +14,11 @@ export const Wrapper = styled.div`
 `;
 export const HeaderSection = styled.div`
     display: flex;
-    padding: 0 20px;
     flex-direction: column;
     gap: 15px;
+    padding: 20px 45px 5px 10px;
 `;
+
 export const Heading = styled(Typography)`
     line-height: 1.2;
     font-size: 20px;
@@ -32,12 +33,18 @@ export const RewardBanner = styled.div`
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+    gap: 7px;
     flex-shrink: 0;
     overflow: hidden;
     background-image: url('/assets/img/exchange_miner_header.png');
     background-size: cover;
     background-repeat: no-repeat;
+    background-position: center;
     padding: 18px;
+
+    @media (max-height: 750px) {
+        height: auto;
+    }
 `;
 
 export const BannerHeading = styled(Typography)`

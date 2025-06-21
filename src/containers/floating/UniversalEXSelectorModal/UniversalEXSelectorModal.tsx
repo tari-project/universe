@@ -12,7 +12,7 @@ import {
     CountdownExplainerText,
 } from './styles';
 import { XCOptions } from '@app/components/exchanges/universal/options/Options.tsx';
-import { CloseButton, CloseWrapper } from '@app/components/exchanges/commonStyles.ts';
+import { CloseButton } from '@app/components/exchanges/commonStyles.ts';
 import { IoClose } from 'react-icons/io5';
 import GradientText from '@app/components/elements/gradientText/GradientText.tsx';
 import { Countdown, CountdownText } from '@app/components/exchanges/universal/option/styles.ts';
@@ -47,13 +47,12 @@ export default function UniversalEXSelectorModal() {
 
     return (
         <Dialog open={!!showModal} onOpenChange={handleClose}>
-            <DialogContent $borderRadius="40px" $transparentBg $unPadded>
+            <DialogContent $borderRadius="20px" $transparentBg $unPadded>
                 <Wrapper>
-                    <CloseWrapper>
-                        <CloseButton onClick={handleClose}>
-                            <IoClose />
-                        </CloseButton>
-                    </CloseWrapper>
+                    <CloseButton onClick={handleClose}>
+                        <IoClose />
+                    </CloseButton>
+
                     <HeaderSection>
                         <Heading>{t('select.modal-title')}</Heading>
                     </HeaderSection>

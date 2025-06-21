@@ -35,7 +35,7 @@ export const CloseWrapper = styled.div`
 
 export const HeaderWrapper = styled.div`
     display: flex;
-    gap: 15px;
+    gap: 5px;
     flex-direction: column;
     padding: 0 15px 15px;
 `;
