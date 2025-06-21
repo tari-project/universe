@@ -1,3 +1,26 @@
+🚀 TARI UNIVERSE v1.2.12: The Bloom Beyond
+
+_June 18, 2025_
+
+Hey everyone,
+
+Welcome to "The Bloom Beyond" release of Tari Universe. This release adds some finishing touches to yesterday's CEXy Mining-focused release. We hope you are all enjoying lots of CEXy Mining out there in the Tari Universe!
+
+✨ WHAT'S NEW
+
+- 💰 Mining Rewards Display – Mining Rewards in progress no longer flicker between address balances when you change your wallet address. Pool tooltips show up when you hover over them.
+- ⚙️ Exchange Settings – Your exchange preferences are saved properly and won't reset when you restart the app.
+- 💼 Wallet Interface – We've heard from many of you that the wallet felt clunky and hard to navigate. We've streamlined the interface so you can find what you need faster.
+- 🌍 Bridge Languages – The bridge now works in 12 languages, like the rest of Tari Universe, so you can use Tari Universe in your native language!
+- 🔧 Core Updates – No more losing track of your payment references! We've fixed an issue where your payment reference information would disappear during blockchain syncs
+
+🐞 KNOWN ISSUES
+
+- We know some of you are still experiencing setup and chain sync failures. Contributors are working on fixes coming soon.
+- The Tari bridge sometimes becomes unresponsive. A fix is in the works.
+
+---
+
 🚀 TARI UNIVERSE v1.2.10: The Eternal Bloom
 
 _June 17, 2025_
