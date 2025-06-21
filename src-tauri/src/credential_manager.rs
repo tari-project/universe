@@ -49,7 +49,7 @@ pub enum CredentialError {
     Serialization(#[from] serde_cbor::Error),
     #[error("Keyring had no entry for: {0}")]
     NoEntry(String),
-    #[error("Data previously stored in Keychain.\nKeychain access is now required to continue")]
+    #[error("Keychain access is required to continue")]
     PreviouslyUsedKeyring,
 }
 

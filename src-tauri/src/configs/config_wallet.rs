@@ -42,7 +42,7 @@ static LOG_TARGET: &str = "tari::universe::config_wallet";
 static INSTANCE: LazyLock<RwLock<ConfigWallet>> =
     LazyLock::new(|| RwLock::new(ConfigWallet::new()));
 
-const WALLET_VERSION: i32 = 2;
+pub const WALLET_VERSION: i32 = 2;
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "snake_case")]
@@ -55,8 +55,6 @@ pub struct ConfigWalletContent {
     // currently we always use first item
     #[getset(get = "pub", set = "pub")]
     tari_wallets: Vec<String>,
-    #[getset(get = "pub", set = "pub")]
-    is_tari_address_generated: bool,
     #[getset(get = "pub")]
     monero_address: String,
     #[getset(get = "pub")]
@@ -75,8 +73,6 @@ impl Default for ConfigWalletContent {
         Self {
             version: 0,
             tari_wallets: Vec::new(),
-            is_tari_address_generated: true,
-            // was_config_migrated: false,
             monero_address: "".to_string(),
             monero_address_is_generated: false,
             keyring_accessed: false,
@@ -102,17 +98,6 @@ impl ConfigWalletContent {
 
         self
     }
-
-    pub fn get_current_used_tari_address(&self) -> TariAddress {
-        if let Some(address) = &self.external_tari_address {
-            address.clone()
-        } else {
-            // TODO: Get it from InternalWallet
-            self.tari_address
-                .clone()
-                .expect("No Tari address set in ConfigWalletContent")
-        }
-    }
 }
 
 pub struct ConfigWallet {
@@ -129,58 +114,35 @@ impl ConfigWallet {
         config.load_app_handle(app_handle.clone()).await;
         drop(config);
 
-        // Think about better place for this
-        // This must happend before InternalWallet::load_or_create !!!
-        // if ConfigWallet::content().await.monero_address().is_empty() {
-        //     if let Ok(monero_address) = create_monereo_address().await {
-        //         let _unused = ConfigWallet::update_field(
-        //             ConfigWalletContent::set_generated_monero_address,
-        //             monero_address,
-        //         )
-        //         .await;
-        //     }
-        // }
-        {
-            let mut cpu_config = state.cpu_miner_config.write().await;
-            cpu_config.load_from_config_wallet(&ConfigWallet::content().await);
-        }
-
         match InternalWallet::initialize(&app_handle).await {
             Ok(wallet) => {
                 log::info!(target: LOG_TARGET, "====== Internal Wallet initialized: {:?}", wallet);
-                if let Err(e) = ConfigWallet::migrate(&wallet, &app_handle).await {
-                    panic!("Wallet migration failed: {:?}", e);
-                } else {
-                    log::info!(target: LOG_TARGET, "Wallet config successfully migrated.");
-                }
 
+                if let Err(e) = ConfigWallet::migrate().await {
+                    panic!("Wallet migration failed: {:?}", e);
+                }
                 {
-                    // Load to state
+                    // Load to the app state
                     let mut wallet_guard = state.internal_wallet.write().await;
                     *wallet_guard = Some(wallet.clone());
-                    state
-                        .wallet_manager
-                        .set_view_private_key_and_spend_key(
-                            wallet.tari_view_private_key_hex,
-                            wallet.tari_spend_public_key_hex,
-                        )
-                        .await;
                 }
-                EventsEmitter::emit_wallet_address_update(
-                    wallet.tari_address,
-                    *ConfigWallet::content().await.is_tari_address_generated(),
-                )
-                .await
-                .expect("Failed to set Tari address in ConfigWallet");
-
-                // Currently it easier to send extra event then handle TariAddress in emit_wallet_config_loaded
-                EventsEmitter::emit_base_tari_address_changed(wallet.get_tari_address().clone())
+                state
+                    .wallet_manager
+                    .set_view_private_key_and_spend_key(
+                        wallet.tari_view_private_key_hex,
+                        wallet.tari_spend_public_key_hex,
+                    )
                     .await;
             }
             Err(e) => {
                 error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);
             }
         };
+        {
+            let mut cpu_config = state.cpu_miner_config.write().await;
+            cpu_config.load_from_config_wallet(&ConfigWallet::content().await);
+        }
+
         // Currently it easier to send extra event then handle TariAddress in emit_wallet_config_loaded
         EventsEmitter::emit_external_tari_address_changed(
             ConfigWallet::content()
@@ -190,42 +152,13 @@ impl ConfigWallet {
         )
         .await;
 
-        // match InternalWallet::load_or_create(old_config_path.clone(), state.clone()).await {
-        //     Ok(wallet) => {
-        //         state
-        //             .wallet_manager
-        //             .set_view_private_key_and_spend_key(
-        //                 wallet.get_view_key(),
-        //                 wallet.get_spend_key(),
-        //             )
-        //             .await;
-        //         let tari_address = wallet.get_tari_address();
-        //         *state.tari_address.write().await = tari_address.clone();
-        //         EventsEmitter::emit_wallet_address_update(
-        //             tari_address,
-        //             wallet.get_is_tari_address_generated(),
-        //         )
-        //         .await;
-        //     }
-        //     Err(e) => {
-        //         error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);
-        //     }
-        // };
-
         EventsEmitter::emit_wallet_config_loaded(Self::current().write().await.content.clone())
             .await;
     }
 
-    pub async fn migrate(
-        wallet: &InternalWallet,
-        app_handle: &AppHandle,
-    ) -> Result<(), anyhow::Error> {
+    pub async fn migrate() -> Result<(), anyhow::Error> {
         let config = ConfigWallet::content().await;
         let current_version = *config.version();
-        let app_config_dir = app_handle
-            .path()
-            .app_config_dir()
-            .expect("Could not get config dir");
 
         if current_version < WALLET_VERSION {
             log::info!(
@@ -234,62 +167,8 @@ impl ConfigWallet {
                 WALLET_VERSION
             );
 
-            // Currently, we always load first wallet
-            let mut new_tari_wallets = vec![wallet.id.clone()];
-            new_tari_wallets.extend_from_slice(config.tari_wallets());
-            ConfigWallet::update_field(ConfigWalletContent::set_tari_wallets, new_tari_wallets)
-                .await?;
-
-            // Migrate from old duplicate wallet_config file if exists
-            if let Some(legacy_config) = LegacyInternalWallet::get_old_wallet_config(app_config_dir)
-                .await
-                .ok()
-            {
-                ConfigWallet::update_field(
-                    ConfigWalletContent::set_is_tari_address_generated,
-                    legacy_config.is_tari_address_generated,
-                )
-                .await?;
-            } else {
-                log::info!(target: LOG_TARGET, "No legacy wallet config found to migrate");
-            }
-
             ConfigWallet::update_field(ConfigWalletContent::set_version, WALLET_VERSION.clone())
                 .await?;
-
-            // stary
-            // {
-            //   "tari_address_base58": "f2GZjrfupyqqnUpv28MLGnwwtba4vogN2sESnTCoSi8XY3N6NBWrZH336qYaLWaAVKyYqfL79NkLeiDiovACsehtyy3",
-            //   "view_key_private_hex": "fb5a56c28a12fbd1602be2468dd78f191ef002e28802004104d6ba3f4693e607",
-            //   "spend_public_key_hex": "7625b504cc972b75ec3cea3579000aae20186f87ced94b0520ae8c8709bd3844",
-            //   "seed_words_encrypted_base58": "1N9CPgtPnDEbHjQywunTcNRrS6yPm2ZrpJUuaAQQbyCE2W",
-            //   "passphrase": null,
-            //   "config_path": "/Users/mpap/Library/Application Support/com.tari.universe.alpha",
-            //   "is_tari_address_generated": true
-            // }
-            //
-            // nowy
-            // {
-            //   "was_config_migrated": false,
-            //   "created_at": {
-            //     "secs_since_epoch": 1749652720,
-            //     "nanos_since_epoch": 139067000
-            //   },
-            //   "monero_address": "41qsZrccK8CYXrWLHLKXA9gVQDxyfZsZthsYm1a5rxWn7AFKEzeyTL63BD5pR1QJNC23PCiqveD6H1HegmbStznbPMCCY9r",
-            //   "monero_address_is_generated": true,
-            //   "keyring_accessed": true
-            // }
-
-            // let monero_address = ConfigWallet::content().await.monero_address().clone();
-            // // ALREADY MIGRATED
-            // return Ok(InternalWallet {
-            //     encrypted_tari_seed: None,
-            //     encrypted_monero_seed: None,
-            //     monero_address: monero_address,
-            //     tari_address: todo!(),
-            //     tari_view_private_key_hex: todo!(),
-            //     tari_spend_public_key_hex: todo!(),
-            // });
 
             return Ok(());
         }

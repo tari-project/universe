@@ -51,6 +51,7 @@ use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sha2::Digest;
+use tauri::Manager;
 use std::collections::HashMap;
 use std::ops::Div;
 use std::time::Instant;

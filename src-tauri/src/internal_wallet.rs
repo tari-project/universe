@@ -21,6 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use anyhow::anyhow;
+use monero_address_creator::network::Mainnet;
 use monero_address_creator::Seed as MoneroSeed;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -43,14 +44,25 @@ use tari_core::transactions::transaction_key_manager::{
 };
 use tari_utilities::hex::Hex;
 
-use crate::configs::config_wallet::ConfigWallet;
+use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent, WALLET_VERSION};
 use crate::configs::trait_config::ConfigImpl;
-use crate::credential_manager::{Credential, CredentialManager, LegacyCredentialManager};
+use crate::consts::DEFAULT_MONERO_ADDRESS;
+use crate::credential_manager::{
+    Credential, CredentialError, CredentialManager, LegacyCredentialManager,
+};
 use crate::utils::rand_utils;
 
 const KEY_MANAGER_COMMS_SECRET_KEY_BRANCH_KEY: &str = "comms";
 const LOG_TARGET: &str = "tari::universe::internal_wallet";
 const DEFAULT_PIN: &str = "123456";
+
+#[derive(Debug, Clone)]
+pub struct TariWalletDetails {
+    pub tari_address: TariAddress,
+    pub tari_wallet_birthday: u16,
+    pub tari_view_private_key_hex: String,
+    pub tari_spend_public_key_hex: String,
+}
 
 // maybe remove derive
 #[derive(Debug, Clone)]
@@ -66,37 +78,220 @@ pub struct InternalWallet {
 }
 
 impl InternalWallet {
-    pub async fn initialize(
-        // config_path: PathBuf,
-        app_handle: &tauri::AppHandle,
-    ) -> Result<Self, anyhow::Error> {
+    pub async fn initialize(app_handle: &tauri::AppHandle) -> Result<Self, anyhow::Error> {
         let app_config_dir = app_handle
             .path()
             .app_config_dir()
-            .expect("Could not get config dir");
+            .expect("Couldn\'t get application config directory!");
 
-        // 1. Check configs/wallet config if new version(2) already applied
         let wallet_config = ConfigWallet::content().await;
-        let current_version = *wallet_config.version();
-        if current_version >= 2 {
-            log::info!("==== Internal Wallet already migrated to version2");
-            let monero_address = ConfigWallet::content().await.monero_address().clone();
-            // ALREADY MIGRATED
+        if *wallet_config.version() >= WALLET_VERSION {
+            return InternalWallet::load_latest_version(wallet_config).await;
+        }
+
+        let monero_address = ConfigWallet::content().await.monero_address().clone();
+        if InternalWallet::migration_available(app_config_dir.clone()).await {
+            let (wallet_id, tari_seed_binary, monero_seed_binary) =
+                InternalWallet::migrate(app_config_dir.clone()).await?;
+            let tari_wallet_details =
+                InternalWallet::extract_tari_wallet_details(&tari_seed_binary).await?;
+
             return Ok(InternalWallet {
-                id: todo!(),
-                encrypted_tari_seed: None,
-                encrypted_monero_seed: None,
-                monero_address: monero_address,
-                tari_address: todo!(),
-                tari_wallet_birthday: todo!(),
-                tari_view_private_key_hex: todo!(),
-                tari_spend_public_key_hex: todo!(),
+                id: wallet_id,
+                encrypted_tari_seed: Some(tari_seed_binary),
+                encrypted_monero_seed: monero_seed_binary,
+                tari_address: tari_wallet_details.tari_address,
+                tari_wallet_birthday: tari_wallet_details.tari_wallet_birthday,
+                tari_spend_public_key_hex: tari_wallet_details.tari_spend_public_key_hex,
+                tari_view_private_key_hex: tari_wallet_details.tari_view_private_key_hex,
+                monero_address,
             });
         }
 
-        let (wallet_id, tari_seed) = InternalWallet::migrate(app_config_dir.clone()).await?;
+        if !wallet_config.tari_wallets().is_empty() {
+            panic!(
+                "Unexpected! Wallet config v{:?} should not have any tari wallets",
+                wallet_config.version()
+            )
+        }
+        let tari_seed = CipherSeed::new();
+        let (wallet_id, tari_seed_binary) = InternalWallet::add_tari_wallet(tari_seed).await?;
+        let tari_wallet_details =
+            InternalWallet::extract_tari_wallet_details(&tari_seed_binary).await?;
+
+        let mut monero_seed_binary = None;
+        if monero_address.is_empty() {
+            let monero_seed = MoneroSeed::generate()?;
+            monero_seed_binary = Some(InternalWallet::add_monero_wallet(monero_seed).await?);
+        };
+
+        Ok(InternalWallet {
+            id: wallet_id,
+            encrypted_tari_seed: Some(tari_seed_binary),
+            encrypted_monero_seed: monero_seed_binary,
+            tari_address: tari_wallet_details.tari_address,
+            tari_wallet_birthday: tari_wallet_details.tari_wallet_birthday,
+            tari_spend_public_key_hex: tari_wallet_details.tari_spend_public_key_hex,
+            tari_view_private_key_hex: tari_wallet_details.tari_view_private_key_hex,
+            monero_address,
+        })
+    }
+
+    async fn add_tari_wallet(tari_seed: CipherSeed) -> Result<(String, Vec<u8>), anyhow::Error> {
+        let wallet_id = rand_utils::get_rand_string(6);
+        let cm = CredentialManager::new_default(wallet_id.clone());
+        let tari_seed_binary = tari_seed
+            .to_binary()
+            .expect("Failed to convert tari seed to binary");
+
+        let credentials = Credential {
+            seed: tari_seed_binary.clone(),
+        };
+        cm.set_credentials(&credentials).await?;
+
+        let wallet_config = ConfigWallet::content().await;
+        // Currently, we always load first index
+        let mut new_tari_wallets = vec![wallet_id.clone()];
+        new_tari_wallets.extend_from_slice(wallet_config.tari_wallets());
+        ConfigWallet::update_field(ConfigWalletContent::set_tari_wallets, new_tari_wallets).await?;
+
+        Ok((wallet_id, tari_seed_binary))
+    }
+
+    async fn add_monero_wallet(monero_seed: MoneroSeed) -> Result<Vec<u8>, anyhow::Error> {
+        let cm = CredentialManager::new_default("monero".to_string());
+        let monero_seed_binary = (*monero_seed.inner())
+            .to_binary()
+            .expect("Failed to convert monero seed to binary");
+
+        let credentials = Credential {
+            seed: monero_seed_binary.clone(),
+        };
+        cm.set_credentials(&credentials).await?;
+
+        let monero_address = monero_seed
+            .to_address::<Mainnet>()
+            // What do we do here?
+            .unwrap_or(DEFAULT_MONERO_ADDRESS.to_string());
+        ConfigWallet::update_field(
+            ConfigWalletContent::set_generated_monero_address,
+            monero_address,
+        )
+        .await?;
+
+        Ok(monero_seed_binary)
+    }
+
+    async fn load_latest_version(
+        wallet_config: ConfigWalletContent,
+    ) -> Result<InternalWallet, anyhow::Error> {
+        log::info!(target: LOG_TARGET, "Internal Wallet latest version detected.");
+        let monero_address = wallet_config.monero_address();
+        if monero_address.is_empty() {
+            panic!(
+                "Unexpected! Monero address should be accessible for v{:?}",
+                *wallet_config.version()
+            );
+        }
+
+        if (*wallet_config.tari_wallets()).len() <= 0 {
+            panic!(
+                "Unexpected! Tari wallets field should be defined in the config for v{:?}",
+                *wallet_config.version()
+            );
+        }
+
+        let selected_tari_wallet_id = (*wallet_config.tari_wallets())
+            .first()
+            .expect("Unexpected! Selected wallet not found in the wallet config!");
+
+        let cm = CredentialManager::new_default(selected_tari_wallet_id.clone());
+        let tari_seed_binary = match cm.get_credentials().await {
+            Ok(cred) => cred.seed,
+            Err(CredentialError::PreviouslyUsedKeyring) => {
+                // User denied keyring access:
+                // 1. Display Shan's warning
+                return Err(anyhow::anyhow!(
+                    CredentialError::PreviouslyUsedKeyring.to_string()
+                ));
+            }
+            Err(CredentialError::NoEntry(entry)) => {
+                // Entry does not exist!
+                return Err(anyhow::anyhow!(CredentialError::NoEntry(entry).to_string()));
+            }
+            Err(err) => return Err(anyhow::anyhow!(err.to_string())),
+        };
+
+        let tari_wallet_details =
+            InternalWallet::extract_tari_wallet_details(&tari_seed_binary).await?;
+
+        return Ok(InternalWallet {
+            id: selected_tari_wallet_id.clone(),
+            encrypted_tari_seed: Some(tari_seed_binary),
+            encrypted_monero_seed: None,
+            tari_address: tari_wallet_details.tari_address,
+            tari_wallet_birthday: tari_wallet_details.tari_wallet_birthday,
+            tari_spend_public_key_hex: tari_wallet_details.tari_spend_public_key_hex,
+            tari_view_private_key_hex: tari_wallet_details.tari_view_private_key_hex,
+            monero_address: monero_address.clone(),
+        });
+    }
+
+    async fn migration_available(app_config_dir: PathBuf) -> bool {
+        LegacyInternalWallet::get_old_wallet_config(app_config_dir)
+            .await
+            .is_err()
+    }
+
+    async fn migrate(
+        app_config_dir: PathBuf,
+    ) -> Result<(String, Vec<u8>, Option<Vec<u8>>), anyhow::Error> {
+        let old_wallet_config =
+            LegacyInternalWallet::get_old_wallet_config(app_config_dir.clone()).await?;
+
+        let legacy_cm = LegacyCredentialManager::new_default(app_config_dir.clone());
+        let legacy_cred = match legacy_cm.get_credentials().await {
+            Ok(cred) => cred,
+            Err(e) => {
+                log::error!(target: LOG_TARGET, "Could not get legacy credentials: {:?}", e);
+                return Err(anyhow::anyhow!("Could not get legacycredentials: {:?}", e));
+            }
+        };
+
+        // Migrate Monero Seed if was generated
+        let monero_seed_binary = legacy_cred.monero_seed.map(|seed| seed.to_vec());
+        if *ConfigWallet::content().await.monero_address_is_generated() {
+            // Question: use "monero" as wallet_id
+            // * only one for all tari wallets
+            let cm = CredentialManager::new_default("monero".to_string());
+            let credentials = Credential {
+                seed: monero_seed_binary
+                    .as_ref()
+                    .expect("Monero seed genereated, but not stored in keychain")
+                    .clone(),
+            };
+            cm.set_credentials(&credentials).await?;
+        }
+
+        // Migrate Tari Seed
+        let tari_seed_enciphered_bytes =
+            Vec::<u8>::from_monero_base58(&old_wallet_config.seed_words_encrypted_base58)
+                .map_err(|e| anyhow!(e.to_string()))?;
+        let tari_seed = CipherSeed::from_enciphered_bytes(
+            &tari_seed_enciphered_bytes,
+            legacy_cred.tari_seed_passphrase,
+        )
+        .expect("Failed to decrypt legacy Tari seed");
+        let (wallet_id, tari_seed_binary) = InternalWallet::add_tari_wallet(tari_seed).await?;
+
+        Ok((wallet_id, tari_seed_binary, monero_seed_binary))
+    }
+
+    async fn extract_tari_wallet_details(
+        tari_seed_binary: &Vec<u8>,
+    ) -> Result<TariWalletDetails, anyhow::Error> {
         let tari_cipher_seed =
-            CipherSeed::from_binary(&tari_seed).expect("Could not parse to cipher seed");
+            CipherSeed::from_binary(tari_seed_binary).expect("Could not parse to cipher seed");
 
         // tari_spend_public_key_hex
         let comms_key_manager = KeyManager::<RistrettoPublicKey, KeyDigest>::from(
@@ -130,92 +325,48 @@ impl InternalWallet {
         )
         .map_err(|e| anyhow!(e.to_string()))?;
 
-        //monero address
-        let monero_address = ConfigWallet::content().await.monero_address().clone();
-
-        Ok(InternalWallet {
-            id: wallet_id,
-            encrypted_tari_seed: Some(tari_seed),
-            encrypted_monero_seed: None,
+        Ok(TariWalletDetails {
             tari_address,
             tari_wallet_birthday,
             tari_spend_public_key_hex: comms_pub_key.to_hex(),
             tari_view_private_key_hex: view_key_private.to_hex(),
-            monero_address,
         })
     }
 
-    async fn migrate(app_config_dir: PathBuf) -> Result<(String, Vec<u8>), anyhow::Error> {
-        let old_wallet_config =
-            LegacyInternalWallet::get_old_wallet_config(app_config_dir.clone()).await?;
+    pub async fn get_tari_seed(&self) -> Result<CipherSeed, anyhow::Error> {
+        // TODO: Use Zeroize and decrypt seeds with PIN
+        let encrypted_tari_seed = self
+            .encrypted_tari_seed
+            .as_ref()
+            .ok_or_else(|| anyhow!("Internal Wallet not initialized yet!"))?;
+        let decrypted_tari_seed: &[u8] = encrypted_tari_seed.as_slice();
+        let cipher_seed =
+            CipherSeed::from_binary(decrypted_tari_seed).map_err(|err| anyhow!(err.to_string()))?;
 
-        // LEGACY WALLET EXISTS -> MIGRATION NEEDED
-        let legacy_cm = LegacyCredentialManager::new_default(app_config_dir.clone());
-        let legacy_cred = match legacy_cm.get_credentials().await {
-            Ok(cred) => cred,
-            Err(e) => {
-                log::error!(target: LOG_TARGET, "Could not get legacy credentials: {:?}", e);
-                return Err(anyhow::anyhow!("Could not get legacycredentials: {:?}", e));
-            }
-        };
-
-        // Extract Monero Seed
-        if *ConfigWallet::content().await.monero_address_is_generated() {
-            let monero_seed_binary = legacy_cred
-                .monero_seed
-                .expect("Couldn't get seed from legacy credentials");
-
-            // use "monero" as wallet_id
-            let cm = CredentialManager::new_default("monero".to_string());
-            let credentials = Credential {
-                seed: monero_seed_binary.into(),
-            };
-            cm.set_credentials(&credentials).await?;
-        }
-
-        // Extract Tari Seed
-        let tari_seed_enciphered_bytes =
-            Vec::<u8>::from_monero_base58(&old_wallet_config.seed_words_encrypted_base58)
-                .map_err(|e| anyhow!(e.to_string()))?;
-        let tari_seed = CipherSeed::from_enciphered_bytes(
-            &tari_seed_enciphered_bytes,
-            legacy_cred.tari_seed_passphrase,
-        )
-        .expect("Failed to decrypt legacy Tari seed");
-
-        // MIGRATE SEEDS(and encrypt with default pin)
-        let wallet_id = rand_utils::get_rand_string(6);
-        let cm = CredentialManager::new_default(wallet_id.clone());
-        let tari_seed_binary_vec = tari_seed
-            .to_binary()
-            .expect("Failed to convert tari_seed to binary");
-        let tari_seed_binary: Vec<u8> = tari_seed_binary_vec
-            .try_into()
-            .expect("tari_seed_binary_vec is not 24 bytes");
-
-        let credentials = Credential {
-            seed: tari_seed_binary.clone(),
-        };
-        cm.set_credentials(&credentials).await?;
-        // let _unused =
-        //     ConfigWallet::update_field(ConfigWalletContent::set_id, Some(wallet_id)).await;
-
-        return Ok((wallet_id, tari_seed_binary));
+        Ok(cipher_seed)
     }
 
     pub async fn get_monero_seed(&self) -> Result<MoneroSeed, anyhow::Error> {
-        // TODO: Use Zeroize and decrypt seeds with PIN
         let encrypted_monero_seed = self
             .encrypted_monero_seed
             .as_ref()
-            .ok_or_else(|| anyhow!("Internal Wallet not initialized yet!"))?;
+            .ok_or_else(|| anyhow!("Monero seed not defined"))?;
 
-        let decrypted_monero: [u8; 32] = encrypted_monero_seed
+        let decrypted_monero_seed: [u8; 32] = encrypted_monero_seed
             .as_slice()
             .try_into()
             .map_err(|_| anyhow!("Monero seed is not 32 bytes"))?;
 
-        Ok(MoneroSeed::new(decrypted_monero))
+        Ok(MoneroSeed::new(decrypted_monero_seed))
+    }
+
+    pub async fn get_current_used_tari_address(&self) -> TariAddress {
+        // External address takes precedence
+        if let Some(address) = ConfigWallet::content().await.external_tari_address() {
+            address.clone()
+        } else {
+            self.tari_address.clone()
+        }
     }
 }
 

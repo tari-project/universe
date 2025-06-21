@@ -858,49 +858,40 @@ pub async fn revert_to_internal_wallet(
     _window: tauri::Window,
     app: tauri::AppHandle,
 ) -> Result<(), InvokeError> {
-    // let timer = Instant::now();
-    // let config_path = app
-    //     .path()
-    //     .app_config_dir()
-    //     .expect("Could not get config dir");
+    let timer = Instant::now();
 
-    // match InternalWallet::load_or_create(config_path).await {
-    //     Ok(wallet) => {
-    //         SetupManager::get_instance()
-    //             .shutdown_phases(vec![SetupPhase::Wallet, SetupPhase::Mining])
-    //             .await;
-    //         ConfigWallet::update_field(ConfigWalletContent::set_external_tari_address, None)
-    //             .await
-    //             .map_err(InvokeError::from_anyhow)?;
-    //         EventsEmitter::emit_external_tari_address_changed(None).await;
-    //         ConfigWallet::update_field(
-    //             ConfigWalletContent::set_tari_address,
-    //             Some(wallet.get_tari_address()),
-    //         )
-    //         .await
-    //         .map_err(InvokeError::from_anyhow)?;
-    //         EventsEmitter::emit_base_tari_address_changed(wallet.get_tari_address()).await;
-    //         ConfigCore::update_field(
-    //             ConfigCoreContent::set_exchange_id,
-    //             DEFAULT_EXCHANGE_ID.to_string(),
-    //         )
-    //         .await
-    //         .map_err(InvokeError::from_anyhow)?;
-    //         EventsEmitter::emit_exchange_id_changed(DEFAULT_EXCHANGE_ID.to_string()).await;
+    // Load or Create
+    match InternalWallet::initialize(&app).await {
+        Ok(wallet) => {
+            SetupManager::get_instance()
+                .shutdown_phases(vec![SetupPhase::Wallet, SetupPhase::Mining])
+                .await;
+            ConfigWallet::update_field(ConfigWalletContent::set_external_tari_address, None)
+                .await
+                .map_err(InvokeError::from_anyhow)?;
+            EventsEmitter::emit_external_tari_address_changed(None).await;
+            EventsEmitter::emit_base_tari_address_changed(wallet.tari_address).await;
+            ConfigCore::update_field(
+                ConfigCoreContent::set_exchange_id,
+                DEFAULT_EXCHANGE_ID.to_string(),
+            )
+            .await
+            .map_err(InvokeError::from_anyhow)?;
+            EventsEmitter::emit_exchange_id_changed(DEFAULT_EXCHANGE_ID.to_string()).await;
 
-    //         SetupManager::get_instance()
-    //             .resume_phases(app, vec![SetupPhase::Wallet, SetupPhase::Mining])
-    //             .await;
-    //     }
-    //     Err(e) => {
-    //         error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);
-    //         e.to_string();
-    //     }
-    // }
+            SetupManager::get_instance()
+                .resume_phases(app, vec![SetupPhase::Wallet, SetupPhase::Mining])
+                .await;
+        }
+        Err(e) => {
+            error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);
+            e.to_string();
+        }
+    }
 
-    // if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-    //     warn!(target: LOG_TARGET, "revert_to_internal_wallet took too long: {:?}", timer.elapsed());
-    // }
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "revert_to_internal_wallet took too long: {:?}", timer.elapsed());
+    }
     Ok(())
 }
 
