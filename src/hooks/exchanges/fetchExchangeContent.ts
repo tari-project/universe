@@ -1,16 +1,11 @@
 import { useConfigBEInMemoryStore, useUIStore } from '@app/store';
 import { useQuery } from '@tanstack/react-query';
-import {
-    setCurrentExchangeMinerId,
-    setShowExchangeModal,
-    universalExchangeMinerOption,
-    useExchangeStore,
-} from '@app/store/useExchangeStore.ts';
+import { setShowExchangeModal, universalExchangeMinerOption, useExchangeStore } from '@app/store/useExchangeStore.ts';
 import { ExchangeBranding } from '@app/types/exchange.ts';
 import { queryClient } from '@app/App/queryClient.ts';
 import { useTheme } from 'styled-components';
 
-export const KEY_XC_CONTENT = 'exchange';
+export const KEY_XC_CONTENT = 'branding';
 
 export const queryfn = async (exchangeId: string) => {
     if (exchangeId === 'universal') {
@@ -23,10 +18,9 @@ export const queryfn = async (exchangeId: string) => {
     try {
         const res = await fetch(endpoint);
         const content = (await res.json()) as ExchangeBranding;
-        const shouldShowExchangeSpecificModal = useUIStore.getState().shouldShowExchangeSpecificModal;
 
-        setCurrentExchangeMinerId(content.id);
         if (content) {
+            const shouldShowExchangeSpecificModal = useUIStore.getState().shouldShowExchangeSpecificModal;
             setShowExchangeModal(shouldShowExchangeSpecificModal);
         }
         return content;

@@ -115,13 +115,13 @@ export const SeasonRewardText = styled(Typography).attrs({ variant: 'p' })`
 export const Countdown = styled.div`
     border-radius: 20px;
     gap: 10px;
-    padding: 0 12px;
+    padding: 5px 12px;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
     background-color: ${({ theme }) => theme.palette.background.main};
-    height: 30px;
+    max-height: 30px;
 `;
 
 export const CountdownText = styled(Typography).attrs({ variant: 'p' })`
@@ -160,24 +160,4 @@ export const HelpButton = styled.button`
     &:hover {
         opacity: 0.7;
     }
-`;
-
-export const StyledAddressWrapper = styled.div`
-    position: relative;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-`;
-
-export const StyledAddress = styled.span`
-    border-radius: 20px;
-    justify-content: space-between;
-    padding: 10px 40px 10px 10px;
-    width: 100%;
-    font-size: 14px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    color: ${({ theme }) => theme.palette.text.primary};
 `;

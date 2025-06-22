@@ -78,6 +78,7 @@ export const useWalletStore = create<WalletStoreState & WalletStoreSelectors>()(
         const externalAddress = get().external_tari_address_base58;
         const externalAddressEmoji = get().external_tari_address_emoji;
         const isSeedlessUI = useUIStore.getState().seedlessUI;
+
         if (isSeedlessUI && externalAddress && externalAddressEmoji) {
             return [externalAddress, externalAddressEmoji];
         }

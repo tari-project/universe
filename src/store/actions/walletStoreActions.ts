@@ -11,6 +11,7 @@ import { setSeedlessUI } from './uiStoreActions';
 import { refreshTransactions } from '@app/hooks/wallet/useFetchTxHistory.ts';
 
 export const fetchBridgeTransactionsHistory = async () => {
+    console.info('Fetching bridge transactions history...');
     const baseUrl = useConfigBEInMemoryStore.getState().bridgeBackendApiUrl;
     if (baseUrl?.includes('env var not defined')) return;
     try {
@@ -43,9 +44,25 @@ export const fetchBridgeColdWalletAddress = async () => {
 };
 
 export const importSeedWords = async (seedWords: string[]) => {
-    useWalletStore.setState({ is_wallet_importing: true });
+    useWalletStore.setState({
+        is_wallet_importing: true,
+        coinbase_transactions: [],
+        transactions: [],
+        bridge_transactions: [],
+        has_more_coinbase_transactions: true,
+        has_more_transactions: true,
+        is_reward_history_loading: false,
+        is_transactions_history_loading: false,
+        wallet_scanning: {
+            is_scanning: true,
+            scanned_height: 0,
+            total_height: 0,
+            progress: 0,
+        },
+    });
     try {
         await invoke('import_seed_words', { seedWords });
+        await refreshTransactions();
         useWalletStore.setState({ is_wallet_importing: false });
     } catch (error) {
         setError(`Could not import seed words: ${error}`, true);
@@ -104,19 +121,21 @@ export const setDetailsItem = (detailsItem: TransactionDetailsItem | BackendBrid
 export const handleExternalWalletAddressUpdate = (payload?: WalletAddress) => {
     const isSeedlessUI = useUIStore.getState().seedlessUI;
     if (payload) {
-        useWalletStore.setState({
+        useWalletStore.setState((c) => ({
+            ...c,
             external_tari_address_base58: payload.tari_address_base58,
             external_tari_address_emoji: payload.tari_address_emoji,
-        });
+        }));
 
         if (!isSeedlessUI) {
             setSeedlessUI(true);
         }
     } else {
-        useWalletStore.setState({
+        useWalletStore.setState((c) => ({
+            ...c,
             external_tari_address_base58: undefined,
             external_tari_address_emoji: undefined,
-        });
+        }));
         if (isSeedlessUI) {
             setSeedlessUI(false);
             setCurrentExchangeMinerId(universalExchangeMinerOption.exchange_id);
@@ -126,8 +145,9 @@ export const handleExternalWalletAddressUpdate = (payload?: WalletAddress) => {
 };
 
 export const handleBaseWalletUpate = (payload: WalletAddress) => {
-    useWalletStore.setState({
+    useWalletStore.setState((c) => ({
+        ...c,
         tari_address_base58: payload.tari_address_base58,
         tari_address_emoji: payload.tari_address_emoji,
-    });
+    }));
 };

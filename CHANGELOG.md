@@ -1,3 +1,60 @@
+🚀 TARI UNIVERSE v1.2.12: The Bloom Beyond
+
+_June 18, 2025_
+
+Hey everyone,
+
+Welcome to "The Bloom Beyond" release of Tari Universe. This release adds some finishing touches to yesterday's CEXy Mining-focused release. We hope you are all enjoying lots of CEXy Mining out there in the Tari Universe!
+
+✨ WHAT'S NEW
+
+- 💰 Mining Rewards Display – Mining Rewards in progress no longer flicker between address balances when you change your wallet address. Pool tooltips show up when you hover over them.
+- ⚙️ Exchange Settings – Your exchange preferences are saved properly and won't reset when you restart the app.
+- 💼 Wallet Interface – We've heard from many of you that the wallet felt clunky and hard to navigate. We've streamlined the interface so you can find what you need faster.
+- 🌍 Bridge Languages – The bridge now works in 12 languages, like the rest of Tari Universe, so you can use Tari Universe in your native language!
+- 🔧 Core Updates – No more losing track of your payment references! We've fixed an issue where your payment reference information would disappear during blockchain syncs
+
+🐞 KNOWN ISSUES
+
+- We know some of you are still experiencing setup and chain sync failures. Contributors are working on fixes coming soon.
+- The Tari bridge sometimes becomes unresponsive. A fix is in the works.
+
+---
+
+🚀 TARI UNIVERSE v1.2.10: The Eternal Bloom
+
+_June 17, 2025_
+
+Hey everyone,
+
+Tari contributors have been working behind the scenes with Centralized Exchanges (CEXs) on a breakthrough new type of collaboration 💪🚀 
+
+Today, when CEXs list a project, there is a standard playbook involving trading competitions, AMAs etc. These elements are a great way for active CEX users to learn about new projects. What about legacy CEX users? Users that haven't logged in or traded in a while? How can we collaborate with CEXs to engage them? 
+
+A plucky group of Tari contributors started thinking about this challenge and came up with a novel idea: what if you could enter a deposit wallet address from a supported exchange in Tari Universe, and mine directly to the CEX?
+
+This way, ALL users from the exchange (active and legacy alike!) can generate new liquidity for themselves on the CEX without needing to deposit fiat. And the Tari network gains tons of new miners in the process. We call this idea: CEXy Mining (blame @fluffypony for the name :P), and it's live in Tari Universe v1.2.10 aka "The Eternal Bloom!" 
+
+We're very lucky to have the support of forward thinking exchanges such as CoinEx, XT, and Biconomy. They are all launching support for CEXy Mining today!
+
+Imagine if every exchange that chooses to list Tari becomes a part of the CEXy Mining program. Tens of millions of users (and perhaps hundreds of millions in future) will discover Tari, and many will start mining with Tari Universe!
+
+PS: XT, Biconomy, and CoinEx are offering bonus XTM if you choose to use the CEXy Mining feature with them! The bonus program will occur in seasons, and today is the beginning of Season 1 🥳 
+
+✨ How CEXy Mining Works
+
+1. 💜🐢 Install Tari Universe 
+
+2. 🤝 Connect Tari Universe to your desired CEX - Enter your Tari deposit address from your chosen exchange (Biconomy, XT, or CoinEx) 
+
+3. 💎 Mine XTM and Earn Bonuses! – Start mining with Tari Universe! When you reach the bonus threshold for your chosen exchange, they'll reward you with bonus XTM 🙌
+
+🐞 Known Issues (Fixes Coming Soon)
+
+• If you switch back to your Tari Universe address after mining to an exchange, your Rewards in Progress may alternate between your Universe address and your Exchange address until you restart the application.
+
+---
+
 🚀 TARI UNIVERSE v1.2.9: Colonies of Light
 
 _June 12, 2025_

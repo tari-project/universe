@@ -22,18 +22,20 @@ import { ImgWrapper, OpenButton } from '../../commonStyles.ts';
 import { ChevronSVG } from '@app/assets/icons/chevron.tsx';
 import { setShowUniversalModal } from '@app/store/useExchangeStore.ts';
 import { invoke } from '@tauri-apps/api/core';
+import { open } from '@tauri-apps/plugin-shell';
 import { useTranslation } from 'react-i18next';
 import { ExchangeAddress } from '../exchangeAddress/ExchangeAddress.tsx';
 import { useState } from 'react';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { formatCountdown } from '@app/utils/formatters.ts';
 import { restartMining } from '@app/store/actions/miningStoreActions.ts';
-import { setError } from '@app/store';
+import { setError, useWalletStore } from '@app/store';
 import { ExchangeBranding, ExchangeMiner } from '@app/types/exchange.ts';
 
 import { setSeedlessUI } from '@app/store/actions/uiStoreActions.ts';
 import { Divider } from '@app/components/elements/Divider.tsx';
 import { ExternalLinkSVG } from '@app/assets/icons/external-link.tsx';
+import { truncateMiddle } from '@app/utils';
 
 interface XCOptionProps {
     content: ExchangeBranding;
@@ -43,6 +45,7 @@ interface XCOptionProps {
 }
 
 export const XCOption = ({ content, isCurrent = false, isActive, onActiveClick }: XCOptionProps) => {
+    const base_tari_address = useWalletStore((state) => state.external_tari_address_emoji);
     const { t } = useTranslation(['exchange', 'settings'], { useSuspense: false });
     const [isAddressValid, setIsAddressValid] = useState(false);
     const [miningAddress, setMiningAddress] = useState('');
@@ -70,10 +73,13 @@ export const XCOption = ({ content, isCurrent = false, isActive, onActiveClick }
     const logoSrc = content.logo_img_small_url;
     const showExpand = isTari ? !isCurrent && content.id : content.id;
 
-    const helpMarkup = content.address_help_link ? (
+    const helpLink =
+        content.address_help_link && content.address_help_link.length > 0 ? content.address_help_link : null;
+
+    const helpMarkup = helpLink ? (
         <HelpButtonWrapper>
             <Divider />
-            <HelpButton onClick={() => open(content.address_help_link)}>
+            <HelpButton onClick={() => open(helpLink)}>
                 <Typography>{t('help-find-address', { exchange: content.name, ns: 'exchange' })}</Typography>
                 <ExternalLinkSVG />
             </HelpButton>
@@ -112,7 +118,11 @@ export const XCOption = ({ content, isCurrent = false, isActive, onActiveClick }
             </ContentHeaderWrapper>
             {isActive && (
                 <ContentBodyWrapper $isActive={isActive}>
-                    <ExchangeAddress handleIsAddressValid={setIsAddressValid} handleAddressChanged={setMiningAddress} />
+                    <ExchangeAddress
+                        handleIsAddressValid={setIsAddressValid}
+                        handleAddressChanged={setMiningAddress}
+                        value={isCurrent && base_tari_address ? truncateMiddle(base_tari_address, 7, ' ... ') : ''}
+                    />
                     <SeasonReward>
                         <LeftContent>
                             {content.campaign_description ? (

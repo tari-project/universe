@@ -310,15 +310,6 @@ impl InternalWallet {
         let address = TariAddress::from_base58(&self.config.tari_address_base58);
         address.map(|a| a.network())
     }
-
-    pub async fn clear_wallet_local_data(cache_path: PathBuf) -> Result<(), anyhow::Error> {
-        let network = Network::get_current_or_user_setting_or_default()
-            .to_string()
-            .to_lowercase();
-        let wallet_dir = cache_path.join("wallet").join(network);
-        fs::remove_dir_all(wallet_dir).await?;
-        Ok(())
-    }
 }
 
 pub fn generate_password(length: usize) -> String {
