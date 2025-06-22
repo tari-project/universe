@@ -8,4 +8,7 @@ export const ButtonWrapper = styled.div`
     justify-content: center;
     align-items: center;
     position: relative;
+
+    background: #188750;
+    border-radius: 500px;
 `;

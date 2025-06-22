@@ -1,6 +1,7 @@
+import * as m from 'motion/react-m';
 import styled, { css } from 'styled-components';
 
-export const StartWrapper = styled.button`
+export const StartWrapper = styled(m.button)`
     position: relative;
     border-radius: 500px;
     width: 100%;
@@ -14,9 +15,37 @@ export const StartWrapper = styled.button`
     box-shadow:
         0px 0px 10px 0px rgba(104, 153, 55, 0.35),
         0px 0px 13px 0px rgba(255, 255, 255, 0.55) inset;
+
+    .start-text {
+        transition: transform 0.3s cubic-bezier(0.39, 0.3, 0.2, 0.87);
+    }
+
+    .play-icon {
+        transition: background-color 0.3s cubic-bezier(0.39, 0.3, 0.2, 0.87);
+    }
+
+    &:hover {
+        background: #188750;
+
+        .start-text {
+            transform: scale(1.05);
+        }
+
+        .play-icon {
+            background: rgba(255, 255, 255, 0.3);
+        }
+    }
+
+    &:active {
+        background: #188750;
+
+        .start-text {
+            transform: scale(1);
+        }
+    }
 `;
 
-export const Text = styled.div`
+export const Text = styled.span`
     color: #f0f1f1;
     text-align: center;
 

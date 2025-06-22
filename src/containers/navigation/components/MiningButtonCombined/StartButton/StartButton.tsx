@@ -7,11 +7,11 @@ interface Props {
 
 export default function StartButton({ onClick }: Props) {
     return (
-        <StartWrapper onClick={onClick}>
-            <IconWrapper $absolute={true}>
+        <StartWrapper onClick={onClick} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <IconWrapper $absolute={true} className="play-icon">
                 <PlayIcon />
             </IconWrapper>
-            <Text>{`Start Mining`}</Text>
+            <Text className="start-text">{`Start Mining`}</Text>
         </StartWrapper>
     );
 }
