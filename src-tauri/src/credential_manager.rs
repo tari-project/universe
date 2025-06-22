@@ -20,12 +20,11 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::configs::trait_config::ConfigImpl;
 use crate::APPLICATION_FOLDER_ID;
 use keyring::{Entry, Error as KeyringError};
 use serde::{Deserialize, Serialize};
 use std::fs::OpenOptions;
-use std::io::{self, Read, Write};
+use std::io::{self, Read};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use tari_common::configuration::Network;

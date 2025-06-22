@@ -23,10 +23,11 @@
 use crate::{
     binaries::{Binaries, BinaryResolver},
     configs::{
-        config_core::ConfigCore, config_mining::ConfigMining, config_wallet::ConfigWallet,
+        config_core::ConfigCore, config_mining::ConfigMining,
         trait_config::ConfigImpl,
     },
     events_emitter::EventsEmitter,
+    internal_wallet::InternalWallet,
     p2pool_manager::P2poolConfig,
     progress_tracker_old::ProgressTracker,
     progress_trackers::{
@@ -154,9 +155,7 @@ impl SetupPhaseImpl for MiningSetupPhase {
         let mmproxy_monero_nodes = ConfigCore::content().await.mmproxy_monero_nodes().clone();
         let mmproxy_use_monero_fail = *ConfigCore::content().await.mmproxy_use_monero_failover();
         let squad_override = ConfigMining::content().await.squad_override().clone();
-        let tari_address = ConfigWallet::content()
-            .await
-            .get_current_used_tari_address();
+        let tari_address = { InternalWallet::current().read().await.tari_address.clone() };
 
         Ok(MiningSetupPhaseAppConfiguration {
             p2pool_enabled,

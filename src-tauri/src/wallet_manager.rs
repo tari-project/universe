@@ -21,6 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::events_emitter::EventsEmitter;
+use crate::internal_wallet::InternalWallet;
 use crate::node::node_manager::{NodeManager, NodeManagerError};
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
@@ -127,10 +128,8 @@ impl WalletManager {
         process_watcher
             .adapter
             .connect_with_local_node(config.connect_with_local_node);
-        process_watcher.adapter.wallet_birthday = self
-            .get_wallet_birthday(config.config_path.clone())
-            .await
-            .ok();
+        process_watcher.adapter.wallet_birthday =
+            Some(InternalWallet::current().read().await.tari_wallet_birthday);
 
         process_watcher
             .start(
@@ -164,13 +163,6 @@ impl WalletManager {
     pub fn is_initial_scan_completed(&self) -> bool {
         self.initial_scan_completed
             .load(std::sync::atomic::Ordering::Relaxed)
-    }
-
-    pub async fn get_wallet_birthday(&self, config_path: PathBuf) -> Result<u16, anyhow::Error> {
-        // let internal_wallet = InternalWallet::load_or_create(config_path, state).await?;
-        // internal_wallet.get_birthday().await
-
-        Ok(0u16)
     }
 
     pub async fn clean_data_folder(&self, base_path: &Path) -> Result<(), anyhow::Error> {
@@ -435,28 +427,5 @@ impl WalletManager {
     pub async fn is_pid_file_exists(&self, base_path: PathBuf) -> bool {
         let lock = self.watcher.read().await;
         lock.is_pid_file_exists(base_path)
-    }
-
-    #[deprecated(
-        note = "Do not use. Use internal wallet instead. This address is the address of the view key wallet and not the internal wallet."
-    )]
-    #[allow(dead_code)]
-    pub async fn wallet_address(&self) -> Result<String, WalletManagerError> {
-        panic!("Do not use. Use internal wallet instead. This address is the address of the view key wallet and not the internal wallet.");
-        // In future the wallet might return the correct address. View only wallets have the same offline address, but different online addresses.
-        // But the grpc only returns the online address.
-
-        // let process_watcher = self.watcher.read().await;
-        // Ok(process_watcher
-        //     .status_monitor
-        //     .as_ref()
-        //     .ok_or_else(|| WalletManagerError::WalletNotStarted)?
-        //     .get_wallet_address()
-        //     .await
-        //     .map_err(|e| match e {
-        //         WalletStatusMonitorError::WalletNotStarted => WalletManagerError::WalletNotStarted,
-        //         _ => WalletManagerError::UnknownError(e.into()),
-        //     })?
-        //     .to_base58())
     }
 }

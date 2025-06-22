@@ -32,11 +32,14 @@ use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_key_manager::cipher_seed::CipherSeed;
 use tari_key_manager::key_manager::KeyManager;
 use tari_key_manager::key_manager_service::KeyDigest;
+use tari_key_manager::mnemonic::Mnemonic;
+use tari_key_manager::SeedWords;
 use tari_utilities::encoding::MBase58;
 use tari_utilities::message_format::MessageFormat;
-use tari_utilities::SafePassword;
-use tauri::Manager;
+use tari_utilities::Hidden;
+use tauri::{AppHandle, Manager};
 use tokio::fs;
+use tokio::sync::{OnceCell, RwLock};
 
 use tari_core::transactions::transaction_key_manager::{
     create_memory_db_key_manager_from_seed, SecretTransactionKeyManagerInterface,
@@ -50,6 +53,7 @@ use crate::consts::DEFAULT_MONERO_ADDRESS;
 use crate::credential_manager::{
     Credential, CredentialError, CredentialManager, LegacyCredentialManager,
 };
+use crate::events_emitter::EventsEmitter;
 use crate::utils::rand_utils;
 
 const KEY_MANAGER_COMMS_SECRET_KEY_BRANCH_KEY: &str = "comms";
@@ -64,7 +68,6 @@ pub struct TariWalletDetails {
     pub tari_spend_public_key_hex: String,
 }
 
-// maybe remove derive
 #[derive(Debug, Clone)]
 pub struct InternalWallet {
     pub id: String,
@@ -77,12 +80,26 @@ pub struct InternalWallet {
     pub monero_address: String,
 }
 
+static INSTANCE: OnceCell<RwLock<InternalWallet>> = OnceCell::const_new();
+
 impl InternalWallet {
-    pub async fn initialize(app_handle: &tauri::AppHandle) -> Result<Self, anyhow::Error> {
+    pub async fn init_instance(app_handle: &tauri::AppHandle) -> Result<Self, anyhow::Error> {
+        let wallet = InternalWallet::initialize(app_handle).await?;
+        INSTANCE
+            .set(RwLock::new(wallet.clone()))
+            .map_err(|_| anyhow!("InternalWallet already initialized"))?;
+        Ok(wallet)
+    }
+
+    pub fn current() -> &'static RwLock<InternalWallet> {
+        INSTANCE.get().expect("InternalWallet is not initialized")
+    }
+
+    async fn initialize(app_handle: &tauri::AppHandle) -> Result<Self, anyhow::Error> {
         let app_config_dir = app_handle
             .path()
             .app_config_dir()
-            .expect("Couldn\'t get application config directory!");
+            .expect("Couldn't get application config directory!");
 
         let wallet_config = ConfigWallet::content().await;
         if *wallet_config.version() >= WALLET_VERSION {
@@ -90,9 +107,10 @@ impl InternalWallet {
         }
 
         let monero_address = ConfigWallet::content().await.monero_address().clone();
-        if InternalWallet::migration_available(app_config_dir.clone()).await {
+        let old_wallet_config = get_old_wallet_config(&app_config_dir).await.ok();
+        if let Some(old_wallet_config) = old_wallet_config {
             let (wallet_id, tari_seed_binary, monero_seed_binary) =
-                InternalWallet::migrate(app_config_dir.clone()).await?;
+                InternalWallet::migrate(&app_config_dir, old_wallet_config).await?;
             let tari_wallet_details =
                 InternalWallet::extract_tari_wallet_details(&tari_seed_binary).await?;
 
@@ -135,6 +153,29 @@ impl InternalWallet {
             tari_view_private_key_hex: tari_wallet_details.tari_view_private_key_hex,
             monero_address,
         })
+    }
+
+    pub async fn import_tari_seed_words(
+        &self,
+        seed_words: Vec<String>,
+        app_handle: &AppHandle,
+    ) -> Result<(String, Vec<u8>), anyhow::Error> {
+        let tari_cipher_seed = get_tari_cipher_seed(seed_words).await?;
+        let (wallet_id, tari_seed_binary) =
+            InternalWallet::add_tari_wallet(tari_cipher_seed).await?;
+
+        let local_data_dir: PathBuf = app_handle
+            .path()
+            .app_local_data_dir()
+            .expect("Could not get data dir");
+        // Side effects
+        clear_wallet_data(&local_data_dir).await?;
+        ConfigWallet::update_field(ConfigWalletContent::set_external_tari_address, None).await?;
+        EventsEmitter::emit_external_tari_address_changed(None).await;
+        let wallet = InternalWallet::extract_tari_wallet_details(&tari_seed_binary).await?;
+        EventsEmitter::emit_base_tari_address_changed(wallet.tari_address).await;
+
+        Ok((wallet_id, tari_seed_binary))
     }
 
     async fn add_tari_wallet(tari_seed: CipherSeed) -> Result<(String, Vec<u8>), anyhow::Error> {
@@ -228,7 +269,7 @@ impl InternalWallet {
         return Ok(InternalWallet {
             id: selected_tari_wallet_id.clone(),
             encrypted_tari_seed: Some(tari_seed_binary),
-            encrypted_monero_seed: None,
+            encrypted_monero_seed: None, // on demand
             tari_address: tari_wallet_details.tari_address,
             tari_wallet_birthday: tari_wallet_details.tari_wallet_birthday,
             tari_spend_public_key_hex: tari_wallet_details.tari_spend_public_key_hex,
@@ -237,18 +278,10 @@ impl InternalWallet {
         });
     }
 
-    async fn migration_available(app_config_dir: PathBuf) -> bool {
-        LegacyInternalWallet::get_old_wallet_config(app_config_dir)
-            .await
-            .is_err()
-    }
-
     async fn migrate(
-        app_config_dir: PathBuf,
+        app_config_dir: &PathBuf,
+        old_wallet_config: LegacyWalletConfig,
     ) -> Result<(String, Vec<u8>, Option<Vec<u8>>), anyhow::Error> {
-        let old_wallet_config =
-            LegacyInternalWallet::get_old_wallet_config(app_config_dir.clone()).await?;
-
         let legacy_cm = LegacyCredentialManager::new_default(app_config_dir.clone());
         let legacy_cred = match legacy_cm.get_credentials().await {
             Ok(cred) => cred,
@@ -293,7 +326,8 @@ impl InternalWallet {
         let tari_cipher_seed =
             CipherSeed::from_binary(tari_seed_binary).expect("Could not parse to cipher seed");
 
-        // tari_spend_public_key_hex
+        let tari_wallet_birthday = tari_cipher_seed.birthday();
+
         let comms_key_manager = KeyManager::<RistrettoPublicKey, KeyDigest>::from(
             tari_cipher_seed.clone(),
             KEY_MANAGER_COMMS_SECRET_KEY_BRANCH_KEY.to_string(),
@@ -304,17 +338,11 @@ impl InternalWallet {
             .map_err(|e| anyhow!(e.to_string()))?
             .key;
         let comms_pub_key = CompressedPublicKey::from_secret_key(&comms_key);
-
-        //tari wallet birthday
-        let tari_wallet_birthday = tari_cipher_seed.birthday();
-
-        // tari_view_private_key_hex
         let tx_key_manager = create_memory_db_key_manager_from_seed(tari_cipher_seed, 64)?;
         let view_key = tx_key_manager.get_view_key().await?;
         let view_key_private = tx_key_manager.get_private_key(&view_key.key_id).await?;
         let view_key_public = view_key.pub_key;
 
-        //tari address
         let network = Network::default();
         let tari_address = TariAddress::new_dual_address(
             view_key_public.clone(),
@@ -368,41 +396,64 @@ impl InternalWallet {
             self.tari_address.clone()
         }
     }
-}
 
-pub struct LegacyInternalWallet {
-    tari_address: TariAddress,
-    config: LegacyWalletConfig,
-}
-
-impl LegacyInternalWallet {
-    // Migration logic below
-    pub fn get_old_wallet_config_file(config_dir: PathBuf) -> PathBuf {
-        let network = Network::get_current_or_user_setting_or_default()
-            .to_string()
-            .to_lowercase();
-        config_dir.join(network).join("wallet_config.json")
+    pub async fn set_external_tari_address(
+        &self,
+        new_external_tari_address: Option<TariAddress>,
+    ) -> Result<(), anyhow::Error> {
+        ConfigWallet::update_field(
+            ConfigWalletContent::set_external_tari_address,
+            new_external_tari_address.clone(),
+        )
+        .await?;
+        Ok(())
     }
 
-    pub async fn get_old_wallet_config(
-        config_dir: PathBuf,
-    ) -> Result<LegacyWalletConfig, anyhow::Error> {
-        let old_config_file = LegacyInternalWallet::get_old_wallet_config_file(config_dir);
-        let old_config_str = fs::read_to_string(old_config_file).await?;
-        let old_config: LegacyWalletConfig = serde_json::from_str(&old_config_str)?;
-        Ok(old_config)
+    pub async fn set_external_monero_address(
+        &self,
+        monero_address: String,
+    ) -> Result<(), anyhow::Error> {
+        ConfigWallet::update_field(ConfigWalletContent::set_user_monero_address, monero_address)
+            .await?;
+        Ok(())
     }
-
-    // pub async fn get_encrypted_seed_words_base58(
-    //     config_dir: PathBuf,
-    // ) -> Result<String, anyhow::Error> {
-    //     let old_config = Internal::walget_old_wallet_config
-    //     Ok(old_config.seed_words_encrypted_base58)
-    // }
 }
 
-pub fn generate_password() -> String {
-    rand_utils::get_rand_string(32)
+// Utils
+
+pub async fn clear_wallet_data(local_dir_path: &PathBuf) -> Result<(), anyhow::Error> {
+    let network = Network::get_current_or_user_setting_or_default()
+        .to_string()
+        .to_lowercase();
+    let wallet_dir = local_dir_path.join("wallet").join(network);
+    fs::remove_dir_all(wallet_dir).await?;
+    Ok(())
+}
+
+pub async fn get_tari_cipher_seed(seed_words: Vec<String>) -> Result<CipherSeed, anyhow::Error> {
+    let hidden_seed_words = seed_words.into_iter().map(Hidden::hide).collect::<Vec<_>>();
+    let seed_words_parsed = SeedWords::new(hidden_seed_words);
+    // TODO: use pin to encrypt seed words
+    CipherSeed::from_mnemonic(&seed_words_parsed, None).map_err(|e| anyhow::anyhow!(e.to_string()))
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct PaperWalletConfig {
+    pub qr_link: String,
+    pub password: String,
+}
+
+// Legacy Config
+pub async fn get_old_wallet_config(
+    config_dir: &PathBuf,
+) -> Result<LegacyWalletConfig, anyhow::Error> {
+    let network = Network::get_current_or_user_setting_or_default()
+        .to_string()
+        .to_lowercase();
+    let old_config_file = config_dir.join(network).join("wallet_config.json");
+    let old_config_str = fs::read_to_string(old_config_file).await?;
+    let old_config: LegacyWalletConfig = serde_json::from_str(&old_config_str)?;
+    Ok(old_config)
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -411,13 +462,5 @@ pub struct LegacyWalletConfig {
     view_key_private_hex: String,
     spend_public_key_hex: String,
     seed_words_encrypted_base58: String,
-    // TODO: "This is for Universe users < v0.5.x who wouldn't be migrated yet. Once we're confident that all users have been migrated, we can remove this."
-    pub(crate) passphrase: Option<SafePassword>,
     config_path: Option<PathBuf>,
-}
-
-#[derive(Debug, Serialize, Clone)]
-pub struct PaperWalletConfig {
-    qr_link: String,
-    password: String,
 }

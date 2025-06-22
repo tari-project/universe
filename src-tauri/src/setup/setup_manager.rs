@@ -27,6 +27,7 @@ use super::{
 };
 use crate::app_in_memory_config::{MinerType, DEFAULT_EXCHANGE_ID};
 use crate::configs::config_core::ConfigCoreContent;
+use crate::internal_wallet::InternalWallet;
 use crate::{
     configs::{
         config_core::ConfigCore, config_mining::ConfigMining, config_ui::ConfigUI,
@@ -307,6 +308,40 @@ impl SetupManager {
         ConfigWallet::initialize(app_handle.clone()).await;
         ConfigMining::initialize(app_handle.clone()).await;
         ConfigUI::initialize(app_handle.clone()).await;
+
+        match InternalWallet::init_instance(&app_handle).await {
+            Ok(wallet) => {
+                log::info!(target: LOG_TARGET, "====== Internal Wallet initialized: {:?}", wallet);
+
+                if let Err(e) = ConfigWallet::migrate().await {
+                    panic!("Wallet migration failed: {:?}", e);
+                }
+                let state = app_handle.state::<UniverseAppState>();
+                state
+                    .wallet_manager
+                    .set_view_private_key_and_spend_key(
+                        wallet.tari_view_private_key_hex,
+                        wallet.tari_spend_public_key_hex,
+                    )
+                    .await;
+                {
+                    let mut cpu_config = state.cpu_miner_config.write().await;
+                    cpu_config.load_from_config_wallet(&ConfigWallet::content().await);
+                }
+
+                // Currently it easier to send extra event then handle TariAddress in emit_wallet_config_loaded
+                EventsEmitter::emit_external_tari_address_changed(
+                    ConfigWallet::content()
+                        .await
+                        .external_tari_address()
+                        .clone(),
+                )
+                .await;
+            }
+            Err(e) => {
+                error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);
+            }
+        };
 
         let build_in_exchange_id = in_memory_config.read().await.exchange_id.clone();
         let is_on_exchange_miner_build =

@@ -23,17 +23,12 @@
 use std::{sync::LazyLock, time::SystemTime};
 
 use getset::{Getters, Setters};
-use log::error;
 use serde::{Deserialize, Serialize};
 use tari_common_types::tari_address::TariAddress;
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
 use tokio::sync::RwLock;
 
-use crate::{
-    events_emitter::EventsEmitter,
-    internal_wallet::{InternalWallet, LegacyInternalWallet},
-    UniverseAppState,
-};
+use crate::events_emitter::EventsEmitter;
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
 
@@ -51,8 +46,6 @@ pub const WALLET_VERSION: i32 = 2;
 pub struct ConfigWalletContent {
     #[getset(get = "pub", set = "pub")]
     version: i32,
-    // Q: Shall we use last 6 chars of address as id?
-    // currently we always use first item
     #[getset(get = "pub", set = "pub")]
     tari_wallets: Vec<String>,
     #[getset(get = "pub")]
@@ -107,50 +100,9 @@ pub struct ConfigWallet {
 
 impl ConfigWallet {
     pub async fn initialize(app_handle: AppHandle) {
-        let app_handle_clone = app_handle.clone();
-        let state = app_handle_clone.state::<UniverseAppState>();
-
         let mut config = Self::current().write().await;
         config.load_app_handle(app_handle.clone()).await;
         drop(config);
-
-        match InternalWallet::initialize(&app_handle).await {
-            Ok(wallet) => {
-                log::info!(target: LOG_TARGET, "====== Internal Wallet initialized: {:?}", wallet);
-
-                if let Err(e) = ConfigWallet::migrate().await {
-                    panic!("Wallet migration failed: {:?}", e);
-                }
-                {
-                    // Load to the app state
-                    let mut wallet_guard = state.internal_wallet.write().await;
-                    *wallet_guard = Some(wallet.clone());
-                }
-                state
-                    .wallet_manager
-                    .set_view_private_key_and_spend_key(
-                        wallet.tari_view_private_key_hex,
-                        wallet.tari_spend_public_key_hex,
-                    )
-                    .await;
-            }
-            Err(e) => {
-                error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);
-            }
-        };
-        {
-            let mut cpu_config = state.cpu_miner_config.write().await;
-            cpu_config.load_from_config_wallet(&ConfigWallet::content().await);
-        }
-
-        // Currently it easier to send extra event then handle TariAddress in emit_wallet_config_loaded
-        EventsEmitter::emit_external_tari_address_changed(
-            ConfigWallet::content()
-                .await
-                .external_tari_address()
-                .clone(),
-        )
-        .await;
 
         EventsEmitter::emit_wallet_config_loaded(Self::current().write().await.content.clone())
             .await;

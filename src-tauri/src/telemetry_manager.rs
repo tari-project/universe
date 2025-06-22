@@ -28,10 +28,10 @@ use crate::commands::CpuMinerStatus;
 use crate::configs::config_core::ConfigCore;
 use crate::configs::config_mining::ConfigMining;
 use crate::configs::config_mining::MiningMode;
-use crate::configs::config_wallet::ConfigWallet;
 use crate::configs::trait_config::ConfigImpl;
 use crate::gpu_miner_adapter::GpuMinerStatus;
 use crate::hardware::hardware_status_monitor::HardwareStatusMonitor;
+use crate::internal_wallet::InternalWallet;
 use crate::node::node_adapter::BaseNodeStatus;
 use crate::node::node_manager::NodeManager;
 use crate::p2pool::models::P2poolStats;
@@ -51,7 +51,6 @@ use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sha2::Digest;
-use tauri::Manager;
 use std::collections::HashMap;
 use std::ops::Div;
 use std::time::Instant;
@@ -61,6 +60,7 @@ use tari_common::configuration::Network;
 use tari_shutdown::ShutdownSignal;
 use tari_utilities::encoding::MBase58;
 use tauri::Emitter;
+use tauri::Manager;
 use tokio::sync::{watch, RwLock};
 use tokio::time::interval;
 
@@ -534,13 +534,9 @@ async fn get_telemetry_data_inner(
     );
 
     // Add payment ID from current tari address
-    if let Some(state) = app_handle.try_state::<crate::UniverseAppState>() {
-        let internal_wallet_guard = state.internal_wallet.read().await;
-        let tari_address = internal_wallet_guard
-            .as_ref()
-            .expect("Internal Wallet not initialized yet!")
-            .tari_address
-            .clone();
+    if let Some(_state) = app_handle.try_state::<crate::UniverseAppState>() {
+        let internal_wallet_guard = InternalWallet::current().read().await;
+        let tari_address = internal_wallet_guard.tari_address.clone();
         drop(internal_wallet_guard);
         if let Ok(Some(payment_id)) = extract_payment_id(&tari_address.to_base58()) {
             extra_data.insert("mining_address_payment_id".to_string(), payment_id);
