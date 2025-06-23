@@ -48,8 +48,8 @@ export const Ring = styled(m.div)<{ $size: number }>`
     border-radius: 500px;
     border: 1px solid rgba(255, 255, 255, 0.1);
 
-    width: ${(p) => p.$size}px;
-    height: ${(p) => p.$size}px;
+    width: ${({ $size }) => $size}px;
+    height: ${({ $size }) => $size}px;
 `;
 
 export const CubePath = styled.div<{ $size: number }>`
@@ -57,16 +57,16 @@ export const CubePath = styled.div<{ $size: number }>`
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: ${(p) => p.$size}px;
-    height: ${(p) => p.$size}px;
+    width: ${({ $size }) => $size}px;
+    height: ${({ $size }) => $size}px;
     border-radius: 500px;
 `;
 
 export const AnimatedCubeWrapper = styled.div<{ $duration: number; $delay: number }>`
     width: 100%;
     height: 100%;
-    animation: ${rotate} ${(p) => p.$duration}s linear infinite;
-    animation-delay: ${(p) => p.$delay}s;
+    animation: ${rotate} ${({ $duration }) => $duration}s linear infinite;
+    animation-delay: ${({ $delay }) => $delay}s;
     border-radius: 500px;
     position: relative;
 `;
@@ -75,12 +75,12 @@ export const CubeStartPosition = styled.div<{ $startAngle: number }>`
     width: 100%;
     height: 100%;
     position: absolute;
-    transform: rotate(${(p) => p.$startAngle}deg);
+    transform: rotate(${({ $startAngle }) => $startAngle}deg);
 `;
 
-export const IndividualCubeWrapper = styled.div<{ rotationDuration: number }>`
+export const IndividualCubeWrapper = styled.div<{ $rotationDuration: number }>`
     position: absolute;
     top: 0;
     left: 50%;
-    animation: ${cubeRotate} ${(p) => p.rotationDuration}s linear infinite;
+    animation: ${cubeRotate} ${({ $rotationDuration }) => $rotationDuration}s linear infinite;
 `;

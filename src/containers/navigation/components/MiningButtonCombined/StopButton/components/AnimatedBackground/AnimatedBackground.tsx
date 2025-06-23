@@ -41,7 +41,7 @@ export default function AnimatedBackground() {
                     <CubePath key={cube.id} $size={cube.size}>
                         <CubeStartPosition $startAngle={cube.startAngle}>
                             <AnimatedCubeWrapper $duration={cube.duration} $delay={cube.delay}>
-                                <IndividualCubeWrapper rotationDuration={cube.rotationDuration}>
+                                <IndividualCubeWrapper $rotationDuration={cube.rotationDuration}>
                                     <CubeIcon />
                                 </IndividualCubeWrapper>
                             </AnimatedCubeWrapper>
