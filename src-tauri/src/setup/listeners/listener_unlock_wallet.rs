@@ -139,7 +139,7 @@ impl UnlockConditionsListenerTrait for ListenerUnlockWallet {
     }
     async fn select_unlock_strategy(&self) -> Box<dyn UnlockStrategyTrait + Send + Sync> {
         let features = self.features_list.lock().await.clone();
-        if features.is_feature_enabled(SetupFeature::ExternalWalletAddress) {
+        if features.is_feature_enabled(SetupFeature::SeedlessWallet) {
             info!(target: LOG_TARGET, "Using CentralizedPoolStrategy for unlocking");
             Box::new(ExternalWalletAddressStrategy)
         } else {

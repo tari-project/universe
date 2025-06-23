@@ -31,7 +31,7 @@ use std::fmt::{Display, Formatter};
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum SetupFeature {
-    ExternalWalletAddress,
+    SeedlessWallet,
     CentralizedPool,
     Restarting,
 }
@@ -39,7 +39,7 @@ pub enum SetupFeature {
 impl Display for SetupFeature {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
-            SetupFeature::ExternalWalletAddress => write!(f, "External Wallet Address"),
+            SetupFeature::SeedlessWallet => write!(f, "Seedless wallet"),
             SetupFeature::CentralizedPool => write!(f, "Centralized Pool"),
             SetupFeature::Restarting => write!(f, "Restarting"),
         }
@@ -59,6 +59,10 @@ impl SetupFeaturesList {
     #[allow(dead_code)]
     pub fn get_features(&self) -> Vec<SetupFeature> {
         self.0.clone()
+    }
+
+    pub fn clear(&mut self) {
+        self.0.clear();
     }
 
     pub fn is_feature_enabled(&self, feature: SetupFeature) -> bool {

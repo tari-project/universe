@@ -41,7 +41,6 @@ use crate::{
     },
     events_emitter::EventsEmitter,
     events_manager::EventsManager,
-    internal_wallet::InternalWallet,
     tasks_tracker::TasksTrackers,
     utils::system_status::SystemStatus,
     websocket_manager::WebsocketMessage,
@@ -189,7 +188,6 @@ pub struct SetupManager {
     wallet_phase_status: Sender<PhaseStatus>,
     mining_phase_status: Sender<PhaseStatus>,
     exchange_modal_status: Sender<ExchangeModalStatus>,
-    universal_modal_status: Sender<ExchangeMiner>,
     phases_to_restart_queue: Mutex<Vec<SetupPhase>>,
     app_handle: Mutex<Option<AppHandle>>,
 }
@@ -333,7 +331,7 @@ impl SetupManager {
 
         info!(target: LOG_TARGET, "Resolving setup features");
         // clear existing features
-        features.0.clear();
+        features.clear();
 
         let exchange_id = ConfigCore::content().await.exchange_id().clone();
         let is_exchange_miner_build = exchange_id.ne(DEFAULT_EXCHANGE_ID);
@@ -341,9 +339,14 @@ impl SetupManager {
             info!(target: LOG_TARGET, "Centralized pool feature enabled");
             features.add_feature(SetupFeature::CentralizedPool);
         }
-        if EXCHANGE_ID.ne(DEFAULT_EXCHANGE_ID) {
-            features.add_feature(SetupFeature::ExternalWalletAddress);
+        if external_tari_address.is_some() || is_exchange_miner_build {
+            info!(target: LOG_TARGET, "Seedless wallet feature enabled");
+            features.add_feature(SetupFeature::SeedlessWallet);
+            EventsEmitter::emit_disabled_phases(vec![SetupPhase::Wallet]).await;
+        } else {
+            EventsEmitter::emit_disabled_phases(vec![]).await;
         }
+
         Ok(())
     }
 
@@ -391,13 +394,6 @@ impl SetupManager {
 
     async fn setup_wallet_phase(&self, app_handle: AppHandle) {
         let setup_features = self.features.read().await.clone();
-        let state = app_handle.state::<UniverseAppState>();
-        let in_memory_config = state.in_memory_config.clone();
-        if in_memory_config.read().await.exchange_id != DEFAULT_EXCHANGE_ID {
-            // TODO: Add option to disable specific phases and handle it properly on frontend
-            // self.unlock_wallet().await;
-            return;
-        }
         let wallet_phase_setup = PhaseBuilder::new()
             .with_setup_timeout_duration(Duration::from_secs(60 * 10)) // 10 minutes
             .with_listeners_for_required_phases_statuses(vec![self.node_phase_status.subscribe()])
@@ -471,11 +467,11 @@ impl SetupManager {
     pub async fn resume_phases(&self, app_handle: AppHandle, phases: Vec<SetupPhase>) {
         if !phases.is_empty() {
             EventsEmitter::emit_restarting_phases(phases.clone()).await;
+            let _unused = self.resolve_setup_features().await;
             self.features
                 .write()
                 .await
                 .add_feature(SetupFeature::Restarting);
-            let _unused = self.resolve_setup_features().await;
         }
 
         let setup_features = self.features.read().await.clone();
@@ -516,7 +512,7 @@ impl SetupManager {
                     self.setup_node_phase(app_handle.clone()).await;
                 }
                 SetupPhase::Wallet => {
-                    if features.is_feature_enabled(SetupFeature::SeedlessWallet) {
+                    if setup_features.is_feature_enabled(SetupFeature::SeedlessWallet) {
                         info!(target: LOG_TARGET, "Skipping Wallet Phase as Seedless Wallet is enabled");
                         continue;
                     }
@@ -529,9 +525,48 @@ impl SetupManager {
         }
     }
 
+    pub async fn restart_phases(&self, app_handle: AppHandle, phases: Vec<SetupPhase>) {
+        info!(target: LOG_TARGET, "Restarting phases: {:?}", phases);
+        self.shutdown_phases(phases.clone()).await;
+        self.resume_phases(app_handle, phases).await;
+    }
+
     #[allow(clippy::too_many_lines)]
     pub async fn start_setup(&self, app_handle: AppHandle) {
         self.pre_setup(app_handle.clone()).await;
+
+        let shutdown_signal = TasksTrackers::current().common.get_signal().await;
+        let modal_status_subscriber = self.exchange_modal_status.subscribe();
+        let task = TasksTrackers::current()
+            .common
+            .get_task_tracker()
+            .await
+            .spawn(async move {
+                loop {
+                    if shutdown_signal.is_triggered() {
+                        info!(target: LOG_TARGET, "Shutdown signal received, exiting start_setup loop");
+                        break;
+                    }
+
+                    if modal_status_subscriber.borrow().is_completed() {
+                        info!(target: LOG_TARGET, "Exchange modal completed, exiting start_setup loop");
+                        break;
+                    }
+
+                    tokio::time::sleep(Duration::from_secs(2)).await;
+                }
+            });
+
+        let _unused = task
+            .await
+            .inspect_err(|e| error!(target: LOG_TARGET, "Error in start_setup task: {}", e));
+
+        let shutdown_signal = TasksTrackers::current().common.get_signal().await;
+        if shutdown_signal.is_triggered() {
+            info!(target: LOG_TARGET, "Shutdown signal already triggered, exiting start_setup");
+            return;
+        }
+
         let _unused = self.resolve_setup_features()
             .await
             .inspect_err(|e| error!(target: LOG_TARGET, "Failed to set setup features during start_setup: {}", e));
@@ -642,59 +677,17 @@ impl SetupManager {
         self.setup_mining_phase(app_handle.clone()).await;
     }
 
-    async fn await_selected_exchange_miner(&self, app_handle: AppHandle) {
-        let state = app_handle.state::<UniverseAppState>();
-        let memory_config = state.in_memory_config.read().await;
-        let universal_miner_initialized_exchange_id = ConfigCore::content()
-            .await
-            .universal_miner_initialized_exchange_id()
-            .clone();
-        if !memory_config.is_universal_miner() || universal_miner_initialized_exchange_id.is_some()
-        {
-            return;
-        }
-        drop(memory_config);
-        let _unused = self.universal_modal_status.subscribe().changed().await;
-    }
-
-    pub async fn select_exchange_miner(
-        &self,
-        selected_miner: ExchangeMiner,
-        app_handle: AppHandle,
-    ) -> Result<(), String> {
-        let state = app_handle.state::<UniverseAppState>();
-        let mut config = state.in_memory_config.write().await;
-        let new_config = DynamicMemoryConfig::init_universal(&selected_miner);
-        let new_config_cloned = new_config.clone();
-        *config = new_config;
-
-        EventsEmitter::emit_app_in_memory_config_changed(new_config_cloned, true).await;
-        let _unused = ConfigCore::update_field(
-            ConfigCoreContent::set_universal_miner_initialized_exchange_id,
-            Some(selected_miner.id.clone()),
-        )
-        .await;
-        EventsEmitter::emit_universal_miner_initialized_exchange_id_changed(
-            selected_miner.id.clone(),
-        )
-        .await;
-        self.universal_modal_status
-            .send(selected_miner.clone())
-            .map_err(|e| e.to_string())?;
-        Ok(())
-    }
-
     pub async fn handle_switch_to_local_node(&self) {
         if let Some(app_handle) = self.app_handle.lock().await.clone() {
             info!(target: LOG_TARGET, "Handle Switching to Local Node in Setup Manager");
             EventsManager::handle_node_type_update(&app_handle).await;
 
             info!(target: LOG_TARGET, "Restarting Phases");
-            self.shutdown_phases(vec![SetupPhase::Wallet, SetupPhase::Mining])
-                .await;
-
-            self.setup_wallet_phase(app_handle.clone()).await;
-            self.setup_mining_phase(app_handle.clone()).await;
+            self.restart_phases(
+                app_handle.clone(),
+                vec![SetupPhase::Wallet, SetupPhase::Mining],
+            )
+            .await;
         } else {
             error!(target: LOG_TARGET, "Failed to reset phases after switching to Local Node: app_handle not defined");
         }
@@ -721,7 +714,6 @@ impl SetupManager {
                         }
                         if !last_state && current_state {
                             info!(target: LOG_TARGET, "System entered sleep mode");
-                            SetupManager::get_instance().shutdown_phases(SetupPhase::all()).await;
                             SetupManager::get_instance().shutdown_phases(SetupPhase::all()).await;
                         }
                         last_state = current_state;
@@ -750,8 +742,7 @@ impl SetupManager {
             return;
         }
         info!(target: LOG_TARGET, "Restarting phases from queue: {:?}", queue);
-        self.shutdown_phases(queue.clone()).await;
-        self.resume_phases(app_handle.clone(), queue.clone()).await;
+        self.restart_phases(app_handle.clone(), queue.clone()).await;
         queue.clear();
     }
 }
