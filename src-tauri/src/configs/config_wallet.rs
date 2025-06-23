@@ -126,7 +126,6 @@ impl Default for ConfigWalletContent {
         }
     }
 }
-
 impl ConfigContentImpl for ConfigWalletContent {}
 
 impl ConfigWalletContent {
@@ -148,6 +147,10 @@ impl ConfigWalletContent {
         self.selected_wallet_address
             .clone()
             .expect("Selected Tari wallet address is not set")
+    }
+
+    pub fn is_selected_tari_wallet_missing(&self) -> bool {
+        self.selected_wallet_address.is_none()
     }
 
     pub fn update_external_tari_address_book(&mut self, address: TariAddress) -> &mut Self {
@@ -236,18 +239,30 @@ impl ConfigWallet {
                     )
                     .await;
 
-                let _unused = ConfigWallet::update_selected_wallet_address(Some(
+                EventsEmitter::emit_main_tari_address_loaded(&wallet.get_tari_address()).await;
+
+                let is_selected_address_missing = ConfigWallet::content()
+                    .await
+                    .is_selected_tari_wallet_missing();
+                if is_selected_address_missing {
+                    let _unused = ConfigWallet::update_selected_wallet_address(Some(
                     TariWalletAddress::Internal(wallet.get_tari_address()),
                 ))
                 .await
                 .inspect_err(|e| {
                     error!(target: LOG_TARGET, "Error updating selected wallet address: {:?}", e);
                 });
+                }
             }
             Err(e) => {
                 error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);
             }
         };
+
+        EventsEmitter::emit_selected_tari_address_changed(
+            &Self::content().await.get_selected_tari_wallet_address(),
+        )
+        .await;
     }
 }
 

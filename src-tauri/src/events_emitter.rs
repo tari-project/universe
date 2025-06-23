@@ -26,7 +26,7 @@ use crate::configs::config_wallet::TariWalletAddress;
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 use crate::events::{
     ConnectionStatusPayload, CriticalProblemPayload, DisabledPhasesPayload,
-    InitWalletScanningProgressPayload,
+    InitWalletScanningProgressPayload, MainTariAddressLoadedPayload,
 };
 #[cfg(target_os = "windows")]
 use crate::external_dependencies::RequiredExternalDependency;
@@ -50,6 +50,7 @@ use crate::{
     BaseNodeStatus, GpuMinerStatus,
 };
 use log::error;
+use tari_common_types::tari_address::TariAddress;
 use tauri::{AppHandle, Emitter};
 use tokio::sync::RwLock;
 
@@ -736,6 +737,23 @@ impl EventsEmitter {
             .emit(BACKEND_STATE_UPDATE, event)
         {
             error!(target: LOG_TARGET, "Failed to emit SelectedTariAddressChanged event: {:?}", e);
+        }
+    }
+
+    pub async fn emit_main_tari_address_loaded(payload: &TariAddress) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::MainTariAddressLoaded,
+            payload: MainTariAddressLoadedPayload {
+                tari_address_base58: payload.to_base58(),
+                tari_address_emoji: payload.to_emoji_string(),
+            },
+        };
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
+            error!(target: LOG_TARGET, "Failed to emit MainTariAddressLoaded event: {:?}", e);
         }
     }
 

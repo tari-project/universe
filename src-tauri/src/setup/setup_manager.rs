@@ -27,6 +27,7 @@ use super::{
 };
 use crate::app_in_memory_config::{MinerType, DEFAULT_EXCHANGE_ID};
 use crate::configs::config_core::ConfigCoreContent;
+use crate::configs::config_ui::WalletUIMode;
 use crate::{
     configs::{
         config_core::ConfigCore, config_mining::ConfigMining, config_ui::ConfigUI,
@@ -336,6 +337,14 @@ impl SetupManager {
         EventsEmitter::emit_mining_config_loaded(&ConfigMining::content().await).await;
         EventsEmitter::emit_ui_config_loaded(&ConfigUI::content().await).await;
 
+        if is_on_exchange_miner_build && build_in_exchange_id.eq(DEFAULT_EXCHANGE_ID) {
+            if is_external_address_selected {
+                let _unused = ConfigUI::update_wallet_ui_mode(WalletUIMode::Seedless).await;
+            } else {
+                let _unused = ConfigUI::update_wallet_ui_mode(WalletUIMode::Standard).await;
+            }
+        }
+
         // If we open different specific exchange miner build then previous one we always want to prompt user to provide tari address
         if is_on_exchange_miner_build
             && build_in_exchange_id.ne(&last_config_exchange_id)
@@ -348,7 +357,7 @@ impl SetupManager {
         }
 
         // If we are on exchange miner build we require external tari address to be set
-        if is_on_exchange_miner_build && is_external_address_selected {
+        if is_on_exchange_miner_build && !is_external_address_selected {
             self.exchange_modal_status
                 .send_replace(ExchangeModalStatus::WaitForCompletion);
             EventsEmitter::emit_should_show_exchange_miner_modal().await;

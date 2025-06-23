@@ -28,6 +28,7 @@ import { NodeType, updateNodeType as updateNodeTypeForNodeStore } from '../useNo
 import { setCurrentExchangeMinerId } from '../useExchangeStore.ts';
 import { fetchExchangeContent, refreshXCContent } from '@app/hooks/exchanges/fetchExchangeContent.ts';
 import { fetchExchangeList } from '@app/hooks/exchanges/fetchExchanges.ts';
+import { WalletUIMode } from '@app/types/events-payloads.ts';
 
 interface SetModeProps {
     mode: modeType;
@@ -342,4 +343,9 @@ export const fetchBackendInMemoryConfig = async () => {
 export const handleExchangeIdChanged = async (payload: string) => {
     setCurrentExchangeMinerId(payload);
     await refreshXCContent(payload);
+};
+
+export const handleWalletUIChanged = (mode: WalletUIMode) => {
+    console.log('Setting wallet UI mode to:', mode);
+    useConfigUIStore.setState({ wallet_ui_mode: mode });
 };

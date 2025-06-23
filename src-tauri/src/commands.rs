@@ -223,12 +223,9 @@ pub async fn select_exchange_miner(
     .await
     .map_err(InvokeError::from_anyhow)?;
 
-    ConfigWallet::update_field(
-        ConfigWalletContent::set_selected_wallet_address,
-        Some(TariWalletAddress::External(
-            new_external_tari_address.clone(),
-        )),
-    )
+    ConfigWallet::update_selected_wallet_address(Some(TariWalletAddress::External(
+        new_external_tari_address.clone(),
+    )))
     .await
     .map_err(InvokeError::from_anyhow)?;
 
@@ -664,12 +661,9 @@ pub async fn set_external_tari_address(
     .await
     .map_err(InvokeError::from_anyhow)?;
 
-    ConfigWallet::update_field(
-        ConfigWalletContent::set_selected_wallet_address,
-        Some(TariWalletAddress::External(
-            new_external_tari_address.clone(),
-        )),
-    )
+    ConfigWallet::update_selected_wallet_address(Some(TariWalletAddress::External(
+        new_external_tari_address.clone(),
+    )))
     .await
     .map_err(InvokeError::from_anyhow)?;
 
@@ -702,12 +696,9 @@ pub async fn confirm_exchange_address(address: String) -> Result<(), InvokeError
     .await
     .map_err(InvokeError::from_anyhow)?;
 
-    ConfigWallet::update_field(
-        ConfigWalletContent::set_selected_wallet_address,
-        Some(TariWalletAddress::External(
-            new_external_tari_address.clone(),
-        )),
-    )
+    ConfigWallet::update_selected_wallet_address(Some(TariWalletAddress::External(
+        new_external_tari_address.clone(),
+    )))
     .await
     .map_err(InvokeError::from_anyhow)?;
 
@@ -875,10 +866,9 @@ pub async fn import_seed_words(
                 .set_view_private_key_and_spend_key(wallet.get_view_key(), wallet.get_spend_key())
                 .await;
 
-            ConfigWallet::update_field(
-                ConfigWalletContent::set_selected_wallet_address,
-                Some(TariWalletAddress::Internal(wallet.get_tari_address())),
-            )
+            ConfigWallet::update_selected_wallet_address(Some(TariWalletAddress::Internal(
+                wallet.get_tari_address().clone(),
+            )))
             .await
             .map_err(InvokeError::from_anyhow)?;
             ConfigCore::update_field(
@@ -921,10 +911,9 @@ pub async fn revert_to_internal_wallet(
             SetupManager::get_instance()
                 .shutdown_phases(vec![SetupPhase::Wallet, SetupPhase::Mining])
                 .await;
-            ConfigWallet::update_field(
-                ConfigWalletContent::set_selected_wallet_address,
-                Some(TariWalletAddress::Internal(wallet.get_tari_address())),
-            )
+            ConfigWallet::update_selected_wallet_address(Some(TariWalletAddress::Internal(
+                wallet.get_tari_address().clone(),
+            )))
             .await
             .map_err(InvokeError::from_anyhow)?;
             ConfigCore::update_field(

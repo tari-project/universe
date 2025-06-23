@@ -1,4 +1,4 @@
-import { useConfigBEInMemoryStore, useUIStore } from '@app/store';
+import { useConfigBEInMemoryStore, useConfigUIStore, useUIStore } from '@app/store';
 import { useQuery } from '@tanstack/react-query';
 import { setRewardData, universalExchangeMinerOption } from '@app/store/useExchangeStore.ts';
 import { ExchangeBranding } from '@app/types/exchange.ts';
@@ -46,7 +46,7 @@ export const queryFn = async () => {
 };
 
 export function useFetchExchangeList() {
-    const isWalletUIExchangeSpecific = useUIStore((s) => s.walletUIMode === WalletUIMode.ExchangeSpecificMiner);
+    const isWalletUIExchangeSpecific = useConfigUIStore((s) => s.wallet_ui_mode === WalletUIMode.ExchangeSpecificMiner);
 
     return useQuery({
         queryKey: [KEY_XC_LIST],

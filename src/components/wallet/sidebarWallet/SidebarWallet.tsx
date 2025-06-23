@@ -1,5 +1,5 @@
 import { AnimatePresence } from 'motion/react';
-import { useUIStore, useWalletStore } from '@app/store';
+import { useConfigUIStore, useUIStore, useWalletStore } from '@app/store';
 import { swapTransition } from '@app/components/transactions/wallet/transitions.ts';
 import { Swap } from '@app/components/transactions/wallet/Swap/Swap.tsx';
 import { WalletBalance, WalletBalanceHidden } from '../components/balance/WalletBalance.tsx';
@@ -52,7 +52,7 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
     }, []);
 
     const isSwapping = useWalletStore((s) => s.is_swapping);
-    const isStandardWalletUI = useUIStore((s) => s.walletUIMode === WalletUIMode.Standard);
+    const isStandardWalletUI = useConfigUIStore((s) => s.wallet_ui_mode === WalletUIMode.Standard);
 
     const openLink = useCallback(() => {
         if (xcData && xcData.wallet_app_link) {

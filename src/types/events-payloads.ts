@@ -14,15 +14,19 @@ export enum TariAddressType {
 }
 
 export enum WalletUIMode {
-    Standard = 0,
-    Seedless = 1,
-    ExchangeSpecificMiner = 2,
+    Standard = 'Standard',
+    Seedless = 'Seedless',
+    ExchangeSpecificMiner = 'ExchangeSpecificMiner',
 }
 
 export interface TariAddressUpdatePayload {
     tari_address_base58: string;
     tari_address_emoji: string;
     tari_address_type: TariAddressType;
+}
+export interface MainTariAddressLoadedPayload {
+    tari_address_base58: string;
+    tari_address_emoji: string;
 }
 
 export interface NewBlockHeightPayload {

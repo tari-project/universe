@@ -16,7 +16,6 @@ import {
     handleAskForRestart,
     handleCloseSplashscreen,
     handleConnectionStatusChanged,
-    handleWalletUIChanged,
     setConnectionStatus,
     setShouldShowExchangeSpecificModal,
     setShowExternalDependenciesDialog,
@@ -53,11 +52,12 @@ import {
     handleConfigUILoaded,
     handleConfigWalletLoaded,
     handleMiningTimeUpdate,
+    handleWalletUIChanged,
 } from '@app/store/actions/appConfigStoreActions';
 import { invoke } from '@tauri-apps/api/core';
 import { handleShowStagedSecurityModal } from '@app/store/actions/stagedSecurityActions';
 import { refreshTransactions } from '@app/hooks/wallet/useFetchTxHistory.ts';
-import { handleSelectedTariAddressChange } from '@app/store/actions/walletStoreActions';
+import { handleMainTariAddressLoaded, handleSelectedTariAddressChange } from '@app/store/actions/walletStoreActions';
 
 const LOG_EVENT_TYPES = ['WalletAddressUpdate', 'CriticalProblem', 'MissingApplications'];
 
@@ -225,6 +225,9 @@ const useTauriEventsListener = () => {
                             break;
                         case 'ShouldShowExchangeMinerModal':
                             setShouldShowExchangeSpecificModal(true);
+                            break;
+                        case 'MainTariAddressLoaded':
+                            handleMainTariAddressLoaded(event.payload);
                             break;
                         default:
                             console.warn('Unknown event', JSON.stringify(event));

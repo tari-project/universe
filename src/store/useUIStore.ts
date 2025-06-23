@@ -39,7 +39,6 @@ interface UIStoreState {
     connectionStatus?: CONNECTION_STATUS;
     isReconnecting?: boolean;
     shouldShowExchangeSpecificModal: boolean;
-    walletUIMode: WalletUIMode;
     showSplashscreen: boolean;
     hideWalletBalance: boolean;
     showResumeAppModal: boolean;
@@ -66,7 +65,6 @@ const initialState: UIStoreState = {
     showWarmup: false,
     showResumeAppModal: false,
     shouldShowExchangeSpecificModal: false,
-    walletUIMode: WalletUIMode.Standard,
     towerSidebarOffset: sidebarTowerOffset,
     showTapplet: false,
     blockBubblesEnabled: false,

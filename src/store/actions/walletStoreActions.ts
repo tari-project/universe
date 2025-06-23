@@ -6,7 +6,7 @@ import { WrapTokenService, OpenAPI } from '@tari-project/wxtm-bridge-backend-api
 import { useConfigBEInMemoryStore } from '../useAppConfigStore';
 import { TransactionDetailsItem, TransactionDirection, TransactionStatus } from '@app/types/transactions';
 import { refreshTransactions } from '@app/hooks/wallet/useFetchTxHistory.ts';
-import { TariAddressType, TariAddressUpdatePayload } from '@app/types/events-payloads';
+import { MainTariAddressLoadedPayload, TariAddressType, TariAddressUpdatePayload } from '@app/types/events-payloads';
 
 export const fetchBridgeTransactionsHistory = async () => {
     console.info('Fetching bridge transactions history...');
@@ -123,10 +123,8 @@ export const handleSelectedTariAddressChange = (payload: TariAddressUpdatePayloa
         tari_address_emoji,
         tari_address_type,
     });
+};
 
-    if (tari_address_type === TariAddressType.Internal) {
-        useWalletStore.setState({ last_internal_tari_emoji_address_used: tari_address_emoji });
-    }
-
-    console.info('Tari address updated:', { tari_address_base58, tari_address_emoji, tari_address_type });
+export const handleMainTariAddressLoaded = (payload: MainTariAddressLoadedPayload) => {
+    useWalletStore.setState({ last_internal_tari_emoji_address_used: payload.tari_address_emoji });
 };

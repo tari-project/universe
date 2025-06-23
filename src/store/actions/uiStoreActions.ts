@@ -123,6 +123,3 @@ export const animationDarkBg = [
     { property: 'particlesOpacity', value: 0.95 },
     { property: 'particlesSize', value: 0.015 },
 ];
-export const handleWalletUIChanged = (mode: WalletUIMode) => {
-    useUIStore.setState({ walletUIMode: mode });
-};
