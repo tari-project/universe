@@ -4,12 +4,15 @@ import { DropdownWrapper, HitBox, StopWrapper, Text } from './styles';
 import ModeDropdown from './components/ModeDropdown/ModeDropdown';
 import { useState } from 'react';
 import AnimatedBackground from './components/AnimatedBackground/AnimatedBackground';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
     onClick: () => void;
 }
 
 export default function StopButton({ onClick }: Props) {
+    const { t } = useTranslation('mining-view');
+
     const [selectedMode, setSelectedMode] = useState('Eco');
 
     return (
@@ -23,7 +26,7 @@ export default function StopButton({ onClick }: Props) {
                 <IconWrapper $absolute={false} className="stop-icon">
                     <StopIcon />
                 </IconWrapper>
-                <Text className="stop-text">{`Stop Mining`}</Text>
+                <Text className="stop-text">{t(`mining-button-text.stop-mining`)}</Text>
             </HitBox>
             <DropdownWrapper>
                 <ModeDropdown selectedMode={selectedMode} setSelectedMode={setSelectedMode} />

@@ -20,6 +20,7 @@ import ludicIcon from './images/ludicrous.png';
 import customIcon from '@app/assets/icons/emoji/custom.png';
 
 import { offset, useClick, useDismiss, useFloating, useInteractions } from '@floating-ui/react';
+import { useTranslation } from 'react-i18next';
 
 const modes = [
     {
@@ -42,6 +43,8 @@ interface Props {
 }
 
 export default function ModeDropdown({ selectedMode, setSelectedMode }: Props) {
+    const { t } = useTranslation('mining-view');
+
     const [isOpen, setIsOpen] = useState(false);
 
     const { refs, floatingStyles, context } = useFloating({
@@ -65,7 +68,7 @@ export default function ModeDropdown({ selectedMode, setSelectedMode }: Props) {
         <Wrapper>
             <Trigger ref={refs.setReference} {...getReferenceProps()} $isOpen={isOpen}>
                 <TextGroup>
-                    <Eyebrow>{`Mode`}</Eyebrow>
+                    <Eyebrow>{t(`mode`)}</Eyebrow>
                     <SelectedValue>
                         {selectedMode}
                         <OptionIcon

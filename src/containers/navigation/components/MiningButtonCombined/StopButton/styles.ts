@@ -1,5 +1,8 @@
 import * as m from 'motion/react-m';
 import styled, { css } from 'styled-components';
+import ecoBackground from './backgrounds/eco.png';
+import ludicrousBackground from './backgrounds/ludicrous.png';
+import customBackground from './backgrounds/custom.png';
 
 export const StopWrapper = styled(m.div)<{ $selectedMode: string }>`
     position: relative;
@@ -11,10 +14,11 @@ export const StopWrapper = styled(m.div)<{ $selectedMode: string }>`
     align-items: center;
     justify-content: space-between;
 
-    background: #4c614a;
-    box-shadow:
-        0px 0px 10px 0px rgba(104, 153, 55, 0.35),
-        0px 0px 13px 0px rgba(238, 255, 217, 0.5) inset;
+    background-color: #4c614a;
+    box-shadow: 0px 0px 10px 0px rgba(104, 153, 55, 0.35);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
 
     padding: 0 6px 0 14px;
 
@@ -26,26 +30,23 @@ export const StopWrapper = styled(m.div)<{ $selectedMode: string }>`
         switch ($selectedMode) {
             case 'Eco':
                 return css`
-                    background: #4c614a;
-                    box-shadow:
-                        0px 0px 10px 0px rgba(104, 153, 55, 0.35),
-                        0px 0px 13px 0px rgba(238, 255, 217, 0.5) inset;
+                    background-color: #4c614a;
+                    box-shadow: 0px 0px 10px 0px rgba(104, 153, 55, 0.35);
+                    background-image: url(${ecoBackground});
                 `;
 
             case 'Ludicrous':
                 return css`
-                    background: #dc6e49;
-                    box-shadow:
-                        0px 0px 10px 0px rgba(153, 89, 55, 0.35),
-                        0px 0px 13px 0px rgba(255, 244, 175, 0.5) inset;
+                    background-color: #dc6e49;
+                    box-shadow: 0px 0px 10px 0px rgba(153, 89, 55, 0.35);
+                    background-image: url(${ludicrousBackground});
                 `;
 
             case 'Custom':
                 return css`
-                    background: #397fb9;
-                    box-shadow:
-                        0px 0px 10px 0px rgba(55, 107, 153, 0.35),
-                        0px 0px 13px 0px rgba(175, 210, 255, 0.5) inset;
+                    background-color: #397fb9;
+                    box-shadow: 0px 0px 10px 0px rgba(55, 107, 153, 0.35);
+                    background-image: url(${customBackground});
                 `;
         }
     }}
@@ -78,6 +79,12 @@ export const HitBox = styled.button`
 
         .stop-text {
             transform: scale(1.05);
+        }
+    }
+
+    &:active {
+        .stop-text {
+            transform: scale(1);
         }
     }
 `;

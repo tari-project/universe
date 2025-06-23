@@ -1,5 +1,6 @@
 import * as m from 'motion/react-m';
 import styled, { css } from 'styled-components';
+import backgroundImage from './images/background.png';
 
 export const StartWrapper = styled(m.button)`
     position: relative;
@@ -11,10 +12,13 @@ export const StartWrapper = styled(m.button)`
     align-items: center;
     justify-content: center;
 
-    background: #188750;
-    box-shadow:
-        0px 0px 10px 0px rgba(104, 153, 55, 0.35),
-        0px 0px 13px 0px rgba(255, 255, 255, 0.55) inset;
+    background-color: #188750;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-image: url(${backgroundImage});
+
+    box-shadow: 0px 0px 10px 0px rgba(104, 153, 55, 0.35);
 
     .start-text {
         transition: transform 0.3s cubic-bezier(0.39, 0.3, 0.2, 0.87);
@@ -25,8 +29,6 @@ export const StartWrapper = styled(m.button)`
     }
 
     &:hover {
-        background: #188750;
-
         .start-text {
             transform: scale(1.05);
         }
@@ -37,8 +39,6 @@ export const StartWrapper = styled(m.button)`
     }
 
     &:active {
-        background: #188750;
-
         .start-text {
             transform: scale(1);
         }
