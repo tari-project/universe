@@ -22,7 +22,7 @@ export const CustomPowerLevelsDialogContainer = () => {
             disableClose={isChangingMode}
         >
             <DialogContent>
-                {maxThreads ? (
+                {isHardwarePhaseFinished && maxThreads ? (
                     <CustomPowerLevelsDialog maxAvailableThreads={maxThreads} handleClose={handleClose} />
                 ) : (
                     <CircularProgress />

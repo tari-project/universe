@@ -4,79 +4,69 @@ import { useBlockchainVisualisationStore } from '../useBlockchainVisualisationSt
 import { useMiningMetricsStore } from '../useMiningMetricsStore.ts';
 
 import { useMiningStore } from '../useMiningStore.ts';
-import { modeType } from '../types.ts';
+import { MiningModeType } from '../types.ts';
 import { setGpuMiningEnabled, setMode } from './appConfigStoreActions.ts';
 import { setError } from './appStateStoreActions.ts';
 import { handleMiningModeChange, setGpuDevices } from '../actions/miningMetricsStoreActions.ts';
 import { useSetupStore } from '@app/store/useSetupStore.ts';
 import { useConfigMiningStore } from '../useAppConfigStore.ts';
 import { Network } from '@app/utils/network.ts';
+import { getParsedMaxLevels } from '@app/utils/mining/power-levels.ts';
 
 interface ChangeMiningModeArgs {
-    mode: modeType;
+    mode: MiningModeType;
     customGpuLevels?: GpuThreads[];
     customCpuLevels?: number;
 }
 
-function setModeDefaults(maxLevels: MaxConsumptionLevels) {
-    console.debug(`wen def`);
+export function setModeDefaults(maxLevels: MaxConsumptionLevels) {
+    const defaultLevels = getParsedMaxLevels(maxLevels, true);
     useConfigMiningStore.setState((c) => ({
-        ...c,
-        eco_mode_cpu_threads: (maxLevels.max_cpu_threads || 3) * 0.3,
-        eco_mode_max_gpu_usage:
-            maxLevels?.max_gpus_threads.map((gpu) => ({
-                gpu_name: gpu.gpu_name,
-                max_gpu_threads: 2,
-            })) || [],
-        ludicrous_mode_max_cpu_usage: maxLevels.max_cpu_threads,
-        ludicrous_mode_max_gpu_usage:
-            maxLevels?.max_gpus_threads.map((gpu) => ({
-                gpu_name: gpu.gpu_name,
-                max_gpu_threads: 1024,
-            })) || [],
+        ...defaultLevels,
+        ...c, // only set defaults if there were none
     }));
 }
 
 export const changeMiningMode = async (params: ChangeMiningModeArgs) => {
     const { mode, customGpuLevels, customCpuLevels } = params;
     console.info(`Changing mode to ${mode}...`);
-    const metricsState = useMiningMetricsStore.getState();
+
+    const cpu_mining_status = useMiningMetricsStore.getState().cpu_mining_status;
+    const gpu_mining_status = useMiningMetricsStore.getState().gpu_mining_status;
+
     useMiningStore.setState({ isChangingMode: true });
     handleMiningModeChange();
     const wasCpuMiningInitiated = useMiningStore.getState().isCpuMiningInitiated;
     const wasGpuMiningInitiated = useMiningStore.getState().isGpuMiningInitiated;
 
-    const maxLevels = useMiningStore.getState().maxAvailableThreads;
-
-    let gpuLevels = customGpuLevels || [];
-    let cpuLevels = customCpuLevels;
-
-    if (mode === 'Eco') {
-        gpuLevels =
-            maxLevels?.max_gpus_threads.map((gpu) => ({
-                gpu_name: gpu.gpu_name,
-                max_gpu_threads: 2,
-            })) || [];
-        cpuLevels = Math.round((maxLevels?.max_cpu_threads || 3) * 0.3);
-    }
-    if (mode === 'Ludicrous') {
-        gpuLevels =
-            maxLevels?.max_gpus_threads.map((gpu) => ({
-                gpu_name: gpu.gpu_name,
-                max_gpu_threads: 1024,
-            })) || [];
-        cpuLevels = maxLevels?.max_cpu_threads;
-    }
-
-    if (metricsState.cpu_mining_status.is_mining || metricsState.gpu_mining_status.is_mining) {
+    if (cpu_mining_status.is_mining || gpu_mining_status.is_mining) {
         console.info('Pausing mining...');
         await stopMining();
     }
+
+    const parsedMax = getParsedMaxLevels(useMiningStore.getState().maxAvailableThreads);
+
+    let cpu = customCpuLevels;
+    let gpu = customGpuLevels;
+
+    switch (mode) {
+        case 'Eco': {
+            cpu = parsedMax.eco_mode_max_cpu_usage;
+            gpu = parsedMax.eco_mode_max_gpu_usage;
+            break;
+        }
+        case 'Ludicrous': {
+            cpu = parsedMax.ludicrous_mode_max_cpu_usage;
+            gpu = parsedMax.ludicrous_mode_max_gpu_usage;
+            break;
+        }
+    }
+
     try {
         await setMode({
-            mode: mode as modeType,
-            customGpuLevels: gpuLevels,
-            customCpuLevels: cpuLevels,
+            mode: mode as MiningModeType,
+            customCpuLevels: cpu,
+            customGpuLevels: gpu,
         });
         console.info(`Mode changed to ${mode}`);
         if (wasCpuMiningInitiated) {

@@ -1,7 +1,7 @@
 import { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { modeType } from '@app/store/types';
+import { MiningModeType } from '@app/store/types';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { setDialogToShow } from '@app/store/actions/uiStoreActions.ts';
@@ -44,7 +44,7 @@ const ModeSelect = memo(function ModeSelect({ variant = 'primary' }: ModeSelectP
             setDialogToShow('ludicrousConfirmation');
             return;
         }
-        await changeMiningMode({ mode: newMode as modeType });
+        await changeMiningMode({ mode: newMode as MiningModeType });
     }, []);
 
     const tabOptions = useMemo(() => {

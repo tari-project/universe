@@ -66,8 +66,6 @@ export function CustomPowerLevelsDialog({ maxAvailableThreads, handleClose }: Cu
         },
     });
 
-    console.debug(configCpuLevels);
-
     const { fields } = useFieldArray({
         control,
         name: FormFields.GPUS,

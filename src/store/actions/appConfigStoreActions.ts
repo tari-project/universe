@@ -22,7 +22,7 @@ import {
 import { setError } from './appStateStoreActions.ts';
 import { setIsAppExchangeSpecific, setUITheme } from './uiStoreActions';
 import { GpuThreads } from '@app/types/app-status.ts';
-import { displayMode, modeType } from '../types';
+import { displayMode, MiningModeType } from '../types';
 import { ConfigCore, ConfigMining, ConfigUI, ConfigWallet } from '@app/types/configs.ts';
 import { NodeType, updateNodeType as updateNodeTypeForNodeStore } from '../useNodeStore.ts';
 import { setCurrentExchangeMinerId } from '../useExchangeStore.ts';
@@ -30,13 +30,13 @@ import { fetchExchangeContent, refreshXCContent } from '@app/hooks/exchanges/fet
 import { fetchExchangeList } from '@app/hooks/exchanges/fetchExchanges.ts';
 
 interface SetModeProps {
-    mode: modeType;
+    mode: MiningModeType;
     customGpuLevels?: GpuThreads[];
     customCpuLevels?: number;
 }
 
 export const handleConfigCoreLoaded = async (coreConfig: ConfigCore) => {
-    useConfigCoreStore.setState(coreConfig);
+    useConfigCoreStore.setState((c) => ({ ...c, ...coreConfig }));
     const buildInExchangeId = useConfigBEInMemoryStore.getState().exchangeId;
     const isAppExchangeSpecific = Boolean(buildInExchangeId !== 'universal');
     setIsAppExchangeSpecific(isAppExchangeSpecific);
@@ -49,10 +49,10 @@ export const handleConfigCoreLoaded = async (coreConfig: ConfigCore) => {
     }
 };
 export const handleConfigWalletLoaded = (walletConfig: ConfigWallet) => {
-    useConfigWalletStore.setState(walletConfig);
+    useConfigWalletStore.setState((c) => ({ ...c, ...walletConfig }));
 };
 export const handleConfigUILoaded = async (uiConfig: ConfigUI) => {
-    useConfigUIStore.setState(uiConfig);
+    useConfigUIStore.setState((c) => ({ ...c, ...uiConfig }));
     const configTheme = uiConfig.display_mode?.toLowerCase();
     if (configTheme) {
         setUITheme(configTheme as displayMode);
@@ -68,7 +68,6 @@ export const handleConfigUILoaded = async (uiConfig: ConfigUI) => {
     }
 };
 export const handleConfigMiningLoaded = (miningConfig: ConfigMining) => {
-    console.debug(`wen`);
     useConfigMiningStore.setState((c) => ({ ...c, ...miningConfig }));
     useMiningStore.setState({ miningTime: miningConfig.mining_time });
 };
@@ -211,42 +210,20 @@ export const setMineOnAppStart = async (mineOnAppStart: boolean) => {
 };
 export const setMode = async (params: SetModeProps) => {
     const { mode, customGpuLevels, customCpuLevels } = params;
-    const prevMode = useConfigMiningStore.getState().mode;
     console.info('Setting mode', mode, customCpuLevels, customGpuLevels);
     invoke('set_mode', { mode, customCpuUsage: customCpuLevels, customGpuUsage: customGpuLevels })
         .then(() => {
-            switch (mode) {
-                case 'Custom': {
-                    useConfigMiningStore.setState({
-                        mode,
-                        custom_max_cpu_usage: customCpuLevels,
-                        custom_max_gpu_usage: customGpuLevels,
-                    });
-                    break;
-                }
-
-                case 'Ludicrous': {
-                    useConfigMiningStore.setState({
-                        mode,
-                        ludicrous_mode_max_cpu_usage: customCpuLevels,
-                        ludicrous_mode_max_gpu_usage: customGpuLevels,
-                    });
-                    break;
-                }
-                case 'Eco': {
-                    useConfigMiningStore.setState({
-                        mode,
-                        eco_mode_max_cpu_usage: customCpuLevels,
-                        eco_mode_max_gpu_usage: customGpuLevels,
-                    });
-                    break;
-                }
-            }
+            const isCustom = mode === 'Custom';
+            useConfigMiningStore.setState((c) => ({
+                ...c,
+                mode,
+                custom_max_cpu_usage: isCustom ? customCpuLevels : c.custom_max_cpu_usage,
+                custom_max_gpu_usage: isCustom ? customGpuLevels : c.custom_max_gpu_usage,
+            }));
         })
         .catch((e) => {
             console.error('Could not set mode', e);
             setError('Could not change mode');
-            useConfigMiningStore.setState({ mode: prevMode });
         });
 };
 export const setMoneroAddress = async (moneroAddress: string) => {
