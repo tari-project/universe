@@ -6,16 +6,15 @@ export const RangeLabel = styled.label`
     align-items: center;
     font-size: 14px;
     font-weight: 500;
-    padding-bottom: 10px;
 `;
 
 export const InputDescription = styled.div`
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
     font-size: 12px;
     color: ${({ theme }) => theme.palette.text.secondary};
-    padding-bottom: 10px;
+    gap: 4px;
     span {
         font-weight: bold;
     }

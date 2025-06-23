@@ -87,7 +87,6 @@ export const getMaxAvailableThreads = async () => {
     try {
         const maxAvailableThreads = await invoke('get_max_consumption_levels');
         useMiningStore.setState({ maxAvailableThreads });
-        console.debug(`maxAvailableThreads= `, maxAvailableThreads);
         setModeDefaults(maxAvailableThreads);
     } catch (e) {
         console.error('Failed to get max available threads: ', e);

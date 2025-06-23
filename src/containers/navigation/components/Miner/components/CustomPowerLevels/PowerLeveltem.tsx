@@ -1,10 +1,7 @@
-import { SliderInput } from '@app/components/elements/inputs/range/Slider.tsx';
-import {
-    InputDescription,
-    RangeLabel,
-    WarningContainer,
-} from '@app/containers/navigation/components/Miner/components/CustomPowerLevels/RangeInput.styles.ts';
 import { Trans, useTranslation } from 'react-i18next';
+import { SliderInput } from '@app/components/elements/inputs/range/Slider.tsx';
+import { InputDescription, RangeLabel, WarningContainer } from './RangeInput.styles.ts';
+import { PowerLeveltemWrapper } from '@app/components/elements/inputs/range/styles.ts';
 
 interface PowerLeveltemProps {
     label: string;
@@ -37,8 +34,8 @@ export const PowerLeveltem = ({
     const hasWarning = convertToPercentage(value, maxLevel) > 75;
 
     return (
-        <>
-            <RangeLabel> {label}</RangeLabel>
+        <PowerLeveltemWrapper>
+            <RangeLabel>{label}</RangeLabel>
             <SliderInput
                 defaultValue={value}
                 maxValue={maxLevel}
@@ -63,6 +60,6 @@ export const PowerLeveltem = ({
             <WarningContainer $visible={hasWarning}>
                 <strong>{t('custom-power-levels.warning')}</strong>: {warning}
             </WarningContainer>
-        </>
+        </PowerLeveltemWrapper>
     );
 };

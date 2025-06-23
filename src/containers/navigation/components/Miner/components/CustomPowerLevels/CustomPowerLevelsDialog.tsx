@@ -8,6 +8,7 @@ import {
     CustomLevelsContent,
     SuccessContainer,
     TopRightContainer,
+    CTAWrapper,
 } from './CustomPowerLevelsDialog.styles.ts';
 import { useTranslation } from 'react-i18next';
 import { Divider } from '@app/components/elements/Divider.tsx';
@@ -20,6 +21,7 @@ import { changeMiningMode } from '@app/store/actions/miningStoreActions.ts';
 import { useConfigMiningStore } from '@app/store/useAppConfigStore.ts';
 
 import { PowerLeveltem } from '@app/containers/navigation/components/Miner/components/CustomPowerLevels/PowerLeveltem.tsx';
+import { getParsedMaxLevels } from '@app/utils/mining/power-levels.ts';
 
 enum FormFields {
     CPU = 'cpu',
@@ -40,29 +42,18 @@ export function CustomPowerLevelsDialog({ maxAvailableThreads, handleClose }: Cu
     const [saved, setSaved] = useState(false);
 
     const mode = useConfigMiningStore((s) => s.mode);
+
+    const defaultLevels = getParsedMaxLevels(maxAvailableThreads);
     const configCpuLevels = useConfigMiningStore((s) => s.custom_max_cpu_usage);
     const configGpuLevels = useConfigMiningStore((s) => s.custom_max_gpu_usage);
-    const ecoCpuLevels = useConfigMiningStore((s) => s.eco_mode_max_cpu_usage);
-    const ecoGpuLevels = useConfigMiningStore((s) => s.eco_mode_max_gpu_usage);
-    const ludicrousCpuLevels = useConfigMiningStore((s) => s.ludicrous_mode_max_cpu_usage);
-    const ludicrousGpuLevels = useConfigMiningStore((s) => s.ludicrous_mode_max_gpu_usage);
+
     const isChangingMode = useMiningStore((s) => s.isChangingMode);
-    const defaults = {
-        Eco: {
-            cpu: ecoCpuLevels,
-            gpu: ecoGpuLevels,
-        },
-        Ludicrous: {
-            cpu: ludicrousCpuLevels,
-            gpu: ludicrousGpuLevels,
-        },
-    };
 
     const { control, handleSubmit, setValue, formState } = useForm<FormValues>({
         reValidateMode: 'onSubmit',
         defaultValues: {
-            cpu: configCpuLevels > 0 ? configCpuLevels : defaults[mode].cpu || 1,
-            gpus: configGpuLevels?.length > 0 ? configGpuLevels : defaults[mode].gpu,
+            cpu: configCpuLevels || defaultLevels.eco_mode_max_cpu_usage,
+            gpus: configGpuLevels?.length > 0 ? configGpuLevels : defaultLevels.eco_mode_max_gpu_usage,
         },
     });
 
@@ -121,7 +112,6 @@ export function CustomPowerLevelsDialog({ maxAvailableThreads, handleClose }: Cu
                 render={({ field }) => {
                     return (
                         <>
-                            <Divider />
                             <PowerLeveltem
                                 key={gpu.id}
                                 label={`${t('custom-power-levels.gpu-power-level', { index: index + 1 })}: ${gpu.gpu_name}`}
@@ -161,13 +151,14 @@ export function CustomPowerLevelsDialog({ maxAvailableThreads, handleClose }: Cu
             <CustomLevelsContent>
                 {cpuMarkup}
                 {gpuMarkup}
-                <Divider />
-                <Button
-                    onClick={handleSubmit(onSubmit)}
-                    disabled={isChangingMode || (mode === 'Custom' && !formState.isDirty)}
-                >
-                    {t(`custom-power-levels.${formState.isDirty ? 'save-changes' : 'use-custom'}`)}
-                </Button>
+                <CTAWrapper>
+                    <Button
+                        onClick={handleSubmit(onSubmit)}
+                        disabled={isChangingMode || (mode === 'Custom' && !formState.isDirty)}
+                    >
+                        {t(`custom-power-levels.${formState.isDirty ? 'save-changes' : 'use-custom'}`)}
+                    </Button>
+                </CTAWrapper>
             </CustomLevelsContent>
         </>
     );

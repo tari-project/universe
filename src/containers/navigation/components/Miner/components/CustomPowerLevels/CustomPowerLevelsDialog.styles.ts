@@ -4,19 +4,26 @@ export const CustomLevelsContent = styled.div`
     padding: 0 10px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
     width: 700px;
+`;
+
+export const CTAWrapper = styled.div`
+    display: flex;
+    width: 100%;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 16px 0 0;
 `;
 
 export const CustomLevelsHeader = styled.div`
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 10px;
     font-size: 18px;
     font-weight: 600;
     line-height: 1.4;
-    padding: 0 10px 10px;
+    padding: 0 10px;
     border-bottom: 1px solid #0000000d;
 `;
 

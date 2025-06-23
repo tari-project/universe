@@ -4,13 +4,12 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 
 const SLIDER_THUMB_WIDTH = 20;
 export const Wrapper = styled.div<{ $isLoading?: boolean }>`
-    display: flex;
+    display: grid;
+    grid-template-columns: min(6%, 45px) auto min(6%, 45px);
     width: 100%;
     touch-action: none;
     user-select: none;
-    gap: 10px;
-    align-items: center;
-    justify-content: space-between;
+    place-items: stretch;
 
     ${({ $isLoading }) =>
         $isLoading &&
@@ -115,7 +114,6 @@ export const ValueIndicator = styled(m.div)`
 export const RangeLimits = styled(Typography)`
     font-size: 18px;
     font-weight: 500;
-    display: flex;
     text-align: center;
 `;
 
@@ -135,4 +133,13 @@ export const PerformanceMarker = styled.div<{ $red?: boolean }>`
             background: #ff0000;
             left: 75%;
         `}
+`;
+
+export const PowerLeveltemWrapper = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+    border-bottom: 1px solid ${({ theme }) => theme.palette.divider};
+    padding: 16px 0;
 `;
