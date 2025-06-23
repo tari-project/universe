@@ -45,6 +45,24 @@ export const StartWrapper = styled(m.button)`
             transform: scale(1);
         }
     }
+
+    &:disabled {
+        pointer-events: none;
+
+        .start-text {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .play-icon {
+            opacity: 0.5;
+            pointer-events: none;
+
+            * {
+                pointer-events: none;
+            }
+        }
+    }
 `;
 
 export const Text = styled.span`
