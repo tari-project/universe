@@ -17,7 +17,8 @@ import { AnimatePresence } from 'motion/react';
 import SelectedIcon from './icons/SelectedIcon';
 import ecoIcon from './images/eco.png';
 import ludicIcon from './images/ludicrous.png';
-import customIcon from './images/custom.png';
+import customIcon from '@app/assets/icons/emoji/custom.png';
+
 import { offset, useClick, useDismiss, useFloating, useInteractions } from '@floating-ui/react';
 
 const modes = [
@@ -35,14 +36,13 @@ const modes = [
     },
 ];
 
-export default function ModeDropdown() {
-    const [isOpen, setIsOpen] = useState(false);
-    const [selectedMode, setSelectedMode] = useState(modes[0]);
+interface Props {
+    selectedMode: string;
+    setSelectedMode: (mode: string) => void;
+}
 
-    const handleSelectMode = (mode: (typeof modes)[number]) => {
-        setSelectedMode(mode);
-        setIsOpen(false);
-    };
+export default function ModeDropdown({ selectedMode, setSelectedMode }: Props) {
+    const [isOpen, setIsOpen] = useState(false);
 
     const { refs, floatingStyles, context } = useFloating({
         open: isOpen,
@@ -56,14 +56,24 @@ export default function ModeDropdown() {
 
     const { getReferenceProps, getFloatingProps } = useInteractions([click, dismiss]);
 
+    const handleSelectMode = (mode: string) => {
+        setSelectedMode(mode);
+        setIsOpen(false);
+    };
+
     return (
         <Wrapper>
             <Trigger ref={refs.setReference} {...getReferenceProps()} $isOpen={isOpen}>
                 <TextGroup>
                     <Eyebrow>{`Mode`}</Eyebrow>
                     <SelectedValue>
-                        <OptionIcon src={selectedMode.icon} alt={selectedMode.name} />
-                        {selectedMode.name}
+                        {selectedMode}
+                        <OptionIcon
+                            src={modes.find((mode) => mode.name === selectedMode)?.icon}
+                            alt=""
+                            aria-hidden="true"
+                            className="option-icon"
+                        />
                     </SelectedValue>
                 </TextGroup>
                 <IconWrapper $isOpen={isOpen}>
@@ -75,15 +85,19 @@ export default function ModeDropdown() {
                 {isOpen && (
                     <FloatingWrapper ref={refs.setFloating} style={floatingStyles} {...getFloatingProps()}>
                         <Menu
-                            initial={{ opacity: 0, y: 10 }}
+                            initial={{ opacity: 0, y: -5 }}
                             animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 10 }}
+                            exit={{ opacity: 0, y: -5 }}
                         >
                             {modes.map((mode) => (
-                                <Option key={mode.name} onClick={() => handleSelectMode(mode)}>
-                                    <OptionIcon src={mode.icon} alt={mode.name} />
+                                <Option
+                                    key={mode.name}
+                                    onClick={() => handleSelectMode(mode.name)}
+                                    $isSelected={mode.name === selectedMode}
+                                >
+                                    <OptionIcon src={mode.icon} alt="" aria-hidden="true" className="option-icon" />
                                     <OptionText>{mode.name}</OptionText>
-                                    {mode.name === selectedMode.name && <SelectedIcon className="selected-icon" />}
+                                    {mode.name === selectedMode && <SelectedIcon className="selected-icon" />}
                                 </Option>
                             ))}
                         </Menu>

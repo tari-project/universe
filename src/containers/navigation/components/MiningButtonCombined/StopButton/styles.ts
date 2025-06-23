@@ -1,7 +1,7 @@
 import * as m from 'motion/react-m';
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 
-export const StopWrapper = styled(m.div)`
+export const StopWrapper = styled(m.div)<{ $selectedMode: string }>`
     position: relative;
     border-radius: 500px;
     width: 100%;
@@ -17,6 +17,38 @@ export const StopWrapper = styled(m.div)`
         0px 0px 13px 0px rgba(238, 255, 217, 0.5) inset;
 
     padding: 0 6px 0 14px;
+
+    transition:
+        background 0.3s cubic-bezier(0.39, 0.3, 0.2, 0.87),
+        box-shadow 0.3s cubic-bezier(0.39, 0.3, 0.2, 0.87);
+
+    ${({ $selectedMode }) => {
+        switch ($selectedMode) {
+            case 'Eco':
+                return css`
+                    background: #4c614a;
+                    box-shadow:
+                        0px 0px 10px 0px rgba(104, 153, 55, 0.35),
+                        0px 0px 13px 0px rgba(238, 255, 217, 0.5) inset;
+                `;
+
+            case 'Ludicrous':
+                return css`
+                    background: #dc6e49;
+                    box-shadow:
+                        0px 0px 10px 0px rgba(153, 89, 55, 0.35),
+                        0px 0px 13px 0px rgba(255, 244, 175, 0.5) inset;
+                `;
+
+            case 'Custom':
+                return css`
+                    background: #397fb9;
+                    box-shadow:
+                        0px 0px 10px 0px rgba(55, 107, 153, 0.35),
+                        0px 0px 13px 0px rgba(175, 210, 255, 0.5) inset;
+                `;
+        }
+    }}
 `;
 
 export const HitBox = styled.button`

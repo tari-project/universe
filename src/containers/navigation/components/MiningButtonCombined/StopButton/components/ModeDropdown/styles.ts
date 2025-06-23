@@ -39,7 +39,7 @@ export const TextGroup = styled.div`
     flex-shrink: 0;
 
     width: 100%;
-    gap: 3px;
+    gap: 1px;
 `;
 
 export const Eyebrow = styled.div`
@@ -63,7 +63,12 @@ export const SelectedValue = styled.div`
 
     display: flex;
     align-items: center;
-    gap: 9px;
+    gap: 5px;
+
+    .option-icon {
+        width: auto;
+        height: 16px;
+    }
 `;
 
 export const IconWrapper = styled.div<{ $isOpen: boolean }>`
@@ -74,6 +79,10 @@ export const IconWrapper = styled.div<{ $isOpen: boolean }>`
 
     transition: transform 0.3s cubic-bezier(0.39, 0.3, 0.2, 0.87);
     transform-origin: center;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
 
     ${({ $isOpen }) =>
         $isOpen &&
@@ -91,22 +100,22 @@ export const Menu = styled(m.div)`
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 1px;
 
     border-radius: 10px;
-    background: #fff;
     box-shadow: 0px 16px 30px 0px rgba(0, 0, 0, 0.25);
     backdrop-filter: blur(12.5px);
 
     width: 197px;
     padding: 10px;
+
+    background: ${({ theme }) => theme.palette.background.paper};
 `;
 
-export const Option = styled.button`
+export const Option = styled.button<{ $isSelected: boolean }>`
     border-radius: 10px;
     position: relative;
 
-    color: #000;
+    color: ${({ theme }) => theme.palette.text.primary};
     font-family: Poppins, sans-serif;
     font-size: 14px;
     font-style: normal;
@@ -118,7 +127,7 @@ export const Option = styled.button`
     gap: 9px;
 
     width: 100%;
-    padding: 10px 10px;
+    padding: 8px 7px;
 
     transition: background 0.1s cubic-bezier(0.39, 0.3, 0.2, 0.87);
 
@@ -131,13 +140,14 @@ export const Option = styled.button`
         transform: translateY(-50%);
     }
 
+    background: ${({ theme, $isSelected }) => ($isSelected ? theme.palette.action.background.default : 'none')};
+
     &:hover {
-        background: #e9e9e9;
+        background: ${({ theme }) => theme.palette.action.hover.default};
     }
 `;
 
 export const OptionText = styled.div`
-    color: #000;
     font-family: Poppins, sans-serif;
     font-size: 14px;
     font-style: normal;
