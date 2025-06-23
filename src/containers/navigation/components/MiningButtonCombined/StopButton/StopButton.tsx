@@ -3,6 +3,7 @@ import StopIcon from './icons/StopIcon';
 import { DropdownWrapper, HitBox, StopWrapper, Text } from './styles';
 import ModeDropdown from './components/ModeDropdown/ModeDropdown';
 import { useState } from 'react';
+import AnimatedBackground from './components/AnimatedBackground/AnimatedBackground';
 
 interface Props {
     onClick: () => void;
@@ -27,6 +28,7 @@ export default function StopButton({ onClick }: Props) {
             <DropdownWrapper>
                 <ModeDropdown selectedMode={selectedMode} setSelectedMode={setSelectedMode} />
             </DropdownWrapper>
+            <AnimatedBackground />
         </StopWrapper>
     );
 }

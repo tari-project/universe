@@ -60,6 +60,9 @@ export const HitBox = styled.button`
     width: 100%;
     height: 100%;
 
+    position: relative;
+    z-index: 1;
+
     .stop-icon {
         transition: background-color 0.3s cubic-bezier(0.39, 0.3, 0.2, 0.87);
     }
@@ -94,4 +97,7 @@ export const Text = styled.div`
 export const DropdownWrapper = styled.div`
     width: 139px;
     flex-shrink: 0;
+
+    position: relative;
+    z-index: 3;
 `;
