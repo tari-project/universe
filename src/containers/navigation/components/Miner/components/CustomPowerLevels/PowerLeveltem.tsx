@@ -13,6 +13,8 @@ interface PowerLeveltemProps {
     warning?: string;
     isLoading?: boolean;
     step?: number;
+    ecoLevel?: number;
+    ludiLevel?: number;
 }
 
 function convertToPercentage(value: number, max: number): number {
@@ -28,6 +30,8 @@ export const PowerLeveltem = ({
     warning,
     step = 1,
     isLoading = false,
+    ecoLevel,
+    ludiLevel,
 }: PowerLeveltemProps) => {
     const { t } = useTranslation('settings');
     // Check if the value is over 75% of the max level
@@ -45,6 +49,8 @@ export const PowerLeveltem = ({
                 stepSize={step}
                 isStepped={!!step}
                 isLoading={isLoading}
+                ecoLevel={ecoLevel}
+                ludiLevel={ludiLevel}
             />
             <InputDescription>
                 <Trans

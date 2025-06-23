@@ -10,7 +10,7 @@ function mapGPU(gpus: MaxConsumptionLevels['max_gpus_threads'], maxThreads: numb
     );
 }
 export function getParsedMaxLevels(maxLevels?: MaxConsumptionLevels, isDefault = false): PowerLevelUsage {
-    const cpuMax = maxLevels?.max_cpu_threads || 1;
+    const cpuMax = maxLevels?.max_cpu_threads || 2;
     const gpuMax = maxLevels?.max_gpus_threads || [];
 
     const ecoCPU = Math.min(Math.round(cpuMax * 0.3), 1);

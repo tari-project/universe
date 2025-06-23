@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { animate, useMotionValue, useTransform } from 'motion/react';
 import {
+    ModeIndicator,
     PerformanceMarker,
     Range,
     RangeLimits,
@@ -14,6 +15,8 @@ import {
 } from './styles.ts';
 import useDebouncedValue from '@app/hooks/helpers/useDebounce.ts';
 
+import eco from '@app/assets/icons/emoji/eco.png';
+import fire from '@app/assets/icons/emoji/fire.png';
 interface SliderProps {
     defaultValue: number;
     maxValue: number;
@@ -23,6 +26,8 @@ interface SliderProps {
     startingValue?: number;
     performanceMarkers?: boolean;
     isLoading?: boolean;
+    ecoLevel?: number;
+    ludiLevel?: number;
 }
 export function SliderInput({
     defaultValue = 0,
@@ -33,6 +38,8 @@ export function SliderInput({
     maxValue,
     stepSize = 1,
     onChange,
+    ecoLevel,
+    ludiLevel,
 }: SliderProps) {
     const [value, setValue] = useState(defaultValue);
     const deferredValue = useDebouncedValue(value, 200);
@@ -67,13 +74,36 @@ export function SliderInput({
         e.currentTarget.setPointerCapture(e.pointerId);
     };
 
-    const getRangePercentage = () => {
+    const getRangePercentage = (valueArg?: number) => {
+        const comparisonValue = valueArg || value;
+
         const totalRange = maxValue - startingValue;
         if (totalRange === 0) return 0;
 
-        return ((value - startingValue) / totalRange) * 100;
+        return ((comparisonValue - startingValue) / totalRange) * 100;
     };
 
+    const ecoMarkup = (
+        <ModeIndicator
+            style={{
+                left: ecoLevel ? `${getRangePercentage(ecoLevel)}%` : 0,
+                opacity: useTransform(scale, [1, 1.01], [0, 1]),
+            }}
+        >
+            <img src={eco} alt="eco emoji" />
+        </ModeIndicator>
+    );
+
+    const ludicrousMarkup = (
+        <ModeIndicator
+            style={{
+                left: ludiLevel ? `${getRangePercentage(ludiLevel)}%` : 0,
+                opacity: useTransform(scale, [1, 1.01], [0, 1]),
+            }}
+        >
+            <img src={fire} alt="fire emoji" />
+        </ModeIndicator>
+    );
     return (
         <Wrapper $isLoading={isLoading}>
             <RangeLimits>{startingValue}</RangeLimits>
@@ -104,6 +134,8 @@ export function SliderInput({
                             marginBottom: useTransform(scale, [1, 1.02], [0, -3]),
                         }}
                     >
+                        {ecoLevel ? ecoMarkup : null}
+                        {ludiLevel ? ludicrousMarkup : null}
                         <Thumb
                             style={{
                                 left: `${getRangePercentage()}%`,

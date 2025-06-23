@@ -83,6 +83,15 @@ export const Thumb = styled(m.div)`
     top: 50%;
     transform: translate(-50%, -50%);
 `;
+export const ModeIndicator = styled(m.div)`
+    top: -${SLIDER_THUMB_WIDTH + 10}px;
+    position: absolute;
+
+    img {
+        position: relative;
+        width: 10px;
+    }
+`;
 export const ValueIndicator = styled(m.div)`
     display: flex;
     color: #fff;

@@ -210,7 +210,7 @@ export const setMineOnAppStart = async (mineOnAppStart: boolean) => {
 };
 export const setMode = async (params: SetModeProps) => {
     const { mode, customGpuLevels, customCpuLevels } = params;
-    console.info('Setting mode', mode, customCpuLevels, customGpuLevels);
+
     invoke('set_mode', { mode, customCpuUsage: customCpuLevels, customGpuUsage: customGpuLevels })
         .then(() => {
             const isCustom = mode === 'Custom';

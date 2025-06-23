@@ -11,7 +11,7 @@ import {
     CTAWrapper,
 } from './CustomPowerLevelsDialog.styles.ts';
 import { useTranslation } from 'react-i18next';
-import { Divider } from '@app/components/elements/Divider.tsx';
+
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 import { IoClose } from 'react-icons/io5';
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
@@ -97,11 +97,16 @@ export function CustomPowerLevelsDialog({ maxAvailableThreads, handleClose }: Cu
                         warning={t('custom-power-levels.cpu-warning')}
                         isLoading={isChangingMode}
                         minLevel={1}
+                        ecoLevel={defaultLevels.eco_mode_max_cpu_usage}
+                        ludiLevel={defaultLevels.ludicrous_mode_max_cpu_usage}
                     />
                 );
             }}
         />
     );
+
+    const gpuEcoLevel = defaultLevels.eco_mode_max_gpu_usage?.[0]?.max_gpu_threads;
+    const gpuLudiLevel = defaultLevels.ludicrous_mode_max_gpu_usage?.[0]?.max_gpu_threads;
     const gpuMarkup = fields?.map((gpu, index) => {
         const maxLevel = maxAvailableThreads?.max_gpus_threads?.[index]?.max_gpu_threads || 8192;
         return (
@@ -127,6 +132,8 @@ export function CustomPowerLevelsDialog({ maxAvailableThreads, handleClose }: Cu
                                     });
                                 }}
                                 isLoading={isChangingMode}
+                                ecoLevel={gpuEcoLevel}
+                                ludiLevel={gpuLudiLevel}
                             />
                         </>
                     );
