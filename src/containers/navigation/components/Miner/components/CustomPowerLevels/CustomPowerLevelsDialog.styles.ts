@@ -23,21 +23,21 @@ export const CustomLevelsHeader = styled.div`
     font-size: 18px;
     font-weight: 600;
     line-height: 1.4;
-    padding: 0 10px;
+    padding: 0 10px 10px;
     border-bottom: 1px solid #0000000d;
 `;
 
 export const SuccessContainer = styled.div<{ $visible: boolean }>`
     overflow: hidden;
-    padding: 15px;
+    padding: 8px 10px;
     font-size: 12px;
     font-family: Poppins, sans-serif;
     color: #188750;
     border: 1px solid #188750;
-    border-radius: 5px;
+    border-radius: 18px;
     background: rgba(24, 135, 80, 0.1);
     opacity: 0;
-    transition: all 0.3s ease-in-out;
+    transition: opacity 0.3s ease-in-out;
     ${({ $visible }) =>
         $visible &&
         css`
