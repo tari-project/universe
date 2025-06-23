@@ -1,6 +1,7 @@
 import { create } from './create';
 import { Theme } from '@app/theme/types.ts';
 import { SB_MINI_WIDTH, SB_SPACING } from '@app/theme/styles.ts';
+import { WalletUIMode } from '@app/types/events-payloads';
 
 export const sidebarTowerOffset = SB_SPACING + SB_MINI_WIDTH;
 export const TOWER_CANVAS_ID = 'tower-canvas';
@@ -37,9 +38,8 @@ interface UIStoreState {
     adminShow?: AdminShow;
     connectionStatus?: CONNECTION_STATUS;
     isReconnecting?: boolean;
-    seedlessUI?: boolean;
-    isAppExchangeSpecific?: boolean;
     shouldShowExchangeSpecificModal: boolean;
+    walletUIMode: WalletUIMode;
     showSplashscreen: boolean;
     hideWalletBalance: boolean;
     showResumeAppModal: boolean;
@@ -65,9 +65,8 @@ const initialState: UIStoreState = {
     hideWalletBalance: false,
     showWarmup: false,
     showResumeAppModal: false,
-    seedlessUI: false,
-    isAppExchangeSpecific: false,
     shouldShowExchangeSpecificModal: false,
+    walletUIMode: WalletUIMode.Standard,
     towerSidebarOffset: sidebarTowerOffset,
     showTapplet: false,
     blockBubblesEnabled: false,

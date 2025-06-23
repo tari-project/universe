@@ -7,10 +7,11 @@ import { GridBottom, GridCenter, GridTop, LogoWrapper, MiniWrapper } from './Sid
 import BridgeNavigationButton from './BridgeNavigationButton.tsx';
 import { useTappletsStore } from '@app/store/useTappletsStore.ts';
 import { useUIStore } from '@app/store';
+import { WalletUIMode } from '@app/types/events-payloads.ts';
 
 const SidebarMini = memo(function SidebarMini() {
     const uiBridgeSwapsEnabled = useTappletsStore((s) => s.uiBridgeSwapsEnabled);
-    const seedlessUI = useUIStore((s) => s.seedlessUI);
+    const isStandardWalletUI = useUIStore((s) => s.walletUIMode === WalletUIMode.Standard);
 
     return (
         <MiniWrapper>
@@ -21,7 +22,7 @@ const SidebarMini = memo(function SidebarMini() {
             </GridTop>
             <GridCenter>
                 <NavigationButton />
-                {uiBridgeSwapsEnabled && !seedlessUI && <BridgeNavigationButton />}
+                {uiBridgeSwapsEnabled && isStandardWalletUI && <BridgeNavigationButton />}
             </GridCenter>
             <GridBottom>
                 <AirdropSidebarItems />

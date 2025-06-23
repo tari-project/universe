@@ -45,7 +45,9 @@ interface XCOptionProps {
 }
 
 export const XCOption = ({ content, isCurrent = false, isActive, onActiveClick }: XCOptionProps) => {
-    const base_tari_address = useWalletStore((state) => state.external_tari_address_emoji);
+    const last_internal_tari_emoji_address_used = useWalletStore(
+        (state) => state.last_internal_tari_emoji_address_used
+    );
     const { t } = useTranslation(['exchange', 'settings'], { useSuspense: false });
     const [isAddressValid, setIsAddressValid] = useState(false);
     const [miningAddress, setMiningAddress] = useState('');
@@ -121,7 +123,11 @@ export const XCOption = ({ content, isCurrent = false, isActive, onActiveClick }
                     <ExchangeAddress
                         handleIsAddressValid={setIsAddressValid}
                         handleAddressChanged={setMiningAddress}
-                        value={isCurrent && base_tari_address ? truncateMiddle(base_tari_address, 7, ' ... ') : ''}
+                        value={
+                            isCurrent && last_internal_tari_emoji_address_used
+                                ? truncateMiddle(last_internal_tari_emoji_address_used, 7, ' ... ')
+                                : ''
+                        }
                     />
                     <SeasonReward>
                         <LeftContent>

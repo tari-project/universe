@@ -1,14 +1,12 @@
 import { invoke } from '@tauri-apps/api/core';
-import { WalletAddress, WalletBalance } from '@app/types/app-status.ts';
+import { WalletBalance } from '@app/types/app-status.ts';
 import { BackendBridgeTransaction, useWalletStore } from '../useWalletStore';
 import { setError } from './appStateStoreActions';
-import { setCurrentExchangeMinerId, universalExchangeMinerOption } from '@app/store/useExchangeStore.ts';
 import { WrapTokenService, OpenAPI } from '@tari-project/wxtm-bridge-backend-api';
 import { useConfigBEInMemoryStore } from '../useAppConfigStore';
 import { TransactionDetailsItem, TransactionDirection, TransactionStatus } from '@app/types/transactions';
-import { useUIStore } from '../useUIStore';
-import { setSeedlessUI } from './uiStoreActions';
 import { refreshTransactions } from '@app/hooks/wallet/useFetchTxHistory.ts';
+import { TariAddressType, TariAddressUpdatePayload } from '@app/types/events-payloads';
 
 export const fetchBridgeTransactionsHistory = async () => {
     console.info('Fetching bridge transactions history...');
@@ -118,36 +116,17 @@ export const setIsSwapping = (isSwapping: boolean) => {
 export const setDetailsItem = (detailsItem: TransactionDetailsItem | BackendBridgeTransaction | null) =>
     useWalletStore.setState({ detailsItem });
 
-export const handleExternalWalletAddressUpdate = (payload?: WalletAddress) => {
-    const isSeedlessUI = useUIStore.getState().seedlessUI;
-    if (payload) {
-        useWalletStore.setState((c) => ({
-            ...c,
-            external_tari_address_base58: payload.tari_address_base58,
-            external_tari_address_emoji: payload.tari_address_emoji,
-        }));
+export const handleSelectedTariAddressChange = (payload: TariAddressUpdatePayload) => {
+    const { tari_address_base58, tari_address_emoji, tari_address_type } = payload;
+    useWalletStore.setState({
+        tari_address_base58,
+        tari_address_emoji,
+        tari_address_type,
+    });
 
-        if (!isSeedlessUI) {
-            setSeedlessUI(true);
-        }
-    } else {
-        useWalletStore.setState((c) => ({
-            ...c,
-            external_tari_address_base58: undefined,
-            external_tari_address_emoji: undefined,
-        }));
-        if (isSeedlessUI) {
-            setSeedlessUI(false);
-            setCurrentExchangeMinerId(universalExchangeMinerOption.exchange_id);
-            refreshTransactions();
-        }
+    if (tari_address_type === TariAddressType.Internal) {
+        useWalletStore.setState({ last_internal_tari_emoji_address_used: tari_address_emoji });
     }
-};
 
-export const handleBaseWalletUpate = (payload: WalletAddress) => {
-    useWalletStore.setState((c) => ({
-        ...c,
-        tari_address_base58: payload.tari_address_base58,
-        tari_address_emoji: payload.tari_address_emoji,
-    }));
+    console.info('Tari address updated:', { tari_address_base58, tari_address_emoji, tari_address_type });
 };

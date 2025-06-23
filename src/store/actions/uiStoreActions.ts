@@ -14,7 +14,7 @@ import {
 import { setVisualMode } from './appConfigStoreActions.ts';
 
 import { Theme } from '@app/theme/types.ts';
-import { ConnectionStatusPayload } from '@app/types/events-payloads.ts';
+import { ConnectionStatusPayload, WalletUIMode } from '@app/types/events-payloads.ts';
 import { SB_WIDTH } from '@app/theme/styles.ts';
 import { useConfigUIStore } from '../useAppConfigStore.ts';
 import { useSetupStore } from '../useSetupStore.ts';
@@ -91,8 +91,6 @@ export const setSidebarOpen = (sidebarOpen: boolean) =>
     });
 
 export const setSeedlessUI = (seedlessUI: boolean) => useUIStore.setState((c) => ({ ...c, seedlessUI }));
-export const setIsAppExchangeSpecific = (isAppExchangeSpecific: boolean) =>
-    useUIStore.setState({ isAppExchangeSpecific });
 export const setShouldShowExchangeSpecificModal = (shouldShowExchangeSpecificModal: boolean) =>
     useUIStore.setState({ shouldShowExchangeSpecificModal });
 export const handleCloseSplashscreen = () => useUIStore.setState({ showSplashscreen: false });
@@ -125,3 +123,6 @@ export const animationDarkBg = [
     { property: 'particlesOpacity', value: 0.95 },
     { property: 'particlesSize', value: 0.015 },
 ];
+export const handleWalletUIChanged = (mode: WalletUIMode) => {
+    useUIStore.setState({ walletUIMode: mode });
+};

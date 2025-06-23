@@ -7,8 +7,10 @@ import {
     DetectedDevicesPayload,
     NewBlockHeightPayload,
     NodeTypeUpdatePayload,
+    SetupPhase,
     ShowReleaseNotesPayload,
     TariAddressUpdatePayload,
+    WalletUIMode,
 } from './events-payloads.ts';
 import {
     BaseNodeStatus,
@@ -21,14 +23,6 @@ import {
 } from './app-status.ts';
 import { ConfigCore, ConfigMining, ConfigUI, ConfigWallet } from './configs.ts';
 import { DisabledPhasesPayload } from '@app/store/actions/setupStoreActions.ts';
-
-export enum SetupPhase {
-    Core = 'Core',
-    Wallet = 'Wallet',
-    Hardware = 'Hardware',
-    Node = 'Node',
-    Mining = 'Mining',
-}
 
 export const BACKEND_STATE_UPDATE = 'backend_state_update';
 export type BackendStateUpdateEvent =
@@ -205,14 +199,14 @@ export type BackendStateUpdateEvent =
           payload: DisabledPhasesPayload;
       }
     | {
-          event_type: 'ExternalTariAddressChanged';
-          payload?: TariAddressUpdatePayload;
+          event_type: 'ShouldShowExchangeMinerModal';
+          payload: undefined;
       }
     | {
-          event_type: 'BaseTariAddressChanged';
+          event_type: 'SelectedTariAddressChanged';
           payload: TariAddressUpdatePayload;
       }
     | {
-          event_type: 'ShouldShowExchangeMinerModal';
-          payload: undefined;
+          event_type: 'WalletUIModeChanged';
+          payload: WalletUIMode;
       };

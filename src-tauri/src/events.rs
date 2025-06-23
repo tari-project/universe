@@ -79,9 +79,9 @@ pub enum EventType {
     MiningTime,
     ExchangeIdChanged,
     DisabledPhases,
-    ExternalTariAddressChanged,
     ShouldShowExchangeMinerModal,
-    BaseTariAddressChanged,
+    SelectedTariAddressChanged,
+    WalletUIModeChanged,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -190,4 +190,5 @@ pub struct DisabledPhasesPayload {
 pub struct TariAddressUpdatePayload {
     pub tari_address_base58: String,
     pub tari_address_emoji: String,
+    pub tari_address_type: u8,
 }

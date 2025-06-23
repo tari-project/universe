@@ -1,8 +1,28 @@
 import { GpuDevice, TransactionInfo, WalletBalance } from './app-status';
 
+export enum SetupPhase {
+    Core = 'Core',
+    Wallet = 'Wallet',
+    Hardware = 'Hardware',
+    Node = 'Node',
+    Mining = 'Mining',
+}
+
+export enum TariAddressType {
+    Internal = 0,
+    External = 1,
+}
+
+export enum WalletUIMode {
+    Standard = 0,
+    Seedless = 1,
+    ExchangeSpecificMiner = 2,
+}
+
 export interface TariAddressUpdatePayload {
     tari_address_base58: string;
     tari_address_emoji: string;
+    tari_address_type: TariAddressType;
 }
 
 export interface NewBlockHeightPayload {

@@ -20,7 +20,7 @@ import {
     toggleDeviceExclusion,
 } from './miningStoreActions';
 import { setError } from './appStateStoreActions.ts';
-import { setIsAppExchangeSpecific, setUITheme } from './uiStoreActions';
+import { setUITheme } from './uiStoreActions';
 import { GpuThreads } from '@app/types/app-status.ts';
 import { displayMode, modeType } from '../types';
 import { ConfigCore, ConfigMining, ConfigUI, ConfigWallet } from '@app/types/configs.ts';
@@ -39,7 +39,6 @@ export const handleConfigCoreLoaded = async (coreConfig: ConfigCore) => {
     useConfigCoreStore.setState(coreConfig);
     const buildInExchangeId = useConfigBEInMemoryStore.getState().exchangeId;
     const isAppExchangeSpecific = Boolean(buildInExchangeId !== 'universal');
-    setIsAppExchangeSpecific(isAppExchangeSpecific);
 
     if (!isAppExchangeSpecific) {
         await fetchExchangeList();
