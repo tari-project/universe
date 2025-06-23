@@ -72,6 +72,8 @@ export const HitBox = styled.button`
     position: relative;
     z-index: 1;
 
+    transition: opacity 0.3s cubic-bezier(0.39, 0.3, 0.2, 0.87);
+
     .stop-icon {
         transition: background-color 0.3s cubic-bezier(0.39, 0.3, 0.2, 0.87);
     }
@@ -91,6 +93,20 @@ export const HitBox = styled.button`
     }
 
     &:active {
+        .stop-text {
+            transform: scale(1);
+        }
+    }
+
+    &:disabled {
+        opacity: 0.5;
+        pointer-events: none;
+        cursor: default;
+
+        .stop-icon {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
         .stop-text {
             transform: scale(1);
         }

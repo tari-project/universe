@@ -5,7 +5,6 @@ import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 
 import { formatHashrate } from '@app/utils/formatters.ts';
 
-import ModeSelect from './components/ModeSelect.tsx';
 import Tile from './components/Tile.tsx';
 
 import { MinerContainer, TileContainer } from './styles.ts';
@@ -51,7 +50,7 @@ export default function Miner() {
                     unit="H/s"
                     useLowerCase
                 />
-                <ModeSelect />
+
                 <PoolStatsTile />
             </TileContainer>
         </MinerContainer>
