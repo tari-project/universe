@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ButtonWrapper } from './styles.ts';
 import StartButton from './StartButton/StartButton.tsx';
 import StopButton from './StopButton/StopButton.tsx';
@@ -7,7 +7,7 @@ import LoadingButton from './LoadingButton/LoadingButton.tsx';
 
 export default function MiningButtonCombined() {
     const [isMining, setIsMining] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(false);
 
     const handleStartMining = () => {
         setIsMining(true);
@@ -16,12 +16,6 @@ export default function MiningButtonCombined() {
     const handleStopMining = () => {
         setIsMining(false);
     };
-
-    useEffect(() => {
-        setTimeout(() => {
-            setIsLoading(false);
-        }, 1000);
-    }, []);
 
     return (
         <ButtonWrapper>
