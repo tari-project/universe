@@ -27,11 +27,8 @@ use super::{
 };
 use crate::app_in_memory_config::{MinerType, DEFAULT_EXCHANGE_ID};
 use crate::configs::config_core::ConfigCoreContent;
-<<<<<<< HEAD
 use crate::internal_wallet::InternalWallet;
-=======
 use crate::configs::config_ui::WalletUIMode;
->>>>>>> feat/support-multiple-external-addresses
 use crate::{
     configs::{
         config_core::ConfigCore, config_mining::ConfigMining, config_ui::ConfigUI,
@@ -334,13 +331,13 @@ impl SetupManager {
                 }
 
                 // Currently it easier to send extra event then handle TariAddress in emit_wallet_config_loaded
-                EventsEmitter::emit_external_tari_address_changed(
-                    ConfigWallet::content()
-                        .await
-                        .external_tari_address()
-                        .clone(),
-                )
-                .await;
+                // EventsEmitter::emit_external_tari_address_changed(
+                //     ConfigWallet::content()
+                //         .await
+                //         .external_tari_address()
+                //         .clone(),
+                // )
+                // .await;
             }
             Err(e) => {
                 error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);

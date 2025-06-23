@@ -29,7 +29,6 @@ use crate::binaries::{Binaries, BinaryResolver};
 use crate::configs::config_core::{AirdropTokens, ConfigCore, ConfigCoreContent};
 use crate::configs::config_mining::{ConfigMining, ConfigMiningContent, GpuThreads, MiningMode};
 use crate::configs::config_ui::{ConfigUI, ConfigUIContent, DisplayMode};
-use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent, TariWalletAddress};
 use crate::configs::trait_config::ConfigImpl;
 use crate::events::ConnectionStatusPayload;
 use crate::events_emitter::EventsEmitter;
@@ -716,7 +715,7 @@ pub async fn confirm_exchange_address(address: String) -> Result<(), InvokeError
         .await
         .map_err(InvokeError::from_anyhow)?;
     drop(internal_wallet_guard);
-    EventsEmitter::emit_external_tari_address_changed(Some(new_external_tari_address)).await;
+    // EventsEmitter::emit_external_tari_address_changed(Some(new_external_tari_address)).await;
 
     // ConfigWallet::update_field(
     //     ConfigWalletContent::update_external_tari_address_book,
@@ -922,8 +921,8 @@ pub async fn revert_to_internal_wallet(
                 .await
                 .map_err(InvokeError::from_anyhow)?;
             drop(internal_wallet_guard);
-            EventsEmitter::emit_external_tari_address_changed(None).await;
-            EventsEmitter::emit_base_tari_address_changed(wallet.tari_address).await;
+            // EventsEmitter::emit_external_tari_address_changed(None).await;
+            // EventsEmitter::emit_base_tari_address_changed(wallet.tari_address).await;
             // ConfigWallet::update_selected_wallet_address(Some(TariWalletAddress::Internal(
             //     wallet.get_tari_address().clone(),
             // )))

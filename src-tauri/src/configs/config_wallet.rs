@@ -108,7 +108,6 @@ pub struct ConfigWalletContent {
     #[getset(get = "pub", set = "pub")]
     wallet_migration_nonce: u64,
     created_at: SystemTime,
-    wallet_migration_nonce: u64,
     #[getset(get = "pub", set = "pub")]
     external_tari_addresses_book: HashMap<String, ExternalTariAddressBookRecord>,
     #[getset(set = "pub")]
@@ -126,7 +125,6 @@ impl Default for ConfigWalletContent {
             external_tari_address: None,
             wallet_migration_nonce: 0,
             created_at: SystemTime::now(),
-            wallet_migration_nonce: 0,
             selected_wallet_address: None,
             external_tari_addresses_book: HashMap::new(),
         }

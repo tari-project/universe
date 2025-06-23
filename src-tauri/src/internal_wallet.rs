@@ -171,9 +171,9 @@ impl InternalWallet {
         // Side effects
         clear_wallet_data(&local_data_dir).await?;
         ConfigWallet::update_field(ConfigWalletContent::set_external_tari_address, None).await?;
-        EventsEmitter::emit_external_tari_address_changed(None).await;
+        // EventsEmitter::emit_external_tari_address_changed(None).await;
         let wallet = InternalWallet::extract_tari_wallet_details(&tari_seed_binary).await?;
-        EventsEmitter::emit_base_tari_address_changed(wallet.tari_address).await;
+        // EventsEmitter::emit_base_tari_address_changed(wallet.tari_address).await;
 
         Ok((wallet_id, tari_seed_binary))
     }
