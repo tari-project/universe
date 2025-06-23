@@ -1,7 +1,6 @@
 import { create } from './create';
 import { Theme } from '@app/theme/types.ts';
 import { SB_MINI_WIDTH, SB_SPACING } from '@app/theme/styles.ts';
-import { WalletUIMode } from '@app/types/events-payloads';
 
 export const sidebarTowerOffset = SB_SPACING + SB_MINI_WIDTH;
 export const TOWER_CANVAS_ID = 'tower-canvas';

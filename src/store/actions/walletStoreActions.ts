@@ -6,7 +6,7 @@ import { WrapTokenService, OpenAPI } from '@tari-project/wxtm-bridge-backend-api
 import { useConfigBEInMemoryStore } from '../useAppConfigStore';
 import { TransactionDetailsItem, TransactionDirection, TransactionStatus } from '@app/types/transactions';
 import { refreshTransactions } from '@app/hooks/wallet/useFetchTxHistory.ts';
-import { MainTariAddressLoadedPayload, TariAddressType, TariAddressUpdatePayload } from '@app/types/events-payloads';
+import { MainTariAddressLoadedPayload, TariAddressUpdatePayload } from '@app/types/events-payloads';
 
 export const fetchBridgeTransactionsHistory = async () => {
     console.info('Fetching bridge transactions history...');

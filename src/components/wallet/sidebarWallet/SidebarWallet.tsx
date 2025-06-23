@@ -1,5 +1,5 @@
 import { AnimatePresence } from 'motion/react';
-import { useConfigUIStore, useUIStore, useWalletStore } from '@app/store';
+import { useConfigUIStore, useWalletStore } from '@app/store';
 import { swapTransition } from '@app/components/transactions/wallet/transitions.ts';
 import { Swap } from '@app/components/transactions/wallet/Swap/Swap.tsx';
 import { WalletBalance, WalletBalanceHidden } from '../components/balance/WalletBalance.tsx';

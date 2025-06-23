@@ -14,7 +14,7 @@ import {
 import { setVisualMode } from './appConfigStoreActions.ts';
 
 import { Theme } from '@app/theme/types.ts';
-import { ConnectionStatusPayload, WalletUIMode } from '@app/types/events-payloads.ts';
+import { ConnectionStatusPayload } from '@app/types/events-payloads.ts';
 import { SB_WIDTH } from '@app/theme/styles.ts';
 import { useConfigUIStore } from '../useAppConfigStore.ts';
 import { useSetupStore } from '../useSetupStore.ts';

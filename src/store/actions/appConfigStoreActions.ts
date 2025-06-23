@@ -346,6 +346,5 @@ export const handleExchangeIdChanged = async (payload: string) => {
 };
 
 export const handleWalletUIChanged = (mode: WalletUIMode) => {
-    console.log('Setting wallet UI mode to:', mode);
     useConfigUIStore.setState({ wallet_ui_mode: mode });
 };

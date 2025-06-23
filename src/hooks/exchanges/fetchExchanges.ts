@@ -1,4 +1,4 @@
-import { useConfigBEInMemoryStore, useConfigUIStore, useUIStore } from '@app/store';
+import { useConfigBEInMemoryStore, useConfigUIStore } from '@app/store';
 import { useQuery } from '@tanstack/react-query';
 import { setRewardData, universalExchangeMinerOption } from '@app/store/useExchangeStore.ts';
 import { ExchangeBranding } from '@app/types/exchange.ts';
