@@ -4,10 +4,7 @@ import { useSetupStore } from '../useSetupStore';
 import { startCpuMining, startGpuMining, stopCpuMining, stopGpuMining } from './miningStoreActions';
 import {
     fetchApplicationsVersionsWithRetry,
-    initialFetchTxs,
-    setWalletAddress,
     TOWER_CANVAS_ID,
-    useConfigBEInMemoryStore,
     useConfigMiningStore,
     useConfigUIStore,
     useMiningStore,
@@ -15,9 +12,7 @@ import {
 } from '@app/store';
 import { ProgressTrackerUpdatePayload } from '@app/hooks/app/useProgressEventsListener';
 
-import { WalletAddress } from '@app/types/app-status.ts';
-import { setSeedlessUI } from '@app/store/actions/uiStoreActions.ts';
-import { fetchExchangeContent, useExchangeStore } from '@app/store/useExchangeStore.ts';
+import { fetchBridgeTransactionsHistory } from './walletStoreActions';
 import { SetupPhase } from '@app/types/backend-state';
 import { useTappletsStore } from '../useTappletsStore';
 
@@ -27,6 +22,10 @@ export interface DisabledPhasesPayload {
 
 export const handleAppUnlocked = async () => {
     useSetupStore.setState({ appUnlocked: true });
+    await fetchBridgeTransactionsHistory().catch((error) => {
+        console.error('Could not fetch bridge transactions history:', error);
+    });
+
     const visual_mode = useConfigUIStore.getState().visual_mode;
     const offset = useUIStore.getState().towerSidebarOffset;
     if (visual_mode) {
@@ -48,23 +47,6 @@ export const handleAppUnlocked = async () => {
 };
 export const handleWalletUnlocked = () => {
     useSetupStore.setState({ walletUnlocked: true });
-    // moved initialFetchTxs here so we don't call it constantly on sidebar open/close
-    initialFetchTxs();
-};
-export const handleWalletUpdate = async (addressPayload: WalletAddress) => {
-    const addressIsGenerated = addressPayload.is_tari_address_generated;
-    const xcID = useConfigBEInMemoryStore.getState().exchangeId;
-
-    setWalletAddress(addressPayload);
-    setSeedlessUI(!addressIsGenerated);
-
-    if (xcID) {
-        const currentID = useExchangeStore.getState().content?.exchange_id;
-        const canFetchXCContent = xcID && currentID !== xcID && xcID !== 'classic';
-        if (canFetchXCContent) {
-            await fetchExchangeContent(xcID);
-        }
-    }
 };
 export const handleCpuMiningUnlocked = async () => {
     useSetupStore.setState({ cpuMiningUnlocked: true });
@@ -153,5 +135,7 @@ export const handleUpdateDisabledPhases = (payload: DisabledPhasesPayload) => {
     updateDisabledPhases(payload);
     if (payload.disabled_phases.includes(SetupPhase.Wallet)) {
         useTappletsStore.setState({ uiBridgeSwapsEnabled: false });
+    } else if (!useTappletsStore.getState().uiBridgeSwapsEnabled) {
+        useTappletsStore.getState().fetchUiBridgeFeatureFlag();
     }
 };

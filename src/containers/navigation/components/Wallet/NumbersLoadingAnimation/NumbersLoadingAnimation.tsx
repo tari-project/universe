@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Circle, Square, SquareWrapper, Wrapper } from './styles';
+import { Square, SquareWrapper, Wrapper } from './styles';
 
 export default function NumbersLoadingAnimation() {
     const [activeSquares, setActiveSquares] = useState<number[]>([]);
-    const totalSquares = 7;
+    const totalSquares = 8;
     const staggerDelay = 0.15;
 
     useEffect(() => {
@@ -48,7 +48,7 @@ export default function NumbersLoadingAnimation() {
                         key={index}
                         initial={{ scale: 0.75, opacity: 0.5 }}
                         animate={
-                            activeSquares.includes(index) ? { scale: 1, opacity: 1 } : { scale: 0.75, opacity: 0.5 }
+                            activeSquares.includes(index) ? { scale: 1, opacity: 0.8 } : { scale: 0.75, opacity: 0.5 }
                         }
                         transition={{
                             duration: 0.5,
@@ -57,8 +57,6 @@ export default function NumbersLoadingAnimation() {
                     />
                 ))}
             </SquareWrapper>
-
-            <Circle />
         </Wrapper>
     );
 }

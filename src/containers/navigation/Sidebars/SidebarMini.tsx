@@ -6,9 +6,12 @@ import NavigationButton from './NavigationButton';
 import { GridBottom, GridCenter, GridTop, LogoWrapper, MiniWrapper } from './SidebarMini.styles.ts';
 import BridgeNavigationButton from './BridgeNavigationButton.tsx';
 import { useTappletsStore } from '@app/store/useTappletsStore.ts';
+import { useUIStore } from '@app/store';
 
 const SidebarMini = memo(function SidebarMini() {
-    const { uiBridgeSwapsEnabled } = useTappletsStore();
+    const uiBridgeSwapsEnabled = useTappletsStore((s) => s.uiBridgeSwapsEnabled);
+    const seedlessUI = useUIStore((s) => s.seedlessUI);
+
     return (
         <MiniWrapper>
             <GridTop>
@@ -18,7 +21,7 @@ const SidebarMini = memo(function SidebarMini() {
             </GridTop>
             <GridCenter>
                 <NavigationButton />
-                {uiBridgeSwapsEnabled && <BridgeNavigationButton />}
+                {uiBridgeSwapsEnabled && !seedlessUI && <BridgeNavigationButton />}
             </GridCenter>
             <GridBottom>
                 <AirdropSidebarItems />

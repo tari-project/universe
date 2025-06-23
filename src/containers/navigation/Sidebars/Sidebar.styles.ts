@@ -1,6 +1,7 @@
 import styled, { css } from 'styled-components';
 import * as m from 'motion/react-m';
 import { SB_WIDTH } from '@app/theme/styles.ts';
+import { convertHexToRGBA } from '@app/utils';
 
 const variants = {
     open: { opacity: 1, left: 0, transition: { duration: 0.2, ease: 'linear' } },
@@ -22,7 +23,6 @@ export const SidebarWrapper = styled(m.div).attrs({
     flex-shrink: 0;
     padding: 15px 10px;
     position: relative;
-
     width: ${SB_WIDTH}px;
 
     & * {
@@ -43,17 +43,34 @@ export const GridAreaTop = styled.div`
     gap: 8px;
 `;
 
-export const GridAreaBottom = styled.div<{ $overflowVisible?: boolean }>`
+export const GridAreaBottom = styled.div<{ $swapsOpen?: boolean }>`
     display: flex;
     flex-direction: column;
     position: relative;
     gap: 4px;
     overflow: hidden;
     overflow-y: auto;
-    ${({ $overflowVisible: $swapsEnabled }) =>
-        $swapsEnabled &&
+    ${({ $swapsOpen }) =>
+        $swapsOpen &&
         css`
-            overflow: visible;
-            position: relative;
+            position: absolute;
+            max-height: 100%;
+            height: auto;
+            width: calc(100% - 20px);
+            left: 10px;
+            bottom: 10px;
+            z-index: 5;
         `}
+`;
+
+export const BuyOverlay = styled(m.div)`
+    background: ${({ theme }) => convertHexToRGBA(theme.mode === 'dark' ? '#1e1e1a' : '#000', 0.5)};
+    backdrop-filter: blur(0.03rem);
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    z-index: 4;
+    top: 0;
+    left: 0;
+    border-radius: 20px;
 `;

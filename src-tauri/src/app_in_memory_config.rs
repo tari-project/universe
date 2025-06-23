@@ -20,8 +20,6 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::ops::Deref;
-
 use anyhow::anyhow;
 use der::{self, asn1::BitString, oid::ObjectIdentifier, Encode};
 use ring::signature::{Ed25519KeyPair, KeyPair};
@@ -40,7 +38,12 @@ const AIRDROP_API_BASE_URL: &str = std::env!(
 const TELEMETRY_API_URL: &str =
     std::env!("TELEMETRY_API_URL", "TELEMETRY_API_URL env var not defined");
 
-pub const DEFAULT_EXCHANGE_ID: &str = "classic";
+const BRIDGE_BACKEND_API_URL: &str = match option_env!("BRIDGE_BACKEND_API_URL") {
+    Some(val) => val,
+    None => "BRIDGE_BACKEND_API_URL env var not defined",
+};
+
+pub const DEFAULT_EXCHANGE_ID: &str = "universal";
 pub const EXCHANGE_ID: &str = match option_env!("EXCHANGE_ID") {
     Some(val) => val,
     None => DEFAULT_EXCHANGE_ID,
@@ -56,6 +59,7 @@ pub struct AppInMemoryConfig {
     pub airdrop_api_url: String,
     pub telemetry_api_url: String,
     pub exchange_id: String,
+    pub bridge_backend_api_url: String,
     pub wallet_connect_project_id: String,
 }
 
@@ -65,6 +69,7 @@ pub struct AirdropInMemoryConfig {
     pub airdrop_url: String,
     pub airdrop_api_url: String,
     pub exchange_id: Option<String>,
+    pub bridge_backend_api_url: String,
     pub wallet_connect_project_id: Option<String>,
 }
 
@@ -74,6 +79,7 @@ impl From<AppInMemoryConfig> for AirdropInMemoryConfig {
             airdrop_url: app_config.airdrop_url,
             airdrop_api_url: app_config.airdrop_api_url,
             exchange_id: Some(app_config.exchange_id),
+            bridge_backend_api_url: app_config.bridge_backend_api_url,
             wallet_connect_project_id: Some(app_config.wallet_connect_project_id),
         }
     }
@@ -86,6 +92,7 @@ impl Default for AppInMemoryConfig {
             airdrop_api_url: "https://ut.tari.com".into(),
             telemetry_api_url: "https://ut.tari.com/push".into(),
             exchange_id: EXCHANGE_ID.into(),
+            bridge_backend_api_url: BRIDGE_BACKEND_API_URL.into(),
             wallet_connect_project_id: WALLET_CONNECT_PROJECT_ID.into(),
         }
     }
@@ -132,6 +139,7 @@ impl AppInMemoryConfig {
             airdrop_api_url: AIRDROP_API_BASE_URL.into(),
             telemetry_api_url: TELEMETRY_API_URL.into(),
             exchange_id: EXCHANGE_ID.into(),
+            bridge_backend_api_url: BRIDGE_BACKEND_API_URL.into(),
             wallet_connect_project_id: WALLET_CONNECT_PROJECT_ID.into(),
         };
 
@@ -141,6 +149,7 @@ impl AppInMemoryConfig {
             airdrop_api_url: "http://localhost:3004".into(),
             telemetry_api_url: "http://localhost:3004".into(),
             exchange_id: EXCHANGE_ID.into(),
+            bridge_backend_api_url: BRIDGE_BACKEND_API_URL.into(),
             wallet_connect_project_id: WALLET_CONNECT_PROJECT_ID.into(),
         };
 
@@ -153,26 +162,6 @@ impl AppInMemoryConfig {
     }
 }
 
-#[derive(Debug)]
-pub enum MinerType {
-    Classic,
-    Universal,
-    ExchangeMode,
-}
-impl MinerType {
-    fn from_str(s: &str) -> Self {
-        match s {
-            DEFAULT_EXCHANGE_ID => MinerType::Classic,
-            _ => MinerType::ExchangeMode,
-        }
-    }
-}
-#[derive(Debug)]
-pub struct DynamicMemoryConfig {
-    pub in_memory_config: AppInMemoryConfig,
-    pub miner_type: MinerType,
-}
-
 #[derive(Default, Serialize, Deserialize, Clone, Debug)]
 pub struct ExchangeMiner {
     pub id: String,
@@ -180,58 +169,19 @@ pub struct ExchangeMiner {
     pub slug: String,
 }
 
-#[derive(Default, Serialize, Deserialize, Clone, Debug)]
-pub struct ExchangeMinersListResponse {
-    pub exchanges: Vec<ExchangeMiner>,
+#[derive(Debug)]
+pub enum MinerType {
+    Universal,
+    ExchangeMode,
 }
-
-impl DynamicMemoryConfig {
-    pub async fn init() -> Self {
-        let in_memory_config = AppInMemoryConfig::init();
-        let miner_type = MinerType::from_str(&in_memory_config.exchange_id);
-
-        // Hard coded universal miner ID fix this later
-        if &in_memory_config.exchange_id == "1eff0ada-8358-4511-99f8-9ec2820aa37e" {
-            return Self {
-                in_memory_config,
-                miner_type: MinerType::Universal,
-            };
-        }
-
-        Self {
-            in_memory_config,
-            miner_type,
+impl MinerType {
+    pub fn from_str(string: &str) -> Self {
+        match string {
+            DEFAULT_EXCHANGE_ID => MinerType::Universal,
+            _ => MinerType::ExchangeMode,
         }
     }
-
-    pub fn init_universal(exchange_miner: &ExchangeMiner) -> Self {
-        Self {
-            miner_type: MinerType::Universal,
-            in_memory_config: AppInMemoryConfig {
-                exchange_id: exchange_miner.id.clone(),
-                ..AppInMemoryConfig::init()
-            },
-        }
-    }
-
-    pub fn init_classic() -> Self {
-        Self {
-            miner_type: MinerType::Classic,
-            in_memory_config: AppInMemoryConfig {
-                exchange_id: "classic".to_string(),
-                ..AppInMemoryConfig::init()
-            },
-        }
-    }
-
-    pub fn is_universal_miner(&self) -> bool {
-        matches!(self.miner_type, MinerType::Universal)
-    }
-}
-
-impl Deref for DynamicMemoryConfig {
-    type Target = AppInMemoryConfig;
-    fn deref(&self) -> &Self::Target {
-        &self.in_memory_config
+    pub fn is_exchange_mode(&self) -> bool {
+        matches!(self, MinerType::ExchangeMode)
     }
 }

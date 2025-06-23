@@ -1,9 +1,7 @@
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormContext } from 'react-hook-form';
-import { EditWrapper, StyledTextArea, WarningText } from './edit.styles.ts';
-import { IoAlertCircleSharp } from 'react-icons/io5';
-import { Typography } from '@app/components/elements/Typography.tsx';
+import { EditWrapper, StyledTextArea } from './edit.styles.ts';
 
 const SEEDWORD_REGEX = /^(([a-zA-Z]+)\s){23}([a-zA-Z]+)$/;
 
@@ -40,10 +38,6 @@ export const Edit = () => {
                     placeholder="Enter seed words..."
                     {...register('seedWords', registerOptions)}
                 />
-                <WarningText>
-                    <IoAlertCircleSharp size={14} />
-                    <Typography>{t('action-requires-restart')}</Typography>
-                </WarningText>
             </EditWrapper>
         </>
     );

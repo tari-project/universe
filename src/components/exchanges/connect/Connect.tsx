@@ -1,6 +1,6 @@
 import { useForm } from 'react-hook-form';
 import { invoke } from '@tauri-apps/api/core';
-import { setShowExchangeModal, useExchangeStore } from '@app/store/useExchangeStore.ts';
+import { setShowExchangeModal } from '@app/store/useExchangeStore.ts';
 import {
     Wrapper,
     CTA,
@@ -17,17 +17,18 @@ import { truncateMiddle } from '@app/utils';
 import { CheckIconWrapper } from '@app/components/transactions/components/TxInput.style.ts'; // TODO - make reusable address input
 import CheckIcon from '@app/components/transactions/components/CheckIcon.tsx';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
-import { setSeedlessUI } from '@app/store/actions/uiStoreActions.ts';
+import { setSeedlessUI, setShouldShowExchangeSpecificModal } from '@app/store/actions/uiStoreActions.ts';
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
 import { setAllowTelemetry, useConfigCoreStore } from '@app/store';
 import { Typography } from '@app/components/elements/Typography.tsx';
+import { useFetchExchangeBranding } from '@app/hooks/exchanges/fetchExchangeContent.ts';
 
 interface ConnectFormFields {
     address: string;
 }
 
 export const Connect = () => {
-    const data = useExchangeStore((s) => s.content);
+    const { data, isPending } = useFetchExchangeBranding();
     const [address, setAddress] = useState('');
     const [isFocused, setIsFocused] = useState(false);
     const [addressIsValid, setAddressIsValid] = useState(false);
@@ -46,6 +47,7 @@ export const Connect = () => {
     function handleAddressChange(e) {
         const address = e.target.value;
         setAddress(address);
+
         setDisplayAddress(truncateMiddle(address, 4));
     }
     function handleFocus(focused: boolean) {
@@ -78,12 +80,15 @@ export const Connect = () => {
             await invoke('confirm_exchange_address', { address });
             setSeedlessUI(true);
             setShowExchangeModal(false);
+            setShouldShowExchangeSpecificModal(false);
         } catch (e) {
             console.error('Error confirming exchange address:', e);
         }
     }
 
-    return (
+    return isPending ? (
+        <LoadingDots />
+    ) : (
         <Wrapper>
             <ConnectForm onSubmit={handleSubmit(onSubmit)}>
                 <AddressInputLabel>{`Enter your ${data?.name} Tari Address`}</AddressInputLabel>
@@ -91,7 +96,9 @@ export const Connect = () => {
                     <AddressInput
                         {...register('address', {
                             required: true,
-                            onBlur: () => handleFocus(false),
+                            onBlur: () => {
+                                handleFocus(false);
+                            },
                             onChange: handleAddressChange,
                         })}
                         onFocus={() => handleFocus(true)}
@@ -113,7 +120,7 @@ export const Connect = () => {
                 <CTA
                     $backgroundCol={data?.primary_colour}
                     type="submit"
-                    disabled={!allowTelemetry || formState.isSubmitting || !formState.isValid}
+                    disabled={!allowTelemetry || formState.isSubmitting || !addressIsValid}
                 >
                     {formState.isSubmitting || formState.isLoading ? (
                         <LoadingDots />

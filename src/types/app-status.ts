@@ -67,7 +67,6 @@ export interface ExternalDependency {
 export interface WalletAddress {
     tari_address_base58: string;
     tari_address_emoji: string;
-    is_tari_address_generated: boolean;
 }
 
 export interface TransactionInfo {
@@ -84,6 +83,7 @@ export interface TransactionInfo {
     message: string;
     payment_id: string;
     mined_in_block_height?: number;
+    payment_reference?: string;
 }
 
 export interface P2poolStatsResult {
@@ -221,6 +221,7 @@ export interface ApplicationsVersions {
     mm_proxy: string;
     wallet: string;
     sha_p2pool: string;
+    bridge: string;
 }
 
 export interface PaperWalletDetails {

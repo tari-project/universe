@@ -32,10 +32,9 @@ use super::{
     phase_core::CoreSetupPhase, phase_hardware::HardwareSetupPhase, phase_mining::MiningSetupPhase,
     phase_node::NodeSetupPhase, phase_wallet::WalletSetupPhase, utils::phase_builder::PhaseBuilder,
 };
-use crate::app_in_memory_config::EXCHANGE_ID;
+use crate::app_in_memory_config::{MinerType, DEFAULT_EXCHANGE_ID};
 use crate::configs::config_core::ConfigCoreContent;
 use crate::{
-    app_in_memory_config::{DynamicMemoryConfig, ExchangeMiner, DEFAULT_EXCHANGE_ID},
     configs::{
         config_core::ConfigCore, config_mining::ConfigMining, config_ui::ConfigUI,
         config_wallet::ConfigWallet, trait_config::ConfigImpl,
@@ -183,7 +182,7 @@ impl PhaseStatus {
 
 #[derive(Default)]
 pub struct SetupManager {
-    features: RwLock<SetupFeaturesList>,
+    pub features: RwLock<SetupFeaturesList>,
     core_phase_status: Sender<PhaseStatus>,
     hardware_phase_status: Sender<PhaseStatus>,
     node_phase_status: Sender<PhaseStatus>,
@@ -274,29 +273,46 @@ impl SetupManager {
         ConfigMining::initialize(app_handle.clone()).await;
         ConfigUI::initialize(app_handle.clone()).await;
 
+        let build_in_exchange_id = in_memory_config.read().await.exchange_id.clone();
+        let is_on_exchange_miner_build =
+            MinerType::from_str(&build_in_exchange_id).is_exchange_mode();
         let node_type = ConfigCore::content().await.node_type().clone();
         info!(target: LOG_TARGET, "Retrieved initial node type: {:?}", node_type);
         state.node_manager.set_node_type(node_type).await;
         EventsManager::handle_node_type_update(&app_handle).await;
 
-        let config_path = app_handle
-            .path()
-            .app_config_dir()
-            .expect("Could not get config dir");
-        let internal_wallet = InternalWallet::load_or_create(config_path, state)
+        let last_config_exchange_id = ConfigCore::content().await.exchange_id().clone();
+
+        let does_not_have_external_tari_address = ConfigWallet::content()
             .await
-            .expect("Could not load or create internal wallet");
-        let is_address_generated = internal_wallet.get_is_tari_address_generated();
-        let is_on_exchange_miner_build =
-            in_memory_config.read().await.exchange_id != DEFAULT_EXCHANGE_ID;
+            .external_tari_address()
+            .is_none();
 
         if is_on_exchange_miner_build {
-            EventsEmitter::emit_disabled_phases_changed(vec![SetupPhase::Wallet]).await;
+            let _unused = ConfigCore::update_field(
+                ConfigCoreContent::set_exchange_id,
+                build_in_exchange_id.clone(),
+            )
+            .await;
+            EventsEmitter::emit_exchange_id_changed(build_in_exchange_id.clone()).await;
         }
 
-        if is_on_exchange_miner_build && is_address_generated {
+        // If we open different specific exchange miner build then previous one we always want to prompt user to provide tari address
+        if is_on_exchange_miner_build
+            && build_in_exchange_id.ne(&last_config_exchange_id)
+            && !does_not_have_external_tari_address
+        {
+            info!(target: LOG_TARGET, "Exchange ID changed from {} to {}", last_config_exchange_id, build_in_exchange_id);
             self.exchange_modal_status
                 .send_replace(ExchangeModalStatus::WaitForCompletion);
+            EventsEmitter::emit_should_show_exchange_miner_modal().await;
+        }
+
+        // If we are on exchange miner build we require external tari address to be set
+        if is_on_exchange_miner_build && does_not_have_external_tari_address {
+            self.exchange_modal_status
+                .send_replace(ExchangeModalStatus::WaitForCompletion);
+            EventsEmitter::emit_should_show_exchange_miner_modal().await;
         }
 
         info!(target: LOG_TARGET, "Pre Setup Finished");
@@ -310,7 +326,19 @@ impl SetupManager {
             .cpu_mining_pool_status_url()
             .clone();
 
+        let external_tari_address = ConfigWallet::content()
+            .await
+            .external_tari_address()
+            .clone();
+
+        info!(target: LOG_TARGET, "Resolving setup features");
+        // clear existing features
+        features.0.clear();
+
+        let exchange_id = ConfigCore::content().await.exchange_id().clone();
+        let is_exchange_miner_build = exchange_id.ne(DEFAULT_EXCHANGE_ID);
         if cpu_mining_pool_url.is_some() && cpu_mining_pool_status_url.is_some() {
+            info!(target: LOG_TARGET, "Centralized pool feature enabled");
             features.add_feature(SetupFeature::CentralizedPool);
         }
         if EXCHANGE_ID.ne(DEFAULT_EXCHANGE_ID) {
@@ -488,6 +516,10 @@ impl SetupManager {
                     self.setup_node_phase(app_handle.clone()).await;
                 }
                 SetupPhase::Wallet => {
+                    if features.is_feature_enabled(SetupFeature::SeedlessWallet) {
+                        info!(target: LOG_TARGET, "Skipping Wallet Phase as Seedless Wallet is enabled");
+                        continue;
+                    }
                     self.setup_wallet_phase(app_handle.clone()).await;
                 }
                 SetupPhase::Mining => {
@@ -499,7 +531,6 @@ impl SetupManager {
 
     #[allow(clippy::too_many_lines)]
     pub async fn start_setup(&self, app_handle: AppHandle) {
-        self.await_selected_exchange_miner(app_handle.clone()).await;
         self.pre_setup(app_handle.clone()).await;
         let _unused = self.resolve_setup_features()
             .await
@@ -671,10 +702,15 @@ impl SetupManager {
 
     pub async fn spawn_sleep_mode_handler(app_handle: AppHandle) {
         info!(target: LOG_TARGET, "Spawning Sleep Mode Handler");
+        let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
+        if shutdown_signal.is_triggered() {
+            info!(target: LOG_TARGET, "Shutdown signal already triggered, exiting sleep mode handler");
+            return;
+        }
+
         TasksTrackers::current().common.get_task_tracker().await.spawn(async move {
             let mut receiver = SystemStatus::current().get_sleep_mode_watcher();
             let mut last_state = *receiver.borrow();
-            let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
             loop {
                 select! {
                     _ = receiver.changed() => {
@@ -685,6 +721,7 @@ impl SetupManager {
                         }
                         if !last_state && current_state {
                             info!(target: LOG_TARGET, "System entered sleep mode");
+                            SetupManager::get_instance().shutdown_phases(SetupPhase::all()).await;
                             SetupManager::get_instance().shutdown_phases(SetupPhase::all()).await;
                         }
                         last_state = current_state;
