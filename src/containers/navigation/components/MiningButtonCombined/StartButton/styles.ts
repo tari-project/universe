@@ -3,7 +3,9 @@ import styled, { css } from 'styled-components';
 import backgroundImage from './images/background.png';
 
 export const StartWrapper = styled(m.button)`
-    position: relative;
+    position: absolute;
+    top: 0;
+    left: 0;
     border-radius: 500px;
     width: 100%;
     height: 100%;

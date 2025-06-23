@@ -4,8 +4,10 @@ import ecoBackground from './backgrounds/eco.png';
 import ludicrousBackground from './backgrounds/ludicrous.png';
 import customBackground from './backgrounds/custom.png';
 
-export const StopWrapper = styled(m.div)<{ $selectedMode: string }>`
-    position: relative;
+export const StopWrapper = styled(m.div)<{ $selectedMode: string; $disabled: boolean }>`
+    position: absolute;
+    top: 0;
+    left: 0;
     border-radius: 500px;
     width: 100%;
     height: 100%;
@@ -50,6 +52,12 @@ export const StopWrapper = styled(m.div)<{ $selectedMode: string }>`
                 `;
         }
     }}
+
+    ${({ $disabled }) =>
+        $disabled &&
+        css`
+            pointer-events: none;
+        `}
 `;
 
 export const HitBox = styled.button`

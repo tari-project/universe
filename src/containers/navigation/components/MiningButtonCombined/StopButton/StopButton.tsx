@@ -8,9 +8,10 @@ import { useConfigMiningStore } from '@app/store';
 
 interface Props {
     onClick: () => void;
+    disabled?: boolean;
 }
 
-export default function StopButton({ onClick }: Props) {
+export default function StopButton({ onClick, disabled = false }: Props) {
     const { t } = useTranslation('mining-view');
     const selectedMode = useConfigMiningStore((s) => s.mode);
 
@@ -20,8 +21,9 @@ export default function StopButton({ onClick }: Props) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             $selectedMode={selectedMode}
+            $disabled={disabled}
         >
-            <HitBox onClick={onClick}>
+            <HitBox onClick={onClick} disabled={disabled}>
                 <IconWrapper $absolute={false} className="stop-icon">
                     <StopIcon />
                 </IconWrapper>

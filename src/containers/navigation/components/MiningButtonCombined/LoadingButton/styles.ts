@@ -1,8 +1,11 @@
 import * as m from 'motion/react-m';
 import styled from 'styled-components';
+import backgroundImage from '../StartButton/images/background.png';
 
 export const LoadingWrapper = styled(m.div)`
-    position: relative;
+    position: absolute;
+    top: 0;
+    left: 0;
     border-radius: 500px;
     width: 100%;
     height: 100%;
@@ -11,10 +14,13 @@ export const LoadingWrapper = styled(m.div)`
     align-items: center;
     justify-content: center;
 
-    background: #888;
-    box-shadow:
-        0px 0px 10px 0px rgba(136, 136, 136, 0.35),
-        0px 0px 13px 0px rgba(255, 255, 255, 0.25) inset;
+    background-color: #188750;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-image: url(${backgroundImage});
+
+    box-shadow: 0px 0px 10px 0px rgba(104, 153, 55, 0.35);
 
     pointer-events: none;
     color: #fff;

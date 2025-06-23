@@ -3,7 +3,7 @@ import { LoadingWrapper } from './styles';
 
 export default function LoadingButton() {
     return (
-        <LoadingWrapper>
+        <LoadingWrapper initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <LoadingDots />
         </LoadingWrapper>
     );
