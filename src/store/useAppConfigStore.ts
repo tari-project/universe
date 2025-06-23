@@ -1,5 +1,6 @@
 import { ConfigBackendInMemory, ConfigCore, ConfigMining, ConfigUI, ConfigWallet } from '@app/types/configs';
 import { create } from './create';
+import { WalletUIMode } from '@app/types/events-payloads';
 
 type UIConfigStoreState = Partial<ConfigUI> & {
     visualModeToggleLoading: boolean;
@@ -61,6 +62,7 @@ const configUIInitialState: UIConfigStoreState = {
     should_always_use_system_language: false,
     visual_mode: true,
     warmup_seen: null,
+    wallet_ui_mode: WalletUIMode.Standard,
 };
 
 const configBEInMemoryInitialState: ConfigBackendInMemory = {

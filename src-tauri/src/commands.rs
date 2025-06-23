@@ -29,6 +29,7 @@ use crate::binaries::{Binaries, BinaryResolver};
 use crate::configs::config_core::{AirdropTokens, ConfigCore, ConfigCoreContent};
 use crate::configs::config_mining::{ConfigMining, ConfigMiningContent, GpuThreads, MiningMode};
 use crate::configs::config_ui::{ConfigUI, ConfigUIContent, DisplayMode};
+use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent, TariWalletAddress};
 use crate::configs::trait_config::ConfigImpl;
 use crate::events::ConnectionStatusPayload;
 use crate::events_emitter::EventsEmitter;
@@ -224,6 +225,18 @@ pub async fn select_exchange_miner(
         .await
         .map_err(InvokeError::from_anyhow)?;
     drop(internal_wallet_guard);
+    // ConfigWallet::update_field(
+    //     ConfigWalletContent::update_external_tari_address_book,
+    //     new_external_tari_address.clone(),
+    // )
+    // .await
+    // .map_err(InvokeError::from_anyhow)?;
+
+    // ConfigWallet::update_selected_wallet_address(Some(TariWalletAddress::External(
+    //     new_external_tari_address.clone(),
+    // )))
+    // .await
+    // .map_err(InvokeError::from_anyhow)?;
 
     ConfigCore::update_field(
         ConfigCoreContent::set_exchange_id,
@@ -232,7 +245,8 @@ pub async fn select_exchange_miner(
     .await
     .map_err(InvokeError::from_anyhow)?;
 
-    EventsEmitter::emit_external_tari_address_changed(Some(new_external_tari_address)).await;
+    // Bartek removed it
+    // EventsEmitter::emit_external_tari_address_changed(Some(new_external_tari_address)).await;
     EventsEmitter::emit_exchange_id_changed(exchange_miner.id.clone()).await;
 
     SetupManager::get_instance()
@@ -662,7 +676,18 @@ pub async fn set_external_tari_address(
         .map_err(InvokeError::from_anyhow)?;
     drop(internal_wallet_guard);
 
-    EventsEmitter::emit_external_tari_address_changed(Some(new_external_tari_address)).await;
+    // ConfigWallet::update_field(
+    //     ConfigWalletContent::update_external_tari_address_book,
+    //     new_external_tari_address.clone(),
+    // )
+    // .await
+    // .map_err(InvokeError::from_anyhow)?;
+
+    // ConfigWallet::update_selected_wallet_address(Some(TariWalletAddress::External(
+    //     new_external_tari_address.clone(),
+    // )))
+    // .await
+    // .map_err(InvokeError::from_anyhow)?;
 
     // For non exchange miner cases to stop wallet services
     SetupManager::get_instance()
@@ -692,6 +717,20 @@ pub async fn confirm_exchange_address(address: String) -> Result<(), InvokeError
         .map_err(InvokeError::from_anyhow)?;
     drop(internal_wallet_guard);
     EventsEmitter::emit_external_tari_address_changed(Some(new_external_tari_address)).await;
+
+    // ConfigWallet::update_field(
+    //     ConfigWalletContent::update_external_tari_address_book,
+    //     new_external_tari_address.clone(),
+    // )
+    // .await
+    // .map_err(InvokeError::from_anyhow)?;
+
+    // ConfigWallet::update_selected_wallet_address(Some(TariWalletAddress::External(
+    //     new_external_tari_address.clone(),
+    // )))
+    // .await
+    // .map_err(InvokeError::from_anyhow)?;
+
     SetupManager::get_instance()
         .mark_exchange_modal_as_completed()
         .await
@@ -821,6 +860,7 @@ pub async fn import_seed_words(
     seed_words: Vec<String>,
     _window: tauri::Window,
     app: tauri::AppHandle,
+    state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), InvokeError> {
     let timer = Instant::now();
 
@@ -834,6 +874,9 @@ pub async fn import_seed_words(
         .await
     {
         Ok(wallet) => {
+            // ConfigWallet::update_selected_wallet_address(Some(TariWalletAddress::Internal(
+            //             wallet.get_tari_address().clone(),
+            //         )));
             ConfigCore::update_field(
                 ConfigCoreContent::set_exchange_id,
                 DEFAULT_EXCHANGE_ID.to_string(),
@@ -881,6 +924,11 @@ pub async fn revert_to_internal_wallet(
             drop(internal_wallet_guard);
             EventsEmitter::emit_external_tari_address_changed(None).await;
             EventsEmitter::emit_base_tari_address_changed(wallet.tari_address).await;
+            // ConfigWallet::update_selected_wallet_address(Some(TariWalletAddress::Internal(
+            //     wallet.get_tari_address().clone(),
+            // )))
+            // .await
+            // .map_err(InvokeError::from_anyhow)?;
             ConfigCore::update_field(
                 ConfigCoreContent::set_exchange_id,
                 DEFAULT_EXCHANGE_ID.to_string(),
@@ -1542,6 +1590,10 @@ pub async fn start_cpu_mining(
     let cpu_miner_running = cpu_miner.is_running().await;
     drop(cpu_miner);
     let cpu_miner_config = state.cpu_miner_config.read().await;
+    // let tari_address = ConfigWallet::content()
+    //     .await
+    //     .get_selected_tari_wallet_address()
+    //     .get_tari_address();
     drop(cpu_miner_config);
     let internal_wallet_guard = InternalWallet::current().read().await;
     let tari_address = internal_wallet_guard.tari_address.clone();
@@ -1613,6 +1665,10 @@ pub async fn start_gpu_mining(
     let internal_wallet_guard = InternalWallet::current().read().await;
     let tari_address = internal_wallet_guard.tari_address.clone();
     drop(internal_wallet_guard);
+    // let tari_address = ConfigWallet::content()
+    //     .await
+    //     .get_selected_tari_wallet_address()
+    //     .get_tari_address();
     let gpu_miner = state.gpu_miner.read().await;
     let gpu_miner_running = gpu_miner.is_running().await;
     let gpu_available = gpu_miner.is_gpu_mining_available();

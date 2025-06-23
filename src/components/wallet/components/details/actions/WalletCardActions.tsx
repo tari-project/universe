@@ -1,67 +1,15 @@
-import { useState } from 'react';
-import { offset, safePolygon, useFloating, useHover, useInteractions } from '@floating-ui/react';
-import { useTranslation } from 'react-i18next';
-import { AnimatePresence } from 'motion/react';
-import { CopySVG } from '@app/assets/icons/copy.tsx';
-import { useCopyToClipboard } from '@app/hooks';
-import { useWalletStore } from '@app/store';
-import { truncateMiddle } from '@app/utils';
-import { ActionButton, AddressTooltip, Wrapper } from './styles.ts';
-
-function ActionAddress() {
-    const { t } = useTranslation('wallet');
-
-    const [showAdress, setShowAddress] = useState(false);
-    const { copyToClipboard, isCopied } = useCopyToClipboard();
-    const [walletAddress, _walletAddressEmoji] = useWalletStore((state) => state.getActiveTariAddress());
-    const displayAddress = truncateMiddle(walletAddress, 5);
-
-    const { refs, context, floatingStyles } = useFloating({
-        open: showAdress,
-        onOpenChange: setShowAddress,
-        placement: 'right-start',
-        strategy: 'fixed',
-        middleware: [offset({ mainAxis: 10 })],
-    });
-
-    function handleCopyClick() {
-        copyToClipboard(walletAddress);
-    }
-
-    const hover = useHover(context, {
-        enabled: !!walletAddress,
-        move: !showAdress,
-        handleClose: safePolygon(),
-    });
-    const { getFloatingProps } = useInteractions([hover]);
-
-    return (
-        <>
-            <AnimatePresence>
-                {showAdress && (
-                    <AddressTooltip
-                        ref={refs.setFloating}
-                        {...getFloatingProps()}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        style={floatingStyles}
-                    >
-                        {!isCopied ? displayAddress : t('receive.copy-address-success')}
-                    </AddressTooltip>
-                )}
-            </AnimatePresence>
-            <ActionButton ref={refs.setReference} onClick={handleCopyClick} disabled={!walletAddress}>
-                <CopySVG />
-            </ActionButton>
-        </>
-    );
-}
+import { useConfigUIStore } from '@app/store';
+import ActionCopyAddress from './ActionCopyAddress';
+import ActionPhoneSync from './ActionPhoneSync';
+import { Wrapper } from './styles.ts';
+import { WalletUIMode } from '@app/types/events-payloads.ts';
 
 export default function WalletCardActions() {
+    const isStandardWalletUI = useConfigUIStore((s) => s.wallet_ui_mode === WalletUIMode.Standard);
     return (
         <Wrapper>
-            <ActionAddress />
+            {isStandardWalletUI && <ActionPhoneSync />}
+            <ActionCopyAddress />
         </Wrapper>
     );
 }

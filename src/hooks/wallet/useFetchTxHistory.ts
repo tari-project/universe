@@ -8,9 +8,10 @@ import { useWalletStore } from '@app/store';
 export const KEY_TX = `transactions`;
 
 export function useFetchTxHistory() {
+    const walletAddress = useWalletStore((state) => state.tari_address_base58);
     const isWalletScanning = useWalletStore((s) => s.wallet_scanning.is_scanning);
     return useInfiniteQuery<TransactionInfo[]>({
-        queryKey: [KEY_TX],
+        queryKey: [KEY_TX, `address: ${walletAddress}`],
         queryFn: async ({ pageParam }) => {
             const limit = 20;
             const offset = limit * (pageParam as number);

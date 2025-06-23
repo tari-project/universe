@@ -12,9 +12,9 @@ import {
 import { ProgressTrackerUpdatePayload } from '@app/hooks/app/useProgressEventsListener';
 
 import { fetchBridgeTransactionsHistory } from './walletStoreActions';
-import { SetupPhase } from '@app/types/backend-state';
 import { useTappletsStore } from '../useTappletsStore';
 import { TOWER_CANVAS_ID } from '../types/ui';
+import { SetupPhase } from '@app/types/events-payloads';
 
 export interface DisabledPhasesPayload {
     disabled_phases: SetupPhase[];

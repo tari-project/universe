@@ -128,7 +128,6 @@ export const RightContent = styled.div`
     height: 100%;
     position: relative;
 
-    position: relative;
     z-index: 2;
 `;
 

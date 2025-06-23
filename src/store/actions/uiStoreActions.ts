@@ -19,9 +19,7 @@ export const setShowExternalDependenciesDialog = (showExternalDependenciesDialog
 export const setUITheme = (theme: Theme | 'system') => {
     const initialPreferred = window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     const uiTheme: Theme = theme === 'system' ? initialPreferred : theme;
-
     setAnimationProperties(uiTheme === 'light' ? animationLightBg : animationDarkBg);
-
     useUIStore.setState({ theme: uiTheme });
 };
 export const setDialogToShow = (dialogToShow?: DialogType) => useUIStore.setState({ dialogToShow });
@@ -87,9 +85,7 @@ export const setSidebarOpen = (sidebarOpen: boolean) =>
         towerSidebarOffset: sidebarOpen ? sidebarTowerOffset + SB_WIDTH : sidebarTowerOffset,
     });
 
-export const setSeedlessUI = (seedlessUI: boolean) => useUIStore.setState({ seedlessUI });
-export const setIsAppExchangeSpecific = (isAppExchangeSpecific: boolean) =>
-    useUIStore.setState({ isAppExchangeSpecific });
+export const setSeedlessUI = (seedlessUI: boolean) => useUIStore.setState((c) => ({ ...c, seedlessUI }));
 export const setShouldShowExchangeSpecificModal = (shouldShowExchangeSpecificModal: boolean) =>
     useUIStore.setState({ shouldShowExchangeSpecificModal });
 export const handleCloseSplashscreen = () => useUIStore.setState({ showSplashscreen: false });

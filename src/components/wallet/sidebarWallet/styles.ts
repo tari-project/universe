@@ -1,11 +1,16 @@
 import * as m from 'motion/react-m';
 import styled, { css, keyframes } from 'styled-components';
 
-export const SwapsWrapper = styled(m.div)``;
+export const SwapsWrapper = styled(m.div)`
+    display: flex;
+    height: 100%;
+    justify-content: flex-end;
+`;
 export const WalletWrapper = styled(m.div)`
     width: 100%;
     flex-direction: column;
     display: flex;
+    position: relative;
 `;
 
 export const Wrapper = styled.div<{ $swapsPanel?: boolean; $seedlessUI?: boolean }>`
@@ -16,6 +21,7 @@ export const Wrapper = styled.div<{ $swapsPanel?: boolean; $seedlessUI?: boolean
     position: relative;
     flex-direction: column;
     overflow: hidden;
+    max-height: 100%;
     overflow-y: auto;
     width: 100%;
     gap: 8px;
@@ -28,7 +34,7 @@ export const Wrapper = styled.div<{ $swapsPanel?: boolean; $seedlessUI?: boolean
         ${({ $swapsPanel, $seedlessUI }) =>
             ($swapsPanel || $seedlessUI) &&
             css`
-                height: unset;
+                height: auto;
             `};
     }
     @media (max-height: 690px) {
@@ -36,14 +42,14 @@ export const Wrapper = styled.div<{ $swapsPanel?: boolean; $seedlessUI?: boolean
         ${({ $swapsPanel, $seedlessUI }) =>
             ($swapsPanel || $seedlessUI) &&
             css`
-                height: unset;
+                height: auto;
             `};
     }
 
     ${({ $swapsPanel, $seedlessUI }) =>
         ($swapsPanel || $seedlessUI) &&
         css`
-            height: unset;
+            height: auto;
         `};
 `;
 
@@ -52,16 +58,31 @@ export const WalletActionWrapper = styled(m.div)`
     flex-shrink: 0;
     display: flex;
     width: 100%;
+    height: auto;
+
+    will-change: height;
 `;
-export const DetailsCard = styled(m.div)`
+
+export const DetailsCard = styled(m.div)<{ $isScrolled: boolean }>`
     display: flex;
     border-radius: 20px;
     padding: 14px;
     width: 100%;
-    min-height: 140px;
+
     box-shadow: 10px 10px 40px 0 rgba(0, 0, 0, 0.06);
     position: relative;
     overflow: hidden;
+
+    transition: height 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: height;
+    height: 210px;
+
+    ${({ $isScrolled }) =>
+        $isScrolled &&
+        css`
+            height: 141px;
+        `}
+
     @media (max-height: 690px) {
         padding: 8px 10px;
     }
@@ -107,13 +128,14 @@ export const BuyTariButton = styled.button`
     font-size: 13px;
     line-height: 100%;
     text-align: center;
-    padding: 16px;
+    padding: 0 16px;
     border-radius: 72px;
     background: #000;
-    color: white;
+    color: #fff;
     cursor: pointer;
-    height: 50px;
+    height: 45px;
     transition: all 0.2s ease-in-out;
+    flex-shrink: 0;
 
     &:hover {
         opacity: 0.9;

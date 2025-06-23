@@ -74,7 +74,8 @@ export const CopyToClipboard = ({ text }: { text: string | undefined }) => {
 const WalletAddressMarkup = () => {
     const [isCondensed, setIsCondensed] = useState(true);
     const { t } = useTranslation('settings', { useSuspense: false });
-    const [walletAddress, walletAddressEmoji] = useWalletStore((state) => state.getActiveTariAddress());
+    const walletAddress = useWalletStore((state) => state.tari_address_base58);
+    const walletAddressEmoji = useWalletStore((state) => state.tari_address_emoji);
 
     function condenseEmojiAddress(emojiAddress: string | undefined) {
         const regex = emojiRegex();

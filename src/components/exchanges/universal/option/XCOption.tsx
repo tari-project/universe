@@ -45,7 +45,9 @@ interface XCOptionProps {
 }
 
 export const XCOption = ({ content, isCurrent = false, isActive, onActiveClick }: XCOptionProps) => {
-    const base_tari_address = useWalletStore((state) => state.external_tari_address_emoji);
+    const last_internal_tari_emoji_address_used = useWalletStore(
+        (state) => state.last_internal_tari_emoji_address_used
+    );
     const { t } = useTranslation(['exchange', 'settings'], { useSuspense: false });
     const [isAddressValid, setIsAddressValid] = useState(false);
     const [miningAddress, setMiningAddress] = useState('');
@@ -73,16 +75,18 @@ export const XCOption = ({ content, isCurrent = false, isActive, onActiveClick }
     const logoSrc = content.logo_img_small_url;
     const showExpand = isTari ? !isCurrent && content.id : content.id;
 
-    const helpMarkup =
-        content.address_help_link !== null ? (
-            <HelpButtonWrapper>
-                <Divider />
-                <HelpButton onClick={() => open(content.address_help_link)}>
-                    <Typography>{t('help-find-address', { exchange: content.name, ns: 'exchange' })}</Typography>
-                    <ExternalLinkSVG />
-                </HelpButton>
-            </HelpButtonWrapper>
-        ) : null;
+    const helpLink =
+        content.address_help_link && content.address_help_link.length > 0 ? content.address_help_link : null;
+
+    const helpMarkup = helpLink ? (
+        <HelpButtonWrapper>
+            <Divider />
+            <HelpButton onClick={() => open(helpLink)}>
+                <Typography>{t('help-find-address', { exchange: content.name, ns: 'exchange' })}</Typography>
+                <ExternalLinkSVG />
+            </HelpButton>
+        </HelpButtonWrapper>
+    ) : null;
 
     return (
         <Wrapper $isCurrent={isCurrent} $isActive={isActive}>
@@ -119,7 +123,11 @@ export const XCOption = ({ content, isCurrent = false, isActive, onActiveClick }
                     <ExchangeAddress
                         handleIsAddressValid={setIsAddressValid}
                         handleAddressChanged={setMiningAddress}
-                        value={isCurrent && base_tari_address ? truncateMiddle(base_tari_address, 7, ' ... ') : ''}
+                        value={
+                            isCurrent && last_internal_tari_emoji_address_used
+                                ? truncateMiddle(last_internal_tari_emoji_address_used, 7, ' ... ')
+                                : ''
+                        }
                     />
                     <SeasonReward>
                         <LeftContent>

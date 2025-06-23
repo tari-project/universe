@@ -156,6 +156,10 @@ impl SetupPhaseImpl for MiningSetupPhase {
         let mmproxy_use_monero_fail = *ConfigCore::content().await.mmproxy_use_monero_failover();
         let squad_override = ConfigMining::content().await.squad_override().clone();
         let tari_address = { InternalWallet::current().read().await.tari_address.clone() };
+        // let tari_address = ConfigWallet::content()
+        //     .await
+        //     .get_selected_tari_wallet_address()
+        //     .get_tari_address();
 
         Ok(MiningSetupPhaseAppConfiguration {
             p2pool_enabled,
