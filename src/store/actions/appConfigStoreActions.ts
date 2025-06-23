@@ -39,10 +39,10 @@ export const handleConfigCoreLoaded = async (coreConfig: ConfigCore) => {
     useConfigCoreStore.setState(coreConfig);
     const buildInExchangeId = useConfigBEInMemoryStore.getState().exchangeId;
     const isAppExchangeSpecific = Boolean(buildInExchangeId !== 'universal');
+    setCurrentExchangeMinerId(coreConfig.exchange_id as string);
 
     if (!isAppExchangeSpecific) {
         await fetchExchangeList();
-        setCurrentExchangeMinerId(coreConfig.exchange_id as string);
     } else {
         await fetchExchangeContent(coreConfig.exchange_id as string);
     }
