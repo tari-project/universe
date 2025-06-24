@@ -47,3 +47,13 @@ export const CardItemLabelValue = styled(Typography)`
 export const ConnectionIcon = styled(IoCheckmarkCircle)<{ $isConnected?: boolean }>(({ theme, $isConnected }) => ({
     color: $isConnected ? theme.palette.success.main : theme.palette.error.main,
 }));
+
+export const TitleCodeBlock = styled.code`
+    font-weight: 700;
+    font-size: 11px;
+    background: rgba(0, 0, 0, 0.15);
+    color: ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.5)};
+    border-radius: 5px;
+    padding: 2px 4px;
+    margin: 0 0 4px;
+`;

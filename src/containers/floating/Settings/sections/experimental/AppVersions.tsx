@@ -15,7 +15,7 @@ export default function AppVersions() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
     const currentEnvironment = useEnvironment();
     const applicationsVersions = useAppStateStore((state) => state.applications_versions);
-
+    console.debug(applicationsVersions);
     return applicationsVersions ? (
         <SettingsGroupWrapper>
             <Stack direction="row" alignItems="center" justifyContent="space-between">
@@ -36,6 +36,7 @@ export default function AppVersions() {
                     {Object.entries(applicationsVersions).map(([key, value]) => (
                         <CardComponent
                             key={`${key}-${value}`}
+                            useCodeBlock
                             heading={key}
                             labels={[
                                 {
