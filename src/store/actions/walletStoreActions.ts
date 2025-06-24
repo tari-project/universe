@@ -76,8 +76,8 @@ export const setExternalTariAddress = async (newAddress: string) => {
             console.info('New Tari address set successfully to:', newAddress);
         })
         .catch((e) => {
-            console.error('Could not set Monero address', e);
-            setError('Could not change Monero address');
+            console.error('Could not set external tari address', e);
+            setError('Could not change external tari address');
         });
 };
 

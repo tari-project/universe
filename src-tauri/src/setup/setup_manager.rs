@@ -27,8 +27,8 @@ use super::{
 };
 use crate::app_in_memory_config::{MinerType, DEFAULT_EXCHANGE_ID};
 use crate::configs::config_core::ConfigCoreContent;
-use crate::internal_wallet::InternalWallet;
 use crate::configs::config_ui::WalletUIMode;
+use crate::internal_wallet::InternalWallet;
 use crate::{
     configs::{
         config_core::ConfigCore, config_mining::ConfigMining, config_ui::ConfigUI,
@@ -310,43 +310,6 @@ impl SetupManager {
         ConfigMining::initialize(app_handle.clone()).await;
         ConfigUI::initialize(app_handle.clone()).await;
 
-        match InternalWallet::init_instance(&app_handle).await {
-            Ok(wallet) => {
-                log::info!(target: LOG_TARGET, "====== Internal Wallet initialized: {:?}", wallet);
-
-                if let Err(e) = ConfigWallet::migrate().await {
-                    panic!("Wallet migration failed: {:?}", e);
-                }
-                let state = app_handle.state::<UniverseAppState>();
-                state
-                    .wallet_manager
-                    .set_view_private_key_and_spend_key(
-                        wallet.tari_view_private_key_hex,
-                        wallet.tari_spend_public_key_hex,
-                    )
-                    .await;
-                {
-                    let mut cpu_config = state.cpu_miner_config.write().await;
-                    cpu_config.load_from_config_wallet(&ConfigWallet::content().await);
-                }
-
-                // Currently it easier to send extra event then handle TariAddress in emit_wallet_config_loaded
-                // EventsEmitter::emit_external_tari_address_changed(
-                //     ConfigWallet::content()
-                //         .await
-                //         .external_tari_address()
-                //         .clone(),
-                // )
-                // .await;
-            }
-            Err(e) => {
-                error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);
-            }
-        };
-
-        let build_in_exchange_id = in_memory_config.read().await.exchange_id.clone();
-        let is_on_exchange_miner_build =
-            MinerType::from_str(&build_in_exchange_id).is_exchange_mode();
         let node_type = ConfigCore::content().await.node_type().clone();
         info!(target: LOG_TARGET, "Retrieved initial node type: {:?}", node_type);
         state.node_manager.set_node_type(node_type).await;
@@ -356,11 +319,6 @@ impl SetupManager {
         let is_on_exchange_miner_build =
             MinerType::from_str(&build_in_exchange_id).is_exchange_mode();
         let last_config_exchange_id = ConfigCore::content().await.exchange_id().clone();
-
-        let is_external_address_selected = ConfigWallet::content()
-            .await
-            .get_selected_tari_wallet_address()
-            .is_external();
 
         if is_on_exchange_miner_build {
             let _unused = ConfigCore::update_field(
@@ -375,11 +333,61 @@ impl SetupManager {
         EventsEmitter::emit_mining_config_loaded(&ConfigMining::content().await).await;
         EventsEmitter::emit_ui_config_loaded(&ConfigUI::content().await).await;
 
-        if is_on_exchange_miner_build && build_in_exchange_id.eq(DEFAULT_EXCHANGE_ID) {
-            if is_external_address_selected {
+        let is_on_exchange_specific_variant = ConfigCore::content()
+            .await
+            .is_on_exchange_specific_variant();
+        let is_external_address_selected = ConfigWallet::content()
+            .await
+            .selected_external_tari_address()
+            .is_some();
+        // Default app variant (when build in exchange ID is DEFAULT_EXCHANGE_ID) can have either seedless wallet or standard wallet
+
+        // If there is exchange id set in config_core that is different from DEFAULT_EXCHANGE_ID and external address is provided we want to display seedless wallet UI
+        // This can happen when user was using dedicated exchange miner build before and now is using default app variant
+        // Or user selected exchange on default app variant and reopened the app
+        // In other cases we want to display standard wallet UI
+        if build_in_exchange_id.eq(DEFAULT_EXCHANGE_ID) {
+            if is_external_address_selected && is_on_exchange_specific_variant {
                 let _unused = ConfigUI::update_wallet_ui_mode(WalletUIMode::Seedless).await;
+                match InternalWallet::initialize_seedless(None).await {
+                    Ok(internal_wallet) => {
+                        log::info!(target: LOG_TARGET, "Seedless wallet initialized with address: {:?}", internal_wallet.tari_address.to_base58());
+                    }
+                    Err(e) => {
+                        // Handle this critical error
+                        error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);
+                    }
+                }
             } else {
                 let _unused = ConfigUI::update_wallet_ui_mode(WalletUIMode::Standard).await;
+                match InternalWallet::initialize_with_seed(&app_handle).await {
+                    Ok(wallet) => {
+                        log::info!(target: LOG_TARGET, "Owned Internal Wallet initialized with address: {:?}", wallet.tari_address.to_base58());
+
+                        if let Err(e) = ConfigWallet::migrate().await {
+                            panic!("Wallet migration failed: {:?}", e);
+                        }
+                        let state = app_handle.state::<UniverseAppState>();
+                        let wallet_details = wallet
+                            .tari_wallet_details
+                            .expect("Wallet details are missing");
+                        state
+                            .wallet_manager
+                            .set_view_private_key_and_spend_key(
+                                wallet_details.view_private_key_hex,
+                                wallet_details.spend_public_key_hex,
+                            )
+                            .await;
+                        {
+                            let mut cpu_config = state.cpu_miner_config.write().await;
+                            cpu_config.load_from_config_wallet(&ConfigWallet::content().await);
+                        }
+                    }
+                    Err(e) => {
+                        // Handle this critical error
+                        error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);
+                    }
+                };
             }
         }
 
@@ -400,25 +408,6 @@ impl SetupManager {
                 .send_replace(ExchangeModalStatus::WaitForCompletion);
             EventsEmitter::emit_should_show_exchange_miner_modal().await;
         }
-        // let config_path = app_handle
-        //     .path()
-        //     .app_config_dir()
-        //     .expect("Could not get config dir");
-        // let internal_wallet = InternalWallet::load_or_create(config_path, state)
-        //     .await
-        //     .expect("Could not load or create internal wallet");
-        // let is_address_generated = internal_wallet.get_is_tari_address_generated();
-        // let is_on_exchange_miner_build =
-        //     in_memory_config.read().await.exchange_id != DEFAULT_EXCHANGE_ID;
-
-        // if is_on_exchange_miner_build {
-        //     EventsEmitter::emit_disabled_phases_changed(vec![SetupPhase::Wallet]).await;
-        // }
-
-        // if is_on_exchange_miner_build && is_address_generated {
-        //     self.exchange_modal_status
-        //         .send_replace(ExchangeModalStatus::WaitForCompletion);
-        // }
 
         info!(target: LOG_TARGET, "Pre Setup Finished");
     }
@@ -431,11 +420,6 @@ impl SetupManager {
             .cpu_mining_pool_status_url()
             .clone();
 
-        let is_external_address_selected = ConfigWallet::content()
-            .await
-            .get_selected_tari_wallet_address()
-            .is_external();
-
         info!(target: LOG_TARGET, "Resolving setup features");
         // clear existing features
         features.0.clear();
@@ -446,6 +430,10 @@ impl SetupManager {
             info!(target: LOG_TARGET, "Centralized pool feature enabled");
             features.add_feature(SetupFeature::CentralizedPool);
         }
+        let is_external_address_selected = ConfigWallet::content()
+            .await
+            .selected_external_tari_address()
+            .is_some();
         if is_external_address_selected || is_exchange_miner_build {
             info!(target: LOG_TARGET, "Seedless wallet feature enabled");
             features.add_feature(SetupFeature::SeedlessWallet);

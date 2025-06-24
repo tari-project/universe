@@ -128,8 +128,13 @@ impl WalletManager {
         process_watcher
             .adapter
             .connect_with_local_node(config.connect_with_local_node);
-        process_watcher.adapter.wallet_birthday =
-            Some(InternalWallet::current().read().await.tari_wallet_birthday);
+
+        let tari_wallet_details = InternalWallet::current()
+            .read()
+            .await
+            .tari_wallet_details
+            .clone();
+        process_watcher.adapter.wallet_birthday = tari_wallet_details.map(|d| d.wallet_birthday);
 
         process_watcher
             .start(

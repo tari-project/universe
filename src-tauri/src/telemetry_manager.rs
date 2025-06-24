@@ -542,10 +542,6 @@ async fn get_telemetry_data_inner(
             extra_data.insert("mining_address_payment_id".to_string(), payment_id);
         }
         // Note: If no payment ID, we don't add the field (saves space vs empty string)
-        // let tari_address = ConfigWallet::content()
-        //     .await
-        //     .get_selected_tari_wallet_address()
-        //     .get_tari_base58_address();
     }
     let mut squad = None;
     if let Some(stats) = p2pool_stats.as_ref() {

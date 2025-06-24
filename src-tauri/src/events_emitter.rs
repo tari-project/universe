@@ -1,8 +1,3 @@
-use std::collections::HashMap;
-use std::sync::LazyLock;
-
-use crate::configs::config_ui::WalletUIMode;
-use crate::configs::config_wallet::TariWalletAddress;
 // Copyright 2024. The Tari Project
 //
 // Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -50,9 +45,12 @@ use crate::{
     BaseNodeStatus, GpuMinerStatus,
 };
 use log::error;
+use std::collections::HashMap;
+use std::sync::LazyLock;
 use tari_common_types::tari_address::TariAddress;
 use tauri::{AppHandle, Emitter};
 use tokio::sync::RwLock;
+use crate::configs::config_ui::WalletUIMode;
 
 const LOG_TARGET: &str = "tari::universe::events_emitter";
 const BACKEND_STATE_UPDATE: &str = "backend_state_update";
@@ -722,14 +720,14 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_selected_tari_address_changed(payload: &TariWalletAddress) {
+    pub async fn emit_selected_tari_address_changed(payload: &TariAddress) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::SelectedTariAddressChanged,
             payload: TariAddressUpdatePayload {
-                tari_address_base58: payload.get_tari_base58_address(),
-                tari_address_emoji: payload.get_tari_emoji_address(),
-                tari_address_type: payload.get_type(),
+                tari_address_base58: payload.to_base58(),
+                tari_address_emoji: payload.to_emoji_string(),
+                tari_address_type: 1, // always external when selected
             },
         };
         if let Err(e) = Self::get_app_handle()

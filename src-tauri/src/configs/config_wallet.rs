@@ -46,43 +46,6 @@ static INSTANCE: LazyLock<RwLock<ConfigWallet>> =
 pub const WALLET_VERSION: i32 = 2;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub enum TariWalletAddress {
-    Internal(TariAddress),
-    External(TariAddress),
-}
-
-impl TariWalletAddress {
-    pub fn get_tari_base58_address(&self) -> String {
-        match self {
-            TariWalletAddress::Internal(tari_address) => tari_address.to_base58(),
-            TariWalletAddress::External(tari_address) => tari_address.to_base58(),
-        }
-    }
-    pub fn get_tari_emoji_address(&self) -> String {
-        match self {
-            TariWalletAddress::Internal(tari_address) => tari_address.to_emoji_string(),
-            TariWalletAddress::External(tari_address) => tari_address.to_emoji_string(),
-        }
-    }
-    pub fn get_tari_address(&self) -> TariAddress {
-        match self {
-            TariWalletAddress::Internal(tari_address) => tari_address.clone(),
-            TariWalletAddress::External(tari_address) => tari_address.clone(),
-        }
-    }
-    pub fn is_external(&self) -> bool {
-        matches!(self, TariWalletAddress::External(_))
-    }
-
-    pub fn get_type(&self) -> u8 {
-        match self {
-            TariWalletAddress::Internal(_) => 0,
-            TariWalletAddress::External(_) => 1,
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ExternalTariAddressBookRecord {
     pub name: String,
     pub address: TariAddress,
@@ -104,14 +67,12 @@ pub struct ConfigWalletContent {
     #[getset(get = "pub", set = "pub")]
     keyring_accessed: bool,
     #[getset(get = "pub", set = "pub")]
-    external_tari_address: Option<TariAddress>,
-    #[getset(get = "pub", set = "pub")]
     wallet_migration_nonce: u64,
     created_at: SystemTime,
     #[getset(get = "pub", set = "pub")]
     external_tari_addresses_book: HashMap<String, ExternalTariAddressBookRecord>,
-    #[getset(set = "pub")]
-    selected_wallet_address: Option<TariWalletAddress>,
+    #[getset(get = "pub", set = "pub")]
+    selected_external_tari_address: Option<TariAddress>,
 }
 
 impl Default for ConfigWalletContent {
@@ -122,10 +83,9 @@ impl Default for ConfigWalletContent {
             monero_address: "".to_string(),
             monero_address_is_generated: false,
             keyring_accessed: false,
-            external_tari_address: None,
             wallet_migration_nonce: 0,
             created_at: SystemTime::now(),
-            selected_wallet_address: None,
+            selected_external_tari_address: None,
             external_tari_addresses_book: HashMap::new(),
         }
     }
@@ -144,18 +104,6 @@ impl ConfigWalletContent {
         self.monero_address_is_generated = true;
 
         self
-    }
-
-
-    // MERGED below
-    pub fn get_selected_tari_wallet_address(&self) -> TariWalletAddress {
-        self.selected_wallet_address
-            .clone()
-            .expect("Selected Tari wallet address is not set")
-    }
-
-    pub fn is_selected_tari_wallet_missing(&self) -> bool {
-        self.selected_wallet_address.is_none()
     }
 
     pub fn update_external_tari_address_book(&mut self, address: TariAddress) -> &mut Self {
@@ -177,32 +125,25 @@ pub struct ConfigWallet {
 }
 
 impl ConfigWallet {
-    pub async fn update_selected_wallet_address(
-        address: Option<TariWalletAddress>,
+    pub async fn update_selected_external_tari_address(
+        address: Option<TariAddress>,
     ) -> Result<(), anyhow::Error> {
         if let Some(ref tari_wallet_address) = address {
-            EventsEmitter::emit_selected_tari_address_changed(tari_wallet_address).await;
-
             let is_on_exchange_miner_specific_variant = ConfigCore::content()
                 .await
                 .is_on_exchange_specific_variant();
-            match tari_wallet_address {
-                TariWalletAddress::Internal(_) => {
-                    ConfigUI::update_wallet_ui_mode(WalletUIMode::Standard).await?;
-                }
-                TariWalletAddress::External(_) => {
-                    if is_on_exchange_miner_specific_variant {
-                        ConfigUI::update_wallet_ui_mode(WalletUIMode::ExchangeSpecificMiner)
-                            .await?;
-                    } else {
-                        ConfigUI::update_wallet_ui_mode(WalletUIMode::Seedless).await?;
-                    }
-                }
+            if is_on_exchange_miner_specific_variant {
+                ConfigUI::update_wallet_ui_mode(WalletUIMode::ExchangeSpecificMiner).await?;
+            } else {
+                ConfigUI::update_wallet_ui_mode(WalletUIMode::Seedless).await?;
             }
         }
 
-        ConfigWallet::update_field(ConfigWalletContent::set_selected_wallet_address, address)
-            .await?;
+        ConfigWallet::update_field(
+            ConfigWalletContent::set_selected_external_tari_address,
+            address,
+        )
+        .await?;
 
         Ok(())
     }
@@ -211,61 +152,6 @@ impl ConfigWallet {
         let mut config = Self::current().write().await;
         config.load_app_handle(app_handle.clone()).await;
         drop(config);
-
-
-        // Merged below
-        //
-        //
-        // Think about better place for this
-        // This must happend before InternalWallet::load_or_create !!!
-        // if ConfigWallet::content().await.monero_address().is_empty() {
-        //     if let Ok(monero_address) = create_monereo_address().await {
-        //         let _unused = ConfigWallet::update_field(
-        //             ConfigWalletContent::set_generated_monero_address,
-        //             monero_address,
-        //         )
-        //         .await;
-        //     }
-        // }
-        // {
-        //     let mut cpu_config = state.cpu_miner_config.write().await;
-        //     cpu_config.load_from_config_wallet(&ConfigWallet::content().await);
-        // }
-
-        // match InternalWallet::load_or_create(old_config_path.clone()).await {
-        //     Ok(wallet) => {
-        //         state
-        //             .wallet_manager
-        //             .set_view_private_key_and_spend_key(
-        //                 wallet.get_view_key(),
-        //                 wallet.get_spend_key(),
-        //             )
-        //             .await;
-
-        //         EventsEmitter::emit_main_tari_address_loaded(&wallet.get_tari_address()).await;
-
-        //         let is_selected_address_missing = ConfigWallet::content()
-        //             .await
-        //             .is_selected_tari_wallet_missing();
-        //         if is_selected_address_missing {
-        //             let _unused = ConfigWallet::update_selected_wallet_address(Some(
-        //             TariWalletAddress::Internal(wallet.get_tari_address()),
-        //         ))
-        //         .await
-        //         .inspect_err(|e| {
-        //             error!(target: LOG_TARGET, "Error updating selected wallet address: {:?}", e);
-        //         });
-        //         }
-        //     }
-        //     Err(e) => {
-        //         error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);
-        //     }
-        // };
-
-        // EventsEmitter::emit_selected_tari_address_changed(
-        //     &Self::content().await.get_selected_tari_wallet_address(),
-        // )
-        // .await;
     }
 
     pub async fn migrate() -> Result<(), anyhow::Error> {
