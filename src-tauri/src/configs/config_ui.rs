@@ -20,7 +20,10 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::events_emitter::EventsEmitter;
+use crate::{
+    configs::config_core::ConfigCore, events_emitter::EventsEmitter,
+    internal_wallet::TariAddressType,
+};
 
 use std::{sync::LazyLock, time::SystemTime};
 
@@ -123,7 +126,29 @@ pub struct ConfigUI {
 }
 
 impl ConfigUI {
-    pub async fn update_wallet_ui_mode(mode: WalletUIMode) -> Result<(), anyhow::Error> {
+    pub async fn handle_wallet_type_update(
+        tari_address_type: TariAddressType,
+    ) -> Result<(), anyhow::Error> {
+        let is_on_exchange_miner_specific_variant = ConfigCore::content()
+            .await
+            .is_on_exchange_specific_variant();
+        let mode = match tari_address_type {
+            TariAddressType::Internal => WalletUIMode::Standard,
+            TariAddressType::External => {
+                if is_on_exchange_miner_specific_variant {
+                    WalletUIMode::ExchangeSpecificMiner
+                } else {
+                    WalletUIMode::Seedless
+                }
+            }
+        };
+
+        Self::set_wallet_ui_mode(mode).await?;
+
+        Ok(())
+    }
+
+    pub async fn set_wallet_ui_mode(mode: WalletUIMode) -> Result<(), anyhow::Error> {
         Self::update_field(ConfigUIContent::set_wallet_ui_mode, mode).await?;
         EventsEmitter::emit_wallet_ui_mode_changed(mode).await;
 

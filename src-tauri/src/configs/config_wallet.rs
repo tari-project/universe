@@ -28,13 +28,7 @@ use tari_common_types::tari_address::TariAddress;
 use tauri::AppHandle;
 use tokio::sync::RwLock;
 
-use crate::events_emitter::EventsEmitter;
-
-use super::{
-    config_core::ConfigCore,
-    config_ui::{ConfigUI, WalletUIMode},
-    trait_config::{ConfigContentImpl, ConfigImpl},
-};
+use super::trait_config::{ConfigContentImpl, ConfigImpl};
 
 static EXCHANGES_RECORD_NAME_FOR_EXTERNAL_ADDRESS_BOOK: &str = "Exchanges";
 
@@ -125,29 +119,6 @@ pub struct ConfigWallet {
 }
 
 impl ConfigWallet {
-    pub async fn update_selected_external_tari_address(
-        address: Option<TariAddress>,
-    ) -> Result<(), anyhow::Error> {
-        if let Some(ref tari_wallet_address) = address {
-            let is_on_exchange_miner_specific_variant = ConfigCore::content()
-                .await
-                .is_on_exchange_specific_variant();
-            if is_on_exchange_miner_specific_variant {
-                ConfigUI::update_wallet_ui_mode(WalletUIMode::ExchangeSpecificMiner).await?;
-            } else {
-                ConfigUI::update_wallet_ui_mode(WalletUIMode::Seedless).await?;
-            }
-        }
-
-        ConfigWallet::update_field(
-            ConfigWalletContent::set_selected_external_tari_address,
-            address,
-        )
-        .await?;
-
-        Ok(())
-    }
-
     pub async fn initialize(app_handle: AppHandle) {
         let mut config = Self::current().write().await;
         config.load_app_handle(app_handle.clone()).await;

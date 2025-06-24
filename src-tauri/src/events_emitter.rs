@@ -19,12 +19,14 @@
 // SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+use crate::configs::config_ui::WalletUIMode;
 use crate::events::{
     ConnectionStatusPayload, CriticalProblemPayload, DisabledPhasesPayload,
     InitWalletScanningProgressPayload, MainTariAddressLoadedPayload,
 };
 #[cfg(target_os = "windows")]
 use crate::external_dependencies::RequiredExternalDependency;
+use crate::internal_wallet::TariAddressType;
 use crate::pool_status_watcher::PoolStatus;
 use crate::{
     commands::CpuMinerStatus,
@@ -50,7 +52,6 @@ use std::sync::LazyLock;
 use tari_common_types::tari_address::TariAddress;
 use tauri::{AppHandle, Emitter};
 use tokio::sync::RwLock;
-use crate::configs::config_ui::WalletUIMode;
 
 const LOG_TARGET: &str = "tari::universe::events_emitter";
 const BACKEND_STATE_UPDATE: &str = "backend_state_update";
@@ -720,14 +721,17 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_selected_tari_address_changed(payload: &TariAddress) {
+    pub async fn emit_selected_tari_address_changed(
+        tari_address: &TariAddress,
+        tari_address_type: TariAddressType,
+    ) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::SelectedTariAddressChanged,
             payload: TariAddressUpdatePayload {
-                tari_address_base58: payload.to_base58(),
-                tari_address_emoji: payload.to_emoji_string(),
-                tari_address_type: 1, // always external when selected
+                tari_address_base58: tari_address.to_base58(),
+                tari_address_emoji: tari_address.to_emoji_string(),
+                tari_address_type,
             },
         };
         if let Err(e) = Self::get_app_handle()

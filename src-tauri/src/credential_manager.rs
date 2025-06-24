@@ -31,7 +31,7 @@ use tari_common::configuration::Network;
 use tari_utilities::SafePassword;
 use thiserror::Error;
 
-const LOG_TARGET: &str = "tari::universe::credential_manager";
+// const LOG_TARGET: &str = "tari::universe::credential_manager";
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Credential {

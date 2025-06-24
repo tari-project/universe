@@ -348,10 +348,12 @@ impl SetupManager {
         // In other cases we want to display standard wallet UI
         if build_in_exchange_id.eq(DEFAULT_EXCHANGE_ID) {
             if is_external_address_selected && is_on_exchange_specific_variant {
-                let _unused = ConfigUI::update_wallet_ui_mode(WalletUIMode::Seedless).await;
+                let _unused = ConfigUI::set_wallet_ui_mode(WalletUIMode::Seedless).await;
                 match InternalWallet::initialize_seedless(None).await {
-                    Ok(internal_wallet) => {
-                        log::info!(target: LOG_TARGET, "Seedless wallet initialized with address: {:?}", internal_wallet.tari_address.to_base58());
+                    Ok(wallet) => {
+                        // Is this proper place to emit the event?
+                        EventsEmitter::emit_main_tari_address_loaded(&wallet.tari_address).await;
+                        log::info!(target: LOG_TARGET, "Seedless wallet initialized with address: {:?}", wallet.tari_address.to_base58());
                     }
                     Err(e) => {
                         // Handle this critical error
@@ -359,7 +361,7 @@ impl SetupManager {
                     }
                 }
             } else {
-                let _unused = ConfigUI::update_wallet_ui_mode(WalletUIMode::Standard).await;
+                let _unused = ConfigUI::set_wallet_ui_mode(WalletUIMode::Standard).await;
                 match InternalWallet::initialize_with_seed(&app_handle).await {
                     Ok(wallet) => {
                         log::info!(target: LOG_TARGET, "Owned Internal Wallet initialized with address: {:?}", wallet.tari_address.to_base58());
@@ -382,9 +384,12 @@ impl SetupManager {
                             let mut cpu_config = state.cpu_miner_config.write().await;
                             cpu_config.load_from_config_wallet(&ConfigWallet::content().await);
                         }
+
+                        // Is this proper place to emit the event?
+                        EventsEmitter::emit_main_tari_address_loaded(&wallet.tari_address).await;
                     }
                     Err(e) => {
-                        // Handle this critical error
+                        // Handle this as critical error
                         error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);
                     }
                 };
