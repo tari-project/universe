@@ -14,7 +14,8 @@ import { useUIStore } from '@app/store/useUIStore.ts';
 import { TOWER_CANVAS_ID } from '@app/store';
 import { queryClient } from './queryClient.ts';
 
-const Splashscreen = lazy(() => import('../containers/phase/Splashscreen/Splashscreen.tsx'));
+import Splashscreen from '../containers/phase/Splashscreen/Splashscreen.tsx';
+
 const ShuttingDownScreen = lazy(() => import('../containers/phase/ShuttingDownScreen/ShuttingDownScreen.tsx'));
 const FloatingElements = lazy(() => import('../containers/floating/FloatingElements.tsx'));
 const MainView = lazy(() => import('../containers/main/MainView.tsx'));
@@ -30,7 +31,7 @@ function CurrentAppSection({ showSplashscreen, isShuttingDown }: CurrentAppSecti
 
         if (showMainView) {
             return (
-                <AppContentContainer key="main" initial="visible">
+                <AppContentContainer key="main" initial="hidden">
                     <Suspense fallback={<div />}>
                         <MainView />
                     </Suspense>
@@ -48,10 +49,8 @@ function CurrentAppSection({ showSplashscreen, isShuttingDown }: CurrentAppSecti
             );
         }
         return (
-            <AppContentContainer key="splashscreen" initial="hidden">
-                <Suspense fallback={<div />}>
-                    <Splashscreen />
-                </Suspense>
+            <AppContentContainer key="splashscreen" initial="visible">
+                <Splashscreen />
             </AppContentContainer>
         );
     }, [showSplashscreen, isShuttingDown]);
