@@ -163,7 +163,7 @@ impl WalletManager {
     }
 
     pub async fn get_port(&self) -> u16 {
-        self.watcher.read().await.adapter.grpc_port.clone()
+        self.watcher.read().await.adapter.grpc_port
     }
 
     pub fn is_initial_scan_completed(&self) -> bool {

@@ -25,14 +25,14 @@ export default function AppVersions() {
                         <InfoCard key={`${appName}-${version}`}>
                             <TitleCodeBlock>{appName}</TitleCodeBlock>
                             <InfoContent>
+                                <InfoLabel>
+                                    {t('version')}: <strong>{version || t('unknown')}</strong>
+                                </InfoLabel>
                                 {port && (
                                     <InfoLabel>
                                         {t('port')}: <strong>{port}</strong>
                                     </InfoLabel>
                                 )}
-                                <InfoLabel>
-                                    {t('version')}: <strong>{version || t('unknown')}</strong>
-                                </InfoLabel>
                             </InfoContent>
                         </InfoCard>
                     );

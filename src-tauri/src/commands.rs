@@ -350,6 +350,8 @@ pub async fn get_applications_versions(
     let binary_resolver = BinaryResolver::current().read().await;
     let tapplet_resolver = TappletResolver::current().read().await;
 
+    let cpu_miner = state.cpu_miner.read().await;
+    let xmrig_port = &cpu_miner.get_port().await;
     let wallet_port = &state.wallet_manager.get_port().await;
     let node_manager = &state.node_manager;
     let node_port = node_manager
@@ -402,7 +404,7 @@ pub async fn get_applications_versions(
         },
         xmrig: ApplicationsInformation {
             version: xmrig_version,
-            port: Some(2),
+            port: Some(*xmrig_port),
         },
         mm_proxy: ApplicationsInformation {
             version: mm_proxy_version,
