@@ -380,7 +380,6 @@ impl StatusMonitor for NodeStatusMonitor {
         match timeout(timeout_duration, self.node_service.get_network_state()).await {
             Ok(res) => match res {
                 Ok(status) => {
-                    warn!("[DEBUG] Node Health Check: {:?}", status);
                     let _res = self.status_broadcast.send(status);
                     if status.readiness_status.is_initializing() {
                         warn!(
@@ -422,7 +421,6 @@ impl StatusMonitor for NodeStatusMonitor {
                     HealthStatus::Healthy
                 }
                 Err(e) => {
-                    warn!("[DEBUG] Node Health Check 1: {:?}", e);
                     warn!(
                         "{:?} Node Health Check Error: checking base node status: {:?}",
                         self.node_type, e
@@ -431,7 +429,6 @@ impl StatusMonitor for NodeStatusMonitor {
                 }
             },
             Err(e) => {
-                warn!("[DEBUG] Node Health Check 2: {:?}", e);
                 warn!(
                     "{:?} Node Health Check (get_network_state) error: {:?}",
                     self.node_type, e
