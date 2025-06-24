@@ -350,8 +350,12 @@ pub async fn get_applications_versions(
     let binary_resolver = BinaryResolver::current().read().await;
     let tapplet_resolver = TappletResolver::current().read().await;
 
-    let cpu_miner = state.cpu_miner.read().await;
+    let mmp_port = &state.mm_proxy_manager.get_port().await;
+    let p2p_port = &state.p2pool_manager.get_grpc_port().await;
+    let cpu_miner = &state.cpu_miner.read().await;
     let xmrig_port = &cpu_miner.get_port().await;
+    let gpu_miner = &state.gpu_miner.read().await;
+    let xtr_port = gpu_miner.get_port().await;
     let wallet_port = &state.wallet_manager.get_port().await;
     let node_manager = &state.node_manager;
     let node_port = node_manager
@@ -408,7 +412,7 @@ pub async fn get_applications_versions(
         },
         mm_proxy: ApplicationsInformation {
             version: mm_proxy_version,
-            port: Some(1),
+            port: Some(*mmp_port),
         },
         wallet: ApplicationsInformation {
             version: wallet_version,
@@ -416,15 +420,15 @@ pub async fn get_applications_versions(
         },
         sha_p2pool: ApplicationsInformation {
             version: sha_p2pool_version,
-            port: Some(2),
+            port: Some(*p2p_port),
         },
         xtrgpuminer: ApplicationsInformation {
             version: xtrgpuminer_version,
-            port: Some(2),
+            port: Some(xtr_port),
         },
         bridge: ApplicationsInformation {
             version: bridge_version,
-            port: Some(2),
+            port: None,
         },
     })
 }

@@ -17,10 +17,11 @@ export default function AppVersions() {
     const currentEnvironment = useEnvironment();
     const appsInfo = useAppStateStore((state) => state.applications_versions);
 
+    console.debug(JSON.stringify(appsInfo));
     const appMarkup = appsInfo ? (
         <Stack>
             <CardGrid>
-                {Object.entries(appsInfo).map(([appName, { version, port }], i) => {
+                {Object.entries(appsInfo).map(([appName, { version, port }]) => {
                     return (
                         <InfoCard key={`${appName}-${version}`}>
                             <TitleCodeBlock>{appName}</TitleCodeBlock>
