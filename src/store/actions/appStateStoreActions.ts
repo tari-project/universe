@@ -19,7 +19,6 @@ export const fetchApplicationsVersions = async () => {
     try {
         console.info('Fetching applications versions');
         const applications_versions = await invoke('get_applications_versions');
-        console.debug(applications_versions);
         useAppStateStore.setState({ applications_versions });
     } catch (error) {
         console.error('Error getting applications versions', error);

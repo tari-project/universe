@@ -1,21 +1,13 @@
 import { ReactNode } from 'react';
-import {
-    CardItem,
-    CardItemLabel,
-    CardItemLabelValue,
-    CardItemLabelWrapper,
-    CardItemTitle,
-    TitleCodeBlock,
-} from './Settings.styles';
+import { CardItem, CardItemLabel, CardItemLabelValue, CardItemLabelWrapper, CardItemTitle } from './Settings.styles';
 import { truncateMiddle } from '@app/utils/truncateString.ts';
 
 interface CardComponentProps {
     heading?: string;
-    useCodeBlock?: boolean;
     labels: { labelText: ReactNode; labelValue: string | number }[];
 }
 
-export const CardComponent = ({ heading, labels, useCodeBlock = false }: CardComponentProps) => {
+export const CardComponent = ({ heading, labels }: CardComponentProps) => {
     const labelMarkup = labels.map(({ labelText, labelValue }) => {
         const labelStr = labelValue.toString();
         const shouldTruncate = labelStr.length > 50;
@@ -27,13 +19,9 @@ export const CardComponent = ({ heading, labels, useCodeBlock = false }: CardCom
             </CardItemLabelWrapper>
         );
     });
-
-    const headingMarkup =
-        heading &&
-        (useCodeBlock ? <TitleCodeBlock>{heading}</TitleCodeBlock> : <CardItemTitle>{heading}</CardItemTitle>);
     return (
         <CardItem>
-            {headingMarkup}
+            {heading ? <CardItemTitle>{heading}</CardItemTitle> : null}
             {labelMarkup}
         </CardItem>
     );
