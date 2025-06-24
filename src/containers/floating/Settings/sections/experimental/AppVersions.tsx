@@ -15,7 +15,7 @@ export default function AppVersions() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
     const currentEnvironment = useEnvironment();
     const applicationsVersions = useAppStateStore((state) => state.applications_versions);
-    console.debug(applicationsVersions);
+
     return applicationsVersions ? (
         <SettingsGroupWrapper>
             <Stack direction="row" alignItems="center" justifyContent="space-between">
@@ -49,5 +49,13 @@ export default function AppVersions() {
                 </CardContainer>
             </Stack>
         </SettingsGroupWrapper>
-    ) : null;
+    ) : (
+        <>
+            {currentEnvironment === Environment.Development && (
+                <TextButton size="small" onClick={() => updateApplicationsVersions()}>
+                    {t('update-versions', { ns: 'settings' })}
+                </TextButton>
+            )}
+        </>
+    );
 }
