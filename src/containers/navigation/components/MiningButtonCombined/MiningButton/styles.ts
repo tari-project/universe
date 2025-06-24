@@ -1,10 +1,10 @@
 import * as m from 'motion/react-m';
 import styled, { css } from 'styled-components';
-import ecoBackground from './backgrounds/eco.png';
-import ludicrousBackground from './backgrounds/ludicrous.png';
-import customBackground from './backgrounds/custom.png';
+import ecoBackground from '../backgrounds/eco.png';
+import ludicrousBackground from '../backgrounds/ludicrous.png';
+import customBackground from '../backgrounds/custom.png';
 
-export const StopWrapper = styled(m.div)<{ $selectedMode: string; $disabled: boolean }>`
+export const ButtonWrapper = styled(m.div)<{ $selectedMode: string; $disabled: boolean }>`
     position: absolute;
     top: 0;
     left: 0;
@@ -74,26 +74,26 @@ export const HitBox = styled.button`
 
     transition: opacity 0.3s cubic-bezier(0.39, 0.3, 0.2, 0.87);
 
-    .stop-icon {
+    .mining_button-icon {
         transition: background-color 0.3s cubic-bezier(0.39, 0.3, 0.2, 0.87);
     }
 
-    .stop-text {
+    .mining_button-text {
         transition: transform 0.3s cubic-bezier(0.39, 0.3, 0.2, 0.87);
     }
 
     &:hover {
-        .stop-icon {
+        .mining_button-icon {
             background: rgba(255, 255, 255, 0.3);
         }
 
-        .stop-text {
+        .mining_button-text {
             transform: scale(1.05);
         }
     }
 
     &:active {
-        .stop-text {
+        .mining_button-text {
             transform: scale(1);
         }
     }
@@ -103,11 +103,11 @@ export const HitBox = styled.button`
         pointer-events: none;
         cursor: default;
 
-        .stop-icon {
+        .mining_button-icon {
             background: rgba(255, 255, 255, 0.3);
         }
 
-        .stop-text {
+        .mining_button-text {
             transform: scale(1);
         }
     }
@@ -131,4 +131,27 @@ export const DropdownWrapper = styled.div`
 
     position: relative;
     z-index: 3;
+`;
+
+export const IconWrapper = styled.div<{ $absolute?: boolean }>`
+    width: 27px;
+    height: 27px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+
+    border-radius: 100%;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(17px);
+
+    ${({ $absolute }) =>
+        $absolute &&
+        css`
+            position: absolute;
+            top: 50%;
+            left: 14px;
+            transform: translateY(-50%);
+        `}
 `;

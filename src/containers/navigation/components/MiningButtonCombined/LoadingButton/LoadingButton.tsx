@@ -1,9 +1,9 @@
 import LoadingDots from '@app/components/elements/loaders/LoadingDots';
 import { LoadingWrapper } from './styles';
-import startBg from '../StartButton/images/background.png';
-import ecoBg from '../StopButton/backgrounds/eco.png';
-import ludicrousBg from '../StopButton/backgrounds/ludicrous.png';
-import customBg from '../StopButton/backgrounds/custom.png';
+import startBg from '../backgrounds/start.png';
+import ecoBg from '../backgrounds/eco.png';
+import ludicrousBg from '../backgrounds/ludicrous.png';
+import customBg from '../backgrounds/custom.png';
 import { useMemo } from 'react';
 import { useConfigMiningStore } from '@app/store';
 

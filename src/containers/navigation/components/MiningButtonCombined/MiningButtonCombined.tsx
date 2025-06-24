@@ -1,7 +1,5 @@
 import { useCallback } from 'react';
 import { ButtonWrapper } from './styles.ts';
-import StartButton from './StartButton/StartButton.tsx';
-import StopButton from './StopButton/StopButton.tsx';
 import { AnimatePresence } from 'motion/react';
 import LoadingButton from './LoadingButton/LoadingButton.tsx';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
@@ -10,6 +8,9 @@ import { useSetupStore } from '@app/store/useSetupStore.ts';
 import { useConfigMiningStore } from '@app/store/useAppConfigStore.ts';
 import { startMining, stopMining } from '@app/store/actions/miningStoreActions.ts';
 import type { ReactElement } from 'react';
+import MiningButton from './MiningButton/MiningButton.tsx';
+import StopIcon from './icons/StopIcon.tsx';
+import PlayIcon from './icons/PlayIcon.tsx';
 
 export default function MiningButtonCombined() {
     const isAppSettingUp = useSetupStore((s) => !s.appUnlocked);
@@ -40,9 +41,27 @@ export default function MiningButtonCombined() {
     if (isAppLoading) {
         button = <LoadingButton key="loading" />;
     } else if (isMining) {
-        button = <StopButton key="stop" onClick={handleStopMining} disabled={isMiningButtonDisabled} />;
+        button = (
+            <MiningButton
+                key="stop"
+                buttonText="stop-mining"
+                onClick={handleStopMining}
+                disabled={isMiningButtonDisabled}
+                icon={<StopIcon />}
+                isMining={isMining}
+            />
+        );
     } else {
-        button = <StartButton key="start" onClick={handleStartMining} disabled={isMiningButtonDisabled} />;
+        button = (
+            <MiningButton
+                key="start"
+                buttonText="start-mining"
+                onClick={handleStartMining}
+                disabled={isMiningButtonDisabled}
+                icon={<PlayIcon />}
+                isMining={isMining}
+            />
+        );
     }
 
     return (

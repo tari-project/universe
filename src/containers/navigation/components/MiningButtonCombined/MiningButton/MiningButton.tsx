@@ -1,6 +1,4 @@
-import { IconWrapper } from '../StartButton/styles';
-import StopIcon from './icons/StopIcon';
-import { DropdownWrapper, HitBox, StopWrapper, Text } from './styles';
+import { DropdownWrapper, HitBox, ButtonWrapper, Text, IconWrapper } from './styles';
 import ModeDropdown from './components/ModeDropdown/ModeDropdown';
 import AnimatedBackground from './components/AnimatedBackground/AnimatedBackground';
 import { useTranslation } from 'react-i18next';
@@ -9,14 +7,17 @@ import { useConfigMiningStore } from '@app/store';
 interface Props {
     onClick: () => void;
     disabled?: boolean;
+    buttonText: string;
+    icon: React.ReactNode;
+    isMining: boolean;
 }
 
-export default function StopButton({ onClick, disabled = false }: Props) {
+export default function MiningButton({ onClick, buttonText, icon, isMining, disabled = false }: Props) {
     const { t } = useTranslation('mining-view');
     const selectedMode = useConfigMiningStore((s) => s.mode);
 
     return (
-        <StopWrapper
+        <ButtonWrapper
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -24,15 +25,15 @@ export default function StopButton({ onClick, disabled = false }: Props) {
             $disabled={disabled}
         >
             <HitBox onClick={onClick} disabled={disabled}>
-                <IconWrapper $absolute={false} className="stop-icon">
-                    <StopIcon />
+                <IconWrapper $absolute={false} className="mining_button-icon">
+                    {icon}
                 </IconWrapper>
-                <Text className="stop-text">{t(`mining-button-text.stop-mining`)}</Text>
+                <Text className="mining_button-text">{t(`mining-button-text.${buttonText}`)}</Text>
             </HitBox>
             <DropdownWrapper>
                 <ModeDropdown />
             </DropdownWrapper>
-            <AnimatedBackground />
-        </StopWrapper>
+            {isMining && <AnimatedBackground />}
+        </ButtonWrapper>
     );
 }
