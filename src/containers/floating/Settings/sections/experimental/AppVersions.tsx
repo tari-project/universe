@@ -17,7 +17,6 @@ export default function AppVersions() {
     const currentEnvironment = useEnvironment();
     const appsInfo = useAppStateStore((state) => state.applications_versions);
 
-    console.debug(JSON.stringify(appsInfo));
     const appMarkup = appsInfo ? (
         <Stack>
             <CardGrid>
@@ -29,11 +28,11 @@ export default function AppVersions() {
                                 <InfoLabel>
                                     {t('version')}: <strong>{version || t('unknown')}</strong>
                                 </InfoLabel>
-                                {port && (
+                                {port ? (
                                     <InfoLabel>
                                         {t('port')}: <strong>{port}</strong>
                                     </InfoLabel>
-                                )}
+                                ) : null}
                             </InfoContent>
                         </InfoCard>
                     );
