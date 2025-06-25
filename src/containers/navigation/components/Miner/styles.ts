@@ -22,31 +22,3 @@ export const TileTop = styled.div`
     display: flex;
     justify-content: space-between;
 `;
-
-export const StatWrapper = styled.div<{ $useLowerCase?: boolean }>`
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    color: ${({ theme }) => theme.palette.text.primary};
-    min-height: 18px;
-
-    font-size: 18px;
-    font-style: normal;
-    font-weight: 500;
-    line-height: 100%;
-    text-transform: ${({ $useLowerCase }) => ($useLowerCase ? 'lowercase' : 'uppercase')};
-`;
-
-export const LoaderWrapper = styled.div`
-    height: 18px;
-    display: flex;
-    align-items: center;
-`;
-
-export const Unit = styled.div`
-    color: ${({ theme }) => theme.palette.text.primary};
-    font-size: 10px;
-    font-style: normal;
-    font-weight: 500;
-    line-height: 100%;
-`;
