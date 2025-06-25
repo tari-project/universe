@@ -1,4 +1,4 @@
-import { AnimatePresence } from 'motion/react';
+import { AnimatePresence, Variants } from 'motion/react';
 
 import { EarningsContainer, EarningsWrapper, RecapText, WinText, WinWrapper } from './Earnings.styles.ts';
 
@@ -7,7 +7,7 @@ import { Trans, useTranslation } from 'react-i18next';
 import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore.ts';
 import { formatNumber, FormatPreset } from '@app/utils/formatters.ts';
 
-const variants = {
+const variants: Variants = {
     visible: {
         opacity: 1,
         y: '-150%',
