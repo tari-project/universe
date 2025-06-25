@@ -383,6 +383,10 @@ impl GpuMiner {
     pub async fn get_gpu_devices(&self) -> Result<Vec<GpuDevice>, anyhow::Error> {
         Ok(self.gpu_devices.clone())
     }
+    pub async fn get_port(&self) -> u16 {
+        let lock = self.watcher.read().await;
+        lock.adapter.http_api_port
+    }
 }
 
 fn get_gpu_engines_statuses_path(config_dir: &Path) -> PathBuf {
