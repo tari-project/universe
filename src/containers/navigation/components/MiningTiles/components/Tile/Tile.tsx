@@ -52,21 +52,27 @@ export default function Tile({
     const syncMarkup = syncing && <SyncData />;
     const mainMarkup = !syncing && (
         <NumberGroup>
-            <BigNumber>
-                <Number>
-                    <NumberFlow
-                        locales={i18n.language}
-                        format={{
-                            minimumFractionDigits: 1,
-                            maximumFractionDigits: 4,
-                            notation: 'standard',
-                            style: 'decimal',
-                        }}
-                        value={mainNumber}
-                    />
-                </Number>
-                <NumberUnit>{mainUnit}</NumberUnit>
-            </BigNumber>
+            {(isLoading || !isMining) && mainUnit !== 'XTM' ? (
+                <BigNumber>
+                    <Number $isLoading>{`-`}</Number>
+                </BigNumber>
+            ) : (
+                <BigNumber>
+                    <Number>
+                        <NumberFlow
+                            locales={i18n.language}
+                            format={{
+                                minimumFractionDigits: 1,
+                                maximumFractionDigits: 4,
+                                notation: 'standard',
+                                style: 'decimal',
+                            }}
+                            value={mainNumber}
+                        />
+                    </Number>
+                    <NumberUnit>{mainUnit}</NumberUnit>
+                </BigNumber>
+            )}
             <NumberLabel>{mainLabel}</NumberLabel>
         </NumberGroup>
     );

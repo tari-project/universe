@@ -2,6 +2,7 @@
 
 import styled, { css, keyframes } from 'styled-components';
 import { Typography } from '@app/components/elements/Typography.tsx';
+import { convertHexToRGBA } from '@app/utils';
 
 export const Wrapper = styled.div`
     width: 100%;
@@ -85,12 +86,15 @@ export const StatusDot = styled.div<{ $isMining: boolean; $isEnabled: boolean; $
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: ${({ $isMining }) => ($isMining ? '#33CD7E' : '#D29807')};
 
     ${({ $isEnabled, $isMining, $isSyncing, theme }) =>
         $isEnabled
             ? css`
-                  background: ${$isMining ? '#33CD7E' : '#D29807'};
+                  background: ${$isSyncing
+                      ? '#D29807'
+                      : $isMining
+                        ? '#33CD7E'
+                        : convertHexToRGBA(theme.palette.contrast, 0.5)};
               `
             : css`
                   background: ${theme.palette.divider};
@@ -138,7 +142,7 @@ export const BigNumber = styled.div`
     gap: 3px;
 `;
 
-export const Number = styled.span`
+export const Number = styled.span<{ $isLoading?: boolean }>`
     color: ${({ theme }) => theme.palette.text.primary};
     font-family: Poppins, sans-serif;
     font-size: 22px;
@@ -146,7 +150,7 @@ export const Number = styled.span`
     font-weight: 600;
     line-height: 95%;
 
-    transform: translateY(7px);
+    transform: ${({ $isLoading }) => ($isLoading ? '' : ' translateY(7px)')};
 `;
 
 export const NumberUnit = styled.span`

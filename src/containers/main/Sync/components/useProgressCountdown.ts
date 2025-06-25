@@ -98,7 +98,7 @@ export const useProgressCountdown = (isCompact = false) => {
 
             if (isCompact) {
                 if (hours > 0) {
-                    return `${hours}h ${minutes < 10 ? '0' : ''}${minutes}m ${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}s`;
+                    return `${hours}h ${minutes < 10 ? '0' : ''}${minutes}m ${remainingSeconds}s`;
                 }
                 return `${minutes}m ${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}s`;
             }

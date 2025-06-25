@@ -29,7 +29,7 @@ export default function MiningTiles() {
     const isGpuLoading = (miningGpuInitiated && !isMiningInProgress) || (isMiningInProgress && !miningGpuInitiated);
 
     const fmtCPU = formatHashrate(cpu_hash_rate, false);
-    const fmtGPU = formatHashrate(gpu_hash_rate, false);
+    const fmtGPU = formatHashrate(gpu_hash_rate);
 
     return (
         <Wrapper>
@@ -51,7 +51,7 @@ export default function MiningTiles() {
                 isMining={isGpuMiningEnabled && gpu_is_mining}
                 pillValue={fmtGPU.value}
                 pillUnit={fmtGPU.unit}
-                mainNumber={fmtGPU.value}
+                mainNumber={fmtGPU.value} //temporary until we get GPU rewards in progress
                 mainUnit={fmtGPU.unit}
                 mainLabel={t('gpu-power')}
             />
