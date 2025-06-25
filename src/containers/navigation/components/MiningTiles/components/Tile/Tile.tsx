@@ -58,7 +58,7 @@ export default function Tile({
 
     const syncing = isGPU && isEnabled && !isConnectedToTariNetwork;
     const syncMarkup = syncing && <SyncData />;
-    const renderPill = isGPU && syncing;
+    const renderPill = isGPU ? syncing : true;
 
     const pillCopy = isLoading || !isMining ? `- ${pillUnit}` : `${pillValue} ${pillUnit}`;
     const pillMarkup = renderPill && <RatePill>{pillCopy}</RatePill>;
