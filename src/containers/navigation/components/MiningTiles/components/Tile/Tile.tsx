@@ -86,7 +86,9 @@ export default function Tile({
                         <LabelText>{title}</LabelText>
                     </LabelWrapper>
 
-                    {pillValue ? <RatePill>{isLoading ? `- ${pillUnit}` : `${pillValue} ${pillUnit}`}</RatePill> : null}
+                    {pillValue ? (
+                        <RatePill>{isLoading || !isMining ? `- ${pillUnit}` : `${pillValue} ${pillUnit}`}</RatePill>
+                    ) : null}
                 </HeadingRow>
                 {syncMarkup}
                 {mainMarkup}

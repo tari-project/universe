@@ -28,7 +28,7 @@ export default function MiningTiles() {
     const isCpuLoading = (miningCpuInitiated && !isMiningInProgress) || (isMiningInProgress && !miningCpuInitiated);
     const isGpuLoading = (miningGpuInitiated && !isMiningInProgress) || (isMiningInProgress && !miningGpuInitiated);
 
-    const fmtCPU = formatHashrate(cpu_hash_rate, false);
+    const fmtCPU = formatHashrate(cpu_hash_rate);
     const fmtGPU = formatHashrate(gpu_hash_rate);
 
     return (
@@ -38,9 +38,9 @@ export default function MiningTiles() {
                 isEnabled={isCpuMiningEnabled}
                 isLoading={isCpuMiningEnabled && (isCpuLoading || isWaitingForCPUHashRate)}
                 isMining={isCpuMiningEnabled && cpu_is_mining}
-                pillValue={fmtCPU.value}
+                pillValue={isCpuMiningEnabled ? fmtCPU.value : undefined}
                 pillUnit={fmtCPU.unit}
-                mainNumber={pool_status?.unpaid || 0}
+                mainNumber={(pool_status?.unpaid || 0) / 1_000_000}
                 mainUnit="XTM"
                 mainLabel={t('p2p:stats.tile-heading')}
             />
