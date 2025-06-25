@@ -51,7 +51,7 @@ export default function Tile({
                         <LabelText>{title}</LabelText>
                     </LabelWrapper>
 
-                    <RatePill>{isLoading ? `-` : `${pillValue} ${pillUnit}`}</RatePill>
+                    <RatePill>{isLoading ? `- ${pillUnit}` : `${pillValue} ${pillUnit}`}</RatePill>
                 </HeadingRow>
 
                 <NumberGroup>
