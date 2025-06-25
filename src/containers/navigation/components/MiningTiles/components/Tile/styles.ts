@@ -12,7 +12,7 @@ export const Wrapper = styled.div`
     border-radius: 10px;
     padding: 1px;
 
-    background: #e9e9e9;
+    background: ${({ theme }) => theme.palette.divider};
     overflow: hidden;
 `;
 
@@ -57,7 +57,13 @@ export const AnimatedGlow = styled.div`
     width: 200%;
     aspect-ratio: 1;
     z-index: 0;
-    background: conic-gradient(#33cd7e 0deg, #e9e9e9 60deg, #33cd7e 180deg, #e9e9e9 240deg, #33cd7e 360deg);
+    background: conic-gradient(
+        ${({ theme }) => theme.palette.success.main} 0deg,
+        ${({ theme }) => theme.palette.divider} 60deg,
+        ${({ theme }) => theme.palette.success.main} 180deg,
+        ${({ theme }) => theme.palette.divider} 240deg,
+        ${({ theme }) => theme.palette.success.main} 360deg
+    );
     animation: ${rotate} 4s linear infinite;
 `;
 
@@ -82,7 +88,7 @@ export const StatusDot = styled.div<{ $isMining: boolean }>`
 `;
 
 export const LabelText = styled.span`
-    color: #797979;
+    color: ${({ theme }) => theme.palette.text.secondary};
     font-family: Poppins, sans-serif;
     font-size: 12px;
     font-style: normal;
@@ -100,9 +106,9 @@ export const RatePill = styled.div`
     height: 19px;
     padding: 0 6px;
     border-radius: 40px;
-    background: #e9e9e9;
+    background: ${({ theme }) => theme.palette.divider};
 
-    color: #9d98a2;
+    color: ${({ theme }) => theme.palette.text.secondary};
     font-family: Poppins, sans-serif;
     font-size: 10px;
     font-style: normal;
@@ -123,7 +129,7 @@ export const BigNumber = styled.div`
 `;
 
 export const Number = styled.span`
-    color: #000;
+    color: ${({ theme }) => theme.palette.text.primary};
     font-family: Poppins, sans-serif;
     font-size: 22px;
     font-style: normal;
@@ -134,7 +140,7 @@ export const Number = styled.span`
 `;
 
 export const NumberUnit = styled.span`
-    color: #000;
+    color: ${({ theme }) => theme.palette.text.primary};
     font-family: Poppins, sans-serif;
     font-size: 10px;
     font-style: normal;
@@ -143,7 +149,7 @@ export const NumberUnit = styled.span`
 `;
 
 export const NumberLabel = styled.span`
-    color: #797979;
+    color: ${({ theme }) => theme.palette.text.secondary};
     font-family: Poppins, sans-serif;
     font-size: 10px;
     font-style: normal;
