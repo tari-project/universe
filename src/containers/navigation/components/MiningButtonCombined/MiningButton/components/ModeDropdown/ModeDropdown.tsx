@@ -58,10 +58,6 @@ export default function ModeDropdown({ disabled, loading }: Props) {
 
     const handleSelectMode = useCallback(
         async (selected: string) => {
-            if (selected === mode) {
-                setIsOpen(false);
-                return;
-            }
             if (selected === 'Custom') {
                 setCustomLevelsDialogOpen(true);
                 setIsOpen(false);
@@ -69,6 +65,10 @@ export default function ModeDropdown({ disabled, loading }: Props) {
             }
             if (selected === 'Ludicrous') {
                 setDialogToShow('ludicrousConfirmation');
+                setIsOpen(false);
+                return;
+            }
+            if (selected === mode) {
                 setIsOpen(false);
                 return;
             }

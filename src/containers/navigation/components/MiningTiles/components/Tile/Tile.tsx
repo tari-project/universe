@@ -18,9 +18,10 @@ import {
 } from './styles';
 import NumberFlow from '@number-flow/react';
 import SuccessAnimation from '../SuccessAnimation/SuccessAnimation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import SyncData from '@app/containers/navigation/components/MiningTiles/components/SyncData/SyncData.tsx';
 import { useMiningMetricsStore } from '@app/store';
+import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 
 interface Props {
     title: string;
@@ -32,6 +33,7 @@ interface Props {
     mainNumber: number;
     mainUnit: string;
     mainLabel: string;
+    successValue?: number;
 }
 
 export default function Tile({
@@ -44,12 +46,17 @@ export default function Tile({
     mainUnit,
     mainLabel,
     isEnabled,
+    successValue,
 }: Props) {
     const isGPU = title === 'GPU';
     const isConnectedToTariNetwork = useMiningMetricsStore((s) => s.isNodeConnected);
     const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
 
-    const syncing = isGPU && !isConnectedToTariNetwork;
+    useEffect(() => {
+        setShowSuccessAnimation(!!successValue);
+    }, [successValue]);
+
+    const syncing = isGPU && isEnabled && !isConnectedToTariNetwork;
     const syncMarkup = syncing && <SyncData />;
     const renderPill = isGPU && syncing;
 
@@ -58,10 +65,8 @@ export default function Tile({
 
     const mainMarkup = !syncing && (
         <NumberGroup>
-            {(isLoading || !isMining) && mainUnit !== 'XTM' ? (
-                <BigNumber>
-                    <Number $isLoading>{`-`}</Number>
-                </BigNumber>
+            {isLoading ? (
+                <LoadingDots />
             ) : (
                 <BigNumber>
                     <Number>
@@ -84,29 +89,36 @@ export default function Tile({
     );
 
     return (
-        <Wrapper>
-            <Inside>
-                <HeadingRow>
-                    <LabelWrapper>
-                        <StatusDot $isMining={isMining} $isEnabled={isEnabled} $isSyncing={syncing} />
-                        <LabelText>{title}</LabelText>
-                    </LabelWrapper>
+        <>
+            <Wrapper>
+                <Inside>
+                    <HeadingRow>
+                        <LabelWrapper>
+                            <StatusDot $isMining={isMining} $isEnabled={isEnabled} $isSyncing={syncing || isLoading} />
+                            <LabelText>{title}</LabelText>
+                        </LabelWrapper>
 
-                    {pillMarkup}
-                </HeadingRow>
-                {syncMarkup}
-                {mainMarkup}
-            </Inside>
+                        {pillMarkup}
+                    </HeadingRow>
+                    {syncMarkup}
+                    {mainMarkup}
+                </Inside>
 
-            <AnimatePresence>
-                {isMining && (
-                    <AnimatedGlowPosition>
-                        <AnimatedGlow />
-                    </AnimatedGlowPosition>
-                )}
-            </AnimatePresence>
+                <AnimatePresence>
+                    {isMining && !isLoading && (
+                        <AnimatedGlowPosition>
+                            <AnimatedGlow />
+                        </AnimatedGlowPosition>
+                    )}
+                </AnimatePresence>
 
-            <SuccessAnimation value={1.235} unit="XTM" show={showSuccessAnimation} setShow={setShowSuccessAnimation} />
-        </Wrapper>
+                <SuccessAnimation
+                    value={successValue || 0}
+                    unit="XTM"
+                    show={showSuccessAnimation}
+                    setShow={setShowSuccessAnimation}
+                />
+            </Wrapper>
+        </>
     );
 }

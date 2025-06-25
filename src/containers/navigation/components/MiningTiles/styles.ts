@@ -9,3 +9,7 @@ export const Wrapper = styled.div`
 
     gap: 6px;
 `;
+
+export const Tooltip = styled.div`
+    display: flex;
+`;
