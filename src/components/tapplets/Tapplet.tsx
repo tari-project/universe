@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useTappletSignerStore } from '@app/store/useTappletSignerStore';
-import { MiningViewContainer } from '@app/containers/main/Dashboard/MiningView/MiningView.styles';
+import { TappletContainer } from '@app/containers/main/Dashboard/MiningView/MiningView.styles';
 import { open } from '@tauri-apps/plugin-shell';
 import { useConfigUIStore, useUIStore, setError as setStoreError } from '@app/store';
 
@@ -102,7 +102,7 @@ export const Tapplet: React.FC<TappletProps> = ({ source }) => {
     }, [sendWindowSize, handleMessage]);
 
     return (
-        <MiningViewContainer>
+        <TappletContainer>
             <iframe
                 src={source}
                 width="100%"
@@ -111,6 +111,6 @@ export const Tapplet: React.FC<TappletProps> = ({ source }) => {
                 onLoad={sendWindowSize}
                 style={{ border: 'none', pointerEvents: 'all' }}
             />
-        </MiningViewContainer>
+        </TappletContainer>
     );
 };
