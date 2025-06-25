@@ -38,7 +38,7 @@ export default function MiningTiles() {
                 isEnabled={isCpuMiningEnabled}
                 isLoading={isCpuMiningEnabled && (isCpuLoading || isWaitingForCPUHashRate)}
                 isMining={isCpuMiningEnabled && cpu_is_mining}
-                pillValue={isCpuMiningEnabled ? fmtCPU.value : undefined}
+                pillValue={fmtCPU.value}
                 pillUnit={fmtCPU.unit}
                 mainNumber={(pool_status?.unpaid || 0) / 1_000_000}
                 mainUnit="XTM"

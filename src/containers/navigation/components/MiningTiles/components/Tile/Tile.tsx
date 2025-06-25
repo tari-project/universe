@@ -45,11 +45,17 @@ export default function Tile({
     mainLabel,
     isEnabled,
 }: Props) {
+    const isGPU = title === 'GPU';
     const isConnectedToTariNetwork = useMiningMetricsStore((s) => s.isNodeConnected);
     const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
 
-    const syncing = title === 'GPU' && !isConnectedToTariNetwork;
+    const syncing = isGPU && !isConnectedToTariNetwork;
     const syncMarkup = syncing && <SyncData />;
+    const renderPill = isGPU && syncing;
+
+    const pillCopy = isLoading || !isMining ? `- ${pillUnit}` : `${pillValue} ${pillUnit}`;
+    const pillMarkup = renderPill && <RatePill>{pillCopy}</RatePill>;
+
     const mainMarkup = !syncing && (
         <NumberGroup>
             {(isLoading || !isMining) && mainUnit !== 'XTM' ? (
@@ -86,9 +92,7 @@ export default function Tile({
                         <LabelText>{title}</LabelText>
                     </LabelWrapper>
 
-                    {pillValue ? (
-                        <RatePill>{isLoading || !isMining ? `- ${pillUnit}` : `${pillValue} ${pillUnit}`}</RatePill>
-                    ) : null}
+                    {pillMarkup}
                 </HeadingRow>
                 {syncMarkup}
                 {mainMarkup}
@@ -102,7 +106,7 @@ export default function Tile({
                 )}
             </AnimatePresence>
 
-            <SuccessAnimation value={1.25} unit="XTM" show={showSuccessAnimation} setShow={setShowSuccessAnimation} />
+            <SuccessAnimation value={1.235} unit="XTM" show={showSuccessAnimation} setShow={setShowSuccessAnimation} />
         </Wrapper>
     );
 }
