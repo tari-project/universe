@@ -5,8 +5,6 @@ import {
     fetchLatestXSpaceEvent,
     fetchOrphanChainUiFeatureFlag,
     fetchPollingFeatureFlag,
-    fetchWarmupFeatureFlag,
-    fetchUiSendRecvFeatureFlag,
     fetchBlockBubblesFeatureFlag,
 } from '@app/store/actions/airdropStoreActions';
 import { listen, UnlistenFn } from '@tauri-apps/api/event';
@@ -30,12 +28,10 @@ export const useAirdropPolling = () => {
         }, DEBOUNCE_DELAY);
     }, []);
 
-    const fetchFeatureFlags = useCallback(() => {
-        fetchOrphanChainUiFeatureFlag();
-        fetchPollingFeatureFlag();
-        fetchUiSendRecvFeatureFlag();
-        fetchWarmupFeatureFlag();
-        fetchBlockBubblesFeatureFlag();
+    const fetchFeatureFlags = useCallback(async () => {
+        await fetchOrphanChainUiFeatureFlag();
+        await fetchPollingFeatureFlag();
+        await fetchBlockBubblesFeatureFlag();
     }, []);
 
     const fetchFeatureFlagDebounced = useCallback(() => {
@@ -43,7 +39,7 @@ export const useAirdropPolling = () => {
             return;
         }
         featureFlagTimeoutRef.current = setTimeout(async () => {
-            fetchFeatureFlags();
+            await fetchFeatureFlags();
             if (featureFlagTimeoutRef.current) {
                 clearTimeout(featureFlagTimeoutRef.current);
             }
