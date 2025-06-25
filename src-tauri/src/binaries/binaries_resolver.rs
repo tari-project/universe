@@ -280,6 +280,10 @@ impl BinaryResolver {
                 .join(sub_folder)
                 .join(binary.binary_file_name(version)));
         }
+        if binary.eq(&Binaries::BridgeTapplet) {
+            return Ok(base_dir);
+        }
+
         Ok(base_dir.join(binary.binary_file_name(version)))
     }
 
