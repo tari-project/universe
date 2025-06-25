@@ -481,7 +481,6 @@ pub async fn get_max_consumption_levels(
             max_gpu_threads,
         });
     }
-
     Ok(MaxUsageLevels {
         max_cpu_threads: max_cpu_available,
         max_gpus_threads,
@@ -1331,27 +1330,62 @@ pub async fn set_mode(
 ) -> Result<(), InvokeError> {
     let timer = Instant::now();
     info!(target: LOG_TARGET, "[set_mode] called with mode: {:?}", mode);
+
     if let Some(mode) = MiningMode::from_str(&mode) {
         ConfigMining::update_field(ConfigMiningContent::set_mode, mode)
             .await
             .map_err(InvokeError::from_anyhow)?;
+
+        match mode {
+            MiningMode::Eco => {
+                ConfigMining::update_field(
+                    ConfigMiningContent::set_eco_mode_max_cpu_usage,
+                    custom_cpu_usage,
+                )
+                .await
+                .map_err(InvokeError::from_anyhow)?;
+
+                ConfigMining::update_field(
+                    ConfigMiningContent::set_eco_mode_max_gpu_usage,
+                    custom_gpu_usage,
+                )
+                .await
+                .map_err(InvokeError::from_anyhow)?;
+            }
+            MiningMode::Ludicrous => {
+                ConfigMining::update_field(
+                    ConfigMiningContent::set_ludicrous_mode_max_cpu_usage,
+                    custom_cpu_usage,
+                )
+                .await
+                .map_err(InvokeError::from_anyhow)?;
+
+                ConfigMining::update_field(
+                    ConfigMiningContent::set_ludicrous_mode_max_gpu_usage,
+                    custom_gpu_usage,
+                )
+                .await
+                .map_err(InvokeError::from_anyhow)?;
+            }
+            MiningMode::Custom => {
+                ConfigMining::update_field(
+                    ConfigMiningContent::set_custom_max_cpu_usage,
+                    custom_cpu_usage,
+                )
+                .await
+                .map_err(InvokeError::from_anyhow)?;
+
+                ConfigMining::update_field(
+                    ConfigMiningContent::set_custom_max_gpu_usage,
+                    custom_gpu_usage,
+                )
+                .await
+                .map_err(InvokeError::from_anyhow)?;
+            }
+        }
     } else {
         return Err(InvokeError::from("Invalid mode".to_string()));
     }
-
-    ConfigMining::update_field(
-        ConfigMiningContent::set_custom_max_cpu_usage,
-        custom_cpu_usage,
-    )
-    .await
-    .map_err(InvokeError::from_anyhow)?;
-
-    ConfigMining::update_field(
-        ConfigMiningContent::set_custom_max_gpu_usage,
-        custom_gpu_usage,
-    )
-    .await
-    .map_err(InvokeError::from_anyhow)?;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "set_mode took too long: {:?}", timer.elapsed());
@@ -1609,7 +1643,12 @@ pub async fn start_cpu_mining(
 
     let cpu_mining_enabled = *ConfigMining::content().await.cpu_mining_enabled();
     let mode = *ConfigMining::content().await.mode();
-    let custom_cpu_usage = *ConfigMining::content().await.custom_max_cpu_usage();
+
+    let cpu_usage = match mode {
+        MiningMode::Custom => *ConfigMining::content().await.custom_max_cpu_usage(),
+        MiningMode::Eco => *ConfigMining::content().await.eco_mode_max_cpu_usage(),
+        MiningMode::Ludicrous => *ConfigMining::content().await.ludicrous_mode_max_cpu_usage(),
+    };
 
     let cpu_miner = state.cpu_miner.read().await;
     let cpu_miner_running = cpu_miner.is_running().await;
@@ -1637,7 +1676,7 @@ pub async fn start_cpu_mining(
                     .expect("Could not get config dir"),
                 app.path().app_log_dir().expect("Could not get log dir"),
                 mode,
-                custom_cpu_usage,
+                cpu_usage,
                 &tari_address,
             )
             .await;
@@ -1673,7 +1712,19 @@ pub async fn start_gpu_mining(
 
     let gpu_mining_enabled = *ConfigMining::content().await.gpu_mining_enabled();
     let mode = *ConfigMining::content().await.mode();
-    let custom_gpu_usage = ConfigMining::content().await.custom_max_gpu_usage().clone();
+
+    let gpu_usage = match mode {
+        MiningMode::Custom => ConfigMining::content().await.custom_max_gpu_usage().clone(),
+        MiningMode::Eco => ConfigMining::content()
+            .await
+            .eco_mode_max_gpu_usage()
+            .clone(),
+        MiningMode::Ludicrous => ConfigMining::content()
+            .await
+            .ludicrous_mode_max_gpu_usage()
+            .clone(),
+    };
+
     let p2pool_enabled = *ConfigCore::content().await.is_p2pool_enabled();
 
     let mut telemetry_id = state
@@ -1731,7 +1782,7 @@ pub async fn start_gpu_mining(
                 app.path().app_log_dir().expect("Could not get log dir"),
                 mode,
                 telemetry_id,
-                custom_gpu_usage,
+                gpu_usage.clone(),
             )
             .await;
 
