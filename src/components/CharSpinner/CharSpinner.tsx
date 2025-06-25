@@ -1,6 +1,7 @@
 import { Character, Characters, CharacterWrapper, SpinnerWrapper, Wrapper, XTMWrapper } from './CharSpinner.styles.ts';
+import { Transition } from 'motion';
 
-const transition = {
+const transition: Transition = {
     type: 'spring',
     bounce: 0.25,
     duration: 1.14,
