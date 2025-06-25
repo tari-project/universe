@@ -10,6 +10,7 @@ export default function SyncData() {
     const { t } = useTranslation('setup-progresses');
     const { countdownText } = useProgressCountdown(IS_COMPACT);
     const { setupPhaseTitle } = useCurrentPhaseDetails();
+
     return (
         <Wrapper>
             <TextWrapper>

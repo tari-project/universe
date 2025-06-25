@@ -20,6 +20,7 @@ import NumberFlow from '@number-flow/react';
 import SuccessAnimation from '../SuccessAnimation/SuccessAnimation';
 import { useState } from 'react';
 import SyncData from '@app/containers/navigation/components/MiningTiles/components/SyncData/SyncData.tsx';
+import { useMiningMetricsStore } from '@app/store';
 
 interface Props {
     title: string;
@@ -42,9 +43,10 @@ export default function Tile({
     mainUnit,
     mainLabel,
 }: Props) {
+    const isConnectedToTariNetwork = useMiningMetricsStore((s) => s.isNodeConnected);
     const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
 
-    const syncing = title === 'GPU';
+    const syncing = title === 'GPU' && !isConnectedToTariNetwork;
     const syncMarkup = syncing && <SyncData />;
     const mainMarkup = !syncing && (
         <NumberGroup>
