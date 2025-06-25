@@ -9,7 +9,7 @@ const float = keyframes`
   100% { transform: translateY(0); }
 `;
 
-export const Wrapper = styled.div`
+export const Wrapper = styled(m.div)`
     width: 100%;
 
     display: flex;
@@ -71,7 +71,7 @@ export const Unit = styled.div`
     font-style: normal;
     font-weight: 700;
     line-height: normal;
-    transform: translateY(-5px) translateX(3px);
+    transform: translateY(-4px) translateX(3px);
 `;
 
 export const Coins = styled.div`
@@ -108,6 +108,7 @@ export const Coin = styled(m.div)<{
 export const CoinImage = styled(m.img)<{ $animationDelay?: string }>`
     width: 100%;
     height: 100%;
-    animation-delay: ${({ $animationDelay }) => $animationDelay ?? '0s'};
+
     animation: ${float} 5s ease-in-out infinite;
+    animation-delay: ${({ $animationDelay }) => $animationDelay ?? '0s'};
 `;

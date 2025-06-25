@@ -42,6 +42,7 @@ export default function Tile({
     mainLabel,
 }: Props) {
     const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
+
     return (
         <Wrapper>
             <Inside>
@@ -80,8 +81,9 @@ export default function Tile({
                         <AnimatedGlow />
                     </AnimatedGlowPosition>
                 )}
-                {showSuccessAnimation && <SuccessAnimation />}
             </AnimatePresence>
+
+            <SuccessAnimation value={1.25} unit="XTM" show={showSuccessAnimation} setShow={setShowSuccessAnimation} />
         </Wrapper>
     );
 }
