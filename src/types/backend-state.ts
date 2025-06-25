@@ -214,4 +214,8 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'WalletUIModeChanged';
           payload: WalletUIMode;
+      }
+    | {
+          event_type: 'ShowKeyringDialog';
+          payload: undefined;
       };

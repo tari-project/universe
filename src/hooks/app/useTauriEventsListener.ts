@@ -17,6 +17,7 @@ import {
     handleCloseSplashscreen,
     handleConnectionStatusChanged,
     setConnectionStatus,
+    setDialogToShow,
     setShouldShowExchangeSpecificModal,
     setShowExternalDependenciesDialog,
 } from '@app/store/actions/uiStoreActions';
@@ -228,6 +229,9 @@ const useTauriEventsListener = () => {
                             break;
                         case 'MainTariAddressLoaded':
                             handleMainTariAddressLoaded(event.payload);
+                            break;
+                        case 'ShowKeyringDialog':
+                            setDialogToShow('keychain');
                             break;
                         default:
                             console.warn('Unknown event', JSON.stringify(event));

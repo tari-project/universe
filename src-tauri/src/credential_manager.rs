@@ -48,8 +48,6 @@ pub enum CredentialError {
     Serialization(#[from] serde_cbor::Error),
     #[error("Keyring had no entry for: {0}")]
     NoEntry(String),
-    #[error("Keychain access is required to continue")]
-    PreviouslyUsedKeyring,
 }
 
 const FALLBACK_FILE_PATH: &str = "credentials_backup.bin";

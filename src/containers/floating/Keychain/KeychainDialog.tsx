@@ -3,6 +3,7 @@ import { IoClose } from 'react-icons/io5';
 import { setDialogToShow, useUIStore } from '@app/store';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog';
 import { Typography } from '@app/components/elements/Typography.tsx';
+import { emit } from '@tauri-apps/api/event';
 
 import { CloseButton, CopyWrapper, HeaderWrapper, Wrapper } from './styles.ts';
 
@@ -11,6 +12,7 @@ export default function KeychainDialog() {
     const isOpen = dialogToShow === 'keychain';
 
     function handleClose() {
+        emit('keyring-dialog-response');
         setDialogToShow(null);
     }
     return (

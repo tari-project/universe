@@ -84,6 +84,7 @@ pub enum EventType {
     SelectedTariAddressChanged,
     WalletUIModeChanged,
     MainTariAddressLoaded,
+    ShowKeyringDialog,
 }
 
 #[derive(Clone, Debug, Serialize)]
