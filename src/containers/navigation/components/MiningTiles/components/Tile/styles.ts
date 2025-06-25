@@ -1,6 +1,6 @@
 'use client';
 
-import styled, { keyframes } from 'styled-components';
+import styled, { css, keyframes } from 'styled-components';
 import { Typography } from '@app/components/elements/Typography.tsx';
 
 export const Wrapper = styled.div`
@@ -81,11 +81,20 @@ export const LabelWrapper = styled.div`
     gap: 5px;
 `;
 
-export const StatusDot = styled.div<{ $isMining: boolean }>`
+export const StatusDot = styled.div<{ $isMining: boolean; $isEnabled: boolean; $isSyncing?: boolean }>`
     width: 6px;
     height: 6px;
     border-radius: 50%;
     background: ${({ $isMining }) => ($isMining ? '#33CD7E' : '#D29807')};
+
+    ${({ $isEnabled, $isMining, $isSyncing, theme }) =>
+        $isEnabled
+            ? css`
+                  background: ${$isMining ? '#33CD7E' : '#D29807'};
+              `
+            : css`
+                  background: ${theme.palette.divider};
+              `}}
 `;
 
 export const LabelText = styled.span`

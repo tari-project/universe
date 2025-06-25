@@ -27,6 +27,7 @@ export default function MiningTiles() {
         <Wrapper>
             <Tile
                 title={`CPU`}
+                isEnabled={isCpuMiningEnabled}
                 isLoading={isCpuMiningEnabled && (isCpuLoading || isWaitingForCPUHashRate)}
                 isMining={isCpuMiningEnabled && cpu_is_mining}
                 pillValue={isCpuMiningEnabled && cpu_is_mining ? formatHashrate(cpu_hash_rate, false) : '-'}
@@ -37,6 +38,7 @@ export default function MiningTiles() {
             />
             <Tile
                 title={`GPU`}
+                isEnabled={isGpuMiningEnabled}
                 isLoading={isGpuMiningEnabled && (isGpuLoading || isWaitingForGPUHashRate)}
                 isMining={isGpuMiningEnabled && gpu_is_mining}
                 pillValue={isGpuMiningEnabled && gpu_is_mining ? formatHashrate(gpu_hash_rate, false) : '-'}

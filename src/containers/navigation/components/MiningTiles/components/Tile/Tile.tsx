@@ -26,6 +26,7 @@ interface Props {
     title: string;
     isLoading: boolean;
     isMining: boolean;
+    isEnabled: boolean;
     pillValue: string;
     pillUnit: string;
     mainNumber: number;
@@ -42,6 +43,7 @@ export default function Tile({
     mainNumber,
     mainUnit,
     mainLabel,
+    isEnabled,
 }: Props) {
     const isConnectedToTariNetwork = useMiningMetricsStore((s) => s.isNodeConnected);
     const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
@@ -74,7 +76,7 @@ export default function Tile({
             <Inside>
                 <HeadingRow>
                     <LabelWrapper>
-                        <StatusDot $isMining={isMining} />
+                        <StatusDot $isMining={isMining} $isEnabled={isEnabled} $isSyncing={syncing} />
                         <LabelText>{title}</LabelText>
                     </LabelWrapper>
 
