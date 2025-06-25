@@ -18,7 +18,7 @@
     "earned": "You earned",
     "tile-heading": "Nagrody w toku",
     "tile-loading": "Pula się rozgrzewa",
-    "tooltip-copy": "Nagrody są „W toku” dopóki nie osiągniesz minimum <strong>{{amount}}</strong>. Po osiągnięciu progu, nagrody w toku zostaną automatycznie wysłane do Twojego portfela Tari Universe. Może to potrwać dodatkowe 2 godziny, zanim dotrą.",
+    "tooltip-copy": "“In Progress” until you earn a minimum of <strong>{{amount}}</strong>. There may be a delay between sending your payout and it displaying in your wallet txs and balance.",
     "tooltip-tile-heading": "Próg nagród"
   },
   "tribe": "Plemie"

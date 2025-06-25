@@ -18,7 +18,7 @@
     "earned": "You earned",
     "tile-heading": "Belohnungen in Bearbeitung",
     "tile-loading": "Pool wird aufgewärmt",
-    "tooltip-copy": "Belohnungen sind „In Bearbeitung“, bis Sie ein Minimum von <strong>{{amount}}</strong> verdienen. Nachdem Sie die Schwelle erreicht haben, werden die in Bearbeitung befindlichen Belohnungen automatisch an Ihr Tari Universe Wallet gesendet. Es kann weitere 2 Stunden dauern, bis sie ankommen.",
+    "tooltip-copy": "“In Progress” until you earn a minimum of <strong>{{amount}}</strong>. There may be a delay between sending your payout and it displaying in your wallet txs and balance.",
     "tooltip-tile-heading": "Belohnungsschwelle"
   },
   "tribe": "Stamm"

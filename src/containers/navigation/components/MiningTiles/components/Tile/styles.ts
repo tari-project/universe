@@ -16,6 +16,7 @@ export const Wrapper = styled.div`
 
     background: ${({ theme }) => theme.palette.divider};
     overflow: hidden;
+    z-index: 1;
 `;
 
 export const Inside = styled.div`

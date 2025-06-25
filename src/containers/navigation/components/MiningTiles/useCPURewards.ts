@@ -6,10 +6,10 @@ import { removeXTMCryptoDecimals } from '@app/utils';
 
 const REWARD_THRESHOLD = 2 * 1_000_000;
 
-const fmtMatch = (value: number) =>
+const fmtMatch = (value: number, max = 4) =>
     Intl.NumberFormat(i18n.language, {
         minimumFractionDigits: 1,
-        maximumFractionDigits: 4,
+        maximumFractionDigits: max,
         notation: 'standard',
         style: 'decimal',
     }).format(value);
@@ -57,5 +57,5 @@ export function useCPURewards() {
         }
     }, [unpaid, visualMode, prevUnpaid]);
 
-    return { progressDiff };
+    return { progressDiff, unpaidFMT: fmtMatch(Math.floor(unpaidM * 100) / 100, 2) };
 }

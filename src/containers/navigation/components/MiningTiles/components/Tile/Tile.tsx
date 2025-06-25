@@ -89,36 +89,34 @@ export default function Tile({
     );
 
     return (
-        <>
-            <Wrapper>
-                <Inside>
-                    <HeadingRow>
-                        <LabelWrapper>
-                            <StatusDot $isMining={isMining} $isEnabled={isEnabled} $isSyncing={syncing || isLoading} />
-                            <LabelText>{title}</LabelText>
-                        </LabelWrapper>
+        <Wrapper>
+            <Inside>
+                <HeadingRow>
+                    <LabelWrapper>
+                        <StatusDot $isMining={isMining} $isEnabled={isEnabled} $isSyncing={syncing || isLoading} />
+                        <LabelText>{title}</LabelText>
+                    </LabelWrapper>
 
-                        {pillMarkup}
-                    </HeadingRow>
-                    {syncMarkup}
-                    {mainMarkup}
-                </Inside>
+                    {pillMarkup}
+                </HeadingRow>
+                {syncMarkup}
+                {mainMarkup}
+            </Inside>
 
-                <AnimatePresence>
-                    {isMining && !isLoading && (
-                        <AnimatedGlowPosition>
-                            <AnimatedGlow />
-                        </AnimatedGlowPosition>
-                    )}
-                </AnimatePresence>
+            <AnimatePresence>
+                {isMining && !isLoading && (
+                    <AnimatedGlowPosition>
+                        <AnimatedGlow />
+                    </AnimatedGlowPosition>
+                )}
+            </AnimatePresence>
 
-                <SuccessAnimation
-                    value={successValue || 0}
-                    unit="XTM"
-                    show={showSuccessAnimation}
-                    setShow={setShowSuccessAnimation}
-                />
-            </Wrapper>
-        </>
+            <SuccessAnimation
+                value={successValue || 0}
+                unit="XTM"
+                show={showSuccessAnimation}
+                setShow={setShowSuccessAnimation}
+            />
+        </Wrapper>
     );
 }
