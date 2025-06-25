@@ -245,7 +245,7 @@ impl InternalWallet {
             .to_binary()
             .expect("Failed to convert tari seed to binary");
         let credentials = Credential {
-            seed: tari_seed_binary.clone(),
+            encrypted_seed: tari_seed_binary.clone(),
         };
         InternalWallet::set_credentials_forced(app_handle, wallet_id.clone(), &credentials).await?;
 
@@ -272,7 +272,7 @@ impl InternalWallet {
             .expect("Failed to convert monero seed to binary");
 
         let credentials = Credential {
-            seed: monero_seed_binary.clone(),
+            encrypted_seed: monero_seed_binary.clone(),
         };
         cm.set_credentials(&credentials).await?;
 
@@ -300,8 +300,8 @@ impl InternalWallet {
             "Failed to get credentials",
         )
         .await?
-        .seed;
-        Ok(Credential { seed })
+        .encrypted_seed;
+        Ok(Credential { encrypted_seed: seed })
     }
 
     async fn set_credentials_forced(
@@ -348,7 +348,7 @@ impl InternalWallet {
         )
         .await
         {
-            Ok(cred) => cred.seed,
+            Ok(cred) => cred.encrypted_seed,
             Err(e) => panic!("Failed to get credentials: {}", e),
         };
 
@@ -391,7 +391,7 @@ impl InternalWallet {
         let monero_seed_binary = legacy_cred.monero_seed.map(|seed| seed.to_vec());
         if *ConfigWallet::content().await.monero_address_is_generated() {
             let credentials = Credential {
-                seed: monero_seed_binary
+                encrypted_seed: monero_seed_binary
                     .as_ref()
                     .expect("Monero seed generated, but not stored in keychain")
                     .clone(),
@@ -488,7 +488,7 @@ impl InternalWallet {
                     return Err(anyhow!("Failed to get monero seed from keyring: {e}"));
                 }
             };
-            credential.seed
+            credential.encrypted_seed
         };
 
         let decrypted_monero_seed: [u8; 32] = encrypted_monero_seed
