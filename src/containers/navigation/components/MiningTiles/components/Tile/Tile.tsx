@@ -43,6 +43,7 @@ export default function Tile({
     mainLabel,
 }: Props) {
     const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
+
     const syncing = title === 'GPU';
     const syncMarkup = syncing && <SyncData />;
     const mainMarkup = !syncing && (
@@ -87,8 +88,9 @@ export default function Tile({
                         <AnimatedGlow />
                     </AnimatedGlowPosition>
                 )}
-                {showSuccessAnimation && <SuccessAnimation />}
             </AnimatePresence>
+
+            <SuccessAnimation value={1.25} unit="XTM" show={showSuccessAnimation} setShow={setShowSuccessAnimation} />
         </Wrapper>
     );
 }
