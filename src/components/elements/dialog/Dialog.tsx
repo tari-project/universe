@@ -22,7 +22,7 @@ import {
     useRole,
 } from '@floating-ui/react';
 import { useAppStateStore } from '@app/store/appStateStore.ts';
-import { ContentWrapper, Overlay } from './Dialog.styles.ts';
+import { ContentWrapper, ContentWrapperProps, Overlay } from './Dialog.styles.ts';
 
 interface DialogOptions {
     open: boolean;
@@ -112,33 +112,33 @@ export function Dialog({
     return <DialogContext.Provider value={dialog}>{children}</DialogContext.Provider>;
 }
 
-export const DialogContent = forwardRef<
-    HTMLDivElement,
-    HTMLProps<HTMLDivElement> & { $unPadded?: boolean; $disableOverflow?: boolean; $borderRadius?: string }
->(function DialogContent(props, propRef) {
-    const context = useDialogContext();
-    const ref = useMergeRefs([context.refs.setFloating, propRef]);
-    return (
-        <FloatingNode id={context.nodeId} key={context.nodeId}>
-            {context.open ? (
-                <FloatingPortal>
-                    <Overlay lockScroll className="overlay">
-                        <FloatingFocusManager context={context.context} modal={false}>
-                            <ContentWrapper
-                                ref={ref}
-                                aria-labelledby={context.labelId}
-                                aria-describedby={context.descriptionId}
-                                $unPadded={props.$unPadded}
-                                $disableOverflow={props.$disableOverflow}
-                                $borderRadius={props.$borderRadius}
-                                {...context.getFloatingProps(props)}
-                            >
-                                {props.children}
-                            </ContentWrapper>
-                        </FloatingFocusManager>
-                    </Overlay>
-                </FloatingPortal>
-            ) : null}
-        </FloatingNode>
-    );
-});
+export const DialogContent = forwardRef<HTMLDivElement, HTMLProps<HTMLDivElement> & ContentWrapperProps>(
+    function DialogContent(props, propRef) {
+        const context = useDialogContext();
+        const ref = useMergeRefs([context.refs.setFloating, propRef]);
+        return (
+            <FloatingNode id={context.nodeId} key={context.nodeId}>
+                {context.open ? (
+                    <FloatingPortal>
+                        <Overlay lockScroll className="overlay">
+                            <FloatingFocusManager context={context.context} modal={false}>
+                                <ContentWrapper
+                                    ref={ref}
+                                    aria-labelledby={context.labelId}
+                                    aria-describedby={context.descriptionId}
+                                    $unPadded={props.$unPadded}
+                                    $disableOverflow={props.$disableOverflow}
+                                    $borderRadius={props.$borderRadius}
+                                    $transparentBg={props.$transparentBg}
+                                    {...context.getFloatingProps(props)}
+                                >
+                                    {props.children}
+                                </ContentWrapper>
+                            </FloatingFocusManager>
+                        </Overlay>
+                    </FloatingPortal>
+                ) : null}
+            </FloatingNode>
+        );
+    }
+);

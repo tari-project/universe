@@ -108,6 +108,12 @@ export const Swap = memo(function Swap() {
         }
     };
 
+    const handleAddXtmToWallet = () => {
+        if (iframeRef.current) {
+            iframeRef.current.contentWindow?.postMessage({ type: 'ADD_XTM_TO_WALLET' }, '*');
+        }
+    };
+
     return (
         <SwapsContainer>
             <TabHeader $noBorder $hidden={isFullscreen}>
@@ -144,6 +150,7 @@ export const Swap = memo(function Swap() {
                 status={processingTransaction?.status}
                 isOpen={processingOpen}
                 setIsOpen={setProcessingOpen}
+                handleAddXtmToWallet={handleAddXtmToWallet}
                 fromTokenSymbol={processingTransaction?.fromTokenSymbol}
                 fromTokenAmount={processingTransaction?.fromTokenAmount}
                 toTokenSymbol={processingTransaction?.toTokenSymbol}

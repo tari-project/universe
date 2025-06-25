@@ -47,16 +47,12 @@ export const useUiMiningStateMachine = () => {
 
             if (retryCount >= maxRetries) {
                 console.info(
-                    getTowerLogPrefix('info'),
+                    getTowerLogPrefix('warn'),
                     `Animation Stop failed after ${maxRetries} retries: status=${animationStatus}`
                 );
                 return;
             }
 
-            console.info(
-                getTowerLogPrefix('info'),
-                `Animation Stop attempt ${retryCount + 1}/${maxRetries}: status=${animationStatus}`
-            );
             setAnimationState('stop');
             retryCount++;
 
@@ -76,7 +72,6 @@ export const useUiMiningStateMachine = () => {
 
     useEffect(() => {
         if (noVisualMode) return;
-
         if (shouldStop) {
             forceAnimationStop();
         } else if (shouldStart) {

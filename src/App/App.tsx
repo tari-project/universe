@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LazyMotion, domAnimation, AnimatePresence } from 'motion/react';
+import { QueryClientProvider } from '@tanstack/react-query';
 
 import { useShuttingDown } from '../hooks';
 
@@ -15,9 +16,7 @@ import MainView from '../containers/main/MainView.tsx';
 import { AppContentContainer } from './App.styles.ts';
 import { useUIStore } from '@app/store/useUIStore.ts';
 import { TOWER_CANVAS_ID } from '@app/store';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-
-const queryClient = new QueryClient();
+import { queryClient } from './queryClient.ts';
 
 interface CurrentAppSectionProps {
     showSplashscreen?: boolean;
@@ -68,8 +67,8 @@ export default function App() {
     }
 
     return (
-        <ThemeProvider>
-            <QueryClientProvider client={queryClient}>
+        <QueryClientProvider client={queryClient}>
+            <ThemeProvider>
                 <GlobalReset />
                 <GlobalStyle $hideCanvas={showSplashscreen || isShuttingDown} />
                 <LazyMotion features={domAnimation} strict>
@@ -77,7 +76,7 @@ export default function App() {
                     <CurrentAppSection showSplashscreen={showSplashscreen} isShuttingDown={isShuttingDown} />
                     <canvas id={TOWER_CANVAS_ID} />
                 </LazyMotion>
-            </QueryClientProvider>
-        </ThemeProvider>
+            </ThemeProvider>
+        </QueryClientProvider>
     );
 }

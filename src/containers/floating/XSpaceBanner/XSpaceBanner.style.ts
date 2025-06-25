@@ -34,6 +34,7 @@ export const IconContainer = styled(m.div)`
     display: flex;
     align-items: center;
     justify-content: center;
+    align-self: center;
     background-color: white;
     border-radius: 8px;
     min-width: 38px;
