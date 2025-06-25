@@ -9,7 +9,7 @@ export const CardGrid = styled.div`
 `;
 
 export const InfoCard = styled.div`
-    background-color: ${({ theme }) => theme.palette.background.default};
+    background-color: ${({ theme }) => theme.palette.background.accent};
     border-radius: ${({ theme }) => theme.shape.borderRadius.app};
     color: ${({ theme }) => theme.palette.text.secondary};
     display: flex;
@@ -24,8 +24,8 @@ export const TitleCodeBlock = styled.code`
     display: flex;
     font-weight: 700;
     font-size: 12px;
-    background-color: ${({ theme }) => theme.palette.background.splash};
-    color: ${({ theme }) => theme.colors.green[500]};
+    background-color: ${({ theme }) => theme.palette.background.paper};
+    color: ${({ theme }) => theme.palette.text.secondary};
     border-radius: 5px;
     padding: 2px 4px;
     width: max-content;
