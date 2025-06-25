@@ -36,7 +36,7 @@ function hasValidEstimate(nodeSetupParams: Record<string, string> | undefined) {
     return false;
 }
 
-export const useProgressCountdown = () => {
+export const useProgressCountdown = (isCompact = false) => {
     const { t } = useTranslation('setup-progresses');
     const isNodePhaseCompleted = useSetupStore((state) => Boolean(state.node_phase_setup_payload?.is_complete));
     const nodeSetupParams = useSetupStore((state) => state.node_phase_setup_payload?.title_params);
@@ -113,7 +113,7 @@ export const useProgressCountdown = () => {
                     nodeSetupParams?.tip_block_height != null);
 
             if (!hasValidEstimate) {
-                return t('calculating_time');
+                return t('calculating_time', { context: isCompact ? 'compact' : undefined });
             }
         }
 
@@ -130,7 +130,7 @@ export const useProgressCountdown = () => {
             return t('awaiting-exchange-selection');
         }
         return t('any_moment_now');
-    }, [nodeType, countdown, isNodePhaseCompleted, nodeSetupParams, showUniversalModal, t]);
+    }, [nodeType, isNodePhaseCompleted, countdown, showUniversalModal, t, nodeSetupParams, isCompact]);
 
     return {
         countdown,

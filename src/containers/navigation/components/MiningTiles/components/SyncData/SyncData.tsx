@@ -1,11 +1,22 @@
-import { Label, Wrapper } from './styles.ts';
+import { CountdownText, Label, TextWrapper, Wrapper } from './styles.ts';
 import { useProgressCountdown } from '@app/containers/main/Sync/components/useProgressCountdown.ts';
 
+import { useCurrentPhaseDetails } from '@app/containers/main/Sync/components/useCurrentPhaseDetails.ts';
+import { useTranslation } from 'react-i18next';
+import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
+
+const IS_COMPACT = true;
 export default function SyncData() {
-    const { countdownText } = useProgressCountdown();
+    const { t } = useTranslation('setup-progresses');
+    const { countdownText } = useProgressCountdown(IS_COMPACT);
+    const { setupPhaseTitle } = useCurrentPhaseDetails();
     return (
         <Wrapper>
-            <Label>{`sup`}</Label>
+            <TextWrapper>
+                <CountdownText>{countdownText}</CountdownText>
+                <Label>{t(`phase-title.${setupPhaseTitle}`, { context: 'compact' })}</Label>
+            </TextWrapper>
+            <LoadingDots />
         </Wrapper>
     );
 }
