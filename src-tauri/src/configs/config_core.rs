@@ -28,10 +28,10 @@ use tari_common::configuration::Network;
 use tauri::AppHandle;
 use tokio::sync::RwLock;
 
+use crate::ab_test_selector::ABTestSelector;
 use crate::app_in_memory_config::{MinerType, DEFAULT_EXCHANGE_ID};
 use crate::node::node_manager::NodeType;
 use crate::utils::rand_utils;
-use crate::{ab_test_selector::ABTestSelector};
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
 

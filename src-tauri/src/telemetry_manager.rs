@@ -534,14 +534,16 @@ async fn get_telemetry_data_inner(
     );
 
     // Add payment ID from current tari address
-    if let Some(_state) = app_handle.try_state::<crate::UniverseAppState>() {
-        let internal_wallet_guard = InternalWallet::current().read().await;
-        let tari_address = internal_wallet_guard.tari_address.clone();
-        drop(internal_wallet_guard);
-        if let Ok(Some(payment_id)) = extract_payment_id(&tari_address.to_base58()) {
-            extra_data.insert("mining_address_payment_id".to_string(), payment_id);
+    if InternalWallet::is_initialized() {
+        if let Some(_state) = app_handle.try_state::<crate::UniverseAppState>() {
+            let internal_wallet_guard = InternalWallet::current().read().await;
+            let tari_address = internal_wallet_guard.tari_address.clone();
+            drop(internal_wallet_guard);
+            if let Ok(Some(payment_id)) = extract_payment_id(&tari_address.to_base58()) {
+                extra_data.insert("mining_address_payment_id".to_string(), payment_id);
+            }
+            // Note: If no payment ID, we don't add the field (saves space vs empty string)
         }
-        // Note: If no payment ID, we don't add the field (saves space vs empty string)
     }
     let mut squad = None;
     if let Some(stats) = p2pool_stats.as_ref() {

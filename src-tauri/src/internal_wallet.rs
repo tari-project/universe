@@ -99,9 +99,14 @@ impl InternalWallet {
         INSTANCE.get().expect("InternalWallet is not initialized")
     }
 
+    pub fn is_initialized() -> bool {
+        INSTANCE.get().is_some()
+    }
+
     async fn set_current(new_internal_wallet: InternalWallet) -> Result<(), anyhow::Error> {
         if INSTANCE.get().is_some() {
             // INSTANCE has been initialized
+            log::info!(target: LOG_TARGET, "=================== INT1");
             let mut internal_wallet_guard = InternalWallet::current().write().await;
             *internal_wallet_guard = new_internal_wallet;
         } else {
@@ -272,6 +277,7 @@ impl InternalWallet {
         let (tari_address, wallet_details) =
             InternalWallet::get_tari_wallet_details(wallet_id, &tari_seed_binary).await?;
         if INSTANCE.get().is_some() {
+            log::info!(target: LOG_TARGET, "=================== INT2");
             let mut internal_wallet_guard = InternalWallet::current().write().await;
             internal_wallet_guard.tari_address = tari_address.clone();
             internal_wallet_guard.tari_wallet_details = Some(wallet_details.clone());
@@ -481,6 +487,7 @@ impl InternalWallet {
         .await?;
 
         if INSTANCE.get().is_some() {
+            log::info!(target: LOG_TARGET, "=================== INT3");
             let mut internal_wallet_guard = InternalWallet::current().write().await;
             internal_wallet_guard.monero_address = monero_address;
         }

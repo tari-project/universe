@@ -22,10 +22,7 @@
 
 use crate::{
     binaries::{Binaries, BinaryResolver},
-    configs::{
-        config_core::ConfigCore, config_mining::ConfigMining,
-        trait_config::ConfigImpl,
-    },
+    configs::{config_core::ConfigCore, config_mining::ConfigMining, trait_config::ConfigImpl},
     events_emitter::EventsEmitter,
     internal_wallet::InternalWallet,
     p2pool_manager::P2poolConfig,
