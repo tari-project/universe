@@ -1,9 +1,10 @@
+import { Variants } from 'motion/react';
 import styled, { css } from 'styled-components';
 import * as m from 'motion/react-m';
 import { SB_WIDTH } from '@app/theme/styles.ts';
 import { convertHexToRGBA } from '@app/utils';
 
-const variants = {
+const variants: Variants = {
     open: { opacity: 1, left: 0, transition: { duration: 0.2, ease: 'linear' } },
     closed: { opacity: 0, left: -50, transition: { duration: 0.05, ease: 'linear' } },
 };
