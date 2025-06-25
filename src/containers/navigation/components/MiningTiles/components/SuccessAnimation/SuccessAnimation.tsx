@@ -6,7 +6,7 @@ import coinImage2 from './images/coin2.png';
 import coinImage3 from './images/coin3.png';
 import coinImage4 from './images/coin4.png';
 import { useEffect, useState } from 'react';
-import { AnimatePresence } from 'motion/react';
+import { AnimatePresence, Variants } from 'motion/react';
 
 const coins = [
     { img: coinImage1, delay: 0.3, $top: '-20px', $left: '40px', $width: '49px' },
@@ -33,7 +33,7 @@ const numberGroupMotion = {
     exit: { opacity: 0, scale: 0.75 },
 };
 
-const coinAnimation = (delay: number) => ({
+const coinAnimation = (delay: number): Variants => ({
     initial: {
         opacity: 0,
         scale: 1.5,
