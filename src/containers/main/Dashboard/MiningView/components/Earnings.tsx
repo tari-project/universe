@@ -1,4 +1,4 @@
-import { AnimatePresence } from 'motion/react';
+import { AnimatePresence, Variants } from 'motion/react';
 
 import { AmtWrapper, EarningsContainer, EarningsWrapper, RecapText, WinText, WinWrapper } from './Earnings.styles.ts';
 
@@ -9,7 +9,7 @@ import i18n from 'i18next';
 import NumberFlow from '@number-flow/react';
 import { useEffect, useState } from 'react';
 
-const variants = {
+const variants: Variants = {
     visible: {
         opacity: 1,
         y: '-150%',
