@@ -1,7 +1,7 @@
 import styled from 'styled-components';
 
 export const TileItem = styled.div<{ $unpadded?: boolean }>`
-    padding: 8px;
+    padding: 9px 15px;
     background-color: ${({ theme }) => theme.palette.background.paper};
     border-radius: ${({ theme }) => theme.shape.borderRadius.app};
     box-shadow: 2px 8px 8px 0 rgba(0, 0, 0, 0.04);
@@ -9,14 +9,15 @@ export const TileItem = styled.div<{ $unpadded?: boolean }>`
     flex-grow: 1;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    gap: 3px;
+    justify-content: center;
+    gap: 4px;
     height: 60px;
     color: ${({ theme }) => theme.palette.text.accent};
     font-size: 12px;
     font-weight: 500;
     position: relative;
 `;
+
 export const TileTop = styled.div`
     display: flex;
     justify-content: space-between;
@@ -29,7 +30,7 @@ export const StatWrapper = styled.div<{ $useLowerCase?: boolean }>`
     color: ${({ theme }) => theme.palette.text.primary};
     min-height: 18px;
 
-    font-size: 14px;
+    font-size: 18px;
     font-style: normal;
     font-weight: 500;
     line-height: 100%;
