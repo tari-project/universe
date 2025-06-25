@@ -23,6 +23,7 @@
   "not-installed-in-applications-directory": "Ups! Tari Universe muss im Anwendungsverzeichnis installiert sein. Bitte dort installieren?",
   "pending": "Pending",
   "please-try-again-later": "Bitte versuche es später erneut. Wenn das Problem weiterhin besteht, kontaktiere uns bitte.",
+  "port": "Port",
   "received": "Empfangen",
   "resources": "Ressourcen",
   "restart": "Neustarten",

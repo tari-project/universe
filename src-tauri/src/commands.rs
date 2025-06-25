@@ -96,15 +96,21 @@ pub enum CpuMinerConnection {
 }
 
 #[derive(Debug, Serialize)]
+pub struct ApplicationsInformation {
+    version: String,
+    port: Option<u16>,
+}
+
+#[derive(Debug, Serialize)]
 pub struct ApplicationsVersions {
-    tari_universe: String,
-    xmrig: String,
-    minotari_node: String,
-    mm_proxy: String,
-    wallet: String,
-    sha_p2pool: String,
-    xtrgpuminer: String,
-    bridge: String,
+    tari_universe: ApplicationsInformation,
+    xmrig: ApplicationsInformation,
+    minotari_node: ApplicationsInformation,
+    mm_proxy: ApplicationsInformation,
+    wallet: ApplicationsInformation,
+    sha_p2pool: ApplicationsInformation,
+    xtrgpuminer: ApplicationsInformation,
+    bridge: ApplicationsInformation,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -337,11 +343,26 @@ pub async fn get_app_in_memory_config(
 
 #[tauri::command]
 pub async fn get_applications_versions(
+    state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<ApplicationsVersions, String> {
     let timer = Instant::now();
     let binary_resolver = BinaryResolver::current().read().await;
     let tapplet_resolver = TappletResolver::current().read().await;
+
+    let mmp_port = &state.mm_proxy_manager.get_port().await;
+    let p2p_port = &state.p2pool_manager.get_grpc_port().await;
+    let cpu_miner = &state.cpu_miner.read().await;
+    let xmrig_port = &cpu_miner.get_port().await;
+    let gpu_miner = &state.gpu_miner.read().await;
+    let xtr_port = gpu_miner.get_port().await;
+    let wallet_port = &state.wallet_manager.get_port().await;
+    let node_manager = &state.node_manager;
+    let node_port = node_manager
+        .clone()
+        .get_grpc_port()
+        .await
+        .expect("Could not get grpc_address");
 
     let tari_universe_version = app.package_info().version.clone();
     let xmrig_version = binary_resolver
@@ -377,14 +398,38 @@ pub async fn get_applications_versions(
     drop(binary_resolver);
 
     Ok(ApplicationsVersions {
-        tari_universe: tari_universe_version.to_string(),
-        minotari_node: minotari_node_version,
-        xmrig: xmrig_version,
-        mm_proxy: mm_proxy_version,
-        wallet: wallet_version,
-        sha_p2pool: sha_p2pool_version,
-        xtrgpuminer: xtrgpuminer_version,
-        bridge: bridge_version,
+        tari_universe: ApplicationsInformation {
+            version: tari_universe_version.to_string(),
+            port: None,
+        },
+        minotari_node: ApplicationsInformation {
+            version: minotari_node_version,
+            port: Some(node_port),
+        },
+        xmrig: ApplicationsInformation {
+            version: xmrig_version,
+            port: Some(*xmrig_port),
+        },
+        mm_proxy: ApplicationsInformation {
+            version: mm_proxy_version,
+            port: Some(*mmp_port),
+        },
+        wallet: ApplicationsInformation {
+            version: wallet_version,
+            port: Some(*wallet_port),
+        },
+        sha_p2pool: ApplicationsInformation {
+            version: sha_p2pool_version,
+            port: Some(*p2p_port),
+        },
+        xtrgpuminer: ApplicationsInformation {
+            version: xtrgpuminer_version,
+            port: Some(xtr_port),
+        },
+        bridge: ApplicationsInformation {
+            version: bridge_version,
+            port: None,
+        },
     })
 }
 
