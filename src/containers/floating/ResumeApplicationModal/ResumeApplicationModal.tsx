@@ -116,12 +116,6 @@ const ResumeApplicationModal = memo(function ResumeApplicationModal() {
     const setupTitle = currentPhaseToShow?.title;
     const setupParams = currentPhaseToShow?.title_params ? { ...currentPhaseToShow.title_params } : {};
 
-    console.log({
-        setupPhaseTitle,
-        setupTitle,
-        setupParams,
-    });
-
     useEffect(() => {
         const isOpen = showModal && Boolean(currentPhaseToShow);
         setOpen(isOpen);
