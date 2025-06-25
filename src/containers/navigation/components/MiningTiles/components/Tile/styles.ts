@@ -139,8 +139,7 @@ export const NumberUnit = styled.span`
     font-size: 10px;
     font-style: normal;
     font-weight: 600;
-    line-height: normal;
-    line-height: 120%;
+    line-height: 1.2;
 `;
 
 export const NumberLabel = styled.span`

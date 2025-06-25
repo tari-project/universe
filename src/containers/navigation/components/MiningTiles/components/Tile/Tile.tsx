@@ -19,6 +19,7 @@ import {
 import NumberFlow from '@number-flow/react';
 import SuccessAnimation from '../SuccessAnimation/SuccessAnimation';
 import { useState } from 'react';
+import SyncData from '@app/containers/navigation/components/MiningTiles/components/SyncData/SyncData.tsx';
 
 interface Props {
     title: string;
@@ -42,6 +43,29 @@ export default function Tile({
     mainLabel,
 }: Props) {
     const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
+    const syncing = title === 'GPU';
+    const syncMarkup = syncing && <SyncData />;
+    const mainMarkup = !syncing && (
+        <NumberGroup>
+            <BigNumber>
+                <Number>
+                    <NumberFlow
+                        locales={i18n.language}
+                        format={{
+                            minimumFractionDigits: 1,
+                            maximumFractionDigits: 4,
+                            notation: 'standard',
+                            style: 'decimal',
+                        }}
+                        value={mainNumber}
+                    />
+                </Number>
+                <NumberUnit>{mainUnit}</NumberUnit>
+            </BigNumber>
+            <NumberLabel>{mainLabel}</NumberLabel>
+        </NumberGroup>
+    );
+
     return (
         <Wrapper>
             <Inside>
@@ -53,25 +77,8 @@ export default function Tile({
 
                     <RatePill>{isLoading ? `-` : `${pillValue} ${pillUnit}`}</RatePill>
                 </HeadingRow>
-
-                <NumberGroup>
-                    <BigNumber>
-                        <Number>
-                            <NumberFlow
-                                locales={i18n.language}
-                                format={{
-                                    minimumFractionDigits: 1,
-                                    maximumFractionDigits: 4,
-                                    notation: 'standard',
-                                    style: 'decimal',
-                                }}
-                                value={mainNumber}
-                            />
-                        </Number>
-                        <NumberUnit>{mainUnit}</NumberUnit>
-                    </BigNumber>
-                    <NumberLabel>{mainLabel}</NumberLabel>
-                </NumberGroup>
+                {syncMarkup}
+                {mainMarkup}
             </Inside>
 
             <AnimatePresence>
