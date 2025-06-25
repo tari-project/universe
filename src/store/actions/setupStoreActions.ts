@@ -20,7 +20,6 @@ import { ProgressTrackerUpdatePayload } from '@app/hooks/app/useProgressEventsLi
 
 import { fetchBridgeTransactionsHistory } from './walletStoreActions';
 import { SetupPhase } from '@app/types/backend-state';
-import { useTappletsStore } from '../useTappletsStore';
 
 export interface DisabledPhasesPayload {
     disabled_phases: SetupPhase[];
@@ -140,9 +139,4 @@ export const updateDisabledPhases = (payload: DisabledPhasesPayload) => {
 
 export const handleUpdateDisabledPhases = (payload: DisabledPhasesPayload) => {
     updateDisabledPhases(payload);
-    if (payload.disabled_phases.includes(SetupPhase.Wallet)) {
-        useTappletsStore.setState({ uiBridgeSwapsEnabled: false });
-    } else if (!useTappletsStore.getState().uiBridgeSwapsEnabled) {
-        useTappletsStore.getState().fetchUiBridgeFeatureFlag();
-    }
 };
