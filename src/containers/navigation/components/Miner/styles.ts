@@ -1,22 +1,5 @@
 import styled from 'styled-components';
 
-export const MinerContainer = styled.div`
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    gap: 6px;
-    box-sizing: border-box;
-`;
-
-export const TileContainer = styled.div`
-    width: 100%;
-    display: flex;
-    justify-content: stretch;
-    align-items: stretch;
-    flex-wrap: wrap;
-    gap: 6px;
-`;
-
 export const TileItem = styled.div<{ $unpadded?: boolean }>`
     padding: 8px;
     background-color: ${({ theme }) => theme.palette.background.paper};

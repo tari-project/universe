@@ -27,8 +27,8 @@ interface Props {
     isLoading: boolean;
     isMining: boolean;
     isEnabled: boolean;
-    pillValue: string;
-    pillUnit: string;
+    pillValue?: number;
+    pillUnit?: string;
     mainNumber: number;
     mainUnit: string;
     mainLabel: string;
@@ -80,7 +80,7 @@ export default function Tile({
                         <LabelText>{title}</LabelText>
                     </LabelWrapper>
 
-                    <RatePill>{isLoading ? `- ${pillUnit}` : `${pillValue} ${pillUnit}`}</RatePill>
+                    {pillValue ? <RatePill>{isLoading ? `- ${pillUnit}` : `${pillValue} ${pillUnit}`}</RatePill> : null}
                 </HeadingRow>
                 {syncMarkup}
                 {mainMarkup}
