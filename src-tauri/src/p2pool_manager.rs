@@ -249,6 +249,16 @@ impl P2poolManager {
         }
     }
 
+    pub async fn get_grpc_port(&self) -> u16 {
+        let process_watcher = self.watcher.read().await;
+        process_watcher
+            .adapter
+            .config
+            .as_ref()
+            .map(|c| c.grpc_port)
+            .unwrap_or_default()
+    }
+
     pub async fn stats_server_port(&self) -> u16 {
         let process_watcher = self.watcher.read().await;
         process_watcher
