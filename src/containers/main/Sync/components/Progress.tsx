@@ -36,7 +36,7 @@ export default function Progress() {
 
     const setUpText =
         setupTitle && setupPhaseTitle
-            ? `${t(`phase-title.${setupPhaseTitle}`)} | ${t(`title.${setupTitle}`, { ...setupParams })}`
+            ? `${t(`phase-title.${setupPhaseTitle}`)} | ${t(`title.${setupTitle}${setupParams.progress ? '-download' : ''}`, { ...setupParams })}`
             : '';
 
     return (
