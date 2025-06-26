@@ -166,27 +166,28 @@ impl WalletAdapter {
             .await
             .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?;
 
-        let confirmations =
-            if current_block_height > 0 && tx.mined_in_block_height <= current_block_height {
-                current_block_height - tx.mined_in_block_height
-            } else {
-                0
-            };
-        let payment_reference = if confirmations >= 5 {
-            match tx.direction {
-                1 => tx.payment_references_received.last().map(hex::encode),
-                2 => tx.payment_references_sent.last().map(hex::encode),
-                _ => None,
-            }
-        } else {
-            None
-        };
-
         let transactions = res
             .into_inner()
             .transactions
             .into_iter()
             .map(|tx| {
+                let confirmations = if current_block_height > 0
+                    && tx.mined_in_block_height <= current_block_height
+                {
+                    current_block_height - tx.mined_in_block_height
+                } else {
+                    0
+                };
+                let payment_reference = if confirmations >= 5 {
+                    match tx.direction {
+                        1 => tx.payment_references_received.last().map(hex::encode),
+                        2 => tx.payment_references_sent.last().map(hex::encode),
+                        _ => None,
+                    }
+                } else {
+                    None
+                };
+
                 Ok(TransactionInfo {
                     tx_id: tx.tx_id.to_string(),
                     source_address: TariAddress::from_bytes(&tx.source_address)?.to_base58(),
@@ -200,7 +201,7 @@ impl WalletAdapter {
                     timestamp: tx.timestamp,
                     payment_id: PaymentId::stringify_bytes(&tx.user_payment_id),
                     mined_in_block_height: tx.mined_in_block_height,
-                    payment_reference
+                    payment_reference,
                 })
             })
             .collect::<Result<Vec<_>, TariAddressError>>()?;

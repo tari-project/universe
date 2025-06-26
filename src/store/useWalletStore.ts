@@ -4,6 +4,7 @@ import { refreshTransactions } from './actions/walletStoreActions.ts';
 import { TxHistoryFilter } from '@app/components/transactions/history/FilterSelect.tsx';
 import { UserTransactionDTO } from '@tari-project/wxtm-bridge-backend-api';
 import { useUIStore } from './useUIStore.ts';
+import { TransactionDetailsItem } from '@app/types/transactions.ts';
 
 export interface BackendBridgeTransaction extends UserTransactionDTO {
     sourceAddress?: string;

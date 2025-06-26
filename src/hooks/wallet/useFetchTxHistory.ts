@@ -1,22 +1,23 @@
-import { invoke } from '@tauri-apps/api/core';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { TransactionInfo } from '@app/types/app-status.ts';
 import { queryClient } from '@app/App/queryClient.ts';
 
-import { useWalletStore } from '@app/store';
+import { fetchTransactions, useWalletStore } from '@app/store';
 
 export const KEY_TX = `transactions`;
 
 export function useFetchTxHistory() {
     const [walletAddress, _] = useWalletStore((state) => state.getActiveTariAddress());
     const isWalletScanning = useWalletStore((s) => s.wallet_scanning.is_scanning);
+    const filter = useWalletStore((s) => s.tx_history_filter);
+
     return useInfiniteQuery<TransactionInfo[]>({
         queryKey: [KEY_TX, `address: ${walletAddress}`],
         queryFn: async ({ pageParam }) => {
             const limit = 20;
             const offset = limit * (pageParam as number);
 
-            return await invoke('get_transactions_history', { offset, limit });
+            return await fetchTransactions({ filter, offset, limit });
         },
         initialPageParam: 0,
         getNextPageParam: (_lastPage, _allPages, _lastPageParam, _allPageParams) => {
