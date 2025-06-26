@@ -369,7 +369,7 @@ impl BinaryManager {
                         info!(target: LOG_TARGET, "Shutdown signal received. Stopping progress channel for binary: {:?}", binary_name);
                         break;
                     }
-                    receiver.changed().await.expect("Failed to receive progress update");
+                    let _unused = receiver.changed().await;
 
                     let last_percentage = *receiver.borrow();
 
