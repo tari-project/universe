@@ -205,8 +205,6 @@ impl GpuMiner {
             self.curent_selected_engine.to_string(),
         ];
         let gpuminer_bin = BinaryResolver::current()
-            .read()
-            .await
             .resolve_path_to_binary_files(Binaries::GpuMiner)
             .await?;
 
