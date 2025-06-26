@@ -21,12 +21,7 @@ function BlockTime() {
 
     const daysMarkup = daysString?.length ? daysString : null;
     const hourMarkup = renderHours ? (
-        <>
-            {hoursString?.split('').map((c, i) => (
-                <SpacedNum key={`hr-${i}-${c}`}>{c}</SpacedNum>
-            ))}
-            :
-        </>
+        <>{hoursString?.split('').map((c, i) => <SpacedNum key={`hr-${i}-${c}`}>{c}</SpacedNum>)}:</>
     ) : null;
 
     return displayBlockTime && isMining && isConnectedToTari ? (
@@ -34,13 +29,8 @@ function BlockTime() {
             <TimerTypography>
                 {daysMarkup}
                 {hourMarkup}
-                {minutes?.split('').map((c, i) => (
-                    <SpacedNum key={`min-${i}-${c}`}>{c}</SpacedNum>
-                ))}
-                :
-                {seconds?.split('').map((c, i) => (
-                    <SpacedNum key={`sec-${i}-${c}`}>{c}</SpacedNum>
-                ))}
+                {minutes?.split('').map((c, i) => <SpacedNum key={`min-${i}-${c}`}>{c}</SpacedNum>)}:
+                {seconds?.split('').map((c, i) => <SpacedNum key={`sec-${i}-${c}`}>{c}</SpacedNum>)}
             </TimerTypography>
             <TitleTypography>{t('current-block-time')}</TitleTypography>
         </BlockTimeContainer>
