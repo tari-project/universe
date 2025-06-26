@@ -5,11 +5,9 @@ import { AirdropSidebarItems } from '@app/containers/main/Airdrop/sidebar/Airdro
 import NavigationButton from './NavigationButton';
 import { GridBottom, GridCenter, GridTop, LogoWrapper, MiniWrapper } from './SidebarMini.styles.ts';
 import BridgeNavigationButton from './BridgeNavigationButton.tsx';
-import { useTappletsStore } from '@app/store/useTappletsStore.ts';
 import { useUIStore } from '@app/store';
 
 const SidebarMini = memo(function SidebarMini() {
-    const uiBridgeSwapsEnabled = useTappletsStore((s) => s.uiBridgeSwapsEnabled);
     const seedlessUI = useUIStore((s) => s.seedlessUI);
 
     return (
@@ -21,7 +19,7 @@ const SidebarMini = memo(function SidebarMini() {
             </GridTop>
             <GridCenter>
                 <NavigationButton />
-                {uiBridgeSwapsEnabled && !seedlessUI && <BridgeNavigationButton />}
+                {!seedlessUI && <BridgeNavigationButton />}
             </GridCenter>
             <GridBottom>
                 <AirdropSidebarItems />

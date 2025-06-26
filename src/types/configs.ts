@@ -1,4 +1,4 @@
-import { modeType } from '@app/store';
+import { MiningModeType } from '@app/store';
 import { GpuThreads } from './app-status';
 import { NodeType } from '@app/store/useNodeStore';
 
@@ -46,12 +46,16 @@ export interface ConfigUI {
 }
 export interface ConfigMining {
     created_at: string;
-    mode: modeType;
+    mode: MiningModeType;
     eco_mode_cpu_threads: number;
     mine_on_app_start: boolean;
     ludicrous_mode_cpu_threads: number;
     eco_mode_cpu_options: string[];
+    eco_mode_max_cpu_usage: number;
+    eco_mode_max_gpu_usage: GpuThreads[];
+    ludicrous_mode_max_gpu_usage: GpuThreads[];
     ludicrous_mode_cpu_options: string[];
+    ludicrous_mode_max_cpu_usage: number;
     custom_mode_cpu_options: string[];
     custom_max_cpu_usage: number;
     custom_max_gpu_usage: GpuThreads[];
