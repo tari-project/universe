@@ -1,6 +1,6 @@
 import { memo, useEffect, useMemo, useState } from 'react';
 import { CircularProgress } from '@app/components/elements/CircularProgress';
-import { Text, Title, Wrapper, ProgressWrapper, TextWrapper } from './styles';
+import { ProgressWrapper, Text, TextWrapper, Title, Wrapper } from './styles';
 import { useTranslation } from 'react-i18next';
 import { useUIStore } from '@app/store';
 import { useSetupStore } from '@app/store/useSetupStore';
@@ -24,16 +24,12 @@ const ResumeApplicationModal = memo(function ResumeApplicationModal() {
     const miningPhaseInfoPayload = useSetupStore((state) => state.mining_phase_setup_payload);
     const walletPhaseInfoPayload = useSetupStore((state) => state.wallet_phase_setup_payload);
 
-    const isAppUnlocked = useSetupStore((state) => state.appUnlocked);
-    const isSetupFinished = useSetupStore((state) => state.isInitialSetupFinished);
     const shouldShowModal = useUIStore((state) => state.showResumeAppModal);
     const disabledPhases = useSetupStore((state) => state.disabled_phases);
 
     const showModal = useMemo(() => {
-        const shouldShowModalForInitialSetup = isAppUnlocked && !isSetupFinished;
-        const shouldShowModalForResume = shouldShowModal && status === 'connected';
-        return shouldShowModalForResume || shouldShowModalForInitialSetup;
-    }, [isAppUnlocked, isSetupFinished, shouldShowModal, status]);
+        return shouldShowModal && status === 'connected';
+    }, [shouldShowModal, status]);
 
     const currentPhaseToShow = useMemo(() => {
         if (

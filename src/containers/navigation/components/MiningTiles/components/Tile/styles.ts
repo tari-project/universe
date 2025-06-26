@@ -147,7 +147,7 @@ export const BigNumber = styled.div`
     gap: 3px;
 `;
 
-export const Number = styled.span<{ $isLoading?: boolean }>`
+export const Number = styled.span<{ $isIdle?: boolean }>`
     color: ${({ theme }) => theme.palette.text.primary};
     font-family: Poppins, sans-serif;
     font-size: 22px;
@@ -155,7 +155,7 @@ export const Number = styled.span<{ $isLoading?: boolean }>`
     font-weight: 600;
     line-height: 95%;
 
-    transform: ${({ $isLoading }) => ($isLoading ? '' : ' translateY(7px)')};
+    transform: ${({ $isIdle }) => ($isIdle ? '' : ' translateY(7px)')};
 `;
 
 export const NumberUnit = styled.span`

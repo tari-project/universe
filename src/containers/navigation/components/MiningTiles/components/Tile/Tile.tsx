@@ -57,6 +57,7 @@ export default function Tile({
     }, [successValue]);
 
     const syncing = isGPU && isEnabled && !isConnectedToTariNetwork;
+    const gpuIdle = isGPU && !isMining;
 
     const syncMarkup = syncing && <SyncData />;
     const renderPill = isGPU ? syncing : true;
@@ -64,27 +65,35 @@ export default function Tile({
     const pillCopy = isLoading || !isMining ? `- ${pillUnit}` : `${pillValue} ${pillUnit}`;
     const pillMarkup = renderPill && <RatePill>{pillCopy}</RatePill>;
 
+    const gpuIdleMarkup = (
+        <BigNumber>
+            <Number $isIdle>{`-`}</Number>
+            <NumberUnit>{mainUnit}</NumberUnit>
+        </BigNumber>
+    );
+
+    const numberMarkup = gpuIdle ? (
+        gpuIdleMarkup
+    ) : (
+        <BigNumber>
+            <Number>
+                <NumberFlow
+                    locales={i18n.language}
+                    format={{
+                        minimumFractionDigits: 1,
+                        maximumFractionDigits: 4,
+                        notation: 'standard',
+                        style: 'decimal',
+                    }}
+                    value={mainNumber}
+                />
+            </Number>
+            <NumberUnit>{mainUnit}</NumberUnit>
+        </BigNumber>
+    );
     const mainMarkup = !syncing && (
         <NumberGroup>
-            {isLoading ? (
-                <LoadingDots />
-            ) : (
-                <BigNumber>
-                    <Number>
-                        <NumberFlow
-                            locales={i18n.language}
-                            format={{
-                                minimumFractionDigits: 1,
-                                maximumFractionDigits: 4,
-                                notation: 'standard',
-                                style: 'decimal',
-                            }}
-                            value={mainNumber}
-                        />
-                    </Number>
-                    <NumberUnit>{mainUnit}</NumberUnit>
-                </BigNumber>
-            )}
+            {isLoading ? <LoadingDots /> : numberMarkup}
             <NumberLabel>{mainLabel}</NumberLabel>
         </NumberGroup>
     );
