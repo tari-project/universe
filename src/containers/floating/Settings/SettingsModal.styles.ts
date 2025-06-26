@@ -9,7 +9,7 @@ export const Container = styled.div`
     align-items: stretch;
     overflow: hidden;
 
-    max-width: 1000px;
+    max-width: 1100px;
 
     @media (min-width: 1200px) {
         height: 80vh;

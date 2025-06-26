@@ -368,6 +368,16 @@ impl NodeManager {
         Err(anyhow::anyhow!("grpc_address not set"))
     }
 
+    pub async fn get_grpc_port(&self) -> Result<u16, anyhow::Error> {
+        let current_adapter = self.current_adapter.read().await;
+        let grpc_address = current_adapter.get_grpc_address();
+
+        if let Some((_host, port)) = grpc_address {
+            return Ok(port);
+        }
+        Err(anyhow::anyhow!("grpc_address not set"))
+    }
+
     pub async fn check_if_is_orphan_chain(&self) -> Result<bool, anyhow::Error> {
         let current_service = self.get_current_service().await?;
         current_service.check_if_is_orphan_chain().await

@@ -61,6 +61,7 @@ pub(crate) struct GpuMinerAdapter {
     pub(crate) gpu_devices: Vec<GpuDevice>,
     pub(crate) gpu_raw_status_broadcast: watch::Sender<Option<GpuMinerStatus>>,
     pub(crate) curent_selected_engine: EngineType,
+    pub http_api_port: u16,
 }
 
 impl GpuMinerAdapter {
@@ -82,6 +83,7 @@ impl GpuMinerAdapter {
             gpu_devices,
             gpu_raw_status_broadcast,
             curent_selected_engine: EngineType::OpenCL,
+            http_api_port: PortAllocator::new().assign_port_with_fallback(),
         }
     }
 
@@ -128,7 +130,7 @@ impl ProcessAdapter for GpuMinerAdapter {
         info!(target: LOG_TARGET, "Gpu miner spawn inner");
         let inner_shutdown = Shutdown::new();
 
-        let http_api_port = PortAllocator::new().assign_port_with_fallback();
+        let http_api_port = self.http_api_port;
         let working_dir = data_dir.join("gpuminer");
         std::fs::create_dir_all(&working_dir)?;
         std::fs::create_dir_all(config_dir.join("gpuminer"))?;
