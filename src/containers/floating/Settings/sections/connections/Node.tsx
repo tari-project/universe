@@ -11,7 +11,6 @@ import {
 } from '../../components/SettingsGroup.styles.ts';
 import { NodeType, useNodeStore } from '@app/store/useNodeStore.ts';
 import { AppSyncProgress } from '@app/containers/floating/Settings/sections/connections/AppSyncProgress/AppSyncProgress.tsx';
-import { Divider } from '@app/components/elements/Divider.tsx';
 
 const getNodeType = (nodeType?: NodeType) => {
     if (!nodeType) return 'N/A';

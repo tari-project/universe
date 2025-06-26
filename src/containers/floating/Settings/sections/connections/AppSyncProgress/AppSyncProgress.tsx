@@ -11,7 +11,8 @@ export const AppSyncProgress = () => {
     const [open, setOpen] = useState(false);
     const { t } = useTranslation('setup-progresses');
 
-    const status = useUIStore((s) => s.connectionStatus);
+    const isSetupFinished = useSetupStore((state) => state.isInitialSetupFinished);
+
     const corePhaseInfoPayload = useSetupStore((state) => state.core_phase_setup_payload);
     const hardwarePhaseInfoPayload = useSetupStore((state) => state.hardware_phase_setup_payload);
     const nodePhaseInfoPayload = useSetupStore((state) => state.node_phase_setup_payload);
@@ -20,10 +21,6 @@ export const AppSyncProgress = () => {
 
     const shouldShowModal = useUIStore((state) => state.showResumeAppModal);
     const disabledPhases = useSetupStore((state) => state.disabled_phases);
-
-    const showModal = useMemo(() => {
-        return shouldShowModal && status === 'connected';
-    }, [shouldShowModal, status]);
 
     const currentPhaseToShow = useMemo(() => {
         if (
@@ -107,10 +104,10 @@ export const AppSyncProgress = () => {
     const setupParams = currentPhaseToShow?.title_params ? { ...currentPhaseToShow.title_params } : {};
 
     useEffect(() => {
-        const isOpen = showModal && Boolean(currentPhaseToShow);
+        const isOpen = shouldShowModal || (Boolean(currentPhaseToShow) && !isSetupFinished);
         setOpen(isOpen);
         useUIStore.setState({ resumeModalIsOpen: isOpen });
-    }, [currentPhaseToShow, showModal]);
+    }, [currentPhaseToShow, isSetupFinished, shouldShowModal]);
 
     useEffect(() => {
         if (
