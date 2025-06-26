@@ -2384,5 +2384,5 @@ pub async fn refresh_wallet_history(
 pub async fn get_base_node_status(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<BaseNodeStatus, String> {
-    Ok(state.node_status_watch_rx.borrow().clone())
+    Ok(*state.node_status_watch_rx.borrow())
 }
