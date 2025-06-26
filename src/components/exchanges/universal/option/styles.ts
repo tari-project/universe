@@ -50,7 +50,6 @@ export const ContentBodyWrapper = styled(m.div)`
     flex-shrink: 0;
     width: 100%;
     gap: 14px;
-    overflow: hidden;
     padding-top: 14px;
 `;
 
