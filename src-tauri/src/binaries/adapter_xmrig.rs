@@ -78,7 +78,10 @@ impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
         {
             Ok(_) => Ok(checksum_path),
             Err(_) => {
-                let checksum_fallback_url = format!("{}.sha256", download_info.fallback_url);
+                let checksum_fallback_url = match download_info.fallback_url.rfind('/') {
+                    Some(pos) => format!("{}/{}", &download_info.fallback_url[..pos], "SHA256SUMS"),
+                    None => download_info.fallback_url,
+                };
                 info!(target: LOG_TARGET, "Fallback URL: {}", checksum_fallback_url);
                 RequestClient::current()
                     .download_file_with_retries(&checksum_fallback_url, &checksum_path, false, None)
