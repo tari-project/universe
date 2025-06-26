@@ -65,16 +65,7 @@ impl ChanneledStepUpdate {
             is_complete: false,
         };
 
-        let _unused = &self
-            .timeout_watcher_sender
-            .send(hash_value(&payload))
-            .inspect_err(|e| {
-                warn!(
-                    target: LOG_TARGET,
-                    "Failed to send timeout watcher signal: {}",
-                    e
-                );
-            });
+        let _unused = &self.timeout_watcher_sender.send(hash_value(&payload));
 
         EventsEmitter::emit_progress_tracker_update(self.step.get_event_type(), payload).await;
     }
