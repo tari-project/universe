@@ -19,7 +19,6 @@ export interface TxArgs {
     filter?: TxHistoryFilter;
     offset?: number;
     limit?: number;
-    storeKey?: 'tx_history' | 'coinbase_transactions';
 }
 
 const filterToBitflag = (filter: TxHistoryFilter): number => {
@@ -33,22 +32,29 @@ const filterToBitflag = (filter: TxHistoryFilter): number => {
     }
 };
 
-export const fetchTransactions = async ({
-    offset = 0,
-    limit,
-    filter = 'all-activity',
-    storeKey = 'tx_history',
-}: TxArgs) => {
-    const bitflag = filterToBitflag(filter);
+export const fetchTransactionsHistory = async ({ offset = 0, limit }: TxArgs) => {
+    const bitflag = filterToBitflag('rewards');
     try {
-        const currentTxs = useWalletStore.getState()[storeKey];
         const fetchedTxs = await invoke('get_transactions', { offset, limit, statusBitflag: bitflag });
 
-        const updatedTxs = offset > 0 ? [...currentTxs, ...fetchedTxs] : fetchedTxs;
-        useWalletStore.setState({ [storeKey]: updatedTxs });
-        return updatedTxs;
+        return fetchedTxs;
     } catch (error) {
-        console.error(`Could not get transaction history for ${filter}: `, error);
+        console.error(`Could not get transaction history for rewards: `, error);
+        return [];
+    }
+};
+
+export const fetchCoinbaseTransactions = async ({ offset = 0, limit }: Omit<TxArgs, 'filter'>) => {
+    const bitflag = filterToBitflag('rewards');
+    try {
+        const currentTxs = useWalletStore.getState().coinbase_transactions;
+        const fetchedTxs = await invoke('get_transactions', { offset, limit, statusBitflag: bitflag });
+
+        const coinbase_transactions = offset > 0 ? [...currentTxs, ...fetchedTxs] : fetchedTxs;
+        useWalletStore.setState({ coinbase_transactions: coinbase_transactions });
+        return coinbase_transactions;
+    } catch (error) {
+        console.error(`Could not get transaction history for rewards: `, error);
         return [];
     }
 };
@@ -114,12 +120,10 @@ export const importSeedWords = async (seedWords: string[]) => {
 
 export const refreshTransactions = async () => {
     const { tx_history, coinbase_transactions, tx_history_filter } = useWalletStore.getState();
-    await fetchTransactions({ offset: 0, limit: Math.max(tx_history.length, 20), filter: tx_history_filter });
-    await fetchTransactions({
+    await fetchTransactionsHistory({ offset: 0, limit: Math.max(tx_history.length, 20), filter: tx_history_filter });
+    await fetchCoinbaseTransactions({
         offset: 0,
         limit: Math.max(coinbase_transactions.length, 20),
-        filter: 'rewards',
-        storeKey: 'coinbase_transactions',
     });
 };
 

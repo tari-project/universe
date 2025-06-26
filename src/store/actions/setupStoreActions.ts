@@ -10,7 +10,8 @@ import {
 } from './miningStoreActions';
 import {
     fetchApplicationsVersionsWithRetry,
-    fetchTransactions,
+    fetchCoinbaseTransactions,
+    fetchTransactionsHistory,
     TOWER_CANVAS_ID,
     useConfigMiningStore,
     useConfigUIStore,
@@ -56,12 +57,10 @@ export const handleWalletUnlocked = () => {
     useSetupStore.setState({ walletUnlocked: true });
     // Initial fetch of transactions
     const { tx_history_filter } = useWalletStore.getState();
-    fetchTransactions({ offset: 0, limit: 20, filter: tx_history_filter });
-    fetchTransactions({
+    fetchTransactionsHistory({ offset: 0, limit: 20, filter: tx_history_filter });
+    fetchCoinbaseTransactions({
         offset: 0,
         limit: 20,
-        filter: 'rewards',
-        storeKey: 'coinbase_transactions',
     });
 };
 

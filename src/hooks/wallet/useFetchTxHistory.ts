@@ -2,7 +2,8 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import { TransactionInfo } from '@app/types/app-status.ts';
 import { queryClient } from '@app/App/queryClient.ts';
 
-import { fetchTransactions, useWalletStore } from '@app/store';
+import { useWalletStore } from '@app/store';
+import { fetchTransactionsHistory } from '@app/store/actions/walletStoreActions';
 
 export const KEY_TX = `transactions`;
 
@@ -17,7 +18,7 @@ export function useFetchTxHistory() {
             const limit = 20;
             const offset = limit * (pageParam as number);
 
-            return await fetchTransactions({ filter, offset, limit });
+            return await fetchTransactionsHistory({ filter, offset, limit });
         },
         initialPageParam: 0,
         getNextPageParam: (_lastPage, _allPages, _lastPageParam, _allPageParams) => {
