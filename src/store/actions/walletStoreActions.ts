@@ -140,7 +140,7 @@ export const setExternalTariAddress = async (newAddress: string) => {
 
 const getPendingOutgoingBalance = async () => {
     try {
-        const fetchedTxs = await invoke('get_transactions', { limit: 20, statusBitflag: 3 });
+        const fetchedTxs = await invoke('get_transactions', { limit: 20, statusBitflag: 3, offset: 0 });
         return fetchedTxs
             .filter((tx) => tx.direction == TransactionDirection.Outbound)
             .reduce((acc, tx) => acc + tx.amount, 0);

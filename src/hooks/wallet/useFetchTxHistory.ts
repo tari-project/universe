@@ -13,7 +13,7 @@ export function useFetchTxHistory() {
     const filter = useWalletStore((s) => s.tx_history_filter);
 
     return useInfiniteQuery<TransactionInfo[]>({
-        queryKey: [KEY_TX, `address: ${walletAddress}`],
+        queryKey: [KEY_TX, `address: ${walletAddress}`, `filter: ${filter}`],
         queryFn: async ({ pageParam }) => {
             const limit = 20;
             const offset = limit * (pageParam as number);
