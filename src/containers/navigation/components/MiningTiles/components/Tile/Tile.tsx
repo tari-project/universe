@@ -57,6 +57,7 @@ export default function Tile({
     }, [successValue]);
 
     const syncing = isGPU && isEnabled && !isConnectedToTariNetwork;
+
     const syncMarkup = syncing && <SyncData />;
     const renderPill = isGPU ? syncing : true;
 
@@ -90,7 +91,7 @@ export default function Tile({
 
     return (
         <Wrapper>
-            <Inside>
+            <Inside $isSyncing={syncing || isLoading}>
                 <HeadingRow>
                     <LabelWrapper>
                         <StatusDot $isMining={isMining} $isEnabled={isEnabled} $isSyncing={syncing || isLoading} />

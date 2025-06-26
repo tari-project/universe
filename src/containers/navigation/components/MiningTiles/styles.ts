@@ -28,7 +28,7 @@ export const ExpandedBox = styled(m.div)`
     box-shadow: 2px 8px 8px 0 rgba(0, 0, 0, 0.04);
     flex-direction: column;
     gap: 6px;
-    width: 290px;
+    width: 300px;
     padding: 20px;
     z-index: 10;
     h5,

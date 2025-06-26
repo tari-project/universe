@@ -3,7 +3,6 @@ import { useProgressCountdown } from '@app/containers/main/Sync/components/usePr
 
 import { useCurrentPhaseDetails } from '@app/containers/main/Sync/components/useCurrentPhaseDetails.ts';
 import { useTranslation } from 'react-i18next';
-import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 
 const IS_COMPACT = true;
 export default function SyncData() {
@@ -17,7 +16,6 @@ export default function SyncData() {
                 <CountdownText>{countdownText}</CountdownText>
                 <Label>{t(`phase-title.${setupPhaseTitle}`, { context: 'compact' })}</Label>
             </TextWrapper>
-            <LoadingDots />
         </Wrapper>
     );
 }

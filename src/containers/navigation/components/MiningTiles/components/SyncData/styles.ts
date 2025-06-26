@@ -9,7 +9,7 @@ export const Wrapper = styled.div`
 
 export const TextWrapper = styled.div`
     display: flex;
-    gap: 4px;
+    gap: 0px;
     flex-direction: column;
 `;
 

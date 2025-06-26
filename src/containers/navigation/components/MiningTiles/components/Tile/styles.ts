@@ -1,5 +1,3 @@
-'use client';
-
 import styled, { css, keyframes } from 'styled-components';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { convertHexToRGBA } from '@app/utils';
@@ -19,7 +17,7 @@ export const Wrapper = styled.div`
     z-index: 1;
 `;
 
-export const Inside = styled.div`
+export const Inside = styled.div<{ $isSyncing?: boolean }>`
     position: relative;
     z-index: 1;
     width: 100%;
@@ -33,6 +31,12 @@ export const Inside = styled.div`
     padding: 6px 10px;
 
     background: ${({ theme }) => theme.palette.background.paper};
+
+    ${({ $isSyncing }) =>
+        $isSyncing &&
+        css`
+            background: ${({ theme }) => theme.palette.background.accent};
+        `}
 `;
 
 const rotate = keyframes`
@@ -99,7 +103,7 @@ export const StatusDot = styled.div<{ $isMining: boolean; $isEnabled: boolean; $
               `
             : css`
                   background: ${theme.palette.divider};
-              `}}
+              `}
 `;
 
 export const LabelText = styled.span`
