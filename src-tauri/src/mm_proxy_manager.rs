@@ -161,6 +161,14 @@ impl MmProxyManager {
         Err(anyhow!("MM proxy did not start in 90sec"))
     }
 
+    pub async fn get_port(&self) -> u16 {
+        let lock = self.watcher.read().await;
+        lock.adapter
+            .config
+            .as_ref()
+            .map(|c| c.port)
+            .unwrap_or_default()
+    }
     pub async fn get_monero_port(&self) -> Result<u16, anyhow::Error> {
         let lock = self.watcher.read().await;
         match lock.adapter.config.clone() {

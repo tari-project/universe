@@ -1,7 +1,13 @@
 import { loadTowerAnimation, setAnimationState } from '@tari-project/tari-tower';
 
 import { useSetupStore } from '../useSetupStore';
-import { startCpuMining, startGpuMining, stopCpuMining, stopGpuMining } from './miningStoreActions';
+import {
+    getMaxAvailableThreads,
+    startCpuMining,
+    startGpuMining,
+    stopCpuMining,
+    stopGpuMining,
+} from './miningStoreActions';
 import {
     fetchApplicationsVersionsWithRetry,
     useConfigMiningStore,
@@ -99,6 +105,7 @@ export const handleGpuMiningLocked = async () => {
 };
 
 export const handleHardwarePhaseFinished = async () => {
+    await getMaxAvailableThreads();
     useSetupStore.setState({ hardwarePhaseFinished: true });
 };
 

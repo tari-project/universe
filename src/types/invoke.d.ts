@@ -13,7 +13,7 @@ import {
 } from './app-status';
 import { Language } from '@app/i18initializer';
 import { PaperWalletDetails } from '@app/types/app-status.ts';
-import { displayMode, modeType } from '@app/store/types.ts';
+import { displayMode, MiningModeType } from '@app/store/types.ts';
 import { SignData } from '@app/types/ws.ts';
 import { ConfigBackendInMemory } from '@app/types/configs.ts';
 import { ExchangeMiner } from './exchange';
@@ -50,7 +50,7 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'update_applications'): Promise<void>;
     function invoke(
         param: 'set_mode',
-        payload: { mode: modeType; customCpuUsage: number; customGpuUsage: GpuThreads[] }
+        payload: { mode: MiningModeType; customCpuUsage: number; customGpuUsage: GpuThreads[] }
     ): Promise<void>;
     function invoke(param: 'get_max_consumption_levels'): Promise<MaxConsumptionLevels>;
     function invoke(param: 'set_display_mode', payload: { displayMode: displayMode }): Promise<void>;
