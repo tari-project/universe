@@ -113,10 +113,10 @@ impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
 
     fn get_base_main_download_url(&self, version: &str) -> String {
         let base_url = get_mirror_download_url("xmrig", "xmrig");
-        format!("{}/{}", base_url, version)
+        format!("{}/v{}", base_url, version)
     }
     fn get_base_fallback_download_url(&self, version: &str) -> String {
         let base_url = get_gh_download_url("xmrig", "xmrig");
-        format!("{}/{}", base_url, version)
+        format!("{}/v{}", base_url, version)
     }
 }

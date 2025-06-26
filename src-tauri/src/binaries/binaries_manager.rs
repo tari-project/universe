@@ -226,7 +226,7 @@ impl BinaryManager {
             platform,
             selected_version,
             network.to_string(),
-            selected_hash,
+            selected_hash.unwrap_or("".to_string()),
         );
 
         BinaryDownloadInfo {
