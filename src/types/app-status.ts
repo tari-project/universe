@@ -203,7 +203,7 @@ export interface BaseNodeStatus {
     sha_network_hashrate: number;
     monero_randomx_network_hashrate: number;
     tari_randomx_network_hashrate: number;
-    block_reward: unknown;
+    block_reward: number;
     block_height: number;
     block_time: number;
     is_synced: boolean;
