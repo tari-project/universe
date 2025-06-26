@@ -1,8 +1,7 @@
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog';
 import { CustomPowerLevelsDialog } from './CustomPowerLevelsDialog';
 import { useMiningStore } from '@app/store/useMiningStore';
-import { useEffect } from 'react';
-import { getMaxAvailableThreads, setCustomLevelsDialogOpen } from '@app/store';
+import { setCustomLevelsDialogOpen } from '@app/store';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
 import { useSetupStore } from '@app/store/useSetupStore';
 
@@ -15,20 +14,15 @@ export const CustomPowerLevelsDialogContainer = () => {
     const handleClose = () => {
         setCustomLevelsDialogOpen(false);
     };
-    useEffect(() => {
-        if (!maxThreads && isHardwarePhaseFinished) {
-            getMaxAvailableThreads();
-        }
-    }, [isHardwarePhaseFinished, maxThreads]);
 
     return (
         <Dialog
-            open={customLevelsDialogOpen && Boolean(maxThreads)}
+            open={customLevelsDialogOpen && isHardwarePhaseFinished}
             onOpenChange={setCustomLevelsDialogOpen}
             disableClose={isChangingMode}
         >
             <DialogContent>
-                {maxThreads ? (
+                {isHardwarePhaseFinished && maxThreads ? (
                     <CustomPowerLevelsDialog maxAvailableThreads={maxThreads} handleClose={handleClose} />
                 ) : (
                     <CircularProgress />

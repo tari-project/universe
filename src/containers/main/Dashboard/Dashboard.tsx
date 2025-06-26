@@ -7,7 +7,6 @@ import { Tapplet } from '@app/components/tapplets/Tapplet.tsx';
 import MiningView from './MiningView/MiningView.tsx';
 
 export default function Dashboard() {
-    const { uiBridgeSwapsEnabled } = useTappletsStore();
     const activeTapplet = useTappletsStore((s) => s.activeTapplet);
     const showTapplet = useUIStore((s) => s.showTapplet);
     const connectionStatus = useUIStore((s) => s.connectionStatus);
@@ -18,11 +17,7 @@ export default function Dashboard() {
     return (
         <DashboardContentContainer $tapplet={!!activeTapplet}>
             {connectionStatus !== 'connected' && !orphanChainUiDisabled ? <DisconnectWrapper /> : null}
-            {uiBridgeSwapsEnabled && showTapplet && activeTapplet ? (
-                <Tapplet source={activeTapplet.source} />
-            ) : (
-                <MiningView />
-            )}
+            {showTapplet && activeTapplet ? <Tapplet source={activeTapplet.source} /> : <MiningView />}
         </DashboardContentContainer>
     );
 }
