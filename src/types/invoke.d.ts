@@ -10,6 +10,7 @@ import {
     WalletBalance,
     BridgeEnvs,
     TariAddressVariants,
+    BaseNodeStatus,
 } from './app-status';
 import { Language } from '@app/i18initializer';
 import { PaperWalletDetails } from '@app/types/app-status.ts';
@@ -137,4 +138,5 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'get_bridge_envs'): Promise<BridgeEnvs>;
     function invoke(param: 'parse_tari_address', payload: { address: string }): Promise<TariAddressVariants>;
     function invoke(param: 'refresh_wallet_history'): Promise<void>;
+    function invoke(param: 'get_base_node_status'): Promise<BaseNodeStatus>;
 }

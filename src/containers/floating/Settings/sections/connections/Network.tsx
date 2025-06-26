@@ -18,7 +18,7 @@ export default function Network() {
     const { t } = useTranslation('settings');
     const sha_network_hashrate = useMiningMetricsStore((state) => state?.base_node_status?.sha_network_hashrate);
     const randomx_network_hashrate = useMiningMetricsStore(
-        (state) => state?.base_node_status?.randomx_network_hashrate
+        (state) => state?.base_node_status?.tari_randomx_network_hashrate
     );
 
     return (
