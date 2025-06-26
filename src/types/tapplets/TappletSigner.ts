@@ -1,4 +1,4 @@
-import { setError as setStoreError, useConfigUIStore } from '@app/store';
+import { setError as setStoreError, useConfigUIStore, useWalletStore } from '@app/store';
 import { invoke } from '@tauri-apps/api/core';
 import { BridgeEnvs, WalletBalance } from '../app-status';
 import { AccountData, BridgeTxDetails, SendOneSidedRequest, TappletSignerParams, WindowSize } from './tapplet.types';
@@ -48,10 +48,10 @@ export class TappletSigner {
     }
 
     public async getAccount(): Promise<AccountData> {
-        const tariAddress = await invoke('get_tari_wallet_address');
         return {
             account_id: 0, // default id - currently we don't support multi accounts
-            address: tariAddress,
+            // Use only base address that have seed words
+            address: useWalletStore.getState().tari_address_base58,
         };
     }
 

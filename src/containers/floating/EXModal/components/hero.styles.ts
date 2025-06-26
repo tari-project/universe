@@ -24,8 +24,9 @@ export const HeroImgWrapper = styled.div`
     border-radius: 100%;
     width: 150px;
     height: 150px;
-    background: ${({ theme }) => theme.colors.greyscale['100']};
-    padding: 30px;
+    background: ${({ theme }) => theme.colors.greyscale['50']};
+    box-shadow: 0 4px 34px rgba(0, 0, 0, 0.25);
+    padding: 20px;
     display: flex;
     align-items: center;
     justify-content: center;

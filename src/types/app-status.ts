@@ -67,7 +67,6 @@ export interface ExternalDependency {
 export interface WalletAddress {
     tari_address_base58: string;
     tari_address_emoji: string;
-    is_tari_address_generated: boolean;
 }
 
 export interface TransactionInfo {
@@ -215,14 +214,19 @@ export interface WalletBalance {
     pending_outgoing_balance: number;
 }
 
+interface ApplicationsInformation {
+    version: string;
+    port?: number;
+}
+
 export interface ApplicationsVersions {
-    tari_universe: string;
-    xmrig: string;
-    minotari_node: string;
-    mm_proxy: string;
-    wallet: string;
-    sha_p2pool: string;
-    bridge: string;
+    tari_universe: ApplicationsInformation;
+    xmrig: ApplicationsInformation;
+    minotari_node: ApplicationsInformation;
+    mm_proxy: ApplicationsInformation;
+    wallet: ApplicationsInformation;
+    sha_p2pool: ApplicationsInformation;
+    bridge: ApplicationsInformation;
 }
 
 export interface PaperWalletDetails {

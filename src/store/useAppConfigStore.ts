@@ -1,7 +1,6 @@
+import { create } from 'zustand';
 import { ConfigBackendInMemory, ConfigCore, ConfigMining, ConfigUI, ConfigWallet } from '@app/types/configs';
-import { create } from './create';
 
-export const DEFAULT_EXCHANGE_ID = 'classic';
 type UIConfigStoreState = Partial<ConfigUI> & {
     visualModeToggleLoading: boolean;
 };
@@ -22,7 +21,7 @@ const configCoreInitialState: ConfigCore = {
     airdrop_tokens: undefined,
     last_binaries_update_timestamp: '',
     p2pool_stats_server_port: undefined,
-    universal_miner_initialized_exchange_id: undefined,
+    exchange_id: undefined,
 };
 
 const configWalletInitialState: ConfigWallet = {
@@ -35,15 +34,19 @@ const configWalletInitialState: ConfigWallet = {
 const configMininigInitialState: ConfigMining = {
     created_at: '',
     cpu_mining_enabled: true,
-    custom_max_cpu_usage: 0,
+    custom_max_cpu_usage: 2,
     custom_mode_cpu_options: [],
     custom_max_gpu_usage: [],
     eco_mode_cpu_threads: 0,
     eco_mode_cpu_options: [],
+    eco_mode_max_cpu_usage: 2,
+    eco_mode_max_gpu_usage: [],
     gpu_engine: '',
     gpu_mining_enabled: true,
     ludicrous_mode_cpu_threads: 0,
     ludicrous_mode_cpu_options: [],
+    ludicrous_mode_max_cpu_usage: 2,
+    ludicrous_mode_max_gpu_usage: [],
     mine_on_app_start: false,
     mode: 'Eco',
     mining_time: 0,
@@ -70,7 +73,6 @@ const configBEInMemoryInitialState: ConfigBackendInMemory = {
     airdropTwitterAuthUrl: '',
     exchangeId: '',
     bridgeBackendApiUrl: '',
-    isUniversalMiner: false,
 };
 
 export const useConfigCoreStore = create<ConfigCore>()(() => ({
@@ -81,9 +83,7 @@ export const useConfigWalletStore = create<ConfigWallet>()(() => ({
     ...configWalletInitialState,
 }));
 
-export const useConfigMiningStore = create<ConfigMining>()(() => ({
-    ...configMininigInitialState,
-}));
+export const useConfigMiningStore = create<ConfigMining>()(() => configMininigInitialState);
 
 export const useConfigUIStore = create<UIConfigStoreState>()(() => ({
     ...configUIInitialState,

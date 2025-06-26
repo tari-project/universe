@@ -22,10 +22,12 @@
 
 use crate::{
     binaries::{Binaries, BinaryResolver},
-    configs::{config_core::ConfigCore, config_mining::ConfigMining, trait_config::ConfigImpl},
+    configs::{
+        config_core::ConfigCore, config_mining::ConfigMining, config_wallet::ConfigWallet,
+        trait_config::ConfigImpl,
+    },
     events_emitter::EventsEmitter,
     p2pool_manager::P2poolConfig,
-    progress_tracker_old::ProgressTracker,
     progress_trackers::{
         progress_plans::{ProgressPlans, ProgressSetupMiningPlan},
         progress_stepper::ProgressStepperBuilder,
@@ -37,10 +39,11 @@ use crate::{
 };
 use anyhow::Error;
 use log::info;
+use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::ShutdownSignal;
 use tauri::{AppHandle, Manager};
 use tokio::sync::{
-    watch::{self, Receiver, Sender},
+    watch::{Receiver, Sender},
     Mutex,
 };
 use tokio_util::task::TaskTracker;
@@ -60,6 +63,7 @@ pub struct MiningSetupPhaseSessionConfiguration {}
 
 #[derive(Clone, Default)]
 pub struct MiningSetupPhaseAppConfiguration {
+    tari_address: TariAddress,
     p2pool_enabled: bool,
     p2pool_stats_server_port: Option<u16>,
     mmproxy_monero_nodes: Vec<String>,
@@ -106,10 +110,13 @@ impl SetupPhaseImpl for MiningSetupPhase {
     }
 
     async fn get_shutdown_signal(&self) -> ShutdownSignal {
-        TasksTrackers::current().core_phase.get_signal().await
+        TasksTrackers::current().mining_phase.get_signal().await
     }
     async fn get_task_tracker(&self) -> TaskTracker {
-        TasksTrackers::current().core_phase.get_task_tracker().await
+        TasksTrackers::current()
+            .mining_phase
+            .get_task_tracker()
+            .await
     }
     fn get_phase_dependencies(&self) -> Vec<Receiver<PhaseStatus>> {
         self.setup_configuration
@@ -146,6 +153,9 @@ impl SetupPhaseImpl for MiningSetupPhase {
         let mmproxy_monero_nodes = ConfigCore::content().await.mmproxy_monero_nodes().clone();
         let mmproxy_use_monero_fail = *ConfigCore::content().await.mmproxy_use_monero_failover();
         let squad_override = ConfigMining::content().await.squad_override().clone();
+        let tari_address = ConfigWallet::content()
+            .await
+            .get_current_used_tari_address();
 
         Ok(MiningSetupPhaseAppConfiguration {
             p2pool_enabled,
@@ -153,6 +163,7 @@ impl SetupPhaseImpl for MiningSetupPhase {
             mmproxy_monero_nodes,
             p2pool_stats_server_port,
             squad_override,
+            tari_address,
         })
     }
 
@@ -166,7 +177,7 @@ impl SetupPhaseImpl for MiningSetupPhase {
         let mut progress_stepper = self.progress_stepper.lock().await;
         let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
         let state = self.app_handle.state::<UniverseAppState>();
-        let tari_address = state.tari_address.read().await;
+        let tari_address = self.app_configuration.tari_address.clone();
         let telemetry_id = state
             .telemetry_manager
             .read()
@@ -174,30 +185,26 @@ impl SetupPhaseImpl for MiningSetupPhase {
             .get_unique_string()
             .await;
 
-        // TODO Remove once not needed
-        let (tx, rx) = watch::channel("".to_string());
-        let progress = ProgressTracker::new(self.app_handle.clone(), Some(tx));
+        let binary_resolver = BinaryResolver::current();
 
-        let binary_resolver = BinaryResolver::current().read().await;
-
-        progress_stepper
-            .resolve_step(ProgressPlans::Mining(
-                ProgressSetupMiningPlan::BinariesMergeMiningProxy,
-            ))
-            .await;
+        let mmproxy_binary_progress_tracker = progress_stepper.channel_step_range_updates(
+            ProgressPlans::Mining(ProgressSetupMiningPlan::BinariesMergeMiningProxy),
+            Some(ProgressPlans::Mining(
+                ProgressSetupMiningPlan::BinariesP2pool,
+            )),
+        );
 
         binary_resolver
-            .initialize_binary_timeout(Binaries::MergeMiningProxy, progress.clone(), rx.clone())
+            .initialize_binary(Binaries::MergeMiningProxy, mmproxy_binary_progress_tracker)
             .await?;
 
-        progress_stepper
-            .resolve_step(ProgressPlans::Mining(
-                ProgressSetupMiningPlan::BinariesP2pool,
-            ))
-            .await;
+        let p2pool_binary_progress_tracker = progress_stepper.channel_step_range_updates(
+            ProgressPlans::Mining(ProgressSetupMiningPlan::BinariesP2pool),
+            Some(ProgressPlans::Mining(ProgressSetupMiningPlan::P2Pool)),
+        );
 
         binary_resolver
-            .initialize_binary_timeout(Binaries::ShaP2pool, progress.clone(), rx.clone())
+            .initialize_binary(Binaries::ShaP2pool, p2pool_binary_progress_tracker)
             .await?;
 
         let base_node_grpc_address = state.node_manager.get_grpc_address().await?;

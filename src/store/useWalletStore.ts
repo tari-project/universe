@@ -3,6 +3,7 @@ import { TransactionInfo, WalletBalance } from '../types/app-status.ts';
 import { refreshTransactions } from './actions/walletStoreActions.ts';
 import { TxHistoryFilter } from '@app/components/transactions/history/FilterSelect.tsx';
 import { UserTransactionDTO } from '@tari-project/wxtm-bridge-backend-api';
+import { useUIStore } from './useUIStore.ts';
 
 export interface BackendBridgeTransaction extends UserTransactionDTO {
     sourceAddress?: string;
@@ -12,7 +13,8 @@ export interface BackendBridgeTransaction extends UserTransactionDTO {
 export interface WalletStoreState {
     tari_address_base58: string;
     tari_address_emoji: string;
-    is_tari_address_generated: boolean | null;
+    external_tari_address_base58?: string;
+    external_tari_address_emoji?: string;
     balance?: WalletBalance;
     calculated_balance?: number;
     coinbase_transactions: TransactionInfo[];
@@ -23,6 +25,7 @@ export interface WalletStoreState {
     cold_wallet_address?: string;
     is_wallet_importing: boolean;
     is_swapping?: boolean;
+    detailsItem?: TransactionDetailsItem | BackendBridgeTransaction | null;
     wallet_scanning: {
         is_scanning: boolean;
         scanned_height: number;
@@ -31,10 +34,15 @@ export interface WalletStoreState {
     };
 }
 
+interface WalletStoreSelectors {
+    getActiveTariAddress: () => [string, string];
+}
+
 const initialState: WalletStoreState = {
     tari_address_base58: '',
     tari_address_emoji: '',
-    is_tari_address_generated: null,
+    external_tari_address_base58: undefined,
+    external_tari_address_emoji: undefined,
     coinbase_transactions: [],
     tx_history_filter: 'all-activity',
     tx_history: [],
@@ -54,8 +62,20 @@ const MAX_TRANSACTIONS_IN_MEMORY = 1000; // Keep only the latest 1000 transactio
 const MAX_COINBASE_TRANSACTIONS_IN_MEMORY = 500; // Keep only the latest 500 coinbase transactions
 // const MAX_PENDING_TRANSACTIONS = 100; // Keep only the latest 100 pending transactions
 
-export const useWalletStore = create<WalletStoreState>()(() => ({
+export const useWalletStore = create<WalletStoreState & WalletStoreSelectors>()((_, get) => ({
     ...initialState,
+    getActiveTariAddress: () => {
+        const baseAddress = get().tari_address_base58;
+        const baseAddressEmoji = get().tari_address_emoji;
+        const externalAddress = get().external_tari_address_base58;
+        const externalAddressEmoji = get().external_tari_address_emoji;
+        const isSeedlessUI = useUIStore.getState().seedlessUI;
+
+        if (isSeedlessUI && externalAddress && externalAddressEmoji) {
+            return [externalAddress, externalAddressEmoji];
+        }
+        return [baseAddress, baseAddressEmoji];
+    },
 }));
 
 // Helper function to prune large arrays
@@ -84,7 +104,6 @@ export const updateWalletScanningProgress = (payload: {
             ...payload,
         },
     });
-
     if (!is_scanning) {
         refreshTransactions();
     }

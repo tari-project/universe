@@ -5,7 +5,7 @@ const truncateString = (str: string, num: number): string => {
     return str.slice(0, num) + '...';
 };
 
-const truncateMiddle = (str: string, num: number): string => {
+const truncateMiddle = (str: string, num: number, separator = '...'): string => {
     if (str.length <= num) return str;
     let end = str.substring(str.length - num);
     let start = str.substring(0, num);
@@ -18,7 +18,7 @@ const truncateMiddle = (str: string, num: number): string => {
         start = matches?.slice(0, num).join('');
     }
 
-    return start + '...' + end;
+    return start + separator + end;
 };
 
 export { truncateMiddle, truncateString };

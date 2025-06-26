@@ -22,12 +22,13 @@
 
 use crate::airdrop;
 use crate::airdrop::get_wallet_view_key_hashed;
-use crate::app_in_memory_config::DynamicMemoryConfig;
 
+use crate::app_in_memory_config::AppInMemoryConfig;
 use crate::commands::CpuMinerStatus;
 use crate::configs::config_core::ConfigCore;
 use crate::configs::config_mining::ConfigMining;
 use crate::configs::config_mining::MiningMode;
+use crate::configs::config_wallet::ConfigWallet;
 use crate::configs::trait_config::ConfigImpl;
 use crate::gpu_miner_adapter::GpuMinerStatus;
 use crate::hardware::hardware_status_monitor::HardwareStatusMonitor;
@@ -58,7 +59,7 @@ use sysinfo::{Disks, System};
 use tari_common::configuration::Network;
 use tari_shutdown::ShutdownSignal;
 use tari_utilities::encoding::MBase58;
-use tauri::{Emitter, Manager};
+use tauri::Emitter;
 use tokio::sync::{watch, RwLock};
 use tokio::time::interval;
 
@@ -236,7 +237,7 @@ impl From<TelemetryData> for NotificationData {
 
 pub struct TelemetryManager {
     cpu_miner_status_watch_rx: watch::Receiver<CpuMinerStatus>,
-    in_memory_config: Arc<RwLock<DynamicMemoryConfig>>,
+    in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
     node_network: Option<Network>,
     gpu_status: watch::Receiver<GpuMinerStatus>,
     node_status: watch::Receiver<BaseNodeStatus>,
@@ -250,7 +251,7 @@ impl TelemetryManager {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         cpu_miner_status_watch_rx: watch::Receiver<CpuMinerStatus>,
-        in_memory_config: Arc<RwLock<DynamicMemoryConfig>>,
+        in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
         network: Option<Network>,
         gpu_status: watch::Receiver<GpuMinerStatus>,
         node_status: watch::Receiver<BaseNodeStatus>,
@@ -532,8 +533,8 @@ async fn get_telemetry_data_inner(
     );
 
     // Add payment ID from current tari address
-    if let Some(state) = app_handle.try_state::<crate::UniverseAppState>() {
-        let tari_address = state.tari_address.read().await;
+    let tari_address = ConfigWallet::content().await.tari_address().clone();
+    if let Some(tari_address) = tari_address {
         let address_str = tari_address.to_base58();
         if let Ok(Some(payment_id)) = extract_payment_id(&address_str) {
             extra_data.insert("mining_address_payment_id".to_string(), payment_id);

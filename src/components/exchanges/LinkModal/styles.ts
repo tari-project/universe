@@ -35,7 +35,7 @@ export const CloseWrapper = styled.div`
 
 export const HeaderWrapper = styled.div`
     display: flex;
-    gap: 15px;
+    gap: 5px;
     flex-direction: column;
     padding: 0 15px 15px;
 `;
@@ -55,6 +55,7 @@ export const Subtitle = styled(Typography).attrs({ variant: 'p' })`
 `;
 
 export const OptionWrapper = styled.div`
+    cursor: pointer;
     display: flex;
     border-radius: 10px;
     width: 100%;
@@ -63,4 +64,8 @@ export const OptionWrapper = styled.div`
     border: 1px solid ${({ theme }) => theme.palette.divider};
     background-color: ${({ theme }) => theme.palette.background.paper};
     padding: 15px;
+    transition: opacity 0.2s ease;
+    &:hover {
+        background-color: ${({ theme }) => theme.palette.background.main};
+    }
 `;

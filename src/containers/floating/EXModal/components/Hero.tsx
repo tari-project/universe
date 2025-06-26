@@ -10,9 +10,9 @@ import {
 import { RingsSVG } from '@app/containers/floating/EXModal/RingsSVG.tsx';
 
 interface HeroProps {
-    primaryCol: string;
-    secondaryCol: string;
-    heroImgUrl: string;
+    primaryCol?: string;
+    secondaryCol?: string;
+    heroImgUrl?: string;
 }
 
 const initial = { opacity: 0, scale: 0 };

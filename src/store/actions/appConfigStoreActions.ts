@@ -20,32 +20,39 @@ import {
     toggleDeviceExclusion,
 } from './miningStoreActions';
 import { setError } from './appStateStoreActions.ts';
-import { setUITheme } from './uiStoreActions';
+import { setIsAppExchangeSpecific, setUITheme } from './uiStoreActions';
 import { GpuThreads } from '@app/types/app-status.ts';
-import { displayMode, modeType } from '../types';
-import { ConfigBackendInMemory, ConfigCore, ConfigMining, ConfigUI, ConfigWallet } from '@app/types/configs.ts';
+import { displayMode, MiningModeType } from '../types';
+import { ConfigCore, ConfigMining, ConfigUI, ConfigWallet } from '@app/types/configs.ts';
 import { NodeType, updateNodeType as updateNodeTypeForNodeStore } from '../useNodeStore.ts';
-import { fetchExchangeContent, fetchExchangeMiners, setShowUniversalModal } from '../useExchangeStore.ts';
-
-import {
-    AppInMemoryConfigChangedPayload,
-    UniversalMinerInitializedExchangeIdChangedPayload,
-} from '@app/types/events-payloads.ts';
+import { setCurrentExchangeMinerId } from '../useExchangeStore.ts';
+import { fetchExchangeContent, refreshXCContent } from '@app/hooks/exchanges/fetchExchangeContent.ts';
+import { fetchExchangeList } from '@app/hooks/exchanges/fetchExchanges.ts';
 
 interface SetModeProps {
-    mode: modeType;
+    mode: MiningModeType;
     customGpuLevels?: GpuThreads[];
     customCpuLevels?: number;
 }
 
-export const handleConfigCoreLoaded = (coreConfig: ConfigCore) => {
-    useConfigCoreStore.setState(coreConfig);
+export const handleConfigCoreLoaded = async (coreConfig: ConfigCore) => {
+    useConfigCoreStore.setState((c) => ({ ...c, ...coreConfig }));
+    const buildInExchangeId = useConfigBEInMemoryStore.getState().exchangeId;
+    const isAppExchangeSpecific = Boolean(buildInExchangeId !== 'universal');
+    setIsAppExchangeSpecific(isAppExchangeSpecific);
+
+    if (!isAppExchangeSpecific) {
+        await fetchExchangeList();
+        setCurrentExchangeMinerId(coreConfig.exchange_id as string);
+    } else {
+        await fetchExchangeContent(coreConfig.exchange_id as string);
+    }
 };
 export const handleConfigWalletLoaded = (walletConfig: ConfigWallet) => {
-    useConfigWalletStore.setState(walletConfig);
+    useConfigWalletStore.setState((c) => ({ ...c, ...walletConfig }));
 };
 export const handleConfigUILoaded = async (uiConfig: ConfigUI) => {
-    useConfigUIStore.setState(uiConfig);
+    useConfigUIStore.setState((c) => ({ ...c, ...uiConfig }));
     const configTheme = uiConfig.display_mode?.toLowerCase();
     if (configTheme) {
         setUITheme(configTheme as displayMode);
@@ -61,7 +68,7 @@ export const handleConfigUILoaded = async (uiConfig: ConfigUI) => {
     }
 };
 export const handleConfigMiningLoaded = (miningConfig: ConfigMining) => {
-    useConfigMiningStore.setState(miningConfig);
+    useConfigMiningStore.setState((c) => ({ ...c, ...miningConfig }));
     useMiningStore.setState({ miningTime: miningConfig.mining_time });
 };
 
@@ -203,18 +210,21 @@ export const setMineOnAppStart = async (mineOnAppStart: boolean) => {
 };
 export const setMode = async (params: SetModeProps) => {
     const { mode, customGpuLevels, customCpuLevels } = params;
-    const prevMode = useConfigMiningStore.getState().mode;
-    useConfigMiningStore.setState({
-        mode,
-        custom_max_cpu_usage: customCpuLevels,
-        custom_max_gpu_usage: customGpuLevels,
-    });
-    console.info('Setting mode', mode, customCpuLevels, customGpuLevels);
-    invoke('set_mode', { mode, customCpuUsage: customCpuLevels, customGpuUsage: customGpuLevels }).catch((e) => {
-        console.error('Could not set mode', e);
-        setError('Could not change mode');
-        useConfigMiningStore.setState({ mode: prevMode });
-    });
+
+    invoke('set_mode', { mode, customCpuUsage: customCpuLevels, customGpuUsage: customGpuLevels })
+        .then(() => {
+            const isCustom = mode === 'Custom';
+            useConfigMiningStore.setState((c) => ({
+                ...c,
+                mode,
+                custom_max_cpu_usage: isCustom ? customCpuLevels : c.custom_max_cpu_usage,
+                custom_max_gpu_usage: isCustom ? customGpuLevels : c.custom_max_gpu_usage,
+            }));
+        })
+        .catch((e) => {
+            console.error('Could not set mode', e);
+            setError('Could not change mode');
+        });
 };
 export const setMoneroAddress = async (moneroAddress: string) => {
     const prevMoneroAddress = useConfigWalletStore.getState().monero_address;
@@ -324,51 +334,16 @@ export const setNodeType = async (nodeType: NodeType) => {
 
 export const fetchBackendInMemoryConfig = async () => {
     try {
-        const isUniversalMiner = await invoke('is_universal_miner');
-
-        const res = await invoke('get_app_in_memory_config');
-        if (res) {
-            useConfigBEInMemoryStore.setState({ ...res, isUniversalMiner });
-            const universalMinerExchangeId = await invoke('get_universal_miner_initialized_exchange_id'); // It has to be a command instead of getter from appConfigStore since store is not initialized yet
-            const isUniversalUninitialized = isUniversalMiner && !universalMinerExchangeId;
-            const isUniversalInitialized = isUniversalMiner && universalMinerExchangeId;
-            const isExchangeMode = res.exchangeId && !isUniversalMiner && res.exchangeId !== 'classic';
-            await fetchExchangeMiners();
-            if (isUniversalUninitialized) {
-                setShowUniversalModal(true);
-            }
-            if (isExchangeMode) {
-                await fetchExchangeContent(res.exchangeId);
-            }
-            if (isUniversalInitialized) {
-                await fetchExchangeContent(universalMinerExchangeId);
-            }
+        const appInMemoryConfig = await invoke('get_app_in_memory_config');
+        if (appInMemoryConfig) {
+            useConfigBEInMemoryStore.setState({ ...appInMemoryConfig });
         }
     } catch (e) {
         console.error('Could not fetch backend in memory config', e);
     }
 };
 
-export const handleUniversalMinerInitializedExchangeIdChanged = (
-    payload: UniversalMinerInitializedExchangeIdChangedPayload
-) => {
-    useConfigCoreStore.setState({
-        universal_miner_initialized_exchange_id: payload.universal_miner_initialized_exchange_id,
-    });
-    if (payload.universal_miner_initialized_exchange_id) {
-        setShowUniversalModal(false); // Enforce this flag if there is race condition between this and handleAppInMemoryConfigChanged
-    }
-};
-
-export const handleAppInMemoryConfigChanged = (payload: AppInMemoryConfigChangedPayload) => {
-    const newConfig: ConfigBackendInMemory = {
-        airdropApiUrl: payload.app_in_memory_config.airdrop_api_url,
-        airdropUrl: payload.app_in_memory_config.airdrop_url,
-        airdropTwitterAuthUrl: payload.app_in_memory_config.airdrop_twitter_auth_url,
-        exchangeId: payload.app_in_memory_config.exchange_id,
-        isUniversalMiner: payload.is_universal_exchange || false,
-        bridgeBackendApiUrl: payload.app_in_memory_config.bridge_backend_api_url,
-        walletConnectProjectId: payload.app_in_memory_config.wallet_connect_project_id,
-    };
-    useConfigBEInMemoryStore.setState(newConfig);
+export const handleExchangeIdChanged = async (payload: string) => {
+    setCurrentExchangeMinerId(payload);
+    await refreshXCContent(payload);
 };

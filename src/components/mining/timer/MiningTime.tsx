@@ -25,8 +25,10 @@ export const MiningTime = memo(function MiningTime({ variant = 'primary', timing
     const _minutes = isMini && minutes === '0' ? '00' : minutes;
     const _seconds = isMini && seconds === '0' ? '00' : seconds;
 
+    const renderDays = daysString && parseInt(daysString) > 0;
     const renderHours = hoursString && parseInt(hoursString) > 0;
-    const daysMarkup = daysString ? (
+
+    const daysMarkup = renderDays ? (
         <>
             {daysString}
             <TimerUnitWrapper />
@@ -34,20 +36,26 @@ export const MiningTime = memo(function MiningTime({ variant = 'primary', timing
     ) : null;
     const hourMarkup = renderHours ? (
         <>
-            {hoursString?.split('').map((c, i) => <SpacedNum key={`hr-${i}-${c}`}>{c}</SpacedNum>)}
+            {hoursString?.split('').map((c, i) => (
+                <SpacedNum key={`hr-${i}-${c}`}>{c}</SpacedNum>
+            ))}
             <TimerUnitWrapper $variant={variant}>{isMini ? ':' : `h`}</TimerUnitWrapper>
         </>
     ) : null;
 
     const minuteMarkup = (
         <>
-            {_minutes?.split('').map((c, i) => <SpacedNum key={`min-${i}-${c}`}>{c}</SpacedNum>)}
+            {_minutes?.split('').map((c, i) => (
+                <SpacedNum key={`min-${i}-${c}`}>{c}</SpacedNum>
+            ))}
             <TimerUnitWrapper $variant={variant}>{isMini ? ':' : `m`}</TimerUnitWrapper>
         </>
     );
     const secondMarkup = (
         <>
-            {_seconds?.split('').map((c, i) => <SpacedNum key={`sec-${i}-${c}`}>{c}</SpacedNum>)}
+            {_seconds?.split('').map((c, i) => (
+                <SpacedNum key={`sec-${i}-${c}`}>{c}</SpacedNum>
+            ))}
             <TimerUnitWrapper $variant={variant}>{!isMini && 's'}</TimerUnitWrapper>
         </>
     );
