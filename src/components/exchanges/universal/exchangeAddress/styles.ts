@@ -12,7 +12,7 @@ export const StyledInputWrapper = styled.div`
 export const StyledInput = styled(Input)`
     border-radius: 20px;
     justify-content: space-between;
-    padding: 10px 40px 10px 10px;
+    padding: 10px 40px 10px 20px;
     width: 100%;
     position: relative;
 `;

@@ -1,5 +1,6 @@
 import styled, { css } from 'styled-components';
 import { Typography } from '@app/components/elements/Typography.tsx';
+import * as m from 'motion/react-m';
 
 export const Wrapper = styled.div<{ $isCurrent?: boolean; $isActive?: boolean }>`
     display: flex;
@@ -41,7 +42,7 @@ export const ContentHeaderWrapper = styled.div`
     }
 `;
 
-export const ContentBodyWrapper = styled.div<{ $isActive?: boolean }>`
+export const ContentBodyWrapper = styled(m.div)`
     display: flex;
     justify-content: space-evenly;
     flex-direction: column;
@@ -49,12 +50,7 @@ export const ContentBodyWrapper = styled.div<{ $isActive?: boolean }>`
     flex-shrink: 0;
     width: 100%;
     gap: 14px;
-    padding: ${({ $isActive }) => ($isActive ? `14px 0 0` : 0)};
-    height: ${({ $isActive: $isActive }) => ($isActive ? 'auto' : '0')};
-    opacity: ${({ $isActive: $isActive }) => ($isActive ? '1' : '0')};
-    transition:
-        height 0.2s linear,
-        opacity 0.2s linear;
+    padding-top: 14px;
 `;
 
 export const XCContent = styled.div`
@@ -147,16 +143,18 @@ export const HelpButtonWrapper = styled.div`
     gap: 4px;
 `;
 export const HelpButton = styled.button`
-    border-radius: 8px;
     display: flex;
     align-items: center;
+    align-self: flex-start;
     gap: 4px;
     color: #1457ff;
     font-weight: 500;
     font-size: 12px;
+
     svg {
         width: 10px;
     }
+
     &:hover {
         opacity: 0.7;
     }
