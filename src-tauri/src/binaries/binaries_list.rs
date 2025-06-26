@@ -22,7 +22,12 @@
 
 use std::path::PathBuf;
 
-use semver::Version;
+pub enum BinaryPlatformAssets {
+    LinuxX64,
+    WindowsX64,
+    MacOSX64,
+    MacOSArm64,
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Binaries {
@@ -64,7 +69,7 @@ impl Binaries {
         }
     }
 
-    pub fn binary_file_name(self, version: Version) -> PathBuf {
+    pub fn binary_file_name(self, version: String) -> PathBuf {
         match self {
             Binaries::Xmrig => {
                 let file_name = format!("xmrig-{}", version);
@@ -101,19 +106,118 @@ impl Binaries {
         }
     }
 
-    #[allow(dead_code)]
-    pub fn iterator() -> impl Iterator<Item = Binaries> {
-        [
-            Binaries::Xmrig,
-            Binaries::MergeMiningProxy,
-            Binaries::MinotariNode,
-            Binaries::Wallet,
-            Binaries::ShaP2pool,
-            Binaries::GpuMiner,
-            Binaries::Tor,
-            Binaries::BridgeTapplet,
-        ]
-        .iter()
-        .copied()
+    #[allow(clippy::too_many_lines)]
+    pub fn get_binary_platform_name(
+        self,
+        platform: BinaryPlatformAssets,
+        version: String,
+        network: String,
+        hash: Option<String>,
+    ) -> String {
+        match self {
+            Binaries::BridgeTapplet => "".to_string(),
+            Binaries::GpuMiner => match platform {
+                BinaryPlatformAssets::LinuxX64 => format!(
+                    "glytex-opencl-linux-x86_64-{:?}-{}-{:?}.zip",
+                    network, version, hash
+                ),
+                BinaryPlatformAssets::WindowsX64 => format!(
+                    "glytex-opencl-windows-x64-{:?}-{}-{:?}.zip",
+                    network, version, hash
+                ),
+                BinaryPlatformAssets::MacOSX64 => format!(
+                    "glytex-opencl-macos-x86_64-{:?}-{}-{:?}.zip",
+                    network, version, hash
+                ),
+                BinaryPlatformAssets::MacOSArm64 => format!(
+                    "glytex-combined-macos-arm64-{:?}-{}-{:?}.zip",
+                    network, version, hash
+                ),
+            },
+            Binaries::ShaP2pool => match platform {
+                BinaryPlatformAssets::LinuxX64 => {
+                    format!("sha_p2pool-{}-{:?}-linux-x86_64.zip", version, hash)
+                }
+                BinaryPlatformAssets::WindowsX64 => {
+                    format!("sha_p2pool-{}-{:?}-windows-x64.exe.zip", version, hash)
+                }
+                BinaryPlatformAssets::MacOSX64 => {
+                    format!("sha_p2pool-{}-{:?}-macos-x86_64.zip", version, hash)
+                }
+                BinaryPlatformAssets::MacOSArm64 => {
+                    format!("sha_p2pool-{}-{:?}-macos-arm64.zip", version, hash)
+                }
+            },
+            Binaries::Xmrig => match platform {
+                BinaryPlatformAssets::LinuxX64 => {
+                    format!("xmrig-{}-linux-x64.tar.gz", version)
+                }
+                BinaryPlatformAssets::WindowsX64 => {
+                    format!("xmrig-{}-msvc-win64.zip", version)
+                }
+                BinaryPlatformAssets::MacOSX64 => {
+                    format!("xmrig-{}-macos-x64.tar.gz", version)
+                }
+                BinaryPlatformAssets::MacOSArm64 => {
+                    format!("xmrig-{}-macos-arm64.tar.gz", version)
+                }
+            },
+            Binaries::Tor => match platform {
+                BinaryPlatformAssets::LinuxX64 => {
+                    format!("tor-expert-bundle-linux-x86_64-{}.tar.gz", version)
+                }
+                BinaryPlatformAssets::WindowsX64 => {
+                    format!("tor-expert-bundle-windows-x86_64-{}.tar.gz", version)
+                }
+                BinaryPlatformAssets::MacOSX64 => {
+                    format!("tor-expert-bundle-macos-x86_64-{}.tar.gz", version)
+                }
+                BinaryPlatformAssets::MacOSArm64 => {
+                    format!("tor-expert-bundle-macos-aarch64-{}.tar.gz", version)
+                }
+            },
+            Binaries::MergeMiningProxy => match platform {
+                BinaryPlatformAssets::LinuxX64 => {
+                    format!("tari_suite-{}-{:?}-linux-x86_64.zip", version, hash)
+                }
+                BinaryPlatformAssets::WindowsX64 => {
+                    format!("tari_suite-{}-{:?}-windows-x64.exe.zip", version, hash)
+                }
+                BinaryPlatformAssets::MacOSX64 => {
+                    format!("tari_suite-{}-{:?}-macos-x86_64.zip", version, hash)
+                }
+                BinaryPlatformAssets::MacOSArm64 => {
+                    format!("tari_suite-{}-{:?}-macos-arm64.zip", version, hash)
+                }
+            },
+            Binaries::MinotariNode => match platform {
+                BinaryPlatformAssets::LinuxX64 => {
+                    format!("tari_suite-{}-{:?}-linux-x86_64.zip", version, hash)
+                }
+                BinaryPlatformAssets::WindowsX64 => {
+                    format!("tari_suite-{}-{:?}-windows-x64.exe.zip", version, hash)
+                }
+                BinaryPlatformAssets::MacOSX64 => {
+                    format!("tari_suite-{}-{:?}-macos-x86_64.zip", version, hash)
+                }
+                BinaryPlatformAssets::MacOSArm64 => {
+                    format!("tari_suite-{}-{:?}-macos-arm64.zip", version, hash)
+                }
+            },
+            Binaries::Wallet => match platform {
+                BinaryPlatformAssets::LinuxX64 => {
+                    format!("tari_suite-{}-{:?}-linux-x86_64.zip", version, hash)
+                }
+                BinaryPlatformAssets::WindowsX64 => {
+                    format!("tari_suite-{}-{:?}-windows-x64.exe.zip", version, hash)
+                }
+                BinaryPlatformAssets::MacOSX64 => {
+                    format!("tari_suite-{}-{:?}-macos-x86_64.zip", version, hash)
+                }
+                BinaryPlatformAssets::MacOSArm64 => {
+                    format!("tari_suite-{}-{:?}-macos-arm64.zip", version, hash)
+                }
+            },
+        }
     }
 }

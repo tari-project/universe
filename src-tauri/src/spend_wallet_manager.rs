@@ -82,8 +82,6 @@ impl SpendWalletManager {
         log_path: PathBuf,
     ) -> Result<(), Error> {
         let binary_path = BinaryResolver::current()
-            .read()
-            .await
             .resolve_path_to_binary_files(Binaries::Wallet)
             .await?;
 

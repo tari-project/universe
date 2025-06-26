@@ -185,7 +185,7 @@ impl SetupPhaseImpl for MiningSetupPhase {
             .get_unique_string()
             .await;
 
-        let binary_resolver = BinaryResolver::current().read().await;
+        let binary_resolver = BinaryResolver::current();
 
         let mmproxy_binary_progress_tracker = progress_stepper.channel_step_range_updates(
             ProgressPlans::Mining(ProgressSetupMiningPlan::BinariesMergeMiningProxy),

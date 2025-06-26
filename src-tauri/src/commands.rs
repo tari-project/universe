@@ -338,30 +338,24 @@ pub async fn get_applications_versions(
     app: tauri::AppHandle,
 ) -> Result<ApplicationsVersions, String> {
     let timer = Instant::now();
-    let binary_resolver = BinaryResolver::current().read().await;
+    let binary_resolver = BinaryResolver::current();
 
     let tari_universe_version = app.package_info().version.clone();
-    let xmrig_version = binary_resolver
-        .get_binary_version_string(Binaries::Xmrig)
-        .await;
+    let xmrig_version = binary_resolver.get_binary_version(Binaries::Xmrig).await;
 
     let minotari_node_version = binary_resolver
-        .get_binary_version_string(Binaries::MinotariNode)
+        .get_binary_version(Binaries::MinotariNode)
         .await;
     let mm_proxy_version = binary_resolver
-        .get_binary_version_string(Binaries::MergeMiningProxy)
+        .get_binary_version(Binaries::MergeMiningProxy)
         .await;
-    let wallet_version = binary_resolver
-        .get_binary_version_string(Binaries::Wallet)
-        .await;
+    let wallet_version = binary_resolver.get_binary_version(Binaries::Wallet).await;
     let sha_p2pool_version = binary_resolver
-        .get_binary_version_string(Binaries::ShaP2pool)
+        .get_binary_version(Binaries::ShaP2pool)
         .await;
-    let xtrgpuminer_version = binary_resolver
-        .get_binary_version_string(Binaries::GpuMiner)
-        .await;
+    let xtrgpuminer_version = binary_resolver.get_binary_version(Binaries::GpuMiner).await;
     let bridge_version = binary_resolver
-        .get_binary_version_string(Binaries::BridgeTapplet)
+        .get_binary_version(Binaries::BridgeTapplet)
         .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
@@ -370,8 +364,6 @@ pub async fn get_applications_versions(
             timer.elapsed()
         );
     }
-
-    drop(binary_resolver);
 
     Ok(ApplicationsVersions {
         tari_universe: tari_universe_version.to_string(),
@@ -2134,7 +2126,7 @@ pub async fn set_warmup_seen(warmup_seen: bool) -> Result<(), String> {
 
 #[tauri::command]
 pub async fn launch_builtin_tapplet() -> Result<ActiveTapplet, String> {
-    let binaries_resolver = BinaryResolver::current().read().await;
+    let binaries_resolver = BinaryResolver::current();
 
     let tapp_dest_dir = binaries_resolver
         .resolve_path_to_binary_files(Binaries::BridgeTapplet)

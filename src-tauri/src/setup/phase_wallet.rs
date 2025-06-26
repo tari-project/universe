@@ -165,7 +165,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
         let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
         let state = self.app_handle.state::<UniverseAppState>();
 
-        let binary_resolver = BinaryResolver::current().read().await;
+        let binary_resolver = BinaryResolver::current();
 
         let wallet_binary_progress_tracker = progress_stepper.channel_step_range_updates(
             ProgressPlans::Wallet(ProgressSetupWalletPlan::BinariesWallet),

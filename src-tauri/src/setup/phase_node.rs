@@ -169,7 +169,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
         let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
         let state = self.app_handle.state::<UniverseAppState>();
 
-        let binary_resolver = BinaryResolver::current().read().await;
+        let binary_resolver = BinaryResolver::current();
 
         if self.app_configuration.use_tor && !cfg!(target_os = "macos") {
             let tor_binary_progress_tracker = progress_stepper.channel_step_range_updates(
