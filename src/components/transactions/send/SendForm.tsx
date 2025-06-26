@@ -10,7 +10,7 @@ import type { InputName, SendInputs } from './types.ts';
 import { FormField } from './FormField.tsx';
 
 import { BottomWrapper, FormFieldsWrapper } from './Send.styles';
-import { useTariBalance } from '@app/hooks/wallet/useTariBalance.ts';
+
 import useDebouncedValue from '@app/hooks/helpers/useDebounce.ts';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
 
@@ -26,7 +26,8 @@ export function SendForm({ isBack }: Props) {
     const [isAddressEmpty, setIsAddressEmpty] = useState(true);
     const availableBalance = useWalletStore((s) => s.balance?.available_balance);
 
-    const { isWalletScanning, numericAvailableBalance } = useTariBalance();
+    const numericAvailableBalance = Number(Math.floor((availableBalance || 0) / 1_000_000).toFixed(2));
+    const isWalletScanning = useWalletStore((s) => s.wallet_scanning?.is_scanning);
 
     const { control, formState, setError, setValue, clearErrors, getValues } = useFormContext<SendInputs>();
     const { isSubmitting, errors } = formState;
