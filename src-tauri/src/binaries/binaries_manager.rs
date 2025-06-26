@@ -24,6 +24,7 @@ use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, path::PathBuf};
 use tari_common::configuration::Network;
+use tari_shutdown::Shutdown;
 use tauri_plugin_sentry::sentry;
 use tokio::sync::watch::{channel, Sender};
 
@@ -348,7 +349,7 @@ impl BinaryManager {
     async fn resolve_progress_channel(
         &self,
         progress_channel: Option<ChanneledStepUpdate>,
-    ) -> Result<Option<Sender<f64>>, Error> {
+    ) -> Result<(Option<Sender<f64>>, Option<Shutdown>), Error> {
         if let Some(step_update_channel) = progress_channel {
             let (sender, mut receiver) = channel::<f64>(0.0);
             let task_tacker = match Binaries::from_name(&self.binary_name) {
@@ -363,9 +364,11 @@ impl BinaryManager {
             };
             let binary_name = self.binary_name.clone();
             let shutdown_signal = task_tacker.get_signal().await;
+            let inner_shutdown = Shutdown::new();
+            let inner_shutdown_signal = inner_shutdown.to_signal();
             task_tacker.get_task_tracker().await.spawn(async move {
                 loop {
-                    if shutdown_signal.is_triggered() {
+                    if shutdown_signal.is_triggered() || inner_shutdown_signal.is_triggered() {
                         info!(target: LOG_TARGET, "Shutdown signal received. Stopping progress channel for binary: {:?}", binary_name);
                         break;
                     }
@@ -391,9 +394,9 @@ impl BinaryManager {
                 }
             });
 
-            Ok(Some(sender))
+            Ok((Some(sender), Some(inner_shutdown)))
         } else {
-            Ok(None)
+            Ok((None, None))
         }
     }
 
@@ -430,7 +433,7 @@ impl BinaryManager {
 
         info!(target: LOG_TARGET, "Downloading binary: {} from url: {}", self.binary_name, &download_url);
 
-        let chunk_progress_sender = self
+        let (chunk_progress_sender, main_progress_sender_shutdown) = self
             .resolve_progress_channel(progress_channel.clone())
             .await
             .map_err(|e| anyhow!("Error resolving progress channel: {:?}", e))?;
@@ -447,8 +450,11 @@ impl BinaryManager {
             .is_err()
         {
             info!(target: LOG_TARGET, "Downloading binary: {} from fallback url: {}", self.binary_name, fallback_url);
+            if let Some(mut progress_sender_shutdown) = main_progress_sender_shutdown {
+                progress_sender_shutdown.trigger();
+            }
 
-            let chunk_progress_sender = self
+            let (chunk_progress_sender, fallback_progress_sender_shutdown) = self
                 .resolve_progress_channel(progress_channel.clone())
                 .await
                 .map_err(|e| anyhow!("Error resolving progress channel: {:?}", e))?;
@@ -461,7 +467,12 @@ impl BinaryManager {
                     chunk_progress_sender,
                 )
                 .await
-                .map_err(|e| anyhow!("Error downloading version: {:?}. Error: {:?}", version, e))?;
+                .unwrap_or_else(|e| {
+                    if let Some(mut progress_sender_shutdown) = fallback_progress_sender_shutdown {
+                        progress_sender_shutdown.trigger();
+                    }
+                    error!(target: LOG_TARGET, "Error downloading version: {:?}. Error: {:?}", version, e);
+                });
         }
 
         extract(&in_progress_file_zip, &destination_dir)
