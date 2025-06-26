@@ -4,7 +4,7 @@ import { formatHashrate } from '@app/utils';
 import Tile from '@app/containers/navigation/components/MiningTiles/components/Tile/Tile.tsx';
 import { useCPURewards } from '@app/containers/navigation/components/MiningTiles/useCPURewards.ts';
 import { useState } from 'react';
-import { offset, safePolygon, useFloating, useHover, useInteractions } from '@floating-ui/react';
+import { offset, useFloating, useHover, useInteractions } from '@floating-ui/react';
 import {
     Tooltip,
     TooltipTrigger,
@@ -40,13 +40,12 @@ export default function CPUTile() {
     const { refs, context, floatingStyles } = useFloating({
         open: isOpen,
         onOpenChange: setIsOpen,
-        placement: 'right-start',
+        placement: 'bottom-start',
         middleware: [offset({ mainAxis: 5 })],
     });
 
     const hover = useHover(context, {
         move: !isOpen,
-        handleClose: safePolygon(),
     });
 
     const { getReferenceProps, getFloatingProps } = useInteractions([hover]);
@@ -73,9 +72,9 @@ export default function CPUTile() {
                 {isOpen && (
                     <Tooltip ref={refs.setFloating} {...getFloatingProps()} style={floatingStyles}>
                         <ExpandedBox
-                            initial={{ opacity: 0, x: 10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: 10 }}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 10 }}
                         >
                             <Typography variant="h5">{t('stats.tile-heading')}</Typography>
                             <Typography variant="p">

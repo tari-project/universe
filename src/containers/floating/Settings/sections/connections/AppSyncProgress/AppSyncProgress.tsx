@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { CircularProgress } from '@app/components/elements/CircularProgress';
 import { ProgressWrapper, Text, TextWrapper, Title, Wrapper } from './styles';
 import { useTranslation } from 'react-i18next';
@@ -7,7 +7,7 @@ import { useSetupStore } from '@app/store/useSetupStore';
 
 import { SetupPhase } from '@app/types/backend-state';
 
-const ResumeApplicationModal = memo(function ResumeApplicationModal() {
+export const AppSyncProgress = () => {
     const [open, setOpen] = useState(false);
     const { t } = useTranslation('setup-progresses');
 
@@ -121,22 +121,18 @@ const ResumeApplicationModal = memo(function ResumeApplicationModal() {
         }
     }, [miningPhaseInfoPayload?.is_complete, walletPhaseInfoPayload?.is_complete, disabledPhases]);
 
-    return (
-        open && (
-            <Wrapper>
-                <TextWrapper>
-                    <Title>{t(`phase-title.${setupPhaseTitle}`)}</Title>
-                    <Text>{t(`title.${setupTitle}`, { ...setupParams })}</Text>
-                </TextWrapper>
-                <ProgressWrapper>
-                    <Title>
-                        {stageProgress} / {stageTotal}
-                    </Title>
-                    <CircularProgress />
-                </ProgressWrapper>
-            </Wrapper>
-        )
-    );
-});
-
-export default ResumeApplicationModal;
+    return open ? (
+        <Wrapper>
+            <TextWrapper>
+                <Title>{t(`phase-title.${setupPhaseTitle}`)}</Title>
+                <Text>{t(`title.${setupTitle}`, { ...setupParams })}</Text>
+            </TextWrapper>
+            <ProgressWrapper>
+                <Title>
+                    {stageProgress} / {stageTotal}
+                </Title>
+                <CircularProgress />
+            </ProgressWrapper>
+        </Wrapper>
+    ) : null;
+};
