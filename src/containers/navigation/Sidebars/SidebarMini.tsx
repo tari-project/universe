@@ -5,12 +5,10 @@ import { AirdropSidebarItems } from '@app/containers/main/Airdrop/sidebar/Airdro
 import NavigationButton from './NavigationButton';
 import { GridBottom, GridCenter, GridTop, LogoWrapper, MiniWrapper } from './SidebarMini.styles.ts';
 import BridgeNavigationButton from './BridgeNavigationButton.tsx';
-import { useTappletsStore } from '@app/store/useTappletsStore.ts';
 import { useConfigUIStore } from '@app/store';
 import { WalletUIMode } from '@app/types/events-payloads.ts';
 
 const SidebarMini = memo(function SidebarMini() {
-    const uiBridgeSwapsEnabled = useTappletsStore((s) => s.uiBridgeSwapsEnabled);
     const isStandardWalletUI = useConfigUIStore((s) => s.wallet_ui_mode === WalletUIMode.Standard);
 
     return (
@@ -22,7 +20,7 @@ const SidebarMini = memo(function SidebarMini() {
             </GridTop>
             <GridCenter>
                 <NavigationButton />
-                {uiBridgeSwapsEnabled && isStandardWalletUI && <BridgeNavigationButton />}
+                {isStandardWalletUI && <BridgeNavigationButton />}
             </GridCenter>
             <GridBottom>
                 <AirdropSidebarItems />

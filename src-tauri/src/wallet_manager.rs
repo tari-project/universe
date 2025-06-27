@@ -165,6 +165,10 @@ impl WalletManager {
         self.watcher.read().await.adapter.view_private_key.clone()
     }
 
+    pub async fn get_port(&self) -> u16 {
+        self.watcher.read().await.adapter.grpc_port
+    }
+
     pub fn is_initial_scan_completed(&self) -> bool {
         self.initial_scan_completed
             .load(std::sync::atomic::Ordering::Relaxed)
