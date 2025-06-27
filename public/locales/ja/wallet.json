@@ -18,6 +18,15 @@
     "tooltip-emoji-id-text2": "Yatサポートが近日登場！",
     "tooltip-emoji-id-title": "絵文字ID"
   },
+  "security": {
+    "keychain": {
+      "enable": "Enable Keychain Access",
+      "warning": "Keychain access is required for this operation.\nPlease try again and select “allow”."
+    },
+    "pin": {
+      "enter": "Enter your PIN"
+    }
+  },
   "send": {
     "balance": "残高",
     "broadcast": "放送中",

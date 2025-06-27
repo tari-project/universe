@@ -18,6 +18,15 @@
     "tooltip-emoji-id-text2": "Support Yat bientôt disponible !",
     "tooltip-emoji-id-title": "ID Emoji"
   },
+  "security": {
+    "keychain": {
+      "enable": "Enable Keychain Access",
+      "warning": "Keychain access is required for this operation.\nPlease try again and select “allow”."
+    },
+    "pin": {
+      "enter": "Enter your PIN"
+    }
+  },
   "send": {
     "balance": "Solde",
     "broadcast": "Diffusion",

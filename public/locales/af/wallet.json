@@ -18,6 +18,15 @@
     "tooltip-emoji-id-text2": "Yat-ondersteuning kom binnekort!",
     "tooltip-emoji-id-title": "Emoji ID"
   },
+  "security": {
+    "keychain": {
+      "enable": "Enable Keychain Access",
+      "warning": "Keychain access is required for this operation.\nPlease try again and select “allow”."
+    },
+    "pin": {
+      "enter": "Enter your PIN"
+    }
+  },
   "send": {
     "balance": "Balans",
     "broadcast": "Uitsaai",
