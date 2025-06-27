@@ -34,6 +34,13 @@ use super::trait_config::{ConfigContentImpl, ConfigImpl};
 
 static INSTANCE: LazyLock<RwLock<ConfigUI>> = LazyLock::new(|| RwLock::new(ConfigUI::new()));
 
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+pub enum WalletUIMode {
+    Standard = 0,
+    Seedless = 1,
+    ExchangeSpecificMiner = 2,
+}
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Default)]
 pub enum DisplayMode {
     #[default]
@@ -73,6 +80,7 @@ pub struct ConfigUIContent {
     show_experimental_settings: bool,
     warmup_seen: bool,
     was_staged_security_modal_shown: bool,
+    wallet_ui_mode: WalletUIMode,
 }
 
 impl Default for ConfigUIContent {
@@ -91,6 +99,7 @@ impl Default for ConfigUIContent {
             show_experimental_settings: false,
             warmup_seen: false,
             was_staged_security_modal_shown: false,
+            wallet_ui_mode: WalletUIMode::Standard,
         }
     }
 }
@@ -114,11 +123,17 @@ pub struct ConfigUI {
 }
 
 impl ConfigUI {
+    pub async fn update_wallet_ui_mode(mode: WalletUIMode) -> Result<(), anyhow::Error> {
+        Self::update_field(ConfigUIContent::set_wallet_ui_mode, mode).await?;
+        EventsEmitter::emit_wallet_ui_mode_changed(mode).await;
+
+        Ok(())
+    }
+
     pub async fn initialize(app_handle: AppHandle) {
         let mut config = Self::current().write().await;
         config.load_app_handle(app_handle.clone()).await;
 
-        EventsEmitter::emit_ui_config_loaded(config.content.clone()).await;
         drop(config);
 
         let _unused = Self::update_field(

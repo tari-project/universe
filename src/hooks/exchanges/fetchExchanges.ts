@@ -1,8 +1,9 @@
-import { useConfigBEInMemoryStore, useUIStore } from '@app/store';
+import { useConfigBEInMemoryStore, useConfigUIStore } from '@app/store';
 import { useQuery } from '@tanstack/react-query';
 import { setRewardData, universalExchangeMinerOption } from '@app/store/useExchangeStore.ts';
 import { ExchangeBranding } from '@app/types/exchange.ts';
 import { queryClient } from '@app/App/queryClient.ts';
+import { WalletUIMode } from '@app/types/events-payloads';
 
 export const KEY_XC_LIST = 'exchanges';
 
@@ -45,11 +46,11 @@ export const queryFn = async () => {
 };
 
 export function useFetchExchangeList() {
-    const isAppExchangeSpecific = useUIStore((s) => s.isAppExchangeSpecific);
+    const isWalletUIExchangeSpecific = useConfigUIStore((s) => s.wallet_ui_mode === WalletUIMode.ExchangeSpecificMiner);
 
     return useQuery({
         queryKey: [KEY_XC_LIST],
-        enabled: !isAppExchangeSpecific,
+        enabled: !isWalletUIExchangeSpecific,
         queryFn: () => queryFn(),
         refetchOnWindowFocus: true,
         refetchInterval: 60 * 1000 * 60 * 3, // every three hours

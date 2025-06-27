@@ -19,7 +19,7 @@ import {
 import { ProgressTrackerUpdatePayload } from '@app/hooks/app/useProgressEventsListener';
 
 import { fetchBridgeTransactionsHistory } from './walletStoreActions';
-import { SetupPhase } from '@app/types/backend-state';
+import { SetupPhase } from '@app/types/events-payloads';
 
 export interface DisabledPhasesPayload {
     disabled_phases: SetupPhase[];

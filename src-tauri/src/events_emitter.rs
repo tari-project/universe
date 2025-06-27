@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use std::sync::LazyLock;
 
+use crate::configs::config_ui::WalletUIMode;
+use crate::configs::config_wallet::TariWalletAddress;
 // Copyright 2024. The Tari Project
 //
 // Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -24,7 +26,7 @@ use std::sync::LazyLock;
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 use crate::events::{
     ConnectionStatusPayload, CriticalProblemPayload, DisabledPhasesPayload,
-    InitWalletScanningProgressPayload,
+    InitWalletScanningProgressPayload, MainTariAddressLoadedPayload,
 };
 #[cfg(target_os = "windows")]
 use crate::external_dependencies::RequiredExternalDependency;
@@ -257,7 +259,7 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_core_config_loaded(payload: ConfigCoreContent) {
+    pub async fn emit_core_config_loaded(payload: &ConfigCoreContent) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::ConfigCoreLoaded,
@@ -271,7 +273,7 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_ui_config_loaded(payload: ConfigUIContent) {
+    pub async fn emit_ui_config_loaded(payload: &ConfigUIContent) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::ConfigUILoaded,
@@ -285,7 +287,7 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_wallet_config_loaded(payload: ConfigWalletContent) {
+    pub async fn emit_wallet_config_loaded(payload: &ConfigWalletContent) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
 
         let event = Event {
@@ -300,7 +302,7 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_mining_config_loaded(payload: ConfigMiningContent) {
+    pub async fn emit_mining_config_loaded(payload: &ConfigMiningContent) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::ConfigMiningLoaded,
@@ -719,31 +721,30 @@ impl EventsEmitter {
             error!(target: LOG_TARGET, "Failed to emit ExchangeIdChanged event: {:?}", e);
         }
     }
-    pub async fn emit_external_tari_address_changed(payload: Option<TariAddress>) {
+
+    pub async fn emit_selected_tari_address_changed(payload: &TariWalletAddress) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
-
-        let resolved_payload: Option<TariAddressUpdatePayload> =
-            payload.as_ref().map(|address| TariAddressUpdatePayload {
-                tari_address_base58: address.to_base58(),
-                tari_address_emoji: address.to_emoji_string(),
-            });
-
         let event = Event {
-            event_type: EventType::ExternalTariAddressChanged,
-            payload: resolved_payload,
+            event_type: EventType::SelectedTariAddressChanged,
+            payload: TariAddressUpdatePayload {
+                tari_address_base58: payload.get_tari_base58_address(),
+                tari_address_emoji: payload.get_tari_emoji_address(),
+                tari_address_type: payload.get_type(),
+            },
         };
         if let Err(e) = Self::get_app_handle()
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit ExternalTariAddressChanged event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit SelectedTariAddressChanged event: {:?}", e);
         }
     }
-    pub async fn emit_base_tari_address_changed(payload: TariAddress) {
+
+    pub async fn emit_main_tari_address_loaded(payload: &TariAddress) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
-            event_type: EventType::BaseTariAddressChanged,
-            payload: TariAddressUpdatePayload {
+            event_type: EventType::MainTariAddressLoaded,
+            payload: MainTariAddressLoadedPayload {
                 tari_address_base58: payload.to_base58(),
                 tari_address_emoji: payload.to_emoji_string(),
             },
@@ -752,7 +753,22 @@ impl EventsEmitter {
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit BaseTariAddressChanged event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit MainTariAddressLoaded event: {:?}", e);
+        }
+    }
+
+    pub async fn emit_wallet_ui_mode_changed(payload: WalletUIMode) {
+        let _unused: Result<(), tokio::sync::watch::error::RecvError> =
+            FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::WalletUIModeChanged,
+            payload,
+        };
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
+            error!(target: LOG_TARGET, "Failed to emit WalletUIModeChanged event: {:?}", e);
         }
     }
 
