@@ -1,7 +1,13 @@
 import { loadTowerAnimation, setAnimationState } from '@tari-project/tari-tower';
 
 import { useSetupStore } from '../useSetupStore';
-import { startCpuMining, startGpuMining, stopCpuMining, stopGpuMining } from './miningStoreActions';
+import {
+    getMaxAvailableThreads,
+    startCpuMining,
+    startGpuMining,
+    stopCpuMining,
+    stopGpuMining,
+} from './miningStoreActions';
 import {
     fetchApplicationsVersionsWithRetry,
     TOWER_CANVAS_ID,
@@ -13,7 +19,6 @@ import {
 import { ProgressTrackerUpdatePayload } from '@app/hooks/app/useProgressEventsListener';
 
 import { fetchBridgeTransactionsHistory } from './walletStoreActions';
-import { useTappletsStore } from '../useTappletsStore';
 import { SetupPhase } from '@app/types/events-payloads';
 
 export interface DisabledPhasesPayload {
@@ -100,6 +105,7 @@ export const handleGpuMiningLocked = async () => {
 };
 
 export const handleHardwarePhaseFinished = async () => {
+    await getMaxAvailableThreads();
     useSetupStore.setState({ hardwarePhaseFinished: true });
 };
 
@@ -133,9 +139,4 @@ export const updateDisabledPhases = (payload: DisabledPhasesPayload) => {
 
 export const handleUpdateDisabledPhases = (payload: DisabledPhasesPayload) => {
     updateDisabledPhases(payload);
-    if (payload.disabled_phases.includes(SetupPhase.Wallet)) {
-        useTappletsStore.setState({ uiBridgeSwapsEnabled: false });
-    } else if (!useTappletsStore.getState().uiBridgeSwapsEnabled) {
-        useTappletsStore.getState().fetchUiBridgeFeatureFlag();
-    }
 };

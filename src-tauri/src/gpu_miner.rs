@@ -205,8 +205,6 @@ impl GpuMiner {
             self.curent_selected_engine.to_string(),
         ];
         let gpuminer_bin = BinaryResolver::current()
-            .read()
-            .await
             .resolve_path_to_binary_files(Binaries::GpuMiner)
             .await?;
 
@@ -382,6 +380,10 @@ impl GpuMiner {
 
     pub async fn get_gpu_devices(&self) -> Result<Vec<GpuDevice>, anyhow::Error> {
         Ok(self.gpu_devices.clone())
+    }
+    pub async fn get_port(&self) -> u16 {
+        let lock = self.watcher.read().await;
+        lock.adapter.http_api_port
     }
 }
 

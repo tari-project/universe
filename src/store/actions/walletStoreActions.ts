@@ -12,17 +12,18 @@ export const fetchBridgeTransactionsHistory = async () => {
     console.info('Fetching bridge transactions history...');
     const baseUrl = useConfigBEInMemoryStore.getState().bridgeBackendApiUrl;
     if (baseUrl?.includes('env var not defined')) return;
-    try {
-        OpenAPI.BASE = baseUrl;
-        await WrapTokenService.getUserTransactions(useWalletStore.getState().tari_address_base58).then((response) => {
+    OpenAPI.BASE = baseUrl;
+    await WrapTokenService.getUserTransactions(useWalletStore.getState().tari_address_base58)
+        .then((response) => {
             console.info('Bridge transactions fetched successfully:', response);
             useWalletStore.setState({
                 bridge_transactions: response.transactions,
             });
+        })
+        .catch((error) => {
+            console.error('Could not fetch bridge transactions history: ', error);
+            throw new Error(`Could not fetch bridge transactions history: ${error}`);
         });
-    } catch (error) {
-        console.error('Could not get bridge transaction history: ', error);
-    }
 };
 
 export const fetchBridgeColdWalletAddress = async () => {

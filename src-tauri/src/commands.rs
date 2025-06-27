@@ -44,11 +44,9 @@ use crate::gpu_status_file::GpuStatus;
 use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
 use crate::node::node_manager::NodeType;
 use crate::p2pool::models::{Connections, P2poolStats};
-use crate::progress_tracker_old::ProgressTracker;
 use crate::setup::setup_manager::{SetupManager, SetupPhase};
 use crate::tapplets::interface::ActiveTapplet;
 use crate::tapplets::tapplet_server::start_tapplet;
-use crate::tapplets::{TappletResolver, Tapplets};
 use crate::tasks_tracker::TasksTrackers;
 use crate::tor_adapter::TorConfig;
 use crate::utils::address_utils::verify_send;
@@ -96,15 +94,21 @@ pub enum CpuMinerConnection {
 }
 
 #[derive(Debug, Serialize)]
+pub struct ApplicationsInformation {
+    version: String,
+    port: Option<u16>,
+}
+
+#[derive(Debug, Serialize)]
 pub struct ApplicationsVersions {
-    tari_universe: String,
-    xmrig: String,
-    minotari_node: String,
-    mm_proxy: String,
-    wallet: String,
-    sha_p2pool: String,
-    xtrgpuminer: String,
-    bridge: String,
+    tari_universe: ApplicationsInformation,
+    xmrig: ApplicationsInformation,
+    minotari_node: ApplicationsInformation,
+    mm_proxy: ApplicationsInformation,
+    wallet: ApplicationsInformation,
+    sha_p2pool: ApplicationsInformation,
+    xtrgpuminer: ApplicationsInformation,
+    bridge: ApplicationsInformation,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -342,34 +346,42 @@ pub async fn get_app_in_memory_config(
 
 #[tauri::command]
 pub async fn get_applications_versions(
+    state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<ApplicationsVersions, String> {
     let timer = Instant::now();
-    let binary_resolver = BinaryResolver::current().read().await;
-    let tapplet_resolver = TappletResolver::current().read().await;
+    let binary_resolver = BinaryResolver::current();
+
+    let mmp_port = &state.mm_proxy_manager.get_port().await;
+    let p2p_port = &state.p2pool_manager.get_grpc_port().await;
+    let cpu_miner = &state.cpu_miner.read().await;
+    let xmrig_port = &cpu_miner.get_port().await;
+    let gpu_miner = &state.gpu_miner.read().await;
+    let xtr_port = gpu_miner.get_port().await;
+    let wallet_port = &state.wallet_manager.get_port().await;
+    let node_manager = &state.node_manager;
+    let node_port = node_manager
+        .clone()
+        .get_grpc_port()
+        .await
+        .expect("Could not get grpc_address");
 
     let tari_universe_version = app.package_info().version.clone();
-    let xmrig_version = binary_resolver
-        .get_binary_version_string(Binaries::Xmrig)
-        .await;
+    let xmrig_version = binary_resolver.get_binary_version(Binaries::Xmrig).await;
 
     let minotari_node_version = binary_resolver
-        .get_binary_version_string(Binaries::MinotariNode)
+        .get_binary_version(Binaries::MinotariNode)
         .await;
     let mm_proxy_version = binary_resolver
-        .get_binary_version_string(Binaries::MergeMiningProxy)
+        .get_binary_version(Binaries::MergeMiningProxy)
         .await;
-    let wallet_version = binary_resolver
-        .get_binary_version_string(Binaries::Wallet)
-        .await;
+    let wallet_version = binary_resolver.get_binary_version(Binaries::Wallet).await;
     let sha_p2pool_version = binary_resolver
-        .get_binary_version_string(Binaries::ShaP2pool)
+        .get_binary_version(Binaries::ShaP2pool)
         .await;
-    let xtrgpuminer_version = binary_resolver
-        .get_binary_version_string(Binaries::GpuMiner)
-        .await;
-    let bridge_version = tapplet_resolver
-        .get_tapplet_version_string(Tapplets::Bridge)
+    let xtrgpuminer_version = binary_resolver.get_binary_version(Binaries::GpuMiner).await;
+    let bridge_version = binary_resolver
+        .get_binary_version(Binaries::BridgeTapplet)
         .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
@@ -379,17 +391,39 @@ pub async fn get_applications_versions(
         );
     }
 
-    drop(binary_resolver);
-
     Ok(ApplicationsVersions {
-        tari_universe: tari_universe_version.to_string(),
-        minotari_node: minotari_node_version,
-        xmrig: xmrig_version,
-        mm_proxy: mm_proxy_version,
-        wallet: wallet_version,
-        sha_p2pool: sha_p2pool_version,
-        xtrgpuminer: xtrgpuminer_version,
-        bridge: bridge_version,
+        tari_universe: ApplicationsInformation {
+            version: tari_universe_version.to_string(),
+            port: None,
+        },
+        minotari_node: ApplicationsInformation {
+            version: minotari_node_version,
+            port: Some(node_port),
+        },
+        xmrig: ApplicationsInformation {
+            version: xmrig_version,
+            port: Some(*xmrig_port),
+        },
+        mm_proxy: ApplicationsInformation {
+            version: mm_proxy_version,
+            port: Some(*mmp_port),
+        },
+        wallet: ApplicationsInformation {
+            version: wallet_version,
+            port: Some(*wallet_port),
+        },
+        sha_p2pool: ApplicationsInformation {
+            version: sha_p2pool_version,
+            port: Some(*p2p_port),
+        },
+        xtrgpuminer: ApplicationsInformation {
+            version: xtrgpuminer_version,
+            port: Some(xtr_port),
+        },
+        bridge: ApplicationsInformation {
+            version: bridge_version,
+            port: None,
+        },
     })
 }
 
@@ -441,7 +475,6 @@ pub async fn get_max_consumption_levels(
             max_gpu_threads,
         });
     }
-
     Ok(MaxUsageLevels {
         max_cpu_threads: max_cpu_available,
         max_gpus_threads,
@@ -1290,27 +1323,62 @@ pub async fn set_mode(
 ) -> Result<(), InvokeError> {
     let timer = Instant::now();
     info!(target: LOG_TARGET, "[set_mode] called with mode: {:?}", mode);
+
     if let Some(mode) = MiningMode::from_str(&mode) {
         ConfigMining::update_field(ConfigMiningContent::set_mode, mode)
             .await
             .map_err(InvokeError::from_anyhow)?;
+
+        match mode {
+            MiningMode::Eco => {
+                ConfigMining::update_field(
+                    ConfigMiningContent::set_eco_mode_max_cpu_usage,
+                    custom_cpu_usage,
+                )
+                .await
+                .map_err(InvokeError::from_anyhow)?;
+
+                ConfigMining::update_field(
+                    ConfigMiningContent::set_eco_mode_max_gpu_usage,
+                    custom_gpu_usage,
+                )
+                .await
+                .map_err(InvokeError::from_anyhow)?;
+            }
+            MiningMode::Ludicrous => {
+                ConfigMining::update_field(
+                    ConfigMiningContent::set_ludicrous_mode_max_cpu_usage,
+                    custom_cpu_usage,
+                )
+                .await
+                .map_err(InvokeError::from_anyhow)?;
+
+                ConfigMining::update_field(
+                    ConfigMiningContent::set_ludicrous_mode_max_gpu_usage,
+                    custom_gpu_usage,
+                )
+                .await
+                .map_err(InvokeError::from_anyhow)?;
+            }
+            MiningMode::Custom => {
+                ConfigMining::update_field(
+                    ConfigMiningContent::set_custom_max_cpu_usage,
+                    custom_cpu_usage,
+                )
+                .await
+                .map_err(InvokeError::from_anyhow)?;
+
+                ConfigMining::update_field(
+                    ConfigMiningContent::set_custom_max_gpu_usage,
+                    custom_gpu_usage,
+                )
+                .await
+                .map_err(InvokeError::from_anyhow)?;
+            }
+        }
     } else {
         return Err(InvokeError::from("Invalid mode".to_string()));
     }
-
-    ConfigMining::update_field(
-        ConfigMiningContent::set_custom_max_cpu_usage,
-        custom_cpu_usage,
-    )
-    .await
-    .map_err(InvokeError::from_anyhow)?;
-
-    ConfigMining::update_field(
-        ConfigMiningContent::set_custom_max_gpu_usage,
-        custom_gpu_usage,
-    )
-    .await
-    .map_err(InvokeError::from_anyhow)?;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "set_mode took too long: {:?}", timer.elapsed());
@@ -1568,7 +1636,12 @@ pub async fn start_cpu_mining(
 
     let cpu_mining_enabled = *ConfigMining::content().await.cpu_mining_enabled();
     let mode = *ConfigMining::content().await.mode();
-    let custom_cpu_usage = *ConfigMining::content().await.custom_max_cpu_usage();
+
+    let cpu_usage = match mode {
+        MiningMode::Custom => *ConfigMining::content().await.custom_max_cpu_usage(),
+        MiningMode::Eco => *ConfigMining::content().await.eco_mode_max_cpu_usage(),
+        MiningMode::Ludicrous => *ConfigMining::content().await.ludicrous_mode_max_cpu_usage(),
+    };
 
     let cpu_miner = state.cpu_miner.read().await;
     let cpu_miner_running = cpu_miner.is_running().await;
@@ -1597,7 +1670,7 @@ pub async fn start_cpu_mining(
                     .expect("Could not get config dir"),
                 app.path().app_log_dir().expect("Could not get log dir"),
                 mode,
-                custom_cpu_usage,
+                cpu_usage,
                 &tari_address,
             )
             .await;
@@ -1633,7 +1706,19 @@ pub async fn start_gpu_mining(
 
     let gpu_mining_enabled = *ConfigMining::content().await.gpu_mining_enabled();
     let mode = *ConfigMining::content().await.mode();
-    let custom_gpu_usage = ConfigMining::content().await.custom_max_gpu_usage().clone();
+
+    let gpu_usage = match mode {
+        MiningMode::Custom => ConfigMining::content().await.custom_max_gpu_usage().clone(),
+        MiningMode::Eco => ConfigMining::content()
+            .await
+            .eco_mode_max_gpu_usage()
+            .clone(),
+        MiningMode::Ludicrous => ConfigMining::content()
+            .await
+            .ludicrous_mode_max_gpu_usage()
+            .clone(),
+    };
+
     let p2pool_enabled = *ConfigCore::content().await.is_p2pool_enabled();
 
     let mut telemetry_id = state
@@ -1692,7 +1777,7 @@ pub async fn start_gpu_mining(
                 app.path().app_log_dir().expect("Could not get log dir"),
                 mode,
                 telemetry_id,
-                custom_gpu_usage,
+                gpu_usage.clone(),
             )
             .await;
 
@@ -1768,59 +1853,6 @@ pub async fn stop_gpu_mining(state: tauri::State<'_, UniverseAppState>) -> Resul
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "stop_cpu_mining took too long: {:?}", timer.elapsed());
     }
-    Ok(())
-}
-
-#[tauri::command]
-pub async fn update_applications(app: tauri::AppHandle) -> Result<(), InvokeError> {
-    let timer = Instant::now();
-    let binary_resolver = BinaryResolver::current().read().await;
-    let tapplet_resolver = TappletResolver::current().read().await;
-
-    ConfigCore::update_field(
-        ConfigCoreContent::set_last_binaries_update_timestamp,
-        SystemTime::now(),
-    )
-    .await
-    .map_err(InvokeError::from_anyhow)?;
-
-    let progress_tracker = ProgressTracker::new(app.clone(), None);
-    binary_resolver
-        .update_binary(Binaries::Xmrig, progress_tracker.clone())
-        .await
-        .map_err(|e| e.to_string())?;
-    sleep(Duration::from_secs(1));
-    binary_resolver
-        .update_binary(Binaries::MinotariNode, progress_tracker.clone())
-        .await
-        .map_err(|e| e.to_string())?;
-    sleep(Duration::from_secs(1));
-    binary_resolver
-        .update_binary(Binaries::MergeMiningProxy, progress_tracker.clone())
-        .await
-        .map_err(|e| e.to_string())?;
-    sleep(Duration::from_secs(1));
-    binary_resolver
-        .update_binary(Binaries::Wallet, progress_tracker.clone())
-        .await
-        .map_err(|e| e.to_string())?;
-    binary_resolver
-        .update_binary(Binaries::ShaP2pool, progress_tracker.clone())
-        .await
-        .map_err(|e| e.to_string())?;
-    sleep(Duration::from_secs(1));
-    tapplet_resolver
-        .update_tapplet(Tapplets::Bridge, progress_tracker.clone())
-        .await
-        .map_err(|e| e.to_string())?;
-    sleep(Duration::from_secs(1));
-
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "update_applications took too long: {:?}", timer.elapsed());
-    }
-
-    drop(binary_resolver);
-
     Ok(())
 }
 
@@ -2196,10 +2228,10 @@ pub async fn set_warmup_seen(warmup_seen: bool) -> Result<(), String> {
 
 #[tauri::command]
 pub async fn launch_builtin_tapplet() -> Result<ActiveTapplet, String> {
-    let tapplet_resolver = TappletResolver::current().read().await;
+    let binaries_resolver = BinaryResolver::current();
 
-    let tapp_dest_dir = tapplet_resolver
-        .resolve_path_to_tapplet_files(Tapplets::Bridge)
+    let tapp_dest_dir = binaries_resolver
+        .resolve_path_to_binary_files(Binaries::BridgeTapplet)
         .await
         .map_err(|e| e.to_string())?;
 
