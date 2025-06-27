@@ -1,3 +1,23 @@
+🚀 TARI UNIVERSE v1.2.14: The Season of Light
+
+_June 27, 2025_
+
+🔄 Rolling out via auto-update
+
+Hey everyone,
+
+Tari contributors are proud to introduce Tari Universe v1.2.14, the first release in the "The Season of Light" series. "The Season of Light" releases are focused on one goal: make Tari Universe work well on as many computers as possible. Our first release in this series makes significant headway on this front by eliminating several root causes for the dreaded "node setup failure" timeout and sync challenges. We can't wait to hear your thoughts on the first Season of Light release!
+
+✨ WHAT'S NEW
+- 🔄 **Sync Reliability** – The setup process sometimes prematurely gives up ("node setup failed" error) on slower connections, whereas now it will continue if it detects that progress is still being made
+- ⚡ **Installing Dependencies** – Previously, set-up failures sometimes occurred if too many miners attempted to update all at once, such as during an automatic update. We also fixed a bug that was impacting the downloading of Tor
+- 🌉 **Bridge Timeouts** – We've fixed the issue where Tari Universe was overwhelming the bridge with excessive requests, causing timeouts
+- 🔑 **Seed Word Import** – We've fixed the issue where seed word imports were failing for some users
+- ⚙️ **Your Power Settings Stay Put** – As many of you reported, switching between Eco, Ludicrous, and Custom mining modes would reset your carefully chosen power level settings. Your preferences now stick
+- 🖥️ **Port Settings** - For more technical users who want to see how things work under the hood, we've exposed the gRPC port numbers in Settings
+
+---
+
 🚀 TARI UNIVERSE v1.2.12: The Bloom Beyond
 
 _June 18, 2025_
