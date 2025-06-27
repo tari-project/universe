@@ -1,4 +1,5 @@
 import { createGlobalStyle } from 'styled-components';
+import { TOWER_CANVAS_ID } from '@app/store';
 
 export const GlobalReset = createGlobalStyle`
     *:focus {
@@ -98,8 +99,9 @@ export const GlobalStyle = createGlobalStyle<{ $hideCanvas?: boolean }>`
     html {
         background: ${({ theme }) => theme.palette.background.main};
     }
-    #tower-canvas {
+    #${TOWER_CANVAS_ID} {
         z-index: 0;
+        position: absolute;
         top: 0;
         left: 0;
         pointer-events: auto;

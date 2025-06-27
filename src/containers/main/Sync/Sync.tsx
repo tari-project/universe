@@ -19,6 +19,7 @@ import { useTheme } from 'styled-components';
 
 import coin_dark from './images/coin_dark.png';
 import coin_light from './images/coin_light.png';
+import { URL_SYNC, URL_SYNC_DARK } from '@app/App/AppWrapper.tsx';
 
 export default function Sync() {
     const { t } = useTranslation('setup-view');
@@ -30,15 +31,9 @@ export default function Sync() {
                 <HeaderContent>
                     <HeaderGraphic>
                         {theme.mode === 'light' ? (
-                            <VideoStream
-                                src="https://customer-o6ocjyfui1ltpm5h.cloudflarestream.com/d15edd1d0a5a2452a49f1312312b69f0/manifest/video.m3u8"
-                                poster={coin_light}
-                            />
+                            <VideoStream src={URL_SYNC} poster={coin_light} />
                         ) : (
-                            <VideoStream
-                                src="https://customer-o6ocjyfui1ltpm5h.cloudflarestream.com/af0c72594da95f7507ccca86831c4c0b/manifest/video.m3u8"
-                                poster={coin_dark}
-                            />
+                            <VideoStream src={URL_SYNC_DARK} poster={coin_dark} />
                         )}
                     </HeaderGraphic>
                     <Heading>{t('sync.header')}</Heading>
