@@ -612,27 +612,6 @@ impl WalletStatusMonitor {
             network: NetworkStatus::from(status.network),
         })
     }
-
-    #[deprecated(
-        note = "Do not use. The view only wallet currently returns an interactive address that is not usable. Remove when grpc has been updated to return correct offline address"
-    )]
-    #[allow(dead_code)]
-    pub async fn get_wallet_address(&self) -> Result<TariAddress, WalletStatusMonitorError> {
-        panic!("Do not use. The view only wallet currently returns an interactive address that is not usable. Remove when grpc has been updated to return correct offline address");
-        // let mut client = WalletClient::connect(self.wallet_grpc_address())
-        //     .await
-        //     .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
-        // let res = client
-        //     .get_address(Empty {})
-        //     .await
-        //     .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?;
-        // let res = res.into_inner();
-
-        // match TariAddress::from_bytes(res.address.as_slice()) {
-        //     Ok(address) => Ok(address),
-        //     Err(err) => Err(WalletStatusMonitorError::TariAddress(err)),
-        // }
-    }
 }
 
 #[derive(Debug, thiserror::Error)]

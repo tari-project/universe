@@ -2,9 +2,8 @@ import { invoke } from '@tauri-apps/api/core';
 import { useAppStateStore } from '../appStateStore.ts';
 import { ExternalDependency, NetworkStatus } from '@app/types/app-status.ts';
 import { addToast } from '@app/components/ToastStack/useToastStore.tsx';
-import { CriticalProblemPayload, ShowReleaseNotesPayload } from '@app/types/events-payloads.ts';
+import { CriticalProblemPayload, SetupPhase, ShowReleaseNotesPayload } from '@app/types/events-payloads.ts';
 import { setDialogToShow, useMiningStore, useUIStore } from '../index.ts';
-import { SetupPhase } from '@app/types/backend-state.ts';
 import {
     updateCoreSetupPhaseInfo,
     updateHardwareSetupPhaseInfo,

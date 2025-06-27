@@ -21,6 +21,7 @@ import WarmupDialog from './Warmup/WarmupDialog.tsx';
 import EXModal from '@app/containers/floating/EXModal/EXModal.tsx';
 import UniversalEXSelectorModal from '@app/containers/floating/UniversalEXSelectorModal/UniversalEXSelectorModal.tsx';
 import XCLinkModal from '@app/components/exchanges/LinkModal/LinkModal.tsx';
+import KeychainDialog from './Keychain/KeychainDialog.tsx';
 
 const environment = import.meta.env.MODE;
 
@@ -47,6 +48,7 @@ const FloatingElements = () => {
             <UniversalEXSelectorModal />
             <ResumeApplicationModal />
             <XCLinkModal />
+            <KeychainDialog />
         </FloatingTree>
     );
 };

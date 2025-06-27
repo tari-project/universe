@@ -1,5 +1,5 @@
 import { AnimatePresence } from 'motion/react';
-import { useUIStore, useWalletStore } from '@app/store';
+import { useConfigUIStore, useWalletStore } from '@app/store';
 import { swapTransition } from '@app/components/transactions/wallet/transitions.ts';
 import { Swap } from '@app/components/transactions/wallet/Swap/Swap.tsx';
 import { WalletBalance, WalletBalanceHidden } from '../components/balance/WalletBalance.tsx';
@@ -30,6 +30,7 @@ import { useFetchExchangeBranding } from '@app/hooks/exchanges/fetchExchangeCont
 import { ExternalLink } from '@app/components/transactions/components/StatusList/styles.ts';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { ExternalLink2SVG } from '@app/assets/icons/external-link2.tsx';
+import { WalletUIMode } from '@app/types/events-payloads.ts';
 
 interface SidebarWalletProps {
     section: string;
@@ -51,7 +52,7 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
     }, []);
 
     const isSwapping = useWalletStore((s) => s.is_swapping);
-    const seedlessUI = useUIStore((s) => s.seedlessUI);
+    const isStandardWalletUI = useConfigUIStore((s) => s.wallet_ui_mode === WalletUIMode.Standard);
 
     const openLink = useCallback(() => {
         if (xcData && xcData.wallet_app_link) {
@@ -70,7 +71,7 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
                     </SwapsWrapper>
                 ) : (
                     <WalletWrapper key="wallet" variants={swapTransition} initial="show" exit="hide" animate="show">
-                        <Wrapper $seedlessUI={seedlessUI}>
+                        <Wrapper $seedlessUI={!isStandardWalletUI}>
                             <DetailsCard $isScrolled={isScrolled}>
                                 <AnimatedBG
                                     $col1={xcData?.primary_colour || `#0B0A0D`}
@@ -79,7 +80,7 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
                                 <DetailsCardContent>
                                     <WalletDetails />
                                     <DetailsCardBottomContent>
-                                        {!seedlessUI ? <WalletBalance /> : <WalletBalanceHidden />}
+                                        {isStandardWalletUI ? <WalletBalance /> : <WalletBalanceHidden />}
                                         {xcData?.wallet_app_link && xcData?.wallet_app_label && (
                                             <ExternalLink onClick={openLink}>
                                                 <Typography
@@ -98,7 +99,7 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
                                     </DetailsCardBottomContent>
                                 </DetailsCardContent>
                             </DetailsCard>
-                            {!seedlessUI && (
+                            {isStandardWalletUI && (
                                 <>
                                     <AnimatePresence>
                                         {!isScrolled && (
