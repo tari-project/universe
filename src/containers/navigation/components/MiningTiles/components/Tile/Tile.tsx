@@ -34,6 +34,7 @@ interface Props {
     mainUnit: string;
     mainLabel: string;
     successValue?: number;
+    isIdle?: boolean;
 }
 
 export default function Tile({
@@ -47,6 +48,7 @@ export default function Tile({
     mainLabel,
     isEnabled,
     successValue,
+    isIdle,
 }: Props) {
     const isGPU = title === 'GPU';
     const isConnectedToTariNetwork = useMiningMetricsStore((s) => s.isNodeConnected);
@@ -76,18 +78,22 @@ export default function Tile({
         gpuIdleMarkup
     ) : (
         <BigNumber>
-            <Number>
-                <NumberFlow
-                    locales={i18n.language}
-                    format={{
-                        minimumFractionDigits: 1,
-                        maximumFractionDigits: 4,
-                        notation: 'standard',
-                        style: 'decimal',
-                    }}
-                    value={mainNumber}
-                />
-            </Number>
+            {isIdle ? (
+                <Number $isIdle={true}>{mainNumber}</Number>
+            ) : (
+                <Number>
+                    <NumberFlow
+                        locales={i18n.language}
+                        format={{
+                            minimumFractionDigits: 1,
+                            maximumFractionDigits: 4,
+                            notation: 'standard',
+                            style: 'decimal',
+                        }}
+                        value={mainNumber}
+                    />
+                </Number>
+            )}
             <NumberUnit>{mainUnit}</NumberUnit>
         </BigNumber>
     );

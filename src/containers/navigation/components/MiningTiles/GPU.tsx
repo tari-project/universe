@@ -28,6 +28,7 @@ export default function GPUTile() {
             mainNumber={fmtGPU.value} //temporary until we get GPU rewards in progress
             mainUnit={fmtGPU.unit}
             mainLabel={t('gpu-power')}
+            isIdle={true}
         />
     );
 }

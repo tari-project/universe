@@ -154,6 +154,7 @@ export const Number = styled.span<{ $isIdle?: boolean }>`
     font-style: normal;
     font-weight: 600;
     line-height: 95%;
+    letter-spacing: -0.2px;
 
     transform: ${({ $isIdle }) => ($isIdle ? '' : ' translateY(7px)')};
 `;
