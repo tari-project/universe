@@ -12,9 +12,7 @@ export const ClipboardViewer: React.FC<ClipboardViewerProps> = ({ handlePaste })
     const [clipboardText, setClipboardText] = useState<string | undefined>();
     const { t } = useTranslation('exchange');
 
-    const { validateAddress, validationError } = useValidate();
-
-    console.debug(`validationError= `, validationError);
+    const { validateAddress } = useValidate();
 
     useEffect(() => {
         const readClipboard = async () => {

@@ -1,6 +1,6 @@
-import { ChangeEvent, useCallback, useEffect, useState } from 'react';
+import { ChangeEvent, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { invoke } from '@tauri-apps/api/core';
+
 import { useFormContext } from 'react-hook-form';
 
 import { Button } from '@app/components/elements/buttons/Button.tsx';
@@ -13,6 +13,7 @@ import { BottomWrapper, FormFieldsWrapper } from './Send.styles';
 
 import useDebouncedValue from '@app/hooks/helpers/useDebounce.ts';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
+import { useValidate } from '@app/hooks/wallet/useValidate.ts';
 
 interface Props {
     isBack?: boolean;
@@ -20,7 +21,7 @@ interface Props {
 
 export function SendForm({ isBack }: Props) {
     const { t } = useTranslation('wallet');
-
+    const { validateAddress, validateAmount, validationErrorMessage } = useValidate();
     const [address, setAddress] = useState('');
     const debouncedAddress = useDebouncedValue(address, 350);
     const [isAddressEmpty, setIsAddressEmpty] = useState(true);
@@ -35,45 +36,16 @@ export function SendForm({ isBack }: Props) {
     const isAmountValid = !errors.amount;
     const isValid = isAddressValid && isAmountValid;
 
-    const validateAmount = async (amount: string) => {
-        if (amount.length === 0) return;
-        if (Number(availableBalance) <= 0) {
-            console.error('Error in validateAmount: no available balance');
-            setError('amount', { message: t('send.error-invalid-amount') });
-        }
-
-        if (Number(amount) === 0) {
-            console.error('Error in validateAmount: value is invalid: ', amount);
-            setError('amount', { message: t('send.error-invalid-amount') });
-            return;
-        }
-
-        try {
-            await invoke('validate_minotari_amount', { amount });
-            clearErrors('amount');
-        } catch (error) {
-            console.error('Error in validateAmount:', error);
-            setError('amount', { message: t('send.error-invalid-amount') });
-        }
-    };
-
-    const validateAddress = useCallback(
-        async (address: string) => {
-            if (address.length === 0) return;
-
-            try {
-                await invoke('verify_address_for_send', { address });
+    useEffect(() => {
+        if (debouncedAddress?.length === 0) return;
+        validateAddress(debouncedAddress).then((isValid) => {
+            if (isValid) {
                 clearErrors('address');
-            } catch (_error) {
+            } else {
                 setError('address', { message: t('send.error-invalid-address') });
             }
-        },
-        [clearErrors, setError, t]
-    );
-
-    useEffect(() => {
-        void validateAddress(debouncedAddress);
-    }, [debouncedAddress, validateAddress]);
+        });
+    }, [clearErrors, debouncedAddress, setError, t, validateAddress]);
 
     useEffect(() => {
         const address = getValues().address;
@@ -102,7 +74,28 @@ export function SendForm({ isBack }: Props) {
     const handleAmountBlur = async () => {
         const amount = getValues().amount;
         if (amount) {
-            await validateAmount(amount.toString().trim());
+            const amountTrimmed = amount.toString().trim();
+
+            if (amountTrimmed.length === 0) return;
+
+            if (Number(amount) === 0) {
+                console.error('Error in validateAmount: value is invalid: ', amount);
+                setError('amount', { message: t('send.error-invalid-amount') });
+                return;
+            }
+
+            if (Number(availableBalance) <= 0) {
+                console.error('Error in validateAmount: no available balance');
+                setError('amount', { message: t('send.error-invalid-amount') });
+            }
+
+            const isValid = await validateAmount(amountTrimmed);
+            if (isValid) {
+                clearErrors('amount');
+            } else {
+                console.error('Error in validateAmount:', validationErrorMessage);
+                setError('amount', { message: t('send.error-invalid-amount') });
+            }
         }
     };
 
