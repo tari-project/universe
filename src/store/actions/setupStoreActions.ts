@@ -10,11 +10,14 @@ import {
 } from './miningStoreActions';
 import {
     fetchApplicationsVersionsWithRetry,
+    fetchCoinbaseTransactions,
+    fetchTransactionsHistory,
     TOWER_CANVAS_ID,
     useConfigMiningStore,
     useConfigUIStore,
     useMiningStore,
     useUIStore,
+    useWalletStore,
 } from '@app/store';
 import { ProgressTrackerUpdatePayload } from '@app/hooks/app/useProgressEventsListener';
 
@@ -52,7 +55,15 @@ export const handleAppUnlocked = async () => {
 };
 export const handleWalletUnlocked = () => {
     useSetupStore.setState({ walletUnlocked: true });
+    // Initial fetch of transactions
+    const { tx_history_filter } = useWalletStore.getState();
+    fetchTransactionsHistory({ offset: 0, limit: 20, filter: tx_history_filter });
+    fetchCoinbaseTransactions({
+        offset: 0,
+        limit: 20,
+    });
 };
+
 export const handleCpuMiningUnlocked = async () => {
     useSetupStore.setState({ cpuMiningUnlocked: true });
 

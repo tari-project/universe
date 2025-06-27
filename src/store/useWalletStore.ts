@@ -1,17 +1,17 @@
 import { create } from './create';
 import { TransactionInfo, WalletBalance } from '../types/app-status.ts';
-
-import { TransactionDetailsItem } from '@app/types/transactions.ts';
+import { refreshTransactions } from './actions/walletStoreActions.ts';
+import { TxHistoryFilter } from '@app/components/transactions/history/FilterSelect.tsx';
 import { UserTransactionDTO } from '@tari-project/wxtm-bridge-backend-api';
-import { refreshTransactions } from '@app/hooks/wallet/useFetchTxHistory.ts';
 import { useUIStore } from './useUIStore.ts';
+import { TransactionDetailsItem } from '@app/types/transactions.ts';
 
 export interface BackendBridgeTransaction extends UserTransactionDTO {
     sourceAddress?: string;
     mined_in_block_height?: number;
 }
 
-interface WalletStoreState {
+export interface WalletStoreState {
     tari_address_base58: string;
     tari_address_emoji: string;
     external_tari_address_base58?: string;
@@ -19,14 +19,11 @@ interface WalletStoreState {
     balance?: WalletBalance;
     calculated_balance?: number;
     coinbase_transactions: TransactionInfo[];
-    transactions: TransactionInfo[];
+    tx_history_filter: TxHistoryFilter;
+    tx_history: TransactionInfo[];
     // TODO: decide later for the best place to store this data
     bridge_transactions: BackendBridgeTransaction[];
     cold_wallet_address?: string;
-    is_reward_history_loading: boolean;
-    has_more_coinbase_transactions: boolean;
-    has_more_transactions: boolean;
-    is_transactions_history_loading: boolean;
     is_wallet_importing: boolean;
     is_swapping?: boolean;
     detailsItem?: TransactionDetailsItem | BackendBridgeTransaction | null;
@@ -36,7 +33,6 @@ interface WalletStoreState {
         total_height: number;
         progress: number;
     };
-    newestTxIdOnInitialFetch?: TransactionInfo['tx_id']; // only set once - needed to check against truly "new" txs for the badge
 }
 
 interface WalletStoreSelectors {
@@ -49,13 +45,10 @@ const initialState: WalletStoreState = {
     external_tari_address_base58: undefined,
     external_tari_address_emoji: undefined,
     coinbase_transactions: [],
-    transactions: [],
+    tx_history_filter: 'all-activity',
+    tx_history: [],
     bridge_transactions: [],
     cold_wallet_address: undefined,
-    has_more_coinbase_transactions: true,
-    has_more_transactions: true,
-    is_reward_history_loading: false,
-    is_transactions_history_loading: false,
     is_wallet_importing: false,
     wallet_scanning: {
         is_scanning: true,
@@ -120,7 +113,7 @@ export const updateWalletScanningProgress = (payload: {
 // New function to prune transaction arrays when they get too large
 export const pruneTransactionHistory = () => {
     useWalletStore.setState((state) => ({
-        transactions: pruneTransactionArray(state.transactions, MAX_TRANSACTIONS_IN_MEMORY),
+        transactions: pruneTransactionArray(state.tx_history, MAX_TRANSACTIONS_IN_MEMORY),
         coinbase_transactions: pruneTransactionArray(state.coinbase_transactions, MAX_COINBASE_TRANSACTIONS_IN_MEMORY),
     }));
 };

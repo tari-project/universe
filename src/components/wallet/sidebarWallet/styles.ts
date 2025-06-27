@@ -141,3 +141,10 @@ export const BuyTariButton = styled.button`
         opacity: 0.9;
     }
 `;
+
+export const TabsWrapper = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-right: 4px;
+`;

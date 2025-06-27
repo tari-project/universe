@@ -14,6 +14,7 @@ import {
     WalletActionWrapper,
     BuyTariButton,
     DetailsCardBottomContent,
+    TabsWrapper,
 } from './styles.ts';
 import { useCallback, useRef, useState, useEffect } from 'react';
 import { HistoryListWrapper } from '@app/components/wallet/components/history/styles.ts';
@@ -22,7 +23,12 @@ import { open } from '@tauri-apps/plugin-shell';
 
 import WalletActions from '@app/components/wallet/components/actions/WalletActions.tsx';
 import { TransactionDetails } from '@app/components/transactions/history/details/TransactionDetails.tsx';
-import { setDetailsItem, setIsSwapping } from '@app/store/actions/walletStoreActions.ts';
+import {
+    fetchTransactionsHistory,
+    setDetailsItem,
+    setIsSwapping,
+    setTxHistoryFilter,
+} from '@app/store/actions/walletStoreActions.ts';
 
 import ExchangesUrls from '@app/components/transactions/wallet/Exchanges/ExchangesUrls.tsx';
 import ExchangeButton from '@app/components/transactions/wallet/Exchanges/exchange-button/ExchangeButton.tsx';
@@ -30,17 +36,25 @@ import { useFetchExchangeBranding } from '@app/hooks/exchanges/fetchExchangeCont
 import { ExternalLink } from '@app/components/transactions/components/StatusList/styles.ts';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { ExternalLink2SVG } from '@app/assets/icons/external-link2.tsx';
+import { FilterSelect, TxHistoryFilter } from '@app/components/transactions/history/FilterSelect.tsx';
 
 interface SidebarWalletProps {
     section: string;
     setSection: (section: string) => void;
 }
+
 export default function SidebarWallet({ section, setSection }: SidebarWalletProps) {
     const { data: xcData } = useFetchExchangeBranding();
     const detailsItem = useWalletStore((s) => s.detailsItem);
+    const filter = useWalletStore((s) => s.tx_history_filter);
 
     const targetRef = useRef<HTMLDivElement>(null);
     const [isScrolled, setIsScrolled] = useState(false);
+
+    function handleFilterChange(newFilter: TxHistoryFilter) {
+        setTxHistoryFilter(newFilter);
+        fetchTransactionsHistory({ offset: 0, limit: 20, filter: newFilter });
+    }
 
     useEffect(() => {
         const el = targetRef.current;
@@ -111,6 +125,10 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
                                             </WalletActionWrapper>
                                         )}
                                     </AnimatePresence>
+
+                                    <TabsWrapper>
+                                        <FilterSelect filter={filter} handleFilterChange={handleFilterChange} />
+                                    </TabsWrapper>
 
                                     <HistoryListWrapper ref={targetRef}>
                                         <List />
