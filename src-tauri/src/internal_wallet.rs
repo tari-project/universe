@@ -388,7 +388,6 @@ impl InternalWallet {
     ) -> Result<(String, Vec<u8>, Option<Vec<u8>>), anyhow::Error> {
         let legacy_cred =
             InternalWallet::get_legacy_credentials_forced(app_handle, app_config_dir).await?;
-        println!("====== LEGACY CRED: {:?}", legacy_cred);
         // Migrate Monero Seed if was generated
         let monero_seed_binary = legacy_cred.monero_seed.map(|seed| seed.to_vec());
         if *ConfigWallet::content().await.monero_address_is_generated() {
