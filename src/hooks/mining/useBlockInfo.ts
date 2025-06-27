@@ -15,9 +15,13 @@ export function useBlockInfo() {
     const block_time = useMiningMetricsStore((s) => s.base_node_status?.block_time);
 
     const diff = useMemo(() => {
-        const now = new Date();
-        const btDate = new Date(block_time * 1000);
-        return now.getTime() - btDate.getTime();
+        if (block_time > 0) {
+            const now = new Date();
+            const btDate = new Date(block_time * 1000);
+            return now.getTime() - btDate.getTime();
+        } else {
+            return 0;
+        }
     }, [block_time]);
 
     const displayCounter = useRef(0);

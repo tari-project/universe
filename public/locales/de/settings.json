@@ -57,7 +57,7 @@
   "invalid-stats-server-port-empty": "Der Port des Statistikservers darf nicht leer sein",
   "inviteCode": "Einladungscode",
   "is-on-orphan-chain": "Sie scheinen mit einem Fork verbunden zu sein und nicht mit der Hauptkette. Alle gewonnenen Blöcke könnten ungültig werden.",
-  "last-block-added-time": "Letzte Blockzeit, die zur Kette hinzugefügt wurde",
+  "last-block-added-time": "Time since previous block was added to the chain: <strong>{{time}}</strong>",
   "license-agreement": "Lizenzvereinbarung",
   "local-node-sync-progress": "Synchronisierungsfortschritt des lokalen Knotens",
   "logs": "Protokolle",
@@ -170,6 +170,7 @@
   "use-tor-bridges": "Tor-Brücken verwenden",
   "user-agreement": "Nutzungsvereinbarung",
   "visual-mode": "Visueller Modus",
+  "waiting-for-data": "Waiting for chain data...",
   "yes": "Ja",
   "your-feedback": "Beschreibe dein Problem, einschließlich deines Telegram-Namens, falls vorhanden, damit wir dich mit Updates kontaktieren können.",
   "your-reference": "Dein Verweis:<br/><bold>{{logRef}}</bold>"

@@ -57,7 +57,7 @@
   "invalid-stats-server-port-empty": "Le port du serveur de statistiques ne peut pas être vide",
   "inviteCode": "Code d\"invitation",
   "is-on-orphan-chain": "Vous semblez être connecté à une branche secondaire, et non à la chaîne principale. Tout bloc que vous gagnez pourrait être invalidé.",
-  "last-block-added-time": "Heure du dernier bloc ajouté à la chaîne",
+  "last-block-added-time": "Time since previous block was added to the chain: <strong>{{time}}</strong>",
   "license-agreement": "Contrat de licence",
   "local-node-sync-progress": "Progression de la synchronisation du nœud local",
   "logs": "Journaux",
@@ -170,6 +170,7 @@
   "use-tor-bridges": "Utiliser les ponts Tor",
   "user-agreement": "Accord de l\"utilisateur",
   "visual-mode": "Mode visuel",
+  "waiting-for-data": "Waiting for chain data...",
   "yes": "Yes",
   "your-feedback": "Veuillez décrire votre problème",
   "your-reference": "Votre référence :<br/><bold>{{logRef}}</bold>"

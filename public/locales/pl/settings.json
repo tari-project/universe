@@ -58,7 +58,7 @@
   "invalid-stats-server-port-empty": "Port serwera statystyk nie może być pusty",
   "inviteCode": "Kod Zaproszenia",
   "is-on-orphan-chain": "Wygląda na to, że jesteś połączony z rozwidleniem, a nie z głównym łańcuchem. Wszelkie wygrane bloki mogą zostać unieważnione.",
-  "last-block-added-time": "Czas dodania ostatniego bloku do łańcucha",
+  "last-block-added-time": "Time since previous block was added to the chain: <strong>{{time}}</strong>",
   "license-agreement": "Umowa licencyjna",
   "local-node-sync-progress": "Postęp synchronizacji lokalnego węzła",
   "logs": "Logi",
@@ -172,6 +172,7 @@
   "use-tor-bridges": "Użyj mostów Tor",
   "user-agreement": "Umowa użytkownika",
   "visual-mode": "Tryb wizualny",
+  "waiting-for-data": "Waiting for chain data...",
   "yes": "Tak",
   "your-feedback": "Proszę opisać swój problem",
   "your-reference": "Twoje odniesienie"

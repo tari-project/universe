@@ -57,7 +57,7 @@
   "invalid-stats-server-port-empty": "İstatistik sunucu portu boş olamaz",
   "inviteCode": "Davet Kodu",
   "is-on-orphan-chain": "Bir çatal ile bağlantılı görünüyorsunuz, ana zincirle değil. Kazandığınız bloklar geçersiz kılınabilir.",
-  "last-block-added-time": "Zincir zamanına eklenen son blok",
+  "last-block-added-time": "Time since previous block was added to the chain: <strong>{{time}}</strong>",
   "license-agreement": "Lisans Anlaşması",
   "local-node-sync-progress": "Yerel düğüm senkronizasyon ilerlemesi",
   "logs": "Günlükler",
@@ -170,6 +170,7 @@
   "use-tor-bridges": "Tor Köprülerini Kullan",
   "user-agreement": "Kullanıcı Sözleşmesi",
   "visual-mode": "Görsel mod",
+  "waiting-for-data": "Waiting for chain data...",
   "yes": "Evet",
   "your-feedback": "Lütfen sorununuzu açıklayın",
   "your-reference": "Referansınız"
