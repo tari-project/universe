@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useUIStore } from '@app/store';
 import { useSetupStore } from '@app/store/useSetupStore';
 import { FloatingNode, FloatingPortal, useFloating, useFloatingNodeId } from '@floating-ui/react';
-import { SetupPhase } from '@app/types/backend-state';
+import { SetupPhase } from '@app/types/events-payloads';
 
 const ResumeApplicationModal = memo(function ResumeApplicationModal() {
     const [open, setOpen] = useState(false);
