@@ -301,7 +301,9 @@ impl InternalWallet {
         )
         .await?
         .encrypted_seed;
-        Ok(Credential { encrypted_seed: seed })
+        Ok(Credential {
+            encrypted_seed: seed,
+        })
     }
 
     async fn set_credentials_forced(
