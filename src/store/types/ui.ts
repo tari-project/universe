@@ -11,6 +11,7 @@ const _DIALOG_TYPES = [
     'warmup',
     'keychain',
     'xc_url',
+    'pin',
 ] as const;
 type DialogTypeTuple = typeof _DIALOG_TYPES;
 export type DialogType = DialogTypeTuple[number] | null;

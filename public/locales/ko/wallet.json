@@ -18,6 +18,15 @@
     "tooltip-emoji-id-text2": "Yat 지원이 곧 제공됩니다!",
     "tooltip-emoji-id-title": "이모지 ID"
   },
+  "security": {
+    "keychain": {
+      "enable": "Enable Keychain Access",
+      "warning": "Keychain access is required for this operation.\nPlease try again and select “allow”."
+    },
+    "pin": {
+      "enter": "Enter your PIN"
+    }
+  },
   "send": {
     "balance": "잔액",
     "broadcast": "전송 중",

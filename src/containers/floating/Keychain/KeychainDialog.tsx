@@ -6,8 +6,10 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 import { emit } from '@tauri-apps/api/event';
 
 import { CloseButton, CopyWrapper, HeaderWrapper, Wrapper } from './styles.ts';
+import { useTranslation } from 'react-i18next';
 
 export default function KeychainDialog() {
+    const { t } = useTranslation('wallet');
     const dialogToShow = useUIStore((s) => s.dialogToShow);
     const isOpen = dialogToShow === 'keychain';
 
@@ -23,11 +25,11 @@ export default function KeychainDialog() {
                 </CloseButton>
                 <Wrapper>
                     <HeaderWrapper>
-                        <Typography variant="h2">{'Enable Keychain Access'}</Typography>
+                        <Typography variant="h2">{t('security.keychain.enable')}</Typography>
                     </HeaderWrapper>
                     <CopyWrapper>
                         <PiWarning size={24} />
-                        <Typography>{`Keychain access is required for this operation.\nPlease try again and select "allow".`}</Typography>
+                        <Typography>{t('security.keychain.warning')}</Typography>
                     </CopyWrapper>
                 </Wrapper>
             </DialogContent>

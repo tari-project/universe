@@ -18,6 +18,15 @@
     "tooltip-emoji-id-text2": "याट समर्थन जल्द ही आ रहा है!",
     "tooltip-emoji-id-title": "इमोजी आईडी"
   },
+  "security": {
+    "keychain": {
+      "enable": "Enable Keychain Access",
+      "warning": "Keychain access is required for this operation.\nPlease try again and select “allow”."
+    },
+    "pin": {
+      "enter": "Enter your PIN"
+    }
+  },
   "send": {
     "balance": "शेष राशि",
     "broadcast": "प्रसारण",
