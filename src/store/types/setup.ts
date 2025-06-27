@@ -1,5 +1,5 @@
 import { ProgressTrackerUpdatePayload } from '@app/hooks/app/useProgressEventsListener';
-import { SetupPhase } from '@app/types/backend-state';
+import { SetupPhase } from '@app/types/events-payloads';
 
 export interface SetupState {
     cpuMiningUnlocked: boolean;
