@@ -78,22 +78,20 @@ export default function Tile({
         gpuIdleMarkup
     ) : (
         <BigNumber>
-            {isIdle ? (
-                <Number $isIdle={true}>{mainNumber}</Number>
-            ) : (
-                <Number>
-                    <NumberFlow
-                        locales={i18n.language}
-                        format={{
-                            minimumFractionDigits: 1,
-                            maximumFractionDigits: 4,
-                            notation: 'standard',
-                            style: 'decimal',
-                        }}
-                        value={mainNumber}
-                    />
-                </Number>
-            )}
+            <Number>
+                <NumberFlow
+                    locales={i18n.language}
+                    format={{
+                        minimumFractionDigits: 1,
+                        maximumFractionDigits: 4,
+                        notation: 'standard',
+                        style: 'decimal',
+                    }}
+                    value={mainNumber}
+                    animated={!isIdle}
+                />
+            </Number>
+
             <NumberUnit>{mainUnit}</NumberUnit>
         </BigNumber>
     );
