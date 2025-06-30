@@ -1,4 +1,5 @@
 import { Stack } from '@app/components/elements/Stack.tsx';
+import { IoCheckmarkCircle, IoCloudOfflineOutline } from 'react-icons/io5';
 
 import { ConnectionIcon } from '../../components/Settings.styles.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
@@ -11,7 +12,9 @@ export default function ConnectionStatus() {
 
     return (
         <Stack direction="row" justifyContent="right" alignItems="center">
-            <ConnectionIcon $isConnected={isConnectedToTariNetwork} size={20} />
+            <ConnectionIcon $isConnected={isConnectedToTariNetwork}>
+                {isConnectedToTariNetwork ? <IoCheckmarkCircle size={20} /> : <IoCloudOfflineOutline size={16} />}
+            </ConnectionIcon>
             <Typography variant="p">
                 {t(isConnectedToTariNetwork ? 'connected-to-tari' : 'not-connected-to-tari')}
             </Typography>

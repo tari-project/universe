@@ -21,6 +21,8 @@ export default function Network() {
         (state) => state?.base_node_status?.tari_randomx_network_hashrate
     );
 
+    const fmtSHA = formatHashrate(sha_network_hashrate || 0);
+    const fmtRX = formatHashrate(randomx_network_hashrate || 0);
     return (
         <SettingsGroupWrapper>
             <SettingsGroup>
@@ -35,13 +37,13 @@ export default function Network() {
                             <Stack direction="row">
                                 <Typography>{t('sha-network-hash-rate')}</Typography>
                                 <Typography>
-                                    <b>{formatHashrate(sha_network_hashrate || 0)}</b>
+                                    <b>{`${fmtSHA.value}${fmtSHA.unit}`}</b>
                                 </Typography>
                             </Stack>
                             <Stack direction="row">
                                 <Typography>{t('randomx-network-hash-rate')}</Typography>
                                 <Typography>
-                                    <b>{formatHashrate(randomx_network_hashrate || 0)}</b>
+                                    <b>{`${fmtRX.value}${fmtRX.unit}`}</b>
                                 </Typography>
                             </Stack>
                         </Stack>

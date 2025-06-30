@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import { InputArea } from '@app/containers/floating/Settings/sections/wallet/styles';
-import { invoke } from '@tauri-apps/api/core';
 import { useCallback, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { IconWrapper, ClearIcon, StyledForm, StyledInput, StyledInputWrapper } from './styles';
@@ -8,6 +7,7 @@ import { ClipboardViewer } from '../clipboardViewer/ClipboardViewer';
 import { useTranslation } from 'react-i18next';
 import CheckIcon from '@app/components/transactions/components/CheckIcon.tsx';
 import { IoClose } from 'react-icons/io5';
+import { useValidate } from '@app/hooks/wallet/useValidate.ts';
 
 interface ExchangeAddressProps {
     handleIsAddressValid: (isValid: boolean) => void;
@@ -32,6 +32,8 @@ export const ExchangeAddress = ({
     } = useForm();
     const [showClipboard, setShowClipboard] = useState(false);
     const address = watch('address');
+
+    const { validateAddress } = useValidate();
     useEffect(() => {
         trigger('address');
         handleAddressChange(address || '');
@@ -50,14 +52,6 @@ export const ExchangeAddress = ({
         },
         [setValue]
     );
-    const validateAddress = useCallback(async (value: string) => {
-        try {
-            await invoke('verify_address_for_send', { address: value });
-            return true;
-        } catch (_) {
-            return false;
-        }
-    }, []);
 
     const validationRules = {
         validate: async (value: string) => {
