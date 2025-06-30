@@ -52,6 +52,7 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
         return () => el.removeEventListener('scroll', onScroll);
     }, []);
 
+    const isSyncing = useWalletStore((s) => s.wallet_scanning.is_scanning);
     const isSwapping = useWalletStore((s) => s.is_swapping);
     const seedlessUI = useUIStore((s) => s.seedlessUI);
 
@@ -121,9 +122,8 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
                     </SwapsWrapper>
                 ) : (
                     <WalletWrapper key="wallet" variants={swapTransition} initial="show" exit="hide" animate="show">
-                        <Wrapper $seedlessUI={seedlessUI}>
-                            {/* {walletMarkup} */}
-                            <SyncLoading />
+                        <Wrapper $seedlessUI={seedlessUI || isSyncing}>
+                            {isSyncing ? <SyncLoading /> : walletMarkup}
                             <BuyTariButton onClick={() => setIsSwapping(true)}>{'Buy Tari (XTM)'}</BuyTariButton>
                         </Wrapper>
                     </WalletWrapper>

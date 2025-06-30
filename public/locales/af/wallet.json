@@ -132,5 +132,13 @@
     "mine-directly-to-exchange": "{{exchangeName}}",
     "mining-here": "Mining here",
     "or": "or"
+  },
+  "sync-message": {
+    "line1": "Sync in progress. ",
+    "line2": " remaining",
+    "line3": "until your wallet balance is displayed",
+    "tooltipTitle": "Why the delay?",
+    "tooltipDescription": "Your node is still syncing, so your balance isn't visible yet. But don't worry, you're actively mining and earning XTM.",
+    "any_moment_now": "any moment now"
   }
 }
