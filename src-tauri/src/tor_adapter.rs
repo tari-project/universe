@@ -220,6 +220,7 @@ impl ProcessAdapter for TorAdapter {
 
         let working_dir_string = convert_to_string(working_dir)?;
         let log_dir_string = convert_to_string(log_dir.join("tor.log"))?;
+        let torrc_string = convert_to_string(data_dir.join("torrc"))?;
         let mut lyrebird_path = binary_version_path.clone();
         lyrebird_path.pop();
         lyrebird_path.push("pluggable_transports");
@@ -244,6 +245,8 @@ impl ProcessAdapter for TorAdapter {
         }
 
         let mut args: Vec<String> = vec![
+            "-f".to_string(),
+            torrc_string,
             "--allow-missing-torrc".to_string(),
             "--ignore-missing-torrc".to_string(),
             "--clientonly".to_string(),
