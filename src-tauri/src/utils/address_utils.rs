@@ -38,8 +38,7 @@ pub fn verify_send(address: String, sending_method: TariAddressFeatures) -> Resu
 
     if !tari_address.features().contains(sending_method) {
         return Err(format!(
-            "Address does not support feature {}",
-            sending_method
+            "Address does not support feature {sending_method}"
         ));
     }
     Ok(())

@@ -266,7 +266,7 @@ impl SetupPhaseImpl for HardwareSetupPhase {
                                 sm.update_tray(systray_data);
                             },
                             Err(e) => {
-                                let err_msg = format!("Failed to acquire systemtray_manager write lock: {}", e);
+                                let err_msg = format!("Failed to acquire systemtray_manager write lock: {e}");
                                 error!(target: LOG_TARGET, "{}", err_msg);
                                 sentry::capture_message(&err_msg, sentry::Level::Error);
                             }
