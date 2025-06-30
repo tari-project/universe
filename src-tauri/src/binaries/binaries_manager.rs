@@ -106,9 +106,7 @@ impl BinaryManager {
             serde_json::from_str(data_str).unwrap_or_default();
         // content string can be either 0.0.5 or 0.0.5 | hash
         let content_string = json_content.binaries.get(&binary_name).unwrap_or_else(|| {
-            panic!(
-                "No version requirements found for binary: {binary_name} in the provided data"
-            )
+            panic!("No version requirements found for binary: {binary_name} in the provided data")
         });
 
         let (version_requirement, hash) =

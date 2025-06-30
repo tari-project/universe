@@ -24,15 +24,11 @@ pub mod request_client;
 
 // https://github.com/tari-project/glytex/releases/download/v0.2.29/glytex-opencl-linux-x86_64-testnet-0.2.29-fd0dd7f.zip
 pub fn get_gh_download_url(repo_owner: &str, repo_name: &str) -> String {
-    format!(
-        "https://github.com/{repo_owner}/{repo_name}/releases/download"
-    )
+    format!("https://github.com/{repo_owner}/{repo_name}/releases/download")
 }
 // https://cdn-universe.tari.com/tari-project/glytex/releases/download/v0.2.29/glytex-opencl-linux-x86_64-testnet-0.2.29-fd0dd7f.zip
 // https://dist.torproject.org/torbrowser/14.5.1/tor-expert-bundle-linux-x86_64-14.5.1.tar.gz
 // https://cdn-universe.tari.com/tari-project/glytex/releases/download/v0.2.29/glytex-opencl-linux-x86_64-testnet-0.2.29-fd0dd7f.zip.sha256
 pub fn get_mirror_download_url(repo_owner: &str, repo_name: &str) -> String {
-    format!(
-        "https://cdn-universe.tari.com/{repo_owner}/{repo_name}/releases/download"
-    )
+    format!("https://cdn-universe.tari.com/{repo_owner}/{repo_name}/releases/download")
 }
