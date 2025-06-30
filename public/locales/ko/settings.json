@@ -57,7 +57,7 @@
   "invalid-stats-server-port-empty": "통계 서버 포트는 비워둘 수 없습니다",
   "inviteCode": "초대 코드",
   "is-on-orphan-chain": "당신은 포크에 연결된 것 같으며, 메인 체인이 아닙니다. 당신이 획득한 블록은 무효화될 수 있습니다.",
-  "last-block-added-time": "마지막 블록 체인 추가 시간",
+  "last-block-added-time": "Time since previous block was added to the chain: <strong>{{time}}</strong>",
   "license-agreement": "라이선스 계약",
   "local-node-sync-progress": "로컬 노드 동기화 진행",
   "logs": "로그",
@@ -170,6 +170,7 @@
   "use-tor-bridges": "Tor 브리지 사용",
   "user-agreement": "사용자 계약",
   "visual-mode": "시각 모드",
+  "waiting-for-data": "Waiting for chain data...",
   "yes": "예",
   "your-feedback": "문제를 설명해 주세요",
   "your-reference": "귀하의 참조"
