@@ -18,7 +18,7 @@
     "earned": "You earned",
     "tile-heading": "Вознаграждение в процессе",
     "tile-loading": "Пул разогревается",
-    "tooltip-copy": "Награды в “процессе” получения, пока Вы не заработаете минимум <strong>{{amount}}</strong>. После того как Вы достигнете порога, Ваша награда будет автоматически отправлена на Ваш кошелек Tari Universe. Может потребоваться около 2 часов до их поступления.",
+    "tooltip-copy": "“In Progress” until you earn a minimum of <strong>{{amount}}</strong>. There may be a delay between sending your payout and it displaying in your wallet txs and balance.",
     "tooltip-tile-heading": "Порог вознаграждения"
   },
   "tribe": "Команда"
