@@ -218,8 +218,8 @@ pub async fn select_exchange_miner(
     )
     .await
     .map_err(InvokeError::from_anyhow)?;
-    let new_external_tari_address = TariAddress::from_str(&mining_address)
-        .map_err(|e| format!("Invalid Tari address: {e}"))?;
+    let new_external_tari_address =
+        TariAddress::from_str(&mining_address).map_err(|e| format!("Invalid Tari address: {e}"))?;
     ConfigWallet::update_field(
         ConfigWalletContent::set_external_tari_address,
         Some(new_external_tari_address.clone()),

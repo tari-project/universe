@@ -117,18 +117,18 @@ impl Binaries {
         match self {
             Binaries::BridgeTapplet => format!("bridge-v{version}.zip"),
             Binaries::GpuMiner => match platform {
-                BinaryPlatformAssets::LinuxX64 => format!(
-                    "glytex-opencl-linux-x86_64-{network}-{version}-{hash}.zip"
-                ),
-                BinaryPlatformAssets::WindowsX64 => format!(
-                    "glytex-opencl-windows-x64-{network}-{version}-{hash}.zip"
-                ),
-                BinaryPlatformAssets::MacOSX64 => format!(
-                    "glytex-opencl-macos-x86_64-{network}-{version}-{hash}.zip"
-                ),
-                BinaryPlatformAssets::MacOSArm64 => format!(
-                    "glytex-combined-macos-arm64-{network}-{version}-{hash}.zip"
-                ),
+                BinaryPlatformAssets::LinuxX64 => {
+                    format!("glytex-opencl-linux-x86_64-{network}-{version}-{hash}.zip")
+                }
+                BinaryPlatformAssets::WindowsX64 => {
+                    format!("glytex-opencl-windows-x64-{network}-{version}-{hash}.zip")
+                }
+                BinaryPlatformAssets::MacOSX64 => {
+                    format!("glytex-opencl-macos-x86_64-{network}-{version}-{hash}.zip")
+                }
+                BinaryPlatformAssets::MacOSArm64 => {
+                    format!("glytex-combined-macos-arm64-{network}-{version}-{hash}.zip")
+                }
             },
             Binaries::ShaP2pool => match platform {
                 BinaryPlatformAssets::LinuxX64 => {
