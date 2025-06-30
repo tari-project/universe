@@ -1,22 +1,26 @@
-import { memo } from 'react';
-
 import WalletSection from './sections/Wallet.tsx';
 import MiningSection from './sections/Mining.tsx';
-import { GridAreaBottom, GridAreaTop, WrapperGrid, SidebarWrapper } from './Sidebar.styles.ts';
+import { GridAreaBottom, GridAreaTop, WrapperGrid, SidebarWrapper, BuyOverlay } from './Sidebar.styles.ts';
+import { useWalletStore } from '@app/store';
+import { AnimatePresence } from 'motion/react';
 
-const Sidebar = memo(function Sidebar() {
+export default function Sidebar() {
+    const isSwapping = useWalletStore((s) => s.is_swapping);
     return (
         <SidebarWrapper key="sidebar">
             <WrapperGrid>
                 <GridAreaTop>
                     <MiningSection />
                 </GridAreaTop>
-                <GridAreaBottom>
+                <AnimatePresence>
+                    {isSwapping && (
+                        <BuyOverlay initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} />
+                    )}
+                </AnimatePresence>
+                <GridAreaBottom $swapsOpen={isSwapping}>
                     <WalletSection />
                 </GridAreaBottom>
             </WrapperGrid>
         </SidebarWrapper>
     );
-});
-
-export default Sidebar;
+}

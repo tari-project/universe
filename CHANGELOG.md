@@ -1,3 +1,96 @@
+🚀 TARI UNIVERSE v1.2.14: The Season of Light
+
+_June 27, 2025_
+
+Hey everyone,
+
+Tari contributors are proud to introduce Tari Universe v1.2.14, the first release in the "The Season of Light" series. "The Season of Light" releases are focused on one goal: make Tari Universe work well on as many computers as possible. Our first release in this series makes significant headway on this front by eliminating several root causes for the dreaded "node setup failure" timeout and sync challenges. We can't wait to hear your thoughts on the first Season of Light release!
+
+✨ WHAT'S NEW
+- 🔄 **Sync Reliability** – The setup process sometimes prematurely gives up ("node setup failed" error) on slower connections, whereas now it will continue if it detects that progress is still being made
+- ⚡ **Installing Dependencies** – Previously, set-up failures sometimes occurred if too many miners attempted to update all at once, such as during an automatic update. We also fixed a bug that was impacting the downloading of Tor
+- 🌉 **Bridge Timeouts** – We've fixed the issue where Tari Universe was overwhelming the bridge with excessive requests, causing timeouts
+- 🔑 **Seed Word Import** – We've fixed the issue where seed word imports were failing for some users
+- ⚙️ **Your Power Settings Stay Put** – As many of you reported, switching between Eco, Ludicrous, and Custom mining modes would reset your carefully chosen power level settings. Your preferences now stick
+- 🖥️ **Port Settings** - For more technical users who want to see how things work under the hood, we've exposed the gRPC port numbers in Settings
+
+---
+
+🚀 TARI UNIVERSE v1.2.12: The Bloom Beyond
+
+_June 18, 2025_
+
+Hey everyone,
+
+Welcome to "The Bloom Beyond" release of Tari Universe. This release adds some finishing touches to yesterday's CEXy Mining-focused release. We hope you are all enjoying lots of CEXy Mining out there in the Tari Universe!
+
+✨ WHAT'S NEW
+
+- 💰 Mining Rewards Display – Mining Rewards in progress no longer flicker between address balances when you change your wallet address. Pool tooltips show up when you hover over them.
+- ⚙️ Exchange Settings – Your exchange preferences are saved properly and won't reset when you restart the app.
+- 💼 Wallet Interface – We've heard from many of you that the wallet felt clunky and hard to navigate. We've streamlined the interface so you can find what you need faster.
+- 🌍 Bridge Languages – The bridge now works in 12 languages, like the rest of Tari Universe, so you can use Tari Universe in your native language!
+- 🔧 Core Updates – No more losing track of your payment references! We've fixed an issue where your payment reference information would disappear during blockchain syncs
+
+🐞 KNOWN ISSUES
+
+- We know some of you are still experiencing setup and chain sync failures. Contributors are working on fixes coming soon.
+- The Tari bridge sometimes becomes unresponsive. A fix is in the works.
+
+---
+
+🚀 TARI UNIVERSE v1.2.10: The Eternal Bloom
+
+_June 17, 2025_
+
+Hey everyone,
+
+Tari contributors have been working behind the scenes with Centralized Exchanges (CEXs) on a breakthrough new type of collaboration 💪🚀 
+
+Today, when CEXs list a project, there is a standard playbook involving trading competitions, AMAs etc. These elements are a great way for active CEX users to learn about new projects. What about legacy CEX users? Users that haven't logged in or traded in a while? How can we collaborate with CEXs to engage them? 
+
+A plucky group of Tari contributors started thinking about this challenge and came up with a novel idea: what if you could enter a deposit wallet address from a supported exchange in Tari Universe, and mine directly to the CEX?
+
+This way, ALL users from the exchange (active and legacy alike!) can generate new liquidity for themselves on the CEX without needing to deposit fiat. And the Tari network gains tons of new miners in the process. We call this idea: CEXy Mining (blame @fluffypony for the name :P), and it's live in Tari Universe v1.2.10 aka "The Eternal Bloom!" 
+
+We're very lucky to have the support of forward thinking exchanges such as CoinEx, XT, and Biconomy. They are all launching support for CEXy Mining today!
+
+Imagine if every exchange that chooses to list Tari becomes a part of the CEXy Mining program. Tens of millions of users (and perhaps hundreds of millions in future) will discover Tari, and many will start mining with Tari Universe!
+
+PS: XT, Biconomy, and CoinEx are offering bonus XTM if you choose to use the CEXy Mining feature with them! The bonus program will occur in seasons, and today is the beginning of Season 1 🥳 
+
+✨ How CEXy Mining Works
+
+1. 💜🐢 Install Tari Universe 
+
+2. 🤝 Connect Tari Universe to your desired CEX - Enter your Tari deposit address from your chosen exchange (Biconomy, XT, or CoinEx) 
+
+3. 💎 Mine XTM and Earn Bonuses! – Start mining with Tari Universe! When you reach the bonus threshold for your chosen exchange, they'll reward you with bonus XTM 🙌
+
+🐞 Known Issues (Fixes Coming Soon)
+
+• If you switch back to your Tari Universe address after mining to an exchange, your Rewards in Progress may alternate between your Universe address and your Exchange address until you restart the application.
+
+---
+
+🚀 TARI UNIVERSE v1.2.9: Colonies of Light
+
+_June 12, 2025_
+
+Hey everyone,
+
+Tari contributors continue to pull out all the stops to make Tari Universe the most beautiful and easiest-to-use crypto app in the world. Introducing the "Colonies of Light" release of Tari Universe, an awesome release filled to the brim with tweaks, bug fixes, and amazing updates
+
+✨ What's New in "Colonies of Light"
+- 🔗 **Link to Supported Exchanges**: We've introduced a new interface that makes it easy to see the list of CEXs that have listed XTM, and directly access them
+- 💎 **Revamped Transaction History**: We've completely revamped the Tari Universe transaction history (!!!). Now your TX history will include your bridge transactions and better formatting. It's clean, clear, and far easier to use than ever before
+- 🛡️ **Linux Tor Support**: We know the Tari Linux community will be hyped about this one: we've added missing library support for much smoother Linux installs
+- ⏱️ **Smarter Download Handling**: Many of you have reported "node setup failure" errors when running Tari Universe. Our new download handling system should make these errors a thing of the past in MOST cases (not all.. but we're getting closer!). We can't wait to hear how this new system works for you
+- ⚡ **Stability and Reliability Improvements**: For Tari Universe users on lower-end machines, Tari Universe should now be faster and more responsive for you
+- 🔄 **Airdrop Game**: We fixed a bug where the Start/Stop mining button was getting stuck when logged into the Tari Airdrop Game
+
+---
+
 🚀 TARI UNIVERSE v1.2.8: The Feast of Light
 
 _June 9, 2025_

@@ -1,7 +1,7 @@
 import { AnimatePresence } from 'motion/react';
-import { Menu, Text, Title, Trigger, Wrapper } from './styles';
+import { Menu, MenuFloating, Text, Title, Trigger, Wrapper } from './styles';
 import { ReactNode, useState } from 'react';
-import { autoUpdate, offset, safePolygon, shift, useFloating, useHover, useInteractions } from '@floating-ui/react';
+import { autoUpdate, offset, shift, useFloating, useHover, useInteractions } from '@floating-ui/react';
 
 interface Props {
     trigger: ReactNode;
@@ -15,9 +15,9 @@ export default function SyncTooltip({ trigger, title, text }: Props) {
     const { refs, context, floatingStyles } = useFloating({
         open: expanded,
         onOpenChange: setExpanded,
-        placement: 'top',
+        placement: 'right',
         strategy: 'fixed',
-        middleware: [offset(5), shift()],
+        middleware: [offset(10), shift()],
         whileElementsMounted(referenceEl, floatingEl, update) {
             return autoUpdate(referenceEl, floatingEl, update, {
                 layoutShift: false,
@@ -27,7 +27,6 @@ export default function SyncTooltip({ trigger, title, text }: Props) {
 
     const hover = useHover(context, {
         move: !expanded,
-        handleClose: safePolygon(),
     });
 
     const { getReferenceProps, getFloatingProps } = useInteractions([hover]);
@@ -40,17 +39,16 @@ export default function SyncTooltip({ trigger, title, text }: Props) {
 
             <AnimatePresence mode="sync">
                 {expanded && (
-                    <Menu
-                        ref={refs.setFloating}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        style={floatingStyles}
-                        {...getFloatingProps()}
-                    >
-                        <Title>{title}</Title>
-                        <Text>{text}</Text>
-                    </Menu>
+                    <MenuFloating ref={refs.setFloating} {...getFloatingProps()} style={floatingStyles}>
+                        <Menu
+                            initial={{ opacity: 0, x: 10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 10 }}
+                        >
+                            <Title>{title}</Title>
+                            <Text>{text}</Text>
+                        </Menu>
+                    </MenuFloating>
                 )}
             </AnimatePresence>
         </Wrapper>

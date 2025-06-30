@@ -14,10 +14,10 @@ import { useWalletStore } from '@app/store/useWalletStore';
 
 import { useCopyToClipboard } from '@app/hooks';
 import { useTranslation } from 'react-i18next';
-import { setGeneratedTariAddress } from '@app/store/actions/walletStoreActions';
-import { invoke } from '@tauri-apps/api/core';
+import { setExternalTariAddress } from '@app/store/actions/walletStoreActions';
 import AddressEditor from '../components/AddressEditor';
 import { CTASArea, InputArea, WalletSettingsGrid } from '@app/containers/floating/Settings/sections/wallet/styles.ts';
+import { useValidate } from '@app/hooks/wallet/useValidate.ts';
 
 const Dot = styled.div`
     width: 4px;
@@ -54,7 +54,7 @@ const AddressInner = styled.div`
     display: flex;
 `;
 
-const CopyToClipboard = ({ text }: { text: string | undefined }) => {
+export const CopyToClipboard = ({ text }: { text: string | undefined }) => {
     const { copyToClipboard, isCopied } = useCopyToClipboard();
     const handleCopy = useCallback(
         (text?: string) => {
@@ -72,10 +72,10 @@ const CopyToClipboard = ({ text }: { text: string | undefined }) => {
 };
 
 const WalletAddressMarkup = () => {
-    const [isCondensed, setIsCondensed] = useState(true);
     const { t } = useTranslation('settings', { useSuspense: false });
-    const walletAddress = useWalletStore((state) => state.tari_address_base58);
-    const walletAddressEmoji = useWalletStore((state) => state.tari_address_emoji);
+    const { validateAddress } = useValidate();
+    const [isCondensed, setIsCondensed] = useState(true);
+    const [walletAddress, walletAddressEmoji] = useWalletStore((state) => state.getActiveTariAddress());
 
     function condenseEmojiAddress(emojiAddress: string | undefined) {
         const regex = emojiRegex();
@@ -106,14 +106,6 @@ const WalletAddressMarkup = () => {
         }
     }
 
-    const validateAddress = useCallback(async (value: string) => {
-        try {
-            await invoke('verify_address_for_send', { address: value });
-            return true;
-        } catch (_) {
-            return false;
-        }
-    }, []);
     const validationRules = {
         validate: async (value) => {
             const isValid = await validateAddress(value);
@@ -127,7 +119,7 @@ const WalletAddressMarkup = () => {
             <SettingsGroupTitle>
                 <Typography variant="h6">{t('tari-wallet-address')}</Typography>
             </SettingsGroupTitle>
-            <AddressEditor initialAddress={walletAddress} onApply={setGeneratedTariAddress} rules={validationRules} />
+            <AddressEditor initialAddress={walletAddress} onApply={setExternalTariAddress} rules={validationRules} />
             <WalletSettingsGrid>
                 <InputArea>
                     <AddressContainer style={{ height: isCondensed ? '40px' : 'auto' }}>

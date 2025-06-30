@@ -217,8 +217,7 @@ impl UpdatesManager {
         };
         let update_url_string = if EXCHANGE_ID.ne(DEFAULT_EXCHANGE_ID) {
             format!(
-                "https://cdn-universe.tari.com/tari-project/universe/exchanges/{}/latest-{}.json",
-                EXCHANGE_ID, EXCHANGE_ID
+                "https://raw.githubusercontent.com/tari-project/universe/main/.updater/latest-{EXCHANGE_ID}.json"
             )
         } else {
             format!("https://raw.githubusercontent.com/tari-project/universe/main/.updater/{updater_filename}.json")

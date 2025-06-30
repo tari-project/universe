@@ -22,12 +22,13 @@
 
 use crate::airdrop;
 use crate::airdrop::get_wallet_view_key_hashed;
-use crate::app_in_memory_config::DynamicMemoryConfig;
 
+use crate::app_in_memory_config::AppInMemoryConfig;
 use crate::commands::CpuMinerStatus;
 use crate::configs::config_core::ConfigCore;
 use crate::configs::config_mining::ConfigMining;
 use crate::configs::config_mining::MiningMode;
+use crate::configs::config_wallet::ConfigWallet;
 use crate::configs::trait_config::ConfigImpl;
 use crate::gpu_miner_adapter::GpuMinerStatus;
 use crate::hardware::hardware_status_monitor::HardwareStatusMonitor;
@@ -58,7 +59,7 @@ use sysinfo::{Disks, System};
 use tari_common::configuration::Network;
 use tari_shutdown::ShutdownSignal;
 use tari_utilities::encoding::MBase58;
-use tauri::{Emitter, Manager};
+use tauri::Emitter;
 use tokio::sync::{watch, RwLock};
 use tokio::time::interval;
 
@@ -236,7 +237,7 @@ impl From<TelemetryData> for NotificationData {
 
 pub struct TelemetryManager {
     cpu_miner_status_watch_rx: watch::Receiver<CpuMinerStatus>,
-    in_memory_config: Arc<RwLock<DynamicMemoryConfig>>,
+    in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
     node_network: Option<Network>,
     gpu_status: watch::Receiver<GpuMinerStatus>,
     node_status: watch::Receiver<BaseNodeStatus>,
@@ -250,7 +251,7 @@ impl TelemetryManager {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         cpu_miner_status_watch_rx: watch::Receiver<CpuMinerStatus>,
-        in_memory_config: Arc<RwLock<DynamicMemoryConfig>>,
+        in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
         network: Option<Network>,
         gpu_status: watch::Receiver<GpuMinerStatus>,
         node_status: watch::Receiver<BaseNodeStatus>,
@@ -532,8 +533,8 @@ async fn get_telemetry_data_inner(
     );
 
     // Add payment ID from current tari address
-    if let Some(state) = app_handle.try_state::<crate::UniverseAppState>() {
-        let tari_address = state.tari_address.read().await;
+    let tari_address = ConfigWallet::content().await.tari_address().clone();
+    if let Some(tari_address) = tari_address {
         let address_str = tari_address.to_base58();
         if let Ok(Some(payment_id)) = extract_payment_id(&address_str) {
             extra_data.insert("mining_address_payment_id".to_string(), payment_id);
@@ -677,23 +678,23 @@ async fn get_telemetry_data_inner(
     let disks = Disks::new_with_refreshed_list();
     for (i, disk) in disks.list().iter().enumerate() {
         extra_data.insert(
-            format!("disk_{}_total_gb", i),
+            format!("disk_{i}_total_gb"),
             disk.total_space().saturating_div(1_000_000_000).to_string(),
         );
         extra_data.insert(
-            format!("disk_{}_free_gb", i),
+            format!("disk_{i}_free_gb"),
             disk.available_space()
                 .saturating_div(1_000_000_000)
                 .to_string(),
         );
         extra_data.insert(
-            format!("disk_{}_used_gb", i),
+            format!("disk_{i}_used_gb"),
             (disk.total_space().saturating_sub(disk.available_space()))
                 .saturating_div(1_000_000_000)
                 .to_string(),
         );
         extra_data.insert(
-            format!("disk_{}_kind", i),
+            format!("disk_{i}_kind"),
             match disk.kind() {
                 sysinfo::DiskKind::HDD => "HDD".to_string(),
                 sysinfo::DiskKind::SSD => "SSD".to_string(),
@@ -738,34 +739,34 @@ fn add_process_stats(
     process: &str,
 ) {
     extra_data.insert(
-        format!("{}_uptime_seconds", process),
+        format!("{process}_uptime_seconds"),
         process_stats.current_uptime.as_secs().to_string(),
     );
     extra_data.insert(
-        format!("{}_total_health_checks", process),
+        format!("{process}_total_health_checks"),
         process_stats.total_health_checks.to_string(),
     );
     extra_data.insert(
-        format!("{}_num_warnings", process),
+        format!("{process}_num_warnings"),
         process_stats.num_warnings.to_string(),
     );
     extra_data.insert(
-        format!("{}_num_failure", process),
+        format!("{process}_num_failure"),
         process_stats.num_failures.to_string(),
     );
     extra_data.insert(
-        format!("{}_num_restarts", process),
+        format!("{process}_num_restarts"),
         process_stats.num_restarts.to_string(),
     );
     extra_data.insert(
-        format!("{}_max_health_check_seconds", process),
+        format!("{process}_max_health_check_seconds"),
         process_stats
             .max_health_check_duration
             .as_secs()
             .to_string(),
     );
     extra_data.insert(
-        format!("{}_total_health_check_seconds", process),
+        format!("{process}_total_health_check_seconds"),
         process_stats
             .total_health_check_duration
             .as_secs()
@@ -870,7 +871,7 @@ async fn send_telemetry_data(
 ) -> Result<Option<TelemetryDataResponse>, TelemetryManagerError> {
     let request = reqwest::Client::new();
     let mut request_builder = request
-        .post(format!("{}/miner/heartbeat", airdrop_api_url))
+        .post(format!("{airdrop_api_url}/miner/heartbeat"))
         .header(
             "User-Agent".to_string(),
             format!("tari-universe/{}", data.version.clone()),
@@ -878,7 +879,7 @@ async fn send_telemetry_data(
         .json(&data);
 
     if let Some(token) = airdrop_access_token.clone() {
-        request_builder = request_builder.header("Authorization", format!("Bearer {}", token));
+        request_builder = request_builder.header("Authorization", format!("Bearer {token}"));
     }
 
     let response = request_builder.send().await?;
@@ -917,7 +918,7 @@ async fn send_notification_data(
     let request = reqwest::Client::new();
 
     let mut request_builder = request
-        .post(format!("{}/miner/notifications", airdrop_api_url))
+        .post(format!("{airdrop_api_url}/miner/notifications"))
         .timeout(Duration::from_secs(5))
         .header(
             "User-Agent".to_string(),
@@ -926,7 +927,7 @@ async fn send_notification_data(
         .json(&data);
 
     if let Some(token) = airdrop_access_token.clone() {
-        request_builder = request_builder.header("Authorization", format!("Bearer {}", token));
+        request_builder = request_builder.header("Authorization", format!("Bearer {token}"));
     }
 
     let response = request_builder.send().await?;

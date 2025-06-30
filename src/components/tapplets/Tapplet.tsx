@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useTappletSignerStore } from '@app/store/useTappletSignerStore';
-import { MiningViewContainer } from '@app/containers/main/Dashboard/MiningView/MiningView.styles';
+import { TappletContainer } from '@app/containers/main/Dashboard/MiningView/MiningView.styles';
 import { open } from '@tauri-apps/plugin-shell';
+import { useConfigUIStore, useUIStore, setError as setStoreError } from '@app/store';
 
 interface TappletProps {
     source: string;
@@ -9,8 +10,10 @@ interface TappletProps {
 
 export const Tapplet: React.FC<TappletProps> = ({ source }) => {
     const tappletRef = useRef<HTMLIFrameElement | null>(null);
-    const provider = useTappletSignerStore((s) => s.tappletSigner);
+    const tappSigner = useTappletSignerStore((s) => s.tappletSigner);
     const runTransaction = useTappletSignerStore((s) => s.runTransaction);
+    const appLanguage = useConfigUIStore((s) => s.application_language);
+    const theme = useUIStore((s) => s.theme);
 
     const sendWindowSize = useCallback(() => {
         if (tappletRef.current) {
@@ -20,10 +23,10 @@ export const Tapplet: React.FC<TappletProps> = ({ source }) => {
             // use "*" for targetOrigin to bypass strict origin checks for custom protocols
             const targetOrigin = '*';
 
-            provider?.setWindowSize(width, height);
-            provider?.sendWindowSizeMessage(tappletWindow, targetOrigin);
+            tappSigner?.setWindowSize(width, height);
+            tappSigner?.sendWindowSizeMessage(tappletWindow, targetOrigin);
         }
-    }, [provider]);
+    }, [tappSigner]);
 
     const openExternalLink = useCallback(async (event: MessageEvent) => {
         if (!event.data.url || typeof event.data.url !== 'string') {
@@ -34,7 +37,7 @@ export const Tapplet: React.FC<TappletProps> = ({ source }) => {
         try {
             await open(url);
         } catch (e) {
-            console.error('Open tapplet URL error: ', e);
+            setStoreError(`Open tapplet URL error: ${e}`, true);
         }
     }, []);
 
@@ -45,6 +48,21 @@ export const Tapplet: React.FC<TappletProps> = ({ source }) => {
         [runTransaction]
     );
 
+    const sendAppLanguage = useCallback(() => {
+        if (tappletRef.current) {
+            tappletRef.current.contentWindow?.postMessage(
+                { type: 'SET_LANGUAGE', payload: { language: appLanguage } },
+                '*'
+            );
+        }
+    }, [appLanguage]);
+
+    const sendTheme = useCallback(() => {
+        if (tappletRef.current) {
+            tappletRef.current.contentWindow?.postMessage({ type: 'SET_THEME', payload: { theme } }, '*');
+        }
+    }, [theme]);
+
     const handleMessage = useCallback(
         (event: MessageEvent) => {
             if (event.data.type === 'request-parent-size') {
@@ -53,10 +71,23 @@ export const Tapplet: React.FC<TappletProps> = ({ source }) => {
                 runTappletTx(event);
             } else if (event.data.type === 'open-external-link') {
                 openExternalLink(event);
+            } else if (event.data.type === 'GET_INIT_CONFIG') {
+                sendAppLanguage();
+                sendTheme();
+            } else if (event.data.type === 'ERROR') {
+                setStoreError(`${event.data.payload.message}`, true);
             }
         },
-        [sendWindowSize, runTappletTx, openExternalLink]
+        [sendWindowSize, runTappletTx, openExternalLink, sendAppLanguage, sendTheme]
     );
+
+    useEffect(() => {
+        sendAppLanguage();
+    }, [sendAppLanguage]);
+
+    useEffect(() => {
+        sendTheme();
+    }, [sendTheme]);
 
     useEffect(() => {
         window.addEventListener('resize', sendWindowSize);
@@ -71,7 +102,7 @@ export const Tapplet: React.FC<TappletProps> = ({ source }) => {
     }, [sendWindowSize, handleMessage]);
 
     return (
-        <MiningViewContainer>
+        <TappletContainer>
             <iframe
                 src={source}
                 width="100%"
@@ -80,6 +111,6 @@ export const Tapplet: React.FC<TappletProps> = ({ source }) => {
                 onLoad={sendWindowSize}
                 style={{ border: 'none', pointerEvents: 'all' }}
             />
-        </MiningViewContainer>
+        </TappletContainer>
     );
 };

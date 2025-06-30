@@ -35,7 +35,7 @@ use tokio::{
 
 use crate::{
     airdrop::decode_jwt_claims_without_exp,
-    app_in_memory_config::DynamicMemoryConfig,
+    app_in_memory_config::AppInMemoryConfig,
     commands::{sign_ws_data, CpuMinerStatus, SignWsDataResponse},
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
     tasks_tracker::TasksTrackers,
@@ -60,7 +60,7 @@ pub struct MiningStatusManager {
     node_latest_status: watch::Receiver<BaseNodeStatus>,
     close_channel_tx: tokio::sync::broadcast::Sender<bool>,
     is_started: Arc<Mutex<bool>>,
-    app_in_memory_config: Arc<RwLock<DynamicMemoryConfig>>,
+    app_in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
 }
 
 impl MiningStatusManager {
@@ -68,7 +68,7 @@ impl MiningStatusManager {
         cpu_miner_status_watch_rx: watch::Receiver<CpuMinerStatus>,
         gpu_latest_miner_stats: watch::Receiver<GpuMinerStatus>,
         node_latest_status: watch::Receiver<BaseNodeStatus>,
-        app_in_memory_config: Arc<RwLock<DynamicMemoryConfig>>,
+        app_in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
     ) -> Self {
         let (close_channel_tx, _) = tokio::sync::broadcast::channel::<bool>(1);
         MiningStatusManager {
@@ -135,8 +135,8 @@ impl MiningStatusManager {
                             if let (Some(jwt), Some(app_version))= (jwt_token, app_version_option){
                                 if let Some(message) = MiningStatusManager::assemble_mining_status(cpu_miner_status_watch_rx.clone(),gpu_latest_miner_stats.clone(),node_latest_status.clone(),app_id.clone(),app_version.clone(),jwt.clone(),).await {
                                     let client = reqwest::Client::new();
-                                    let url = format!("{}/miner/mining-status",base_url);
-                                    if let Ok(response) = client.post(url).header(AUTHORIZATION, &format!("Bearer {}",jwt)).json(&message).send().await.inspect_err(|e|{
+                                    let url = format!("{base_url}/miner/mining-status");
+                                    if let Ok(response) = client.post(url).header(AUTHORIZATION, &format!("Bearer {jwt}")).json(&message).send().await.inspect_err(|e|{
                                         error!("error at sending mining status {}",e.to_string());
                                     }){
                                         let status = response.status();

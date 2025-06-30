@@ -36,5 +36,5 @@ export const useIframeUrl = () => {
         return () => clearInterval(interval);
     }, [handleFetchUrl, url]);
 
-    return url || urlRef.current;
+    return url || urlRef.current || 'https://tari.com/swaps';
 };

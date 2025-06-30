@@ -24,6 +24,7 @@ use crate::{
     configs::{
         config_core::ConfigCore,
         config_ui::{ConfigUI, ConfigUIContent},
+        config_wallet::{ConfigWallet, ConfigWalletContent},
         trait_config::ConfigImpl,
     },
     events_emitter::EventsEmitter,
@@ -53,7 +54,10 @@ use super::{
     utils::{setup_default_adapter::SetupDefaultAdapter, timeout_watcher::TimeoutWatcher},
 };
 
-// static LOG_TARGET: &str = "tari::universe::phase_hardware";
+static LOG_TARGET: &str = "tari::universe::phase_wallet";
+
+// Bump to force wallet full scan
+const WALLET_MIGRATION_NONCE: u64 = 1;
 
 #[derive(Clone, Default)]
 pub struct WalletSetupPhaseOutput {}
@@ -105,10 +109,13 @@ impl SetupPhaseImpl for WalletSetupPhase {
     }
 
     async fn get_shutdown_signal(&self) -> ShutdownSignal {
-        TasksTrackers::current().core_phase.get_signal().await
+        TasksTrackers::current().wallet_phase.get_signal().await
     }
     async fn get_task_tracker(&self) -> TaskTracker {
-        TasksTrackers::current().core_phase.get_task_tracker().await
+        TasksTrackers::current()
+            .wallet_phase
+            .get_task_tracker()
+            .await
     }
     fn get_phase_dependencies(&self) -> Vec<Receiver<PhaseStatus>> {
         self.setup_configuration
@@ -158,7 +165,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
         let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
         let state = self.app_handle.state::<UniverseAppState>();
 
-        let binary_resolver = BinaryResolver::current().read().await;
+        let binary_resolver = BinaryResolver::current();
 
         let wallet_binary_progress_tracker = progress_stepper.channel_step_range_updates(
             ProgressPlans::Wallet(ProgressSetupWalletPlan::BinariesWallet),
@@ -172,6 +179,22 @@ impl SetupPhaseImpl for WalletSetupPhase {
         progress_stepper
             .resolve_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::StartWallet))
             .await;
+
+        let latest_wallet_migration_nonce = *ConfigWallet::content().await.wallet_migration_nonce();
+        if latest_wallet_migration_nonce < WALLET_MIGRATION_NONCE {
+            log::info!(target: LOG_TARGET, "Wallet migration required(Nonce {} => {})", latest_wallet_migration_nonce, WALLET_MIGRATION_NONCE);
+            if let Err(e) = state.wallet_manager.clean_data_folder(&data_dir).await {
+                log::warn!(target: LOG_TARGET, "Failed to clean wallet data folder: {}", e);
+            }
+            if let Err(e) = ConfigWallet::update_field(
+                ConfigWalletContent::set_wallet_migration_nonce,
+                WALLET_MIGRATION_NONCE,
+            )
+            .await
+            {
+                log::warn!(target: LOG_TARGET, "Failed to update wallet migration nonce: {}", e);
+            }
+        }
 
         let app_state = self.get_app_handle().state::<UniverseAppState>().clone();
         let is_local_node = app_state.node_manager.is_local_current().await?;
@@ -187,7 +210,6 @@ impl SetupPhaseImpl for WalletSetupPhase {
             .ensure_started(
                 TasksTrackers::current().wallet_phase.get_signal().await,
                 wallet_config,
-                app_state.clone(),
             )
             .await?;
 
@@ -208,7 +230,6 @@ impl SetupPhaseImpl for WalletSetupPhase {
                 data_dir,
                 config_dir,
                 log_dir,
-                app_state.clone(),
             )
             .await?;
         drop(spend_wallet_manager);

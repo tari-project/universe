@@ -30,7 +30,6 @@ use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 use tokio::sync::watch::Sender;
 
-use super::Release;
 use anyhow::{anyhow, Error};
 use log::debug;
 use log::info;
@@ -178,6 +177,7 @@ impl RequestClient {
         head_response.map_err(|e| anyhow!("HEAD request failed with error: {}", e))
     }
 
+    #[allow(dead_code)]
     pub async fn send_get_request(&self, url: &str) -> Result<Response, Error> {
         let get_response = self
             .client
@@ -271,6 +271,7 @@ impl RequestClient {
         // get_response.map_err(|e| anyhow!("GET request failed with error: {}", e))
     }
 
+    #[allow(dead_code)]
     pub fn get_etag_from_head_response(&self, response: &Response) -> String {
         if response.status().is_server_error() || response.status().is_client_error() {
             return "".to_string();
@@ -313,21 +314,6 @@ impl RequestClient {
 
         cache_status.log_warning_if_present();
         cache_status
-    }
-
-    pub async fn fetch_get_versions_download_info(
-        &self,
-        url: &str,
-    ) -> Result<(Vec<Release>, String), anyhow::Error> {
-        let get_response = self.send_get_request(url).await.map_err(|e| anyhow!(e))?;
-        let etag = get_response
-            .headers()
-            .get("etag")
-            .map_or("", |v| v.to_str().unwrap_or_default())
-            .to_string();
-        let body = get_response.text().await.map_err(|e| anyhow!(e))?;
-
-        Ok((serde_json::from_str(&body)?, etag))
     }
 
     #[allow(dead_code)]

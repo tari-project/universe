@@ -107,10 +107,10 @@ impl SetupPhaseImpl for NodeSetupPhase {
     }
 
     async fn get_shutdown_signal(&self) -> ShutdownSignal {
-        TasksTrackers::current().core_phase.get_signal().await
+        TasksTrackers::current().node_phase.get_signal().await
     }
     async fn get_task_tracker(&self) -> TaskTracker {
-        TasksTrackers::current().core_phase.get_task_tracker().await
+        TasksTrackers::current().node_phase.get_task_tracker().await
     }
     fn get_phase_dependencies(&self) -> Vec<tokio::sync::watch::Receiver<PhaseStatus>> {
         self.setup_configuration
@@ -169,7 +169,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
         let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
         let state = self.app_handle.state::<UniverseAppState>();
 
-        let binary_resolver = BinaryResolver::current().read().await;
+        let binary_resolver = BinaryResolver::current();
 
         if self.app_configuration.use_tor && !cfg!(target_os = "macos") {
             let tor_binary_progress_tracker = progress_stepper.channel_step_range_updates(

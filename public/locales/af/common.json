@@ -19,9 +19,11 @@
   "max-temperature": "Maksimum temperatuur",
   "minimize": "Minimaliseer",
   "mode": "Modus",
+  "not-available": "Not available",
   "not-installed-in-applications-directory": "Oeps! Tari Universe moet in die Toepassingsgids wees. Sal jy dit daar installeer?",
   "pending": "Pending",
   "please-try-again-later": "Probeer asseblief later weer. As die probleem voortduur, kontak ons asseblief.",
+  "port": "Port",
   "received": "Ontvang",
   "resources": "Hulpbronne",
   "restart": "Herbegin",
@@ -43,6 +45,7 @@
   "utilization": "Benutting",
   "version": "Weergawe",
   "versions": "Weergawes",
+  "waiting-for-confirmations": "Waiting for {{ total }} block confirmations ({{ confirmations }} of {{ total }} confirmed)",
   "webgl-not-supported": "WebGL word nie ondersteun nie. Visuele modus gedeaktiveer.",
   "xtm": "XTM"
 }

@@ -24,6 +24,7 @@
     "save-changes": "Stoor Veranderinge",
     "saved": "Veranderinge Toepas",
     "title": "Pasgemaakte Modus",
+    "use-custom": "Use Custom settings",
     "warning": "Waarskuwing"
   },
   "debug-info": "Ontfoutingsinligting",
@@ -56,7 +57,7 @@
   "invalid-stats-server-port-empty": "Statistieke bedienerpoort kan nie leeg wees nie",
   "inviteCode": "Uitnodigingskode",
   "is-on-orphan-chain": "Dit lyk of jy aan \"n vurk gekoppel is, en nie die hoofketting nie. Enige blokke wat jy wen, mag ongeldig verklaar word.",
-  "last-block-added-time": "Tyd toe laaste blok by ketting gevoeg was",
+  "last-block-added-time": "Time since previous block was added to the chain: <strong>{{time}}</strong>",
   "license-agreement": "Lisensie-ooreenkoms",
   "local-node-sync-progress": "Plaaslike node sinkroniseer vordering",
   "logs": "Verslae",
@@ -169,6 +170,7 @@
   "use-tor-bridges": "Gebruik Tor Brûe",
   "user-agreement": "Gebruikersooreenkoms",
   "visual-mode": "Visuele modus",
+  "waiting-for-data": "Waiting for chain data...",
   "yes": "Yes",
   "your-feedback": "Beskryf asseblief u probleem",
   "your-reference": "U verwysing"
