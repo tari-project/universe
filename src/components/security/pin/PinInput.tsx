@@ -1,21 +1,18 @@
 import { ChangeEvent, useEffect, useState } from 'react';
-import { Controller, useFieldArray, useForm } from 'react-hook-form';
-import { DigitInput, DigitWrapper, FormCTA, Wrapper } from './styles.ts';
+import { Controller, useFieldArray, useFormContext } from 'react-hook-form';
+import { DigitInput, DigitWrapper } from './styles.ts';
 
-const DEFAULT_PIN_LENGTH = 6;
-const pinArr = Array.from({ length: DEFAULT_PIN_LENGTH }, (_, i) => i);
+export const DEFAULT_PIN_LENGTH = 6;
 
 interface Digit {
     digit: string;
 }
-interface Values {
+export interface CodeInputValues {
     code: Digit[];
 }
 export function PinInput() {
     const [focusedIndex, setFocusedIndex] = useState(0);
-    const { control, setFocus, getValues, setValue, handleSubmit } = useForm<Values>({
-        defaultValues: { code: pinArr.map((_) => ({ digit: '' })) },
-    });
+    const { control, setFocus, getValues, setValue } = useFormContext<CodeInputValues>();
 
     const { fields } = useFieldArray({
         control,
@@ -89,15 +86,5 @@ export function PinInput() {
         );
     });
 
-    function onSubmit(data) {
-        const codeValue = data.code.map(({ digit }) => digit).join('');
-        console.debug(`codeValue= `, codeValue);
-    }
-    // console.debug(`formState.isValid= `, formState.isValid);
-    return (
-        <Wrapper onSubmit={handleSubmit(onSubmit)}>
-            <DigitWrapper>{digitMarkup}</DigitWrapper>
-            <FormCTA fluid disabled={false} type="submit">{`Submit`}</FormCTA>
-        </Wrapper>
-    );
+    return <DigitWrapper>{digitMarkup}</DigitWrapper>;
 }

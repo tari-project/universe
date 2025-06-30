@@ -6,13 +6,27 @@ export const Wrapper = styled.form`
     display: flex;
     width: 100%;
     flex-direction: column;
-    gap: 30px;
+    align-items: center;
+`;
+
+export const TextWrapper = styled.div`
+    display: flex;
+    width: 100%;
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
+    white-space: pre-wrap;
+
+    h5 {
+        font-size: 30px;
+    }
 `;
 
 export const DigitWrapper = styled.div`
     display: flex;
     width: 100%;
     justify-content: space-between;
+    padding: 30px 0;
 `;
 
 export const DigitInput = styled.input<{ $isInvalid?: boolean }>`
