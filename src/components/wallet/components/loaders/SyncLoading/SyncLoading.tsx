@@ -14,6 +14,8 @@ import { useFloating, useHover, useInteractions, offset, shift, FloatingPortal }
 import { AnimatePresence } from 'motion/react';
 import Countdown from 'react-countdown';
 
+const date = new Date(Date.now() + (2 * 60 * 60 + 17 * 60) * 1000);
+
 export default function SyncLoading() {
     const sync_text = {
         line1: 'Sync in progress. ',
@@ -25,8 +27,6 @@ export default function SyncLoading() {
     };
 
     const [open, setOpen] = useState(false);
-
-    const date = new Date(Date.now() + (2 * 60 * 60 + 17 * 60) * 1000);
 
     const { refs, context, floatingStyles } = useFloating({
         open,

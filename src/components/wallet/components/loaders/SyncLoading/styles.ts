@@ -3,8 +3,10 @@ import styled from 'styled-components';
 
 export const Wrapper = styled(m.div)`
     border-radius: 10px;
-    border: 1px solid rgba(144, 144, 144, 0.2);
-    background: #f8f8f8;
+    border: 1px solid ${({ theme }) => theme.palette.background.accent};
+
+    background: ${({ theme }) =>
+        theme.mode === 'dark' ? theme.palette.background.accent : theme.palette.background.paper};
 
     padding: 17px;
 
@@ -15,7 +17,7 @@ export const Wrapper = styled(m.div)`
 `;
 
 export const Text = styled.div`
-    color: #797979;
+    color: ${({ theme }) => theme.palette.text.secondary};
     font-family: Poppins, sans-serif;
     font-size: 11px;
     font-style: normal;
@@ -27,7 +29,7 @@ export const Text = styled.div`
     align-items: flex-start;
 
     strong {
-        color: #111;
+        color: ${({ theme }) => theme.palette.text.primary};
         font-weight: 700;
     }
 `;
@@ -58,12 +60,12 @@ export const TooltipContent = styled(m.div)`
     padding: 20px;
 
     border-radius: 10px;
-    background: #fff;
+    background: ${({ theme }) => theme.palette.background.paper};
     box-shadow: 0px 4px 45px 0px rgba(0, 0, 0, 0.08);
 `;
 
 export const TooltipTitle = styled.div`
-    color: #000;
+    color: ${({ theme }) => theme.palette.text.primary};
     font-family: Poppins, sans-serif;
     font-size: 14px;
     font-style: normal;
