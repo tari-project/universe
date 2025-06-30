@@ -219,7 +219,7 @@ pub async fn select_exchange_miner(
     .await
     .map_err(InvokeError::from_anyhow)?;
     let new_external_tari_address = TariAddress::from_str(&mining_address)
-        .map_err(|e| format!("Invalid Tari address: {}", e))?;
+        .map_err(|e| format!("Invalid Tari address: {e}"))?;
     ConfigWallet::update_field(
         ConfigWalletContent::set_external_tari_address,
         Some(new_external_tari_address.clone()),
@@ -680,7 +680,7 @@ pub async fn set_external_tari_address(
     let timer = Instant::now();
 
     let new_external_tari_address =
-        TariAddress::from_str(&address).map_err(|e| format!("Invalid Tari address: {}", e))?;
+        TariAddress::from_str(&address).map_err(|e| format!("Invalid Tari address: {e}"))?;
 
     ConfigWallet::update_field(
         ConfigWalletContent::set_external_tari_address,
@@ -711,7 +711,7 @@ pub async fn set_external_tari_address(
 pub async fn confirm_exchange_address(address: String) -> Result<(), InvokeError> {
     let timer = Instant::now();
     let new_external_tari_address =
-        TariAddress::from_str(&address).map_err(|e| format!("Invalid Tari address: {}", e))?;
+        TariAddress::from_str(&address).map_err(|e| format!("Invalid Tari address: {e}"))?;
     ConfigWallet::update_field(
         ConfigWalletContent::set_external_tari_address,
         Some(new_external_tari_address.clone()),
@@ -1069,7 +1069,7 @@ pub async fn reset_settings(
 
                     remove_dir_all(path.clone()).map_err(|e| {
                         error!(target: LOG_TARGET, "[reset_settings] Could not remove {:?} directory: {:?}", path, e);
-                        format!("Could not remove directory: {}", e)
+                        format!("Could not remove directory: {e}")
                     })?;
                 } else {
                     if let Some(file_name) = path.file_name().and_then(|name| name.to_str()) {
@@ -1080,7 +1080,7 @@ pub async fn reset_settings(
 
                     remove_file(path.clone()).map_err(|e| {
                         error!(target: LOG_TARGET, "[reset_settings] Could not remove {:?} file: {:?}", path, e);
-                        format!("Could not remove file: {}", e)
+                        format!("Could not remove file: {e}")
                     })?;
                 }
             }
@@ -1672,14 +1672,14 @@ pub async fn start_cpu_mining(
         drop(cpu_miner_config);
 
         if let Err(e) = res {
-            let err_msg = format!("Could not start CPU mining: {}", e);
+            let err_msg = format!("Could not start CPU mining: {e}");
             error!(target: LOG_TARGET, "{}", err_msg);
             sentry::capture_message(&err_msg, sentry::Level::Error);
             cpu_miner
                 .stop()
                 .await
                 .inspect_err(|e| {
-                    let stop_err = format!("Error stopping CPU miner: {}", e);
+                    let stop_err = format!("Error stopping CPU miner: {e}");
                     error!(target: LOG_TARGET, "{}", stop_err);
                 })
                 .ok();
@@ -1777,7 +1777,7 @@ pub async fn start_gpu_mining(
 
         info!(target: LOG_TARGET, "4. Starting gpu miner");
         if let Err(e) = res {
-            let err_msg = format!("Could not start GPU mining: {}", e);
+            let err_msg = format!("Could not start GPU mining: {e}");
             error!(target: LOG_TARGET, "{}", err_msg);
             sentry::capture_message(&err_msg, sentry::Level::Error);
 
@@ -2243,7 +2243,7 @@ pub async fn launch_builtin_tapplet() -> Result<ActiveTapplet, String> {
     Ok(ActiveTapplet {
         tapplet_id: 0,
         display_name: "Bridge-wXTM".to_string(),
-        source: format!("http://{}", addr),
+        source: format!("http://{addr}"),
         version: "1.0.0".to_string(),
     })
 }

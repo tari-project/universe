@@ -237,7 +237,7 @@ impl P2poolManager {
                 .as_ref()
                 .map(|c| c.grpc_port)
                 .unwrap_or_default();
-            format!("http://127.0.0.1:{}", grpc_port)
+            format!("http://127.0.0.1:{grpc_port}")
         } else {
             let network = Network::get_current_or_user_setting_or_default();
             match network {

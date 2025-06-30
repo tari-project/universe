@@ -235,7 +235,7 @@ impl SpendWalletAdapter {
             "/ip4/127.0.0.1/tcp/{:?}",
             PortAllocator::new().assign_port_with_fallback()
         );
-        let output_path = self.get_working_dir().join(format!("tx-{}.json", tx_id));
+        let output_path = self.get_working_dir().join(format!("tx-{tx_id}.json"));
 
         let command = ExecutionCommand::new("export-tx").with_extra_args(vec![
             "-p".to_string(),
