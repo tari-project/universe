@@ -18,7 +18,7 @@
     "earned": "You earned",
     "tile-heading": "Hadiah Sedang Berlangsung",
     "tile-loading": "Pool sedang memanas",
-    "tooltip-copy": "Hadiah berada dalam status “Sedang Berlangsung” hingga Anda mendapatkan minimal <strong>{{amount}}</strong>. Setelah mencapai ambang batas, hadiah yang sedang berlangsung akan otomatis dikirim ke dompet Tari Universe Anda. Mungkin diperlukan waktu tambahan 2 jam untuk tiba.",
+    "tooltip-copy": "“In Progress” until you earn a minimum of <strong>{{amount}}</strong>. There may be a delay between sending your payout and it displaying in your wallet txs and balance.",
     "tooltip-tile-heading": "Ambang Hadiah"
   },
   "tribe": "Suku"

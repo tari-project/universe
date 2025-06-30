@@ -28,11 +28,11 @@ const Count = styled.div<{ $count: number }>`
 
 export default function Peers() {
     const { t } = useTranslation('settings');
+    const isConnectedToTariNetwork = useMiningMetricsStore((s) => s.isNodeConnected);
     const connectedPeers = useMiningMetricsStore((state) => state?.connected_peers || []);
     const connectedPeersCount = connectedPeers?.length || 0;
-    const listMarkup = connectedPeersCount
-        ? connectedPeers.map((peer, i) => <li key={`peer-${peer}:${i}`}>{peer}</li>)
-        : null;
+    const listMarkup = connectedPeers.map((peer, i) => <li key={`peer-${peer}:${i}`}>{peer}</li>);
+
     return (
         <SettingsGroupWrapper>
             <SettingsGroup>
@@ -47,7 +47,11 @@ export default function Peers() {
                     </SettingsGroupTitle>
 
                     <Stack style={{ fontSize: '12px' }}>
-                        <ol>{listMarkup}</ol>
+                        {connectedPeersCount ? (
+                            <ol>{listMarkup}</ol>
+                        ) : (
+                            <p>{isConnectedToTariNetwork ? 0 : t('not-connected-to-tari')}</p>
+                        )}
                     </Stack>
                 </SettingsGroupContent>
             </SettingsGroup>
