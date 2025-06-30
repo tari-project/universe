@@ -27,7 +27,7 @@ use tari_common::configuration::Network;
 fn get_text_explore_blocks_url(network: Network, block_height: u64) -> String {
     match network {
         Network::MainNet => {
-            format!("https://textexplore.tari.com/blocks/{}?json", block_height)
+            format!("https://textexplore.tari.com/blocks/{block_height}?json")
         }
         _ => format!(
             "https://textexplore-{}.tari.com/blocks/{}?json",
@@ -114,7 +114,7 @@ pub(crate) async fn get_block_info_from_block_scan(
         .data
         .iter()
         .fold(String::new(), |mut acc, x| {
-            write!(acc, "{:02x}", x).expect("Unable to write");
+            write!(acc, "{x:02x}").expect("Unable to write");
             acc
         });
     let height = response.header.height.parse::<u64>()?;
