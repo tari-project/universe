@@ -1,4 +1,5 @@
 {
+  "all-activity": "All activity",
   "confirmation-message": "İşleminiz gönderildi!\nBirkaç blok madenciliğinden sonra geçmişinizde görünecektir.",
   "empty-tx": "İşlem bulunamadı",
   "history": {
@@ -18,6 +19,7 @@
     "tooltip-emoji-id-text2": "Yat desteği yakında geliyor!",
     "tooltip-emoji-id-title": "Emoji Kimliği"
   },
+  "rewards": "Rewards",
   "send": {
     "balance": "Bakiye",
     "broadcast": "Yayınlanıyor",
@@ -122,6 +124,7 @@
     "send": "Gönder"
   },
   "tari": "Tari",
+  "transactions": "Transactions",
   "wallet-connected": "Cüzdan Bağlandı",
   "wallet-is-scanning": "Cüzdan taranıyor...",
   "wallet-scanning-with-progress": "Cüzdan taranıyor: {{scanned}}/{{total}} ({{percent}}%)",
