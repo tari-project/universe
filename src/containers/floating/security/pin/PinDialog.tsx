@@ -8,14 +8,14 @@ import { PinInput } from '@app/components/security/pin/PinInput.tsx';
 export default function PinDialog() {
     const { t } = useTranslation('wallet');
     const dialogToShow = useUIStore((s) => s.dialogToShow);
-    const _isOpen = dialogToShow === 'pin';
+    const isOpen = dialogToShow === 'pin';
 
     function handleClose() {
         setDialogToShow(null);
     }
 
     return (
-        <Dialog open={true} onOpenChange={handleClose} disableClose>
+        <Dialog open={isOpen} onOpenChange={handleClose} disableClose>
             <DialogContent $transparentBg $unPadded>
                 <Wrapper>
                     <Header>

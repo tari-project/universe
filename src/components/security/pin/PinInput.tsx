@@ -1,6 +1,6 @@
 import { ChangeEvent, useEffect, useState } from 'react';
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
-import { DigitWrapper, Wrapper } from './styles.ts';
+import { DigitInput, DigitWrapper, FormCTA, Wrapper } from './styles.ts';
 
 const DEFAULT_PIN_LENGTH = 6;
 const pinArr = Array.from({ length: DEFAULT_PIN_LENGTH }, (_, i) => i);
@@ -12,16 +12,8 @@ interface Values {
     code: Digit[];
 }
 export function PinInput() {
-    const rules = {
-        maxLength: 1,
-        required: true,
-        pattern: /^[0-9]+$/g,
-    };
     const [focusedIndex, setFocusedIndex] = useState(0);
-    const { control, setFocus, getValues, setValue } = useForm<Values>({
-        mode: 'all',
-        shouldUseNativeValidation: true,
-        shouldFocusError: true,
+    const { control, setFocus, getValues, setValue, handleSubmit } = useForm<Values>({
         defaultValues: { code: pinArr.map((_) => ({ digit: '' })) },
     });
 
@@ -29,7 +21,9 @@ export function PinInput() {
         control,
         name: 'code',
         keyName: 'id',
-        rules,
+        rules: {
+            required: true,
+        },
     });
 
     useEffect(() => {
@@ -74,12 +68,12 @@ export function PinInput() {
         return (
             <Controller
                 control={control}
-                rules={rules}
+                rules={{ required: true }}
                 key={digit.id}
                 name={`code.${i}.digit`}
                 render={({ field, formState: _, fieldState }) => {
                     return (
-                        <DigitWrapper
+                        <DigitInput
                             {...field}
                             ref={field.ref}
                             $isInvalid={!!field.value && fieldState.invalid}
@@ -95,5 +89,15 @@ export function PinInput() {
         );
     });
 
-    return <Wrapper>{digitMarkup}</Wrapper>;
+    function onSubmit(data) {
+        const codeValue = data.code.map(({ digit }) => digit).join('');
+        console.debug(`codeValue= `, codeValue);
+    }
+    // console.debug(`formState.isValid= `, formState.isValid);
+    return (
+        <Wrapper onSubmit={handleSubmit(onSubmit)}>
+            <DigitWrapper>{digitMarkup}</DigitWrapper>
+            <FormCTA fluid disabled={false} type="submit">{`Submit`}</FormCTA>
+        </Wrapper>
+    );
 }
