@@ -131,7 +131,7 @@ impl NodeAdapterService {
                 .header
                 .expect("Failed to get block header data");
             let hash: String = hash.iter().fold(String::new(), |mut acc, x| {
-                write!(acc, "{:02x}", x).expect("Unable to write");
+                write!(acc, "{x:02x}").expect("Unable to write");
                 acc
             });
 
