@@ -121,7 +121,7 @@ pub async fn send_new_block_mined(app: AppHandle, block_height: u64) {
         let hashed_view_private_key = get_wallet_view_key_hashed(app.clone()).await;
 
         let client = reqwest::Client::new();
-        let url = format!("{}/miner/mined-block", base_url);
+        let url = format!("{base_url}/miner/mined-block");
         let message = AirdropMinedBlockMessage {
             wallet_view_key_hashed: hashed_view_private_key,
             app_id,

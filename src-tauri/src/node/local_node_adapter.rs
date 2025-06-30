@@ -290,8 +290,7 @@ impl ProcessAdapter for LocalNodeAdapter {
                 }
                 args.push("-p".to_string());
                 args.push(format!(
-                    "base_node.p2p.transport.tor.control_address=/ip4/127.0.0.1/tcp/{}",
-                    tor_control_port
+                    "base_node.p2p.transport.tor.control_address=/ip4/127.0.0.1/tcp/{tor_control_port}"
                 ));
             }
             let network = Network::get_current_or_user_setting_or_default();
