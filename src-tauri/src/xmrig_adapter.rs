@@ -186,7 +186,7 @@ impl ProcessAdapter for XmrigAdapter {
 
         // don't specify threads for ludicrous mode
         if let Some(Some(cpu_threads)) = self.cpu_threads {
-            args.push(format!("--threads={}", cpu_threads));
+            args.push(format!("--threads={cpu_threads}"));
         }
         args.push("--verbose".to_string());
         for extra_option in &self.extra_options {
