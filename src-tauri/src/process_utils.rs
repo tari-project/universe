@@ -136,10 +136,10 @@ where
 
 pub fn write_pid_file(spec: &ProcessStartupSpec, id: u32) -> Result<(), String> {
     let mut file = fs::File::create(spec.data_dir.join(spec.pid_file_name.clone()))
-        .map_err(|e| format!("Failed to create PID file: {}", e))?;
+        .map_err(|e| format!("Failed to create PID file: {e}"))?;
     file.write_all(id.to_string().as_bytes())
-        .map_err(|e| format!("Failed to write PID file: {}", e))?;
+        .map_err(|e| format!("Failed to write PID file: {e}"))?;
     file.flush()
-        .map_err(|e| format!("Failed to flush PID file: {}", e))?;
+        .map_err(|e| format!("Failed to flush PID file: {e}"))?;
     Ok(())
 }

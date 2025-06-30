@@ -157,7 +157,7 @@ impl NetworkStatus {
             Ok(Ok(_)) => info!(target: LOG_TARGET, "Network speed test completed"),
             Ok(Err(error_message)) => {
                 let error_message =
-                    format!("Failed to perform network speed test: {:?}", error_message);
+                    format!("Failed to perform network speed test: {error_message:?}");
                 error!(target: LOG_TARGET, "Failed to perform network speed test: {:?}", error_message);
             }
             Err(_) => {
