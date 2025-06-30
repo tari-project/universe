@@ -32,8 +32,8 @@ const filterToBitflag = (filter: TxHistoryFilter): number => {
     }
 };
 
-export const fetchTransactionsHistory = async ({ offset = 0, limit }: TxArgs) => {
-    const bitflag = filterToBitflag('rewards');
+export const fetchTransactionsHistory = async ({ offset = 0, limit, filter = 'all-activity' }: TxArgs) => {
+    const bitflag = filterToBitflag(filter);
     try {
         const fetchedTxs = await invoke('get_transactions', { offset, limit, statusBitflag: bitflag });
 
