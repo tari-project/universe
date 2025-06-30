@@ -116,10 +116,10 @@ impl LatestVersionApiAdapter for TorReleaseAdapter {
 
     fn get_base_main_download_url(&self, version: &str) -> String {
         let base_url = "https://cdn-universe.tari.com/tor-package-archive/torbrowser".to_string();
-        format!("{}/{}", base_url, version)
+        format!("{base_url}/{version}")
     }
     fn get_base_fallback_download_url(&self, version: &str) -> String {
         let base_url = "https://archive.torproject.org/tor-package-archive/torbrowser".to_string();
-        format!("{}/{}", base_url, version)
+        format!("{base_url}/{version}")
     }
 }

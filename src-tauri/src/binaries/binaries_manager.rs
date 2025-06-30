@@ -106,10 +106,7 @@ impl BinaryManager {
             serde_json::from_str(data_str).unwrap_or_default();
         // content string can be either 0.0.5 or 0.0.5 | hash
         let content_string = json_content.binaries.get(&binary_name).unwrap_or_else(|| {
-            panic!(
-                "No version requirements found for binary: {} in the provided data",
-                binary_name
-            )
+            panic!("No version requirements found for binary: {binary_name} in the provided data")
         });
 
         let (version_requirement, hash) =
@@ -233,7 +230,7 @@ impl BinaryManager {
         BinaryDownloadInfo {
             name: name.clone(),
             main_url: format!("{}/{}", main_url, name.clone()),
-            fallback_url: format!("{}/{}", fallback_url, name),
+            fallback_url: format!("{fallback_url}/{name}"),
         }
     }
 

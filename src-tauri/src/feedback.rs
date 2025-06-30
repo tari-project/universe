@@ -157,7 +157,7 @@ impl Feedback {
         // Send the POST request
         let mut req = reqwest::Client::new().post(feedback_url).multipart(form);
         if let Some(jwt) = jwt {
-            req = req.header("Authorization", format!("Bearer {}", jwt));
+            req = req.header("Authorization", format!("Bearer {jwt}"));
         }
         let response = req.send().await?;
 

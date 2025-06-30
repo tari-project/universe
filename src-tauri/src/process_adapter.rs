@@ -225,7 +225,7 @@ impl ProcessInstanceTrait for ProcessInstance {
             if let Some(id) = child.id() {
                 let pid_file_res = write_pid_file(&spec, id);
                 if let Err(e) = pid_file_res {
-                    let error_msg = format!("Failed to write PID file: {}", e);
+                    let error_msg = format!("Failed to write PID file: {e}");
                     error!(target: LOG_TARGET, "{}", error_msg);
                     sentry::capture_message(&error_msg, sentry::Level::Error);
                 }
