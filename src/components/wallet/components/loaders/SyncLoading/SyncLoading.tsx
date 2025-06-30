@@ -41,7 +41,7 @@ export default function SyncLoading() {
                                 date={date}
                                 renderer={({ hours, minutes, completed }) =>
                                     completed
-                                        ? t('sync-message.any_moment_now')
+                                        ? t('sync-message.completed')
                                         : `${hours}h ${minutes.toString().padStart(2, '0')}m`
                                 }
                             />
@@ -63,8 +63,8 @@ export default function SyncLoading() {
                                 animate={{ opacity: 1, x: 0 }}
                                 exit={{ opacity: 0, x: 10 }}
                             >
-                                <TooltipTitle>{t('sync-message.tooltipTitle')}</TooltipTitle>
-                                <TooltipDescription>{t('sync-message.tooltipDescription')}</TooltipDescription>
+                                <TooltipTitle>{t('sync-message.tooltip-title')}</TooltipTitle>
+                                <TooltipDescription>{t('sync-message.tooltip-description')}</TooltipDescription>
                             </TooltipContent>
                         </TooltipPosition>
                     </FloatingPortal>
