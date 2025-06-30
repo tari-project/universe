@@ -1,5 +1,5 @@
 import { AnimatePresence } from 'motion/react';
-import { useUIStore, useWalletStore } from '@app/store';
+import { useMiningMetricsStore, useUIStore, useWalletStore } from '@app/store';
 import { swapTransition } from '@app/components/transactions/wallet/transitions.ts';
 import { Swap } from '@app/components/transactions/wallet/Swap/Swap.tsx';
 import { WalletBalance, WalletBalanceHidden } from '../components/balance/WalletBalance.tsx';
@@ -49,6 +49,8 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
     const detailsItem = useWalletStore((s) => s.detailsItem);
     const filter = useWalletStore((s) => s.tx_history_filter);
 
+    const isConnectedToTariNetwork = useMiningMetricsStore((s) => s.isNodeConnected);
+
     const targetRef = useRef<HTMLDivElement>(null) as React.RefObject<HTMLDivElement>;
     const [isScrolled, setIsScrolled] = useState(false);
 
@@ -65,7 +67,8 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
         return () => el.removeEventListener('scroll', onScroll);
     }, []);
 
-    const isSyncing = useWalletStore((s) => s.wallet_scanning.is_scanning);
+    const walletIsScanning = useWalletStore((s) => s.wallet_scanning.is_scanning);
+    const isSyncing = walletIsScanning || !isConnectedToTariNetwork;
     const isSwapping = useWalletStore((s) => s.is_swapping);
     const seedlessUI = useUIStore((s) => s.seedlessUI);
 

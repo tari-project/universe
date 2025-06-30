@@ -118,6 +118,15 @@
     "your-transaction-is-being-processed": "Ваша транзакция обрабатывается",
     "your-xtm-is-on-the-way": "Ваши XTM уже в пути!"
   },
+  "sync-message": {
+    "completed": "any moment now",
+    "line1": "Sync in progress. ",
+    "line2": " remaining",
+    "line3": "until your wallet balance is displayed",
+    "tooltip-description": "Your node is still syncing, so your balance isn't visible yet.",
+    "tooltip-description-mining": "Your node is still syncing, so your balance isn't visible yet. But don't worry, you're actively mining and earning XTM.",
+    "tooltip-title": "Why the delay?"
+  },
   "tabs": {
     "history": "История",
     "receive": "Получить",
@@ -135,13 +144,5 @@
     "mine-directly-to-exchange": "{{exchangeName}}",
     "mining-here": "Mining here",
     "or": "or"
-  },
-  "sync-message": {
-    "line1": "Sync in progress. ",
-    "line2": " remaining",
-    "line3": "until your wallet balance is displayed",
-    "tooltip-title": "Why the delay?",
-    "tooltip-description": "Your node is still syncing, so your balance isn't visible yet. But don't worry, you're actively mining and earning XTM.",
-    "completed": "any moment now"
   }
 }
