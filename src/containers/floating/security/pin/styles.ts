@@ -5,6 +5,8 @@ export const Wrapper = styled.div`
     display: flex;
     padding: 30px;
     min-width: 580px;
+    flex-direction: column;
+    gap: 20px;
 `;
 
 export const Header = styled.div`

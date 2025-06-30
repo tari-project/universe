@@ -3,6 +3,7 @@ import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.ts
 import { Header, Heading, Wrapper } from './styles.ts';
 import CloseButton from '@app/components/elements/buttons/CloseButton.tsx';
 import { useTranslation } from 'react-i18next';
+import PinInput from '@app/components/security/pin/PinInput.tsx';
 
 export default function PinDialog() {
     const { t } = useTranslation('wallet');
@@ -20,6 +21,7 @@ export default function PinDialog() {
                     <Header>
                         <Heading>{t('security.pin.enter')}</Heading> <CloseButton />
                     </Header>
+                    <PinInput />
                 </Wrapper>
             </DialogContent>
         </Dialog>
