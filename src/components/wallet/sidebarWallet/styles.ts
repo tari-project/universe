@@ -30,6 +30,7 @@ export const Wrapper = styled.div<{ $swapsPanel?: boolean; $seedlessUI?: boolean
     @media (max-height: 815px) {
         height: 425px;
         padding: 10px;
+        height: auto;
 
         ${({ $swapsPanel, $seedlessUI }) =>
             ($swapsPanel || $seedlessUI) &&
