@@ -1,4 +1,5 @@
 {
+  "all-activity": "All activity",
   "confirmation-message": "Transaksi Anda telah dikirim!\nIni akan muncul dalam riwayat Anda setelah menambang beberapa blok.",
   "empty-tx": "Tidak ada transaksi ditemukan",
   "history": {
@@ -18,6 +19,7 @@
     "tooltip-emoji-id-text2": "Dukungan Yat segera hadir!",
     "tooltip-emoji-id-title": "ID Emoji"
   },
+  "rewards": "Rewards",
   "send": {
     "balance": "Saldo",
     "broadcast": "Menyebarkan",
@@ -122,6 +124,7 @@
     "send": "Kirim"
   },
   "tari": "Tari",
+  "transactions": "Transactions",
   "wallet-connected": "Dompet Terhubung",
   "wallet-is-scanning": "Dompet sedang memindai...",
   "wallet-scanning-with-progress": "Dompet sedang memindai: {{scanned}}/{{total}} ({{percent}}%)",
