@@ -42,6 +42,7 @@ use crate::gpu_miner::EngineType;
 use crate::gpu_miner_adapter::{GpuMinerStatus, GpuNodeSource};
 use crate::gpu_status_file::GpuStatus;
 use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
+use crate::node::node_adapter::BaseNodeStatus;
 use crate::node::node_manager::NodeType;
 use crate::p2pool::models::{Connections, P2poolStats};
 use crate::setup::setup_manager::{SetupManager, SetupPhase};
@@ -115,14 +116,6 @@ pub struct ApplicationsVersions {
 pub struct GpuMinerMetrics {
     hardware: Vec<GpuStatus>,
     mining: GpuMinerStatus,
-}
-
-#[derive(Debug, Serialize, Clone)]
-pub struct BaseNodeStatus {
-    block_height: u64,
-    block_time: u64,
-    is_connected: bool,
-    connected_peers: Vec<String>,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -2277,4 +2270,11 @@ pub async fn refresh_wallet_history(
         .await;
 
     Ok(())
+}
+
+#[tauri::command]
+pub async fn get_base_node_status(
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<BaseNodeStatus, String> {
+    Ok(*state.node_status_watch_rx.borrow())
 }
