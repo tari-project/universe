@@ -6,8 +6,9 @@ import { useProgressCountdown } from '@app/containers/main/Sync/components/usePr
 interface SyncCountdownProps {
     onCompleted: () => void;
     onStarted: () => void;
+    isCompact?: boolean;
 }
-export default function SyncCountdown({ onCompleted, onStarted }: SyncCountdownProps) {
+export default function SyncCountdown({ onCompleted, onStarted, isCompact = false }: SyncCountdownProps) {
     const { t } = useTranslation(['wallet', 'setup-progresses']);
     const countdownRef = useRef<Countdown | null>(null);
     const { countdown } = useProgressCountdown();
@@ -17,16 +18,14 @@ export default function SyncCountdown({ onCompleted, onStarted }: SyncCountdownP
 
     const renderer = ({ hours, minutes, completed, api }) => {
         if (!api.isStarted()) {
-            return t('setup-progresses:calculating_time');
+            return t('setup-progresses:calculating_time', { context: isCompact && 'compact' });
         }
         return completed ? t('sync-message.completed') : `${hours}h ${minutes.toString().padStart(2, '0')}m`;
     };
 
     useEffect(() => {
-        if (countdown > 0) {
+        if (countdown > 0 && !api?.isStarted()) {
             api?.start();
-        } else {
-            console.debug(countdown);
         }
     }, [api, countdown]);
 
