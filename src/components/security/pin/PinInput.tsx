@@ -1,47 +1,92 @@
+import { ChangeEvent, useEffect, useState } from 'react';
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { DigitWrapper, Wrapper } from './styles.ts';
 
 const DEFAULT_PIN_LENGTH = 6;
-const pinArr = Array.from({ length: DEFAULT_PIN_LENGTH }, (_, i) => i + 1);
+const pinArr = Array.from({ length: DEFAULT_PIN_LENGTH }, (_, i) => i);
 
-interface IDigitInputs {
-    digit?: number;
+interface Digit {
+    digit: string;
 }
-
-interface IFields {
-    digits: IDigitInputs[];
+interface Values {
+    code: Digit[];
 }
-export default function PinInput() {
-    const { control, setFocus } = useForm<IFields>({
+export function PinInput() {
+    const rules = {
+        maxLength: 1,
+        required: true,
+        pattern: /^[0-9]+$/g,
+    };
+    const [focusedIndex, setFocusedIndex] = useState(0);
+    const { control, setFocus, getValues, setValue } = useForm<Values>({
+        mode: 'all',
         shouldUseNativeValidation: true,
-        defaultValues: { digits: pinArr.map((d) => ({ [`digit${d}`]: undefined })) },
+        shouldFocusError: true,
+        defaultValues: { code: pinArr.map((_) => ({ digit: '' })) },
     });
 
     const { fields } = useFieldArray({
         control,
-        name: 'digits',
+        name: 'code',
         keyName: 'id',
-        rules: {
-            maxLength: 1,
-            required: true,
-        },
+        rules,
     });
+
+    useEffect(() => {
+        function listener(e: KeyboardEvent) {
+            if (e.key === 'Backspace' || e.key === 'Delete') {
+                const currentValue = getValues(`code.${focusedIndex}.digit`);
+                if (!currentValue) {
+                    setFocusedIndex((c) => (c > 0 ? c - 1 : c));
+                }
+            }
+        }
+        document.addEventListener('keydown', listener);
+        return () => {
+            document.removeEventListener('keydown', listener);
+        };
+    }, [focusedIndex, getValues]);
+
+    useEffect(() => {
+        setFocus(`code.${focusedIndex}.digit`);
+    }, [focusedIndex, setFocus]);
+
+    function handleChange(e: ChangeEvent<HTMLInputElement>, fieldIndex: number) {
+        const value = e.target.value;
+        const valueIsNaN = isNaN(Number(value));
+        if (!valueIsNaN) {
+            if (value.length <= 1) {
+                setValue(`code.${fieldIndex}.digit`, value, { shouldValidate: true });
+            }
+
+            const nativeEvent = e.nativeEvent as InputEvent;
+            const isBackSpace = nativeEvent.inputType == 'deleteContentBackward';
+
+            if (!isBackSpace) {
+                setFocus(`code.${fieldIndex + 1}.digit`);
+            }
+        } else {
+            setValue(`code.${fieldIndex}.digit`, '', { shouldValidate: true });
+        }
+    }
 
     const digitMarkup = fields.map((digit, i) => {
         return (
             <Controller
                 control={control}
+                rules={rules}
                 key={digit.id}
-                name={`digits.${i}.digit`}
-                render={({ field }) => {
+                name={`code.${i}.digit`}
+                render={({ field, formState: _, fieldState }) => {
                     return (
                         <DigitWrapper
+                            {...field}
                             ref={field.ref}
-                            type="number"
-                            max={9}
+                            $isInvalid={!!field.value && fieldState.invalid}
+                            onFocus={() => setFocusedIndex(i)}
                             onChange={(e) => {
-                                field.onChange(e);
-                                setFocus(`digits.${i + 1}.digit`);
+                                e.preventDefault();
+                                handleChange(e, i);
                             }}
                         />
                     );
