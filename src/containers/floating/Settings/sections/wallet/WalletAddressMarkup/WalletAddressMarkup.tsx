@@ -15,9 +15,9 @@ import { useWalletStore } from '@app/store/useWalletStore';
 import { useCopyToClipboard } from '@app/hooks';
 import { useTranslation } from 'react-i18next';
 import { setExternalTariAddress } from '@app/store/actions/walletStoreActions';
-import { invoke } from '@tauri-apps/api/core';
 import AddressEditor from '../components/AddressEditor';
 import { CTASArea, InputArea, WalletSettingsGrid } from '@app/containers/floating/Settings/sections/wallet/styles.ts';
+import { useValidate } from '@app/hooks/wallet/useValidate.ts';
 
 const Dot = styled.div`
     width: 4px;
@@ -72,10 +72,11 @@ export const CopyToClipboard = ({ text }: { text: string | undefined }) => {
 };
 
 const WalletAddressMarkup = () => {
-    const [isCondensed, setIsCondensed] = useState(true);
     const { t } = useTranslation('settings', { useSuspense: false });
     const walletAddress = useWalletStore((state) => state.tari_address_base58);
     const walletAddressEmoji = useWalletStore((state) => state.tari_address_emoji);
+    const { validateAddress } = useValidate();
+    const [isCondensed, setIsCondensed] = useState(true);
 
     function condenseEmojiAddress(emojiAddress: string | undefined) {
         const regex = emojiRegex();
@@ -106,14 +107,6 @@ const WalletAddressMarkup = () => {
         }
     }
 
-    const validateAddress = useCallback(async (value: string) => {
-        try {
-            await invoke('verify_address_for_send', { address: value });
-            return true;
-        } catch (_) {
-            return false;
-        }
-    }, []);
     const validationRules = {
         validate: async (value) => {
             const isValid = await validateAddress(value);

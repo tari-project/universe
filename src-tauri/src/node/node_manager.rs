@@ -360,9 +360,9 @@ impl NodeManager {
 
         if let Some((host, port)) = grpc_address {
             if host.starts_with("http") {
-                return Ok(format!("{}:{}", host, port));
+                return Ok(format!("{host}:{port}"));
             } else {
-                return Ok(format!("http://{}:{}", host, port));
+                return Ok(format!("http://{host}:{port}"));
             }
         }
         Err(anyhow::anyhow!("grpc_address not set"))

@@ -681,23 +681,23 @@ async fn get_telemetry_data_inner(
     let disks = Disks::new_with_refreshed_list();
     for (i, disk) in disks.list().iter().enumerate() {
         extra_data.insert(
-            format!("disk_{}_total_gb", i),
+            format!("disk_{i}_total_gb"),
             disk.total_space().saturating_div(1_000_000_000).to_string(),
         );
         extra_data.insert(
-            format!("disk_{}_free_gb", i),
+            format!("disk_{i}_free_gb"),
             disk.available_space()
                 .saturating_div(1_000_000_000)
                 .to_string(),
         );
         extra_data.insert(
-            format!("disk_{}_used_gb", i),
+            format!("disk_{i}_used_gb"),
             (disk.total_space().saturating_sub(disk.available_space()))
                 .saturating_div(1_000_000_000)
                 .to_string(),
         );
         extra_data.insert(
-            format!("disk_{}_kind", i),
+            format!("disk_{i}_kind"),
             match disk.kind() {
                 sysinfo::DiskKind::HDD => "HDD".to_string(),
                 sysinfo::DiskKind::SSD => "SSD".to_string(),
@@ -742,34 +742,34 @@ fn add_process_stats(
     process: &str,
 ) {
     extra_data.insert(
-        format!("{}_uptime_seconds", process),
+        format!("{process}_uptime_seconds"),
         process_stats.current_uptime.as_secs().to_string(),
     );
     extra_data.insert(
-        format!("{}_total_health_checks", process),
+        format!("{process}_total_health_checks"),
         process_stats.total_health_checks.to_string(),
     );
     extra_data.insert(
-        format!("{}_num_warnings", process),
+        format!("{process}_num_warnings"),
         process_stats.num_warnings.to_string(),
     );
     extra_data.insert(
-        format!("{}_num_failure", process),
+        format!("{process}_num_failure"),
         process_stats.num_failures.to_string(),
     );
     extra_data.insert(
-        format!("{}_num_restarts", process),
+        format!("{process}_num_restarts"),
         process_stats.num_restarts.to_string(),
     );
     extra_data.insert(
-        format!("{}_max_health_check_seconds", process),
+        format!("{process}_max_health_check_seconds"),
         process_stats
             .max_health_check_duration
             .as_secs()
             .to_string(),
     );
     extra_data.insert(
-        format!("{}_total_health_check_seconds", process),
+        format!("{process}_total_health_check_seconds"),
         process_stats
             .total_health_check_duration
             .as_secs()
@@ -874,7 +874,7 @@ async fn send_telemetry_data(
 ) -> Result<Option<TelemetryDataResponse>, TelemetryManagerError> {
     let request = reqwest::Client::new();
     let mut request_builder = request
-        .post(format!("{}/miner/heartbeat", airdrop_api_url))
+        .post(format!("{airdrop_api_url}/miner/heartbeat"))
         .header(
             "User-Agent".to_string(),
             format!("tari-universe/{}", data.version.clone()),
@@ -882,7 +882,7 @@ async fn send_telemetry_data(
         .json(&data);
 
     if let Some(token) = airdrop_access_token.clone() {
-        request_builder = request_builder.header("Authorization", format!("Bearer {}", token));
+        request_builder = request_builder.header("Authorization", format!("Bearer {token}"));
     }
 
     let response = request_builder.send().await?;
@@ -921,7 +921,7 @@ async fn send_notification_data(
     let request = reqwest::Client::new();
 
     let mut request_builder = request
-        .post(format!("{}/miner/notifications", airdrop_api_url))
+        .post(format!("{airdrop_api_url}/miner/notifications"))
         .timeout(Duration::from_secs(5))
         .header(
             "User-Agent".to_string(),
@@ -930,7 +930,7 @@ async fn send_notification_data(
         .json(&data);
 
     if let Some(token) = airdrop_access_token.clone() {
-        request_builder = request_builder.header("Authorization", format!("Bearer {}", token));
+        request_builder = request_builder.header("Authorization", format!("Bearer {token}"));
     }
 
     let response = request_builder.send().await?;

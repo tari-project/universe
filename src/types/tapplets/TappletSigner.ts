@@ -1,6 +1,6 @@
 import { setError as setStoreError, useConfigUIStore, useWalletStore } from '@app/store';
 import { invoke } from '@tauri-apps/api/core';
-import { BridgeEnvs, WalletBalance } from '../app-status';
+import { BaseNodeStatus, BridgeEnvs, WalletBalance } from '../app-status';
 import { AccountData, BridgeTxDetails, SendOneSidedRequest, TappletSignerParams, WindowSize } from './tapplet.types';
 import { useTappletsStore } from '@app/store/useTappletsStore';
 
@@ -86,6 +86,11 @@ export class TappletSigner {
             setStoreError(`Error sending transaction: ${error}`);
             return false;
         }
+    }
+
+    public async getBaseNodeStatus(): Promise<BaseNodeStatus> {
+        const status = await invoke('get_base_node_status');
+        return status;
     }
 
     public async getTariBalance(): Promise<WalletBalance> {

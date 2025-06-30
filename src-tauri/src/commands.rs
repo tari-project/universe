@@ -40,6 +40,7 @@ use crate::gpu_miner::EngineType;
 use crate::gpu_miner_adapter::{GpuMinerStatus, GpuNodeSource};
 use crate::gpu_status_file::GpuStatus;
 use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
+use crate::node::node_adapter::BaseNodeStatus;
 use crate::node::node_manager::NodeType;
 use crate::p2pool::models::{Connections, P2poolStats};
 use crate::setup::setup_manager::{SetupManager, SetupPhase};
@@ -117,14 +118,6 @@ pub struct ApplicationsVersions {
 pub struct GpuMinerMetrics {
     hardware: Vec<GpuStatus>,
     mining: GpuMinerStatus,
-}
-
-#[derive(Debug, Serialize, Clone)]
-pub struct BaseNodeStatus {
-    block_height: u64,
-    block_time: u64,
-    is_connected: bool,
-    connected_peers: Vec<String>,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -1012,7 +1005,7 @@ pub async fn reset_settings(
 
                     remove_dir_all(path.clone()).map_err(|e| {
                         error!(target: LOG_TARGET, "[reset_settings] Could not remove {:?} directory: {:?}", path, e);
-                        format!("Could not remove directory: {}", e)
+                        format!("Could not remove directory: {e}")
                     })?;
                 } else {
                     if let Some(file_name) = path.file_name().and_then(|name| name.to_str()) {
@@ -1023,7 +1016,7 @@ pub async fn reset_settings(
 
                     remove_file(path.clone()).map_err(|e| {
                         error!(target: LOG_TARGET, "[reset_settings] Could not remove {:?} file: {:?}", path, e);
-                        format!("Could not remove file: {}", e)
+                        format!("Could not remove file: {e}")
                     })?;
                 }
             }
@@ -1615,14 +1608,14 @@ pub async fn start_cpu_mining(
         drop(cpu_miner_config);
 
         if let Err(e) = res {
-            let err_msg = format!("Could not start CPU mining: {}", e);
+            let err_msg = format!("Could not start CPU mining: {e}");
             error!(target: LOG_TARGET, "{}", err_msg);
             sentry::capture_message(&err_msg, sentry::Level::Error);
             cpu_miner
                 .stop()
                 .await
                 .inspect_err(|e| {
-                    let stop_err = format!("Error stopping CPU miner: {}", e);
+                    let stop_err = format!("Error stopping CPU miner: {e}");
                     error!(target: LOG_TARGET, "{}", stop_err);
                 })
                 .ok();
@@ -1720,7 +1713,7 @@ pub async fn start_gpu_mining(
 
         info!(target: LOG_TARGET, "4. Starting gpu miner");
         if let Err(e) = res {
-            let err_msg = format!("Could not start GPU mining: {}", e);
+            let err_msg = format!("Could not start GPU mining: {e}");
             error!(target: LOG_TARGET, "{}", err_msg);
             sentry::capture_message(&err_msg, sentry::Level::Error);
 
@@ -2186,7 +2179,7 @@ pub async fn launch_builtin_tapplet() -> Result<ActiveTapplet, String> {
     Ok(ActiveTapplet {
         tapplet_id: 0,
         display_name: "Bridge-wXTM".to_string(),
-        source: format!("http://{}", addr),
+        source: format!("http://{addr}"),
         version: "1.0.0".to_string(),
     })
 }
@@ -2264,4 +2257,11 @@ pub async fn refresh_wallet_history(
         .await;
 
     Ok(())
+}
+
+#[tauri::command]
+pub async fn get_base_node_status(
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<BaseNodeStatus, String> {
+    Ok(*state.node_status_watch_rx.borrow())
 }

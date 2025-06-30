@@ -39,8 +39,7 @@ pub async fn try_write_with_retry<T>(
             Err(_) => {
                 if i == retries - 1 {
                     return Err(format!(
-                        "Failed to acquire write lock after {} retries",
-                        retries
+                        "Failed to acquire write lock after {retries} retries"
                     ));
                 }
                 sleep(LOCK_RETRY_DELAY).await;

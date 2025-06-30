@@ -56,7 +56,7 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
         let contents =
             String::from_utf8(buffer_sha256).expect("Failed to read file contents as UTF-8");
         let mut expected_hash = "";
-        let regex = Regex::new(&format!(r"([a-f0-9]+)\s.{}", asset_name))
+        let regex = Regex::new(&format!(r"([a-f0-9]+)\s.{asset_name}"))
             .map_err(|e| anyhow!("Failed to create regex: {}", e))?;
 
         for line in contents.lines() {
@@ -120,10 +120,10 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
 
     fn get_base_main_download_url(&self, version: &str) -> String {
         let base_url = get_mirror_download_url(&self.owner, &self.repo);
-        format!("{}/v{}", base_url, version)
+        format!("{base_url}/v{version}")
     }
     fn get_base_fallback_download_url(&self, version: &str) -> String {
         let base_url = get_gh_download_url(&self.owner, &self.repo);
-        format!("{}/v{}", base_url, version)
+        format!("{base_url}/v{version}")
     }
 }

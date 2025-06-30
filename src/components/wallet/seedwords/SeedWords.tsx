@@ -4,7 +4,7 @@ import { useCopyToClipboard } from '@app/hooks';
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
 import { IoCheckmarkOutline, IoCloseOutline, IoCopyOutline, IoPencil } from 'react-icons/io5';
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useTransition } from 'react';
 import { Wrapper } from './styles.ts';
 import { CTASArea, InputArea, WalletSettingsGrid } from '@app/containers/floating/Settings/sections/wallet/styles.ts';
 import { Edit } from '@app/components/wallet/seedwords/components/Edit.tsx';
@@ -25,12 +25,10 @@ interface SeedWordsProps {
 }
 export default function SeedWords({ isMonero = false }: SeedWordsProps) {
     const isWalletImporting = useWalletStore((s) => s.is_wallet_importing);
-
+    const [isPending, startTransition] = useTransition();
     const [isEditView, setIsEditView] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
     const [newSeedWords, setNewSeedWords] = useState<string[]>();
     const [showConfirm, setShowConfirm] = useState(false);
-    const [copyFetchLoading, setCopyFetchLoading] = useState(false);
 
     const { t } = useTranslation('settings', { useSuspense: false });
     const { copyToClipboard, isCopied } = useCopyToClipboard();
@@ -51,14 +49,12 @@ export default function SeedWords({ isMonero = false }: SeedWordsProps) {
         setShowConfirm(true);
     };
 
-    async function onToggleVisibility(currentVisibilty?: boolean) {
-        setIsLoading(!currentVisibilty);
-        if (!seedWords?.length || !seedWordsFetched) {
-            await getSeedWords();
-            setIsLoading(false);
-        } else {
-            setIsLoading(false);
-        }
+    function onToggleVisibility() {
+        startTransition(async () => {
+            if (!seedWords?.length || !seedWordsFetched) {
+                await getSeedWords();
+            }
+        });
     }
     function onToggleEdit() {
         setIsEditView((c) => !c);
@@ -67,19 +63,18 @@ export default function SeedWords({ isMonero = false }: SeedWordsProps) {
         methods.reset();
         onToggleEdit();
     }
-    const handleCopyClick = useCallback(async () => {
-        if (seedWords && seedWordsFetched) {
-            copyToClipboard(seedWords.join(' '));
-        } else {
-            setCopyFetchLoading(true);
-            getSeedWords().then((r) => {
-                setCopyFetchLoading(false);
-
-                if (r?.length) {
-                    copyToClipboard(r.join(' '));
-                }
-            });
-        }
+    const handleCopyClick = useCallback(() => {
+        startTransition(async () => {
+            if (seedWords && seedWordsFetched) {
+                copyToClipboard(seedWords.join(' '));
+            } else {
+                getSeedWords().then((r) => {
+                    if (r?.length) {
+                        copyToClipboard(r.join(' '));
+                    }
+                });
+            }
+        });
     }, [copyToClipboard, getSeedWords, seedWords, seedWordsFetched]);
 
     const displayCTAs = (
@@ -90,7 +85,7 @@ export default function SeedWords({ isMonero = false }: SeedWordsProps) {
                 </IconButton>
             ) : null}
             <IconButton size="small" type="button" onClick={() => handleCopyClick()}>
-                {!isCopied ? copyFetchLoading ? <CircularProgress /> : <IoCopyOutline /> : <IoCheckmarkOutline />}
+                {!isCopied ? isPending ? <CircularProgress /> : <IoCopyOutline /> : <IoCheckmarkOutline />}
             </IconButton>
         </>
     );
@@ -118,7 +113,7 @@ export default function SeedWords({ isMonero = false }: SeedWordsProps) {
                                 ) : (
                                     <Display
                                         words={seedWords}
-                                        isLoading={isLoading || seedWordsFetching || copyFetchLoading}
+                                        isLoading={isPending || seedWordsFetching}
                                         onToggleClick={onToggleVisibility}
                                     />
                                 )}
