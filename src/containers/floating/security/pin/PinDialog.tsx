@@ -15,7 +15,7 @@ export default function PinDialog() {
     }
 
     return (
-        <Dialog open={isOpen} onOpenChange={handleClose}>
+        <Dialog open={true} onOpenChange={handleClose} disableClose>
             <DialogContent $transparentBg $unPadded>
                 <Wrapper>
                     <Header>

@@ -1,13 +1,13 @@
 import styled from 'styled-components';
 import { convertHexToRGBA } from '@app/utils';
 
-export const Wrapper = styled.div`
+export const Wrapper = styled.form`
     display: flex;
     width: 100%;
     justify-content: space-between;
 `;
 
-export const DigitWrapper = styled.div`
+export const DigitWrapper = styled.input`
     display: flex;
     width: 80px;
     height: 110px;
@@ -20,4 +20,5 @@ export const DigitWrapper = styled.div`
     justify-content: center;
     font-size: 48px;
     font-weight: 500;
+    text-align: center;
 `;
