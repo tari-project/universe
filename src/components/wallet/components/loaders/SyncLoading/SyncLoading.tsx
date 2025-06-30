@@ -9,13 +9,12 @@ import {
     TooltipTitle,
     Wrapper,
 } from './styles';
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { useFloating, useHover, useInteractions, offset, shift, FloatingPortal } from '@floating-ui/react';
 import { AnimatePresence } from 'motion/react';
-import Countdown from 'react-countdown';
 import { useTranslation } from 'react-i18next';
-import { useProgressCountdown } from '@app/containers/main/Sync/components/useProgressCountdown.ts';
 import { useMiningMetricsStore } from '@app/store';
+import SyncCountdown from '@app/components/wallet/components/loaders/SyncLoading/SyncCountdown.tsx';
 
 export default function SyncLoading() {
     const { t } = useTranslation(['wallet', 'setup-progresses']);
@@ -23,10 +22,10 @@ export default function SyncLoading() {
     const gpuMining = useMiningMetricsStore((s) => s.gpu_mining_status.is_mining);
 
     const isMining = cpuMining || gpuMining;
+
     const [open, setOpen] = useState(false);
-    const countdownRef = useRef<Countdown | null>(null);
-    const { countdown } = useProgressCountdown();
-    const date = new Date(Date.now() + countdown * 1000);
+    const [isComplete, setIsComplete] = useState(false);
+    const [isStarted, setIsStarted] = useState(false);
     const { refs, context, floatingStyles } = useFloating({
         open,
         onOpenChange: setOpen,
@@ -36,21 +35,6 @@ export default function SyncLoading() {
     const hover = useHover(context);
     const { getReferenceProps, getFloatingProps } = useInteractions([hover]);
 
-    const renderer = ({ hours, minutes, completed, api }) => {
-        if (!api.isStarted()) {
-            return t('setup-progresses:calculating_time');
-        }
-        return completed ? t('sync-message.completed') : `${hours}h ${minutes.toString().padStart(2, '0')}m`;
-    };
-
-    useEffect(() => {
-        const api = countdownRef.current?.getApi();
-
-        if (api && countdown > 0) {
-            api.start();
-        }
-    }, [countdown]);
-
     return (
         <>
             <Wrapper ref={refs.setReference} {...getReferenceProps()}>
@@ -58,11 +42,14 @@ export default function SyncLoading() {
                     <Line>
                         {t('sync-message.line1')}
                         <strong>
-                            <Countdown ref={countdownRef} date={date} autoStart={false} renderer={renderer} />
-                            {countdown > 0 && t('sync-message.line2')}
+                            <SyncCountdown
+                                onStarted={() => setIsStarted(true)}
+                                onCompleted={() => setIsComplete(true)}
+                            />
+                            {isStarted && !isComplete && t('sync-message.line2')}
                         </strong>
                     </Line>
-                    <Line>{countdown > 0 && t('sync-message.line3')}</Line>
+                    <Line>{isStarted && t('sync-message.line3')}</Line>
                 </Text>
                 <LoadingWrapper>
                     <LoadingDots />
