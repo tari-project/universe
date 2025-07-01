@@ -1,5 +1,5 @@
 import { AnimatePresence } from 'motion/react';
-import { useUIStore, useWalletStore } from '@app/store';
+import { useMiningMetricsStore, useUIStore, useWalletStore } from '@app/store';
 import { swapTransition } from '@app/components/transactions/wallet/transitions.ts';
 import { Swap } from '@app/components/transactions/wallet/Swap/Swap.tsx';
 import { WalletBalance, WalletBalanceHidden } from '../components/balance/WalletBalance.tsx';
@@ -14,6 +14,7 @@ import {
     WalletActionWrapper,
     BuyTariButton,
     DetailsCardBottomContent,
+    TabsWrapper,
 } from './styles.ts';
 import { useCallback, useRef, useState, useEffect } from 'react';
 import { HistoryListWrapper } from '@app/components/wallet/components/history/styles.ts';
@@ -22,7 +23,12 @@ import { open } from '@tauri-apps/plugin-shell';
 
 import WalletActions from '@app/components/wallet/components/actions/WalletActions.tsx';
 import { TransactionDetails } from '@app/components/transactions/history/details/TransactionDetails.tsx';
-import { setDetailsItem, setIsSwapping } from '@app/store/actions/walletStoreActions.ts';
+import {
+    fetchTransactionsHistory,
+    setDetailsItem,
+    setIsSwapping,
+    setTxHistoryFilter,
+} from '@app/store/actions/walletStoreActions.ts';
 
 import ExchangesUrls from '@app/components/transactions/wallet/Exchanges/ExchangesUrls.tsx';
 import ExchangeButton from '@app/components/transactions/wallet/Exchanges/exchange-button/ExchangeButton.tsx';
@@ -30,17 +36,28 @@ import { useFetchExchangeBranding } from '@app/hooks/exchanges/fetchExchangeCont
 import { ExternalLink } from '@app/components/transactions/components/StatusList/styles.ts';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { ExternalLink2SVG } from '@app/assets/icons/external-link2.tsx';
+import SyncLoading from '../components/loaders/SyncLoading/SyncLoading.tsx';
+import { FilterSelect, TxHistoryFilter } from '@app/components/transactions/history/FilterSelect.tsx';
 
 interface SidebarWalletProps {
     section: string;
     setSection: (section: string) => void;
 }
+
 export default function SidebarWallet({ section, setSection }: SidebarWalletProps) {
     const { data: xcData } = useFetchExchangeBranding();
     const detailsItem = useWalletStore((s) => s.detailsItem);
+    const filter = useWalletStore((s) => s.tx_history_filter);
 
-    const targetRef = useRef<HTMLDivElement>(null);
+    const isConnectedToTariNetwork = useMiningMetricsStore((s) => s.isNodeConnected);
+
+    const targetRef = useRef<HTMLDivElement>(null) as React.RefObject<HTMLDivElement>;
     const [isScrolled, setIsScrolled] = useState(false);
+
+    function handleFilterChange(newFilter: TxHistoryFilter) {
+        setTxHistoryFilter(newFilter);
+        fetchTransactionsHistory({ offset: 0, limit: 20, filter: newFilter });
+    }
 
     useEffect(() => {
         const el = targetRef.current;
@@ -50,6 +67,8 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
         return () => el.removeEventListener('scroll', onScroll);
     }, []);
 
+    const walletIsScanning = useWalletStore((s) => s.wallet_scanning.is_scanning);
+    const isSyncing = walletIsScanning || !isConnectedToTariNetwork;
     const isSwapping = useWalletStore((s) => s.is_swapping);
     const seedlessUI = useUIStore((s) => s.seedlessUI);
 
@@ -58,6 +77,59 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
             open(xcData.wallet_app_link);
         }
     }, [xcData]);
+
+    const walletMarkup = (
+        <>
+            <DetailsCard $isScrolled={isScrolled}>
+                <AnimatedBG $col1={xcData?.primary_colour || `#0B0A0D`} $col2={xcData?.secondary_colour || `#6F8309`} />
+                <DetailsCardContent>
+                    <WalletDetails />
+                    <DetailsCardBottomContent>
+                        {!seedlessUI ? <WalletBalance /> : <WalletBalanceHidden />}
+                        {xcData?.wallet_app_link && xcData?.wallet_app_label && (
+                            <ExternalLink onClick={openLink}>
+                                <Typography
+                                    variant="p"
+                                    style={{
+                                        fontSize: '10px',
+                                        color: 'rgba(255, 255, 255, 0.7)',
+                                    }}
+                                >
+                                    {xcData.wallet_app_label}
+                                </Typography>
+                                <ExternalLink2SVG />
+                            </ExternalLink>
+                        )}
+                        <ExchangeButton />
+                    </DetailsCardBottomContent>
+                </DetailsCardContent>
+            </DetailsCard>
+            {!seedlessUI && (
+                <>
+                    <AnimatePresence>
+                        {!isScrolled && (
+                            <WalletActionWrapper
+                                initial={{ height: 'auto' }}
+                                animate={{ height: 'auto' }}
+                                exit={{ height: 0 }}
+                            >
+                                <WalletActions section={section} setSection={setSection} />
+                            </WalletActionWrapper>
+                        )}
+                    </AnimatePresence>
+
+                    <TabsWrapper>
+                        <FilterSelect filter={filter} handleFilterChange={handleFilterChange} />
+                    </TabsWrapper>
+
+                    <HistoryListWrapper ref={targetRef}>
+                        <List setIsScrolled={setIsScrolled} targetRef={targetRef} />
+                    </HistoryListWrapper>
+                </>
+            )}
+        </>
+    );
+
     return (
         <>
             <AnimatePresence initial={false} mode="wait">
@@ -70,53 +142,8 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
                     </SwapsWrapper>
                 ) : (
                     <WalletWrapper key="wallet" variants={swapTransition} initial="show" exit="hide" animate="show">
-                        <Wrapper $seedlessUI={seedlessUI}>
-                            <DetailsCard $isScrolled={isScrolled}>
-                                <AnimatedBG
-                                    $col1={xcData?.primary_colour || `#0B0A0D`}
-                                    $col2={xcData?.secondary_colour || `#6F8309`}
-                                />
-                                <DetailsCardContent>
-                                    <WalletDetails />
-                                    <DetailsCardBottomContent>
-                                        {!seedlessUI ? <WalletBalance /> : <WalletBalanceHidden />}
-                                        {xcData?.wallet_app_link && xcData?.wallet_app_label && (
-                                            <ExternalLink onClick={openLink}>
-                                                <Typography
-                                                    variant="p"
-                                                    style={{
-                                                        fontSize: '10px',
-                                                        color: 'rgba(255, 255, 255, 0.7)',
-                                                    }}
-                                                >
-                                                    {xcData.wallet_app_label}
-                                                </Typography>
-                                                <ExternalLink2SVG />
-                                            </ExternalLink>
-                                        )}
-                                        <ExchangeButton />
-                                    </DetailsCardBottomContent>
-                                </DetailsCardContent>
-                            </DetailsCard>
-                            {!seedlessUI && (
-                                <>
-                                    <AnimatePresence>
-                                        {!isScrolled && (
-                                            <WalletActionWrapper
-                                                initial={{ height: 'auto' }}
-                                                animate={{ height: 'auto' }}
-                                                exit={{ height: 0 }}
-                                            >
-                                                <WalletActions section={section} setSection={setSection} />
-                                            </WalletActionWrapper>
-                                        )}
-                                    </AnimatePresence>
-
-                                    <HistoryListWrapper ref={targetRef}>
-                                        <List />
-                                    </HistoryListWrapper>
-                                </>
-                            )}
+                        <Wrapper $seedlessUI={seedlessUI || isSyncing}>
+                            {isSyncing ? <SyncLoading /> : walletMarkup}
                             <BuyTariButton onClick={() => setIsSwapping(true)}>{'Buy Tari (XTM)'}</BuyTariButton>
                         </Wrapper>
                     </WalletWrapper>

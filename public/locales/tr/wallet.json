@@ -1,4 +1,5 @@
 {
+  "all-activity": "All activity",
   "confirmation-message": "İşleminiz gönderildi!\nBirkaç blok madenciliğinden sonra geçmişinizde görünecektir.",
   "empty-tx": "İşlem bulunamadı",
   "history": {
@@ -18,6 +19,7 @@
     "tooltip-emoji-id-text2": "Yat desteği yakında geliyor!",
     "tooltip-emoji-id-title": "Emoji Kimliği"
   },
+  "rewards": "Rewards",
   "send": {
     "balance": "Bakiye",
     "broadcast": "Yayınlanıyor",
@@ -116,12 +118,22 @@
     "your-transaction-is-being-processed": "İşleminiz işleniyor",
     "your-xtm-is-on-the-way": "XTM'leriniz yolda!"
   },
+  "sync-message": {
+    "completed": "Any moment now",
+    "line1": "Sync in progress. ",
+    "line2": " remaining",
+    "line3": "until your wallet balance is displayed",
+    "tooltip-description": "Your node is still syncing, so your balance isn't visible yet.",
+    "tooltip-description-mining": "Your node is still syncing, so your balance isn't visible yet. But don't worry, you're actively mining and earning XTM.",
+    "tooltip-title": "Why the delay?"
+  },
   "tabs": {
     "history": "Geçmiş",
     "receive": "Al",
     "send": "Gönder"
   },
   "tari": "Tari",
+  "transactions": "Transactions",
   "wallet-connected": "Cüzdan Bağlandı",
   "wallet-is-scanning": "Cüzdan taranıyor...",
   "wallet-scanning-with-progress": "Cüzdan taranıyor: {{scanned}}/{{total}} ({{percent}}%)",
