@@ -146,6 +146,7 @@ export function Select({
                                     key={`opt-${value}-${label}`}
                                     $selected={selected}
                                     $loading={loading && !selected}
+                                    $isBordered={isBordered}
                                 >
                                     <OptionLabelWrapper>
                                         {iconSrc ? <img src={iconSrc} alt={`Select option: ${value} icon `} /> : null}
