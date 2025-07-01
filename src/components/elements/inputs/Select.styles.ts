@@ -51,6 +51,7 @@ export const TriggerWrapper = styled.div<StyleProps>`
 
 export const OptionsPosition = styled.div`
     position: absolute;
+    width: 100%;
     z-index: 10;
 `;
 
@@ -118,7 +119,8 @@ export const StyledOption = styled.div<StyleProps>`
     transition: all 0.2s ease-in-out;
 
     height: 38px;
-    padding: 0px 12px;
+    padding: 0 12px;
+
     justify-content: space-between;
     align-items: center;
     align-self: stretch;
@@ -127,6 +129,13 @@ export const StyledOption = styled.div<StyleProps>`
     &:hover {
         background: ${({ theme }) => theme.palette.action.hover.default};
     }
+
+    ${({ $isBordered }) =>
+        $isBordered &&
+        css`
+            height: 36px;
+            padding: 13px 7px;
+        `}
 `;
 
 export const IconWrapper = styled.div`
