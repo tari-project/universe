@@ -28,6 +28,8 @@ use tauri::{
     AppHandle, Manager, Wry,
 };
 
+use tauri::tray::TrayIconBuilder;
+
 use crate::utils::{
     formatting_utils::{format_currency, format_hashrate},
     platform_utils::{CurrentOperatingSystem, PlatformUtils},
@@ -150,7 +152,9 @@ impl SystemTrayManager {
     }
 
     pub fn initialize_tray(&mut self, app: AppHandle) -> Result<(), anyhow::Error> {
-        let tray = app.tray_by_id("universe-tray-id").expect("tray not found");
+        let tray = TrayIconBuilder::new()
+          .icon(app.default_window_icon().unwrap().clone())
+          .build(&app)?;
         let menu = self.initialize_menu(app.clone())?;
         tray.set_menu(Some(menu.clone()))?;
 
