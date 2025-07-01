@@ -44,6 +44,7 @@ export default function SyncLoading() {
                             <SyncCountdown
                                 onStarted={() => setIsStarted(true)}
                                 onCompleted={() => setIsComplete(true)}
+                                isCompact
                             />
                             {isStarted && !isComplete && t('sync-message.line2')}
                         </strong>
