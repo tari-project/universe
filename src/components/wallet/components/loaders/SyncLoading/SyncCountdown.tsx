@@ -14,20 +14,21 @@ export default function SyncCountdown({ onCompleted, onStarted, isCompact = fals
     const { countdown } = useProgressCountdown();
     const date = new Date(countdown * 1000);
 
-    const api = countdownRef.current?.getApi();
-
     const renderer = ({ hours, minutes, completed, api }) => {
         if (!api.isStarted()) {
             return t('setup-progresses:calculating_time', { context: isCompact && 'compact' });
+        } else {
+            const isComplete = completed && countdown !== -1 && countdown < 60;
+            return isComplete ? t('sync-message.completed') : `${hours}h ${minutes.toString().padStart(2, '0')}m`;
         }
-        return completed ? t('sync-message.completed') : `${hours}h ${minutes.toString().padStart(2, '0')}m`;
     };
 
     useEffect(() => {
-        if (countdown > 0 && !api?.isStarted()) {
+        const api = countdownRef.current?.getApi();
+        if (!api?.isStarted() && countdown !== -1) {
             api?.start();
         }
-    }, [api, countdown]);
+    }, [countdown]);
 
     return (
         <Countdown

@@ -34,7 +34,6 @@ export default function SyncLoading() {
     });
     const hover = useHover(context);
     const { getReferenceProps, getFloatingProps } = useInteractions([hover]);
-
     return (
         <>
             <Wrapper ref={refs.setReference} {...getReferenceProps()}>
@@ -49,7 +48,7 @@ export default function SyncLoading() {
                             {isStarted && !isComplete && t('sync-message.line2')}
                         </strong>
                     </Line>
-                    <Line>{isStarted && t('sync-message.line3')}</Line>
+                    <Line>{t('sync-message.line3')}</Line>
                 </Text>
                 <LoadingWrapper>
                     <LoadingDots />
