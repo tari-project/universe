@@ -814,4 +814,18 @@ impl EventsEmitter {
             error!(target: LOG_TARGET, "Failed to emit ShowKeyringDialog event: {:?}", e);
         }
     }
+
+    pub async fn emit_ask_for_pin() {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::AskForPin,
+            payload: (),
+        };
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
+            error!(target: LOG_TARGET, "Failed to emit AskForPin event: {:?}", e);
+        }
+    }
 }

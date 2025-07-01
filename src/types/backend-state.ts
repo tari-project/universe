@@ -218,4 +218,8 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'ShowKeyringDialog';
           payload: undefined;
+      }
+    | {
+          event_type: 'AskForPin';
+          payload: undefined;
       };

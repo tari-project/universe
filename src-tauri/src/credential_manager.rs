@@ -35,6 +35,7 @@ use thiserror::Error;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Credential {
+    // It's not PIN encrypted until non-zero balance detected
     pub encrypted_seed: Vec<u8>,
 }
 

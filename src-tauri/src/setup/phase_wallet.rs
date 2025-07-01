@@ -28,6 +28,7 @@ use crate::{
         trait_config::ConfigImpl,
     },
     events_emitter::EventsEmitter,
+    internal_wallet::InternalWallet,
     progress_trackers::{
         progress_plans::{ProgressPlans, ProgressSetupWalletPlan},
         progress_stepper::ProgressStepperBuilder,
@@ -66,6 +67,7 @@ pub struct WalletSetupPhaseOutput {}
 pub struct WalletSetupPhaseAppConfiguration {
     use_tor: bool,
     was_staged_security_modal_shown: bool,
+    pin_locked: bool,
 }
 
 pub struct WalletSetupPhase {
@@ -150,9 +152,11 @@ impl SetupPhaseImpl for WalletSetupPhase {
         let use_tor = *ConfigCore::content().await.use_tor();
         let was_staged_security_modal_shown =
             *ConfigUI::content().await.was_staged_security_modal_shown();
+        let pin_locked = *ConfigWallet::content().await.pin_locked();
         Ok(WalletSetupPhaseAppConfiguration {
             use_tor,
             was_staged_security_modal_shown,
+            pin_locked,
         })
     }
 
@@ -263,7 +267,10 @@ impl SetupPhaseImpl for WalletSetupPhase {
 
         let app_handle = self.get_app_handle().clone();
 
-        if !self.app_configuration.was_staged_security_modal_shown {
+        let was_staged_security_modal_shown =
+            self.app_configuration.was_staged_security_modal_shown;
+        let pin_locked = self.app_configuration.pin_locked;
+        if !was_staged_security_modal_shown || !pin_locked {
             let wallet_manager = app_handle
                 .state::<UniverseAppState>()
                 .wallet_manager
@@ -299,12 +306,17 @@ impl SetupPhaseImpl for WalletSetupPhase {
                                 if balance_sum.gt(&MicroMinotari::zero())
                                     && wallet_manager.is_initial_scan_completed()
                                 {
-                                    EventsEmitter::show_staged_security_modal().await;
-                                    let _unused = ConfigUI::update_field(
-                                        ConfigUIContent::set_was_staged_security_modal_shown,
-                                        true,
-                                    )
-                                    .await;
+                                    if !pin_locked {
+                                        let _unused = InternalWallet::set_pin(&app_handle).await;
+                                    }
+                                    if !was_staged_security_modal_shown {
+                                        EventsEmitter::show_staged_security_modal().await;
+                                        let _unused = ConfigUI::update_field(
+                                            ConfigUIContent::set_was_staged_security_modal_shown,
+                                            true,
+                                        )
+                                        .await;
+                                    }
                                     break;
                                 }
                             }

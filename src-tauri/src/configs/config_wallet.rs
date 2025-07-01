@@ -67,6 +67,8 @@ pub struct ConfigWalletContent {
     external_tari_addresses_book: HashMap<String, ExternalTariAddressBookRecord>,
     #[getset(get = "pub", set = "pub")]
     selected_external_tari_address: Option<TariAddress>,
+    #[getset(get = "pub", set = "pub")]
+    pin_locked: bool,
 }
 
 impl Default for ConfigWalletContent {
@@ -81,6 +83,7 @@ impl Default for ConfigWalletContent {
             created_at: SystemTime::now(),
             selected_external_tari_address: None,
             external_tari_addresses_book: HashMap::new(),
+            pin_locked: false,
         }
     }
 }

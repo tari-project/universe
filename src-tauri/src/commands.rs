@@ -841,11 +841,7 @@ pub async fn import_seed_words(
         .shutdown_phases(vec![SetupPhase::Wallet, SetupPhase::Mining])
         .await;
 
-    let internal_wallet_guard = InternalWallet::current().read().await;
-    match internal_wallet_guard
-        .import_tari_seed_words(seed_words, &app)
-        .await
-    {
+    match InternalWallet::import_tari_seed_words(seed_words, &app).await {
         Ok((wallet_id, _seed_binary)) => {
             ConfigCore::update_field(
                 ConfigCoreContent::set_exchange_id,
@@ -861,7 +857,6 @@ pub async fn import_seed_words(
             e.to_string();
         }
     }
-    drop(internal_wallet_guard);
 
     SetupManager::get_instance()
         .resume_phases(app, vec![SetupPhase::Wallet, SetupPhase::Mining])
