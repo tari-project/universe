@@ -7,7 +7,6 @@ import { useState } from 'react';
 import { offset, useFloating, useHover, useInteractions } from '@floating-ui/react';
 import {
     Tooltip,
-    TooltipTrigger,
     ExpandedBox,
     TooltipChip,
     TooltipChipHeading,
@@ -41,7 +40,7 @@ export default function CPUTile() {
         open: isOpen,
         onOpenChange: setIsOpen,
         placement: 'bottom-start',
-        middleware: [offset({ mainAxis: 5 })],
+        middleware: [offset({ crossAxis: -10, mainAxis: 15 })],
     });
 
     const hover = useHover(context, {
@@ -54,20 +53,20 @@ export default function CPUTile() {
 
     return (
         <>
-            <TooltipTrigger ref={refs.setReference} {...getReferenceProps()}>
-                <Tile
-                    title={`CPU`}
-                    isEnabled={cpuEnabled}
-                    isLoading={isLoading || poolStatsLoading}
-                    isMining={is_mining}
-                    pillValue={formatted.value}
-                    pillUnit={formatted.unit}
-                    mainNumber={currentUnpaid}
-                    mainUnit="XTM"
-                    successValue={progressDiff}
-                    mainLabel={t('stats.tile-heading')}
-                />
-            </TooltipTrigger>
+            <Tile
+                title={`CPU`}
+                isEnabled={cpuEnabled}
+                isLoading={isLoading || poolStatsLoading}
+                isMining={is_mining}
+                pillValue={formatted.value}
+                pillUnit={formatted.unit}
+                mainNumber={currentUnpaid}
+                mainUnit="XTM"
+                successValue={progressDiff}
+                mainLabel={t('stats.tile-heading', { context: is_mining && currentUnpaid === 0 && 'zero' })}
+                tooltipTriggerRef={refs.setReference}
+                getReferenceProps={getReferenceProps}
+            />
             <AnimatePresence>
                 {isOpen && (
                     <Tooltip ref={refs.setFloating} {...getFloatingProps()} style={floatingStyles}>

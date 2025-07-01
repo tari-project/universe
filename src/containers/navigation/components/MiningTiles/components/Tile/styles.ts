@@ -1,5 +1,4 @@
 import styled, { css, keyframes } from 'styled-components';
-import { Typography } from '@app/components/elements/Typography.tsx';
 import { convertHexToRGBA } from '@app/utils';
 
 export const Wrapper = styled.div`
@@ -168,7 +167,7 @@ export const NumberUnit = styled.span`
     line-height: 1.2;
 `;
 
-export const NumberLabel = styled(Typography)`
+export const NumberLabel = styled.div`
     color: ${({ theme }) => theme.palette.text.secondary};
     font-family: Poppins, sans-serif;
     font-size: 10px;

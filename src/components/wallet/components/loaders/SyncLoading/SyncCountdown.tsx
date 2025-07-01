@@ -15,11 +15,11 @@ export default function SyncCountdown({ onCompleted, onStarted, isCompact = fals
     const date = new Date(countdown * 1000);
 
     const renderer = ({ hours, minutes, completed, api }) => {
-        if (!api.isStarted()) {
-            return t('setup-progresses:calculating_time-compact', { context: isCompact && 'compact' });
-        } else {
-            const isComplete = completed && countdown !== -1 && countdown < 60;
+        const isComplete = completed && countdown !== -1 && countdown < 60;
+        if (api.isStarted()) {
             return isComplete ? t('sync-message.completed') : `${hours}h ${minutes.toString().padStart(2, '0')}m`;
+        } else {
+            return t('setup-progresses:calculating_time-compact', { context: isCompact && 'compact' });
         }
     };
 

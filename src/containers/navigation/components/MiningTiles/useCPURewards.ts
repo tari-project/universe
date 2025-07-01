@@ -8,7 +8,7 @@ const REWARD_THRESHOLD = 2 * 1_000_000;
 
 const fmtMatch = (value: number, max = 4) =>
     Intl.NumberFormat(i18n.language, {
-        minimumFractionDigits: 1,
+        minimumFractionDigits: value > 0 ? 1 : 0,
         maximumFractionDigits: max,
         notation: 'standard',
         style: 'decimal',
