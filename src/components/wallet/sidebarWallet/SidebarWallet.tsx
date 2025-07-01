@@ -67,8 +67,7 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
         return () => el.removeEventListener('scroll', onScroll);
     }, []);
 
-    const walletIsScanning = useWalletStore((s) => s.wallet_scanning.is_scanning);
-    const isSyncing = walletIsScanning || !isConnectedToTariNetwork;
+    const isSyncing = !isConnectedToTariNetwork;
     const isSwapping = useWalletStore((s) => s.is_swapping);
     const seedlessUI = useUIStore((s) => s.seedlessUI);
 
