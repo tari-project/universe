@@ -1,5 +1,11 @@
 import i18n from 'i18next';
+import { Ref, useEffect, useState } from 'react';
 import { AnimatePresence } from 'motion/react';
+import NumberFlow from '@number-flow/react';
+import { useMiningMetricsStore } from '@app/store';
+import SuccessAnimation from '../SuccessAnimation/SuccessAnimation';
+import SyncData from '@app/containers/navigation/components/MiningTiles/components/SyncData/SyncData.tsx';
+import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 import {
     AnimatedGlow,
     AnimatedGlowPosition,
@@ -16,12 +22,7 @@ import {
     LabelWrapper,
     NumberUnit,
 } from './styles';
-import NumberFlow from '@number-flow/react';
-import SuccessAnimation from '../SuccessAnimation/SuccessAnimation';
-import { useEffect, useState } from 'react';
-import SyncData from '@app/containers/navigation/components/MiningTiles/components/SyncData/SyncData.tsx';
-import { useMiningMetricsStore } from '@app/store';
-import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
+import { UseInteractionsReturn } from '@floating-ui/react';
 
 interface Props {
     title: string;
@@ -35,6 +36,8 @@ interface Props {
     mainLabel: string;
     successValue?: number;
     isIdle?: boolean;
+    tooltipTriggerRef?: Ref<HTMLDivElement>;
+    getReferenceProps?: UseInteractionsReturn['getReferenceProps'];
 }
 
 export default function Tile({
@@ -49,6 +52,8 @@ export default function Tile({
     isEnabled,
     successValue,
     isIdle,
+    tooltipTriggerRef,
+    getReferenceProps,
 }: Props) {
     const isGPU = title === 'GPU';
     const isConnectedToTariNetwork = useMiningMetricsStore((s) => s.isNodeConnected);
@@ -82,7 +87,7 @@ export default function Tile({
                 <NumberFlow
                     locales={i18n.language}
                     format={{
-                        minimumFractionDigits: 1,
+                        minimumFractionDigits: mainNumber > 0 ? 1 : 0,
                         maximumFractionDigits: 4,
                         notation: 'standard',
                         style: 'decimal',
@@ -98,7 +103,9 @@ export default function Tile({
     const mainMarkup = !syncing && (
         <NumberGroup>
             {isLoading ? <LoadingDots /> : numberMarkup}
-            <NumberLabel>{mainLabel}</NumberLabel>
+            <NumberLabel ref={tooltipTriggerRef} {...getReferenceProps?.()}>
+                {mainLabel}
+            </NumberLabel>
         </NumberGroup>
     );
 

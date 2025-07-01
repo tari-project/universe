@@ -12,9 +12,6 @@ export const Wrapper = styled.div`
     gap: 6px;
 `;
 
-export const TooltipTrigger = styled.div`
-    width: 100%;
-`;
 export const Tooltip = styled.div`
     display: flex;
     position: relative;
