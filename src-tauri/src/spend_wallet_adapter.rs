@@ -122,8 +122,9 @@ impl SpendWalletAdapter {
         destination: String,
         payment_id: Option<String>,
         state: tauri::State<'_, UniverseAppState>,
+        app_handle: &tauri::AppHandle,
     ) -> Result<(), Error> {
-        let seed_words = self.get_seed_words().await?;
+        let seed_words = self.get_seed_words(app_handle).await?;
         let t_amount = Minotari::from_str(_amount.as_str())?;
         let converted_amount = MicroMinotari::from(t_amount);
         let amount = converted_amount.to_string();
@@ -431,10 +432,10 @@ impl SpendWalletAdapter {
             .expect("Base node address not set")
     }
 
-    async fn get_seed_words(&self) -> Result<String, Error> {
+    async fn get_seed_words(&self, app_handle: &tauri::AppHandle) -> Result<String, Error> {
         let internal_wallet_guard = InternalWallet::current().read().await;
 
-        let tari_cipher_seed = internal_wallet_guard.get_tari_seed().await?;
+        let tari_cipher_seed = internal_wallet_guard.get_tari_seed(app_handle).await?;
         let seed_words = tari_cipher_seed.to_mnemonic(MnemonicLanguage::English, None)?;
         Ok(seed_words.join(" ").reveal().to_string())
     }

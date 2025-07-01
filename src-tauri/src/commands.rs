@@ -586,6 +586,7 @@ pub async fn get_used_p2pool_stats_server_port(
 pub async fn get_paper_wallet_details(
     state: tauri::State<'_, UniverseAppState>,
     auth_uuid: Option<String>,
+    app_handle: tauri::AppHandle,
 ) -> Result<PaperWalletConfig, InvokeError> {
     let timer = Instant::now();
 
@@ -600,7 +601,7 @@ pub async fn get_paper_wallet_details(
 
     let internal_wallet_guard = InternalWallet::current().read().await;
     let seed = internal_wallet_guard
-        .get_tari_seed()
+        .get_tari_seed(&app_handle)
         .await
         .map_err(InvokeError::from_anyhow)?;
     drop(internal_wallet_guard);
@@ -646,12 +647,12 @@ pub async fn get_paper_wallet_details(
 }
 
 #[tauri::command]
-pub async fn get_seed_words() -> Result<Vec<String>, String> {
+pub async fn get_seed_words(app_handle: tauri::AppHandle) -> Result<Vec<String>, String> {
     let timer = Instant::now();
 
     let internal_wallet_guard = InternalWallet::current().read().await;
     let tari_cipher_seed = internal_wallet_guard
-        .get_tari_seed()
+        .get_tari_seed(&app_handle)
         .await
         .map_err(|e| e.to_string())?;
     drop(internal_wallet_guard);
@@ -1942,6 +1943,7 @@ pub async fn reconnect(app_handle: tauri::AppHandle) -> Result<(), String> {
 #[tauri::command]
 pub async fn send_one_sided_to_stealth_address(
     state: tauri::State<'_, UniverseAppState>,
+    app_handle: tauri::AppHandle,
     amount: String,
     destination: String,
     payment_id: Option<String>,
@@ -1951,7 +1953,13 @@ pub async fn send_one_sided_to_stealth_address(
     let state_clone = state.clone();
     let mut spend_wallet_manager = state_clone.spend_wallet_manager.write().await;
     spend_wallet_manager
-        .send_one_sided_to_stealth_address(amount, destination, payment_id, state.clone())
+        .send_one_sided_to_stealth_address(
+            amount,
+            destination,
+            payment_id,
+            state.clone(),
+            &app_handle,
+        )
         .await
         .map_err(|e| e.to_string())?;
 
