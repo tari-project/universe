@@ -8,6 +8,7 @@ import {
     IconWrapper,
     OptionLabelWrapper,
     Options,
+    OptionsPosition,
     SelectedOption,
     SelectVariant,
     StyledOption,
@@ -45,6 +46,7 @@ interface Props {
     customIcon?: React.ReactNode | ((open: boolean) => React.ReactNode);
     triggerTypographyProps?: Omit<React.ComponentProps<typeof Typography>, 'children'>;
     floatingProps?: UseFloatingOptions;
+    optionItemTypographyProps?: Omit<React.ComponentProps<typeof Typography>, 'children'>;
 }
 
 export function Select({
@@ -57,6 +59,7 @@ export function Select({
     forceHeight,
     customIcon,
     triggerTypographyProps = {},
+    optionItemTypographyProps = {},
     floatingProps = {},
 }: Props) {
     const [isOpen, setIsOpen] = useState(false);
@@ -132,30 +135,32 @@ export function Select({
                 )}
             </TriggerWrapper>
             {isOpen && (
-                <Options ref={refs.setFloating} {...getFloatingProps()} $isBordered={isBordered} style={floatingStyles}>
-                    {options.map(({ label, value, iconSrc }) => {
-                        const selected = value === selectedOption?.value;
-                        const disableClick = loading && !selected && value !== 'Custom';
-                        return (
-                            <StyledOption
-                                onClick={() => handleChange(value, disableClick)}
-                                key={`opt-${value}-${label}`}
-                                $selected={selected}
-                                $loading={loading && !selected}
-                            >
-                                <OptionLabelWrapper>
-                                    {iconSrc ? <img src={iconSrc} alt={`Select option: ${value} icon `} /> : null}
-                                    <Typography>{label}</Typography>
-                                </OptionLabelWrapper>
-                                {selected ? (
-                                    <IconWrapper>
-                                        <CheckSvg />
-                                    </IconWrapper>
-                                ) : null}
-                            </StyledOption>
-                        );
-                    })}
-                </Options>
+                <OptionsPosition ref={refs.setFloating} {...getFloatingProps()} style={floatingStyles}>
+                    <Options $isBordered={isBordered}>
+                        {options.map(({ label, value, iconSrc }) => {
+                            const selected = value === selectedOption?.value;
+                            const disableClick = loading && !selected && value !== 'Custom';
+                            return (
+                                <StyledOption
+                                    onClick={() => handleChange(value, disableClick)}
+                                    key={`opt-${value}-${label}`}
+                                    $selected={selected}
+                                    $loading={loading && !selected}
+                                >
+                                    <OptionLabelWrapper>
+                                        {iconSrc ? <img src={iconSrc} alt={`Select option: ${value} icon `} /> : null}
+                                        <Typography {...optionItemTypographyProps}>{label}</Typography>
+                                    </OptionLabelWrapper>
+                                    {selected ? (
+                                        <IconWrapper>
+                                            <CheckSvg />
+                                        </IconWrapper>
+                                    ) : null}
+                                </StyledOption>
+                            );
+                        })}
+                    </Options>
+                </OptionsPosition>
             )}
         </Wrapper>
     );
