@@ -16,9 +16,9 @@ export default function SyncCountdown({ onCompleted, onStarted, isCompact = fals
     const date = new Date(countdown * 1000);
     const renderer = useMemo(
         () =>
-            ({ hours, minutes, completed, api }) => {
+            ({ hours, minutes, completed }) => {
                 const isComplete = completed || countdown < 80;
-                if (api.isStarted() && startedRef.current) {
+                if (startedRef.current) {
                     return isComplete
                         ? t('sync-message.completed')
                         : `${hours > 0 ? hours + `h` : ''} ${minutes.toString().padStart(2, '0')}m`;
@@ -35,6 +35,10 @@ export default function SyncCountdown({ onCompleted, onStarted, isCompact = fals
             api?.start();
             startedRef.current = true;
         }
+
+        if (startedRef.current && countdown < 80) {
+            api?.stop();
+        }
     }, [countdown]);
 
     return (
@@ -44,8 +48,9 @@ export default function SyncCountdown({ onCompleted, onStarted, isCompact = fals
             date={date}
             autoStart={false}
             renderer={renderer}
-            onComplete={onCompleted}
             onStart={onStarted}
+            onComplete={onCompleted}
+            onStop={onCompleted}
         />
     );
 }
