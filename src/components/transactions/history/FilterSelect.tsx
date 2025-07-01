@@ -58,6 +58,11 @@ export const FilterSelect = React.memo(({ filter, handleFilterChange }: FilterSe
                         borderRadius: 10,
                     },
                 }}
+                optionItemTypographyProps={{
+                    style: {
+                        textTransform: 'capitalize',
+                    },
+                }}
             />
         </FilterWrapper>
     );
