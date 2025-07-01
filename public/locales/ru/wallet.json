@@ -119,7 +119,7 @@
     "your-xtm-is-on-the-way": "Ваши XTM уже в пути!"
   },
   "sync-message": {
-    "completed": "any moment now",
+    "completed": "Any moment now",
     "line1": "Sync in progress. ",
     "line2": " remaining",
     "line3": "until your wallet balance is displayed",
