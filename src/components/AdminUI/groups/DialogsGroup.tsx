@@ -48,10 +48,16 @@ export function DialogsGroup() {
                     Keychain Access
                 </AdminButton>
                 <AdminButton
-                    onClick={() => setDialogToShow(dialogToShow === 'pin' ? undefined : 'pin')}
-                    $isActive={dialogToShow === 'pin'}
+                    onClick={() => setDialogToShow(dialogToShow === 'createPin' ? undefined : 'createPin')}
+                    $isActive={dialogToShow === 'createPin'}
                 >
-                    Pin Lock
+                    Create Pin
+                </AdminButton>
+                <AdminButton
+                    onClick={() => setDialogToShow(dialogToShow === 'enterPin' ? undefined : 'enterPin')}
+                    $isActive={dialogToShow === 'enterPin'}
+                >
+                    Enter Pin
                 </AdminButton>
             </ButtonGroup>
         </>

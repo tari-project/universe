@@ -233,8 +233,11 @@ const useTauriEventsListener = () => {
                         case 'ShowKeyringDialog':
                             setDialogToShow('keychain');
                             break;
-                        case 'AskForPin':
-                            setDialogToShow('pin');
+                        case 'CreatePin':
+                            setDialogToShow('createPin');
+                            break;
+                        case 'EnterPin':
+                            setDialogToShow('enterPin');
                             break;
                         default:
                             console.warn('Unknown event', JSON.stringify(event));

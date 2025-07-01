@@ -307,7 +307,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
                                     && wallet_manager.is_initial_scan_completed()
                                 {
                                     if !pin_locked {
-                                        let _unused = InternalWallet::set_pin(&app_handle).await;
+                                        let _unused = InternalWallet::create_pin(&app_handle).await;
                                     }
                                     if !was_staged_security_modal_shown {
                                         EventsEmitter::show_staged_security_modal().await;

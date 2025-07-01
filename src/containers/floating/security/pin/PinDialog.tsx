@@ -5,11 +5,12 @@ import CloseButton from '@app/components/elements/buttons/CloseButton.tsx';
 
 import CreatePin from '@app/components/security/pin/CreatePin.tsx';
 import { emit } from '@tauri-apps/api/event';
+import EnterPin from '@app/components/security/pin/EnterPin.tsx';
 
 export default function PinDialog() {
     // const { t } = useTranslation('wallet');
     const dialogToShow = useUIStore((s) => s.dialogToShow);
-    const isOpen = dialogToShow === 'pin';
+    const isOpen = dialogToShow === 'enterPin' || dialogToShow === 'createPin';
 
     function handleClose() {
         emit('pin-dialog-response', { pin: undefined });
@@ -21,6 +22,10 @@ export default function PinDialog() {
         setDialogToShow(null);
     }
 
+    async function handleForgotPin() {
+        // Import seed words to create new PIN
+    }
+
     return (
         <Dialog open={isOpen} onOpenChange={handleClose}>
             <DialogContent $transparentBg $unPadded>
@@ -30,7 +35,8 @@ export default function PinDialog() {
                         <div /> <CloseButton onClick={handleClose} />
                         {/*<Heading>{t('security.pin.enter')}</Heading> <CloseButton />*/}
                     </Header>
-                    <CreatePin onSubmit={handleSubmit} onClose={handleClose} />
+                    {dialogToShow === 'createPin' && <CreatePin onSubmit={handleSubmit} />}
+                    {dialogToShow === 'enterPin' && <EnterPin onSubmit={handleSubmit} onForgot={handleForgotPin} />}
                 </Wrapper>
             </DialogContent>
         </Dialog>

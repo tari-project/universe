@@ -220,6 +220,10 @@ export type BackendStateUpdateEvent =
           payload: undefined;
       }
     | {
-          event_type: 'AskForPin';
+          event_type: 'CreatePin';
+          payload: undefined;
+      }
+    | {
+          event_type: 'EnterPin';
           payload: undefined;
       };

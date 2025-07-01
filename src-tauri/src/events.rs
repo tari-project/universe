@@ -85,7 +85,8 @@ pub enum EventType {
     WalletUIModeChanged,
     MainTariAddressLoaded,
     ShowKeyringDialog,
-    AskForPin,
+    CreatePin,
+    EnterPin,
 }
 
 #[derive(Clone, Debug, Serialize)]

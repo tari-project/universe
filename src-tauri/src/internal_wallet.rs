@@ -54,6 +54,7 @@ use crate::consts::DEFAULT_MONERO_ADDRESS;
 use crate::credential_manager::{
     Credential, CredentialError, CredentialManager, LegacyCredential, LegacyCredentialManager,
 };
+use crate::events::CriticalProblemPayload;
 use crate::events_emitter::EventsEmitter;
 use crate::utils::rand_utils;
 
@@ -299,8 +300,8 @@ impl InternalWallet {
         Ok(monero_seed_binary)
     }
 
-    pub async fn set_pin(app_handle: &AppHandle) -> Result<(), anyhow::Error> {
-        let pin = ask_for_pin(app_handle).await?;
+    pub async fn create_pin(app_handle: &AppHandle) -> Result<(), anyhow::Error> {
+        let pin = create_pin_dialog(app_handle).await?;
         let pin_password = SafePassword::from(pin);
 
         let internal_wallet_guard = InternalWallet::current().read().await;
@@ -398,12 +399,28 @@ impl InternalWallet {
         let encrypted_tari_seed =
             match InternalWallet::get_credentials(app_handle, tari_wallet_id.clone(), true).await {
                 Ok(cred) => cred.encrypted_seed,
-                Err(e) => panic!("Failed to get credentials: {}", e),
+                Err(e) => {
+                    panic!("Failed to get credentials: {}", e)
+                }
             };
         let tari_cipher_seed = if *ConfigWallet::content().await.pin_locked() {
-            let pin = ask_for_pin(app_handle).await?;
+            let pin = enter_pin_dialog(app_handle).await?;
             let pin_password = SafePassword::from(pin);
-            CipherSeed::from_enciphered_bytes(&encrypted_tari_seed, Some(pin_password))?
+            match CipherSeed::from_enciphered_bytes(&encrypted_tari_seed, Some(pin_password)) {
+                Ok(seed) => seed,
+                Err(_) => {
+                    // Think about better error handling here
+                    EventsEmitter::emit_critical_problem(CriticalProblemPayload {
+                        title: Some("Wrong PIN entered!".to_string()),
+                        description: Some(
+                            "You entered an incorrect PIN. Try again later".to_string(),
+                        ),
+                        error_message: None,
+                    })
+                    .await;
+                    return Err(anyhow!("Wrong PIN entered!"));
+                }
+            }
         } else {
             // Seed not yet encrypted with PIN
             CipherSeed::from_binary(&encrypted_tari_seed)
@@ -412,6 +429,8 @@ impl InternalWallet {
         let (tari_address, tari_wallet_details) =
             InternalWallet::get_tari_wallet_details(tari_wallet_id.clone(), tari_cipher_seed)
                 .await?;
+        log::info!("Extracted Tari Address: {:?}", tari_address);
+        log::info!("Extracted Tari Wallet Details: {:?}", tari_wallet_details);
 
         return Ok(InternalWallet {
             encrypted_tari_seed: Some(encrypted_tari_seed),
@@ -633,9 +652,17 @@ pub async fn get_tari_cipher_seed(seed_words: Vec<String>) -> Result<CipherSeed,
     CipherSeed::from_mnemonic(&seed_words_parsed, None).map_err(|e| anyhow::anyhow!(e.to_string()))
 }
 
-async fn ask_for_pin(app_handle: &AppHandle) -> Result<String, anyhow::Error> {
-    // Display the PIN dialog
-    EventsEmitter::emit_ask_for_pin().await;
+async fn pin_dialog_with_emitter<F, Fut>(
+    app_handle: &AppHandle,
+    emit_fn: F,
+) -> Result<String, anyhow::Error>
+where
+    F: Fn() -> Fut,
+    Fut: std::future::Future<Output = ()>,
+{
+    // Display the PIN dialog using the provided emitter
+    emit_fn().await;
+
     // Listen for the pin dialog response event
     let (tx, rx) = oneshot::channel();
     app_handle.once("pin-dialog-response", move |event| {
@@ -647,6 +674,7 @@ async fn ask_for_pin(app_handle: &AppHandle) -> Result<String, anyhow::Error> {
             let _unused = tx.send(None);
         }
     });
+
     // Await the response
     let pin = rx.await.unwrap_or_default();
     if let Some(pin) = pin {
@@ -654,6 +682,14 @@ async fn ask_for_pin(app_handle: &AppHandle) -> Result<String, anyhow::Error> {
     } else {
         Err(anyhow::anyhow!("PIN entry cancelled"))
     }
+}
+
+async fn enter_pin_dialog(app_handle: &AppHandle) -> Result<String, anyhow::Error> {
+    pin_dialog_with_emitter(app_handle, || EventsEmitter::emit_ask_for_pin()).await
+}
+
+async fn create_pin_dialog(app_handle: &AppHandle) -> Result<String, anyhow::Error> {
+    pin_dialog_with_emitter(app_handle, || EventsEmitter::emit_set_pin()).await
 }
 
 // ** Legacy Wallet Config **

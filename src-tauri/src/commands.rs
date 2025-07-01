@@ -2103,6 +2103,15 @@ pub async fn set_warmup_seen(warmup_seen: bool) -> Result<(), String> {
     Ok(())
 }
 
+#[tauri::command]
+pub async fn create_pin(app_handle: tauri::AppHandle) -> Result<(), String> {
+    InternalWallet::create_pin(&app_handle)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
 /*
  ********** TAPPLETS SECTION **********
 */
