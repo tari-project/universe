@@ -7,7 +7,7 @@ import { TextButton } from '@app/components/elements/buttons/TextButton.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 
 const pinArr = Array.from({ length: DEFAULT_PIN_LENGTH }, (_, i) => i);
-export default function CreatePin({ onClose }: { onClose?: () => void }) {
+export default function CreatePin({ onClose, onSubmit }: { onClose?: () => void; onSubmit: (pin: string) => void }) {
     const { t } = useTranslation('wallet');
     const [initialCode, setInitialCode] = useState('');
     const [codeMatches, setCodeMatches] = useState(false);
@@ -17,7 +17,7 @@ export default function CreatePin({ onClose }: { onClose?: () => void }) {
 
     const isConfirm = !!initialCode.length;
 
-    function onSubmit(data: CodeInputValues) {
+    function handleSubmit(data: CodeInputValues) {
         const codeValue = data.code.map(({ digit }) => digit).join('');
         console.debug(`codeValue= `, codeValue);
         console.debug(`isConfirm= `, isConfirm);
@@ -27,6 +27,7 @@ export default function CreatePin({ onClose }: { onClose?: () => void }) {
             methods.reset();
         } else {
             setCodeMatches(codeValue === initialCode);
+            onSubmit(codeValue);
         }
     }
 
@@ -43,7 +44,7 @@ export default function CreatePin({ onClose }: { onClose?: () => void }) {
 
     return (
         <FormProvider {...methods}>
-            <Wrapper onSubmit={methods.handleSubmit(onSubmit)}>
+            <Wrapper onSubmit={methods.handleSubmit(handleSubmit)}>
                 <TextWrapper>
                     <Typography variant="h5">{t('security.pin.creation-title', { context })}</Typography>
                     <Typography variant="p">{t('security.pin.creation-subtitle', { context })}</Typography>
