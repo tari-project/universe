@@ -16,7 +16,7 @@ export default function SyncCountdown({ onCompleted, onStarted, isCompact = fals
 
     const renderer = ({ hours, minutes, completed, api }) => {
         if (!api.isStarted()) {
-            return t('setup-progresses:calculating_time', { context: isCompact && 'compact' });
+            return t('setup-progresses:calculating_time-compact', { context: isCompact && 'compact' });
         } else {
             const isComplete = completed && countdown !== -1 && countdown < 60;
             return isComplete ? t('sync-message.completed') : `${hours}h ${minutes.toString().padStart(2, '0')}m`;
