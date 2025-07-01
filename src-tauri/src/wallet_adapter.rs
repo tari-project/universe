@@ -33,11 +33,11 @@ use async_trait::async_trait;
 use log::{info, warn};
 use minotari_node_grpc_client::grpc::wallet_client::WalletClient;
 use minotari_node_grpc_client::grpc::{
-    GetAllCompletedTransactionsRequest, GetBalanceRequest, GetBalanceResponse,
-    GetCompletedTransactionsRequest, GetCompletedTransactionsResponse, GetStateRequest,
+    GetAllCompletedTransactionsRequest, GetBalanceRequest, GetBalanceResponse, GetStateRequest,
     ImportTransactionsRequest, NetworkStatusResponse,
 };
-use serde::Serialize;
+use serde::{Serialize, Serializer};
+use std::fs;
 use std::path::PathBuf;
 use std::time::Duration;
 use tari_common::configuration::Network;
@@ -47,8 +47,7 @@ use tari_core::transactions::transaction_components::payment_id::PaymentId;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::Shutdown;
 use tari_utilities::hex::Hex;
-use tokio::sync::{watch, Mutex};
-use tonic::Streaming;
+use tokio::sync::watch;
 
 #[cfg(target_os = "windows")]
 use crate::utils::windows_setup_utils::add_firewall_rule;
@@ -66,7 +65,6 @@ pub struct WalletAdapter {
     pub(crate) grpc_port: u16,
     pub(crate) state_broadcast: watch::Sender<Option<WalletState>>,
     pub(crate) wallet_birthday: Option<u16>,
-    coinbase_transactions_stream: Mutex<Option<Streaming<GetCompletedTransactionsResponse>>>,
 }
 
 impl WalletAdapter {
@@ -84,7 +82,6 @@ impl WalletAdapter {
             grpc_port,
             state_broadcast,
             wallet_birthday: None,
-            coinbase_transactions_stream: Mutex::new(None),
         }
     }
 
@@ -109,7 +106,7 @@ impl WalletAdapter {
     }
 
     pub async fn import_transaction(&self, tx_output_file: PathBuf) -> Result<(), anyhow::Error> {
-        let tx_json = std::fs::read_to_string(&tx_output_file).map_err(|e| {
+        let tx_json = fs::read_to_string(&tx_output_file).map_err(|e| {
             log::error!(
                 "[import_transaction] Failed to read transaction output file: {}, output_file:\n{:?}",
                 e,
@@ -150,10 +147,11 @@ impl WalletAdapter {
         Ok(())
     }
 
-    pub async fn get_transactions_history(
+    pub async fn get_transactions(
         &self,
-        offset: Option<i32>,
-        limit: Option<i32>,
+        offset: Option<u32>,
+        limit: Option<u32>,
+        status: Option<u32>,
         current_block_height: u64,
     ) -> Result<Vec<TransactionInfo>, WalletStatusMonitorError> {
         let mut client = WalletClient::connect(self.wallet_grpc_address())
@@ -161,132 +159,53 @@ impl WalletAdapter {
             .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
         let res = client
             .get_all_completed_transactions(GetAllCompletedTransactionsRequest {
-                offset: offset.unwrap_or(0) as u64,
-                limit: limit.unwrap_or(0) as u64,
-                status_bitflag: 0,
+                offset: u64::from(offset.unwrap_or(0)),
+                limit: u64::from(limit.unwrap_or(0)),
+                status_bitflag: u64::from(status.unwrap_or(0)),
             })
             .await
             .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?;
-        let transactions_raw = res.into_inner().transactions;
 
-        let mut transactions: Vec<TransactionInfo> = Vec::new();
-        for tx in transactions_raw {
-            if tx.status == 14 {
-                // Remove TRANSACTION_STATUS_COINBASE_NOT_IN_BLOCK_CHAIN
-                continue;
-            }
-            let source_address = TariAddress::from_bytes(&tx.source_address)?;
-            let dest_address = TariAddress::from_bytes(&tx.dest_address)?;
-
-            let confirmations =
-                if current_block_height > 0 && tx.mined_in_block_height <= current_block_height {
+        let transactions = res
+            .into_inner()
+            .transactions
+            .into_iter()
+            .map(|tx| {
+                let confirmations = if current_block_height > 0
+                    && tx.mined_in_block_height <= current_block_height
+                {
                     current_block_height - tx.mined_in_block_height
                 } else {
                     0
                 };
-            let payment_reference = if confirmations >= 5 {
-                match tx.direction {
-                    1 => tx.payment_references_received.last().map(hex::encode),
-                    2 => tx.payment_references_sent.last().map(hex::encode),
-                    _ => None,
-                }
-            } else {
-                None
-            };
+                let payment_reference = if confirmations >= 5 {
+                    match tx.direction {
+                        1 => tx.payment_references_received.last().map(hex::encode),
+                        2 => tx.payment_references_sent.last().map(hex::encode),
+                        _ => None,
+                    }
+                } else {
+                    None
+                };
 
-            transactions.push(TransactionInfo {
-                tx_id: tx.tx_id.to_string(),
-                source_address: source_address.to_base58(),
-                dest_address: dest_address.to_base58(),
-                status: tx.status,
-                amount: MicroMinotari(tx.amount),
-                is_cancelled: tx.is_cancelled,
-                direction: tx.direction,
-                excess_sig: tx.excess_sig,
-                fee: tx.fee,
-                timestamp: tx.timestamp,
-                payment_id: PaymentId::stringify_bytes(&tx.user_payment_id),
-                mined_in_block_height: tx.mined_in_block_height,
-                payment_reference,
-            });
-            if let Some(limit) = limit {
-                if transactions.len() >= limit as usize {
-                    break;
-                }
-            }
-        }
-
-        Ok(transactions)
-    }
-
-    pub async fn get_coinbase_transactions(
-        &self,
-        continuation: bool,
-        limit: Option<u32>,
-        _current_block_height: u64,
-    ) -> Result<Vec<TransactionInfo>, WalletStatusMonitorError> {
-        // TODO: Implement starting point instead of continuation
-        let mut stream = if continuation && self.coinbase_transactions_stream.lock().await.is_some()
-        {
-            self.coinbase_transactions_stream
-                .lock()
-                .await
-                .take()
-                .expect("coinbase_transactions_stream not found")
-        } else {
-            let mut client = WalletClient::connect(self.wallet_grpc_address())
-                .await
-                .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
-            let res = client
-                .get_completed_transactions(GetCompletedTransactionsRequest {
-                    payment_id: None,
-                    block_hash: None,
-                    block_height: None,
+                Ok(TransactionInfo {
+                    tx_id: tx.tx_id.to_string(),
+                    source_address: TariAddress::from_bytes(&tx.source_address)?.to_base58(),
+                    dest_address: TariAddress::from_bytes(&tx.dest_address)?.to_base58(),
+                    status: TransactionStatus::from(tx.status),
+                    amount: MicroMinotari(tx.amount),
+                    is_cancelled: tx.is_cancelled,
+                    direction: tx.direction,
+                    excess_sig: tx.excess_sig,
+                    fee: tx.fee,
+                    timestamp: tx.timestamp,
+                    payment_id: PaymentId::stringify_bytes(&tx.user_payment_id),
+                    mined_in_block_height: tx.mined_in_block_height,
+                    payment_reference,
                 })
-                .await
-                .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?;
-            res.into_inner()
-        };
+            })
+            .collect::<Result<Vec<_>, TariAddressError>>()?;
 
-        let mut transactions: Vec<TransactionInfo> = Vec::new();
-
-        while let Some(message) = stream
-            .message()
-            .await
-            .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?
-        {
-            let tx = message.transaction.expect("Transaction not found");
-            if tx.status != 12 && tx.status != 13 {
-                // Consider only COINBASE_UNCONFIRMED and COINBASE_UNCONFIRMED
-                continue;
-            }
-
-            transactions.push(TransactionInfo {
-                tx_id: tx.tx_id.to_string(),
-                source_address: tx.source_address.to_hex(),
-                dest_address: tx.dest_address.to_hex(),
-                status: tx.status,
-                amount: MicroMinotari(tx.amount),
-                is_cancelled: tx.is_cancelled,
-                direction: tx.direction,
-                excess_sig: tx.excess_sig,
-                fee: tx.fee,
-                timestamp: tx.timestamp,
-                payment_id: PaymentId::stringify_bytes(&tx.user_payment_id),
-                mined_in_block_height: tx.mined_in_block_height,
-                payment_reference: None,
-            });
-            if let Some(limit) = limit {
-                if transactions.len() >= limit as usize {
-                    break;
-                }
-            }
-        }
-
-        self.coinbase_transactions_stream
-            .lock()
-            .await
-            .replace(stream);
         Ok(transactions)
     }
 
@@ -347,24 +266,6 @@ impl WalletAdapter {
                 }
             }
         }
-    }
-
-    /// Find a recent coinbase transaction for a specific block height
-    pub async fn find_coinbase_transaction_for_block(
-        &self,
-        block_height: u64,
-    ) -> Result<Option<TransactionInfo>, WalletStatusMonitorError> {
-        // Get a small batch of recent coinbase transactions
-        let transactions = self
-            .get_coinbase_transactions(false, Some(10), block_height)
-            .await?;
-
-        // Find one matching the specified block height
-        let matching_tx = transactions
-            .into_iter()
-            .find(|tx| tx.mined_in_block_height == block_height);
-
-        Ok(matching_tx)
     }
 
     pub fn wallet_grpc_address(&self) -> String {
@@ -701,7 +602,7 @@ pub struct TransactionInfo {
     pub tx_id: String,
     pub source_address: String,
     pub dest_address: String,
-    pub status: i32,
+    pub status: TransactionStatus,
     pub amount: MicroMinotari,
     pub is_cancelled: bool,
     pub direction: i32,
@@ -718,4 +619,72 @@ pub struct TariAddressVariants {
     pub emoji_string: String,
     pub base58: String,
     pub hex: String,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[repr(i32)]
+pub enum TransactionStatus {
+    /// This transaction has been completed between the parties but has not been broadcast to the base layer network.
+    Completed = 0,
+    /// This transaction has been broadcast to the base layer network and is currently in one or more base node mempools.
+    Broadcast = 1,
+    /// This transaction has been mined and included in a block.
+    MinedUnconfirmed = 2,
+    /// This transaction was generated as part of importing a spendable UTXO
+    Imported = 3,
+    /// This transaction is still being negotiated by the parties
+    Pending = 4,
+    /// This is a created Coinbase Transaction
+    Coinbase = 5,
+    /// This transaction is mined and confirmed at the current base node's height
+    MinedConfirmed = 6,
+    /// The transaction was rejected by the mempool
+    Rejected = 7,
+    /// This is faux transaction mainly for one-sided transaction outputs or wallet recovery outputs have been found
+    OneSidedUnconfirmed = 8,
+    /// All Imported and FauxUnconfirmed transactions will end up with this status when the outputs have been confirmed
+    OneSidedConfirmed = 9,
+    /// This transaction is still being queued for sending
+    Queued = 10,
+    /// The transaction was not found by the wallet its in transaction database
+    NotFound = 11,
+    /// This is Coinbase transaction that is detected from chain
+    CoinbaseUnconfirmed = 12,
+    /// This is Coinbase transaction that is detected from chain
+    CoinbaseConfirmed = 13,
+    /// This is Coinbase transaction that is not currently detected as mined
+    CoinbaseNotInBlockChain = 14,
+}
+
+// We should decide which format we wanna use
+impl Serialize for TransactionStatus {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_i32(*self as i32)
+    }
+}
+
+impl From<i32> for TransactionStatus {
+    fn from(value: i32) -> Self {
+        match value {
+            0 => TransactionStatus::Completed,
+            1 => TransactionStatus::Broadcast,
+            2 => TransactionStatus::MinedUnconfirmed,
+            3 => TransactionStatus::Imported,
+            4 => TransactionStatus::Pending,
+            5 => TransactionStatus::Coinbase,
+            6 => TransactionStatus::MinedConfirmed,
+            7 => TransactionStatus::Rejected,
+            8 => TransactionStatus::OneSidedUnconfirmed,
+            9 => TransactionStatus::OneSidedConfirmed,
+            10 => TransactionStatus::Queued,
+            11 => TransactionStatus::NotFound,
+            12 => TransactionStatus::CoinbaseUnconfirmed,
+            13 => TransactionStatus::CoinbaseConfirmed,
+            14 => TransactionStatus::CoinbaseNotInBlockChain,
+            _ => TransactionStatus::NotFound,
+        }
+    }
 }

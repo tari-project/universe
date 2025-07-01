@@ -41,7 +41,7 @@ export const WrapperGrid = styled.div`
 export const GridAreaTop = styled.div`
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 16px;
 `;
 
 export const GridAreaBottom = styled.div<{ $swapsOpen?: boolean }>`

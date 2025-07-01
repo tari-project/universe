@@ -120,19 +120,46 @@ export function formatNumber(value: number, preset: FormatPreset): string {
     }
 }
 
-export function formatHashrate(hashrate: number, joinUnit = true): string {
+interface Hashrate {
+    value: number;
+    unit: string;
+}
+
+export function formatHashrate(hashrate: number, joinUnit = true): Hashrate {
     if (hashrate < 1000) {
-        return joinUnit ? hashrate + ' H/s' : hashrate.toFixed(2);
-    } else if (hashrate < 1000000) {
-        return (hashrate / 1000).toFixed(2) + (joinUnit ? ' kH/s' : 'k');
-    } else if (hashrate < 1000000000) {
-        return (hashrate / 1000000).toFixed(2) + (joinUnit ? ' MH/s' : 'M');
-    } else if (hashrate < 1000000000000) {
-        return (hashrate / 1000000000).toFixed(2) + (joinUnit ? ' GH/s' : 'G');
-    } else if (hashrate < 1000000000000000) {
-        return (hashrate / 1000000000000).toFixed(2) + (joinUnit ? ' TH/s' : 'T');
+        return {
+            value: hashrate,
+            unit: 'H/s',
+        };
+    }
+    if (hashrate < 1000000) {
+        return {
+            value: Number((hashrate / 1000).toFixed(2)),
+            unit: joinUnit ? ' kH/s' : 'k',
+        };
+    }
+    if (hashrate < 1000000000) {
+        return {
+            value: Number((hashrate / 1000000).toFixed(2)),
+            unit: joinUnit ? ' MH/s' : 'M',
+        };
+    }
+    if (hashrate < 1000000000000) {
+        return {
+            value: Number((hashrate / 1000000000).toFixed(2)),
+            unit: joinUnit ? ' GH/s' : 'G',
+        };
+    }
+    if (hashrate < 1000000000000000) {
+        return {
+            value: Number((hashrate / 1000000000000).toFixed(2)),
+            unit: joinUnit ? ' TH/s' : 'T',
+        };
     } else {
-        return (hashrate / 1000000000000000).toFixed(2) + (joinUnit ? ' PH/s' : 'P');
+        return {
+            value: Number((hashrate / 1000000000000000).toFixed(2)),
+            unit: joinUnit ? ' PH/s' : 'P',
+        };
     }
 }
 

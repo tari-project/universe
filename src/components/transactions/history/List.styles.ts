@@ -19,5 +19,9 @@ export const ListItemWrapper = styled.div`
     align-items: center;
     position: relative;
     gap: 4px;
-    padding: 6px 0 0;
+`;
+
+export const FilterWrapper = styled.div`
+    display: flex;
+    gap: 12px;
 `;

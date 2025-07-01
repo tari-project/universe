@@ -1,7 +1,7 @@
 {
     "name": "tari-universe",
     "private": true,
-    "version": "1.2.14",
+    "version": "1.2.15",
     "type": "module",
     "scripts": {
         "dev": "vite dev",
@@ -32,6 +32,7 @@
         "i18next-http-backend": "^3.0.2",
         "motion": "^12.19.1",
         "react": "19.1.0",
+        "react-countdown": "^2.3.6",
         "react-dom": "19.1.0",
         "react-hook-form": "^7.58.1",
         "react-i18next": "^15.5.3",
