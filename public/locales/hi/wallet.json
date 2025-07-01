@@ -118,6 +118,15 @@
     "your-transaction-is-being-processed": "आपका लेन-देन संसाधित हो रहा है",
     "your-xtm-is-on-the-way": "आपका XTM रास्ते में है!"
   },
+  "sync-message": {
+    "completed": "any moment now",
+    "line1": "Sync in progress. ",
+    "line2": " remaining",
+    "line3": "until your wallet balance is displayed",
+    "tooltip-description": "Your node is still syncing, so your balance isn't visible yet.",
+    "tooltip-description-mining": "Your node is still syncing, so your balance isn't visible yet. But don't worry, you're actively mining and earning XTM.",
+    "tooltip-title": "Why the delay?"
+  },
   "tabs": {
     "history": "इतिहास",
     "receive": "प्राप्त करें",

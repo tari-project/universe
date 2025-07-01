@@ -1,9 +1,10 @@
+import React from 'react';
 import { IoIosArrowDown, IoIosArrowUp } from 'react-icons/io';
 import { Select, SelectOption } from '@app/components/elements/inputs/Select.tsx';
 import { flip, offset } from '@floating-ui/react';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import React from 'react';
+import { FilterWrapper } from './List.styles.ts';
 
 export type TxHistoryFilter = 'all-activity' | 'rewards' | 'transactions';
 
@@ -33,7 +34,7 @@ export const FilterSelect = React.memo(({ filter, handleFilterChange }: FilterSe
     )();
 
     return (
-        <div style={{ display: 'flex', gap: '12px' }}>
+        <FilterWrapper>
             <Select
                 options={filterOptions}
                 selectedValue={filter}
@@ -58,7 +59,7 @@ export const FilterSelect = React.memo(({ filter, handleFilterChange }: FilterSe
                     },
                 }}
             />
-        </div>
+        </FilterWrapper>
     );
 });
 

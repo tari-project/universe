@@ -21,7 +21,12 @@ import { getTimestampFromTransaction, isBridgeTransaction, isTransactionInfo } f
 import { UserTransactionDTO } from '@tari-project/wxtm-bridge-backend-api';
 import { BridgeHistoryListItem } from '@app/components/transactions/history/BridgeListItem.tsx';
 
-export function List() {
+interface Props {
+    setIsScrolled: (isScrolled: boolean) => void;
+    targetRef: React.RefObject<HTMLDivElement> | null;
+}
+
+export function List({ setIsScrolled, targetRef }: Props) {
     const { t } = useTranslation('wallet');
     const walletScanning = useWalletStore((s) => s.wallet_scanning);
     const bridgeTransactions = useWalletStore((s) => s.bridge_transactions);
@@ -29,6 +34,14 @@ export function List() {
     const coldWalletAddress = useWalletStore((s) => s.cold_wallet_address);
     const { data, fetchNextPage, isFetchingNextPage, isFetching, hasNextPage } = useFetchTxHistory();
     const isFetchBridgeTransactionsFailed = useRef(false);
+
+    useEffect(() => {
+        const el = targetRef?.current;
+        if (!el) return;
+        const onScroll = () => setIsScrolled(el.scrollTop > 1);
+        el.addEventListener('scroll', onScroll);
+        return () => el.removeEventListener('scroll', onScroll);
+    }, [targetRef, setIsScrolled]);
 
     const { ref } = useInView({
         initialInView: false,
