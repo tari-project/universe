@@ -64,7 +64,7 @@ use crate::utils::{cryptography, rand_utils};
 const KEY_MANAGER_COMMS_SECRET_KEY_BRANCH_KEY: &str = "comms";
 const LOG_TARGET: &str = "tari::universe::internal_wallet";
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TariWalletDetails {
     pub id: String,
     pub tari_address: TariAddress,
@@ -75,11 +75,13 @@ pub struct TariWalletDetails {
 
 #[derive(Debug, Clone, Getters)]
 pub struct InternalWallet {
+    tari_address_type: TariAddressType,
     encrypted_tari_seed: Hidden<Option<Vec<u8>>>,
     encrypted_monero_seed: Hidden<Option<Vec<u8>>>,
     monero_address: String,
+    // Only for an external(seedless) wallet
     external_tari_address: Option<TariAddress>,
-    // Available only for an owned(with seed) wallet
+    // Only for an owned(with seed) wallet
     tari_wallet_details: Option<TariWalletDetails>,
 }
 
@@ -139,6 +141,7 @@ impl InternalWallet {
         };
 
         let internal_wallet = InternalWallet {
+            tari_address_type: TariAddressType::External,
             external_tari_address,
             monero_address,
             encrypted_monero_seed: Hidden::hide(monero_seed_binary),
@@ -189,6 +192,7 @@ impl InternalWallet {
                 .await?;
 
                 InternalWallet {
+                    tari_address_type: TariAddressType::Internal,
                     encrypted_tari_seed: Hidden::hide(Some(tari_seed_binary)),
                     encrypted_monero_seed: Hidden::hide(monero_seed_binary),
                     monero_address,
@@ -209,6 +213,7 @@ impl InternalWallet {
                 };
 
                 InternalWallet {
+                    tari_address_type: TariAddressType::Internal,
                     encrypted_tari_seed: Hidden::hide(Some(tari_seed_binary)),
                     encrypted_monero_seed: Hidden::hide(monero_seed_binary),
                     monero_address,
@@ -241,7 +246,7 @@ impl InternalWallet {
         } else if let Some(ref details) = self.tari_wallet_details {
             &details.tari_address
         } else {
-            panic!("Internal wallet should have a Tari address")
+            panic!("Internal wallet must have a Tari Address defined!")
         }
     }
 
@@ -255,7 +260,7 @@ impl InternalWallet {
         seed_words: Vec<String>,
         app_handle: &AppHandle,
     ) -> Result<(String, Vec<u8>), anyhow::Error> {
-        let tari_cipher_seed = get_tari_cipher_seed(seed_words).await?;
+        let tari_cipher_seed = get_tari_seed(seed_words).await?;
         let (tari_wallet_details, tari_seed_binary) =
             InternalWallet::add_tari_wallet(app_handle, tari_cipher_seed).await?;
 
@@ -269,13 +274,12 @@ impl InternalWallet {
         Ok((tari_wallet_details.id, tari_seed_binary))
     }
 
-    // Internal method, without required side effects
+    // Internal method
     async fn add_tari_wallet(
         app_handle: &AppHandle,
         tari_seed: CipherSeed,
     ) -> Result<(TariWalletDetails, Vec<u8>), anyhow::Error> {
         let wallet_id = rand_utils::get_rand_string(6);
-
         let tari_seed_binary = tari_seed
             .to_binary()
             .expect("Failed to convert tari seed to binary");
@@ -289,10 +293,23 @@ impl InternalWallet {
         let mut new_tari_wallets = vec![wallet_id.clone()];
         new_tari_wallets.extend_from_slice(wallet_config.tari_wallets());
         ConfigWallet::update_field(ConfigWalletContent::set_tari_wallets, new_tari_wallets).await?;
+
         let wallet_details = InternalWallet::get_tari_wallet_details(
             wallet_id,
             CipherSeed::from_binary(&tari_seed_binary)
                 .expect("Failed to create CipherSeed from Tari Seed binary"),
+        )
+        .await?;
+        ConfigWallet::update_field(
+            ConfigWalletContent::set_tari_wallet_details,
+            Some(wallet_details.clone()),
+        )
+        .await?;
+
+        // Deselect the external Tari address because a new address is now selected by default
+        ConfigWallet::update_field(
+            ConfigWalletContent::set_selected_external_tari_address,
+            None,
         )
         .await?;
 
@@ -443,46 +460,62 @@ impl InternalWallet {
             );
         }
 
-        let tari_wallet_id = (*wallet_config.tari_wallets())
-            .first()
-            .expect("Unexpected! Selected wallet not found in the wallet config!");
-        let encrypted_tari_seed =
-            match InternalWallet::get_credentials(app_handle, tari_wallet_id.clone(), true).await {
-                Ok(cred) => cred.encrypted_seed,
-                Err(e) => {
-                    panic!("Failed to get credentials: {}", e)
-                }
-            };
-        let tari_cipher_seed = if *ConfigWallet::content().await.pin_locked() {
-            let pin = enter_pin_dialog(app_handle).await?;
-            let pin_password = SafePassword::from(pin);
-            match CipherSeed::from_enciphered_bytes(&encrypted_tari_seed, Some(pin_password)) {
-                Ok(seed) => seed,
-                Err(_) => {
-                    // Think about better error handling here
-                    EventsEmitter::emit_critical_problem(CriticalProblemPayload {
-                        title: Some("Wrong PIN entered!".to_string()),
-                        description: Some(
-                            "You entered an incorrect PIN. Try again later".to_string(),
-                        ),
-                        error_message: None,
-                    })
-                    .await;
-                    return Err(anyhow!("Wrong PIN entered!"));
-                }
-            }
-        } else {
-            // Seed not yet encrypted with PIN
-            CipherSeed::from_binary(&encrypted_tari_seed)
-                .expect("Could not parse Tari Seed from binary")
-        };
-        let tari_wallet_details =
-            InternalWallet::get_tari_wallet_details(tari_wallet_id.clone(), tari_cipher_seed)
+        let (encrypted_tari_seed, tari_wallet_details) = {
+            if let Some(wallet_details) = ConfigWallet::content().await.tari_wallet_details() {
+                log::info!(target: LOG_TARGET, "Extracted(wallet config file) Tari Wallet Details: {:?}", wallet_details);
+                (None, wallet_details.clone())
+            } else {
+                // If wallet details are not saved in the config file, extract them from the decrypted seed.
+                let tari_wallet_id = (*wallet_config.tari_wallets())
+                    .first()
+                    .expect("Unexpected! Selected wallet not found in the wallet config!");
+                let encrypted_tari_seed =
+                    match InternalWallet::get_credentials(app_handle, tari_wallet_id.clone(), true)
+                        .await
+                    {
+                        Ok(cred) => cred.encrypted_seed,
+                        Err(e) => {
+                            panic!("Failed to get credentials: {}", e)
+                        }
+                    };
+                let tari_cipher_seed = if *ConfigWallet::content().await.pin_locked() {
+                    let pin = enter_pin_dialog(app_handle).await?;
+                    let pin_password = SafePassword::from(pin);
+                    match CipherSeed::from_enciphered_bytes(
+                        &encrypted_tari_seed,
+                        Some(pin_password),
+                    ) {
+                        Ok(seed) => seed,
+                        Err(_) => {
+                            EventsEmitter::emit_critical_problem(CriticalProblemPayload {
+                                title: Some("Wrong PIN entered!".to_string()),
+                                description: Some(
+                                    "You entered an incorrect PIN. Try again later".to_string(),
+                                ),
+                                error_message: None,
+                            })
+                            .await;
+                            return Err(anyhow!("Wrong PIN entered!"));
+                        }
+                    }
+                } else {
+                    // Seed not yet encrypted with PIN
+                    CipherSeed::from_binary(&encrypted_tari_seed)
+                        .expect("Could not parse Tari Seed from binary")
+                };
+                let wallet_details = InternalWallet::get_tari_wallet_details(
+                    tari_wallet_id.clone(),
+                    tari_cipher_seed,
+                )
                 .await?;
-        log::info!("Extracted Tari Wallet Details: {:?}", tari_wallet_details);
+                log::info!(target: LOG_TARGET, "Extracted(seed from credentials) Tari Wallet Details: {:?}", wallet_details);
+                (Some(encrypted_tari_seed), wallet_details)
+            }
+        };
 
         return Ok(InternalWallet {
-            encrypted_tari_seed: Hidden::hide(Some(encrypted_tari_seed)),
+            tari_address_type: TariAddressType::Internal,
+            encrypted_tari_seed: Hidden::hide(encrypted_tari_seed),
             encrypted_monero_seed: Hidden::hide(None), // Prompt when needed
             monero_address,
             external_tari_address: None,
@@ -605,7 +638,15 @@ impl InternalWallet {
             let pin = enter_pin_dialog(app_handle).await?;
             let pin_password = SafePassword::from(pin);
             match CipherSeed::from_enciphered_bytes(&encrypted_tari_seed, Some(pin_password)) {
-                Ok(seed) => Ok(seed),
+                Ok(seed) => {
+                    {
+                        // Temporary block for testing crucial part
+                        // Remove before rolling out
+                        // Maybe log to sentry
+                        compare_extracted_tari_wallet_details(&seed).await;
+                    }
+                    Ok(seed)
+                }
                 Err(_) => {
                     EventsEmitter::emit_critical_problem(CriticalProblemPayload {
                         title: Some("Wrong PIN entered!".to_string()),
@@ -704,6 +745,31 @@ pub struct PaperWalletConfig {
     pub password: String,
 }
 
+async fn handle_critical_problem(
+    title: &str,
+    description: &str,
+    extracted_wallet_details: Option<&TariWalletDetails>,
+) {
+    let state_wallet_details = InternalWallet::tari_wallet_details().await;
+    log::error!(
+        target: LOG_TARGET,
+        "Unexpected! {} --- State: {:?} | Extracted from seed: {:?}",
+        title,
+        state_wallet_details,
+        extracted_wallet_details
+    );
+    EventsEmitter::emit_critical_problem(CriticalProblemPayload {
+        title: Some(title.to_string()),
+        description: Some(description.to_string()),
+        error_message: Some(format!(
+            "State: {:?}, Extracted: {:?}",
+            state_wallet_details.map(|d| d.tari_address),
+            extracted_wallet_details.map(|d| d.tari_address.clone())
+        )),
+    })
+    .await;
+}
+
 async fn retry_with_keyring_dialog<F, Fut, T>(
     app_handle: &AppHandle,
     mut operation: F,
@@ -742,7 +808,7 @@ pub async fn clear_wallet_data(local_dir_path: &PathBuf) -> Result<(), anyhow::E
     Ok(())
 }
 
-pub async fn get_tari_cipher_seed(seed_words: Vec<String>) -> Result<CipherSeed, anyhow::Error> {
+pub async fn get_tari_seed(seed_words: Vec<String>) -> Result<CipherSeed, anyhow::Error> {
     let hidden_seed_words = seed_words.into_iter().map(Hidden::hide).collect::<Vec<_>>();
     let seed_words_parsed = SeedWords::new(hidden_seed_words);
     // TODO: use pin to encrypt seed words
@@ -787,6 +853,27 @@ async fn enter_pin_dialog(app_handle: &AppHandle) -> Result<String, anyhow::Erro
 
 async fn create_pin_dialog(app_handle: &AppHandle) -> Result<String, anyhow::Error> {
     pin_dialog_with_emitter(app_handle, || EventsEmitter::emit_set_pin()).await
+}
+
+// temporary for catching errors
+async fn compare_extracted_tari_wallet_details(seed: &CipherSeed) {
+    match InternalWallet::get_tari_wallet_details("42069".to_string(), seed.clone()).await {
+        Ok(extracted_wallet_detals) => {
+            if InternalWallet::tari_address().await != extracted_wallet_detals.tari_address {
+                let _unused = handle_critical_problem(
+                    "Tari address mismatch",
+                    "[get_tari_seed]",
+                    Some(&extracted_wallet_detals),
+                )
+                .await;
+            }
+        }
+        Err(e) => {
+            let _unused =
+                handle_critical_problem("Could not extract wallet details", &e.to_string(), None)
+                    .await;
+        }
+    }
 }
 
 // ** Legacy Wallet Config **

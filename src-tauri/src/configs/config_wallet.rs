@@ -28,6 +28,8 @@ use tari_common_types::tari_address::TariAddress;
 use tauri::AppHandle;
 use tokio::sync::RwLock;
 
+use crate::internal_wallet::TariWalletDetails;
+
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
 
 static EXCHANGES_RECORD_NAME_FOR_EXTERNAL_ADDRESS_BOOK: &str = "Exchanges";
@@ -68,6 +70,8 @@ pub struct ConfigWalletContent {
     #[getset(get = "pub", set = "pub")]
     selected_external_tari_address: Option<TariAddress>,
     #[getset(get = "pub", set = "pub")]
+    tari_wallet_details: Option<TariWalletDetails>,
+    #[getset(get = "pub", set = "pub")]
     pin_locked: bool,
 }
 
@@ -84,6 +88,7 @@ impl Default for ConfigWalletContent {
             selected_external_tari_address: None,
             external_tari_addresses_book: HashMap::new(),
             pin_locked: false,
+            tari_wallet_details: None,
         }
     }
 }
