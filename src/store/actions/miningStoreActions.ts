@@ -152,9 +152,11 @@ export const getMiningNetwork = async () => {
 };
 
 export const startCpuMining = async () => {
-    if (!useSetupStore.getState().cpuMiningUnlocked) return;
-    if (!useConfigMiningStore.getState().cpu_mining_enabled) return;
-    if (useMiningStore.getState().isCpuMiningInitiated) return;
+    const unlocked = useSetupStore.getState().cpuMiningUnlocked;
+    const enabled = useConfigMiningStore.getState().cpu_mining_enabled;
+    const initiated = useMiningStore.getState().isCpuMiningInitiated;
+
+    if (!enabled || !unlocked || initiated) return;
 
     useMiningStore.setState({ isCpuMiningInitiated: true });
     console.info('CPU Mining starting....');
