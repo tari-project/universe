@@ -99,7 +99,7 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
                                 <ExternalLink2SVG />
                             </ExternalLink>
                         )}
-                        <ExchangeButton />
+                        <ExchangeButton isScrolled={isScrolled} />
                     </DetailsCardBottomContent>
                 </DetailsCardContent>
             </DetailsCard>
@@ -108,9 +108,10 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
                     <AnimatePresence>
                         {!isScrolled && (
                             <WalletActionWrapper
-                                initial={{ height: 'auto' }}
-                                animate={{ height: 'auto' }}
-                                exit={{ height: 0 }}
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
                             >
                                 <WalletActions section={section} setSection={setSection} />
                             </WalletActionWrapper>
