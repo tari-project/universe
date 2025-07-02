@@ -1530,9 +1530,7 @@ pub async fn start_cpu_mining(
     drop(cpu_miner);
     let cpu_miner_config = state.cpu_miner_config.read().await;
     drop(cpu_miner_config);
-    let internal_wallet_guard = InternalWallet::current().read().await;
-    let tari_address = internal_wallet_guard.tari_address.clone();
-    drop(internal_wallet_guard);
+    let tari_address = InternalWallet::tari_address().await;
 
     if cpu_mining_enabled && !cpu_miner_running {
         let cpu_miner_config = state.cpu_miner_config.read().await;
@@ -1609,9 +1607,7 @@ pub async fn start_gpu_mining(
         .get_unique_string()
         .await;
 
-    let internal_wallet_guard = InternalWallet::current().read().await;
-    let tari_address = internal_wallet_guard.tari_address.clone();
-    drop(internal_wallet_guard);
+    let tari_address = InternalWallet::tari_address().await;
     let gpu_miner = state.gpu_miner.read().await;
     let gpu_miner_running = gpu_miner.is_running().await;
     let gpu_available = gpu_miner.is_gpu_mining_available();

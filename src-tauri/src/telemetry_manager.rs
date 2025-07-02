@@ -536,9 +536,7 @@ async fn get_telemetry_data_inner(
     // Add payment ID from current tari address
     if InternalWallet::is_initialized() {
         if let Some(_state) = app_handle.try_state::<crate::UniverseAppState>() {
-            let internal_wallet_guard = InternalWallet::current().read().await;
-            let tari_address = internal_wallet_guard.tari_address.clone();
-            drop(internal_wallet_guard);
+            let tari_address = InternalWallet::tari_address().await;
             if let Ok(Some(payment_id)) = extract_payment_id(&tari_address.to_base58()) {
                 extra_data.insert("mining_address_payment_id".to_string(), payment_id);
             }

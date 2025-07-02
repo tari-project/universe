@@ -28,6 +28,7 @@ use super::{
 use crate::app_in_memory_config::{MinerType, DEFAULT_EXCHANGE_ID};
 use crate::configs::config_core::ConfigCoreContent;
 use crate::configs::config_ui::WalletUIMode;
+use crate::events::CriticalProblemPayload;
 use crate::internal_wallet::InternalWallet;
 use crate::{
     configs::{
@@ -349,30 +350,34 @@ impl SetupManager {
         if build_in_exchange_id.eq(DEFAULT_EXCHANGE_ID) {
             if is_external_address_selected && is_on_exchange_specific_variant {
                 let _unused = ConfigUI::set_wallet_ui_mode(WalletUIMode::Seedless).await;
-                match InternalWallet::initialize_seedless(None).await {
-                    Ok(wallet) => {
-                        // Is this proper place to emit the event?
-                        EventsEmitter::emit_main_tari_address_loaded(&wallet.tari_address).await;
-                        log::info!(target: LOG_TARGET, "Seedless wallet initialized with address: {:?}", wallet.tari_address.to_base58());
-                    }
-                    Err(e) => {
-                        // Handle this critical error
-                        error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);
-                    }
+                if let Err(e) = InternalWallet::initialize_seedless(None).await {
+                    EventsEmitter::emit_critical_problem(CriticalProblemPayload {
+                        title: Some("Wallet not initialized!".to_string()),
+                        description: Some(
+                            "Encountered an error while initializing the wallet.".to_string(),
+                        ),
+                        error_message: Some(e.to_string()),
+                    })
+                    .await;
                 }
             } else {
                 let _unused = ConfigUI::set_wallet_ui_mode(WalletUIMode::Standard).await;
                 match InternalWallet::initialize_with_seed(&app_handle).await {
-                    Ok(wallet) => {
-                        log::info!(target: LOG_TARGET, "Owned Internal Wallet initialized with address: {:?}", wallet.tari_address.to_base58());
-
+                    Ok(()) => {
                         if let Err(e) = ConfigWallet::migrate().await {
-                            panic!("Wallet migration failed: {:?}", e);
+                            EventsEmitter::emit_critical_problem(CriticalProblemPayload {
+                                title: Some("Wallet migration failed!".to_string()),
+                                description: Some(
+                                    "Encountered an error while migrating the wallet.".to_string(),
+                                ),
+                                error_message: Some(e.to_string()),
+                            })
+                            .await
                         }
                         let state = app_handle.state::<UniverseAppState>();
-                        let wallet_details = wallet
-                            .tari_wallet_details
-                            .expect("Wallet details are missing");
+                        let wallet_details = InternalWallet::tari_wallet_details()
+                            .await
+                            .expect("Wallet details are missing for an Owned InternalWallet");
                         state
                             .wallet_manager
                             .set_view_private_key_and_spend_key(
@@ -384,9 +389,6 @@ impl SetupManager {
                             let mut cpu_config = state.cpu_miner_config.write().await;
                             cpu_config.load_from_config_wallet(&ConfigWallet::content().await);
                         }
-
-                        // Is this proper place to emit the event?
-                        EventsEmitter::emit_main_tari_address_loaded(&wallet.tari_address).await;
                     }
                     Err(e) => {
                         // Handle this as critical error

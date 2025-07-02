@@ -59,7 +59,7 @@ pub struct ConfigWalletContent {
     #[getset(get = "pub")]
     monero_address_is_generated: bool,
     #[getset(get = "pub", set = "pub")]
-    keyring_accessed: bool,
+    keyring_accessed: bool, // backward compatibility
     #[getset(get = "pub", set = "pub")]
     wallet_migration_nonce: u64,
     created_at: SystemTime,

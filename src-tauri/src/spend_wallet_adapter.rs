@@ -106,11 +106,7 @@ impl SpendWalletAdapter {
             include_str!("../log4rs/spend_wallet_sample.yml"),
         )?;
 
-        let tari_wallet_details = InternalWallet::current()
-            .read()
-            .await
-            .tari_wallet_details
-            .clone();
+        let tari_wallet_details = InternalWallet::tari_wallet_details().await;
         self.wallet_birthday = tari_wallet_details.map(|d| d.wallet_birthday);
 
         Ok(())
