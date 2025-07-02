@@ -670,7 +670,7 @@ impl InternalWallet {
         &self,
         app_handle: &tauri::AppHandle,
     ) -> Result<MoneroSeed, anyhow::Error> {
-        if *ConfigWallet::content().await.monero_address_is_generated() {
+        if !*ConfigWallet::content().await.monero_address_is_generated() {
             return Err(anyhow!(
                 "Can't retrieve seed words from an imported monero address!"
             ));
