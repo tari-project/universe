@@ -162,7 +162,7 @@ export const Shadow = styled(m.div)`
     left: 0;
     width: 100%;
     height: 100%;
-    background: linear-gradient(0deg, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0.4) 100%);
+    background: linear-gradient(0deg, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.4) 100%);
     border-radius: 500px;
     z-index: 0;
 `;
