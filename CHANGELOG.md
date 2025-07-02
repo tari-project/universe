@@ -1,10 +1,10 @@
-🚀 TARI UNIVERSE v1.2.16: The Season of Light: Part 2
+🚀 TARI UNIVERSE v1.2.15: The Season of Light: Part 2
 
 _July 2, 2025_
 
 Hey everyone,
 
-Tari contributors are excited to unveil Tari Universe v1.2.16 "The Season of Light Part 2." This release builds on the success of the first Season of Light release last week, which meaningfully improved both the conversion rate for new users and overall retention rate by over 20%. This release features significant changes to the UI for Tari Universe to better communicate when you should expect your first rewards, and how long it will take to see your wallet balance. It also has more under the hood updates to improve overall sync ability and reduce the potential for errors. We can't wait to hear what you think about Season of Light Part 2!
+Tari contributors are excited to unveil Tari Universe v1.2.15 "The Season of Light Part 2." This release builds on the success of the first Season of Light release last week, which meaningfully improved both the conversion rate for new users and overall retention rate by over 20%. This release features significant changes to the UI for Tari Universe to better communicate when you should expect your first rewards, and how long it will take to see your wallet balance. It also has more under the hood updates to improve overall sync ability and reduce the potential for errors. We can't wait to hear what you think about Season of Light Part 2!
 
 ✨ WHAT'S NEW
 
