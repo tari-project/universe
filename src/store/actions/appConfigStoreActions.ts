@@ -135,15 +135,15 @@ export const setAutoUpdate = async (autoUpdate: boolean) => {
 };
 export const setCpuMiningEnabled = async (enabled: boolean) => {
     useConfigMiningStore.setState({ cpu_mining_enabled: enabled });
-    const miningInitiated = useMiningStore.getState().isCpuMiningInitiated;
+    const anyMiningInitiated =
+        useMiningStore.getState().isCpuMiningInitiated || useMiningStore.getState().isGpuMiningInitiated;
     const cpuMining = useMiningMetricsStore.getState().cpu_mining_status.is_mining;
-
     if (cpuMining) {
         await stopCpuMining();
     }
     invoke('set_cpu_mining_enabled', { enabled })
         .then(async () => {
-            if (miningInitiated && enabled) {
+            if (anyMiningInitiated && enabled) {
                 await startCpuMining();
             } else {
                 await stopCpuMining();
@@ -153,7 +153,7 @@ export const setCpuMiningEnabled = async (enabled: boolean) => {
             console.error('Could not set CPU mining enabled', e);
             setError('Could not change CPU mining enabled');
             useConfigMiningStore.setState({ cpu_mining_enabled: !enabled });
-            if (miningInitiated && !cpuMining) {
+            if (useMiningStore.getState().isCpuMiningInitiated && !cpuMining) {
                 void stopCpuMining();
             }
         });
@@ -168,7 +168,8 @@ export const setCustomStatsServerPort = async (port?: number) => {
 };
 export const setGpuMiningEnabled = async (enabled: boolean) => {
     useConfigMiningStore.setState({ gpu_mining_enabled: enabled });
-    const miningInitiated = useMiningStore.getState().isGpuMiningInitiated;
+    const anyMiningInitiated =
+        useMiningStore.getState().isCpuMiningInitiated || useMiningStore.getState().isGpuMiningInitiated;
     const gpuMining = useMiningMetricsStore.getState().gpu_mining_status.is_mining;
     const gpuDevices = useMiningMetricsStore.getState().gpu_devices;
     if (gpuMining) {
@@ -176,7 +177,7 @@ export const setGpuMiningEnabled = async (enabled: boolean) => {
     }
     try {
         await invoke('set_gpu_mining_enabled', { enabled });
-        if (miningInitiated && enabled) {
+        if (anyMiningInitiated && enabled) {
             await startGpuMining();
         } else {
             void stopGpuMining();
@@ -195,7 +196,7 @@ export const setGpuMiningEnabled = async (enabled: boolean) => {
         console.error('Could not set GPU mining enabled', e);
         setError('Could not change GPU mining enabled');
         useConfigMiningStore.setState({ gpu_mining_enabled: !enabled });
-        if (miningInitiated && !gpuMining) {
+        if (useMiningStore.getState().isGpuMiningInitiated && !gpuMining) {
             void stopGpuMining();
         }
     }
