@@ -477,26 +477,24 @@ pub async fn get_network(
 }
 
 #[tauri::command]
-pub async fn get_monero_seed_words() -> Result<Vec<String>, String> {
+pub async fn get_monero_seed_words(app_handle: tauri::AppHandle) -> Result<Vec<String>, String> {
     let timer = Instant::now();
 
     let internal_wallet_guard = InternalWallet::current().read().await;
-
     let monero_seed = internal_wallet_guard
-        .get_monero_seed()
+        .get_monero_seed(&app_handle)
         .await
         .map_err(|e| e.to_string())?;
 
     drop(internal_wallet_guard);
-
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "get_monero_seed_words took too long: {:?}", timer.elapsed());
-    }
-
     let result = monero_seed.seed_words().map_err(|e| {
         log::error!(target: LOG_TARGET, "get_monero_seed_words: error getting seed words: {}", e);
         e.to_string()
     });
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "get_monero_seed_words took too long: {:?}", timer.elapsed());
+    }
     result
 }
 
