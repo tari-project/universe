@@ -155,3 +155,14 @@ export const IconWrapper = styled.div<{ $absolute?: boolean }>`
             transform: translateY(-50%);
         `}
 `;
+
+export const Shadow = styled(m.div)`
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(0deg, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0.4) 100%);
+    border-radius: 500px;
+    z-index: 0;
+`;
