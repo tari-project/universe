@@ -24,6 +24,8 @@ use anyhow::anyhow;
 use monero_address_creator::network::Mainnet;
 use monero_address_creator::Seed as MoneroSeed;
 use serde::{Deserialize, Serialize};
+use std::fs::OpenOptions;
+use std::io::Read;
 use std::path::PathBuf;
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::{TariAddress, TariAddressFeatures};
@@ -480,16 +482,28 @@ impl InternalWallet {
         app_config_dir: &PathBuf,
         old_wallet_config: LegacyWalletConfig,
     ) -> Result<(String, Vec<u8>, Option<Vec<u8>>), anyhow::Error> {
-        let legacy_cred =
-            InternalWallet::get_legacy_credentials_forced(app_handle, app_config_dir).await?;
-        // Migrate Monero Seed if was generated
+        let legacy_cred: LegacyCredential = if *ConfigWallet::content().await.keyring_accessed() {
+            InternalWallet::get_legacy_credentials_forced(app_handle, app_config_dir).await?
+        } else {
+            log::info!(target: LOG_TARGET, "Keyring was not accessed, migrating from legacy fallback file");
+            let legacy_fallback_file = get_legacy_fallback_file(app_config_dir).await?;
+            if !legacy_fallback_file.exists() {
+                return Err(anyhow!(
+                    "Legacy fallback file not found even though keyring not accessed! Path: {:?}",
+                    legacy_fallback_file
+                ));
+            }
+            let mut file = OpenOptions::new().read(true).open(legacy_fallback_file)?;
+            let mut buffer = Vec::new();
+            file.read_to_end(&mut buffer)?;
+            serde_cbor::from_slice(&buffer)?
+        };
+
+        // Migrate Monero Seed if exists in the LegacyCredential
         let monero_seed_binary = legacy_cred.monero_seed.map(|seed| seed.to_vec());
-        if *ConfigWallet::content().await.monero_address_is_generated() {
+        if let Some(ref monero_seed) = monero_seed_binary {
             let credentials = Credential {
-                encrypted_seed: monero_seed_binary
-                    .as_ref()
-                    .expect("Monero seed generated, but not stored in keychain")
-                    .clone(),
+                encrypted_seed: monero_seed.clone(),
             };
             InternalWallet::set_credentials(app_handle, "monero".to_string(), &credentials, true)
                 .await?;
@@ -770,4 +784,11 @@ pub async fn get_old_wallet_config(
     let old_config_str = fs::read_to_string(old_config_file).await?;
     let old_config: LegacyWalletConfig = serde_json::from_str(&old_config_str)?;
     Ok(old_config)
+}
+
+async fn get_legacy_fallback_file(app_config_dir: &PathBuf) -> Result<PathBuf, anyhow::Error> {
+    const FALLBACK_FILE_PATH: &str = "credentials_backup.bin";
+    let network = Network::get_current().as_key_str();
+    let old_fallback_file = app_config_dir.join(network).join(FALLBACK_FILE_PATH);
+    Ok(old_fallback_file)
 }
