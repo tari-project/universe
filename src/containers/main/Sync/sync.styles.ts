@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import { Typography } from '@app/components/elements/Typography.tsx';
 
 export const Wrapper = styled(m.div)`
+    height: 100%;
     width: 100%;
     display: flex;
     align-items: center;
@@ -12,20 +13,22 @@ export const Wrapper = styled(m.div)`
     & * {
         pointer-events: all;
     }
+
+    padding: 40px;
+    background-color: #fafafa;
 `;
 
 export const Content = styled(m.div)`
-    height: 100%;
     will-change: width;
-    width: min(100%, 80vw);
-    display: grid;
-    grid-auto-columns: 100%;
-    grid-template-rows: min-content max-content auto;
-    overflow: hidden;
-    place-content: space-between;
-    gap: min(40px, 2vh);
-    @media (max-height: 955px) {
-        gap: min(20px, 1vh);
+    width: 100%;
+    max-width: 800px;
+
+    display: flex;
+    flex-direction: column;
+    gap: 47px;
+
+    @media (max-height: 768px) {
+        gap: 40px;
     }
 `;
 
@@ -34,10 +37,16 @@ export const HeaderContent = styled(m.div)`
     flex-direction: column;
     align-items: center;
     text-align: center;
+    gap: 10px;
 `;
 
 export const Heading = styled(Typography).attrs({ variant: 'h1' })`
-    font-size: min(max(26px, 3vw), 48px);
+    font-size: 48px;
+    line-height: 120%;
+
+    @media (max-height: 768px) {
+        font-size: 40px;
+    }
 `;
 
 export const SubHeading = styled(Typography).attrs({ variant: 'p' })`
@@ -46,7 +55,6 @@ export const SubHeading = styled(Typography).attrs({ variant: 'p' })`
 `;
 
 export const HeaderGraphic = styled.div`
-    width: min(220px, 24vh);
     user-select: none;
     max-width: 100%;
 
@@ -64,6 +72,7 @@ export const ActionContent = styled(m.div)`
     width: 100%;
     height: 100%;
 `;
+
 export const FooterContent = styled(m.div)`
     display: flex;
     width: 100%;

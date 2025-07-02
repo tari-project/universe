@@ -7,11 +7,14 @@ export const ActionContentWrapper = styled.div`
     justify-content: center;
     width: 100%;
 `;
+
 export const ActionButton = styled.button`
     display: flex;
     align-items: center;
     width: 100%;
+    padding: 0 10px 0 5px;
 `;
+
 export const ButtonIconWrapper = styled.div`
     width: 30px;
     height: 30px;
