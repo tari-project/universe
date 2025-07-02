@@ -1,3 +1,23 @@
+🚀 TARI UNIVERSE v1.2.16: The Season of Light: Part 2
+
+_July 2, 2025_
+
+Hey everyone,
+
+Tari contributors are excited to unveil Tari Universe v1.2.16 "The Season of Light Part 2." This release builds on the success of the first Season of Light release last week, which meaningfully improved both the conversion rate for new users and overall retention rate by over 20%. This release features significant changes to the UI for Tari Universe to better communicate when you should expect your first rewards, and how long it will take to see your wallet balance. It also has more under the hood updates to improve overall sync ability and reduce the potential for errors. We can't wait to hear what you think about Season of Light Part 2!
+
+✨ WHAT'S NEW
+
+- ⏰ **Clear Timing** – We now tell you how long to expect for three key milestones:
+   - A. CPU rewards
+   - B. GPU mining activation
+   - C. wallet balance updates
+- 🎉 **Victory Celebrations** – Many miners are winning but had no idea! We've completely revamped the winning experience to make your victories more fun and enjoyable
+- 🎛️ **Streamlined Controls** – The Start, Stop, and Power Level buttons have been polished and refined for a smoother, more intuitive mining experience
+- 🔧 **Under-the-Hood Improvements** – Various bug fixes and optimizations to further improve the stability of Tari Universe, and reduce the potential for errors
+
+---
+
 🚀 TARI UNIVERSE v1.2.14: The Season of Light
 
 _June 27, 2025_
