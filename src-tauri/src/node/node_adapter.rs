@@ -89,22 +89,21 @@ impl NodeAdapterService {
             .await
             .map_err(|e| NodeStatusMonitorError::UnknownError(e.into()))?;
         let res = res.into_inner();
-        let metadata = match res.metadata {
-            Some(metadata) => metadata,
-            None => {
-                return Err(NodeStatusMonitorError::UnknownError(anyhow!(
-                    "No metadata found"
-                )));
-            }
-        };
+
+        let block_height = res
+            .metadata
+            .as_ref()
+            .map(|m| m.best_block_height)
+            .unwrap_or(0);
+        let block_time = res.metadata.as_ref().map(|m| m.timestamp).unwrap_or(0);
 
         Ok(BaseNodeStatus {
             sha_network_hashrate: res.sha3x_estimated_hash_rate,
             tari_randomx_network_hashrate: res.tari_randomx_estimated_hash_rate,
             monero_randomx_network_hashrate: res.monero_randomx_estimated_hash_rate,
             block_reward: MicroMinotari(res.reward),
-            block_height: metadata.best_block_height,
-            block_time: metadata.timestamp,
+            block_height,
+            block_time,
             is_synced: res.initial_sync_achieved,
             num_connections: res.num_connections,
             readiness_status: res

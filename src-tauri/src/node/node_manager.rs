@@ -27,6 +27,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use log::{error, info, warn};
+use minotari_node_grpc_client::grpc::readiness_status::State;
 use serde::{Deserialize, Serialize};
 use tari_common::configuration::Network;
 use tari_crypto::ristretto::RistrettoPublicKey;
@@ -41,12 +42,13 @@ use crate::configs::config_core::ConfigCore;
 use crate::configs::trait_config::ConfigImpl;
 use crate::events_emitter::EventsEmitter;
 use crate::node::node_adapter::{
-    NodeAdapter, NodeAdapterService, NodeIdentity, NodeStatusMonitorError,
+    NodeAdapter, NodeAdapterService, NodeIdentity, NodeStatusMonitorError, ReadinessStatus,
 };
 use crate::process_adapter::ProcessAdapter;
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
 use crate::process_watcher::ProcessWatcherStats;
+use crate::progress_trackers::progress_stepper::ChanneledStepUpdate;
 use crate::setup::setup_manager::SetupManager;
 use crate::tasks_tracker::TasksTrackers;
 use crate::{BaseNodeStatus, LocalNodeAdapter, RemoteNodeAdapter};
@@ -145,6 +147,7 @@ impl NodeManager {
         use_tor: bool,
         tor_control_port: Option<u16>,
         remote_grpc_address: Option<String>,
+        migration_tracker: Option<ChanneledStepUpdate>,
     ) -> Result<(), NodeManagerError> {
         let shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
         let task_tracker = TasksTrackers::current().node_phase.get_task_tracker().await;
@@ -167,6 +170,7 @@ impl NodeManager {
                 task_tracker.clone(),
             )
             .await?;
+            self.wait_migration(migration_tracker).await?;
         }
         if self.is_remote().await? {
             self.configure_adapter(
@@ -303,6 +307,77 @@ impl NodeManager {
                 }
             }
         }
+    }
+
+    pub async fn wait_migration(
+        &self,
+        migration_tracker: Option<ChanneledStepUpdate>,
+    ) -> Result<(), NodeManagerError> {
+        if self.is_local().await? {
+            let current_service = self.get_current_service().await;
+            let migration_handle = TasksTrackers::current()
+                        .node_phase
+                        .get_task_tracker()
+                        .await
+                        .spawn(async move {
+                            let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
+                            let mut migration_completed = false;
+                            let start_time = std::time::Instant::now();
+                            let timeout_duration = Duration::from_secs(60); // 1 minute timeout
+
+                            while !migration_completed {
+                                tokio::select! {
+                                    _ = shutdown_signal.wait() => {
+                                        break;
+                                    }
+                                    _ = tokio::time::sleep(Duration::from_millis(1000)) => {
+                                        // Check for timeout
+                                        if start_time.elapsed() > timeout_duration {
+                                            info!(target: LOG_TARGET, "Migration monitoring timed out, proceeding with setup");
+                                            break;
+                                        }
+
+                                        // Try to get node status
+                                        if let Ok(ref current_service) = current_service {
+                                            if let Ok(status) = current_service.get_network_state().await {
+                                                match status.readiness_status {
+                                                    ReadinessStatus::Migration(progress) => {
+                                                        info!(target: LOG_TARGET, "Database migration in progress: {:.1}% ({}/{})",
+                                                            progress.progress_percentage, progress.current_block, progress.total_blocks);
+
+                                                        let mut params = HashMap::new();
+                                                        params.insert("current_block".to_string(), progress.current_block.to_string());
+                                                        params.insert("total_blocks".to_string(), progress.total_blocks.to_string());
+                                                        params.insert("current_db_version".to_string(), progress.current_db_version.to_string());
+                                                        params.insert("target_db_version".to_string(), progress.target_db_version.to_string());
+
+                                                        if let Some(tracker) = &migration_tracker {
+                                                            tracker.send_update(params, progress.progress_percentage / 100.0).await;
+                                                        }
+
+                                                        if progress.progress_percentage >= 100.0 {
+                                                            info!(target: LOG_TARGET, "Database migration completed");
+                                                            migration_completed = true;
+                                                        }
+                                                    }
+                                                    ReadinessStatus::State(state) => match state {
+                                                        100 => {
+                                                            info!(target: LOG_TARGET, "Node is ready, no migration needed");
+                                                            migration_completed = true;
+                                                        }
+                                                        _ => {println!("Other state: {}", state)}
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        });
+            // Wait for migration monitoring to complete
+            let _unused = migration_handle.await;
+        }
+        Ok(())
     }
 
     pub async fn wait_ready(&self) -> Result<(), NodeManagerError> {
