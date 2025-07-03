@@ -33,7 +33,7 @@ use crate::{
     EventsEmitter,
 };
 
-use log::info;
+use log::{debug, info};
 
 use super::{
     trait_listener::{
@@ -95,18 +95,17 @@ impl UnlockConditionsListenerTrait for ListenerUnlockCpuMining {
             .get_task_tracker()
             .await
             .spawn(async move {
-                if shutdown_signal.is_triggered() {
-                    info!(target: LOG_TARGET, "Shutdown signal already triggered, stopping listener");
-                    return;
-                }
-
                 loop {
+                    if shutdown_signal.is_triggered() {
+                        info!(target: LOG_TARGET, "Shutdown signal already triggered, stopping listener");
+                        return;
+                    }
                     if unlock_strategy.check_conditions(&channels).unwrap_or(false) {
-                        info!(target: LOG_TARGET, "Conditions met, proceeding with unlock");
+                        debug!(target: LOG_TARGET, "Conditions met, proceeding with unlock");
                         unlock_cpu_mining_listener.conditions_met_callback().await;
                         break;
                     } else {
-                        info!(target: LOG_TARGET, "Conditions not met, waiting for next check");
+                        debug!(target: LOG_TARGET, "Conditions not met, waiting for next check");
                     }
                     sleep(Duration::from_secs(5)).await;
                 }

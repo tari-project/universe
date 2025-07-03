@@ -25,7 +25,7 @@ use std::collections::HashMap;
 use crate::setup::setup_manager::{PhaseStatus, SetupPhase};
 
 use super::SetupFeaturesList;
-use log::warn;
+use log::{debug, warn};
 use tokio::sync::watch::{error::RecvError, Receiver};
 
 static LOG_TARGET: &str = "tari::universe::unlock_conditions::listener_trait";
@@ -111,7 +111,7 @@ pub trait UnlockStrategyTrait {
             let channel = channels.get(phase)?;
             let status = channel.borrow();
             if !status.is_success() {
-                warn!(target: LOG_TARGET, "Phase {:?} is not ready", phase);
+                debug!(target: LOG_TARGET, "Phase {:?} is not ready", phase);
                 return Ok(false);
             }
         }
