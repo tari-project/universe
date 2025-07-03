@@ -30,7 +30,7 @@ use tari_common::configuration::Network;
 use tokio::{fs::File, io::AsyncReadExt};
 
 use crate::{
-    github::{get_gh_download_url, get_mirror_download_url, request_client::RequestClient},
+    github::{get_gh_download_url, get_mirror_download_url, request_client::RequestManager},
     APPLICATION_FOLDER_ID,
 };
 
@@ -79,7 +79,7 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
             .join(format!("{}.sha256", download_info.name));
         let checksum_url = format!("{}.sha256", download_info.main_url);
 
-        match RequestClient::current()
+        match RequestManager::current()
             .download_file_with_retries(&checksum_url, &checksum_path, true, None)
             .await
         {
@@ -87,7 +87,7 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
             Err(_) => {
                 let checksum_fallback_url = format!("{}.sha256", download_info.fallback_url);
                 info!(target: LOG_TARGET, "Fallback URL: {}", checksum_fallback_url);
-                RequestClient::current()
+                RequestManager::current()
                     .download_file_with_retries(&checksum_fallback_url, &checksum_path, false, None)
                     .await?;
                 Ok(checksum_path)

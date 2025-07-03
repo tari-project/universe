@@ -38,108 +38,35 @@ use reqwest::{self, Client, Response};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
 
+use super::CloudFlareCacheStatus;
+
 const LOG_TARGET: &str = "tari::universe::request_client";
 const MAX_DOWNLOAD_FILE_RETRIES: u8 = 3;
 const TIME_BETWEEN_FILE_DOWNLOADS: Duration = Duration::from_secs(15);
-#[allow(dead_code)]
-pub enum CloudFlareCacheStatus {
-    Hit,
-    Miss,
-    Unknown,
-    Expired,
-    Stale,
-    Bypass,
-    Revalidated,
-    Updating,
-    Dynamic,
-    NonExistent,
-}
 
-#[allow(dead_code)]
-impl CloudFlareCacheStatus {
-    pub fn from_str(s: &str) -> Self {
-        match s {
-            "HIT" => Self::Hit,
-            "MISS" => Self::Miss,
-            "EXPIRED" => Self::Expired,
-            "STALE" => Self::Stale,
-            "BYPASS" => Self::Bypass,
-            "REVALIDATED" => Self::Revalidated,
-            "UPDATING" => Self::Updating,
-            "DYNAMIC" => Self::Dynamic,
-            "UNKNOWN" => Self::Unknown,
-            "NONE" => Self::Unknown,
-            "NONE/UNKNOWN" => Self::Unknown,
-            "" => Self::NonExistent,
-            _ => Self::Unknown,
-        }
-    }
-    pub fn to_str(&self) -> &str {
-        match self {
-            Self::Hit => "HIT",
-            Self::Miss => "MISS",
-            Self::Unknown => "UNKNOWN",
-            Self::Expired => "EXPIRED",
-            Self::Stale => "STALE",
-            Self::Bypass => "BYPASS",
-            Self::Revalidated => "REVALIDATED",
-            Self::Updating => "UPDATING",
-            Self::Dynamic => "DYNAMIC",
-            Self::NonExistent => "NONEXISTENT",
-        }
-    }
+// pub struct
 
-    #[allow(dead_code)]
-    pub fn is_non_existent(&self) -> bool {
-        matches!(self, Self::NonExistent)
-    }
-
-    #[allow(dead_code)]
-    pub fn is_hit(&self) -> bool {
-        matches!(self, Self::Hit) || matches!(self, Self::Revalidated)
-    }
-
-    #[allow(dead_code)]
-    pub fn is_miss(&self) -> bool {
-        matches!(self, Self::Miss)
-    }
-
-    #[allow(dead_code)]
-    pub fn should_log_warning(&self) -> bool {
-        matches!(self, Self::Unknown)
-            || matches!(self, Self::NonExistent)
-            || matches!(self, Self::Dynamic)
-            || matches!(self, Self::Bypass)
-    }
-
-    #[allow(dead_code)]
-    pub fn log_warning_if_present(&self) {
-        if self.should_log_warning() {
-            warn!(target: LOG_TARGET, "Cloudflare cache status: {}", self.to_str());
-        }
-    }
-}
-
-static INSTANCE: LazyLock<RequestClient> = LazyLock::new(RequestClient::new);
-pub struct RequestClient {
-    client: ClientWithMiddleware,
+pub struct RequestManager {
     user_agent: String,
 }
 
-impl RequestClient {
-    pub fn new() -> Self {
+impl RequestManager {
+    pub fn client_default() -> ClientWithMiddleware {
+        debug!(target: LOG_TARGET, "[default_client]");
+        build_retry_reqwest_client()
+    }
+
+    pub fn client_builder() -> ClientBuilder {
+        debug!(target: LOG_TARGET, "[client_builder]");
+        ClientBuilder::new(Self::default_client())
+    }
+
+    pub fn create_user_agent() -> String {
         let user_agent = format!(
             "universe {}({})",
             env!("CARGO_PKG_VERSION"),
             std::env::consts::OS
         );
-
-        info!(target: LOG_TARGET, "RequestClient::new, user_agent: {}", user_agent);
-
-        Self {
-            client: Self::build_retry_reqwest_client(),
-            user_agent,
-        }
     }
 
     fn build_retry_reqwest_client() -> ClientWithMiddleware {
@@ -462,9 +389,5 @@ impl RequestClient {
         }
 
         Ok(())
-    }
-
-    pub fn current() -> &'static LazyLock<RequestClient> {
-        &INSTANCE
     }
 }

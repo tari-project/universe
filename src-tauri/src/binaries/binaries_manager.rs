@@ -30,7 +30,7 @@ use tokio::sync::watch::{channel, Sender};
 
 use crate::{
     download_utils::{extract, validate_checksum},
-    github::request_client::RequestClient,
+    github::request_client::RequestManager,
     progress_trackers::progress_stepper::ChanneledStepUpdate,
     tasks_tracker::TasksTrackers,
     utils::platform_utils::{CurrentOperatingSystem, PlatformUtils},
@@ -435,7 +435,7 @@ impl BinaryManager {
             .await
             .map_err(|e| anyhow!("Error resolving progress channel: {:?}", e))?;
 
-        if RequestClient::current()
+        if RequestManager::current()
             .download_file(
                 download_url.as_str(),
                 &in_progress_file_zip,
@@ -456,7 +456,7 @@ impl BinaryManager {
                 .await
                 .map_err(|e| anyhow!("Error resolving progress channel: {:?}", e))?;
 
-            RequestClient::current()
+            RequestManager::current()
                 .download_file(
                     fallback_url.as_str(),
                     &in_progress_file_zip,
