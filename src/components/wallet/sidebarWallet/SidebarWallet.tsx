@@ -11,7 +11,6 @@ import {
     WalletWrapper,
     SwapsWrapper,
     Wrapper,
-    WalletActionWrapper,
     BuyTariButton,
     DetailsCardBottomContent,
     TabsWrapper,
