@@ -324,6 +324,7 @@ impl SetupManager {
             .await
             .cpu_mining_pool_status_url()
             .clone();
+        let is_cpu_mining_enabled = *ConfigMining::content().await.cpu_mining_enabled();
 
         let external_tari_address = ConfigWallet::content()
             .await
@@ -336,10 +337,17 @@ impl SetupManager {
 
         let exchange_id = ConfigCore::content().await.exchange_id().clone();
         let is_exchange_miner_build = exchange_id.ne(DEFAULT_EXCHANGE_ID);
-        if cpu_mining_pool_url.is_some() && cpu_mining_pool_status_url.is_some() {
+
+        // Centralized Pool feature
+        if cpu_mining_pool_url.is_some()
+            && cpu_mining_pool_status_url.is_some()
+            && is_cpu_mining_enabled
+        {
             info!(target: LOG_TARGET, "Centralized pool feature enabled");
             features.add_feature(SetupFeature::CentralizedPool);
         }
+
+        // Seedless Wallet feature
         if external_tari_address.is_some() || is_exchange_miner_build {
             info!(target: LOG_TARGET, "Seedless wallet feature enabled");
             features.add_feature(SetupFeature::SeedlessWallet);
