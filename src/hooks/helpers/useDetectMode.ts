@@ -7,8 +7,9 @@ export function useDetectMode() {
     const configTheme = useConfigUIStore((s) => s.display_mode);
 
     useEffect(() => {
-        if (configTheme !== 'system') return;
+        console.debug(`configTheme= `, configTheme);
         const listener = listen('tauri://theme-changed', async ({ payload }) => {
+            console.debug(`payload= `, payload);
             if (payload) {
                 const themePayload = payload as Theme;
                 setUITheme(themePayload);
