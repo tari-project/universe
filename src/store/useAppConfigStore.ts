@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { ConfigBackendInMemory, ConfigCore, ConfigMining, ConfigUI, ConfigWallet } from '@app/types/configs';
 
-type UIConfigStoreState = Partial<ConfigUI> & {
+type UIConfigStoreState = ConfigUI & {
     visualModeToggleLoading: boolean;
 };
 const configCoreInitialState: ConfigCore = {
@@ -83,7 +83,9 @@ export const useConfigWalletStore = create<ConfigWallet>()(() => ({
     ...configWalletInitialState,
 }));
 
-export const useConfigMiningStore = create<ConfigMining>()(() => configMininigInitialState);
+export const useConfigMiningStore = create<ConfigMining>()(() => ({
+    ...configMininigInitialState,
+}));
 
 export const useConfigUIStore = create<UIConfigStoreState>()(() => ({
     ...configUIInitialState,

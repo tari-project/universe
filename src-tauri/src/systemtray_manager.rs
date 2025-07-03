@@ -25,7 +25,7 @@ use std::path::PathBuf;
 use tauri::{
     menu::{Menu, MenuItem, PredefinedMenuItem},
     tray::TrayIcon,
-    AppHandle, Manager, Theme, Wry,
+    AppHandle, Manager, Wry,
 };
 
 use crate::utils::{
@@ -235,7 +235,6 @@ impl SystemTrayManager {
     }
 
     pub fn update_icon(&mut self, icon_path: PathBuf) {
-        info!(target: LOG_TARGET, "SHAN icon_path {:?}", icon_path);
         let tray = self.tray.clone().expect("Tray not initialized");
 
         tray.set_icon(Some(
