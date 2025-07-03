@@ -69,7 +69,6 @@ use utils::logging_utils::setup_logging;
 #[cfg(all(feature = "exchange-ci", not(feature = "release-ci")))]
 use app_in_memory_config::EXCHANGE_ID;
 
-use progress_tracker_old::ProgressTracker;
 use telemetry_manager::TelemetryManager;
 
 use crate::cpu_miner::CpuMiner;
@@ -123,7 +122,6 @@ mod process_killer;
 mod process_stats_collector;
 mod process_utils;
 mod process_watcher;
-mod progress_tracker_old;
 mod progress_trackers;
 mod release_notes;
 mod setup;
@@ -179,8 +177,6 @@ struct UniverseAppState {
     gpu_latest_status: Arc<watch::Receiver<GpuMinerStatus>>,
     p2pool_latest_status: Arc<watch::Receiver<Option<P2poolStats>>>,
     is_getting_p2pool_connections: Arc<AtomicBool>,
-    is_getting_transactions_history: Arc<AtomicBool>,
-    is_getting_coinbase_history: Arc<AtomicBool>,
     in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
     cpu_miner: Arc<RwLock<CpuMiner>>,
     gpu_miner: Arc<RwLock<GpuMiner>>,
@@ -376,8 +372,6 @@ fn main() {
         cpu_miner_status_watch_rx: Arc::new(cpu_miner_status_watch_rx),
         gpu_latest_status: Arc::new(gpu_status_rx),
         p2pool_latest_status: Arc::new(p2pool_stats_rx),
-        is_getting_transactions_history: Arc::new(AtomicBool::new(false)),
-        is_getting_coinbase_history: Arc::new(AtomicBool::new(false)),
         in_memory_config: app_in_memory_config.clone(),
         cpu_miner: cpu_miner.clone(),
         gpu_miner: gpu_miner.clone(),
@@ -573,8 +567,7 @@ fn main() {
             commands::get_seed_words,
             commands::get_tor_config,
             commands::get_tor_entry_guards,
-            commands::get_transactions_history,
-            commands::get_coinbase_transactions, // TODO: Unused
+            commands::get_transactions,
             commands::import_seed_words,
             commands::revert_to_internal_wallet,
             commands::log_web_message,
@@ -607,7 +600,6 @@ fn main() {
             commands::start_gpu_mining,
             commands::stop_cpu_mining,
             commands::stop_gpu_mining,
-            commands::update_applications,
             commands::get_p2pool_connections,
             commands::set_p2pool_stats_server_port,
             commands::get_used_p2pool_stats_server_port,
@@ -639,6 +631,7 @@ fn main() {
             commands::get_bridge_envs,
             commands::parse_tari_address,
             commands::refresh_wallet_history,
+            commands::get_base_node_status,
         ])
         .build(tauri::generate_context!())
         .inspect_err(|e| {

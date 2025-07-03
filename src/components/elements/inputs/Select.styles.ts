@@ -49,6 +49,12 @@ export const TriggerWrapper = styled.div<StyleProps>`
         `}
 `;
 
+export const OptionsPosition = styled.div`
+    position: absolute;
+    width: 100%;
+    z-index: 10;
+`;
+
 export const Options = styled.div<StyleProps>`
     display: flex;
     flex-direction: column;
@@ -59,10 +65,10 @@ export const Options = styled.div<StyleProps>`
     transition: all 0.1s ease-in;
     min-width: 220px;
     width: ${({ $isBordered }) => ($isBordered ? '100%' : 'max-content')};
-    padding: 9px 12px;
+    padding: 9px 8px;
 
     align-items: flex-start;
-    gap: 6px;
+    gap: 1px;
 
     color: ${({ theme }) => theme.palette.text.primary};
     font-weight: 500;
@@ -102,6 +108,7 @@ export const OptionLabelWrapper = styled.div`
         display: flex;
     }
 `;
+
 export const StyledOption = styled.div<StyleProps>`
     display: flex;
     font-size: 14px;
@@ -111,8 +118,9 @@ export const StyledOption = styled.div<StyleProps>`
     border-radius: 10px;
     transition: all 0.2s ease-in-out;
 
-    height: 36px;
-    padding: 13px 7px;
+    height: 38px;
+    padding: 0 12px;
+
     justify-content: space-between;
     align-items: center;
     align-self: stretch;
@@ -121,6 +129,13 @@ export const StyledOption = styled.div<StyleProps>`
     &:hover {
         background: ${({ theme }) => theme.palette.action.hover.default};
     }
+
+    ${({ $isBordered }) =>
+        $isBordered &&
+        css`
+            height: 36px;
+            padding: 13px 7px;
+        `}
 `;
 
 export const IconWrapper = styled.div`

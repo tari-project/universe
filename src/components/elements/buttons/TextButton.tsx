@@ -4,7 +4,7 @@ import { ExtendedButtonProps } from './button.types.ts';
 export const TextButton = ({
     children,
     variant,
-    color = 'tariPurple',
+    color = 'grey',
     colorIntensity,
     size = 'medium',
     ...props

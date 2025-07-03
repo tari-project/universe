@@ -26,8 +26,8 @@ use crate::node::node_manager::{NodeManager, NodeManagerError};
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
 use crate::tasks_tracker::TasksTrackers;
-use crate::wallet_adapter::WalletStatusMonitorError;
 use crate::wallet_adapter::{TransactionInfo, WalletBalance};
+use crate::wallet_adapter::{TransactionStatus, WalletStatusMonitorError};
 use crate::wallet_adapter::{WalletAdapter, WalletState};
 use crate::BaseNodeStatus;
 use futures_util::future::FusedFuture;
@@ -162,6 +162,10 @@ impl WalletManager {
         self.watcher.read().await.adapter.view_private_key.clone()
     }
 
+    pub async fn get_port(&self) -> u16 {
+        self.watcher.read().await.adapter.grpc_port
+    }
+
     pub fn is_initial_scan_completed(&self) -> bool {
         self.initial_scan_completed
             .load(std::sync::atomic::Ordering::Relaxed)
@@ -191,17 +195,18 @@ impl WalletManager {
         process_watcher.adapter.get_balance().await
     }
 
-    pub async fn get_transactions_history(
+    pub async fn get_transactions(
         &self,
-        offset: Option<i32>,
-        limit: Option<i32>,
+        offset: Option<u32>,
+        limit: Option<u32>,
+        status_bitflag: Option<u32>,
     ) -> Result<Vec<TransactionInfo>, WalletManagerError> {
         let node_status = *self.base_node_watch_rx.borrow();
         let current_block_height = node_status.block_height;
         let process_watcher = self.watcher.read().await;
         process_watcher
             .adapter
-            .get_transactions_history(offset, limit, current_block_height)
+            .get_transactions(offset, limit, status_bitflag, current_block_height)
             .await
             .map_err(|e| match e {
                 WalletStatusMonitorError::WalletNotStarted => WalletManagerError::WalletNotStarted,
@@ -219,24 +224,6 @@ impl WalletManager {
             .adapter
             .import_transaction(tx_output_file)
             .await
-    }
-
-    pub async fn get_coinbase_transactions(
-        &self,
-        continuation: bool,
-        limit: Option<u32>,
-    ) -> Result<Vec<TransactionInfo>, WalletManagerError> {
-        let node_status = *self.base_node_watch_rx.borrow();
-        let current_block_height = node_status.block_height;
-        let process_watcher = self.watcher.read().await;
-        process_watcher
-            .adapter
-            .get_coinbase_transactions(continuation, limit, current_block_height)
-            .await
-            .map_err(|e| match e {
-                WalletStatusMonitorError::WalletNotStarted => WalletManagerError::WalletNotStarted,
-                _ => WalletManagerError::UnknownError(e.into()),
-            })
     }
 
     pub async fn wait_for_scan_to_height(
@@ -264,19 +251,20 @@ impl WalletManager {
         &self,
         block_height: u64,
     ) -> Result<Option<TransactionInfo>, WalletManagerError> {
-        let process_watcher = self.watcher.read().await;
-        if !process_watcher.is_running() {
-            return Err(WalletManagerError::WalletNotStarted);
-        }
+        const COINBASE_STATUSES_BITFLAG: u32 = (1 << TransactionStatus::CoinbaseConfirmed as u32)
+            | (1 << TransactionStatus::CoinbaseUnconfirmed as u32);
 
-        process_watcher
-            .adapter
-            .find_coinbase_transaction_for_block(block_height)
-            .await
-            .map_err(|e| match e {
-                WalletStatusMonitorError::WalletNotStarted => WalletManagerError::WalletNotStarted,
-                _ => WalletManagerError::UnknownError(e.into()),
-            })
+        // Get a small batch of recent coinbase transactions
+        let coinbase_txs = self
+            .get_transactions(Some(0), Some(10), Some(COINBASE_STATUSES_BITFLAG))
+            .await?;
+
+        // Find one matching the specified block height
+        let matching_tx = coinbase_txs
+            .into_iter()
+            .find(|tx| tx.mined_in_block_height == block_height);
+
+        Ok(matching_tx)
     }
 
     #[allow(clippy::too_many_lines)]

@@ -360,10 +360,20 @@ impl NodeManager {
 
         if let Some((host, port)) = grpc_address {
             if host.starts_with("http") {
-                return Ok(format!("{}:{}", host, port));
+                return Ok(format!("{host}:{port}"));
             } else {
-                return Ok(format!("http://{}:{}", host, port));
+                return Ok(format!("http://{host}:{port}"));
             }
+        }
+        Err(anyhow::anyhow!("grpc_address not set"))
+    }
+
+    pub async fn get_grpc_port(&self) -> Result<u16, anyhow::Error> {
+        let current_adapter = self.current_adapter.read().await;
+        let grpc_address = current_adapter.get_grpc_address();
+
+        if let Some((_host, port)) = grpc_address {
+            return Ok(port);
         }
         Err(anyhow::anyhow!("grpc_address not set"))
     }

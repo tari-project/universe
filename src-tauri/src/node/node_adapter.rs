@@ -107,6 +107,7 @@ impl NodeAdapterService {
             block_time: metadata.timestamp,
             is_synced: res.initial_sync_achieved,
             num_connections: res.num_connections,
+            readiness_status: res.readiness_status.into(),
         })
     }
 
@@ -130,7 +131,7 @@ impl NodeAdapterService {
                 .header
                 .expect("Failed to get block header data");
             let hash: String = hash.iter().fold(String::new(), |mut acc, x| {
-                write!(acc, "{:02x}", x).expect("Unable to write");
+                write!(acc, "{x:02x}").expect("Unable to write");
                 acc
             });
 
@@ -380,6 +381,15 @@ impl StatusMonitor for NodeStatusMonitor {
             Ok(res) => match res {
                 Ok(status) => {
                     let _res = self.status_broadcast.send(status);
+                    if status.readiness_status.is_initializing() {
+                        warn!(
+                            "{:?} Node Health Check Warning: Not ready | status: {:?}",
+                            self.node_type,
+                            status.clone()
+                        );
+                        return HealthStatus::Warning;
+                    }
+
                     if status.num_connections == 0 {
                         warn!(
                             "{:?} Node Health Check Warning: No connections | status: {:?}",
@@ -474,6 +484,82 @@ pub struct NodeIdentity {
     pub public_addresses: Vec<String>,
 }
 
+#[derive(Clone, Copy, Debug, serde::Deserialize, serde::Serialize)]
+pub struct ReadinessStatus(i32);
+
+impl ReadinessStatus {
+    // Constants for all variants
+    pub const NOT_READY: Self = Self(0);
+    pub const STARTING_UP: Self = Self(1);
+    pub const MIGRATING: Self = Self(2);
+    pub const RECOVERING: Self = Self(3);
+    pub const BUILDING_CONTEXT: Self = Self(4);
+    pub const READY: Self = Self(5);
+
+    /// Check if the node is ready
+    pub fn is_ready(self) -> bool {
+        self.0 == 5
+    }
+
+    /// Check if the node is not ready
+    pub fn is_initializing(self) -> bool {
+        self.0 != 5
+    }
+
+    /// Get the raw i32 value
+    pub fn as_i32(self) -> i32 {
+        self.0
+    }
+
+    /// Get a human-readable status string
+    pub fn as_str(self) -> &'static str {
+        match self.0 {
+            0 => "Not Ready",
+            1 => "Starting Up",
+            2 => "Migrating",
+            3 => "Recovering",
+            4 => "Building Context",
+            5 => "Ready",
+            _ => "Unknown",
+        }
+    }
+}
+
+impl From<minotari_node_grpc_client::grpc::ReadinessStatus> for ReadinessStatus {
+    fn from(status: minotari_node_grpc_client::grpc::ReadinessStatus) -> Self {
+        Self(status as i32)
+    }
+}
+
+impl From<i32> for ReadinessStatus {
+    fn from(value: i32) -> Self {
+        match value {
+            0..=5 => Self(value),
+            _ => Self::NOT_READY,
+        }
+    }
+}
+
+impl From<ReadinessStatus> for minotari_node_grpc_client::grpc::ReadinessStatus {
+    fn from(status: ReadinessStatus) -> Self {
+        match status.0 {
+            0 => minotari_node_grpc_client::grpc::ReadinessStatus::NotReady,
+            1 => minotari_node_grpc_client::grpc::ReadinessStatus::StartingUp,
+            2 => minotari_node_grpc_client::grpc::ReadinessStatus::Migrating,
+            3 => minotari_node_grpc_client::grpc::ReadinessStatus::Recovering,
+            4 => minotari_node_grpc_client::grpc::ReadinessStatus::BuildingContext,
+            5 => minotari_node_grpc_client::grpc::ReadinessStatus::Ready,
+            _ => minotari_node_grpc_client::grpc::ReadinessStatus::NotReady, // Default fallback
+        }
+    }
+}
+
+impl std::fmt::Display for ReadinessStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
 #[derive(Clone, Copy, Debug, Serialize)]
 pub(crate) struct BaseNodeStatus {
     pub sha_network_hashrate: u64,
@@ -484,6 +570,7 @@ pub(crate) struct BaseNodeStatus {
     pub block_time: u64,
     pub is_synced: bool,
     pub num_connections: u64,
+    pub readiness_status: ReadinessStatus,
 }
 
 impl Default for BaseNodeStatus {
@@ -497,6 +584,7 @@ impl Default for BaseNodeStatus {
             block_time: 0,
             is_synced: false,
             num_connections: 0,
+            readiness_status: ReadinessStatus::NOT_READY,
         }
     }
 }

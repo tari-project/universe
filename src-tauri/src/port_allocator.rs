@@ -37,7 +37,7 @@ impl PortAllocator {
     }
 
     fn get_address_with_0_port(&self) -> String {
-        format!("{}:0", ADDRESS)
+        format!("{ADDRESS}:0")
     }
 
     fn get_port(&self) -> Result<u16, Error> {
@@ -58,7 +58,7 @@ impl PortAllocator {
     }
 
     fn check_if_port_is_free(&self, port: u16) -> bool {
-        TcpListener::bind(format!("{}:{}", ADDRESS, port)).is_ok()
+        TcpListener::bind(format!("{ADDRESS}:{port}")).is_ok()
     }
 
     fn asign_port_from_fallback_range(&self) -> u16 {

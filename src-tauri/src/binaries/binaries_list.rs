@@ -22,7 +22,12 @@
 
 use std::path::PathBuf;
 
-use semver::Version;
+pub enum BinaryPlatformAssets {
+    LinuxX64,
+    WindowsX64,
+    MacOSX64,
+    MacOSArm64,
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Binaries {
@@ -33,6 +38,7 @@ pub enum Binaries {
     ShaP2pool,
     GpuMiner,
     Tor,
+    BridgeTapplet,
 }
 
 impl Binaries {
@@ -45,6 +51,7 @@ impl Binaries {
             Binaries::ShaP2pool => "sha-p2pool",
             Binaries::GpuMiner => "glytex",
             Binaries::Tor => "tor",
+            Binaries::BridgeTapplet => "bridge",
         }
     }
 
@@ -57,14 +64,15 @@ impl Binaries {
             "sha-p2pool" => Binaries::ShaP2pool,
             "glytex" => Binaries::GpuMiner,
             "tor" => Binaries::Tor,
-            _ => panic!("Unknown binary name: {}", name),
+            "bridge" => Binaries::BridgeTapplet,
+            _ => panic!("Unknown binary name: {name}"),
         }
     }
 
-    pub fn binary_file_name(self, version: Version) -> PathBuf {
+    pub fn binary_file_name(self, version: String) -> PathBuf {
         match self {
             Binaries::Xmrig => {
-                let file_name = format!("xmrig-{}", version);
+                let file_name = format!("xmrig-{version}");
                 PathBuf::from(file_name).join("xmrig")
             }
             Binaries::MergeMiningProxy => {
@@ -91,21 +99,121 @@ impl Binaries {
                 let file_name = "tor";
                 PathBuf::from(file_name)
             }
+            Binaries::BridgeTapplet => {
+                let file_name = format!("bridge-{version}");
+                PathBuf::from(file_name).join("bridge")
+            }
         }
     }
 
-    #[allow(dead_code)]
-    pub fn iterator() -> impl Iterator<Item = Binaries> {
-        [
-            Binaries::Xmrig,
-            Binaries::MergeMiningProxy,
-            Binaries::MinotariNode,
-            Binaries::Wallet,
-            Binaries::ShaP2pool,
-            Binaries::GpuMiner,
-            Binaries::Tor,
-        ]
-        .iter()
-        .copied()
+    #[allow(clippy::too_many_lines)]
+    pub fn get_binary_platform_name(
+        self,
+        platform: BinaryPlatformAssets,
+        version: String,
+        network: String,
+        hash: String,
+    ) -> String {
+        match self {
+            Binaries::BridgeTapplet => format!("bridge-v{version}.zip"),
+            Binaries::GpuMiner => match platform {
+                BinaryPlatformAssets::LinuxX64 => {
+                    format!("glytex-opencl-linux-x86_64-{network}-{version}-{hash}.zip")
+                }
+                BinaryPlatformAssets::WindowsX64 => {
+                    format!("glytex-opencl-windows-x64-{network}-{version}-{hash}.zip")
+                }
+                BinaryPlatformAssets::MacOSX64 => {
+                    format!("glytex-opencl-macos-x86_64-{network}-{version}-{hash}.zip")
+                }
+                BinaryPlatformAssets::MacOSArm64 => {
+                    format!("glytex-combined-macos-arm64-{network}-{version}-{hash}.zip")
+                }
+            },
+            Binaries::ShaP2pool => match platform {
+                BinaryPlatformAssets::LinuxX64 => {
+                    format!("sha_p2pool-{version}-{hash}-linux-x86_64.zip")
+                }
+                BinaryPlatformAssets::WindowsX64 => {
+                    format!("sha_p2pool-{version}-{hash}-windows-x64.exe.zip")
+                }
+                BinaryPlatformAssets::MacOSX64 => {
+                    format!("sha_p2pool-{version}-{hash}-macos-x86_64.zip")
+                }
+                BinaryPlatformAssets::MacOSArm64 => {
+                    format!("sha_p2pool-{version}-{hash}-macos-arm64.zip")
+                }
+            },
+            Binaries::Xmrig => match platform {
+                BinaryPlatformAssets::LinuxX64 => {
+                    format!("xmrig-{version}-linux-static-x64.tar.gz")
+                }
+                BinaryPlatformAssets::WindowsX64 => {
+                    format!("xmrig-{version}-msvc-win64.zip")
+                }
+                BinaryPlatformAssets::MacOSX64 => {
+                    format!("xmrig-{version}-macos-x64.tar.gz")
+                }
+                BinaryPlatformAssets::MacOSArm64 => {
+                    format!("xmrig-{version}-macos-arm64.tar.gz")
+                }
+            },
+            Binaries::Tor => match platform {
+                BinaryPlatformAssets::LinuxX64 => {
+                    format!("tor-expert-bundle-linux-x86_64-{version}.tar.gz")
+                }
+                BinaryPlatformAssets::WindowsX64 => {
+                    format!("tor-expert-bundle-windows-x86_64-{version}.tar.gz")
+                }
+                BinaryPlatformAssets::MacOSX64 => {
+                    format!("tor-expert-bundle-macos-x86_64-{version}.tar.gz")
+                }
+                BinaryPlatformAssets::MacOSArm64 => {
+                    format!("tor-expert-bundle-macos-aarch64-{version}.tar.gz")
+                }
+            },
+            Binaries::MergeMiningProxy => match platform {
+                BinaryPlatformAssets::LinuxX64 => {
+                    format!("tari_suite-{version}-{hash}-linux-x86_64.zip")
+                }
+                BinaryPlatformAssets::WindowsX64 => {
+                    format!("tari_suite-{version}-{hash}-windows-x64.exe.zip")
+                }
+                BinaryPlatformAssets::MacOSX64 => {
+                    format!("tari_suite-{version}-{hash}-macos-x86_64.zip")
+                }
+                BinaryPlatformAssets::MacOSArm64 => {
+                    format!("tari_suite-{version}-{hash}-macos-arm64.zip")
+                }
+            },
+            Binaries::MinotariNode => match platform {
+                BinaryPlatformAssets::LinuxX64 => {
+                    format!("tari_suite-{version}-{hash}-linux-x86_64.zip")
+                }
+                BinaryPlatformAssets::WindowsX64 => {
+                    format!("tari_suite-{version}-{hash}-windows-x64.exe.zip")
+                }
+                BinaryPlatformAssets::MacOSX64 => {
+                    format!("tari_suite-{version}-{hash}-macos-x86_64.zip")
+                }
+                BinaryPlatformAssets::MacOSArm64 => {
+                    format!("tari_suite-{version}-{hash}-macos-arm64.zip")
+                }
+            },
+            Binaries::Wallet => match platform {
+                BinaryPlatformAssets::LinuxX64 => {
+                    format!("tari_suite-{version}-{hash}-linux-x86_64.zip")
+                }
+                BinaryPlatformAssets::WindowsX64 => {
+                    format!("tari_suite-{version}-{hash}-windows-x64.exe.zip")
+                }
+                BinaryPlatformAssets::MacOSX64 => {
+                    format!("tari_suite-{version}-{hash}-macos-x86_64.zip")
+                }
+                BinaryPlatformAssets::MacOSArm64 => {
+                    format!("tari_suite-{version}-{hash}-macos-arm64.zip")
+                }
+            },
+        }
     }
 }

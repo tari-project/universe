@@ -24,17 +24,16 @@ use std::path::PathBuf;
 
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
-use log::error;
-use regex::Regex;
+use log::{error, info};
 use tari_common::configuration::Network;
 use tokio::{fs::File, io::AsyncReadExt};
 
 use crate::{
-    github::{self, request_client::RequestClient},
+    github::{get_gh_download_url, get_mirror_download_url, request_client::RequestClient},
     APPLICATION_FOLDER_ID,
 };
 
-use super::binaries_resolver::{LatestVersionApiAdapter, VersionAsset, VersionDownloadInfo};
+use super::binaries_resolver::{BinaryDownloadInfo, LatestVersionApiAdapter};
 
 const LOG_TARGET: &str = "tari::universe::adapter_xmrig";
 
@@ -42,11 +41,6 @@ pub struct XmrigVersionApiAdapter {}
 
 #[async_trait]
 impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
-    async fn fetch_releases_list(&self) -> Result<Vec<VersionDownloadInfo>, Error> {
-        let releases = github::list_releases("xmrig", "xmrig").await?;
-        Ok(releases.clone())
-    }
-
     async fn get_expected_checksum(
         &self,
         checksum_path: PathBuf,
@@ -70,23 +64,29 @@ impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
     async fn download_and_get_checksum_path(
         &self,
         directory: PathBuf,
-        download_info: VersionDownloadInfo,
+        download_info: BinaryDownloadInfo,
     ) -> Result<PathBuf, Error> {
-        let asset = self.find_version_for_platform(&download_info)?;
         let checksum_path = directory.join("in_progress").join("SHA256SUMS");
-        let checksum_url = match asset.url.rfind('/') {
-            Some(pos) => format!("{}/{}", &asset.url[..pos], "SHA256SUMS"),
-            None => asset.url,
+        let checksum_url = match download_info.main_url.rfind('/') {
+            Some(pos) => format!("{}/{}", &download_info.main_url[..pos], "SHA256SUMS"),
+            None => download_info.main_url,
         };
 
         match RequestClient::current()
-            .download_file_with_retries(&checksum_url, &checksum_path, false)
+            .download_file_with_retries(&checksum_url, &checksum_path, true, None)
             .await
         {
             Ok(_) => Ok(checksum_path),
-            Err(e) => {
-                error!(target: LOG_TARGET, "Failed to download checksum file: {}", e);
-                Err(e)
+            Err(_) => {
+                let checksum_fallback_url = match download_info.fallback_url.rfind('/') {
+                    Some(pos) => format!("{}/{}", &download_info.fallback_url[..pos], "SHA256SUMS"),
+                    None => download_info.fallback_url,
+                };
+                info!(target: LOG_TARGET, "Fallback URL: {}", checksum_fallback_url);
+                RequestClient::current()
+                    .download_file_with_retries(&checksum_fallback_url, &checksum_path, false, None)
+                    .await?;
+                Ok(checksum_path)
             }
         }
     }
@@ -114,39 +114,12 @@ impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
         Ok(binary_folder_path)
     }
 
-    fn find_version_for_platform(
-        &self,
-        _version: &VersionDownloadInfo,
-    ) -> Result<VersionAsset, anyhow::Error> {
-        let mut name_suffix = "";
-        if cfg!(target_os = "windows") {
-            name_suffix = r".*msvc-win64\.zip";
-        }
-        if cfg!(target_os = "macos") && cfg!(target_arch = "x86_64") {
-            name_suffix = r".*macos-x64\.tar.gz";
-        }
-        if cfg!(target_os = "macos") && cfg!(target_arch = "aarch64") {
-            // the x64 seems to work better on the M1
-            name_suffix = r".*macos-arm64\.tar.gz";
-        }
-        if cfg!(target_os = "linux") {
-            name_suffix = r".*linux-static-x64\.tar.gz";
-        }
-        if cfg!(target_os = "freebsd") {
-            name_suffix = r".*freebsd-static-x64\.tar.gz";
-        }
-        if name_suffix.is_empty() {
-            panic!("Unsupported OS");
-        }
-
-        let name_sufix_regex = Regex::new(name_suffix)
-            .map_err(|error| anyhow::anyhow!("Failed to create regex: {}", error))?;
-
-        let platform = _version
-            .assets
-            .iter()
-            .find(|a| name_sufix_regex.is_match(&a.name))
-            .ok_or(anyhow::anyhow!("Failed to get platform asset"))?;
-        Ok(platform.clone())
+    fn get_base_main_download_url(&self, version: &str) -> String {
+        let base_url = get_mirror_download_url("xmrig", "xmrig");
+        format!("{base_url}/v{version}")
+    }
+    fn get_base_fallback_download_url(&self, version: &str) -> String {
+        let base_url = get_gh_download_url("xmrig", "xmrig");
+        format!("{base_url}/v{version}")
     }
 }

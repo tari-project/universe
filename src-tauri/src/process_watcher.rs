@@ -114,8 +114,6 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         }
         info!(target: LOG_TARGET, "Starting process watcher for {}", name);
         let binary_path = BinaryResolver::current()
-            .read()
-            .await
             .resolve_path_to_binary_files(binary)
             .await?;
         self.kill_previous_instances(base_path.clone(), &binary_path)

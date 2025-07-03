@@ -22,7 +22,7 @@
 
 pub fn format_hashrate(hashrate: f64) -> String {
     if hashrate < 1000.0 {
-        format!("{:.2} H/s", hashrate)
+        format!("{hashrate:.2} H/s")
     } else if hashrate < 1_000_000.0 {
         format!("{:.2} kH/s", hashrate / 1000.0)
     } else if hashrate < 1_000_000_000.0 {
@@ -43,7 +43,7 @@ pub fn format_currency(balance: f64, currency: &str) -> String {
     }
 
     if balance < 1000.0 {
-        format!("{:.2} {}", balance, currency)
+        format!("{balance:.2} {currency}")
     } else if balance < 1_000_000.0 {
         format!("{:.2}k {}", balance / 1000.0, currency)
     } else if balance < 1_000_000_000.0 {

@@ -22,7 +22,7 @@ import {
 import { setError } from './appStateStoreActions.ts';
 import { setIsAppExchangeSpecific, setUITheme } from './uiStoreActions';
 import { GpuThreads } from '@app/types/app-status.ts';
-import { displayMode, modeType } from '../types';
+import { displayMode, MiningModeType } from '../types';
 import { ConfigCore, ConfigMining, ConfigUI, ConfigWallet } from '@app/types/configs.ts';
 import { NodeType, updateNodeType as updateNodeTypeForNodeStore } from '../useNodeStore.ts';
 import { setCurrentExchangeMinerId } from '../useExchangeStore.ts';
@@ -30,13 +30,13 @@ import { fetchExchangeContent, refreshXCContent } from '@app/hooks/exchanges/fet
 import { fetchExchangeList } from '@app/hooks/exchanges/fetchExchanges.ts';
 
 interface SetModeProps {
-    mode: modeType;
+    mode: MiningModeType;
     customGpuLevels?: GpuThreads[];
     customCpuLevels?: number;
 }
 
 export const handleConfigCoreLoaded = async (coreConfig: ConfigCore) => {
-    useConfigCoreStore.setState(coreConfig);
+    useConfigCoreStore.setState((c) => ({ ...c, ...coreConfig }));
     const buildInExchangeId = useConfigBEInMemoryStore.getState().exchangeId;
     const isAppExchangeSpecific = Boolean(buildInExchangeId !== 'universal');
     setIsAppExchangeSpecific(isAppExchangeSpecific);
@@ -49,10 +49,10 @@ export const handleConfigCoreLoaded = async (coreConfig: ConfigCore) => {
     }
 };
 export const handleConfigWalletLoaded = (walletConfig: ConfigWallet) => {
-    useConfigWalletStore.setState(walletConfig);
+    useConfigWalletStore.setState((c) => ({ ...c, ...walletConfig }));
 };
 export const handleConfigUILoaded = async (uiConfig: ConfigUI) => {
-    useConfigUIStore.setState(uiConfig);
+    useConfigUIStore.setState((c) => ({ ...c, ...uiConfig }));
     const configTheme = uiConfig.display_mode?.toLowerCase();
     if (configTheme) {
         setUITheme(configTheme as displayMode);
@@ -68,7 +68,7 @@ export const handleConfigUILoaded = async (uiConfig: ConfigUI) => {
     }
 };
 export const handleConfigMiningLoaded = (miningConfig: ConfigMining) => {
-    useConfigMiningStore.setState(miningConfig);
+    useConfigMiningStore.setState((c) => ({ ...c, ...miningConfig }));
     useMiningStore.setState({ miningTime: miningConfig.mining_time });
 };
 
@@ -135,15 +135,15 @@ export const setAutoUpdate = async (autoUpdate: boolean) => {
 };
 export const setCpuMiningEnabled = async (enabled: boolean) => {
     useConfigMiningStore.setState({ cpu_mining_enabled: enabled });
-    const miningInitiated = useMiningStore.getState().isCpuMiningInitiated;
+    const anyMiningInitiated =
+        useMiningStore.getState().isCpuMiningInitiated || useMiningStore.getState().isGpuMiningInitiated;
     const cpuMining = useMiningMetricsStore.getState().cpu_mining_status.is_mining;
-
     if (cpuMining) {
         await stopCpuMining();
     }
     invoke('set_cpu_mining_enabled', { enabled })
         .then(async () => {
-            if (miningInitiated && enabled) {
+            if (anyMiningInitiated && enabled) {
                 await startCpuMining();
             } else {
                 await stopCpuMining();
@@ -153,7 +153,7 @@ export const setCpuMiningEnabled = async (enabled: boolean) => {
             console.error('Could not set CPU mining enabled', e);
             setError('Could not change CPU mining enabled');
             useConfigMiningStore.setState({ cpu_mining_enabled: !enabled });
-            if (miningInitiated && !cpuMining) {
+            if (useMiningStore.getState().isCpuMiningInitiated && !cpuMining) {
                 void stopCpuMining();
             }
         });
@@ -168,7 +168,8 @@ export const setCustomStatsServerPort = async (port?: number) => {
 };
 export const setGpuMiningEnabled = async (enabled: boolean) => {
     useConfigMiningStore.setState({ gpu_mining_enabled: enabled });
-    const miningInitiated = useMiningStore.getState().isGpuMiningInitiated;
+    const anyMiningInitiated =
+        useMiningStore.getState().isCpuMiningInitiated || useMiningStore.getState().isGpuMiningInitiated;
     const gpuMining = useMiningMetricsStore.getState().gpu_mining_status.is_mining;
     const gpuDevices = useMiningMetricsStore.getState().gpu_devices;
     if (gpuMining) {
@@ -176,7 +177,7 @@ export const setGpuMiningEnabled = async (enabled: boolean) => {
     }
     try {
         await invoke('set_gpu_mining_enabled', { enabled });
-        if (miningInitiated && enabled) {
+        if (anyMiningInitiated && enabled) {
             await startGpuMining();
         } else {
             void stopGpuMining();
@@ -195,7 +196,7 @@ export const setGpuMiningEnabled = async (enabled: boolean) => {
         console.error('Could not set GPU mining enabled', e);
         setError('Could not change GPU mining enabled');
         useConfigMiningStore.setState({ gpu_mining_enabled: !enabled });
-        if (miningInitiated && !gpuMining) {
+        if (useMiningStore.getState().isGpuMiningInitiated && !gpuMining) {
             void stopGpuMining();
         }
     }
@@ -210,18 +211,21 @@ export const setMineOnAppStart = async (mineOnAppStart: boolean) => {
 };
 export const setMode = async (params: SetModeProps) => {
     const { mode, customGpuLevels, customCpuLevels } = params;
-    const prevMode = useConfigMiningStore.getState().mode;
-    useConfigMiningStore.setState({
-        mode,
-        custom_max_cpu_usage: customCpuLevels,
-        custom_max_gpu_usage: customGpuLevels,
-    });
-    console.info('Setting mode', mode, customCpuLevels, customGpuLevels);
-    invoke('set_mode', { mode, customCpuUsage: customCpuLevels, customGpuUsage: customGpuLevels }).catch((e) => {
-        console.error('Could not set mode', e);
-        setError('Could not change mode');
-        useConfigMiningStore.setState({ mode: prevMode });
-    });
+
+    invoke('set_mode', { mode, customCpuUsage: customCpuLevels, customGpuUsage: customGpuLevels })
+        .then(() => {
+            const isCustom = mode === 'Custom';
+            useConfigMiningStore.setState((c) => ({
+                ...c,
+                mode,
+                custom_max_cpu_usage: isCustom ? customCpuLevels : c.custom_max_cpu_usage,
+                custom_max_gpu_usage: isCustom ? customGpuLevels : c.custom_max_gpu_usage,
+            }));
+        })
+        .catch((e) => {
+            console.error('Could not set mode', e);
+            setError('Could not change mode');
+        });
 };
 export const setMoneroAddress = async (moneroAddress: string) => {
     const prevMoneroAddress = useConfigWalletStore.getState().monero_address;

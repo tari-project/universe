@@ -1,5 +1,5 @@
+import { create } from 'zustand';
 import { ConfigBackendInMemory, ConfigCore, ConfigMining, ConfigUI, ConfigWallet } from '@app/types/configs';
-import { create } from './create';
 
 type UIConfigStoreState = Partial<ConfigUI> & {
     visualModeToggleLoading: boolean;
@@ -34,15 +34,19 @@ const configWalletInitialState: ConfigWallet = {
 const configMininigInitialState: ConfigMining = {
     created_at: '',
     cpu_mining_enabled: true,
-    custom_max_cpu_usage: 0,
+    custom_max_cpu_usage: 2,
     custom_mode_cpu_options: [],
     custom_max_gpu_usage: [],
     eco_mode_cpu_threads: 0,
     eco_mode_cpu_options: [],
+    eco_mode_max_cpu_usage: 2,
+    eco_mode_max_gpu_usage: [],
     gpu_engine: '',
     gpu_mining_enabled: true,
     ludicrous_mode_cpu_threads: 0,
     ludicrous_mode_cpu_options: [],
+    ludicrous_mode_max_cpu_usage: 2,
+    ludicrous_mode_max_gpu_usage: [],
     mine_on_app_start: false,
     mode: 'Eco',
     mining_time: 0,
@@ -79,9 +83,7 @@ export const useConfigWalletStore = create<ConfigWallet>()(() => ({
     ...configWalletInitialState,
 }));
 
-export const useConfigMiningStore = create<ConfigMining>()(() => ({
-    ...configMininigInitialState,
-}));
+export const useConfigMiningStore = create<ConfigMining>()(() => configMininigInitialState);
 
 export const useConfigUIStore = create<UIConfigStoreState>()(() => ({
     ...configUIInitialState,

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useInView } from 'react-intersection-observer';
 import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/core';
@@ -21,13 +21,27 @@ import { getTimestampFromTransaction, isBridgeTransaction, isTransactionInfo } f
 import { UserTransactionDTO } from '@tari-project/wxtm-bridge-backend-api';
 import { BridgeHistoryListItem } from '@app/components/transactions/history/BridgeListItem.tsx';
 
-export function List() {
+interface Props {
+    setIsScrolled: (isScrolled: boolean) => void;
+    targetRef: React.RefObject<HTMLDivElement> | null;
+}
+
+export function List({ setIsScrolled, targetRef }: Props) {
     const { t } = useTranslation('wallet');
     const walletScanning = useWalletStore((s) => s.wallet_scanning);
     const bridgeTransactions = useWalletStore((s) => s.bridge_transactions);
     const currentBlockHeight = useBlockchainVisualisationStore((s) => s.displayBlockHeight);
     const coldWalletAddress = useWalletStore((s) => s.cold_wallet_address);
     const { data, fetchNextPage, isFetchingNextPage, isFetching, hasNextPage } = useFetchTxHistory();
+    const isFetchBridgeTransactionsFailed = useRef(false);
+
+    useEffect(() => {
+        const el = targetRef?.current;
+        if (!el) return;
+        const onScroll = () => setIsScrolled(el.scrollTop > 1);
+        el.addEventListener('scroll', onScroll);
+        return () => el.removeEventListener('scroll', onScroll);
+    }, [targetRef, setIsScrolled]);
 
     const { ref } = useInView({
         initialInView: false,
@@ -49,8 +63,15 @@ export function List() {
             (tx) => tx.dest_address === coldWalletAddress && bridgeTransactions.length === 0
         );
 
-        if (isThereANewBridgeTransaction || isThereEmptyBridgeTransactionAndFoundInWallet) {
-            fetchBridgeTransactionsHistory();
+        if (
+            !isFetchBridgeTransactionsFailed.current &&
+            (isThereANewBridgeTransaction || isThereEmptyBridgeTransactionAndFoundInWallet)
+        ) {
+            fetchBridgeTransactionsHistory().catch(() => {
+                if (!isFetchBridgeTransactionsFailed.current) {
+                    isFetchBridgeTransactionsFailed.current = true;
+                }
+            });
         }
     }, [baseTx, bridgeTransactions, coldWalletAddress, currentBlockHeight]);
 

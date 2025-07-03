@@ -10,10 +10,11 @@ import {
     WalletBalance,
     BridgeEnvs,
     TariAddressVariants,
+    BaseNodeStatus,
 } from './app-status';
 import { Language } from '@app/i18initializer';
 import { PaperWalletDetails } from '@app/types/app-status.ts';
-import { displayMode, modeType } from '@app/store/types.ts';
+import { displayMode, MiningModeType } from '@app/store/types.ts';
 import { SignData } from '@app/types/ws.ts';
 import { ConfigBackendInMemory } from '@app/types/configs.ts';
 import { ExchangeMiner } from './exchange';
@@ -47,10 +48,9 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'set_allow_telemetry', payload: { allow_telemetry: boolean }): Promise<void>;
     function invoke(param: 'send_data_telemetry_service', payload: { eventName: string; data: object }): Promise<void>;
     function invoke(param: 'set_user_inactivity_timeout', payload: { timeout: number }): Promise<void>;
-    function invoke(param: 'update_applications'): Promise<void>;
     function invoke(
         param: 'set_mode',
-        payload: { mode: modeType; customCpuUsage: number; customGpuUsage: GpuThreads[] }
+        payload: { mode: MiningModeType; customCpuUsage: number; customGpuUsage: GpuThreads[] }
     ): Promise<void>;
     function invoke(param: 'get_max_consumption_levels'): Promise<MaxConsumptionLevels>;
     function invoke(param: 'set_display_mode', payload: { displayMode: displayMode }): Promise<void>;
@@ -71,12 +71,8 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'restart_application', payload: { shouldStopMiners: boolean }): Promise<string>;
     function invoke(param: 'set_use_tor', payload: { useTor: boolean }): Promise<void>;
     function invoke(
-        param: 'get_coinbase_transactions',
-        payload: { continuation: boolean; limit?: number }
-    ): Promise<TransactionInfo[]>;
-    function invoke(
-        param: 'get_transactions_history',
-        payload: { offset?: number; limit?: number }
+        param: 'get_transactions',
+        payload: { offset?: number; limit?: number; statusBitflag?: number }
     ): Promise<TransactionInfo[]>;
     function invoke(param: 'import_seed_words', payload: { seedWords: string[] }): Promise<void>;
     function invoke(param: 'get_tor_config'): Promise<TorConfig>;
@@ -138,4 +134,5 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'get_bridge_envs'): Promise<BridgeEnvs>;
     function invoke(param: 'parse_tari_address', payload: { address: string }): Promise<TariAddressVariants>;
     function invoke(param: 'refresh_wallet_history'): Promise<void>;
+    function invoke(param: 'get_base_node_status'): Promise<BaseNodeStatus>;
 }

@@ -252,20 +252,6 @@ export async function fetchOrphanChainUiFeatureFlag() {
     return response;
 }
 
-export async function fetchWarmupFeatureFlag() {
-    const response = await fetchFeatureFlag(FEATURES.FF_UI_WARMUP);
-    if (response) {
-        useUIStore.setState({ showWarmup: response.access });
-    }
-    return response;
-}
-
-export async function fetchUiSendRecvFeatureFlag() {
-    const response = await fetchFeatureFlag(FEATURES.FF_UI_TX);
-    useAirdropStore.setState({ uiSendRecvEnabled: response?.access || true });
-    return response;
-}
-
 export async function fetchBlockBubblesFeatureFlag() {
     const response = await fetchFeatureFlag(FEATURES.FF_UI_BLOCK_BUBBLES);
     if (response) {

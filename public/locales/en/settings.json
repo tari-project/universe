@@ -24,6 +24,7 @@
     "save-changes": "Save Changes",
     "saved": "Applying Changes",
     "title": "Custom Mode",
+    "use-custom": "Use Custom settings",
     "warning": "Warning"
   },
   "debug-info": "Debug",
@@ -56,7 +57,7 @@
   "invalid-stats-server-port-empty": "Stats server port cannot be empty",
   "inviteCode": "Invite Code",
   "is-on-orphan-chain": "You seem to be connected to a fork, and not the main chain. Any blocks you win might be invalidated.",
-  "last-block-added-time": "Last block added to chain time",
+  "last-block-added-time": "Time since previous block was added to the chain: <strong>{{time}}</strong>",
   "license-agreement": "License Agreement",
   "local-node-sync-progress": "Local node syncing progress",
   "logs": "Logs",
@@ -169,6 +170,7 @@
   "use-tor-bridges": "Use Tor Bridges",
   "user-agreement": "User Agreement",
   "visual-mode": "Visual mode",
+  "waiting-for-data": "Waiting for chain data...",
   "yes": "Yes",
   "your-feedback": "Describe your issue, including your Telegram handle if you have one, so that we can contact you with updates.",
   "your-reference": "Your reference:<br/><bold>{{logRef}}</bold>"

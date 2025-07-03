@@ -200,11 +200,15 @@ export interface GpuMinerStatus {
 }
 
 export interface BaseNodeStatus {
+    sha_network_hashrate: number;
+    monero_randomx_network_hashrate: number;
+    tari_randomx_network_hashrate: number;
+    block_reward: number;
     block_height: number;
     block_time: number;
     is_synced: boolean;
-    sha_network_hashrate: number;
-    randomx_network_hashrate: number;
+    num_connections: number;
+    readiness_status: string;
 }
 
 export interface WalletBalance {
@@ -214,14 +218,19 @@ export interface WalletBalance {
     pending_outgoing_balance: number;
 }
 
+interface ApplicationsInformation {
+    version: string;
+    port?: number;
+}
+
 export interface ApplicationsVersions {
-    tari_universe: string;
-    xmrig: string;
-    minotari_node: string;
-    mm_proxy: string;
-    wallet: string;
-    sha_p2pool: string;
-    bridge: string;
+    tari_universe: ApplicationsInformation;
+    xmrig: ApplicationsInformation;
+    minotari_node: ApplicationsInformation;
+    mm_proxy: ApplicationsInformation;
+    wallet: ApplicationsInformation;
+    sha_p2pool: ApplicationsInformation;
+    bridge: ApplicationsInformation;
 }
 
 export interface PaperWalletDetails {
