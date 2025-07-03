@@ -270,6 +270,10 @@ async fn do_health_check<TStatusMonitor: StatusMonitor, TProcessInstance: Proces
                 *warning_count = 0;
                 is_healthy = true;
             }
+            HealthStatus::Initializing => {
+                *warning_count = 0;
+                is_healthy = false;
+            }
             HealthStatus::Warning => {
                 stats.num_warnings += 1;
                 *warning_count += 1;

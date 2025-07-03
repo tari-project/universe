@@ -27,7 +27,6 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use log::{error, info, warn};
-use minotari_node_grpc_client::grpc::readiness_status::State;
 use serde::{Deserialize, Serialize};
 use tari_common::configuration::Network;
 use tari_crypto::ristretto::RistrettoPublicKey;
@@ -322,21 +321,14 @@ impl NodeManager {
                         .spawn(async move {
                             let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
                             let mut migration_completed = false;
-                            let start_time = std::time::Instant::now();
-                            let timeout_duration = Duration::from_secs(60); // 1 minute timeout
 
                             while !migration_completed {
                                 tokio::select! {
                                     _ = shutdown_signal.wait() => {
+                                        info!(target: LOG_TARGET, "Node migration interrupted");
                                         break;
                                     }
-                                    _ = tokio::time::sleep(Duration::from_millis(1000)) => {
-                                        // Check for timeout
-                                        if start_time.elapsed() > timeout_duration {
-                                            info!(target: LOG_TARGET, "Migration monitoring timed out, proceeding with setup");
-                                            break;
-                                        }
-
+                                    _ = tokio::time::sleep(Duration::from_millis(2000)) => {
                                         // Try to get node status
                                         if let Ok(ref current_service) = current_service {
                                             if let Ok(status) = current_service.get_network_state().await {
@@ -365,7 +357,7 @@ impl NodeManager {
                                                             info!(target: LOG_TARGET, "Node is ready, no migration needed");
                                                             migration_completed = true;
                                                         }
-                                                        _ => {println!("Other state: {}", state)}
+                                                        _ => info!(target: LOG_TARGET, "Received other state: {}", state)
                                                     }
                                                 }
                                             }
@@ -374,8 +366,8 @@ impl NodeManager {
                                 }
                             }
                         });
-            // Wait for migration monitoring to complete
             let _unused = migration_handle.await;
+            info!(target: LOG_TARGET, "Migration monitoring completed");
         }
         Ok(())
     }

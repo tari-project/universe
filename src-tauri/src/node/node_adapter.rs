@@ -384,12 +384,12 @@ impl StatusMonitor for NodeStatusMonitor {
                 Ok(status) => {
                     let _res = self.status_broadcast.send(status);
                     if status.readiness_status.is_initializing() {
-                        warn!(
-                            "{:?} Node Health Check Warning: Not ready | status: {:?}",
+                        info!(
+                            "{:?} Node Health Check: Not ready yet | status: {:?}",
                             self.node_type,
                             status.clone()
                         );
-                        return HealthStatus::Warning;
+                        return HealthStatus::Initializing;
                     }
 
                     if status.num_connections == 0 {
