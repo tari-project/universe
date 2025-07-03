@@ -18,14 +18,16 @@ export const NavButton = styled(Button).attrs({
     font-size: 11px;
 
     color: ${({ theme }) => theme.palette.text.primary};
-    background-color: ${({ theme }) => theme.palette.base};
+    background-color: ${({ theme }) =>
+        theme.mode === 'light' ? theme.palette.background.paper : theme.palette.background.default};
     text-transform: capitalize;
 
     height: 22px;
     width: 70px;
 
     &:hover {
-        opacity: 0.85;
+        background-color: ${({ theme }) =>
+            theme.mode === 'light' ? theme.palette.background.accent : '#000'} !important;
     }
 
     &:disabled {
