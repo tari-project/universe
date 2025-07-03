@@ -37,8 +37,7 @@
         "shortDescription": "Tari Universe is a mining app for Tari.",
         "longDescription": "Introducing Tari Universe, the beautifully simple mining app for Tari. Install it on your Mac or PC and start mining Tari with one click.",
         "publisher": "Tari Labs, LLC",
-        "createUpdaterArtifacts": true,
-        "resources": ["icons/systray_icon.ico", "icons/systray_icon_dark_mode.ico"]
+        "createUpdaterArtifacts": true
     },
     "app": {
         "security": {
