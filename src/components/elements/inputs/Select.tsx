@@ -47,6 +47,7 @@ interface Props {
     triggerTypographyProps?: Omit<React.ComponentProps<typeof Typography>, 'children'>;
     floatingProps?: UseFloatingOptions;
     optionItemTypographyProps?: Omit<React.ComponentProps<typeof Typography>, 'children'>;
+    isSync?: boolean;
 }
 
 export function Select({
@@ -61,6 +62,7 @@ export function Select({
     triggerTypographyProps = {},
     optionItemTypographyProps = {},
     floatingProps = {},
+    isSync,
 }: Props) {
     const [isOpen, setIsOpen] = useState(false);
     const isBordered = variant === 'bordered';
@@ -70,7 +72,7 @@ export function Select({
         open: isOpen,
         onOpenChange: setIsOpen,
         placement: 'bottom-start',
-        middleware: [offset({ mainAxis: isMinimal ? 15 : 5 }), flip()],
+        middleware: [offset({ mainAxis: 5 }), flip()],
         ...floatingProps,
     });
 
@@ -121,7 +123,9 @@ export function Select({
                 {...getReferenceProps()}
                 $disabled={disabled}
                 $isBordered={isBordered}
+                $isMinimal={isMinimal}
                 $variant={variant}
+                $isSync={isSync}
             >
                 {triggerOption}
                 {customIcon ? (

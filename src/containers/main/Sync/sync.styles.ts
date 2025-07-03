@@ -1,6 +1,5 @@
 import * as m from 'motion/react-m';
 import styled from 'styled-components';
-import { Typography } from '@app/components/elements/Typography.tsx';
 
 export const Wrapper = styled(m.div)`
     height: 100%;
@@ -8,14 +7,13 @@ export const Wrapper = styled(m.div)`
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: min(10px, 0.75vmin);
     box-sizing: border-box;
+
+    padding: 40px;
+
     & * {
         pointer-events: all;
     }
-
-    padding: 40px;
-    background-color: #fafafa;
 `;
 
 export const Content = styled(m.div)`
@@ -26,6 +24,8 @@ export const Content = styled(m.div)`
     display: flex;
     flex-direction: column;
     gap: 47px;
+
+    transform: translateY(-10px);
 
     @media (max-height: 768px) {
         gap: 40px;
@@ -40,23 +40,34 @@ export const HeaderContent = styled(m.div)`
     gap: 10px;
 `;
 
-export const Heading = styled(Typography).attrs({ variant: 'h1' })`
+export const Heading = styled(m.div)`
+    text-align: center;
+    font-family: Poppins, sans-serif;
     font-size: 48px;
-    line-height: 120%;
+    font-style: normal;
+    font-weight: 600;
+    line-height: 116%;
 
     @media (max-height: 768px) {
         font-size: 40px;
     }
 `;
 
-export const SubHeading = styled(Typography).attrs({ variant: 'p' })`
-    white-space: pre;
+export const SubHeading = styled(m.div)`
     color: ${({ theme }) => theme.palette.text.secondary};
+
+    text-align: center;
+    font-family: Poppins, sans-serif;
+    font-size: 16px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: 137.5%;
 `;
 
 export const HeaderGraphic = styled.div`
     user-select: none;
     max-width: 100%;
+    transform: translateY(10px);
 
     video {
         width: 169px;

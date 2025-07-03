@@ -14,7 +14,7 @@ export default function MainView() {
             {!visualMode && !isSettingUp && <Background />}
             <DashboardContent>
                 <SidebarNavigation />
-                <Sync />
+                {isSettingUp ? <Sync /> : <Dashboard />}
             </DashboardContent>
         </DashboardContainer>
     );
