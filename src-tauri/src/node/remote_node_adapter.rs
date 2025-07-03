@@ -29,7 +29,7 @@ use tonic::async_trait;
 use crate::{
     ab_test_selector::ABTestSelector,
     node::{
-        node_adapter::{NodeAdapter, NodeAdapterService, NodeStatusMonitor},
+        node_adapter::{NodeAdapter, NodeAdapterService, NodeConnectionDetails, NodeStatusMonitor},
         node_manager::NodeType,
     },
     process_adapter::{ProcessAdapter, ProcessInstanceTrait},
@@ -125,30 +125,31 @@ impl NodeAdapter for RemoteNodeAdapter {
         log::info!(target: LOG_TARGET, "RemoteNodeAdapter doesn't use tor_control_port");
     }
 
-    async fn get_connection_details(&self) -> Result<(RistrettoPublicKey, String), anyhow::Error> {
+    async fn get_connection_details(&self) -> Result<NodeConnectionDetails, anyhow::Error> {
         let node_service = self.get_service();
         if let Some(node_service) = node_service {
             let node_identity = node_service.get_identity().await?;
             let public_key = node_identity.public_key.clone();
 
-            if let Some(addr) = node_identity
-                .public_addresses
-                .iter()
-                .find(|addr| addr.starts_with("/ip4/"))
-            {
-                return Ok((public_key, addr.clone()));
-            }
-            if let Some(addr) = node_identity
-                .public_addresses
-                .iter()
-                .find(|addr| addr.starts_with("/ip6/"))
-            {
-                return Ok((public_key, addr.clone()));
-            }
-            // Take any address if IPv4 or IPv6 not found
-            if let Some(addr) = node_identity.public_addresses.first() {
-                return Ok((public_key, addr.clone()));
-            }
+            todo!("Implement http address handling if needed");
+            // if let Some(addr) = node_identity
+            //     .public_addresses
+            //     .iter()
+            //     .find(|addr| addr.starts_with("/ip4/"))
+            // {
+            //     return Ok((public_key, addr.clone()));
+            // }
+            // if let Some(addr) = node_identity
+            //     .public_addresses
+            //     .iter()
+            //     .find(|addr| addr.starts_with("/ip6/"))
+            // {
+            //     return Ok((public_key, addr.clone()));
+            // }
+            // // Take any address if IPv4 or IPv6 not found
+            // if let Some(addr) = node_identity.public_addresses.first() {
+            //     return Ok((public_key, addr.clone()));
+            // }
 
             return Err(anyhow::anyhow!("No address found for remote node"));
         }

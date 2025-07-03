@@ -53,6 +53,7 @@ const LOG_TARGET: &str = "tari::universe::spend_wallet_adapter";
 pub struct SpendWalletAdapter {
     pub(crate) base_node_public_key: Option<RistrettoPublicKey>,
     pub(crate) base_node_address: Option<String>,
+    pub(crate) base_node_http_address: Option<String>,
     pub(crate) tcp_listener_port: u16,
     app_shutdown: Option<ShutdownSignal>,
     data_dir: Option<PathBuf>,
@@ -68,6 +69,7 @@ impl SpendWalletAdapter {
         Self {
             base_node_address: None,
             base_node_public_key: None,
+            base_node_http_address: None,
             tcp_listener_port,
             app_shutdown: None,
             data_dir: None,
@@ -87,6 +89,7 @@ impl SpendWalletAdapter {
         config_dir: PathBuf,
         log_dir: PathBuf,
         wallet_binary: PathBuf,
+        app_state: tauri::State<'_, UniverseAppState>,
     ) -> Result<(), Error> {
         info!(target: LOG_TARGET, "Initializing spend wallet adapter");
 
@@ -104,7 +107,9 @@ impl SpendWalletAdapter {
             include_str!("../log4rs/spend_wallet_sample.yml"),
         )?;
 
-        let wallet_birthday = self.get_wallet_birthday(config_dir.clone()).await;
+        let wallet_birthday = self
+            .get_wallet_birthday(config_dir.clone(), app_state)
+            .await;
         self.wallet_birthday = wallet_birthday.ok();
 
         Ok(())
@@ -117,7 +122,9 @@ impl SpendWalletAdapter {
         payment_id: Option<String>,
         state: tauri::State<'_, UniverseAppState>,
     ) -> Result<(), Error> {
-        let seed_words = self.get_seed_words(self.get_config_dir()).await?;
+        let seed_words = self
+            .get_seed_words(self.get_config_dir(), state.clone())
+            .await?;
         let t_amount = Minotari::from_str(_amount.as_str())?;
         let converted_amount = MicroMinotari::from(t_amount);
         let amount = converted_amount.to_string();
@@ -148,6 +155,7 @@ impl SpendWalletAdapter {
     ) -> Result<(i32, Vec<String>, Vec<String>), Error> {
         let base_node_public_key = self.get_base_node_public_key_hex();
         let base_node_address = self.get_base_node_address();
+        let base_node_http_address = self.get_base_node_http_address();
         let command = ExecutionCommand::new("recovery")
             .with_extra_args(vec![
                 "-p".to_string(),
@@ -155,6 +163,8 @@ impl SpendWalletAdapter {
                     "wallet.custom_base_node={}::{}",
                     base_node_public_key, base_node_address
                 ),
+                "-p".to_string(),
+                format!("wallet.http_client_address={}", base_node_http_address),
                 "--recovery".to_string(),
             ])
             .with_extra_envs(HashMap::from([(
@@ -168,12 +178,15 @@ impl SpendWalletAdapter {
     async fn execute_sync_command(&self) -> Result<(i32, Vec<String>, Vec<String>), Error> {
         let base_node_public_key = self.get_base_node_public_key_hex();
         let base_node_address = self.get_base_node_address();
+        let base_node_http_address = self.get_base_node_http_address();
         let command = ExecutionCommand::new("sync").with_extra_args(vec![
             "-p".to_string(),
             format!(
                 "wallet.custom_base_node={}::{}",
                 base_node_public_key, base_node_address
             ),
+            "-p".to_string(),
+            format!("wallet.http_client_address={}", base_node_http_address),
             "sync".to_string(),
         ]);
 
@@ -193,6 +206,7 @@ impl SpendWalletAdapter {
             "/ip4/127.0.0.1/tcp/{:?}",
             PortAllocator::new().assign_port_with_fallback()
         );
+
         let mut args = vec![
             "-p".to_string(),
             format!(
@@ -235,7 +249,7 @@ impl SpendWalletAdapter {
             "/ip4/127.0.0.1/tcp/{:?}",
             PortAllocator::new().assign_port_with_fallback()
         );
-        let output_path = self.get_working_dir().join(format!("tx-{tx_id}.json"));
+        let output_path = self.get_working_dir().join(format!("tx-{}.json", tx_id));
 
         let command = ExecutionCommand::new("export-tx").with_extra_args(vec![
             "-p".to_string(),
@@ -425,14 +439,28 @@ impl SpendWalletAdapter {
             .expect("Base node address not set")
     }
 
-    async fn get_seed_words(&self, config_path: PathBuf) -> Result<String, Error> {
-        let internal_wallet = InternalWallet::load_or_create(config_path).await?;
+    fn get_base_node_http_address(&self) -> &str {
+        self.base_node_http_address
+            .as_ref()
+            .expect("Base node HTTP address not set")
+    }
+
+    async fn get_seed_words(
+        &self,
+        config_path: PathBuf,
+        state: tauri::State<'_, UniverseAppState>,
+    ) -> Result<String, Error> {
+        let internal_wallet = InternalWallet::load_or_create(config_path, state).await?;
         let seed_words = internal_wallet.decrypt_seed_words().await?;
         Ok(seed_words.join(" ").reveal().to_string())
     }
 
-    pub async fn get_wallet_birthday(&self, config_path: PathBuf) -> Result<u16, anyhow::Error> {
-        let internal_wallet = InternalWallet::load_or_create(config_path).await?;
+    pub async fn get_wallet_birthday(
+        &self,
+        config_path: PathBuf,
+        state: tauri::State<'_, UniverseAppState>,
+    ) -> Result<u16, anyhow::Error> {
+        let internal_wallet = InternalWallet::load_or_create(config_path, state).await?;
         internal_wallet.get_birthday().await
     }
 

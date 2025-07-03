@@ -22,7 +22,7 @@
 
 use crate::ab_test_selector::ABTestSelector;
 use crate::node::node_adapter::{
-    BaseNodeStatus, NodeAdapter, NodeAdapterService, NodeStatusMonitor,
+    BaseNodeStatus, NodeAdapter, NodeAdapterService, NodeConnectionDetails, NodeStatusMonitor,
 };
 use crate::node::node_manager::NodeType;
 use crate::port_allocator::PortAllocator;
@@ -78,12 +78,14 @@ pub(crate) struct LocalNodeAdapter {
     pub(crate) tor_control_port: Option<u16>,
     required_initial_peers: u32,
     pub(crate) ab_test_group: ABTestSelector,
+    pub(crate) http_listener_port: u16,
 }
 
 impl LocalNodeAdapter {
     pub fn new(status_broadcast: watch::Sender<BaseNodeStatus>) -> Self {
         let grpc_port = PortAllocator::new().assign_port_with_fallback();
         let tcp_listener_port = PortAllocator::new().assign_port_with_fallback();
+        let http_listener_port = PortAllocator::new().assign_port_with_fallback();
         Self {
             grpc_address: Some(("127.0.0.1".to_string(), grpc_port)),
             status_broadcast,
@@ -93,6 +95,7 @@ impl LocalNodeAdapter {
             use_tor: false,
             tor_control_port: None,
             ab_test_group: ABTestSelector::GroupA,
+            http_listener_port,
         }
     }
 
@@ -131,14 +134,18 @@ impl NodeAdapter for LocalNodeAdapter {
         self.get_service()
     }
 
-    async fn get_connection_details(&self) -> Result<(RistrettoPublicKey, String), anyhow::Error> {
+    async fn get_connection_details(&self) -> Result<NodeConnectionDetails, anyhow::Error> {
         let node_service = self.get_service();
         if let Some(node_service) = node_service {
             let node_identity = node_service.get_identity().await?;
             let public_key = node_identity.public_key.clone();
-            Ok((public_key, self.tcp_address()))
+            Ok(NodeConnectionDetails {
+                public_key,
+                tcp_address: self.tcp_address(),
+                http_address: format!("http://127.0.0.1:{}", self.http_listener_port),
+            })
         } else {
-            Err(anyhow::anyhow!("Remote node service is not available"))
+            Err(anyhow::anyhow!("Local node service is not available"))
         }
     }
 
@@ -256,6 +263,11 @@ impl ProcessAdapter for LocalNodeAdapter {
             "base_node.p2p.allow_test_addresses=true".to_string(),
             "-p".to_string(),
             "base_node.p2p.dht.network_discovery.min_desired_peers=12".to_string(),
+            "-p".to_string(),
+            format!(
+                "base_node.http_wallet_query_service.port={}",
+                self.http_listener_port
+            ),
         ];
         if self.use_pruned_mode {
             args.push("-p".to_string());
