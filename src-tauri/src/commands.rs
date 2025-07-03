@@ -74,7 +74,8 @@ use tari_common::configuration::Network;
 use tari_common_types::tari_address::{TariAddress, TariAddressFeatures};
 use tari_core::transactions::tari_amount::{MicroMinotari, Minotari};
 use tauri::ipc::InvokeError;
-use tauri::{Manager, PhysicalPosition, PhysicalSize};
+use tauri::path::BaseDirectory;
+use tauri::{Manager, PhysicalPosition, PhysicalSize, Theme};
 use tauri_plugin_sentry::sentry;
 
 const MAX_ACCEPTABLE_COMMAND_TIME: Duration = Duration::from_secs(1);
@@ -2277,4 +2278,30 @@ pub async fn get_base_node_status(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<BaseNodeStatus, String> {
     Ok(*state.node_status_watch_rx.borrow())
+}
+
+#[tauri::command]
+pub async fn set_theme_icon(
+    theme: Theme,
+    app_handle: tauri::AppHandle,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    let file_name = match theme {
+        Theme::Light => "systray_icon.ico",
+        Theme::Dark => "systray_icon_dark_mode.ico",
+        _ => "systray_icon.ico",
+    };
+
+    let icon_path = app_handle
+        .path()
+        .resolve(file_name, BaseDirectory::Resource)
+        .expect("No icon path match");
+
+    let _ = state
+        .systemtray_manager
+        .write()
+        .await
+        .update_icon(icon_path);
+
+    Ok(())
 }
