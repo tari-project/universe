@@ -51,7 +51,7 @@
     "done": "완료",
     "initialize-application-modules": "플랫폼 필수 조건 초기화 중",
     "initialize-spending-wallet": "지출 지갑 초기화 중",
-    "migrating-database": "Migrating Database",
+    "migrating-database": "Migrating Database from version {{current_db_version}} to {{target_db_version}} progress: {{current_block}}/{{total_blocks}}",
     "mm-proxy": "병합 채굴 프록시 시작 중",
     "network-speed-test": "네트워크 속도 테스트",
     "p2pool": "P2Pool 시작 중",

@@ -51,7 +51,7 @@
     "done": "Готово",
     "initialize-application-modules": "Инициализация предварительных условий платформы",
     "initialize-spending-wallet": "Инициализация кошелька для трат",
-    "migrating-database": "Migrating Database",
+    "migrating-database": "Migrating Database from version {{current_db_version}} to {{target_db_version}} progress: {{current_block}}/{{total_blocks}}",
     "mm-proxy": "Запуск прокси для объединенного майнинга",
     "network-speed-test": "Тест скорости сети",
     "p2pool": "Запуск P2Pool",

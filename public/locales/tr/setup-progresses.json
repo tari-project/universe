@@ -51,7 +51,7 @@
     "done": "Tamamlandı",
     "initialize-application-modules": "Platform Ön Koşulları Başlatılıyor",
     "initialize-spending-wallet": "Harcama Cüzdanı Başlatılıyor",
-    "migrating-database": "Migrating Database",
+    "migrating-database": "Migrating Database from version {{current_db_version}} to {{target_db_version}} progress: {{current_block}}/{{total_blocks}}",
     "mm-proxy": "Birleştirme Madenciliği Proxy\"si Başlatılıyor",
     "network-speed-test": "Ağ Hız Testi",
     "p2pool": "P2Pool Başlatılıyor",

@@ -51,7 +51,7 @@
     "done": "समाप्त",
     "initialize-application-modules": "प्लेटफ़ॉर्म पूर्वापेक्षाएँ प्रारंभ कर रहे हैं",
     "initialize-spending-wallet": "खर्च वॉलेट प्रारंभ कर रहे हैं",
-    "migrating-database": "Migrating Database",
+    "migrating-database": "Migrating Database from version {{current_db_version}} to {{target_db_version}} progress: {{current_block}}/{{total_blocks}}",
     "mm-proxy": "मर्ज माइनिंग प्रॉक्सी शुरू कर रहे हैं",
     "network-speed-test": "नेटवर्क स्पीड टेस्ट",
     "p2pool": "पी2पूल शुरू कर रहे हैं",

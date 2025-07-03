@@ -51,7 +51,7 @@
     "done": "Terminé",
     "initialize-application-modules": "Initialisation des prérequis de la plateforme",
     "initialize-spending-wallet": "Initialisation du portefeuille de dépenses",
-    "migrating-database": "Migrating Database",
+    "migrating-database": "Migrating Database from version {{current_db_version}} to {{target_db_version}} progress: {{current_block}}/{{total_blocks}}",
     "mm-proxy": "Démarrage du proxy de fusion minière",
     "network-speed-test": "Test de vitesse du réseau",
     "p2pool": "Démarrage de P2Pool",

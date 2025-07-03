@@ -51,7 +51,7 @@
     "done": "Fertig",
     "initialize-application-modules": "Plattform-Voraussetzungen werden initialisiert",
     "initialize-spending-wallet": "Ausgaben-Wallet wird initialisiert",
-    "migrating-database": "Migrating Database",
+    "migrating-database": "Migrating Database from version {{current_db_version}} to {{target_db_version}} progress: {{current_block}}/{{total_blocks}}",
     "mm-proxy": "Merge Mining Proxy wird gestartet",
     "network-speed-test": "Netzwerk-Geschwindigkeitstest",
     "p2pool": "P2Pool wird gestartet",

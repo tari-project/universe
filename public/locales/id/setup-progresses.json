@@ -51,7 +51,7 @@
     "done": "Selesai",
     "initialize-application-modules": "Memulai Prasyarat Platform",
     "initialize-spending-wallet": "Memulai Dompet Pengeluaran",
-    "migrating-database": "Migrating Database",
+    "migrating-database": "Migrating Database from version {{current_db_version}} to {{target_db_version}} progress: {{current_block}}/{{total_blocks}}",
     "mm-proxy": "Memulai Proxy Merge Mining",
     "network-speed-test": "Tes Kecepatan Jaringan",
     "p2pool": "Memulai P2Pool",

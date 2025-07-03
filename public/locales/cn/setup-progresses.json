@@ -51,7 +51,7 @@
     "done": "完成",
     "initialize-application-modules": "初始化平台先决条件",
     "initialize-spending-wallet": "初始化支出钱包",
-    "migrating-database": "Migrating Database",
+    "migrating-database": "Migrating Database from version {{current_db_version}} to {{target_db_version}} progress: {{current_block}}/{{total_blocks}}",
     "mm-proxy": "启动合并挖矿代理",
     "network-speed-test": "网络速度测试",
     "p2pool": "启动 P2Pool",
