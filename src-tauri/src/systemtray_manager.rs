@@ -235,13 +235,13 @@ impl SystemTrayManager {
     }
 
     pub fn update_icon(&mut self, icon_path: PathBuf) {
-        let tray = self.tray.clone().expect("Tray not initialized");
-
-        tray.set_icon(Some(
-            tauri::image::Image::from_path(&icon_path).expect("no icon"),
-        ))
-        .expect("Failed to set icon");
-
-        self.tray.replace(tray);
+        if let Some(tray) = &self.tray {
+            tray.set_icon(Some(
+                tauri::image::Image::from_path(&icon_path).expect("no icon"),
+            ))
+            .expect("Failed to set icon");
+        } else {
+            error!(target: LOG_TARGET, "Tray not initialized");
+        }
     }
 }
