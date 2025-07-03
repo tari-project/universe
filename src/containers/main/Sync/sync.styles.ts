@@ -25,7 +25,7 @@ export const Content = styled(m.div)`
     flex-direction: column;
     gap: 47px;
 
-    transform: translateY(-10px);
+    transform: translateY(-20px);
 
     @media (max-height: 768px) {
         gap: 40px;
