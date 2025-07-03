@@ -23,7 +23,7 @@
 use rand::Rng;
 
 pub fn get_rand_string(length: usize) -> String {
-    const CHARSET: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&";
+    const CHARSET: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     let charset: Vec<char> = CHARSET.chars().collect();
 
     let mut rng = rand::thread_rng();

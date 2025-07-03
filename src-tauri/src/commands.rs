@@ -480,13 +480,10 @@ pub async fn get_network(
 pub async fn get_monero_seed_words(app_handle: tauri::AppHandle) -> Result<Vec<String>, String> {
     let timer = Instant::now();
 
-    let internal_wallet_guard = InternalWallet::current().read().await;
-    let monero_seed = internal_wallet_guard
-        .get_monero_seed(&app_handle)
+    let monero_seed = InternalWallet::get_monero_seed(&app_handle)
         .await
         .map_err(|e| e.to_string())?;
 
-    drop(internal_wallet_guard);
     let result = monero_seed.seed_words().map_err(|e| {
         log::error!(target: LOG_TARGET, "get_monero_seed_words: error getting seed words: {}", e);
         e.to_string()
@@ -597,14 +594,11 @@ pub async fn get_paper_wallet_details(
     warn!(target: LOG_TARGET, "auth_uuid {:?}", auth_uuid);
     let anon_id = ConfigCore::content().await.anon_id().clone();
 
-    let internal_wallet_guard = InternalWallet::current().read().await;
-    let seed = internal_wallet_guard
-        .get_tari_seed(&app_handle)
+    let tari_cipher_seed = InternalWallet::get_tari_seed(&app_handle, None)
         .await
         .map_err(InvokeError::from_anyhow)?;
-    drop(internal_wallet_guard);
     let raw_passphrase = phraze::generate_a_passphrase(5, "-", false, &MNEMONIC_ENGLISH_WORDS);
-    let seed_file = seed
+    let seed_file = tari_cipher_seed
         .encipher(Some(SafePassword::from(&raw_passphrase)))
         .map_err(|e| InvokeError::from_anyhow(anyhow::anyhow!(e.to_string())))?;
     let seed_words_encrypted_base58 = seed_file.to_monero_base58();
@@ -648,12 +642,9 @@ pub async fn get_paper_wallet_details(
 pub async fn get_seed_words(app_handle: tauri::AppHandle) -> Result<Vec<String>, String> {
     let timer = Instant::now();
 
-    let internal_wallet_guard = InternalWallet::current().read().await;
-    let tari_cipher_seed = internal_wallet_guard
-        .get_tari_seed(&app_handle)
+    let tari_cipher_seed = InternalWallet::get_tari_seed(&app_handle, None)
         .await
         .map_err(|e| e.to_string())?;
-    drop(internal_wallet_guard);
     let seed_words = tari_cipher_seed
         .to_mnemonic(MnemonicLanguage::English, None)
         .map_err(|e| e.to_string())?;

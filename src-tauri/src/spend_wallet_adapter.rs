@@ -429,9 +429,7 @@ impl SpendWalletAdapter {
     }
 
     async fn get_seed_words(&self, app_handle: &tauri::AppHandle) -> Result<String, Error> {
-        let internal_wallet_guard = InternalWallet::current().read().await;
-
-        let tari_cipher_seed = internal_wallet_guard.get_tari_seed(app_handle).await?;
+        let tari_cipher_seed = InternalWallet::get_tari_seed(app_handle, None).await?;
         let seed_words = tari_cipher_seed.to_mnemonic(MnemonicLanguage::English, None)?;
         Ok(seed_words.join(" ").reveal().to_string())
     }
