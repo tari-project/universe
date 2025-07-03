@@ -146,5 +146,6 @@ export const TabsWrapper = styled.div`
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-right: 4px;
+    gap: 40px;
+    padding-left: 4px;
 `;
