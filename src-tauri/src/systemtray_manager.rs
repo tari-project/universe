@@ -234,14 +234,12 @@ impl SystemTrayManager {
         }
     }
 
-    pub fn update_icon(&mut self, icon_path: PathBuf) {
-        if let Some(tray) = &self.tray {
-            tray.set_icon(Some(
-                tauri::image::Image::from_path(&icon_path).expect("no icon"),
-            ))
-            .expect("Failed to set icon");
-        } else {
-            error!(target: LOG_TARGET, "Tray not initialized");
-        }
+    pub fn update_icon(&mut self, icon_path: PathBuf, app: AppHandle) {
+        let tray = app.tray_by_id("universe-tray-id").expect("tray not found");
+        tray.set_icon(Some(
+            tauri::image::Image::from_path(&icon_path).expect("no icon"),
+        ))
+        .expect("Failed to set icon");
+        self.tray.replace(tray);
     }
 }

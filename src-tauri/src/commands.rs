@@ -2302,7 +2302,7 @@ pub async fn set_theme_icon(
         .systemtray_manager
         .write()
         .await
-        .update_icon(icon_path);
+        .update_icon(icon_path, app_handle.clone());
 
     Ok(())
 }
