@@ -26,7 +26,7 @@ use super::listeners::listener_unlock_cpu_mining::ListenerUnlockCpuMining;
 use super::listeners::listener_unlock_gpu_mining::ListenerUnlockGpuMining;
 use super::listeners::listener_unlock_wallet::ListenerUnlockWallet;
 use super::listeners::trait_listener::UnlockConditionsListenerTrait;
-use super::listeners::{SetupFeature, SetupFeaturesList};
+use super::listeners::{setup_listener, SetupFeature, SetupFeaturesList};
 use super::trait_setup_phase::SetupPhaseImpl;
 use super::{
     phase_core::CoreSetupPhase, phase_hardware::HardwareSetupPhase, phase_mining::MiningSetupPhase,
@@ -48,6 +48,7 @@ use crate::{
 };
 use log::{error, info};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::{
     fmt::{Display, Formatter},
     sync::LazyLock,
@@ -577,98 +578,52 @@ impl SetupManager {
         let hardware_phase_status = self.hardware_phase_status.subscribe();
         let node_phase_status = self.node_phase_status.subscribe();
         let wallet_phase_status = self.wallet_phase_status.subscribe();
-        let unknown_phase_status = self.mining_phase_status.subscribe();
+        let mining_phase_status = self.mining_phase_status.subscribe();
+
+        let mut phase_status_channels = HashMap::new();
+        phase_status_channels.insert(SetupPhase::Core, core_phase_status.clone());
+        phase_status_channels.insert(SetupPhase::Hardware, hardware_phase_status.clone());
+        phase_status_channels.insert(SetupPhase::Node, node_phase_status.clone());
+        phase_status_channels.insert(SetupPhase::Wallet, wallet_phase_status.clone());
+        phase_status_channels.insert(SetupPhase::Mining, mining_phase_status.clone());
 
         ListenerUnlockApp::current()
             .load_app_handle(app_handle.clone())
             .await;
-        ListenerUnlockApp::current()
-            .load_setup_features(setup_features.clone())
-            .await;
-        ListenerUnlockApp::current()
-            .add_status_channel(SetupPhase::Core, core_phase_status.clone())
-            .await;
-        ListenerUnlockApp::current()
-            .add_status_channel(SetupPhase::Hardware, hardware_phase_status.clone())
-            .await;
-        ListenerUnlockApp::current()
-            .add_status_channel(SetupPhase::Node, node_phase_status.clone())
-            .await;
-        ListenerUnlockApp::current()
-            .add_status_channel(SetupPhase::Wallet, wallet_phase_status.clone())
-            .await;
-        ListenerUnlockApp::current()
-            .add_status_channel(SetupPhase::Mining, unknown_phase_status.clone())
-            .await;
-        ListenerUnlockApp::current().start_listener().await;
+        setup_listener(
+            ListenerUnlockApp::current(),
+            &setup_features,
+            phase_status_channels.clone(),
+        )
+        .await;
 
-        ListenerSetupFinished::current()
-            .load_setup_features(setup_features.clone())
-            .await;
-        ListenerSetupFinished::current()
-            .add_status_channel(SetupPhase::Core, core_phase_status.clone())
-            .await;
-        ListenerSetupFinished::current()
-            .add_status_channel(SetupPhase::Hardware, hardware_phase_status.clone())
-            .await;
-        ListenerSetupFinished::current()
-            .add_status_channel(SetupPhase::Node, node_phase_status.clone())
-            .await;
-        ListenerSetupFinished::current()
-            .add_status_channel(SetupPhase::Wallet, wallet_phase_status.clone())
-            .await;
-        ListenerSetupFinished::current()
-            .add_status_channel(SetupPhase::Mining, unknown_phase_status.clone())
-            .await;
-        ListenerSetupFinished::current().start_listener().await;
+        setup_listener(
+            ListenerSetupFinished::current(),
+            &setup_features,
+            phase_status_channels.clone(),
+        )
+        .await;
 
-        ListenerUnlockCpuMining::current()
-            .load_setup_features(setup_features.clone())
-            .await;
-        ListenerUnlockCpuMining::current()
-            .add_status_channel(SetupPhase::Core, core_phase_status.clone())
-            .await;
-        ListenerUnlockCpuMining::current()
-            .add_status_channel(SetupPhase::Hardware, hardware_phase_status.clone())
-            .await;
-        ListenerUnlockCpuMining::current()
-            .add_status_channel(SetupPhase::Node, node_phase_status.clone())
-            .await;
-        ListenerUnlockCpuMining::current()
-            .add_status_channel(SetupPhase::Mining, unknown_phase_status.clone())
-            .await;
-        ListenerUnlockCpuMining::current().start_listener().await;
+        setup_listener(
+            ListenerUnlockCpuMining::current(),
+            &setup_features,
+            phase_status_channels.clone(),
+        )
+        .await;
 
-        ListenerUnlockGpuMining::current()
-            .load_setup_features(setup_features.clone())
-            .await;
-        ListenerUnlockGpuMining::current()
-            .add_status_channel(SetupPhase::Core, core_phase_status.clone())
-            .await;
-        ListenerUnlockGpuMining::current()
-            .add_status_channel(SetupPhase::Hardware, hardware_phase_status.clone())
-            .await;
-        ListenerUnlockGpuMining::current()
-            .add_status_channel(SetupPhase::Node, node_phase_status.clone())
-            .await;
-        ListenerUnlockGpuMining::current()
-            .add_status_channel(SetupPhase::Mining, unknown_phase_status.clone())
-            .await;
-        ListenerUnlockGpuMining::current().start_listener().await;
+        setup_listener(
+            ListenerUnlockGpuMining::current(),
+            &setup_features,
+            phase_status_channels.clone(),
+        )
+        .await;
 
-        ListenerUnlockWallet::current()
-            .load_setup_features(setup_features.clone())
-            .await;
-        ListenerUnlockWallet::current()
-            .add_status_channel(SetupPhase::Core, core_phase_status.clone())
-            .await;
-        ListenerUnlockWallet::current()
-            .add_status_channel(SetupPhase::Node, node_phase_status.clone())
-            .await;
-        ListenerUnlockWallet::current()
-            .add_status_channel(SetupPhase::Wallet, wallet_phase_status.clone())
-            .await;
-        ListenerUnlockWallet::current().start_listener().await;
+        setup_listener(
+            ListenerUnlockWallet::current(),
+            &setup_features,
+            phase_status_channels.clone(),
+        )
+        .await;
 
         self.setup_core_phase(app_handle.clone()).await;
         self.setup_hardware_phase(app_handle.clone()).await;

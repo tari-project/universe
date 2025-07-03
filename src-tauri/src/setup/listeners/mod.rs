@@ -27,7 +27,15 @@ pub mod listener_unlock_gpu_mining;
 pub mod listener_unlock_wallet;
 pub mod trait_listener;
 
-use std::fmt::{Display, Formatter};
+use std::{
+    collections::HashMap,
+    fmt::{Display, Formatter},
+};
+
+use tokio::sync::watch::Receiver;
+use trait_listener::UnlockConditionsListenerTrait;
+
+use super::setup_manager::{PhaseStatus, SetupPhase};
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum SetupFeature {
@@ -72,4 +80,20 @@ impl SetupFeaturesList {
     pub fn is_feature_disabled(&self, feature: SetupFeature) -> bool {
         !self.0.contains(&feature)
     }
+}
+
+pub async fn setup_listener<T>(
+    listener: &T,
+    setup_features: &SetupFeaturesList,
+    phase_status_map: HashMap<SetupPhase, Receiver<PhaseStatus>>,
+) where
+    T: UnlockConditionsListenerTrait,
+{
+    listener.load_setup_features(setup_features.clone()).await;
+
+    for (phase, status) in phase_status_map {
+        listener.add_status_channel(phase, status).await;
+    }
+
+    listener.start_listener().await;
 }
