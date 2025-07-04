@@ -32,6 +32,7 @@ export function List({ setIsScrolled, targetRef }: Props) {
     const bridgeTransactions = useWalletStore((s) => s.bridge_transactions);
     const currentBlockHeight = useBlockchainVisualisationStore((s) => s.displayBlockHeight);
     const coldWalletAddress = useWalletStore((s) => s.cold_wallet_address);
+    const tx_history_filter = useWalletStore((s) => s.tx_history_filter);
     const { data, fetchNextPage, isFetchingNextPage, isFetching, hasNextPage } = useFetchTxHistory();
     const isFetchBridgeTransactionsFailed = useRef(false);
 
@@ -76,10 +77,15 @@ export function List({ setIsScrolled, targetRef }: Props) {
     }, [baseTx, bridgeTransactions, coldWalletAddress, currentBlockHeight]);
 
     const combinedTransactions = useMemo(() => {
-        return ([...baseTx, ...bridgeTransactions] as (TransactionInfo | UserTransactionDTO)[]).sort((a, b) => {
-            return getTimestampFromTransaction(b) - getTimestampFromTransaction(a);
-        });
-    }, [baseTx, bridgeTransactions]);
+        const transactions: (TransactionInfo | UserTransactionDTO)[] = [...baseTx];
+
+        const includeBridgeTx = tx_history_filter === 'transactions' || tx_history_filter === 'all-activity';
+        if (includeBridgeTx) {
+            transactions.push(...bridgeTransactions);
+        }
+
+        return transactions.sort((a, b) => getTimestampFromTransaction(b) - getTimestampFromTransaction(a));
+    }, [baseTx, bridgeTransactions, tx_history_filter]);
 
     const adjustedTransactions = useMemo(() => {
         return combinedTransactions.reduce(
