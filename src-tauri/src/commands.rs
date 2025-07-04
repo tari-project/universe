@@ -2293,10 +2293,9 @@ pub async fn set_theme_icon(
         _ => "icons/systray_icon.ico",
     };
 
-    let icon_path = app_handle
-        .path()
-        .resolve(file_name, BaseDirectory::Resource)
-        .expect("No icon path match");
+    let path = app_handle.path().local_data_dir().expect("No path match");
+
+    let icon_path = path.join(file_name);
 
     state
         .systemtray_manager
