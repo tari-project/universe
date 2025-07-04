@@ -3,8 +3,8 @@ import { TrayIcon } from '@tauri-apps/api/tray';
 import { Image } from '@tauri-apps/api/image';
 import { type } from '@tauri-apps/plugin-os';
 
-import standard from '/assets/icons/systray_icon.ico';
-import darkMode from '/assets/icons/systray_icon_dark_mode.ico';
+import standard from '/assets/icons/systray_icon.png';
+import darkMode from '/assets/icons/systray_icon_dark_mode.png';
 
 function useHandleSystemTrayIcon() {
     return useCallback(async (systemDarkMode: boolean) => {
@@ -15,6 +15,7 @@ function useHandleSystemTrayIcon() {
         const tray = await TrayIcon.getById('universe-tray-id');
         const img = await Image.fromBytes(logo);
         tray?.setIcon(img);
+        tray?.setIconAsTemplate(true);
     }, []);
 }
 
