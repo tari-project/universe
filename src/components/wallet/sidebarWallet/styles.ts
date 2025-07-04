@@ -70,7 +70,7 @@ export const DetailsCard = styled(m.div)<{ $isScrolled: boolean }>`
     ${({ $isScrolled }) =>
         $isScrolled &&
         css`
-            height: 141px;
+            height: 100px;
         `}
 
     @media (max-height: 690px) {

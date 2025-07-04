@@ -98,7 +98,7 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
                                 <ExternalLink2SVG />
                             </ExternalLink>
                         )}
-                        <ExchangeButton />
+                        <ExchangeButton isScrolled={isScrolled} />
                     </DetailsCardBottomContent>
                 </DetailsCardContent>
             </DetailsCard>
