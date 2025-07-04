@@ -24,4 +24,5 @@ export const ListItemWrapper = styled.div`
 export const FilterWrapper = styled.div`
     display: flex;
     gap: 12px;
+    flex-shrink: 0;
 `;

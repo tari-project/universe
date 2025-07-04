@@ -53,16 +53,6 @@ export const Wrapper = styled.div<{ $swapsPanel?: boolean; $seedlessUI?: boolean
         `};
 `;
 
-export const WalletActionWrapper = styled(m.div)`
-    overflow: hidden;
-    flex-shrink: 0;
-    display: flex;
-    width: 100%;
-    height: auto;
-
-    will-change: height;
-`;
-
 export const DetailsCard = styled(m.div)<{ $isScrolled: boolean }>`
     display: flex;
     border-radius: 20px;
@@ -146,5 +136,6 @@ export const TabsWrapper = styled.div`
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-right: 4px;
+    gap: 40px;
+    padding-left: 4px;
 `;
