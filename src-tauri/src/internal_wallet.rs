@@ -301,10 +301,7 @@ impl InternalWallet {
                     SafePassword::from(pin)
                 }
             };
-            tari_seed
-                .encipher(Some(pin_password))?
-                .to_binary()
-                .expect("[add_tari_wallet] Failed to convert encrypted tari seed to binary")
+            tari_seed.encipher(Some(pin_password))?
         } else {
             tari_seed
                 .to_binary()
