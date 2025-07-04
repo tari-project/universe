@@ -22,8 +22,6 @@
 
 use futures::StreamExt;
 use std::path::Path;
-use std::path::PathBuf;
-use std::sync::LazyLock;
 use std::time::Duration;
 use tokio::fs;
 use tokio::fs::File;
@@ -31,14 +29,8 @@ use tokio::io::AsyncWriteExt;
 use tokio::sync::watch::Sender;
 
 use anyhow::{anyhow, Error};
-use log::debug;
 use log::info;
 use log::warn;
-use reqwest::{self, Client, Response};
-use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
-use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
-
-use super::CloudFlareCacheStatus;
 
 const LOG_TARGET: &str = "tari::universe::request_client";
 const MAX_DOWNLOAD_FILE_RETRIES: u8 = 3;
@@ -51,82 +43,6 @@ pub struct RequestManager {
 }
 
 impl RequestManager {
-    pub fn client_default() -> ClientWithMiddleware {
-        debug!(target: LOG_TARGET, "[default_client]");
-        build_retry_reqwest_client()
-    }
-
-    pub fn client_builder() -> ClientBuilder {
-        debug!(target: LOG_TARGET, "[client_builder]");
-        ClientBuilder::new(Self::default_client())
-    }
-
-    pub fn create_user_agent() -> String {
-        let user_agent = format!(
-            "universe {}({})",
-            env!("CARGO_PKG_VERSION"),
-            std::env::consts::OS
-        );
-    }
-
-    fn build_retry_reqwest_client() -> ClientWithMiddleware {
-        debug!(target: LOG_TARGET, "[build_retry_reqwest_client]");
-        let retry_policy = ExponentialBackoff::builder().build_with_max_retries(2);
-
-        ClientBuilder::new(Client::new())
-            .with(RetryTransientMiddleware::new_with_policy(retry_policy))
-            .build()
-    }
-
-    #[allow(dead_code)]
-    fn convert_content_length_to_mb(&self, content_length: u64) -> f64 {
-        (content_length as f64) / 1024.0 / 1024.0
-    }
-
-    pub async fn send_head_request(&self, url: &str) -> Result<Response, Error> {
-        let head_response = self
-            .client
-            .head(url)
-            .header("User-Agent", self.user_agent.clone())
-            .send()
-            .await;
-
-        if let Ok(response) = head_response {
-            if response.status().is_success() {
-                return Ok(response);
-            } else {
-                return Err(anyhow!(
-                    "HEAD request failed with status code: {}",
-                    response.status()
-                ));
-            }
-        };
-        head_response.map_err(|e| anyhow!("HEAD request failed with error: {}", e))
-    }
-
-    #[allow(dead_code)]
-    pub async fn send_get_request(&self, url: &str) -> Result<Response, Error> {
-        let get_response = self
-            .client
-            .get(url)
-            .header("User-Agent", self.user_agent.clone())
-            .send()
-            .await;
-
-        if let Ok(response) = get_response {
-            if response.status().is_success() {
-                return Ok(response);
-            } else {
-                return Err(anyhow!(
-                    "GET request failed with status code: {}",
-                    response.status()
-                ));
-            }
-        };
-
-        get_response.map_err(|e| anyhow!("GET request failed with error: {}", e))
-    }
-
     pub async fn send_get_file_request(
         &self,
         url: &str,
@@ -196,105 +112,6 @@ impl RequestManager {
 
         Ok(())
         // get_response.map_err(|e| anyhow!("GET request failed with error: {}", e))
-    }
-
-    #[allow(dead_code)]
-    pub fn get_etag_from_head_response(&self, response: &Response) -> String {
-        if response.status().is_server_error() || response.status().is_client_error() {
-            return "".to_string();
-        };
-        response
-            .headers()
-            .get("etag")
-            .map_or("", |v| v.to_str().unwrap_or_default())
-            .to_string()
-    }
-
-    pub fn get_content_length_from_head_response(&self, response: &Response) -> u64 {
-        if response.status().is_server_error() || response.status().is_client_error() {
-            return 0;
-        };
-        response
-            .headers()
-            .get("content-length")
-            .map_or(0, |v| v.to_str().unwrap_or_default().parse().unwrap_or(0))
-    }
-
-    pub fn get_cf_cache_status_from_head_response(
-        &self,
-        response: &Response,
-    ) -> CloudFlareCacheStatus {
-        debug!(target: LOG_TARGET, "get_cf_cache_status_from_head_response, response status: {}, url: {}", response.status(), response.url());
-        if response.status().is_server_error() || response.status().is_client_error() {
-            info!(target: LOG_TARGET, "get_cf_cache_status_from_head_response, error");
-            return CloudFlareCacheStatus::Unknown;
-        };
-        let cache_status = CloudFlareCacheStatus::from_str(
-            response
-                .headers()
-                .get("cf-cache-status")
-                .map_or("", |v| v.to_str().unwrap_or_default()),
-        );
-
-        debug!(target: LOG_TARGET, "get_cf_cache_status_from_head_response, cache status: {:?}", cache_status.to_str());
-        debug!(target: LOG_TARGET, "get_cf_cache_status_from_head_response_raw, cache status: {:?}", response.headers().get("cf-cache-status"));
-
-        cache_status.log_warning_if_present();
-        cache_status
-    }
-
-    #[allow(dead_code)]
-    pub async fn check_if_cache_hits(&self, url: &str) -> Result<bool, anyhow::Error> {
-        const MAX_RETRIES: u8 = 3;
-        const MAX_WAIT_TIME: u64 = 30;
-        const MIN_WAIT_TIME: u64 = 2;
-        let mut retries = 0;
-
-        loop {
-            if retries >= MAX_RETRIES {
-                return Ok(false);
-            }
-
-            let head_response = self.send_head_request(url).await?;
-
-            let cf_cache_status = self.get_cf_cache_status_from_head_response(&head_response);
-            cf_cache_status.log_warning_if_present();
-
-            let content_length = self.get_content_length_from_head_response(&head_response);
-
-            let mut sleep_time = std::time::Duration::from_secs(MIN_WAIT_TIME);
-
-            if !content_length.eq(&0) {
-                sleep_time = std::time::Duration::from_secs(
-                    #[allow(clippy::cast_possible_truncation)]
-                    ((self.convert_content_length_to_mb(content_length) / 10.0).trunc() as u64)
-                        .clamp(MIN_WAIT_TIME, MAX_WAIT_TIME),
-                );
-            }
-
-            if cf_cache_status.is_hit() {
-                break;
-            }
-
-            retries += 1;
-            warn!(target: LOG_TARGET, "Cache miss. Retrying in {} seconds. Try {}/{}", sleep_time.as_secs().to_string() ,retries, MAX_RETRIES);
-            tokio::time::sleep(sleep_time).await;
-        }
-
-        Ok(true)
-    }
-
-    #[allow(dead_code)]
-    pub async fn lookup_content_size(&self, url: &str) -> Result<u64, anyhow::Error> {
-        let head_response = self.send_head_request(url).await?;
-        let content_length = self.get_content_length_from_head_response(&head_response);
-        Ok(content_length)
-    }
-
-    pub async fn get_content_size_from_file(&self, path: PathBuf) -> Result<u64, anyhow::Error> {
-        let file = File::open(path).await?;
-        let metadata = file.metadata().await?;
-        Ok(metadata.len())
     }
 
     pub async fn download_file(

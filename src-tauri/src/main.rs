@@ -126,7 +126,7 @@ mod process_utils;
 mod process_watcher;
 mod progress_trackers;
 mod release_notes;
-mod request_manager;
+mod requests;
 mod setup;
 mod spend_wallet_adapter;
 mod spend_wallet_manager;
