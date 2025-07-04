@@ -30,8 +30,8 @@ use tokio::sync::watch::{channel, Sender};
 
 use crate::{
     download_utils::{extract, validate_checksum},
-    github::request_client::RequestManager,
     progress_trackers::progress_stepper::ChanneledStepUpdate,
+    requests::clients::http_file_client::HttpFileClient,
     tasks_tracker::TasksTrackers,
     utils::platform_utils::{CurrentOperatingSystem, PlatformUtils},
 };
@@ -435,13 +435,13 @@ impl BinaryManager {
             .await
             .map_err(|e| anyhow!("Error resolving progress channel: {:?}", e))?;
 
-        if RequestManager::current()
-            .download_file(
-                download_url.as_str(),
-                &in_progress_file_zip,
-                true,
-                chunk_progress_sender.clone(),
-            )
+        if HttpFileClient::builder()
+            .with_cloudflare_cache_check()
+            // .with_file_extract()
+            .with_progress_status_sender(chunk_progress_sender.clone())
+            .with_download_resume()
+            .build(download_url.clone(), destination_dir.clone())
+            .execute()
             .await
             .map_err(|e| anyhow!("Error downloading version: {:?}. Error: {:?}", version, e))
             .is_err()
@@ -456,15 +456,13 @@ impl BinaryManager {
                 .await
                 .map_err(|e| anyhow!("Error resolving progress channel: {:?}", e))?;
 
-            RequestManager::current()
-                .download_file(
-                    fallback_url.as_str(),
-                    &in_progress_file_zip,
-                    false,
-                    chunk_progress_sender,
-                )
-                .await
-                .unwrap_or_else(|e| {
+            HttpFileClient::builder()
+                // .with_file_extract()
+                .with_progress_status_sender(chunk_progress_sender.clone())
+                .with_download_resume()
+                .build(fallback_url.clone(), in_progress_file_zip.clone())
+                .execute()
+                .await.unwrap_or_else(|e| {
                     if let Some(mut progress_sender_shutdown) = fallback_progress_sender_shutdown {
                         progress_sender_shutdown.trigger();
                     }

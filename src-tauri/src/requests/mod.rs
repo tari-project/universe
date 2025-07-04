@@ -21,8 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 mod cache;
-mod clients;
-mod request_client;
+pub mod clients;
 mod utils;
 
 // https://github.com/tari-project/glytex/releases/download/v0.2.29/glytex-opencl-linux-x86_64-testnet-0.2.29-fd0dd7f.zip

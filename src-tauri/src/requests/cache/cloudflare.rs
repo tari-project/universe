@@ -87,7 +87,7 @@ impl CloudFlareCacheStatus {
 pub struct CloudFlareCache;
 
 impl CloudFlareCache {
-    fn get_cf_cache_status_from_head_response(&self, response: &Response) -> CloudFlareCacheStatus {
+    fn get_cf_cache_status_from_head_response(response: &Response) -> CloudFlareCacheStatus {
         if response.status().is_server_error() || response.status().is_client_error() {
             info!(target: LOG_TARGET, "get_cf_cache_status_from_head_response, error");
             return CloudFlareCacheStatus::Unknown;
@@ -102,7 +102,7 @@ impl CloudFlareCache {
     }
 
     #[allow(dead_code)]
-    pub async fn check_if_cache_hits(&self, url: &str) -> Result<(), anyhow::Error> {
+    pub async fn check_if_cache_hits(url: &str) -> Result<(), anyhow::Error> {
         const MAX_RETRIES: u8 = 3;
         const MAX_WAIT_TIME: u64 = 30;
         const MIN_WAIT_TIME: u64 = 2;
@@ -118,7 +118,8 @@ impl CloudFlareCache {
 
             let head_response = http_client.send_head_request(url).await?;
 
-            let cf_cache_status = self.get_cf_cache_status_from_head_response(&head_response);
+            let cf_cache_status =
+                CloudFlareCache::get_cf_cache_status_from_head_response(&head_response);
 
             match cf_cache_status.resolve_handling_option() {
                 CloudFlareCacheStatusHandlingOptions::Retry => {

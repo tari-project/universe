@@ -3,7 +3,7 @@ use anyhow::anyhow;
 use crate::requests::utils::create_user_agent;
 
 pub struct HttpClient {
-    client: reqwest_middleware::ClientWithMiddleware,
+    pub client: reqwest_middleware::ClientWithMiddleware,
 }
 
 impl HttpClient {
@@ -15,6 +15,10 @@ impl HttpClient {
         let client = reqwest_middleware::ClientBuilder::new(inner_client).build();
 
         HttpClient { client }
+    }
+
+    pub fn client(&self) -> &reqwest_middleware::ClientWithMiddleware {
+        &self.client
     }
 
     pub fn with_retries(retries: u32) -> Self {
