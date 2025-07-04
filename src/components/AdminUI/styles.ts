@@ -56,7 +56,7 @@ export const MenuContent = styled(m.div)`
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 `;
 
-export const Button = styled('button')<{ $isActive?: boolean }>`
+export const AdminButton = styled('button')<{ $isActive?: boolean }>`
     background: ${({ $isActive }) => ($isActive ? '#666' : '#444')};
     color: white;
     border: 1px solid #666;
