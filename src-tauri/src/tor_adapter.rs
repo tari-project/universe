@@ -22,8 +22,6 @@
 
 use std::collections::HashMap;
 use std::path::PathBuf;
-#[cfg(target_os = "linux")]
-use std::process::Command;
 use std::time::Duration;
 
 use anyhow::{anyhow, Error};
@@ -373,43 +371,21 @@ impl Default for TorConfig {
     }
 }
 
+#[cfg(target_os = "linux")]
 fn get_libevent_envs(_binary_version_path: &std::path::Path) -> Option<HashMap<String, String>> {
-    #[cfg(target_os = "linux")]
-    {
-        if !check_libevent_exists() {
-            let mut tor_bundle_path = _binary_version_path.to_path_buf();
-            tor_bundle_path.pop();
-            let mut envs = HashMap::new();
-            envs.insert(
-                "LD_PRELOAD".to_string(),
-                format!("{}/libevent-2.1.so.7", tor_bundle_path.display()),
-            );
-            log::warn!(target: LOG_TARGET, "Using LD_PRELOAD, libevent-2.1.so.7 not found.");
-            return Some(envs);
-        }
-    }
-    // For non-Linux, or if libevent exists, return None
-    None
+    let mut tor_bundle_path = _binary_version_path.to_path_buf();
+    tor_bundle_path.pop();
+    let mut envs = HashMap::new();
+    envs.insert(
+        "LD_PRELOAD".to_string(),
+        format!("{}/libevent-2.1.so.7", tor_bundle_path.display()),
+    );
+    log::warn!(target: LOG_TARGET, "Using LD_PRELOAD for libevent-2.1.so.7.");
+    Some(envs)
 }
 
-#[cfg(target_os = "linux")]
-fn check_libevent_exists() -> bool {
-    let output = Command::new("find")
-        .arg("/usr/lib")
-        .arg("/usr/local/lib")
-        .arg("-name")
-        .arg("libevent-2.1.so.7")
-        .output()
-        .expect("Failed to execute find libevent-2.1.so.7 command");
-
-    if output.status.success() {
-        let stdout = String::from_utf8_lossy(&output.stdout);
-        let lines: Vec<&str> = stdout.split('\n').collect();
-        for line in lines {
-            if line.contains("libevent-2.1.so.7") {
-                return true;
-            }
-        }
-    }
-    false
+#[cfg(not(target_os = "linux"))]
+fn get_libevent_envs(_binary_version_path: &std::path::Path) -> Option<HashMap<String, String>> {
+    // For non-Linux, return None
+    None
 }
