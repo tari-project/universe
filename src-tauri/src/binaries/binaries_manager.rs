@@ -30,8 +30,8 @@ use tokio::sync::watch::{channel, Sender};
 
 use crate::{
     download_utils::{extract, validate_checksum},
-    github::request_client::RequestClient,
     progress_trackers::progress_stepper::ChanneledStepUpdate,
+    requests::clients::http_file_client::HttpFileClient,
     tasks_tracker::TasksTrackers,
     utils::platform_utils::{CurrentOperatingSystem, PlatformUtils},
 };
@@ -133,10 +133,7 @@ impl BinaryManager {
             .join("in_progress");
 
         if in_progress_folder.exists() {
-            debug!(target: LOG_TARGET,"Removing in progress folder: {:?}", in_progress_folder);
-            if let Err(error) = std::fs::remove_dir_all(&in_progress_folder) {
-                error!(target: LOG_TARGET, "Error removing in progress folder: {:?}. Error: {:?}", in_progress_folder, error);
-            }
+            return Ok(in_progress_folder);
         }
 
         debug!(target: LOG_TARGET,"Creating in progress folder: {:?}", in_progress_folder);
@@ -418,7 +415,6 @@ impl BinaryManager {
         // So when one of them is deleted, and we need to download it again
         // We in fact will download zip with multiple binaries, and when other binaries are present in destination dir
         // extract will fail, so we need to remove all files from destination dir
-        self.ensure_empty_directory(destination_dir.clone())?;
 
         let in_progress_dir = self
             .create_in_progress_folder_for_selected_version()
@@ -435,13 +431,13 @@ impl BinaryManager {
             .await
             .map_err(|e| anyhow!("Error resolving progress channel: {:?}", e))?;
 
-        if RequestClient::current()
-            .download_file(
-                download_url.as_str(),
-                &in_progress_file_zip,
-                true,
-                chunk_progress_sender.clone(),
-            )
+        if HttpFileClient::builder()
+            .with_cloudflare_cache_check()
+            // .with_file_extract()
+            .with_progress_status_sender(chunk_progress_sender.clone())
+            .with_download_resume()
+            .build(download_url.clone(), in_progress_file_zip.clone())
+            .execute()
             .await
             .map_err(|e| anyhow!("Error downloading version: {:?}. Error: {:?}", version, e))
             .is_err()
@@ -456,15 +452,13 @@ impl BinaryManager {
                 .await
                 .map_err(|e| anyhow!("Error resolving progress channel: {:?}", e))?;
 
-            RequestClient::current()
-                .download_file(
-                    fallback_url.as_str(),
-                    &in_progress_file_zip,
-                    false,
-                    chunk_progress_sender,
-                )
-                .await
-                .unwrap_or_else(|e| {
+            HttpFileClient::builder()
+                // .with_file_extract()
+                .with_progress_status_sender(chunk_progress_sender.clone())
+                .with_download_resume()
+                .build(fallback_url.clone(), in_progress_file_zip.clone())
+                .execute()
+                .await.unwrap_or_else(|e| {
                     if let Some(mut progress_sender_shutdown) = fallback_progress_sender_shutdown {
                         progress_sender_shutdown.trigger();
                     }

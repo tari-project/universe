@@ -20,7 +20,9 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod request_client;
+mod cache;
+pub mod clients;
+mod utils;
 
 // https://github.com/tari-project/glytex/releases/download/v0.2.29/glytex-opencl-linux-x86_64-testnet-0.2.29-fd0dd7f.zip
 pub fn get_gh_download_url(repo_owner: &str, repo_name: &str) -> String {
