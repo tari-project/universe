@@ -30,7 +30,8 @@
             "icons/StoreLogo.png",
             "icons/systray_icon.icns",
             "icons/systray_icon.png",
-            "icons/systray_icon.png"
+            "icons/systray_icon.png",
+            "icons/systray_icon_dark_mode.png"
         ],
         "copyright": "Copyright (c) 2024 Tari Labs, LLC",
         "shortDescription": "Tari Universe is a mining app for Tari.",
@@ -83,7 +84,7 @@
         },
         "trayIcon": {
             "id": "universe-tray-id",
-            "iconPath": "icons/systray_icon.png",
+            "iconPath": "icons/systray_icon_dark_mode.png",
             "iconAsTemplate": true
         },
         "macOSPrivateApi": true,
