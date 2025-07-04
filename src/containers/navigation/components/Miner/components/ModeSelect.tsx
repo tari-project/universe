@@ -19,8 +19,9 @@ import { useSetupStore } from '@app/store/useSetupStore';
 
 interface ModeSelectProps {
     variant?: 'primary' | 'minimal';
+    isSync?: boolean;
 }
-const ModeSelect = memo(function ModeSelect({ variant = 'primary' }: ModeSelectProps) {
+const ModeSelect = memo(function ModeSelect({ variant = 'primary', isSync }: ModeSelectProps) {
     const { t } = useTranslation('common', { useSuspense: false });
     const mode = useConfigMiningStore((s) => s.mode);
     const isCPUMining = useMiningMetricsStore((s) => s.cpu_mining_status.is_mining);
@@ -79,6 +80,7 @@ const ModeSelect = memo(function ModeSelect({ variant = 'primary' }: ModeSelectP
             options={tabOptions}
             forceHeight={21}
             variant={isMininimal ? 'minimal' : 'primary'}
+            isSync={isSync}
         />
     );
 
