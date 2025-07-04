@@ -133,10 +133,7 @@ impl BinaryManager {
             .join("in_progress");
 
         if in_progress_folder.exists() {
-            debug!(target: LOG_TARGET,"Removing in progress folder: {:?}", in_progress_folder);
-            if let Err(error) = std::fs::remove_dir_all(&in_progress_folder) {
-                error!(target: LOG_TARGET, "Error removing in progress folder: {:?}. Error: {:?}", in_progress_folder, error);
-            }
+            return Ok(in_progress_folder);
         }
 
         debug!(target: LOG_TARGET,"Creating in progress folder: {:?}", in_progress_folder);
@@ -418,7 +415,6 @@ impl BinaryManager {
         // So when one of them is deleted, and we need to download it again
         // We in fact will download zip with multiple binaries, and when other binaries are present in destination dir
         // extract will fail, so we need to remove all files from destination dir
-        self.ensure_empty_directory(destination_dir.clone())?;
 
         let in_progress_dir = self
             .create_in_progress_folder_for_selected_version()
@@ -440,7 +436,7 @@ impl BinaryManager {
             // .with_file_extract()
             .with_progress_status_sender(chunk_progress_sender.clone())
             .with_download_resume()
-            .build(download_url.clone(), destination_dir.clone())
+            .build(download_url.clone(), in_progress_file_zip.clone())
             .execute()
             .await
             .map_err(|e| anyhow!("Error downloading version: {:?}. Error: {:?}", version, e))
