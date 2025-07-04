@@ -21,12 +21,13 @@ export const WalletBalance = () => {
     const available_balance = useWalletStore((s) => s.balance?.available_balance);
 
     const balanceValue = removeXTMCryptoDecimals(roundToTwoDecimals(calculated_balance || 0));
+    const availableBalanceValue = removeXTMCryptoDecimals(roundToTwoDecimals(available_balance || 0));
+
     const isWalletScanning = useWalletStore((s) => s.wallet_scanning?.is_scanning);
     const hideWalletBalance = useUIStore((s) => s.hideWalletBalance);
 
-    const formattedAvailableBalance = hideWalletBalance
-        ? '****'
-        : formatNumber(available_balance || 0, FormatPreset.XTM_LONG);
+    const formattedAvailableBalance = formatNumber(available_balance || 0, FormatPreset.XTM_LONG);
+    const finalAvailableBalance = hideWalletBalance ? '*******' : formattedAvailableBalance;
 
     const formatOptions: Format = {
         maximumFractionDigits: 2,
@@ -62,7 +63,11 @@ export const WalletBalance = () => {
                     </BalanceWrapper>
 
                     <AvailableWrapper>
-                        <Typography>{`${t('history.available-balance')}: ${formattedAvailableBalance} XTM`}</Typography>
+                        {availableBalanceValue != balanceValue ? (
+                            <Typography>{`${t('history.available-balance')}: ${finalAvailableBalance} XTM`}</Typography>
+                        ) : (
+                            <Typography>{t('history.my-balance')}</Typography>
+                        )}
                     </AvailableWrapper>
                 </>
             ) : (

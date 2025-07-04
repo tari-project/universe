@@ -4,6 +4,7 @@
   "empty-tx": "Geen transaksies gevind nie",
   "history": {
     "available-balance": "Beskikbaar",
+    "my-balance": "My Balance",
     "label-rewards": "My belonings",
     "sync-with-phone": "Sinkroniseer met Foon",
     "transaction-details": "Transaksiebesonderhede",

@@ -19,7 +19,7 @@ const cubeRotate = keyframes`
     }
 `;
 
-export const Wrapper = styled.div`
+export const Wrapper = styled(m.div)`
     position: absolute;
     top: 0;
     left: 0;

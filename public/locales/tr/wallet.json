@@ -4,6 +4,7 @@
   "empty-tx": "İşlem bulunamadı",
   "history": {
     "available-balance": "Mevcut",
+    "my-balance": "My Balance",
     "label-rewards": "Ödüllerim",
     "sync-with-phone": "Telefonla Senkronize Et",
     "transaction-details": "İşlem Detayları",

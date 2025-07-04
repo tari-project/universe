@@ -4,6 +4,7 @@
   "empty-tx": "거래를 찾을 수 없음",
   "history": {
     "available-balance": "사용 가능",
+    "my-balance": "My Balance",
     "label-rewards": "내 보상",
     "sync-with-phone": "전화와 동기화",
     "transaction-details": "거래 세부 정보",

@@ -32,7 +32,7 @@ const CUBES = CUBE_DEFINITIONS.flatMap((def, defIndex) =>
 
 export default function AnimatedBackground() {
     return (
-        <Wrapper>
+        <Wrapper initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <Rings>
                 {RINGS.map((ring) => (
                     <Ring key={ring.size} $size={ring.size} />

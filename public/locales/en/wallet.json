@@ -4,6 +4,7 @@
   "empty-tx": "No transactions found",
   "history": {
     "available-balance": "Available",
+    "my-balance": "My Balance",
     "label-rewards": "My rewards",
     "sync-with-phone": "Sync with Phone",
     "transaction-details": "Transaction Details",

@@ -24,6 +24,7 @@ pub mod setup_manager;
 mod trait_setup_phase;
 pub mod utils;
 
+pub mod listeners;
 mod phase_core;
 mod phase_hardware;
 mod phase_mining;

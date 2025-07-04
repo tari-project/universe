@@ -1,4 +1,5 @@
 import styled from 'styled-components';
+import { m } from 'motion/react';
 
 export const XCButton = styled.button`
     display: flex;
@@ -7,8 +8,6 @@ export const XCButton = styled.button`
     justify-content: space-between;
     border-radius: 50px;
     background: rgba(0, 0, 0, 0.3);
-    backdrop-filter: blur(42px);
-    -webkit-backdrop-filter: blur(42px);
     font-size: 11px;
     padding: 0 10px 0 14px;
     font-weight: 600;
@@ -21,4 +20,8 @@ export const XCButton = styled.button`
         background: rgba(0, 0, 0, 0.4);
         color: ${({ theme }) => theme.colors.greyscale[150]};
     }
+`;
+
+export const MotionWrapper = styled(m.div)`
+    overflow: hidden;
 `;
