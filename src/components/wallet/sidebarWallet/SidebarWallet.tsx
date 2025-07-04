@@ -11,7 +11,6 @@ import {
     WalletWrapper,
     SwapsWrapper,
     Wrapper,
-    WalletActionWrapper,
     BuyTariButton,
     DetailsCardBottomContent,
     TabsWrapper,
@@ -105,21 +104,9 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
             </DetailsCard>
             {!seedlessUI && (
                 <>
-                    <AnimatePresence>
-                        {!isScrolled && (
-                            <WalletActionWrapper
-                                initial={{ height: 0, opacity: 0 }}
-                                animate={{ height: 'auto', opacity: 1 }}
-                                exit={{ height: 0, opacity: 0 }}
-                                transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-                            >
-                                <WalletActions section={section} setSection={setSection} />
-                            </WalletActionWrapper>
-                        )}
-                    </AnimatePresence>
-
                     <TabsWrapper>
                         <FilterSelect filter={filter} handleFilterChange={handleFilterChange} />
+                        <WalletActions section={section} setSection={setSection} />
                     </TabsWrapper>
 
                     <HistoryListWrapper ref={targetRef}>
