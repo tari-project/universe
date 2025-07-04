@@ -702,7 +702,6 @@ fn main() {
             commands::parse_tari_address,
             commands::refresh_wallet_history,
             commands::get_base_node_status,
-            commands::set_theme_icon,
         ])
         .build(tauri::generate_context!())
         .inspect_err(|e| {

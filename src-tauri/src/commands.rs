@@ -62,7 +62,6 @@ use keyring::Entry;
 use log::{debug, error, info, warn};
 use monero_address_creator::Seed as MoneroSeed;
 use regex::Regex;
-
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::fmt::Debug;
@@ -75,7 +74,6 @@ use tari_common::configuration::Network;
 use tari_common_types::tari_address::{TariAddress, TariAddressFeatures};
 use tari_core::transactions::tari_amount::{MicroMinotari, Minotari};
 use tauri::ipc::InvokeError;
-use tauri::path::BaseDirectory;
 use tauri::{Manager, PhysicalPosition, PhysicalSize};
 use tauri_plugin_sentry::sentry;
 
@@ -2279,29 +2277,4 @@ pub async fn get_base_node_status(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<BaseNodeStatus, String> {
     Ok(*state.node_status_watch_rx.borrow())
-}
-
-#[tauri::command]
-pub async fn set_theme_icon(
-    theme: String,
-    app_handle: tauri::AppHandle,
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<(), String> {
-    let file_name = match theme.as_str() {
-        "light" => "icons/systray_icon.ico",
-        "dark" => "icons/systray_icon_dark_mode.ico",
-        _ => "icons/systray_icon.ico",
-    };
-
-    let path = app_handle.path().local_data_dir().expect("No path match");
-
-    let icon_path = path.join(file_name);
-
-    state
-        .systemtray_manager
-        .write()
-        .await
-        .update_icon(icon_path, app_handle.clone());
-
-    Ok(())
 }

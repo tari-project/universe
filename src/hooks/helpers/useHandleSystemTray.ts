@@ -3,8 +3,8 @@ import { TrayIcon } from '@tauri-apps/api/tray';
 import { Image } from '@tauri-apps/api/image';
 import { type } from '@tauri-apps/plugin-os';
 
-import standard from '/assets/icons/systray_icon.ico?url';
-import darkMode from '/assets/icons/systray_icon_dark_mode.ico?url';
+import standard from '/assets/icons/systray_icon.ico';
+import darkMode from '/assets/icons/systray_icon_dark_mode.ico';
 
 function useHandleSystemTrayIcon() {
     return useCallback(async (systemDarkMode: boolean) => {

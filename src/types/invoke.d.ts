@@ -135,5 +135,4 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'parse_tari_address', payload: { address: string }): Promise<TariAddressVariants>;
     function invoke(param: 'refresh_wallet_history'): Promise<void>;
     function invoke(param: 'get_base_node_status'): Promise<BaseNodeStatus>;
-    function invoke(param: 'set_theme_icon', payload: { theme: 'light' | 'dark' }): Promise<void>;
 }
