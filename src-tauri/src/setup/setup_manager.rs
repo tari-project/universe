@@ -350,7 +350,7 @@ impl SetupManager {
         if build_in_exchange_id.eq(DEFAULT_EXCHANGE_ID) {
             if is_external_address_selected && is_on_exchange_specific_variant {
                 let _unused = ConfigUI::set_wallet_ui_mode(WalletUIMode::Seedless).await;
-                if let Err(e) = InternalWallet::initialize_seedless(None).await {
+                if let Err(e) = InternalWallet::initialize_seedless(&app_handle, None).await {
                     EventsEmitter::emit_critical_problem(CriticalProblemPayload {
                         title: Some("Wallet not initialized!".to_string()),
                         description: Some(
@@ -373,21 +373,6 @@ impl SetupManager {
                                 error_message: Some(e.to_string()),
                             })
                             .await
-                        }
-                        let state = app_handle.state::<UniverseAppState>();
-                        let wallet_details = InternalWallet::tari_wallet_details()
-                            .await
-                            .expect("Wallet details are missing for an Owned InternalWallet");
-                        state
-                            .wallet_manager
-                            .set_view_private_key_and_spend_key(
-                                wallet_details.view_private_key_hex,
-                                wallet_details.spend_public_key_hex,
-                            )
-                            .await;
-                        {
-                            let mut cpu_config = state.cpu_miner_config.write().await;
-                            cpu_config.load_from_config_wallet(&ConfigWallet::content().await);
                         }
                     }
                     Err(e) => {

@@ -15,7 +15,6 @@ export interface WalletStoreState {
     tari_address_base58: string;
     tari_address_emoji: string;
     tari_address_type: TariAddressType;
-    last_internal_tari_emoji_address_used?: string;
     balance?: WalletBalance;
     calculated_balance?: number;
     coinbase_transactions: TransactionInfo[];
@@ -35,7 +34,7 @@ export interface WalletStoreState {
     };
 }
 
-const initialState: WalletStoreState = {
+export const initialState: WalletStoreState = {
     tari_address_base58: '',
     tari_address_emoji: '',
     tari_address_type: TariAddressType.Internal,

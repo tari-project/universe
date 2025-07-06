@@ -22,7 +22,7 @@
 use crate::configs::config_ui::WalletUIMode;
 use crate::events::{
     ConnectionStatusPayload, CriticalProblemPayload, DisabledPhasesPayload,
-    InitWalletScanningProgressPayload, MainTariAddressLoadedPayload,
+    InitWalletScanningProgressPayload,
 };
 #[cfg(target_os = "windows")]
 use crate::external_dependencies::RequiredExternalDependency;
@@ -729,9 +729,9 @@ impl EventsEmitter {
         let event = Event {
             event_type: EventType::SelectedTariAddressChanged,
             payload: TariAddressUpdatePayload {
+                tari_address_type,
                 tari_address_base58: tari_address.to_base58(),
                 tari_address_emoji: tari_address.to_emoji_string(),
-                tari_address_type,
             },
         };
         if let Err(e) = Self::get_app_handle()
@@ -739,23 +739,6 @@ impl EventsEmitter {
             .emit(BACKEND_STATE_UPDATE, event)
         {
             error!(target: LOG_TARGET, "Failed to emit SelectedTariAddressChanged event: {:?}", e);
-        }
-    }
-
-    pub async fn emit_main_tari_address_loaded(payload: &TariAddress) {
-        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
-        let event = Event {
-            event_type: EventType::MainTariAddressLoaded,
-            payload: MainTariAddressLoadedPayload {
-                tari_address_base58: payload.to_base58(),
-                tari_address_emoji: payload.to_emoji_string(),
-            },
-        };
-        if let Err(e) = Self::get_app_handle()
-            .await
-            .emit(BACKEND_STATE_UPDATE, event)
-        {
-            error!(target: LOG_TARGET, "Failed to emit MainTariAddressLoaded event: {:?}", e);
         }
     }
 

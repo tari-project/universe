@@ -59,6 +59,7 @@ use crate::credential_manager::{
 use crate::events::CriticalProblemPayload;
 use crate::events_emitter::EventsEmitter;
 use crate::utils::{cryptography, rand_utils};
+use crate::UniverseAppState;
 
 const KEY_MANAGER_COMMS_SECRET_KEY_BRANCH_KEY: &str = "comms";
 const LOG_TARGET: &str = "tari::universe::internal_wallet";
@@ -109,6 +110,7 @@ impl InternalWallet {
     }
 
     pub async fn initialize_seedless(
+        app_handle: &tauri::AppHandle,
         new_external_tari_address: Option<TariAddress>,
     ) -> Result<(), anyhow::Error> {
         if let Some(external_tari_address) = new_external_tari_address {
@@ -149,15 +151,7 @@ impl InternalWallet {
             tari_wallet_details: None,
         };
 
-        InternalWallet::set_current(internal_wallet.clone()).await?;
-        ConfigUI::handle_wallet_type_update(TariAddressType::External).await?;
-        EventsEmitter::emit_selected_tari_address_changed(
-            internal_wallet.extract_tari_address(),
-            TariAddressType::External,
-        )
-        .await;
-        EventsEmitter::emit_main_tari_address_loaded(internal_wallet.extract_tari_address()).await;
-        Ok(())
+        internal_wallet.post_init(app_handle).await
     }
 
     pub async fn initialize_with_seed(app_handle: &tauri::AppHandle) -> Result<(), anyhow::Error> {
@@ -223,14 +217,44 @@ impl InternalWallet {
             }
         };
 
-        InternalWallet::set_current(internal_wallet.clone()).await?;
-        ConfigUI::handle_wallet_type_update(TariAddressType::Internal).await?;
-        EventsEmitter::emit_selected_tari_address_changed(
-            internal_wallet.extract_tari_address(),
-            TariAddressType::Internal,
-        )
-        .await;
-        EventsEmitter::emit_main_tari_address_loaded(internal_wallet.extract_tari_address()).await;
+        internal_wallet.post_init(app_handle).await
+    }
+
+    // Handle all side effects here
+    async fn post_init(&self, app_handle: &AppHandle) -> Result<(), anyhow::Error> {
+        InternalWallet::set_current(self.clone()).await?;
+
+        let state = app_handle.state::<UniverseAppState>();
+        if let Some(ref wallet_details) = self.tari_wallet_details {
+            // Internal(Seed)
+            state
+                .wallet_manager
+                .set_view_private_key_and_spend_key(
+                    wallet_details.view_private_key_hex.clone(),
+                    wallet_details.spend_public_key_hex.clone(),
+                )
+                .await;
+            ConfigUI::handle_wallet_type_update(TariAddressType::Internal).await?;
+            EventsEmitter::emit_selected_tari_address_changed(
+                self.extract_tari_address(),
+                TariAddressType::Internal,
+            )
+            .await;
+        } else {
+            // External(Seedless)
+            ConfigUI::handle_wallet_type_update(TariAddressType::External).await?;
+            EventsEmitter::emit_selected_tari_address_changed(
+                self.extract_tari_address(),
+                TariAddressType::External,
+            )
+            .await;
+        }
+
+        let mut cpu_config = state.cpu_miner_config.write().await;
+        cpu_config.load_from_config_wallet(&ConfigWallet::content().await);
+        // Why do we even emit this useless event for last_internal_tari_emoji_address_used??
+        // EventsEmitter::emit_main_tari_address_loaded(self.extract_tari_address()).await;
+
         Ok(())
     }
 
@@ -269,23 +293,22 @@ impl InternalWallet {
             None
         };
 
-        // Validate provided pin by encrypting the tari seed
-        let _unused = InternalWallet::get_tari_seed(app_handle, pin_password.clone()).await?;
+        if let Some(pin_password) = pin_password.clone() {
+            validate_pin(app_handle, pin_password).await?;
+        }
 
         let (tari_wallet_details, tari_seed_binary) =
             InternalWallet::add_tari_wallet(app_handle, tari_cipher_seed, pin_password).await?;
 
-        let local_data_dir: PathBuf = app_handle
-            .path()
-            .app_local_data_dir()
-            .expect("Could not get data dir");
-        clear_wallet_data(&local_data_dir).await?;
         InternalWallet::initialize_with_seed(&app_handle).await?;
 
         Ok((tari_wallet_details.id, tari_seed_binary))
     }
 
     // Internal method
+    //
+    // Support only one wallet fow now
+    // * Define if we want to have one PIN for all wallets
     async fn add_tari_wallet(
         app_handle: &AppHandle,
         tari_seed: CipherSeed, // decrypted seed
@@ -314,11 +337,8 @@ impl InternalWallet {
 
         InternalWallet::set_credentials(app_handle, wallet_id.clone(), &credentials, true).await?;
 
-        let wallet_config = ConfigWallet::content().await;
-
         // We always load the first index
-        let mut new_tari_wallets = vec![wallet_id.clone()];
-        new_tari_wallets.extend_from_slice(wallet_config.tari_wallets());
+        let new_tari_wallets = vec![wallet_id.clone()];
 
         ConfigWallet::update_field(ConfigWalletContent::set_tari_wallets, new_tari_wallets).await?;
 
@@ -380,7 +400,7 @@ impl InternalWallet {
 
         {
             // Encrypt Monero Seed with PIN
-            let monero_seed = InternalWallet::get_monero_seed(app_handle).await?;
+            let monero_seed = InternalWallet::get_monero_seed(app_handle, None).await?;
             let encrypted_seed = cryptography::encrypt(monero_seed.inner(), &pin_password)?;
             InternalWallet::set_credentials(
                 app_handle,
@@ -744,6 +764,7 @@ impl InternalWallet {
 
     pub async fn get_monero_seed(
         app_handle: &tauri::AppHandle,
+        pin_password_provided: Option<SafePassword>,
     ) -> Result<MoneroSeed, anyhow::Error> {
         if !*ConfigWallet::content().await.monero_address_is_generated() {
             return Err(anyhow!(
@@ -786,8 +807,18 @@ impl InternalWallet {
         }
 
         let decrypted_monero_seed = if *ConfigWallet::content().await.pin_locked() {
-            let pin = enter_pin_dialog(app_handle).await?;
-            let pin_password = SafePassword::from(pin);
+            let pin_password = match pin_password_provided {
+                Some(p) => p,
+                None => {
+                    let pin = match enter_pin_dialog(app_handle).await {
+                        Ok(pin) => pin,
+                        Err(e) => {
+                            return Err(e);
+                        }
+                    };
+                    SafePassword::from(pin)
+                }
+            };
             cryptography::decrypt(&encrypted_monero_seed, &pin_password)
                 .map_err(|_| anyhow!("Wrong PIN entered!"))
         } else {
@@ -845,6 +876,23 @@ pub struct PaperWalletConfig {
     pub password: String,
 }
 
+pub async fn validate_pin(
+    app_handle: &AppHandle,
+    pin_password: SafePassword,
+) -> Result<(), anyhow::Error> {
+    if InternalWallet::tari_wallet_details().await.is_some() {
+        let _unused = InternalWallet::get_tari_seed(app_handle, Some(pin_password.clone())).await?;
+    } else if *ConfigWallet::content().await.monero_address_is_generated() {
+        let _unused =
+            InternalWallet::get_monero_seed(app_handle, Some(pin_password.clone())).await?;
+    } else {
+        // Edge case, we can't actually validate the pin
+        // because we don't have a Tari wallet or Monero wallet
+        // to check against.
+    }
+    Ok(())
+}
+
 async fn handle_critical_problem(
     title: &str,
     description: &str,
@@ -900,15 +948,6 @@ where
     }
 }
 
-pub async fn clear_wallet_data(local_dir_path: &PathBuf) -> Result<(), anyhow::Error> {
-    let network = Network::get_current_or_user_setting_or_default()
-        .to_string()
-        .to_lowercase();
-    let wallet_dir = local_dir_path.join("wallet").join(network);
-    fs::remove_dir_all(wallet_dir).await?;
-    Ok(())
-}
-
 pub async fn mnemonic_to_tari_cipher_seed(
     seed_words: Vec<String>,
 ) -> Result<CipherSeed, anyhow::Error> {
@@ -950,7 +989,7 @@ where
     }
 }
 
-async fn enter_pin_dialog(app_handle: &AppHandle) -> Result<String, anyhow::Error> {
+pub async fn enter_pin_dialog(app_handle: &AppHandle) -> Result<String, anyhow::Error> {
     pin_dialog_with_emitter(app_handle, || EventsEmitter::emit_ask_for_pin()).await
 }
 

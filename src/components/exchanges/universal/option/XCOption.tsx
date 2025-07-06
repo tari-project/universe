@@ -47,9 +47,7 @@ interface XCOptionProps {
 }
 
 export const XCOption = ({ isCurrent = false, isActive, content, onActiveClick, ref }: XCOptionProps) => {
-    const last_internal_tari_emoji_address_used = useWalletStore(
-        (state) => state.last_internal_tari_emoji_address_used
-    );
+    const last_internal_tari_emoji_address_used = useWalletStore((state) => state.tari_address_emoji);
     const { t } = useTranslation(['exchange', 'settings'], { useSuspense: false });
     const [isAddressValid, setIsAddressValid] = useState(false);
     const [miningAddress, setMiningAddress] = useState('');

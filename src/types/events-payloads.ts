@@ -24,10 +24,6 @@ export interface TariAddressUpdatePayload {
     tari_address_emoji: string;
     tari_address_type: TariAddressType;
 }
-export interface MainTariAddressLoadedPayload {
-    tari_address_base58: string;
-    tari_address_emoji: string;
-}
 
 export interface NewBlockHeightPayload {
     block_height: number;

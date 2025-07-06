@@ -1,11 +1,11 @@
 import { invoke } from '@tauri-apps/api/core';
 import { WalletBalance } from '@app/types/app-status.ts';
-import { BackendBridgeTransaction, useWalletStore } from '../useWalletStore';
+import { BackendBridgeTransaction, initialState, useWalletStore } from '../useWalletStore';
 import { setError } from './appStateStoreActions';
 import { TxHistoryFilter } from '@app/components/transactions/history/FilterSelect';
 import { WrapTokenService, OpenAPI } from '@tari-project/wxtm-bridge-backend-api';
 import { useConfigBEInMemoryStore } from '../useAppConfigStore';
-import { MainTariAddressLoadedPayload, TariAddressUpdatePayload } from '@app/types/events-payloads';
+import { TariAddressUpdatePayload } from '@app/types/events-payloads';
 import { TransactionDetailsItem, TransactionDirection } from '@app/types/transactions';
 
 // NOTE: Tx status differ for core and proto(grpc)
@@ -174,12 +174,9 @@ export const setDetailsItem = (detailsItem: TransactionDetailsItem | BackendBrid
 export const handleSelectedTariAddressChange = (payload: TariAddressUpdatePayload) => {
     const { tari_address_base58, tari_address_emoji, tari_address_type } = payload;
     useWalletStore.setState({
+        ...initialState,
         tari_address_base58,
         tari_address_emoji,
         tari_address_type,
     });
-};
-
-export const handleMainTariAddressLoaded = (payload: MainTariAddressLoadedPayload) => {
-    useWalletStore.setState({ last_internal_tari_emoji_address_used: payload.tari_address_emoji });
 };

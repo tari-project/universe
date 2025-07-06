@@ -30,6 +30,7 @@ export default function EmptySeedWords() {
     const handleConfirmed = useCallback(async () => {
         if (!isValid || !newSeedWords) return;
         await importSeedWords(newSeedWords).finally(() => setShowConfirm(false));
+        setIsEditView(false);
     }, [isValid, newSeedWords]);
 
     const handleApply = (data: { seedWords: string }) => {

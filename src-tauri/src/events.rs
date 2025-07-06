@@ -83,7 +83,6 @@ pub enum EventType {
     ShouldShowExchangeMinerModal,
     SelectedTariAddressChanged,
     WalletUIModeChanged,
-    MainTariAddressLoaded,
     ShowKeyringDialog,
     CreatePin,
     EnterPin,
@@ -196,9 +195,4 @@ pub struct TariAddressUpdatePayload {
     pub tari_address_base58: String,
     pub tari_address_emoji: String,
     pub tari_address_type: TariAddressType,
-}
-#[derive(Clone, Debug, Serialize)]
-pub struct MainTariAddressLoadedPayload {
-    pub tari_address_base58: String,
-    pub tari_address_emoji: String,
 }

@@ -5,7 +5,6 @@ import {
     CriticalProblemPayload,
     DetectedAvailableGpuEngines,
     DetectedDevicesPayload,
-    MainTariAddressLoadedPayload,
     NewBlockHeightPayload,
     NodeTypeUpdatePayload,
     SetupPhase,
@@ -206,10 +205,6 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'SelectedTariAddressChanged';
           payload: TariAddressUpdatePayload;
-      }
-    | {
-          event_type: 'MainTariAddressLoaded';
-          payload: MainTariAddressLoadedPayload;
       }
     | {
           event_type: 'WalletUIModeChanged';

@@ -58,7 +58,7 @@ import {
 import { invoke } from '@tauri-apps/api/core';
 import { handleShowStagedSecurityModal } from '@app/store/actions/stagedSecurityActions';
 import { refreshTransactions } from '@app/hooks/wallet/useFetchTxHistory.ts';
-import { handleMainTariAddressLoaded, handleSelectedTariAddressChange } from '@app/store/actions/walletStoreActions';
+import { handleSelectedTariAddressChange } from '@app/store/actions/walletStoreActions';
 
 const LOG_EVENT_TYPES = ['WalletAddressUpdate', 'CriticalProblem', 'MissingApplications'];
 
@@ -226,9 +226,6 @@ const useTauriEventsListener = () => {
                             break;
                         case 'ShouldShowExchangeMinerModal':
                             setShouldShowExchangeSpecificModal(true);
-                            break;
-                        case 'MainTariAddressLoaded':
-                            handleMainTariAddressLoaded(event.payload);
                             break;
                         case 'ShowKeyringDialog':
                             setDialogToShow('keychain');

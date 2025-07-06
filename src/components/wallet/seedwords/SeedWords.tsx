@@ -42,6 +42,7 @@ export default function SeedWords({ isMonero = false }: SeedWordsProps) {
         if (!isValid || !newSeedWords) return;
 
         await importSeedWords(newSeedWords).finally(() => setShowConfirm(false));
+        setIsEditView(false);
     }, [isValid, newSeedWords]);
 
     const handleApply = (data: { seedWords: string }) => {

@@ -29,6 +29,7 @@ use crate::binaries::{Binaries, BinaryResolver};
 use crate::configs::config_core::{AirdropTokens, ConfigCore, ConfigCoreContent};
 use crate::configs::config_mining::{ConfigMining, ConfigMiningContent, GpuThreads, MiningMode};
 use crate::configs::config_ui::{ConfigUI, ConfigUIContent, DisplayMode};
+use crate::configs::config_wallet::ConfigWallet;
 use crate::configs::trait_config::ConfigImpl;
 use crate::events::ConnectionStatusPayload;
 use crate::events_emitter::EventsEmitter;
@@ -39,7 +40,7 @@ use crate::external_dependencies::{
 use crate::gpu_miner::EngineType;
 use crate::gpu_miner_adapter::{GpuMinerStatus, GpuNodeSource};
 use crate::gpu_status_file::GpuStatus;
-use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
+use crate::internal_wallet::{enter_pin_dialog, validate_pin, InternalWallet, PaperWalletConfig};
 use crate::node::node_adapter::BaseNodeStatus;
 use crate::node::node_manager::NodeType;
 use crate::p2pool::models::{Connections, P2poolStats};
@@ -209,7 +210,7 @@ pub async fn select_exchange_miner(
 ) -> Result<(), InvokeError> {
     let new_external_tari_address = TariAddress::from_str(&mining_address)
         .map_err(|e| format!("Invalid Tari address: {}", e))?;
-    match InternalWallet::initialize_seedless(Some(new_external_tari_address)).await {
+    match InternalWallet::initialize_seedless(&app_handle, Some(new_external_tari_address)).await {
         Ok(_) => {
             log::info!(target: LOG_TARGET, "Internal wallet initialized successfully after \"select_exchange_miner\"");
         }
@@ -480,7 +481,7 @@ pub async fn get_network(
 pub async fn get_monero_seed_words(app_handle: tauri::AppHandle) -> Result<Vec<String>, String> {
     let timer = Instant::now();
 
-    let monero_seed = InternalWallet::get_monero_seed(&app_handle)
+    let monero_seed = InternalWallet::get_monero_seed(&app_handle, None)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -666,16 +667,29 @@ pub async fn get_seed_words(app_handle: tauri::AppHandle) -> Result<Vec<String>,
 }
 
 #[tauri::command]
-pub async fn set_external_tari_address(address: String) -> Result<(), InvokeError> {
+pub async fn set_external_tari_address(
+    app_handle: tauri::AppHandle,
+    address: String,
+) -> Result<(), InvokeError> {
     let timer = Instant::now();
 
     SetupManager::get_instance()
         .shutdown_phases(vec![SetupPhase::Wallet, SetupPhase::Mining])
         .await;
 
+    // Validate PIN if pin locked
+    if *ConfigWallet::content().await.pin_locked() {
+        let pin = enter_pin_dialog(&app_handle)
+            .await
+            .map_err(InvokeError::from_anyhow)?;
+        validate_pin(&app_handle, SafePassword::from(pin))
+            .await
+            .map_err(InvokeError::from_anyhow)?;
+    }
+
     let new_external_tari_address =
         TariAddress::from_str(&address).map_err(|e| format!("Invalid Tari address: {}", e))?;
-    InternalWallet::initialize_seedless(Some(new_external_tari_address))
+    InternalWallet::initialize_seedless(&app_handle, Some(new_external_tari_address))
         .await
         .map_err(InvokeError::from_anyhow)?;
 
@@ -686,12 +700,15 @@ pub async fn set_external_tari_address(address: String) -> Result<(), InvokeErro
 }
 
 #[tauri::command]
-pub async fn confirm_exchange_address(address: String) -> Result<(), InvokeError> {
+pub async fn confirm_exchange_address(
+    app_handle: tauri::AppHandle,
+    address: String,
+) -> Result<(), InvokeError> {
     let timer = Instant::now();
     let new_external_tari_address =
         TariAddress::from_str(&address).map_err(|e| format!("Invalid Tari address: {}", e))?;
 
-    InternalWallet::initialize_seedless(Some(new_external_tari_address))
+    InternalWallet::initialize_seedless(&app_handle, Some(new_external_tari_address))
         .await
         .map_err(InvokeError::from_anyhow)?;
 
@@ -778,8 +795,8 @@ pub async fn get_transactions(
 #[tauri::command]
 pub async fn import_seed_words(
     seed_words: Vec<String>,
-    _window: tauri::Window,
-    app: tauri::AppHandle,
+    state: tauri::State<'_, UniverseAppState>,
+    app_handle: tauri::AppHandle,
 ) -> Result<(), InvokeError> {
     let timer = Instant::now();
 
@@ -787,7 +804,7 @@ pub async fn import_seed_words(
         .shutdown_phases(vec![SetupPhase::Wallet, SetupPhase::Mining])
         .await;
 
-    match InternalWallet::import_tari_seed_words(seed_words, &app).await {
+    match InternalWallet::import_tari_seed_words(seed_words, &app_handle).await {
         Ok((wallet_id, _seed_binary)) => {
             ConfigCore::update_field(
                 ConfigCoreContent::set_exchange_id,
@@ -804,8 +821,18 @@ pub async fn import_seed_words(
         }
     }
 
+    let base_path = app_handle
+        .path()
+        .app_local_data_dir()
+        .map_err(|_| "Could not find wallet data dir".to_string())?;
+    state
+        .wallet_manager
+        .clean_data_folder(&base_path)
+        .await
+        .map_err(|e| e.to_string())?;
+
     SetupManager::get_instance()
-        .resume_phases(app, vec![SetupPhase::Wallet, SetupPhase::Mining])
+        .resume_phases(app_handle, vec![SetupPhase::Wallet, SetupPhase::Mining])
         .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
