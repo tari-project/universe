@@ -4,6 +4,7 @@
   "empty-tx": "Транзакции не найдены",
   "history": {
     "available-balance": "Доступно",
+    "my-balance": "My Balance",
     "label-rewards": "Мои награды",
     "sync-with-phone": "Синхронизировать с телефоном",
     "transaction-details": "Детали транзакции",

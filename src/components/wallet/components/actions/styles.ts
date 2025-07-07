@@ -1,14 +1,5 @@
-import * as m from 'motion/react-m';
 import styled from 'styled-components';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
-
-export const Wrapper = styled(m.div)`
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    width: 100%;
-`;
 
 export const NavWrapper = styled.div`
     display: flex;
@@ -16,8 +7,8 @@ export const NavWrapper = styled.div`
     flex-direction: row;
     position: relative;
     align-items: center;
-    width: 100%;
-    gap: 10px;
+
+    gap: 5px;
 `;
 
 export const NavButton = styled(Button).attrs({
@@ -25,13 +16,18 @@ export const NavButton = styled(Button).attrs({
 })<{ $isActive?: boolean }>`
     line-height: 1.05;
     font-size: 11px;
-    width: 100%;
+
     color: ${({ theme }) => theme.palette.text.primary};
-    background-color: ${({ theme }) => theme.palette.base};
+    background-color: ${({ theme }) =>
+        theme.mode === 'light' ? theme.palette.background.paper : theme.palette.background.default};
     text-transform: capitalize;
-    height: 35px;
+
+    height: 22px;
+    width: 70px;
+
     &:hover {
-        opacity: 0.85;
+        background-color: ${({ theme }) =>
+            theme.mode === 'light' ? theme.palette.background.accent : '#000'} !important;
     }
 
     &:disabled {

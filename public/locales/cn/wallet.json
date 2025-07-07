@@ -4,6 +4,7 @@
   "empty-tx": "未找到交易",
   "history": {
     "available-balance": "可用",
+    "my-balance": "My Balance",
     "label-rewards": "我的奖励",
     "sync-with-phone": "与手机同步",
     "transaction-details": "交易详情",

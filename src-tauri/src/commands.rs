@@ -1103,10 +1103,17 @@ pub async fn set_auto_update(auto_update: bool) -> Result<(), InvokeError> {
 }
 
 #[tauri::command]
-pub async fn set_cpu_mining_enabled(enabled: bool) -> Result<(), String> {
+pub async fn set_cpu_mining_enabled(
+    enabled: bool,
+    app_handle: tauri::AppHandle,
+) -> Result<(), String> {
     let timer = Instant::now();
     let _unused =
         ConfigMining::update_field(ConfigMiningContent::set_cpu_mining_enabled, enabled).await;
+
+    SetupManager::get_instance()
+        .restart_phases(app_handle, vec![SetupPhase::Mining])
+        .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET,

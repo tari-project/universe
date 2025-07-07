@@ -4,6 +4,7 @@
   "empty-tx": "トランザクションが見つかりません",
   "history": {
     "available-balance": "利用可能",
+    "my-balance": "My Balance",
     "label-rewards": "私の報酬",
     "sync-with-phone": "電話と同期",
     "transaction-details": "トランザクションの詳細",
