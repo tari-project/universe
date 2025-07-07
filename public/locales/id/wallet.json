@@ -4,6 +4,7 @@
   "empty-tx": "Tidak ada transaksi ditemukan",
   "history": {
     "available-balance": "Tersedia",
+    "my-balance": "My Balance",
     "label-rewards": "Hadiah saya",
     "sync-with-phone": "Sinkronkan dengan Ponsel",
     "transaction-details": "Detail Transaksi",

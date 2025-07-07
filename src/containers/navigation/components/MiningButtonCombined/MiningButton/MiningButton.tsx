@@ -1,8 +1,9 @@
-import { DropdownWrapper, HitBox, ButtonWrapper, Text, IconWrapper } from './styles';
+import { DropdownWrapper, HitBox, ButtonWrapper, Text, IconWrapper, Shadow } from './styles';
 import ModeDropdown from './components/ModeDropdown/ModeDropdown';
 import AnimatedBackground from './components/AnimatedBackground/AnimatedBackground';
 import { useTranslation } from 'react-i18next';
 import { useConfigMiningStore } from '@app/store';
+import { AnimatePresence } from 'motion/react';
 
 interface Props {
     onClick: () => void;
@@ -33,7 +34,10 @@ export default function MiningButton({ onClick, buttonText, icon, isMining, disa
             <DropdownWrapper>
                 <ModeDropdown />
             </DropdownWrapper>
-            {isMining && <AnimatedBackground />}
+            <AnimatePresence>
+                {!isMining && <Shadow initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} />}
+            </AnimatePresence>
+            <AnimatePresence>{isMining && <AnimatedBackground />}</AnimatePresence>
         </ButtonWrapper>
     );
 }

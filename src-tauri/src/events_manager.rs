@@ -29,7 +29,8 @@ use tauri::{AppHandle, Manager};
 use crate::airdrop::send_new_block_mined;
 use crate::configs::config_core::ConfigCore;
 use crate::configs::trait_config::ConfigImpl;
-use crate::setup::setup_manager::{SetupFeature, SetupManager};
+use crate::setup::listeners::SetupFeature;
+use crate::setup::setup_manager::SetupManager;
 use crate::{
     events::NodeTypeUpdatePayload, events_emitter::EventsEmitter, tasks_tracker::TasksTrackers,
     UniverseAppState,

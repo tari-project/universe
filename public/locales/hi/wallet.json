@@ -4,6 +4,7 @@
   "empty-tx": "कोई लेन-देन नहीं मिला",
   "history": {
     "available-balance": "उपलब्ध",
+    "my-balance": "My Balance",
     "label-rewards": "मेरे पुरस्कार",
     "sync-with-phone": "फोन के साथ सिंक करें",
     "transaction-details": "लेन-देन विवरण",
