@@ -16,7 +16,6 @@ import {
 import { useTranslation } from 'react-i18next';
 import VideoStream from '@app/components/VideoStream/VideoStream.tsx';
 import { useTheme } from 'styled-components';
-import * as m from 'motion/react-m';
 import { easeInOut } from 'motion';
 
 import coin_dark from './images/coin_dark.png';

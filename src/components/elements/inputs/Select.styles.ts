@@ -10,7 +10,6 @@ interface StyleProps {
     $open?: boolean;
     $selected?: boolean;
     $loading?: boolean;
-    $isMinimal?: boolean;
     $isSync?: boolean;
 }
 
