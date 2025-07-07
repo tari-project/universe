@@ -208,8 +208,8 @@ pub async fn select_exchange_miner(
     exchange_miner: ExchangeMiner,
     mining_address: String,
 ) -> Result<(), InvokeError> {
-    let new_external_tari_address = TariAddress::from_str(&mining_address)
-        .map_err(|e| format!("Invalid Tari address: {}", e))?;
+    let new_external_tari_address =
+        TariAddress::from_str(&mining_address).map_err(|e| format!("Invalid Tari address: {e}"))?;
     match InternalWallet::initialize_seedless(&app_handle, Some(new_external_tari_address)).await {
         Ok(_) => {
             log::info!(target: LOG_TARGET, "Internal wallet initialized successfully after \"select_exchange_miner\"");
@@ -688,7 +688,7 @@ pub async fn set_external_tari_address(
     }
 
     let new_external_tari_address =
-        TariAddress::from_str(&address).map_err(|e| format!("Invalid Tari address: {}", e))?;
+        TariAddress::from_str(&address).map_err(|e| format!("Invalid Tari address: {e}"))?;
     InternalWallet::initialize_seedless(&app_handle, Some(new_external_tari_address))
         .await
         .map_err(InvokeError::from_anyhow)?;
@@ -706,7 +706,7 @@ pub async fn confirm_exchange_address(
 ) -> Result<(), InvokeError> {
     let timer = Instant::now();
     let new_external_tari_address =
-        TariAddress::from_str(&address).map_err(|e| format!("Invalid Tari address: {}", e))?;
+        TariAddress::from_str(&address).map_err(|e| format!("Invalid Tari address: {e}"))?;
 
     InternalWallet::initialize_seedless(&app_handle, Some(new_external_tari_address))
         .await

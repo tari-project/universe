@@ -26,7 +26,7 @@ use monero_address_creator::Seed as MoneroSeed;
 use serde::{Deserialize, Serialize};
 use std::fs::OpenOptions;
 use std::io::Read;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::{TariAddress, TariAddressFeatures};
 use tari_common_types::types::CompressedPublicKey;
@@ -155,11 +155,14 @@ impl InternalWallet {
     }
 
     pub async fn initialize_with_seed(app_handle: &tauri::AppHandle) -> Result<(), anyhow::Error> {
-        let mut wallet_config = ConfigWallet::content().await;
-        wallet_config.set_selected_external_tari_address(None);
-
+        ConfigWallet::update_field(
+            ConfigWalletContent::set_selected_external_tari_address,
+            None,
+        )
+        .await?;
+        let wallet_config = ConfigWallet::content().await;
         let internal_wallet = if *wallet_config.version() >= WALLET_VERSION
-            && wallet_config.tari_wallets().len() > 0
+            && !wallet_config.tari_wallets().is_empty()
         {
             // Load latest version of wallet, no action required
             InternalWallet::load_latest_version(app_handle, wallet_config).await?
@@ -297,7 +300,7 @@ impl InternalWallet {
         let (tari_wallet_details, tari_seed_binary) =
             InternalWallet::add_tari_wallet(app_handle, tari_cipher_seed, pin_password).await?;
 
-        InternalWallet::initialize_with_seed(&app_handle).await?;
+        InternalWallet::initialize_with_seed(app_handle).await?;
 
         Ok((tari_wallet_details.id, tari_seed_binary))
     }
@@ -395,45 +398,55 @@ impl InternalWallet {
         let pin = create_pin_dialog(app_handle).await?;
         let pin_password = SafePassword::from(pin);
 
-        {
+        let encrypted_monero_seed = {
             // Encrypt Monero Seed with PIN
             let monero_seed = InternalWallet::get_monero_seed(app_handle, None).await?;
-            let encrypted_seed = cryptography::encrypt(monero_seed.inner(), &pin_password)?;
+            let encrypted_monero_seed = cryptography::encrypt(monero_seed.inner(), &pin_password)?;
             InternalWallet::set_credentials(
                 app_handle,
                 "monero".to_string(),
                 &Credential {
-                    encrypted_seed: encrypted_seed.clone(),
+                    encrypted_seed: encrypted_monero_seed.clone(),
                 },
                 false,
             )
             .await?;
             if InternalWallet::is_initialized() {
                 let mut internal_wallet_guard = InternalWallet::current().write().await;
-                internal_wallet_guard.encrypted_monero_seed = Hidden::hide(Some(encrypted_seed));
+                internal_wallet_guard.encrypted_monero_seed =
+                    Hidden::hide(Some(encrypted_monero_seed.clone()));
             }
-        }
-        {
+            encrypted_monero_seed
+        };
+        let encrypted_tari_seed = {
             // Encrypt Tari Seed with PIN
             let tari_seed = InternalWallet::get_tari_seed(app_handle, None).await?;
             let wallet_id = InternalWallet::tari_wallet_details()
                 .await
                 .ok_or_else(|| anyhow!("Seedless Wallet does not support PIN enciphering"))?
                 .id;
-            let encrypted_seed = tari_seed.encipher(Some(pin_password))?;
+            let encrypted_tari_seed = tari_seed.encipher(Some(pin_password))?;
             InternalWallet::set_credentials(
                 app_handle,
                 wallet_id,
                 &Credential {
-                    encrypted_seed: encrypted_seed.clone(),
+                    encrypted_seed: encrypted_tari_seed.clone(),
                 },
                 false,
             )
             .await?;
-        }
+            encrypted_tari_seed
+        };
         ConfigWallet::update_field(ConfigWalletContent::set_pin_locked, true).await?;
 
-        InternalWallet::initialize_with_seed(&app_handle).await?;
+        if InternalWallet::is_initialized() {
+            let mut internal_wallet_guard = InternalWallet::current().write().await;
+            internal_wallet_guard.encrypted_monero_seed =
+                Hidden::hide(Some(encrypted_monero_seed.clone()));
+            internal_wallet_guard.encrypted_tari_seed =
+                Hidden::hide(Some(encrypted_tari_seed.clone()));
+        }
+
         log::info!(target: LOG_TARGET, "Tari Seed is now encrypted with the provided PIN");
         Ok(())
     }
@@ -496,7 +509,7 @@ impl InternalWallet {
                 *wallet_config.version()
             );
         }
-        if (*wallet_config.tari_wallets()).len() <= 0 {
+        if (*wallet_config.tari_wallets()).is_empty() {
             panic!(
                 "Unexpected! Tari wallets field should be defined in the config for v{:?}",
                 *wallet_config.version()
@@ -518,7 +531,7 @@ impl InternalWallet {
                     {
                         Ok(cred) => cred.encrypted_seed,
                         Err(e) => {
-                            panic!("Failed to get credentials: {}", e)
+                            panic!("Failed to get credentials: {e}")
                         }
                     };
                 let tari_cipher_seed = if *ConfigWallet::content().await.pin_locked() {
@@ -556,21 +569,21 @@ impl InternalWallet {
             }
         };
 
-        return Ok(InternalWallet {
+        Ok(InternalWallet {
             tari_address_type: TariAddressType::Internal,
             encrypted_tari_seed: Hidden::hide(encrypted_tari_seed),
             encrypted_monero_seed: Hidden::hide(None), // Prompt when needed
             monero_address,
             external_tari_address: None,
             tari_wallet_details: Some(tari_wallet_details),
-        });
+        })
     }
 
     async fn get_legacy_credentials_forced(
         app_handle: &AppHandle,
-        app_config_dir: &PathBuf,
+        app_config_dir: &Path,
     ) -> Result<LegacyCredential, anyhow::Error> {
-        let legacy_cm = LegacyCredentialManager::new_default(app_config_dir.clone());
+        let legacy_cm = LegacyCredentialManager::new_default(app_config_dir.to_path_buf());
         let legacy_credential = retry_with_keyring_dialog(
             app_handle,
             || legacy_cm.get_credentials(),
@@ -582,7 +595,7 @@ impl InternalWallet {
 
     async fn migrate(
         app_handle: &AppHandle,
-        app_config_dir: &PathBuf,
+        app_config_dir: &Path,
         old_wallet_config: LegacyWalletConfig,
     ) -> Result<(String, Vec<u8>, Option<Vec<u8>>), anyhow::Error> {
         let legacy_cred: LegacyCredential = if *ConfigWallet::content().await.keyring_accessed() {
@@ -987,11 +1000,11 @@ where
 }
 
 pub async fn enter_pin_dialog(app_handle: &AppHandle) -> Result<String, anyhow::Error> {
-    pin_dialog_with_emitter(app_handle, || EventsEmitter::emit_ask_for_pin()).await
+    pin_dialog_with_emitter(app_handle, EventsEmitter::emit_ask_for_pin).await
 }
 
 async fn create_pin_dialog(app_handle: &AppHandle) -> Result<String, anyhow::Error> {
-    pin_dialog_with_emitter(app_handle, || EventsEmitter::emit_set_pin()).await
+    pin_dialog_with_emitter(app_handle, EventsEmitter::emit_set_pin).await
 }
 
 // temporary for catching errors
@@ -1025,9 +1038,7 @@ pub struct LegacyWalletConfig {
     seed_words_encrypted_base58: String,
     config_path: Option<PathBuf>,
 }
-pub async fn get_old_wallet_config(
-    config_dir: &PathBuf,
-) -> Result<LegacyWalletConfig, anyhow::Error> {
+pub async fn get_old_wallet_config(config_dir: &Path) -> Result<LegacyWalletConfig, anyhow::Error> {
     let network = Network::get_current_or_user_setting_or_default()
         .to_string()
         .to_lowercase();
@@ -1037,7 +1048,7 @@ pub async fn get_old_wallet_config(
     Ok(old_config)
 }
 
-async fn get_legacy_fallback_file(app_config_dir: &PathBuf) -> Result<PathBuf, anyhow::Error> {
+async fn get_legacy_fallback_file(app_config_dir: &Path) -> Result<PathBuf, anyhow::Error> {
     const FALLBACK_FILE_PATH: &str = "credentials_backup.bin";
     let network = Network::get_current().as_key_str();
     let old_fallback_file = app_config_dir.join(network).join(FALLBACK_FILE_PATH);
