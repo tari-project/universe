@@ -509,7 +509,7 @@ impl InternalWallet {
                 *wallet_config.version()
             );
         }
-        if (*wallet_config.tari_wallets()).len() == 0 {
+        if (*wallet_config.tari_wallets()).is_empty() {
             panic!(
                 "Unexpected! Tari wallets field should be defined in the config for v{:?}",
                 *wallet_config.version()
@@ -595,7 +595,7 @@ impl InternalWallet {
 
     async fn migrate(
         app_handle: &AppHandle,
-        app_config_dir: &PathBuf,
+        app_config_dir: &Path,
         old_wallet_config: LegacyWalletConfig,
     ) -> Result<(String, Vec<u8>, Option<Vec<u8>>), anyhow::Error> {
         let legacy_cred: LegacyCredential = if *ConfigWallet::content().await.keyring_accessed() {
