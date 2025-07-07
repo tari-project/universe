@@ -393,6 +393,10 @@ impl SetupManager {
             features.add_feature(SetupFeature::CentralizedPool);
         }
 
+        let external_tari_address = ConfigWallet::content()
+            .await
+            .selected_external_tari_address()
+            .clone();
         // Seedless Wallet feature
         if external_tari_address.is_some() || is_exchange_miner_build {
             info!(target: LOG_TARGET, "Seedless wallet feature enabled");
