@@ -685,28 +685,30 @@ impl InternalWallet {
         app_handle: &tauri::AppHandle,
         pin_password_provided: Option<SafePassword>,
     ) -> Result<CipherSeed, anyhow::Error> {
-        // Try to get the encrypted Tari seed from state, or load from credentials manager.
         let encrypted_tari_seed = {
             let internal_wallet = InternalWallet::current().read().await;
+            // Try to get from state first
             if let Some(encrypted_tari_seed) = internal_wallet.encrypted_tari_seed.reveal() {
                 encrypted_tari_seed.clone()
-            } else if let Some(wallet_details) = internal_wallet.tari_wallet_details.clone() {
-                drop(internal_wallet); // Release lock before await
-                match CredentialManager::new_default(wallet_details.id)
-                    .get_credentials()
-                    .await
-                {
-                    Ok(cred) => cred.encrypted_seed,
-                    Err(e) => {
-                        // We display only once
-                        EventsEmitter::emit_show_keyring_dialog().await;
-                        return Err(anyhow!("Failed to get tari seed from keyring: {e}"));
-                    }
+            }
+            // Try to get from credentials
+            else {
+                let wallets = ConfigWallet::content().await.tari_wallets().clone();
+                if let Some(wallet_id) = wallets.first() {
+                    CredentialManager::new_default(wallet_id.clone())
+                        .get_credentials()
+                        .await
+                        .map(|cred| cred.encrypted_seed)
+                        .map_err(|e| {
+                            // Only display once
+                            let _ = EventsEmitter::emit_show_keyring_dialog();
+                            anyhow!("Failed to get tari seed from keyring: {e}")
+                        })?
+                } else {
+                    drop(internal_wallet); // Release lock before await
+                    handle_critical_problem("Can't access seed", "[get_tari_seed]", None).await;
+                    return Err(anyhow!("Can't access Tari seed"));
                 }
-            } else {
-                drop(internal_wallet); // Release lock before await
-                handle_critical_problem("Can't access seed", "[get_tari_seed]", None).await;
-                return Err(anyhow!("Can't access Tari seed"));
             }
         };
 
@@ -894,7 +896,7 @@ pub async fn validate_pin(
             InternalWallet::get_monero_seed(app_handle, Some(pin_password.clone())).await?;
     } else {
         // Edge case, we can't actually validate the pin
-        // because we don't have a Tari wallet or Monero wallet
+        // because we don't have neither a Tari wallet nor a Monero wallet
         // to check against.
     }
     Ok(())
