@@ -20,16 +20,15 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 use anyhow::{anyhow, Error};
-use log::{debug, error, info, warn};
+use log::{debug, error, info};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, path::PathBuf};
 use tari_common::configuration::Network;
 use tari_shutdown::Shutdown;
-use tauri_plugin_sentry::sentry;
 use tokio::sync::watch::{channel, Sender};
 
 use crate::{
-    download_utils::{extract, validate_checksum},
+    download_utils::validate_checksum,
     progress_trackers::progress_stepper::ChanneledStepUpdate,
     requests::clients::http_file_client::HttpFileClient,
     tasks_tracker::TasksTrackers,
@@ -118,73 +117,6 @@ impl BinaryManager {
 
         debug!(target: LOG_TARGET, "Binary: {} version requirement: {}, hash: {:?}", binary_name, version_requirement, hash);
         (version_requirement, hash)
-    }
-
-    fn create_in_progress_folder_for_selected_version(&self) -> Result<PathBuf, Error> {
-        debug!(target: LOG_TARGET,"Creating in progress folder for version: {:?}", self.selected_version);
-
-        let binary_folder = self.adapter.get_binary_folder().map_err(|error| {
-            error!(target: LOG_TARGET, "Error getting binary folder. Error: {:?}", error);
-            anyhow!("Error getting binary folder: {:?}", error)
-        })?;
-
-        let in_progress_folder = binary_folder
-            .join(self.selected_version.clone())
-            .join("in_progress");
-
-        if in_progress_folder.exists() {
-            return Ok(in_progress_folder);
-        }
-
-        debug!(target: LOG_TARGET,"Creating in progress folder: {:?}", in_progress_folder);
-        std::fs::create_dir_all(&in_progress_folder)?;
-
-        Ok(in_progress_folder)
-    }
-
-    async fn delete_in_progress_folder_for_selected_version(&self) -> Result<(), Error> {
-        debug!(target: LOG_TARGET,"Deleting in progress folder for version: {:?}", self.selected_version);
-
-        let binary_folder = self.adapter.get_binary_folder().map_err(|error| {
-            error!(target: LOG_TARGET, "Error getting binary folder. Error: {:?}", error);
-            anyhow!("Error getting binary folder: {:?}", error)
-        })?;
-
-        let in_progress_folder = binary_folder
-            .join(self.selected_version.clone())
-            .join("in_progress");
-
-        if in_progress_folder.exists() {
-            debug!(target: LOG_TARGET,"Removing in progress folder: {:?}", in_progress_folder);
-            if let Err(error) = std::fs::remove_dir_all(&in_progress_folder) {
-                error!(target: LOG_TARGET, "Error removing in progress folder: {:?}. Error: {:?}", in_progress_folder, error);
-            }
-        }
-
-        Ok(())
-    }
-
-    fn ensure_empty_directory(&self, dir: PathBuf) -> Result<(), Error> {
-        if dir.exists() {
-            warn!(target: LOG_TARGET, "Destination dir exists. Removing all files from: {:?}", dir.clone());
-            std::fs::remove_dir_all(dir.clone())
-                .and_then(|_| std::fs::create_dir_all(dir.clone()))
-                .map_err(|e| {
-                    anyhow!(
-                        "Error handling destination dir: {:?}. Error: {:?}",
-                        dir.clone(),
-                        e
-                    )
-                })
-        } else {
-            std::fs::create_dir_all(dir.clone()).map_err(|e| {
-                anyhow!(
-                    "Error creating destination dir: {:?}. Error: {:?}",
-                    dir.clone(),
-                    e
-                )
-            })
-        }
     }
 
     fn construct_binary_download_info(&self) -> BinaryDownloadInfo {
@@ -314,32 +246,6 @@ impl BinaryManager {
         binary_file_exists
     }
 
-    pub async fn download_version_with_retries(
-        &self,
-        progress_channel: Option<ChanneledStepUpdate>,
-    ) -> Result<(), Error> {
-        let mut last_error_message = String::new();
-        for retry in 0..3 {
-            match self
-                .download_selected_version(progress_channel.clone())
-                .await
-            {
-                Ok(_) => return Ok(()),
-                Err(error) => {
-                    last_error_message = format!(
-                        "Failed to download binary: {}. Error: {:?}",
-                        self.binary_name, error
-                    );
-                    warn!(target: LOG_TARGET, "Failed to download binary: {} at retry: {}", self.binary_name, retry);
-                    continue;
-                }
-            }
-        }
-        sentry::capture_message(&last_error_message, sentry::Level::Error);
-        error!(target: LOG_TARGET, "{}", last_error_message);
-        Err(anyhow!(last_error_message))
-    }
-
     async fn resolve_progress_channel(
         &self,
         progress_channel: Option<ChanneledStepUpdate>,
@@ -394,8 +300,7 @@ impl BinaryManager {
         }
     }
 
-    #[allow(clippy::too_many_lines)]
-    async fn download_selected_version(
+    pub async fn download_selected_version(
         &self,
         progress_channel: Option<ChanneledStepUpdate>,
     ) -> Result<(), Error> {
@@ -416,32 +321,30 @@ impl BinaryManager {
         // We in fact will download zip with multiple binaries, and when other binaries are present in destination dir
         // extract will fail, so we need to remove all files from destination dir
 
-        let in_progress_dir = self
-            .create_in_progress_folder_for_selected_version()
-            .map_err(|e| anyhow!("Error creating in progress folder. Error: {:?}", e))?;
-        let in_progress_file_zip = in_progress_dir.join(download_info.name.clone());
-
         let download_url = download_info.main_url.clone();
         let fallback_url = download_info.fallback_url.clone();
 
         info!(target: LOG_TARGET, "Downloading binary: {} from url: {}", self.binary_name, &download_url);
+
+        let archive_destination_path: Option<PathBuf>;
+        let destination_path: PathBuf;
 
         let (chunk_progress_sender, main_progress_sender_shutdown) = self
             .resolve_progress_channel(progress_channel.clone())
             .await
             .map_err(|e| anyhow!("Error resolving progress channel: {:?}", e))?;
 
-        if HttpFileClient::builder()
+        let main_file_download_result = HttpFileClient::builder()
             .with_cloudflare_cache_check()
-            // .with_file_extract()
+            .with_file_extract()
             .with_progress_status_sender(chunk_progress_sender.clone())
             .with_download_resume()
-            .build(download_url.clone(), in_progress_file_zip.clone())
+            .build(download_url.clone(), destination_dir.clone())
             .execute()
             .await
-            .map_err(|e| anyhow!("Error downloading version: {:?}. Error: {:?}", version, e))
-            .is_err()
-        {
+            .map_err(|e| anyhow!("Error downloading version: {:?}. Error: {:?}", version, e));
+
+        if main_file_download_result.is_err() {
             info!(target: LOG_TARGET, "Downloading binary: {} from fallback url: {}", self.binary_name, fallback_url);
             if let Some(mut progress_sender_shutdown) = main_progress_sender_shutdown {
                 progress_sender_shutdown.trigger();
@@ -452,31 +355,29 @@ impl BinaryManager {
                 .await
                 .map_err(|e| anyhow!("Error resolving progress channel: {:?}", e))?;
 
-            HttpFileClient::builder()
-                // .with_file_extract()
+            (destination_path, archive_destination_path) = HttpFileClient::builder()
+                .with_file_extract()
                 .with_progress_status_sender(chunk_progress_sender.clone())
                 .with_download_resume()
-                .build(fallback_url.clone(), in_progress_file_zip.clone())
+                .build(fallback_url.clone(), destination_dir.clone())
                 .execute()
-                .await.unwrap_or_else(|e| {
+                .await
+                .inspect_err(|_| {
                     if let Some(mut progress_sender_shutdown) = fallback_progress_sender_shutdown {
                         progress_sender_shutdown.trigger();
                     }
-                    error!(target: LOG_TARGET, "Error downloading version: {:?}. Error: {:?}", version, e);
-                });
+                })?;
+        } else {
+            (destination_path, archive_destination_path) = main_file_download_result?;
         }
-
-        extract(&in_progress_file_zip, &destination_dir)
-            .await
-            .map_err(|e| anyhow!("Error extracting version: {:?}. Error: {:?}", version, e))?;
 
         if self.should_validate_checksum {
-            self.validate_checksum(download_info, destination_dir, in_progress_file_zip)
-                .await?;
+            if let Some(archive_destination_path) = archive_destination_path {
+                self.validate_checksum(download_info, destination_path, archive_destination_path)
+                    .await?;
+            }
         }
 
-        self.delete_in_progress_folder_for_selected_version()
-            .await?;
         Ok(())
     }
 

@@ -16,6 +16,7 @@ pub fn convert_content_length_to_mb(content_length: u64) -> f64 {
     (content_length as f64) / 1024.0 / 1024.0
 }
 
+#[allow(dead_code)]
 pub fn get_etag_from_head_response(response: &Response) -> String {
     if response.status().is_server_error() || response.status().is_client_error() {
         return "".to_string();

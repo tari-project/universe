@@ -17,10 +17,12 @@ impl HttpClient {
         HttpClient { client }
     }
 
+    #[allow(dead_code)]
     pub fn client(&self) -> &reqwest_middleware::ClientWithMiddleware {
         &self.client
     }
 
+    #[allow(dead_code)]
     pub fn with_retries(retries: u32) -> Self {
         let retry_policy =
             reqwest_retry::policies::ExponentialBackoff::builder().build_with_max_retries(retries);

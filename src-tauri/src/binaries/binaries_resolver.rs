@@ -220,7 +220,7 @@ impl BinaryResolver {
             return Ok(());
         } else {
             manager
-                .download_version_with_retries(progress_channel.clone())
+                .download_selected_version(progress_channel.clone())
                 .await?
         }
 

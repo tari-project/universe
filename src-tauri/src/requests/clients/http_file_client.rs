@@ -1,7 +1,8 @@
 use anyhow::anyhow;
 use futures::StreamExt;
-use log::{info, warn};
+use log::{debug, info, warn};
 use std::path::PathBuf;
+use tokio::fs::create_dir_all;
 use tokio::sync::watch;
 use tokio::{fs::File, io::AsyncWriteExt};
 
@@ -10,10 +11,19 @@ use crate::requests::utils::get_content_size_from_file;
 use crate::requests::{
     cache::cloudflare::CloudFlareCache, utils::get_content_length_from_head_response,
 };
+use crate::utils::network_status::NetworkStatus;
 
 use super::http_client::HttpClient;
 
 const LOG_TARGET: &str = "tari::universe::clients::http_file_client";
+const MAX_RETRIES: u32 = 5;
+
+fn create_exponential_timeout(attempt: u32) -> tokio::time::Duration {
+    let base_delay = 2; // seconds
+    let max_delay = 60; // seconds
+    let delay = base_delay * (2_u64.pow(attempt));
+    tokio::time::Duration::from_secs(delay.min(max_delay))
+}
 
 struct FileClientConfig {
     progress_status_sender: Option<watch::Sender<f64>>,
@@ -58,9 +68,23 @@ impl FileClientBuilder {
     }
 
     pub fn build(self, url: String, destination: PathBuf) -> HttpFileClient {
+        let archive_destination = if self.config.should_extract {
+            Some(destination.join("archive"))
+        } else {
+            None
+        };
+
+        let file_name = url
+            .split('/')
+            .last()
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| "downloaded_file".to_string());
+
         HttpFileClient {
             url,
             destination,
+            file_name,
+            archive_destination,
             config: FileClientConfig {
                 progress_status_sender: self.config.progress_status_sender,
                 should_extract: self.config.should_extract,
@@ -73,7 +97,9 @@ impl FileClientBuilder {
 
 pub struct HttpFileClient {
     url: String,
+    file_name: String,
     destination: PathBuf,
+    archive_destination: Option<PathBuf>,
     config: FileClientConfig,
 }
 
@@ -82,7 +108,17 @@ impl HttpFileClient {
         FileClientBuilder::new()
     }
 
-    pub async fn execute(&self) -> Result<(), anyhow::Error> {
+    fn get_destination(&self) -> &PathBuf {
+        if let Some(archive_destination) = &self.archive_destination {
+            info!(target: LOG_TARGET, "Using archive destination: {}", archive_destination.display());
+            archive_destination
+        } else {
+            info!(target: LOG_TARGET, "Using destination: {}", self.destination.display());
+            &self.destination
+        }
+    }
+
+    pub async fn execute(&self) -> Result<(PathBuf, Option<PathBuf>), anyhow::Error> {
         if self.config.should_check_cloudflare_cache {
             CloudFlareCache::check_if_cache_hits(&self.url).await?;
         }
@@ -93,30 +129,36 @@ impl HttpFileClient {
             self.handle_default_flow().await?;
         }
 
-        // Extract the file if needed
         if self.config.should_extract {
             self.extract().await?;
         }
 
-        Ok(())
+        Ok((self.destination.clone(), None))
     }
 
     pub async fn handle_default_flow(&self) -> Result<(), anyhow::Error> {
         let head_response = HttpClient::default().send_head_request(&self.url).await?;
         let expected_size = get_content_length_from_head_response(&head_response);
 
-        // if self.destination exists then delete it and create a new file
+        let destination = self.get_destination();
+
         if self.destination.exists() {
-            std::fs::remove_file(&self.destination)?;
+            std::fs::remove_dir_all(&self.destination)?;
         }
 
-        let mut file = File::create(&self.destination)
+        if !destination.exists() {
+            create_dir_all(destination)
+                .await
+                .map_err(|e| anyhow::anyhow!("Failed to create directory: {}", e))?;
+        }
+
+        let mut file = File::create(destination)
             .await
             .map_err(|e| anyhow::anyhow!("Failed to create file: {}", e))?;
 
-        self.download(expected_size, &mut file).await?;
+        self.download_file(expected_size, &mut file, false).await?;
 
-        let file_size = get_content_size_from_file(self.destination.clone())
+        let file_size = get_content_size_from_file(destination.clone())
             .await
             .map_err(|e| anyhow::anyhow!("Failed to get file size: {}", e))?;
 
@@ -127,129 +169,131 @@ impl HttpFileClient {
                 file_size
             ));
         }
-        info!(target: LOG_TARGET, "File downloaded successfully to {}", self.destination.display());
+        info!(target: LOG_TARGET, "File downloaded successfully to {}", destination.display());
         Ok(())
-    }
-
-    pub async fn download(&self, expected_size: u64, file: &mut File) -> Result<(), anyhow::Error> {
-        let get_file_response = HttpClient::default()
-            .client
-            .get(&self.url)
-            .header(reqwest::header::ACCEPT, "application/octet-stream")
-            .send()
-            .await?;
-
-        let response_status = get_file_response.status();
-
-        let mut stream = get_file_response.bytes_stream();
-        while let Some(chunk) = stream.next().await {
-            match chunk {
-                Ok(data) => {
-                    if let Err(e) = file.write_all(&data).await {
-                        warn!(target: LOG_TARGET, "Failed to write chunk to file: {}", e);
-                        return Err(anyhow!("Failed to write chunk to file: {}", e));
-                    }
-                    if expected_size > 0 {
-                        let progress_percentage =
-                            (file.metadata().await?.len() as f64 / expected_size as f64) * 100.0;
-                        if let Some(sender) = &self.config.progress_status_sender {
-                            if let Err(e) = sender.send(progress_percentage.round()) {
-                                warn!(target: LOG_TARGET, "Failed to send progress update: {}", e);
-                            }
-                        }
-                    }
-                }
-                Err(e) => {
-                    warn!(target: LOG_TARGET, "Error reading chunk: {}", e);
-                    return Err(anyhow!("Error reading chunk: {}", e));
-                }
-            }
-        }
-
-        if response_status.is_success() {
-            Ok(())
-        } else {
-            return Err(anyhow!(
-                "GET request failed with status code: {}",
-                response_status
-            ));
-        }
     }
 
     pub async fn handle_resume_flow(&self) -> Result<(), anyhow::Error> {
         let head_response = HttpClient::default().send_head_request(&self.url).await?;
         let expected_size = get_content_length_from_head_response(&head_response);
 
-        const DOWNLOAD_CHUNK_SIZE: u64 = 1024 * 1024; // 1 MB
+        let destination = self.get_destination();
+        let destination_file = destination.join(&self.file_name);
 
-        info!(target: LOG_TARGET, "Starting download from {} to {}, expected size: {}", self.url, self.destination.display(), expected_size);
+        if !destination.exists() {
+            create_dir_all(destination)
+                .await
+                .map_err(|e| anyhow::anyhow!("Failed to create directory: {}", e))?;
+        }
 
-        if !self.destination.exists() {
-            File::create(&self.destination)
+        if !destination_file.exists() {
+            info!(target: LOG_TARGET, "File does not exist, creating new file at {}", destination_file.display());
+            File::create(&destination_file)
                 .await
                 .map_err(|e| anyhow::anyhow!("Failed to create file: {}", e))?;
         }
 
         let mut file = File::options()
             .append(true)
-            .open(&self.destination)
+            .open(&destination_file)
             .await
             .map_err(|e| anyhow::anyhow!("Failed to open file: {}", e))?;
 
+        let mut internet_connnection_check_attempt_count = 0;
+        let mut file_download_attempt_count = 0;
+        let mut last_registered_file_size = 0;
+
         loop {
-            let file_size = get_content_size_from_file(self.destination.clone())
+            file_download_attempt_count += 1;
+
+            let file_size = get_content_size_from_file(destination_file.clone())
                 .await
                 .map_err(|e| anyhow::anyhow!("Failed to get file size: {}", e))?;
 
             if file_size.eq(&expected_size) {
-                info!(target: LOG_TARGET, "File already downloaded to {}, size: {}", self.destination.display(), file_size);
+                info!(target: LOG_TARGET, "File already downloaded to {}, size: {}", destination_file.display(), file_size);
                 break;
             }
 
-            info!(target: LOG_TARGET, "Resuming download from {} to {}, current size: {}", self.url, self.destination.display(), file_size);
-            let start = file_size;
-            let end = if expected_size > 0 {
-                std::cmp::min(file_size + DOWNLOAD_CHUNK_SIZE - 1, expected_size - 1)
-            } else {
-                file_size + DOWNLOAD_CHUNK_SIZE - 1
-            };
+            if file_size.ne(&last_registered_file_size) {
+                last_registered_file_size = file_size;
+                file_download_attempt_count = 0;
+            }
 
-            match self
-                .download_with_resume(expected_size, &mut file, start, end)
-                .await
-            {
+            if file_download_attempt_count > MAX_RETRIES {
+                warn!(target: LOG_TARGET, "Max download attempts reached, giving up on downloading file.");
+                return Err(anyhow::anyhow!(
+                    "Max download attempts reached for file: {}",
+                    destination_file.display()
+                ));
+            }
+
+            if file_size.eq(&0) {
+                info!(target: LOG_TARGET, "File is empty, starting download from the beginning.");
+            } else {
+                info!(target: LOG_TARGET, "Resuming download from {} to {}, current size: {}", self.url, destination_file.display(), file_size);
+            }
+
+            let start = file_size;
+            let end: u64 = expected_size.saturating_sub(1);
+
+            match self.download_file(expected_size, &mut file, true).await {
                 Ok(_) => {
-                    info!(target: LOG_TARGET, "Downloaded chunk from {} to {}, current size: {}", start, end, file_size + DOWNLOAD_CHUNK_SIZE);
+                    info!(target: LOG_TARGET, "Downloaded chunk from {} to {}", start, end);
+                    internet_connnection_check_attempt_count = 0;
                     continue;
                 }
-                Err(e) => {
+                Err(e) => loop {
+                    internet_connnection_check_attempt_count += 1;
                     warn!(target: LOG_TARGET, "Failed to resume download: {}", e);
-                    tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
-                }
+                    if NetworkStatus::check_internet_connection().await {
+                        info!(target: LOG_TARGET, "Internet connection is available, retrying download...");
+                        break;
+                    } else {
+                        warn!(target: LOG_TARGET, "No internet connection, retrying in 5 seconds...");
+                        tokio::time::sleep(create_exponential_timeout(
+                            internet_connnection_check_attempt_count,
+                        ))
+                        .await;
+                    }
+
+                    if internet_connnection_check_attempt_count > MAX_RETRIES {
+                        break;
+                    }
+                },
             }
         }
 
         Ok(())
     }
 
-    pub async fn download_with_resume(
+    pub async fn download_file(
         &self,
         expected_size: u64,
         file: &mut File,
-        start: u64,
-        end: u64,
+        resume: bool,
     ) -> Result<(), anyhow::Error> {
-        // Implement the download with resume logic here
-
-        let get_file_response = HttpClient::default()
+        let mut request = HttpClient::default()
             .client
             .get(&self.url)
-            .header(reqwest::header::RANGE, format!("bytes={}-{}", start, end))
-            .send()
-            .await?;
-        let response_status = get_file_response.status();
+            .header(reqwest::header::ACCEPT, "application/octet-stream");
 
-        let mut stream = get_file_response.bytes_stream();
+        if resume {
+            let current_size = file.metadata().await?.len();
+            request = request.header(reqwest::header::RANGE, format!("bytes={}-", current_size));
+        }
+
+        let response = request.send().await?;
+        let response_status = response.status();
+
+        if !response_status.is_success() {
+            return Err(anyhow!(
+                "GET request failed with status code: {}",
+                response_status
+            ));
+        }
+
+        let mut stream = response.bytes_stream();
         while let Some(chunk) = stream.next().await {
             match chunk {
                 Ok(data) => {
@@ -257,15 +301,7 @@ impl HttpFileClient {
                         warn!(target: LOG_TARGET, "Failed to write chunk to file: {}", e);
                         return Err(anyhow!("Failed to write chunk to file: {}", e));
                     }
-                    if expected_size > 0 {
-                        let progress_percentage =
-                            (file.metadata().await?.len() as f64 / expected_size as f64) * 100.0;
-                        if let Some(sender) = &self.config.progress_status_sender {
-                            if let Err(e) = sender.send(progress_percentage.round()) {
-                                warn!(target: LOG_TARGET, "Failed to send progress update: {}", e);
-                            }
-                        }
-                    }
+                    self.update_progress(file, expected_size).await?;
                 }
                 Err(e) => {
                     warn!(target: LOG_TARGET, "Error reading chunk: {}", e);
@@ -274,19 +310,37 @@ impl HttpFileClient {
             }
         }
 
-        if response_status.is_success() {
-            Ok(())
-        } else {
-            return Err(anyhow!(
-                "GET request failed with status code: {}",
-                response_status
-            ));
+        Ok(())
+    }
+
+    async fn update_progress(&self, file: &File, expected_size: u64) -> Result<(), anyhow::Error> {
+        if expected_size > 0 {
+            let progress_percentage =
+                (file.metadata().await?.len() as f64 / expected_size as f64) * 100.0;
+            if let Some(sender) = &self.config.progress_status_sender {
+                if let Err(e) = sender.send(progress_percentage.round()) {
+                    debug!(target: LOG_TARGET, "Failed to send progress update: {}", e);
+                }
+            }
         }
+        Ok(())
     }
 
     // It should extract file if the configuration is set to do so and file extension is supported
     // Then delete the original file
     pub async fn extract(&self) -> Result<(), anyhow::Error> {
-        extract(&self.destination, &self.destination).await
+        if let Some(archive_destination) = &self.archive_destination {
+            if archive_destination.exists() {
+                let archive_file = archive_destination.join(&self.file_name);
+                extract(&archive_file, &self.destination).await?;
+            } else {
+                return Err(anyhow::anyhow!(
+                    "Archive destination does not exist: {}",
+                    archive_destination.display()
+                ));
+            }
+        }
+
+        Ok(())
     }
 }

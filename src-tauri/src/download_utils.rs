@@ -33,6 +33,7 @@ use tokio::io::BufReader;
 use tokio_util::compat::{TokioAsyncReadCompatExt, TokioAsyncWriteCompatExt};
 
 pub async fn extract(file_path: &Path, dest_dir: &Path) -> Result<(), anyhow::Error> {
+    println!("Extracting file at {file_path:?} to {dest_dir:?}");
     match file_path.extension() {
         Some(ext) => match ext.to_str() {
             Some("gz") => {
