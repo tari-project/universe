@@ -10,7 +10,11 @@ interface Digit {
 export interface CodeInputValues {
     code: Digit[];
 }
-export function PinInput() {
+
+interface PinInputProps {
+    hasError?: boolean;
+}
+export function PinInput({ hasError = false }: PinInputProps) {
     const [focusedIndex, setFocusedIndex] = useState(0);
     const { control, setFocus, getValues, setValue } = useFormContext<CodeInputValues>();
 
@@ -73,7 +77,7 @@ export function PinInput() {
                         <DigitInput
                             {...field}
                             ref={field.ref}
-                            $isInvalid={!!field.value && fieldState.invalid}
+                            $isInvalid={(!!field.value && fieldState.invalid) || hasError}
                             onFocus={() => setFocusedIndex(i)}
                             onChange={(e) => {
                                 e.preventDefault();

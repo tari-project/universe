@@ -1,17 +1,23 @@
-import { FormProvider, useForm } from 'react-hook-form';
-import { FormCTA, TextWrapper, Wrapper } from './styles.ts';
-import { CodeInputValues, DEFAULT_PIN_LENGTH, PinInput } from './PinInput.tsx';
 import { useTranslation } from 'react-i18next';
+import { FormProvider, useForm } from 'react-hook-form';
 import { TextButton } from '@app/components/elements/buttons/TextButton.tsx';
-import { Typography } from '@app/components/elements/Typography.tsx';
+import { CodeInputValues, DEFAULT_PIN_LENGTH, PinInput } from './PinInput.tsx';
+import { CTAWrapper, FormCTA, Wrapper } from './styles.ts';
 
 const pinArr = Array.from({ length: DEFAULT_PIN_LENGTH }, (_, i) => i);
 
-export default function EnterPin({ onForgot, onSubmit }: { onForgot?: () => void; onSubmit: (pin: string) => void }) {
+interface EnterPinProps {
+    onForgot?: () => void;
+    onSubmit: (pin: string) => void;
+}
+export default function EnterPin({ onForgot, onSubmit }: EnterPinProps) {
     const { t } = useTranslation('wallet');
     const methods = useForm({
         defaultValues: { code: pinArr.map((_) => ({ digit: '' })) },
     });
+
+    const currentDigits = methods.watch('code');
+    const currentCode = currentDigits.map(({ digit }) => digit).join('');
 
     function handleSubmit(data: CodeInputValues) {
         const codeValue = data.code.map(({ digit }) => digit).join('');
@@ -26,16 +32,15 @@ export default function EnterPin({ onForgot, onSubmit }: { onForgot?: () => void
     return (
         <FormProvider {...methods}>
             <Wrapper onSubmit={methods.handleSubmit(handleSubmit)}>
-                <TextWrapper>
-                    <Typography variant="h5">{t('security.pin.enter')}</Typography>
-                </TextWrapper>
                 <PinInput />
-                <FormCTA fluid disabled={false} type="submit">
-                    {t('security.pin.enter')}
-                </FormCTA>
-                <TextButton color="greyscale" onClick={handleForgot}>
-                    {t('security.pin.forgot')}
-                </TextButton>
+                <CTAWrapper>
+                    <FormCTA fluid disabled={currentCode.length !== DEFAULT_PIN_LENGTH} type="submit">
+                        {t('security.pin.enter')}
+                    </FormCTA>
+                    <TextButton color="greyscale" onClick={handleForgot}>
+                        {t('security.pin.forgot')}
+                    </TextButton>
+                </CTAWrapper>
             </Wrapper>
         </FormProvider>
     );
