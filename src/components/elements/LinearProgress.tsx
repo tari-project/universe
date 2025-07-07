@@ -1,5 +1,5 @@
 import * as m from 'motion/react-m';
-import styled, { css } from 'styled-components';
+import styled, { css, keyframes } from 'styled-components';
 
 type LinearProgressVariant = 'small' | 'large';
 
@@ -29,15 +29,27 @@ const Wrapper = styled.div<{ $variant?: LinearProgressVariant }>`
     }};
 `;
 
-const BarSVG = styled.svg`
-    width: 100%;
-    height: 100%;
-    border-radius: 52px;
+const gradientAnimation = keyframes`
+  0% {
+    background-position: 200% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
 `;
-const BarLine = styled(m.line)<{ $variant?: LinearProgressVariant }>`
-    stroke-width: ${({ $variant }) => ($variant === 'small' ? '5px' : '10px')};
-    stroke: ${({ theme }) => `url(${theme.mode === 'dark' ? '#bar_gradient_dark' : '#bar_gradient_light'})`};
-    color: rgba(13, 24, 32, 0.7);
+
+const ProgressBar = styled(m.div)<{ $width: number }>`
+    width: ${({ $width }) => `${$width}%`};
+    height: 100%;
+    border-radius: 50px;
+    overflow: hidden;
+    background: ${({ theme }) =>
+        theme.mode === 'light'
+            ? 'linear-gradient(90deg, #122044 0%, #768FB1 50%, #122044 100%)'
+            : 'linear-gradient(90deg, #253659 0%, #435879 50%, #253659 100%)'};
+    background-size: 200% 200%;
+    animation: ${gradientAnimation} 3s linear infinite;
+    will-change: width;
 `;
 
 interface LinearProgressProps {
@@ -46,53 +58,15 @@ interface LinearProgressProps {
     duration?: number;
     onAnimationComplete?: () => void;
 }
-export function LinearProgress({ value = 0, variant = 'small', duration, onAnimationComplete }: LinearProgressProps) {
+export function LinearProgress({ value = 0, variant = 'small', onAnimationComplete }: LinearProgressProps) {
     return (
         <Wrapper $variant={variant}>
-            <BarSVG strokeLinecap="round">
-                <BarLine
-                    x1="0%"
-                    y1="50%"
-                    y2="50%"
-                    fill="transparent"
-                    strokeLinecap="round"
-                    $variant={variant}
-                    initial={{ x2: '0%' }}
-                    animate={{ x2: `${value}%` }}
-                    transition={{ duration: duration || 0.5, ease: 'linear' }}
-                    onAnimationComplete={onAnimationComplete}
-                />
-                <defs>
-                    <linearGradient
-                        id="bar_gradient_light"
-                        x1="0%"
-                        y1="50%"
-                        x2="100%"
-                        y2="100%"
-                        gradientUnits="userSpaceOnUse"
-                    >
-                        <stop offset="0%" stopColor="#8DBCF95f" />
-                        <stop offset="15%" stopColor="#071E6B" />
-                        <stop offset="50%" stopColor="#0D1820" />
-                        <stop offset="85%" stopColor="#071E6B" />
-                        <stop offset="100%" stopColor="#8DBCF95f" />
-                    </linearGradient>
-                    <linearGradient
-                        id="bar_gradient_dark"
-                        x1="0%"
-                        y1="100%"
-                        x2="100%"
-                        y2="0%"
-                        gradientUnits="userSpaceOnUse"
-                    >
-                        <stop offset="0%" stopColor="#0D1820B3" />
-                        <stop offset="15%" stopColor="#0D1820" />
-                        <stop offset="50%" stopColor="#8DBCF950" />
-                        <stop offset="85%" stopColor="#0D1820" />
-                        <stop offset="100%" stopColor="#0D1820B3" />
-                    </linearGradient>
-                </defs>
-            </BarSVG>
+            <ProgressBar
+                animate={{ width: `${value}%` }}
+                transition={{ type: 'spring', stiffness: 120, damping: 20 }}
+                onAnimationComplete={onAnimationComplete}
+                $width={value}
+            />
         </Wrapper>
     );
 }
