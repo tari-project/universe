@@ -45,7 +45,7 @@ const ProgressBar = styled(m.div)<{ $width: number }>`
     overflow: hidden;
     background: ${({ theme }) =>
         theme.mode === 'light'
-            ? 'linear-gradient(90deg, #122044 0%, #768FB1 50%, #122044 100%)'
+            ? 'linear-gradient(90deg, #001F6E 0%, #85A3D4 50%, #001F6E 100%)'
             : 'linear-gradient(90deg, #253659 0%, #435879 50%, #253659 100%)'};
     background-size: 200% 200%;
     animation: ${gradientAnimation} 3s linear infinite;
