@@ -29,7 +29,30 @@ export default function DisconnectWrapper() {
             stopCountdown();
         };
     }, [attempt, connectionStatus, startCountdown, stopCountdown]);
+    useEffect(() => {
+        const criticalErrorListener = listen(
+            BACKEND_STATE_UPDATE,
+            ({ payload: event }: { payload: BackendStateUpdateEvent }) => {
+                if (event.event_type !== 'CriticalProblem') return;
+                if (connectionStatus === 'connected') return;
+                console.warn('Failed to reconnect');
+                stopCountdown();
+                const currentAttempt = Math.min(attempt + 1, retryBackoff.length);
+                if (connectionStatus === 'disconnected' && currentAttempt === retryBackoff.length) {
+                    setConnectionStatus('disconnected-severe');
+                    setIsReconnectOnCooldown(false);
+                    startCountdown(300);
+                    return;
+                }
+                setAttempt(currentAttempt);
+                startCountdown(retryBackoff[currentAttempt]);
+            }
+        );
 
+        return () => {
+            criticalErrorListener.then((unlisten) => unlisten());
+        };
+    }, [attempt, connectionStatus, startCountdown, stopCountdown]);
     useEffect(() => {
         const reconnectingListener = listen(
             BACKEND_STATE_UPDATE,
@@ -52,30 +75,10 @@ export default function DisconnectWrapper() {
             }
         );
 
-        const criticalErrorListener = listen(
-            BACKEND_STATE_UPDATE,
-            ({ payload: event }: { payload: BackendStateUpdateEvent }) => {
-                if (event.event_type !== 'CriticalProblem') return;
-                if (connectionStatus === 'connected') return;
-                console.warn('Failed to reconnect');
-                stopCountdown();
-                const currentAttempt = Math.min(attempt + 1, retryBackoff.length);
-                if (connectionStatus === 'disconnected' && currentAttempt === retryBackoff.length) {
-                    setConnectionStatus('disconnected-severe');
-                    setIsReconnectOnCooldown(false);
-                    startCountdown(300);
-                    return;
-                }
-                setAttempt(currentAttempt);
-                startCountdown(retryBackoff[currentAttempt]);
-            }
-        );
-
         return () => {
             reconnectingListener.then((unlisten) => unlisten());
-            criticalErrorListener.then((unlisten) => unlisten());
         };
-    }, [attempt, connectionStatus, setAttempt, startCountdown, stopCountdown]);
+    }, [attempt, connectionStatus, startCountdown, stopCountdown]);
 
     const countdownText = formatSecondsToMmSs(seconds);
 

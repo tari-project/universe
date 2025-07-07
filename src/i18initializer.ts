@@ -135,6 +135,6 @@ i18n.use(HttpBackend)
         contextSeparator: '-',
     })
     .then(() => {
-        // eslint-disable-next-line no-console
-        console.log('i18n initialized');
-    });
+        console.info('i18n initialized');
+    })
+    .catch((e) => console.error('i18n error: ', e));
