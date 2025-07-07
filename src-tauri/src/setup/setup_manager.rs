@@ -294,7 +294,6 @@ impl SetupManager {
         }
 
         EventsEmitter::emit_core_config_loaded(&ConfigCore::content().await).await;
-        EventsEmitter::emit_wallet_config_loaded(&ConfigWallet::content().await).await;
         EventsEmitter::emit_mining_config_loaded(&ConfigMining::content().await).await;
         EventsEmitter::emit_ui_config_loaded(&ConfigUI::content().await).await;
 
@@ -346,6 +345,10 @@ impl SetupManager {
                 };
             }
         }
+
+        // Trigger it here so we can update UI when new wallet is created
+        // We should probably change events to be loaded from internal wallet directly
+        EventsEmitter::emit_wallet_config_loaded(&ConfigWallet::content().await).await;
 
         // If we open different specific exchange miner build then previous one we always want to prompt user to provide tari address
         if is_on_exchange_miner_build

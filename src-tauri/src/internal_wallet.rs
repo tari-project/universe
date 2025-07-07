@@ -234,27 +234,24 @@ impl InternalWallet {
                     wallet_details.spend_public_key_hex.clone(),
                 )
                 .await;
-            ConfigUI::handle_wallet_type_update(TariAddressType::Internal).await?;
-            EventsEmitter::emit_selected_tari_address_changed(
-                self.extract_tari_address(),
-                TariAddressType::Internal,
-            )
-            .await;
         } else {
             // External(Seedless)
-            ConfigUI::handle_wallet_type_update(TariAddressType::External).await?;
-            EventsEmitter::emit_selected_tari_address_changed(
-                self.extract_tari_address(),
-                TariAddressType::External,
-            )
-            .await;
         }
 
         let mut cpu_config = state.cpu_miner_config.write().await;
         cpu_config.load_from_config_wallet(&ConfigWallet::content().await);
-        // Why do we even emit this useless event for last_internal_tari_emoji_address_used??
-        // EventsEmitter::emit_main_tari_address_loaded(self.extract_tari_address()).await;
 
+        ConfigUI::handle_wallet_type_update(self.tari_address_type.clone()).await?;
+        EventsEmitter::emit_selected_tari_address_changed(
+            self.extract_tari_address(),
+            self.tari_address_type.clone(),
+        )
+        .await;
+
+        log::info!(
+            "Wallet with {} address initialized successfully",
+            self.tari_address_type.clone()
+        );
         Ok(())
     }
 

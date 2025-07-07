@@ -47,7 +47,7 @@ pub struct ExternalTariAddressBookRecord {
     pub address: TariAddress,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "snake_case")]
 #[serde(default)]
 #[derive(Getters, Setters)]
