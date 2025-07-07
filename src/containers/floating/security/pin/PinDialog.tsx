@@ -27,6 +27,7 @@ export default function PinDialog() {
         emit('pin-dialog-response', Number(pin)).then(() => {
             setShowComplete(true);
         });
+        setDialogToShow(null);
     }
 
     async function handleForgotPin() {
