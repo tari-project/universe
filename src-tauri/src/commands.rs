@@ -210,6 +210,18 @@ pub async fn select_exchange_miner(
 ) -> Result<(), InvokeError> {
     let new_external_tari_address =
         TariAddress::from_str(&mining_address).map_err(|e| format!("Invalid Tari address: {e}"))?;
+
+    // Validate PIN if pin locked
+    if *ConfigWallet::content().await.pin_locked() {
+        let pin = enter_pin_dialog(&app_handle)
+            .await
+            .map_err(InvokeError::from_anyhow)?;
+        validate_pin(&app_handle, SafePassword::from(pin))
+            .await
+            .map_err(InvokeError::from_anyhow)?;
+    }
+
+    // tutaj
     match InternalWallet::initialize_seedless(&app_handle, Some(new_external_tari_address)).await {
         Ok(_) => {
             log::info!(target: LOG_TARGET, "Internal wallet initialized successfully after \"select_exchange_miner\"");
@@ -895,16 +907,31 @@ pub fn open_log_dir(app: tauri::AppHandle) {
 #[tauri::command]
 pub async fn reset_settings(
     reset_wallet: bool,
-    _window: tauri::Window,
-    app: tauri::AppHandle,
+    app_handle: tauri::AppHandle,
 ) -> Result<(), String> {
+    if reset_wallet {
+        // Validate PIN if pin locked
+        if *ConfigWallet::content().await.pin_locked() {
+            let pin = enter_pin_dialog(&app_handle)
+                .await
+                .map_err(|e| e.to_string())?;
+            validate_pin(&app_handle, SafePassword::from(pin))
+                .await
+                .map_err(|e| {
+                    log::error!(target: LOG_TARGET, "[reset_settings] Pin validation error: {e}");
+                    e.to_string()
+                })?;
+            log::info!(target: LOG_TARGET, "[reset_settings] Pin successfully validated");
+        }
+    }
+
     TasksTrackers::current().stop_all_processes().await;
     let network = Network::get_current_or_user_setting_or_default().as_key_str();
 
-    let app_config_dir = app.path().app_config_dir();
-    let app_cache_dir = app.path().app_cache_dir();
-    let app_data_dir = app.path().app_data_dir();
-    let app_local_data_dir = app.path().app_local_data_dir();
+    let app_config_dir = app_handle.path().app_config_dir();
+    let app_cache_dir = app_handle.path().app_cache_dir();
+    let app_data_dir = app_handle.path().app_data_dir();
+    let app_local_data_dir = app_handle.path().app_local_data_dir();
 
     let dirs_to_remove = [
         app_config_dir,
@@ -999,7 +1026,7 @@ pub async fn reset_settings(
     }
 
     info!(target: LOG_TARGET, "[reset_settings] Restarting the app");
-    app.restart()
+    app_handle.restart()
 }
 
 #[tauri::command]
