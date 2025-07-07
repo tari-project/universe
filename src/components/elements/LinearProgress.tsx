@@ -55,16 +55,14 @@ const ProgressBar = styled(m.div)<{ $width: number }>`
 interface LinearProgressProps {
     value?: number;
     variant?: LinearProgressVariant;
-    duration?: number;
-    onAnimationComplete?: () => void;
 }
-export function LinearProgress({ value = 0, variant = 'small', onAnimationComplete }: LinearProgressProps) {
+
+export function LinearProgress({ value = 0, variant = 'small' }: LinearProgressProps) {
     return (
         <Wrapper $variant={variant}>
             <ProgressBar
                 animate={{ width: `${value}%` }}
                 transition={{ type: 'spring', stiffness: 120, damping: 20 }}
-                onAnimationComplete={onAnimationComplete}
                 $width={value}
             />
         </Wrapper>
