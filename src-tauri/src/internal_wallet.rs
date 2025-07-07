@@ -156,10 +156,7 @@ impl InternalWallet {
 
     pub async fn initialize_with_seed(app_handle: &tauri::AppHandle) -> Result<(), anyhow::Error> {
         let mut wallet_config = ConfigWallet::content().await;
-        if wallet_config.selected_external_tari_address().is_some() {
-            // Unselect external tari address if defined
-            wallet_config.set_selected_external_tari_address(None);
-        }
+        wallet_config.set_selected_external_tari_address(None);
 
         let internal_wallet = if *wallet_config.version() >= WALLET_VERSION
             && wallet_config.tari_wallets().len() > 0
