@@ -11,10 +11,10 @@ import {
     AddressInputLabel,
     OptInWrapper,
 } from './connect.styles.ts';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import useDebouncedValue from '@app/hooks/helpers/useDebounce.ts';
 import { truncateMiddle } from '@app/utils';
-import { CheckIconWrapper } from '@app/components/transactions/components/TxInput.style.ts'; // TODO - make reusable address input
+import { CheckIconWrapper } from '@app/components/transactions/components/TxInput.style.ts';
 import CheckIcon from '@app/components/transactions/components/CheckIcon.tsx';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 import { setSeedlessUI, setShouldShowExchangeSpecificModal } from '@app/store/actions/uiStoreActions.ts';
@@ -22,6 +22,7 @@ import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
 import { setAllowTelemetry, useConfigCoreStore } from '@app/store';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { useFetchExchangeBranding } from '@app/hooks/exchanges/fetchExchangeContent.ts';
+import { useValidate } from '@app/hooks/wallet/useValidate.ts';
 
 interface ConnectFormFields {
     address: string;
@@ -35,6 +36,7 @@ export const Connect = () => {
     const [displayAddress, setDisplayAddress] = useState(address);
     const allowTelemetry = useConfigCoreStore((s) => s.allow_telemetry);
     const debouncedAddress = useDebouncedValue(address, 350);
+    const { validateAddress, validationErrorMessage } = useValidate();
 
     const { register, handleSubmit, setError, formState } = useForm<ConnectFormFields>({
         defaultValues: { address: '' },
@@ -53,27 +55,19 @@ export const Connect = () => {
     function handleFocus(focused: boolean) {
         setIsFocused(focused);
     }
-    const validateAddress = useCallback(
-        (address: string) => {
-            if (!address.length) {
-                setError('address', { message: 'Address cannot be empty.' });
-                return;
-            }
-            invoke('verify_address_for_send', { address })
-                .then(() => {
-                    setAddressIsValid(true);
-                })
-                .catch((e) => {
-                    setError('address', { message: e });
-                    setAddressIsValid(false);
-                });
-        },
-        [setError]
-    );
 
     useEffect(() => {
-        void validateAddress(debouncedAddress);
-    }, [debouncedAddress, validateAddress]);
+        if (!debouncedAddress.length) {
+            setError('address', { message: 'Address cannot be empty.' });
+            return;
+        }
+        validateAddress(debouncedAddress).then((isValid) => {
+            setAddressIsValid(isValid);
+            if (!isValid) {
+                setError('address', { message: validationErrorMessage });
+            }
+        });
+    }, [debouncedAddress, setError, validateAddress, validationErrorMessage]);
 
     async function onSubmit(_unused: ConnectFormFields) {
         try {

@@ -1,5 +1,4 @@
 import styled from 'styled-components';
-import { IoCheckmarkCircle } from 'react-icons/io5';
 import { convertHexToRGBA } from '@app/utils/convertHex.ts';
 import { Typography } from '@app/components/elements/Typography.tsx';
 
@@ -44,6 +43,7 @@ export const CardItemLabelValue = styled(Typography)`
     word-break: break-all;
 `;
 
-export const ConnectionIcon = styled(IoCheckmarkCircle)<{ $isConnected?: boolean }>(({ theme, $isConnected }) => ({
+export const ConnectionIcon = styled.div<{ $isConnected?: boolean }>(({ theme, $isConnected }) => ({
     color: $isConnected ? theme.palette.success.main : theme.palette.error.main,
+    display: 'flex',
 }));

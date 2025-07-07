@@ -8,6 +8,7 @@ import {
     IconWrapper,
     OptionLabelWrapper,
     Options,
+    OptionsPosition,
     SelectedOption,
     SelectVariant,
     StyledOption,
@@ -23,6 +24,7 @@ import {
     useFloating,
     useInteractions,
     useRole,
+    UseFloatingOptions,
 } from '@floating-ui/react';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 
@@ -41,6 +43,11 @@ interface Props {
     disabled?: boolean;
     loading?: boolean;
     forceHeight?: number;
+    customIcon?: React.ReactNode | ((open: boolean) => React.ReactNode);
+    triggerTypographyProps?: Omit<React.ComponentProps<typeof Typography>, 'children'>;
+    floatingProps?: UseFloatingOptions;
+    optionItemTypographyProps?: Omit<React.ComponentProps<typeof Typography>, 'children'>;
+    isSync?: boolean;
 }
 
 export function Select({
@@ -51,6 +58,11 @@ export function Select({
     onChange,
     variant = 'primary',
     forceHeight,
+    customIcon,
+    triggerTypographyProps = {},
+    optionItemTypographyProps = {},
+    floatingProps = {},
+    isSync,
 }: Props) {
     const [isOpen, setIsOpen] = useState(false);
     const isBordered = variant === 'bordered';
@@ -60,7 +72,8 @@ export function Select({
         open: isOpen,
         onOpenChange: setIsOpen,
         placement: 'bottom-start',
-        middleware: [offset({ mainAxis: isMinimal ? 15 : 5 }), flip()],
+        middleware: [offset({ mainAxis: 5 }), flip()],
+        ...floatingProps,
     });
 
     useEffect(() => {
@@ -90,12 +103,12 @@ export function Select({
     const triggerOption = isMinimal ? (
         <>
             {selectedIcon ? <img src={selectedIcon} alt={`Selected option: ${selectedLabel} icon `} /> : null}
-            <Typography>{selectedLabel}</Typography>
+            <Typography {...triggerTypographyProps}>{selectedLabel}</Typography>
         </>
     ) : (
         <>
             <SelectedOption $isBordered={isBordered} $forceHeight={forceHeight}>
-                <Typography>{selectedLabel}</Typography>
+                <Typography {...triggerTypographyProps}>{selectedLabel}</Typography>
                 {selectedIcon && variant !== 'primary' ? (
                     <img src={selectedIcon} alt={`Selected option: ${selectedLabel} icon `} />
                 ) : null}
@@ -111,35 +124,47 @@ export function Select({
                 $disabled={disabled}
                 $isBordered={isBordered}
                 $variant={variant}
+                $isSync={isSync}
             >
                 {triggerOption}
-                <IconWrapper>{loading ? <LoadingDots /> : <HiOutlineSelector />}</IconWrapper>
+                {customIcon ? (
+                    typeof customIcon === 'function' ? (
+                        customIcon(isOpen)
+                    ) : (
+                        customIcon
+                    )
+                ) : (
+                    <IconWrapper>{loading ? <LoadingDots /> : <HiOutlineSelector />}</IconWrapper>
+                )}
             </TriggerWrapper>
             {isOpen && (
-                <Options ref={refs.setFloating} {...getFloatingProps()} $isBordered={isBordered} style={floatingStyles}>
-                    {options.map(({ label, value, iconSrc }) => {
-                        const selected = value === selectedOption?.value;
-                        const disableClick = loading && !selected && value !== 'Custom';
-                        return (
-                            <StyledOption
-                                onClick={() => handleChange(value, disableClick)}
-                                key={`opt-${value}-${label}`}
-                                $selected={selected}
-                                $loading={loading && !selected}
-                            >
-                                <OptionLabelWrapper>
-                                    {iconSrc ? <img src={iconSrc} alt={`Select option: ${value} icon `} /> : null}
-                                    <Typography>{label}</Typography>
-                                </OptionLabelWrapper>
-                                {selected ? (
-                                    <IconWrapper>
-                                        <CheckSvg />
-                                    </IconWrapper>
-                                ) : null}
-                            </StyledOption>
-                        );
-                    })}
-                </Options>
+                <OptionsPosition ref={refs.setFloating} {...getFloatingProps()} style={floatingStyles}>
+                    <Options $isBordered={isBordered}>
+                        {options.map(({ label, value, iconSrc }) => {
+                            const selected = value === selectedOption?.value;
+                            const disableClick = loading && !selected && value !== 'Custom';
+                            return (
+                                <StyledOption
+                                    onClick={() => handleChange(value, disableClick)}
+                                    key={`opt-${value}-${label}`}
+                                    $selected={selected}
+                                    $loading={loading && !selected}
+                                    $isBordered={isBordered}
+                                >
+                                    <OptionLabelWrapper>
+                                        {iconSrc ? <img src={iconSrc} alt={`Select option: ${value} icon `} /> : null}
+                                        <Typography {...optionItemTypographyProps}>{label}</Typography>
+                                    </OptionLabelWrapper>
+                                    {selected ? (
+                                        <IconWrapper>
+                                            <CheckSvg />
+                                        </IconWrapper>
+                                    ) : null}
+                                </StyledOption>
+                            );
+                        })}
+                    </Options>
+                </OptionsPosition>
             )}
         </Wrapper>
     );

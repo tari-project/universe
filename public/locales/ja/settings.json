@@ -24,6 +24,7 @@
     "save-changes": "変更を保存",
     "saved": "変更を適用中",
     "title": "カスタムモード",
+    "use-custom": "Use Custom settings",
     "warning": "警告"
   },
   "debug-info": "デバッグ",
@@ -56,7 +57,7 @@
   "invalid-stats-server-port-empty": "統計サーバーポートは空にできません",
   "inviteCode": "招待コード",
   "is-on-orphan-chain": "フォークに接続されているようです。メインチェーンではありません。獲得したブロックは無効になる可能性があります。",
-  "last-block-added-time": "最後のブロックがチェーンに追加された時間",
+  "last-block-added-time": "Time since previous block was added to the chain: <strong>{{time}}</strong>",
   "license-agreement": "ライセンス契約",
   "local-node-sync-progress": "ローカルノードの同期進行状況",
   "logs": "ログ",
@@ -169,6 +170,7 @@
   "use-tor-bridges": "Torブリッジを使用",
   "user-agreement": "ユーザー契約",
   "visual-mode": "ビジュアルモード",
+  "waiting-for-data": "Waiting for chain data...",
   "yes": "はい",
   "your-feedback": "問題を説明してください",
   "your-reference": "あなたの参照"

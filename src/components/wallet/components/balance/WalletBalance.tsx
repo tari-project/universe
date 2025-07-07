@@ -1,11 +1,10 @@
 import i18n from 'i18next';
 import NumberFlow, { type Format } from '@number-flow/react';
 import { useTranslation } from 'react-i18next';
-import { useTariBalance } from '@app/hooks/wallet/useTariBalance.ts';
 import { IoEyeOffOutline, IoEyeOutline } from 'react-icons/io5';
 import { useUIStore, useWalletStore } from '@app/store';
 
-import { roundToTwoDecimals, removeXTMCryptoDecimals } from '@app/utils';
+import { roundToTwoDecimals, removeXTMCryptoDecimals, formatNumber, FormatPreset } from '@app/utils';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import NumbersLoadingAnimation from '@app/containers/navigation/components/Wallet/NumbersLoadingAnimation/NumbersLoadingAnimation.tsx';
 import { AvailableWrapper, BalanceTextWrapper, BalanceWrapper, Hidden, SuffixWrapper, Wrapper } from './styles.ts';
@@ -18,11 +17,17 @@ export const WalletBalance = () => {
     const { t } = useTranslation('wallet');
     const [hovering, setHovering] = useState(false);
 
-    const { formattedAvailableBalance } = useTariBalance();
     const calculated_balance = useWalletStore((s) => s.calculated_balance);
+    const available_balance = useWalletStore((s) => s.balance?.available_balance);
+
     const balanceValue = removeXTMCryptoDecimals(roundToTwoDecimals(calculated_balance || 0));
+    const availableBalanceValue = removeXTMCryptoDecimals(roundToTwoDecimals(available_balance || 0));
+
     const isWalletScanning = useWalletStore((s) => s.wallet_scanning?.is_scanning);
     const hideWalletBalance = useUIStore((s) => s.hideWalletBalance);
+
+    const formattedAvailableBalance = formatNumber(available_balance || 0, FormatPreset.XTM_LONG);
+    const finalAvailableBalance = hideWalletBalance ? '*******' : formattedAvailableBalance;
 
     const formatOptions: Format = {
         maximumFractionDigits: 2,
@@ -58,7 +63,11 @@ export const WalletBalance = () => {
                     </BalanceWrapper>
 
                     <AvailableWrapper>
-                        <Typography>{`${t('history.available-balance')}: ${formattedAvailableBalance} XTM`}</Typography>
+                        {availableBalanceValue != balanceValue ? (
+                            <Typography>{`${t('history.available-balance')}: ${finalAvailableBalance} XTM`}</Typography>
+                        ) : (
+                            <Typography>{t('history.my-balance')}</Typography>
+                        )}
                     </AvailableWrapper>
                 </>
             ) : (

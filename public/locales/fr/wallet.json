@@ -1,8 +1,10 @@
 {
+  "all-activity": "All activity",
   "confirmation-message": "Votre transaction a été soumise !\nElle apparaîtra dans votre historique après le minage de quelques blocs.",
   "empty-tx": "Aucune transaction trouvée",
   "history": {
     "available-balance": "Disponible",
+    "my-balance": "My Balance",
     "label-rewards": "Mes récompenses",
     "sync-with-phone": "Synchroniser avec le téléphone",
     "transaction-details": "Détails de la transaction",
@@ -18,6 +20,7 @@
     "tooltip-emoji-id-text2": "Support Yat bientôt disponible !",
     "tooltip-emoji-id-title": "ID Emoji"
   },
+  "rewards": "Rewards",
   "send": {
     "balance": "Solde",
     "broadcast": "Diffusion",
@@ -116,12 +119,22 @@
     "your-transaction-is-being-processed": "Votre transaction est en cours de traitement",
     "your-xtm-is-on-the-way": "Votre XTM est en route !"
   },
+  "sync-message": {
+    "completed": "Any moment now",
+    "line1": "Sync in progress. ",
+    "line2": " remaining",
+    "line3": "until your wallet balance is displayed",
+    "tooltip-description": "Your node is still syncing, so your balance isn't visible yet.",
+    "tooltip-description-mining": "Your node is still syncing, so your balance isn't visible yet. But don't worry, you're actively mining and earning XTM.",
+    "tooltip-title": "Why the delay?"
+  },
   "tabs": {
     "history": "Historique",
     "receive": "Recevoir",
     "send": "Envoyer"
   },
   "tari": "Tari",
+  "transactions": "Transactions",
   "wallet-connected": "Portefeuille connecté",
   "wallet-is-scanning": "Le portefeuille est en cours de scan...",
   "wallet-scanning-with-progress": "Le portefeuille est en cours de scan : {{scanned}}/{{total}} ({{percent}}%)",

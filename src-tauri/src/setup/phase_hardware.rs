@@ -28,7 +28,6 @@ use crate::{
     events_emitter::EventsEmitter,
     gpu_miner::EngineType,
     hardware::hardware_status_monitor::HardwareStatusMonitor,
-    progress_tracker_old::ProgressTracker,
     progress_trackers::{
         progress_plans::{ProgressPlans, ProgressSetupHardwarePlan},
         progress_stepper::ProgressStepperBuilder,
@@ -48,14 +47,15 @@ use tauri_plugin_sentry::sentry;
 use tokio::{
     select,
     sync::{
-        watch::{self, Receiver, Sender},
+        watch::{Receiver, Sender},
         Mutex,
     },
 };
 use tokio_util::task::TaskTracker;
 
 use super::{
-    setup_manager::{PhaseStatus, SetupFeaturesList},
+    listeners::SetupFeaturesList,
+    setup_manager::PhaseStatus,
     trait_setup_phase::{SetupConfiguration, SetupPhaseImpl},
     utils::{setup_default_adapter::SetupDefaultAdapter, timeout_watcher::TimeoutWatcher},
 };
@@ -165,30 +165,28 @@ impl SetupPhaseImpl for HardwareSetupPhase {
         let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
         let state = self.app_handle.state::<UniverseAppState>();
 
-        // TODO Remove once not needed
-        let (tx, rx) = watch::channel("".to_string());
-        let progress = ProgressTracker::new(self.app_handle.clone(), Some(tx));
+        let binary_resolver = BinaryResolver::current();
 
-        let binary_resolver = BinaryResolver::current().read().await;
-
-        progress_stepper
-            .resolve_step(ProgressPlans::Hardware(
-                ProgressSetupHardwarePlan::BinariesGpuMiner,
-            ))
-            .await;
+        let gpu_miner_binary_progress_tracker = progress_stepper.channel_step_range_updates(
+            ProgressPlans::Hardware(ProgressSetupHardwarePlan::BinariesGpuMiner),
+            Some(ProgressPlans::Hardware(
+                ProgressSetupHardwarePlan::BinariesCpuMiner,
+            )),
+        );
 
         binary_resolver
-            .initialize_binary_timeout(Binaries::GpuMiner, progress.clone(), rx.clone())
+            .initialize_binary(Binaries::GpuMiner, gpu_miner_binary_progress_tracker)
             .await?;
 
-        progress_stepper
-            .resolve_step(ProgressPlans::Hardware(
-                ProgressSetupHardwarePlan::BinariesCpuMiner,
-            ))
-            .await;
+        let cpu_miner_binary_progress_tracker = progress_stepper.channel_step_range_updates(
+            ProgressPlans::Hardware(ProgressSetupHardwarePlan::BinariesCpuMiner),
+            Some(ProgressPlans::Hardware(
+                ProgressSetupHardwarePlan::DetectGPU,
+            )),
+        );
 
         binary_resolver
-            .initialize_binary_timeout(Binaries::Xmrig, progress.clone(), rx.clone())
+            .initialize_binary(Binaries::Xmrig, cpu_miner_binary_progress_tracker)
             .await?;
 
         progress_stepper
@@ -269,7 +267,7 @@ impl SetupPhaseImpl for HardwareSetupPhase {
                                 sm.update_tray(systray_data);
                             },
                             Err(e) => {
-                                let err_msg = format!("Failed to acquire systemtray_manager write lock: {}", e);
+                                let err_msg = format!("Failed to acquire systemtray_manager write lock: {e}");
                                 error!(target: LOG_TARGET, "{}", err_msg);
                                 sentry::capture_message(&err_msg, sentry::Level::Error);
                             }

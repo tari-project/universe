@@ -24,6 +24,7 @@
     "save-changes": "Simpan Perubahan",
     "saved": "Menerapkan Perubahan",
     "title": "Mode Kustom",
+    "use-custom": "Use Custom settings",
     "warning": "Peringatan"
   },
   "debug-info": "Debug",
@@ -56,7 +57,7 @@
   "invalid-stats-server-port-empty": "Port server statistik tidak boleh kosong",
   "inviteCode": "Kode Undangan",
   "is-on-orphan-chain": "Anda tampaknya terhubung ke cabang, bukan rantai utama. Blok yang Anda menangkan mungkin akan dibatalkan.",
-  "last-block-added-time": "Waktu blok terakhir ditambahkan ke rantai",
+  "last-block-added-time": "Time since previous block was added to the chain: <strong>{{time}}</strong>",
   "license-agreement": "Perjanjian Lisensi",
   "local-node-sync-progress": "Kemajuan sinkronisasi node lokal",
   "logs": "Log",
@@ -169,6 +170,7 @@
   "use-tor-bridges": "Gunakan Jembatan Tor",
   "user-agreement": "Perjanjian Pengguna",
   "visual-mode": "Mode visual",
+  "waiting-for-data": "Waiting for chain data...",
   "yes": "Ya",
   "your-feedback": "Silakan jelaskan masalah Anda",
   "your-reference": "Referensi Anda"

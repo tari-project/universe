@@ -1,20 +1,28 @@
 import { loadTowerAnimation, setAnimationState } from '@tari-project/tari-tower';
 
 import { useSetupStore } from '../useSetupStore';
-import { startCpuMining, startGpuMining, stopCpuMining, stopGpuMining } from './miningStoreActions';
+import {
+    getMaxAvailableThreads,
+    startCpuMining,
+    startGpuMining,
+    stopCpuMining,
+    stopGpuMining,
+} from './miningStoreActions';
 import {
     fetchApplicationsVersionsWithRetry,
+    fetchCoinbaseTransactions,
+    fetchTransactionsHistory,
     TOWER_CANVAS_ID,
     useConfigMiningStore,
     useConfigUIStore,
     useMiningStore,
     useUIStore,
+    useWalletStore,
 } from '@app/store';
 import { ProgressTrackerUpdatePayload } from '@app/hooks/app/useProgressEventsListener';
 
 import { fetchBridgeTransactionsHistory } from './walletStoreActions';
 import { SetupPhase } from '@app/types/backend-state';
-import { useTappletsStore } from '../useTappletsStore';
 
 export interface DisabledPhasesPayload {
     disabled_phases: SetupPhase[];
@@ -47,7 +55,15 @@ export const handleAppUnlocked = async () => {
 };
 export const handleWalletUnlocked = () => {
     useSetupStore.setState({ walletUnlocked: true });
+    // Initial fetch of transactions
+    const { tx_history_filter } = useWalletStore.getState();
+    fetchTransactionsHistory({ offset: 0, limit: 20, filter: tx_history_filter });
+    fetchCoinbaseTransactions({
+        offset: 0,
+        limit: 20,
+    });
 };
+
 export const handleCpuMiningUnlocked = async () => {
     useSetupStore.setState({ cpuMiningUnlocked: true });
 
@@ -100,6 +116,7 @@ export const handleGpuMiningLocked = async () => {
 };
 
 export const handleHardwarePhaseFinished = async () => {
+    await getMaxAvailableThreads();
     useSetupStore.setState({ hardwarePhaseFinished: true });
 };
 
@@ -133,9 +150,4 @@ export const updateDisabledPhases = (payload: DisabledPhasesPayload) => {
 
 export const handleUpdateDisabledPhases = (payload: DisabledPhasesPayload) => {
     updateDisabledPhases(payload);
-    if (payload.disabled_phases.includes(SetupPhase.Wallet)) {
-        useTappletsStore.setState({ uiBridgeSwapsEnabled: false });
-    } else if (!useTappletsStore.getState().uiBridgeSwapsEnabled) {
-        useTappletsStore.getState().fetchUiBridgeFeatureFlag();
-    }
 };

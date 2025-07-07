@@ -31,7 +31,8 @@ use tokio_util::task::TaskTracker;
 use crate::progress_trackers::ProgressStepper;
 
 use super::{
-    setup_manager::{PhaseStatus, SetupFeaturesList, SetupPhase},
+    listeners::SetupFeaturesList,
+    setup_manager::{PhaseStatus, SetupPhase},
     utils::timeout_watcher::TimeoutWatcher,
 };
 

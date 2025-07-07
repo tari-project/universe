@@ -40,7 +40,6 @@ export {
     setIsSettingsOpen,
     setIssueReference,
     setReleaseNotes,
-    updateApplicationsVersions,
 } from './appStateStoreActions.ts';
 
 export {
@@ -60,7 +59,13 @@ export {
     setIsWebglNotSupported,
 } from './uiStoreActions.ts';
 
-export { importSeedWords, setWalletBalance } from './walletStoreActions';
+export {
+    importSeedWords,
+    refreshTransactions,
+    fetchCoinbaseTransactions,
+    fetchTransactionsHistory,
+    setWalletBalance,
+} from './walletStoreActions';
 export {
     setGpuDevices,
     setGpuMiningStatus,

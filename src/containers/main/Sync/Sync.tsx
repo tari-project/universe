@@ -16,9 +16,24 @@ import {
 import { useTranslation } from 'react-i18next';
 import VideoStream from '@app/components/VideoStream/VideoStream.tsx';
 import { useTheme } from 'styled-components';
+import { easeInOut } from 'motion';
 
 import coin_dark from './images/coin_dark.png';
 import coin_light from './images/coin_light.png';
+import { URL_SYNC, URL_SYNC_DARK } from '@app/App/AppWrapper.tsx';
+
+const containerVariants = {
+    initial: {},
+    animate: {
+        transition: { staggerChildren: 0.15, delayChildren: 0.1 },
+    },
+};
+
+const childVariants = {
+    initial: { opacity: 0, y: 20 },
+    animate: { opacity: 1, y: 0, transition: { duration: 0.5, ease: easeInOut } },
+    exit: { opacity: 0, y: 20, transition: { duration: 0.3, ease: easeInOut } },
+};
 
 export default function Sync() {
     const { t } = useTranslation('setup-view');
@@ -26,30 +41,24 @@ export default function Sync() {
 
     return (
         <Wrapper>
-            <Content>
-                <HeaderContent>
+            <Content variants={containerVariants} initial="initial" animate="animate" exit="exit">
+                <HeaderContent variants={childVariants}>
                     <HeaderGraphic>
                         {theme.mode === 'light' ? (
-                            <VideoStream
-                                src="https://customer-o6ocjyfui1ltpm5h.cloudflarestream.com/d15edd1d0a5a2452a49f1312312b69f0/manifest/video.m3u8"
-                                poster={coin_light}
-                            />
+                            <VideoStream src={URL_SYNC} poster={coin_light} />
                         ) : (
-                            <VideoStream
-                                src="https://customer-o6ocjyfui1ltpm5h.cloudflarestream.com/af0c72594da95f7507ccca86831c4c0b/manifest/video.m3u8"
-                                poster={coin_dark}
-                            />
+                            <VideoStream src={URL_SYNC_DARK} poster={coin_dark} />
                         )}
                     </HeaderGraphic>
-                    <Heading>{t('sync.header')}</Heading>
-                    <SubHeading>{t('sync.subheader')}</SubHeading>
+                    <Heading variants={childVariants}>{t('sync.header')}</Heading>
+                    <SubHeading variants={childVariants}>{t('sync.subheader')}</SubHeading>
                 </HeaderContent>
-                <ActionContent>
+                <ActionContent variants={childVariants}>
                     <AirdropLogin />
                     <ModeSelection />
                     <AirdropInvite />
                 </ActionContent>
-                <FooterContent>
+                <FooterContent variants={childVariants}>
                     <Progress />
                 </FooterContent>
             </Content>

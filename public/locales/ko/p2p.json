@@ -17,8 +17,9 @@
   "stats": {
     "earned": "You earned",
     "tile-heading": "진행 중인 보상",
+    "tile-heading-zero": "Rewards start in ~30 mins",
     "tile-loading": "풀 준비 중",
-    "tooltip-copy": "보상은 <strong>{{amount}}</strong>의 최소 금액을 벌기 전까지 \"진행 중\" 상태입니다. 기준에 도달하면 진행 중인 보상이 자동으로 Tari Universe 지갑으로 전송됩니다. 도착까지 추가로 2시간이 소요될 수 있습니다.",
+    "tooltip-copy": "“In Progress” until you earn a minimum of <strong>{{amount}}</strong>. There may be a delay between sending your payout and it displaying in your wallet txs and balance.",
     "tooltip-tile-heading": "보상 기준"
   },
   "tribe": "부족"

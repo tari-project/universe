@@ -1,7 +1,7 @@
 import { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { modeType } from '@app/store/types';
+import { MiningModeType } from '@app/store/types';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { setDialogToShow } from '@app/store/actions/uiStoreActions.ts';
@@ -19,8 +19,9 @@ import { useSetupStore } from '@app/store/useSetupStore';
 
 interface ModeSelectProps {
     variant?: 'primary' | 'minimal';
+    isSync?: boolean;
 }
-const ModeSelect = memo(function ModeSelect({ variant = 'primary' }: ModeSelectProps) {
+const ModeSelect = memo(function ModeSelect({ variant = 'primary', isSync }: ModeSelectProps) {
     const { t } = useTranslation('common', { useSuspense: false });
     const mode = useConfigMiningStore((s) => s.mode);
     const isCPUMining = useMiningMetricsStore((s) => s.cpu_mining_status.is_mining);
@@ -44,7 +45,7 @@ const ModeSelect = memo(function ModeSelect({ variant = 'primary' }: ModeSelectP
             setDialogToShow('ludicrousConfirmation');
             return;
         }
-        await changeMiningMode({ mode: newMode as modeType });
+        await changeMiningMode({ mode: newMode as MiningModeType });
     }, []);
 
     const tabOptions = useMemo(() => {
@@ -79,6 +80,7 @@ const ModeSelect = memo(function ModeSelect({ variant = 'primary' }: ModeSelectP
             options={tabOptions}
             forceHeight={21}
             variant={isMininimal ? 'minimal' : 'primary'}
+            isSync={isSync}
         />
     );
 

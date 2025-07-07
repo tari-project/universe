@@ -24,6 +24,7 @@
     "save-changes": "Сохранить изменения",
     "saved": "Применение изменений",
     "title": "Пользовательский режим",
+    "use-custom": "Use Custom settings",
     "warning": "Предупреждение"
   },
   "debug-info": "Отладка",
@@ -56,7 +57,7 @@
   "invalid-stats-server-port-empty": "Порт сервера статистики не может быть пустым",
   "inviteCode": "Код приглашения",
   "is-on-orphan-chain": "Похоже, что Вы подключены к форку, а не к основной цепочке. Любые выигранные Вами блоки могут быть аннулированы.",
-  "last-block-added-time": "Время добавления последнего блока в цепь",
+  "last-block-added-time": "Time since previous block was added to the chain: <strong>{{time}}</strong>",
   "license-agreement": "Лицензионное соглашение",
   "local-node-sync-progress": "Прогресс синхронизации локального узла",
   "logs": "Логи",
@@ -169,6 +170,7 @@
   "use-tor-bridges": "Использовать мосты Tor",
   "user-agreement": "Пользовательское соглашение",
   "visual-mode": "Визуальный режим",
+  "waiting-for-data": "Waiting for chain data...",
   "yes": "Да",
   "your-feedback": "Пожалуйста, опишите Вашу проблему",
   "your-reference": "Ваша ссылка"

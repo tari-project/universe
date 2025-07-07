@@ -24,6 +24,7 @@
     "save-changes": "保存更改",
     "saved": "应用更改",
     "title": "自定义模式",
+    "use-custom": "Use Custom settings",
     "warning": "警告"
   },
   "debug-info": "调试信息",
@@ -56,7 +57,7 @@
   "invalid-stats-server-port-empty": "统计服务器端口不能为空",
   "inviteCode": "邀请代码",
   "is-on-orphan-chain": "您似乎连接到了一个分叉，而不是主链。您赢得的任何区块可能会被作废。",
-  "last-block-added-time": "最后添加到链的块时间",
+  "last-block-added-time": "Time since previous block was added to the chain: <strong>{{time}}</strong>",
   "license-agreement": "许可协议",
   "local-node-sync-progress": "本地节点同步进度",
   "logs": "日志",
@@ -169,6 +170,7 @@
   "use-tor-bridges": "使用Tor桥接",
   "user-agreement": "用户协议",
   "visual-mode": "视觉模式",
+  "waiting-for-data": "Waiting for chain data...",
   "yes": "是",
   "your-feedback": "请描述您的问题，包括您的Telegram账号（如果有），以便我们能够联系您并提供更新。",
   "your-reference": "您的参考号：<br/><bold>{{logRef}}</bold>"

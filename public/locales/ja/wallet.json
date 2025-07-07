@@ -1,8 +1,10 @@
 {
+  "all-activity": "All activity",
   "confirmation-message": "トランザクションが送信されました！\nいくつかのブロックをマイニングした後、履歴に表示されます。",
   "empty-tx": "トランザクションが見つかりません",
   "history": {
     "available-balance": "利用可能",
+    "my-balance": "My Balance",
     "label-rewards": "私の報酬",
     "sync-with-phone": "電話と同期",
     "transaction-details": "トランザクションの詳細",
@@ -18,6 +20,7 @@
     "tooltip-emoji-id-text2": "Yatサポートが近日登場！",
     "tooltip-emoji-id-title": "絵文字ID"
   },
+  "rewards": "Rewards",
   "send": {
     "balance": "残高",
     "broadcast": "放送中",
@@ -116,12 +119,22 @@
     "your-transaction-is-being-processed": "取引が処理されています",
     "your-xtm-is-on-the-way": "XTMが送金中です！"
   },
+  "sync-message": {
+    "completed": "Any moment now",
+    "line1": "Sync in progress. ",
+    "line2": " remaining",
+    "line3": "until your wallet balance is displayed",
+    "tooltip-description": "Your node is still syncing, so your balance isn't visible yet.",
+    "tooltip-description-mining": "Your node is still syncing, so your balance isn't visible yet. But don't worry, you're actively mining and earning XTM.",
+    "tooltip-title": "Why the delay?"
+  },
   "tabs": {
     "history": "履歴",
     "receive": "受信",
     "send": "送信"
   },
   "tari": "Tari",
+  "transactions": "Transactions",
   "wallet-connected": "ウォレット接続済み",
   "wallet-is-scanning": "ウォレットをスキャン中...",
   "wallet-scanning-with-progress": "ウォレットをスキャン中: {{scanned}}/{{total}} ({{percent}}%)",

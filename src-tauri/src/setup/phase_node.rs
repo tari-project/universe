@@ -28,7 +28,6 @@ use crate::{
     events_emitter::EventsEmitter,
     events_manager::EventsManager,
     node::node_manager::{NodeManagerError, STOP_ON_ERROR_CODES},
-    progress_tracker_old::ProgressTracker,
     progress_trackers::{
         progress_plans::{ProgressPlans, ProgressSetupNodePlan},
         progress_stepper::ProgressStepperBuilder,
@@ -52,7 +51,8 @@ use tokio::{
 use tokio_util::task::TaskTracker;
 
 use super::{
-    setup_manager::{PhaseStatus, SetupFeaturesList},
+    listeners::SetupFeaturesList,
+    setup_manager::PhaseStatus,
     trait_setup_phase::{SetupConfiguration, SetupPhaseImpl},
     utils::{setup_default_adapter::SetupDefaultAdapter, timeout_watcher::TimeoutWatcher},
 };
@@ -170,28 +170,26 @@ impl SetupPhaseImpl for NodeSetupPhase {
         let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
         let state = self.app_handle.state::<UniverseAppState>();
 
-        // TODO Remove once not needed
-        let (tx, rx) = watch::channel("".to_string());
-        let progress = ProgressTracker::new(self.app_handle.clone(), Some(tx));
-        let binary_resolver = BinaryResolver::current().read().await;
+        let binary_resolver = BinaryResolver::current();
 
         if self.app_configuration.use_tor && !cfg!(target_os = "macos") {
-            tokio::time::sleep(Duration::from_secs(10)).await;
-            progress_stepper
-                .resolve_step(ProgressPlans::Node(ProgressSetupNodePlan::BinariesTor))
-                .await;
+            let tor_binary_progress_tracker = progress_stepper.channel_step_range_updates(
+                ProgressPlans::Node(ProgressSetupNodePlan::BinariesTor),
+                Some(ProgressPlans::Node(ProgressSetupNodePlan::BinariesNode)),
+            );
             binary_resolver
-                .initialize_binary_timeout(Binaries::Tor, progress.clone(), rx.clone())
+                .initialize_binary(Binaries::Tor, tor_binary_progress_tracker)
                 .await?;
         } else {
             progress_stepper.skip_step(ProgressPlans::Node(ProgressSetupNodePlan::BinariesTor));
         };
 
-        progress_stepper
-            .resolve_step(ProgressPlans::Node(ProgressSetupNodePlan::BinariesNode))
-            .await;
+        let node_binary_progress_tracker = progress_stepper.channel_step_range_updates(
+            ProgressPlans::Node(ProgressSetupNodePlan::BinariesNode),
+            Some(ProgressPlans::Node(ProgressSetupNodePlan::StartTor)),
+        );
         binary_resolver
-            .initialize_binary_timeout(Binaries::MinotariNode, progress.clone(), rx.clone())
+            .initialize_binary(Binaries::MinotariNode, node_binary_progress_tracker)
             .await?;
 
         if self.app_configuration.use_tor && !cfg!(target_os = "macos") {
@@ -331,6 +329,42 @@ impl SetupPhaseImpl for NodeSetupPhase {
 
         let app_handle_clone: tauri::AppHandle = self.app_handle.clone();
         let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
+
+        TasksTrackers::current().common.get_task_tracker().await.spawn(async move {
+        let app_state = app_handle_clone.state::<UniverseAppState>().clone();
+
+        let mut node_status_watch_rx = (*app_state.node_status_watch_rx).clone();
+        let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
+
+        let init_node_status = *node_status_watch_rx.borrow();
+        EventsEmitter::emit_base_node_update(init_node_status).await;
+
+        let mut latest_updated_block_height = init_node_status.block_height;
+        loop {
+            tokio::select! {
+                _ = node_status_watch_rx.changed() => {
+                    let node_status = *node_status_watch_rx.borrow();
+                    let initial_sync_finished = app_state.wallet_manager.is_initial_scan_completed();
+
+                    if node_status.block_height > latest_updated_block_height && initial_sync_finished {
+                        while latest_updated_block_height < node_status.block_height {
+                            latest_updated_block_height += 1;
+                            let _ = EventsManager::handle_new_block_height(&app_handle_clone, latest_updated_block_height).await;
+                        }
+                    }
+                    if node_status.block_height > latest_updated_block_height && !initial_sync_finished {
+                        EventsEmitter::emit_base_node_update(node_status).await;
+                        latest_updated_block_height = node_status.block_height;
+                    }
+                },
+                _ = shutdown_signal.wait() => {
+                    break;
+                },
+            }
+        }
+    });
+
+        let app_handle_clone: tauri::AppHandle = self.app_handle.clone();
         TasksTrackers::current()
             .node_phase
             .get_task_tracker()
@@ -362,6 +396,32 @@ impl SetupPhaseImpl for NodeSetupPhase {
                     }
                 }
             });
+
+        let app_handle_clone: tauri::AppHandle = self.app_handle.clone();
+        TasksTrackers::current().node_phase.get_task_tracker().await.spawn(async move {
+        let app_state = app_handle_clone.state::<UniverseAppState>().clone();
+        let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
+        let mut interval = interval(Duration::from_secs(10));
+
+        loop {
+            tokio::select! {
+                _ = interval.tick() => {
+                    if let Ok(connected_peers) = app_state
+                        .node_manager
+                        .list_connected_peers()
+                        .await {
+                            EventsEmitter::emit_connected_peers_update(connected_peers.clone()).await;
+                        } else {
+                            let err_msg = "Error getting connected peers";
+                            error!(target: LOG_TARGET, "{}", err_msg);
+                        }
+                },
+                _ = shutdown_signal.wait() => {
+                    break;
+                },
+            }
+        }
+    });
 
         Ok(())
     }

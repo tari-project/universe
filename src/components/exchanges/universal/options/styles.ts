@@ -1,3 +1,5 @@
+'use client';
+
 import styled from 'styled-components';
 
 export const ListWrapper = styled.div`
@@ -11,6 +13,10 @@ export const ListWrapper = styled.div`
     max-height: 100%;
     overflow: hidden;
     padding: 20px;
+
+    @media (max-height: 750px) {
+        gap: 5px;
+    }
 `;
 
 export const ScrollWrapper = styled.div`
@@ -19,4 +25,8 @@ export const ScrollWrapper = styled.div`
     gap: 12px;
     overflow: hidden;
     overflow-y: auto;
+
+    @media (max-height: 750px) {
+        gap: 5px;
+    }
 `;

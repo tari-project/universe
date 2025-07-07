@@ -1,8 +1,10 @@
 {
+  "all-activity": "All activity",
   "confirmation-message": "आपका लेन-देन सबमिट कर दिया गया है!\nकुछ ब्लॉकों के माइनिंग के बाद यह आपके इतिहास में दिखाई देगा।",
   "empty-tx": "कोई लेन-देन नहीं मिला",
   "history": {
     "available-balance": "उपलब्ध",
+    "my-balance": "My Balance",
     "label-rewards": "मेरे पुरस्कार",
     "sync-with-phone": "फोन के साथ सिंक करें",
     "transaction-details": "लेन-देन विवरण",
@@ -18,6 +20,7 @@
     "tooltip-emoji-id-text2": "याट समर्थन जल्द ही आ रहा है!",
     "tooltip-emoji-id-title": "इमोजी आईडी"
   },
+  "rewards": "Rewards",
   "send": {
     "balance": "शेष राशि",
     "broadcast": "प्रसारण",
@@ -116,12 +119,22 @@
     "your-transaction-is-being-processed": "आपका लेन-देन संसाधित हो रहा है",
     "your-xtm-is-on-the-way": "आपका XTM रास्ते में है!"
   },
+  "sync-message": {
+    "completed": "Any moment now",
+    "line1": "Sync in progress. ",
+    "line2": " remaining",
+    "line3": "until your wallet balance is displayed",
+    "tooltip-description": "Your node is still syncing, so your balance isn't visible yet.",
+    "tooltip-description-mining": "Your node is still syncing, so your balance isn't visible yet. But don't worry, you're actively mining and earning XTM.",
+    "tooltip-title": "Why the delay?"
+  },
   "tabs": {
     "history": "इतिहास",
     "receive": "प्राप्त करें",
     "send": "भेजें"
   },
   "tari": "तारी",
+  "transactions": "Transactions",
   "wallet-connected": "वॉलेट कनेक्टेड",
   "wallet-is-scanning": "वॉलेट स्कैन कर रहा है...",
   "wallet-scanning-with-progress": "वॉलेट स्कैन कर रहा है: {{scanned}}/{{total}} ({{percent}}%)",
