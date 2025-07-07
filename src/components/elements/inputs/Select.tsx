@@ -123,7 +123,6 @@ export function Select({
                 {...getReferenceProps()}
                 $disabled={disabled}
                 $isBordered={isBordered}
-                $isMinimal={isMinimal}
                 $variant={variant}
                 $isSync={isSync}
             >
