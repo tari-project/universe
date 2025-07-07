@@ -155,9 +155,12 @@ impl InternalWallet {
     }
 
     pub async fn initialize_with_seed(app_handle: &tauri::AppHandle) -> Result<(), anyhow::Error> {
-        let mut wallet_config = ConfigWallet::content().await;
-        wallet_config.set_selected_external_tari_address(None);
-
+        ConfigWallet::update_field(
+            ConfigWalletContent::set_selected_external_tari_address,
+            None,
+        )
+        .await?;
+        let wallet_config = ConfigWallet::content().await;
         let internal_wallet = if *wallet_config.version() >= WALLET_VERSION
             && !wallet_config.tari_wallets().is_empty()
         {
@@ -395,45 +398,55 @@ impl InternalWallet {
         let pin = create_pin_dialog(app_handle).await?;
         let pin_password = SafePassword::from(pin);
 
-        {
+        let encrypted_monero_seed = {
             // Encrypt Monero Seed with PIN
             let monero_seed = InternalWallet::get_monero_seed(app_handle, None).await?;
-            let encrypted_seed = cryptography::encrypt(monero_seed.inner(), &pin_password)?;
+            let encrypted_monero_seed = cryptography::encrypt(monero_seed.inner(), &pin_password)?;
             InternalWallet::set_credentials(
                 app_handle,
                 "monero".to_string(),
                 &Credential {
-                    encrypted_seed: encrypted_seed.clone(),
+                    encrypted_seed: encrypted_monero_seed.clone(),
                 },
                 false,
             )
             .await?;
             if InternalWallet::is_initialized() {
                 let mut internal_wallet_guard = InternalWallet::current().write().await;
-                internal_wallet_guard.encrypted_monero_seed = Hidden::hide(Some(encrypted_seed));
+                internal_wallet_guard.encrypted_monero_seed =
+                    Hidden::hide(Some(encrypted_monero_seed.clone()));
             }
-        }
-        {
+            encrypted_monero_seed
+        };
+        let encrypted_tari_seed = {
             // Encrypt Tari Seed with PIN
             let tari_seed = InternalWallet::get_tari_seed(app_handle, None).await?;
             let wallet_id = InternalWallet::tari_wallet_details()
                 .await
                 .ok_or_else(|| anyhow!("Seedless Wallet does not support PIN enciphering"))?
                 .id;
-            let encrypted_seed = tari_seed.encipher(Some(pin_password))?;
+            let encrypted_tari_seed = tari_seed.encipher(Some(pin_password))?;
             InternalWallet::set_credentials(
                 app_handle,
                 wallet_id,
                 &Credential {
-                    encrypted_seed: encrypted_seed.clone(),
+                    encrypted_seed: encrypted_tari_seed.clone(),
                 },
                 false,
             )
             .await?;
-        }
+            encrypted_tari_seed
+        };
         ConfigWallet::update_field(ConfigWalletContent::set_pin_locked, true).await?;
 
-        InternalWallet::initialize_with_seed(app_handle).await?;
+        if InternalWallet::is_initialized() {
+            let mut internal_wallet_guard = InternalWallet::current().write().await;
+            internal_wallet_guard.encrypted_monero_seed =
+                Hidden::hide(Some(encrypted_monero_seed.clone()));
+            internal_wallet_guard.encrypted_tari_seed =
+                Hidden::hide(Some(encrypted_tari_seed.clone()));
+        }
+
         log::info!(target: LOG_TARGET, "Tari Seed is now encrypted with the provided PIN");
         Ok(())
     }
