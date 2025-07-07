@@ -2,7 +2,7 @@ import { defineConfig, UserConfig } from 'vite';
 import * as path from 'node:path';
 import react from '@vitejs/plugin-react';
 import tsconfigPaths from 'vite-tsconfig-paths';
-import eslintPlugin from '@nabla/vite-plugin-eslint';
+import eslintPlugin from 'vite-plugin-eslint2';
 
 const ReactCompilerConfig = {
     sources: (filename) => {
@@ -26,7 +26,7 @@ const plugins: UserConfig['plugins'] = [
         },
     }),
     tsconfigPaths(),
-    eslintPlugin({ eslintOptions: { cache: false } }),
+    eslintPlugin({ cache: false }),
 ];
 const baseOptions: UserConfig = {
     plugins,
