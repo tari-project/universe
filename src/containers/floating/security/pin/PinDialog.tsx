@@ -20,6 +20,7 @@ export default function PinDialog() {
     function handleClose() {
         void emit('pin-dialog-response', { pin: undefined });
         setDialogToShow(null);
+        setShowComplete(false);
     }
 
     function handleSubmit(pin: string) {
