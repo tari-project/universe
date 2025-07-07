@@ -97,8 +97,9 @@ impl FileClientBuilder {
         };
 
         let file_name = url
+            .clone()
             .split('/')
-            .last()
+            .next_back()
             .map(|s| s.to_string())
             .unwrap_or_else(|| "downloaded_file".to_string());
 
@@ -302,7 +303,7 @@ impl HttpFileClient {
 
         if resume {
             let current_size = file.metadata().await?.len();
-            request = request.header(reqwest::header::RANGE, format!("bytes={}-", current_size));
+            request = request.header(reqwest::header::RANGE, format!("bytes={current_size}-"));
         }
 
         let response = request.send().await?;
