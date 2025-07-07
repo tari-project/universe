@@ -144,8 +144,7 @@ impl ConfigWallet {
                 WALLET_VERSION
             );
 
-            ConfigWallet::update_field(ConfigWalletContent::set_version, WALLET_VERSION.clone())
-                .await?;
+            ConfigWallet::update_field(ConfigWalletContent::set_version, WALLET_VERSION).await?;
 
             return Ok(());
         }

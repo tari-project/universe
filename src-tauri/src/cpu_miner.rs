@@ -140,10 +140,6 @@ impl CpuMiner {
     ) -> Result<(), anyhow::Error> {
         self.pool_status_shutdown_signal = Shutdown::new();
 
-        println!("(((((((((((((((( Starting Cpu miner with addresses:");
-        println!("Tari address: {}", tari_address);
-        println!("Monero address: {}", cpu_miner_config.monero_address);
-
         let (xmrig_node_connection, pool_watcher) = match cpu_miner_config.node_connection {
             CpuMinerConnection::BuiltInProxy => (
                 XmrigNodeConnection::LocalMmproxy {
