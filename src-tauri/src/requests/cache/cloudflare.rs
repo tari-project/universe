@@ -160,8 +160,10 @@ impl CloudFlareCache {
             let content_length = get_content_length_from_head_response(&head_response);
 
             let mut sleep_time = std::time::Duration::from_secs(MIN_WAIT_TIME);
+
+            #[allow(clippy::cast_possible_truncation)]
             let content_length_in_mb: u64 =
-                convert_content_length_to_mb(content_length).to_bits() / 10;
+                (convert_content_length_to_mb(content_length) / 10.0).trunc() as u64;
 
             if !content_length.eq(&0) {
                 sleep_time = std::time::Duration::from_secs(

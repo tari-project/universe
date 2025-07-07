@@ -164,6 +164,7 @@ impl HttpFileClient {
         let expected_size = get_content_length_from_head_response(&head_response);
 
         let destination = self.get_destination();
+        let destination_file = destination.join(&self.file_name);
 
         if self.destination.exists() {
             std::fs::remove_dir_all(&self.destination)?;
@@ -175,7 +176,7 @@ impl HttpFileClient {
                 .map_err(|e| anyhow::anyhow!("Failed to create directory: {}", e))?;
         }
 
-        let mut file = File::create(destination)
+        let mut file = File::create(destination_file)
             .await
             .map_err(|e| anyhow::anyhow!("Failed to create file: {}", e))?;
 
@@ -222,7 +223,7 @@ impl HttpFileClient {
             .await
             .map_err(|e| anyhow::anyhow!("Failed to open file: {}", e))?;
 
-        let mut internet_connnection_check_attempt_count = 0;
+        let mut internet_connection_check_attempt_count = 0;
         let mut file_download_attempt_count = 0;
         let mut last_registered_file_size = 0;
 
@@ -263,11 +264,11 @@ impl HttpFileClient {
             match self.download_file(expected_size, &mut file, true).await {
                 Ok(_) => {
                     info!(target: LOG_TARGET, "Downloaded chunk from {} to {}", start, end);
-                    internet_connnection_check_attempt_count = 0;
+                    internet_connection_check_attempt_count = 0;
                     continue;
                 }
                 Err(e) => loop {
-                    internet_connnection_check_attempt_count += 1;
+                    internet_connection_check_attempt_count += 1;
                     warn!(target: LOG_TARGET, "Failed to resume download: {}", e);
                     if NetworkStatus::check_internet_connection().await {
                         info!(target: LOG_TARGET, "Internet connection is available, retrying download...");
@@ -275,12 +276,12 @@ impl HttpFileClient {
                     } else {
                         warn!(target: LOG_TARGET, "No internet connection, retrying in 5 seconds...");
                         tokio::time::sleep(create_exponential_timeout(
-                            internet_connnection_check_attempt_count,
+                            internet_connection_check_attempt_count,
                         ))
                         .await;
                     }
 
-                    if internet_connnection_check_attempt_count > MAX_RETRIES {
+                    if internet_connection_check_attempt_count > MAX_RETRIES {
                         break;
                     }
                 },
@@ -349,8 +350,6 @@ impl HttpFileClient {
         Ok(())
     }
 
-    // It should extract file if the configuration is set to do so and file extension is supported
-    // Then delete the original file
     pub async fn extract(&self) -> Result<(), anyhow::Error> {
         if let Some(archive_destination) = &self.archive_destination {
             if archive_destination.exists() {

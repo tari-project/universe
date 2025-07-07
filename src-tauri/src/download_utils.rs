@@ -33,7 +33,6 @@ use tokio::io::BufReader;
 use tokio_util::compat::{TokioAsyncReadCompatExt, TokioAsyncWriteCompatExt};
 
 pub async fn extract(file_path: &Path, dest_dir: &Path) -> Result<(), anyhow::Error> {
-    println!("Extracting file at {file_path:?} to {dest_dir:?}");
     match file_path.extension() {
         Some(ext) => match ext.to_str() {
             Some("gz") => {
@@ -58,10 +57,8 @@ pub async fn extract(file_path: &Path, dest_dir: &Path) -> Result<(), anyhow::Er
 
 pub async fn extract_gz(gz_path: &Path, dest_dir: &Path) -> std::io::Result<()> {
     let gz_file = std::fs::File::open(gz_path)?;
-    println!("Extracting file at {gz_path:?}");
     let decoder = GzDecoder::new(std::io::BufReader::new(gz_file));
     let mut archive = Archive::new(decoder);
-    println!("Unpacking to {dest_dir:?}");
     archive.unpack(dest_dir)?;
     Ok(())
 }
