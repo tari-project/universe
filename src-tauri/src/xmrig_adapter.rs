@@ -176,7 +176,7 @@ impl ProcessAdapter for XmrigAdapter {
             }
         };
 
-        std::fs::create_dir_all(xmrig_log_file_parent).unwrap_or_else(| error | {
+        std::fs::create_dir_all(xmrig_log_file_parent).unwrap_or_else(|error| {
             warn!(target: LOG_TARGET, "Could not create xmrig log file parent directory - {error}");
         });
 

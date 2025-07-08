@@ -59,9 +59,7 @@ pub async fn serve(app: Router, port: u16) -> Result<(String, CancellationToken)
         })?;
     let address = listener
         .local_addr()
-        .inspect_err(
-            |e| error!(target: LOG_TARGET, "Failed to obtain local address error: {e:?}"),
-        )
+        .inspect_err(|e| error!(target: LOG_TARGET, "Failed to obtain local address error: {e:?}"))
         .map_err(|_| TappletServerError(FailedToObtainLocalAddress))?
         .to_string();
 

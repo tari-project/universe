@@ -571,9 +571,9 @@ impl SetupManager {
             return;
         }
 
-        let _unused = self.resolve_setup_features()
-            .await
-            .inspect_err(|e| error!(target: LOG_TARGET, "Failed to set setup features during start_setup: {e}"));
+        let _unused = self.resolve_setup_features().await.inspect_err(
+            |e| error!(target: LOG_TARGET, "Failed to set setup features during start_setup: {e}"),
+        );
         *self.app_handle.lock().await = Some(app_handle.clone());
 
         let setup_features = self.features.read().await.clone();

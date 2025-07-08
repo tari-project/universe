@@ -243,9 +243,13 @@ impl UpdatesManager {
                     let now = std::time::Instant::now();
                     let is_last_chunk = content_length.map(|cl| downloaded >= cl).unwrap_or(false);
 
-                    if is_last_chunk || now.duration_since(last_emit) >= Duration::from_millis(100) {
+                    if is_last_chunk || now.duration_since(last_emit) >= Duration::from_millis(100)
+                    {
                         last_emit = std::time::Instant::now();
-                        let payload = DownloadProgressPayload::new(downloaded, content_length.unwrap_or(downloaded));
+                        let payload = DownloadProgressPayload::new(
+                            downloaded,
+                            content_length.unwrap_or(downloaded),
+                        );
                         drop(app.emit("updates_event", payload).inspect_err(|e| {
                             warn!(target: LOG_TARGET, "Failed to emit 'updates_event' event: {e}");
                         }));

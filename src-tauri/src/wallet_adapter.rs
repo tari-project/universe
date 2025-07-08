@@ -116,9 +116,7 @@ impl WalletAdapter {
         let mut client = WalletClient::connect(self.wallet_grpc_address())
             .await
             .map_err(|e| {
-                log::error!(
-                    "[import_transaction] Failed to connect to wallet client: {e}"
-                );
+                log::error!("[import_transaction] Failed to connect to wallet client: {e}");
                 anyhow::anyhow!("Failed to connect to wallet client")
             })?;
 
@@ -128,9 +126,7 @@ impl WalletAdapter {
             })
             .await
             .map_err(|e| {
-                log::error!(
-                    "[import_transaction] Failed to import transactions: {e:?}"
-                );
+                log::error!("[import_transaction] Failed to import transactions: {e:?}");
                 anyhow::anyhow!("Failed to import transactions: {:?}", e)
             })?;
 
