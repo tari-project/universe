@@ -10,10 +10,10 @@ import { AddressTooltip, ActionButton } from './styles.ts';
 
 export default function ActionCopyAddress() {
     const { t } = useTranslation('wallet');
-
-    const [showAdress, setShowAddress] = useState(false);
     const { copyToClipboard, isCopied } = useCopyToClipboard();
-    const [walletAddress, _walletAddressEmoji] = useWalletStore((state) => state.getActiveTariAddress());
+    const [showAdress, setShowAddress] = useState(false);
+    const getActiveTariAddress = useWalletStore((state) => state.getActiveTariAddress);
+    const [walletAddress, _walletAddressEmoji] = getActiveTariAddress();
     const displayAddress = truncateMiddle(walletAddress, 5);
 
     const { refs, context, floatingStyles } = useFloating({
