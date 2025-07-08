@@ -430,7 +430,7 @@ impl SpendWalletAdapter {
     }
 
     async fn get_seed_words(&self, app_handle: &tauri::AppHandle) -> Result<String, Error> {
-        let pin_password = PinManager::get_validated_pin_if_defined(&app_handle).await?;
+        let pin_password = PinManager::get_validated_pin_if_defined(app_handle).await?;
         let tari_cipher_seed = InternalWallet::get_tari_seed(pin_password).await?;
         let seed_words = tari_cipher_seed.to_mnemonic(MnemonicLanguage::English, None)?;
         Ok(seed_words.join(" ").reveal().to_string())

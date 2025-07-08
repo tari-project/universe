@@ -47,7 +47,7 @@ impl PinManager {
     pub async fn get_validated_pin(app_handle: &AppHandle) -> Result<SafePassword, anyhow::Error> {
         let pin = enter_pin_dialog(app_handle).await?;
         let pin_password = SafePassword::from(pin);
-        let _unused = PinManager::validate_pin(pin_password.clone()).await?;
+        PinManager::validate_pin(pin_password.clone()).await?;
         Ok(pin_password)
     }
 
@@ -80,7 +80,7 @@ impl PinManager {
                 Err(e) => {
                     pin_locker.register_failed_pin_attempt().await?;
                     log::info!(target: LOG_TARGET, "Pin validation failed against Tari Seed!");
-                    return Err(e.into());
+                    return Err(e);
                 }
             }
         } else if *ConfigWallet::content().await.monero_address_is_generated() {
@@ -91,7 +91,7 @@ impl PinManager {
                 Err(e) => {
                     pin_locker.register_failed_pin_attempt().await?;
                     log::info!(target: LOG_TARGET, "Pin validation failed against Monero Seed!");
-                    return Err(e.into());
+                    return Err(e);
                 }
             }
         } else {

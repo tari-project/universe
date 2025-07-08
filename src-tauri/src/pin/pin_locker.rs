@@ -92,7 +92,7 @@ impl PinLocker {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Getters, Setters)]
+#[derive(Default, Serialize, Deserialize, Clone, Debug, Getters, Setters)]
 pub struct PinLockerState {
     #[getset(get = "pub", set = "pub")]
     pin_locked: bool,
@@ -100,16 +100,6 @@ pub struct PinLockerState {
     failed_pin_attempts: u32,
     #[getset(get = "pub", set = "pub")]
     last_failed_pin_attempt: Option<SystemTime>,
-}
-
-impl Default for PinLockerState {
-    fn default() -> Self {
-        PinLockerState {
-            pin_locked: false,
-            failed_pin_attempts: 0,
-            last_failed_pin_attempt: None,
-        }
-    }
 }
 
 impl PinLockerState {
