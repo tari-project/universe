@@ -315,12 +315,6 @@ impl BinaryManager {
 
         let destination_dir = binary_folder.join(&version);
 
-        // This is a safety check to ensure that the destination directory is empty
-        // Its special case for tari repo, where zip will inclue mutliple binaries
-        // So when one of them is deleted, and we need to download it again
-        // We in fact will download zip with multiple binaries, and when other binaries are present in destination dir
-        // extract will fail, so we need to remove all files from destination dir
-
         let download_url = download_info.main_url.clone();
         let fallback_url = download_info.fallback_url.clone();
 
