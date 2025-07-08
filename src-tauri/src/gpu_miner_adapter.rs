@@ -305,7 +305,7 @@ impl GpuMinerStatusMonitor {
         {
             Ok(response) => response,
             Err(e) => {
-                warn!(target: LOG_TARGET, "Error in getting response from XtrGpuMiner status: {}", e);
+                warn!(target: LOG_TARGET, "Error in getting response from XtrGpuMiner status: {e}");
                 if e.is_connect() {
                     return Ok(GpuMinerStatus {
                         is_mining: false,
@@ -324,7 +324,7 @@ impl GpuMinerStatusMonitor {
         let body: XtrGpuminerHttpApiStatus = match serde_json::from_str(&text) {
             Ok(body) => body,
             Err(e) => {
-                warn!(target: LOG_TARGET, "Error decoding body from  in XtrGpuMiner status: {}", e);
+                warn!(target: LOG_TARGET, "Error decoding body from  in XtrGpuMiner status: {e}");
                 return Ok(GpuMinerStatus {
                     is_mining: false,
                     hash_rate: 0.0,

@@ -809,7 +809,7 @@ async fn handle_data(
                     Ok(response) => {
                         if let Some(response_inner) = response {
                             if let Some(user_points) = response_inner.user_points {
-                                debug!(target: LOG_TARGET,"emitting UserPoints event{:?}", user_points);
+                                debug!(target: LOG_TARGET,"emitting UserPoints event{user_points:?}");
                                 let response_inner =
                                     response_inner.referral_count.unwrap_or(ReferralCount {
                                         gems: 0.0,
@@ -823,14 +823,14 @@ async fn handle_data(
                                 app_handle
                                     .emit("UserPoints", emit_data)
                                     .map_err(|e| {
-                                        error!("could not send user points as an event: {}", e)
+                                        error!("could not send user points as an event: {e}")
                                     })
                                     .unwrap_or(());
                             }
                         }
                     }
                     Err(e) => {
-                        error!(target: LOG_TARGET,"Error sending telemetry data: {}", e);
+                        error!(target: LOG_TARGET,"Error sending telemetry data: {e}");
                     }
                 }
             }
@@ -859,7 +859,7 @@ async fn handle_data(
             debug!(target: LOG_TARGET, "Telemetry manager shutdown – no data sent");
         }
         Err(e) => {
-            error!(target: LOG_TARGET,"Error getting telemetry data: {}", e);
+            error!(target: LOG_TARGET,"Error getting telemetry data: {e}");
         }
     }
 }

@@ -134,7 +134,7 @@ impl RequestClient {
             std::env::consts::OS
         );
 
-        info!(target: LOG_TARGET, "RequestClient::new, user_agent: {}", user_agent);
+        info!(target: LOG_TARGET, "RequestClient::new, user_agent: {user_agent}");
 
         Self {
             client: Self::build_retry_reqwest_client(),
@@ -212,9 +212,9 @@ impl RequestClient {
         let mut file = match File::open(file_destination_path).await {
             Ok(file) => file,
             Err(e) => {
-                warn!(target: LOG_TARGET, "Failed to open file for writing: {}", e);
+                warn!(target: LOG_TARGET, "Failed to open file for writing: {e}");
                 File::create(file_destination_path).await.map_err(|e| {
-                    warn!(target: LOG_TARGET, "Failed to create file: {}", e);
+                    warn!(target: LOG_TARGET, "Failed to create file: {e}");
                     e
                 })?
             }
@@ -236,7 +236,7 @@ impl RequestClient {
                 match chunk {
                     Ok(data) => {
                         if let Err(e) = file.write_all(&data).await {
-                            warn!(target: LOG_TARGET, "Failed to write chunk to file: {}", e);
+                            warn!(target: LOG_TARGET, "Failed to write chunk to file: {e}");
                             return Err(anyhow!("Failed to write chunk to file: {}", e));
                         }
                         if expected_size > 0 {
@@ -245,13 +245,13 @@ impl RequestClient {
                                 * 100.0;
                             if let Some(sender) = &progress_status_sender {
                                 if let Err(e) = sender.send(progress_percentage.round()) {
-                                    warn!(target: LOG_TARGET, "Failed to send progress update: {}", e);
+                                    warn!(target: LOG_TARGET, "Failed to send progress update: {e}");
                                 }
                             }
                         }
                     }
                     Err(e) => {
-                        warn!(target: LOG_TARGET, "Error reading chunk: {}", e);
+                        warn!(target: LOG_TARGET, "Error reading chunk: {e}");
                         return Err(anyhow!("Error reading chunk: {}", e));
                     }
                 }
@@ -350,7 +350,7 @@ impl RequestClient {
             }
 
             retries += 1;
-            warn!(target: LOG_TARGET, "Cache miss. Retrying in {} seconds. Try {}/{}", sleep_time.as_secs().to_string() ,retries, MAX_RETRIES);
+            warn!(target: LOG_TARGET, "Cache miss. Retrying in {} seconds. Try {}/{}", sleep_time.as_secs() ,retries, MAX_RETRIES);
             tokio::time::sleep(sleep_time).await;
         }
 
@@ -403,8 +403,8 @@ impl RequestClient {
             info!(target: LOG_TARGET, "Cloudflare cache status: {:?}", head_reposnse_cache_status.to_str());
         };
 
-        info!(target: LOG_TARGET, "Expected downloaded file size: {}", head_reponse_content_length);
-        info!(target: LOG_TARGET, "Downloaded file size: {}", destination_file_size);
+        info!(target: LOG_TARGET, "Expected downloaded file size: {head_reponse_content_length}");
+        info!(target: LOG_TARGET, "Downloaded file size: {destination_file_size}");
 
         if head_reponse_content_length != 0 && head_reponse_content_length != destination_file_size
         {
@@ -415,7 +415,7 @@ impl RequestClient {
             ));
         };
 
-        info!(target: LOG_TARGET, "Finished downloading: {}", url);
+        info!(target: LOG_TARGET, "Finished downloading: {url}");
 
         Ok(())
     }
@@ -427,7 +427,7 @@ impl RequestClient {
         check_cache: bool,
         chunk_progress_sender: Option<Sender<f64>>,
     ) -> Result<(), anyhow::Error> {
-        info!(target: LOG_TARGET, "Downloading file: {}", url);
+        info!(target: LOG_TARGET, "Downloading file: {url}");
 
         let mut retries = 0;
         let mut last_error_message = String::new();
@@ -448,11 +448,11 @@ impl RequestClient {
                 Ok(_) => break,
                 Err(e) => {
                     last_error_message = e.to_string();
-                    warn!(target: LOG_TARGET, "Failed to download file: {}", e);
+                    warn!(target: LOG_TARGET, "Failed to download file: {e}");
                     info!(target: LOG_TARGET, "Deleting file: {}", destination.display());
                     if destination.exists() {
                         let _unused = fs::remove_file(destination).await.inspect_err(|e| {
-                            warn!(target: LOG_TARGET, "Failed to delete file: {}", e);
+                            warn!(target: LOG_TARGET, "Failed to delete file: {e}");
                         });
                     }
                     tokio::time::sleep(TIME_BETWEEN_FILE_DOWNLOADS).await;

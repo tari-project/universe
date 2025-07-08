@@ -256,7 +256,7 @@ impl GpuMiner {
 
         for entry in read_dir(engine_statuses_directory)? {
             info!(target: LOG_TARGET, "Reading engine status file");
-            info!(target: LOG_TARGET, "Engine status file: {:?}", entry);
+            info!(target: LOG_TARGET, "Engine status file: {entry:?}");
             let entry = entry?;
             let path = entry.path();
             // let file_name = path.file_name().unwrap().to_str().unwrap();
@@ -269,15 +269,15 @@ impl GpuMiner {
             let sanitized_file_name = file_name.split("_").collect::<Vec<&str>>()[0];
             let engine_type = EngineType::from_string(sanitized_file_name);
 
-            info!(target: LOG_TARGET, "File name: {:?}", file_name);
-            info!(target: LOG_TARGET, "Sanitized file name: {:?}", sanitized_file_name);
+            info!(target: LOG_TARGET, "File name: {file_name:?}");
+            info!(target: LOG_TARGET, "Sanitized file name: {sanitized_file_name:?}");
 
             match engine_type {
                 Ok(engine) => {
                     available_engines.push(engine);
                 }
                 Err(_) => {
-                    info!(target: LOG_TARGET, "Invalid engine type: {:?}", sanitized_file_name);
+                    info!(target: LOG_TARGET, "Invalid engine type: {sanitized_file_name:?}");
                 }
             }
         }

@@ -51,7 +51,7 @@ impl PortAllocator {
                 Ok(port)
             }
             Err(e) => {
-                error!(target: LOG_TARGET, "Failed to bind to port: {:?}", e);
+                error!(target: LOG_TARGET, "Failed to bind to port: {e:?}");
                 Err(anyhow!("Failed to bind to port"))
             }
         }
@@ -82,13 +82,13 @@ impl PortAllocator {
                 .unwrap_or_else(|_| self.asign_port_from_fallback_range());
             tries += 1;
             if tries >= MAX_RETRIES {
-                warn!(target: LOG_TARGET, "Failed to assign port after {} tries", MAX_RETRIES);
+                warn!(target: LOG_TARGET, "Failed to assign port after {MAX_RETRIES} tries");
                 info!(target: LOG_TARGET, "Assigning port from fallback range");
                 return self.asign_port_from_fallback_range();
             }
         }
 
-        info!(target: LOG_TARGET, "Assigned port: {}", port);
+        info!(target: LOG_TARGET, "Assigned port: {port}");
         port
     }
 }

@@ -75,11 +75,11 @@ impl CpuMinerConfig {
                 if let Ok(port) = parts[1].parse::<u16>() {
                     self.pool_port = Some(port);
                 } else {
-                    error!(target: LOG_TARGET, "Invalid port number in pool URL: {}", pool_url);
+                    error!(target: LOG_TARGET, "Invalid port number in pool URL: {pool_url}");
                 }
                 self.pool_host_name = Some(parts[0].to_string());
             } else {
-                error!(target: LOG_TARGET, "Invalid pool URL format: {}", pool_url);
+                error!(target: LOG_TARGET, "Invalid pool URL format: {pool_url}");
             }
             self.node_connection = CpuMinerConnection::Pool;
         } else {
@@ -210,11 +210,11 @@ impl CpuMiner {
         let max_cpu_available = thread::available_parallelism();
         let max_cpu_available = match max_cpu_available {
             Ok(available_cpus) => {
-                debug!(target:LOG_TARGET, "Available CPUs: {}", available_cpus);
+                debug!(target:LOG_TARGET, "Available CPUs: {available_cpus}");
                 u32::try_from(available_cpus.get()).unwrap_or(1)
             }
             Err(err) => {
-                error!("Available CPUs: Unknown, error: {}", err);
+                error!("Available CPUs: Unknown, error: {err}");
                 1
             }
         };
@@ -410,7 +410,7 @@ impl CpuMiner {
                                 match watcher.get_pool_status().await {
                                     Ok(status) => Some(status),
                                     Err(e) => {
-                                        error!(target: LOG_TARGET, "Error fetching pool status: {}", e);
+                                        error!(target: LOG_TARGET, "Error fetching pool status: {e}");
                                         None
                                     }
                                 }

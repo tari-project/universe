@@ -168,24 +168,24 @@ impl SystemTrayManager {
                     info!(target: LOG_TARGET, "Unminimizing window");
                     match PlatformUtils::detect_current_os() {
                         CurrentOperatingSystem::Linux => {
-                            window.hide().unwrap_or_else(|error| error!(target: LOG_TARGET, "Failed hide window: {}", error));
-                            window.unminimize().unwrap_or_else(|error| error!(target: LOG_TARGET, "Failed to unminimize window: {}", error));
-                            window.show().unwrap_or_else(|error| error!(target: LOG_TARGET, "Failed to show window: {}", error));
-                            window.set_focus().unwrap_or_else(|error| error!(target: LOG_TARGET, "Failed to set focus on window: {}", error));
+                            window.hide().unwrap_or_else(|error| error!(target: LOG_TARGET, "Failed hide window: {error}"));
+                            window.unminimize().unwrap_or_else(|error| error!(target: LOG_TARGET, "Failed to unminimize window: {error}"));
+                            window.show().unwrap_or_else(|error| error!(target: LOG_TARGET, "Failed to show window: {error}"));
+                            window.set_focus().unwrap_or_else(|error| error!(target: LOG_TARGET, "Failed to set focus on window: {error}"));
                         }
                         _ => {
                             window.unminimize().unwrap_or_else(|error| {
-                                error!(target: LOG_TARGET, "Failed to unminimize window: {}", error);
+                                error!(target: LOG_TARGET, "Failed to unminimize window: {error}");
                             });
                             window.set_focus().unwrap_or_else(|error| {
-                                error!(target: LOG_TARGET, "Failed to set focus on window: {}", error);
+                                error!(target: LOG_TARGET, "Failed to set focus on window: {error}");
                             });
                         }
                     }
                 } else {
                     info!(target: LOG_TARGET, "Minimizing window");
                     window.minimize().unwrap_or_else(|error| {
-                        error!(target: LOG_TARGET, "Failed to minimize window: {}", error);
+                        error!(target: LOG_TARGET, "Failed to minimize window: {error}");
                     });
                 }
             },
@@ -203,7 +203,7 @@ impl SystemTrayManager {
     pub fn update_tray(&mut self, data: SystemTrayData) {
         if let Some(tray) = &self.tray {
             if let Err(e) = tray.set_tooltip(self.get_tooltip_text(data.clone())) {
-                error!(target: LOG_TARGET, "Failed to update tooltip: {}", e);
+                error!(target: LOG_TARGET, "Failed to update tooltip: {e}");
             }
         } else {
             error!(target: LOG_TARGET, "Tray not initialized");
@@ -220,13 +220,13 @@ impl SystemTrayManager {
                 if let Some(item) = menu.get(id.to_str()) {
                     if let Some(menu_item) = item.as_menuitem() {
                         if let Err(e) = menu_item.set_text(id.get_title(value)) {
-                            error!(target: LOG_TARGET, "Failed to update menu field: {}", e);
+                            error!(target: LOG_TARGET, "Failed to update menu field: {e}");
                         }
                     } else {
-                        error!(target: LOG_TARGET, "Failed to get menu item for {:?}", id);
+                        error!(target: LOG_TARGET, "Failed to get menu item for {id:?}");
                     }
                 } else {
-                    error!(target: LOG_TARGET, "Failed to get menu item by id for {:?}", id);
+                    error!(target: LOG_TARGET, "Failed to get menu item by id for {id:?}");
                 }
             }
         } else {

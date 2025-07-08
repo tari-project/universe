@@ -86,7 +86,7 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
             Ok(_) => Ok(checksum_path),
             Err(_) => {
                 let checksum_fallback_url = format!("{}.sha256", download_info.fallback_url);
-                info!(target: LOG_TARGET, "Fallback URL: {}", checksum_fallback_url);
+                info!(target: LOG_TARGET, "Fallback URL: {checksum_fallback_url}");
                 RequestClient::current()
                     .download_file_with_retries(&checksum_fallback_url, &checksum_path, false, None)
                     .await?;
@@ -111,7 +111,7 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
 
         if !binary_folder_path.exists() {
             std::fs::create_dir_all(&binary_folder_path).unwrap_or_else(|e| {
-                error!(target: LOG_TARGET, "Failed to create directory: {}", e);
+                error!(target: LOG_TARGET, "Failed to create directory: {e}");
             });
         };
 

@@ -66,10 +66,7 @@ impl NetworkStatus {
     pub async fn handle_test_results(&self, download_speed: f64, upload_speed: f64, latency: f64) {
         info!(
             target: LOG_TARGET,
-            "Network speed test results: download_speed: {:.2} MB/s, upload_speed: {:.2} MB/s, latency: {:.2} ms",
-            download_speed,
-            upload_speed,
-            latency
+            "Network speed test results: download_speed: {download_speed:.2} MB/s, upload_speed: {upload_speed:.2} MB/s, latency: {latency:.2} ms"
         );
         let is_bandwidth_too_low = self.is_bandwidth_too_low(download_speed, upload_speed);
 
@@ -77,7 +74,7 @@ impl NetworkStatus {
             .sender
             .send((download_speed, upload_speed, latency))
             .inspect_err(|e| {
-                error!(target: LOG_TARGET, "Failed to send network speeds: {:?}", e);
+                error!(target: LOG_TARGET, "Failed to send network speeds: {e:?}");
             });
 
         EventsEmitter::emit_network_status(
@@ -111,7 +108,7 @@ impl NetworkStatus {
                 download_speed = speed;
             }
             Err(e) => {
-                error!(target: LOG_TARGET, "Failed to perform download speed test: {:?}", e)
+                error!(target: LOG_TARGET, "Failed to perform download speed test: {e:?}")
             }
         };
 
@@ -126,13 +123,13 @@ impl NetworkStatus {
         {
             Ok(speed) => upload_speed = speed,
             Err(e) => {
-                error!(target: LOG_TARGET, "Failed to perform upload speed test: {:?}", e)
+                error!(target: LOG_TARGET, "Failed to perform upload speed test: {e:?}")
             }
         };
 
         match spawn_blocking(|| test_latency(&reqwest::blocking::Client::new())).await {
             Ok(lat) => latency = lat,
-            Err(e) => error!(target: LOG_TARGET, "Failed to perform latency test: {:?}", e),
+            Err(e) => error!(target: LOG_TARGET, "Failed to perform latency test: {e:?}"),
         }
 
         Ok((download_speed, upload_speed, latency))
@@ -146,7 +143,7 @@ impl NetworkStatus {
                 Ok(())
             }
             Err(e) => {
-                error!(target: LOG_TARGET, "Failed to perform network speed test: {:?}", e);
+                error!(target: LOG_TARGET, "Failed to perform network speed test: {e:?}");
                 Err(e)
             }
         }
@@ -158,7 +155,7 @@ impl NetworkStatus {
             Ok(Err(error_message)) => {
                 let error_message =
                     format!("Failed to perform network speed test: {error_message:?}");
-                error!(target: LOG_TARGET, "Failed to perform network speed test: {:?}", error_message);
+                error!(target: LOG_TARGET, "Failed to perform network speed test: {error_message:?}");
             }
             Err(_) => {
                 error!(target: LOG_TARGET, "Network speed test timed out");

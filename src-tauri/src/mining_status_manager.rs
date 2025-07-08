@@ -137,7 +137,7 @@ impl MiningStatusManager {
                                     let client = reqwest::Client::new();
                                     let url = format!("{base_url}/miner/mining-status");
                                     if let Ok(response) = client.post(url).header(AUTHORIZATION, &format!("Bearer {jwt}")).json(&message).send().await.inspect_err(|e|{
-                                        error!("error at sending mining status {}",e.to_string());
+                                        error!("error at sending mining status {e}");
                                     }){
                                         let status = response.status();
                                         if !status.is_success(){

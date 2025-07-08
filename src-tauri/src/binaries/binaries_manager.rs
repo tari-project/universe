@@ -116,7 +116,7 @@ impl BinaryManager {
                 (content_string.trim().to_string(), None)
             };
 
-        debug!(target: LOG_TARGET, "Binary: {} version requirement: {}, hash: {:?}", binary_name, version_requirement, hash);
+        debug!(target: LOG_TARGET, "Binary: {binary_name} version requirement: {version_requirement}, hash: {hash:?}");
         (version_requirement, hash)
     }
 
@@ -124,7 +124,7 @@ impl BinaryManager {
         debug!(target: LOG_TARGET,"Creating in progress folder for version: {:?}", self.selected_version);
 
         let binary_folder = self.adapter.get_binary_folder().map_err(|error| {
-            error!(target: LOG_TARGET, "Error getting binary folder. Error: {:?}", error);
+            error!(target: LOG_TARGET, "Error getting binary folder. Error: {error:?}");
             anyhow!("Error getting binary folder: {:?}", error)
         })?;
 
@@ -133,13 +133,13 @@ impl BinaryManager {
             .join("in_progress");
 
         if in_progress_folder.exists() {
-            debug!(target: LOG_TARGET,"Removing in progress folder: {:?}", in_progress_folder);
+            debug!(target: LOG_TARGET,"Removing in progress folder: {in_progress_folder:?}");
             if let Err(error) = std::fs::remove_dir_all(&in_progress_folder) {
-                error!(target: LOG_TARGET, "Error removing in progress folder: {:?}. Error: {:?}", in_progress_folder, error);
+                error!(target: LOG_TARGET, "Error removing in progress folder: {in_progress_folder:?}. Error: {error:?}");
             }
         }
 
-        debug!(target: LOG_TARGET,"Creating in progress folder: {:?}", in_progress_folder);
+        debug!(target: LOG_TARGET,"Creating in progress folder: {in_progress_folder:?}");
         std::fs::create_dir_all(&in_progress_folder)?;
 
         Ok(in_progress_folder)
@@ -149,7 +149,7 @@ impl BinaryManager {
         debug!(target: LOG_TARGET,"Deleting in progress folder for version: {:?}", self.selected_version);
 
         let binary_folder = self.adapter.get_binary_folder().map_err(|error| {
-            error!(target: LOG_TARGET, "Error getting binary folder. Error: {:?}", error);
+            error!(target: LOG_TARGET, "Error getting binary folder. Error: {error:?}");
             anyhow!("Error getting binary folder: {:?}", error)
         })?;
 
@@ -158,9 +158,9 @@ impl BinaryManager {
             .join("in_progress");
 
         if in_progress_folder.exists() {
-            debug!(target: LOG_TARGET,"Removing in progress folder: {:?}", in_progress_folder);
+            debug!(target: LOG_TARGET,"Removing in progress folder: {in_progress_folder:?}");
             if let Err(error) = std::fs::remove_dir_all(&in_progress_folder) {
-                error!(target: LOG_TARGET, "Error removing in progress folder: {:?}. Error: {:?}", in_progress_folder, error);
+                error!(target: LOG_TARGET, "Error removing in progress folder: {in_progress_folder:?}. Error: {error:?}");
             }
         }
 
@@ -293,7 +293,7 @@ impl BinaryManager {
         let binary_folder = match self.adapter.get_binary_folder() {
             Ok(path) => path,
             Err(e) => {
-                error!(target: LOG_TARGET, "Error getting binary folder. Error: {:?}", e);
+                error!(target: LOG_TARGET, "Error getting binary folder. Error: {e:?}");
                 return false;
             }
         };
@@ -305,14 +305,14 @@ impl BinaryManager {
         let binary_file_with_exe = binary_file.with_extension("exe");
         let binary_file_with_html = version_folder.join("index.html");
 
-        debug!(target: LOG_TARGET, "Binary folder path: {:?}", binary_folder);
-        debug!(target: LOG_TARGET, "Version folder path: {:?}", version_folder);
-        debug!(target: LOG_TARGET, "Binary file path: {:?}", binary_file);
+        debug!(target: LOG_TARGET, "Binary folder path: {binary_folder:?}");
+        debug!(target: LOG_TARGET, "Version folder path: {version_folder:?}");
+        debug!(target: LOG_TARGET, "Binary file path: {binary_file:?}");
 
         let binary_file_exists =
             binary_file.exists() || binary_file_with_exe.exists() || binary_file_with_html.exists();
 
-        debug!(target: LOG_TARGET, "Binary file exists: {:?}", binary_file_exists);
+        debug!(target: LOG_TARGET, "Binary file exists: {binary_file_exists:?}");
 
         binary_file_exists
     }
@@ -339,7 +339,7 @@ impl BinaryManager {
             }
         }
         sentry::capture_message(&last_error_message, sentry::Level::Error);
-        error!(target: LOG_TARGET, "{}", last_error_message);
+        error!(target: LOG_TARGET, "{last_error_message}");
         Err(anyhow!(last_error_message))
     }
 
@@ -366,7 +366,7 @@ impl BinaryManager {
             task_tacker.get_task_tracker().await.spawn(async move {
                 loop {
                     if shutdown_signal.is_triggered() || inner_shutdown_signal.is_triggered() {
-                        info!(target: LOG_TARGET, "Shutdown signal received. Stopping progress channel for binary: {:?}", binary_name);
+                        info!(target: LOG_TARGET, "Shutdown signal received. Stopping progress channel for binary: {binary_name:?}");
                         break;
                     }
                     let _unused = receiver.changed().await;
@@ -385,7 +385,7 @@ impl BinaryManager {
                     tokio::time::sleep(std::time::Duration::from_millis(10)).await;
 
                     if last_percentage.ge(&100.0)  {
-                        info!(target: LOG_TARGET, "Progress channel completed for binary: {:?}", binary_name);
+                        info!(target: LOG_TARGET, "Progress channel completed for binary: {binary_name:?}");
                         break;
                     }
                 }
@@ -468,7 +468,7 @@ impl BinaryManager {
                     if let Some(mut progress_sender_shutdown) = fallback_progress_sender_shutdown {
                         progress_sender_shutdown.trigger();
                     }
-                    error!(target: LOG_TARGET, "Error downloading version: {:?}. Error: {:?}", version, e);
+                    error!(target: LOG_TARGET, "Error downloading version: {version:?}. Error: {e:?}");
                 });
         }
 

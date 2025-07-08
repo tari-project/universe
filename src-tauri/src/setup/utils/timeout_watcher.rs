@@ -173,7 +173,7 @@ impl TimeoutWatcher {
             }
 
             let sleep_duration = std::cmp::min(duration, Duration::from_secs(1));
-            info!(target: LOG_TARGET, "Remaining timeout duration: {:?}", duration);
+            info!(target: LOG_TARGET, "Remaining timeout duration: {duration:?}");
             tokio::time::sleep(sleep_duration).await;
             duration -= sleep_duration;
         }

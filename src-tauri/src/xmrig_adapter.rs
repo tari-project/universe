@@ -177,7 +177,7 @@ impl ProcessAdapter for XmrigAdapter {
         };
 
         std::fs::create_dir_all(xmrig_log_file_parent).unwrap_or_else(| error | {
-            warn!(target: LOG_TARGET, "Could not create xmrig log file parent directory - {}", error);
+            warn!(target: LOG_TARGET, "Could not create xmrig log file parent directory - {error}");
         });
 
         args.push(format!("--http-port={}", self.http_api_port));
@@ -241,7 +241,7 @@ impl StatusMonitor for XmrigStatusMonitor {
                     HealthStatus::Healthy
                 }
                 Err(e) => {
-                    warn!(target: LOG_TARGET, "Failed to get xmrig summary: {}", e);
+                    warn!(target: LOG_TARGET, "Failed to get xmrig summary: {e}");
                     let _result = self.summary_broadcast.send(None);
                     HealthStatus::Unhealthy
                 }

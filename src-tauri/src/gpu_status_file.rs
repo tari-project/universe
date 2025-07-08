@@ -74,8 +74,7 @@ impl GpuStatusFile {
 
     pub fn save(new_content: GpuStatusFile, path: &Path) -> Result<(), anyhow::Error> {
         debug!(
-            "Updating gpu status file with {:?}, at path: {:?}",
-            new_content, path
+            "Updating gpu status file with {new_content:?}, at path: {path:?}"
         );
         let content = serde_json::to_string_pretty(&new_content)?;
 

@@ -343,7 +343,7 @@ impl NodeManager {
     pub async fn get_identity(&self) -> Result<NodeIdentity, anyhow::Error> {
         let current_service = self.get_current_service().await?;
         current_service.get_identity().await.inspect_err(|e| {
-            error!(target: LOG_TARGET, "Error getting node identity: {}", e);
+            error!(target: LOG_TARGET, "Error getting node identity: {e}");
         })
     }
 
@@ -537,7 +537,7 @@ pub async fn start_status_forwarding_thread(
                             error!(target: LOG_TARGET, "Failed to forward local BaseNodeStatus via base_node_watch_tx");
                         }
                         if should_log {
-                            info!(target: LOG_TARGET, "Forwarded Local BaseNodeStatus: {:?}", status);
+                            info!(target: LOG_TARGET, "Forwarded Local BaseNodeStatus: {status:?}");
                             last_local_status = Some(status);
                         }
                     }
@@ -559,7 +559,7 @@ pub async fn start_status_forwarding_thread(
                             error!(target: LOG_TARGET, "Failed to forward remote BaseNodeStatus via base_node_watch_tx");
                         }
                         if should_log {
-                            info!(target: LOG_TARGET, "Forwarded Remote BaseNodeStatus: {:?}", status);
+                            info!(target: LOG_TARGET, "Forwarded Remote BaseNodeStatus: {status:?}");
                             last_remote_status = Some(status);
                         }
                     }
@@ -599,17 +599,13 @@ where
                     if retries > 420 {
                         warn!(
                             target: LOG_TARGET,
-                            "Max retries exceeded for {} node identity readiness. Stopping watcher. Error: {}",
-                            node_type,
-                            err
+                            "Max retries exceeded for {node_type} node identity readiness. Stopping watcher. Error: {err}"
                         );
                         return stop_watcher_on_error(node_watcher, err).await;
                     }
                     warn!(
                         target: LOG_TARGET,
-                        "[ensure_node_identity_reachable] {} node did not return identity, retrying in 1 second... | {}",
-                        node_type,
-                        err
+                        "[ensure_node_identity_reachable] {node_type} node did not return identity, retrying in 1 second... | {err}"
                     );
                     retries += 1;
                 }
@@ -617,8 +613,7 @@ where
         } else {
             error!(
                 target: LOG_TARGET,
-                "{} node service is unavailable - ensure_node_identity_reachable skipped",
-                node_type
+                "{node_type} node service is unavailable - ensure_node_identity_reachable skipped"
             );
             break;
         }
@@ -730,7 +725,7 @@ async fn switch_to_local(node_manager: NodeManager, node_type: Arc<RwLock<NodeTy
         let mut remote_node_watcher = node_manager.remote_node_watcher.write().await;
         if let Some(remote_node_watcher) = remote_node_watcher.as_mut() {
             if let Err(e) = remote_node_watcher.stop().await {
-                error!(target: LOG_TARGET, "Failed to stop remote node watcher: {}", e);
+                error!(target: LOG_TARGET, "Failed to stop remote node watcher: {e}");
             }
         }
     }
