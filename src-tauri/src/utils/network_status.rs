@@ -177,7 +177,7 @@ impl NetworkStatus {
                 }
             }
             Err(e) => {
-                error!(target: LOG_TARGET, "Failed to ping Google server: {:?}", e);
+                error!(target: LOG_TARGET, "Failed to ping Google server: {e:?}");
                 Err(e.into())
             }
         }
@@ -191,7 +191,7 @@ impl NetworkStatus {
                     true
                 }
                 Err(e) => {
-                    error!(target: LOG_TARGET, "No internet connection: {:?}", e);
+                    error!(target: LOG_TARGET, "No internet connection: {e:?}");
                     false
                 }
             },
