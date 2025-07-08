@@ -141,6 +141,7 @@ pub enum HealthStatus {
     Healthy,
     Warning,
     Unhealthy,
+    Initializing,
 }
 
 #[async_trait]

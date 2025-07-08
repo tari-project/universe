@@ -133,6 +133,9 @@ impl SetupPhaseImpl for NodeSetupPhase {
             .add_step(ProgressPlans::Node(ProgressSetupNodePlan::BinariesTor))
             .add_step(ProgressPlans::Node(ProgressSetupNodePlan::BinariesNode))
             .add_step(ProgressPlans::Node(ProgressSetupNodePlan::StartTor))
+            .add_step(ProgressPlans::Node(
+                ProgressSetupNodePlan::MigratingDatabase,
+            ))
             .add_step(ProgressPlans::Node(ProgressSetupNodePlan::StartingNode))
             .add_step(ProgressPlans::Node(
                 ProgressSetupNodePlan::WaitingForInitialSync,
@@ -203,11 +206,20 @@ impl SetupPhaseImpl for NodeSetupPhase {
         }
 
         let tor_control_port = state.tor_manager.get_control_port().await?;
-        progress_stepper
-            .resolve_step(ProgressPlans::Node(ProgressSetupNodePlan::StartingNode))
-            .await;
+
+        // Set up migration progress tracking
+        let migration_tracker = progress_stepper.channel_step_range_updates(
+            ProgressPlans::Node(ProgressSetupNodePlan::MigratingDatabase),
+            Some(ProgressPlans::Node(ProgressSetupNodePlan::StartingNode)),
+        );
 
         info!(target: LOG_TARGET, "Starting node manager, grpc address: {}", self.app_configuration.base_node_grpc_address);
+
+        progress_stepper
+            .resolve_step(ProgressPlans::Node(
+                ProgressSetupNodePlan::MigratingDatabase,
+            ))
+            .await;
 
         for _i in 0..2 {
             match state
@@ -219,6 +231,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
                     self.app_configuration.use_tor,
                     tor_control_port,
                     Some(self.app_configuration.base_node_grpc_address.clone()),
+                    migration_tracker.clone(),
                 )
                 .await
             {
@@ -245,6 +258,10 @@ impl SetupPhaseImpl for NodeSetupPhase {
                 }
             }
         }
+
+        progress_stepper
+            .resolve_step(ProgressPlans::Node(ProgressSetupNodePlan::StartingNode))
+            .await;
 
         let (progress_params_tx, mut progress_params_rx) =
             watch::channel(HashMap::<String, String>::new());
