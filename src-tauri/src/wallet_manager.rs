@@ -180,12 +180,16 @@ impl WalletManager {
         self.initial_scan_completed
             .store(false, std::sync::atomic::Ordering::Relaxed);
 
-        fs::remove_dir_all(
-            base_path
-                .join("wallet")
-                .join(Network::get_current().to_string().to_lowercase()),
-        )
-        .await?;
+        let path_to_network_wallet = base_path
+            .join("wallet")
+            .join(Network::get_current().to_string().to_lowercase());
+        if path_to_network_wallet.try_exists()? && path_to_network_wallet.is_dir() {
+            fs::remove_dir_all(path_to_network_wallet).await?;
+        } else {
+            //create the directory if it does not exist
+            fs::create_dir_all(path_to_network_wallet).await?;
+        }
+
         log::info!(target: LOG_TARGET, "Cleaning wallet data folder");
         Ok(())
     }
