@@ -60,7 +60,7 @@ pub fn decode_jwt_claims(t: &str) -> Option<AirdropAccessToken> {
     match decode::<AirdropAccessToken>(t, &key, &validation) {
         Ok(data) => Some(data.claims),
         Err(e) => {
-            warn!(target: LOG_TARGET,"Error decoding access token: {:?}", e);
+            warn!(target: LOG_TARGET,"Error decoding access token: {e:?}");
             None
         }
     }
@@ -75,7 +75,7 @@ pub fn decode_jwt_claims_without_exp(t: &str) -> Option<AirdropAccessToken> {
     match decode::<AirdropAccessToken>(t, &key, &validation) {
         Ok(data) => Some(data.claims),
         Err(e) => {
-            warn!(target: LOG_TARGET,"Error decoding access token without exp: {:?}", e);
+            warn!(target: LOG_TARGET,"Error decoding access token without exp: {e:?}");
             None
         }
     }
@@ -133,7 +133,7 @@ pub async fn send_new_block_mined(app: AppHandle, block_height: u64) {
             .send()
             .await
             .inspect_err(|e| {
-                error!(target: LOG_TARGET,"error at sending newly mined block to /miner/mined-block {}", e.to_string());
+                error!(target: LOG_TARGET,"error at sending newly mined block to /miner/mined-block {e}");
             })
         {
             let status = response.status();
