@@ -618,7 +618,7 @@ impl ReadinessStatus {
             Self::State(32) => "Building Context - Blockchain".to_string(),
             Self::State(34) => "Building Context - Bootstrap".to_string(),
             Self::State(100) => "Ready".to_string(),
-            Self::State(value) => format!("Unknown State ({})", value),
+            Self::State(value) => format!("Unknown State ({value})"),
             Self::Migration(progress) => {
                 format!(
                     "Migrating DB v{} -> v{} ({:.1}% - {}/{})",
