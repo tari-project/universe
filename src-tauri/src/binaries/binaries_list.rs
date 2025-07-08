@@ -39,6 +39,7 @@ pub enum Binaries {
     GpuMiner,
     Tor,
     BridgeTapplet,
+    GpuMinerSHA3X,
 }
 
 impl Binaries {
@@ -52,6 +53,7 @@ impl Binaries {
             Binaries::GpuMiner => "glytex",
             Binaries::Tor => "tor",
             Binaries::BridgeTapplet => "bridge",
+            Binaries::GpuMinerSHA3X => "sha3x-miner",
         }
     }
 
@@ -65,6 +67,7 @@ impl Binaries {
             "glytex" => Binaries::GpuMiner,
             "tor" => Binaries::Tor,
             "bridge" => Binaries::BridgeTapplet,
+            "sha3x-miner" => Binaries::GpuMinerSHA3X,
             _ => panic!("Unknown binary name: {name}"),
         }
     }
@@ -102,6 +105,10 @@ impl Binaries {
             Binaries::BridgeTapplet => {
                 let file_name = format!("bridge-{version}");
                 PathBuf::from(file_name).join("bridge")
+            }
+            Binaries::GpuMinerSHA3X => {
+                let file_name = format!("sha3x-miner");
+                PathBuf::from(file_name).join("sha3x-miner")
             }
         }
     }
@@ -212,6 +219,21 @@ impl Binaries {
                 }
                 BinaryPlatformAssets::MacOSArm64 => {
                     format!("tari_suite-{version}-{hash}-macos-arm64.zip")
+                }
+            },
+            // TODO: Change to proper names once we have the binaries online
+            Binaries::GpuMinerSHA3X => match platform {
+                BinaryPlatformAssets::LinuxX64 => {
+                    format!("sha3x-miner-linux-x86_64-{network}-{version}-{hash}.zip")
+                }
+                BinaryPlatformAssets::WindowsX64 => {
+                    format!("sha3x-miner-windows-x64-{network}-{version}-{hash}.zip")
+                }
+                BinaryPlatformAssets::MacOSX64 => {
+                    format!("sha3x-miner-macos-x86_64-{network}-{version}-{hash}.zip")
+                }
+                BinaryPlatformAssets::MacOSArm64 => {
+                    format!("sha3x-miner-macos-arm64-{network}-{version}-{hash}.zip")
                 }
             },
         }

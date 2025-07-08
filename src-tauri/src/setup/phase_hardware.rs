@@ -174,6 +174,11 @@ impl SetupPhaseImpl for HardwareSetupPhase {
             )),
         );
 
+        // TODO: REPLACE GpuMiner with GpuMinerSHA3X
+        binary_resolver
+            .initialize_binary(Binaries::GpuMinerSHA3X, None)
+            .await?;
+
         binary_resolver
             .initialize_binary(Binaries::GpuMiner, gpu_miner_binary_progress_tracker)
             .await?;

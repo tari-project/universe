@@ -105,6 +105,18 @@ impl BinaryResolver {
                 true,
             ),
         );
+        binary_manager.insert(
+            Binaries::GpuMinerSHA3X,
+            BinaryManager::new(
+                Binaries::GpuMinerSHA3X.name().to_string(),
+                None,
+                Box::new(GithubReleasesAdapter {
+                    repo: "sha3x-miner".to_string(),
+                    owner: "OIEIEIO".to_string(),
+                }),
+                false,
+            ),
+        );
 
         binary_manager.insert(
             Binaries::MergeMiningProxy,

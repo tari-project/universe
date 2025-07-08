@@ -1655,24 +1655,7 @@ pub async fn start_gpu_mining(
     let timer = Instant::now();
     let _lock = state.gpu_miner_stop_start_mutex.lock().await;
 
-    let gpu_mining_enabled = *ConfigMining::content().await.gpu_mining_enabled();
-    let mode = *ConfigMining::content().await.mode();
-
-    let gpu_usage = match mode {
-        MiningMode::Custom => ConfigMining::content().await.custom_max_gpu_usage().clone(),
-        MiningMode::Eco => ConfigMining::content()
-            .await
-            .eco_mode_max_gpu_usage()
-            .clone(),
-        MiningMode::Ludicrous => ConfigMining::content()
-            .await
-            .ludicrous_mode_max_gpu_usage()
-            .clone(),
-    };
-
-    let p2pool_enabled = *ConfigCore::content().await.is_p2pool_enabled();
-
-    let mut telemetry_id = state
+    let telemetry_id = state
         .telemetry_manager
         .read()
         .await
@@ -1682,68 +1665,126 @@ pub async fn start_gpu_mining(
     let tari_address = ConfigWallet::content()
         .await
         .get_current_used_tari_address();
-    let gpu_miner = state.gpu_miner.read().await;
-    let gpu_miner_running = gpu_miner.is_running().await;
-    let gpu_available = gpu_miner.is_gpu_mining_available();
-    drop(gpu_miner);
 
-    info!(target: LOG_TARGET, "GPU availability {:?} gpu_mining_enabled {}", gpu_available.clone(), gpu_mining_enabled);
+    info!(target: LOG_TARGET, "3. Starting gpu miner");
 
-    if gpu_mining_enabled && gpu_available && !gpu_miner_running {
-        info!(target: LOG_TARGET, "1. Starting gpu miner");
+    let gpu_miner = state.gpu_miner_sha.write().await;
+    let res = gpu_miner
+        .start(
+            tari_address.clone(),
+            telemetry_id.clone(),
+            app.path()
+                .app_local_data_dir()
+                .expect("Could not get data dir"),
+            app.path()
+                .app_config_dir()
+                .expect("Could not get config dir"),
+            app.path().app_log_dir().expect("Could not get log dir"),
+        )
+        .await;
 
-        let source = if p2pool_enabled {
-            let use_local = state.node_manager.is_local_current().await.unwrap_or(false);
-            let grpc_address = state.p2pool_manager.get_grpc_address(use_local).await;
-            GpuNodeSource::P2Pool { grpc_address }
-        } else {
-            let grpc_address = state
-                .node_manager
-                .get_grpc_address()
-                .await
-                .map_err(|e| e.to_string())?;
-            GpuNodeSource::BaseNode { grpc_address }
-        };
+    info!(target: LOG_TARGET, "4. Starting gpu miner");
+    if let Err(e) = res {
+        let err_msg = format!("Could not start GPU mining: {e}");
+        error!(target: LOG_TARGET, "{}", err_msg);
+        sentry::capture_message(&err_msg, sentry::Level::Error);
 
-        info!(target: LOG_TARGET, "2 Starting gpu miner");
-
-        if telemetry_id.is_empty() {
-            telemetry_id = "tari-universe".to_string();
+        if let Err(stop_err) = gpu_miner.stop().await {
+            error!(target: LOG_TARGET, "Could not stop GPU miner: {}", stop_err);
         }
 
-        info!(target: LOG_TARGET, "3. Starting gpu miner");
-
-        let mut gpu_miner = state.gpu_miner.write().await;
-        let res = gpu_miner
-            .start(
-                tari_address.clone(),
-                source,
-                app.path()
-                    .app_local_data_dir()
-                    .expect("Could not get data dir"),
-                app.path()
-                    .app_config_dir()
-                    .expect("Could not get config dir"),
-                app.path().app_log_dir().expect("Could not get log dir"),
-                mode,
-                telemetry_id,
-                gpu_usage.clone(),
-            )
-            .await;
-
-        info!(target: LOG_TARGET, "4. Starting gpu miner");
-        if let Err(e) = res {
-            let err_msg = format!("Could not start GPU mining: {e}");
-            error!(target: LOG_TARGET, "{}", err_msg);
-            sentry::capture_message(&err_msg, sentry::Level::Error);
-
-            if let Err(stop_err) = gpu_miner.stop().await {
-                error!(target: LOG_TARGET, "Could not stop GPU miner: {}", stop_err);
-            }
-
-            return Err(e.to_string());
-        }
+        return Err(e.to_string());
     }
+
+    // let gpu_mining_enabled = *ConfigMining::content().await.gpu_mining_enabled();
+    // let mode = *ConfigMining::content().await.mode();
+
+    // let gpu_usage = match mode {
+    //     MiningMode::Custom => ConfigMining::content().await.custom_max_gpu_usage().clone(),
+    //     MiningMode::Eco => ConfigMining::content()
+    //         .await
+    //         .eco_mode_max_gpu_usage()
+    //         .clone(),
+    //     MiningMode::Ludicrous => ConfigMining::content()
+    //         .await
+    //         .ludicrous_mode_max_gpu_usage()
+    //         .clone(),
+    // };
+
+    // let p2pool_enabled = *ConfigCore::content().await.is_p2pool_enabled();
+
+    // let mut telemetry_id = state
+    //     .telemetry_manager
+    //     .read()
+    //     .await
+    //     .get_unique_string()
+    //     .await;
+
+    // let tari_address = ConfigWallet::content()
+    //     .await
+    //     .get_current_used_tari_address();
+    // let gpu_miner = state.gpu_miner.read().await;
+    // let gpu_miner_running = gpu_miner.is_running().await;
+    // let gpu_available = gpu_miner.is_gpu_mining_available();
+    // drop(gpu_miner);
+
+    // info!(target: LOG_TARGET, "GPU availability {:?} gpu_mining_enabled {}", gpu_available.clone(), gpu_mining_enabled);
+
+    // if gpu_mining_enabled && gpu_available && !gpu_miner_running {
+    //     info!(target: LOG_TARGET, "1. Starting gpu miner");
+
+    //     let source = if p2pool_enabled {
+    //         let use_local = state.node_manager.is_local_current().await.unwrap_or(false);
+    //         let grpc_address = state.p2pool_manager.get_grpc_address(use_local).await;
+    //         GpuNodeSource::P2Pool { grpc_address }
+    //     } else {
+    //         let grpc_address = state
+    //             .node_manager
+    //             .get_grpc_address()
+    //             .await
+    //             .map_err(|e| e.to_string())?;
+    //         GpuNodeSource::BaseNode { grpc_address }
+    //     };
+
+    //     info!(target: LOG_TARGET, "2 Starting gpu miner");
+
+    //     if telemetry_id.is_empty() {
+    //         telemetry_id = "tari-universe".to_string();
+    //     }
+
+    //     info!(target: LOG_TARGET, "3. Starting gpu miner");
+
+    //     let mut gpu_miner = state.gpu_miner.write().await;
+    //     let res = gpu_miner
+    //         .start(
+    //             tari_address.clone(),
+    //             source,
+    //             app.path()
+    //                 .app_local_data_dir()
+    //                 .expect("Could not get data dir"),
+    //             app.path()
+    //                 .app_config_dir()
+    //                 .expect("Could not get config dir"),
+    //             app.path().app_log_dir().expect("Could not get log dir"),
+    //             mode,
+    //             telemetry_id,
+    //             gpu_usage.clone(),
+    //         )
+    //         .await;
+
+    //     info!(target: LOG_TARGET, "4. Starting gpu miner");
+    //     if let Err(e) = res {
+    //         let err_msg = format!("Could not start GPU mining: {e}");
+    //         error!(target: LOG_TARGET, "{}", err_msg);
+    //         sentry::capture_message(&err_msg, sentry::Level::Error);
+
+    //         if let Err(stop_err) = gpu_miner.stop().await {
+    //             error!(target: LOG_TARGET, "Could not stop GPU miner: {}", stop_err);
+    //         }
+
+    //         return Err(e.to_string());
+    //     }
+    // }
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "start_gpu_mining took too long: {:?}", timer.elapsed());
     }

@@ -28,6 +28,7 @@ use commands::CpuMinerStatus;
 use cpu_miner::CpuMinerConfig;
 use events_emitter::EventsEmitter;
 use gpu_miner_adapter::GpuMinerStatus;
+use gpu_miner_sha::GpuMinerSha;
 use log::{error, info, warn};
 use mining_status_manager::MiningStatusManager;
 use node::local_node_adapter::LocalNodeAdapter;
@@ -103,6 +104,8 @@ mod feedback;
 mod github;
 mod gpu_miner;
 mod gpu_miner_adapter;
+mod gpu_miner_sha;
+mod gpu_miner_sha_adapter;
 mod gpu_status_file;
 mod hardware;
 mod internal_wallet;
@@ -180,6 +183,7 @@ struct UniverseAppState {
     in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
     cpu_miner: Arc<RwLock<CpuMiner>>,
     gpu_miner: Arc<RwLock<GpuMiner>>,
+    gpu_miner_sha: Arc<RwLock<GpuMinerSha>>,
     cpu_miner_config: Arc<RwLock<CpuMinerConfig>>,
     mm_proxy_manager: MmProxyManager,
     node_manager: NodeManager,
@@ -321,6 +325,9 @@ fn main() {
         .into(),
     );
 
+    let gpu_miner_sha: Arc<RwLock<GpuMinerSha>> =
+        Arc::new(GpuMinerSha::new(&mut stats_collector).into());
+
     let (tor_watch_tx, tor_watch_rx) = watch::channel(TorStatus::default());
     let tor_manager = TorManager::new(tor_watch_tx, &mut stats_collector);
     let mm_proxy_manager = MmProxyManager::new(&mut stats_collector);
@@ -375,6 +382,7 @@ fn main() {
         in_memory_config: app_in_memory_config.clone(),
         cpu_miner: cpu_miner.clone(),
         gpu_miner: gpu_miner.clone(),
+        gpu_miner_sha: gpu_miner_sha.clone(),
         cpu_miner_config: cpu_config.clone(),
         mm_proxy_manager: mm_proxy_manager.clone(),
         node_manager,

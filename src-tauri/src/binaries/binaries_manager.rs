@@ -286,9 +286,9 @@ impl BinaryManager {
     }
 
     pub fn check_if_files_for_version_exist(&self) -> bool {
-        debug!(target: LOG_TARGET,"Checking if files for selected version exist: {:?}", self.selected_version);
+        info!(target: LOG_TARGET,"Checking if files for selected version exist: {:?}", self.selected_version);
 
-        debug!(target: LOG_TARGET, "Selected version: {:?}", self.selected_version);
+        info!(target: LOG_TARGET, "Selected version: {:?}", self.selected_version);
 
         let binary_folder = match self.adapter.get_binary_folder() {
             Ok(path) => path,
@@ -305,14 +305,14 @@ impl BinaryManager {
         let binary_file_with_exe = binary_file.with_extension("exe");
         let binary_file_with_html = version_folder.join("index.html");
 
-        debug!(target: LOG_TARGET, "Binary folder path: {:?}", binary_folder);
-        debug!(target: LOG_TARGET, "Version folder path: {:?}", version_folder);
-        debug!(target: LOG_TARGET, "Binary file path: {:?}", binary_file);
+        info!(target: LOG_TARGET, "Binary folder path: {:?}", binary_folder);
+        info!(target: LOG_TARGET, "Version folder path: {:?}", version_folder);
+        info!(target: LOG_TARGET, "Binary file path: {:?}", binary_file);
 
         let binary_file_exists =
             binary_file.exists() || binary_file_with_exe.exists() || binary_file_with_html.exists();
 
-        debug!(target: LOG_TARGET, "Binary file exists: {:?}", binary_file_exists);
+        info!(target: LOG_TARGET, "Binary file exists: {:?}", binary_file_exists);
 
         binary_file_exists
     }
@@ -358,6 +358,7 @@ impl BinaryManager {
                 Binaries::MergeMiningProxy => &TasksTrackers::current().mining_phase,
                 Binaries::ShaP2pool => &TasksTrackers::current().mining_phase,
                 Binaries::BridgeTapplet => &TasksTrackers::current().wallet_phase,
+                Binaries::GpuMinerSHA3X => &TasksTrackers::current().hardware_phase,
             };
             let binary_name = self.binary_name.clone();
             let shutdown_signal = task_tacker.get_signal().await;
