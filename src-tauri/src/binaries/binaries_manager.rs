@@ -20,11 +20,12 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 use anyhow::{anyhow, Error};
-use log::{debug, error, info};
+use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, path::PathBuf};
 use tari_common::configuration::Network;
 use tari_shutdown::Shutdown;
+use tauri_plugin_sentry::sentry;
 use tokio::sync::watch::{channel, Sender};
 
 use crate::{
@@ -298,6 +299,32 @@ impl BinaryManager {
         } else {
             Ok((None, None))
         }
+    }
+
+    pub async fn download_version_with_retries(
+        &self,
+        progress_channel: Option<ChanneledStepUpdate>,
+    ) -> Result<(), Error> {
+        let mut last_error_message = String::new();
+        for retry in 0..3 {
+            match self
+                .download_selected_version(progress_channel.clone())
+                .await
+            {
+                Ok(_) => return Ok(()),
+                Err(error) => {
+                    last_error_message = format!(
+                        "Failed to download binary: {}. Error: {:?}",
+                        self.binary_name, error
+                    );
+                    warn!(target: LOG_TARGET, "Failed to download binary: {} at retry: {}", self.binary_name, retry);
+                    continue;
+                }
+            }
+        }
+        sentry::capture_message(&last_error_message, sentry::Level::Error);
+        error!(target: LOG_TARGET, "{}", last_error_message);
+        Err(anyhow!(last_error_message))
     }
 
     pub async fn download_selected_version(
