@@ -25,11 +25,7 @@ function VisualMode() {
 
     const handleSwitch = useCallback(() => {
         if (visualModeToggleLoading) return;
-        if (visualMode) {
-            enableTowerAnimation(false);
-        } else {
-            enableTowerAnimation(true);
-        }
+        enableTowerAnimation(!visualMode);
     }, [visualMode, visualModeToggleLoading]);
 
     return (
