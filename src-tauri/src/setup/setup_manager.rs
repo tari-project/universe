@@ -484,11 +484,6 @@ impl SetupManager {
         }
 
         let setup_features = self.features.read().await.clone();
-        ListenerUnlockApp::current()
-            .load_setup_features(setup_features.clone())
-            .await;
-        ListenerUnlockApp::current().start_listener().await;
-
         ListenerSetupFinished::current()
             .load_setup_features(setup_features.clone())
             .await;
