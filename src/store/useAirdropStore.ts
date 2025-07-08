@@ -1,5 +1,5 @@
+import { create } from 'zustand';
 import { XSpaceEvent } from '@app/types/ws';
-import { create } from './create';
 import { ConfigBackendInMemory } from '@app/types/configs.ts';
 
 export const GIFT_GEMS = 5000;

@@ -19,7 +19,7 @@ if (rootEl) {
     });
     root.render(
         <StrictMode>
-            <Suspense fallback={<div />}>
+            <Suspense fallback={<div>{`fallback1`}</div>}>
                 <AppWrapper />
             </Suspense>
         </StrictMode>

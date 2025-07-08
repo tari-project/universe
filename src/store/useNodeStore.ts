@@ -1,5 +1,5 @@
+import { create } from 'zustand';
 import { BackgroundNodeSyncUpdatePayload } from '@app/types/events-payloads';
-import { create } from './create';
 import { deepEqual } from '@app/utils/objectDeepEqual.ts';
 
 export type NodeType = 'Local' | 'Remote' | 'RemoteUntilLocal' | 'LocalAfterRemote';

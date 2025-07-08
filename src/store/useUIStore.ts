@@ -1,4 +1,4 @@
-import { create } from './create';
+import { create } from 'zustand';
 import { Theme } from '@app/theme/types.ts';
 import { SB_MINI_WIDTH, SB_SPACING } from '@app/theme/styles.ts';
 

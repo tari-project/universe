@@ -1,5 +1,5 @@
+import { create } from 'zustand';
 import { TransactionInfo } from '@app/types/app-status.ts';
-import { create } from './create.ts';
 
 interface State {
     showModal: boolean;

@@ -1,10 +1,7 @@
-import { setWalletBalance } from '@app/store/actions';
-
-let winTimeout: NodeJS.Timeout | undefined;
-let failTimeout: NodeJS.Timeout | undefined;
-import { create } from './create';
-import { useMiningStore } from './useMiningStore.ts';
+import { create } from 'zustand';
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import { setWalletBalance } from '@app/store/actions';
+import { useMiningStore } from './useMiningStore.ts';
 import { BlockTimeData } from '@app/types/mining.ts';
 import { setAnimationState } from '@tari-project/tari-tower';
 import { TransactionInfo, WalletBalance } from '@app/types/app-status.ts';
@@ -14,6 +11,9 @@ import { useConfigUIStore } from '@app/store/useAppConfigStore.ts';
 import { refreshTransactions } from '@app/hooks/wallet/useFetchTxHistory.ts';
 
 const appWindow = getCurrentWindow();
+
+let winTimeout: NodeJS.Timeout | undefined;
+let failTimeout: NodeJS.Timeout | undefined;
 
 interface Recap {
     count: number;

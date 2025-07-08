@@ -1,5 +1,5 @@
+import { create } from 'zustand';
 import { invoke } from '@tauri-apps/api/core';
-import { create } from './create';
 import { P2poolConnections, P2poolStatsResult } from '../types/app-status.ts';
 
 type P2poolStatsStoreState = Partial<P2poolStatsResult> & Partial<P2poolConnections>;
