@@ -183,6 +183,7 @@ impl WalletManager {
         let path_to_network_wallet = base_path
             .join("wallet")
             .join(Network::get_current().to_string().to_lowercase());
+
         if path_to_network_wallet.try_exists()? && path_to_network_wallet.is_dir() {
             fs::remove_dir_all(path_to_network_wallet).await?;
         } else {
