@@ -29,7 +29,9 @@ use tari_common::configuration::Network;
 use tokio::{fs::File, io::AsyncReadExt};
 
 use crate::{
-    github::{get_gh_download_url, get_mirror_download_url, request_client::RequestClient},
+    requests::{
+        clients::http_file_client::HttpFileClient, get_gh_download_url, get_mirror_download_url,
+    },
     APPLICATION_FOLDER_ID,
 };
 
@@ -72,8 +74,10 @@ impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
             None => download_info.main_url,
         };
 
-        match RequestClient::current()
-            .download_file_with_retries(&checksum_url, &checksum_path, true, None)
+        match HttpFileClient::builder()
+            .with_cloudflare_cache_check()
+            .build(checksum_url.clone(), checksum_path.clone())
+            .execute()
             .await
         {
             Ok(_) => Ok(checksum_path),
@@ -83,8 +87,9 @@ impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
                     None => download_info.fallback_url,
                 };
                 info!(target: LOG_TARGET, "Fallback URL: {checksum_fallback_url}");
-                RequestClient::current()
-                    .download_file_with_retries(&checksum_fallback_url, &checksum_path, false, None)
+                HttpFileClient::builder()
+                    .build(checksum_fallback_url.clone(), checksum_path.clone())
+                    .execute()
                     .await?;
                 Ok(checksum_path)
             }
