@@ -29,25 +29,24 @@ export interface DisabledPhasesPayload {
 }
 
 async function initializeAnimation() {
-    const existingCanvas = document.getElementById(TOWER_CANVAS_ID);
     const visual_mode = useConfigUIStore.getState().visual_mode;
-    if (existingCanvas || !visual_mode) {
-        return;
-    }
+    const towerInitalized = useUIStore.getState().towerInitalized;
+    if (!visual_mode || towerInitalized) return;
+
     const offset = useUIStore.getState().towerSidebarOffset;
-    if (visual_mode) {
+    try {
+        console.info('Loading tower animation');
         try {
-            console.info('Loading tower animation');
             await loadTowerAnimation({ canvasId: TOWER_CANVAS_ID, offset: offset });
-            try {
-                setAnimationState('showVisual');
-            } catch (error) {
-                console.error('Failed to set animation state:', error);
-            }
-        } catch (e) {
-            console.error('Error at loadTowerAnimation:', e);
-            useConfigUIStore.setState({ visual_mode: false });
+            setAnimationState('showVisual');
+            useUIStore.setState({ towerInitalized: true });
+        } catch (error) {
+            console.error('Failed to set animation state:', error);
+            useUIStore.setState({ towerInitalized: false });
         }
+    } catch (e) {
+        console.error('Error at loadTowerAnimation:', e);
+        useConfigUIStore.setState({ visual_mode: false });
     }
 }
 
