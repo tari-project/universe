@@ -98,7 +98,7 @@ const useTauriEventsListener = () => {
                             await handleAppUnlocked();
                             break;
                         case 'UnlockWallet':
-                            handleWalletUnlocked();
+                            await handleWalletUnlocked();
                             break;
                         case 'UnlockCpuMining':
                             await handleCpuMiningUnlocked();

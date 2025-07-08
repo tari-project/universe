@@ -1,4 +1,4 @@
-import { ActionWrapper, Card, CardActionWrapper, CardSubtitle, CardTitle } from './syncAction.style.ts';
+import { ActionWrapper, Card, CardSubtitle, CardTitle, CartTextGroup } from './syncAction.style.ts';
 import { ReactNode } from 'react';
 
 interface SyncActionCardProps {
@@ -9,11 +9,12 @@ interface SyncActionCardProps {
 export function SyncActionCard({ title, action, subtitle }: SyncActionCardProps) {
     return (
         <Card>
-            <CardTitle>{title}</CardTitle>
-            <CardSubtitle>{subtitle}</CardSubtitle>
-            <CardActionWrapper>
-                <ActionWrapper>{action}</ActionWrapper>
-            </CardActionWrapper>
+            <CartTextGroup>
+                <CardTitle>{title}</CardTitle>
+                <CardSubtitle>{subtitle}</CardSubtitle>
+            </CartTextGroup>
+
+            <ActionWrapper>{action}</ActionWrapper>
         </Card>
     );
 }

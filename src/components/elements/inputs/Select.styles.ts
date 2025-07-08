@@ -10,6 +10,7 @@ interface StyleProps {
     $open?: boolean;
     $selected?: boolean;
     $loading?: boolean;
+    $isSync?: boolean;
 }
 
 export const Wrapper = styled.div`
@@ -38,6 +39,12 @@ export const TriggerWrapper = styled.div<StyleProps>`
             border: 1px solid ${theme.palette.divider};
             background: rgba(0, 0, 0, 0.01);
             padding: 0 15px;
+        `}
+
+    ${({ $isSync }) =>
+        $isSync &&
+        css`
+            padding: 10px 15px;
         `}
 
     ${({ $variant }) => $variant === 'primary' && css``}
@@ -145,7 +152,6 @@ export const IconWrapper = styled.div`
     align-items: center;
     justify-content: center;
     border-radius: 100%;
-    background: ${({ theme }) => theme.palette.background.paper};
     color: ${({ theme }) => theme.palette.text.primary};
 
     svg {

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import Countdown from 'react-countdown';
 import { useProgressCountdown } from '@app/containers/main/Sync/components/useProgressCountdown.ts';
+import LoadingText from '@app/components/elements/loaders/LoadingText/LoadingText';
 
 interface SyncCountdownProps {
     onCompleted: () => void;
@@ -40,6 +41,10 @@ export default function SyncCountdown({ onCompleted, onStarted, isCompact = fals
             api?.stop();
         }
     }, [countdown]);
+
+    if (!startedRef.current) {
+        return <LoadingText text={t('setup-progresses:calculating_time', { context: isCompact && 'compact' })} />;
+    }
 
     return (
         <Countdown

@@ -64,7 +64,7 @@ impl Feedback {
 
         let mut buffer = Vec::new();
 
-        let log_regex_filter = Regex::new(r"^(.*[0-9]+\.log|.*\.zip)$")
+        let log_regex_filter = Regex::new(r"^(.*[0-9]*\.log|.*\.zip)$")
             .map_err(|e| anyhow!("Failed to create log file filter: {}", e))?;
 
         while let Some(next) = paths_queue.pop() {
@@ -78,7 +78,7 @@ impl Feedback {
                     .and_then(|name| name.to_str())
                     .ok_or_else(|| anyhow::anyhow!("Failed to get file name"))?;
 
-                if entry_metadata.is_file() && !log_regex_filter.is_match(entry_file_name_as_str) {
+                if entry_metadata.is_file() && log_regex_filter.is_match(entry_file_name_as_str) {
                     let mut f = File::open(&entry_path)?;
                     f.read_to_end(&mut buffer)?;
                     let relative_path = make_relative_path(directory, &entry_path);

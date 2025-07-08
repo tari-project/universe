@@ -44,6 +44,7 @@ interface UIStoreState {
     hideWalletBalance: boolean;
     showResumeAppModal: boolean;
     towerSidebarOffset: number;
+    towerInitalized: boolean;
     showTapplet: boolean;
     blockBubblesEnabled: boolean;
     resumeModalIsOpen: boolean;
@@ -69,6 +70,7 @@ const initialState: UIStoreState = {
     isAppExchangeSpecific: false,
     shouldShowExchangeSpecificModal: false,
     towerSidebarOffset: sidebarTowerOffset,
+    towerInitalized: false,
     showTapplet: false,
     blockBubblesEnabled: false,
     resumeModalIsOpen: false,

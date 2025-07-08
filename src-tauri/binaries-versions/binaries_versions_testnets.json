@@ -1,6 +1,6 @@
 {
     "binaries": {
-        "xmrig": "6.22.0",
+        "xmrig": "6.24.0",
         "mmproxy": "4.7.0-pre.0 | 73e6c9e",
         "minotari_node": "4.7.0-pre.0 | 73e6c9e",
         "wallet": "4.7.0-pre.0 | 73e6c9e",
