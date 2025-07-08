@@ -26,6 +26,7 @@ interface SeedWordsProps {
 export default function SeedWords({ isMonero = false }: SeedWordsProps) {
     const isWalletImporting = useWalletStore((s) => s.is_wallet_importing);
     const [isPending, startTransition] = useTransition();
+    const [isVisible, setIsVisible] = useState(false);
     const [isEditView, setIsEditView] = useState(false);
     const [newSeedWords, setNewSeedWords] = useState<string[]>();
     const [showConfirm, setShowConfirm] = useState(false);
@@ -51,9 +52,19 @@ export default function SeedWords({ isMonero = false }: SeedWordsProps) {
     };
 
     function onToggleVisibility() {
-        startTransition(async () => {
+        startTransition(() => {
             if (!seedWords?.length || !seedWordsFetched) {
-                await getSeedWords();
+                getSeedWords()
+                    .then((r) => {
+                        if (r?.length) {
+                            setIsVisible((c) => !c);
+                        }
+                    })
+                    .catch(() => {
+                        setIsVisible(false);
+                    });
+            } else {
+                setIsVisible((c) => !c);
             }
         });
     }
@@ -114,6 +125,7 @@ export default function SeedWords({ isMonero = false }: SeedWordsProps) {
                                 ) : (
                                     <Display
                                         words={seedWords}
+                                        isVisible={isVisible}
                                         isLoading={isPending || seedWordsFetching}
                                         onToggleClick={onToggleVisibility}
                                     />

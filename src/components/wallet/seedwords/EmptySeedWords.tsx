@@ -71,7 +71,11 @@ export default function EmptySeedWords() {
                     <Form onSubmit={methods.handleSubmit(handleApply)} onReset={handleReset}>
                         <WalletSettingsGrid>
                             <InputArea>
-                                {isEditView ? <Edit /> : <Display words={[]} isSeedlessUI isLoading={false} />}
+                                {isEditView ? (
+                                    <Edit />
+                                ) : (
+                                    <Display words={[]} isSeedlessUI isLoading={false} isVisible={false} />
+                                )}
                             </InputArea>
                             <CTASArea>{isEditView ? editCTAs : displayCTAs}</CTASArea>
                         </WalletSettingsGrid>

@@ -25,9 +25,12 @@ export default function PinDialog() {
 
     function handleSubmit(pin: string) {
         emit('pin-dialog-response', Number(pin)).then(() => {
-            setShowComplete(true);
+            if (dialogToShow !== 'createPin') {
+                setDialogToShow(null);
+            } else {
+                setShowComplete(true);
+            }
         });
-        setDialogToShow(null);
     }
 
     async function handleForgotPin() {

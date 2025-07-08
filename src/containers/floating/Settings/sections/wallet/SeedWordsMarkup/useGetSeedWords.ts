@@ -29,6 +29,7 @@ export function useGetSeedWords(args?: Arguments) {
                 setError(errorMessage);
             }
             console.error('Could not get seed words', e);
+            return [];
         } finally {
             setSeedWordsFetching(false);
         }
