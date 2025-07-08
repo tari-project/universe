@@ -28,13 +28,12 @@ export interface DisabledPhasesPayload {
     disabled_phases: SetupPhase[];
 }
 
-export const handleAppUnlocked = async () => {
-    useSetupStore.setState({ appUnlocked: true });
-    await fetchBridgeTransactionsHistory().catch((error) => {
-        console.error('Could not fetch bridge transactions history:', error);
-    });
-
+async function initializeAnimation() {
+    const existingCanvas = document.getElementById(TOWER_CANVAS_ID);
     const visual_mode = useConfigUIStore.getState().visual_mode;
+    if (existingCanvas || !visual_mode) {
+        return;
+    }
     const offset = useUIStore.getState().towerSidebarOffset;
     if (visual_mode) {
         try {
@@ -50,6 +49,15 @@ export const handleAppUnlocked = async () => {
             useConfigUIStore.setState({ visual_mode: false });
         }
     }
+}
+
+export const handleAppUnlocked = async () => {
+    console.debug(`wen app unlock`);
+    useSetupStore.setState({ appUnlocked: true });
+    await fetchBridgeTransactionsHistory().catch((error) => {
+        console.error('Could not fetch bridge transactions history:', error);
+    });
+    await initializeAnimation();
     // todo move it to event
     await fetchApplicationsVersionsWithRetry();
 };

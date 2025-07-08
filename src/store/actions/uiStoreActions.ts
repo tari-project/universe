@@ -36,9 +36,10 @@ export const setIsWebglNotSupported = (isWebglNotSupported: boolean) => {
 export const enableTowerAnimation = (enabled: boolean) => {
     const setupComplete = useSetupStore.getState().appUnlocked;
     const towerSidebarOffset = useUIStore.getState().towerSidebarOffset;
+    const existingCanvas = document.getElementById(TOWER_CANVAS_ID);
     useConfigUIStore.setState({ visualModeToggleLoading: true });
     setVisualMode(enabled);
-    if (enabled) {
+    if (enabled && !existingCanvas) {
         loadTowerAnimation({ canvasId: TOWER_CANVAS_ID, offset: towerSidebarOffset })
             .then(() => {
                 if (setupComplete) {
