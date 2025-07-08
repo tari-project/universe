@@ -73,171 +73,182 @@ const useTauriEventsListener = () => {
     }
 
     useEffect(() => {
-        invoke('frontend_ready')
-            .then(() => {
-                console.info('Successfully called frontend_ready');
-            })
-            .catch((e) => console.error('Failed to call frontend_ready: ', e));
+        const setupListener = async () => {
+            // Set up the event listener
+            const unlisten = await listen(
+                BACKEND_STATE_UPDATE,
+                async ({ payload: event }: { payload: BackendStateUpdateEvent }) => {
+                    handleLogUpdate(event);
+                    switch (event.event_type) {
+                        case 'CorePhaseFinished':
+                            break;
+                        case 'HardwarePhaseFinished':
+                            await handleHardwarePhaseFinished();
+                            break;
+                        case 'NodePhaseFinished':
+                            break;
+                        case 'MiningPhaseFinished':
+                            break;
+                        case 'WalletPhaseFinished':
+                            break;
+                        case 'InitialSetupFinished':
+                            setInitialSetupFinished(true);
+                            break;
+                        case 'UnlockApp':
+                            await handleAppUnlocked();
+                            break;
+                        case 'UnlockWallet':
+                            await handleWalletUnlocked();
+                            break;
+                        case 'UnlockCpuMining':
+                            await handleCpuMiningUnlocked();
+                            break;
+                        case 'UnlockGpuMining':
+                            await handleGpuMiningUnlocked();
+                            break;
+                        case 'LockCpuMining':
+                            await handleCpuMiningLocked();
+                            break;
+                        case 'LockGpuMining':
+                            await handleGpuMiningLocked();
+                            break;
+                        case 'LockWallet':
+                            handleWalletLocked();
+                            break;
+                        case 'WalletBalanceUpdate':
+                            await setWalletBalance(event.payload);
+                            await refreshTransactions();
+                            break;
+                        case 'BaseNodeUpdate':
+                            handleBaseNodeStatusUpdate(event.payload);
+                            break;
+                        case 'GpuMiningUpdate':
+                            setGpuMiningStatus(event.payload);
+                            break;
+                        case 'CpuMiningUpdate':
+                            setCpuMiningStatus(event.payload);
+                            break;
+                        case 'PoolStatusUpdate':
+                            setPoolStatus(event.payload);
+                            break;
+                        case 'ConnectedPeersUpdate':
+                            handleConnectedPeersUpdate(event.payload);
+                            break;
+                        case 'NewBlockHeight':
+                            await handleNewBlock(event.payload);
+                            break;
+                        case 'ConfigCoreLoaded':
+                            handleConfigCoreLoaded(event.payload);
+                            break;
+                        case 'ConfigWalletLoaded':
+                            handleConfigWalletLoaded(event.payload);
+                            break;
+                        case 'ConfigMiningLoaded':
+                            handleConfigMiningLoaded(event.payload);
+                            break;
+                        case 'ConfigUILoaded':
+                            await handleConfigUILoaded(event.payload);
+                            break;
+                        case 'CloseSplashscreen':
+                            handleCloseSplashscreen();
+                            break;
+                        case 'DetectedDevices':
+                            setGpuDevices(event.payload.devices);
+                            break;
+                        case 'DetectedAvailableGpuEngines':
+                            setAvailableEngines(event.payload.engines, event.payload.selected_engine);
+                            break;
+                        case 'CriticalProblem': {
+                            const isMacAppFolderError =
+                                event.payload.title === 'common:installation-problem' &&
+                                event.payload.description === 'common:not-installed-in-applications-directory';
 
-        const listener = listen(
-            BACKEND_STATE_UPDATE,
-            async ({ payload: event }: { payload: BackendStateUpdateEvent }) => {
-                handleLogUpdate(event);
-                switch (event.event_type) {
-                    case 'CorePhaseFinished':
-                        break;
-                    case 'HardwarePhaseFinished':
-                        await handleHardwarePhaseFinished();
-                        break;
-                    case 'NodePhaseFinished':
-                        break;
-                    case 'MiningPhaseFinished':
-                        break;
-                    case 'WalletPhaseFinished':
-                        break;
-                    case 'InitialSetupFinished':
-                        setInitialSetupFinished(true);
-                        break;
-                    case 'UnlockApp':
-                        await handleAppUnlocked();
-                        break;
-                    case 'UnlockWallet':
-                        handleWalletUnlocked();
-                        break;
-                    case 'UnlockCpuMining':
-                        await handleCpuMiningUnlocked();
-                        break;
-                    case 'UnlockGpuMining':
-                        await handleGpuMiningUnlocked();
-                        break;
-                    case 'LockCpuMining':
-                        await handleCpuMiningLocked();
-                        break;
-                    case 'LockGpuMining':
-                        await handleGpuMiningLocked();
-                        break;
-                    case 'LockWallet':
-                        handleWalletLocked();
-                        break;
-                    case 'WalletBalanceUpdate':
-                        await setWalletBalance(event.payload);
-                        await refreshTransactions();
-                        break;
-                    case 'BaseNodeUpdate':
-                        handleBaseNodeStatusUpdate(event.payload);
-                        break;
-                    case 'GpuMiningUpdate':
-                        setGpuMiningStatus(event.payload);
-                        break;
-                    case 'CpuMiningUpdate':
-                        setCpuMiningStatus(event.payload);
-                        break;
-                    case 'PoolStatusUpdate':
-                        setPoolStatus(event.payload);
-                        break;
-                    case 'ConnectedPeersUpdate':
-                        handleConnectedPeersUpdate(event.payload);
-                        break;
-                    case 'NewBlockHeight':
-                        await handleNewBlock(event.payload);
-                        break;
-                    case 'ConfigCoreLoaded':
-                        await handleConfigCoreLoaded(event.payload);
-                        break;
-                    case 'ConfigWalletLoaded':
-                        handleConfigWalletLoaded(event.payload);
-                        break;
-                    case 'ConfigMiningLoaded':
-                        handleConfigMiningLoaded(event.payload);
-                        break;
-                    case 'ConfigUILoaded':
-                        await handleConfigUILoaded(event.payload);
-                        break;
-                    case 'CloseSplashscreen':
-                        handleCloseSplashscreen();
-                        break;
-                    case 'DetectedDevices':
-                        setGpuDevices(event.payload.devices);
-                        break;
-                    case 'DetectedAvailableGpuEngines':
-                        setAvailableEngines(event.payload.engines, event.payload.selected_engine);
-                        break;
-                    case 'CriticalProblem': {
-                        const isMacAppFolderError =
-                            event.payload.title === 'common:installation-problem' &&
-                            event.payload.description === 'common:not-installed-in-applications-directory';
-
-                        if (isMacAppFolderError) {
-                            setCriticalError(event.payload);
-                        } else {
-                            handleCriticalProblemEvent(event.payload);
+                            if (isMacAppFolderError) {
+                                setCriticalError(event.payload);
+                            } else {
+                                handleCriticalProblemEvent(event.payload);
+                            }
+                            break;
                         }
-                        break;
+                        case 'MissingApplications':
+                            loadExternalDependencies(event.payload);
+                            setShowExternalDependenciesDialog(true);
+                            break;
+                        case 'StuckOnOrphanChain':
+                            setIsStuckOnOrphanChain(event.payload);
+                            if (event.payload) {
+                                setConnectionStatus('disconnected');
+                            }
+                            break;
+                        case 'ShowReleaseNotes':
+                            handleShowRelesaeNotes(event.payload);
+                            break;
+                        case `NetworkStatus`:
+                            setNetworkStatus(event.payload);
+                            break;
+                        case `NodeTypeUpdate`:
+                            setNodeStoreState(event.payload);
+                            break;
+                        case 'RestartingPhases':
+                            await handleRestartingPhases(event.payload);
+                            break;
+                        case 'AskForRestart':
+                            handleAskForRestart();
+                            break;
+                        case 'BackgroundNodeSyncUpdate':
+                            setBackgroundNodeState(event.payload);
+                            break;
+                        case 'InitWalletScanningProgress':
+                            updateWalletScanningProgress(event.payload);
+                            break;
+                        case 'ConnectionStatus':
+                            handleConnectionStatusChanged(event.payload);
+                            break;
+                        case 'ShowStageSecurityModal':
+                            handleShowStagedSecurityModal();
+                            break;
+                        case 'MiningTime':
+                            handleMiningTimeUpdate(event.payload);
+                            break;
+                        case 'ExchangeIdChanged':
+                            await handleExchangeIdChanged(event.payload);
+                            break;
+                        case 'DisabledPhases':
+                            handleUpdateDisabledPhases(event.payload);
+                            break;
+                        case 'BaseTariAddressChanged':
+                            handleBaseWalletUpate(event.payload);
+                            break;
+                        case 'ExternalTariAddressChanged':
+                            handleExternalWalletAddressUpdate(event.payload);
+                            break;
+                        case 'ShouldShowExchangeMinerModal':
+                            setShouldShowExchangeSpecificModal(true);
+                            break;
+                        default:
+                            console.warn('Unknown event', JSON.stringify(event));
+                            break;
                     }
-                    case 'MissingApplications':
-                        loadExternalDependencies(event.payload);
-                        setShowExternalDependenciesDialog(true);
-                        break;
-                    case 'StuckOnOrphanChain':
-                        setIsStuckOnOrphanChain(event.payload);
-                        if (event.payload) {
-                            setConnectionStatus('disconnected');
-                        }
-                        break;
-                    case 'ShowReleaseNotes':
-                        handleShowRelesaeNotes(event.payload);
-                        break;
-                    case `NetworkStatus`:
-                        setNetworkStatus(event.payload);
-                        break;
-                    case `NodeTypeUpdate`:
-                        setNodeStoreState(event.payload);
-                        break;
-                    case 'RestartingPhases':
-                        await handleRestartingPhases(event.payload);
-                        break;
-                    case 'AskForRestart':
-                        handleAskForRestart();
-                        break;
-                    case 'BackgroundNodeSyncUpdate':
-                        setBackgroundNodeState(event.payload);
-                        break;
-                    case 'InitWalletScanningProgress':
-                        updateWalletScanningProgress(event.payload);
-                        break;
-                    case 'ConnectionStatus':
-                        handleConnectionStatusChanged(event.payload);
-                        break;
-                    case 'ShowStageSecurityModal':
-                        handleShowStagedSecurityModal();
-                        break;
-                    case 'MiningTime':
-                        handleMiningTimeUpdate(event.payload);
-                        break;
-                    case 'ExchangeIdChanged':
-                        await handleExchangeIdChanged(event.payload);
-                        break;
-                    case 'DisabledPhases':
-                        handleUpdateDisabledPhases(event.payload);
-                        break;
-                    case 'BaseTariAddressChanged':
-                        handleBaseWalletUpate(event.payload);
-                        break;
-                    case 'ExternalTariAddressChanged':
-                        handleExternalWalletAddressUpdate(event.payload);
-                        break;
-                    case 'ShouldShowExchangeMinerModal':
-                        setShouldShowExchangeSpecificModal(true);
-                        break;
-                    default:
-                        console.warn('Unknown event', JSON.stringify(event));
-                        break;
                 }
+            );
+
+            try {
+                await invoke('frontend_ready');
+                console.info('Successfully called frontend_ready');
+            } catch (e) {
+                console.error('Failed to call frontend_ready: ', e);
             }
-        );
+
+            return unlisten;
+        };
+
+        let unlistenFunction: (() => void) | null = null;
+        setupListener().then((unlisten) => {
+            unlistenFunction = unlisten;
+        });
 
         return () => {
-            listener.then((fn) => fn());
+            unlistenFunction?.();
         };
     }, []);
 };
