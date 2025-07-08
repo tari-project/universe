@@ -186,9 +186,6 @@ impl WalletManager {
 
         if path_to_network_wallet.try_exists()? && path_to_network_wallet.is_dir() {
             fs::remove_dir_all(path_to_network_wallet).await?;
-        } else {
-            //create the directory if it does not exist
-            fs::create_dir_all(path_to_network_wallet).await?;
         }
 
         log::info!(target: LOG_TARGET, "Cleaning wallet data folder");
