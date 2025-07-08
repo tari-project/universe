@@ -7,7 +7,7 @@ export default function ModeSelection() {
     const { t } = useTranslation('setup-view');
     const action = (
         <SelectWrapper>
-            <ModeSelect variant="minimal" />
+            <ModeSelect variant="minimal" isSync />
         </SelectWrapper>
     );
     return <SyncActionCard action={action} title={t('actions.mode')} subtitle={t('actions.mode-copy')} />;
