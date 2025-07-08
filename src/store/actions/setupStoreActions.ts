@@ -28,37 +28,43 @@ export interface DisabledPhasesPayload {
     disabled_phases: SetupPhase[];
 }
 
+async function initializeAnimation() {
+    const visual_mode = useConfigUIStore.getState().visual_mode;
+    const towerInitalized = useUIStore.getState().towerInitalized;
+    if (!visual_mode || towerInitalized) return;
+
+    const offset = useUIStore.getState().towerSidebarOffset;
+    try {
+        console.info('Loading tower animation');
+        try {
+            await loadTowerAnimation({ canvasId: TOWER_CANVAS_ID, offset: offset });
+            setAnimationState('showVisual');
+            useUIStore.setState({ towerInitalized: true });
+        } catch (error) {
+            console.error('Failed to set animation state:', error);
+            useUIStore.setState({ towerInitalized: false });
+        }
+    } catch (e) {
+        console.error('Error at loadTowerAnimation:', e);
+        useConfigUIStore.setState({ visual_mode: false });
+    }
+}
+
 export const handleAppUnlocked = async () => {
     useSetupStore.setState({ appUnlocked: true });
     await fetchBridgeTransactionsHistory().catch((error) => {
         console.error('Could not fetch bridge transactions history:', error);
     });
-
-    const visual_mode = useConfigUIStore.getState().visual_mode;
-    const offset = useUIStore.getState().towerSidebarOffset;
-    if (visual_mode) {
-        try {
-            console.info('Loading tower animation');
-            await loadTowerAnimation({ canvasId: TOWER_CANVAS_ID, offset: offset });
-            try {
-                setAnimationState('showVisual');
-            } catch (error) {
-                console.error('Failed to set animation state:', error);
-            }
-        } catch (e) {
-            console.error('Error at loadTowerAnimation:', e);
-            useConfigUIStore.setState({ visual_mode: false });
-        }
-    }
+    await initializeAnimation();
     // todo move it to event
     await fetchApplicationsVersionsWithRetry();
 };
-export const handleWalletUnlocked = () => {
+export const handleWalletUnlocked = async () => {
     useSetupStore.setState({ walletUnlocked: true });
     // Initial fetch of transactions
-    const { tx_history_filter } = useWalletStore.getState();
-    fetchTransactionsHistory({ offset: 0, limit: 20, filter: tx_history_filter });
-    fetchCoinbaseTransactions({
+    const tx_history_filter = useWalletStore.getState().tx_history_filter;
+    await fetchTransactionsHistory({ offset: 0, limit: 20, filter: tx_history_filter });
+    await fetchCoinbaseTransactions({
         offset: 0,
         limit: 20,
     });
