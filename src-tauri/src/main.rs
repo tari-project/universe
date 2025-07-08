@@ -325,8 +325,9 @@ fn main() {
         .into(),
     );
 
+    let (gpu_sha_status_tx, gpu_sha_status_rx) = watch::channel(None);
     let gpu_miner_sha: Arc<RwLock<GpuMinerSha>> =
-        Arc::new(GpuMinerSha::new(&mut stats_collector).into());
+        Arc::new(GpuMinerSha::new(&mut stats_collector, gpu_sha_status_tx).into());
 
     let (tor_watch_tx, tor_watch_rx) = watch::channel(TorStatus::default());
     let tor_manager = TorManager::new(tor_watch_tx, &mut stats_collector);
