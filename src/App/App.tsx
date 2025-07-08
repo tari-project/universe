@@ -32,7 +32,7 @@ function CurrentAppSection({ showSplashscreen, isShuttingDown }: CurrentAppSecti
         if (showMainView) {
             return (
                 <AppContentContainer key="main" initial="hidden">
-                    <Suspense fallback={<div />}>
+                    <Suspense fallback={<div>{`fallbackMain`}</div>}>
                         <MainView />
                     </Suspense>
                 </AppContentContainer>
@@ -42,7 +42,7 @@ function CurrentAppSection({ showSplashscreen, isShuttingDown }: CurrentAppSecti
         if (isShuttingDown) {
             return (
                 <AppContentContainer key="shutdown" initial="hidden">
-                    <Suspense fallback={<div />}>
+                    <Suspense fallback={<div>{`fallback Shut down`}</div>}>
                         <ShuttingDownScreen />
                     </Suspense>
                 </AppContentContainer>

@@ -1,6 +1,7 @@
 import './i18initializer';
 import { lazy, StrictMode, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
+import AppFallback from '@app/fallback.tsx';
 const AppWrapper = lazy(() => import('./App/AppWrapper.tsx'));
 
 const rootEl = document.getElementById('root');
@@ -19,7 +20,7 @@ if (rootEl) {
     });
     root.render(
         <StrictMode>
-            <Suspense fallback={<div>{`fallback1`}</div>}>
+            <Suspense fallback={<AppFallback />}>
                 <AppWrapper />
             </Suspense>
         </StrictMode>

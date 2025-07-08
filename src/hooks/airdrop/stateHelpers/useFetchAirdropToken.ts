@@ -4,10 +4,8 @@ import { AirdropTokens, setAirdropTokens, setAuthUuid, setFlareAnimationType, us
 import { fetchAllUserData } from '@app/store/actions/airdropStoreActions.ts';
 
 export default function useFetchAirdropToken({ canListen = false }: { canListen?: boolean }) {
-    const { authUuid, apiUrl } = useAirdropStore((s) => ({
-        authUuid: s.authUuid,
-        apiUrl: s.backendInMemoryConfig?.airdropApiUrl,
-    }));
+    const authUuid = useAirdropStore((s) => s.authUuid);
+    const apiUrl = useAirdropStore((s) => s.backendInMemoryConfig?.airdropApiUrl);
 
     useEffect(() => {
         if (!canListen) return;
