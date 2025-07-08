@@ -461,13 +461,6 @@ impl StatusMonitor for NodeStatusMonitor {
                 base_path
                     .join("node")
                     .join(Network::get_current().to_string().to_lowercase())
-                    .join("peer_db"),
-            )
-            .await;
-            let _unused = fs::remove_dir_all(
-                base_path
-                    .join("node")
-                    .join(Network::get_current().to_string().to_lowercase())
                     .join("libtor"),
             )
             .await;
