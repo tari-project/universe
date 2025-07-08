@@ -32,7 +32,7 @@ function CurrentAppSection({ showSplashscreen, isShuttingDown }: CurrentAppSecti
         if (showMainView) {
             return (
                 <AppContentContainer key="main" initial="hidden">
-                    <Suspense fallback={<div>{`fallbackMain`}</div>}>
+                    <Suspense fallback={<div />}>
                         <MainView />
                     </Suspense>
                 </AppContentContainer>
@@ -42,7 +42,7 @@ function CurrentAppSection({ showSplashscreen, isShuttingDown }: CurrentAppSecti
         if (isShuttingDown) {
             return (
                 <AppContentContainer key="shutdown" initial="hidden">
-                    <Suspense fallback={<div>{`fallback Shut down`}</div>}>
+                    <Suspense fallback={<div />}>
                         <ShuttingDownScreen />
                     </Suspense>
                 </AppContentContainer>
@@ -50,7 +50,9 @@ function CurrentAppSection({ showSplashscreen, isShuttingDown }: CurrentAppSecti
         }
         return (
             <AppContentContainer key="splashscreen" initial="visible">
-                <Splashscreen />
+                <Suspense fallback={<div />}>
+                    <Splashscreen />
+                </Suspense>
             </AppContentContainer>
         );
     }, [showSplashscreen, isShuttingDown]);

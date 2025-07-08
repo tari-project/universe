@@ -1,9 +1,10 @@
+import { useTheme } from 'styled-components';
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import { LottieWrapper, SplashScreenContainer } from './SplashScreenContainer.styles';
 
 import default_url from './Tari_Universe_Black_JSON.json?url';
 import dm_url from './Tari_Universe_White_JSON.json?url';
-import { useTheme } from 'styled-components';
+import { handleCloseSplashscreen } from '@app/store/actions/uiStoreActions.ts';
 
 export default function Splashscreen() {
     const theme = useTheme();
@@ -11,7 +12,15 @@ export default function Splashscreen() {
     return (
         <SplashScreenContainer>
             <LottieWrapper>
-                <DotLottieReact src={url} autoplay />
+                <DotLottieReact
+                    src={url}
+                    autoplay
+                    dotLottieRefCallback={(ref) =>
+                        ref?.addEventListener('complete', () => {
+                            handleCloseSplashscreen();
+                        })
+                    }
+                />
             </LottieWrapper>
         </SplashScreenContainer>
     );
