@@ -52,8 +52,9 @@ export const handleConfigWalletLoaded = (walletConfig: ConfigWallet) => {
     useConfigWalletStore.setState((c) => ({ ...c, ...walletConfig }));
 };
 export const handleConfigUILoaded = async (uiConfig: ConfigUI) => {
-    useConfigUIStore.setState((c) => ({ ...c, ...uiConfig }));
     const configTheme = uiConfig.display_mode?.toLowerCase();
+    useConfigUIStore.setState({ ...uiConfig, display_mode: configTheme });
+
     if (configTheme) {
         setUITheme(configTheme as displayMode);
     }
@@ -295,14 +296,15 @@ export const setShowExperimentalSettings = async (showExperimentalSettings: bool
 };
 
 export const setDisplayMode = async (displayMode: displayMode) => {
-    const previousDisplayMode = useConfigUIStore.getState().display_mode;
-    useConfigUIStore.setState({ display_mode: displayMode });
-
-    invoke('set_display_mode', { displayMode: displayMode as displayMode }).catch((e) => {
-        console.error('Could not set theme', e);
-        setError('Could not change theme');
-        useConfigUIStore.setState({ display_mode: previousDisplayMode });
-    });
+    invoke('set_display_mode', { displayMode: displayMode as displayMode })
+        .then(() => {
+            useConfigUIStore.setState({ display_mode: displayMode });
+        })
+        .catch((e) => {
+            console.error('Could not set theme', e);
+            setError('Could not change theme');
+            useConfigUIStore.setState((c) => ({ display_mode: c.display_mode }));
+        });
 };
 
 export const setUseTor = async (useTor: boolean) => {
