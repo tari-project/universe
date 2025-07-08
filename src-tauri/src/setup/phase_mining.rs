@@ -33,7 +33,7 @@ use crate::{
         progress_stepper::ProgressStepperBuilder,
         ProgressStepper,
     },
-    setup::setup_manager::{SetupFeature, SetupPhase},
+    setup::{listeners::SetupFeature, setup_manager::SetupPhase},
     tasks_tracker::TasksTrackers,
     StartConfig, UniverseAppState,
 };
@@ -49,7 +49,8 @@ use tokio::sync::{
 use tokio_util::task::TaskTracker;
 
 use super::{
-    setup_manager::{PhaseStatus, SetupFeaturesList},
+    listeners::SetupFeaturesList,
+    setup_manager::PhaseStatus,
     trait_setup_phase::{SetupConfiguration, SetupPhaseImpl},
     utils::{setup_default_adapter::SetupDefaultAdapter, timeout_watcher::TimeoutWatcher},
 };
