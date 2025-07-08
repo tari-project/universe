@@ -165,4 +165,43 @@ impl NetworkStatus {
             }
         }
     }
+
+    async fn ping_google_server() -> Result<(), anyhow::Error> {
+        match reqwest::get("https://www.google.com").await {
+            Ok(response) => {
+                if response.status().is_success() {
+                    info!(target: LOG_TARGET, "Successfully pinged Google server");
+                    Ok(())
+                } else {
+                    Err(anyhow::anyhow!(
+                        "Failed to ping Google server: {:?}",
+                        response.status()
+                    ))
+                }
+            }
+            Err(e) => {
+                error!(target: LOG_TARGET, "Failed to ping Google server: {:?}", e);
+                Err(e.into())
+            }
+        }
+    }
+
+    pub async fn check_internet_connection() -> bool {
+        match tokio::time::timeout(Duration::from_secs(5), Self::ping_google_server()).await {
+            Ok(result) => match result {
+                Ok(_) => {
+                    info!(target: LOG_TARGET, "Internet connection is available");
+                    true
+                }
+                Err(e) => {
+                    error!(target: LOG_TARGET, "No internet connection: {:?}", e);
+                    false
+                }
+            },
+            Err(_) => {
+                error!(target: LOG_TARGET, "Ping to Google server timed out");
+                false
+            }
+        }
+    }
 }
