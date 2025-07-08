@@ -40,7 +40,7 @@ use process_stats_collector::ProcessStatsCollectorBuilder;
 use node::remote_node_adapter::RemoteNodeAdapter;
 
 use setup::setup_manager::SetupManager;
-use std::fs::remove_file;
+use std::fs::{remove_dir_all, remove_file};
 use std::path::Path;
 use systemtray_manager::SystemTrayManager;
 use tasks_tracker::TasksTrackers;
@@ -516,6 +516,30 @@ fn main() {
             // The start of needed restart operations. Break this out into a module if we need n+1
             let tcp_tor_toggled_file = config_path.join("tcp_tor_toggled");
             if tcp_tor_toggled_file.exists() {
+                let network = Network::default().as_key_str();
+
+                let node_peer_db = config_path.join("node").join(network).join("peer_db");
+                let wallet_peer_db = config_path.join("wallet").join(network).join("peer_db");
+
+                // They may not exist. This could be first run.
+                if node_peer_db.exists() {
+                    if let Err(e) = remove_dir_all(node_peer_db) {
+                        warn!(
+                            target: LOG_TARGET,
+                            "Could not clear peer data folder: {}", e
+                        );
+                    }
+                }
+
+                if wallet_peer_db.exists() {
+                    if let Err(e) = remove_dir_all(wallet_peer_db) {
+                        warn!(
+                            target: LOG_TARGET,
+                            "Could not clear peer data folder: {}", e
+                        );
+                    }
+                }
+
                 remove_file(tcp_tor_toggled_file).map_err(|e| {
                     error!(
                         target: LOG_TARGET,

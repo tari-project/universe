@@ -179,11 +179,17 @@ impl ProcessAdapter for LocalNodeAdapter {
 
         if migration_info.version < 2 {
             // Delete the peer info db.
+            let peer_db_dir = network_dir.join("peer_db");
             let node_db_dir = network_dir.join("data");
             let config_dir = network_dir.join("config");
             let libtor_dir = network_dir.join("libtor");
 
-            let dirs = vec![node_db_dir.clone(), config_dir.clone(), libtor_dir.clone()];
+            let dirs = vec![
+                peer_db_dir.clone(),
+                node_db_dir.clone(),
+                config_dir.clone(),
+                libtor_dir.clone(),
+            ];
 
             for dir in dirs {
                 if dir.exists() {
@@ -198,6 +204,15 @@ impl ProcessAdapter for LocalNodeAdapter {
             migration_info.version = 2;
         }
         migration_info.save(&migration_file)?;
+
+        // Remove peerdb on every restart as requested by Protocol team
+        let peer_db_dir = network_dir.join("peer_db");
+        if peer_db_dir.exists() {
+            info!(target: LOG_TARGET, "Removing peer db at {:?}", peer_db_dir);
+            let _unused = fs::remove_dir_all(peer_db_dir).inspect_err(|e| {
+                warn!(target: LOG_TARGET, "Failed to remove peer db: {:?}", e);
+            });
+        }
 
         let config_dir = log_dir
             .clone()

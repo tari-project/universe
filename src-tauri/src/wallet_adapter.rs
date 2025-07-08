@@ -340,6 +340,10 @@ impl ProcessAdapter for WalletAdapter {
             }
         }
 
+        let peer_data_folder = working_dir
+            .join(Network::get_current_or_user_setting_or_default().to_string())
+            .join("peer_db");
+
         // Always use direct connections with the local node
         if self.use_tor && !self.connect_with_local_node {
             args.push("-p".to_string());
@@ -394,6 +398,10 @@ impl ProcessAdapter for WalletAdapter {
                     ));
                 }
             }
+        }
+
+        if let Err(e) = std::fs::remove_dir_all(peer_data_folder) {
+            warn!(target: LOG_TARGET, "Could not clear peer data folder: {}", e);
         }
 
         #[cfg(target_os = "windows")]
