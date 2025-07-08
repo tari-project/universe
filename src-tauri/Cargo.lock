@@ -5047,7 +5047,7 @@ version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "af1844ef2428cc3e1cb900be36181049ef3d3193c63e43026cfe202983b27a56"
 dependencies = [
- "proc-macro-crate 2.0.0",
+ "proc-macro-crate 3.2.0",
  "proc-macro2",
  "quote",
  "syn 2.0.99",
@@ -8113,6 +8113,7 @@ dependencies = [
  "auto-launch",
  "axum 0.7.9",
  "base64 0.22.1",
+ "bincode",
  "blake2",
  "cfspeedtest",
  "chrono",
@@ -8181,6 +8182,7 @@ dependencies = [
  "tauri-plugin-single-instance",
  "tauri-plugin-updater",
  "thiserror 2.0.12",
+ "tiny-keccak",
  "tokio",
  "tokio-tungstenite",
  "tokio-util 0.7.14",

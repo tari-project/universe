@@ -29,6 +29,7 @@ use crate::{
     },
     events_emitter::EventsEmitter,
     internal_wallet::InternalWallet,
+    pin::PinManager,
     progress_trackers::{
         progress_plans::{ProgressPlans, ProgressSetupWalletPlan},
         progress_stepper::ProgressStepperBuilder,
@@ -153,7 +154,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
         let use_tor = *ConfigCore::content().await.use_tor();
         let was_staged_security_modal_shown =
             *ConfigUI::content().await.was_staged_security_modal_shown();
-        let pin_locked = *ConfigWallet::content().await.pin_locked();
+        let pin_locked = PinManager::pin_locked().await;
         Ok(WalletSetupPhaseAppConfiguration {
             use_tor,
             was_staged_security_modal_shown,

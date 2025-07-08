@@ -114,6 +114,7 @@ mod node;
 mod p2pool;
 mod p2pool_adapter;
 mod p2pool_manager;
+mod pin;
 mod pool_status_watcher;
 mod port_allocator;
 mod process_adapter;

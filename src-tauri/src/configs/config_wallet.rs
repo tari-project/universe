@@ -28,7 +28,7 @@ use tari_common_types::tari_address::TariAddress;
 use tauri::AppHandle;
 use tokio::sync::RwLock;
 
-use crate::internal_wallet::TariWalletDetails;
+use crate::{internal_wallet::TariWalletDetails, pin::PinLockerState};
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
 
@@ -72,7 +72,7 @@ pub struct ConfigWalletContent {
     #[getset(get = "pub", set = "pub")]
     tari_wallet_details: Option<TariWalletDetails>,
     #[getset(get = "pub", set = "pub")]
-    pin_locked: bool,
+    pin_locker_state: PinLockerState,
 }
 
 impl Default for ConfigWalletContent {
@@ -87,8 +87,8 @@ impl Default for ConfigWalletContent {
             created_at: SystemTime::now(),
             selected_external_tari_address: None,
             external_tari_addresses_book: HashMap::new(),
-            pin_locked: false,
             tari_wallet_details: None,
+            pin_locker_state: PinLockerState::default(),
         }
     }
 }
