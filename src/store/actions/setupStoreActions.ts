@@ -51,7 +51,6 @@ async function initializeAnimation() {
 }
 
 export const handleAppUnlocked = async () => {
-    console.debug(`wen app unlock`);
     useSetupStore.setState({ appUnlocked: true });
     await fetchBridgeTransactionsHistory().catch((error) => {
         console.error('Could not fetch bridge transactions history:', error);
@@ -60,12 +59,12 @@ export const handleAppUnlocked = async () => {
     // todo move it to event
     await fetchApplicationsVersionsWithRetry();
 };
-export const handleWalletUnlocked = () => {
+export const handleWalletUnlocked = async () => {
     useSetupStore.setState({ walletUnlocked: true });
     // Initial fetch of transactions
-    const { tx_history_filter } = useWalletStore.getState();
-    fetchTransactionsHistory({ offset: 0, limit: 20, filter: tx_history_filter });
-    fetchCoinbaseTransactions({
+    const tx_history_filter = useWalletStore.getState().tx_history_filter;
+    await fetchTransactionsHistory({ offset: 0, limit: 20, filter: tx_history_filter });
+    await fetchCoinbaseTransactions({
         offset: 0,
         limit: 20,
     });
