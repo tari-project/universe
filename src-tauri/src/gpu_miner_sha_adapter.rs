@@ -45,14 +45,15 @@ impl ProcessAdapter for GpuMinerShaAdapter {
 
         let mut args: Vec<String> = vec![];
 
-        args.push(format!("--algo '{}'", "sha3x"));
-        args.push(format!(
-            "--pool '{}'",
-            "pool.sha3x.supportxtm.com:6118".to_string()
-        ));
+        args.push("--algo".to_string());
+        args.push("sha3x".to_string());
+
+        args.push("--pool".to_string());
+        args.push("pool.sha3x.supportxtm.com:6118".to_string());
 
         if let Some(tari_address) = &self.tari_address {
-            args.push(format!("--wallet '{}'", tari_address.to_base58()));
+            args.push("--wallet".to_string());
+            args.push(tari_address.to_base58());
         } else {
             return Err(anyhow::anyhow!(
                 "Tari address must be set before starting the GpuMinerShaAdapter"
@@ -60,15 +61,18 @@ impl ProcessAdapter for GpuMinerShaAdapter {
         }
 
         if let Some(intensity) = self.intensity {
-            args.push(format!("--gpu-intensity '{}'", intensity));
+            args.push("--gpu-intensity".to_string());
+            args.push(intensity.to_string());
         }
 
         if let Some(batch_size) = self.batch_size {
-            args.push(format!("--gpu-batch-size '{}'", batch_size));
+            args.push("--gpu-batch-size".to_string());
+            args.push(batch_size.to_string());
         }
 
         if let Some(worker_name) = &self.worker_name {
-            args.push(format!("--worker '{}'", worker_name));
+            args.push("--worker".to_string());
+            args.push(worker_name.clone());
         }
 
         Ok((

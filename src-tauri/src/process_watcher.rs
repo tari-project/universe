@@ -294,6 +294,9 @@ async fn do_health_check<TStatusMonitor: StatusMonitor, TProcessInstance: Proces
 
     stats.total_health_check_duration += health_check_duration;
 
+    info!(target: LOG_TARGET, "Health check status for {}: is_healthy: {}, ping_failed: {}, duration: {:?}", 
+          name, is_healthy, ping_failed, health_check_duration);
+
     if !is_healthy
         && !child.is_shutdown_triggered()
         && !global_shutdown_signal.is_triggered()
