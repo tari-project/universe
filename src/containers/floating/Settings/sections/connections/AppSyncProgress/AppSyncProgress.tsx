@@ -11,7 +11,7 @@ export const AppSyncProgress = () => {
     const [open, setOpen] = useState(false);
     const { t } = useTranslation('setup-progresses');
 
-    const isSetupFinished = useSetupStore((state) => state.isInitialSetupFinished);
+    const isInitialSetupFinished = useSetupStore((state) => state.isInitialSetupFinished);
 
     const corePhaseInfoPayload = useSetupStore((state) => state.core_phase_setup_payload);
     const hardwarePhaseInfoPayload = useSetupStore((state) => state.hardware_phase_setup_payload);
@@ -104,21 +104,21 @@ export const AppSyncProgress = () => {
     const setupParams = currentPhaseToShow?.title_params ? { ...currentPhaseToShow.title_params } : {};
 
     useEffect(() => {
-        const isOpen = shouldShowModal || (Boolean(currentPhaseToShow) && !isSetupFinished);
+        const isOpen = shouldShowModal || (!currentPhaseToShow?.is_complete && !isInitialSetupFinished);
         setOpen(isOpen);
-        useUIStore.setState({ resumeModalIsOpen: isOpen });
-    }, [currentPhaseToShow, isSetupFinished, shouldShowModal]);
+    }, [currentPhaseToShow?.is_complete, isInitialSetupFinished, shouldShowModal]);
 
     useEffect(() => {
-        if (
+        const hideResumeAppModal =
             miningPhaseInfoPayload?.is_complete &&
-            (walletPhaseInfoPayload?.is_complete || disabledPhases.includes(SetupPhase.Wallet))
-        ) {
+            (walletPhaseInfoPayload?.is_complete || disabledPhases.includes(SetupPhase.Wallet));
+
+        if (hideResumeAppModal) {
             useUIStore.setState({ showResumeAppModal: false });
         }
     }, [miningPhaseInfoPayload?.is_complete, walletPhaseInfoPayload?.is_complete, disabledPhases]);
 
-    return open ? (
+    return open && Boolean(currentPhaseToShow) ? (
         <Wrapper>
             <TextWrapper>
                 <Title>{t(`phase-title.${setupPhaseTitle}`)}</Title>
