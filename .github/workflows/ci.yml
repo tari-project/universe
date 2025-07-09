@@ -157,6 +157,7 @@ jobs:
       - name: checkout
         uses: actions/checkout@v4
       - name: cargo test compile
+        working-directory: ./src-tauri
         env:
           AIRDROP_BASE_URL: http://localhost:4000
           AIRDROP_API_BASE_URL: http://localhost:3004
@@ -165,6 +166,7 @@ jobs:
           EXCHANGE_ID: universal
         run: cargo test -vv --no-run --locked --all-features --release
       - name: cargo test
+        working-directory: ./src-tauri
         env:
           AIRDROP_BASE_URL: http://localhost:4000
           AIRDROP_API_BASE_URL: http://localhost:3004
