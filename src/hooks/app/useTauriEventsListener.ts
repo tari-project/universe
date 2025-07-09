@@ -135,10 +135,11 @@ const useTauriEventsListener = () => {
                             handleConnectedPeersUpdate(event.payload);
                             break;
                         case 'NewBlockHeight':
+                            console.debug(`NewBlockHeight= `, event.payload);
                             await handleNewBlock(event.payload);
                             break;
                         case 'ConfigCoreLoaded':
-                            handleConfigCoreLoaded(event.payload);
+                            await handleConfigCoreLoaded(event.payload);
                             break;
                         case 'ConfigWalletLoaded':
                             handleConfigWalletLoaded(event.payload);

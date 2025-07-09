@@ -1,7 +1,5 @@
 import { setWalletBalance } from '@app/store/actions';
 
-let winTimeout: NodeJS.Timeout | undefined;
-let failTimeout: NodeJS.Timeout | undefined;
 import { create } from './create';
 import { useMiningStore } from './useMiningStore.ts';
 import { getCurrentWindow } from '@tauri-apps/api/window';
@@ -31,7 +29,6 @@ interface State {
 interface Actions {
     setRecapCount: (recapCount?: number) => void;
     setRewardCount: (rewardCount?: number) => void;
-    cleanup: () => void;
 }
 
 type BlockchainVisualisationStoreState = State & Actions;
@@ -51,20 +48,6 @@ export const useBlockchainVisualisationStore = create<BlockchainVisualisationSto
     recapIds: [],
     setRecapCount: (recapCount) => set({ recapCount }),
     setRewardCount: (rewardCount) => set({ rewardCount }),
-    cleanup: () => {
-        if (winTimeout) {
-            clearTimeout(winTimeout);
-            winTimeout = undefined;
-        }
-        if (failTimeout) {
-            clearTimeout(failTimeout);
-            failTimeout = undefined;
-        }
-        if (newBlockDebounceTimeout) {
-            clearTimeout(newBlockDebounceTimeout);
-            newBlockDebounceTimeout = undefined;
-        }
-    },
 }));
 
 const handleWin = async (coinbase_transaction: TransactionInfo, balance: WalletBalance, canAnimate: boolean) => {
@@ -82,15 +65,10 @@ const handleWin = async (coinbase_transaction: TransactionInfo, balance: WalletB
             setAnimationState(successTier);
         }
         useBlockchainVisualisationStore.setState({ earnings });
-        if (winTimeout) {
-            clearTimeout(winTimeout);
-        }
-        winTimeout = setTimeout(async () => {
-            useBlockchainVisualisationStore.setState({ earnings: undefined });
-            await refreshTransactions();
-            await setWalletBalance(balance);
-            setMiningControlsEnabled(true);
-        }, 2000);
+        await refreshTransactions();
+        await setWalletBalance(balance);
+        setMiningControlsEnabled(true);
+        useBlockchainVisualisationStore.setState({ earnings: undefined });
     } else {
         await refreshTransactions();
         useBlockchainVisualisationStore.setState((curr) => ({
@@ -105,14 +83,9 @@ const handleFail = async (_blockHeight: number, balance: WalletBalance, canAnima
     if (canAnimate && visualModeEnabled) {
         setMiningControlsEnabled(false);
         setAnimationState('fail');
-        if (failTimeout) {
-            clearTimeout(failTimeout);
-        }
-        failTimeout = setTimeout(async () => {
-            setMiningControlsEnabled(true);
-            await refreshTransactions();
-            await setWalletBalance(balance);
-        }, 1000);
+        await refreshTransactions();
+        await setWalletBalance(balance);
+        setMiningControlsEnabled(true);
     }
 };
 

@@ -12,8 +12,15 @@ export const ScrollMask = styled.div`
     padding-right: 16px;
     padding-left: 16px;
     width: 100%;
+
     mask-image: linear-gradient(to right, transparent, black 20px, black calc(100% - 100px), transparent 100%);
-    -webkit-mask-image: linear-gradient(to right, transparent, black 20px, black calc(100% - 100px), transparent 100%);
+    -webkit-mask-image: -webkit-linear-gradient(
+        to right,
+        transparent,
+        black 0px,
+        black calc(100% - 100px),
+        transparent 100%
+    );
 
     &:active {
         cursor: grabbing;
