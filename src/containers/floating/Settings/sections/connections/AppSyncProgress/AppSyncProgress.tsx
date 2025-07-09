@@ -11,7 +11,7 @@ export const AppSyncProgress = () => {
     const [open, setOpen] = useState(false);
     const { t } = useTranslation('setup-progresses');
 
-    const isSetupFinished = useSetupStore((state) => state.isInitialSetupFinished);
+    const isInitialSetupFinished = useSetupStore((state) => state.isInitialSetupFinished);
 
     const corePhaseInfoPayload = useSetupStore((state) => state.core_phase_setup_payload);
     const hardwarePhaseInfoPayload = useSetupStore((state) => state.hardware_phase_setup_payload);
@@ -104,10 +104,9 @@ export const AppSyncProgress = () => {
     const setupParams = currentPhaseToShow?.title_params ? { ...currentPhaseToShow.title_params } : {};
 
     useEffect(() => {
-        const isOpen = shouldShowModal || (Boolean(currentPhaseToShow) && !isSetupFinished);
+        const isOpen = shouldShowModal || (Boolean(currentPhaseToShow) && !isInitialSetupFinished);
         setOpen(isOpen);
-        useUIStore.setState({ resumeModalIsOpen: isOpen });
-    }, [currentPhaseToShow, isSetupFinished, shouldShowModal]);
+    }, [currentPhaseToShow, isInitialSetupFinished, shouldShowModal]);
 
     useEffect(() => {
         if (
