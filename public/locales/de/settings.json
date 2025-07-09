@@ -96,6 +96,7 @@
     "load-qr-code": "QR-Code laden",
     "passphrase": "Passphrase"
   },
+  "pin": "Pin",
   "pool-mining": "Pool-Mining",
   "pool-mining-description": "Wenn aktiviert, wirst du in einem Pool minen und einer Gruppe von Minern beitreten.",
   "pre-release": {
@@ -129,6 +130,7 @@
   "send-logs": "Ein Problem & Protokolle einreichen",
   "set-dynamic-fail-data": "Benutzerdefinierte URLs für Monero-Knoten festlegen",
   "settings": "Einstellungen",
+  "setup-pin": "Setup Universe Security PIN",
   "setup-tor-settings": "Tor-Einstellungen für Datenschutzkontrolle und Konnektivität einrichten",
   "sha-network-hash-rate": "Sha3-Netzwerk-Hashrate",
   "should-auto-start": {

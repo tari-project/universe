@@ -638,6 +638,7 @@ fn main() {
             commands::get_base_node_status,
             commands::create_pin,
             commands::forgot_pin,
+            commands::is_pin_locked,
         ])
         .build(tauri::generate_context!())
         .inspect_err(|e| {

@@ -96,6 +96,7 @@
     "load-qr-code": "Muat Kode QR",
     "passphrase": "Kata Sandi"
   },
+  "pin": "Pin",
   "pool-mining": "Penambangan Pool",
   "pool-mining-description": "Ketika diaktifkan, Anda akan menambang dalam pool dan bergabung dengan kelompok penambang.",
   "pre-release": {
@@ -129,6 +130,7 @@
   "send-logs": "Kirim log",
   "set-dynamic-fail-data": "Atur URL kustom untuk node monero",
   "settings": "Pengaturan",
+  "setup-pin": "Setup Universe Security PIN",
   "setup-tor-settings": "Atur Pengaturan Tor untuk Kontrol Privasi dan Konektivitas",
   "sha-network-hash-rate": "Hashrate jaringan Sha3",
   "should-auto-start": {

@@ -2290,3 +2290,9 @@ pub async fn get_base_node_status(
 ) -> Result<BaseNodeStatus, String> {
     Ok(*state.node_status_watch_rx.borrow())
 }
+
+#[tauri::command]
+pub async fn is_pin_locked() -> Result<bool, String> {
+    let is_pin_locked = PinManager::pin_locked().await;
+    Ok(is_pin_locked)
+}

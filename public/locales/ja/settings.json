@@ -96,6 +96,7 @@
     "load-qr-code": "QRコードを読み込む",
     "passphrase": "パスフレーズ"
   },
+  "pin": "Pin",
   "pool-mining": "プールマイニング",
   "pool-mining-description": "有効にすると、プールでマイニングし、マイナーのグループに参加します。",
   "pre-release": {
@@ -129,6 +130,7 @@
   "send-logs": "ログを送信",
   "set-dynamic-fail-data": "MoneroノードのカスタムURLを設定",
   "settings": "設定",
+  "setup-pin": "Setup Universe Security PIN",
   "setup-tor-settings": "プライバシー管理と接続のためのTor設定をセットアップ",
   "sha-network-hash-rate": "Sha3ネットワークのハッシュレート",
   "should-auto-start": {
