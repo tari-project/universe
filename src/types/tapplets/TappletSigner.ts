@@ -94,9 +94,9 @@ export class TappletSigner {
     }
 
     public async getTariBalance(): Promise<WalletBalance> {
-        const bridgeTxs = useWalletStore.getState().balance;
+        const walletBalance = useWalletStore.getState().balance;
         return (
-            bridgeTxs ?? {
+            walletBalance ?? {
                 available_balance: 0,
                 timelocked_balance: 0,
                 pending_incoming_balance: 0,
