@@ -149,3 +149,26 @@ jobs:
           rg --version || exit 1
       - name: run the license check
         run: ./scripts/file_license_check.sh
+
+  test:
+    name: "lil' testy tests"
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+      - name: cargo test compile
+        env:
+          AIRDROP_BASE_URL: http://localhost:4000
+          AIRDROP_API_BASE_URL: http://localhost:3004
+          AIRDROP_TWITTER_AUTH_URL: http://localhost:3004/auth/twitter
+          TELEMETRY_API_URL: http://localhost:3004
+          EXCHANGE_ID: universal
+        run: cargo test -vv --no-run --locked --all-features --release
+      - name: cargo test
+        env:
+          AIRDROP_BASE_URL: http://localhost:4000
+          AIRDROP_API_BASE_URL: http://localhost:3004
+          AIRDROP_TWITTER_AUTH_URL: http://localhost:3004/auth/twitter
+          TELEMETRY_API_URL: http://localhost:3004
+          EXCHANGE_ID: universal
+        run: cargo test -vv --locked --all-features --release
