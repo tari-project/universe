@@ -516,8 +516,13 @@ fn main() {
             if tcp_tor_toggled_file.exists() {
                 let network = Network::default().as_key_str();
 
-                let node_peer_db = config_path.join("node").join(network).join("peer_db");
-                let wallet_peer_db = config_path.join("wallet").join(network).join("peer_db");
+                let local_data_dir = app
+                    .path()
+                    .app_local_data_dir()
+                    .expect("Could not get local data dir");
+
+                let node_peer_db = local_data_dir.join("node").join(network).join("peer_db");
+                let wallet_peer_db = local_data_dir.join("wallet").join(network).join("peer_db");
 
                 // They may not exist. This could be first run.
                 if node_peer_db.exists() {

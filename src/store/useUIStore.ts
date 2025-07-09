@@ -48,7 +48,6 @@ interface UIStoreState {
     towerInitalized: boolean;
     showTapplet: boolean;
     blockBubblesEnabled: boolean;
-    resumeModalIsOpen: boolean;
 }
 const preferredTheme = window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 
@@ -73,7 +72,6 @@ const initialState: UIStoreState = {
     towerInitalized: false,
     showTapplet: false,
     blockBubblesEnabled: false,
-    resumeModalIsOpen: false,
     showSplashscreen: true,
     canCloseSplashscreen: false,
 };
