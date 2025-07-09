@@ -11,9 +11,17 @@ export const Wrapper = styled(m.div)`
     padding: 17px;
 
     display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+`;
+
+export const LoadingGroup = styled.div`
+    display: flex;
     gap: 24px;
     align-items: center;
     justify-content: space-between;
+    width: 100%;
 `;
 
 export const Text = styled.div`
@@ -74,10 +82,19 @@ export const TooltipTitle = styled.div`
 `;
 
 export const TooltipDescription = styled.div`
-    color: #797979;
+    color: ${({ theme }) => theme.palette.text.secondary};
     font-family: Poppins, sans-serif;
     font-size: 12px;
     font-style: normal;
     font-weight: 500;
     line-height: 133.333%;
+`;
+
+export const TextTop = styled.div`
+    color: ${({ theme }) => theme.palette.text.secondary};
+    font-family: Poppins, sans-serif;
+    font-size: 12px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: normal;
 `;

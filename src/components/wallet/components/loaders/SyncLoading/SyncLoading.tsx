@@ -1,8 +1,10 @@
 import LoadingDots from '@app/components/elements/loaders/LoadingDots';
 import {
     Line,
+    LoadingGroup,
     LoadingWrapper,
     Text,
+    TextTop,
     TooltipContent,
     TooltipDescription,
     TooltipPosition,
@@ -18,9 +20,9 @@ import SyncCountdown from '@app/components/wallet/components/loaders/SyncLoading
 
 export default function SyncLoading() {
     const { t } = useTranslation(['wallet', 'setup-progresses']);
+
     const cpuMining = useMiningMetricsStore((s) => s.cpu_mining_status.is_mining);
     const gpuMining = useMiningMetricsStore((s) => s.gpu_mining_status.is_mining);
-
     const isMining = cpuMining || gpuMining;
 
     const [open, setOpen] = useState(false);
@@ -37,23 +39,24 @@ export default function SyncLoading() {
     return (
         <>
             <Wrapper ref={refs.setReference} {...getReferenceProps()}>
-                <Text>
-                    <Line>
-                        {t('sync-message.line1')}
-                        <strong>
-                            <SyncCountdown
-                                onStarted={() => setIsStarted(true)}
-                                onCompleted={() => setIsComplete(true)}
-                                isCompact
-                            />
-                            {isStarted && !isComplete && t('sync-message.line2')}
-                        </strong>
-                    </Line>
-                    <Line>{t('sync-message.line3')}</Line>
-                </Text>
-                <LoadingWrapper>
-                    <LoadingDots />
-                </LoadingWrapper>
+                {isMining && <TextTop>{t('sync-message.top-line')}</TextTop>}
+                <LoadingGroup>
+                    <Text>
+                        <Line>
+                            <strong>
+                                <SyncCountdown
+                                    onStarted={() => setIsStarted(true)}
+                                    onCompleted={() => setIsComplete(true)}
+                                />
+                                {isStarted && !isComplete && t('sync-message.line2')}
+                            </strong>
+                        </Line>
+                        <Line>{t('sync-message.line3')}</Line>
+                    </Text>
+                    <LoadingWrapper>
+                        <LoadingDots />
+                    </LoadingWrapper>
+                </LoadingGroup>
             </Wrapper>
             <AnimatePresence>
                 {open && (
