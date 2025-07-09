@@ -6,9 +6,11 @@ import BlockTime from './components/BlockTime';
 import { MiningViewContainer } from './MiningView.styles.ts';
 import BlockExplorerMini from '../components/BlockExplorerMini/BlockExplorerMini.tsx';
 import { useUIStore } from '@app/store/useUIStore.ts';
+import { useConfigUIStore } from '@app/store';
 
 export default function MiningView() {
     const blockBubblesEnabled = useUIStore((s) => s.blockBubblesEnabled);
+    const visualModeEnabled = useConfigUIStore((s) => s.visual_mode);
 
     return (
         <MiningViewContainer>
@@ -21,7 +23,7 @@ export default function MiningView() {
                     <BlockTime />
                 </>
             ) : (
-                <BlockExplorerMini />
+                visualModeEnabled && <BlockExplorerMini />
             )}
         </MiningViewContainer>
     );

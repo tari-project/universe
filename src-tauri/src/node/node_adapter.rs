@@ -89,25 +89,27 @@ impl NodeAdapterService {
             .await
             .map_err(|e| NodeStatusMonitorError::UnknownError(e.into()))?;
         let res = res.into_inner();
-        let metadata = match res.metadata {
-            Some(metadata) => metadata,
-            None => {
-                return Err(NodeStatusMonitorError::UnknownError(anyhow!(
-                    "No metadata found"
-                )));
-            }
-        };
+
+        let block_height = res
+            .metadata
+            .as_ref()
+            .map(|m| m.best_block_height)
+            .unwrap_or(0);
+        let block_time = res.metadata.as_ref().map(|m| m.timestamp).unwrap_or(0);
 
         Ok(BaseNodeStatus {
             sha_network_hashrate: res.sha3x_estimated_hash_rate,
             tari_randomx_network_hashrate: res.tari_randomx_estimated_hash_rate,
             monero_randomx_network_hashrate: res.monero_randomx_estimated_hash_rate,
             block_reward: MicroMinotari(res.reward),
-            block_height: metadata.best_block_height,
-            block_time: metadata.timestamp,
+            block_height,
+            block_time,
             is_synced: res.initial_sync_achieved,
             num_connections: res.num_connections,
-            readiness_status: res.readiness_status.into(),
+            readiness_status: res
+                .readiness_status
+                .map(|s| s.into())
+                .unwrap_or(ReadinessStatus::NOT_READY),
         })
     }
 
@@ -382,12 +384,12 @@ impl StatusMonitor for NodeStatusMonitor {
                 Ok(status) => {
                     let _res = self.status_broadcast.send(status);
                     if status.readiness_status.is_initializing() {
-                        warn!(
-                            "{:?} Node Health Check Warning: Not ready | status: {:?}",
+                        info!(
+                            "{:?} Node Health Check: Not ready yet | status: {:?}",
                             self.node_type,
                             status.clone()
                         );
-                        return HealthStatus::Warning;
+                        return HealthStatus::Initializing;
                     }
 
                     if status.num_connections == 0 {
@@ -485,78 +487,163 @@ pub struct NodeIdentity {
 }
 
 #[derive(Clone, Copy, Debug, serde::Deserialize, serde::Serialize)]
-pub struct ReadinessStatus(i32);
+pub struct MigrationProgress {
+    pub current_block: u64,
+    pub total_blocks: u64,
+    pub progress_percentage: f64,
+    pub current_db_version: u64,
+    pub target_db_version: u64,
+}
+
+#[derive(Clone, Copy, Debug, serde::Deserialize, serde::Serialize)]
+pub enum ReadinessStatus {
+    State(i32),
+    Migration(MigrationProgress),
+}
 
 impl ReadinessStatus {
-    // Constants for all variants
-    pub const NOT_READY: Self = Self(0);
-    pub const STARTING_UP: Self = Self(1);
-    pub const MIGRATING: Self = Self(2);
-    pub const RECOVERING: Self = Self(3);
-    pub const BUILDING_CONTEXT: Self = Self(4);
-    pub const READY: Self = Self(5);
+    // Constants for all state variants - updated to match new values
+    pub const NOT_READY: Self = Self::State(0);
+    pub const STARTING_UP: Self = Self::State(1);
+    pub const DATABASE_INITIALIZING: Self = Self::State(10);
+    pub const RECOVERING_PREPARING: Self = Self::State(20);
+    pub const RECOVERING_REBUILDING: Self = Self::State(21);
+    pub const RECOVERING_REBUILDING_DATABASE: Self = Self::State(22);
+    pub const BUILDING_CONTEXT_BLOCKCHAIN: Self = Self::State(32);
+    pub const BUILDING_CONTEXT_BOOTSTRAP: Self = Self::State(34);
+    pub const READY: Self = Self::State(100);
 
     /// Check if the node is ready
-    pub fn is_ready(self) -> bool {
-        self.0 == 5
+    pub fn is_ready(&self) -> bool {
+        matches!(self, Self::State(100))
     }
 
     /// Check if the node is not ready
-    pub fn is_initializing(self) -> bool {
-        self.0 != 5
+    pub fn is_initializing(&self) -> bool {
+        !self.is_ready()
     }
 
-    /// Get the raw i32 value
-    pub fn as_i32(self) -> i32 {
-        self.0
+    /// Get the raw i32 value for state, or a representative value for migration
+    pub fn as_i32(&self) -> i32 {
+        match self {
+            Self::State(value) => *value,
+            Self::Migration(_) => 50, // Representative value for migration
+        }
     }
 
     /// Get a human-readable status string
-    pub fn as_str(self) -> &'static str {
-        match self.0 {
-            0 => "Not Ready",
-            1 => "Starting Up",
-            2 => "Migrating",
-            3 => "Recovering",
-            4 => "Building Context",
-            5 => "Ready",
-            _ => "Unknown",
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::State(0) => "Not Ready",
+            Self::State(1) => "Starting Up",
+            Self::State(10) => "Database Initializing",
+            Self::State(20) => "Recovering - Preparing",
+            Self::State(21) => "Recovering - Rebuilding",
+            Self::State(22) => "Recovering - Rebuilding Database",
+            Self::State(32) => "Building Context - Blockchain",
+            Self::State(34) => "Building Context - Bootstrap",
+            Self::State(100) => "Ready",
+            Self::State(_) => "Unknown State",
+            Self::Migration(_) => "Migrating Database",
         }
     }
 }
 
 impl From<minotari_node_grpc_client::grpc::ReadinessStatus> for ReadinessStatus {
     fn from(status: minotari_node_grpc_client::grpc::ReadinessStatus) -> Self {
-        Self(status as i32)
+        if let Some(status_oneof) = status.status {
+            match status_oneof {
+                minotari_node_grpc_client::grpc::readiness_status::Status::State(state) => {
+                    Self::State(state)
+                }
+                minotari_node_grpc_client::grpc::readiness_status::Status::Migration(migration) => {
+                    Self::Migration(MigrationProgress {
+                        current_block: migration.current_block,
+                        total_blocks: migration.total_blocks,
+                        progress_percentage: migration.progress_percentage,
+                        current_db_version: migration.current_db_version,
+                        target_db_version: migration.target_db_version,
+                    })
+                }
+            }
+        } else {
+            Self::NOT_READY
+        }
     }
 }
 
 impl From<i32> for ReadinessStatus {
     fn from(value: i32) -> Self {
-        match value {
-            0..=5 => Self(value),
-            _ => Self::NOT_READY,
-        }
+        Self::State(value)
     }
 }
 
 impl From<ReadinessStatus> for minotari_node_grpc_client::grpc::ReadinessStatus {
     fn from(status: ReadinessStatus) -> Self {
-        match status.0 {
-            0 => minotari_node_grpc_client::grpc::ReadinessStatus::NotReady,
-            1 => minotari_node_grpc_client::grpc::ReadinessStatus::StartingUp,
-            2 => minotari_node_grpc_client::grpc::ReadinessStatus::Migrating,
-            3 => minotari_node_grpc_client::grpc::ReadinessStatus::Recovering,
-            4 => minotari_node_grpc_client::grpc::ReadinessStatus::BuildingContext,
-            5 => minotari_node_grpc_client::grpc::ReadinessStatus::Ready,
-            _ => minotari_node_grpc_client::grpc::ReadinessStatus::NotReady, // Default fallback
+        let status_oneof = match status {
+            ReadinessStatus::State(state_value) => {
+                minotari_node_grpc_client::grpc::readiness_status::Status::State(state_value)
+            }
+            ReadinessStatus::Migration(migration) => {
+                let migration_proto = minotari_node_grpc_client::grpc::MigrationProgress {
+                    current_block: migration.current_block,
+                    total_blocks: migration.total_blocks,
+                    progress_percentage: migration.progress_percentage,
+                    current_db_version: migration.current_db_version,
+                    target_db_version: migration.target_db_version,
+                };
+                minotari_node_grpc_client::grpc::readiness_status::Status::Migration(
+                    migration_proto,
+                )
+            }
+        };
+
+        minotari_node_grpc_client::grpc::ReadinessStatus {
+            status: Some(status_oneof),
+            timestamp: 0, // Default timestamp value
+        }
+    }
+}
+
+impl ReadinessStatus {
+    /// Get detailed status information including migration progress
+    pub fn detailed_str(&self) -> String {
+        match self {
+            Self::State(0) => "Not Ready".to_string(),
+            Self::State(1) => "Starting Up".to_string(),
+            Self::State(10) => "Database Initializing".to_string(),
+            Self::State(20) => "Recovering - Preparing".to_string(),
+            Self::State(21) => "Recovering - Rebuilding".to_string(),
+            Self::State(22) => "Recovering - Rebuilding Database".to_string(),
+            Self::State(32) => "Building Context - Blockchain".to_string(),
+            Self::State(34) => "Building Context - Bootstrap".to_string(),
+            Self::State(100) => "Ready".to_string(),
+            Self::State(value) => format!("Unknown State ({value})"),
+            Self::Migration(progress) => {
+                format!(
+                    "Migrating DB v{} -> v{} ({:.1}% - {}/{})",
+                    progress.current_db_version,
+                    progress.target_db_version,
+                    progress.progress_percentage,
+                    progress.current_block,
+                    progress.total_blocks
+                )
+            }
+        }
+    }
+
+    /// Get migration progress if status is migrating
+    pub fn migration_progress(&self) -> Option<&MigrationProgress> {
+        match self {
+            Self::Migration(progress) => Some(progress),
+            _ => None,
         }
     }
 }
 
 impl std::fmt::Display for ReadinessStatus {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.as_str())
+        write!(f, "{}", self.detailed_str())
     }
 }
 

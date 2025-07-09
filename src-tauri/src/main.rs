@@ -100,7 +100,6 @@ mod events_emitter;
 mod events_manager;
 mod external_dependencies;
 mod feedback;
-mod github;
 mod gpu_miner;
 mod gpu_miner_adapter;
 mod gpu_status_file;
@@ -124,6 +123,7 @@ mod process_utils;
 mod process_watcher;
 mod progress_trackers;
 mod release_notes;
+mod requests;
 mod setup;
 mod spend_wallet_adapter;
 mod spend_wallet_manager;
@@ -518,8 +518,13 @@ fn main() {
             if tcp_tor_toggled_file.exists() {
                 let network = Network::default().as_key_str();
 
-                let node_peer_db = config_path.join("node").join(network).join("peer_db");
-                let wallet_peer_db = config_path.join("wallet").join(network).join("peer_db");
+                let local_data_dir = app
+                    .path()
+                    .app_local_data_dir()
+                    .expect("Could not get local data dir");
+
+                let node_peer_db = local_data_dir.join("node").join(network).join("peer_db");
+                let wallet_peer_db = local_data_dir.join("wallet").join(network).join("peer_db");
 
                 // They may not exist. This could be first run.
                 if node_peer_db.exists() {
