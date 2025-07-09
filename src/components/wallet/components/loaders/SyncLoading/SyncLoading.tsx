@@ -1,8 +1,10 @@
 import LoadingDots from '@app/components/elements/loaders/LoadingDots';
 import {
     Line,
+    LoadingGroup,
     LoadingWrapper,
     Text,
+    TextTop,
     TooltipContent,
     TooltipDescription,
     TooltipPosition,
@@ -37,23 +39,24 @@ export default function SyncLoading() {
     return (
         <>
             <Wrapper ref={refs.setReference} {...getReferenceProps()}>
-                <Text>
-                    <Line>
-                        {t('sync-message.line1')}
-                        <strong>
-                            <SyncCountdown
-                                onStarted={() => setIsStarted(true)}
-                                onCompleted={() => setIsComplete(true)}
-                                isCompact
-                            />
-                            {isStarted && !isComplete && t('sync-message.line2')}
-                        </strong>
-                    </Line>
-                    <Line>{t('sync-message.line3')}</Line>
-                </Text>
-                <LoadingWrapper>
-                    <LoadingDots />
-                </LoadingWrapper>
+                <TextTop>{t('sync-message.top-line')}</TextTop>
+                <LoadingGroup>
+                    <Text>
+                        <Line>
+                            <strong>
+                                <SyncCountdown
+                                    onStarted={() => setIsStarted(true)}
+                                    onCompleted={() => setIsComplete(true)}
+                                />
+                                {isStarted && !isComplete && t('sync-message.line2')}
+                            </strong>
+                        </Line>
+                        <Line>{t('sync-message.line3')}</Line>
+                    </Text>
+                    <LoadingWrapper>
+                        <LoadingDots />
+                    </LoadingWrapper>
+                </LoadingGroup>
             </Wrapper>
             <AnimatePresence>
                 {open && (

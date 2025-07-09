@@ -126,7 +126,8 @@
     "line3": "until your wallet balance is displayed",
     "tooltip-description": "Your node is still syncing, so your balance isn't visible yet.",
     "tooltip-description-mining": "Your node is still syncing, so your balance isn't visible yet. But don't worry, you're actively mining and earning XTM.",
-    "tooltip-title": "Why the delay?"
+    "tooltip-title": "Why the delay?",
+    "top-line": "You are now mining Tari XTM"
   },
   "tabs": {
     "history": "Historique",
