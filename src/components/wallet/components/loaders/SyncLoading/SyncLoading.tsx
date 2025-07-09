@@ -20,9 +20,9 @@ import SyncCountdown from '@app/components/wallet/components/loaders/SyncLoading
 
 export default function SyncLoading() {
     const { t } = useTranslation(['wallet', 'setup-progresses']);
+
     const cpuMining = useMiningMetricsStore((s) => s.cpu_mining_status.is_mining);
     const gpuMining = useMiningMetricsStore((s) => s.gpu_mining_status.is_mining);
-
     const isMining = cpuMining || gpuMining;
 
     const [open, setOpen] = useState(false);
@@ -39,7 +39,7 @@ export default function SyncLoading() {
     return (
         <>
             <Wrapper ref={refs.setReference} {...getReferenceProps()}>
-                <TextTop>{t('sync-message.top-line')}</TextTop>
+                {isMining && <TextTop>{t('sync-message.top-line')}</TextTop>}
                 <LoadingGroup>
                     <Text>
                         <Line>
