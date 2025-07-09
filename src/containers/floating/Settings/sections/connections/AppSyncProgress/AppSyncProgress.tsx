@@ -104,15 +104,16 @@ export const AppSyncProgress = () => {
     const setupParams = currentPhaseToShow?.title_params ? { ...currentPhaseToShow.title_params } : {};
 
     useEffect(() => {
-        const isOpen = shouldShowModal || (Boolean(currentPhaseToShow) && !isInitialSetupFinished);
+        const isOpen = shouldShowModal || (!currentPhaseToShow?.is_complete && !isInitialSetupFinished);
         setOpen(isOpen);
-    }, [currentPhaseToShow, isInitialSetupFinished, shouldShowModal]);
+    }, [currentPhaseToShow?.is_complete, isInitialSetupFinished, shouldShowModal]);
 
     useEffect(() => {
-        if (
+        const hideResumeAppModal =
             miningPhaseInfoPayload?.is_complete &&
-            (walletPhaseInfoPayload?.is_complete || disabledPhases.includes(SetupPhase.Wallet))
-        ) {
+            (walletPhaseInfoPayload?.is_complete || disabledPhases.includes(SetupPhase.Wallet));
+
+        if (hideResumeAppModal) {
             useUIStore.setState({ showResumeAppModal: false });
         }
     }, [miningPhaseInfoPayload?.is_complete, walletPhaseInfoPayload?.is_complete, disabledPhases]);
