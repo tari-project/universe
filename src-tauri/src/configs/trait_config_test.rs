@@ -121,7 +121,7 @@ mod tests {
     #![allow(clippy::unwrap_used)]
 
     use super::*;
-    use std::fs;
+    // use std::fs;
 
     fn clear_config_file() {
         if TestConfig::_get_config_path().exists() {
