@@ -161,7 +161,7 @@ impl ConfigWallet {
                     .await;
             }
             Err(e) => {
-                error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);
+                error!(target: LOG_TARGET, "Error loading internal wallet: {e:?}");
             }
         };
         // Currently it easier to send extra event then handle TariAddress in emit_wallet_config_loaded

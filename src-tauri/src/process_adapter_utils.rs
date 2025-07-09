@@ -37,9 +37,9 @@ pub fn setup_working_directory(data_dir: &Path, working_dir_name: &str) -> Resul
     // Remove peerdb on every restart as requested by Protocol team
     let peer_db_dir = network_dir.join("peer_db");
     if peer_db_dir.exists() {
-        info!(target: LOG_TARGET, "Removing peer db at {:?}", peer_db_dir);
+        info!(target: LOG_TARGET, "Removing peer db at {peer_db_dir:?}");
         let _unused = fs::remove_dir_all(peer_db_dir).inspect_err(|e| {
-            warn!(target: LOG_TARGET, "Failed to remove peer db: {:?}", e);
+            warn!(target: LOG_TARGET, "Failed to remove peer db: {e:?}");
         });
     }
 

@@ -97,7 +97,7 @@ pub trait UnlockStrategyTrait {
     fn are_all_channels_loaded(&self, channels: &UnlockConditionsStatusChannels) -> bool {
         for phase in &self.required_channels() {
             if !channels.contains_key(phase) {
-                warn!(target: LOG_TARGET, "Missing channel for phase: {:?}", phase);
+                warn!(target: LOG_TARGET, "Missing channel for phase: {phase:?}");
                 return false;
             }
         }
@@ -111,7 +111,7 @@ pub trait UnlockStrategyTrait {
             let channel = channels.get(phase)?;
             let status = channel.borrow();
             if !status.is_success() {
-                debug!(target: LOG_TARGET, "Phase {:?} is not ready", phase);
+                debug!(target: LOG_TARGET, "Phase {phase:?} is not ready");
                 return Ok(false);
             }
         }
@@ -126,7 +126,7 @@ pub trait UnlockStrategyTrait {
                     return true;
                 }
             } else {
-                warn!(target: LOG_TARGET, "Channel for phase {:?} not found", phase);
+                warn!(target: LOG_TARGET, "Channel for phase {phase:?} not found");
                 return true;
             }
         }

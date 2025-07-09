@@ -70,7 +70,7 @@ impl EventsManager {
                             match wallet_manager.find_coinbase_transaction_for_block(block_height).await {
                                 Ok(tx) => tx,
                                 Err(e) => {
-                                    error!(target: LOG_TARGET, "Failed to get coinbase transaction: {:?}", e);
+                                    error!(target: LOG_TARGET, "Failed to get coinbase transaction: {e:?}");
                                     None
                                 }
                             }
@@ -89,7 +89,7 @@ impl EventsManager {
                             send_new_block_mined(app_clone.clone(), block_height).await;
                         }
                     } else {
-                        error!(target: LOG_TARGET, "Wallet balance is None after new block height #{}", block_height);
+                        error!(target: LOG_TARGET, "Wallet balance is None after new block height #{block_height}");
                         EventsEmitter::emit_new_block_mined(
 
                             block_height,
@@ -100,7 +100,7 @@ impl EventsManager {
                     }
                 },
                 Err(e) => {
-                    error!(target: LOG_TARGET, "Error waiting for wallet scan: {}", e);
+                    error!(target: LOG_TARGET, "Error waiting for wallet scan: {e}");
                     EventsEmitter::emit_new_block_mined(
                         block_height,
                         None,
