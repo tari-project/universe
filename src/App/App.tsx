@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { LazyMotion, domAnimation, AnimatePresence } from 'motion/react';
 import { QueryClientProvider } from '@tanstack/react-query';
 
-import { useShuttingDown } from '../hooks';
+import { useShuttingDown } from '../hooks/app/useShuttingDown.ts';
 
 import { setError, setIsWebglNotSupported } from '../store/actions';
 import { GlobalReset, GlobalStyle } from '../theme/GlobalStyle.ts';

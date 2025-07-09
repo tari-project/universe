@@ -1,6 +1,6 @@
 import BlockSolved from './BlockSolved/BlockSolved';
 import BlockSolving from './BlockSolving/BlockSolving';
-import { BlockData } from '../useBlocks';
+import { BlockData } from '@app/types/mining/blocks.ts';
 
 interface Props extends BlockData {
     isFirstEntry?: boolean;

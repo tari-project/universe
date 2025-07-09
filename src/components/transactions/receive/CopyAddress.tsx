@@ -1,6 +1,6 @@
-import { useWalletStore } from '@app/store';
-import { useCopyToClipboard } from '@app/hooks';
 import { useTranslation } from 'react-i18next';
+import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard.ts';
+import { useWalletStore } from '@app/store';
 import { CopyAddressButton } from './Address.style';
 
 export function CopyAddress({ useEmoji }: { useEmoji: boolean }) {

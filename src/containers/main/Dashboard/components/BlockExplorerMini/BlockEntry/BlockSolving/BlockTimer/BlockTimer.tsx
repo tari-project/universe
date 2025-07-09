@@ -9,17 +9,18 @@ interface Props {
 
 export default function BlockTimer({ time }: Props) {
     const { data } = useFetchExplorerData();
+    const currentBlock = data?.currentBlock;
     const [currentTime, setCurrentTime] = useState(time);
     const [seconds, setSeconds] = useState(0);
 
     useEffect(() => {
-        if (data && data[0]?.timeAgo) {
-            const startTime = new Date(data[0].timeAgo + ' UTC').getTime();
+        if (currentBlock && currentBlock.parsedTimestamp) {
+            const startTime = new Date(currentBlock.parsedTimestamp + ' UTC').getTime();
             const now = Date.now();
             const elapsedSeconds = Math.floor((now - startTime) / 1000);
             setSeconds(elapsedSeconds);
         }
-    }, [data]);
+    }, [currentBlock]);
 
     useEffect(() => {
         const timer = setInterval(() => {

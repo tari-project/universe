@@ -6,7 +6,7 @@ import { useFetchExplorerData } from '@app/hooks/mining/useFetchExplorerData.ts'
 
 export function BlockHeightAccent() {
     const { data } = useFetchExplorerData();
-    const heightString = data?.[0].id;
+    const heightString = data?.currentBlock.height;
     const heightStringArr = heightString?.split('') || [];
     const windowDimensions = useMotionValue({ height: window.innerHeight, width: window.innerWidth });
     const width = useMotionValue(170);
