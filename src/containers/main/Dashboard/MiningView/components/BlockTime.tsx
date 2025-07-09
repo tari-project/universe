@@ -1,29 +1,19 @@
 import { useTranslation } from 'react-i18next';
 
-import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore';
 import { BlockTimeContainer, SpacedNum, TimerTypography, TitleTypography } from './BlockTime.styles';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 import { useConfigUIStore } from '@app/store';
-import { useFetchExplorerData } from '@app/hooks/mining/useFetchExplorerData.ts';
-import { timeAgo } from '@app/containers/main/Dashboard/components/BlockExplorerMini/utils/formatting.ts';
+
 import useBlockTime from '@app/hooks/mining/useBlockTime.ts';
 
 function BlockTime() {
-    useBlockTime();
-    const { data } = useFetchExplorerData();
-
+    const { currentTimeParts } = useBlockTime();
     const { t } = useTranslation('mining-view', { useSuspense: false });
-    const isCPUMining = useMiningMetricsStore((s) => s.cpu_mining_status.is_mining);
-    const isGPUMining = useMiningMetricsStore((s) => s.gpu_mining_status.is_mining);
-    const displayBlockTime = useBlockchainVisualisationStore((s) => s.displayBlockTime);
 
     const isConnectedToTari = useMiningMetricsStore((s) => s.isNodeConnected);
     const visualMode = useConfigUIStore((s) => s.visual_mode);
-    const isMining = isCPUMining || isGPUMining;
 
-    const time = timeAgo(data?.currentBlock.timestamp || '');
-
-    const { daysString, hoursString, minutes, seconds } = displayBlockTime || {};
+    const { daysString, hoursString, minutes, seconds } = currentTimeParts || {};
 
     const renderHours = hoursString && parseInt(hoursString) > 0;
 
@@ -37,9 +27,8 @@ function BlockTime() {
         </>
     ) : null;
 
-    return displayBlockTime && isMining && isConnectedToTari ? (
+    return isConnectedToTari ? (
         <BlockTimeContainer $visualModeOn={visualMode}>
-            {time}
             <TimerTypography>
                 {daysMarkup}
                 {hourMarkup}

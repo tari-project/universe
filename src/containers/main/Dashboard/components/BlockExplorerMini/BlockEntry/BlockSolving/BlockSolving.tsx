@@ -57,7 +57,7 @@ export default function BlockSolving({ id, minersSolved, timeAgo, reward, isSolv
                                             </span>
                                         </RewardPillBlack>
                                     )}
-                                    <BlockTimer time={`00:00`} />
+                                    <BlockTimer />
                                 </BottomWrapper>
                             </ContentWrapper>
                         </Inside>
