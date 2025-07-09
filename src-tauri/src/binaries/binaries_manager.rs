@@ -116,7 +116,7 @@ impl BinaryManager {
                 (content_string.trim().to_string(), None)
             };
 
-        debug!(target: LOG_TARGET, "Binary: {} version requirement: {}, hash: {:?}", binary_name, version_requirement, hash);
+        debug!(target: LOG_TARGET, "Binary: {binary_name} version requirement: {version_requirement}, hash: {hash:?}");
         (version_requirement, hash)
     }
 
@@ -223,7 +223,7 @@ impl BinaryManager {
         let binary_folder = match self.adapter.get_binary_folder() {
             Ok(path) => path,
             Err(e) => {
-                error!(target: LOG_TARGET, "Error getting binary folder. Error: {:?}", e);
+                error!(target: LOG_TARGET, "Error getting binary folder. Error: {e:?}");
                 return false;
             }
         };
@@ -235,14 +235,14 @@ impl BinaryManager {
         let binary_file_with_exe = binary_file.with_extension("exe");
         let binary_file_with_html = version_folder.join("index.html");
 
-        debug!(target: LOG_TARGET, "Binary folder path: {:?}", binary_folder);
-        debug!(target: LOG_TARGET, "Version folder path: {:?}", version_folder);
-        debug!(target: LOG_TARGET, "Binary file path: {:?}", binary_file);
+        debug!(target: LOG_TARGET, "Binary folder path: {binary_folder:?}");
+        debug!(target: LOG_TARGET, "Version folder path: {version_folder:?}");
+        debug!(target: LOG_TARGET, "Binary file path: {binary_file:?}");
 
         let binary_file_exists =
             binary_file.exists() || binary_file_with_exe.exists() || binary_file_with_html.exists();
 
-        debug!(target: LOG_TARGET, "Binary file exists: {:?}", binary_file_exists);
+        debug!(target: LOG_TARGET, "Binary file exists: {binary_file_exists:?}");
 
         binary_file_exists
     }
@@ -270,7 +270,7 @@ impl BinaryManager {
             task_tacker.get_task_tracker().await.spawn(async move {
                 loop {
                     if shutdown_signal.is_triggered() || inner_shutdown_signal.is_triggered() {
-                        info!(target: LOG_TARGET, "Shutdown signal received. Stopping progress channel for binary: {:?}", binary_name);
+                        info!(target: LOG_TARGET, "Shutdown signal received. Stopping progress channel for binary: {binary_name:?}");
                         break;
                     }
                     let _unused = receiver.changed().await;
@@ -289,7 +289,7 @@ impl BinaryManager {
                     tokio::time::sleep(std::time::Duration::from_millis(10)).await;
 
                     if last_percentage.ge(&100.0)  {
-                        info!(target: LOG_TARGET, "Progress channel completed for binary: {:?}", binary_name);
+                        info!(target: LOG_TARGET, "Progress channel completed for binary: {binary_name:?}");
                         break;
                     }
                 }
@@ -323,7 +323,7 @@ impl BinaryManager {
             }
         }
         sentry::capture_message(&last_error_message, sentry::Level::Error);
-        error!(target: LOG_TARGET, "{}", last_error_message);
+        error!(target: LOG_TARGET, "{last_error_message}");
         Err(anyhow!(last_error_message))
     }
 

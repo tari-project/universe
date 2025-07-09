@@ -127,7 +127,7 @@ impl WebsocketEventsManager {
                               jwt,
                             ).await{
                                 drop(websocket_tx_channel_clone.send(message).await.inspect_err(|e|{
-                                  error!(target:LOG_TARGET, "could not send to websocket channel due to {}",e);
+                                  error!(target:LOG_TARGET, "could not send to websocket channel due to {e}");
                                 }));
                             }}
                       },

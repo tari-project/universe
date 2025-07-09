@@ -72,10 +72,10 @@ impl InternalWallet {
             .ok_or_else(|| anyhow!("Failed to get parent directory of wallet config file"))?;
 
         create_dir_all(file_parent).unwrap_or_else(|error| {
-            warn!(target: LOG_TARGET, "Could not create wallet config file parent directory - {}", error);
+            warn!(target: LOG_TARGET, "Could not create wallet config file parent directory - {error}");
         });
         if file.exists() {
-            info!(target: LOG_TARGET, "Loading wallet from file: {:?}", file);
+            info!(target: LOG_TARGET, "Loading wallet from file: {file:?}");
             let config = fs::read_to_string(&file).await?;
             match serde_json::from_str::<WalletConfig>(&config) {
                 Ok(mut config) => {
@@ -83,7 +83,7 @@ impl InternalWallet {
 
                     let cm = CredentialManager::default_with_dir(config_path.clone());
                     if let Err(e) = cm.migrate().await {
-                        warn!(target: LOG_TARGET, "Failed to migrate wallet credentials: {}", e.to_string());
+                        warn!(target: LOG_TARGET, "Failed to migrate wallet credentials: {e}");
                     }
 
                     return Ok(Self {
@@ -92,7 +92,7 @@ impl InternalWallet {
                     });
                 }
                 Err(e) => {
-                    warn!(target: LOG_TARGET, "Failed to parse wallet config: {}", e.to_string());
+                    warn!(target: LOG_TARGET, "Failed to parse wallet config: {e}");
                 }
             }
         }
@@ -116,7 +116,7 @@ impl InternalWallet {
             .parent()
             .ok_or_else(|| anyhow!("Failed to get parent directory of wallet config file"))?;
         create_dir_all(file_parent).unwrap_or_else(|error| {
-            warn!(target: LOG_TARGET, "Could not create wallet config file parent directory - {}", error);
+            warn!(target: LOG_TARGET, "Could not create wallet config file parent directory - {error}");
         });
 
         let (wallet, config) =

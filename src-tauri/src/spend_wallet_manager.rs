@@ -119,7 +119,7 @@ impl SpendWalletManager {
         let (public_key, public_address) = self.node_manager.get_connection_details().await?;
         self.adapter.base_node_public_key = Some(public_key.clone());
         self.adapter.base_node_address = Some(public_address.clone());
-        info!(target: LOG_TARGET, "[send_one_sided_to_stealth_address] with node {:?}:{:?}", public_key, public_address);
+        info!(target: LOG_TARGET, "[send_one_sided_to_stealth_address] with node {public_key:?}:{public_address:?}");
 
         // Prevent from erasing wallet data when sending in progress
         self.set_next_wallet_data_erasure_block(None)?;
@@ -153,8 +153,7 @@ impl SpendWalletManager {
                         if current_height >= erasure_height {
                             info!(
                                 target: LOG_TARGET,
-                                "Cleanup threshold reached: {} blocks since at height {}. Erasing Spend wallet related data.",
-                                BLOCKS_THRESHOLD, current_height
+                                "Cleanup threshold reached: {BLOCKS_THRESHOLD} blocks since at height {current_height}. Erasing Spend wallet related data."
                             );
 
                             match SpendWalletManager::erase_related_data(base_path.clone()) {
@@ -163,7 +162,7 @@ impl SpendWalletManager {
                                     let _unused = self.set_next_wallet_data_erasure_block(None);
                                 },
                                 Err(e) => {
-                                    debug!(target: LOG_TARGET, "Error erasing related data: {:?}", e);
+                                    debug!(target: LOG_TARGET, "Error erasing related data: {e:?}");
                                 }
                             }
                         }
@@ -194,7 +193,7 @@ impl SpendWalletManager {
     fn set_next_wallet_data_erasure_block(&self, height: Option<u64>) -> Result<(), Error> {
         match self.next_wallet_data_erasure_block.lock() {
             Ok(mut guard) => {
-                info!(target: LOG_TARGET, "Updating next wallet data erasure block to: {:?}", height);
+                info!(target: LOG_TARGET, "Updating next wallet data erasure block to: {height:?}");
                 *guard = height;
                 Ok(())
             }

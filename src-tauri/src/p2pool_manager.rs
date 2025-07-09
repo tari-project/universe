@@ -223,7 +223,7 @@ impl P2poolManager {
         let mut process_watcher = self.watcher.write().await;
         let exit_code = process_watcher.stop().await?;
         if exit_code != 0 {
-            warn!(target: LOG_TARGET, "P2pool process exited with code {}", exit_code);
+            warn!(target: LOG_TARGET, "P2pool process exited with code {exit_code}");
         }
         Ok(exit_code)
     }

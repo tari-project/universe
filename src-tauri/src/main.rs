@@ -413,7 +413,7 @@ fn main() {
                     let _unused = w.show().map_err(|err| {
                         error!(
                             target: LOG_TARGET,
-                            "Couldn't show the main window {:?}", err
+                            "Couldn't show the main window {err:?}"
                         )
                     });
                     let _unused = w.set_focus();
@@ -460,7 +460,7 @@ fn main() {
                         if let Some(backup_path) = backup_path.value.as_str() {
                             info!(
                                 target: LOG_TARGET,
-                                "Trying to copy backup to existing db: {:?}", backup_path
+                                "Trying to copy backup to existing db: {backup_path:?}"
                             );
                             let backup_path = Path::new(backup_path);
                             if backup_path.exists() {
@@ -477,39 +477,37 @@ fn main() {
                                     .join("base_node")
                                     .join("db");
 
-                                info!(target: LOG_TARGET, "Existing db path: {:?}", existing_db);
+                                info!(target: LOG_TARGET, "Existing db path: {existing_db:?}");
                                 let _unused = fs::remove_dir_all(&existing_db).inspect_err(|e| {
                                     warn!(
                                         target: LOG_TARGET,
-                                        "Could not remove existing db when importing backup: {:?}",
-                                        e
+                                        "Could not remove existing db when importing backup: {e:?}"
                                     )
                                 });
                                 let _unused = fs::create_dir_all(&existing_db).inspect_err(|e| {
                                     error!(
                                         target: LOG_TARGET,
-                                        "Could not create existing db when importing backup: {:?}",
-                                        e
+                                        "Could not create existing db when importing backup: {e:?}"
                                     )
                                 });
                                 let _unused = fs::copy(backup_path, existing_db.join("data.mdb"))
                                     .inspect_err(|e| {
                                         error!(
                                             target: LOG_TARGET,
-                                            "Could not copy backup to existing db: {:?}", e
+                                            "Could not copy backup to existing db: {e:?}"
                                         )
                                     });
                             } else {
                                 warn!(
                                     target: LOG_TARGET,
-                                    "Backup file does not exist: {:?}", backup_path
+                                    "Backup file does not exist: {backup_path:?}"
                                 );
                             }
                         }
                     }
                 }
                 Err(e) => {
-                    error!(target: LOG_TARGET, "Could not get cli matches: {:?}", e);
+                    error!(target: LOG_TARGET, "Could not get cli matches: {e:?}");
                     return Err(Box::new(e));
                 }
             };
@@ -531,7 +529,7 @@ fn main() {
                     if let Err(e) = remove_dir_all(node_peer_db) {
                         warn!(
                             target: LOG_TARGET,
-                            "Could not clear peer data folder: {}", e
+                            "Could not clear peer data folder: {e}"
                         );
                     }
                 }
@@ -540,7 +538,7 @@ fn main() {
                     if let Err(e) = remove_dir_all(wallet_peer_db) {
                         warn!(
                             target: LOG_TARGET,
-                            "Could not clear peer data folder: {}", e
+                            "Could not clear peer data folder: {e}"
                         );
                     }
                 }
@@ -548,7 +546,7 @@ fn main() {
                 remove_file(tcp_tor_toggled_file).map_err(|e| {
                     error!(
                         target: LOG_TARGET,
-                        "Could not remove tcp_tor_toggled file: {}", e
+                        "Could not remove tcp_tor_toggled file: {e}"
                     );
                     e.to_string()
                 })?;
@@ -642,7 +640,7 @@ fn main() {
         .inspect_err(|e| {
             error!(
                 target: LOG_TARGET,
-                "Error while building tauri application: {:?}", e
+                "Error while building tauri application: {e:?}"
             )
         })
         .expect("error while running tauri application");
@@ -662,7 +660,7 @@ fn main() {
         // We can only receive system events from the event loop so this needs to be here
         let _unused = SystemStatus::current()
             .receive_power_event(&power_monitor)
-            .inspect_err(|e| error!(target: LOG_TARGET, "Could not receive power event: {:?}", e));
+            .inspect_err(|e| error!(target: LOG_TARGET, "Could not receive power event: {e:?}"));
 
         match event {
             tauri::RunEvent::Ready => {
@@ -678,12 +676,12 @@ fn main() {
             tauri::RunEvent::ExitRequested { api: _, code, .. } => {
                 info!(
                     target: LOG_TARGET,
-                    "App shutdown request caught with code: {:#?}", code
+                    "App shutdown request caught with code: {code:#?}"
                 );
                 let base_path = app_handle.path().app_local_data_dir().expect("Could not get data dir");
                 match SpendWalletManager::erase_related_data(base_path) {
                     Ok(_) => info!(target: LOG_TARGET, "Successfully erased related spend wallet data."),
-                    Err(e) => error!(target: LOG_TARGET, "Failed to erase related spend wallet data: {:?}", e),
+                    Err(e) => error!(target: LOG_TARGET, "Failed to erase related spend wallet data: {e:?}"),
                 }
                 if let Some(exit_code) = code {
                     if exit_code == RESTART_EXIT_CODE {

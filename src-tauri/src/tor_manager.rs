@@ -120,7 +120,7 @@ impl TorManager {
             tokio::select! {
                 _ = tokio::time::sleep(Duration::from_secs(STARTUP_TIMEOUT)) => {
                     let err_msg = format!("Waiting for Tor to be ready timed out after {STARTUP_TIMEOUT}");
-                    log::error!(target: LOG_TARGET, "{}", err_msg);
+                    log::error!(target: LOG_TARGET, "{err_msg}");
                     sentry::capture_message(&err_msg, sentry::Level::Error);
                     return Err(anyhow!(err_msg))
                 }

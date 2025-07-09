@@ -89,7 +89,7 @@ impl LatestVersionApiAdapter for BridgeTappletAdapter {
             Ok(_) => Ok(checksum_path),
             Err(_) => {
                 let checksum_fallback_url = format!("{}.sha256", download_info.fallback_url);
-                info!(target: LOG_TARGET, "Fallback URL: {}", checksum_fallback_url);
+                info!(target: LOG_TARGET, "Fallback URL: {checksum_fallback_url}");
                 HttpFileClient::builder()
                     .build(checksum_fallback_url.clone(), checksum_path.clone())
                     .execute()
@@ -116,7 +116,7 @@ impl LatestVersionApiAdapter for BridgeTappletAdapter {
 
         if !tapplet_folder_path.exists() {
             std::fs::create_dir_all(&tapplet_folder_path).unwrap_or_else(|e| {
-                error!(target: LOG_TARGET, "Failed to create directory: {}", e);
+                error!(target: LOG_TARGET, "Failed to create directory: {e}");
             });
         };
 
