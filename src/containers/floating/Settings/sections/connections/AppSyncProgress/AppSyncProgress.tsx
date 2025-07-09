@@ -118,7 +118,7 @@ export const AppSyncProgress = () => {
         }
     }, [miningPhaseInfoPayload?.is_complete, walletPhaseInfoPayload?.is_complete, disabledPhases]);
 
-    return open ? (
+    return open && Boolean(currentPhaseToShow) ? (
         <Wrapper>
             <TextWrapper>
                 <Title>{t(`phase-title.${setupPhaseTitle}`)}</Title>
