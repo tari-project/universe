@@ -156,7 +156,7 @@ impl Binaries {
                     format!("xmrig-{version}-linux-static-x64.tar.gz")
                 }
                 BinaryPlatformAssets::WindowsX64 => {
-                    format!("xmrig-{version}-msvc-win64.zip")
+                    format!("xmrig-{version}-windows-x64.zip")
                 }
                 BinaryPlatformAssets::MacOSX64 => {
                     format!("xmrig-{version}-macos-x64.tar.gz")

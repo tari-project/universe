@@ -191,6 +191,8 @@ pub struct SetupManager {
     exchange_modal_status: Sender<ExchangeModalStatus>,
     phases_to_restart_queue: Mutex<Vec<SetupPhase>>,
     app_handle: Mutex<Option<AppHandle>>,
+    // Temporary to prevent multiple restarts within few seconds
+    restart_safe_lock: Mutex<()>,
 }
 
 impl SetupManager {
@@ -484,11 +486,6 @@ impl SetupManager {
         }
 
         let setup_features = self.features.read().await.clone();
-        ListenerUnlockApp::current()
-            .load_setup_features(setup_features.clone())
-            .await;
-        ListenerUnlockApp::current().start_listener().await;
-
         ListenerSetupFinished::current()
             .load_setup_features(setup_features.clone())
             .await;
@@ -536,6 +533,7 @@ impl SetupManager {
 
     pub async fn restart_phases(&self, app_handle: AppHandle, phases: Vec<SetupPhase>) {
         info!(target: LOG_TARGET, "Restarting phases: {:?}", phases);
+        let _lock = self.restart_safe_lock.lock().await;
         self.shutdown_phases(phases.clone()).await;
         self.resume_phases(app_handle, phases).await;
     }

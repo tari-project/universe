@@ -8,6 +8,8 @@ export const PlayerContainer = styled.div`
 export const VideoElement = styled.video`
     width: 100%;
     display: block;
+    pointer-events: none;
+    object-fit: cover;
 `;
 
 export const PosterOverlay = styled(m.div)`

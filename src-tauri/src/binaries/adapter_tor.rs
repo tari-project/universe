@@ -21,7 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::binaries::binaries_resolver::LatestVersionApiAdapter;
-use crate::github::request_client::RequestClient;
+use crate::requests::clients::http_file_client::HttpFileClient;
 use crate::APPLICATION_FOLDER_ID;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
@@ -75,16 +75,19 @@ impl LatestVersionApiAdapter for TorReleaseAdapter {
             None => download_info.main_url,
         };
 
-        match RequestClient::current()
-            .download_file_with_retries(&checksum_url, &checksum_path, true, None)
+        match HttpFileClient::builder()
+            .with_cloudflare_cache_check()
+            .build(checksum_url.clone(), checksum_path.clone())
+            .execute()
             .await
         {
             Ok(_) => Ok(checksum_path),
             Err(_) => {
                 let checksum_fallback_url = format!("{}.asc", download_info.fallback_url);
                 info!(target: LOG_TARGET, "Fallback URL: {}", checksum_fallback_url);
-                RequestClient::current()
-                    .download_file_with_retries(&checksum_fallback_url, &checksum_path, false, None)
+                HttpFileClient::builder()
+                    .build(checksum_fallback_url.clone(), checksum_path.clone())
+                    .execute()
                     .await?;
                 Ok(checksum_path)
             }
