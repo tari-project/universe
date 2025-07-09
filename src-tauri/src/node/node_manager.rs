@@ -357,7 +357,7 @@ impl NodeManager {
                                                             info!(target: LOG_TARGET, "Node is ready, no migration needed");
                                                             migration_completed = true;
                                                         }
-                                                        _ => info!(target: LOG_TARGET, "Received other state: {}", state)
+                                                        _ => info!(target: LOG_TARGET, "Received other state: {state}")
                                                     }
                                                 }
                                             }
