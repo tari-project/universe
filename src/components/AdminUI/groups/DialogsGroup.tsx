@@ -59,6 +59,12 @@ export function DialogsGroup() {
                 >
                     Enter Pin
                 </AdminButton>
+                <AdminButton
+                    onClick={() => setDialogToShow(dialogToShow === 'forgotPin' ? undefined : 'forgotPin')}
+                    $isActive={dialogToShow === 'forgotPin'}
+                >
+                    Forgot Pin
+                </AdminButton>
             </ButtonGroup>
         </>
     );

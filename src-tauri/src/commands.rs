@@ -39,7 +39,7 @@ use crate::external_dependencies::{
 use crate::gpu_miner::EngineType;
 use crate::gpu_miner_adapter::{GpuMinerStatus, GpuNodeSource};
 use crate::gpu_status_file::GpuStatus;
-use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
+use crate::internal_wallet::{mnemonic_to_tari_cipher_seed, InternalWallet, PaperWalletConfig};
 use crate::node::node_adapter::BaseNodeStatus;
 use crate::node::node_manager::NodeType;
 use crate::p2pool::models::{Connections, P2poolStats};
@@ -801,6 +801,33 @@ pub async fn get_transactions(
     }
 
     Ok(transactions)
+}
+
+#[tauri::command]
+pub async fn forgot_pin(
+    seed_words: Vec<String>,
+    app_handle: tauri::AppHandle,
+) -> Result<(), String> {
+    let tari_cipher_seed = mnemonic_to_tari_cipher_seed(seed_words)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let extracted_wallet_details =
+        InternalWallet::get_tari_wallet_details("unused_id".to_string(), tari_cipher_seed.clone())
+            .await
+            .map_err(|e| e.to_string())?;
+
+    if extracted_wallet_details.tari_address != InternalWallet::tari_address().await {
+        error!(target: LOG_TARGET, "Seed words do not match current wallet address");
+        return Err("Seed words do not match".to_string());
+    }
+
+    InternalWallet::recover_forgotten_pin(&app_handle, tari_cipher_seed)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    info!(target: LOG_TARGET, "PIN recovery completed successfully");
+    Ok(())
 }
 
 #[tauri::command]

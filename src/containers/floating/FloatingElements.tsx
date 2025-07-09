@@ -22,6 +22,7 @@ import UniversalEXSelectorModal from '@app/containers/floating/UniversalEXSelect
 import XCLinkModal from '@app/components/exchanges/LinkModal/LinkModal.tsx';
 import KeychainDialog from './Keychain/KeychainDialog.tsx';
 import PinDialog from '@app/containers/floating/security/pin/PinDialog.tsx';
+import ForgotPinDialog from './security/pin/ForgotPinDialog.tsx';
 
 const environment = import.meta.env.MODE;
 
@@ -49,6 +50,7 @@ const FloatingElements = () => {
             <XCLinkModal />
             <KeychainDialog />
             <PinDialog />
+            <ForgotPinDialog />
         </FloatingTree>
     );
 };

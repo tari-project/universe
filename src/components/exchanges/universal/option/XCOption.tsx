@@ -67,7 +67,7 @@ export const XCOption = ({ isCurrent = false, isActive, content, onActiveClick, 
             })
             .catch((e) => {
                 console.error('Could not set Exchange address', e);
-                setError('Could not change Exchange address');
+                setError('Could not change Exchange address: ' + e.message);
             });
     };
 

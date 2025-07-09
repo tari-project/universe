@@ -20,7 +20,6 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use anyhow::anyhow;
 use tari_utilities::SafePassword;
 use tauri::{AppHandle, Listener};
 use tokio::sync::oneshot;
@@ -106,9 +105,6 @@ impl PinManager {
     }
 
     pub async fn create_pin(app_handle: &AppHandle) -> Result<SafePassword, anyhow::Error> {
-        if PinManager::pin_locked().await {
-            return Err(anyhow!("PIN already created!"));
-        }
         let pin = create_pin_dialog(app_handle).await?;
         Ok(SafePassword::from(pin))
     }

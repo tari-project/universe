@@ -136,4 +136,5 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'refresh_wallet_history'): Promise<void>;
     function invoke(param: 'get_base_node_status'): Promise<BaseNodeStatus>;
     function invoke(param: 'create_pin'): Promise<void>;
+    function invoke(param: 'forgot_pin', payload: { seedWords: string[] }): Promise<void>;
 }

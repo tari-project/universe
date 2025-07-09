@@ -639,6 +639,7 @@ fn main() {
             commands::refresh_wallet_history,
             commands::get_base_node_status,
             commands::create_pin,
+            commands::forgot_pin,
         ])
         .build(tauri::generate_context!())
         .inspect_err(|e| {

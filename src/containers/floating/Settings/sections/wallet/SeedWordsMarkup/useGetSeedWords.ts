@@ -25,7 +25,7 @@ export function useGetSeedWords(args?: Arguments) {
             }
         } catch (e) {
             const errorMessage = e as unknown as string;
-            if (errorMessage) {
+            if (errorMessage !== 'PIN entry cancelled') {
                 setError(errorMessage);
             }
             console.error('Could not get seed words', e);

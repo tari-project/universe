@@ -34,7 +34,9 @@ export default function PinDialog() {
     }
 
     async function handleForgotPin() {
-        // Import seed words to create new PIN
+        // stop backend listener for entering the pin
+        await emit('pin-dialog-response', { pin: undefined });
+        setDialogToShow('forgotPin');
     }
 
     const createMarkup = showComplete ? (
