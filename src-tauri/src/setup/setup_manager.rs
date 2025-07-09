@@ -192,7 +192,7 @@ pub struct SetupManager {
     phases_to_restart_queue: Mutex<Vec<SetupPhase>>,
     app_handle: Mutex<Option<AppHandle>>,
     // Temporary to prevent multiple restarts within few seconds
-    restart_safe_lock: Mutex<bool>,
+    restart_safe_lock: Mutex<()>,
 }
 
 impl SetupManager {
