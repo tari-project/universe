@@ -154,17 +154,23 @@ jobs:
     name: "lil' testy tests"
     runs-on: ubuntu-latest
     steps:
-      - name: checkout
-        uses: actions/checkout@v4
-      - name: cargo test compile
-        working-directory: ./src-tauri
-        env:
-          AIRDROP_BASE_URL: http://localhost:4000
-          AIRDROP_API_BASE_URL: http://localhost:3004
-          AIRDROP_TWITTER_AUTH_URL: http://localhost:3004/auth/twitter
-          TELEMETRY_API_URL: http://localhost:3004
-          EXCHANGE_ID: universal
-        run: cargo test -vv --no-run --locked --all-features --release
+      - name: install dependencies (linux)
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends --assume-yes \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libprotobuf-dev \
+            protobuf-compiler
+
+      - name: install dependencies (linux/OpenCL)
+        run: |
+          sudo apt-get install --no-install-recommends --assume-yes \
+            opencl-headers \
+            ocl-icd-opencl-dev
+
       - name: cargo test
         working-directory: ./src-tauri
         env:
