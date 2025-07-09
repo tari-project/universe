@@ -73,7 +73,7 @@ impl TorAdapter {
         self.config_file = Some(file.clone());
 
         if file.exists() {
-            debug!(target: LOG_TARGET, "Loading tor config from file: {:?}", file);
+            debug!(target: LOG_TARGET, "Loading tor config from file: {file:?}");
             let config = tokio::fs::read_to_string(&file).await?;
             self.apply_loaded_config(config);
         } else {
@@ -165,7 +165,7 @@ impl TorAdapter {
         let mut response = String::new();
         reader.read_line(&mut response).await?;
         if !response.starts_with("250 OK") {
-            error!(target: LOG_TARGET, "Tor AUTHENTICATE failed for: {:?}", control_port_address);
+            error!(target: LOG_TARGET, "Tor AUTHENTICATE failed for: {control_port_address:?}");
             return Err(Error::msg("Authentication failed"));
         }
 
@@ -191,7 +191,7 @@ impl TorAdapter {
 
             Ok(entry_guards)
         } else {
-            error!(target: LOG_TARGET, "Tor GETINFO entry-guards with response: {:?}", response);
+            error!(target: LOG_TARGET, "Tor GETINFO entry-guards with response: {response:?}");
             Err(Error::msg("Failed to get entry guards"))
         }
     }
@@ -236,7 +236,7 @@ impl ProcessAdapter for TorAdapter {
                 match std::fs::remove_dir_all(data_dir.join("tor-data")) {
                     Ok(_) => info!(target: LOG_TARGET, "Removed tor data directory"),
                     Err(e) => {
-                        warn!(target: LOG_TARGET, "Failed to remove tor data directory: {}", e);
+                        warn!(target: LOG_TARGET, "Failed to remove tor data directory: {e}");
                     }
                 }
             }
@@ -331,12 +331,12 @@ impl StatusMonitor for TorStatusMonitor {
                 if status.is_bootstrapped && status.network_liveness {
                     HealthStatus::Healthy
                 } else {
-                    warn!(target: LOG_TARGET, "Tor Healthcheck status: {:?}", status);
+                    warn!(target: LOG_TARGET, "Tor Healthcheck status: {status:?}");
                     HealthStatus::Warning
                 }
             }
             Ok(Err(e)) => {
-                warn!(target: LOG_TARGET, "Failed to get Tor Healthcheck status: {}", e);
+                warn!(target: LOG_TARGET, "Failed to get Tor Healthcheck status: {e}");
                 HealthStatus::Unhealthy
             }
             Err(_) => {

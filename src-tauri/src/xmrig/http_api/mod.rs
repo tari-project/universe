@@ -52,8 +52,8 @@ impl XmrigHttpApiClient {
             let summary: models::Summary = match serde_json::from_str(&summary) {
                 Ok(summary) => summary,
                 Err(e) => {
-                    debug!(target: LOG_TARGET, "summary: {:?}", summary);
-                    error!(target: LOG_TARGET, "Failed to parse xmrig summary: {}", e);
+                    debug!(target: LOG_TARGET, "summary: {summary:?}");
+                    error!(target: LOG_TARGET, "Failed to parse xmrig summary: {e}");
                     // Xmrig has a bug where it doesn't return valid json sometimes.
                     // https://github.com/xmrig/xmrig/issues/3363
                     continue;

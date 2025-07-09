@@ -212,7 +212,7 @@ impl StatusMonitor for MergeMiningProxyStatusMonitor {
                 Err(e) => {
                     warn!(
                         target: LOG_TARGET,
-                        "Failed to get version during health check: {}", e
+                        "Failed to get version during health check: {e}"
                     );
                     HealthStatus::Warning
                 }
@@ -220,7 +220,7 @@ impl StatusMonitor for MergeMiningProxyStatusMonitor {
             Err(_) => {
                 warn!(
                     target: LOG_TARGET,
-                    "Mmproxy Version check timed out after {:?}", timeout_duration
+                    "Mmproxy Version check timed out after {timeout_duration:?}"
                 );
                 HealthStatus::Warning
             }
