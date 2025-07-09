@@ -16,7 +16,7 @@
     },
     "dependencies": {
         "@floating-ui/react": "^0.27.13",
-        "@lottiefiles/dotlottie-react": "^0.14.2",
+        "@lottiefiles/dotlottie-react": "^0.13.5",
         "@number-flow/react": "^0.5.9",
         "@tanstack/react-query": "^5.81.5",
         "@tari-project/tari-tower": "^0.0.42",
@@ -49,7 +49,7 @@
         "@eslint/js": "^9.9.0",
         "@taplo/cli": "^0.7.0",
         "@tauri-apps/cli": "^2.6.2",
-        "@types/node": "^24.0.10",
+        "@types/node": "^24.0.12",
         "@types/react": "^19.1.8",
         "@types/react-dom": "^19.1.6",
         "@types/uuid": "^10.0.0",
