@@ -5,7 +5,7 @@ let failTimeout: NodeJS.Timeout | undefined;
 import { create } from './create';
 import { useMiningStore } from './useMiningStore.ts';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { BlockTimeData } from '@app/types/mining.ts';
+
 import { setAnimationState } from '@tari-project/tari-tower';
 import { TransactionInfo, WalletBalance } from '@app/types/app-status.ts';
 import { setMiningControlsEnabled } from './actions/miningStoreActions.ts';
@@ -20,9 +20,6 @@ interface Recap {
     totalEarnings: number;
 }
 interface State {
-    displayBlockTime?: BlockTimeData;
-    debugBlockTime?: BlockTimeData;
-    displayBlockHeight?: number;
     earnings?: number;
     recapData?: Recap;
     recapCount?: number;
@@ -32,9 +29,6 @@ interface State {
 }
 
 interface Actions {
-    setDisplayBlockHeight: (displayBlockHeight: number) => void;
-    setDisplayBlockTime: (displayBlockTime: BlockTimeData) => void;
-    setDebugBlockTime: (displayBlockTime: BlockTimeData) => void;
     setRecapCount: (recapCount?: number) => void;
     setRewardCount: (rewardCount?: number) => void;
     cleanup: () => void;
@@ -55,9 +49,6 @@ const getSuccessTier = (earnings: number) => {
 
 export const useBlockchainVisualisationStore = create<BlockchainVisualisationStoreState>()((set) => ({
     recapIds: [],
-    setDisplayBlockHeight: (displayBlockHeight) => set({ displayBlockHeight }),
-    setDisplayBlockTime: (displayBlockTime) => set({ displayBlockTime }),
-    setDebugBlockTime: (debugBlockTime) => set({ debugBlockTime }),
     setRecapCount: (recapCount) => set({ recapCount }),
     setRewardCount: (rewardCount) => set({ rewardCount }),
     cleanup: () => {
@@ -95,9 +86,9 @@ const handleWin = async (coinbase_transaction: TransactionInfo, balance: WalletB
             clearTimeout(winTimeout);
         }
         winTimeout = setTimeout(async () => {
-            useBlockchainVisualisationStore.setState({ displayBlockHeight: blockHeight, earnings: undefined });
+            useBlockchainVisualisationStore.setState({ earnings: undefined });
             await refreshTransactions();
-            setWalletBalance(balance);
+            await setWalletBalance(balance);
             setMiningControlsEnabled(true);
         }, 2000);
     } else {
@@ -109,7 +100,7 @@ const handleWin = async (coinbase_transaction: TransactionInfo, balance: WalletB
         }));
     }
 };
-const handleFail = async (blockHeight: number, balance: WalletBalance, canAnimate: boolean) => {
+const handleFail = async (_blockHeight: number, balance: WalletBalance, canAnimate: boolean) => {
     const visualModeEnabled = useConfigUIStore.getState().visual_mode;
     if (canAnimate && visualModeEnabled) {
         setMiningControlsEnabled(false);
@@ -118,13 +109,10 @@ const handleFail = async (blockHeight: number, balance: WalletBalance, canAnimat
             clearTimeout(failTimeout);
         }
         failTimeout = setTimeout(async () => {
-            useBlockchainVisualisationStore.setState({ displayBlockHeight: blockHeight });
             setMiningControlsEnabled(true);
             await refreshTransactions();
-            setWalletBalance(balance);
+            await setWalletBalance(balance);
         }, 1000);
-    } else {
-        useBlockchainVisualisationStore.setState({ displayBlockHeight: blockHeight });
     }
 };
 
@@ -173,7 +161,6 @@ async function processNewBlock(payload: {
             await handleFail(payload.block_height, payload.balance, canAnimate);
         }
     } else {
-        useBlockchainVisualisationStore.setState({ displayBlockHeight: payload.block_height });
         await refreshTransactions();
     }
 }
