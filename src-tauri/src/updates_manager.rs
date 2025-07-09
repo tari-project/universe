@@ -110,7 +110,7 @@ impl UpdatesManager {
                             _ = interval.tick() => {
                                 info!(target: LOG_TARGET, "Periodic update check triggered.");
                                  if let Err(e) = self_clone.try_update(app_clone.clone(), false, false).await {
-                                    error!(target: LOG_TARGET, "Error checking for updates: {:?}", e);
+                                    error!(target: LOG_TARGET, "Error checking for updates: {e:?}");
                                 }
                             }
                         }
@@ -129,7 +129,7 @@ impl UpdatesManager {
         match self.check_for_update(app.clone(), enable_downgrade).await? {
             Some(update) => {
                 let version = update.version.clone();
-                info!(target: LOG_TARGET, "try_update: Update available: {:?}", version);
+                info!(target: LOG_TARGET, "try_update: Update available: {version:?}");
                 *self.update.write().await = Some(update);
                 let is_auto_update = *ConfigCore::content().await.auto_update();
                 let is_screen_locked = *SystemStatus::current().get_sleep_mode_watcher().borrow();
@@ -138,7 +138,7 @@ impl UpdatesManager {
                     info!(target: LOG_TARGET, "try_update: Screen is locked. Displaying notification");
                     let payload = CouldNotUpdatePayload::new(version);
                     drop(app.emit("updates_event", payload).inspect_err(|e| {
-                        warn!(target: LOG_TARGET, "Failed to emit 'updates-event' with CouldNotUpdatePayload: {}", e);
+                        warn!(target: LOG_TARGET, "Failed to emit 'updates-event' with CouldNotUpdatePayload: {e}");
                     }));
                 } else if force {
                     info!(target: LOG_TARGET, "try_update: Proceeding with force update");
@@ -153,7 +153,7 @@ impl UpdatesManager {
                         version,
                     };
                     drop(app.emit("updates_event", payload).inspect_err(|e| {
-                        warn!(target: LOG_TARGET, "Failed to emit 'updates-event' with UpdateAvailablePayload: {}", e);
+                        warn!(target: LOG_TARGET, "Failed to emit 'updates-event' with UpdateAvailablePayload: {e}");
                     }));
                     // proceed_with_update will be trigger by the user
                 }
@@ -187,21 +187,21 @@ impl UpdatesManager {
         let builder = match builder.endpoints(vec![updates_url]) {
             Ok(b) => b,
             Err(e) => {
-                warn!(target: LOG_TARGET, "Failed to set update URL: {}", e);
+                warn!(target: LOG_TARGET, "Failed to set update URL: {e}");
                 return Ok(None);
             }
         };
         let updater = match builder.build() {
             Ok(u) => u,
             Err(e) => {
-                warn!(target: LOG_TARGET, "Failed to build updater: {}", e);
+                warn!(target: LOG_TARGET, "Failed to build updater: {e}");
                 return Ok(None);
             }
         };
         let update = match updater.check().await {
             Ok(u) => u,
             Err(e) => {
-                warn!(target: LOG_TARGET, "Failed to check for updates: {}", e);
+                warn!(target: LOG_TARGET, "Failed to check for updates: {e}");
                 return Ok(None);
             }
         };
@@ -243,11 +243,15 @@ impl UpdatesManager {
                     let now = std::time::Instant::now();
                     let is_last_chunk = content_length.map(|cl| downloaded >= cl).unwrap_or(false);
 
-                    if is_last_chunk || now.duration_since(last_emit) >= Duration::from_millis(100) {
+                    if is_last_chunk || now.duration_since(last_emit) >= Duration::from_millis(100)
+                    {
                         last_emit = std::time::Instant::now();
-                        let payload = DownloadProgressPayload::new(downloaded, content_length.unwrap_or(downloaded));
+                        let payload = DownloadProgressPayload::new(
+                            downloaded,
+                            content_length.unwrap_or(downloaded),
+                        );
                         drop(app.emit("updates_event", payload).inspect_err(|e| {
-                            warn!(target: LOG_TARGET, "Failed to emit 'updates_event' event: {}", e);
+                            warn!(target: LOG_TARGET, "Failed to emit 'updates_event' event: {e}");
                         }));
                     }
                 },

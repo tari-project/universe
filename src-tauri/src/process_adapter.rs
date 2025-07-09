@@ -112,7 +112,7 @@ pub(crate) trait ProcessAdapter {
                     kill_process(pid).await?;
                 }
                 Err(_) => {
-                    warn!(target: LOG_TARGET, "pid file is not a valid integer: {}. Attempting to kill process by name", pid);
+                    warn!(target: LOG_TARGET, "pid file is not a valid integer: {pid}. Attempting to kill process by name");
                     let pid_by_name = Self::find_process_pid_by_name(binary_name);
                     if let Some(process) = pid_by_name {
                         let parsed_id = i32::try_from(process)
@@ -209,7 +209,7 @@ impl ProcessInstanceTrait for ProcessInstance {
 
         self.handle = Some(task_tracker.spawn(async move {
             if let Err(e) = set_permissions(&spec.file_path).await {
-                error!(target: LOG_TARGET, "{}", e);
+                error!(target: LOG_TARGET, "{e}");
                 sentry::capture_message(&e.to_string(), sentry::Level::Error);
                 return Err(e);
             }
@@ -227,7 +227,7 @@ impl ProcessInstanceTrait for ProcessInstance {
                 let pid_file_res = write_pid_file(&spec, id);
                 if let Err(e) = pid_file_res {
                     let error_msg = format!("Failed to write PID file: {e}");
-                    error!(target: LOG_TARGET, "{}", error_msg);
+                    error!(target: LOG_TARGET, "{error_msg}");
                     sentry::capture_message(&error_msg, sentry::Level::Error);
                 }
             }
@@ -349,7 +349,7 @@ impl Drop for ProcessInstance {
                 let spec_name = self.startup_spec.name.clone();
                 current_handle.spawn(async move {
                     if let Err(e) = handle.await {
-                        warn!(target: LOG_TARGET, "Error during process cleanup for {}: {}", spec_name, e);
+                        warn!(target: LOG_TARGET, "Error during process cleanup for {spec_name}: {e}");
                     }
                 });
             } else {
@@ -364,7 +364,7 @@ impl Drop for ProcessInstance {
                             Duration::from_secs(5),
                             handle
                         ).await {
-                            warn!(target: LOG_TARGET, "Timeout or error during emergency process cleanup: {}", e);
+                            warn!(target: LOG_TARGET, "Timeout or error during emergency process cleanup: {e}");
                         }
                     });
                 } else {

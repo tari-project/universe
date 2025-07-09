@@ -173,11 +173,11 @@ pub async fn close_splashscreen(app: tauri::AppHandle) {
 
         retries += 1;
         if retries >= close_max_retries {
-            error!(target: "LOG_TARGET", "Failed to fetch both 'splashscreen' and 'main' windows after {} retries", close_max_retries);
+            error!(target: "LOG_TARGET", "Failed to fetch both 'splashscreen' and 'main' windows after {close_max_retries} retries");
             return;
         }
 
-        info!(target: "LOG_TARGET", "Failed to fetch both 'splashscreen' and 'main' windows. Retrying in {}ms", retry_delay_ms);
+        info!(target: "LOG_TARGET", "Failed to fetch both 'splashscreen' and 'main' windows. Retrying in {retry_delay_ms}ms");
         tokio::time::sleep(Duration::from_millis(retry_delay_ms)).await;
     };
 
@@ -193,7 +193,7 @@ pub async fn close_splashscreen(app: tauri::AppHandle) {
                 main_window.set_size(PhysicalSize::new(window_size.width, window_size.height))
             })
         {
-            error!(target: LOG_TARGET, "Could not set window position or size: {:?}", e);
+            error!(target: LOG_TARGET, "Could not set window position or size: {e:?}");
         }
     } else {
         error!(target: LOG_TARGET, "Could not get window position or size");
@@ -314,7 +314,7 @@ pub async fn fetch_tor_bridges() -> Result<Vec<String>, String> {
         .find_iter(&res_html)
         .map(|m| m.as_str().trim_end_matches(" <br/>").to_string())
         .collect();
-    info!(target: LOG_TARGET, "Fetched default bridges: {:?}", bridges);
+    info!(target: LOG_TARGET, "Fetched default bridges: {bridges:?}");
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "fetch_default_tor_bridges took too long: {:?}", timer.elapsed());
     }
@@ -496,7 +496,7 @@ pub async fn get_monero_seed_words(app_handle: tauri::AppHandle) -> Result<Vec<S
         .map_err(|e| e.to_string())?;
 
     let result = monero_seed.seed_words().map_err(|e| {
-        log::error!(target: LOG_TARGET, "get_monero_seed_words: error getting seed words: {}", e);
+        log::error!(target: LOG_TARGET, "get_monero_seed_words: error getting seed words: {e:?}");
         e.to_string()
     });
 
@@ -541,7 +541,7 @@ pub async fn get_p2pool_connections(
         .get_connections()
         .await
         .unwrap_or_else(|e| {
-            warn!(target: LOG_TARGET, "Error getting p2pool connections: {}", e);
+            warn!(target: LOG_TARGET, "Error getting p2pool connections: {e}");
             None
         });
 
@@ -671,7 +671,7 @@ pub async fn get_seed_words(app_handle: tauri::AppHandle) -> Result<Vec<String>,
         match seed_words.get_word(i) {
             Ok(word) => res.push(word.clone()),
             Err(error) => {
-                error!(target: LOG_TARGET, "Could not get seed word: {:?}", error);
+                error!(target: LOG_TARGET, "Could not get seed word: {error:?}");
             }
         }
     }
@@ -791,7 +791,7 @@ pub async fn get_transactions(
         .await
         .unwrap_or_else(|e| {
             if !matches!(e, WalletManagerError::WalletNotStarted) {
-                warn!(target: LOG_TARGET, "Error getting transactions: {}", e);
+                warn!(target: LOG_TARGET, "Error getting transactions: {e}");
             }
             vec![]
         });
@@ -854,7 +854,7 @@ pub async fn import_seed_words(
             log::info!(target: LOG_TARGET, "Seed words imported successfully for wallet #{}", wallet_id);
         }
         Err(e) => {
-            error!(target: LOG_TARGET, "Error importing seed words by internal wallet: {:?}", e);
+            error!(target: LOG_TARGET, "Error importing seed words by internal wallet: {e:?}");
             e.to_string();
         }
     }
@@ -916,9 +916,9 @@ pub fn log_web_message(level: String, message: Vec<String>) {
     let joined_message = message.join(" ");
     match level.as_str() {
         "error" => {
-            error!(target: LOG_TARGET_WEB, "{}", joined_message)
+            error!(target: LOG_TARGET_WEB, "{joined_message}")
         }
-        _ => info!(target: LOG_TARGET_WEB, "{}", joined_message),
+        _ => info!(target: LOG_TARGET_WEB, "{joined_message}"),
     }
 }
 
@@ -926,7 +926,7 @@ pub fn log_web_message(level: String, message: Vec<String>) {
 pub fn open_log_dir(app: tauri::AppHandle) {
     let log_dir = app.path().app_log_dir().expect("Could not get log dir");
     if let Err(e) = open::that(log_dir) {
-        error!(target: LOG_TARGET, "Could not open log dir: {:?}", e);
+        error!(target: LOG_TARGET, "Could not open log dir: {e:?}");
     }
 }
 
@@ -969,7 +969,7 @@ pub async fn reset_settings(
         .collect();
 
     if valid_dir_paths.is_empty() {
-        error!(target: LOG_TARGET, "Could not get app directories for {:?}", valid_dir_paths);
+        error!(target: LOG_TARGET, "Could not get app directories for {valid_dir_paths:?}");
         return Err("Could not get app directories".to_string());
     }
     let mut folder_block_list = Vec::new();
@@ -1017,7 +1017,7 @@ pub async fn reset_settings(
                     }
 
                     remove_dir_all(path.clone()).map_err(|e| {
-                        error!(target: LOG_TARGET, "[reset_settings] Could not remove {:?} directory: {:?}", path, e);
+                        error!(target: LOG_TARGET, "[reset_settings] Could not remove {path:?} directory: {e:?}");
                         format!("Could not remove directory: {e}")
                     })?;
                 } else {
@@ -1028,7 +1028,7 @@ pub async fn reset_settings(
                     }
 
                     remove_file(path.clone()).map_err(|e| {
-                        error!(target: LOG_TARGET, "[reset_settings] Could not remove {:?} file: {:?}", path, e);
+                        error!(target: LOG_TARGET, "[reset_settings] Could not remove {path:?} file: {e:?}");
                         format!("Could not remove file: {e}")
                     })?;
                 }
@@ -1077,7 +1077,7 @@ pub async fn send_feedback(
         .await
         .send_feedback(feedback, include_logs, app_log_dir.clone())
         .await
-        .inspect_err(|e| error!("error at send_feedback {:?}", e))
+        .inspect_err(|e| error!("error at send_feedback {e:?}"))
         .map_err(|e| e.to_string())?;
     if timer.elapsed() > Duration::from_secs(60) {
         warn!(target: LOG_TARGET, "send_feedback took too long: {:?}", timer.elapsed());
@@ -1116,7 +1116,7 @@ pub async fn send_data_telemetry_service(
         .await
         .send(event_name, data)
         .await
-        .inspect_err(|e| error!(target: LOG_TARGET, "error at send_data_telemetry_service {:?}", e))
+        .inspect_err(|e| error!(target: LOG_TARGET, "error at send_data_telemetry_service {e:?}"))
         .map_err(|e| e.to_string())?;
     Ok(())
 }
@@ -1220,7 +1220,7 @@ pub async fn toggle_device_exclusion(
     gpu_miner
         .toggle_device_exclusion(config_dir, device_index, excluded)
         .await
-        .inspect_err(|e| error!("error at toggle_device_exclusion {:?}", e))
+        .inspect_err(|e| error!("error at toggle_device_exclusion {e:?}"))
         .map_err(|e| e.to_string())?;
     Ok(())
 }
@@ -1267,7 +1267,7 @@ pub async fn set_mode(
     custom_gpu_usage: Vec<GpuThreads>,
 ) -> Result<(), InvokeError> {
     let timer = Instant::now();
-    info!(target: LOG_TARGET, "[set_mode] called with mode: {:?}", mode);
+    info!(target: LOG_TARGET, "[set_mode] called with mode: {mode:?}");
 
     if let Some(mode) = MiningMode::from_str(&mode) {
         ConfigMining::update_field(ConfigMiningContent::set_mode, mode)
@@ -1362,7 +1362,7 @@ pub async fn set_monerod_config(
     app_handle: tauri::AppHandle,
 ) -> Result<(), InvokeError> {
     let timer = Instant::now();
-    info!(target: LOG_TARGET, "[set_monerod_config] called with use_monero_fail: {:?}, monero_nodes: {:?}", use_monero_fail, monero_nodes);
+    info!(target: LOG_TARGET, "[set_monerod_config] called with use_monero_fail: {use_monero_fail:?}, monero_nodes: {monero_nodes:?}");
     ConfigCore::update_field_requires_restart(
         ConfigCoreContent::set_mmproxy_monero_nodes,
         monero_nodes.clone(),
@@ -1467,7 +1467,7 @@ pub async fn set_tor_config(
     app_handle: tauri::AppHandle,
 ) -> Result<TorConfig, String> {
     let timer = Instant::now();
-    info!(target: LOG_TARGET, "[set_tor_config] called with config: {:?}", config);
+    info!(target: LOG_TARGET, "[set_tor_config] called with config: {config:?}");
     let tor_config = state
         .tor_manager
         .set_tor_config(config)
@@ -1559,7 +1559,7 @@ pub async fn set_airdrop_tokens(
         .await
         .map_err(InvokeError::from_anyhow)?;
 
-    info!(target: LOG_TARGET, "New Airdrop tokens saved, user id changed:{:?}", user_id_changed);
+    info!(target: LOG_TARGET, "New Airdrop tokens saved, user id changed:{user_id_changed:?}");
     if user_id_changed {
         // If the user id changed, we need to restart the mining phases to ensure that the new telemetry_id ( unique_string value )is used
         SetupManager::get_instance()
@@ -1620,14 +1620,14 @@ pub async fn start_cpu_mining(
 
         if let Err(e) = res {
             let err_msg = format!("Could not start CPU mining: {e}");
-            error!(target: LOG_TARGET, "{}", err_msg);
+            error!(target: LOG_TARGET, "{err_msg}");
             sentry::capture_message(&err_msg, sentry::Level::Error);
             cpu_miner
                 .stop()
                 .await
                 .inspect_err(|e| {
                     let stop_err = format!("Error stopping CPU miner: {e}");
-                    error!(target: LOG_TARGET, "{}", stop_err);
+                    error!(target: LOG_TARGET, "{stop_err}");
                 })
                 .ok();
             return Err(e.to_string());
@@ -1723,11 +1723,11 @@ pub async fn start_gpu_mining(
         info!(target: LOG_TARGET, "4. Starting gpu miner");
         if let Err(e) = res {
             let err_msg = format!("Could not start GPU mining: {e}");
-            error!(target: LOG_TARGET, "{}", err_msg);
+            error!(target: LOG_TARGET, "{err_msg}");
             sentry::capture_message(&err_msg, sentry::Level::Error);
 
             if let Err(stop_err) = gpu_miner.stop().await {
-                error!(target: LOG_TARGET, "Could not stop GPU miner: {}", stop_err);
+                error!(target: LOG_TARGET, "Could not stop GPU miner: {stop_err}");
             }
 
             return Err(e.to_string());
@@ -1916,7 +1916,7 @@ pub async fn set_selected_engine(
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), InvokeError> {
-    info!(target: LOG_TARGET, "set_selected_engine called with engine: {:?}", selected_engine);
+    info!(target: LOG_TARGET, "set_selected_engine called with engine: {selected_engine:?}");
     let timer = Instant::now();
 
     let engine_type = EngineType::from_string(selected_engine).map_err(InvokeError::from_anyhow)?;
@@ -2006,7 +2006,7 @@ pub async fn send_one_sided_to_stealth_address(
     payment_id: Option<String>,
 ) -> Result<(), String> {
     let timer = Instant::now();
-    info!(target: LOG_TARGET, "[send_one_sided_to_stealth_address] called with args: (amount: {:?}, destination: {:?}, payment_id: {:?})", amount, destination, payment_id);
+    info!(target: LOG_TARGET, "[send_one_sided_to_stealth_address] called with args: (amount: {amount:?}, destination: {destination:?}, payment_id: {payment_id:?})");
     let state_clone = state.clone();
     let mut spend_wallet_manager = state_clone.spend_wallet_manager.write().await;
     spend_wallet_manager
@@ -2125,11 +2125,11 @@ pub async fn set_node_type(
         .get_node_type()
         .await
         .map_err(|e| e.to_string())?;
-    info!(target: LOG_TARGET, "[set_node_type] from {:?} to: {:?}", prev_node_type, node_type);
+    info!(target: LOG_TARGET, "[set_node_type] from {prev_node_type:?} to: {node_type:?}");
 
     let is_current_local = matches!(prev_node_type, NodeType::Local | NodeType::LocalAfterRemote);
     if is_current_local && node_type != NodeType::Remote {
-        info!(target: LOG_TARGET, "[set_node_type] Local node is already running, no restart needed for node_type: {:?}", node_type);
+        info!(target: LOG_TARGET, "[set_node_type] Local node is already running, no restart needed for node_type: {node_type:?}");
         ConfigCore::update_field(ConfigCoreContent::set_node_type, node_type.clone())
             .await
             .map_err(InvokeError::from_anyhow)?;
@@ -2139,7 +2139,7 @@ pub async fn set_node_type(
             node_type = NodeType::LocalAfterRemote
         }
     } else {
-        info!(target: LOG_TARGET, "[set_node_type] Restarting required phases for node_type: {:?}", node_type);
+        info!(target: LOG_TARGET, "[set_node_type] Restarting required phases for node_type: {node_type:?}");
         ConfigCore::update_field_requires_restart(
             ConfigCoreContent::set_node_type,
             node_type.clone(),
@@ -2196,7 +2196,7 @@ pub async fn launch_builtin_tapplet() -> Result<ActiveTapplet, String> {
     let (addr, _cancel_token) = match handle_start.await {
         Ok(result) => result.map_err(|e| e.to_string())?,
         Err(e) => {
-            error!(target: LOG_TARGET, "❌ Error handling tapplet start: {:?}", e);
+            error!(target: LOG_TARGET, "❌ Error handling tapplet start: {e:?}");
             return Err(e.to_string());
         }
     };

@@ -84,7 +84,7 @@ impl HardwareVendor {
         } else if HardwareVendor::is_apple(&HardwareVendor::Apple, vendor) {
             HardwareVendor::Apple
         } else {
-            error!(target: LOG_TARGET, "Unsupported hardware vendor: {:?}", vendor);
+            error!(target: LOG_TARGET, "Unsupported hardware vendor: {vendor:?}");
             HardwareVendor::Unknown
         }
     }
@@ -160,12 +160,12 @@ impl HardwareStatusMonitor {
     ) -> Result<GpuStatusFileContent, Error> {
         let file: PathBuf = config_dir.join("gpuminer").join("gpu_status.json");
         if file.exists() {
-            debug!(target: LOG_TARGET, "Loading gpu status from file: {:?}", file);
+            debug!(target: LOG_TARGET, "Loading gpu status from file: {file:?}");
             let content = tokio::fs::read_to_string(file).await?;
             let gpu_status: GpuStatusFileContent = serde_json::from_str(&content)?;
             Ok(gpu_status)
         } else {
-            warn!(target: LOG_TARGET, "Gpu status file not found: {:?}", file);
+            warn!(target: LOG_TARGET, "Gpu status file not found: {file:?}");
             Ok(GpuStatusFileContent::default())
         }
     }
@@ -180,7 +180,7 @@ impl HardwareStatusMonitor {
             HardwareVendor::Intel => Box::new(IntelGpuReader::new()),
             HardwareVendor::Apple => Box::new(AppleGpuReader::new()),
             _ => {
-                warn!("Unsupported GPU vendor: {:?}", vendor);
+                warn!("Unsupported GPU vendor: {vendor:?}");
                 Box::new(DefaultGpuParametersReader)
             }
         }
@@ -233,7 +233,7 @@ impl HardwareStatusMonitor {
             HardwareVendor::Intel => Box::new(IntelCpuParametersReader::new()),
             HardwareVendor::Apple => Box::new(AppleCpuParametersReader::new()),
             _ => {
-                warn!("Unsupported GPU vendor: {:?}", vendor);
+                warn!("Unsupported GPU vendor: {vendor:?}");
                 Box::new(DefaultCpuParametersReader)
             }
         }

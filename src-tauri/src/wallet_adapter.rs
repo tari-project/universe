@@ -108,9 +108,7 @@ impl WalletAdapter {
     pub async fn import_transaction(&self, tx_output_file: PathBuf) -> Result<(), anyhow::Error> {
         let tx_json = fs::read_to_string(&tx_output_file).map_err(|e| {
             log::error!(
-                "[import_transaction] Failed to read transaction output file: {}, output_file:\n{:?}",
-                e,
-                tx_output_file
+                "[import_transaction] Failed to read transaction output file: {e}, output_file:\n{tx_output_file:?}"
             );
             anyhow::anyhow!("Failed to read transaction output file: {}", e)
         })?;
@@ -118,10 +116,7 @@ impl WalletAdapter {
         let mut client = WalletClient::connect(self.wallet_grpc_address())
             .await
             .map_err(|e| {
-                log::error!(
-                    "[import_transaction] Failed to connect to wallet client: {}",
-                    e
-                );
+                log::error!("[import_transaction] Failed to connect to wallet client: {e}");
                 anyhow::anyhow!("Failed to connect to wallet client")
             })?;
 
@@ -131,10 +126,7 @@ impl WalletAdapter {
             })
             .await
             .map_err(|e| {
-                log::error!(
-                    "[import_transaction] Failed to import transactions: {:?}",
-                    e
-                );
+                log::error!("[import_transaction] Failed to import transactions: {e:?}");
                 anyhow::anyhow!("Failed to import transactions: {:?}", e)
             })?;
 
@@ -228,7 +220,7 @@ impl WalletAdapter {
                     if let Some(state) = current_state {
                         // Case 1: Scan has reached or exceeded target height
                         if state.scanned_height >= block_height {
-                            info!(target: LOG_TARGET, "Wallet scan completed up to block height {}", block_height);
+                            info!(target: LOG_TARGET, "Wallet scan completed up to block height {block_height}");
                             return Ok(state);
                         }
                         // Case 2: Wallet is at height 0 but is connected - likely means scan finished already
@@ -401,7 +393,7 @@ impl ProcessAdapter for WalletAdapter {
         }
 
         if let Err(e) = std::fs::remove_dir_all(peer_data_folder) {
-            warn!(target: LOG_TARGET, "Could not clear peer data folder: {}", e);
+            warn!(target: LOG_TARGET, "Could not clear peer data folder: {e}");
         }
 
         #[cfg(target_os = "windows")]
@@ -481,14 +473,14 @@ impl StatusMonitor for WalletStatusMonitor {
                     HealthStatus::Healthy
                 }
                 Err(e) => {
-                    warn!(target: LOG_TARGET, "Wallet health check failed: {}", e);
+                    warn!(target: LOG_TARGET, "Wallet health check failed: {e}");
                     HealthStatus::Unhealthy
                 }
             },
             Err(_timeout_error) => {
                 warn!(
                     target: LOG_TARGET,
-                    "Wallet health check timed out after {:?}", timeout_duration
+                    "Wallet health check timed out after {timeout_duration:?}"
                 );
                 HealthStatus::Warning
             }

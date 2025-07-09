@@ -98,7 +98,7 @@ impl EventsEmitter {
             .await
             .emit(PROGRESS_TRACKER_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit ProgressTrackerUpdate event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit ProgressTrackerUpdate event: {e:?}");
         }
     }
 
@@ -112,7 +112,7 @@ impl EventsEmitter {
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit StuckOnOrphanChain event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit StuckOnOrphanChain event: {e:?}");
         }
     }
 
@@ -126,7 +126,7 @@ impl EventsEmitter {
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit ShowReleaseNotesPayload event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit ShowReleaseNotesPayload event: {e:?}");
         }
     }
 
@@ -141,7 +141,7 @@ impl EventsEmitter {
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit MissingApplications event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit MissingApplications event: {e:?}");
         }
     }
 
@@ -155,7 +155,7 @@ impl EventsEmitter {
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit CriticalProblem event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit CriticalProblem event: {e:?}");
         }
     }
 
@@ -169,7 +169,7 @@ impl EventsEmitter {
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit RestartingPhases event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit RestartingPhases event: {e:?}");
         }
     }
 
@@ -183,7 +183,7 @@ impl EventsEmitter {
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit AskForRestart event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit AskForRestart event: {e:?}");
         }
     }
 
@@ -197,7 +197,7 @@ impl EventsEmitter {
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit DetectedDevices event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit DetectedDevices event: {e:?}");
         }
     }
 
@@ -217,7 +217,7 @@ impl EventsEmitter {
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit DetectedAvailableGpuEngines event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit DetectedAvailableGpuEngines event: {e:?}");
         }
     }
 
@@ -231,7 +231,7 @@ impl EventsEmitter {
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit CloseSplashscreen event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit CloseSplashscreen event: {e:?}");
         }
     }
 
@@ -254,7 +254,7 @@ impl EventsEmitter {
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit NetworkStatus event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit NetworkStatus event: {e:?}");
         }
     }
 
@@ -268,7 +268,7 @@ impl EventsEmitter {
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit CoreConfigLoaded event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit CoreConfigLoaded event: {e:?}");
         }
     }
 
@@ -282,7 +282,7 @@ impl EventsEmitter {
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit UIConfigLoaded event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit UIConfigLoaded event: {e:?}");
         }
     }
 
@@ -297,7 +297,7 @@ impl EventsEmitter {
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit WalletConfigLoaded event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit WalletConfigLoaded event: {e:?}");
         }
     }
 
@@ -311,7 +311,7 @@ impl EventsEmitter {
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit MiningConfigLoaded event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit MiningConfigLoaded event: {e:?}");
         }
     }
 
@@ -325,7 +325,7 @@ impl EventsEmitter {
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit WalletBalanceUpdate event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit WalletBalanceUpdate event: {e:?}");
         }
     }
 
@@ -340,7 +340,7 @@ impl EventsEmitter {
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit BaseNodeUpdate event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit BaseNodeUpdate event: {e:?}");
         }
     }
 
@@ -354,7 +354,7 @@ impl EventsEmitter {
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit ShowStagedSecurityModal event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit ShowStagedSecurityModal event: {e:?}");
         }
     }
 
@@ -369,7 +369,7 @@ impl EventsEmitter {
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit GpuDevicesUpdate event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit GpuDevicesUpdate event: {e:?}");
         }
     }
 
@@ -383,7 +383,7 @@ impl EventsEmitter {
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit PoolStatusUpdate event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit PoolStatusUpdate event: {e:?}");
         }
     }
     pub async fn emit_cpu_mining_update(status: CpuMinerStatus) {
@@ -396,7 +396,7 @@ impl EventsEmitter {
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit CpuMiningUpdate event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit CpuMiningUpdate event: {e:?}");
         }
     }
     pub async fn emit_mining_time_update(mining_time: u128) {
@@ -409,7 +409,7 @@ impl EventsEmitter {
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit MiningTime event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit MiningTime event: {e:?}");
         }
     }
 
@@ -423,7 +423,7 @@ impl EventsEmitter {
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit GpuMiningUpdate event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit GpuMiningUpdate event: {e:?}");
         }
     }
 
@@ -437,7 +437,7 @@ impl EventsEmitter {
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit ConnectedPeersUpdate event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit ConnectedPeersUpdate event: {e:?}");
         }
     }
 
@@ -459,7 +459,7 @@ impl EventsEmitter {
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit NewBlockHeight event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit NewBlockHeight event: {e:?}");
         }
     }
 
@@ -473,7 +473,7 @@ impl EventsEmitter {
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit CorePhaseFinished event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit CorePhaseFinished event: {e:?}");
         }
     }
 
@@ -487,7 +487,7 @@ impl EventsEmitter {
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit WalletPhaseFinished event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit WalletPhaseFinished event: {e:?}");
         }
     }
 
@@ -501,7 +501,7 @@ impl EventsEmitter {
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit HardwarePhaseFinished event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit HardwarePhaseFinished event: {e:?}");
         }
     }
 
@@ -515,7 +515,7 @@ impl EventsEmitter {
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit NodePhaseFinished event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit NodePhaseFinished event: {e:?}");
         }
     }
 
@@ -529,7 +529,7 @@ impl EventsEmitter {
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit MiningPhaseFinished event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit MiningPhaseFinished event: {e:?}");
         }
     }
 
@@ -543,7 +543,7 @@ impl EventsEmitter {
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit SetupFinished event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit SetupFinished event: {e:?}");
         }
     }
 
@@ -557,7 +557,7 @@ impl EventsEmitter {
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit UnlockApp event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit UnlockApp event: {e:?}");
         }
     }
 
@@ -571,7 +571,7 @@ impl EventsEmitter {
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit UnlockWallet event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit UnlockWallet event: {e:?}");
         }
     }
 
@@ -585,7 +585,7 @@ impl EventsEmitter {
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit UnlockCpuMining event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit UnlockCpuMining event: {e:?}");
         }
     }
     pub async fn emit_unlock_gpu_mining() {
@@ -598,7 +598,7 @@ impl EventsEmitter {
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit UnlockGpuMining event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit UnlockGpuMining event: {e:?}");
         }
     }
 
@@ -612,7 +612,7 @@ impl EventsEmitter {
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit LockWallet event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit LockWallet event: {e:?}");
         }
     }
 
@@ -626,7 +626,7 @@ impl EventsEmitter {
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit LockCpuMining event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit LockCpuMining event: {e:?}");
         }
     }
     pub async fn emit_lock_gpu_mining() {
@@ -639,7 +639,7 @@ impl EventsEmitter {
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit LockGpuMining event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit LockGpuMining event: {e:?}");
         }
     }
 
@@ -653,7 +653,7 @@ impl EventsEmitter {
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit NodeTypeUpdate event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit NodeTypeUpdate event: {e:?}");
         }
     }
 
@@ -667,7 +667,7 @@ impl EventsEmitter {
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit BackgroundNodeSyncUpdate event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit BackgroundNodeSyncUpdate event: {e:?}");
         }
     }
 
@@ -689,7 +689,7 @@ impl EventsEmitter {
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit InitWalletScanningProgress event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit InitWalletScanningProgress event: {e:?}");
         }
     }
 
@@ -703,7 +703,7 @@ impl EventsEmitter {
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit ConnectionStatus event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit ConnectionStatus event: {e:?}");
         }
     }
 
@@ -717,7 +717,7 @@ impl EventsEmitter {
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit ExchangeIdChanged event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit ExchangeIdChanged event: {e:?}");
         }
     }
 
@@ -738,7 +738,7 @@ impl EventsEmitter {
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit SelectedTariAddressChanged event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit SelectedTariAddressChanged event: {e:?}");
         }
     }
 
@@ -753,7 +753,7 @@ impl EventsEmitter {
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit WalletUIModeChanged event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit WalletUIModeChanged event: {e:?}");
         }
     }
 
@@ -767,7 +767,7 @@ impl EventsEmitter {
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit DisabledPhasesChanged event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit DisabledPhasesChanged event: {e:?}");
         }
     }
     pub async fn emit_should_show_exchange_miner_modal() {
@@ -780,7 +780,7 @@ impl EventsEmitter {
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit ShouldShowExchangeMinerModal event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit ShouldShowExchangeMinerModal event: {e:?}");
         }
     }
 
@@ -794,7 +794,7 @@ impl EventsEmitter {
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit ShowKeyringDialog event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit ShowKeyringDialog event: {e:?}");
         }
     }
 
@@ -808,7 +808,7 @@ impl EventsEmitter {
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit CreatePin event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit CreatePin event: {e:?}");
         }
     }
 
@@ -822,7 +822,7 @@ impl EventsEmitter {
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit EnterPin event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit EnterPin event: {e:?}");
         }
     }
 }

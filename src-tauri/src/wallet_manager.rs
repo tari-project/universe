@@ -312,7 +312,7 @@ impl WalletManager {
                         }
 
                         if scanned_height > 0 && progress < 100.0 {
-                            log::info!(target: LOG_TARGET, "Initial wallet scanning: {}% ({}/{})", progress, scanned_height, current_target_height);
+                            log::info!(target: LOG_TARGET, "Initial wallet scanning: {progress}% ({scanned_height}/{current_target_height})");
                             EventsEmitter::emit_init_wallet_scanning_progress(
                                 scanned_height,
                                 current_target_height,
@@ -355,8 +355,7 @@ impl WalletManager {
                                 let latest_height = node_status_watch_rx_scan.borrow().block_height;
                                 if latest_height > current_target_height {
                                     log::info!(target: LOG_TARGET,
-                                        "Node height increased from {} to {} while initial scanning, continuing..",
-                                        current_target_height, latest_height);
+                                        "Node height increased from {current_target_height} to {latest_height} while initial scanning, continuing..");
                                     continue;
                                 }
 
@@ -383,7 +382,7 @@ impl WalletManager {
                                 break;
                             }
                             Err(e) => {
-                                log::error!(target: LOG_TARGET, "Error during initial wallet scan: {}", e);
+                                log::error!(target: LOG_TARGET, "Error during initial wallet scan: {e}");
                                 return Err(e);
                             }
                         }

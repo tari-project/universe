@@ -101,8 +101,7 @@ impl ProgressStepper {
                 .inspect_err(|e| {
                     warn!(
                         target: LOG_TARGET,
-                        "Failed to send timeout watcher signal: {}",
-                        e
+                        "Failed to send timeout watcher signal: {e}"
                     );
                 });
 

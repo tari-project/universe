@@ -257,15 +257,15 @@ impl SetupManager {
             tauri::async_runtime::spawn(async move {
                 let message = event_cloned.payload();
                 if let Ok(message) = serde_json::from_str::<WebsocketMessage>(message)
-                    .inspect_err(|e| error!("websocket malformatted: {}", e))
+                    .inspect_err(|e| error!("websocket malformatted: {e}"))
                 {
                     if websocket_tx_clone
                         .send(message.clone())
                         .await
-                        .inspect_err(|e| error!("too many messages in websocket send queue {}", e))
+                        .inspect_err(|e| error!("too many messages in websocket send queue {e}"))
                         .is_ok()
                     {
-                        log::trace!("websocket message sent {:?}", message);
+                        log::trace!("websocket message sent {message:?}");
                     }
                 }
             });
@@ -278,7 +278,7 @@ impl SetupManager {
         ConfigUI::initialize(app_handle.clone()).await;
 
         let node_type = ConfigCore::content().await.node_type().clone();
-        info!(target: LOG_TARGET, "Retrieved initial node type: {:?}", node_type);
+        info!(target: LOG_TARGET, "Retrieved initial node type: {node_type:?}");
         state.node_manager.set_node_type(node_type).await;
         EventsManager::handle_node_type_update(&app_handle).await;
 
@@ -357,7 +357,7 @@ impl SetupManager {
             && build_in_exchange_id.ne(&last_config_exchange_id)
             && !is_external_address_selected
         {
-            info!(target: LOG_TARGET, "Exchange ID changed from {} to {}", last_config_exchange_id, build_in_exchange_id);
+            info!(target: LOG_TARGET, "Exchange ID changed from {last_config_exchange_id} to {build_in_exchange_id}");
             self.exchange_modal_status
                 .send_replace(ExchangeModalStatus::WaitForCompletion);
             EventsEmitter::emit_should_show_exchange_miner_modal().await;
@@ -585,7 +585,7 @@ impl SetupManager {
     }
 
     pub async fn restart_phases(&self, app_handle: AppHandle, phases: Vec<SetupPhase>) {
-        info!(target: LOG_TARGET, "Restarting phases: {:?}", phases);
+        info!(target: LOG_TARGET, "Restarting phases: {phases:?}");
         let _lock = self.restart_safe_lock.lock().await;
         self.shutdown_phases(phases.clone()).await;
         self.resume_phases(app_handle, phases).await;
@@ -619,7 +619,7 @@ impl SetupManager {
 
         let _unused = task
             .await
-            .inspect_err(|e| error!(target: LOG_TARGET, "Error in start_setup task: {}", e));
+            .inspect_err(|e| error!(target: LOG_TARGET, "Error in start_setup task: {e}"));
 
         let shutdown_signal = TasksTrackers::current().common.get_signal().await;
         if shutdown_signal.is_triggered() {
@@ -627,9 +627,9 @@ impl SetupManager {
             return;
         }
 
-        let _unused = self.resolve_setup_features()
-            .await
-            .inspect_err(|e| error!(target: LOG_TARGET, "Failed to set setup features during start_setup: {}", e));
+        let _unused = self.resolve_setup_features().await.inspect_err(
+            |e| error!(target: LOG_TARGET, "Failed to set setup features during start_setup: {e}"),
+        );
         *self.app_handle.lock().await = Some(app_handle.clone());
 
         let setup_features = self.features.read().await.clone();
@@ -747,7 +747,7 @@ impl SetupManager {
                 queue.push(phase);
             }
         }
-        info!(target: LOG_TARGET, "Phases to restart queue: {:?}", queue);
+        info!(target: LOG_TARGET, "Phases to restart queue: {queue:?}");
     }
 
     pub async fn restart_phases_from_queue(&self, app_handle: AppHandle) {
@@ -755,7 +755,7 @@ impl SetupManager {
         if queue.is_empty() {
             return;
         }
-        info!(target: LOG_TARGET, "Restarting phases from queue: {:?}", queue);
+        info!(target: LOG_TARGET, "Restarting phases from queue: {queue:?}");
         self.restart_phases(app_handle.clone(), queue.clone()).await;
         queue.clear();
     }
