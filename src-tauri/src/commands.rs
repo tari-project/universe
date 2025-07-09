@@ -2197,7 +2197,6 @@ pub async fn launch_builtin_tapplet() -> Result<ActiveTapplet, String> {
     })
 }
 
-
 #[tauri::command]
 pub async fn get_bridge_envs() -> Result<(String, String), String> {
     let walletconnect_id = option_env!("BRIDGE_WALLET_CONNECT_PROJECT_ID")

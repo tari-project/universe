@@ -7,7 +7,6 @@ import {
     MaxConsumptionLevels,
     GpuThreads,
     P2poolConnections,
-    WalletBalance,
     BridgeEnvs,
     TariAddressVariants,
     BaseNodeStatus,
