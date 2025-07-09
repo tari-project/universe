@@ -382,10 +382,8 @@ impl InternalWallet {
     ) -> Result<(), anyhow::Error> {
         let pin_password = PinManager::create_pin(app_handle).await?;
 
-        let encrypted_monero_seed = if !*ConfigWallet::content().await.monero_address_is_generated()
+        let encrypted_monero_seed = if *ConfigWallet::content().await.monero_address_is_generated()
         {
-            None // External Monero address, no seed to recover
-        } else {
             // Unfortunately, we cannot recover the Monero seed from the wallet.
             // We need to create a new one at this point.
             let monero_seed = MoneroSeed::generate()?;
@@ -410,6 +408,8 @@ impl InternalWallet {
             .await?;
 
             Some(encrypted_monero_seed)
+        } else {
+            None // External Monero address, no seed to recover
         };
         let encrypted_tari_seed = {
             // Encrypt Tari Seed with PIN
