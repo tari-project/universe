@@ -19,10 +19,8 @@ import { XSpaceEventType } from '@app/utils/XSpaceEventType';
 import { useTranslation } from 'react-i18next';
 import { formatDateForEvent } from './formatDate';
 import { AnimatePresence } from 'motion/react';
-import { useUIStore } from '@app/store';
 
 const XSpaceEventBanner = () => {
-    const resumeModalIsOpen = useUIStore((s) => s.resumeModalIsOpen);
     const latestXSpaceEvent = useAirdropStore((state) => state.latestXSpaceEvent);
     const [isTextTooLong, setIsTextTooLong] = useState(false);
     const [transitionPixelWidth, setTransitionPixelWidth] = useState(0);
@@ -74,7 +72,6 @@ const XSpaceEventBanner = () => {
         <AnimatePresence>
             {latestXSpaceEvent && isVisible && (
                 <BannerContent
-                    $shiftDown={resumeModalIsOpen}
                     onClick={() => {
                         open(latestXSpaceEvent.link);
                     }}

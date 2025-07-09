@@ -3,9 +3,9 @@ import styled, { css } from 'styled-components';
 
 // don't need theming for this file as the colours are the same in dark/light mode (black and white)
 
-export const BannerContent = styled(m.div)<{ $shiftDown?: boolean }>`
+export const BannerContent = styled(m.div)`
     position: fixed;
-    top: ${({ $shiftDown }) => ($shiftDown ? `102px` : `16px`)};
+    top: 16px;
     right: 20px;
     z-index: 99999;
     display: flex;
@@ -137,8 +137,7 @@ export const JoinSpaceWrapper = styled(m.div)`
     gap: 12px;
     border-radius: 30px;
     border: 1px solid #ffffff33;
-    padding: 0px 5px;
-    font-family: Poppins, sans-serif;
+    padding: 0 5px;
     font-weight: 600;
     font-size: 10px;
     line-height: 17px;
