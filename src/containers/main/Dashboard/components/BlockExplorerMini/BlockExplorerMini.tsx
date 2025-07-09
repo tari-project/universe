@@ -1,15 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
-import { Wrapper, StickyEntryWrapper, LoadingPlaceholder, InsideHolder } from './styles';
-import { BlockData, useBlocks } from './useBlocks';
+import { BlockData, useFetchExplorerData } from '@app/hooks/mining/useFetchExplorerData.ts';
 import BlockEntry from './BlockEntry/BlockEntry';
 import BlockScrollList from './BlockScrollList/BlockScrollList';
 import { timeAgo } from './utils/formatting';
 import MinerCount from '@app/containers/main/Dashboard/components/BlockExplorerMini/MinerCount/MinerCount.tsx';
+import { Wrapper, StickyEntryWrapper, LoadingPlaceholder, InsideHolder } from './styles';
 
 export default function BlockExplorerMini() {
-    const { data, isLoading, isError } = useBlocks();
+    const { data, isLoading, isError } = useFetchExplorerData();
     const [stickyEntry, setStickyEntry] = useState<BlockData | null>(null);
     const [scrollList, setScrollList] = useState<BlockData[]>([]);
+
     const containerRef = useRef<HTMLDivElement>(null);
     const isFirstRender = useRef(true);
 

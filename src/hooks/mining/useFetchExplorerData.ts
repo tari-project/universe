@@ -1,0 +1,65 @@
+import { useQuery } from '@tanstack/react-query';
+import { getExplorerUrl } from '@app/utils/network.ts';
+
+export const BLOCKS_KEY = ['blocks'];
+
+interface Blocks {
+    height: string;
+    timestamp: string;
+    outputs: number;
+    totalCoinbaseXtm: string;
+    numCoinbases: number;
+    numOutputsNoCoinbases: number;
+    numInputs: number;
+    powAlgo: string;
+}
+
+interface Headers {
+    height: string;
+    timestamp: string;
+}
+
+interface BlocksStats {
+    stats: Blocks[];
+    headers: Headers[];
+}
+
+export interface BlockData {
+    id: string;
+    minersSolved: number;
+    reward?: number; // XTM reward amount
+    timeAgo: string;
+    isSolved?: boolean;
+    blocks?: number;
+    isFirstEntry?: boolean;
+}
+
+async function fetchExplorerData(): Promise<BlocksStats> {
+    const explorerUrl = getExplorerUrl();
+    const response = await fetch(`${explorerUrl}/?json`);
+
+    if (!response.ok) {
+        throw new Error('Failed to fetch blocks');
+    }
+
+    return response.json();
+}
+
+export function useFetchExplorerData() {
+    return useQuery<BlockData[]>({
+        queryKey: BLOCKS_KEY,
+        queryFn: async () => {
+            const data = await fetchExplorerData();
+            return data.stats.slice(0, 10).map((block) => ({
+                id: block.height,
+                minersSolved: block.numCoinbases,
+                reward: parseInt(block.totalCoinbaseXtm.split('.')[0].replace(/,/g, ''), 10),
+                timeAgo: block.timestamp,
+                blocks: block.numOutputsNoCoinbases,
+                isSolved: false,
+            }));
+        },
+        refetchOnWindowFocus: true,
+        refetchInterval: 30 * 1000,
+    });
+}

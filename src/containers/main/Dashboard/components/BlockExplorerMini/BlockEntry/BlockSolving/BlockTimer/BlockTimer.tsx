@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Wrapper } from './styles';
-import { useBlocks } from '../../../useBlocks';
+
+import { useFetchExplorerData } from '@app/hooks/mining/useFetchExplorerData.ts';
 
 interface Props {
     time: string;
 }
 
 export default function BlockTimer({ time }: Props) {
-    const { data } = useBlocks();
+    const { data } = useFetchExplorerData();
     const [currentTime, setCurrentTime] = useState(time);
     const [seconds, setSeconds] = useState(0);
 
