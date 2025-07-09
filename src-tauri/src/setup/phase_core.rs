@@ -179,7 +179,7 @@ impl SetupPhaseImpl for CoreSetupPhase {
             .initialize_auto_launcher(self.app_configuration.is_auto_launcher_enabled)
             .await
             .inspect_err(
-                |e| error!(target: LOG_TARGET, "Could not initialize auto launcher: {:?}", e),
+                |e| error!(target: LOG_TARGET, "Could not initialize auto launcher: {e:?}"),
             );
 
         state

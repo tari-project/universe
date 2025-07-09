@@ -42,7 +42,7 @@ impl Client {
             .await?
             .json::<P2poolStats>()
             .await
-            .inspect_err(|e| warn!(target: LOG_TARGET, "P2pool stats error: {:?}", e))?;
+            .inspect_err(|e| warn!(target: LOG_TARGET, "P2pool stats error: {e:?}"))?;
         Ok(stats)
     }
 
@@ -51,7 +51,7 @@ impl Client {
             .await?
             .json::<Connections>()
             .await
-            .inspect_err(|e| warn!(target: LOG_TARGET, "P2pool connections error: {:?}", e))?;
+            .inspect_err(|e| warn!(target: LOG_TARGET, "P2pool connections error: {e:?}"))?;
         Ok(stats)
     }
 }

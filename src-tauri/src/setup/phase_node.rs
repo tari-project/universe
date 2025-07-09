@@ -249,10 +249,10 @@ impl SetupPhaseImpl for NodeSetupPhase {
                         continue;
                     }
                     if let NodeManagerError::UnknownError(error) = e {
-                        warn!(target: LOG_TARGET, "NodeManagerError::UnknownError({:?}) needs a restart.", error);
+                        warn!(target: LOG_TARGET, "NodeManagerError::UnknownError({error:?}) needs a restart.");
                         continue;
                     }
-                    error!(target: LOG_TARGET, "Could not start node manager after restart: {:?} | Exitting the app", e);
+                    error!(target: LOG_TARGET, "Could not start node manager after restart: {e:?} | Exitting the app");
                     self.app_handle.exit(-1);
                     return Err(e.into());
                 }
@@ -301,7 +301,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
                                     "Header" => &wait_for_header_sync_tracker,
                                     "Block" => &wait_for_block_sync_tracker,
                                     _ => {
-                                        warn!("Unknown step: {}", step);
+                                        warn!("Unknown step: {step}");
                                         continue;
                                     }
                                 };
@@ -312,7 +312,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
                                         break;
                                     }
                                 } else {
-                                    warn!("Progress tracker not found for step: {}", step);
+                                    warn!("Progress tracker not found for step: {step}");
                                 }
                             }
                             tokio::time::sleep(Duration::from_secs(1)).await;
@@ -402,7 +402,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
                                     EventsEmitter::emit_stuck_on_orphan_chain(is_stuck).await;
                                 }
                                 Err(ref e) => {
-                                    error!(target: LOG_TARGET, "{}", e);
+                                    error!(target: LOG_TARGET, "{e}");
                                 }
                             }
                         },
@@ -430,7 +430,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
                             EventsEmitter::emit_connected_peers_update(connected_peers.clone()).await;
                         } else {
                             let err_msg = "Error getting connected peers";
-                            error!(target: LOG_TARGET, "{}", err_msg);
+                            error!(target: LOG_TARGET, "{err_msg}");
                         }
                 },
                 _ = shutdown_signal.wait() => {
