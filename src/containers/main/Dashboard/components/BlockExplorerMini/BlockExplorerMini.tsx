@@ -37,7 +37,6 @@ export default function BlockExplorerMini() {
         };
 
         if (blockBubblesData && blockBubblesData.length > 0) {
-            console.debug(`isFirstRender.current= `, isFirstRender.current);
             if (isFirstRender.current) {
                 setStickyEntry(updateStickyEntry(false));
                 setScrollList(updateScrollList());

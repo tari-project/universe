@@ -101,22 +101,24 @@ export const handleWinRecap = (recapData: Recap) => {
     const successTier = getSuccessTier(recapData.totalEarnings);
     setAnimationState(successTier);
     useBlockchainVisualisationStore.setState((c) => ({ ...c, recapData, recapCount: recapData.count }));
-    setTimeout(() => {
-        setMiningControlsEnabled(true);
-        useBlockchainVisualisationStore.setState((c) => ({ ...c, recapData: undefined, recapIds: [] }));
-    }, 2000);
 };
 export const handleWinReplay = (txItem: TransactionInfo) => {
     const earnings = txItem.amount;
     const successTier = getSuccessTier(earnings);
     useBlockchainVisualisationStore.setState((c) => ({ ...c, replayItem: txItem }));
     setAnimationState(successTier, true);
-    setTimeout(() => {
-        useBlockchainVisualisationStore.setState((c) => ({
-            ...c,
-            replayItem: undefined,
-        }));
-    }, 1500);
+};
+
+export const handleReplayComplete = () => {
+    const wasRecap = !!useBlockchainVisualisationStore.getState().recapData;
+    useBlockchainVisualisationStore.setState((c) => ({
+        ...c,
+        replayItem: undefined,
+    }));
+    if (wasRecap) {
+        setMiningControlsEnabled(true);
+        useBlockchainVisualisationStore.setState((c) => ({ ...c, recapData: undefined, recapIds: [] }));
+    }
 };
 
 export async function processNewBlock(payload: {
@@ -124,7 +126,6 @@ export async function processNewBlock(payload: {
     coinbase_transaction?: TransactionInfo;
     balance: WalletBalance;
 }) {
-    console.debug('processNewBlock', payload.block_height);
     if (useMiningStore.getState().isCpuMiningInitiated || useMiningStore.getState().isGpuMiningInitiated) {
         const minimized = await appWindow?.isMinimized();
         const documentIsVisible = document?.visibilityState === 'visible' || false;
@@ -140,7 +141,6 @@ export async function processNewBlock(payload: {
 }
 
 export const handleNewBlockPayload = async (payload: LatestBlockPayload) => {
-    console.debug('handleNewBlockPayload', payload);
     useBlockchainVisualisationStore.setState((c) => ({ ...c, latestBlockPayload: payload }));
     const isWalletScanned = !useWalletStore.getState().wallet_scanning?.is_scanning;
     if (!isWalletScanned) {

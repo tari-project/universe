@@ -135,9 +135,7 @@ const useTauriEventsListener = () => {
                             handleConnectedPeersUpdate(event.payload);
                             break;
                         case 'NewBlockHeight': {
-                            console.debug('NEW BLOCK EVT', event.payload);
                             const current = useBlockchainVisualisationStore.getState().latestBlockPayload?.block_height;
-                            console.debug(`current= `, current);
                             if (!current || current < event.payload.block_height) {
                                 await handleNewBlockPayload(event.payload);
                             }

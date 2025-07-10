@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { getExplorerUrl } from '@app/utils/network.ts';
 import { BlockData, BlockDataExtended, BlocksStats } from '@app/types/mining/blocks.ts';
-import { queryClient } from '@app/App/queryClient.ts';
 import { processNewBlock, useBlockchainVisualisationStore } from '@app/store';
 
 export const KEY_EXPLORER = 'block_explorer';
@@ -28,7 +27,6 @@ export function useFetchExplorerData() {
         queryKey: [KEY_EXPLORER],
         queryFn: async () => {
             const data = await fetchExplorerData();
-            console.debug(data.stats[0]?.height, data.headers?.[0]?.height);
             const currentBlock = {
                 ...data.stats[0],
                 timestamp: data.headers[0].timestamp,
@@ -44,10 +42,8 @@ export function useFetchExplorerData() {
                 blocks: block.numOutputsNoCoinbases,
                 isSolved: false,
             }));
-            console.debug(`latestBlock?.block_height= `, latestBlock?.block_height);
-            console.debug(`currentBlock.height= `, currentBlock.height);
 
-            if (latestBlock?.block_height && Number(currentBlock.height) >= latestBlock?.block_height) {
+            if (latestBlock?.block_height && Number(currentBlock.height) !== latestBlock?.block_height) {
                 await processNewBlock(latestBlock);
             }
 
@@ -58,7 +54,3 @@ export function useFetchExplorerData() {
         staleTime: 20 * 1000,
     });
 }
-export const refreshExplorerData = async () => {
-    console.debug(`refreshExplorerData`);
-    await queryClient.invalidateQueries({ queryKey: [KEY_EXPLORER] });
-};
