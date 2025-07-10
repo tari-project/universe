@@ -15,7 +15,7 @@ export default function Dashboard() {
     useMiningStatesSync();
 
     return (
-        <DashboardContentContainer $tapplet={!!activeTapplet}>
+        <DashboardContentContainer $tapplet={showTapplet}>
             {connectionStatus !== 'connected' && !orphanChainUiDisabled ? <DisconnectWrapper /> : null}
             {showTapplet && activeTapplet ? <Tapplet source={activeTapplet.source} /> : <MiningView />}
         </DashboardContentContainer>
