@@ -10,9 +10,14 @@ import { setMiningControlsEnabled } from './actions/miningStoreActions.ts';
 import { updateWalletScanningProgress, useWalletStore } from './useWalletStore.ts';
 import { useConfigUIStore } from '@app/store/useAppConfigStore.ts';
 import { refreshTransactions } from '@app/hooks/wallet/useFetchTxHistory.ts';
+import { refreshExplorerData } from '@app/hooks/mining/useFetchExplorerData.ts';
 
 const appWindow = getCurrentWindow();
-
+interface LatestBlockPayload {
+    block_height: number;
+    coinbase_transaction?: TransactionInfo;
+    balance: WalletBalance;
+}
 interface Recap {
     count: number;
     totalEarnings: number;
@@ -24,6 +29,7 @@ interface State {
     rewardCount?: number;
     recapIds: TransactionInfo['tx_id'][];
     replayItem?: TransactionInfo;
+    latestBlockPayload?: LatestBlockPayload;
 }
 
 interface Actions {
@@ -109,8 +115,8 @@ export const handleWinReplay = (txItem: TransactionInfo) => {
     }, 1500);
 };
 
-let newBlockDebounceTimeout: NodeJS.Timeout | undefined = undefined;
-const BLOCK_DEBOUNCE_DELAY = 200;
+const newBlockDebounceTimeout: NodeJS.Timeout | undefined = undefined;
+const BLOCK_DEBOUNCE_DELAY = 2 * 1000;
 let latestBlockPayload:
     | {
           block_height: number;
@@ -119,7 +125,7 @@ let latestBlockPayload:
       }
     | undefined = undefined;
 
-async function processNewBlock(payload: {
+export async function processNewBlock(payload: {
     block_height: number;
     coinbase_transaction?: TransactionInfo;
     balance: WalletBalance;
@@ -136,13 +142,11 @@ async function processNewBlock(payload: {
     } else {
         await refreshTransactions();
     }
+
+    useBlockchainVisualisationStore.setState({ latestBlockPayload: undefined });
 }
 
-export const handleNewBlock = async (payload: {
-    block_height: number;
-    coinbase_transaction?: TransactionInfo;
-    balance: WalletBalance;
-}) => {
+export const handleNewBlockPayload = async (payload: LatestBlockPayload) => {
     latestBlockPayload = payload;
 
     const isWalletScanned = !useWalletStore.getState().wallet_scanning?.is_scanning;
@@ -154,14 +158,5 @@ export const handleNewBlock = async (payload: {
         });
     }
 
-    if (newBlockDebounceTimeout) {
-        clearTimeout(newBlockDebounceTimeout);
-    }
-    newBlockDebounceTimeout = setTimeout(async () => {
-        if (latestBlockPayload) {
-            await processNewBlock(latestBlockPayload);
-            latestBlockPayload = undefined;
-        }
-        newBlockDebounceTimeout = undefined;
-    }, BLOCK_DEBOUNCE_DELAY);
+    useBlockchainVisualisationStore.setState({ latestBlockPayload: payload });
 };

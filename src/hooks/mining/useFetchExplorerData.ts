@@ -1,8 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { getExplorerUrl } from '@app/utils/network.ts';
 import { BlockData, BlockDataExtended, BlocksStats } from '@app/types/mining/blocks.ts';
+import { queryClient } from '@app/App/queryClient.ts';
+import { processNewBlock, useBlockchainVisualisationStore } from '@app/store';
 
-export const BLOCKS_KEY = ['blocks'];
+export const BLOCKS_KEY = 'blocks';
 
 async function fetchExplorerData(): Promise<BlocksStats> {
     const explorerUrl = getExplorerUrl();
@@ -21,8 +23,9 @@ interface ExplorerData {
 }
 
 export function useFetchExplorerData() {
+    const latestBlock = useBlockchainVisualisationStore((s) => s.latestBlockPayload);
     return useQuery<ExplorerData>({
-        queryKey: BLOCKS_KEY,
+        queryKey: [BLOCKS_KEY],
         queryFn: async () => {
             const data = await fetchExplorerData();
             const currentBlock = {
@@ -41,9 +44,17 @@ export function useFetchExplorerData() {
                 isSolved: false,
             }));
 
+            if (latestBlock?.block_height && Number(currentBlock.height) === latestBlock?.block_height) {
+                await processNewBlock(latestBlock);
+            }
+
             return { blockBubblesData, currentBlock };
         },
         refetchOnWindowFocus: true,
         refetchInterval: 30 * 1000,
     });
 }
+export const refreshExplorerData = async () => {
+    console.debug(`refreshExplorerData`);
+    await queryClient.invalidateQueries({ queryKey: [BLOCKS_KEY] });
+};
