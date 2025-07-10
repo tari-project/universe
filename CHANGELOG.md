@@ -1,4 +1,4 @@
-� HOTFIX v1.2.17: XMRig extraction bug on windows
+🔥 HOTFIX v1.2.17: XMRig extraction bug on windows
 
 _July 10, 2025_
 
@@ -10,7 +10,7 @@ This problem is an unexpected side effect of the improvements we shipped in yest
 
 ---
 
-�🚀 TARI UNIVERSE v1.2.16: The Season of Light: Part 3
+🚀 TARI UNIVERSE v1.2.16: The Season of Light: Part 3
 
 _July 9, 2025_
 
