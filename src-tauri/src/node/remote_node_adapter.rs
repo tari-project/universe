@@ -113,6 +113,10 @@ impl NodeAdapter for RemoteNodeAdapter {
         self.get_service()
     }
 
+    fn get_http_api_port(&self) -> u16 {
+        todo!()
+    }
+
     fn use_tor(&mut self, use_tor: bool) {
         self.use_tor = use_tor;
     }
@@ -155,6 +159,7 @@ impl NodeAdapter for RemoteNodeAdapter {
 
         Err(anyhow::anyhow!("Remote node service is not available"))
     }
+
 }
 
 impl ProcessAdapter for RemoteNodeAdapter {

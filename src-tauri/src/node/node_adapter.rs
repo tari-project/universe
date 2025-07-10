@@ -60,6 +60,7 @@ pub trait NodeAdapter {
     fn set_grpc_address(&mut self, grpc_address: String) -> Result<(), anyhow::Error>;
     fn get_service(&self) -> Option<NodeAdapterService>;
     async fn get_connection_details(&self) -> Result<(RistrettoPublicKey, String), anyhow::Error>;
+    fn get_http_api_port(&self) -> u16;
     fn use_tor(&mut self, use_tor: bool);
     fn set_tor_control_port(&mut self, tor_control_port: Option<u16>);
     fn set_ab_group(&mut self, ab_group: ABTestSelector);

@@ -445,6 +445,13 @@ impl NodeManager {
         Err(anyhow::anyhow!("grpc_address not set"))
     }
 
+    pub async fn get_http_api_url(&self) -> Result<String, anyhow::Error> {
+        let current_adapter = self.current_adapter.read().await;
+        let http_api_url = current_adapter.get_http_api_port();
+
+        Ok(format!("http://127.0.0.1:{http_api_url}"))
+    }
+
     pub async fn check_if_is_orphan_chain(&self) -> Result<bool, anyhow::Error> {
         let current_service = self.get_current_service().await?;
         current_service.check_if_is_orphan_chain().await
@@ -477,6 +484,7 @@ impl NodeManager {
         let node_type = self.get_node_type().await?;
         Ok(node_type.is_remote())
     }
+
 }
 
 // Helpers
