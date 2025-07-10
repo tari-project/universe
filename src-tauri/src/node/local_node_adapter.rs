@@ -146,8 +146,8 @@ impl NodeAdapter for LocalNodeAdapter {
         }
     }
 
-    fn get_http_api_port(&self) -> u16 {
-        self.http_api_port
+    fn get_http_api_port(&self) -> Option<u16> {
+        Some(self.http_api_port)
     }
 
     fn use_tor(&mut self, use_tor: bool) {

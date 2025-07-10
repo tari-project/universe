@@ -447,9 +447,12 @@ impl NodeManager {
 
     pub async fn get_http_api_url(&self) -> Result<String, anyhow::Error> {
         let current_adapter = self.current_adapter.read().await;
-        let http_api_url = current_adapter.get_http_api_port();
 
-        Ok(format!("http://127.0.0.1:{http_api_url}"))
+        if let Some(http_api_url) = current_adapter.get_http_api_port() {
+            return Ok(format!("http://127.0.0.1:{http_api_url}"));
+        }
+
+        Ok("https://rpc.esmeralda.tari.com".to_string())
     }
 
     pub async fn check_if_is_orphan_chain(&self) -> Result<bool, anyhow::Error> {
