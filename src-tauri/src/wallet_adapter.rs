@@ -321,7 +321,7 @@ impl ProcessAdapter for WalletAdapter {
                 self.base_node_address
                     .as_ref()
                     .ok_or_else(|| anyhow::anyhow!("Base node address not set"))?
-            )
+            ),
         ];
 
         if let Some(http_client_url) = &self.http_client_url {

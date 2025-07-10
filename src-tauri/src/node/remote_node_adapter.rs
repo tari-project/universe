@@ -159,7 +159,6 @@ impl NodeAdapter for RemoteNodeAdapter {
 
         Err(anyhow::anyhow!("Remote node service is not available"))
     }
-
 }
 
 impl ProcessAdapter for RemoteNodeAdapter {

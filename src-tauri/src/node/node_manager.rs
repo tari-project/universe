@@ -484,7 +484,6 @@ impl NodeManager {
         let node_type = self.get_node_type().await?;
         Ok(node_type.is_remote())
     }
-
 }
 
 // Helpers

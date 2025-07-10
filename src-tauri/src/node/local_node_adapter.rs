@@ -265,7 +265,10 @@ impl ProcessAdapter for LocalNodeAdapter {
             "-p".to_string(),
             "base_node.p2p.dht.network_discovery.min_desired_peers=12".to_string(),
             "-p".to_string(),
-            format!("base_node.http_wallet_query_service.port={}", self.http_api_port)
+            format!(
+                "base_node.http_wallet_query_service.port={}",
+                self.http_api_port
+            ),
         ];
         if self.use_pruned_mode {
             args.push("-p".to_string());
