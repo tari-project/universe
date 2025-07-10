@@ -1,4 +1,5 @@
 use axum::async_trait;
+
 use log::{info, warn};
 use std::{path::PathBuf, time::Duration};
 use tari_common_types::tari_address::TariAddress;
@@ -6,6 +7,7 @@ use tari_shutdown::Shutdown;
 use tokio::sync::watch::Sender;
 
 use crate::{
+    gpu_miner_sha_websocket::GpuMinerShaWebSocket,
     process_adapter::{
         HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
     },
@@ -55,7 +57,7 @@ impl ProcessAdapter for GpuMinerShaAdapter {
         args.push("sha3x".to_string());
 
         args.push("--pool".to_string());
-        args.push("pool.sha3x.supportxtm.com:6118".to_string());
+        args.push("pl-eu.luckypool.io:6118".to_string());
 
         args.push("--web".to_string());
 
@@ -98,6 +100,7 @@ impl ProcessAdapter for GpuMinerShaAdapter {
             },
             GpuMinerShaStatusMonitor {
                 gpu_status_sender: self.gpu_status_sender.clone(),
+                websocket_listener: GpuMinerShaWebSocket::new(),
             },
         ))
     }
@@ -114,6 +117,7 @@ impl ProcessAdapter for GpuMinerShaAdapter {
 #[derive(Clone)]
 pub struct GpuMinerShaStatusMonitor {
     gpu_status_sender: Sender<Option<GpuMinerStatus>>,
+    websocket_listener: GpuMinerShaWebSocket,
 }
 
 #[async_trait]
@@ -130,6 +134,7 @@ impl StatusMonitor for GpuMinerShaStatusMonitor {
 
         match status {
             Ok(status) => {
+                info!(target: LOG_TARGET, "ShaMiner status: {:?}", status);
                 let _ = self.gpu_status_sender.send(Some(status.clone()));
                 if status.hash_rate > 0.0 || uptime.as_secs() < 11 {
                     HealthStatus::Healthy
@@ -147,23 +152,19 @@ impl StatusMonitor for GpuMinerShaStatusMonitor {
 
 impl GpuMinerShaStatusMonitor {
     pub async fn status(&self) -> Result<GpuMinerStatus, anyhow::Error> {
-        let client = reqwest::Client::new();
-        let response = match client.get("http://127.0.0.1:8080/ws").send().await {
-            Ok(response) => response,
-            Err(e) => {
-                warn!(target: LOG_TARGET, "Error in getting response from ShaMiner status: {}", e);
-                return Ok(GpuMinerStatus {
-                    is_mining: false,
-                    hash_rate: 0.0,
-                    estimated_earnings: 0,
-                });
-            }
-        };
-        let text = response.text().await?;
-        info!(target: LOG_TARGET, "Response from ShaMiner status: {}", text);
+        self.websocket_listener.clone().connect().await;
+        let last_status = self.websocket_listener.get_last_message().await;
+
+        if let Some(status) = last_status {
+            return Ok(GpuMinerStatus {
+                is_mining: true,
+                estimated_earnings: 0,
+                hash_rate: status.current_hashrate as f64,
+            });
+        }
 
         Ok(GpuMinerStatus {
-            is_mining: true,
+            is_mining: false,
             estimated_earnings: 0,
             hash_rate: 0.0,
         })

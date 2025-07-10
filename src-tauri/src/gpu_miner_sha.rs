@@ -1,14 +1,17 @@
-use log::{info, warn};
+use log::{info, warn, error};
 use std::{path::PathBuf, sync::Arc, time::Duration};
 use tari_common_types::tari_address::TariAddress;
+use tari_shutdown::Shutdown;
 use tokio::{
     select,
     sync::{watch::Sender, RwLock},
+    time::interval,
 };
 
 use crate::{
-    binaries::Binaries, gpu_miner_sha_adapter::GpuMinerShaAdapter, process_watcher::ProcessWatcher,
-    tasks_tracker::TasksTrackers, GpuMinerStatus, ProcessStatsCollectorBuilder,
+    binaries::Binaries, gpu_miner_sha_adapter::GpuMinerShaAdapter,
+    pool_status_watcher::LuckyPoolAdapter, process_watcher::ProcessWatcher,
+    tasks_tracker::TasksTrackers, GpuMinerStatus, PoolStatusWatcher, ProcessStatsCollectorBuilder,
 };
 
 const LOG_TARGET: &str = "tari::universe::gpu_miner_sha";
@@ -17,6 +20,8 @@ pub struct GpuMinerSha {
     watcher: Arc<RwLock<ProcessWatcher<GpuMinerShaAdapter>>>,
     status_sender: Sender<Option<GpuMinerStatus>>,
     status_updates_thread: RwLock<Option<tokio::task::JoinHandle<()>>>,
+    pool_status_watcher: Option<PoolStatusWatcher<LuckyPoolAdapter>>,
+    pub pool_status_shutdown_signal: Shutdown,
 }
 
 impl GpuMinerSha {
@@ -34,11 +39,13 @@ impl GpuMinerSha {
             watcher: Arc::new(RwLock::new(process_watcher)),
             status_sender,
             status_updates_thread: RwLock::new(None),
+            pool_status_watcher: None,
+            pool_status_shutdown_signal: Shutdown::new(),
         }
     }
 
     pub async fn start(
-        &self,
+        &mut self,
         tari_address: TariAddress,
         telemetry_id: String,
         base_path: PathBuf,
@@ -50,6 +57,14 @@ impl GpuMinerSha {
             .hardware_phase
             .get_task_tracker()
             .await;
+
+        self.pool_status_watcher = Some(PoolStatusWatcher::new(
+            format!(
+                "https://api-tari.luckypool.io/stats_address?address={}",
+                tari_address.to_base58()
+            ),
+            LuckyPoolAdapter {},
+        ));
 
         let mut process_watcher = self.watcher.write().await;
 
@@ -98,6 +113,11 @@ impl GpuMinerSha {
 
         let gpu_status_sender = self.status_sender.clone();
         let mut gpu_status_receiver = self.status_sender.subscribe();
+        
+        let pool_status_watcher = self.pool_status_watcher.clone();
+        let mut pool_status_check = interval(Duration::from_secs(20));
+        pool_status_check.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+        let mut pool_shutdown_signal = self.pool_status_shutdown_signal.to_signal();
 
         let mut shutdown_signal = TasksTrackers::current().hardware_phase.get_signal().await;
 
@@ -106,8 +126,26 @@ impl GpuMinerSha {
             .get_task_tracker()
             .await
             .spawn(async move {
+                let mut last_pool_status = None;
                 loop {
                     select! {
+                        _ = pool_status_check.tick() => {
+                            last_pool_status = match pool_status_watcher {
+                                Some(ref watcher) => {
+                                    match watcher.get_pool_status().await {
+                                        Ok(status) => Some(status),
+                                        Err(e) => {
+                                            error!(target: LOG_TARGET, "Error fetching pool status: {}", e);
+                                            None
+                                        }
+                                    }
+                                },
+                                None => None,
+                            };
+                        
+                            info!(target: LOG_TARGET, "Current pool status: {:?}", last_pool_status);
+                        
+                        }
                         _ = gpu_status_receiver.changed() => {
                             let gpu_status = gpu_status_receiver.borrow().clone();
 
@@ -130,6 +168,10 @@ impl GpuMinerSha {
                         _ = shutdown_signal.wait() => {
                             break;
                         },
+                        _ = pool_shutdown_signal.wait() => {
+                            info!(target: LOG_TARGET, "Pool status watcher shutdown signal received, stopping updates");
+                            break;
+                        }
                     }
                 }
             });

@@ -25,7 +25,7 @@ use crate::commands::{CpuMinerConnection, CpuMinerConnectionStatus, CpuMinerStat
 use crate::configs::config_mining::{ConfigMiningContent, MiningMode};
 use crate::configs::config_wallet::ConfigWalletContent;
 use crate::events_emitter::EventsEmitter;
-use crate::pool_status_watcher::SupportXmrStyleAdapter;
+use crate::pool_status_watcher::SupportXmrPoolAdapter;
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
 use crate::tasks_tracker::TasksTrackers;
@@ -100,7 +100,7 @@ pub(crate) struct CpuMiner {
     summary_watch_rx: watch::Receiver<Option<Summary>>,
     node_status_watch_rx: watch::Receiver<BaseNodeStatus>,
     pub benchmarked_hashrate: u64,
-    pool_status_watcher: Option<PoolStatusWatcher<SupportXmrStyleAdapter>>,
+    pool_status_watcher: Option<PoolStatusWatcher<SupportXmrPoolAdapter>>,
     pub pool_status_shutdown_signal: Shutdown,
 }
 
@@ -164,7 +164,7 @@ impl CpuMiner {
                     PoolStatusWatcher::new(
                         url.replace("%MONERO_ADDRESS%", &cpu_miner_config.monero_address)
                             .replace("%TARI_ADDRESS%", &tari_address.to_base58()),
-                        SupportXmrStyleAdapter {},
+                        SupportXmrPoolAdapter {},
                     )
                 });
 
@@ -191,7 +191,7 @@ impl CpuMiner {
                     PoolStatusWatcher::new(
                         url.replace("%MONERO_ADDRESS%", &cpu_miner_config.monero_address)
                             .replace("%TARI_ADDRESS%", &tari_address.to_base58()),
-                        SupportXmrStyleAdapter {},
+                        SupportXmrPoolAdapter {},
                     )
                 });
 

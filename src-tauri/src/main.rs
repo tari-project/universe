@@ -105,6 +105,7 @@ mod gpu_miner;
 mod gpu_miner_adapter;
 mod gpu_miner_sha;
 mod gpu_miner_sha_adapter;
+mod gpu_miner_sha_websocket;
 mod gpu_status_file;
 mod hardware;
 mod internal_wallet;

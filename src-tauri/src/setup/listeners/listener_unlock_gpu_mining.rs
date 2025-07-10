@@ -154,8 +154,8 @@ impl UnlockStrategyTrait for DefaultStrategy {
         vec![
             SetupPhase::Core,
             SetupPhase::Hardware,
-            SetupPhase::Node,
-            SetupPhase::Mining,
+            // SetupPhase::Node,
+            // SetupPhase::Mining,
         ]
     }
 }

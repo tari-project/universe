@@ -1661,7 +1661,7 @@ pub async fn start_gpu_mining(
 
     info!(target: LOG_TARGET, "3. Starting gpu miner");
 
-    let gpu_miner = state.gpu_miner_sha.write().await;
+    let mut gpu_miner = state.gpu_miner_sha.write().await;
     let res = gpu_miner
         .start(
             tari_address.clone(),

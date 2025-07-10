@@ -21,9 +21,9 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use anyhow::Error;
+use log::info;
 use serde::{Deserialize, Serialize};
 
-#[allow(dead_code)]
 const LOG_TARGET: &str = "tari::universe::pool_status_watcher";
 #[derive(Clone, Debug, Serialize)]
 pub(crate) struct PoolStatus {
@@ -59,7 +59,7 @@ impl<T: PoolApiAdapter + Send + Sync + 'static> PoolStatusWatcher<T> {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct PoolStatusResponseBody {
+pub struct SupportXmrPoolStatusResponseBody {
     pub hash: u64,
     pub identifier: String,
     #[serde(rename = "lastHash")]
@@ -80,15 +80,33 @@ pub struct PoolStatusResponseBody {
 }
 
 #[derive(Clone, Debug)]
-pub struct SupportXmrStyleAdapter {}
+pub struct SupportXmrPoolAdapter {}
 
-impl PoolApiAdapter for SupportXmrStyleAdapter {
+impl PoolApiAdapter for SupportXmrPoolAdapter {
     fn convert_api_data(&self, data: &str) -> Result<PoolStatus, Error> {
-        let response: PoolStatusResponseBody = serde_json::from_str(data)?;
+        let response: SupportXmrPoolStatusResponseBody = serde_json::from_str(data)?;
         let pool_status = PoolStatus {
             accepted_shares: response.valid_shares,
             unpaid: response.amt_due,
             balance: response.amt_paid + response.amt_due,
+            min_payout: 0,
+        };
+        Ok(pool_status)
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct LuckyPoolStatusResponseBody {}
+#[derive(Clone, Debug)]
+pub struct LuckyPoolAdapter {}
+
+impl PoolApiAdapter for LuckyPoolAdapter {
+    fn convert_api_data(&self, data: &str) -> Result<PoolStatus, Error> {
+        info!(target: LOG_TARGET, "LuckyPoolAdapter received data: {}", data);
+        let pool_status = PoolStatus {
+            accepted_shares: 0,
+            unpaid: 0,
+            balance: 0,
             min_payout: 0,
         };
         Ok(pool_status)
