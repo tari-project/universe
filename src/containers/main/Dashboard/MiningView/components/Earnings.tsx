@@ -45,8 +45,11 @@ export default function Earnings() {
 
     useEffect(() => {
         if (displayEarnings && show) {
-            const minotari = removeXTMCryptoDecimals(displayEarnings);
-            const val = Math.floor(minotari / 10) * 10; // to match sidebar value's formatting
+            const minotariVal = removeXTMCryptoDecimals(displayEarnings);
+            let val = minotariVal;
+            if (minotariVal > 1000) {
+                val = Math.floor(minotariVal / 10) * 10; // to match sidebar value's formatting
+            }
 
             setValue(val);
         } else {
