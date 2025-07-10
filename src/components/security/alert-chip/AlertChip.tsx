@@ -7,8 +7,7 @@ interface AlertChipProps {
 }
 
 const Wrapper = styled.div`
-    border: 1px solid ${({ theme }) => (theme.mode === 'dark' ? `#623939` : `#FFD1D1`)};
-    background-color: ${({ theme }) => (theme.mode === 'dark' ? `#492c2c` : `#FFE8E8`)};
+    background-color: ${({ theme }) => (theme.mode === 'dark' ? `#623939` : `#FF6B6B40`)};
     border-radius: 20px;
     height: 30px;
     gap: 5px;
