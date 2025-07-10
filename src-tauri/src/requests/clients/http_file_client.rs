@@ -354,6 +354,16 @@ impl HttpFileClient {
         if let Some(archive_destination) = &self.archive_destination {
             if archive_destination.exists() {
                 let archive_file = archive_destination.join(&self.file_name);
+                // There can be case where extracted dir already exists on this stage and windows will throw an error if we try to extract to it
+                if self.destination.exists() {
+                    for entry in std::fs::read_dir(&self.destination)? {
+                        let entry = entry?;
+                        let path = entry.path();
+                        if path != *archive_destination {
+                            std::fs::remove_dir_all(path)?;
+                        }
+                    }
+                }
                 extract(&archive_file, &self.destination).await?;
             } else {
                 return Err(anyhow::anyhow!(
