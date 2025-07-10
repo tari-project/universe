@@ -2173,6 +2173,7 @@ pub async fn create_pin(app_handle: tauri::AppHandle) -> Result<(), String> {
     InternalWallet::create_pin(&app_handle)
         .await
         .map_err(|e| e.to_string())?;
+    info!(target: LOG_TARGET, "PIN created successfully");
 
     Ok(())
 }

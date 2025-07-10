@@ -11,7 +11,6 @@ import {
 import { useCallback, useEffect, useState } from 'react';
 import { Warning } from '@app/containers/floating/StagedSecurity/sections/ProtectIntro/styles.ts';
 import { invoke } from '@tauri-apps/api/core';
-import { setDialogToShow } from '@app/store';
 
 export const PinMarkup = () => {
     const { t } = useTranslation(['settings', 'staged-security'], { useSuspense: false });
@@ -24,7 +23,14 @@ export const PinMarkup = () => {
     }, []);
 
     const setPin = useCallback(() => {
-        setDialogToShow('createPin');
+        invoke('create_pin')
+            .then(() => {
+                console.info('Pin created successfully');
+                setIsPinLocked(true);
+            })
+            .catch((error) => {
+                console.error('Failed to create PIN:', error);
+            });
     }, []);
 
     return !isPinLocked ? (

@@ -493,7 +493,6 @@ impl InternalWallet {
                 Hidden::hide(Some(encrypted_tari_seed.clone()));
         }
 
-        log::info!(target: LOG_TARGET, "Tari Seed is now encrypted with the provided PIN");
         Ok(())
     }
 

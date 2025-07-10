@@ -69,7 +69,6 @@ pub struct WalletSetupPhaseOutput {}
 pub struct WalletSetupPhaseAppConfiguration {
     use_tor: bool,
     was_staged_security_modal_shown: bool,
-    pin_locked: bool,
 }
 
 pub struct WalletSetupPhase {
@@ -154,11 +153,9 @@ impl SetupPhaseImpl for WalletSetupPhase {
         let use_tor = *ConfigCore::content().await.use_tor();
         let was_staged_security_modal_shown =
             *ConfigUI::content().await.was_staged_security_modal_shown();
-        let pin_locked = PinManager::pin_locked().await;
         Ok(WalletSetupPhaseAppConfiguration {
             use_tor,
             was_staged_security_modal_shown,
-            pin_locked,
         })
     }
 
@@ -271,7 +268,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
 
         let was_staged_security_modal_shown =
             self.app_configuration.was_staged_security_modal_shown;
-        let pin_locked = self.app_configuration.pin_locked;
+        let pin_locked = PinManager::pin_locked().await;
         if !was_staged_security_modal_shown || !pin_locked {
             let wallet_manager = app_handle
                 .state::<UniverseAppState>()
@@ -289,6 +286,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
                 .get_task_tracker()
                 .await
                 .spawn(async move {
+                    let pin_locked = PinManager::pin_locked().await;
                     let wallet_state_watcher = app_handle
                         .state::<UniverseAppState>()
                         .wallet_state_watch_rx
