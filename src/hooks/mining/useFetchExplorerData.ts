@@ -25,7 +25,7 @@ interface ExplorerData {
 export function useFetchExplorerData() {
     const latestBlock = useBlockchainVisualisationStore((s) => s.latestBlockPayload);
     return useQuery<ExplorerData>({
-        queryKey: [BLOCKS_KEY],
+        queryKey: [BLOCKS_KEY, latestBlock?.block_height],
         queryFn: async () => {
             const data = await fetchExplorerData();
             const currentBlock = {
@@ -45,6 +45,7 @@ export function useFetchExplorerData() {
             }));
 
             if (latestBlock?.block_height && Number(currentBlock.height) === latestBlock?.block_height) {
+                console.debug('match!', latestBlock.block_height, currentBlock.height);
                 await processNewBlock(latestBlock);
             }
 

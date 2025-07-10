@@ -115,16 +115,6 @@ export const handleWinReplay = (txItem: TransactionInfo) => {
     }, 1500);
 };
 
-const newBlockDebounceTimeout: NodeJS.Timeout | undefined = undefined;
-const BLOCK_DEBOUNCE_DELAY = 2 * 1000;
-let latestBlockPayload:
-    | {
-          block_height: number;
-          coinbase_transaction?: TransactionInfo;
-          balance: WalletBalance;
-      }
-    | undefined = undefined;
-
 export async function processNewBlock(payload: {
     block_height: number;
     coinbase_transaction?: TransactionInfo;
@@ -147,8 +137,8 @@ export async function processNewBlock(payload: {
 }
 
 export const handleNewBlockPayload = async (payload: LatestBlockPayload) => {
-    latestBlockPayload = payload;
-
+    useBlockchainVisualisationStore.setState({ latestBlockPayload: payload });
+    await refreshExplorerData();
     const isWalletScanned = !useWalletStore.getState().wallet_scanning?.is_scanning;
     if (!isWalletScanned) {
         updateWalletScanningProgress({
@@ -157,6 +147,5 @@ export const handleNewBlockPayload = async (payload: LatestBlockPayload) => {
             total_height: payload.block_height,
         });
     }
-
-    useBlockchainVisualisationStore.setState({ latestBlockPayload: payload });
+    await refreshTransactions();
 };
