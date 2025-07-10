@@ -1,7 +1,6 @@
 import styled from 'styled-components';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { convertHexToRGBA } from '@app/utils';
-
 export const Wrapper = styled.div`
     display: flex;
     flex-direction: column;

@@ -1,10 +1,12 @@
-import { Content, Header, Subtitle, Title, Wrapper } from './styles.ts';
+import { Content, Header, Subtitle, Title, Wrapper, CTA, CTAWrapper } from './styles.ts';
 import { useTranslation } from 'react-i18next';
 import { setDialogToShow, useUIStore } from '@app/store';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import { AlertChip } from '@app/components/security/alert-chip/AlertChip.tsx';
 import CloseButton from '@app/components/elements/buttons/CloseButton.tsx';
 import { Step, StepItem } from '@app/components/security/step/Step.tsx';
+
+import { TextButton } from '@app/components/elements/buttons/TextButton.tsx';
 
 const steps: StepItem[] = [
     {
@@ -30,7 +32,7 @@ export default function SecurityPromptDialog() {
         setDialogToShow(null);
     }
     return (
-        <Dialog open={true} onOpenChange={handleClose}>
+        <Dialog open={isOpen} onOpenChange={handleClose}>
             <DialogContent $transparentBg $unPadded>
                 <Wrapper>
                     <Header>
@@ -45,6 +47,10 @@ export default function SecurityPromptDialog() {
                                 <Step key={step.stepNumber + step.title} {...step} />
                             ))}
                         </>
+                        <CTAWrapper>
+                            <CTA>{`Secure my wallet`}</CTA>
+                            <TextButton>{t('security.pin.enter', { context: 'skip' })}</TextButton>
+                        </CTAWrapper>
                     </Content>
                 </Wrapper>
             </DialogContent>
