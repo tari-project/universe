@@ -37,6 +37,7 @@ export default function BlockExplorerMini() {
         };
 
         if (blockBubblesData && blockBubblesData.length > 0) {
+            console.debug(`isFirstRender.current= `, isFirstRender.current);
             if (isFirstRender.current) {
                 setStickyEntry(updateStickyEntry(false));
                 setScrollList(updateScrollList());
@@ -54,7 +55,7 @@ export default function BlockExplorerMini() {
             if (blockBubblesData && blockBubblesData.length > 0) {
                 setScrollList(updateScrollList());
             }
-        }, 30 * 1000);
+        }, 20 * 1000);
 
         return () => {
             clearInterval(interval);

@@ -25,10 +25,10 @@ interface ExplorerData {
 export function useFetchExplorerData() {
     const latestBlock = useBlockchainVisualisationStore((s) => s.latestBlockPayload);
     return useQuery<ExplorerData>({
-        queryKey: [KEY_EXPLORER, latestBlock?.block_height],
+        queryKey: [KEY_EXPLORER],
         queryFn: async () => {
             const data = await fetchExplorerData();
-            console.debug(data.stats[0]?.height);
+            console.debug(data.stats[0]?.height, data.headers?.[0]?.height);
             const currentBlock = {
                 ...data.stats[0],
                 timestamp: data.headers[0].timestamp,
@@ -54,10 +54,11 @@ export function useFetchExplorerData() {
             return { blockBubblesData, currentBlock };
         },
         refetchOnWindowFocus: true,
-        refetchInterval: 30 * 1000,
+        refetchInterval: 20 * 1000,
+        staleTime: 20 * 1000,
     });
 }
-export const refreshExplorerData = async (latestHeight?: number) => {
-    console.debug(`refreshExplorerData`, latestHeight);
-    await queryClient.invalidateQueries({ queryKey: [KEY_EXPLORER, latestHeight] });
+export const refreshExplorerData = async () => {
+    console.debug(`refreshExplorerData`);
+    await queryClient.invalidateQueries({ queryKey: [KEY_EXPLORER] });
 };
