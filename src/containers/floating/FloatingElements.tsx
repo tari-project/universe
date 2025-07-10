@@ -23,6 +23,7 @@ import XCLinkModal from '@app/components/exchanges/LinkModal/LinkModal.tsx';
 import KeychainDialog from './Keychain/KeychainDialog.tsx';
 import PinDialog from '@app/containers/floating/security/pin/PinDialog.tsx';
 import ForgotPinDialog from './security/pin/ForgotPinDialog.tsx';
+import SecurityPromptDialog from '@app/containers/floating/security/prompt/SecurityPromptDialog.tsx';
 
 const environment = import.meta.env.MODE;
 
@@ -51,6 +52,7 @@ const FloatingElements = () => {
             <KeychainDialog />
             <PinDialog />
             <ForgotPinDialog />
+            <SecurityPromptDialog />
         </FloatingTree>
     );
 };

@@ -14,6 +14,7 @@ const _DIALOG_TYPES = [
     'createPin',
     'enterPin',
     'forgotPin',
+    'security',
 ] as const;
 type DialogTypeTuple = typeof _DIALOG_TYPES;
 export type DialogType = DialogTypeTuple[number] | null;
