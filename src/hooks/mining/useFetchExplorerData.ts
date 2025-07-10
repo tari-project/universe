@@ -4,7 +4,7 @@ import { BlockData, BlockDataExtended, BlocksStats } from '@app/types/mining/blo
 import { queryClient } from '@app/App/queryClient.ts';
 import { processNewBlock, useBlockchainVisualisationStore } from '@app/store';
 
-export const BLOCKS_KEY = 'blocks';
+export const KEY_EXPLORER = 'block_explorer';
 
 async function fetchExplorerData(): Promise<BlocksStats> {
     const explorerUrl = getExplorerUrl();
@@ -25,9 +25,10 @@ interface ExplorerData {
 export function useFetchExplorerData() {
     const latestBlock = useBlockchainVisualisationStore((s) => s.latestBlockPayload);
     return useQuery<ExplorerData>({
-        queryKey: [BLOCKS_KEY, latestBlock?.block_height],
+        queryKey: [KEY_EXPLORER, latestBlock?.block_height],
         queryFn: async () => {
             const data = await fetchExplorerData();
+            console.debug(data.stats[0]?.height);
             const currentBlock = {
                 ...data.stats[0],
                 timestamp: data.headers[0].timestamp,
@@ -43,9 +44,10 @@ export function useFetchExplorerData() {
                 blocks: block.numOutputsNoCoinbases,
                 isSolved: false,
             }));
+            console.debug(`latestBlock?.block_height= `, latestBlock?.block_height);
+            console.debug(`currentBlock.height= `, currentBlock.height);
 
-            if (latestBlock?.block_height && Number(currentBlock.height) === latestBlock?.block_height) {
-                console.debug('match!', latestBlock.block_height, currentBlock.height);
+            if (latestBlock?.block_height && Number(currentBlock.height) >= latestBlock?.block_height) {
                 await processNewBlock(latestBlock);
             }
 
@@ -55,7 +57,7 @@ export function useFetchExplorerData() {
         refetchInterval: 30 * 1000,
     });
 }
-export const refreshExplorerData = async () => {
-    console.debug(`refreshExplorerData`);
-    await queryClient.invalidateQueries({ queryKey: [BLOCKS_KEY] });
+export const refreshExplorerData = async (latestHeight?: number) => {
+    console.debug(`refreshExplorerData`, latestHeight);
+    await queryClient.invalidateQueries({ queryKey: [KEY_EXPLORER, latestHeight] });
 };

@@ -70,11 +70,11 @@ const handleWin = async (coinbase_transaction: TransactionInfo, balance: WalletB
             const successTier = getSuccessTier(earnings);
             setAnimationState(successTier);
         }
-        useBlockchainVisualisationStore.setState({ earnings });
+        useBlockchainVisualisationStore.setState((c) => ({ ...c, earnings }));
         await refreshTransactions();
         await setWalletBalance(balance);
         setMiningControlsEnabled(true);
-        useBlockchainVisualisationStore.setState({ earnings: undefined });
+        useBlockchainVisualisationStore.setState((c) => ({ ...c, earnings: undefined }));
     } else {
         await refreshTransactions();
         useBlockchainVisualisationStore.setState((curr) => ({
@@ -84,7 +84,7 @@ const handleWin = async (coinbase_transaction: TransactionInfo, balance: WalletB
         }));
     }
 };
-const handleFail = async (_blockHeight: number, balance: WalletBalance, canAnimate: boolean) => {
+const handleFail = async (balance: WalletBalance, canAnimate: boolean) => {
     const visualModeEnabled = useConfigUIStore.getState().visual_mode;
     if (canAnimate && visualModeEnabled) {
         setMiningControlsEnabled(false);
@@ -99,19 +99,19 @@ export const handleWinRecap = (recapData: Recap) => {
     setMiningControlsEnabled(false);
     const successTier = getSuccessTier(recapData.totalEarnings);
     setAnimationState(successTier);
-    useBlockchainVisualisationStore.setState({ recapData, recapCount: recapData.count });
+    useBlockchainVisualisationStore.setState((c) => ({ ...c, recapData, recapCount: recapData.count }));
     setTimeout(() => {
         setMiningControlsEnabled(true);
-        useBlockchainVisualisationStore.setState({ recapData: undefined, recapIds: [] });
+        useBlockchainVisualisationStore.setState((c) => ({ ...c, recapData: undefined, recapIds: [] }));
     }, 2000);
 };
 export const handleWinReplay = (txItem: TransactionInfo) => {
     const earnings = txItem.amount;
     const successTier = getSuccessTier(earnings);
-    useBlockchainVisualisationStore.setState({ replayItem: txItem });
+    useBlockchainVisualisationStore.setState((c) => ({ ...c, replayItem: txItem }));
     setAnimationState(successTier, true);
     setTimeout(() => {
-        useBlockchainVisualisationStore.setState({ replayItem: undefined });
+        useBlockchainVisualisationStore.setState((c) => ({ ...c, replayItem: undefined }));
     }, 1500);
 };
 
@@ -127,18 +127,17 @@ export async function processNewBlock(payload: {
         if (payload.coinbase_transaction) {
             await handleWin(payload.coinbase_transaction, payload.balance, canAnimate);
         } else {
-            await handleFail(payload.block_height, payload.balance, canAnimate);
+            await handleFail(payload.balance, canAnimate);
         }
     } else {
         await refreshTransactions();
     }
-
-    useBlockchainVisualisationStore.setState({ latestBlockPayload: undefined });
 }
 
 export const handleNewBlockPayload = async (payload: LatestBlockPayload) => {
-    useBlockchainVisualisationStore.setState({ latestBlockPayload: payload });
-    await refreshExplorerData();
+    console.debug('handleNewBlockPayload', payload);
+    useBlockchainVisualisationStore.setState((c) => ({ ...c, latestBlockPayload: payload }));
+    await refreshExplorerData(payload.block_height);
     const isWalletScanned = !useWalletStore.getState().wallet_scanning?.is_scanning;
     if (!isWalletScanned) {
         updateWalletScanningProgress({
@@ -147,5 +146,4 @@ export const handleNewBlockPayload = async (payload: LatestBlockPayload) => {
             total_height: payload.block_height,
         });
     }
-    await refreshTransactions();
 };
