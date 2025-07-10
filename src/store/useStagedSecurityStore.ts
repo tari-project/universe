@@ -1,4 +1,4 @@
-import { create } from './create.ts';
+import { create } from 'zustand';
 
 interface State {
     showModal: boolean;

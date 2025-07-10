@@ -16,6 +16,7 @@ interface FormFieldProps {
     autoFocus?: boolean;
     truncateOnBlur?: boolean;
     isValid?: boolean;
+
     errorText?: string;
     disabled?: boolean;
     secondaryField?: ReactNode;
@@ -54,6 +55,7 @@ export function FormField({
                   pattern: /^[0-9]+$/,
               }
             : undefined;
+
     const rules = {
         required: {
             value: required,

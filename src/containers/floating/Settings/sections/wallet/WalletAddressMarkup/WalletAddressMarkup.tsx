@@ -75,7 +75,8 @@ const WalletAddressMarkup = () => {
     const { t } = useTranslation('settings', { useSuspense: false });
     const { validateAddress } = useValidate();
     const [isCondensed, setIsCondensed] = useState(true);
-    const [walletAddress, walletAddressEmoji] = useWalletStore((state) => state.getActiveTariAddress());
+    const getActiveTariAddress = useWalletStore((state) => state.getActiveTariAddress);
+    const [walletAddress, walletAddressEmoji] = getActiveTariAddress();
 
     function condenseEmojiAddress(emojiAddress: string | undefined) {
         const regex = emojiRegex();
