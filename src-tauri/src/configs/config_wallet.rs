@@ -138,21 +138,14 @@ impl ConfigWallet {
         let current_version = *config.version();
 
         if current_version < WALLET_VERSION {
-            log::info!(
-                "Wallet Config needs migration {:?} => {}",
-                current_version,
-                WALLET_VERSION
-            );
+            log::info!("Wallet Config needs migration {current_version:?} => {WALLET_VERSION}");
 
             ConfigWallet::update_field(ConfigWalletContent::set_version, WALLET_VERSION).await?;
 
             return Ok(());
         }
 
-        log::info!(
-            "Skipped migration for wallet config version {:?}",
-            current_version,
-        );
+        log::info!("Skipped migration for wallet config version {current_version:?}");
 
         Ok(())
     }

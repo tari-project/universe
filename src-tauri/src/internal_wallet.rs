@@ -564,7 +564,7 @@ impl InternalWallet {
 
         let (encrypted_tari_seed, tari_wallet_details) = {
             if let Some(wallet_details) = ConfigWallet::content().await.tari_wallet_details() {
-                log::info!(target: LOG_TARGET, "Extracted(wallet config file) Tari Wallet Details: {:?}", wallet_details);
+                log::info!(target: LOG_TARGET, "Extracted(wallet config file) Tari Wallet Details: {wallet_details:?}");
                 (None, wallet_details.clone())
             } else {
                 // If wallet details are not saved in the config file, extract them from the decrypted seed.
@@ -601,7 +601,7 @@ impl InternalWallet {
                     tari_cipher_seed,
                 )
                 .await?;
-                log::info!(target: LOG_TARGET, "Extracted(seed from credentials) Tari Wallet Details: {:?}", wallet_details);
+                log::info!(target: LOG_TARGET, "Extracted(seed from credentials) Tari Wallet Details: {wallet_details:?}");
                 (Some(encrypted_tari_seed), wallet_details)
             }
         };
@@ -932,7 +932,7 @@ where
                 // Loop will retry
             }
             Err(err) => {
-                log::error!(target: LOG_TARGET, "{}: {}", log_msg, err);
+                log::error!(target: LOG_TARGET, "{log_msg}: {err}");
                 return Err(err.into());
             }
         }

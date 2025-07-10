@@ -342,7 +342,7 @@ impl SetupManager {
                     }
                     Err(e) => {
                         // Handle this as critical error
-                        error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);
+                        error!(target: LOG_TARGET, "Error loading internal wallet: {e:?}");
                     }
                 };
             }

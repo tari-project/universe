@@ -223,7 +223,7 @@ pub async fn select_exchange_miner(
         }
         Err(e) => {
             // Handle this critical error
-            error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);
+            error!(target: LOG_TARGET, "Error loading internal wallet: {e:?}");
         }
     }
 
@@ -602,7 +602,7 @@ pub async fn get_paper_wallet_details(
         .clone()
         .and_then(|state| state.balance);
 
-    warn!(target: LOG_TARGET, "auth_uuid {:?}", auth_uuid);
+    warn!(target: LOG_TARGET, "auth_uuid {auth_uuid:?}");
     let anon_id = ConfigCore::content().await.anon_id().clone();
 
     let pin_password = PinManager::get_validated_pin_if_defined(&app_handle)
@@ -851,7 +851,7 @@ pub async fn import_seed_words(
             .await
             .map_err(InvokeError::from_anyhow)?;
             EventsEmitter::emit_exchange_id_changed(DEFAULT_EXCHANGE_ID.to_string()).await;
-            log::info!(target: LOG_TARGET, "Seed words imported successfully for wallet #{}", wallet_id);
+            log::info!(target: LOG_TARGET, "Seed words imported successfully for wallet #{wallet_id}");
         }
         Err(e) => {
             error!(target: LOG_TARGET, "Error importing seed words by internal wallet: {e:?}");
