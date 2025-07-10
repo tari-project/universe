@@ -15,14 +15,13 @@ export default function SyncCountdown({ onCompleted, onStarted, isCompact = fals
     const countdownRef = useRef<Countdown | null>(null);
     const { countdown } = useProgressCountdown();
     const date = new Date(countdown * 1000);
+
     const renderer = useMemo(
         () =>
             ({ hours, minutes, completed }) => {
                 const isComplete = completed || countdown < 80;
                 if (startedRef.current) {
-                    return isComplete
-                        ? t('sync-message.completed')
-                        : `${hours > 0 ? hours + `h` : ''} ${minutes.toString().padStart(2, '0')}m`;
+                    return isComplete ? t('sync-message.completed') : `${hours > 0 ? hours + `h` : ''} ${minutes}m`;
                 } else {
                     return t('setup-progresses:calculating_time', { context: isCompact && 'compact' });
                 }

@@ -63,7 +63,7 @@ impl TorControlClient {
 
         if let Some(response) = reader.next_line().await? {
             if !response.starts_with("250") {
-                warn!(target: LOG_TARGET, "Failed to authenticate with Tor control port: {}", response);
+                warn!(target: LOG_TARGET, "Failed to authenticate with Tor control port: {response}");
                 return Err(anyhow::anyhow!(
                     "Failed to authenticate with Tor control port: {}",
                     response
@@ -94,7 +94,7 @@ impl TorControlClient {
                 // drop the next line
                 let _s250_ok = reader.next_line().await?;
             } else {
-                warn!(target: LOG_TARGET, "Failed to parse bootstrap response: {}", response);
+                warn!(target: LOG_TARGET, "Failed to parse bootstrap response: {response}");
             }
         }
 
