@@ -15,7 +15,7 @@ import {
     RewardPillHoverBg,
 } from './styles';
 import { AnimatePresence } from 'motion/react';
-import { BlockData } from '../../useBlocks';
+import { BlockData } from '@app/types/mining/blocks.ts';
 import { formatBlockNumber, formatReward } from '../../utils/formatting';
 import { useTranslation } from 'react-i18next';
 

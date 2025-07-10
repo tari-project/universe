@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import TransactionModal from '@app/components/TransactionModal/TransactionModal.tsx';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { IoCheckmarkOutline, IoCopyOutline } from 'react-icons/io5';
-import { useCopyToClipboard } from '@app/hooks';
+import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard.ts';
 import { Wrapper } from './styles.ts';
 import { StatusList } from '@app/components/transactions/components/StatusList/StatusList.tsx';
 import { getListEntries } from './getListEntries.tsx';

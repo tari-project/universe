@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, RefObject } from 'react';
 import { useInView } from 'react-intersection-observer';
 import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/core';
 
-import { BackendBridgeTransaction, useBlockchainVisualisationStore, useWalletStore } from '@app/store';
+import { BackendBridgeTransaction, useMiningMetricsStore, useWalletStore } from '@app/store';
 
 import { TransactionInfo } from '@app/types/app-status.ts';
 
@@ -23,14 +23,14 @@ import { BridgeHistoryListItem } from '@app/components/transactions/history/Brid
 
 interface Props {
     setIsScrolled: (isScrolled: boolean) => void;
-    targetRef: React.RefObject<HTMLDivElement> | null;
+    targetRef: RefObject<HTMLDivElement> | null;
 }
 
 export function List({ setIsScrolled, targetRef }: Props) {
     const { t } = useTranslation('wallet');
     const walletScanning = useWalletStore((s) => s.wallet_scanning);
     const bridgeTransactions = useWalletStore((s) => s.bridge_transactions);
-    const currentBlockHeight = useBlockchainVisualisationStore((s) => s.displayBlockHeight);
+    const currentBlockHeight = useMiningMetricsStore((s) => s.base_node_status.block_height);
     const coldWalletAddress = useWalletStore((s) => s.cold_wallet_address);
     const tx_history_filter = useWalletStore((s) => s.tx_history_filter);
     const { data, fetchNextPage, isFetchingNextPage, isFetching, hasNextPage } = useFetchTxHistory();

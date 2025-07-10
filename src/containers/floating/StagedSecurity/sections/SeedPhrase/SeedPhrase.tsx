@@ -21,7 +21,7 @@ import CopyIcon from '../../icons/CopyIcon';
 import CheckIcon from '../../icons/CheckIcon';
 import { AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
-import { useCopyToClipboard } from '@app/hooks';
+import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard.ts';
 
 interface Props {
     setSection: (section: StagedSecuritySectionType) => void;

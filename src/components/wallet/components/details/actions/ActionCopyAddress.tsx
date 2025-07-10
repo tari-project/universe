@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AnimatePresence } from 'motion/react';
 import { CopySVG } from '@app/assets/icons/copy';
-import { useCopyToClipboard } from '@app/hooks';
+import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard.ts';
 import { useWalletStore } from '@app/store';
 import { truncateMiddle } from '@app/utils';
 import { offset, useFloating, useHover, useInteractions } from '@floating-ui/react';

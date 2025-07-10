@@ -1,9 +1,9 @@
 import { useEffect, useCallback, useState } from 'react';
 import { useForm, Controller, RegisterOptions } from 'react-hook-form';
 import { IoCopyOutline, IoCheckmarkOutline, IoCloseOutline, IoPencil } from 'react-icons/io5';
-import { Input } from '@app/components/elements/inputs/Input';
 import styled from 'styled-components';
-import { useCopyToClipboard } from '@app/hooks';
+import { Input } from '@app/components/elements/inputs/Input';
+import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard.ts';
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 import { CTASArea, InputArea, WalletSettingsGrid } from '../styles';
 

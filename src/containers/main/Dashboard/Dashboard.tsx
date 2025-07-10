@@ -1,4 +1,4 @@
-import { useMiningStatesSync } from '@app/hooks';
+import { useMiningStatesSync } from '@app/hooks/mining/useMiningStatesSync.ts';
 import DisconnectWrapper from '../Reconnect/DisconnectWrapper.tsx';
 import { DashboardContentContainer } from './styles';
 import { useAirdropStore, useUIStore } from '@app/store';

@@ -3,7 +3,7 @@ import { CircularProgress } from '@app/components/elements/CircularProgress';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog';
 import { Stack } from '@app/components/elements/Stack';
 import { Typography } from '@app/components/elements/Typography';
-import { useCopyToClipboard } from '@app/hooks';
+import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard.ts';
 import { useAppStateStore } from '@app/store/appStateStore';
 import { invoke } from '@tauri-apps/api/core';
 

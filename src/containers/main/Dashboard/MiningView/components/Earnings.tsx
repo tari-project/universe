@@ -3,7 +3,7 @@ import { AnimatePresence, Variants } from 'motion/react';
 import { AmtWrapper, EarningsContainer, EarningsWrapper, RecapText, WinText, WinWrapper } from './Earnings.styles.ts';
 
 import { Trans, useTranslation } from 'react-i18next';
-import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore.ts';
+import { handleReplayComplete, useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore.ts';
 import { removeXTMCryptoDecimals } from '@app/utils/formatters.ts';
 import i18n from 'i18next';
 import NumberFlow from '@number-flow/react';
@@ -37,17 +37,25 @@ export default function Earnings() {
     const recapData = useBlockchainVisualisationStore((s) => s.recapData);
     const displayEarnings = replayItem?.amount || recapData?.totalEarnings || earnings;
     const [value, setValue] = useState(0);
+    const [show, setShow] = useState(false);
 
     useEffect(() => {
-        if (displayEarnings && displayEarnings > 0) {
-            const minotari = removeXTMCryptoDecimals(displayEarnings);
-            const val = Math.floor(minotari / 10) * 10; // to match sidebar value's formatting
+        setShow(!!displayEarnings);
+    }, [displayEarnings]);
+
+    useEffect(() => {
+        if (displayEarnings && show) {
+            const minotariVal = removeXTMCryptoDecimals(displayEarnings);
+            let val = minotariVal;
+            if (minotariVal > 1000) {
+                val = Math.floor(minotariVal / 10) * 10; // to match sidebar value's formatting
+            }
 
             setValue(val);
         } else {
             setValue(0);
         }
-    }, [displayEarnings]);
+    }, [displayEarnings, show]);
 
     const recapText = recapData?.totalEarnings ? (
         <RecapText>
@@ -78,9 +86,21 @@ export default function Earnings() {
 
     return (
         <EarningsContainer>
-            <AnimatePresence mode="wait">
-                {displayEarnings ? (
-                    <EarningsWrapper variants={variants} initial="hidden" animate="visible" exit="hidden">
+            <AnimatePresence
+                onExitComplete={() => {
+                    handleReplayComplete();
+                }}
+            >
+                {show && (
+                    <EarningsWrapper
+                        variants={variants}
+                        initial="hidden"
+                        animate="visible"
+                        exit="hidden"
+                        onAnimationComplete={() => {
+                            setShow(false);
+                        }}
+                    >
                         {replayText}
                         {recapText}
                         <WinWrapper>
@@ -100,7 +120,7 @@ export default function Earnings() {
                             <WinText>{`XTM`}</WinText>
                         </WinWrapper>
                     </EarningsWrapper>
-                ) : null}
+                )}
             </AnimatePresence>
         </EarningsContainer>
     );

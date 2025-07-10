@@ -5,7 +5,7 @@ import BlockVideo from './BlockVideo/BlockVideo';
 import { MetaData, TimeAgo, BottomWrapper, RewardPillBlack } from '../BlockSolved/styles';
 import { AnimatePresence } from 'motion/react';
 import { formatReward, formatBlockNumber } from '../../utils/formatting';
-import { BlockData } from '../../useBlocks';
+import { BlockData } from '@app/types/mining/blocks.ts';
 import { useTranslation } from 'react-i18next';
 
 export default function BlockSolving({ id, minersSolved, timeAgo, reward, isSolved }: BlockData) {
@@ -57,7 +57,7 @@ export default function BlockSolving({ id, minersSolved, timeAgo, reward, isSolv
                                             </span>
                                         </RewardPillBlack>
                                     )}
-                                    <BlockTimer time={`00:00`} />
+                                    <BlockTimer />
                                 </BottomWrapper>
                             </ContentWrapper>
                         </Inside>

@@ -1,4 +1,4 @@
-import { BlockData } from '../useBlocks';
+import { BlockData } from '@app/types/mining/blocks.ts';
 import { DragContainer, ScrollMask } from './styles';
 import { useRef, useState, useEffect, Suspense } from 'react';
 import { useMotionValue, useAnimation, useSpring } from 'motion/react';

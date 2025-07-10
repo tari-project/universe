@@ -1,6 +1,6 @@
 import Display from './components/Display.tsx';
 import { useGetSeedWords } from '@app/containers/floating/Settings/sections/wallet/SeedWordsMarkup/useGetSeedWords.ts';
-import { useCopyToClipboard } from '@app/hooks';
+import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard.ts';
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
 import { IoCheckmarkOutline, IoCloseOutline, IoCopyOutline, IoPencil } from 'react-icons/io5';

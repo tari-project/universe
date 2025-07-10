@@ -1,39 +1,42 @@
 import { useState, useEffect, useRef } from 'react';
-import { Wrapper, StickyEntryWrapper, LoadingPlaceholder, InsideHolder } from './styles';
-import { BlockData, useBlocks } from './useBlocks';
+import { BlockData } from '@app/types/mining/blocks.ts';
+import { useFetchExplorerData } from '@app/hooks/mining/useFetchExplorerData.ts';
 import BlockEntry from './BlockEntry/BlockEntry';
 import BlockScrollList from './BlockScrollList/BlockScrollList';
 import { timeAgo } from './utils/formatting';
 import MinerCount from '@app/containers/main/Dashboard/components/BlockExplorerMini/MinerCount/MinerCount.tsx';
+import { Wrapper, StickyEntryWrapper, LoadingPlaceholder, InsideHolder } from './styles';
 
 export default function BlockExplorerMini() {
-    const { data, isLoading, isError } = useBlocks();
+    const { data, isLoading, isError } = useFetchExplorerData();
+    const blockBubblesData = data?.blockBubblesData;
     const [stickyEntry, setStickyEntry] = useState<BlockData | null>(null);
     const [scrollList, setScrollList] = useState<BlockData[]>([]);
+
     const containerRef = useRef<HTMLDivElement>(null);
     const isFirstRender = useRef(true);
 
     useEffect(() => {
         let stickyTimeout: NodeJS.Timeout;
         const updateStickyEntry = (isSolved: boolean) => {
-            if (!data || data.length === 0) return null;
+            if (!blockBubblesData || blockBubblesData.length === 0) return null;
             return {
-                ...data[0],
-                id: (parseInt(data[0].id) + 1).toString(),
-                timeAgo: timeAgo(data[0].timeAgo),
+                ...blockBubblesData[0],
+                id: (parseInt(blockBubblesData[0].id) + 1).toString(),
+                timeAgo: timeAgo(blockBubblesData[0].timeAgo),
                 isSolved,
             };
         };
 
         const updateScrollList = () => {
-            if (!data || data.length === 0) return [];
-            return data.map((block) => ({
+            if (!blockBubblesData || blockBubblesData.length === 0) return [];
+            return blockBubblesData.map((block) => ({
                 ...block,
                 timeAgo: timeAgo(block.timeAgo),
             }));
         };
 
-        if (data && data.length > 0) {
+        if (blockBubblesData && blockBubblesData.length > 0) {
             if (isFirstRender.current) {
                 setStickyEntry(updateStickyEntry(false));
                 setScrollList(updateScrollList());
@@ -48,10 +51,10 @@ export default function BlockExplorerMini() {
         }
 
         const interval = setInterval(() => {
-            if (data && data.length > 0) {
+            if (blockBubblesData && blockBubblesData.length > 0) {
                 setScrollList(updateScrollList());
             }
-        }, 30 * 1000);
+        }, 20 * 1000);
 
         return () => {
             clearInterval(interval);
@@ -59,7 +62,7 @@ export default function BlockExplorerMini() {
                 clearTimeout(stickyTimeout);
             }
         };
-    }, [data]);
+    }, [blockBubblesData]);
 
     if (isLoading) {
         return <LoadingPlaceholder />;
