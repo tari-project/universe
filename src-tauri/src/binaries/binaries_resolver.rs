@@ -111,8 +111,8 @@ impl BinaryResolver {
                 Binaries::GpuMinerSHA3X.name().to_string(),
                 None,
                 Box::new(GithubReleasesAdapter {
-                    repo: "sha3x-miner".to_string(),
-                    owner: "OIEIEIO".to_string(),
+                    repo: "graxil".to_string(),
+                    owner: "tari-project".to_string(),
                 }),
                 false,
             ),

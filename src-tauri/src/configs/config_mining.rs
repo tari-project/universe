@@ -25,7 +25,6 @@ use std::{sync::LazyLock, time::SystemTime};
 
 use getset::{Getters, Setters};
 use serde::{Deserialize, Serialize};
-use tari_common::configuration::Network;
 use tauri::{AppHandle, Manager};
 use tokio::sync::RwLock;
 
