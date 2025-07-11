@@ -9,13 +9,9 @@ import {
     GroupCol,
     GroupDivider,
     PhraseWrapper,
-    TextWrapper,
     Word,
     WordColumn,
     WordList,
-    BlackButton,
-    Title,
-    Text,
 } from './styles.ts';
 import { useTranslation } from 'react-i18next';
 import { useCopyToClipboard } from '@app/hooks';
@@ -24,6 +20,7 @@ import { AnimatePresence } from 'motion/react';
 import { useStagedSecurityStore } from '@app/store';
 import CheckIcon from '@app/assets/icons/CheckIcon.tsx';
 import CopyIcon from '@app/assets/icons/CopyIcon.tsx';
+import { CTA } from '@app/components/security/styles.ts';
 
 interface ViewSeedPhraseProps {
     words: string[];
@@ -38,9 +35,10 @@ const seedWordGroups = (words: string[]) => {
 };
 
 export function ViewSeedPhrase({ words }: ViewSeedPhraseProps) {
-    const setModalStep = useStagedSecurityStore((s) => s.setModalStep);
     const { t } = useTranslation('staged-security');
     const { isCopied, copyToClipboard } = useCopyToClipboard();
+
+    const setModalStep = useStagedSecurityStore((s) => s.setModalStep);
     const [checked, setChecked] = useState(false);
 
     function handleCopy() {
@@ -53,11 +51,6 @@ export function ViewSeedPhrase({ words }: ViewSeedPhraseProps) {
 
     return (
         <Wrapper>
-            <TextWrapper>
-                <Title>{t('seedPhrase.title')}</Title>
-                <Text>{t('seedPhrase.text')}</Text>
-            </TextWrapper>
-
             <PhraseWrapper>
                 <WordList>
                     {seedWordGroups(words).map((group, groupIndex) => (
@@ -104,9 +97,9 @@ export function ViewSeedPhrase({ words }: ViewSeedPhraseProps) {
                     <CheckboxText>{t('seedPhrase.checkbox')}</CheckboxText>
                 </CheckboxWrapper>
 
-                <BlackButton onClick={() => setModalStep('VerifySeedPhrase')} disabled={!checked}>
+                <CTA onClick={() => setModalStep('VerifySeedPhrase')} disabled={!checked}>
                     <span>{t('seedPhrase.button')}</span>
-                </BlackButton>
+                </CTA>
             </ButtonWrapper>
         </Wrapper>
     );

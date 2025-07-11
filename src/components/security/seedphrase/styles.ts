@@ -4,9 +4,7 @@ import styled, { css } from 'styled-components';
 export const Wrapper = styled.div`
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 30px;
-    padding-top: 40px;
+    gap: 20px;
     width: 100%;
     max-width: 710px;
     @media (max-height: 900px) {
@@ -15,20 +13,14 @@ export const Wrapper = styled.div`
     }
 `;
 
-export const TextWrapper = styled.div`
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-`;
-
 export const PhraseWrapper = styled.div`
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
     gap: 20px;
     width: 100%;
+    @media (max-height: 730px) {
+        gap: 16px;
+    }
 `;
 
 export const GroupCol = styled.div`
@@ -111,9 +103,7 @@ export const CopyButton = styled('button')`
 export const ButtonWrapper = styled.div`
     display: flex;
     flex-direction: column;
-    gap: 20px;
     width: 100%;
-    max-width: 566px;
 `;
 
 export const CheckboxWrapper = styled.div`
@@ -166,15 +156,13 @@ export const CheckboxText = styled.div`
 export const WordButtons = styled('div')`
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
-    padding-bottom: 10px;
+    gap: 6px;
     width: 100%;
-    max-width: 566px;
 `;
 
 export const WordButton = styled('button')`
     display: flex;
-    padding: 6px;
+    padding: 4px 6px;
     align-items: flex-start;
 
     border-radius: 8px;
@@ -203,22 +191,21 @@ export const WordButton = styled('button')`
 
 export const WordsSelected = styled.div`
     width: 100%;
-    max-width: 566px;
-    min-height: 180px;
+    min-height: 160px;
     border-radius: 15px;
     background: rgba(0, 0, 0, 0.15);
     display: flex;
     align-content: flex-start;
     flex-wrap: wrap;
-    gap: 8px;
-    padding: 12px;
+    gap: 6px;
+    padding: 10px 8px;
     position: relative;
 `;
 
 export const WordPill = styled(m.div)`
     border-radius: 8px;
     background: rgba(0, 0, 0, 0.1);
-    padding: 6px;
+    padding: 4px 6px;
     font-size: 14px;
     font-weight: 600;
     line-height: 1.6;
@@ -226,7 +213,7 @@ export const WordPill = styled(m.div)`
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
+    gap: 4px;
 
     color: #000;
 
@@ -255,65 +242,4 @@ export const Placeholder = styled(m.div)`
     display: flex;
     justify-content: center;
     align-items: center;
-`;
-
-export const Title = styled('div')`
-    color: ${({ theme }) => theme.palette.text.primary};
-    text-align: center;
-    font-size: min(calc(1rem + 1.1vmin), 30px);
-    font-weight: 600;
-    line-height: 0.9;
-    max-width: 470px;
-`;
-
-export const Text = styled('div')`
-    color: rgba(0, 0, 0, 0.75);
-    text-align: center;
-    font-size: 16px;
-    font-weight: 400;
-    line-height: 1.05;
-    max-width: 500px;
-`;
-export const BlackButton = styled('button')`
-    color: #c9eb00;
-    text-align: center;
-    font-size: 21px;
-    line-height: 99.7%;
-    text-transform: uppercase;
-    font-family: DrukWide, sans-serif;
-    font-weight: 800;
-
-    border-radius: 49px;
-    background: #000;
-    box-shadow: 28px 28px 77px 0 rgba(0, 0, 0, 0.1);
-
-    width: 100%;
-    height: 81px;
-
-    transition: opacity 0.2s ease;
-    cursor: pointer;
-
-    span {
-        display: block;
-        transition: transform 0.2s ease;
-    }
-
-    svg {
-        width: 48px;
-    }
-
-    &:hover {
-        span {
-            transform: scale(1.05);
-        }
-    }
-
-    &:disabled {
-        opacity: 0.5;
-        pointer-events: none;
-    }
-
-    @media (max-height: 900px) {
-        height: 56px;
-    }
 `;

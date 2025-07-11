@@ -6,18 +6,15 @@ import {
     Wrapper,
     ButtonWrapper,
     PhraseWrapper,
-    TextWrapper,
     WordsSelected,
     Placeholder,
     WordPill,
     WordButtons,
     WordButton,
-    Text,
-    Title,
-    BlackButton,
 } from './styles.ts';
 import { AnimatePresence } from 'motion/react';
 import PillCloseIcon from '@app/assets/icons/PillCloseIcon.tsx';
+import { CTA } from '@app/components/security/styles.ts';
 
 interface VerifySeedPhraseProps {
     words: string[];
@@ -75,11 +72,6 @@ export function VerifySeedPhrase({ words }: VerifySeedPhraseProps) {
 
     return (
         <Wrapper>
-            <TextWrapper>
-                <Title>{t('verifySeed.title')}</Title>
-                <Text>{t('verifySeed.text')}</Text>
-            </TextWrapper>
-
             <PhraseWrapper>
                 <WordsSelected>
                     <AnimatePresence>
@@ -125,9 +117,9 @@ export function VerifySeedPhrase({ words }: VerifySeedPhraseProps) {
             </PhraseWrapper>
 
             <ButtonWrapper>
-                <BlackButton onClick={handleSubmit} disabled={!completed}>
+                <CTA onClick={handleSubmit} disabled={!completed}>
                     <span>{t('verifySeed.button')}</span>
-                </BlackButton>
+                </CTA>
             </ButtonWrapper>
         </Wrapper>
     );

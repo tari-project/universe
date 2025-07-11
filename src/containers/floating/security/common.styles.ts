@@ -4,9 +4,13 @@ import { Button } from '@app/components/elements/buttons/Button.tsx';
 
 export const Wrapper = styled.div`
     display: flex;
-    width: clamp(600px, 45vw, 710px);
+    width: clamp(610px, 46vw, 710px);
     flex-direction: column;
     padding: 26px;
+
+    @media (max-height: 730px) {
+        padding: 18px;
+    }
 `;
 
 export const Header = styled.div`
@@ -18,14 +22,37 @@ export const Header = styled.div`
 
 export const Content = styled.div`
     display: flex;
+    width: 100%;
     gap: 20px;
     padding: 0 20px;
     flex-direction: column;
+
+    @media (max-height: 730px) {
+        gap: 8px;
+        padding: 0 16px;
+    }
+`;
+
+export const ContentWrapper = styled.div`
+    display: flex;
+    width: 100%;
+    gap: 10px;
+    padding: 20px 0;
+    flex-direction: column;
+
+    @media (max-height: 730px) {
+        padding: 14px 0;
+        gap: 10px;
+    }
 `;
 
 export const Title = styled(Typography).attrs({ variant: 'h1' })`
     line-height: 1;
     white-space: pre-wrap;
+
+    @media (max-height: 730px) {
+        font-size: 28px;
+    }
 `;
 
 export const Subtitle = styled(Typography)`

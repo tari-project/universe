@@ -1,5 +1,6 @@
 // import { useTranslation } from 'react-i18next';
-import { CTAWrapper, FormCTA, TextWrapper } from './styles.ts';
+import { CTAWrapper, TextWrapper } from './styles.ts';
+import { CTA } from '../styles.ts';
 import { Typography } from '@app/components/elements/Typography.tsx';
 
 export default function CreateComplete({ onClose }: { onClose?: () => void }) {
@@ -12,9 +13,9 @@ export default function CreateComplete({ onClose }: { onClose?: () => void }) {
                 <Typography variant="p">{`Happy mining!`}</Typography>
 
                 <CTAWrapper>
-                    <FormCTA fluid type="button" onClick={onClose}>
+                    <CTA fluid type="button" onClick={onClose}>
                         {`Continue to Tari Universe`}
-                    </FormCTA>
+                    </CTA>
                 </CTAWrapper>
             </TextWrapper>
         </>

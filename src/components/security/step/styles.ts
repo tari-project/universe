@@ -9,6 +9,10 @@ export const Wrapper = styled.div`
     padding: 20px;
     gap: 15px;
     width: 100%;
+    @media (max-height: 730px) {
+        gap: 8px;
+        padding: 16px;
+    }
 `;
 export const Chip = styled.div<{ $isStep?: boolean }>`
     border-radius: 50px;

@@ -1,5 +1,6 @@
 import { FormProvider, useForm } from 'react-hook-form';
-import { CTAWrapper, FormCTA, HelpWrapper, TextWrapper, Wrapper } from './styles.ts';
+import { CTAWrapper, HelpWrapper, TextWrapper, Wrapper } from './styles.ts';
+import { CTA } from '../styles.ts';
 import { CodeInputValues, DEFAULT_PIN_LENGTH, PinInput } from './PinInput.tsx';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -73,9 +74,9 @@ export default function CreatePin({ onClose, onSubmit }: { onClose?: () => void;
                 )}
 
                 <CTAWrapper>
-                    <FormCTA fluid disabled={submitDisabled} type="submit">
+                    <CTA fluid disabled={submitDisabled} type="submit">
                         {t('security.pin.create', { context })}
-                    </FormCTA>
+                    </CTA>
                     <TextButton onClick={handleSecondary}>
                         {t('security.pin.enter', { context: isConfirm ? 'new' : 'skip' })}
                     </TextButton>

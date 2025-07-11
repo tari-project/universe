@@ -4,7 +4,7 @@ import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.ts
 import { AlertChip } from '@app/components/security/alert-chip/AlertChip.tsx';
 import CloseButton from '@app/components/elements/buttons/CloseButton.tsx';
 import { Step, StepItem } from '@app/components/security/step/Step.tsx';
-import { Content, Header, Subtitle, Title, Wrapper, CTA, CTAWrapper } from '../common.styles.ts';
+import { Content, Header, Subtitle, Title, Wrapper, CTA, CTAWrapper, ContentWrapper } from '../common.styles.ts';
 
 import { TextButton } from '@app/components/elements/buttons/TextButton.tsx';
 import { useGetSeedWords } from '@app/containers/floating/Settings/sections/wallet/SeedWordsMarkup/useGetSeedWords.ts';
@@ -53,11 +53,11 @@ export default function SecurityPromptDialog() {
                         <AlertChip />
                         <Title>{`You've won your first Tari reward!\nLet’s secure your wallet.`}</Title>
                         <Subtitle>{`You now have your first Tari tokens. Let’s quickly protect your wallet in two easy steps.`}</Subtitle>
-                        <>
+                        <ContentWrapper>
                             {steps.map((step) => (
                                 <Step key={step.stepNumber + step.title} {...step} />
                             ))}
-                        </>
+                        </ContentWrapper>
                         <CTAWrapper>
                             <CTA onClick={handleClick}>{`Secure my wallet`}</CTA>
                             <TextButton onClick={handleClose}>
