@@ -65,6 +65,13 @@ export interface ConfigMining {
     mining_time: number;
 }
 
+export interface ConfigPools {
+    was_config_migrated: boolean;
+    created_at: string;
+    gpu_pool_enabled: boolean;
+    cpu_pool_enabled: boolean;
+}
+
 export interface ConfigBackendInMemory {
     airdropUrl: string;
     airdropApiUrl: string;

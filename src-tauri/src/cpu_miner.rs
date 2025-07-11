@@ -434,7 +434,7 @@ impl CpuMiner {
                             None => None,
                         };
 
-                        EventsEmitter::emit_pool_status_update(last_pool_status.clone()).await;
+                        EventsEmitter::emit_cpu_pool_status_update(last_pool_status.clone()).await;
 
                     }
                     _ = summary_watch_rx.changed() => {

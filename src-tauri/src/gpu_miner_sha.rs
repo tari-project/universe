@@ -9,7 +9,7 @@ use tokio::{
 };
 
 use crate::{
-    binaries::Binaries, configs::config_mining::MiningMode, gpu_miner_sha_adapter::GpuMinerShaAdapter, pool_status_watcher::LuckyPoolAdapter, process_watcher::ProcessWatcher, tasks_tracker::TasksTrackers, GpuMinerStatus, PoolStatusWatcher, ProcessStatsCollectorBuilder
+    binaries::Binaries, configs::{config_mining::MiningMode, config_pools::{ConfigPools, GpuPool}, trait_config::ConfigImpl}, gpu_miner_sha_adapter::GpuMinerShaAdapter, pool_status_watcher::LuckyPoolAdapter, process_watcher::{self, ProcessWatcher}, tasks_tracker::TasksTrackers, GpuMinerStatus, PoolStatusWatcher, ProcessStatsCollectorBuilder
 };
 
 const LOG_TARGET: &str = "tari::universe::gpu_miner_sha";
@@ -57,15 +57,22 @@ impl GpuMinerSha {
             .get_task_tracker()
             .await;
 
-        self.pool_status_watcher = Some(PoolStatusWatcher::new(
-            format!(
-                "https://api-tari.luckypool.io/stats_address?address={}",
-                tari_address.to_base58()
-            ),
-            LuckyPoolAdapter {},
-        ));
 
         let mut process_watcher = self.watcher.write().await;
+
+        let pools_config = ConfigPools::content().await;
+        if *pools_config.gpu_pool_enabled() {
+            match pools_config.gpu_pool() {
+                GpuPool::LuckyPool(lucky_pool_config) => {
+                process_watcher.adapter.pool_url = Some(lucky_pool_config.get_pool_url());
+                self.pool_status_watcher = Some(PoolStatusWatcher::new(
+                    lucky_pool_config.get_stats_url(tari_address.to_base58().as_str()),
+                    LuckyPoolAdapter {},
+                ));
+                }
+            }
+        }
+
 
         process_watcher.adapter.tari_address = Some(tari_address);
         process_watcher.adapter.worker_name = Some(telemetry_id.to_string());

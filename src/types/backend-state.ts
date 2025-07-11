@@ -16,10 +16,10 @@ import {
     ExternalDependency,
     GpuMinerStatus,
     NetworkStatus,
-    PoolStatus,
+    PoolStats,
     WalletBalance,
 } from './app-status.ts';
-import { ConfigCore, ConfigMining, ConfigUI, ConfigWallet } from './configs.ts';
+import { ConfigCore, ConfigMining, ConfigPools, ConfigUI, ConfigWallet } from './configs.ts';
 import { DisabledPhasesPayload } from '@app/store/actions/setupStoreActions.ts';
 
 export enum SetupPhase {
@@ -161,6 +161,10 @@ export type BackendStateUpdateEvent =
           payload: ConfigMining;
       }
     | {
+          event_type: 'ConfigPoolsLoaded';
+          payload: ConfigPools;
+      }
+    | {
           event_type: 'RestartingPhases';
           payload: SetupPhase[];
       }
@@ -193,8 +197,12 @@ export type BackendStateUpdateEvent =
           payload: number;
       }
     | {
-          event_type: 'PoolStatusUpdate';
-          payload: PoolStatus;
+          event_type: 'CpuPoolStatsUpdate';
+          payload: PoolStats;
+      }
+    | {
+          event_type: 'GpuPoolStatsUpdate';
+          payload: PoolStats;
       }
     | {
           event_type: 'ExchangeIdChanged';

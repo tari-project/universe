@@ -22,6 +22,7 @@ pub struct GpuMinerShaAdapter {
     pub intensity: Option<u8>,
     pub batch_size: Option<u32>,
     pub worker_name: Option<String>,
+    pub pool_url: Option<String>,
     pub(crate) gpu_status_sender: Sender<Option<GpuMinerStatus>>,
 }
 
@@ -33,6 +34,7 @@ impl GpuMinerShaAdapter {
             intensity: None,
             worker_name: None,
             gpu_status_sender,
+            pool_url: None,
         }
     }
 }
@@ -55,11 +57,12 @@ impl ProcessAdapter for GpuMinerShaAdapter {
 
         args.push("--algo".to_string());
         args.push("sha3x".to_string());
-
-        args.push("--pool".to_string());
-        args.push("pl-eu.luckypool.io:6118".to_string());
-
         args.push("--web".to_string());
+
+        if let Some(pool_url) = &self.pool_url {
+            args.push("--pool".to_string());
+            args.push(pool_url.clone());
+        }
 
         if let Some(tari_address) = &self.tari_address {
             args.push("--wallet".to_string());
