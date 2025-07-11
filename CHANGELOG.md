@@ -1,3 +1,15 @@
+🔥 HOTFIX v1.2.17: XMRig extraction bug on windows
+
+_July 10, 2025_
+
+Hey everyone,
+
+We've received reports of a setup issue affecting some Windows machines, where XMRig initialization fails with the error "Failed to download xmrig: the file exists." XMRig is the component that enables your CPU to mine Tari using RandomX, so it's very important
+
+This problem is an unexpected side effect of the improvements we shipped in yesterday's v1.2.16 release. It only affects the scenario where XMRig was unable to be fully updated on the first attempt. Contributors have identified the root cause and prepared a hotfix that should resolve the file extraction issue.
+
+---
+
 🚀 TARI UNIVERSE v1.2.16: The Season of Light: Part 3
 
 _July 9, 2025_
