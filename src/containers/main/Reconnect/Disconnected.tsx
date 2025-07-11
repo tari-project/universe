@@ -4,8 +4,7 @@ import { useTranslation } from 'react-i18next';
 import disconnectedImage from '/assets/img/disconnected.png';
 import { Stack } from '@app/components/elements/Stack';
 import { Typography } from '@app/components/elements/Typography';
-import { RetryTimer, SecondaryButton, HeaderImg, TextWrapper, Wrapper } from './styles';
-import { Title } from '@app/containers/floating/StagedSecurity/styles';
+import { RetryTimer, SecondaryButton, HeaderImg, TextWrapper, Wrapper, Title } from './styles';
 
 interface DisconnectedProps {
     countdownText?: React.ReactNode;

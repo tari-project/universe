@@ -1,24 +1,25 @@
+import { useStagedSecurityStore } from '@app/store';
 import { useMemo, useState } from 'react';
-import { StagedSecuritySectionType } from '../../StagedSecurity';
-import { BlackButton, Text, Title } from '../../styles';
+import { useTranslation } from 'react-i18next';
+
 import {
+    Wrapper,
     ButtonWrapper,
     PhraseWrapper,
-    Placeholder,
     TextWrapper,
-    WordButton,
-    WordButtons,
-    WordPill,
     WordsSelected,
-    Wrapper,
-} from './styles';
+    Placeholder,
+    WordPill,
+    WordButtons,
+    WordButton,
+    Text,
+    Title,
+    BlackButton,
+} from './styles.ts';
 import { AnimatePresence } from 'motion/react';
-import PillCloseIcon from '../../icons/PillCloseIcon';
-import { useTranslation } from 'react-i18next';
-import { useStagedSecurityStore } from '@app/store/useStagedSecurityStore';
+import PillCloseIcon from '@app/assets/icons/PillCloseIcon.tsx';
 
-interface Props {
-    setSection: (section: StagedSecuritySectionType) => void;
+interface VerifySeedPhraseProps {
     words: string[];
 }
 
@@ -27,10 +28,10 @@ interface SelectedWord {
     word: string;
 }
 
-export default function VerifySeedPhrase({ setSection, words }: Props) {
+export function VerifySeedPhrase({ words }: VerifySeedPhraseProps) {
     const { t } = useTranslation(['staged-security'], { useSuspense: false });
-
     const setShowModal = useStagedSecurityStore((s) => s.setShowModal);
+    const setModalStep = useStagedSecurityStore((s) => s.setModalStep);
     const setShowCompletedTip = useStagedSecurityStore((s) => s.setShowCompletedTip);
 
     const [completed, setCompleted] = useState(false);
@@ -68,7 +69,7 @@ export default function VerifySeedPhrase({ setSection, words }: Props) {
 
     const handleSubmit = () => {
         setShowModal(false);
-        setSection('ProtectIntro');
+        setModalStep('ProtectIntro');
         setShowCompletedTip(true);
     };
 

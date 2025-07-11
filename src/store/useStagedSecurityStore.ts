@@ -1,5 +1,5 @@
 import { create } from './create.ts';
-export type StagedSecuritySectionType = 'ProtectIntro' | 'SeedPhrase' | 'VerifySeedPhrase';
+export type StagedSecuritySectionType = 'ProtectIntro' | 'SeedPhrase' | 'VerifySeedPhrase' | 'CreatePin';
 
 interface State {
     showModal: boolean;
@@ -12,6 +12,7 @@ interface Actions {
     setShowModal: (showModal: boolean) => void;
     setShowReminderTip: (showReminderTip: boolean) => void;
     setShowCompletedTip: (showCompletedTip: boolean) => void;
+    setModalStep: (step: State['step']) => void;
 }
 
 const initialState: State = {
@@ -26,4 +27,5 @@ export const useStagedSecurityStore = create<State & Actions>()((set) => ({
     setShowModal: (showModal) => set({ showModal }),
     setShowReminderTip: (showReminderTip) => set({ showReminderTip }),
     setShowCompletedTip: (showCompletedTip) => set({ showCompletedTip }),
+    setModalStep: (step) => set({ step }),
 }));

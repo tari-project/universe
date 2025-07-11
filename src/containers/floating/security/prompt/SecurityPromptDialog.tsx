@@ -1,12 +1,13 @@
-import { Content, Header, Subtitle, Title, Wrapper, CTA, CTAWrapper } from './styles.ts';
 import { useTranslation } from 'react-i18next';
 import { setDialogToShow, useStagedSecurityStore } from '@app/store';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import { AlertChip } from '@app/components/security/alert-chip/AlertChip.tsx';
 import CloseButton from '@app/components/elements/buttons/CloseButton.tsx';
 import { Step, StepItem } from '@app/components/security/step/Step.tsx';
+import { Content, Header, Subtitle, Title, Wrapper, CTA, CTAWrapper } from '../common.styles.ts';
 
 import { TextButton } from '@app/components/elements/buttons/TextButton.tsx';
+import { useGetSeedWords } from '@app/containers/floating/Settings/sections/wallet/SeedWordsMarkup/useGetSeedWords.ts';
 
 const steps: StepItem[] = [
     {
@@ -25,16 +26,24 @@ const steps: StepItem[] = [
 
 export default function SecurityPromptDialog() {
     const { t } = useTranslation('wallet');
+    const { getSeedWords } = useGetSeedWords();
     const showModal = useStagedSecurityStore((s) => s.showModal);
+    const setModalStep = useStagedSecurityStore((s) => s.setModalStep);
+    const step = useStagedSecurityStore((s) => s.step);
 
+    const isOpen = showModal && step === 'ProtectIntro';
     function handleClose() {
         setDialogToShow(null);
     }
     function handleClick() {
-        console.debug(`on to the next step!`);
+        getSeedWords().then((seedWords) => {
+            if (seedWords && seedWords?.length) {
+                setModalStep('SeedPhrase');
+            }
+        });
     }
     return (
-        <Dialog open={showModal} onOpenChange={handleClose}>
+        <Dialog open={isOpen} onOpenChange={handleClose}>
             <DialogContent $transparentBg $unPadded>
                 <Wrapper>
                     <Header>
