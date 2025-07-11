@@ -24,12 +24,15 @@ use getset::{Getters, Setters};
 use serde::{Deserialize, Serialize};
 use std::{sync::LazyLock, time::SystemTime};
 use tari_common::configuration::Network;
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 use tokio::sync::RwLock;
 
-use crate::EventsEmitter;
+use crate::{EventsEmitter, UniverseAppState};
 
-use super::trait_config::{ConfigContentImpl, ConfigImpl};
+use super::{
+    config_wallet::ConfigWallet,
+    trait_config::{ConfigContentImpl, ConfigImpl},
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LuckyGpuPoolConfig {
@@ -156,8 +159,16 @@ pub struct ConfigPools {
 
 impl ConfigPools {
     pub async fn initialize(app_handle: AppHandle) {
+        let state = app_handle.state::<UniverseAppState>();
         let mut config = Self::current().write().await;
         config.load_app_handle(app_handle.clone()).await;
+
+        let mut cpu_config = state.cpu_miner_config.write().await;
+        let tari_address = ConfigWallet::content().await.tari_address().clone();
+        if let Some(address) = &tari_address {
+            cpu_config.load_from_config_pools(config.content.clone(), address);
+        }
+        drop(cpu_config);
 
         EventsEmitter::emit_pools_config_loaded(config.content.clone()).await;
     }

@@ -274,6 +274,7 @@ impl SetupManager {
         ConfigWallet::initialize(app_handle.clone()).await;
         ConfigMining::initialize(app_handle.clone()).await;
         ConfigUI::initialize(app_handle.clone()).await;
+        ConfigPools::initialize(app_handle.clone()).await;
 
         let build_in_exchange_id = in_memory_config.read().await.exchange_id.clone();
         let is_on_exchange_miner_build =

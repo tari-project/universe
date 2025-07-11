@@ -23,6 +23,7 @@
 use crate::binaries::Binaries;
 use crate::commands::{CpuMinerConnection, CpuMinerConnectionStatus, CpuMinerStatus};
 use crate::configs::config_mining::{ConfigMiningContent, MiningMode};
+use crate::configs::config_pools::{ConfigPoolsContent, CpuPool};
 use crate::configs::config_wallet::ConfigWalletContent;
 use crate::events_emitter::EventsEmitter;
 use crate::pool_status_watcher::SupportXmrPoolAdapter;
@@ -38,7 +39,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
-use tari_common_types::tari_address::TariAddress;
+use tari_common_types::tari_address::{self, TariAddress};
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::{Shutdown, ShutdownSignal};
 use tokio::sync::{watch, RwLock};
@@ -69,24 +70,39 @@ impl CpuMinerConfig {
         self.eco_mode_xmrig_options = config_mining_content.eco_mode_cpu_options().clone();
         self.ludicrous_mode_xmrig_options =
             config_mining_content.ludicrous_mode_cpu_options().clone();
-        if let Some(ref pool_url) = config_mining_content.cpu_mining_pool_url() {
-            let parts = pool_url.split(':').collect::<Vec<_>>();
-            if parts.len() == 2 {
-                if let Ok(port) = parts[1].parse::<u16>() {
-                    self.pool_port = Some(port);
-                } else {
-                    error!(target: LOG_TARGET, "Invalid port number in pool URL: {}", pool_url);
-                }
-                self.pool_host_name = Some(parts[0].to_string());
-            } else {
-                error!(target: LOG_TARGET, "Invalid pool URL format: {}", pool_url);
-            }
-            self.node_connection = CpuMinerConnection::Pool;
-        } else {
-            self.pool_host_name = None;
-        }
+    }
 
-        self.pool_status_url = config_mining_content.cpu_mining_pool_status_url().clone();
+    pub fn load_from_config_pools(
+        &mut self,
+        config_pools_content: ConfigPoolsContent,
+        tari_address: &TariAddress,
+    ) {
+        if *config_pools_content.cpu_pool_enabled() {
+            match config_pools_content.cpu_pool() {
+                CpuPool::DefaultPool(default_pool) => {
+                    self.pool_status_url =
+                        Some(default_pool.get_stats_url(tari_address.to_base58().as_str()));
+                    let pool_url = default_pool.get_pool_url();
+                    let parts = pool_url.split(':').collect::<Vec<_>>();
+                    if parts.len() == 2 {
+                        if let Ok(port) = parts[1].parse::<u16>() {
+                            self.pool_port = Some(port);
+                        } else {
+                            error!(target: LOG_TARGET, "Invalid port number in pool URL: {}", pool_url);
+                        }
+                        self.pool_host_name = Some(parts[0].to_string());
+                    } else {
+                        error!(target: LOG_TARGET, "Invalid pool URL format: {}", pool_url);
+                    }
+                    self.node_connection = CpuMinerConnection::Pool;
+                }
+            }
+        } else {
+            self.pool_status_url = None;
+            self.pool_host_name = None;
+            self.pool_port = None;
+            self.node_connection = CpuMinerConnection::BuiltInProxy;
+        }
     }
 
     pub fn load_from_config_wallet(&mut self, config_wallet_content: &ConfigWalletContent) {
