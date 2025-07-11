@@ -24,6 +24,7 @@ import PinDialog from '@app/containers/floating/security/pin/PinDialog.tsx';
 import ForgotPinDialog from './security/pin/ForgotPinDialog.tsx';
 import SecurityPromptDialog from '@app/containers/floating/security/prompt/SecurityPromptDialog.tsx';
 import SeedPhrase from '@app/containers/floating/security/seedphrase/SeedPhrase.tsx';
+import SecurityReminder from '@app/components/security/reminder/SecurityReminder.tsx';
 
 const environment = import.meta.env.MODE;
 
@@ -53,6 +54,7 @@ const FloatingElements = () => {
             <ForgotPinDialog />
             <SecurityPromptDialog />
             <SeedPhrase />
+            <SecurityReminder />
         </FloatingTree>
     );
 };
