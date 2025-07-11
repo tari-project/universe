@@ -139,10 +139,10 @@ impl SetupPhaseImpl for MiningSetupPhase {
             .add_step(ProgressPlans::Mining(
                 ProgressSetupMiningPlan::BinariesMergeMiningProxy,
             ))
-            .add_step(ProgressPlans::Mining(
-                ProgressSetupMiningPlan::BinariesP2pool,
-            ))
-            .add_step(ProgressPlans::Mining(ProgressSetupMiningPlan::P2Pool))
+            // .add_step(ProgressPlans::Mining(
+            //     ProgressSetupMiningPlan::BinariesP2pool,
+            // ))
+            // .add_step(ProgressPlans::Mining(ProgressSetupMiningPlan::P2Pool))
             .add_step(ProgressPlans::Mining(ProgressSetupMiningPlan::MMProxy))
             .add_step(ProgressPlans::Mining(ProgressSetupMiningPlan::Done))
             .build(app_handle.clone(), timeout_watcher_sender)
@@ -199,45 +199,45 @@ impl SetupPhaseImpl for MiningSetupPhase {
             .initialize_binary(Binaries::MergeMiningProxy, mmproxy_binary_progress_tracker)
             .await?;
 
-        let p2pool_binary_progress_tracker = progress_stepper.channel_step_range_updates(
-            ProgressPlans::Mining(ProgressSetupMiningPlan::BinariesP2pool),
-            Some(ProgressPlans::Mining(ProgressSetupMiningPlan::P2Pool)),
-        );
+        // let p2pool_binary_progress_tracker = progress_stepper.channel_step_range_updates(
+        //     ProgressPlans::Mining(ProgressSetupMiningPlan::BinariesP2pool),
+        //     Some(ProgressPlans::Mining(ProgressSetupMiningPlan::P2Pool)),
+        // );
 
-        binary_resolver
-            .initialize_binary(Binaries::ShaP2pool, p2pool_binary_progress_tracker)
-            .await?;
+        // binary_resolver
+        //     .initialize_binary(Binaries::ShaP2pool, p2pool_binary_progress_tracker)
+        //     .await?;
 
         let base_node_grpc_address = state.node_manager.get_grpc_address().await?;
-        if self.app_configuration.p2pool_enabled {
-            progress_stepper
-                .resolve_step(ProgressPlans::Mining(ProgressSetupMiningPlan::P2Pool))
-                .await;
+        // if self.app_configuration.p2pool_enabled {
+        //     progress_stepper
+        //         .resolve_step(ProgressPlans::Mining(ProgressSetupMiningPlan::P2Pool))
+        //         .await;
 
-            let p2pool_config = P2poolConfig::builder()
-                .with_base_node(base_node_grpc_address.clone())
-                .with_squad_override(self.app_configuration.squad_override.clone())
-                .with_stats_server_port(self.app_configuration.p2pool_stats_server_port)
-                .with_cpu_benchmark_hashrate(Some(
-                    state.cpu_miner.read().await.benchmarked_hashrate,
-                ))
-                .with_randomx_disabled(
-                    self.setup_features
-                        .is_feature_enabled(SetupFeature::CpuPool),
-                )
-                .build()?;
-            state
-                .p2pool_manager
-                .ensure_started(
-                    p2pool_config,
-                    data_dir.clone(),
-                    config_dir.clone(),
-                    log_dir.clone(),
-                )
-                .await?;
-        } else {
-            progress_stepper.skip_step(ProgressPlans::Mining(ProgressSetupMiningPlan::P2Pool));
-        }
+        //     let p2pool_config = P2poolConfig::builder()
+        //         .with_base_node(base_node_grpc_address.clone())
+        //         .with_squad_override(self.app_configuration.squad_override.clone())
+        //         .with_stats_server_port(self.app_configuration.p2pool_stats_server_port)
+        //         .with_cpu_benchmark_hashrate(Some(
+        //             state.cpu_miner.read().await.benchmarked_hashrate,
+        //         ))
+        //         .with_randomx_disabled(
+        //             self.setup_features
+        //                 .is_feature_enabled(SetupFeature::CpuPool),
+        //         )
+        //         .build()?;
+        //     state
+        //         .p2pool_manager
+        //         .ensure_started(
+        //             p2pool_config,
+        //             data_dir.clone(),
+        //             config_dir.clone(),
+        //             log_dir.clone(),
+        //         )
+        //         .await?;
+        // } else {
+        //     progress_stepper.skip_step(ProgressPlans::Mining(ProgressSetupMiningPlan::P2Pool));
+        // }
 
         if self
             .setup_features
