@@ -9,21 +9,6 @@ import { Content, Header, Subtitle, Title, Wrapper, CTA, CTAWrapper, ContentWrap
 import { TextButton } from '@app/components/elements/buttons/TextButton.tsx';
 import { useGetSeedWords } from '@app/containers/floating/Settings/sections/wallet/SeedWordsMarkup/useGetSeedWords.ts';
 
-const steps: StepItem[] = [
-    {
-        stepNumber: 1,
-        completed: false,
-        title: `Back up your Seed Phrase`,
-        subtitle: `Ensures you can recover funds if you lose your device`,
-    },
-    {
-        stepNumber: 2,
-        completed: false,
-        title: `Set a secure PIN`,
-        subtitle: `Prevents unauthorized wallet access`,
-    },
-];
-
 export default function SecurityPromptDialog() {
     const { t } = useTranslation(['staged-security']);
     const { getSeedWords } = useGetSeedWords();
@@ -42,6 +27,22 @@ export default function SecurityPromptDialog() {
             }
         });
     }
+
+    const steps: StepItem[] = [
+        {
+            stepNumber: 1,
+            completed: false,
+            title: t('steps.title-seeds'),
+            subtitle: t('steps.title-seeds'),
+        },
+        {
+            stepNumber: 2,
+            completed: false,
+            title: t('steps.title-seeds'),
+            subtitle: t('steps.title-seeds'),
+        },
+    ];
+
     return (
         <Dialog open={isOpen} onOpenChange={handleClose}>
             <DialogContent $transparentBg $unPadded>

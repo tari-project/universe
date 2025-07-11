@@ -1,4 +1,5 @@
 import { Wrapper, Title, Subtitle, Content, Top, Chip } from './styles.ts';
+import { useTranslation } from 'react-i18next';
 
 export interface StepItem {
     stepNumber: number;
@@ -7,11 +8,12 @@ export interface StepItem {
     subtitle: string;
 }
 export const Step = ({ stepNumber, completed, title, subtitle }: StepItem) => {
+    const { t } = useTranslation(['staged-security']);
     return (
         <Wrapper>
             <Top>
-                <Chip $isStep>{`Step ${stepNumber}`}</Chip>
-                <Chip>{completed ? `Complete` : `Incomplete`}</Chip>
+                <Chip $isStep>{t('steps.step', { stepNumber })}</Chip>
+                <Chip>{t('steps.complete', { context: completed })}</Chip>
             </Top>
             <Content>
                 <Title>{title}</Title>
