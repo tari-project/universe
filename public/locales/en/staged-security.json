@@ -8,25 +8,27 @@
   },
   "intro": {
     "balance": "Your wallet has <span>{{balance}}</span> XTM",
-    "button": "Back up seed phrase",
+    "button": "Secure my wallet",
+    "subtitle": "You now have your first Tari tokens. Let’s quickly protect your wallet in two easy steps.",
     "text": "Tari Universe automatically sets up a wallet for you when you start mining. Make sure you always have access to your wallet by storing your seed phrase in a safe spot.",
-    "title": "Protect your tokens by backing up your seed phrase",
-    "warning": "❗ Highly recommended"
+    "title": "You’ve gotten your first Tari (XTM)!\nLet’s secure your wallet.",
+    "warning": "Highly recommended"
   },
   "reminderTip": {
     "text": "It is highly recommended to back up your seed phrase for your unique wallet",
     "title": "Quickly back up your seed phrase in settings"
   },
   "seedPhrase": {
-    "button": "VERIFY SEED PHRASE",
+    "button": "Verify seed phrase",
     "checkbox": "I understand that if I lose my recovery seed phrase I will not be able to restore my wallet.",
     "copied": "Copied!",
     "copy": "Copy to clipboard",
     "text": "You will need this code again to restore your wallet.",
     "title": "Write down your seed phrase and store it somewhere safe"
   },
+  "skip": "Skip for now",
   "verifySeed": {
-    "button": "CONFIRM SEED PHRASE",
+    "button": "Confirm seed phrase",
     "placeholder": "Click the words below in the correct order",
     "text": "To make sure you wrote down your seed phrase correctly, please select the words in the correct order.",
     "title": "Verify your seed phrase"

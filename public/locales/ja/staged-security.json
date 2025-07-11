@@ -8,25 +8,27 @@
   },
   "intro": {
     "balance": "あなたのウォレットには<span>{{balance}}</span> XTMがあります",
-    "button": "シードフレーズをバックアップ",
+    "button": "Secure my wallet",
+    "subtitle": "You now have your first Tari tokens. Let’s quickly protect your wallet in two easy steps.",
     "text": "Tari Universeは、マイニングを開始すると自動的にウォレットを設定します。シードフレーズを安全な場所に保管して、常にウォレットにアクセスできるようにしてください。",
-    "title": "シードフレーズをバックアップしてトークンを保護",
-    "warning": "❗ 強く推奨"
+    "title": "You’ve gotten your first Tari (XTM)!\nLet’s secure your wallet.",
+    "warning": "強く推奨"
   },
   "reminderTip": {
     "text": "ユニークなウォレットのためにシードフレーズをバックアップすることを強くお勧めします",
     "title": "設定でシードフレーズをすばやくバックアップ"
   },
   "seedPhrase": {
-    "button": "シードフレーズを確認",
+    "button": "Verify seed phrase",
     "checkbox": "リカバリーシードフレーズを失うとウォレットを復元できないことを理解しています。",
     "copied": "コピーしました！",
     "copy": "クリップボードにコピー",
     "text": "このコードはウォレットを復元する際に再度必要になります。",
     "title": "シードフレーズを書き留めて安全な場所に保管してください"
   },
+  "skip": "Skip for now",
   "verifySeed": {
-    "button": "シードフレーズを確認",
+    "button": "Confirm seed phrase",
     "placeholder": "以下の単語を正しい順序でクリックしてください",
     "text": "シードフレーズを正しく書き留めたことを確認するため、正しい順序で単語を選択してください。",
     "title": "シードフレーズを確認"

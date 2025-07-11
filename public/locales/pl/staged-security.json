@@ -8,25 +8,27 @@
   },
   "intro": {
     "balance": "Twój portfel ma <span>{{balance}}</span> XTM",
-    "button": "Zrób kopię zapasową frazy seed",
+    "button": "Secure my wallet",
+    "subtitle": "You now have your first Tari tokens. Let’s quickly protect your wallet in two easy steps.",
     "text": "Tari Universe automatycznie zakłada portfel, gdy zaczynasz kopać. Upewnij się, że zawsze masz dostęp do swojego portfela, przechowując frazę seed w bezpiecznym miejscu.",
-    "title": "Chroń swoje tokeny, tworząc kopię zapasową frazy seed",
-    "warning": "❗ Wysoce zalecane"
+    "title": "You’ve gotten your first Tari (XTM)!\nLet’s secure your wallet.",
+    "warning": "Wysoce zalecane"
   },
   "reminderTip": {
     "text": "Zaleca się wykonanie kopii zapasowej frazy seed dla unikalnego portfela",
     "title": "Szybko zrób kopię zapasową frazy seed w ustawieniach"
   },
   "seedPhrase": {
-    "button": "ZWERYFIKUJ FRAZĘ SEED",
+    "button": "Verify seed phrase",
     "checkbox": "Rozumiem, że jeśli zgubię swoją frazę seed, nie będę mógł przywrócić portfela.",
     "copied": "Skopiowano!",
     "copy": "Kopiuj do schowka",
     "text": "Będziesz potrzebować tego kodu, aby przywrócić swój portfel.",
     "title": "Zapisz swoją frazę seed i przechowuj ją w bezpiecznym miejscu"
   },
+  "skip": "Skip for now",
   "verifySeed": {
-    "button": "POTWIERDŹ FRAZĘ SEED",
+    "button": "Confirm seed phrase",
     "placeholder": "Kliknij poniższe słowa w odpowiedniej kolejności",
     "text": "Aby upewnić się, że poprawnie zapisałeś swoją frazę seed, wybierz słowa w odpowiedniej kolejności.",
     "title": "Zweryfikuj swoją frazę seed"

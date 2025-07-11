@@ -25,7 +25,7 @@ const steps: StepItem[] = [
 ];
 
 export default function SecurityPromptDialog() {
-    const { t } = useTranslation('wallet');
+    const { t } = useTranslation(['staged-security']);
     const { getSeedWords } = useGetSeedWords();
     const showModal = useStagedSecurityStore((s) => s.showModal);
     const setModalStep = useStagedSecurityStore((s) => s.setModalStep);
@@ -50,19 +50,17 @@ export default function SecurityPromptDialog() {
                         <CloseButton onClick={handleClose} />
                     </Header>
                     <Content>
-                        <AlertChip />
-                        <Title>{`You've won your first Tari reward!\nLet’s secure your wallet.`}</Title>
-                        <Subtitle>{`You now have your first Tari tokens. Let’s quickly protect your wallet in two easy steps.`}</Subtitle>
+                        <AlertChip text={t('intro.warning')} />
+                        <Title>{t('intro.title')}</Title>
+                        <Subtitle>{t('intro.subtitle')}</Subtitle>
                         <ContentWrapper>
                             {steps.map((step) => (
                                 <Step key={step.stepNumber + step.title} {...step} />
                             ))}
                         </ContentWrapper>
                         <CTAWrapper>
-                            <CTA onClick={handleClick}>{`Secure my wallet`}</CTA>
-                            <TextButton onClick={handleClose}>
-                                {t('security.pin.enter', { context: 'skip' })}
-                            </TextButton>
+                            <CTA onClick={handleClick}>{t('intro.title')}</CTA>
+                            <TextButton onClick={handleClose}>{t('skip')}</TextButton>
                         </CTAWrapper>
                     </Content>
                 </Wrapper>

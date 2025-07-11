@@ -8,25 +8,27 @@
   },
   "intro": {
     "balance": "Ihr Wallet hat <span>{{balance}}</span> XTM",
-    "button": "Seed-Wörter sichern",
+    "button": "Secure my wallet",
+    "subtitle": "You now have your first Tari tokens. Let’s quickly protect your wallet in two easy steps.",
     "text": "Tari Universe richtet automatisch eine Wallet für Sie ein, wenn Sie mit dem Mining beginnen. Stellen Sie sicher, dass Sie immer Zugriff auf Ihre Wallet haben, indem Sie Ihre Seed-Wörter an einem sicheren Ort aufbewahren.",
-    "title": "Schützen Sie Ihre Token, indem Sie Ihre Seed-Wörter sichern",
-    "warning": "❗ Sehr empfohlen"
+    "title": "You’ve gotten your first Tari (XTM)!\nLet’s secure your wallet.",
+    "warning": "Sehr empfohlen"
   },
   "reminderTip": {
     "text": "Es wird dringend empfohlen, Ihre Seed-Wörter für Ihre einzigartige Wallet zu sichern",
     "title": "Sichern Sie Ihre Seed-Wörter schnell in den Einstellungen"
   },
   "seedPhrase": {
-    "button": "SEED-WÖRTER ÜBERPRÜFEN",
+    "button": "Verify seed phrase",
     "checkbox": "Ich verstehe, dass ich meine Wallet nicht wiederherstellen kann, wenn ich meine Wiederherstellungs-Seed-Wörter verliere.",
     "copied": "Kopiert!",
     "copy": "In die Zwischenablage kopieren",
     "text": "Sie benötigen diesen Code erneut, um Ihre Wallet wiederherzustellen.",
     "title": "Notieren Sie Ihre Seed-Wörter und bewahren Sie sie an einem sicheren Ort auf"
   },
+  "skip": "Skip for now",
   "verifySeed": {
-    "button": "SEED-WÖRTER BESTÄTIGEN",
+    "button": "Confirm seed phrase",
     "placeholder": "Klicken Sie die Wörter unten in der richtigen Reihenfolge an",
     "text": "Um sicherzustellen, dass Sie Ihre Seed-Wörter korrekt aufgeschrieben haben, wählen Sie bitte die Wörter in der richtigen Reihenfolge aus.",
     "title": "Überprüfen Sie Ihre Seed-Wörter"

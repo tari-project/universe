@@ -8,9 +8,10 @@
   },
   "intro": {
     "balance": "Dompet Anda memiliki <span>{{balance}}</span> XTM",
-    "button": "Cadangkan frasa pemulihan",
+    "button": "Secure my wallet",
+    "subtitle": "You now have your first Tari tokens. Let’s quickly protect your wallet in two easy steps.",
     "text": "Tari Universe secara otomatis menyiapkan dompet untuk Anda saat Anda mulai menambang. Pastikan Anda selalu memiliki akses ke dompet Anda dengan menyimpan frasa pemulihan Anda di tempat yang aman.",
-    "title": "Lindungi token Anda dengan mencadangkan frasa pemulihan Anda",
+    "title": "You’ve gotten your first Tari (XTM)!\nLet’s secure your wallet.",
     "warning": "Sangat disarankan"
   },
   "reminderTip": {
@@ -18,15 +19,16 @@
     "title": "Segera cadangkan frasa pemulihan Anda di pengaturan"
   },
   "seedPhrase": {
-    "button": "VERIFIKASI FRASA PEMULIHAN",
+    "button": "Verify seed phrase",
     "checkbox": "Saya mengerti bahwa jika saya kehilangan frasa pemulihan saya, saya tidak akan dapat memulihkan dompet saya.",
     "copied": "Tersalin!",
     "copy": "Salin ke papan klip",
     "text": "Anda akan membutuhkan kode ini lagi untuk memulihkan dompet Anda.",
     "title": "Tuliskan frasa pemulihan Anda dan simpan di tempat yang aman"
   },
+  "skip": "Skip for now",
   "verifySeed": {
-    "button": "KONFIRMASI FRASA PEMULIHAN",
+    "button": "Confirm seed phrase",
     "placeholder": "Klik kata-kata di bawah ini dalam urutan yang benar",
     "text": "Untuk memastikan Anda menuliskan frasa pemulihan Anda dengan benar, silakan pilih kata-kata dalam urutan yang benar.",
     "title": "Verifikasi frasa pemulihan Anda"
