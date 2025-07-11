@@ -216,9 +216,9 @@ impl BinaryManager {
     }
 
     pub fn check_if_files_for_version_exist(&self) -> bool {
-        info!(target: LOG_TARGET,"Checking if files for selected version exist: {:?}", self.selected_version);
+        debug!(target: LOG_TARGET,"Checking if files for selected version exist: {:?}", self.selected_version);
 
-        info!(target: LOG_TARGET, "Selected version: {:?}", self.selected_version);
+        debug!(target: LOG_TARGET, "Selected version: {:?}", self.selected_version);
 
         let binary_folder = match self.adapter.get_binary_folder() {
             Ok(path) => path,
@@ -235,14 +235,14 @@ impl BinaryManager {
         let binary_file_with_exe = binary_file.with_extension("exe");
         let binary_file_with_html = version_folder.join("index.html");
 
-        info!(target: LOG_TARGET, "Binary folder path: {:?}", binary_folder);
-        info!(target: LOG_TARGET, "Version folder path: {:?}", version_folder);
-        info!(target: LOG_TARGET, "Binary file path: {:?}", binary_file);
+        debug!(target: LOG_TARGET, "Binary folder path: {:?}", binary_folder);
+        debug!(target: LOG_TARGET, "Version folder path: {:?}", version_folder);
+        debug!(target: LOG_TARGET, "Binary file path: {:?}", binary_file);
 
         let binary_file_exists =
             binary_file.exists() || binary_file_with_exe.exists() || binary_file_with_html.exists();
 
-        info!(target: LOG_TARGET, "Binary file exists: {:?}", binary_file_exists);
+        debug!(target: LOG_TARGET, "Binary file exists: {:?}", binary_file_exists);
 
         binary_file_exists
     }

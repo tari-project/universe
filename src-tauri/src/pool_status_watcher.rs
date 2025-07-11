@@ -102,7 +102,6 @@ pub struct LuckyPoolAdapter {}
 
 impl PoolApiAdapter for LuckyPoolAdapter {
     fn convert_api_data(&self, data: &str) -> Result<PoolStatus, Error> {
-        info!(target: LOG_TARGET, "LuckyPoolAdapter received data: {}", data);
         let pool_status = PoolStatus {
             accepted_shares: 0,
             unpaid: 0,
