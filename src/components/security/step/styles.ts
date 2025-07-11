@@ -5,7 +5,8 @@ export const Wrapper = styled.div`
     display: flex;
     flex-direction: column;
     border-radius: 10px;
-    background-color: ${({ theme }) => convertHexToRGBA(theme.palette.background.paper, 0.4)};
+    background-color: ${({ theme }) =>
+        convertHexToRGBA(theme.palette.background.default, theme.mode == 'dark' ? 0.7 : 0.45)};
     padding: 20px;
     gap: 15px;
     width: 100%;
@@ -17,7 +18,7 @@ export const Wrapper = styled.div`
 export const Chip = styled.div<{ $isStep?: boolean }>`
     border-radius: 50px;
     background-color: ${({ theme, $isStep }) => ($isStep ? theme.palette.contrast : theme.colors.brightRed[400])};
-    color: ${({ theme }) => theme.palette.text.contrast};
+    color: ${({ theme, $isStep }) => ($isStep ? theme.palette.text.contrast : '#fff')};
     display: flex;
     width: max-content;
     height: 22px;

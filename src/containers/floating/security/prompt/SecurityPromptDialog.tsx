@@ -66,7 +66,7 @@ export default function SecurityPromptDialog() {
                             ))}
                         </ContentWrapper>
                         <CTAWrapper>
-                            <CTA onClick={handleClick}>{t('intro.title')}</CTA>
+                            <CTA onClick={handleClick}>{t('intro.button')}</CTA>
                             <TextButton onClick={handleClose}>{t('skip')}</TextButton>
                         </CTAWrapper>
                     </Content>
