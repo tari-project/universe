@@ -96,6 +96,7 @@
     "load-qr-code": "加载二维码",
     "passphrase": "密码短语"
   },
+  "pin": "Pin",
   "pool-mining": "矿池挖矿",
   "pool-mining-description": "启用后，您将在矿池中挖矿并加入矿工组。",
   "pre-release": {
@@ -129,6 +130,7 @@
   "send-logs": "发送日志",
   "set-dynamic-fail-data": "设置Monero节点的自定义URL",
   "settings": "设置",
+  "setup-pin": "Setup Universe Security PIN",
   "setup-tor-settings": "设置 Tor 设置以控制隐私和连接",
   "sha-network-hash-rate": "Sha3 网络算力",
   "should-auto-start": {

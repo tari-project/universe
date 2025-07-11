@@ -98,6 +98,7 @@
     "load-qr-code": "Załaduj kod QR",
     "passphrase": "Hasło"
   },
+  "pin": "Pin",
   "pool-mining": "Kopanie w puli",
   "pool-mining-description": "Po włączeniu tej opcji będziesz wydobywać w puli i dołączać do grupy górników (plemienia).",
   "pre-release": {
@@ -131,6 +132,7 @@
   "send-logs": "Wyślij logi",
   "set-dynamic-fail-data": "Ustaw niestandardowe adresy URL dla węzłów Monero",
   "settings": "Ustawienia",
+  "setup-pin": "Setup Universe Security PIN",
   "setup-tor-settings": "Skonfiguruj ustawienia Tor dla kontroli prywatności i łączności",
   "sha-network-hash-rate": "Hashrate sieci Sha3",
   "should-auto-start": {

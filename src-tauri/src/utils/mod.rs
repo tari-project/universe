@@ -22,6 +22,7 @@
 
 pub mod address_utils;
 pub mod app_flow_utils;
+pub mod cryptography;
 pub mod file_utils;
 pub mod formatting_utils;
 pub mod locks_utils;
@@ -30,7 +31,7 @@ pub mod macos_utils;
 pub mod math_utils;
 pub mod network_status;
 pub mod platform_utils;
-pub mod wallet_utils;
+pub mod rand_utils;
 
 pub mod system_status;
 #[cfg(windows)]

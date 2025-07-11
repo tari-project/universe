@@ -1,5 +1,5 @@
 /* eslint-disable i18next/no-literal-string */
-import { Button, ButtonGroup, CategoryLabel } from '../styles';
+import { AdminButton, ButtonGroup, CategoryLabel } from '../styles';
 
 import { useAppStateStore } from '@app/store/appStateStore';
 import { setCriticalProblem, setDialogToShow, setShowExternalDependenciesDialog } from '@app/store/actions';
@@ -14,7 +14,7 @@ export function DialogsGroup() {
         <>
             <CategoryLabel>Dialogs</CategoryLabel>
             <ButtonGroup>
-                <Button
+                <AdminButton
                     onClick={() =>
                         setCriticalProblem(
                             criticalProblem
@@ -28,20 +28,43 @@ export function DialogsGroup() {
                     $isActive={!!criticalProblem}
                 >
                     Critical Problem
-                </Button>
-
-                <Button
+                </AdminButton>
+                <AdminButton
                     onClick={() => setDialogToShow(dialogToShow === 'autoUpdate' ? undefined : 'autoUpdate')}
                     $isActive={dialogToShow === 'autoUpdate'}
                 >
                     Auto Update
-                </Button>
-                <Button
+                </AdminButton>
+                <AdminButton
                     onClick={() => setShowExternalDependenciesDialog(!showExternalDependenciesDialog)}
                     $isActive={showExternalDependenciesDialog}
                 >
                     External Deps
-                </Button>
+                </AdminButton>
+                <AdminButton
+                    onClick={() => setDialogToShow(dialogToShow === 'keychain' ? undefined : 'keychain')}
+                    $isActive={dialogToShow === 'keychain'}
+                >
+                    Keychain Access
+                </AdminButton>
+                <AdminButton
+                    onClick={() => setDialogToShow(dialogToShow === 'createPin' ? undefined : 'createPin')}
+                    $isActive={dialogToShow === 'createPin'}
+                >
+                    Create Pin
+                </AdminButton>
+                <AdminButton
+                    onClick={() => setDialogToShow(dialogToShow === 'enterPin' ? undefined : 'enterPin')}
+                    $isActive={dialogToShow === 'enterPin'}
+                >
+                    Enter Pin
+                </AdminButton>
+                <AdminButton
+                    onClick={() => setDialogToShow(dialogToShow === 'forgotPin' ? undefined : 'forgotPin')}
+                    $isActive={dialogToShow === 'forgotPin'}
+                >
+                    Forgot Pin
+                </AdminButton>
             </ButtonGroup>
         </>
     );

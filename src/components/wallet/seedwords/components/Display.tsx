@@ -1,4 +1,4 @@
-import { memo, useState } from 'react';
+import { memo } from 'react';
 import { AddSeedWordsWrapper, CTAWrapper, DisplayWrapper, HiddenWrapper, WordsWrapper } from './display.styles.ts';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
@@ -7,16 +7,14 @@ import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 
 interface DisplayProps {
     words: string[];
+    isVisible: boolean;
     isLoading?: boolean;
     onToggleClick?: (currentVisibilty?: boolean) => void;
     isSeedlessUI?: boolean;
 }
-const Display = memo(function Display({ words, onToggleClick, isLoading, isSeedlessUI }: DisplayProps) {
-    const [isVisible, setIsVisible] = useState(false);
-
+const Display = memo(function Display({ isVisible, words, onToggleClick, isLoading, isSeedlessUI }: DisplayProps) {
     function handleToggleClick() {
         onToggleClick?.(isVisible);
-        setIsVisible((c) => !c);
     }
 
     const wordAmount = words?.length || 0;

@@ -96,6 +96,7 @@
     "load-qr-code": "QR 코드 불러오기",
     "passphrase": "암호 구문"
   },
+  "pin": "Pin",
   "pool-mining": "풀 채굴",
   "pool-mining-description": "활성화되면 풀에서 채굴하고 마이너 그룹에 참여합니다.",
   "pre-release": {
@@ -129,6 +130,7 @@
   "send-logs": "로그 전송",
   "set-dynamic-fail-data": "모네로 노드를 위한 사용자 정의 URL 설정",
   "settings": "설정",
+  "setup-pin": "Setup Universe Security PIN",
   "setup-tor-settings": "개인정보 보호 및 연결을 위한 Tor 설정 구성",
   "sha-network-hash-rate": "Sha3 네트워크 해시레이트",
   "should-auto-start": {

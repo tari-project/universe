@@ -1,5 +1,5 @@
 import { createGlobalStyle } from 'styled-components';
-import { TOWER_CANVAS_ID } from '@app/store';
+import { TOWER_CANVAS_ID } from '@app/store/types/ui.ts';
 
 export const GlobalReset = createGlobalStyle`
     *:focus {

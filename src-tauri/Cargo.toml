@@ -111,6 +111,8 @@ tokio-tungstenite = { version = "0.26.2", features = ["native-tls"] }
 futures = "0.3.31"
 getset = "0.1.5"
 console-subscriber = "0.4.1"
+tiny-keccak = "2.0"
+bincode = "1.3"
 
 [target.'cfg(windows)'.dependencies]
 planif = "1.0.0"
