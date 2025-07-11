@@ -193,9 +193,9 @@ impl ProcessAdapter for LocalNodeAdapter {
 
             for dir in dirs {
                 if dir.exists() {
-                    info!(target: LOG_TARGET, "Node migration v2: removing directory at {:?}", dir);
+                    info!(target: LOG_TARGET, "Node migration v2: removing directory at {dir:?}");
                     let _unused = fs::remove_dir_all(dir).inspect_err(|e| {
-                        warn!(target: LOG_TARGET, "Failed to remove directory: {:?}", e);
+                        warn!(target: LOG_TARGET, "Failed to remove directory: {e:?}");
                     });
                 }
             }
@@ -208,9 +208,9 @@ impl ProcessAdapter for LocalNodeAdapter {
         // Remove peerdb on every restart as requested by Protocol team
         let peer_db_dir = network_dir.join("peer_db");
         if peer_db_dir.exists() {
-            info!(target: LOG_TARGET, "Removing peer db at {:?}", peer_db_dir);
+            info!(target: LOG_TARGET, "Removing peer db at {peer_db_dir:?}");
             let _unused = fs::remove_dir_all(peer_db_dir).inspect_err(|e| {
-                warn!(target: LOG_TARGET, "Failed to remove peer db: {:?}", e);
+                warn!(target: LOG_TARGET, "Failed to remove peer db: {e:?}");
             });
         }
 

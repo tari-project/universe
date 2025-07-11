@@ -209,7 +209,7 @@ impl SetupPhaseImpl for HardwareSetupPhase {
                 self.app_configuration.gpu_engine.clone(),
             )
             .await
-            .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {:?}", e));
+            .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {e:?}"));
 
         HardwareStatusMonitor::current().initialize().await?;
 
@@ -273,7 +273,7 @@ impl SetupPhaseImpl for HardwareSetupPhase {
                             },
                             Err(e) => {
                                 let err_msg = format!("Failed to acquire systemtray_manager write lock: {e}");
-                                error!(target: LOG_TARGET, "{}", err_msg);
+                                error!(target: LOG_TARGET, "{err_msg}");
                                 sentry::capture_message(&err_msg, sentry::Level::Error);
                             }
                         }

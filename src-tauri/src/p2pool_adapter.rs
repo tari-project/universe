@@ -86,7 +86,7 @@ impl ProcessAdapter for P2poolAdapter {
             .join("sha-p2pool")
             .join(Network::get_current_or_user_setting_or_default().to_string());
         std::fs::create_dir_all(&working_dir).unwrap_or_else(|error| {
-            warn!(target: LOG_TARGET, "Could not create p2pool working directory - {}", error);
+            warn!(target: LOG_TARGET, "Could not create p2pool working directory - {error}");
         });
 
         if self.config.is_none() {
@@ -222,15 +222,14 @@ impl StatusMonitor for P2poolStatusMonitor {
                     HealthStatus::Healthy
                 }
                 Err(e) => {
-                    warn!(target: LOG_TARGET, "P2pool health check failed: {}", e);
+                    warn!(target: LOG_TARGET, "P2pool health check failed: {e}");
                     HealthStatus::Unhealthy
                 }
             },
             Err(_timeout_err) => {
                 warn!(
                     target: LOG_TARGET,
-                    "P2pool health check timed out after {:?}",
-                    timeout_duration
+                    "P2pool health check timed out after {timeout_duration:?}"
                 );
                 HealthStatus::Warning
             }

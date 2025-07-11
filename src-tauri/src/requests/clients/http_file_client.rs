@@ -263,13 +263,13 @@ impl HttpFileClient {
 
             match self.download_file(expected_size, &mut file, true).await {
                 Ok(_) => {
-                    info!(target: LOG_TARGET, "Downloaded chunk from {} to {}", start, end);
+                    info!(target: LOG_TARGET, "Downloaded chunk from {start} to {end}");
                     internet_connection_check_attempt_count = 0;
                     continue;
                 }
                 Err(e) => loop {
                     internet_connection_check_attempt_count += 1;
-                    warn!(target: LOG_TARGET, "Failed to resume download: {}", e);
+                    warn!(target: LOG_TARGET, "Failed to resume download: {e}");
                     if NetworkStatus::check_internet_connection().await {
                         info!(target: LOG_TARGET, "Internet connection is available, retrying download...");
                         break;
@@ -322,13 +322,13 @@ impl HttpFileClient {
             match chunk {
                 Ok(data) => {
                     if let Err(e) = file.write_all(&data).await {
-                        warn!(target: LOG_TARGET, "Failed to write chunk to file: {}", e);
+                        warn!(target: LOG_TARGET, "Failed to write chunk to file: {e}");
                         return Err(anyhow!("Failed to write chunk to file: {}", e));
                     }
                     self.update_progress(file, expected_size).await?;
                 }
                 Err(e) => {
-                    warn!(target: LOG_TARGET, "Error reading chunk: {}", e);
+                    warn!(target: LOG_TARGET, "Error reading chunk: {e}");
                     return Err(anyhow!("Error reading chunk: {}", e));
                 }
             }
@@ -343,7 +343,7 @@ impl HttpFileClient {
                 (file.metadata().await?.len() as f64 / expected_size as f64) * 100.0;
             if let Some(sender) = &self.config.progress_status_sender {
                 if let Err(e) = sender.send(progress_percentage.round()) {
-                    debug!(target: LOG_TARGET, "Failed to send progress update: {}", e);
+                    debug!(target: LOG_TARGET, "Failed to send progress update: {e}");
                 }
             }
         }
@@ -354,6 +354,16 @@ impl HttpFileClient {
         if let Some(archive_destination) = &self.archive_destination {
             if archive_destination.exists() {
                 let archive_file = archive_destination.join(&self.file_name);
+                // There can be case where extracted dir already exists on this stage and windows will throw an error if we try to extract to it
+                if self.destination.exists() {
+                    for entry in std::fs::read_dir(&self.destination)? {
+                        let entry = entry?;
+                        let path = entry.path();
+                        if path != *archive_destination {
+                            std::fs::remove_dir_all(path)?;
+                        }
+                    }
+                }
                 extract(&archive_file, &self.destination).await?;
             } else {
                 return Err(anyhow::anyhow!(

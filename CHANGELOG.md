@@ -1,3 +1,37 @@
+🔥 HOTFIX v1.2.17: XMRig extraction bug on windows
+
+_July 10, 2025_
+
+Hey everyone,
+
+We've received reports of a setup issue affecting some Windows machines, where XMRig initialization fails with the error "Failed to download xmrig: the file exists." XMRig is the component that enables your CPU to mine Tari using RandomX, so it's very important
+
+This problem is an unexpected side effect of the improvements we shipped in yesterday's v1.2.16 release. It only affects the scenario where XMRig was unable to be fully updated on the first attempt. Contributors have identified the root cause and prepared a hotfix that should resolve the file extraction issue.
+
+---
+
+🚀 TARI UNIVERSE v1.2.16: The Season of Light: Part 3
+
+_July 9, 2025_
+
+Hey everyone,
+
+Welcome everyone, to Tari Universe v1.2.16 aka "The Season of Light: Part 3!" This release of Tari Universe is a game-changer. It's filled to the brim with a ton of under-the-hood upgrades, tweaks, and improvements. It also introduces a brand new, groundbreaking feature: block bubbles!
+
+Block bubbles are an entirely new way to experience Tari blocks. Every block is represented by a bubble in the Tari Universe (and Tari.com!) interface, including the XTM reward amount and the time it takes Tari miners to find the solution. When a block is solved, a lovely animation is played before the next block enters the Universe. It's fun, beautiful, and provides valuable information on what's happening with the Tari network block by block!
+
+Let us know what you think about block bubbles. We hope you love them as much as Tari contributors do!
+
+✨ WHAT'S NEW
+- 🫧 **Block Bubbles** – A fun, beautiful, and invaluable real-time visualization of block production and XTM rewards
+- 🎨 **Interface Polish** – We've moved the Send and Receive buttons to the filter row for a cleaner wallet layout. The Exchange button now smartly hides when you scroll through your transaction history, and your balance display shows "My Balance" when available. The Start Mining button now has better visual feedback between active and inactive states
+- 🌉 **Transaction Organization** – Bridge transactions are no longer mixed up with mining Rewards. They now only show up in "Transactions" and "All Activity"
+- 🔧 **System Reliability** – Improved file downloads that can now resume if interrupted, better Tor stability on Linux by using bundled libraries, better log file uploads, detailed database migration progress tracking, and fixed seed word restoration issues
+- ⚙️ **Performance Updates** – Updated XMRig to version 6.24.0, fixed app unlock timing issues, and improved app restart handling
+- 🏗️ **Under the Hood** – Enhanced network connectivity checking, better error handling for corrupted downloads, and improved request client architecture for more reliable operations
+
+---
+
 🚀 TARI UNIVERSE v1.2.15: The Season of Light: Part 2
 
 _July 2, 2025_
