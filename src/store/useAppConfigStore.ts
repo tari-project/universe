@@ -1,5 +1,12 @@
 import { create } from 'zustand';
-import { ConfigBackendInMemory, ConfigCore, ConfigMining, ConfigUI, ConfigWallet } from '@app/types/configs';
+import {
+    ConfigBackendInMemory,
+    ConfigCore,
+    ConfigMining,
+    ConfigPools,
+    ConfigUI,
+    ConfigWallet,
+} from '@app/types/configs';
 
 type UIConfigStoreState = Partial<ConfigUI> & {
     visualModeToggleLoading: boolean;
@@ -67,6 +74,13 @@ const configUIInitialState: UIConfigStoreState = {
     warmup_seen: null,
 };
 
+const configPoolsInitialState: ConfigPools = {
+    was_config_migrated: false,
+    created_at: '',
+    cpu_pool_enabled: false,
+    gpu_pool_enabled: false,
+};
+
 const configBEInMemoryInitialState: ConfigBackendInMemory = {
     airdropUrl: '',
     airdropApiUrl: '',
@@ -87,6 +101,10 @@ export const useConfigMiningStore = create<ConfigMining>()(() => configMininigIn
 
 export const useConfigUIStore = create<UIConfigStoreState>()(() => ({
     ...configUIInitialState,
+}));
+
+export const useConfigPoolsStore = create<ConfigPools>()(() => ({
+    ...configPoolsInitialState,
 }));
 
 export const useConfigBEInMemoryStore = create<ConfigBackendInMemory>()(() => ({

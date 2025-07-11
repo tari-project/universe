@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { setAnimationState } from '@tari-project/tari-tower';
 import i18n from 'i18next';
 import { removeXTMCryptoDecimals } from '@app/utils';
+import { PoolStats } from '@app/types/app-status';
 
 const REWARD_THRESHOLD = 2 * 1_000_000;
 
@@ -14,24 +15,23 @@ const fmtMatch = (value: number, max = 4) =>
         style: 'decimal',
     }).format(value);
 
-export function useCPURewards() {
-    const pool_status = useMiningMetricsStore((s) => s.cpu_mining_status.pool_status);
+export function usePoolRewards(pool_stats?: PoolStats) {
     const visualMode = useConfigUIStore((s) => s.visual_mode);
-    const [unpaid, setUnpaid] = useState(pool_status?.unpaid || 0);
+    const [unpaid, setUnpaid] = useState(pool_stats?.unpaid || 0);
     const [unpaidM, setUnpaidM] = useState(Math.floor(removeXTMCryptoDecimals(unpaid) * 10_000) / 10_000);
     const [prevUnpaidM, setPrevUnpaidM] = useState(unpaidM);
     const [unpaidFMT, setUnpaidFTM] = useState(fmtMatch(unpaid));
     const [prevUnpaid, _] = useState(unpaidFMT);
     const [progressDiff, setProgressDiff] = useState(0);
 
-    const prevFloored = useRef(Math.floor((pool_status?.unpaid || 0) / 1_000_000));
+    const prevFloored = useRef(Math.floor((pool_stats?.unpaid || 0) / 1_000_000));
 
     useEffect(() => {
-        const _unpaid = pool_status?.unpaid || 0;
+        const _unpaid = pool_stats?.unpaid || 0;
         setUnpaid(_unpaid);
         setUnpaidM(Math.floor(removeXTMCryptoDecimals(_unpaid) * 10_000) / 10_000);
         setUnpaidFTM(fmtMatch(_unpaid));
-    }, [pool_status?.unpaid]);
+    }, [pool_stats?.unpaid]);
 
     useEffect(() => {
         if (unpaidM > prevUnpaidM) {

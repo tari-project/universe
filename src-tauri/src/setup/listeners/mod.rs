@@ -40,7 +40,8 @@ use super::setup_manager::{PhaseStatus, SetupPhase};
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum SetupFeature {
     SeedlessWallet,
-    CentralizedPool,
+    CpuPool,
+    GpuPool,
     Restarting,
 }
 
@@ -48,7 +49,8 @@ impl Display for SetupFeature {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
             SetupFeature::SeedlessWallet => write!(f, "Seedless wallet"),
-            SetupFeature::CentralizedPool => write!(f, "Centralized Pool"),
+            SetupFeature::CpuPool => write!(f, "CPU Pool"),
+            SetupFeature::GpuPool => write!(f, "GPU Pool"),
             SetupFeature::Restarting => write!(f, "Restarting"),
         }
     }

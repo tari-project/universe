@@ -36,6 +36,7 @@ interface Props {
     mainLabel: string;
     successValue?: number;
     isIdle?: boolean;
+    isSoloMining?: boolean;
     tooltipTriggerRef?: Ref<HTMLDivElement>;
     getReferenceProps?: UseInteractionsReturn['getReferenceProps'];
 }
@@ -54,8 +55,8 @@ export default function Tile({
     isIdle,
     tooltipTriggerRef,
     getReferenceProps,
+    isSoloMining,
 }: Props) {
-    const isGPU = title === 'GPU';
     const isConnectedToTariNetwork = useMiningMetricsStore((s) => s.isNodeConnected);
     const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
 
@@ -63,11 +64,11 @@ export default function Tile({
         setShowSuccessAnimation(!!successValue);
     }, [successValue]);
 
-    const syncing = isGPU && isEnabled && !isConnectedToTariNetwork;
-    const gpuIdle = isGPU && !isMining;
+    const syncing = isSoloMining && isEnabled && !isConnectedToTariNetwork;
+    const gpuIdle = isSoloMining && !isMining;
 
     const syncMarkup = syncing && <SyncData />;
-    const renderPill = isGPU ? syncing : true;
+    const renderPill = isSoloMining ? syncing : true;
 
     const pillCopy = isLoading || !isMining ? `- ${pillUnit}` : `${pillValue} ${pillUnit}`;
     const pillMarkup = renderPill && <RatePill>{pillCopy}</RatePill>;

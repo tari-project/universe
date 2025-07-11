@@ -6,6 +6,7 @@ import {
     useConfigBEInMemoryStore,
     useConfigCoreStore,
     useConfigMiningStore,
+    useConfigPoolsStore,
     useConfigUIStore,
     useConfigWalletStore,
     useMiningMetricsStore,
@@ -23,7 +24,7 @@ import { setError } from './appStateStoreActions.ts';
 import { setIsAppExchangeSpecific, setUITheme } from './uiStoreActions';
 import { GpuThreads } from '@app/types/app-status.ts';
 import { displayMode, MiningModeType } from '../types';
-import { ConfigCore, ConfigMining, ConfigUI, ConfigWallet } from '@app/types/configs.ts';
+import { ConfigCore, ConfigMining, ConfigPools, ConfigUI, ConfigWallet } from '@app/types/configs.ts';
 import { NodeType, updateNodeType as updateNodeTypeForNodeStore } from '../useNodeStore.ts';
 import { setCurrentExchangeMinerId } from '../useExchangeStore.ts';
 import { fetchExchangeContent, refreshXCContent } from '@app/hooks/exchanges/fetchExchangeContent.ts';
@@ -70,6 +71,10 @@ export const handleConfigUILoaded = async (uiConfig: ConfigUI) => {
 export const handleConfigMiningLoaded = (miningConfig: ConfigMining) => {
     useConfigMiningStore.setState((c) => ({ ...c, ...miningConfig }));
     useMiningStore.setState({ miningTime: miningConfig.mining_time });
+};
+
+export const handleConfigPoolsLoaded = (poolsConfig: ConfigPools) => {
+    useConfigPoolsStore.setState((c) => ({ ...c, ...poolsConfig }));
 };
 
 export const handleMiningTimeUpdate = (miningTime: number) => {

@@ -105,6 +105,18 @@ impl BinaryResolver {
                 true,
             ),
         );
+        binary_manager.insert(
+            Binaries::GpuMinerSHA3X,
+            BinaryManager::new(
+                Binaries::GpuMinerSHA3X.name().to_string(),
+                None,
+                Box::new(GithubReleasesAdapter {
+                    repo: "graxil".to_string(),
+                    owner: "tari-project".to_string(),
+                }),
+                false,
+            ),
+        );
 
         binary_manager.insert(
             Binaries::MergeMiningProxy,
