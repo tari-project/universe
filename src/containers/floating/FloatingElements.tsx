@@ -1,7 +1,7 @@
 import { FloatingTree } from '@floating-ui/react';
 
 import SettingsModal from './Settings/SettingsModal.tsx';
-import StagedSecurity from './StagedSecurity/StagedSecurity.tsx';
+// import StagedSecurity from './StagedSecurity/StagedSecurity.tsx';
 import AutoUpdateDialog from './AutoUpdateDialog/AutoUpdateDialog.tsx';
 import ExternalDependenciesDialog from './ExternalDependenciesDialog/ExternalDependenciesDialog.tsx';
 import CriticalErrorDialog from './CriticalErrorDialog/CriticalErrorDialog.tsx';
@@ -32,7 +32,7 @@ const FloatingElements = () => {
         <FloatingTree>
             {environment === 'development' && <AdminUI />}
             <SettingsModal />
-            <StagedSecurity />
+            {/*<StagedSecurity />*/}
             <AutoUpdateDialog />
             <CriticalErrorDialog />
             <ExternalDependenciesDialog />

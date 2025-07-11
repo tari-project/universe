@@ -1,7 +1,9 @@
 import { create } from './create.ts';
+export type StagedSecuritySectionType = 'ProtectIntro' | 'SeedPhrase' | 'VerifySeedPhrase';
 
 interface State {
     showModal: boolean;
+    step: StagedSecuritySectionType;
     showReminderTip: boolean;
     showCompletedTip: boolean;
 }
@@ -13,6 +15,7 @@ interface Actions {
 }
 
 const initialState: State = {
+    step: 'ProtectIntro',
     showModal: false,
     showReminderTip: false,
     showCompletedTip: false,

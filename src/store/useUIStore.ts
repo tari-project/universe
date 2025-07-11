@@ -33,7 +33,7 @@ const initialState: UIStoreState = {
     preferredTheme,
     sidebarOpen: false,
     currentSidebar: 'mining',
-    dialogToShow: 'security',
+    dialogToShow: null,
     showExperimental: false,
     showExternalDependenciesDialog: false,
     connectionStatus: 'connected',

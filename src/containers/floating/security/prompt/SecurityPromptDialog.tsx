@@ -1,6 +1,6 @@
 import { Content, Header, Subtitle, Title, Wrapper, CTA, CTAWrapper } from './styles.ts';
 import { useTranslation } from 'react-i18next';
-import { setDialogToShow, useUIStore } from '@app/store';
+import { setDialogToShow, useStagedSecurityStore } from '@app/store';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import { AlertChip } from '@app/components/security/alert-chip/AlertChip.tsx';
 import CloseButton from '@app/components/elements/buttons/CloseButton.tsx';
@@ -25,14 +25,16 @@ const steps: StepItem[] = [
 
 export default function SecurityPromptDialog() {
     const { t } = useTranslation('wallet');
-    const dialogToShow = useUIStore((s) => s.dialogToShow);
-    const isOpen = dialogToShow === 'security';
+    const showModal = useStagedSecurityStore((s) => s.showModal);
 
     function handleClose() {
         setDialogToShow(null);
     }
+    function handleClick() {
+        console.debug(`on to the next step!`);
+    }
     return (
-        <Dialog open={isOpen} onOpenChange={handleClose}>
+        <Dialog open={showModal} onOpenChange={handleClose}>
             <DialogContent $transparentBg $unPadded>
                 <Wrapper>
                     <Header>
@@ -48,8 +50,10 @@ export default function SecurityPromptDialog() {
                             ))}
                         </>
                         <CTAWrapper>
-                            <CTA>{`Secure my wallet`}</CTA>
-                            <TextButton>{t('security.pin.enter', { context: 'skip' })}</TextButton>
+                            <CTA onClick={handleClick}>{`Secure my wallet`}</CTA>
+                            <TextButton onClick={handleClose}>
+                                {t('security.pin.enter', { context: 'skip' })}
+                            </TextButton>
                         </CTAWrapper>
                     </Content>
                 </Wrapper>
