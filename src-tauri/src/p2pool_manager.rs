@@ -26,10 +26,11 @@ use std::time::Duration;
 
 use futures_util::future::FusedFuture;
 use log::{info, warn};
-use tari_common::configuration::Network;
 use tokio::sync::{watch, RwLock};
 use tokio::time::sleep;
 
+use crate::configs::config_core::ConfigCore;
+use crate::configs::trait_config::ConfigImpl;
 use crate::p2pool::models::{Connections, P2poolStats};
 use crate::p2pool_adapter::P2poolAdapter;
 use crate::port_allocator::PortAllocator;
@@ -239,13 +240,10 @@ impl P2poolManager {
                 .unwrap_or_default();
             format!("http://127.0.0.1:{grpc_port}")
         } else {
-            let network = Network::get_current_or_user_setting_or_default();
-            match network {
-                Network::MainNet => "https://grpc-p2pool.tari.com:443".to_string(),
-                _ => {
-                    format!("https://grpc-p2pool.{}.tari.com:443", network.as_key_str())
-                }
-            }
+            ConfigCore::content()
+                .await
+                .remote_base_node_address()
+                .clone()
         }
     }
 
