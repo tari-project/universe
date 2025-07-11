@@ -8,9 +8,10 @@
   },
   "intro": {
     "balance": "Jou beursie het <span>{{balance}}</span> XTM",
-    "button": "Rugsteun saadfrase",
+    "button": "Secure my wallet",
+    "subtitle": "You now have your first Tari tokens. Let’s quickly protect your wallet in two easy steps.",
     "text": "Tari Universe stel outomaties \"n beursie vir jou op wanneer jy begin myn. Maak seker jy het altyd toegang tot jou beursie deur jou saadfrase op \"n veilige plek te stoor.",
-    "title": "Beskerm jou tokens deur jou saadfrase te rugsteun",
+    "title": "You’ve gotten your first Tari (XTM)!\nLet’s secure your wallet.",
     "warning": "Sterk aanbeveel"
   },
   "reminderTip": {
@@ -18,15 +19,25 @@
     "title": "Rugsteun vinnig jou saadfrase in instellings"
   },
   "seedPhrase": {
-    "button": "VERIFIEER SAADFRASE",
+    "button": "Verify seed phrase",
     "checkbox": "Ek verstaan dat as ek my herstel saadfrase verloor, ek nie my beursie sal kan herstel nie.",
     "copied": "Gekopieer!",
     "copy": "Kopieer na knipbord",
     "text": "Jy sal hierdie kode weer nodig hê om jou beursie te herstel.",
     "title": "Skryf jou saadfrase neer en stoor dit op \"n veilige plek"
   },
+  "skip": "Skip for now",
+  "steps": {
+    "complete-true": "Complete",
+    "complete-false": "Incomplete",
+    "step": "Step {{stepNumber}}",
+    "subtitle-pin": "Prevents unauthorized wallet access",
+    "subtitle-seeds": "Ensures you can recover funds if you lose your device",
+    "title-pin": "Set a secure PIN",
+    "title-seeds": "Back up your Seed Phrase"
+  },
   "verifySeed": {
-    "button": "BEVESTIG SAADFRASE",
+    "button": "Confirm seed phrase",
     "placeholder": "Klik die woorde hieronder in die korrekte volgorde",
     "text": "Om seker te maak jy het jou saadfrase korrek neergeskryf, kies asseblief die woorde in die korrekte volgorde.",
     "title": "Verifieer jou saadfrase"

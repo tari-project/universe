@@ -7,8 +7,17 @@ import disconnectedSevereImage from '/assets/img/disconnected_severe.png';
 import telegramLogo from '/assets/img/telegram_logo.png';
 import { Stack } from '@app/components/elements/Stack';
 import { Typography } from '@app/components/elements/Typography';
-import { RetryTimer, SecondaryButton, TelegramLogo, TextWrapper, Wrapper, HeaderImgSevere, SubTitle } from './styles';
-import { Title } from '@app/containers/floating/StagedSecurity/styles';
+import {
+    RetryTimer,
+    SecondaryButton,
+    TelegramLogo,
+    TextWrapper,
+    Wrapper,
+    HeaderImgSevere,
+    SubTitle,
+    Title,
+} from './styles';
+
 import { invoke } from '@tauri-apps/api/core';
 
 interface DisconnectedSevereProps {

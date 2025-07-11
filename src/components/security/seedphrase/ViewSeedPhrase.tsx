@@ -1,7 +1,5 @@
-import { useState } from 'react';
-import { StagedSecuritySectionType } from '../../StagedSecurity';
-import { BlackButton, Text, Title } from '../../styles';
 import {
+    Wrapper,
     ButtonWrapper,
     Check,
     Checkbox,
@@ -11,20 +9,20 @@ import {
     GroupCol,
     GroupDivider,
     PhraseWrapper,
-    TextWrapper,
     Word,
     WordColumn,
     WordList,
-    Wrapper,
-} from './styles';
-import CopyIcon from '../../icons/CopyIcon';
-import CheckIcon from '../../icons/CheckIcon';
-import { AnimatePresence } from 'motion/react';
+} from './styles.ts';
 import { useTranslation } from 'react-i18next';
 import { useCopyToClipboard } from '@app/hooks';
+import { useState } from 'react';
+import { AnimatePresence } from 'motion/react';
+import { useStagedSecurityStore } from '@app/store';
+import CheckIcon from '@app/assets/icons/CheckIcon.tsx';
+import CopyIcon from '@app/assets/icons/CopyIcon.tsx';
+import { CTA } from '@app/components/security/styles.ts';
 
-interface Props {
-    setSection: (section: StagedSecuritySectionType) => void;
+interface ViewSeedPhraseProps {
     words: string[];
 }
 
@@ -36,26 +34,23 @@ const seedWordGroups = (words: string[]) => {
     return groups;
 };
 
-const SeedPhrase = ({ setSection, words }: Props) => {
+export function ViewSeedPhrase({ words }: ViewSeedPhraseProps) {
     const { t } = useTranslation('staged-security');
     const { isCopied, copyToClipboard } = useCopyToClipboard();
+
+    const setModalStep = useStagedSecurityStore((s) => s.setModalStep);
     const [checked, setChecked] = useState(false);
 
-    const handleCopy = () => {
+    function handleCopy() {
         copyToClipboard(words.join(' '));
-    };
+    }
 
-    const handleCheckboxClick = () => {
-        setChecked(!checked);
-    };
+    function handleCheckboxClick() {
+        setChecked((c) => !c);
+    }
 
     return (
         <Wrapper>
-            <TextWrapper>
-                <Title>{t('seedPhrase.title')}</Title>
-                <Text>{t('seedPhrase.text')}</Text>
-            </TextWrapper>
-
             <PhraseWrapper>
                 <WordList>
                     {seedWordGroups(words).map((group, groupIndex) => (
@@ -102,12 +97,10 @@ const SeedPhrase = ({ setSection, words }: Props) => {
                     <CheckboxText>{t('seedPhrase.checkbox')}</CheckboxText>
                 </CheckboxWrapper>
 
-                <BlackButton onClick={() => setSection('VerifySeedPhrase')} disabled={!checked}>
+                <CTA onClick={() => setModalStep('VerifySeedPhrase')} disabled={!checked}>
                     <span>{t('seedPhrase.button')}</span>
-                </BlackButton>
+                </CTA>
             </ButtonWrapper>
         </Wrapper>
     );
-};
-
-export default SeedPhrase;
+}

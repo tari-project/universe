@@ -1,12 +1,10 @@
 import * as m from 'motion/react-m';
 import styled, { css } from 'styled-components';
 
-export const Wrapper = styled('div')`
+export const Wrapper = styled.div`
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 30px;
-    padding-top: 40px;
+    gap: 20px;
     width: 100%;
     max-width: 710px;
     @media (max-height: 900px) {
@@ -15,23 +13,17 @@ export const Wrapper = styled('div')`
     }
 `;
 
-export const TextWrapper = styled('div')`
+export const PhraseWrapper = styled.div`
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 10px;
-`;
-
-export const PhraseWrapper = styled('div')`
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
     gap: 20px;
     width: 100%;
+    @media (max-height: 730px) {
+        gap: 16px;
+    }
 `;
 
-export const GroupCol = styled('div')`
+export const GroupCol = styled.div`
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -39,7 +31,7 @@ export const GroupCol = styled('div')`
     gap: 10px;
     width: 100%;
 `;
-export const WordList = styled('div')`
+export const WordList = styled.div`
     display: flex;
     gap: 4px;
     justify-content: space-between;
@@ -47,14 +39,14 @@ export const WordList = styled('div')`
     max-width: 566px;
 `;
 
-export const WordColumn = styled('div')`
+export const WordColumn = styled.div`
     display: flex;
     flex-direction: column;
     gap: max(10px, 2vmin);
     padding: 4px 0;
 `;
 
-export const Word = styled('div')`
+export const Word = styled.div`
     color: #000;
     font-size: min(calc(1rem + 0.1vmin), 18px);
     font-weight: 600;
@@ -71,7 +63,7 @@ export const Word = styled('div')`
     }
 `;
 
-export const GroupDivider = styled('div')`
+export const GroupDivider = styled.div`
     background: rgba(0, 0, 0, 0.15);
     width: 1px;
     height: 100%;
@@ -108,15 +100,13 @@ export const CopyButton = styled('button')`
     }
 `;
 
-export const ButtonWrapper = styled('div')`
+export const ButtonWrapper = styled.div`
     display: flex;
     flex-direction: column;
-    gap: 20px;
     width: 100%;
-    max-width: 566px;
 `;
 
-export const CheckboxWrapper = styled('div')`
+export const CheckboxWrapper = styled.div`
     display: flex;
     align-items: center;
     gap: 15px;
@@ -124,7 +114,7 @@ export const CheckboxWrapper = styled('div')`
     cursor: pointer;
 `;
 
-export const Checkbox = styled('div')<{ $checked: boolean }>`
+export const Checkbox = styled.div<{ $checked: boolean }>`
     width: 25px;
     height: 25px;
     flex-shrink: 0;
@@ -156,9 +146,100 @@ export const Check = styled(m.div)`
     height: 18px;
 `;
 
-export const CheckboxText = styled('div')`
+export const CheckboxText = styled.div`
     color: rgba(0, 0, 0, 0.75);
     font-size: 14px;
     font-weight: 400;
     line-height: 100%;
+`;
+
+export const WordButtons = styled('div')`
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    width: 100%;
+`;
+
+export const WordButton = styled('button')`
+    display: flex;
+    padding: 4px 6px;
+    align-items: flex-start;
+
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.1);
+
+    color: #000;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.6;
+
+    transition:
+        background 0.2s ease,
+        opacity 0.2s ease;
+    cursor: pointer;
+
+    &:hover {
+        background: rgba(0, 0, 0, 0.2);
+    }
+
+    &:disabled {
+        opacity: 0.2;
+        cursor: default;
+        pointer-events: none;
+    }
+`;
+
+export const WordsSelected = styled.div`
+    width: 100%;
+    min-height: 160px;
+    border-radius: 15px;
+    background: rgba(0, 0, 0, 0.15);
+    display: flex;
+    align-content: flex-start;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 10px 8px;
+    position: relative;
+`;
+
+export const WordPill = styled(m.div)`
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.1);
+    padding: 4px 6px;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.6;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+
+    color: #000;
+
+    cursor: pointer;
+    transition: background 0.2s ease;
+
+    &:hover {
+        background: rgba(0, 0, 0, 0.2);
+    }
+`;
+
+export const Placeholder = styled(m.div)`
+    color: #000;
+    text-align: center;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 700;
+    line-height: 100%;
+
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
 `;

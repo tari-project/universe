@@ -67,6 +67,7 @@ const configUIInitialState: UIConfigStoreState = {
     visual_mode: true,
     warmup_seen: null,
     wallet_ui_mode: WalletUIMode.Standard,
+    was_staged_security_modal_shown: false,
 };
 
 const configBEInMemoryInitialState: ConfigBackendInMemory = {

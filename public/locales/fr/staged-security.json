@@ -8,25 +8,36 @@
   },
   "intro": {
     "balance": "Votre portefeuille contient <span>{{balance}}</span> XTM",
-    "button": "Sauvegarder la phrase de récupération",
+    "button": "Secure my wallet",
+    "subtitle": "You now have your first Tari tokens. Let’s quickly protect your wallet in two easy steps.",
     "text": "Tari Universe configure automatiquement un portefeuille pour vous lorsque vous commencez à miner. Assurez-vous d\"avoir toujours accès à votre portefeuille en stockant votre phrase de récupération en lieu sûr.",
-    "title": "Protégez vos tokens en sauvegardant votre phrase de récupération",
-    "warning": "❗ Fortement recommandé"
+    "title": "You’ve gotten your first Tari (XTM)!\nLet’s secure your wallet.",
+    "warning": "Fortement recommandé"
   },
   "reminderTip": {
     "text": "Il est fortement recommandé de sauvegarder votre phrase de récupération pour votre portefeuille unique",
     "title": "Sauvegardez rapidement votre phrase de récupération dans les paramètres"
   },
   "seedPhrase": {
-    "button": "VÉRIFIER LA PHRASE DE RÉCUPÉRATION",
+    "button": "Verify seed phrase",
     "checkbox": "Je comprends que si je perds ma phrase de récupération, je ne pourrai pas restaurer mon portefeuille.",
     "copied": "Copié !",
     "copy": "Copier dans le presse-papiers",
     "text": "Vous aurez besoin de ce code pour restaurer votre portefeuille.",
     "title": "Notez votre phrase de récupération et conservez-la en lieu sûr"
   },
+  "skip": "Skip for now",
+  "steps": {
+    "complete-true": "Complete",
+    "complete-false": "Incomplete",
+    "step": "Step {{stepNumber}}",
+    "subtitle-pin": "Prevents unauthorized wallet access",
+    "subtitle-seeds": "Ensures you can recover funds if you lose your device",
+    "title-pin": "Set a secure PIN",
+    "title-seeds": "Back up your Seed Phrase"
+  },
   "verifySeed": {
-    "button": "CONFIRMER LA PHRASE DE RÉCUPÉRATION",
+    "button": "Confirm seed phrase",
     "placeholder": "Cliquez sur les mots ci-dessous dans le bon ordre",
     "text": "Pour vous assurer que vous avez bien noté votre phrase de récupération, veuillez sélectionner les mots dans le bon ordre.",
     "title": "Vérifiez votre phrase de récupération"

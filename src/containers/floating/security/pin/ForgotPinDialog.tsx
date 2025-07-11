@@ -5,13 +5,13 @@ import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.ts
 import CloseButton from '@app/components/elements/buttons/CloseButton.tsx';
 
 import { Header, Heading, Wrapper } from './styles.ts';
-import { FormCTA } from '@app/components/security/pin/styles.ts';
 import { FormProvider, useForm } from 'react-hook-form';
 
 import { InputArea, WalletSettingsGrid } from '@app/containers/floating/Settings/sections/wallet/styles.ts';
 import { Edit } from '@app/components/wallet/seedwords/components/Edit.tsx';
 import { Form } from '@app/components/wallet/seedwords/components/edit.styles.ts';
 import { invoke } from '@tauri-apps/api/core';
+import { CTA } from '../common.styles.ts';
 
 export default function ForgotPinDialog() {
     const dialogToShow = useUIStore((s) => s.dialogToShow);
@@ -53,9 +53,9 @@ export default function ForgotPinDialog() {
                                     <Edit />
                                 </InputArea>
                             </WalletSettingsGrid>
-                            <FormCTA fluid type="submit">
+                            <CTA fluid type="submit">
                                 {t('security.pin.forgot')}
-                            </FormCTA>
+                            </CTA>
                         </Form>
                     </FormProvider>
                 </Wrapper>

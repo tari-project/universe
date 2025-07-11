@@ -1,6 +1,5 @@
 import styled, { css } from 'styled-components';
 import { convertHexToRGBA } from '@app/utils';
-import { Button } from '@app/components/elements/buttons/Button.tsx';
 
 export const Wrapper = styled.form`
     display: flex;
@@ -70,20 +69,6 @@ export const CTAWrapper = styled.div`
     width: 100%;
     font-weight: 600;
     margin: 30px 0 0;
-`;
-
-export const FormCTA = styled(Button).attrs({
-    size: 'xlarge',
-})`
-    background-color: ${({ theme }) => theme.palette.contrast};
-    color: ${({ theme }) => theme.palette.text.contrast};
-    transform: scale(0.99);
-    &:hover:not(:disabled) {
-        background-color: ${({ theme }) => theme.palette.contrast};
-        color: ${({ theme }) => theme.palette.text.contrast};
-        transform: scale(1);
-        opacity: 0.9;
-    }
 `;
 
 export const HelpWrapper = styled.div`

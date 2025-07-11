@@ -2,7 +2,8 @@ import { useTranslation } from 'react-i18next';
 import { FormProvider, useForm } from 'react-hook-form';
 import { TextButton } from '@app/components/elements/buttons/TextButton.tsx';
 import { CodeInputValues, DEFAULT_PIN_LENGTH, PinInput } from './PinInput.tsx';
-import { CTAWrapper, FormCTA, Wrapper } from './styles.ts';
+import { CTAWrapper, Wrapper } from './styles.ts';
+import { CTA } from '../styles.ts';
 
 const pinArr = Array.from({ length: DEFAULT_PIN_LENGTH }, (_, i) => i);
 
@@ -34,9 +35,9 @@ export default function EnterPin({ onForgot, onSubmit }: EnterPinProps) {
             <Wrapper onSubmit={methods.handleSubmit(handleSubmit)}>
                 <PinInput />
                 <CTAWrapper>
-                    <FormCTA fluid disabled={currentCode.length !== DEFAULT_PIN_LENGTH} type="submit">
+                    <CTA fluid disabled={currentCode.length !== DEFAULT_PIN_LENGTH} type="submit">
                         {t('security.pin.enter')}
-                    </FormCTA>
+                    </CTA>
                     <TextButton color="greyscale" onClick={handleForgot}>
                         {t('security.pin.forgot')}
                     </TextButton>
