@@ -1645,6 +1645,13 @@ pub async fn start_gpu_mining(
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
+    let gpu_mining_enabled = *ConfigMining::content().await.gpu_mining_enabled();
+
+    if !gpu_mining_enabled {
+        info!(target: LOG_TARGET, "GPU mining is disabled, not starting GPU miner.");
+        return Ok(());
+    }
+
     let timer = Instant::now();
     let _lock = state.gpu_miner_stop_start_mutex.lock().await;
 
@@ -1661,11 +1668,13 @@ pub async fn start_gpu_mining(
 
     info!(target: LOG_TARGET, "3. Starting gpu miner");
 
+    let mode = *ConfigMining::content().await.mode();
     let mut gpu_miner = state.gpu_miner_sha.write().await;
     let res = gpu_miner
         .start(
             tari_address.clone(),
             telemetry_id.clone(),
+            mode,
             app.path()
                 .app_local_data_dir()
                 .expect("Could not get data dir"),
@@ -1826,7 +1835,7 @@ pub async fn stop_gpu_mining(state: tauri::State<'_, UniverseAppState>) -> Resul
     let timer = Instant::now();
 
     state
-        .gpu_miner
+        .gpu_miner_sha
         .write()
         .await
         .stop()

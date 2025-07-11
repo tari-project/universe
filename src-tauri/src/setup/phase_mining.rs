@@ -223,7 +223,7 @@ impl SetupPhaseImpl for MiningSetupPhase {
                 ))
                 .with_randomx_disabled(
                     self.setup_features
-                        .is_feature_enabled(SetupFeature::CentralizedPool),
+                        .is_feature_enabled(SetupFeature::CpuPool),
                 )
                 .build()?;
             state
@@ -241,7 +241,7 @@ impl SetupPhaseImpl for MiningSetupPhase {
 
         if self
             .setup_features
-            .is_feature_disabled(SetupFeature::CentralizedPool)
+            .is_feature_disabled(SetupFeature::CpuPool)
         {
             progress_stepper
                 .resolve_step(ProgressPlans::Mining(ProgressSetupMiningPlan::MMProxy))

@@ -34,6 +34,7 @@ use super::{
 };
 use crate::app_in_memory_config::{MinerType, DEFAULT_EXCHANGE_ID};
 use crate::configs::config_core::ConfigCoreContent;
+use crate::configs::config_pools::ConfigPools;
 use crate::{
     configs::{
         config_core::ConfigCore, config_mining::ConfigMining, config_ui::ConfigUI,
@@ -321,12 +322,6 @@ impl SetupManager {
 
     pub async fn resolve_setup_features(&self) -> Result<(), anyhow::Error> {
         let mut features = self.features.write().await;
-        let cpu_mining_pool_url = ConfigMining::content().await.cpu_mining_pool_url().clone();
-        let cpu_mining_pool_status_url = ConfigMining::content()
-            .await
-            .cpu_mining_pool_status_url()
-            .clone();
-        let is_cpu_mining_enabled = *ConfigMining::content().await.cpu_mining_enabled();
 
         let external_tari_address = ConfigWallet::content()
             .await
@@ -340,13 +335,17 @@ impl SetupManager {
         let exchange_id = ConfigCore::content().await.exchange_id().clone();
         let is_exchange_miner_build = exchange_id.ne(DEFAULT_EXCHANGE_ID);
 
-        // Centralized Pool feature
-        if cpu_mining_pool_url.is_some()
-            && cpu_mining_pool_status_url.is_some()
-            && is_cpu_mining_enabled
-        {
-            info!(target: LOG_TARGET, "Centralized pool feature enabled");
-            features.add_feature(SetupFeature::CentralizedPool);
+        let is_cpu_pool_enabled = *ConfigPools::content().await.cpu_pool_enabled();
+        let is_gpu_pool_enabled = *ConfigPools::content().await.gpu_pool_enabled();
+
+        if is_cpu_pool_enabled {
+            info!(target: LOG_TARGET, "Cpu Pool feature enabled");
+            features.add_feature(SetupFeature::CpuPool);
+        }
+
+        if is_gpu_pool_enabled {
+            info!(target: LOG_TARGET, "Gpu Pool feature enabled");
+            features.add_feature(SetupFeature::GpuPool);
         }
 
         // Seedless Wallet feature

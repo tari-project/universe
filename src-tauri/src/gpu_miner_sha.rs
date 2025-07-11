@@ -9,9 +9,7 @@ use tokio::{
 };
 
 use crate::{
-    binaries::Binaries, gpu_miner_sha_adapter::GpuMinerShaAdapter,
-    pool_status_watcher::LuckyPoolAdapter, process_watcher::ProcessWatcher,
-    tasks_tracker::TasksTrackers, GpuMinerStatus, PoolStatusWatcher, ProcessStatsCollectorBuilder,
+    binaries::Binaries, configs::config_mining::MiningMode, gpu_miner_sha_adapter::GpuMinerShaAdapter, pool_status_watcher::LuckyPoolAdapter, process_watcher::ProcessWatcher, tasks_tracker::TasksTrackers, GpuMinerStatus, PoolStatusWatcher, ProcessStatsCollectorBuilder
 };
 
 const LOG_TARGET: &str = "tari::universe::gpu_miner_sha";
@@ -48,6 +46,7 @@ impl GpuMinerSha {
         &mut self,
         tari_address: TariAddress,
         telemetry_id: String,
+        mode: MiningMode,
         base_path: PathBuf,
         config_path: PathBuf,
         log_path: PathBuf,

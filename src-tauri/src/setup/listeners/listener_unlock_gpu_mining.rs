@@ -39,7 +39,7 @@ use super::{
     trait_listener::{
         UnlockConditionsListenerTrait, UnlockConditionsStatusChannels, UnlockStrategyTrait,
     },
-    SetupFeaturesList,
+    SetupFeature, SetupFeaturesList,
 };
 
 static LOG_TARGET: &str = "tari::universe::unlock_conditions::listener_unlock_gpu_mining";
@@ -137,7 +137,14 @@ impl UnlockConditionsListenerTrait for ListenerUnlockGpuMining {
         *self.features_list.lock().await = features;
     }
     async fn select_unlock_strategy(&self) -> Box<dyn UnlockStrategyTrait + Send + Sync> {
-        Box::new(DefaultStrategy)
+        let features = self.features_list.lock().await.clone();
+        if features.is_feature_enabled(SetupFeature::GpuPool) {
+            info!(target: LOG_TARGET, "Using GpuPoolStrategy for unlocking");
+            Box::new(GpuPoolStrategy)
+        } else {
+            info!(target: LOG_TARGET, "Using DefaultStrategy for unlocking");
+            Box::new(DefaultStrategy)
+        }
     }
 }
 
@@ -154,8 +161,15 @@ impl UnlockStrategyTrait for DefaultStrategy {
         vec![
             SetupPhase::Core,
             SetupPhase::Hardware,
-            // SetupPhase::Node,
-            // SetupPhase::Mining,
+            SetupPhase::Node,
+            SetupPhase::Mining,
         ]
+    }
+}
+
+struct GpuPoolStrategy;
+impl UnlockStrategyTrait for GpuPoolStrategy {
+    fn required_channels(&self) -> Vec<SetupPhase> {
+        vec![SetupPhase::Core, SetupPhase::Hardware]
     }
 }
