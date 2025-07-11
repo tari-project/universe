@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { setDialogToShow, useStagedSecurityStore } from '@app/store';
+import { useConfigUIStore, useStagedSecurityStore } from '@app/store';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import { AlertChip } from '@app/components/security/alert-chip/AlertChip.tsx';
 import CloseButton from '@app/components/elements/buttons/CloseButton.tsx';
@@ -12,26 +12,32 @@ import { useGetSeedWords } from '@app/containers/floating/Settings/sections/wall
 export default function SecurityPromptDialog() {
     const { t } = useTranslation(['staged-security']);
     const { getSeedWords } = useGetSeedWords();
+    const seedWordsComplete = useConfigUIStore((s) => s.was_staged_security_modal_shown);
     const showModal = useStagedSecurityStore((s) => s.showModal);
+    const setShowModal = useStagedSecurityStore((s) => s.setShowModal);
     const setModalStep = useStagedSecurityStore((s) => s.setModalStep);
     const step = useStagedSecurityStore((s) => s.step);
 
     const isOpen = showModal && step === 'ProtectIntro';
     function handleClose() {
-        setDialogToShow(null);
+        setShowModal(false);
     }
     function handleClick() {
-        getSeedWords().then((seedWords) => {
-            if (seedWords && seedWords?.length) {
-                setModalStep('SeedPhrase');
-            }
-        });
+        if (!seedWordsComplete) {
+            getSeedWords().then((seedWords) => {
+                if (seedWords && seedWords?.length) {
+                    setModalStep('SeedPhrase');
+                }
+            });
+        } else {
+            setModalStep('CreatePin');
+        }
     }
 
     const steps: StepItem[] = [
         {
             stepNumber: 1,
-            completed: false,
+            completed: !!seedWordsComplete,
             title: t('steps.title-seeds'),
             subtitle: t('steps.title-seeds'),
         },
