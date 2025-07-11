@@ -36,6 +36,10 @@ export default function MiningButtonCombined() {
         await stopMining();
     }, []);
 
+    console.log(
+        `MiningButtonCombined: isAppSettingUp=${isAppSettingUp}, isMiningUnlocked=${isMiningUnlocked}, isMiningControlsEnabled=${isMiningControlsEnabled}, isMiningInitiated=${isMiningInitiated}, isCPUMining=${isCPUMining}, isGPUMining=${isGPUMining}, isMining=${isMining}, isCpuMiningEnabled=${isCpuMiningEnabled}, isGpuMiningEnabled=${isGpuMiningEnabled}, isMiningEnabled=${isMiningEnabled}, isMiningLoading=${isMiningLoading}, isMiningButtonDisabled=${isMiningButtonDisabled}`
+    );
+
     let button: ReactElement | null = null;
 
     if (isAppLoading) {

@@ -1,4 +1,3 @@
-import { useTranslation } from 'react-i18next';
 import { useConfigMiningStore, useConfigPoolsStore, useMiningMetricsStore, useMiningStore } from '@app/store';
 import MinerTile from './Miner';
 import { useMiningPoolsStore } from '@app/store/useMiningPoolsStore';
@@ -21,7 +20,7 @@ export default function GPUTile() {
             hashRate={hash_rate}
             isPoolEnabled={isGpuPoolEnabled}
             poolStats={gpuPoolStats}
-            rewardThreshold={2.0}
+            rewardThreshold={gpuPoolStats?.min_payout || 2.0}
         />
     );
 }

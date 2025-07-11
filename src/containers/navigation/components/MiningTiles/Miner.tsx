@@ -1,5 +1,5 @@
 import { PoolStats } from '@app/types/app-status';
-import { formatHashrate } from '@app/utils';
+import { formatHashrate, formatNumber, FormatPreset } from '@app/utils';
 import { Trans, useTranslation } from 'react-i18next';
 import { usePoolRewards } from './usePoolRewards';
 import Tile from './components/Tile/Tile';
@@ -74,7 +74,9 @@ export default function MinerTile({
         getReferenceProps: getReferenceProps,
     };
 
-    const rewardThresholdString = rewardThreshold ? `${rewardThreshold} XTM` : '2.0 XTM';
+    const rewardThresholdString = rewardThreshold
+        ? `${formatNumber(rewardThreshold, FormatPreset.XTM_COMPACT)} XTM`
+        : '2.0 XTM';
 
     return (
         <>
@@ -89,6 +91,7 @@ export default function MinerTile({
                 mainUnit={mainUnit}
                 mainLabel={mainLabel}
                 isIdle={!isPoolEnabled}
+                isSoloMining={!isPoolEnabled}
                 {...(isPoolEnabled ? additionalTilePropsForPool : {})}
             />
             <AnimatePresence>

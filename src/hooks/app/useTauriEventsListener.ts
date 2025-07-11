@@ -124,6 +124,7 @@ const useTauriEventsListener = () => {
                             handleBaseNodeStatusUpdate(event.payload);
                             break;
                         case 'GpuMiningUpdate':
+                            console.info('GpuMiningUpdate', event.payload);
                             setGpuMiningStatus(event.payload);
                             break;
                         case 'CpuMiningUpdate':
@@ -133,6 +134,7 @@ const useTauriEventsListener = () => {
                             loadCpuPoolStats(event.payload);
                             break;
                         case 'GpuPoolStatsUpdate':
+                            console.info('GpuPoolStatsUpdate', event.payload);
                             loadGpuPoolStats(event.payload);
                             break;
                         case 'ConnectedPeersUpdate':

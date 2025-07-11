@@ -9,14 +9,14 @@ use tokio::{
 };
 
 use crate::{
-    binaries::Binaries, configs::{config_mining::MiningMode, config_pools::{ConfigPools, GpuPool}, trait_config::ConfigImpl}, gpu_miner_sha_adapter::GpuMinerShaAdapter, pool_status_watcher::LuckyPoolAdapter, process_watcher::{self, ProcessWatcher}, tasks_tracker::TasksTrackers, GpuMinerStatus, PoolStatusWatcher, ProcessStatsCollectorBuilder
+    binaries::Binaries, configs::{config_mining::MiningMode, config_pools::{ConfigPools, GpuPool}, trait_config::ConfigImpl}, gpu_miner_sha_adapter::GpuMinerShaAdapter, pool_status_watcher::LuckyPoolAdapter, process_watcher::{self, ProcessWatcher}, tasks_tracker::TasksTrackers, EventsEmitter, GpuMinerStatus, PoolStatusWatcher, ProcessStatsCollectorBuilder
 };
 
 const LOG_TARGET: &str = "tari::universe::gpu_miner_sha";
 
 pub struct GpuMinerSha {
     watcher: Arc<RwLock<ProcessWatcher<GpuMinerShaAdapter>>>,
-    status_sender: Sender<Option<GpuMinerStatus>>,
+    status_sender: Sender<GpuMinerStatus>,
     status_updates_thread: RwLock<Option<tokio::task::JoinHandle<()>>>,
     pool_status_watcher: Option<PoolStatusWatcher<LuckyPoolAdapter>>,
     pub pool_status_shutdown_signal: Shutdown,
@@ -25,7 +25,7 @@ pub struct GpuMinerSha {
 impl GpuMinerSha {
     pub fn new(
         stats_collector: &mut ProcessStatsCollectorBuilder,
-        status_sender: Sender<Option<GpuMinerStatus>>,
+        status_sender: Sender<GpuMinerStatus>,
     ) -> Self {
         let adapter = GpuMinerShaAdapter::new(status_sender.clone());
         let mut process_watcher =
@@ -102,6 +102,7 @@ impl GpuMinerSha {
             let mut process_watcher = self.watcher.write().await;
             process_watcher.status_monitor = None;
             process_watcher.stop().await?;
+            let _res = self.status_sender.send(GpuMinerStatus::default());
             if let Some(status_updates_thread) = self.status_updates_thread.write().await.take() {
                 status_updates_thread.abort();
             }
@@ -116,9 +117,6 @@ impl GpuMinerSha {
             warn!(target: LOG_TARGET, "Status updates thread is already running");
             return Ok(());
         }
-
-        let gpu_status_sender = self.status_sender.clone();
-        let mut gpu_status_receiver = self.status_sender.subscribe();
         
         let pool_status_watcher = self.pool_status_watcher.clone();
         let mut pool_status_check = interval(Duration::from_secs(20));
@@ -149,28 +147,10 @@ impl GpuMinerSha {
                                 None => None,
                             };
                         
-                            info!(target: LOG_TARGET, "Current pool status: {:?}", last_pool_status);
+                            info!(target: LOG_TARGET, "Pool status update: {:?}", last_pool_status);
+                            EventsEmitter::emit_gpu_pool_status_update(last_pool_status.clone()).await;
                         
                         }
-                        _ = gpu_status_receiver.changed() => {
-                            let gpu_status = gpu_status_receiver.borrow().clone();
-
-                            let gpu_status = match gpu_status {
-                                Some(gpu_raw_status) => {
-
-                                    GpuMinerStatus {
-                                        estimated_earnings: 0,
-                                        ..gpu_raw_status
-                                    }
-                                }
-                                None => {
-                                    warn!(target: LOG_TARGET, "Failed to get gpu miner status");
-                                    GpuMinerStatus::default()
-                                }
-                            };
-
-                            let _result = gpu_status_sender.send(Some(gpu_status));
-                        },
                         _ = shutdown_signal.wait() => {
                             break;
                         },

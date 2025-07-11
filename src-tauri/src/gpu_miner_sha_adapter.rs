@@ -23,11 +23,11 @@ pub struct GpuMinerShaAdapter {
     pub batch_size: Option<u32>,
     pub worker_name: Option<String>,
     pub pool_url: Option<String>,
-    pub(crate) gpu_status_sender: Sender<Option<GpuMinerStatus>>,
+    pub(crate) gpu_status_sender: Sender<GpuMinerStatus>,
 }
 
 impl GpuMinerShaAdapter {
-    pub fn new(gpu_status_sender: Sender<Option<GpuMinerStatus>>) -> Self {
+    pub fn new(gpu_status_sender: Sender<GpuMinerStatus>) -> Self {
         Self {
             tari_address: None,
             batch_size: None,
@@ -119,18 +119,18 @@ impl ProcessAdapter for GpuMinerShaAdapter {
 
 #[derive(Clone)]
 pub struct GpuMinerShaStatusMonitor {
-    gpu_status_sender: Sender<Option<GpuMinerStatus>>,
+    gpu_status_sender: Sender<GpuMinerStatus>,
     websocket_listener: GpuMinerShaWebSocket,
 }
 
 #[async_trait]
 impl StatusMonitor for GpuMinerShaStatusMonitor {
     async fn check_health(&self, uptime: Duration, timeout_duration: Duration) -> HealthStatus {
+        info!(target: LOG_TARGET, "Checking health of ShaMiner");
         let status = match tokio::time::timeout(timeout_duration, self.status()).await {
             Ok(inner) => inner,
             Err(_) => {
                 warn!(target: LOG_TARGET, "Timeout error in ShaMiner check_health");
-                let _ = self.gpu_status_sender.send(None);
                 return HealthStatus::Warning;
             }
         };
@@ -138,17 +138,14 @@ impl StatusMonitor for GpuMinerShaStatusMonitor {
         match status {
             Ok(status) => {
                 info!(target: LOG_TARGET, "ShaMiner status: {:?}", status);
-                let _ = self.gpu_status_sender.send(Some(status.clone()));
+                let _ = self.gpu_status_sender.send(status.clone());
                 if status.hash_rate > 0.0 || uptime.as_secs() < 11 {
                     HealthStatus::Healthy
                 } else {
                     HealthStatus::Warning
                 }
             }
-            Err(_) => {
-                let _ = self.gpu_status_sender.send(None);
-                HealthStatus::Unhealthy
-            }
+            Err(_) => HealthStatus::Unhealthy,
         }
     }
 }

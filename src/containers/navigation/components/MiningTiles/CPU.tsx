@@ -21,53 +21,7 @@ export default function CPUTile() {
             hashRate={hash_rate}
             isPoolEnabled={isCpuPoolEnabled}
             poolStats={cpuPoolStats}
-            rewardThreshold={2.0}
+            rewardThreshold={cpuPoolStats?.min_payout || 2000000} // 2.0 XTM in micro units
         />
     );
-
-    // return (
-    //     <>
-    //         <Tile
-    //             title={`CPU`}
-    //             isEnabled={cpuEnabled}
-    //             isLoading={isLoading || poolStatsLoading}
-    //             isMining={is_mining}
-    //             pillValue={formatted.value}
-    //             pillUnit={formatted.unit}
-    //             mainNumber={currentUnpaid}
-    //             mainUnit="XTM"
-    //             successValue={progressDiff}
-    //             mainLabel={t('stats.tile-heading', { context: is_mining && currentUnpaid === 0 && 'zero' })}
-    //             tooltipTriggerRef={refs.setReference}
-    //             getReferenceProps={getReferenceProps}
-    //         />
-    //         <AnimatePresence>
-    //             {isOpen && (
-    //                 <Tooltip ref={refs.setFloating} {...getFloatingProps()} style={floatingStyles}>
-    //                     <ExpandedBox
-    //                         initial={{ opacity: 0, y: 10 }}
-    //                         animate={{ opacity: 1, y: 0 }}
-    //                         exit={{ opacity: 0, y: 10 }}
-    //                     >
-    //                         <Typography variant="h5">{t('stats.tile-heading')}</Typography>
-    //                         <Typography variant="p">
-    //                             <Trans
-    //                                 i18nKey="stats.tooltip-copy"
-    //                                 ns="p2p"
-    //                                 values={{ amount: REWARD_THRESHOLD_STR }}
-    //                                 components={{ strong: <strong /> }}
-    //                             />
-    //                         </Typography>
-    //                         <TooltipChipWrapper>
-    //                             <TooltipChip>
-    //                                 <TooltipChipHeading>{t('stats.tooltip-tile-heading')}</TooltipChipHeading>
-    //                                 <TooltipChipText>{`${unpaidFMT} / ${REWARD_THRESHOLD_STR}`}</TooltipChipText>
-    //                             </TooltipChip>
-    //                         </TooltipChipWrapper>
-    //                     </ExpandedBox>
-    //                 </Tooltip>
-    //             )}
-    //         </AnimatePresence>
-    //     </>
-    // );
 }

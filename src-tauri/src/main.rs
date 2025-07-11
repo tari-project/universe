@@ -319,16 +319,15 @@ fn main() {
     );
     let gpu_miner: Arc<RwLock<GpuMiner>> = Arc::new(
         GpuMiner::new(
-            gpu_status_tx,
+            gpu_status_tx.clone(),
             base_node_watch_rx.clone(),
             &mut stats_collector,
         )
         .into(),
     );
 
-    let (gpu_sha_status_tx, gpu_sha_status_rx) = watch::channel(None);
     let gpu_miner_sha: Arc<RwLock<GpuMinerSha>> =
-        Arc::new(GpuMinerSha::new(&mut stats_collector, gpu_sha_status_tx).into());
+        Arc::new(GpuMinerSha::new(&mut stats_collector, gpu_status_tx.clone()).into());
 
     let (tor_watch_tx, tor_watch_rx) = watch::channel(TorStatus::default());
     let tor_manager = TorManager::new(tor_watch_tx, &mut stats_collector);

@@ -142,10 +142,10 @@ impl Default for ConfigPoolsContent {
             was_config_migrated: false,
             created_at: SystemTime::now(),
             // ======= Gpu Pool =======
-            gpu_pool_enabled: false,
+            gpu_pool_enabled: true,
             gpu_pool: GpuPool::LuckyPool(LuckyGpuPoolConfig::default()),
             // ======= Cpu Pool =======
-            cpu_pool_enabled: false,
+            cpu_pool_enabled: true,
             cpu_pool: CpuPool::DefaultPool(DefaultCpuPoolConfig::default()),
         }
     }

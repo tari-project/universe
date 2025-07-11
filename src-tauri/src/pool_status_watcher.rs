@@ -96,17 +96,92 @@ impl PoolApiAdapter for SupportXmrPoolAdapter {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct LuckyPoolStatusResponseBody {}
+pub struct LuckyPoolStats {
+    pub wallet: String,
+    #[serde(rename = "rejectedShares")]
+    pub rejected_shares: String,
+    pub hashrate: u64,
+    pub email: Option<String>,
+    pub paid: u64,
+    #[serde(rename = "paymentEnabled")]
+    pub payment_enabled: bool,
+    #[serde(rename = "paymentThreshold")]
+    pub payment_threshold: u64,
+    pub unlocked: u64,
+    pub locked: u64,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct HashrateAvg {
+    #[serde(rename = "1h")]
+    pub one_hour: u64,
+    #[serde(rename = "6h")]
+    pub six_hours: u64,
+    #[serde(rename = "24h")]
+    pub twenty_four_hours: u64,
+}
+#[derive(Serialize, Deserialize, Debug)]
+pub struct LuckyPoolWorker {
+    pub name: String,
+    #[serde(rename = "minerAgent")]
+    pub miner_agent: String,
+    #[serde(rename = "loginTime")]
+    pub login_time: String,
+    pub region: String,
+    pub port: String,
+    #[serde(rename = "firstConnect")]
+    pub first_connect: String,
+    #[serde(rename = "lastJobDiff")]
+    pub last_job_diff: String,
+    #[serde(rename = "rejectedShares")]
+    pub rejected_shares: String,
+    pub hashrate: u64,
+    #[serde(rename = "hashrateAvg")]
+    pub hashrate_avg: HashrateAvg,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct LuckyPoolCharts {
+    #[serde(rename = "hashrate")]
+    pub hashrate: Option<String>, // Assuming this is a string representation of the chart data
+}
+#[derive(Serialize, Deserialize, Debug)]
+pub struct LuckyPoolPayment {}
+#[derive(Serialize, Deserialize, Debug)]
+pub struct LuckyPoolReward {}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct LuckyPoolRewardStats {
+    pub period: String,
+    pub blocks: u64,
+    pub amount: u64,
+    #[serde(rename = "startTime")]
+    pub start_time: u64,
+    #[serde(rename = "endTime")]
+    pub end_time: u64,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct LuckyPoolStatusResponseBody {
+    pub stats: LuckyPoolStats,
+    pub workers: Vec<LuckyPoolWorker>,
+    pub charts: LuckyPoolCharts,
+    pub payments: Vec<LuckyPoolPayment>,
+    pub rewards: Vec<LuckyPoolReward>,
+    #[serde(rename = "rewardStats")]
+    pub reward_stats: Vec<LuckyPoolRewardStats>,
+}
 #[derive(Clone, Debug)]
 pub struct LuckyPoolAdapter {}
 
 impl PoolApiAdapter for LuckyPoolAdapter {
     fn convert_api_data(&self, data: &str) -> Result<PoolStatus, Error> {
+        let converted_data: LuckyPoolStatusResponseBody = serde_json::from_str(data)?;
         let pool_status = PoolStatus {
-            accepted_shares: 0,
-            unpaid: 0,
-            balance: 0,
-            min_payout: 0,
+            accepted_shares: converted_data.stats.hashrate,
+            unpaid: converted_data.stats.unlocked,
+            balance: converted_data.stats.paid + converted_data.stats.unlocked,
+            min_payout: converted_data.stats.payment_threshold,
         };
         Ok(pool_status)
     }
