@@ -402,10 +402,6 @@ impl ProcessAdapter for WalletAdapter {
             binary_version_path.clone(),
         )?;
 
-        println!("-------- START Wallet Binary with keys:");
-        println!("View Private Key: {}", self.view_private_key);
-        println!("Spend Key: {}", self.spend_key);
-
         let mut envs = std::collections::HashMap::new();
         envs.insert(
             "MINOTARI_WALLET_PASSWORD".to_string(),

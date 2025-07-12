@@ -38,6 +38,7 @@ export function useGetSeedWords(args?: Arguments) {
     return {
         seedWords,
         getSeedWords,
+        setSeedWords,
         seedWordsFetched: hasFetched.current,
         seedWordsFetching,
     };
