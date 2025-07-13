@@ -43,11 +43,7 @@ export default function SeedWords({ isMonero = false }: SeedWordsProps) {
     const { isValid } = methods.formState;
 
     // Countdown hook for auto-hiding seed words
-    const {
-        countdown,
-        start: startCountdown,
-        stop: stopCountdown,
-    } = useCountdown({
+    const { start: startCountdown, stop: stopCountdown } = useCountdown({
         duration: SEED_WORDS_COUNTDOWN_DURATION,
         onComplete: () => {
             setShowConfirm(false);
