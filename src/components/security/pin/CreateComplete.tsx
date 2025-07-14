@@ -1,7 +1,8 @@
 // import { useTranslation } from 'react-i18next';
 import { CTAWrapper, TextWrapper } from './styles.ts';
-import { CTA } from '../styles.ts';
+
 import { Typography } from '@app/components/elements/Typography.tsx';
+import { Button } from '@app/components/elements/buttons/Button.tsx';
 
 export default function CreateComplete({ onClose }: { onClose?: () => void }) {
     // const { t } = useTranslation('wallet');
@@ -13,9 +14,9 @@ export default function CreateComplete({ onClose }: { onClose?: () => void }) {
                 <Typography variant="p">{`Happy mining!`}</Typography>
 
                 <CTAWrapper>
-                    <CTA size="xlarge" type="button" onClick={onClose}>
+                    <Button variant="black" size="xlarge" type="button" onClick={onClose}>
                         {`Continue to Tari Universe`}
-                    </CTA>
+                    </Button>
                 </CTAWrapper>
             </TextWrapper>
         </>

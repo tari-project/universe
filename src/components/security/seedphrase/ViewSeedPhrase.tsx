@@ -20,8 +20,9 @@ import { AnimatePresence } from 'motion/react';
 import { useStagedSecurityStore } from '@app/store';
 import CheckIcon from '@app/assets/icons/CheckIcon.tsx';
 import CopyIcon from '@app/assets/icons/CopyIcon.tsx';
-import { CTA } from '@app/components/security/styles.ts';
+
 import { CTAWrapper } from '../pin/styles.ts';
+import { Button } from '@app/components/elements/buttons/Button.tsx';
 
 interface ViewSeedPhraseProps {
     words: string[];
@@ -99,9 +100,14 @@ export function ViewSeedPhrase({ words }: ViewSeedPhraseProps) {
                 </CheckboxWrapper>
 
                 <CTAWrapper>
-                    <CTA size="xlarge" onClick={() => setModalStep('VerifySeedPhrase')} disabled={!checked}>
+                    <Button
+                        variant="black"
+                        size="xlarge"
+                        onClick={() => setModalStep('VerifySeedPhrase')}
+                        disabled={!checked}
+                    >
                         {t('seedPhrase.button')}
-                    </CTA>
+                    </Button>
                 </CTAWrapper>
             </ButtonWrapper>
         </Wrapper>

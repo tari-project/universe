@@ -3,7 +3,7 @@ import { FormProvider, useForm } from 'react-hook-form';
 import { TextButton } from '@app/components/elements/buttons/TextButton.tsx';
 import { CodeInputValues, DEFAULT_PIN_LENGTH, PinInput } from './PinInput.tsx';
 import { CTAWrapper, Wrapper } from './styles.ts';
-import { CTA } from '../styles.ts';
+import { Button } from '@app/components/elements/buttons/Button.tsx';
 
 const pinArr = Array.from({ length: DEFAULT_PIN_LENGTH }, (_, i) => i);
 
@@ -35,9 +35,14 @@ export default function EnterPin({ onForgot, onSubmit }: EnterPinProps) {
             <Wrapper onSubmit={methods.handleSubmit(handleSubmit)}>
                 <PinInput />
                 <CTAWrapper>
-                    <CTA size="xlarge" disabled={currentCode.length !== DEFAULT_PIN_LENGTH} type="submit">
+                    <Button
+                        variant="black"
+                        size="xlarge"
+                        disabled={currentCode.length !== DEFAULT_PIN_LENGTH}
+                        type="submit"
+                    >
                         {t('security.pin.enter')}
-                    </CTA>
+                    </Button>
                     <TextButton color="greyscale" onClick={handleForgot}>
                         {t('security.pin.forgot')}
                     </TextButton>

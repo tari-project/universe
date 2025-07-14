@@ -14,7 +14,7 @@ import {
 } from './styles.ts';
 import { AnimatePresence } from 'motion/react';
 import PillCloseIcon from '@app/assets/icons/PillCloseIcon.tsx';
-import { CTA } from '@app/components/security/styles.ts';
+import { Button } from '@app/components/elements/buttons/Button.tsx';
 
 interface VerifySeedPhraseProps {
     words: string[];
@@ -117,9 +117,9 @@ export function VerifySeedPhrase({ words }: VerifySeedPhraseProps) {
             </PhraseWrapper>
 
             <ButtonWrapper>
-                <CTA size="xlarge" onClick={handleSubmit} disabled={!completed}>
+                <Button size="xlarge" onClick={handleSubmit} disabled={!completed} variant="black">
                     <span>{t('verifySeed.button')}</span>
-                </CTA>
+                </Button>
             </ButtonWrapper>
         </Wrapper>
     );

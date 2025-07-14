@@ -30,6 +30,7 @@ const IconWrapper = styled.div`
 const Text = styled(Typography)`
     display: flex;
     font-size: 14px;
+    color: ${({ theme }) => theme.palette.text.primary};
     font-weight: 600;
 `;
 

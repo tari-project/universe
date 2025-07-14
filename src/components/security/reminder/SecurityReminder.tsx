@@ -3,7 +3,7 @@ import { useStagedSecurityStore, useUIStore } from '@app/store';
 import { BodyCopy, ChevronWrapper, CTAWrapper, Title, Wrapper } from './styles.ts';
 import { ChevronSVG } from '@app/assets/icons/chevron.tsx';
 import { TextButton } from '@app/components/elements/buttons/TextButton.tsx';
-import { CTA } from '../styles.ts';
+import { Button } from '@app/components/elements/buttons/Button.tsx';
 
 const variants = {
     show: {
@@ -38,7 +38,8 @@ export default function SecurityReminder() {
                     <Title>{`🔔 Protect your Tari!`}</Title>
                     <BodyCopy>{`You haven’t secured your wallet yet. Backing up your seed phrase keeps your tokens safe and ensures only you can access them.\nLet's do it now—it'll only take a moment!`}</BodyCopy>
                     <CTAWrapper>
-                        <CTA
+                        <Button
+                            variant="black"
                             onClick={handleStart}
                             size="medium"
                             icon={
@@ -46,7 +47,7 @@ export default function SecurityReminder() {
                                     <ChevronSVG />
                                 </ChevronWrapper>
                             }
-                        >{`Start now`}</CTA>
+                        >{`Start now`}</Button>
                         <TextButton onClick={handleClose}>{`Maybe later`}</TextButton>
                     </CTAWrapper>
                 </Wrapper>

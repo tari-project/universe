@@ -41,7 +41,9 @@ export const PinMarkup = () => {
             <SettingsGroup>
                 <SettingsGroupContent>
                     <SettingsGroupTitle>
-                        <Button onClick={setPin}>{t('setup-pin', { ns: 'settings' })}</Button>
+                        <Button variant="black" onClick={setPin}>
+                            {t('setup-pin', { ns: 'settings' })}
+                        </Button>
                     </SettingsGroupTitle>
                 </SettingsGroupContent>
                 <SettingsGroupAction>
