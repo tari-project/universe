@@ -1037,10 +1037,10 @@ pub async fn reset_settings(
     }
 
     if reset_wallet {
-        debug!(target: LOG_TARGET, "[reset_settings] Removing keychain items");
-        if let Ok(entry) = Entry::new(APPLICATION_FOLDER_ID, "inner_wallet_credentials") {
-            let _unused = entry.delete_credential();
-        }
+        debug!(target: LOG_TARGET, "[reset_settings] Clearing all wallets");
+        InternalWallet::clear_all_wallets()
+            .await
+            .map_err(|e| e.to_string())?;
     }
 
     info!(target: LOG_TARGET, "[reset_settings] Restarting the app");

@@ -108,7 +108,8 @@ impl ConfigWalletContent {
         self
     }
 
-    pub fn update_external_tari_address_book(&mut self, address: TariAddress) -> &mut Self {
+    pub fn select_external_tari_address(&mut self, address: TariAddress) -> &mut Self {
+        self.selected_external_tari_address = Some(address.clone());
         self.external_tari_addresses_book.insert(
             EXCHANGES_RECORD_NAME_FOR_EXTERNAL_ADDRESS_BOOK.to_string(),
             ExternalTariAddressBookRecord {
@@ -116,6 +117,18 @@ impl ConfigWalletContent {
                 address,
             },
         );
+        self.tari_wallet_details = None;
+
+        self
+    }
+
+    // Auto select the first wallet
+    pub fn add_tari_wallet(&mut self, selected_wallet_details: TariWalletDetails) -> &mut Self {
+        // Deselect the external Tari address because a new address is now selected by default
+        self.selected_external_tari_address = None;
+        self.tari_wallets
+            .insert(0, selected_wallet_details.id.clone());
+        self.tari_wallet_details = Some(selected_wallet_details);
 
         self
     }
