@@ -2,6 +2,7 @@ import * as m from 'motion/react-m';
 import styled from 'styled-components';
 import { SB_SPACING } from '@app/theme/styles.ts';
 import { Typography } from '@app/components/elements/Typography.tsx';
+import { Button } from '@app/components/elements/buttons/Button.tsx';
 
 export const Wrapper = styled(m.div)`
     border-radius: 10px;
@@ -28,4 +29,14 @@ export const Title = styled(Typography).attrs({ variant: 'h2' })`
 
 export const BodyCopy = styled(Typography).attrs({ variant: 'p' })`
     text-align: center;
+`;
+
+export const MainCTA = styled(Button).attrs({
+    fluid: true,
+})`
+    background-color: black;
+`;
+
+export const ChevronWrapper = styled.div`
+    transform: rotate(-90deg);
 `;

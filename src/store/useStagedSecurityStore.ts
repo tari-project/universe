@@ -18,7 +18,7 @@ interface Actions {
 const initialState: State = {
     step: 'ProtectIntro',
     showModal: false,
-    showReminderTip: false,
+    showReminderTip: true,
     showCompletedTip: false,
 };
 

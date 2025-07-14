@@ -1,6 +1,8 @@
 import { AnimatePresence } from 'motion/react';
 import { useStagedSecurityStore, useUIStore } from '@app/store';
-import { BodyCopy, Title, Wrapper } from './styles.ts';
+import { BodyCopy, ChevronWrapper, MainCTA, Title, Wrapper } from './styles.ts';
+import { ChevronSVG } from '@app/assets/icons/chevron.tsx';
+import { TextButton } from '@app/components/elements/buttons/TextButton.tsx';
 
 const variants = {
     show: {
@@ -26,6 +28,14 @@ export default function SecurityReminder() {
                 <Wrapper variants={variants} initial="hide" animate="show" exit="hide" style={{ left: offset }}>
                     <Title>{`🔔 Protect your Tari!`}</Title>
                     <BodyCopy>{`You haven’t secured your wallet yet. Backing up your seed phrase keeps your tokens safe and ensures only you can access them.\nLet's do it now—it'll only take a moment!`}</BodyCopy>
+                    <MainCTA
+                        icon={
+                            <ChevronWrapper>
+                                <ChevronSVG />
+                            </ChevronWrapper>
+                        }
+                    >{`Start now`}</MainCTA>
+                    <TextButton>{`Maybe later`}</TextButton>
                 </Wrapper>
             )}
         </AnimatePresence>
