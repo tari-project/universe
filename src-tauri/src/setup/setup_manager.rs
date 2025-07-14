@@ -34,10 +34,10 @@ use super::{
 };
 use crate::app_in_memory_config::{MinerType, DEFAULT_EXCHANGE_ID};
 use crate::configs::config_core::ConfigCoreContent;
+use crate::configs::config_pools::ConfigPools;
 use crate::configs::config_ui::WalletUIMode;
 use crate::events::CriticalProblemPayload;
 use crate::internal_wallet::InternalWallet;
-use crate::configs::config_pools::ConfigPools;
 use crate::{
     configs::{
         config_core::ConfigCore, config_mining::ConfigMining, config_ui::ConfigUI,

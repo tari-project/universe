@@ -27,11 +27,9 @@ use tari_common::configuration::Network;
 use tauri::{AppHandle, Manager};
 use tokio::sync::RwLock;
 
-use crate::{EventsEmitter, UniverseAppState};
+use super::trait_config::{ConfigContentImpl, ConfigImpl};
 use crate::internal_wallet::InternalWallet;
-use super::{
-    trait_config::{ConfigContentImpl, ConfigImpl},
-};
+use crate::{EventsEmitter, UniverseAppState};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SupportXTMPoolConfig {

@@ -20,6 +20,12 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use super::{
+    listeners::SetupFeaturesList,
+    setup_manager::PhaseStatus,
+    trait_setup_phase::{SetupConfiguration, SetupPhaseImpl},
+    utils::{setup_default_adapter::SetupDefaultAdapter, timeout_watcher::TimeoutWatcher},
+};
 use crate::{
     binaries::{Binaries, BinaryResolver},
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
@@ -43,12 +49,6 @@ use tokio::sync::{
     Mutex,
 };
 use tokio_util::task::TaskTracker;
-use super::{
-    listeners::SetupFeaturesList,
-    setup_manager::PhaseStatus,
-    trait_setup_phase::{SetupConfiguration, SetupPhaseImpl},
-    utils::{setup_default_adapter::SetupDefaultAdapter, timeout_watcher::TimeoutWatcher},
-};
 
 static LOG_TARGET: &str = "tari::universe::phase_hardware";
 
