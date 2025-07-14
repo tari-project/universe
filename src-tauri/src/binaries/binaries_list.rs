@@ -106,7 +106,7 @@ impl Binaries {
                 PathBuf::from(file_name).join("bridge")
             }
             Binaries::GpuMinerSHA3X => {
-                let file_name = format!("graxil");
+                let file_name = "graxil";
                 PathBuf::from(file_name)
             }
         }

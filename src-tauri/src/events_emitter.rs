@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::LazyLock;
 
-use crate::configs::config_pools::{ConfigPools, ConfigPoolsContent};
+use crate::configs::config_pools::ConfigPoolsContent;
 // Copyright 2024. The Tari Project
 //
 // Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -324,7 +324,7 @@ impl EventsEmitter {
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit PoolsConfigLoaded event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit PoolsConfigLoaded event: {e:?}");
         }
     }
 
@@ -410,7 +410,7 @@ impl EventsEmitter {
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit GpuPoolStatusUpdate event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit GpuPoolStatusUpdate event: {e:?}");
         }
     }
 

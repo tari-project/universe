@@ -21,9 +21,10 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use anyhow::Error;
-use log::info;
+
 use serde::{Deserialize, Serialize};
 
+#[allow(dead_code)]
 const LOG_TARGET: &str = "tari::universe::pool_status_watcher";
 #[derive(Clone, Debug, Serialize)]
 pub(crate) struct PoolStatus {

@@ -1,10 +1,32 @@
+// Copyright 2025. The Tari Project
+//
+// Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
+// following conditions are met:
+//
+// 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+// disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
+// following disclaimer in the documentation and/or other materials provided with the distribution.
+//
+// 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
+// products derived from this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+// INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+// USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::{Display, Formatter},
     sync::Arc,
 };
-use tokio::{spawn, sync::Mutex};
+use tokio::sync::Mutex;
 use tungstenite::{connect, Message};
 
 use crate::tasks_tracker::TasksTrackers;
@@ -283,9 +305,9 @@ impl Display for WebSocketGpuMinerResponse {
                 .iter()
                 .map(|share| share.to_string())
                 .collect::<Vec<_>>(),
-            self.system_info.to_string(),
-            self.pool_info.to_string(),
-            self.gpu_info.to_string()
+            self.system_info,
+            self.pool_info,
+            self.gpu_info
         )
     }
 }
@@ -315,7 +337,7 @@ impl GpuMinerShaWebSocket {
         }
 
         if let Ok((mut socket, response)) = connect("ws://localhost:8080/ws") {
-            info!(target: LOG_TARGET, "Connected to WebSocket server: {:?}", response);
+            info!(target: LOG_TARGET, "Connected to WebSocket server: {response:?}" );
 
             let shutdown_signal = TasksTrackers::current().hardware_phase.get_signal().await;
 
@@ -345,7 +367,7 @@ impl GpuMinerShaWebSocket {
 
                                             }
                                             Err(e) => {
-                                                warn!(target: LOG_TARGET, "Failed to parse message: {}", e);
+                                                warn!(target: LOG_TARGET, "Failed to parse message: {e}");
                                                 *self.last_message.lock().await = None;
                                             }
                                         }
@@ -359,7 +381,7 @@ impl GpuMinerShaWebSocket {
                                 }
                             }
                             Err(e) => {
-                                warn!(target: LOG_TARGET, "Error reading message: {}", e);
+                                warn!(target: LOG_TARGET, "Error reading message: {e}");
                                 *self.last_message.lock().await = None;
                                 break;
                             }
