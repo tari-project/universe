@@ -13,7 +13,8 @@ import { useEffect, useState } from 'react';
 
 export default function SecurityPromptDialog() {
     const { t } = useTranslation(['staged-security']);
-    const [seedWordsComplete, setSeedWordsComplete] = useState(false);
+    const [seedBackedUp, setSeedBackedUp] = useState(false);
+    const [pinLocked, setPinLocked] = useState(false);
     const showModal = useStagedSecurityStore((s) => s.showModal);
     const setShowModal = useStagedSecurityStore((s) => s.setShowModal);
     const setModalStep = useStagedSecurityStore((s) => s.setModalStep);
@@ -24,7 +25,7 @@ export default function SecurityPromptDialog() {
         setShowModal(false);
     }
     function handleClick() {
-        if (!seedWordsComplete) {
+        if (!seedBackedUp) {
             setModalStep('SeedPhrase');
         } else {
             setModalStep('CreatePin');
@@ -32,21 +33,27 @@ export default function SecurityPromptDialog() {
     }
 
     useEffect(() => {
-        invoke('is_seed_backed_up').then((r) => setSeedWordsComplete(!!r));
-    }, [seedWordsComplete]);
+        invoke('is_seed_backed_up').then((r) => {
+            setSeedBackedUp(!!r);
+        });
+    }, [isOpen]);
+
+    useEffect(() => {
+        invoke('is_pin_locked').then((r) => setPinLocked(!!r));
+    }, [isOpen]);
 
     const steps: StepItem[] = [
         {
             stepNumber: 1,
-            completed: seedWordsComplete,
+            completed: seedBackedUp,
             title: t('steps.title-seeds'),
-            subtitle: t('steps.title-seeds'),
+            subtitle: t('steps.subtitle-seeds'),
         },
         {
             stepNumber: 2,
-            completed: false,
-            title: t('steps.title-seeds'),
-            subtitle: t('steps.title-seeds'),
+            completed: pinLocked,
+            title: t('steps.title-pin'),
+            subtitle: t('steps.subtitle-pin'),
         },
     ];
 
