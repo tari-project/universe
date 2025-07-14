@@ -50,6 +50,7 @@
     "placeholder": "Voer onaktiwiteitstyd in sekondes in",
     "title": "Tyd waarna masjien as onaktief beskou word"
   },
+  "import-seed-success": "Seed words imported successfully",
   "importing-wallet": "Beursie invoer",
   "importing-wallet-copy": "Tari Universe sal outomaties herbegin sodra jou beursie ingevoer is",
   "invalid-seed-words": "Voer 24 woorde in, geskei deur spasies",

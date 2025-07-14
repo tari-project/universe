@@ -50,6 +50,7 @@
     "placeholder": "输入空闲超时时间（秒）",
     "title": "机器被视为空闲的时间"
   },
+  "import-seed-success": "Seed words imported successfully",
   "importing-wallet": "正在导入钱包",
   "importing-wallet-copy": "钱包导入后，Tari Universe 将自动重启",
   "invalid-seed-words": "输入24个用空格分隔的单词",

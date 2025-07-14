@@ -50,6 +50,7 @@
     "placeholder": "Boşta kalma zaman aşımını saniye cinsinden girin",
     "title": "Makinenin boşta sayılacağı süre"
   },
+  "import-seed-success": "Seed words imported successfully",
   "importing-wallet": "Cüzdan İçe Aktarılıyor",
   "importing-wallet-copy": "Cüzdanınız içe aktarıldığında Tari Universe otomatik olarak yeniden başlayacak",
   "invalid-seed-words": "Boşluklarla ayrılmış 24 kelime girin",

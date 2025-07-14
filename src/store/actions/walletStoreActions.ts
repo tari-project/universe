@@ -7,6 +7,8 @@ import { WrapTokenService, OpenAPI } from '@tari-project/wxtm-bridge-backend-api
 import { useConfigBEInMemoryStore } from '../useAppConfigStore';
 import { TariAddressUpdatePayload } from '@app/types/events-payloads';
 import { TransactionDetailsItem, TransactionDirection } from '@app/types/transactions';
+import { addToast } from '@app/components/ToastStack/useToastStore';
+import { t } from 'i18next';
 
 // NOTE: Tx status differ for core and proto(grpc)
 export const COINBASE_BITFLAG = 6144;
@@ -107,6 +109,11 @@ export const importSeedWords = async (seedWords: string[]) => {
         await invoke('import_seed_words', { seedWords });
         await refreshTransactions();
         useWalletStore.setState({ is_wallet_importing: false });
+        addToast({
+            title: t('success', { ns: 'airdrop' }),
+            text: t('import-seed-success', { ns: 'settings' }),
+            type: 'success',
+        });
     } catch (error) {
         setError(`Could not import seed words: ${error}`, true);
         useWalletStore.setState({ is_wallet_importing: false });

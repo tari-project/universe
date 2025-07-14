@@ -50,6 +50,7 @@
     "placeholder": "सेकंड में निष्क्रिय समय सीमा दर्ज करें",
     "title": "समय जिसके बाद मशीन को निष्क्रिय माना जाता है"
   },
+  "import-seed-success": "Seed words imported successfully",
   "importing-wallet": "वॉलेट आयात किया जा रहा है",
   "importing-wallet-copy": "एक बार आपका वॉलेट आयात हो जाने पर Tari Universe स्वचालित रूप से पुनः आरंभ होगा",
   "invalid-seed-words": "24 शब्दों को स्पेस से अलग करके दर्ज करें",

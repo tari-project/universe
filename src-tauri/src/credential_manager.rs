@@ -72,7 +72,7 @@ impl CredentialManager {
             "{}_{}_{}",
             KEYCHAIN_USERNAME,
             Network::get_current().as_key_str(),
-            id.to_lowercase()
+            id
         );
 
         CredentialManager::new(APPLICATION_FOLDER_ID.into(), name)
@@ -94,11 +94,15 @@ impl CredentialManager {
         }
     }
 
-    fn save_to_keyring(&self, credential: &Credential) -> Result<(), CredentialError> {
+    pub fn delete_credential(&self) -> Result<(), keyring::Error> {
         let entry = Entry::new(&self.service_name, &self.username)?;
+        entry.delete_credential()
+    }
 
-        let _unused = entry.delete_credential();
+    fn save_to_keyring(&self, credential: &Credential) -> Result<(), CredentialError> {
+        let _unused = self.delete_credential();
 
+        let entry = Entry::new(&self.service_name, &self.username)?;
         let serialized = serde_cbor::to_vec(credential)?;
         entry.set_secret(&serialized)?;
         Ok(())

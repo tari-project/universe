@@ -29,6 +29,7 @@ use crate::binaries::{Binaries, BinaryResolver};
 use crate::configs::config_core::{AirdropTokens, ConfigCore, ConfigCoreContent};
 use crate::configs::config_mining::{ConfigMining, ConfigMiningContent, GpuThreads, MiningMode};
 use crate::configs::config_ui::{ConfigUI, ConfigUIContent, DisplayMode};
+use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent};
 use crate::configs::trait_config::ConfigImpl;
 use crate::events::ConnectionStatusPayload;
 use crate::events_emitter::EventsEmitter;
@@ -54,10 +55,9 @@ use crate::utils::app_flow_utils::FrontendReadyChannel;
 use crate::wallet_adapter::{TariAddressVariants, TransactionInfo, WalletBalance};
 use crate::wallet_manager::WalletManagerError;
 use crate::websocket_manager::WebsocketManagerStatusMessage;
-use crate::{airdrop, PoolStatus, UniverseAppState, APPLICATION_FOLDER_ID};
+use crate::{airdrop, PoolStatus, UniverseAppState};
 
 use base64::prelude::*;
-use keyring::Entry;
 use log::{debug, error, info, warn};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -1037,10 +1037,10 @@ pub async fn reset_settings(
     }
 
     if reset_wallet {
-        debug!(target: LOG_TARGET, "[reset_settings] Removing keychain items");
-        if let Ok(entry) = Entry::new(APPLICATION_FOLDER_ID, "inner_wallet_credentials") {
-            let _unused = entry.delete_credential();
-        }
+        debug!(target: LOG_TARGET, "[reset_settings] Clearing all wallets");
+        InternalWallet::clear_all_wallets()
+            .await
+            .map_err(|e| e.to_string())?;
     }
 
     info!(target: LOG_TARGET, "[reset_settings] Restarting the app");
@@ -2176,6 +2176,21 @@ pub async fn create_pin(app_handle: tauri::AppHandle) -> Result<(), String> {
     info!(target: LOG_TARGET, "PIN created successfully");
 
     Ok(())
+}
+
+#[tauri::command]
+pub async fn set_seed_backed_up() -> Result<(), String> {
+    ConfigWallet::update_field(ConfigWalletContent::set_seed_backed_up, true)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn is_seed_backed_up() -> Result<bool, String> {
+    let seed_backed_up = *ConfigWallet::content().await.seed_backed_up();
+    Ok(seed_backed_up)
 }
 
 /*

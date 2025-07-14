@@ -50,6 +50,7 @@
     "placeholder": "Entrez le délai d\"inactivité en secondes",
     "title": "Temps après lequel la machine est considérée comme inactive"
   },
+  "import-seed-success": "Seed words imported successfully",
   "importing-wallet": "Importation du portefeuille",
   "importing-wallet-copy": "Tari Universe redémarrera automatiquement une fois que votre portefeuille aura été importé",
   "invalid-seed-words": "Entrez 24 mots séparés par des espaces",

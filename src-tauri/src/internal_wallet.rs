@@ -117,16 +117,10 @@ impl InternalWallet {
     ) -> Result<(), anyhow::Error> {
         if let Some(external_tari_address) = new_external_tari_address {
             ConfigWallet::update_field(
-                ConfigWalletContent::set_selected_external_tari_address,
-                Some(external_tari_address.clone()),
+                ConfigWalletContent::select_external_tari_address,
+                external_tari_address.clone(),
             )
             .await?;
-            ConfigWallet::update_field(
-                ConfigWalletContent::update_external_tari_address_book,
-                external_tari_address,
-            )
-            .await?;
-            ConfigWallet::update_field(ConfigWalletContent::set_tari_wallet_details, None).await?;
         }
 
         let wallet_config = ConfigWallet::content().await;
@@ -304,6 +298,7 @@ impl InternalWallet {
         pin_password_provided: Option<SafePassword>,
     ) -> Result<(TariWalletDetails, Vec<u8>), anyhow::Error> {
         let wallet_id = rand_utils::get_rand_string(6);
+        log::info!(target: LOG_TARGET, "Adding Tari Wallet with id: {wallet_id}");
 
         let encrypted_seed = if PinManager::pin_locked().await {
             let pin_password = match pin_password_provided {
@@ -324,24 +319,9 @@ impl InternalWallet {
         InternalWallet::set_credentials(app_handle, wallet_id.clone(), &credentials, true).await?;
 
         // We always load the first index
-        let new_tari_wallets = vec![wallet_id.clone()];
-
-        ConfigWallet::update_field(ConfigWalletContent::set_tari_wallets, new_tari_wallets).await?;
-
         let wallet_details = InternalWallet::get_tari_wallet_details(wallet_id, tari_seed).await?;
-
-        ConfigWallet::update_field(
-            ConfigWalletContent::set_tari_wallet_details,
-            Some(wallet_details.clone()),
-        )
-        .await?;
-
-        // Deselect the external Tari address because a new address is now selected by default
-        ConfigWallet::update_field(
-            ConfigWalletContent::set_selected_external_tari_address,
-            None,
-        )
-        .await?;
+        ConfigWallet::update_field(ConfigWalletContent::add_tari_wallet, wallet_details.clone())
+            .await?;
 
         // Modify the instance directly due to circular usage in initialze_seed
         if INSTANCE.get().is_some() {
@@ -353,7 +333,16 @@ impl InternalWallet {
         Ok((wallet_details, encrypted_seed))
     }
 
+    fn remove_tari_wallet(wallet_id: String) -> Result<(), anyhow::Error> {
+        log::info!(target: LOG_TARGET, "Removing Tari Wallet with id: {wallet_id}");
+        let cm = CredentialManager::new_default(wallet_id);
+        cm.delete_credential()?;
+
+        Ok(())
+    }
+
     async fn add_monero_wallet(monero_seed: MoneroSeed) -> Result<Vec<u8>, anyhow::Error> {
+        log::info!(target: LOG_TARGET, "Adding new Monero Wallet");
         let cm = CredentialManager::new_default("monero".to_string());
         let monero_seed_binary = (*monero_seed.inner())
             .to_binary()
@@ -374,6 +363,14 @@ impl InternalWallet {
         .await?;
 
         Ok(monero_seed_binary)
+    }
+
+    fn remove_monero_wallet() -> Result<(), anyhow::Error> {
+        log::info!(target: LOG_TARGET, "Removing Monero Wallet");
+        let cm = CredentialManager::new_default("monero".to_string());
+        cm.delete_credential()?;
+
+        Ok(())
     }
 
     pub async fn recover_forgotten_pin(
@@ -522,11 +519,11 @@ impl InternalWallet {
 
     async fn set_credentials(
         app_handle: &AppHandle,
-        entry_id: String,
+        wallet_id: String,
         credential: &Credential,
         forced: bool,
     ) -> Result<(), anyhow::Error> {
-        let cm = CredentialManager::new_default(entry_id);
+        let cm = CredentialManager::new_default(wallet_id);
         if forced {
             // Infinitely retry until the user proceed with keyring
             retry_with_keyring_dialog(
@@ -851,6 +848,15 @@ impl InternalWallet {
             internal_wallet_guard.monero_address = monero_address;
         }
 
+        Ok(())
+    }
+
+    pub async fn clear_all_wallets() -> Result<(), anyhow::Error> {
+        let wallet_config = ConfigWallet::content().await;
+        for wallet_id in wallet_config.tari_wallets() {
+            InternalWallet::remove_tari_wallet(wallet_id.clone())?
+        }
+        InternalWallet::remove_monero_wallet()?;
         Ok(())
     }
 }
