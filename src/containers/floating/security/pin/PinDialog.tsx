@@ -32,7 +32,7 @@ export default function PinDialog() {
 
     function handleSubmit(pin: string) {
         emit('pin-dialog-response', Number(pin)).then(() => {
-            if (dialogToShow !== 'createPin') {
+            if (step !== 'CreatePin') {
                 setDialogToShow(null);
             } else {
                 setShowComplete(true);
@@ -67,7 +67,7 @@ export default function PinDialog() {
             <DialogContent $transparentBg $unPadded>
                 <Wrapper>
                     {headerMarkup}
-                    {dialogToShow === 'createPin' && createMarkup}
+                    {createOpen ? createMarkup : null}
                     {dialogToShow === 'enterPin' && <EnterPin onSubmit={handleSubmit} onForgot={handleForgotPin} />}
                 </Wrapper>
             </DialogContent>

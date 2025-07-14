@@ -1,18 +1,21 @@
 import { useTranslation } from 'react-i18next';
-import { useConfigUIStore, useStagedSecurityStore } from '@app/store';
+import { useStagedSecurityStore } from '@app/store';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import { AlertChip } from '@app/components/security/alert-chip/AlertChip.tsx';
 import CloseButton from '@app/components/elements/buttons/CloseButton.tsx';
 import { Step, StepItem } from '@app/components/security/step/Step.tsx';
-import { Content, Header, Subtitle, Title, Wrapper, CTA, CTAWrapper, ContentWrapper } from '../common.styles.ts';
+import { Content, Header, Subtitle, Title, Wrapper, CTAWrapper, ContentWrapper } from '../common.styles.ts';
 
 import { TextButton } from '@app/components/elements/buttons/TextButton.tsx';
 import { useGetSeedWords } from '@app/containers/floating/Settings/sections/wallet/SeedWordsMarkup/useGetSeedWords.ts';
+import { Button } from '@app/components/elements/buttons/Button.tsx';
+import { invoke } from '@tauri-apps/api/core';
+import { useEffect, useState } from 'react';
 
 export default function SecurityPromptDialog() {
     const { t } = useTranslation(['staged-security']);
     const { getSeedWords } = useGetSeedWords();
-    const seedWordsComplete = useConfigUIStore((s) => s.was_staged_security_modal_shown);
+    const [seedWordsComplete, setSeedWordsComplete] = useState(false);
     const showModal = useStagedSecurityStore((s) => s.showModal);
     const setShowModal = useStagedSecurityStore((s) => s.setShowModal);
     const setModalStep = useStagedSecurityStore((s) => s.setModalStep);
@@ -34,10 +37,14 @@ export default function SecurityPromptDialog() {
         }
     }
 
+    useEffect(() => {
+        invoke('is_seed_backed_up').then((r) => setSeedWordsComplete(!!r));
+    }, [seedWordsComplete]);
+
     const steps: StepItem[] = [
         {
             stepNumber: 1,
-            completed: !!seedWordsComplete,
+            completed: seedWordsComplete,
             title: t('steps.title-seeds'),
             subtitle: t('steps.title-seeds'),
         },
@@ -66,7 +73,9 @@ export default function SecurityPromptDialog() {
                             ))}
                         </ContentWrapper>
                         <CTAWrapper>
-                            <CTA onClick={handleClick}>{t('intro.button')}</CTA>
+                            <Button fluid variant="black" size="xlarge" onClick={handleClick}>
+                                {t('intro.button')}
+                            </Button>
                             <TextButton onClick={handleClose}>{t('skip')}</TextButton>
                         </CTAWrapper>
                     </Content>

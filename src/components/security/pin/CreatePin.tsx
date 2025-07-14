@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { TextButton } from '@app/components/elements/buttons/TextButton.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
+import { StepChip } from '@app/containers/floating/security/common.styles.ts';
 
 const pinArr = Array.from({ length: DEFAULT_PIN_LENGTH }, (_, i) => i);
 export default function CreatePin({ onClose, onSubmit }: { onClose?: () => void; onSubmit: (pin: string) => void }) {
@@ -59,6 +60,7 @@ export default function CreatePin({ onClose, onSubmit }: { onClose?: () => void;
 
     return (
         <FormProvider {...methods}>
+            <StepChip>{`Step 2 of 2 `}</StepChip>
             <Wrapper onSubmit={methods.handleSubmit(handleSubmit)}>
                 <TextWrapper>
                     <Typography variant="h5">{t('security.pin.creation-title', { context })}</Typography>

@@ -1,4 +1,4 @@
-import { setError, useStagedSecurityStore } from '@app/store';
+import { useStagedSecurityStore } from '@app/store';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -63,14 +63,9 @@ export function VerifySeedPhrase({ words }: VerifySeedPhraseProps) {
         checkCompletion(newSelectedWords.map((w) => w.word));
     };
 
-    const handleSubmit = () => {
-        invoke('set_seed_backed_up')
-            .then(() => {
-                setModalStep('CreatePin');
-            })
-            .catch((e) => {
-                setError(e.message);
-            });
+    const handleSubmit = async () => {
+        setModalStep('CreatePin');
+        await invoke('set_seed_backed_up');
     };
 
     return (

@@ -67,17 +67,19 @@ export const CTAWrapper = styled.div`
     width: 100%;
     font-weight: 600;
 `;
-export const CTA = styled(Button).attrs({
-    size: 'xlarge',
-    fluid: true,
-})`
+
+export const StepChip = styled.div`
+    border-radius: 50px;
     background-color: ${({ theme }) => theme.palette.contrast};
     color: ${({ theme }) => theme.palette.text.contrast};
-    transform: scale(0.99);
-    &:hover:not(:disabled) {
-        background-color: ${({ theme }) => theme.palette.contrast};
-        color: ${({ theme }) => theme.palette.text.contrast};
-        transform: scale(1);
-        opacity: 0.9;
-    }
+    display: flex;
+    width: max-content;
+    height: 33px;
+    padding: 0 8px;
+    align-items: center;
+
+    text-align: center;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.2;
 `;

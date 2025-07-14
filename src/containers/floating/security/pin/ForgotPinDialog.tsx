@@ -11,7 +11,8 @@ import { InputArea, WalletSettingsGrid } from '@app/containers/floating/Settings
 import { Edit } from '@app/components/wallet/seedwords/components/Edit.tsx';
 import { Form } from '@app/components/wallet/seedwords/components/edit.styles.ts';
 import { invoke } from '@tauri-apps/api/core';
-import { CTA } from '../common.styles.ts';
+
+import { Button } from '@app/components/elements/buttons/Button.tsx';
 
 export default function ForgotPinDialog() {
     const dialogToShow = useUIStore((s) => s.dialogToShow);
@@ -53,9 +54,9 @@ export default function ForgotPinDialog() {
                                     <Edit />
                                 </InputArea>
                             </WalletSettingsGrid>
-                            <CTA fluid type="submit">
+                            <Button fluid type="submit" variant="black" size="xlarge">
                                 {t('security.pin.forgot')}
-                            </CTA>
+                            </Button>
                         </Form>
                     </FormProvider>
                 </Wrapper>
