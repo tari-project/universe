@@ -20,7 +20,7 @@ export default function GPUTile() {
             hashRate={hash_rate}
             isPoolEnabled={isGpuPoolEnabled}
             poolStats={gpuPoolStats}
-            rewardThreshold={gpuPoolStats?.min_payout || 2.0}
+            rewardThreshold={gpuPoolStats?.min_payout || 2000000}
         />
     );
 }
