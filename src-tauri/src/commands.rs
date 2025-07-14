@@ -1859,7 +1859,7 @@ pub async fn toggle_cpu_pool_mining(enabled: bool, app: tauri::AppHandle) -> Res
 }
 
 #[tauri::command]
-pub async fn toggle_gpu_pool_mining(enabled: bool, app: tauri::AppHandle) -> Result<(), String> {
+pub async fn toggle_gpu_pool_mining(enabled: bool) -> Result<(), String> {
     let timer = Instant::now();
 
     ConfigPools::update_field(ConfigPoolsContent::set_gpu_pool_enabled, enabled)

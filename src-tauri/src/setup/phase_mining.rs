@@ -61,7 +61,6 @@ pub struct MiningSetupPhaseSessionConfiguration {}
 #[derive(Clone, Default)]
 pub struct MiningSetupPhaseAppConfiguration {
     tari_address: TariAddress,
-    p2pool_enabled: bool,
     mmproxy_monero_nodes: Vec<String>,
     mmproxy_use_monero_fail: bool,
 }
@@ -139,7 +138,6 @@ impl SetupPhaseImpl for MiningSetupPhase {
     }
 
     async fn load_app_configuration() -> Result<Self::AppConfiguration, Error> {
-        let p2pool_enabled = *ConfigCore::content().await.is_p2pool_enabled();
         let mmproxy_monero_nodes = ConfigCore::content().await.mmproxy_monero_nodes().clone();
         let mmproxy_use_monero_fail = *ConfigCore::content().await.mmproxy_use_monero_failover();
         let tari_address = ConfigWallet::content()
@@ -147,7 +145,6 @@ impl SetupPhaseImpl for MiningSetupPhase {
             .get_current_used_tari_address();
 
         Ok(MiningSetupPhaseAppConfiguration {
-            p2pool_enabled,
             mmproxy_use_monero_fail,
             mmproxy_monero_nodes,
             tari_address,
@@ -193,23 +190,15 @@ impl SetupPhaseImpl for MiningSetupPhase {
                 .resolve_step(ProgressPlans::Mining(ProgressSetupMiningPlan::MMProxy))
                 .await;
 
-            let use_local_p2pool_node =
-                state.node_manager.is_local_current().await.unwrap_or(false);
-            let p2pool_node_grpc_address = state
-                .p2pool_manager
-                .get_grpc_address(use_local_p2pool_node)
-                .await;
             state
                 .mm_proxy_manager
                 .start(StartConfig {
                     base_node_grpc_address,
-                    p2pool_node_grpc_address,
                     base_path: data_dir.clone(),
                     config_path: config_dir.clone(),
                     log_path: log_dir.clone(),
                     tari_address: tari_address.clone(),
                     coinbase_extra: telemetry_id,
-                    p2pool_enabled: self.app_configuration.p2pool_enabled,
                     monero_nodes: self.app_configuration.mmproxy_monero_nodes.clone(),
                     use_monero_fail: self.app_configuration.mmproxy_use_monero_fail,
                 })
