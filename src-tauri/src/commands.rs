@@ -52,7 +52,7 @@ use crate::tasks_tracker::TasksTrackers;
 use crate::tor_adapter::TorConfig;
 use crate::utils::address_utils::verify_send;
 use crate::utils::app_flow_utils::FrontendReadyChannel;
-use crate::wallet_adapter::{TariAddressVariants, TransactionInfo, WalletBalance};
+use crate::wallet_adapter::{TariAddressVariants, TransactionInfo};
 use crate::wallet_manager::WalletManagerError;
 use crate::websocket_manager::WebsocketManagerStatusMessage;
 use crate::{airdrop, PoolStatus, UniverseAppState};
@@ -1682,8 +1682,7 @@ pub async fn start_gpu_mining(
         info!(target: LOG_TARGET, "1. Starting gpu miner");
 
         let source = if p2pool_enabled {
-            let use_local = state.node_manager.is_local_current().await.unwrap_or(false);
-            let grpc_address = state.p2pool_manager.get_grpc_address(use_local).await;
+            let grpc_address = state.p2pool_manager.get_grpc_address().await;
             GpuNodeSource::P2Pool { grpc_address }
         } else {
             let grpc_address = state
@@ -2223,27 +2222,6 @@ pub async fn launch_builtin_tapplet() -> Result<ActiveTapplet, String> {
         source: format!("http://{addr}"),
         version: "1.0.0".to_string(),
     })
-}
-
-#[tauri::command]
-pub async fn get_tari_wallet_balance(
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<WalletBalance, String> {
-    let balance = state
-        .wallet_state_watch_rx
-        .borrow()
-        .clone()
-        .and_then(|state| state.balance);
-
-    match balance {
-        Some(balance) => Ok(balance),
-        None => Ok(WalletBalance {
-            available_balance: MicroMinotari(0),
-            timelocked_balance: MicroMinotari(0),
-            pending_incoming_balance: MicroMinotari(0),
-            pending_outgoing_balance: MicroMinotari(0),
-        }),
-    }
 }
 
 #[tauri::command]

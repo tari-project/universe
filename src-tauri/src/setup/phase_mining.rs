@@ -239,12 +239,7 @@ impl SetupPhaseImpl for MiningSetupPhase {
                 .resolve_step(ProgressPlans::Mining(ProgressSetupMiningPlan::MMProxy))
                 .await;
 
-            let use_local_p2pool_node =
-                state.node_manager.is_local_current().await.unwrap_or(false);
-            let p2pool_node_grpc_address = state
-                .p2pool_manager
-                .get_grpc_address(use_local_p2pool_node)
-                .await;
+            let p2pool_node_grpc_address = state.p2pool_manager.get_grpc_address().await;
             state
                 .mm_proxy_manager
                 .start(StartConfig {

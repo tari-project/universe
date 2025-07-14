@@ -631,7 +631,6 @@ fn main() {
             commands::set_warmup_seen,
             commands::set_allow_notifications,
             commands::launch_builtin_tapplet,
-            commands::get_tari_wallet_balance,
             commands::get_bridge_envs,
             commands::parse_tari_address,
             commands::refresh_wallet_history,
