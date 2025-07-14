@@ -1,6 +1,6 @@
 /* eslint-disable i18next/no-literal-string */
 import { useUIStore } from '@app/store/useUIStore';
-import { Button, ButtonGroup, CategoryLabel } from '../styles';
+import { AdminButton, ButtonGroup, CategoryLabel } from '../styles';
 
 import { setConnectionStatus } from '@app/store/actions/uiStoreActions.ts';
 import { setShowUniversalModal, useExchangeStore } from '@app/store/useExchangeStore.ts';
@@ -23,8 +23,8 @@ export function OtherUIGroup() {
         <>
             <CategoryLabel>Other UI</CategoryLabel>
             <ButtonGroup>
-                <Button onClick={shiftConnectionStatus}>Change connection status</Button>
-                <Button onClick={() => setShowUniversalModal(!showUniversalModal)}>Universal XC Modal</Button>
+                <AdminButton onClick={shiftConnectionStatus}>Change connection status</AdminButton>
+                <AdminButton onClick={() => setShowUniversalModal(!showUniversalModal)}>Universal XC Modal</AdminButton>
             </ButtonGroup>
         </>
     );

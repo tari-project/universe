@@ -113,6 +113,7 @@ mod node;
 mod p2pool;
 mod p2pool_adapter;
 mod p2pool_manager;
+mod pin;
 mod pool_status_watcher;
 mod port_allocator;
 mod process_adapter;
@@ -634,6 +635,11 @@ fn main() {
             commands::parse_tari_address,
             commands::refresh_wallet_history,
             commands::get_base_node_status,
+            commands::create_pin,
+            commands::forgot_pin,
+            commands::is_pin_locked,
+            commands::set_seed_backed_up,
+            commands::is_seed_backed_up,
         ])
         .build(tauri::generate_context!())
         .inspect_err(|e| {

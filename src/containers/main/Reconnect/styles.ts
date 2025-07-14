@@ -20,6 +20,11 @@ export const Wrapper = styled.div`
     z-index: 2;
 `;
 
+export const Title = styled(Typography).attrs({ variant: 'h1' })`
+    line-height: 1;
+    white-space: pre-wrap;
+`;
+
 export const SubTitle = styled(Typography)`
     max-width: 700px;
     font-weight: 400;

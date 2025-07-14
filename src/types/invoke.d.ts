@@ -133,4 +133,7 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'parse_tari_address', payload: { address: string }): Promise<TariAddressVariants>;
     function invoke(param: 'refresh_wallet_history'): Promise<void>;
     function invoke(param: 'get_base_node_status'): Promise<BaseNodeStatus>;
+    function invoke(param: 'create_pin'): Promise<void>;
+    function invoke(param: 'forgot_pin', payload: { seedWords: string[] }): Promise<void>;
+    function invoke(param: 'is_pin_locked'): Promise<boolean>;
 }

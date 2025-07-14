@@ -17,6 +17,7 @@ import {
     handleCloseSplashscreen,
     handleConnectionStatusChanged,
     setConnectionStatus,
+    setDialogToShow,
     setShouldShowExchangeSpecificModal,
     setShowExternalDependenciesDialog,
 } from '@app/store/actions/uiStoreActions';
@@ -30,7 +31,7 @@ import {
     setIsStuckOnOrphanChain,
     setNetworkStatus,
 } from '@app/store/actions/appStateStoreActions';
-import { setWalletBalance, updateWalletScanningProgress } from '@app/store';
+import { setWalletBalance, updateWalletScanningProgress, useStagedSecurityStore } from '@app/store';
 import { deepEqual } from '@app/utils/objectDeepEqual.ts';
 import {
     handleAppUnlocked,
@@ -52,11 +53,12 @@ import {
     handleConfigUILoaded,
     handleConfigWalletLoaded,
     handleMiningTimeUpdate,
+    handleWalletUIChanged,
 } from '@app/store/actions/appConfigStoreActions';
 import { invoke } from '@tauri-apps/api/core';
 import { handleShowStagedSecurityModal } from '@app/store/actions/stagedSecurityActions';
 import { refreshTransactions } from '@app/hooks/wallet/useFetchTxHistory.ts';
-import { handleBaseWalletUpate, handleExternalWalletAddressUpdate } from '@app/store/actions/walletStoreActions';
+import { handleSelectedTariAddressChange } from '@app/store/actions/walletStoreActions';
 
 const LOG_EVENT_TYPES = ['WalletAddressUpdate', 'CriticalProblem', 'MissingApplications'];
 
@@ -216,14 +218,23 @@ const useTauriEventsListener = () => {
                         case 'DisabledPhases':
                             handleUpdateDisabledPhases(event.payload);
                             break;
-                        case 'BaseTariAddressChanged':
-                            handleBaseWalletUpate(event.payload);
+                        case 'SelectedTariAddressChanged':
+                            handleSelectedTariAddressChange(event.payload);
                             break;
-                        case 'ExternalTariAddressChanged':
-                            handleExternalWalletAddressUpdate(event.payload);
+                        case 'WalletUIModeChanged':
+                            handleWalletUIChanged(event.payload);
                             break;
                         case 'ShouldShowExchangeMinerModal':
                             setShouldShowExchangeSpecificModal(true);
+                            break;
+                        case 'ShowKeyringDialog':
+                            setDialogToShow('keychain');
+                            break;
+                        case 'CreatePin':
+                            useStagedSecurityStore.setState({ showModal: true, step: 'ProtectIntro' });
+                            break;
+                        case 'EnterPin':
+                            setDialogToShow('enterPin');
                             break;
                         default:
                             console.warn('Unknown event', JSON.stringify(event));

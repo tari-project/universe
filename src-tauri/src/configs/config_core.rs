@@ -28,10 +28,10 @@ use tari_common::configuration::Network;
 use tauri::AppHandle;
 use tokio::sync::RwLock;
 
-use crate::app_in_memory_config::DEFAULT_EXCHANGE_ID;
-use crate::events_emitter::EventsEmitter;
+use crate::ab_test_selector::ABTestSelector;
+use crate::app_in_memory_config::{MinerType, DEFAULT_EXCHANGE_ID};
 use crate::node::node_manager::NodeType;
-use crate::{ab_test_selector::ABTestSelector, internal_wallet::generate_password};
+use crate::utils::rand_utils;
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
 
@@ -89,7 +89,7 @@ impl Default for ConfigCoreContent {
                 format!("https://grpc.{}.tari.com:443", network.as_key_str())
             }
         };
-        let anon_id = generate_password(20);
+        let anon_id = rand_utils::get_rand_string(20);
         let ab_test_selector = anon_id
             .chars()
             .nth(0)
@@ -127,6 +127,11 @@ impl Default for ConfigCoreContent {
     }
 }
 impl ConfigContentImpl for ConfigCoreContent {}
+impl ConfigCoreContent {
+    pub fn is_on_exchange_specific_variant(&self) -> bool {
+        MinerType::from_str(&self.exchange_id).is_exchange_mode()
+    }
+}
 
 pub struct ConfigCore {
     content: ConfigCoreContent,
@@ -137,8 +142,6 @@ impl ConfigCore {
     pub async fn initialize(app_handle: AppHandle) {
         let mut config = Self::current().write().await;
         config.load_app_handle(app_handle.clone()).await;
-
-        EventsEmitter::emit_core_config_loaded(config.content.clone()).await;
     }
 }
 
