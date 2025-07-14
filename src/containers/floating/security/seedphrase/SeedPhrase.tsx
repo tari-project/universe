@@ -27,14 +27,13 @@ export default function SeedPhrase() {
     }
 
     useEffect(() => {
-        if (!seedWords.length) {
-            getSeedWords().then((r) => {
-                if (r?.length) {
-                    setWords(r);
-                }
-            });
-        }
-    }, [getSeedWords, seedWords.length]);
+        if (words && words.length) return;
+        getSeedWords().then((r) => {
+            if (r?.length) {
+                setWords(r);
+            }
+        });
+    }, [getSeedWords, words]);
 
     const content =
         step === 'VerifySeedPhrase' ? (
