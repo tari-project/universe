@@ -50,6 +50,7 @@
     "placeholder": "Enter idle timeout in seconds",
     "title": "Time after which mdchine is considered idle"
   },
+  "import-seed-success": "Seed words imported successfully",
   "importing-wallet": "Importing wallet",
   "importing-wallet-copy": "Tari Universe will restart automatically once your wallet has been imported",
   "invalid-seed-words": "Enter 24 words separated by spaces",

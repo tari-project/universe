@@ -54,10 +54,9 @@ use crate::utils::app_flow_utils::FrontendReadyChannel;
 use crate::wallet_adapter::{TariAddressVariants, TransactionInfo, WalletBalance};
 use crate::wallet_manager::WalletManagerError;
 use crate::websocket_manager::WebsocketManagerStatusMessage;
-use crate::{airdrop, PoolStatus, UniverseAppState, APPLICATION_FOLDER_ID};
+use crate::{airdrop, PoolStatus, UniverseAppState};
 
 use base64::prelude::*;
-use keyring::Entry;
 use log::{debug, error, info, warn};
 use regex::Regex;
 use serde::{Deserialize, Serialize};

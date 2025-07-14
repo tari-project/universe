@@ -336,7 +336,7 @@ impl InternalWallet {
     fn remove_tari_wallet(wallet_id: String) -> Result<(), anyhow::Error> {
         log::info!(target: LOG_TARGET, "Removing Tari Wallet with id: {wallet_id}");
         let cm = CredentialManager::new_default(wallet_id);
-        let _unused = cm.delete_credential()?;
+        cm.delete_credential()?;
 
         Ok(())
     }
@@ -368,7 +368,7 @@ impl InternalWallet {
     fn remove_monero_wallet() -> Result<(), anyhow::Error> {
         log::info!(target: LOG_TARGET, "Removing Monero Wallet");
         let cm = CredentialManager::new_default("monero".to_string());
-        let _unused = cm.delete_credential()?;
+        cm.delete_credential()?;
 
         Ok(())
     }

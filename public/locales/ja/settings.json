@@ -50,6 +50,7 @@
     "placeholder": "アイドルタイムアウトを秒で入力",
     "title": "マシンがアイドルと見なされるまでの時間"
   },
+  "import-seed-success": "Seed words imported successfully",
   "importing-wallet": "ウォレットのインポート",
   "importing-wallet-copy": "ウォレットがインポートされると、Tari Universe は自動的に再起動します",
   "invalid-seed-words": "スペースで区切って24の単語を入力してください",
