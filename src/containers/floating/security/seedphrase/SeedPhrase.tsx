@@ -10,7 +10,7 @@ import { useEffect } from 'react';
 
 export default function SeedPhrase() {
     const { t } = useTranslation('staged-security');
-    const { seedWords, getSeedWords } = useGetSeedWords();
+    const { seedWords, getSeedWords, seedWordsFetching, seedWordsFetched } = useGetSeedWords();
     const showModal = useStagedSecurityStore((s) => s.showModal);
     const setShowModal = useStagedSecurityStore((s) => s.setShowModal);
     const step = useStagedSecurityStore((s) => s.step);
@@ -21,10 +21,11 @@ export default function SeedPhrase() {
         setShowModal(false);
     }
     useEffect(() => {
-        if (!seedWords.length) {
+        if (seedWordsFetching) return;
+        if (!seedWordsFetched || !seedWords.length) {
             void getSeedWords();
         }
-    }, [getSeedWords, seedWords.length]);
+    }, [getSeedWords, seedWords.length, seedWordsFetched, seedWordsFetching]);
 
     return (
         <Dialog open={isOpen} onOpenChange={handleClose}>

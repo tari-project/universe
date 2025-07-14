@@ -121,7 +121,7 @@ export const Checkbox = styled.div<{ $checked: boolean }>`
     flex-shrink: 0;
 
     border-radius: 0.3rem;
-    border: 0.2rem solid #000;
+    border: 0.2rem solid ${({ theme }) => theme.palette.contrast};
     opacity: 0.5;
 
     display: flex;

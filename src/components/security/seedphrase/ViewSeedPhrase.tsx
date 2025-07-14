@@ -102,6 +102,7 @@ export function ViewSeedPhrase({ words }: ViewSeedPhraseProps) {
                 <CTAWrapper>
                     <Button
                         variant="black"
+                        fluid
                         size="xlarge"
                         onClick={() => setModalStep('VerifySeedPhrase')}
                         disabled={!checked}

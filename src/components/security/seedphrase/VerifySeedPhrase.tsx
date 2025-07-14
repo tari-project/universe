@@ -27,9 +27,7 @@ interface SelectedWord {
 
 export function VerifySeedPhrase({ words }: VerifySeedPhraseProps) {
     const { t } = useTranslation(['staged-security'], { useSuspense: false });
-    const setShowModal = useStagedSecurityStore((s) => s.setShowModal);
     const setModalStep = useStagedSecurityStore((s) => s.setModalStep);
-    const setShowCompletedTip = useStagedSecurityStore((s) => s.setShowCompletedTip);
 
     const [completed, setCompleted] = useState(false);
     const [selectedWords, setSelectedWords] = useState<SelectedWord[]>([]);
@@ -65,9 +63,7 @@ export function VerifySeedPhrase({ words }: VerifySeedPhraseProps) {
     };
 
     const handleSubmit = () => {
-        setShowModal(false);
-        setModalStep('ProtectIntro');
-        setShowCompletedTip(true);
+        setModalStep('CreatePin');
     };
 
     return (
@@ -117,7 +113,7 @@ export function VerifySeedPhrase({ words }: VerifySeedPhraseProps) {
             </PhraseWrapper>
 
             <ButtonWrapper>
-                <Button size="xlarge" onClick={handleSubmit} disabled={!completed} variant="black">
+                <Button size="xlarge" fluid onClick={handleSubmit} disabled={!completed} variant="black">
                     <span>{t('verifySeed.button')}</span>
                 </Button>
             </ButtonWrapper>

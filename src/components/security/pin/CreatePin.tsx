@@ -1,11 +1,12 @@
 import { FormProvider, useForm } from 'react-hook-form';
 import { CTAWrapper, HelpWrapper, TextWrapper, Wrapper } from './styles.ts';
-import { CTA } from '../styles.ts';
+
 import { CodeInputValues, DEFAULT_PIN_LENGTH, PinInput } from './PinInput.tsx';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { TextButton } from '@app/components/elements/buttons/TextButton.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
+import { Button } from '@app/components/elements/buttons/Button.tsx';
 
 const pinArr = Array.from({ length: DEFAULT_PIN_LENGTH }, (_, i) => i);
 export default function CreatePin({ onClose, onSubmit }: { onClose?: () => void; onSubmit: (pin: string) => void }) {
@@ -74,9 +75,9 @@ export default function CreatePin({ onClose, onSubmit }: { onClose?: () => void;
                 )}
 
                 <CTAWrapper>
-                    <CTA size="xlarge" disabled={submitDisabled} type="submit">
+                    <Button size="xlarge" disabled={submitDisabled} type="submit" fluid variant="black">
                         {t('security.pin.create', { context })}
-                    </CTA>
+                    </Button>
                     <TextButton onClick={handleSecondary}>
                         {t('security.pin.enter', { context: isConfirm ? 'new' : 'skip' })}
                     </TextButton>
