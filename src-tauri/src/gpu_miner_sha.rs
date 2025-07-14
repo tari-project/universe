@@ -9,7 +9,7 @@ use tokio::{
 };
 
 use crate::{
-    binaries::Binaries, configs::{config_mining::MiningMode, config_pools::{ConfigPools, GpuPool}, trait_config::ConfigImpl}, gpu_miner_sha_adapter::GpuMinerShaAdapter, pool_status_watcher::LuckyPoolAdapter, process_watcher::{self, ProcessWatcher}, tasks_tracker::TasksTrackers, EventsEmitter, GpuMinerStatus, PoolStatusWatcher, ProcessStatsCollectorBuilder
+    binaries::Binaries, configs::{config_mining::MiningMode, config_pools::{ConfigPools, GpuPool}, trait_config::ConfigImpl}, gpu_miner_sha_adapter::GpuMinerShaAdapter, pool_status_watcher::{LuckyPoolAdapter, PoolApiAdapters, SupportXmrPoolAdapter}, process_watcher::{self, ProcessWatcher}, tasks_tracker::TasksTrackers, EventsEmitter, GpuMinerStatus, PoolStatusWatcher, ProcessStatsCollectorBuilder
 };
 
 const LOG_TARGET: &str = "tari::universe::gpu_miner_sha";
@@ -18,7 +18,7 @@ pub struct GpuMinerSha {
     watcher: Arc<RwLock<ProcessWatcher<GpuMinerShaAdapter>>>,
     status_sender: Sender<GpuMinerStatus>,
     status_updates_thread: RwLock<Option<tokio::task::JoinHandle<()>>>,
-    pool_status_watcher: Option<PoolStatusWatcher<LuckyPoolAdapter>>,
+    pool_status_watcher: Option<PoolStatusWatcher<PoolApiAdapters>>,
     pub pool_status_shutdown_signal: Shutdown,
 }
 
@@ -67,8 +67,15 @@ impl GpuMinerSha {
                 process_watcher.adapter.pool_url = Some(lucky_pool_config.get_pool_url());
                 self.pool_status_watcher = Some(PoolStatusWatcher::new(
                     lucky_pool_config.get_stats_url(tari_address.to_base58().as_str()),
-                    LuckyPoolAdapter {},
+                    PoolApiAdapters::LuckyPool(LuckyPoolAdapter {}),
                 ));
+                }
+                GpuPool::SupportXTMPool(support_xtm_pool_config) => {
+                    process_watcher.adapter.pool_url = Some(support_xtm_pool_config.get_pool_url());
+                    self.pool_status_watcher = Some(PoolStatusWatcher::new(
+                        support_xtm_pool_config.get_stats_url(tari_address.to_base58().as_str()),
+                        PoolApiAdapters::SupportXmrPool(SupportXmrPoolAdapter {}),
+                    ));
                 }
             }
         }

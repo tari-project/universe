@@ -35,6 +35,31 @@ use super::{
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SupportXTMPoolConfig {
+    pool_url: String,
+    stats_url: String,
+}
+
+impl Default for SupportXTMPoolConfig {
+    fn default() -> Self {
+        Self {
+            pool_url: "pool.sha3x.supportxtm.com:6118".to_string(),
+            stats_url: "https://backend.sha3x.supportxtm.com/api/miner/%TARI_ADDRESS%/stats"
+                .to_string(),
+        }
+    }
+}
+
+impl SupportXTMPoolConfig {
+    pub fn get_stats_url(&self, tari_address: &str) -> String {
+        self.stats_url.replace("%TARI_ADDRESS%", tari_address)
+    }
+    pub fn get_pool_url(&self) -> String {
+        self.pool_url.clone()
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LuckyGpuPoolConfig {
     pool_url: String,
     stats_url: String,
@@ -62,6 +87,7 @@ impl LuckyGpuPoolConfig {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum GpuPool {
     LuckyPool(LuckyGpuPoolConfig),
+    SupportXTMPool(SupportXTMPoolConfig),
 }
 
 fn default_cpu_mining_pool_url() -> String {
@@ -143,7 +169,7 @@ impl Default for ConfigPoolsContent {
             created_at: SystemTime::now(),
             // ======= Gpu Pool =======
             gpu_pool_enabled: true,
-            gpu_pool: GpuPool::LuckyPool(LuckyGpuPoolConfig::default()),
+            gpu_pool: GpuPool::SupportXTMPool(SupportXTMPoolConfig::default()),
             // ======= Cpu Pool =======
             cpu_pool_enabled: true,
             cpu_pool: CpuPool::DefaultPool(DefaultCpuPoolConfig::default()),

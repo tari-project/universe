@@ -38,12 +38,12 @@ pub(crate) trait PoolApiAdapter: Clone {
 }
 
 #[derive(Clone, Debug)]
-pub(crate) struct PoolStatusWatcher<T: Clone> {
+pub(crate) struct PoolStatusWatcher<T: PoolApiAdapter> {
     pub url: String,
     pub adapter: T,
 }
 
-impl<T: Clone> PoolStatusWatcher<T> {
+impl<T: PoolApiAdapter> PoolStatusWatcher<T> {
     pub fn new(url: String, adapter: T) -> Self {
         Self { url, adapter }
     }
@@ -184,5 +184,20 @@ impl PoolApiAdapter for LuckyPoolAdapter {
             min_payout: converted_data.stats.payment_threshold,
         };
         Ok(pool_status)
+    }
+}
+
+#[derive(Clone)]
+pub enum PoolApiAdapters {
+    LuckyPool(LuckyPoolAdapter),
+    SupportXmrPool(SupportXmrPoolAdapter),
+}
+
+impl PoolApiAdapter for PoolApiAdapters {
+    fn convert_api_data(&self, data: &str) -> Result<PoolStatus, Error> {
+        match self {
+            PoolApiAdapters::LuckyPool(adapter) => adapter.convert_api_data(data),
+            PoolApiAdapters::SupportXmrPool(adapter) => adapter.convert_api_data(data),
+        }
     }
 }
