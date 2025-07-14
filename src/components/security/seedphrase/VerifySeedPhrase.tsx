@@ -1,4 +1,4 @@
-import { useStagedSecurityStore } from '@app/store';
+import { setError, useStagedSecurityStore } from '@app/store';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -15,6 +15,7 @@ import {
 import { AnimatePresence } from 'motion/react';
 import PillCloseIcon from '@app/assets/icons/PillCloseIcon.tsx';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
+import { invoke } from '@tauri-apps/api/core';
 
 interface VerifySeedPhraseProps {
     words: string[];
@@ -63,7 +64,13 @@ export function VerifySeedPhrase({ words }: VerifySeedPhraseProps) {
     };
 
     const handleSubmit = () => {
-        setModalStep('CreatePin');
+        invoke('set_seed_backed_up')
+            .then(() => {
+                setModalStep('CreatePin');
+            })
+            .catch((e) => {
+                setError(e.message);
+            });
     };
 
     return (
