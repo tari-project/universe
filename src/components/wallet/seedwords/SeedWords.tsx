@@ -21,7 +21,7 @@ import { useCountdown } from './utils.ts';
 
 // Controller component for edit/view seed words (both Tari & Monero)
 
-const SEED_WORDS_COUNTDOWN_DURATION = 30; // 30 seconds
+const SEED_WORDS_COUNTDOWN_DURATION = 300; // 5mins (same as in paper wallet)
 
 interface SeedWordsProps {
     isMonero?: boolean;

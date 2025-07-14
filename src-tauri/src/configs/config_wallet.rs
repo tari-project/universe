@@ -137,6 +137,9 @@ impl ConfigWalletContent {
             .insert(0, selected_wallet_details.id.clone());
         self.tari_wallet_details = Some(selected_wallet_details);
 
+        // Remove when we decide not to autoselect
+        self.seed_backed_up = false;
+
         self
     }
 }
