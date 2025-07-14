@@ -4,6 +4,7 @@ import {
     ConfigCore,
     ConfigMining,
     ConfigPools,
+    ConfigPoolsSelectors,
     ConfigUI,
     ConfigWallet,
 } from '@app/types/configs';
@@ -103,8 +104,16 @@ export const useConfigUIStore = create<UIConfigStoreState>()(() => ({
     ...configUIInitialState,
 }));
 
-export const useConfigPoolsStore = create<ConfigPools>()(() => ({
+export const useConfigPoolsStore = create<ConfigPools & ConfigPoolsSelectors>()((_, get) => ({
     ...configPoolsInitialState,
+    getGpuPool: () => {
+        const gpuPool = get().gpu_pool;
+        return gpuPool ? Object.values(gpuPool)[0] : undefined;
+    },
+    getCpuPool: () => {
+        const cpuPool = get().cpu_pool;
+        return cpuPool ? Object.values(cpuPool)[0] : undefined;
+    },
 }));
 
 export const useConfigBEInMemoryStore = create<ConfigBackendInMemory>()(() => ({

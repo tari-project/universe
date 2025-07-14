@@ -38,6 +38,7 @@ use super::{
 pub struct SupportXTMPoolConfig {
     pool_url: String,
     stats_url: String,
+    pool_name: String,
 }
 
 impl Default for SupportXTMPoolConfig {
@@ -46,6 +47,7 @@ impl Default for SupportXTMPoolConfig {
             pool_url: "pool.sha3x.supportxtm.com:6118".to_string(),
             stats_url: "https://backend.sha3x.supportxtm.com/api/miner/%TARI_ADDRESS%/stats"
                 .to_string(),
+            pool_name: "SupportXTM".to_string(),
         }
     }
 }
@@ -63,6 +65,7 @@ impl SupportXTMPoolConfig {
 pub struct LuckyGpuPoolConfig {
     pool_url: String,
     stats_url: String,
+    pool_name: String,
 }
 
 impl Default for LuckyGpuPoolConfig {
@@ -71,6 +74,7 @@ impl Default for LuckyGpuPoolConfig {
             pool_url: "pl-eu.luckypool.io:6118".to_string(),
             stats_url: "https://api-tari.luckypool.io/stats_address?address=%TARI_ADDRESS%"
                 .to_string(),
+            pool_name: "LuckyPool".to_string(),
         }
     }
 }
@@ -90,7 +94,7 @@ pub enum GpuPool {
     SupportXTMPool(SupportXTMPoolConfig),
 }
 
-fn default_cpu_mining_pool_url() -> String {
+fn global_tari_cpu_mining_pool_url() -> String {
     match Network::get_current_or_user_setting_or_default() {
         Network::MainNet => "pool-global.tari.snipanet.com:3333".to_string(),
         Network::NextNet | Network::StageNet => "69.164.205.243:3333".to_string(),
@@ -98,7 +102,7 @@ fn default_cpu_mining_pool_url() -> String {
     }
 }
 
-fn default_cpu_mining_pool_status_url() -> String {
+fn global_tari_cpu_mining_pool_status_url() -> String {
     match Network::get_current_or_user_setting_or_default() {
         Network::MainNet => {
             "https://pool.rxt.tari.jagtech.io/api/miner/%TARI_ADDRESS%/stats".to_string()
@@ -113,21 +117,23 @@ fn default_cpu_mining_pool_status_url() -> String {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DefaultCpuPoolConfig {
+pub struct GlobalTariCpuPoolConfig {
     pool_url: String,
     stats_url: String,
+    pool_name: String,
 }
 
-impl Default for DefaultCpuPoolConfig {
+impl Default for GlobalTariCpuPoolConfig {
     fn default() -> Self {
         Self {
-            pool_url: default_cpu_mining_pool_url(),
-            stats_url: default_cpu_mining_pool_status_url(),
+            pool_url: global_tari_cpu_mining_pool_url(),
+            stats_url: global_tari_cpu_mining_pool_status_url(),
+            pool_name: "GlobalTariPool".to_string(),
         }
     }
 }
 
-impl DefaultCpuPoolConfig {
+impl GlobalTariCpuPoolConfig {
     pub fn get_stats_url(&self, tari_address: &str) -> String {
         self.stats_url.replace("%TARI_ADDRESS%", tari_address)
     }
@@ -138,7 +144,7 @@ impl DefaultCpuPoolConfig {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum CpuPool {
-    DefaultPool(DefaultCpuPoolConfig),
+    GlobalTariPool(GlobalTariCpuPoolConfig),
 }
 
 static INSTANCE: LazyLock<RwLock<ConfigPools>> = LazyLock::new(|| RwLock::new(ConfigPools::new()));
@@ -172,7 +178,7 @@ impl Default for ConfigPoolsContent {
             gpu_pool: GpuPool::SupportXTMPool(SupportXTMPoolConfig::default()),
             // ======= Cpu Pool =======
             cpu_pool_enabled: true,
-            cpu_pool: CpuPool::DefaultPool(DefaultCpuPoolConfig::default()),
+            cpu_pool: CpuPool::GlobalTariPool(GlobalTariCpuPoolConfig::default()),
         }
     }
 }

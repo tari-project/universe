@@ -612,6 +612,8 @@ fn main() {
             commands::start_gpu_mining,
             commands::stop_cpu_mining,
             commands::stop_gpu_mining,
+            commands::toggle_cpu_pool_mining,
+            commands::toggle_gpu_pool_mining,
             commands::get_p2pool_connections,
             commands::set_p2pool_stats_server_port,
             commands::get_used_p2pool_stats_server_port,

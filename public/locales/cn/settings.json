@@ -145,6 +145,7 @@
     "general": "常规",
     "mining": "挖矿",
     "p2p": "矿池挖矿",
+    "pools": "Mining Pools",
     "releaseNotes": "发布说明",
     "very_experimental": "非常实验性",
     "wallet": "钱包"

@@ -79,10 +79,10 @@ impl CpuMinerConfig {
     ) {
         if *config_pools_content.cpu_pool_enabled() {
             match config_pools_content.cpu_pool() {
-                CpuPool::DefaultPool(default_pool) => {
+                CpuPool::GlobalTariPool(global_tari_pool) => {
                     self.pool_status_url =
-                        Some(default_pool.get_stats_url(tari_address.to_base58().as_str()));
-                    let pool_url = default_pool.get_pool_url();
+                        Some(global_tari_pool.get_stats_url(tari_address.to_base58().as_str()));
+                    let pool_url = global_tari_pool.get_pool_url();
                     let parts = pool_url.split(':').collect::<Vec<_>>();
                     if parts.len() == 2 {
                         if let Ok(port) = parts[1].parse::<u16>() {

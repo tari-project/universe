@@ -28,7 +28,7 @@ use crate::auto_launcher::AutoLauncher;
 use crate::binaries::{Binaries, BinaryResolver};
 use crate::configs::config_core::{AirdropTokens, ConfigCore, ConfigCoreContent};
 use crate::configs::config_mining::{ConfigMining, ConfigMiningContent, GpuThreads, MiningMode};
-use crate::configs::config_pools::ConfigPools;
+use crate::configs::config_pools::{ConfigPools, ConfigPoolsContent};
 use crate::configs::config_ui::{ConfigUI, ConfigUIContent, DisplayMode};
 use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent};
 use crate::configs::trait_config::ConfigImpl;
@@ -1836,6 +1836,40 @@ pub async fn stop_gpu_mining(state: tauri::State<'_, UniverseAppState>) -> Resul
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "stop_cpu_mining took too long: {:?}", timer.elapsed());
     }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn toggle_cpu_pool_mining(enabled: bool, app: tauri::AppHandle) -> Result<(), String> {
+    let timer = Instant::now();
+
+    ConfigPools::update_field(ConfigPoolsContent::set_cpu_pool_enabled, enabled)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    SetupManager::get_instance()
+        .restart_phases(app.clone(), vec![SetupPhase::Mining])
+        .await;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "toggle_cpu_pool_mining took too long: {:?}", timer.elapsed());
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn toggle_gpu_pool_mining(enabled: bool, app: tauri::AppHandle) -> Result<(), String> {
+    let timer = Instant::now();
+
+    ConfigPools::update_field(ConfigPoolsContent::set_gpu_pool_enabled, enabled)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "toggle_gpu_pool_mining took too long: {:?}", timer.elapsed());
+    }
+
     Ok(())
 }
 

@@ -51,8 +51,10 @@ export default function MinerTile({
     const mainNumber = isPoolEnabled ? currentUnpaid : formattedHashRate.value;
     const mainUnit = isPoolEnabled ? 'XTM' : formattedHashRate.unit;
     const mainLabel = isPoolEnabled
-        ? t('stats.tile-heading', { context: isMining && currentUnpaid === 0 && 'zero' })
+        ? t('stats.tile-heading', { context: isMining && currentUnpaid === 0 && 'zero', ns: 'p2p' })
         : t(mainLabelKey);
+
+    console.log('Main label:', mainLabel);
 
     const [isOpen, setIsOpen] = useState(false);
     const { refs, context, floatingStyles } = useFloating({
@@ -102,7 +104,7 @@ export default function MinerTile({
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: 10 }}
                         >
-                            <Typography variant="h5">{t('stats.tile-heading')}</Typography>
+                            <Typography variant="h5">{t('stats.tile-heading', { ns: 'p2p' })}</Typography>
                             <Typography variant="p">
                                 <Trans
                                     i18nKey="stats.tooltip-copy"
@@ -113,7 +115,9 @@ export default function MinerTile({
                             </Typography>
                             <TooltipChipWrapper>
                                 <TooltipChip>
-                                    <TooltipChipHeading>{t('stats.tooltip-tile-heading')}</TooltipChipHeading>
+                                    <TooltipChipHeading>
+                                        {t('stats.tooltip-tile-heading', { ns: 'p2p' })}
+                                    </TooltipChipHeading>
                                     <TooltipChipText>{`${unpaidFMT} / ${rewardThresholdString}`}</TooltipChipText>
                                 </TooltipChip>
                             </TooltipChipWrapper>

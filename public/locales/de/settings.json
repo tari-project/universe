@@ -145,6 +145,7 @@
     "general": "Allgemein",
     "mining": "Mining",
     "p2p": "Pool-Mining",
+    "pools": "Mining Pools",
     "releaseNotes": "Versionshinweise",
     "very_experimental": "Sehr experimentell",
     "wallet": "Wallet"
