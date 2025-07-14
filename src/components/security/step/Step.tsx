@@ -13,7 +13,7 @@ export const Step = ({ stepNumber, completed, title, subtitle }: StepItem) => {
         <Wrapper>
             <Top>
                 <Chip $isStep>{t('steps.step', { stepNumber })}</Chip>
-                <Chip>{t('steps.complete', { context: `${completed}` })}</Chip>
+                <Chip $isStep={completed}>{t('steps.complete', { context: `${completed}` })}</Chip>
             </Top>
             <Content>
                 <Title>{title}</Title>
