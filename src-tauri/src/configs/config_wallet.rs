@@ -28,7 +28,11 @@ use tari_common_types::tari_address::TariAddress;
 use tauri::AppHandle;
 use tokio::sync::RwLock;
 
-use crate::{internal_wallet::TariWalletDetails, pin::PinLockerState};
+use crate::{
+    configs::config_ui::{ConfigUI, ConfigUIContent},
+    internal_wallet::TariWalletDetails,
+    pin::PinLockerState,
+};
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
 
@@ -73,6 +77,8 @@ pub struct ConfigWalletContent {
     tari_wallet_details: Option<TariWalletDetails>,
     #[getset(get = "pub", set = "pub")]
     pin_locker_state: PinLockerState,
+    #[getset(get = "pub", set = "pub")]
+    seed_backed_up: bool,
 }
 
 impl Default for ConfigWalletContent {
@@ -89,6 +95,7 @@ impl Default for ConfigWalletContent {
             external_tari_addresses_book: HashMap::new(),
             tari_wallet_details: None,
             pin_locker_state: PinLockerState::default(),
+            seed_backed_up: false,
         }
     }
 }
@@ -156,9 +163,18 @@ impl ConfigWallet {
             ConfigWallet::update_field(ConfigWalletContent::set_version, WALLET_VERSION).await?;
 
             return Ok(());
+        } else {
+            log::info!("Skipped migration for wallet config version {current_version:?}");
         }
 
-        log::info!("Skipped migration for wallet config version {current_version:?}");
+        if *ConfigUI::content().await.was_staged_security_modal_shown() {
+            log::info!("Wallet Config needs 'set_was_staged_security_modal_shown' flag migration");
+            // Rename and move this flag here
+            ConfigWallet::update_field(ConfigWalletContent::set_seed_backed_up, true).await?;
+            // Clear this flag to prevent from re-migrating
+            ConfigUI::update_field(ConfigUIContent::set_was_staged_security_modal_shown, false)
+                .await?;
+        }
 
         Ok(())
     }

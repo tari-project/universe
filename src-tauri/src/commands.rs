@@ -29,6 +29,7 @@ use crate::binaries::{Binaries, BinaryResolver};
 use crate::configs::config_core::{AirdropTokens, ConfigCore, ConfigCoreContent};
 use crate::configs::config_mining::{ConfigMining, ConfigMiningContent, GpuThreads, MiningMode};
 use crate::configs::config_ui::{ConfigUI, ConfigUIContent, DisplayMode};
+use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent};
 use crate::configs::trait_config::ConfigImpl;
 use crate::events::ConnectionStatusPayload;
 use crate::events_emitter::EventsEmitter;
@@ -2175,6 +2176,21 @@ pub async fn create_pin(app_handle: tauri::AppHandle) -> Result<(), String> {
     info!(target: LOG_TARGET, "PIN created successfully");
 
     Ok(())
+}
+
+#[tauri::command]
+pub async fn set_seed_backed_up() -> Result<(), String> {
+    ConfigWallet::update_field(ConfigWalletContent::set_seed_backed_up, true)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn is_seed_backed_up() -> Result<bool, String> {
+    let seed_backed_up = *ConfigWallet::content().await.seed_backed_up();
+    Ok(seed_backed_up)
 }
 
 /*

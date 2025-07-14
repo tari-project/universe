@@ -639,6 +639,8 @@ fn main() {
             commands::create_pin,
             commands::forgot_pin,
             commands::is_pin_locked,
+            commands::set_seed_backed_up,
+            commands::is_seed_backed_up,
         ])
         .build(tauri::generate_context!())
         .inspect_err(|e| {
