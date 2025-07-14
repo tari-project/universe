@@ -26,7 +26,6 @@ use std::time::Duration;
 
 use futures_util::future::FusedFuture;
 use log::{info, warn};
-use tari_common::configuration::Network;
 use tokio::sync::{watch, RwLock};
 use tokio::time::sleep;
 
@@ -228,25 +227,15 @@ impl P2poolManager {
         Ok(exit_code)
     }
 
-    pub async fn get_grpc_address(&self, use_local: bool) -> String {
-        if use_local {
-            let process_watcher = self.watcher.read().await;
-            let grpc_port = process_watcher
-                .adapter
-                .config
-                .as_ref()
-                .map(|c| c.grpc_port)
-                .unwrap_or_default();
-            format!("http://127.0.0.1:{grpc_port}")
-        } else {
-            let network = Network::get_current_or_user_setting_or_default();
-            match network {
-                Network::MainNet => "https://grpc-p2pool.tari.com:443".to_string(),
-                _ => {
-                    format!("https://grpc-p2pool.{}.tari.com:443", network.as_key_str())
-                }
-            }
-        }
+    pub async fn get_grpc_address(&self) -> String {
+        let process_watcher = self.watcher.read().await;
+        let grpc_port = process_watcher
+            .adapter
+            .config
+            .as_ref()
+            .map(|c| c.grpc_port)
+            .unwrap_or_default();
+        format!("http://127.0.0.1:{grpc_port}")
     }
 
     pub async fn get_grpc_port(&self) -> u16 {

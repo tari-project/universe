@@ -1686,8 +1686,7 @@ pub async fn start_gpu_mining(
         info!(target: LOG_TARGET, "1. Starting gpu miner");
 
         let source = if p2pool_enabled {
-            let use_local = state.node_manager.is_local_current().await.unwrap_or(false);
-            let grpc_address = state.p2pool_manager.get_grpc_address(use_local).await;
+            let grpc_address = state.p2pool_manager.get_grpc_address().await;
             GpuNodeSource::P2Pool { grpc_address }
         } else {
             let grpc_address = state
