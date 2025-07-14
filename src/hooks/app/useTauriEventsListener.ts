@@ -3,7 +3,7 @@ import { listen } from '@tauri-apps/api/event';
 
 import { BACKEND_STATE_UPDATE, BackendStateUpdateEvent } from '@app/types/backend-state.ts';
 
-import { handleNewBlock } from '@app/store/useBlockchainVisualisationStore';
+import { handleNewBlockPayload, useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore';
 import {
     handleBaseNodeStatusUpdate,
     handleConnectedPeersUpdate,
@@ -136,11 +136,15 @@ const useTauriEventsListener = () => {
                         case 'ConnectedPeersUpdate':
                             handleConnectedPeersUpdate(event.payload);
                             break;
-                        case 'NewBlockHeight':
-                            await handleNewBlock(event.payload);
+                        case 'NewBlockHeight': {
+                            const current = useBlockchainVisualisationStore.getState().latestBlockPayload?.block_height;
+                            if (!current || current < event.payload.block_height) {
+                                await handleNewBlockPayload(event.payload);
+                            }
                             break;
+                        }
                         case 'ConfigCoreLoaded':
-                            handleConfigCoreLoaded(event.payload);
+                            await handleConfigCoreLoaded(event.payload);
                             break;
                         case 'ConfigWalletLoaded':
                             handleConfigWalletLoaded(event.payload);

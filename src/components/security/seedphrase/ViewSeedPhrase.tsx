@@ -14,7 +14,7 @@ import {
     WordList,
 } from './styles.ts';
 import { useTranslation } from 'react-i18next';
-import { useCopyToClipboard } from '@app/hooks';
+import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard.ts';
 import { useState } from 'react';
 import { AnimatePresence } from 'motion/react';
 import { useStagedSecurityStore } from '@app/store';
