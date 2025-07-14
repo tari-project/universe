@@ -4,7 +4,7 @@ import { useCopyToClipboard } from '@app/hooks';
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
 import { IoCheckmarkOutline, IoCloseOutline, IoCopyOutline, IoPencil } from 'react-icons/io5';
-import { useCallback, useState, useTransition } from 'react';
+import { useCallback, useEffect, useState, useTransition } from 'react';
 import { Wrapper } from './styles.ts';
 import { CTASArea, InputArea, WalletSettingsGrid } from '@app/containers/floating/Settings/sections/wallet/styles.ts';
 import { Edit } from '@app/components/wallet/seedwords/components/Edit.tsx';
@@ -17,8 +17,11 @@ import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { useTranslation } from 'react-i18next';
 import { Form } from '@app/components/wallet/seedwords/components/edit.styles.ts';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
+import { useCountdown } from './utils.ts';
 
 // Controller component for edit/view seed words (both Tari & Monero)
+
+const SEED_WORDS_COUNTDOWN_DURATION = 30; // 30 seconds
 
 interface SeedWordsProps {
     isMonero?: boolean;
@@ -33,16 +36,43 @@ export default function SeedWords({ isMonero = false }: SeedWordsProps) {
 
     const { t } = useTranslation('settings', { useSuspense: false });
     const { copyToClipboard, isCopied } = useCopyToClipboard();
-    const { seedWords, getSeedWords, seedWordsFetched, seedWordsFetching } = useGetSeedWords({
+    const { seedWords, getSeedWords, setSeedWords, seedWordsFetched, seedWordsFetching } = useGetSeedWords({
         fetchMoneroSeeds: isMonero,
     });
     const methods = useForm({ defaultValues: { seedWords: seedWords?.join(' ').trim() } });
     const { isValid } = methods.formState;
 
+    // Countdown hook for auto-hiding seed words
+    const { start: startCountdown, stop: stopCountdown } = useCountdown({
+        duration: SEED_WORDS_COUNTDOWN_DURATION,
+        onComplete: () => {
+            setShowConfirm(false);
+            setIsEditView(false);
+            setIsVisible(false);
+            setSeedWords([]);
+        },
+    });
+    useEffect(() => {
+        if (isWalletImporting || isEditView) {
+            setSeedWords([]);
+            setIsVisible(false);
+            stopCountdown();
+        }
+    }, [isEditView, isWalletImporting, setSeedWords, stopCountdown]);
+    // Start countdown when seed words become visible
+    useEffect(() => {
+        if (isVisible && seedWords?.length && seedWordsFetched) {
+            startCountdown();
+        } else {
+            stopCountdown();
+        }
+    }, [isVisible, seedWords, seedWordsFetched, startCountdown, stopCountdown]);
+
     const handleConfirmed = useCallback(async () => {
         if (!isValid || !newSeedWords) return;
 
-        await importSeedWords(newSeedWords).finally(() => setShowConfirm(false));
+        importSeedWords(newSeedWords);
+        setShowConfirm(false);
         setIsEditView(false);
     }, [isValid, newSeedWords]);
 
@@ -64,11 +94,13 @@ export default function SeedWords({ isMonero = false }: SeedWordsProps) {
                         setIsVisible(false);
                     });
             } else {
+                setSeedWords([]);
                 setIsVisible((c) => !c);
             }
         });
     }
     function onToggleEdit() {
+        methods.reset();
         setIsEditView((c) => !c);
     }
     function handleReset() {
@@ -92,7 +124,7 @@ export default function SeedWords({ isMonero = false }: SeedWordsProps) {
     const displayCTAs = (
         <>
             {!isMonero ? (
-                <IconButton size="small" onClick={onToggleEdit} type="button">
+                <IconButton size="small" disabled={isWalletImporting} onClick={onToggleEdit} type="button">
                     <IoPencil />
                 </IconButton>
             ) : null}
