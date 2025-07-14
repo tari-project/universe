@@ -34,7 +34,7 @@ export function useGetSeedWords(args?: Arguments) {
             setSeedWordsFetching(false);
         }
     }, [fetchMoneroSeeds]);
-    console.debug(`seedWords= `, seedWords);
+
     return {
         seedWords,
         getSeedWords,

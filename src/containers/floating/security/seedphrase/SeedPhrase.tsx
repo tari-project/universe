@@ -6,21 +6,20 @@ import { Content, ContentWrapper, Header, StepChip, Subtitle, Title, Wrapper } f
 import { VerifySeedPhrase } from '@app/components/security/seedphrase/VerifySeedPhrase.tsx';
 import CloseButton from '@app/components/elements/buttons/CloseButton.tsx';
 import { useTranslation } from 'react-i18next';
-import { useEffect, useState, useTransition } from 'react';
+import { useEffect, useState } from 'react';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
-import { invoke } from '@tauri-apps/api/core';
+import { useGetSeedWords } from '@app/containers/floating/Settings/sections/wallet/SeedWordsMarkup/useGetSeedWords.ts';
 
 export default function SeedPhrase() {
     const { t } = useTranslation('staged-security');
-    const [isPending, startTransition] = useTransition();
-
+    const { seedWords, getSeedWords, seedWordsFetching } = useGetSeedWords();
     const showModal = useStagedSecurityStore((s) => s.showModal);
     const setShowModal = useStagedSecurityStore((s) => s.setShowModal);
     const setModalStep = useStagedSecurityStore((s) => s.setModalStep);
     const step = useStagedSecurityStore((s) => s.step);
     const isOpen = showModal && (step === 'SeedPhrase' || step === 'VerifySeedPhrase');
 
-    const [words, setWords] = useState<string[] | undefined>([]);
+    const [words, setWords] = useState<string[] | undefined>(seedWords);
     function handleClose() {
         setDialogToShow(null);
         setModalStep('ProtectIntro');
@@ -28,26 +27,14 @@ export default function SeedPhrase() {
     }
 
     useEffect(() => {
-        function loadSeedWords() {
-            startTransition(async () => {
-                try {
-                    const seedwords = await invoke('get_seed_words');
-                    console.debug(`seedwords= `, seedwords);
-                    if (seedwords) {
-                        setWords(seedwords);
-                    }
-                } catch (e) {
-                    console.error('BLA', e);
+        if (!seedWords.length) {
+            getSeedWords().then((r) => {
+                if (r?.length) {
+                    setWords(r);
                 }
             });
         }
-
-        if (!words?.length) {
-            loadSeedWords();
-        }
-    }, [words?.length]);
-
-    console.debug(`words= `, words);
+    }, [getSeedWords, seedWords.length]);
 
     const content =
         step === 'VerifySeedPhrase' ? (
@@ -78,7 +65,7 @@ export default function SeedPhrase() {
 
                     <Content>
                         <StepChip>{`Step 1 of 2 `}</StepChip>
-                        {isPending ? (
+                        {seedWordsFetching ? (
                             <ContentWrapper>
                                 <LoadingDots />
                             </ContentWrapper>
