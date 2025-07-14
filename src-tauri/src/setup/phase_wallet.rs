@@ -301,10 +301,8 @@ impl SetupPhaseImpl for WalletSetupPhase {
 
                                     if !pin_locked || !seed_backed_up {
                                         EventsEmitter::show_staged_security_modal().await;
-                                    } else {
-                                        // Both pin locked and seed are backed up
-                                        break;
                                     }
+                                    break;
                                 }
                             }
                         }
