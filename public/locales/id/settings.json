@@ -50,6 +50,7 @@
     "placeholder": "Masukkan batas waktu tidak aktif dalam detik",
     "title": "Waktu setelah mesin dianggap tidak aktif"
   },
+  "import-seed-success": "Seed words imported successfully",
   "importing-wallet": "Mengimpor dompet",
   "importing-wallet-copy": "Tari Universe akan memulai ulang secara otomatis setelah dompet Anda diimpor",
   "invalid-seed-words": "Masukkan 24 kata yang dipisahkan oleh spasi",

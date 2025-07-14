@@ -50,6 +50,7 @@
     "placeholder": "Введите время простоя в секундах",
     "title": "Время, после которого машина считается в простое"
   },
+  "import-seed-success": "Seed words imported successfully",
   "importing-wallet": "Импорт кошелька",
   "importing-wallet-copy": "Tari Universe будет автоматически перезапущен, когда Ваш кошелек будет импортирован",
   "invalid-seed-words": "Введите 24 слова, разделенные пробелами",

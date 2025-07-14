@@ -50,6 +50,7 @@
     "placeholder": "유휴 시간 초 단위로 입력",
     "title": "기기가 유휴 상태로 간주되는 시간"
   },
+  "import-seed-success": "Seed words imported successfully",
   "importing-wallet": "지갑 가져오기",
   "importing-wallet-copy": "지갑이 가져오면 Tari Universe가 자동으로 재시작됩니다",
   "invalid-seed-words": "공백으로 구분된 24개의 단어를 입력하세요",

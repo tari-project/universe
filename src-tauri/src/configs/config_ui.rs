@@ -82,7 +82,7 @@ pub struct ConfigUIContent {
     visual_mode: bool,
     show_experimental_settings: bool,
     warmup_seen: bool,
-    was_staged_security_modal_shown: bool,
+    was_staged_security_modal_shown: bool, // TODO: Migrated to ConfigWallet, remove after some time
     wallet_ui_mode: WalletUIMode,
 }
 
