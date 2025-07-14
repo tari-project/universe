@@ -1,27 +1,27 @@
 {
-  "version": "1.2.16",
+  "version": "1.2.17",
   "notes": "Tari Universe - See the assets to download this version and install",
-  "pub_date": "2025-07-09T11:55:02.729Z",
+  "pub_date": "2025-07-10T12:17:49.142Z",
   "platforms": {
     "linux-aarch64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRbUtvKzlyYWhiOFVTbVFPTVRkQldkUTRCZUI1ZjRoN0dmN3BpdjlFbnV3bkl0UE1lOWNaeVhpMnpGN2Z3R2N5ZWdWTW5UZDZyY1lnak52UnBneE5Ga2ZyeGIzRytTR0FZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzUyMDYwNTY1CWZpbGU6dGFyaV91bml2ZXJzZV8xLjIuMTZfYWFyY2g2NC5BcHBJbWFnZQpzRXNuZVd2RHpvUytselZ6dGpXc09lUnZIVVNEMnVKZGp5TE1rTjdVb3lTUEZ2ZG5mTWVDYytoNm1Zak83aytpQTdPa0g4OUk1UjAxZkJUZG5wTVlBdz09Cg==",
-      "url": "https://github.com/tari-project/universe/releases/download/v1.2.16/tari_universe_1.2.16_aarch64.AppImage"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRbUtvKzlyYWhiOFdWa3RxaFIxOFNRVDJwU0dZVE5pTitwbjFhYlBxeHZielRSam1yQnBoRWUyL0JNOGNhcEhoY0tiMmFEMkR1K2dyZTNhQ3pSak1kQmc5aitaMzZvNHdrPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzUyMTQ4Mzk3CWZpbGU6dGFyaV91bml2ZXJzZV8xLjIuMTdfYWFyY2g2NC5BcHBJbWFnZQorWkVqalFOdHdLamQ3NGpFeCtuVkJiQjAySEhrSG9iVXVuYTJhaWtpUGxvVG9LMXJmLzVUTGVNdlZQTkoxUGJCS25TODhOMEZCSzJsUEx2QitiVU5CUT09Cg==",
+      "url": "https://github.com/tari-project/universe/releases/download/v1.2.17/tari_universe_1.2.17_aarch64.AppImage"
     },
     "linux-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRbUtvKzlyYWhiOForQjdEQWRlS2JPeStYSjNiUkZRVzNzYkZaSW83TGRkbkhEd2NGU3kyQTkyaGNiRE5EQm1sRXBIWnB0YXJYU1BYOG1oMnNYemtyb09TeEkvUElNNVFrPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzUyMDYwNzQ3CWZpbGU6dGFyaV91bml2ZXJzZV8xLjIuMTZfYW1kNjQuQXBwSW1hZ2UKMDJPellvKy9XSGNWd0FDaUpDL0NFem1WSGtwK0RjdHdDLzlJUEEyWkUwaTc4M1I1bGFvanpEd1BZM1Y1YVh5QzZNVEY1QXp6ZThSS3J0bS96QXNHQlE9PQo=",
-      "url": "https://github.com/tari-project/universe/releases/download/v1.2.16/tari_universe_1.2.16_amd64.AppImage"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRbUtvKzlyYWhiOGZiSlZNME1heEdPM3UzVk03MThONDBjaDhxVnFxaERqQkRsREtUdE1BTmxvcWJOaFllY1h6Qmd6VTZvcDdFTnhZc2p3OW5tQUIyOUFpNVplTEY5aFFjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzUyMTQ4NDkwCWZpbGU6dGFyaV91bml2ZXJzZV8xLjIuMTdfYW1kNjQuQXBwSW1hZ2UKOWtoWEZxVTdDbmZYWG1XdE85WDBycTVBelpjc0VOcEpyRnY0MGdpY3dPejVPQnJZQmhtNXF6U3ZIcFVrdHY0Q3BLZmpiSzZFK1E0NUFNeENBTDU0Qmc9PQo=",
+      "url": "https://github.com/tari-project/universe/releases/download/v1.2.17/tari_universe_1.2.17_amd64.AppImage"
     },
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRbUtvKzlyYWhiOFZHMGNsK3ZGci9UZER2cnd1eDA2Z1luS3g1aFpHU1crdkYzV1o3TUw3dXBMTmR0a2d6MVJZR2VBbjdYdGNRL1FoV3FnSm5EdnJrRXVkclA2dWhuRkFBPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzUyMDYxNTA5CWZpbGU6VGFyaSBVbml2ZXJzZV8xLjIuMTZfeDY0X2VuLVVTLm1zaQpqYXNBRGtqUHU4OFdkbnAzMW9EUDAvRFZEemNGMFNQdmQyOTlNUjBvdU5YNG9UNVNVZzBxNlN5M1YwT3dsNnk0RjdoRTg3RFpRTWdMRG5TNCtiRHlDQT09Cg==",
-      "url": "https://github.com/tari-project/universe/releases/download/v1.2.16/Tari.Universe_1.2.16_x64_en-US.msi"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRbUtvKzlyYWhiOGUrdzJEVHVXVTM3S1B1S3Z6V1BJVWs1a2pkc3I3T1pUcUhwSlVWbzNxNVVwUk1KbWgzelBuM3krN05wQ1FUNWdkcmMvcEpheHVPTjdieTFuaHlFY1FrPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzUyMTQ5MTU0CWZpbGU6VGFyaSBVbml2ZXJzZV8xLjIuMTdfeDY0X2VuLVVTLm1zaQpWRHdjdm9JcnBzRHEzblc2MFlWOEdPK2xJQTQyVXQ3bHJFdnRDK1kyQnFCcmxJK2dTNTM5cWtjalozWHZ5cStZRzJEeWkxNWVTUnowTE84YjQwMnNEQT09Cg==",
+      "url": "https://github.com/tari-project/universe/releases/download/v1.2.17/Tari.Universe_1.2.17_x64_en-US.msi"
     },
     "darwin-aarch64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRbUtvKzlyYWhiOGFmbmRYdlJ4dnlXczExazBmU0JUMFVFckdybnZpRzlzcEJzeGNydkIyV3dudERwRkdVUVloTE5iSXB3Y3JKZnhXSms3dVJIR2dkV25VbmxTMWlMdndjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzUyMDYyMDkzCWZpbGU6VGFyaSBVbml2ZXJzZS5hcHAudGFyLmd6Cm1NSlNrT2FlczlrRWpJMnVxMFdmdWF2b2k4dEg4RDhISVF2SkpVck9sN3NlbEtYdWFRaU0xNHBSQmhoZ0dWOURacWw2bDR4MnB5RWNGZ2xmZldvY0N3PT0K",
-      "url": "https://github.com/tari-project/universe/releases/download/v1.2.16/Tari.Universe_universal.app.tar.gz"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRbUtvKzlyYWhiOGVCSERBdEs1bGRXMmxMbFNuTERKZ3FPTW5xZ3h6Mk1rbHhoZHI2TExVM0FIRS9FTG93UWcwQlF2WlpHR0RPa0c2WlQrRGt4Ui9sK3U1K2hWcTJSK1FFPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzUyMTQ5ODU4CWZpbGU6VGFyaSBVbml2ZXJzZS5hcHAudGFyLmd6ClF2TmdrUURRWjJ4Wkt3L2ZmUW50ZXBrb25iRFI4WFA3c01Gck9weHpBd3c1NjZOUGJZSXNGdWVURWJWRWJEN0tjQjNuMDdmdXpYNkNQYndYMEU0akFnPT0K",
+      "url": "https://github.com/tari-project/universe/releases/download/v1.2.17/Tari.Universe_universal.app.tar.gz"
     },
     "darwin-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRbUtvKzlyYWhiOGFmbmRYdlJ4dnlXczExazBmU0JUMFVFckdybnZpRzlzcEJzeGNydkIyV3dudERwRkdVUVloTE5iSXB3Y3JKZnhXSms3dVJIR2dkV25VbmxTMWlMdndjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzUyMDYyMDkzCWZpbGU6VGFyaSBVbml2ZXJzZS5hcHAudGFyLmd6Cm1NSlNrT2FlczlrRWpJMnVxMFdmdWF2b2k4dEg4RDhISVF2SkpVck9sN3NlbEtYdWFRaU0xNHBSQmhoZ0dWOURacWw2bDR4MnB5RWNGZ2xmZldvY0N3PT0K",
-      "url": "https://github.com/tari-project/universe/releases/download/v1.2.16/Tari.Universe_universal.app.tar.gz"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRbUtvKzlyYWhiOGVCSERBdEs1bGRXMmxMbFNuTERKZ3FPTW5xZ3h6Mk1rbHhoZHI2TExVM0FIRS9FTG93UWcwQlF2WlpHR0RPa0c2WlQrRGt4Ui9sK3U1K2hWcTJSK1FFPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzUyMTQ5ODU4CWZpbGU6VGFyaSBVbml2ZXJzZS5hcHAudGFyLmd6ClF2TmdrUURRWjJ4Wkt3L2ZmUW50ZXBrb25iRFI4WFA3c01Gck9weHpBd3c1NjZOUGJZSXNGdWVURWJWRWJEN0tjQjNuMDdmdXpYNkNQYndYMEU0akFnPT0K",
+      "url": "https://github.com/tari-project/universe/releases/download/v1.2.17/Tari.Universe_universal.app.tar.gz"
     }
   }
 }
