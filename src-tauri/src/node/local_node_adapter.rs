@@ -78,12 +78,15 @@ pub(crate) struct LocalNodeAdapter {
     pub(crate) tor_control_port: Option<u16>,
     required_initial_peers: u32,
     pub(crate) ab_test_group: ABTestSelector,
+    pub(crate) http_api_port: u16,
 }
 
 impl LocalNodeAdapter {
     pub fn new(status_broadcast: watch::Sender<BaseNodeStatus>) -> Self {
         let grpc_port = PortAllocator::new().assign_port_with_fallback();
         let tcp_listener_port = PortAllocator::new().assign_port_with_fallback();
+        let http_api_port = PortAllocator::new().assign_port_with_fallback();
+
         Self {
             grpc_address: Some(("127.0.0.1".to_string(), grpc_port)),
             status_broadcast,
@@ -93,6 +96,7 @@ impl LocalNodeAdapter {
             use_tor: false,
             tor_control_port: None,
             ab_test_group: ABTestSelector::GroupA,
+            http_api_port,
         }
     }
 
@@ -140,6 +144,10 @@ impl NodeAdapter for LocalNodeAdapter {
         } else {
             Err(anyhow::anyhow!("Remote node service is not available"))
         }
+    }
+
+    fn get_http_api_port(&self) -> Option<u16> {
+        Some(self.http_api_port)
     }
 
     fn use_tor(&mut self, use_tor: bool) {
@@ -256,6 +264,11 @@ impl ProcessAdapter for LocalNodeAdapter {
             "base_node.p2p.allow_test_addresses=true".to_string(),
             "-p".to_string(),
             "base_node.p2p.dht.network_discovery.min_desired_peers=12".to_string(),
+            "-p".to_string(),
+            format!(
+                "base_node.http_wallet_query_service.port={}",
+                self.http_api_port
+            ),
         ];
         if self.use_pruned_mode {
             args.push("-p".to_string());
