@@ -6,20 +6,18 @@ import { Content, ContentWrapper, Header, StepChip, Subtitle, Title, Wrapper } f
 import { VerifySeedPhrase } from '@app/components/security/seedphrase/VerifySeedPhrase.tsx';
 import CloseButton from '@app/components/elements/buttons/CloseButton.tsx';
 import { useTranslation } from 'react-i18next';
-import { useEffect, useState } from 'react';
-import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
-import { useGetSeedWords } from '@app/containers/floating/Settings/sections/wallet/SeedWordsMarkup/useGetSeedWords.ts';
+import { useEffect, useRef } from 'react';
+import { invoke } from '@tauri-apps/api/core';
 
 export default function SeedPhrase() {
     const { t } = useTranslation('staged-security');
-    const { seedWords, getSeedWords, seedWordsFetching } = useGetSeedWords();
     const showModal = useStagedSecurityStore((s) => s.showModal);
     const setShowModal = useStagedSecurityStore((s) => s.setShowModal);
     const setModalStep = useStagedSecurityStore((s) => s.setModalStep);
     const step = useStagedSecurityStore((s) => s.step);
     const isOpen = showModal && (step === 'SeedPhrase' || step === 'VerifySeedPhrase');
 
-    const [words, setWords] = useState<string[] | undefined>(seedWords);
+    const seedPhrase = useRef<string[]>(null);
     function handleClose() {
         setDialogToShow(null);
         setModalStep('ProtectIntro');
@@ -27,13 +25,16 @@ export default function SeedPhrase() {
     }
 
     useEffect(() => {
-        if (words?.length && words?.length > 0) return;
-        getSeedWords().then((r) => {
-            if (r?.length) {
-                setWords(r);
-            }
-        });
-    }, [getSeedWords, words]);
+        if (isOpen) {
+            if (seedPhrase.current?.length && seedPhrase.current?.length > 0) return;
+            invoke('get_seed_words').then((r) => {
+                if (r?.length) {
+                    console.debug(r);
+                    seedPhrase.current = r;
+                }
+            });
+        }
+    }, [isOpen]);
 
     const content =
         step === 'VerifySeedPhrase' ? (
@@ -41,7 +42,7 @@ export default function SeedPhrase() {
                 <Title>{t('verifySeed.title')}</Title>
                 <Subtitle>{t('verifySeed.text')}</Subtitle>
                 <ContentWrapper>
-                    <VerifySeedPhrase words={words || []} />
+                    <VerifySeedPhrase words={seedPhrase.current || []} />
                 </ContentWrapper>
             </>
         ) : (
@@ -49,7 +50,7 @@ export default function SeedPhrase() {
                 <Title>{t('seedPhrase.title')}</Title>
                 <Subtitle>{t('seedPhrase.text')}</Subtitle>
                 <ContentWrapper>
-                    <ViewSeedPhrase words={words || []} />
+                    <ViewSeedPhrase words={seedPhrase.current || []} />
                 </ContentWrapper>
             </>
         );
@@ -64,11 +65,6 @@ export default function SeedPhrase() {
 
                     <Content>
                         <StepChip>{`Step 1 of 2 `}</StepChip>
-                        {seedWordsFetching && (
-                            <ContentWrapper>
-                                <LoadingDots />
-                            </ContentWrapper>
-                        )}
                         {content}
                     </Content>
                 </Wrapper>
