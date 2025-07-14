@@ -855,7 +855,7 @@ pub async fn import_seed_words(
         }
         Err(e) => {
             error!(target: LOG_TARGET, "Error importing seed words by internal wallet: {e:?}");
-            e.to_string();
+            return Err(InvokeError::from_anyhow(e));
         }
     }
 

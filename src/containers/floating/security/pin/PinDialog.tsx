@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { emit } from '@tauri-apps/api/event';
 
-import { setDialogToShow, useUIStore } from '@app/store';
+import { setDialogToShow, useStagedSecurityStore, useUIStore } from '@app/store';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import CloseButton from '@app/components/elements/buttons/CloseButton.tsx';
 
@@ -15,17 +15,24 @@ export default function PinDialog() {
     const { t } = useTranslation('wallet');
     const [showComplete, setShowComplete] = useState(false);
     const dialogToShow = useUIStore((s) => s.dialogToShow);
-    const isOpen = dialogToShow === 'enterPin' || dialogToShow === 'createPin';
+    const step = useStagedSecurityStore((s) => s.step);
+    const showModal = useStagedSecurityStore((s) => s.showModal);
+    const setShowModal = useStagedSecurityStore((s) => s.setShowModal);
+    const setModalStep = useStagedSecurityStore((s) => s.setModalStep);
+    const createOpen = showModal && step === 'CreatePin';
+    const isOpen = dialogToShow === 'enterPin' || createOpen;
 
     function handleClose() {
         void emit('pin-dialog-response', { pin: undefined });
         setDialogToShow(null);
         setShowComplete(false);
+        setShowModal(false);
+        setModalStep('CreatePin');
     }
 
     function handleSubmit(pin: string) {
         emit('pin-dialog-response', Number(pin)).then(() => {
-            if (dialogToShow !== 'createPin') {
+            if (step !== 'CreatePin') {
                 setDialogToShow(null);
             } else {
                 setShowComplete(true);
@@ -60,7 +67,7 @@ export default function PinDialog() {
             <DialogContent $transparentBg $unPadded>
                 <Wrapper>
                     {headerMarkup}
-                    {dialogToShow === 'createPin' && createMarkup}
+                    {createOpen ? createMarkup : null}
                     {dialogToShow === 'enterPin' && <EnterPin onSubmit={handleSubmit} onForgot={handleForgotPin} />}
                 </Wrapper>
             </DialogContent>

@@ -1,7 +1,6 @@
 import { FloatingTree } from '@floating-ui/react';
 
 import SettingsModal from './Settings/SettingsModal.tsx';
-import StagedSecurity from './StagedSecurity/StagedSecurity.tsx';
 import AutoUpdateDialog from './AutoUpdateDialog/AutoUpdateDialog.tsx';
 import ExternalDependenciesDialog from './ExternalDependenciesDialog/ExternalDependenciesDialog.tsx';
 import CriticalErrorDialog from './CriticalErrorDialog/CriticalErrorDialog.tsx';
@@ -23,6 +22,9 @@ import XCLinkModal from '@app/components/exchanges/LinkModal/LinkModal.tsx';
 import KeychainDialog from './Keychain/KeychainDialog.tsx';
 import PinDialog from '@app/containers/floating/security/pin/PinDialog.tsx';
 import ForgotPinDialog from './security/pin/ForgotPinDialog.tsx';
+import SecurityPromptDialog from '@app/containers/floating/security/prompt/SecurityPromptDialog.tsx';
+import SeedPhrase from '@app/containers/floating/security/seedphrase/SeedPhrase.tsx';
+import SecurityReminder from '@app/components/security/reminder/SecurityReminder.tsx';
 
 const environment = import.meta.env.MODE;
 
@@ -31,7 +33,6 @@ const FloatingElements = () => {
         <FloatingTree>
             {environment === 'development' && <AdminUI />}
             <SettingsModal />
-            <StagedSecurity />
             <AutoUpdateDialog />
             <CriticalErrorDialog />
             <ExternalDependenciesDialog />
@@ -51,6 +52,9 @@ const FloatingElements = () => {
             <KeychainDialog />
             <PinDialog />
             <ForgotPinDialog />
+            <SecurityPromptDialog />
+            <SeedPhrase />
+            <SecurityReminder />
         </FloatingTree>
     );
 };

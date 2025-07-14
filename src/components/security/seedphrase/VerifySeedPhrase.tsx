@@ -1,24 +1,23 @@
+import { useStagedSecurityStore } from '@app/store';
 import { useMemo, useState } from 'react';
-import { StagedSecuritySectionType } from '../../StagedSecurity';
-import { BlackButton, Text, Title } from '../../styles';
+import { useTranslation } from 'react-i18next';
+
 import {
+    Wrapper,
     ButtonWrapper,
     PhraseWrapper,
-    Placeholder,
-    TextWrapper,
-    WordButton,
-    WordButtons,
-    WordPill,
     WordsSelected,
-    Wrapper,
-} from './styles';
+    Placeholder,
+    WordPill,
+    WordButtons,
+    WordButton,
+} from './styles.ts';
 import { AnimatePresence } from 'motion/react';
-import PillCloseIcon from '../../icons/PillCloseIcon';
-import { useTranslation } from 'react-i18next';
-import { useStagedSecurityStore } from '@app/store/useStagedSecurityStore';
+import PillCloseIcon from '@app/assets/icons/PillCloseIcon.tsx';
+import { Button } from '@app/components/elements/buttons/Button.tsx';
+import { invoke } from '@tauri-apps/api/core';
 
-interface Props {
-    setSection: (section: StagedSecuritySectionType) => void;
+interface VerifySeedPhraseProps {
     words: string[];
 }
 
@@ -27,11 +26,9 @@ interface SelectedWord {
     word: string;
 }
 
-export default function VerifySeedPhrase({ setSection, words }: Props) {
+export function VerifySeedPhrase({ words }: VerifySeedPhraseProps) {
     const { t } = useTranslation(['staged-security'], { useSuspense: false });
-
-    const setShowModal = useStagedSecurityStore((s) => s.setShowModal);
-    const setShowCompletedTip = useStagedSecurityStore((s) => s.setShowCompletedTip);
+    const setModalStep = useStagedSecurityStore((s) => s.setModalStep);
 
     const [completed, setCompleted] = useState(false);
     const [selectedWords, setSelectedWords] = useState<SelectedWord[]>([]);
@@ -66,19 +63,13 @@ export default function VerifySeedPhrase({ setSection, words }: Props) {
         checkCompletion(newSelectedWords.map((w) => w.word));
     };
 
-    const handleSubmit = () => {
-        setShowModal(false);
-        setSection('ProtectIntro');
-        setShowCompletedTip(true);
+    const handleSubmit = async () => {
+        setModalStep('CreatePin');
+        await invoke('set_seed_backed_up');
     };
 
     return (
         <Wrapper>
-            <TextWrapper>
-                <Title>{t('verifySeed.title')}</Title>
-                <Text>{t('verifySeed.text')}</Text>
-            </TextWrapper>
-
             <PhraseWrapper>
                 <WordsSelected>
                     <AnimatePresence>
@@ -124,9 +115,9 @@ export default function VerifySeedPhrase({ setSection, words }: Props) {
             </PhraseWrapper>
 
             <ButtonWrapper>
-                <BlackButton onClick={handleSubmit} disabled={!completed}>
+                <Button size="xlarge" fluid onClick={handleSubmit} disabled={!completed} variant="black">
                     <span>{t('verifySeed.button')}</span>
-                </BlackButton>
+                </Button>
             </ButtonWrapper>
         </Wrapper>
     );

@@ -9,8 +9,8 @@ import {
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles.ts';
 import { useCallback, useEffect, useState } from 'react';
-import { Warning } from '@app/containers/floating/StagedSecurity/sections/ProtectIntro/styles.ts';
 import { invoke } from '@tauri-apps/api/core';
+import { AlertChip } from '@app/components/security/alert-chip/AlertChip.tsx';
 
 export const PinMarkup = () => {
     const { t } = useTranslation(['settings', 'staged-security'], { useSuspense: false });
@@ -41,13 +41,13 @@ export const PinMarkup = () => {
             <SettingsGroup>
                 <SettingsGroupContent>
                     <SettingsGroupTitle>
-                        <Button onClick={setPin}>{t('setup-pin', { ns: 'settings' })}</Button>
+                        <Button variant="black" onClick={setPin}>
+                            {t('setup-pin', { ns: 'settings' })}
+                        </Button>
                     </SettingsGroupTitle>
                 </SettingsGroupContent>
                 <SettingsGroupAction>
-                    <Warning style={{ fontSize: '12px', textWrap: 'nowrap' }}>
-                        {t('intro.warning', { ns: 'staged-security' })}
-                    </Warning>
+                    <AlertChip text={t('intro.warning', { ns: 'staged-security' })} />
                 </SettingsGroupAction>
             </SettingsGroup>
         </SettingsGroupWrapper>

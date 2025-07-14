@@ -31,7 +31,7 @@ import {
     setIsStuckOnOrphanChain,
     setNetworkStatus,
 } from '@app/store/actions/appStateStoreActions';
-import { setWalletBalance, updateWalletScanningProgress } from '@app/store';
+import { setWalletBalance, updateWalletScanningProgress, useStagedSecurityStore } from '@app/store';
 import { deepEqual } from '@app/utils/objectDeepEqual.ts';
 import {
     handleAppUnlocked,
@@ -231,7 +231,7 @@ const useTauriEventsListener = () => {
                             setDialogToShow('keychain');
                             break;
                         case 'CreatePin':
-                            setDialogToShow('createPin');
+                            useStagedSecurityStore.setState({ showModal: true, step: 'ProtectIntro' });
                             break;
                         case 'EnterPin':
                             setDialogToShow('enterPin');

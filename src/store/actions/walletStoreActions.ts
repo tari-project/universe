@@ -182,6 +182,7 @@ export const handleSelectedTariAddressChange = (payload: TariAddressUpdatePayloa
     const { tari_address_base58, tari_address_emoji, tari_address_type } = payload;
     useWalletStore.setState({
         ...initialState,
+        is_wallet_importing: useWalletStore.getState().is_wallet_importing,
         tari_address_base58,
         tari_address_emoji,
         tari_address_type,
