@@ -407,7 +407,7 @@ impl SpendWalletAdapter {
 
         if let Some(http_client_url) = &self.http_client_url {
             shared_args.push("-p".to_string());
-            shared_args.push(format!("wallet.http_client_url={http_client_url}"));
+            shared_args.push(format!("wallet.http_server_url={http_client_url}"));
         }
 
         match self.wallet_birthday {
