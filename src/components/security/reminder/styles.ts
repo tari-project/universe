@@ -2,11 +2,10 @@ import * as m from 'motion/react-m';
 import styled from 'styled-components';
 import { SB_SPACING } from '@app/theme/styles.ts';
 import { Typography } from '@app/components/elements/Typography.tsx';
-import { Button } from '@app/components/elements/buttons/Button.tsx';
 
 export const Wrapper = styled(m.div)`
     border-radius: 10px;
-    background: ${({ theme }) => theme.palette.background.paper};
+    background: ${({ theme }) => theme.palette.background.default};
     box-shadow: 0 4px 45px 0 rgba(0, 0, 0, 0.08);
     display: flex;
     flex-direction: column;
@@ -31,12 +30,14 @@ export const BodyCopy = styled(Typography).attrs({ variant: 'p' })`
     text-align: center;
 `;
 
-export const MainCTA = styled(Button).attrs({
-    fluid: true,
-})`
-    background-color: black;
-`;
-
 export const ChevronWrapper = styled.div`
     transform: rotate(-90deg);
+`;
+
+export const CTAWrapper = styled.div`
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    align-items: center;
+    font-weight: 600;
 `;

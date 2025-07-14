@@ -35,7 +35,7 @@ export default function EnterPin({ onForgot, onSubmit }: EnterPinProps) {
             <Wrapper onSubmit={methods.handleSubmit(handleSubmit)}>
                 <PinInput />
                 <CTAWrapper>
-                    <CTA fluid disabled={currentCode.length !== DEFAULT_PIN_LENGTH} type="submit">
+                    <CTA size="xlarge" disabled={currentCode.length !== DEFAULT_PIN_LENGTH} type="submit">
                         {t('security.pin.enter')}
                     </CTA>
                     <TextButton color="greyscale" onClick={handleForgot}>

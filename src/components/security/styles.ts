@@ -2,7 +2,6 @@ import styled from 'styled-components';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 
 export const CTA = styled(Button).attrs({
-    size: 'xlarge',
     fluid: true,
 })`
     background-color: ${({ theme }) => theme.palette.contrast};

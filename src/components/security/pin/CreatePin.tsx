@@ -74,7 +74,7 @@ export default function CreatePin({ onClose, onSubmit }: { onClose?: () => void;
                 )}
 
                 <CTAWrapper>
-                    <CTA fluid disabled={submitDisabled} type="submit">
+                    <CTA size="xlarge" disabled={submitDisabled} type="submit">
                         {t('security.pin.create', { context })}
                     </CTA>
                     <TextButton onClick={handleSecondary}>

@@ -117,7 +117,7 @@ export function VerifySeedPhrase({ words }: VerifySeedPhraseProps) {
             </PhraseWrapper>
 
             <ButtonWrapper>
-                <CTA onClick={handleSubmit} disabled={!completed}>
+                <CTA size="xlarge" onClick={handleSubmit} disabled={!completed}>
                     <span>{t('verifySeed.button')}</span>
                 </CTA>
             </ButtonWrapper>

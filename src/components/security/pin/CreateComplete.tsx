@@ -13,7 +13,7 @@ export default function CreateComplete({ onClose }: { onClose?: () => void }) {
                 <Typography variant="p">{`Happy mining!`}</Typography>
 
                 <CTAWrapper>
-                    <CTA fluid type="button" onClick={onClose}>
+                    <CTA size="xlarge" type="button" onClick={onClose}>
                         {`Continue to Tari Universe`}
                     </CTA>
                 </CTAWrapper>

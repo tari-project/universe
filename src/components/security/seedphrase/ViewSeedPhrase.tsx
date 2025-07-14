@@ -97,7 +97,7 @@ export function ViewSeedPhrase({ words }: ViewSeedPhraseProps) {
                     <CheckboxText>{t('seedPhrase.checkbox')}</CheckboxText>
                 </CheckboxWrapper>
 
-                <CTA onClick={() => setModalStep('VerifySeedPhrase')} disabled={!checked}>
+                <CTA size="xlarge" onClick={() => setModalStep('VerifySeedPhrase')} disabled={!checked}>
                     <span>{t('seedPhrase.button')}</span>
                 </CTA>
             </ButtonWrapper>
