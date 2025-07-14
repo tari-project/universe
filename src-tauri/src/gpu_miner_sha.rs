@@ -84,7 +84,7 @@ impl GpuMinerSha {
         process_watcher.adapter.tari_address = Some(tari_address);
         process_watcher.adapter.worker_name = Some(telemetry_id.to_string());
         process_watcher.adapter.batch_size = Some(10000);
-        process_watcher.adapter.intensity = Some(100);
+        process_watcher.adapter.intensity = Some(80);
         info!(target: LOG_TARGET, "Starting sha miner");
         process_watcher
             .start(
