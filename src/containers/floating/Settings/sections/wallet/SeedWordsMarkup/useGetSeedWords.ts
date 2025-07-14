@@ -14,10 +14,10 @@ export function useGetSeedWords(args?: Arguments) {
 
     const getSeedWords = useCallback(async () => {
         setSeedWordsFetching(true);
+
         const commandName = fetchMoneroSeeds ? 'get_monero_seed_words' : 'get_seed_words';
         try {
             const seedWords: string[] = await invoke(commandName);
-
             if (seedWords.length) {
                 hasFetched.current = true;
                 setSeedWords(seedWords);

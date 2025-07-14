@@ -7,14 +7,12 @@ import { Step, StepItem } from '@app/components/security/step/Step.tsx';
 import { Content, Header, Subtitle, Title, Wrapper, CTAWrapper, ContentWrapper } from '../common.styles.ts';
 
 import { TextButton } from '@app/components/elements/buttons/TextButton.tsx';
-import { useGetSeedWords } from '@app/containers/floating/Settings/sections/wallet/SeedWordsMarkup/useGetSeedWords.ts';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { invoke } from '@tauri-apps/api/core';
 import { useEffect, useState } from 'react';
 
 export default function SecurityPromptDialog() {
     const { t } = useTranslation(['staged-security']);
-    const { getSeedWords } = useGetSeedWords();
     const [seedWordsComplete, setSeedWordsComplete] = useState(false);
     const showModal = useStagedSecurityStore((s) => s.showModal);
     const setShowModal = useStagedSecurityStore((s) => s.setShowModal);
@@ -27,11 +25,7 @@ export default function SecurityPromptDialog() {
     }
     function handleClick() {
         if (!seedWordsComplete) {
-            getSeedWords().then((seedWords) => {
-                if (seedWords && seedWords?.length) {
-                    setModalStep('SeedPhrase');
-                }
-            });
+            setModalStep('SeedPhrase');
         } else {
             setModalStep('CreatePin');
         }
