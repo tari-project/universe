@@ -29,8 +29,6 @@ use log::{info, warn};
 use tokio::sync::{watch, RwLock};
 use tokio::time::sleep;
 
-use crate::configs::config_core::ConfigCore;
-use crate::configs::trait_config::ConfigImpl;
 use crate::p2pool::models::{Connections, P2poolStats};
 use crate::p2pool_adapter::P2poolAdapter;
 use crate::port_allocator::PortAllocator;
@@ -229,22 +227,15 @@ impl P2poolManager {
         Ok(exit_code)
     }
 
-    pub async fn get_grpc_address(&self, use_local: bool) -> String {
-        if use_local {
-            let process_watcher = self.watcher.read().await;
-            let grpc_port = process_watcher
-                .adapter
-                .config
-                .as_ref()
-                .map(|c| c.grpc_port)
-                .unwrap_or_default();
-            format!("http://127.0.0.1:{grpc_port}")
-        } else {
-            ConfigCore::content()
-                .await
-                .remote_base_node_address()
-                .clone()
-        }
+    pub async fn get_grpc_address(&self) -> String {
+        let process_watcher = self.watcher.read().await;
+        let grpc_port = process_watcher
+            .adapter
+            .config
+            .as_ref()
+            .map(|c| c.grpc_port)
+            .unwrap_or_default();
+        format!("http://127.0.0.1:{grpc_port}")
     }
 
     pub async fn get_grpc_port(&self) -> u16 {

@@ -22,11 +22,9 @@
 
 use crate::{
     binaries::{Binaries, BinaryResolver},
-    configs::{
-        config_core::ConfigCore, config_mining::ConfigMining, config_wallet::ConfigWallet,
-        trait_config::ConfigImpl,
-    },
+    configs::{config_core::ConfigCore, config_mining::ConfigMining, trait_config::ConfigImpl},
     events_emitter::EventsEmitter,
+    internal_wallet::InternalWallet,
     p2pool_manager::P2poolConfig,
     progress_trackers::{
         progress_plans::{ProgressPlans, ProgressSetupMiningPlan},
@@ -39,7 +37,6 @@ use crate::{
 };
 use anyhow::Error;
 use log::info;
-use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::ShutdownSignal;
 use tauri::{AppHandle, Manager};
 use tokio::sync::{
@@ -64,7 +61,6 @@ pub struct MiningSetupPhaseSessionConfiguration {}
 
 #[derive(Clone, Default)]
 pub struct MiningSetupPhaseAppConfiguration {
-    tari_address: TariAddress,
     p2pool_enabled: bool,
     p2pool_stats_server_port: Option<u16>,
     mmproxy_monero_nodes: Vec<String>,
@@ -154,9 +150,6 @@ impl SetupPhaseImpl for MiningSetupPhase {
         let mmproxy_monero_nodes = ConfigCore::content().await.mmproxy_monero_nodes().clone();
         let mmproxy_use_monero_fail = *ConfigCore::content().await.mmproxy_use_monero_failover();
         let squad_override = ConfigMining::content().await.squad_override().clone();
-        let tari_address = ConfigWallet::content()
-            .await
-            .get_current_used_tari_address();
 
         Ok(MiningSetupPhaseAppConfiguration {
             p2pool_enabled,
@@ -164,7 +157,6 @@ impl SetupPhaseImpl for MiningSetupPhase {
             mmproxy_monero_nodes,
             p2pool_stats_server_port,
             squad_override,
-            tari_address,
         })
     }
 
@@ -178,7 +170,7 @@ impl SetupPhaseImpl for MiningSetupPhase {
         let mut progress_stepper = self.progress_stepper.lock().await;
         let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
         let state = self.app_handle.state::<UniverseAppState>();
-        let tari_address = self.app_configuration.tari_address.clone();
+        let tari_address = InternalWallet::tari_address().await;
         let telemetry_id = state
             .telemetry_manager
             .read()
@@ -247,12 +239,7 @@ impl SetupPhaseImpl for MiningSetupPhase {
                 .resolve_step(ProgressPlans::Mining(ProgressSetupMiningPlan::MMProxy))
                 .await;
 
-            let use_local_p2pool_node =
-                state.node_manager.is_local_current().await.unwrap_or(false);
-            let p2pool_node_grpc_address = state
-                .p2pool_manager
-                .get_grpc_address(use_local_p2pool_node)
-                .await;
+            let p2pool_node_grpc_address = state.p2pool_manager.get_grpc_address().await;
             state
                 .mm_proxy_manager
                 .start(StartConfig {

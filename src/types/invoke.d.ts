@@ -7,7 +7,6 @@ import {
     MaxConsumptionLevels,
     GpuThreads,
     P2poolConnections,
-    WalletBalance,
     BridgeEnvs,
     TariAddressVariants,
     BaseNodeStatus,
@@ -130,9 +129,11 @@ declare module '@tauri-apps/api/core' {
         payload: { exchange_miner: ExchangeMiner; mining_address: string }
     ): Promise<void>;
     function invoke(param: 'launch_builtin_tapplet'): Promise<ActiveTapplet>;
-    function invoke(param: 'get_tari_wallet_balance'): Promise<WalletBalance>;
     function invoke(param: 'get_bridge_envs'): Promise<BridgeEnvs>;
     function invoke(param: 'parse_tari_address', payload: { address: string }): Promise<TariAddressVariants>;
     function invoke(param: 'refresh_wallet_history'): Promise<void>;
     function invoke(param: 'get_base_node_status'): Promise<BaseNodeStatus>;
+    function invoke(param: 'create_pin'): Promise<void>;
+    function invoke(param: 'forgot_pin', payload: { seedWords: string[] }): Promise<void>;
+    function invoke(param: 'is_pin_locked'): Promise<boolean>;
 }

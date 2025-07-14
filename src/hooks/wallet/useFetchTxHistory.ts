@@ -8,7 +8,7 @@ import { fetchTransactionsHistory } from '@app/store/actions/walletStoreActions'
 export const KEY_TX = `transactions`;
 
 export function useFetchTxHistory() {
-    const [walletAddress, _] = useWalletStore((state) => state.getActiveTariAddress());
+    const walletAddress = useWalletStore((state) => state.tari_address_base58);
     const isWalletScanning = useWalletStore((s) => s.wallet_scanning.is_scanning);
     const filter = useWalletStore((s) => s.tx_history_filter);
 

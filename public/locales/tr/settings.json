@@ -50,6 +50,7 @@
     "placeholder": "Boşta kalma zaman aşımını saniye cinsinden girin",
     "title": "Makinenin boşta sayılacağı süre"
   },
+  "import-seed-success": "Seed words imported successfully",
   "importing-wallet": "Cüzdan İçe Aktarılıyor",
   "importing-wallet-copy": "Cüzdanınız içe aktarıldığında Tari Universe otomatik olarak yeniden başlayacak",
   "invalid-seed-words": "Boşluklarla ayrılmış 24 kelime girin",
@@ -96,6 +97,7 @@
     "load-qr-code": "QR kodunu yükle",
     "passphrase": "Parola"
   },
+  "pin": "Pin",
   "pool-mining": "Havuz Madenciliği",
   "pool-mining-description": "Etkinleştirildiğinde, bir havuzda madencilik yapacak ve bir grup madenciye (kabileye) katılacaksınız.",
   "pre-release": {
@@ -129,6 +131,7 @@
   "send-logs": "Günlüğü gönder",
   "set-dynamic-fail-data": "Monero düğümleri için özel URL\"ler ayarla",
   "settings": "Ayarlar",
+  "setup-pin": "Setup Universe Security PIN",
   "setup-tor-settings": "Gizlilik Kontrolü ve Bağlantı için Tor Ayarlarını Yapılandırın",
   "sha-network-hash-rate": "Sha3 ağ hash oranı",
   "should-auto-start": {

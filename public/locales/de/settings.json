@@ -50,6 +50,7 @@
     "placeholder": "Gib die Zeitüberschreitung in Sekunden ein",
     "title": "Zeit nach der die Maschine als inaktiv betrachtet wird"
   },
+  "import-seed-success": "Seed words imported successfully",
   "importing-wallet": "Wallet wird importiert",
   "importing-wallet-copy": "Tari Universe wird automatisch neu starten, sobald dein Wallet importiert wurde",
   "invalid-seed-words": "Geben Sie 24 Wörter ein, getrennt durch Leerzeichen",
@@ -96,6 +97,7 @@
     "load-qr-code": "QR-Code laden",
     "passphrase": "Passphrase"
   },
+  "pin": "Pin",
   "pool-mining": "Pool-Mining",
   "pool-mining-description": "Wenn aktiviert, wirst du in einem Pool minen und einer Gruppe von Minern beitreten.",
   "pre-release": {
@@ -129,6 +131,7 @@
   "send-logs": "Ein Problem & Protokolle einreichen",
   "set-dynamic-fail-data": "Benutzerdefinierte URLs für Monero-Knoten festlegen",
   "settings": "Einstellungen",
+  "setup-pin": "Setup Universe Security PIN",
   "setup-tor-settings": "Tor-Einstellungen für Datenschutzkontrolle und Konnektivität einrichten",
   "sha-network-hash-rate": "Sha3-Netzwerk-Hashrate",
   "should-auto-start": {
