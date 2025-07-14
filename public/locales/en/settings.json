@@ -148,6 +148,7 @@
     "general": "General",
     "mining": "Mining",
     "p2p": "Pool Mining",
+    "pools": "Mining Pools",
     "releaseNotes": "Release Notes",
     "very_experimental": "Very Experimental",
     "wallet": "Wallet"

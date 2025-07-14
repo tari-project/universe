@@ -1,4 +1,4 @@
-// Copyright 2024. The Tari Project
+// Copyright 2025. The Tari Project
 //
 // Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
 // following conditions are met:
@@ -49,7 +49,6 @@ const LOG_TARGET: &str = "tari::universe::gpu_miner_adapter";
 
 pub enum GpuNodeSource {
     BaseNode { grpc_address: String },
-    P2Pool { grpc_address: String },
 }
 
 pub(crate) struct GpuMinerAdapter {
@@ -141,7 +140,6 @@ impl ProcessAdapter for GpuMinerAdapter {
 
         let tari_node_address = match self.node_source.as_ref() {
             Some(GpuNodeSource::BaseNode { grpc_address }) => grpc_address.clone(),
-            Some(GpuNodeSource::P2Pool { grpc_address }) => grpc_address.clone(),
             None => {
                 return Err(anyhow!("GpuMinerAdapter node_source is not set"));
             }
@@ -196,12 +194,12 @@ impl ProcessAdapter for GpuMinerAdapter {
         args.push("--coinbase-extra".to_string());
         args.push(self.coinbase_extra.clone());
 
-        if matches!(
-            self.node_source.as_ref(),
-            Some(GpuNodeSource::P2Pool { .. })
-        ) {
-            args.push("--p2pool-enabled".to_string());
-        }
+        // if matches!(
+        //     self.node_source.as_ref(),
+        //     Some(GpuNodeSource::P2Pool { .. })
+        // ) {
+        //     args.push("--p2pool-enabled".to_string());
+        // }
 
         info!(target: LOG_TARGET, "Run Gpu miner with args: {:?}", args.join(" "));
         let mut envs = std::collections::HashMap::new();

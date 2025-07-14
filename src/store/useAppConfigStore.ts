@@ -1,5 +1,13 @@
 import { create } from 'zustand';
-import { ConfigBackendInMemory, ConfigCore, ConfigMining, ConfigUI, ConfigWallet } from '@app/types/configs';
+import {
+    ConfigBackendInMemory,
+    ConfigCore,
+    ConfigMining,
+    ConfigPools,
+    ConfigPoolsSelectors,
+    ConfigUI,
+    ConfigWallet,
+} from '@app/types/configs';
 import { WalletUIMode } from '@app/types/events-payloads';
 
 type UIConfigStoreState = Partial<ConfigUI> & {
@@ -70,6 +78,13 @@ const configUIInitialState: UIConfigStoreState = {
     was_staged_security_modal_shown: false,
 };
 
+const configPoolsInitialState: ConfigPools = {
+    was_config_migrated: false,
+    created_at: '',
+    cpu_pool_enabled: false,
+    gpu_pool_enabled: false,
+};
+
 const configBEInMemoryInitialState: ConfigBackendInMemory = {
     airdropUrl: '',
     airdropApiUrl: '',
@@ -90,6 +105,18 @@ export const useConfigMiningStore = create<ConfigMining>()(() => configMininigIn
 
 export const useConfigUIStore = create<UIConfigStoreState>()(() => ({
     ...configUIInitialState,
+}));
+
+export const useConfigPoolsStore = create<ConfigPools & ConfigPoolsSelectors>()((_, get) => ({
+    ...configPoolsInitialState,
+    getGpuPool: () => {
+        const gpuPool = get().gpu_pool;
+        return gpuPool ? Object.values(gpuPool)[0] : undefined;
+    },
+    getCpuPool: () => {
+        const cpuPool = get().cpu_pool;
+        return cpuPool ? Object.values(cpuPool)[0] : undefined;
+    },
 }));
 
 export const useConfigBEInMemoryStore = create<ConfigBackendInMemory>()(() => ({

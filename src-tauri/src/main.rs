@@ -28,6 +28,7 @@ use commands::CpuMinerStatus;
 use cpu_miner::CpuMinerConfig;
 use events_emitter::EventsEmitter;
 use gpu_miner_adapter::GpuMinerStatus;
+use gpu_miner_sha::GpuMinerSha;
 use log::{error, info, warn};
 use mining_status_manager::MiningStatusManager;
 use node::local_node_adapter::LocalNodeAdapter;
@@ -102,6 +103,9 @@ mod external_dependencies;
 mod feedback;
 mod gpu_miner;
 mod gpu_miner_adapter;
+mod gpu_miner_sha;
+mod gpu_miner_sha_adapter;
+mod gpu_miner_sha_websocket;
 mod gpu_status_file;
 mod hardware;
 mod internal_wallet;
@@ -181,6 +185,7 @@ struct UniverseAppState {
     in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
     cpu_miner: Arc<RwLock<CpuMiner>>,
     gpu_miner: Arc<RwLock<GpuMiner>>,
+    gpu_miner_sha: Arc<RwLock<GpuMinerSha>>,
     cpu_miner_config: Arc<RwLock<CpuMinerConfig>>,
     mm_proxy_manager: MmProxyManager,
     node_manager: NodeManager,
@@ -315,12 +320,15 @@ fn main() {
     );
     let gpu_miner: Arc<RwLock<GpuMiner>> = Arc::new(
         GpuMiner::new(
-            gpu_status_tx,
+            gpu_status_tx.clone(),
             base_node_watch_rx.clone(),
             &mut stats_collector,
         )
         .into(),
     );
+
+    let gpu_miner_sha: Arc<RwLock<GpuMinerSha>> =
+        Arc::new(GpuMinerSha::new(&mut stats_collector, gpu_status_tx.clone()).into());
 
     let (tor_watch_tx, tor_watch_rx) = watch::channel(TorStatus::default());
     let tor_manager = TorManager::new(tor_watch_tx, &mut stats_collector);
@@ -376,6 +384,7 @@ fn main() {
         in_memory_config: app_in_memory_config.clone(),
         cpu_miner: cpu_miner.clone(),
         gpu_miner: gpu_miner.clone(),
+        gpu_miner_sha: gpu_miner_sha.clone(),
         cpu_miner_config: cpu_config.clone(),
         mm_proxy_manager: mm_proxy_manager.clone(),
         node_manager,
@@ -604,6 +613,8 @@ fn main() {
             commands::start_gpu_mining,
             commands::stop_cpu_mining,
             commands::stop_gpu_mining,
+            commands::toggle_cpu_pool_mining,
+            commands::toggle_gpu_pool_mining,
             commands::get_p2pool_connections,
             commands::set_p2pool_stats_server_port,
             commands::get_used_p2pool_stats_server_port,

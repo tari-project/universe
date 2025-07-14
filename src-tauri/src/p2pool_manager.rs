@@ -38,7 +38,7 @@ use crate::tasks_tracker::TasksTrackers;
 
 const LOG_TARGET: &str = "tari::universe::p2pool_manager";
 // const P2POOL_STATS_UPDATE_INTERVAL: Duration = Duration::from_secs(10);
-
+#[allow(dead_code)]
 #[derive(Clone)]
 pub struct P2poolConfig {
     pub grpc_port: u16, // Local
@@ -48,11 +48,11 @@ pub struct P2poolConfig {
     pub squad_override: Option<String>,
     pub randomx_disabled: bool,
 }
-
+#[allow(dead_code)]
 pub struct P2poolConfigBuilder {
     config: P2poolConfig,
 }
-
+#[allow(dead_code)]
 impl P2poolConfigBuilder {
     pub fn new() -> Self {
         Self {
@@ -104,7 +104,7 @@ impl P2poolConfigBuilder {
         })
     }
 }
-
+#[allow(dead_code)]
 impl P2poolConfig {
     pub fn builder() -> P2poolConfigBuilder {
         P2poolConfigBuilder::new()
@@ -131,11 +131,11 @@ impl Clone for P2poolManager {
         }
     }
 }
-
+#[allow(dead_code)]
 pub struct P2poolManager {
     watcher: Arc<RwLock<ProcessWatcher<P2poolAdapter>>>,
 }
-
+#[allow(dead_code)]
 impl P2poolManager {
     pub fn new(
         stats_broadcast: watch::Sender<Option<P2poolStats>>,

@@ -10,10 +10,11 @@ import { useMiningMetricsStore } from '@app/store';
 import { Stack } from '@app/components/elements/Stack';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 import { formatNumber, FormatPreset } from '@app/utils';
+import { useMiningPoolsStore } from '@app/store/useMiningPoolsStore';
 
 export function PoolMiningStats() {
     const { t } = useTranslation(['mining-view', 'settings'], { useSuspense: false });
-    const pool_status = useMiningMetricsStore((s) => s.cpu_mining_status.pool_status);
+    const pool_status = useMiningPoolsStore((s) => s.cpuPoolStats);
 
     const unpaidFMT = formatNumber(pool_status?.unpaid || 0, FormatPreset.XTM_LONG_DEC);
     const balanceFMT = formatNumber(pool_status?.balance || 0, FormatPreset.XTM_LONG_DEC);

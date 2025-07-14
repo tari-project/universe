@@ -10,7 +10,6 @@ import {
     setCpuMiningStatus,
     setGpuDevices,
     setGpuMiningStatus,
-    setPoolStatus,
 } from '@app/store/actions/miningMetricsStoreActions';
 import {
     handleAskForRestart,
@@ -54,10 +53,12 @@ import {
     handleConfigWalletLoaded,
     handleMiningTimeUpdate,
     handleWalletUIChanged,
+    handleConfigPoolsLoaded,
 } from '@app/store/actions/appConfigStoreActions';
 import { invoke } from '@tauri-apps/api/core';
 import { handleShowStagedSecurityModal } from '@app/store/actions/stagedSecurityActions';
 import { refreshTransactions } from '@app/hooks/wallet/useFetchTxHistory.ts';
+import { loadCpuPoolStats, loadGpuPoolStats } from '@app/store/actions/miningPoolsStoreActions';
 import { handleSelectedTariAddressChange } from '@app/store/actions/walletStoreActions';
 
 const LOG_EVENT_TYPES = ['WalletAddressUpdate', 'CriticalProblem', 'MissingApplications'];
@@ -125,13 +126,18 @@ const useTauriEventsListener = () => {
                             handleBaseNodeStatusUpdate(event.payload);
                             break;
                         case 'GpuMiningUpdate':
+                            console.info('GpuMiningUpdate', event.payload);
                             setGpuMiningStatus(event.payload);
                             break;
                         case 'CpuMiningUpdate':
                             setCpuMiningStatus(event.payload);
                             break;
-                        case 'PoolStatusUpdate':
-                            setPoolStatus(event.payload);
+                        case 'CpuPoolStatsUpdate':
+                            loadCpuPoolStats(event.payload);
+                            break;
+                        case 'GpuPoolStatsUpdate':
+                            console.info('GpuPoolStatsUpdate', event.payload);
+                            loadGpuPoolStats(event.payload);
                             break;
                         case 'ConnectedPeersUpdate':
                             handleConnectedPeersUpdate(event.payload);
@@ -154,6 +160,10 @@ const useTauriEventsListener = () => {
                             break;
                         case 'ConfigUILoaded':
                             await handleConfigUILoaded(event.payload);
+                            break;
+                        case 'ConfigPoolsLoaded':
+                            console.info('ConfigPoolsLoaded', event.payload);
+                            handleConfigPoolsLoaded(event.payload);
                             break;
                         case 'CloseSplashscreen':
                             handleCloseSplashscreen();

@@ -39,8 +39,8 @@ pub enum Binaries {
     GpuMiner,
     Tor,
     BridgeTapplet,
+    GpuMinerSHA3X,
 }
-
 impl Binaries {
     pub fn name(&self) -> &str {
         match self {
@@ -52,6 +52,7 @@ impl Binaries {
             Binaries::GpuMiner => "glytex",
             Binaries::Tor => "tor",
             Binaries::BridgeTapplet => "bridge",
+            Binaries::GpuMinerSHA3X => "graxil",
         }
     }
 
@@ -65,6 +66,7 @@ impl Binaries {
             "glytex" => Binaries::GpuMiner,
             "tor" => Binaries::Tor,
             "bridge" => Binaries::BridgeTapplet,
+            "graxil" => Binaries::GpuMinerSHA3X,
             _ => panic!("Unknown binary name: {name}"),
         }
     }
@@ -102,6 +104,10 @@ impl Binaries {
             Binaries::BridgeTapplet => {
                 let file_name = format!("bridge-{version}");
                 PathBuf::from(file_name).join("bridge")
+            }
+            Binaries::GpuMinerSHA3X => {
+                let file_name = "graxil";
+                PathBuf::from(file_name)
             }
         }
     }
@@ -212,6 +218,22 @@ impl Binaries {
                 }
                 BinaryPlatformAssets::MacOSArm64 => {
                     format!("tari_suite-{version}-{hash}-macos-arm64.zip")
+                }
+            },
+
+            // TODO: Change to proper names once we have the binaries online
+            Binaries::GpuMinerSHA3X => match platform {
+                BinaryPlatformAssets::LinuxX64 => {
+                    format!("graxil-linux-x86_64--{version}-{hash}.zip")
+                }
+                BinaryPlatformAssets::WindowsX64 => {
+                    format!("graxil-windows-x64--{version}-{hash}.zip")
+                }
+                BinaryPlatformAssets::MacOSX64 => {
+                    format!("graxil-macos-x86_64--{version}-{hash}.zip")
+                }
+                BinaryPlatformAssets::MacOSArm64 => {
+                    format!("graxil-macos-arm64--{version}-{hash}.zip")
                 }
             },
         }

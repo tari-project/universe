@@ -46,11 +46,12 @@ use crate::utils::windows_setup_utils::add_firewall_rule;
 
 const LOG_TARGET: &str = "tari::universe::p2pool_adapter";
 
+#[allow(dead_code)]
 pub struct P2poolAdapter {
     pub(crate) config: Option<P2poolConfig>,
     stats_broadcast: watch::Sender<Option<P2poolStats>>,
 }
-
+#[allow(dead_code)]
 impl P2poolAdapter {
     pub fn new(stats_broadcast: watch::Sender<Option<P2poolStats>>) -> Self {
         Self {
@@ -58,13 +59,11 @@ impl P2poolAdapter {
             stats_broadcast,
         }
     }
-
-    #[allow(dead_code)]
     pub fn config(&self) -> Option<&P2poolConfig> {
         self.config.as_ref()
     }
 }
-
+#[allow(dead_code)]
 impl ProcessAdapter for P2poolAdapter {
     type StatusMonitor = P2poolStatusMonitor;
     type ProcessInstance = ProcessInstance;
@@ -184,12 +183,13 @@ impl ProcessAdapter for P2poolAdapter {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Clone)]
 pub struct P2poolStatusMonitor {
     stats_client: p2pool::stats_client::Client,
     latest_status_broadcast: watch::Sender<Option<P2poolStats>>,
 }
-
+#[allow(dead_code)]
 impl P2poolStatusMonitor {
     pub fn new(
         stats_server_addr: String,
@@ -201,7 +201,7 @@ impl P2poolStatusMonitor {
         }
     }
 }
-
+#[allow(dead_code)]
 #[async_trait]
 impl StatusMonitor for P2poolStatusMonitor {
     async fn check_health(&self, _uptime: Duration, timeout_duration: Duration) -> HealthStatus {
@@ -236,7 +236,7 @@ impl StatusMonitor for P2poolStatusMonitor {
         }
     }
 }
-
+#[allow(dead_code)]
 impl P2poolStatusMonitor {
     pub async fn status(&self) -> Result<P2poolStats, Error> {
         self.stats_client.stats().await

@@ -53,6 +53,8 @@ use tari_common_types::tari_address::TariAddress;
 use tauri::{AppHandle, Emitter};
 use tokio::sync::RwLock;
 
+use crate::configs::config_pools::ConfigPoolsContent;
+
 const LOG_TARGET: &str = "tari::universe::events_emitter";
 const BACKEND_STATE_UPDATE: &str = "backend_state_update";
 const PROGRESS_TRACKER_UPDATE: &str = "progress_tracker_update";
@@ -314,6 +316,19 @@ impl EventsEmitter {
             error!(target: LOG_TARGET, "Failed to emit MiningConfigLoaded event: {e:?}");
         }
     }
+    pub async fn emit_pools_config_loaded(payload: ConfigPoolsContent) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::ConfigPoolsLoaded,
+            payload,
+        };
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
+            error!(target: LOG_TARGET, "Failed to emit PoolsConfigLoaded event: {e:?}");
+        }
+    }
 
     pub async fn emit_wallet_balance_update(balance: WalletBalance) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
@@ -373,10 +388,10 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_pool_status_update(pool_status: Option<PoolStatus>) {
+    pub async fn emit_cpu_pool_status_update(pool_status: Option<PoolStatus>) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
-            event_type: EventType::PoolStatusUpdate,
+            event_type: EventType::CpuPoolStatsUpdate,
             payload: pool_status,
         };
         if let Err(e) = Self::get_app_handle()
@@ -386,6 +401,21 @@ impl EventsEmitter {
             error!(target: LOG_TARGET, "Failed to emit PoolStatusUpdate event: {e:?}");
         }
     }
+
+    pub async fn emit_gpu_pool_status_update(pool_status: Option<PoolStatus>) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::GpuPoolStatsUpdate,
+            payload: pool_status,
+        };
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
+            error!(target: LOG_TARGET, "Failed to emit GpuPoolStatusUpdate event: {e:?}");
+        }
+    }
+
     pub async fn emit_cpu_mining_update(status: CpuMinerStatus) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {

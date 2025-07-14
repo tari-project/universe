@@ -326,7 +326,7 @@ impl ProcessAdapter for WalletAdapter {
 
         if let Some(http_client_url) = &self.http_client_url {
             args.push("-p".to_string());
-            args.push(format!("wallet.http_client_url={http_client_url}"));
+            args.push(format!("wallet.http_server_url={http_client_url}"));
         }
 
         match self.wallet_birthday {

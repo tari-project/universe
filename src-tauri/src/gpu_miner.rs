@@ -83,7 +83,9 @@ pub(crate) struct GpuMiner {
     is_available: bool,
     gpu_devices: Vec<GpuDevice>,
     curent_selected_engine: EngineType,
+    #[allow(dead_code)]
     node_status_watch_rx: watch::Receiver<BaseNodeStatus>,
+    #[allow(dead_code)]
     gpu_raw_status_rx: watch::Receiver<Option<GpuMinerStatus>>,
     status_broadcast: watch::Sender<GpuMinerStatus>,
 }
@@ -167,10 +169,6 @@ impl GpuMiner {
         Ok(())
     }
 
-    pub async fn is_running(&self) -> bool {
-        let process_watcher = self.watcher.read().await;
-        process_watcher.is_running()
-    }
     #[allow(dead_code)]
     pub async fn is_pid_file_exists(&self, base_path: PathBuf) -> bool {
         let lock = self.watcher.read().await;

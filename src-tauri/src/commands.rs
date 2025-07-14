@@ -28,6 +28,7 @@ use crate::auto_launcher::AutoLauncher;
 use crate::binaries::{Binaries, BinaryResolver};
 use crate::configs::config_core::{AirdropTokens, ConfigCore, ConfigCoreContent};
 use crate::configs::config_mining::{ConfigMining, ConfigMiningContent, GpuThreads, MiningMode};
+use crate::configs::config_pools::{ConfigPools, ConfigPoolsContent};
 use crate::configs::config_ui::{ConfigUI, ConfigUIContent, DisplayMode};
 use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent};
 use crate::configs::trait_config::ConfigImpl;
@@ -1638,30 +1639,21 @@ pub async fn start_cpu_mining(
     }
     Ok(())
 }
+#[allow(clippy::too_many_lines)]
 #[tauri::command]
 pub async fn start_gpu_mining(
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
+    let gpu_mining_enabled = *ConfigMining::content().await.gpu_mining_enabled();
+
+    if !gpu_mining_enabled {
+        info!(target: LOG_TARGET, "GPU mining is disabled, not starting GPU miner.");
+        return Ok(());
+    }
+
     let timer = Instant::now();
     let _lock = state.gpu_miner_stop_start_mutex.lock().await;
-
-    let gpu_mining_enabled = *ConfigMining::content().await.gpu_mining_enabled();
-    let mode = *ConfigMining::content().await.mode();
-
-    let gpu_usage = match mode {
-        MiningMode::Custom => ConfigMining::content().await.custom_max_gpu_usage().clone(),
-        MiningMode::Eco => ConfigMining::content()
-            .await
-            .eco_mode_max_gpu_usage()
-            .clone(),
-        MiningMode::Ludicrous => ConfigMining::content()
-            .await
-            .ludicrous_mode_max_gpu_usage()
-            .clone(),
-    };
-
-    let p2pool_enabled = *ConfigCore::content().await.is_p2pool_enabled();
 
     let mut telemetry_id = state
         .telemetry_manager
@@ -1670,38 +1662,77 @@ pub async fn start_gpu_mining(
         .get_unique_string()
         .await;
 
+    if telemetry_id.is_empty() {
+        telemetry_id = "tari-universe".to_string();
+    }
+
+    if telemetry_id.is_empty() {
+        telemetry_id = "tari-universe".to_string();
+    }
+
     let tari_address = InternalWallet::tari_address().await;
-    let gpu_miner = state.gpu_miner.read().await;
-    let gpu_miner_running = gpu_miner.is_running().await;
-    let gpu_available = gpu_miner.is_gpu_mining_available();
-    drop(gpu_miner);
 
-    info!(target: LOG_TARGET, "GPU availability {:?} gpu_mining_enabled {}", gpu_available.clone(), gpu_mining_enabled);
+    info!(target: LOG_TARGET, "3. Starting gpu miner");
 
-    if gpu_mining_enabled && gpu_available && !gpu_miner_running {
-        info!(target: LOG_TARGET, "1. Starting gpu miner");
+    let mode = *ConfigMining::content().await.mode();
+    let is_gpu_pool_enabled = *ConfigPools::content().await.gpu_pool_enabled();
 
-        let source = if p2pool_enabled {
-            let grpc_address = state.p2pool_manager.get_grpc_address().await;
-            GpuNodeSource::P2Pool { grpc_address }
-        } else {
-            let grpc_address = state
-                .node_manager
-                .get_grpc_address()
+    if is_gpu_pool_enabled {
+        let mut gpu_miner_sha = state.gpu_miner_sha.write().await;
+        let res = gpu_miner_sha
+            .start(
+                tari_address.clone(),
+                telemetry_id.clone(),
+                mode,
+                app.path()
+                    .app_local_data_dir()
+                    .expect("Could not get data dir"),
+                app.path()
+                    .app_config_dir()
+                    .expect("Could not get config dir"),
+                app.path().app_log_dir().expect("Could not get log dir"),
+            )
+            .await;
+
+        info!(target: LOG_TARGET, "4. Starting gpu miner");
+        if let Err(e) = res {
+            let err_msg = format!("Could not start GPU mining: {e}");
+            error!(target: LOG_TARGET, "{err_msg}", );
+            sentry::capture_message(&err_msg, sentry::Level::Error);
+
+            if let Err(stop_err) = gpu_miner_sha.stop().await {
+                error!(target: LOG_TARGET, "Could not stop GPU miner: {stop_err}");
+            }
+
+            return Err(e.to_string());
+        }
+    } else {
+        let grpc_address = state
+            .node_manager
+            .get_grpc_address()
+            .await
+            .map_err(|e| e.to_string())?;
+
+        let source = GpuNodeSource::BaseNode { grpc_address };
+
+        let gpu_usage = match mode {
+            MiningMode::Custom => ConfigMining::content().await.custom_max_gpu_usage().clone(),
+            MiningMode::Eco => ConfigMining::content()
                 .await
-                .map_err(|e| e.to_string())?;
-            GpuNodeSource::BaseNode { grpc_address }
+                .eco_mode_max_gpu_usage()
+                .clone(),
+            MiningMode::Ludicrous => ConfigMining::content()
+                .await
+                .ludicrous_mode_max_gpu_usage()
+                .clone(),
         };
 
-        info!(target: LOG_TARGET, "2 Starting gpu miner");
-
-        if telemetry_id.is_empty() {
-            telemetry_id = "tari-universe".to_string();
+        let mut gpu_miner = state.gpu_miner.write().await;
+        let gpu_available = gpu_miner.is_gpu_mining_available();
+        if !gpu_available {
+            return Err("No GPU available for mining".to_string());
         }
 
-        info!(target: LOG_TARGET, "3. Starting gpu miner");
-
-        let mut gpu_miner = state.gpu_miner.write().await;
         let res = gpu_miner
             .start(
                 tari_address.clone(),
@@ -1732,6 +1763,7 @@ pub async fn start_gpu_mining(
             return Err(e.to_string());
         }
     }
+
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "start_gpu_mining took too long: {:?}", timer.elapsed());
     }
@@ -1779,18 +1811,65 @@ pub async fn stop_gpu_mining(state: tauri::State<'_, UniverseAppState>) -> Resul
     let _lock = state.gpu_miner_stop_start_mutex.lock().await;
     let timer = Instant::now();
 
-    state
-        .gpu_miner
-        .write()
-        .await
-        .stop()
-        .await
-        .map_err(|e| e.to_string())?;
+    let is_gpu_pool_enabled = *ConfigPools::content().await.gpu_pool_enabled();
+
+    if is_gpu_pool_enabled {
+        state
+            .gpu_miner_sha
+            .write()
+            .await
+            .stop()
+            .await
+            .map_err(|e| e.to_string())?;
+    } else {
+        state
+            .gpu_miner
+            .write()
+            .await
+            .stop()
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+
     info!(target:LOG_TARGET, "gpu miner stopped");
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "stop_cpu_mining took too long: {:?}", timer.elapsed());
     }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn toggle_cpu_pool_mining(enabled: bool, app: tauri::AppHandle) -> Result<(), String> {
+    let timer = Instant::now();
+
+    ConfigPools::update_field(ConfigPoolsContent::set_cpu_pool_enabled, enabled)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    SetupManager::get_instance()
+        .restart_phases(app.clone(), vec![SetupPhase::Mining])
+        .await;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "toggle_cpu_pool_mining took too long: {:?}", timer.elapsed());
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn toggle_gpu_pool_mining(enabled: bool) -> Result<(), String> {
+    let timer = Instant::now();
+
+    ConfigPools::update_field(ConfigPoolsContent::set_gpu_pool_enabled, enabled)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "toggle_gpu_pool_mining took too long: {:?}", timer.elapsed());
+    }
+
     Ok(())
 }
 

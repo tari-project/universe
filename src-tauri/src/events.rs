@@ -39,7 +39,8 @@ pub enum EventType {
     WalletBalanceUpdate,
     BaseNodeUpdate,
     GpuDevicesUpdate,
-    PoolStatusUpdate,
+    CpuPoolStatsUpdate,
+    GpuPoolStatsUpdate,
     CpuMiningUpdate,
     GpuMiningUpdate,
     ConnectedPeersUpdate,
@@ -73,6 +74,7 @@ pub enum EventType {
     ConfigUILoaded,
     ConfigWalletLoaded,
     ConfigMiningLoaded,
+    ConfigPoolsLoaded,
     BackgroundNodeSyncUpdate,
     InitWalletScanningProgress,
     ConnectionStatus,
@@ -196,3 +198,6 @@ pub struct TariAddressUpdatePayload {
     pub tari_address_emoji: String,
     pub tari_address_type: TariAddressType,
 }
+
+#[derive(Clone, Debug, Serialize)]
+pub struct ConfigPoolsContentLoadedPayload {}
