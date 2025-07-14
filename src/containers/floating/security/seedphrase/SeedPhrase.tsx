@@ -27,7 +27,7 @@ export default function SeedPhrase() {
     }
 
     useEffect(() => {
-        if (words && words.length) return;
+        if (words?.length && words?.length > 0) return;
         getSeedWords().then((r) => {
             if (r?.length) {
                 setWords(r);
@@ -64,13 +64,12 @@ export default function SeedPhrase() {
 
                     <Content>
                         <StepChip>{`Step 1 of 2 `}</StepChip>
-                        {seedWordsFetching ? (
+                        {seedWordsFetching && (
                             <ContentWrapper>
                                 <LoadingDots />
                             </ContentWrapper>
-                        ) : (
-                            content
                         )}
+                        {content}
                     </Content>
                 </Wrapper>
             </DialogContent>
