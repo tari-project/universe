@@ -24,7 +24,6 @@ import {
 import { Container, ContentContainer, EndContainer, HeaderContainer, SectionWrapper } from './SettingsModal.styles.ts';
 import { setIsSettingsOpen } from '@app/store';
 import VersionChip from '@app/containers/navigation/components/VersionChip/VersionChip.tsx';
-import { PoolMiningSettings } from './sections/poolMining/PoolMiningSettings.tsx';
 import { PoolsSettings } from './sections/pools/PoolsSettings.tsx';
 
 const SettingsModal = memo(function SettingsModal() {

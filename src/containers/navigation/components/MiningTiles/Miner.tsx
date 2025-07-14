@@ -54,8 +54,6 @@ export default function MinerTile({
         ? t('stats.tile-heading', { context: isMining && currentUnpaid === 0 && 'zero', ns: 'p2p' })
         : t(mainLabelKey);
 
-    console.log('Main label:', mainLabel);
-
     const [isOpen, setIsOpen] = useState(false);
     const { refs, context, floatingStyles } = useFloating({
         open: isOpen,
