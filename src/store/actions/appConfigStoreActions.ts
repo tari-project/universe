@@ -21,7 +21,7 @@ import {
     toggleDeviceExclusion,
 } from './miningStoreActions';
 import { setError } from './appStateStoreActions.ts';
-import { setIsAppExchangeSpecific, setUITheme } from './uiStoreActions';
+import { setUITheme } from './uiStoreActions';
 import { GpuThreads } from '@app/types/app-status.ts';
 import { displayMode, MiningModeType } from '../types';
 import { ConfigCore, ConfigMining, ConfigPools, ConfigUI, ConfigWallet } from '@app/types/configs.ts';
@@ -29,6 +29,7 @@ import { NodeType, updateNodeType as updateNodeTypeForNodeStore } from '../useNo
 import { setCurrentExchangeMinerId } from '../useExchangeStore.ts';
 import { fetchExchangeContent, refreshXCContent } from '@app/hooks/exchanges/fetchExchangeContent.ts';
 import { fetchExchangeList } from '@app/hooks/exchanges/fetchExchanges.ts';
+import { WalletUIMode } from '@app/types/events-payloads.ts';
 
 interface SetModeProps {
     mode: MiningModeType;
@@ -40,11 +41,10 @@ export const handleConfigCoreLoaded = async (coreConfig: ConfigCore) => {
     useConfigCoreStore.setState((c) => ({ ...c, ...coreConfig }));
     const buildInExchangeId = useConfigBEInMemoryStore.getState().exchangeId;
     const isAppExchangeSpecific = Boolean(buildInExchangeId !== 'universal');
-    setIsAppExchangeSpecific(isAppExchangeSpecific);
+    setCurrentExchangeMinerId(coreConfig.exchange_id as string);
 
     if (!isAppExchangeSpecific) {
         await fetchExchangeList();
-        setCurrentExchangeMinerId(coreConfig.exchange_id as string);
     } else {
         await fetchExchangeContent(coreConfig.exchange_id as string);
     }
@@ -412,4 +412,8 @@ export const toggleGpuPool = async (enabled: boolean) => {
                 void stopGpuMining();
             }
         });
+};
+
+export const handleWalletUIChanged = (mode: WalletUIMode) => {
+    useConfigUIStore.setState({ wallet_ui_mode: mode });
 };

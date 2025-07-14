@@ -167,11 +167,10 @@ impl GpuMinerSha {
             .get_task_tracker()
             .await
             .spawn(async move {
-                let mut last_pool_status = None;
                 loop {
                     select! {
                         _ = pool_status_check.tick() => {
-                            last_pool_status = match pool_status_watcher {
+                            let last_pool_status = match pool_status_watcher {
                                 Some(ref watcher) => {
                                     match watcher.get_pool_status().await {
                                         Ok(status) => Some(status),

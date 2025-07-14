@@ -12,7 +12,7 @@ import { styled } from 'styled-components';
 import { BsArrowsExpandVertical, BsArrowsCollapseVertical } from 'react-icons/bs';
 import { useWalletStore } from '@app/store/useWalletStore';
 
-import { useCopyToClipboard } from '@app/hooks';
+import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard.ts';
 import { useTranslation } from 'react-i18next';
 import { setExternalTariAddress } from '@app/store/actions/walletStoreActions';
 import AddressEditor from '../components/AddressEditor';
@@ -73,9 +73,10 @@ export const CopyToClipboard = ({ text }: { text: string | undefined }) => {
 
 const WalletAddressMarkup = () => {
     const { t } = useTranslation('settings', { useSuspense: false });
+    const walletAddress = useWalletStore((state) => state.tari_address_base58);
+    const walletAddressEmoji = useWalletStore((state) => state.tari_address_emoji);
     const { validateAddress } = useValidate();
     const [isCondensed, setIsCondensed] = useState(true);
-    const [walletAddress, walletAddressEmoji] = useWalletStore((state) => state.getActiveTariAddress());
 
     function condenseEmojiAddress(emojiAddress: string | undefined) {
         const regex = emojiRegex();

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AnimatePresence } from 'motion/react';
 import { CopySVG } from '@app/assets/icons/copy';
-import { useCopyToClipboard } from '@app/hooks';
+import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard.ts';
 import { useWalletStore } from '@app/store';
 import { truncateMiddle } from '@app/utils';
 import { offset, useFloating, useHover, useInteractions } from '@floating-ui/react';
@@ -13,8 +13,8 @@ export default function ActionCopyAddress() {
 
     const [showAdress, setShowAddress] = useState(false);
     const { copyToClipboard, isCopied } = useCopyToClipboard();
-    const [walletAddress, _walletAddressEmoji] = useWalletStore((state) => state.getActiveTariAddress());
-    const displayAddress = truncateMiddle(walletAddress, 5);
+    const tariWalletAddress = useWalletStore((state) => state.tari_address_base58);
+    const displayAddress = truncateMiddle(tariWalletAddress, 5);
 
     const { refs, context, floatingStyles } = useFloating({
         open: showAdress,
@@ -25,11 +25,11 @@ export default function ActionCopyAddress() {
     });
 
     function handleCopyClick() {
-        copyToClipboard(walletAddress);
+        copyToClipboard(tariWalletAddress);
     }
 
     const hover = useHover(context, {
-        enabled: !!walletAddress,
+        enabled: !!tariWalletAddress,
         move: !showAdress,
     });
 
@@ -50,7 +50,7 @@ export default function ActionCopyAddress() {
                     </div>
                 )}
             </AnimatePresence>
-            <ActionButton ref={refs.setReference} onClick={handleCopyClick} disabled={!walletAddress}>
+            <ActionButton ref={refs.setReference} onClick={handleCopyClick} disabled={!tariWalletAddress}>
                 <CopySVG />
             </ActionButton>
         </>

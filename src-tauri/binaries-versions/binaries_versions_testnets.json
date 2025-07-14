@@ -1,13 +1,13 @@
 {
     "binaries": {
         "xmrig": "6.24.0",
-        "mmproxy": "4.8.0-pre.0 | 2d9dbf1",
-        "minotari_node": "4.8.0-pre.0 | 2d9dbf1",
-        "wallet": "4.8.0-pre.0 | 2d9dbf1",
+        "mmproxy": "4.9.0-pre.1 | 22bd4b9",
+        "minotari_node": "4.9.0-pre.1 | 22bd4b9",
+        "wallet": "4.9.0-pre.1 | 22bd4b9",
         "sha-p2pool": "1.0.3 | cff9241",
         "glytex": "0.2.26 | 78e833f",
         "tor": "14.5.1",
-        "bridge": "0.1.7",
+        "bridge": "0.2.0",
         "graxil": "1.0.1 | 56963d7"
     }
 }

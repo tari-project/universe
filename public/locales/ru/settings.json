@@ -50,6 +50,7 @@
     "placeholder": "Введите время простоя в секундах",
     "title": "Время, после которого машина считается в простое"
   },
+  "import-seed-success": "Seed words imported successfully",
   "importing-wallet": "Импорт кошелька",
   "importing-wallet-copy": "Tari Universe будет автоматически перезапущен, когда Ваш кошелек будет импортирован",
   "invalid-seed-words": "Введите 24 слова, разделенные пробелами",
@@ -96,6 +97,7 @@
     "load-qr-code": "Загрузить QR-код",
     "passphrase": "Парольная фраза"
   },
+  "pin": "Pin",
   "pool-mining": "Майнинг в пуле",
   "pool-mining-description": "При включении Вы будете майнить в пуле и присоединитесь к группе майнеров.",
   "pre-release": {
@@ -129,6 +131,7 @@
   "send-logs": "Отправить логи",
   "set-dynamic-fail-data": "Установить пользовательские URL для узлов Monero",
   "settings": "Настройки",
+  "setup-pin": "Setup Universe Security PIN",
   "setup-tor-settings": "Настройка параметров Tor для управления конфиденциальностью и подключением",
   "sha-network-hash-rate": "Хэшрейт сети Sha3",
   "should-auto-start": {

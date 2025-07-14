@@ -22,8 +22,9 @@
 
 use crate::{
     binaries::{Binaries, BinaryResolver},
-    configs::{config_core::ConfigCore, config_wallet::ConfigWallet, trait_config::ConfigImpl},
+    configs::{config_core::ConfigCore, trait_config::ConfigImpl},
     events_emitter::EventsEmitter,
+    internal_wallet::InternalWallet,
     progress_trackers::{
         progress_plans::{ProgressPlans, ProgressSetupMiningPlan},
         progress_stepper::ProgressStepperBuilder,
@@ -35,7 +36,6 @@ use crate::{
 };
 use anyhow::Error;
 use log::info;
-use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::ShutdownSignal;
 use tauri::{AppHandle, Manager};
 use tokio::sync::{
@@ -43,7 +43,6 @@ use tokio::sync::{
     Mutex,
 };
 use tokio_util::task::TaskTracker;
-
 use super::{
     listeners::SetupFeaturesList,
     setup_manager::PhaseStatus,
@@ -60,7 +59,6 @@ pub struct MiningSetupPhaseSessionConfiguration {}
 
 #[derive(Clone, Default)]
 pub struct MiningSetupPhaseAppConfiguration {
-    tari_address: TariAddress,
     mmproxy_monero_nodes: Vec<String>,
     mmproxy_use_monero_fail: bool,
 }
@@ -140,14 +138,10 @@ impl SetupPhaseImpl for MiningSetupPhase {
     async fn load_app_configuration() -> Result<Self::AppConfiguration, Error> {
         let mmproxy_monero_nodes = ConfigCore::content().await.mmproxy_monero_nodes().clone();
         let mmproxy_use_monero_fail = *ConfigCore::content().await.mmproxy_use_monero_failover();
-        let tari_address = ConfigWallet::content()
-            .await
-            .get_current_used_tari_address();
 
         Ok(MiningSetupPhaseAppConfiguration {
             mmproxy_use_monero_fail,
             mmproxy_monero_nodes,
-            tari_address,
         })
     }
 
@@ -161,7 +155,7 @@ impl SetupPhaseImpl for MiningSetupPhase {
         let mut progress_stepper = self.progress_stepper.lock().await;
         let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
         let state = self.app_handle.state::<UniverseAppState>();
-        let tari_address = self.app_configuration.tari_address.clone();
+        let tari_address = InternalWallet::tari_address().await;
         let telemetry_id = state
             .telemetry_manager
             .read()

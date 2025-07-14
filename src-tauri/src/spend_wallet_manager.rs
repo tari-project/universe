@@ -114,11 +114,13 @@ impl SpendWalletManager {
         destination: String,
         payment_id: Option<String>,
         state: tauri::State<'_, UniverseAppState>,
+        app_handle: &tauri::AppHandle,
     ) -> Result<(), Error> {
         self.node_manager.wait_ready().await?;
         let (public_key, public_address) = self.node_manager.get_connection_details().await?;
         self.adapter.base_node_public_key = Some(public_key.clone());
         self.adapter.base_node_address = Some(public_address.clone());
+        self.adapter.http_client_url = Some(self.node_manager.get_http_api_url().await?);
         info!(target: LOG_TARGET, "[send_one_sided_to_stealth_address] with node {public_key:?}:{public_address:?}");
 
         // Prevent from erasing wallet data when sending in progress
@@ -126,7 +128,7 @@ impl SpendWalletManager {
 
         let res = self
             .adapter
-            .send_one_sided_to_stealth_address(amount, destination, payment_id, state)
+            .send_one_sided_to_stealth_address(amount, destination, payment_id, state, app_handle)
             .await;
 
         let node_status = *self.base_node_status_rx.borrow();

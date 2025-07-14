@@ -50,6 +50,7 @@
     "placeholder": "Voer onaktiwiteitstyd in sekondes in",
     "title": "Tyd waarna masjien as onaktief beskou word"
   },
+  "import-seed-success": "Seed words imported successfully",
   "importing-wallet": "Beursie invoer",
   "importing-wallet-copy": "Tari Universe sal outomaties herbegin sodra jou beursie ingevoer is",
   "invalid-seed-words": "Voer 24 woorde in, geskei deur spasies",
@@ -96,6 +97,7 @@
     "load-qr-code": "Laai QR-kode",
     "passphrase": "Wagwoordfrase"
   },
+  "pin": "Pin",
   "pool-mining": "Poel Mynbou",
   "pool-mining-description": "Wanneer geaktiveer, sal u in \"n poel myn en by \"n groep mynwerkers aansluit.",
   "pre-release": {
@@ -129,6 +131,7 @@
   "send-logs": "Stuur logs",
   "set-dynamic-fail-data": "Stel pasgemaakte URL\"s vir monero nodusse",
   "settings": "Instellings",
+  "setup-pin": "Setup Universe Security PIN",
   "setup-tor-settings": "Stel Tor-instellings op vir Privaatheidsbeheer en Konnektiwiteit",
   "sha-network-hash-rate": "Sha3 netwerk hashrate",
   "should-auto-start": {

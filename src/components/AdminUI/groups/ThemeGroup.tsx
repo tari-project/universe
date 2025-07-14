@@ -1,5 +1,5 @@
 /* eslint-disable i18next/no-literal-string */
-import { Button, ButtonGroup, CategoryLabel } from '../styles';
+import { AdminButton, ButtonGroup, CategoryLabel } from '../styles';
 import { useUIStore } from '@app/store/useUIStore';
 import { setUITheme } from '@app/store';
 
@@ -10,12 +10,12 @@ export function ThemeGroup() {
         <>
             <CategoryLabel>Theme</CategoryLabel>
             <ButtonGroup>
-                <Button onClick={() => setUITheme('light')} $isActive={theme === 'light'}>
+                <AdminButton onClick={() => setUITheme('light')} $isActive={theme === 'light'}>
                     Light Theme
-                </Button>
-                <Button onClick={() => setUITheme('dark')} $isActive={theme === 'dark'}>
+                </AdminButton>
+                <AdminButton onClick={() => setUITheme('dark')} $isActive={theme === 'dark'}>
                     Dark Theme
-                </Button>
+                </AdminButton>
             </ButtonGroup>
         </>
     );

@@ -28,9 +28,8 @@ use tauri::{AppHandle, Manager};
 use tokio::sync::RwLock;
 
 use crate::{EventsEmitter, UniverseAppState};
-
+use crate::internal_wallet::InternalWallet;
 use super::{
-    config_wallet::ConfigWallet,
     trait_config::{ConfigContentImpl, ConfigImpl},
 };
 
@@ -196,10 +195,8 @@ impl ConfigPools {
         config.load_app_handle(app_handle.clone()).await;
 
         let mut cpu_config = state.cpu_miner_config.write().await;
-        let tari_address = ConfigWallet::content().await.tari_address().clone();
-        if let Some(address) = &tari_address {
-            cpu_config.load_from_config_pools(config.content.clone(), address);
-        }
+        let tari_address = InternalWallet::tari_address().await;
+        cpu_config.load_from_config_pools(config.content.clone(), &tari_address);
         drop(cpu_config);
 
         EventsEmitter::emit_pools_config_loaded(config.content.clone()).await;

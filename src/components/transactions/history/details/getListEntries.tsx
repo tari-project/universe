@@ -4,7 +4,7 @@ import { ReactNode } from 'react';
 import { formatNumber, FormatPreset } from '@app/utils';
 import { StatusListEntry } from '@app/components/transactions/components/StatusList/StatusList.tsx';
 import { getExplorerUrl, Network } from '@app/utils/network.ts';
-import { BackendBridgeTransaction, useBlockchainVisualisationStore, useMiningStore } from '@app/store';
+import { BackendBridgeTransaction, useMiningMetricsStore, useMiningStore } from '@app/store';
 import { getTxStatusTitleKey, getTxTitle } from '@app/utils/getTxStatus.ts';
 import { TransactionDetailsItem } from '@app/types/transactions.ts';
 import { EmojiAddressWrapper } from '@app/components/transactions/history/details/styles.ts';
@@ -55,7 +55,7 @@ function getPaymentReferenceValue(transaction: TransactionDetailsItem): ReactNod
     if (transaction.payment_reference) {
         return transaction.payment_reference;
     }
-    const currentBlockHeight = useBlockchainVisualisationStore.getState().displayBlockHeight;
+    const currentBlockHeight = useMiningMetricsStore.getState().base_node_status.block_height;
     if (!transaction.mined_in_block_height || !currentBlockHeight) {
         return i18n.t('common:pending');
     }

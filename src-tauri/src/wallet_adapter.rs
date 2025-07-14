@@ -65,6 +65,7 @@ pub struct WalletAdapter {
     pub(crate) grpc_port: u16,
     pub(crate) state_broadcast: watch::Sender<Option<WalletState>>,
     pub(crate) wallet_birthday: Option<u16>,
+    pub(crate) http_client_url: Option<String>,
 }
 
 impl WalletAdapter {
@@ -82,6 +83,7 @@ impl WalletAdapter {
             grpc_port,
             state_broadcast,
             wallet_birthday: None,
+            http_client_url: None,
         }
     }
 
@@ -322,6 +324,11 @@ impl ProcessAdapter for WalletAdapter {
             ),
         ];
 
+        if let Some(http_client_url) = &self.http_client_url {
+            args.push("-p".to_string());
+            args.push(format!("wallet.http_client_url={http_client_url}"));
+        }
+
         match self.wallet_birthday {
             Some(wallet_birthday) => {
                 args.push("--birthday".to_string());
@@ -504,27 +511,6 @@ impl WalletStatusMonitor {
             balance: WalletBalance::from_option(status.balance),
             network: NetworkStatus::from(status.network),
         })
-    }
-
-    #[deprecated(
-        note = "Do not use. The view only wallet currently returns an interactive address that is not usable. Remove when grpc has been updated to return correct offline address"
-    )]
-    #[allow(dead_code)]
-    pub async fn get_wallet_address(&self) -> Result<TariAddress, WalletStatusMonitorError> {
-        panic!("Do not use. The view only wallet currently returns an interactive address that is not usable. Remove when grpc has been updated to return correct offline address");
-        // let mut client = WalletClient::connect(self.wallet_grpc_address())
-        //     .await
-        //     .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
-        // let res = client
-        //     .get_address(Empty {})
-        //     .await
-        //     .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?;
-        // let res = res.into_inner();
-
-        // match TariAddress::from_bytes(res.address.as_slice()) {
-        //     Ok(address) => Ok(address),
-        //     Err(err) => Err(WalletStatusMonitorError::TariAddress(err)),
-        // }
     }
 }
 

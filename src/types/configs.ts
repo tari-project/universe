@@ -1,6 +1,7 @@
 import { MiningModeType } from '@app/store';
 import { GpuThreads } from './app-status';
 import { NodeType } from '@app/store/useNodeStore';
+import { WalletUIMode } from './events-payloads';
 
 export interface ConfigCore {
     created_at: string;
@@ -43,6 +44,8 @@ export interface ConfigUI {
     visual_mode: boolean;
     show_experimental_settings: boolean;
     warmup_seen: boolean | null;
+    wallet_ui_mode: WalletUIMode;
+    was_staged_security_modal_shown: boolean;
 }
 export interface ConfigMining {
     created_at: string;

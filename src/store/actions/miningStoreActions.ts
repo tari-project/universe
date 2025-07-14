@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import { GpuThreads, MaxConsumptionLevels } from '@app/types/app-status.ts';
-import { useBlockchainVisualisationStore } from '../useBlockchainVisualisationStore.ts';
+
 import { useMiningMetricsStore } from '../useMiningMetricsStore.ts';
 
 import { useMiningStore } from '../useMiningStore.ts';
@@ -162,9 +162,6 @@ export const startCpuMining = async () => {
     console.info('CPU Mining starting....');
     try {
         await invoke('start_cpu_mining', {});
-        useBlockchainVisualisationStore
-            .getState()
-            .setDisplayBlockTime({ daysString: '', hoursString: '', minutes: '00', seconds: '00' });
         console.info('CPU Mining started.');
     } catch (e) {
         console.error('Failed to start CPU mining: ', e);
@@ -181,9 +178,6 @@ export const startGpuMining = async () => {
     console.info('GPU Mining starting....');
     try {
         await invoke('start_gpu_mining', {});
-        useBlockchainVisualisationStore
-            .getState()
-            .setDisplayBlockTime({ daysString: '', hoursString: '', minutes: '00', seconds: '00' });
         console.info('GPU Mining started.');
     } catch (e) {
         console.error('Failed to start GPU mining: ', e);

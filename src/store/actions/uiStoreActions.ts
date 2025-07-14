@@ -1,10 +1,4 @@
-import {
-    CONNECTION_STATUS,
-    DialogType,
-    sidebarTowerOffset,
-    TOWER_CANVAS_ID,
-    useUIStore,
-} from '@app/store/useUIStore.ts';
+import { useUIStore } from '@app/store/useUIStore.ts';
 import {
     loadTowerAnimation,
     removeTowerAnimation,
@@ -18,6 +12,7 @@ import { ConnectionStatusPayload } from '@app/types/events-payloads.ts';
 import { SB_WIDTH } from '@app/theme/styles.ts';
 import { useConfigUIStore } from '../useAppConfigStore.ts';
 import { useSetupStore } from '../useSetupStore.ts';
+import { CONNECTION_STATUS, DialogType, sidebarTowerOffset, TOWER_CANVAS_ID } from '../types/ui.ts';
 
 export const setShowExternalDependenciesDialog = (showExternalDependenciesDialog: boolean) =>
     useUIStore.setState({ showExternalDependenciesDialog });
@@ -91,8 +86,6 @@ export const setSidebarOpen = (sidebarOpen: boolean) =>
     });
 
 export const setSeedlessUI = (seedlessUI: boolean) => useUIStore.setState((c) => ({ ...c, seedlessUI }));
-export const setIsAppExchangeSpecific = (isAppExchangeSpecific: boolean) =>
-    useUIStore.setState({ isAppExchangeSpecific });
 export const setShouldShowExchangeSpecificModal = (shouldShowExchangeSpecificModal: boolean) =>
     useUIStore.setState({ shouldShowExchangeSpecificModal });
 export const handleCloseSplashscreen = () => useUIStore.setState({ showSplashscreen: false });
