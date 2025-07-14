@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use log::{info, warn, error};
+use log::{error, info, warn};
 use std::{path::PathBuf, sync::Arc, time::Duration};
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
@@ -31,7 +31,17 @@ use tokio::{
 };
 
 use crate::{
-    binaries::Binaries, configs::{config_mining::MiningMode, config_pools::{ConfigPools, GpuPool}, trait_config::ConfigImpl}, gpu_miner_sha_adapter::GpuMinerShaAdapter, pool_status_watcher::{LuckyPoolAdapter, PoolApiAdapters, SupportXmrPoolAdapter}, process_watcher::{ProcessWatcher}, tasks_tracker::TasksTrackers, EventsEmitter, GpuMinerStatus, PoolStatusWatcher, ProcessStatsCollectorBuilder
+    binaries::Binaries,
+    configs::{
+        config_mining::MiningMode,
+        config_pools::{ConfigPools, GpuPool},
+        trait_config::ConfigImpl,
+    },
+    gpu_miner_sha_adapter::GpuMinerShaAdapter,
+    pool_status_watcher::{LuckyPoolAdapter, PoolApiAdapters, SupportXmrPoolAdapter},
+    process_watcher::ProcessWatcher,
+    tasks_tracker::TasksTrackers,
+    EventsEmitter, GpuMinerStatus, PoolStatusWatcher, ProcessStatsCollectorBuilder,
 };
 
 const LOG_TARGET: &str = "tari::universe::gpu_miner_sha";
@@ -68,8 +78,7 @@ impl GpuMinerSha {
         &mut self,
         tari_address: TariAddress,
         telemetry_id: String,
-        #[allow(unused_variables)]
-        mode: MiningMode,
+        #[allow(unused_variables)] mode: MiningMode,
         base_path: PathBuf,
         config_path: PathBuf,
         log_path: PathBuf,
@@ -80,18 +89,17 @@ impl GpuMinerSha {
             .get_task_tracker()
             .await;
 
-
         let mut process_watcher = self.watcher.write().await;
 
         let pools_config = ConfigPools::content().await;
         if *pools_config.gpu_pool_enabled() {
             match pools_config.gpu_pool() {
                 GpuPool::LuckyPool(lucky_pool_config) => {
-                process_watcher.adapter.pool_url = Some(lucky_pool_config.get_pool_url());
-                self.pool_status_watcher = Some(PoolStatusWatcher::new(
-                    lucky_pool_config.get_stats_url(tari_address.to_base58().as_str()),
-                    PoolApiAdapters::LuckyPool(LuckyPoolAdapter {}),
-                ));
+                    process_watcher.adapter.pool_url = Some(lucky_pool_config.get_pool_url());
+                    self.pool_status_watcher = Some(PoolStatusWatcher::new(
+                        lucky_pool_config.get_stats_url(tari_address.to_base58().as_str()),
+                        PoolApiAdapters::LuckyPool(LuckyPoolAdapter {}),
+                    ));
                 }
                 GpuPool::SupportXTMPool(support_xtm_pool_config) => {
                     process_watcher.adapter.pool_url = Some(support_xtm_pool_config.get_pool_url());
@@ -102,7 +110,6 @@ impl GpuMinerSha {
                 }
             }
         }
-
 
         process_watcher.adapter.tari_address = Some(tari_address);
         process_watcher.adapter.worker_name = Some(telemetry_id.to_string());
@@ -147,7 +154,7 @@ impl GpuMinerSha {
             warn!(target: LOG_TARGET, "Status updates thread is already running");
             return Ok(());
         }
-        
+
         let pool_status_watcher = self.pool_status_watcher.clone();
         let mut pool_status_check = interval(Duration::from_secs(20));
         pool_status_check.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
@@ -176,10 +183,8 @@ impl GpuMinerSha {
                                 },
                                 None => None,
                             };
-                        
                             info!(target: LOG_TARGET, "Pool status update: {last_pool_status:?}");
                             EventsEmitter::emit_gpu_pool_status_update(last_pool_status.clone()).await;
-                        
                         }
                         _ = shutdown_signal.wait() => {
                             break;
