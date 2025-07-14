@@ -1,5 +1,6 @@
 import * as m from 'motion/react-m';
 import styled, { css } from 'styled-components';
+import { convertHexToRGBA } from '@app/utils';
 
 export const Wrapper = styled.div`
     display: flex;
@@ -47,7 +48,7 @@ export const WordColumn = styled.div`
 `;
 
 export const Word = styled.div`
-    color: #000;
+    color: ${({ theme }) => theme.palette.text.primary};
     font-size: min(calc(1rem + 0.1vmin), 18px);
     font-weight: 600;
     line-height: 1;
@@ -56,7 +57,7 @@ export const Word = styled.div`
     gap: 6px;
 
     span {
-        color: rgba(0, 0, 0, 0.5);
+        color: ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.5)};
         text-align: center;
         width: 24px;
         font-variant-numeric: tabular-nums;
@@ -82,7 +83,7 @@ export const CopyButton = styled('button')`
     border-radius: 100px;
     border: 1px solid #b0b0b0;
 
-    color: #000;
+    color: ${({ theme }) => theme.palette.text.primary};
     text-align: center;
     font-size: 16px;
     font-style: normal;
@@ -147,7 +148,7 @@ export const Check = styled(m.div)`
 `;
 
 export const CheckboxText = styled.div`
-    color: rgba(0, 0, 0, 0.75);
+    color: ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.75)};
     font-size: 14px;
     font-weight: 400;
     line-height: 100%;
@@ -168,7 +169,7 @@ export const WordButton = styled('button')`
     border-radius: 8px;
     background: rgba(0, 0, 0, 0.1);
 
-    color: #000;
+    color: ${({ theme }) => theme.palette.text.primary};
     font-size: 14px;
     font-weight: 600;
     line-height: 1.6;
@@ -215,7 +216,7 @@ export const WordPill = styled(m.div)`
     justify-content: center;
     gap: 4px;
 
-    color: #000;
+    color: ${({ theme }) => theme.palette.text.primary};
 
     cursor: pointer;
     transition: background 0.2s ease;
@@ -226,7 +227,7 @@ export const WordPill = styled(m.div)`
 `;
 
 export const Placeholder = styled(m.div)`
-    color: #000;
+    color: ${({ theme }) => theme.palette.text.primary};
     text-align: center;
     font-size: 14px;
     font-style: normal;

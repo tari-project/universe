@@ -21,6 +21,7 @@ import { useStagedSecurityStore } from '@app/store';
 import CheckIcon from '@app/assets/icons/CheckIcon.tsx';
 import CopyIcon from '@app/assets/icons/CopyIcon.tsx';
 import { CTA } from '@app/components/security/styles.ts';
+import { CTAWrapper } from '../pin/styles.ts';
 
 interface ViewSeedPhraseProps {
     words: string[];
@@ -97,9 +98,11 @@ export function ViewSeedPhrase({ words }: ViewSeedPhraseProps) {
                     <CheckboxText>{t('seedPhrase.checkbox')}</CheckboxText>
                 </CheckboxWrapper>
 
-                <CTA size="xlarge" onClick={() => setModalStep('VerifySeedPhrase')} disabled={!checked}>
-                    <span>{t('seedPhrase.button')}</span>
-                </CTA>
+                <CTAWrapper>
+                    <CTA size="xlarge" onClick={() => setModalStep('VerifySeedPhrase')} disabled={!checked}>
+                        {t('seedPhrase.button')}
+                    </CTA>
+                </CTAWrapper>
             </ButtonWrapper>
         </Wrapper>
     );

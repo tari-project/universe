@@ -12,13 +12,14 @@ export default function SeedPhrase() {
     const { t } = useTranslation('staged-security');
     const { seedWords, getSeedWords } = useGetSeedWords();
     const showModal = useStagedSecurityStore((s) => s.showModal);
+    const setShowModal = useStagedSecurityStore((s) => s.setShowModal);
     const step = useStagedSecurityStore((s) => s.step);
     const isOpen = showModal && (step === 'SeedPhrase' || step === 'VerifySeedPhrase');
 
     function handleClose() {
         setDialogToShow(null);
+        setShowModal(false);
     }
-
     useEffect(() => {
         if (!seedWords.length) {
             void getSeedWords();
