@@ -6,7 +6,7 @@ import { Content, ContentWrapper, Header, StepChip, Subtitle, Title, Wrapper } f
 import { VerifySeedPhrase } from '@app/components/security/seedphrase/VerifySeedPhrase.tsx';
 import CloseButton from '@app/components/elements/buttons/CloseButton.tsx';
 import { useTranslation } from 'react-i18next';
-import { useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 
 export default function SeedPhrase() {
@@ -15,9 +15,10 @@ export default function SeedPhrase() {
     const setShowModal = useStagedSecurityStore((s) => s.setShowModal);
     const setModalStep = useStagedSecurityStore((s) => s.setModalStep);
     const step = useStagedSecurityStore((s) => s.step);
+
+    const [seedPhrase, setSeedPhrase] = useState<string[] | undefined>();
     const isOpen = showModal && (step === 'SeedPhrase' || step === 'VerifySeedPhrase');
 
-    const seedPhrase = useRef<string[]>(null);
     function handleClose() {
         setDialogToShow(null);
         setModalStep('ProtectIntro');
@@ -26,15 +27,14 @@ export default function SeedPhrase() {
 
     useEffect(() => {
         if (isOpen) {
-            if (seedPhrase.current?.length && seedPhrase.current?.length > 0) return;
+            if (seedPhrase?.length && seedPhrase?.length > 0) return;
             invoke('get_seed_words').then((r) => {
                 if (r?.length) {
-                    console.debug(r);
-                    seedPhrase.current = r;
+                    setSeedPhrase(r);
                 }
             });
         }
-    }, [isOpen]);
+    }, [isOpen, seedPhrase?.length]);
 
     const content =
         step === 'VerifySeedPhrase' ? (
@@ -42,7 +42,7 @@ export default function SeedPhrase() {
                 <Title>{t('verifySeed.title')}</Title>
                 <Subtitle>{t('verifySeed.text')}</Subtitle>
                 <ContentWrapper>
-                    <VerifySeedPhrase words={seedPhrase.current || []} />
+                    <VerifySeedPhrase words={seedPhrase || []} />
                 </ContentWrapper>
             </>
         ) : (
@@ -50,7 +50,7 @@ export default function SeedPhrase() {
                 <Title>{t('seedPhrase.title')}</Title>
                 <Subtitle>{t('seedPhrase.text')}</Subtitle>
                 <ContentWrapper>
-                    <ViewSeedPhrase words={seedPhrase.current || []} />
+                    <ViewSeedPhrase words={seedPhrase || []} />
                 </ContentWrapper>
             </>
         );
