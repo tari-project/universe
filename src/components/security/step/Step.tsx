@@ -7,8 +7,7 @@ export interface StepItem {
     title: string;
     subtitle: string;
 }
-export const Step = ({
-                         stepNumber, completed, title, subtitle }: StepItem) => {
+export const Step = ({ stepNumber, completed, title, subtitle }: StepItem) => {
     const { t } = useTranslation(['staged-security']);
     return (
         <Wrapper>

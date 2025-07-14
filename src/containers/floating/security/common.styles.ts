@@ -1,6 +1,5 @@
 import styled from 'styled-components';
 import { Typography } from '@app/components/elements/Typography.tsx';
-import { Button } from '@app/components/elements/buttons/Button.tsx';
 
 export const Wrapper = styled.div`
     display: flex;
