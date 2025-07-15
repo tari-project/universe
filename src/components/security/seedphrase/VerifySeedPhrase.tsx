@@ -1,4 +1,3 @@
-import { useStagedSecurityStore } from '@app/store';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -28,7 +27,6 @@ interface SelectedWord {
 
 export function VerifySeedPhrase({ words }: VerifySeedPhraseProps) {
     const { t } = useTranslation(['staged-security'], { useSuspense: false });
-    const setModalStep = useStagedSecurityStore((s) => s.setModalStep);
 
     const [completed, setCompleted] = useState(false);
     const [selectedWords, setSelectedWords] = useState<SelectedWord[]>([]);
@@ -64,8 +62,8 @@ export function VerifySeedPhrase({ words }: VerifySeedPhraseProps) {
     };
 
     const handleSubmit = async () => {
-        setModalStep('CreatePin');
         await invoke('set_seed_backed_up');
+        await invoke('create_pin');
     };
 
     return (

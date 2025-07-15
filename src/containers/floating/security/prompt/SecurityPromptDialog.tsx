@@ -28,7 +28,7 @@ export default function SecurityPromptDialog() {
         if (!seedBackedUp) {
             setModalStep('SeedPhrase');
         } else {
-            setModalStep('CreatePin');
+            invoke('create_pin');
         }
     }
 
@@ -36,11 +36,11 @@ export default function SecurityPromptDialog() {
         invoke('is_seed_backed_up').then((r) => {
             setSeedBackedUp(!!r);
         });
-    }, [isOpen]);
+    }, [showModal]);
 
     useEffect(() => {
         invoke('is_pin_locked').then((r) => setPinLocked(!!r));
-    }, [isOpen]);
+    }, [showModal]);
 
     const steps: StepItem[] = [
         {

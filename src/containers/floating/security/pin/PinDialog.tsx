@@ -16,9 +16,9 @@ export default function PinDialog() {
     const [showComplete, setShowComplete] = useState(false);
     const dialogToShow = useUIStore((s) => s.dialogToShow);
     const step = useStagedSecurityStore((s) => s.step);
+    const setStep = useStagedSecurityStore((s) => s.setModalStep);
     const showModal = useStagedSecurityStore((s) => s.showModal);
     const setShowModal = useStagedSecurityStore((s) => s.setShowModal);
-    const setModalStep = useStagedSecurityStore((s) => s.setModalStep);
     const createOpen = showModal && step === 'CreatePin';
     const isOpen = dialogToShow === 'enterPin' || createOpen;
 
@@ -27,7 +27,6 @@ export default function PinDialog() {
         setDialogToShow(null);
         setShowComplete(false);
         setShowModal(false);
-        setModalStep('CreatePin');
     }
 
     function handleSubmit(pin: string) {
@@ -36,7 +35,9 @@ export default function PinDialog() {
                 setDialogToShow(null);
             } else {
                 setShowComplete(true);
+                setStep('ProtectIntro');
             }
+            setShowModal(false);
         });
     }
 

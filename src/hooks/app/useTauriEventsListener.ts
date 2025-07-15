@@ -245,7 +245,7 @@ const useTauriEventsListener = () => {
                             setDialogToShow('keychain');
                             break;
                         case 'CreatePin':
-                            useStagedSecurityStore.setState({ showModal: true, step: 'ProtectIntro' });
+                            useStagedSecurityStore.setState({ showModal: true, step: 'CreatePin' });
                             break;
                         case 'EnterPin':
                             setDialogToShow('enterPin');
