@@ -1,12 +1,12 @@
 /* eslint-disable i18next/no-literal-string */
 import { AdminButton, ButtonGroup, CategoryLabel } from '../styles';
 import { usePaperWalletStore } from '@app/store/usePaperWalletStore';
-import { useStagedSecurityStore } from '@app/store/useStagedSecurityStore';
+import { useSecurityStore } from '@app/store/useSecurityStore.ts';
 import { useShareRewardStore } from '@app/store/useShareRewardStore';
 
 export function GreenModalsGroup() {
     const { showModal: showPaperWallet, setShowModal: setShowPaperWallet } = usePaperWalletStore();
-    const { showModal: showStagedSecurity, setShowModal: setShowStagedSecurity } = useStagedSecurityStore();
+    const { modal, setModal } = useSecurityStore();
     const { showModal: showShareReward, setShowModal: setShowShareReward } = useShareRewardStore();
 
     return (
@@ -16,7 +16,7 @@ export function GreenModalsGroup() {
                 <AdminButton onClick={() => setShowPaperWallet(!showPaperWallet)} $isActive={showPaperWallet}>
                     Paper Wallet
                 </AdminButton>
-                <AdminButton onClick={() => setShowStagedSecurity(!showStagedSecurity)} $isActive={showStagedSecurity}>
+                <AdminButton onClick={() => setModal('intro')} $isActive={modal === 'intro'}>
                     Staged Security
                 </AdminButton>
                 <AdminButton onClick={() => setShowShareReward(!showShareReward)} $isActive={showShareReward}>

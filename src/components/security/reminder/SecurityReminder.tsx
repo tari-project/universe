@@ -1,5 +1,5 @@
 import { AnimatePresence } from 'motion/react';
-import { useStagedSecurityStore, useUIStore } from '@app/store';
+import { useSecurityStore, useUIStore } from '@app/store';
 import { BodyCopy, ChevronWrapper, CTAWrapper, Title, Wrapper } from './styles.ts';
 import { ChevronSVG } from '@app/assets/icons/chevron.tsx';
 import { TextButton } from '@app/components/elements/buttons/TextButton.tsx';
@@ -16,15 +16,13 @@ const variants = {
     },
 };
 export default function SecurityReminder() {
-    const open = useStagedSecurityStore((s) => s.showReminderTip);
-    const setOpen = useStagedSecurityStore((s) => s.setShowReminderTip);
-    const setShowModal = useStagedSecurityStore((s) => s.setShowModal);
-    const setModalStep = useStagedSecurityStore((s) => s.setModalStep);
+    const open = useSecurityStore((s) => s.showReminderTip);
+    const setOpen = useSecurityStore((s) => s.setShowReminderTip);
+    const setModal = useSecurityStore((s) => s.setModal);
     const offset = useUIStore((s) => s.towerSidebarOffset);
 
     function handleStart() {
-        setShowModal(true);
-        setModalStep('ProtectIntro');
+        setModal('intro');
         handleClose();
     }
     function handleClose() {

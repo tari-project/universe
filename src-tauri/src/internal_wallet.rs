@@ -924,6 +924,18 @@ where
     F: FnMut() -> Fut,
     Fut: std::future::Future<Output = Result<T, CredentialError>>,
 {
+    // Skip the keyring dialog for non-macos platforms(only mac os prompts for a keyring)
+    #[cfg(not(target_os = "macos"))]
+    {
+        match operation().await {
+            Ok(r) => return Ok(r),
+            Err(e) => {
+                log::error!(target: LOG_TARGET, "{log_msg}: {e}");
+                return Err(e.into());
+            }
+        }
+    }
+
     loop {
         match operation().await {
             Ok(result) => return Ok(result),

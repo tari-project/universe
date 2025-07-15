@@ -17,7 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard.ts';
 import { useState } from 'react';
 import { AnimatePresence } from 'motion/react';
-import { useStagedSecurityStore } from '@app/store';
+
 import CheckIcon from '@app/assets/icons/CheckIcon.tsx';
 import CopyIcon from '@app/assets/icons/CopyIcon.tsx';
 
@@ -26,6 +26,7 @@ import { Button } from '@app/components/elements/buttons/Button.tsx';
 
 interface ViewSeedPhraseProps {
     words: string[];
+    onContinue: () => void;
 }
 
 const seedWordGroups = (words: string[]) => {
@@ -36,11 +37,10 @@ const seedWordGroups = (words: string[]) => {
     return groups;
 };
 
-export function ViewSeedPhrase({ words }: ViewSeedPhraseProps) {
+export function ViewSeedPhrase({ words, onContinue }: ViewSeedPhraseProps) {
     const { t } = useTranslation('staged-security');
     const { isCopied, copyToClipboard } = useCopyToClipboard();
 
-    const setModalStep = useStagedSecurityStore((s) => s.setModalStep);
     const [checked, setChecked] = useState(false);
 
     function handleCopy() {
@@ -100,13 +100,7 @@ export function ViewSeedPhrase({ words }: ViewSeedPhraseProps) {
                 </CheckboxWrapper>
 
                 <CTAWrapper>
-                    <Button
-                        variant="black"
-                        fluid
-                        size="xlarge"
-                        onClick={() => setModalStep('VerifySeedPhrase')}
-                        disabled={!checked}
-                    >
+                    <Button variant="black" fluid size="xlarge" onClick={onContinue} disabled={!checked}>
                         {t('seedPhrase.button')}
                     </Button>
                 </CTAWrapper>

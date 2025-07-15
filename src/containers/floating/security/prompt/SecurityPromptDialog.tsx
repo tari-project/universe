@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { useStagedSecurityStore } from '@app/store';
+
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import { AlertChip } from '@app/components/security/alert-chip/AlertChip.tsx';
 import CloseButton from '@app/components/elements/buttons/CloseButton.tsx';
@@ -10,25 +10,26 @@ import { TextButton } from '@app/components/elements/buttons/TextButton.tsx';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { invoke } from '@tauri-apps/api/core';
 import { useEffect, useState } from 'react';
+import { useSecurityStore } from '@app/store';
 
 export default function SecurityPromptDialog() {
     const { t } = useTranslation(['staged-security']);
+    const modal = useSecurityStore((s) => s.modal);
+    const setModal = useSecurityStore((s) => s.setModal);
+
+    const isOpen = modal === 'intro';
+
     const [seedBackedUp, setSeedBackedUp] = useState(false);
     const [pinLocked, setPinLocked] = useState(false);
-    const showModal = useStagedSecurityStore((s) => s.showModal);
-    const setShowModal = useStagedSecurityStore((s) => s.setShowModal);
-    const setModalStep = useStagedSecurityStore((s) => s.setModalStep);
-    const step = useStagedSecurityStore((s) => s.step);
 
-    const isOpen = showModal && step === 'ProtectIntro';
     function handleClose() {
-        setShowModal(false);
+        setModal(null);
     }
     function handleClick() {
         if (!seedBackedUp) {
-            setModalStep('SeedPhrase');
+            setModal('verify_seedphrase');
         } else {
-            setModalStep('CreatePin');
+            void invoke('create_pin');
         }
     }
 
@@ -36,11 +37,11 @@ export default function SecurityPromptDialog() {
         invoke('is_seed_backed_up').then((r) => {
             setSeedBackedUp(!!r);
         });
-    }, [isOpen]);
+    }, []);
 
     useEffect(() => {
-        invoke('is_pin_locked').then((r) => setPinLocked(!!r));
-    }, [isOpen]);
+        invoke('is_pin_locked').then((r) => setPinLocked(r));
+    }, []);
 
     const steps: StepItem[] = [
         {

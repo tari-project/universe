@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 
-import { setDialogToShow, setError, useUIStore } from '@app/store';
+import { setError, useSecurityStore } from '@app/store';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import CloseButton from '@app/components/elements/buttons/CloseButton.tsx';
 
@@ -13,12 +13,15 @@ import { Form } from '@app/components/wallet/seedwords/components/edit.styles.ts
 import { invoke } from '@tauri-apps/api/core';
 
 import { Button } from '@app/components/elements/buttons/Button.tsx';
+import { CTAWrapper } from '@app/components/security/pin/styles.ts';
 
 export default function ForgotPinDialog() {
-    const dialogToShow = useUIStore((s) => s.dialogToShow);
-    const isOpen = dialogToShow === 'forgotPin';
-
     const { t } = useTranslation('wallet');
+    const modal = useSecurityStore((s) => s.modal);
+    const setModal = useSecurityStore((s) => s.setModal);
+
+    const isOpen = modal === 'forgot_pin';
+
     const methods = useForm({ defaultValues: { seedWords: '' } });
     const { isValid } = methods.formState;
 
@@ -36,8 +39,8 @@ export default function ForgotPinDialog() {
     };
 
     function handleClose() {
-        setDialogToShow(null);
         methods.reset({ seedWords: '' });
+        setModal(null);
     }
 
     return (
@@ -49,14 +52,14 @@ export default function ForgotPinDialog() {
                     </Header>
                     <FormProvider {...methods}>
                         <Form onSubmit={methods.handleSubmit(handleApply)}>
-                            <WalletSettingsGrid>
-                                <InputArea>
-                                    <Edit />
-                                </InputArea>
-                            </WalletSettingsGrid>
-                            <Button fluid type="submit" variant="black" size="xlarge">
-                                {t('security.pin.forgot')}
-                            </Button>
+                            <InputArea>
+                                <Edit />
+                            </InputArea>
+                            <CTAWrapper>
+                                <Button fluid type="submit" variant="black" size="xlarge">
+                                    {t('security.pin.forgot')}
+                                </Button>
+                            </CTAWrapper>
                         </Form>
                     </FormProvider>
                 </Wrapper>

@@ -11,6 +11,6 @@ export * from './useMiningStore.ts';
 export * from './usePaperWalletStore.ts';
 export * from './useShareRewardStore.ts';
 export * from './useShellOfSecretsStore.ts';
-export * from './useStagedSecurityStore.ts';
+export * from './useSecurityStore.ts';
 export * from './useUIStore.ts';
 export * from './useWalletStore.ts';
