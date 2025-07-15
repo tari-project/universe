@@ -27,7 +27,7 @@ use crate::app_in_memory_config::{
 use crate::auto_launcher::AutoLauncher;
 use crate::binaries::{Binaries, BinaryResolver};
 use crate::configs::config_core::{AirdropTokens, ConfigCore, ConfigCoreContent};
-use crate::configs::config_mining::{ConfigMining, ConfigMiningContent, GpuThreads, MiningMode};
+use crate::configs::config_mining::{ConfigMining, ConfigMiningContent};
 use crate::configs::config_pools::{ConfigPools, ConfigPoolsContent};
 use crate::configs::config_ui::{ConfigUI, ConfigUIContent, DisplayMode};
 use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent};
@@ -67,7 +67,7 @@ use std::fmt::Debug;
 use std::fs::{read_dir, remove_dir_all, remove_file, File};
 use std::str::FromStr;
 use std::sync::atomic::Ordering;
-use std::thread::{available_parallelism, sleep};
+use std::thread::sleep;
 use std::time::{Duration, Instant, SystemTime};
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::{TariAddress, TariAddressFeatures};
@@ -84,12 +84,6 @@ use urlencoding::encode;
 const MAX_ACCEPTABLE_COMMAND_TIME: Duration = Duration::from_secs(1);
 const LOG_TARGET: &str = "tari::universe::commands";
 const LOG_TARGET_WEB: &str = "tari::universe::web";
-
-#[derive(Debug, Serialize, Clone)]
-pub struct MaxUsageLevels {
-    max_cpu_threads: i32,
-    max_gpus_threads: Vec<GpuThreads>,
-}
 
 pub enum CpuMinerConnection {
     BuiltInProxy,
@@ -435,45 +429,6 @@ pub async fn get_external_dependencies() -> Result<RequiredExternalDependency, S
         );
     }
     Ok(external_dependencies)
-}
-
-#[tauri::command]
-pub async fn get_max_consumption_levels(
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<MaxUsageLevels, String> {
-    // CPU Detection
-    let timer = Instant::now();
-    let max_cpu_available = available_parallelism()
-        .map(|cores| i32::try_from(cores.get()).unwrap_or(1))
-        .map_err(|e| e.to_string())?;
-
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "get_available_cpu_cores took too long: {:?}", timer.elapsed());
-    }
-
-    let gpu_devices = state
-        .gpu_miner
-        .read()
-        .await
-        .get_gpu_devices()
-        .await
-        .map_err(|e| e.to_string())?;
-
-    let mut max_gpus_threads = Vec::new();
-    for gpu_device in gpu_devices {
-        // let max_gpu_threads = gpu_device.max_grid_size;
-        // For some reason this is always return 256, even when the cards can do more like
-        // 4096 or 8192
-        let max_gpu_threads = 8192;
-        max_gpus_threads.push(GpuThreads {
-            gpu_name: gpu_device.device_name,
-            max_gpu_threads,
-        });
-    }
-    Ok(MaxUsageLevels {
-        max_cpu_threads: max_cpu_available,
-        max_gpus_threads,
-    })
 }
 
 #[tauri::command]
@@ -1262,74 +1217,45 @@ pub async fn set_mine_on_app_start(mine_on_app_start: bool) -> Result<(), Invoke
 }
 
 #[tauri::command]
-pub async fn set_mode(
-    mode: String,
-    custom_cpu_usage: Option<u32>,
-    custom_gpu_usage: Vec<GpuThreads>,
-) -> Result<(), InvokeError> {
+pub async fn select_mining_mode(mode: String) -> Result<(), InvokeError> {
     let timer = Instant::now();
-    info!(target: LOG_TARGET, "[set_mode] called with mode: {mode:?}");
+    info!(target: LOG_TARGET, "[select_mining_mode] called with mode: {mode:?}");
 
-    if let Some(mode) = MiningMode::from_str(&mode) {
-        ConfigMining::update_field(ConfigMiningContent::set_mode, mode)
-            .await
-            .map_err(InvokeError::from_anyhow)?;
-
-        match mode {
-            MiningMode::Eco => {
-                ConfigMining::update_field(
-                    ConfigMiningContent::set_eco_mode_max_cpu_usage,
-                    custom_cpu_usage,
-                )
-                .await
-                .map_err(InvokeError::from_anyhow)?;
-
-                ConfigMining::update_field(
-                    ConfigMiningContent::set_eco_mode_max_gpu_usage,
-                    custom_gpu_usage,
-                )
-                .await
-                .map_err(InvokeError::from_anyhow)?;
-            }
-            MiningMode::Ludicrous => {
-                ConfigMining::update_field(
-                    ConfigMiningContent::set_ludicrous_mode_max_cpu_usage,
-                    custom_cpu_usage,
-                )
-                .await
-                .map_err(InvokeError::from_anyhow)?;
-
-                ConfigMining::update_field(
-                    ConfigMiningContent::set_ludicrous_mode_max_gpu_usage,
-                    custom_gpu_usage,
-                )
-                .await
-                .map_err(InvokeError::from_anyhow)?;
-            }
-            MiningMode::Custom => {
-                ConfigMining::update_field(
-                    ConfigMiningContent::set_custom_max_cpu_usage,
-                    custom_cpu_usage,
-                )
-                .await
-                .map_err(InvokeError::from_anyhow)?;
-
-                ConfigMining::update_field(
-                    ConfigMiningContent::set_custom_max_gpu_usage,
-                    custom_gpu_usage,
-                )
-                .await
-                .map_err(InvokeError::from_anyhow)?;
-            }
-        }
-    } else {
-        return Err(InvokeError::from("Invalid mode".to_string()));
-    }
+    ConfigMining::update_field(ConfigMiningContent::set_selected_mining_mode, mode)
+        .await
+        .map_err(InvokeError::from_anyhow)?;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "set_mode took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET, "select_mining_mode took too long: {:?}", timer.elapsed());
     }
+    Ok(())
+}
 
+#[tauri::command]
+pub async fn update_custom_mining_mode(
+    custom_cpu_usage: u32,
+    custom_gpu_usage: u32,
+) -> Result<(), InvokeError> {
+    let timer = Instant::now();
+    info!(target: LOG_TARGET, "[update_custom_mining_mode] called with custom_cpu_usage: {custom_cpu_usage:?}, custom_gpu_usage: {custom_gpu_usage:?}");
+
+    ConfigMining::update_field(
+        ConfigMiningContent::update_custom_mode_cpu_usage,
+        custom_cpu_usage,
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
+
+    ConfigMining::update_field(
+        ConfigMiningContent::update_custom_mode_gpu_usage,
+        custom_gpu_usage,
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "update_custom_mining_mode took too long: {:?}", timer.elapsed());
+    }
     Ok(())
 }
 
@@ -1581,13 +1507,9 @@ pub async fn start_cpu_mining(
     *timestamp_lock = SystemTime::now();
 
     let cpu_mining_enabled = *ConfigMining::content().await.cpu_mining_enabled();
-    let mode = *ConfigMining::content().await.mode();
-
-    let cpu_usage = match mode {
-        MiningMode::Custom => *ConfigMining::content().await.custom_max_cpu_usage(),
-        MiningMode::Eco => *ConfigMining::content().await.eco_mode_max_cpu_usage(),
-        MiningMode::Ludicrous => *ConfigMining::content().await.ludicrous_mode_max_cpu_usage(),
-    };
+    let cpu_usage_percentage = ConfigMining::content()
+        .await
+        .get_selected_cpu_usage_percentage();
 
     let cpu_miner = state.cpu_miner.read().await;
     let cpu_miner_running = cpu_miner.is_running().await;
@@ -1612,8 +1534,7 @@ pub async fn start_cpu_mining(
                     .app_config_dir()
                     .expect("Could not get config dir"),
                 app.path().app_log_dir().expect("Could not get log dir"),
-                mode,
-                cpu_usage,
+                cpu_usage_percentage,
                 &tari_address,
             )
             .await;
@@ -1674,7 +1595,9 @@ pub async fn start_gpu_mining(
 
     info!(target: LOG_TARGET, "3. Starting gpu miner");
 
-    let mode = *ConfigMining::content().await.mode();
+    let gpu_usage_percentage = ConfigMining::content()
+        .await
+        .get_selected_gpu_usage_percentage();
     let is_gpu_pool_enabled = *ConfigPools::content().await.gpu_pool_enabled();
 
     if is_gpu_pool_enabled {
@@ -1683,7 +1606,7 @@ pub async fn start_gpu_mining(
             .start(
                 tari_address.clone(),
                 telemetry_id.clone(),
-                mode,
+                gpu_usage_percentage,
                 app.path()
                     .app_local_data_dir()
                     .expect("Could not get data dir"),
@@ -1715,18 +1638,6 @@ pub async fn start_gpu_mining(
 
         let source = GpuNodeSource::BaseNode { grpc_address };
 
-        let gpu_usage = match mode {
-            MiningMode::Custom => ConfigMining::content().await.custom_max_gpu_usage().clone(),
-            MiningMode::Eco => ConfigMining::content()
-                .await
-                .eco_mode_max_gpu_usage()
-                .clone(),
-            MiningMode::Ludicrous => ConfigMining::content()
-                .await
-                .ludicrous_mode_max_gpu_usage()
-                .clone(),
-        };
-
         let mut gpu_miner = state.gpu_miner.write().await;
         let gpu_available = gpu_miner.is_gpu_mining_available();
         if !gpu_available {
@@ -1744,9 +1655,8 @@ pub async fn start_gpu_mining(
                     .app_config_dir()
                     .expect("Could not get config dir"),
                 app.path().app_log_dir().expect("Could not get log dir"),
-                mode,
                 telemetry_id,
-                gpu_usage.clone(),
+                gpu_usage_percentage,
             )
             .await;
 

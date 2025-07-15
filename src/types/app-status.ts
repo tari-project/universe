@@ -193,15 +193,6 @@ export interface PaperWalletDetails {
     password: string;
 }
 
-export interface GpuThreads {
-    gpu_name: string;
-    max_gpu_threads: number;
-}
-export interface MaxConsumptionLevels {
-    max_cpu_threads: number;
-    max_gpus_threads: GpuThreads[];
-}
-
 export interface NetworkStatus {
     download_speed: number;
     upload_speed: number;

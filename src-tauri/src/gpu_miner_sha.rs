@@ -33,7 +33,6 @@ use tokio::{
 use crate::{
     binaries::Binaries,
     configs::{
-        config_mining::MiningMode,
         config_pools::{ConfigPools, GpuPool},
         trait_config::ConfigImpl,
     },
@@ -78,7 +77,7 @@ impl GpuMinerSha {
         &mut self,
         tari_address: TariAddress,
         telemetry_id: String,
-        #[allow(unused_variables)] mode: MiningMode,
+        gpu_usage_percentage: u32,
         base_path: PathBuf,
         config_path: PathBuf,
         log_path: PathBuf,
@@ -113,8 +112,12 @@ impl GpuMinerSha {
 
         process_watcher.adapter.tari_address = Some(tari_address);
         process_watcher.adapter.worker_name = Some(telemetry_id.to_string());
-        process_watcher.adapter.batch_size = Some(10000);
-        process_watcher.adapter.intensity = Some(80);
+        process_watcher.adapter.batch_size = if gpu_usage_percentage.gt(&50) {
+            Some(10000)
+        } else {
+            Some(1000)
+        };
+        process_watcher.adapter.intensity = Some(gpu_usage_percentage);
         info!(target: LOG_TARGET, "Starting sha miner");
         process_watcher
             .start(

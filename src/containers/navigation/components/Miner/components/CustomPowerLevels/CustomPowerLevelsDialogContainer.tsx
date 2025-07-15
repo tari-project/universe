@@ -8,7 +8,6 @@ import { useSetupStore } from '@app/store/useSetupStore';
 export const CustomPowerLevelsDialogContainer = () => {
     const customLevelsDialogOpen = useMiningStore((s) => s.customLevelsDialogOpen);
     const isChangingMode = useMiningStore((s) => s.isChangingMode);
-    const maxThreads = useMiningStore((s) => s.maxAvailableThreads);
     const isHardwarePhaseFinished = useSetupStore((s) => s.hardwarePhaseFinished);
 
     const handleClose = () => {
@@ -22,11 +21,7 @@ export const CustomPowerLevelsDialogContainer = () => {
             disableClose={isChangingMode}
         >
             <DialogContent>
-                {isHardwarePhaseFinished && maxThreads ? (
-                    <CustomPowerLevelsDialog maxAvailableThreads={maxThreads} handleClose={handleClose} />
-                ) : (
-                    <CircularProgress />
-                )}
+                {isHardwarePhaseFinished ? <CustomPowerLevelsDialog handleClose={handleClose} /> : <CircularProgress />}
             </DialogContent>
         </Dialog>
     );

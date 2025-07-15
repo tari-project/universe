@@ -15,9 +15,9 @@
   "control-port": "Kontrol Portu",
   "cpu-mining-enabled": "CPU Madenciliği",
   "custom-power-levels": {
-    "choose-cpu-power-level": "CPU\"nuzun madenciliğe ne kadar ayrılmasını istediğinizi seçin <span>({{max}} çekirdekten {{current}})</span>",
-    "choose-gpu-power-level": "GPU\"nuzun madenciliğe ne kadar ayrılmasını istediğinizi seçin <span>({{max}} iş parçacığından {{current}})</span>",
-    "cpu-power-level": "CPU Çekirdekleri",
+    "choose-cpu-power-level": "Choose how big of a percentage you want your CPU to be allocated to mining",
+    "choose-gpu-power-level": "Choose how big of a percentage you want your GPU to be allocated to mining",
+    "cpu-power-level": "CPU Gücü %",
     "cpu-warning": "Yüksek CPU kullanımı aşırı ısınmaya, enerji tüketiminin artmasına ve zamanla donanım hasarına yol açabilir. Güvenli ve verimli bir çalışma sağlamak için kullanımı izleyin.",
     "gpu-power-level": "GPU Gücü %",
     "gpu-warning": "Yüksek GPU kullanımı aşırı ısınmaya, enerji tüketiminin artmasına ve zamanla donanım hasarına yol açabilir. Güvenli ve verimli bir çalışma sağlamak için kullanımı izleyin.",

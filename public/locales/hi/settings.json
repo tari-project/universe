@@ -15,9 +15,9 @@
   "control-port": "कंट्रोल पोर्ट",
   "cpu-mining-enabled": "सीपीयू माइनिंग",
   "custom-power-levels": {
-    "choose-cpu-power-level": "चुनें कि आप अपने CPU को माइनिंग के लिए कितना आवंटित करना चाहते हैं <span>({{current}} में से {{max}} कोर)</span>",
-    "choose-gpu-power-level": "चुनें कि आप अपने GPU को माइनिंग के लिए कितना आवंटित करना चाहते हैं <span>({{current}} में से {{max}} थ्रेड्स)</span>",
-    "cpu-power-level": "CPU कोर",
+    "choose-cpu-power-level": "Choose how big of a percentage you want your CPU to be allocated to mining",
+    "choose-gpu-power-level": "Choose how big of a percentage you want your GPU to be allocated to mining",
+    "cpu-power-level": "CPU पावर %",
     "cpu-warning": "उच्च CPU उपयोग से ओवरहीटिंग हो सकती है, ऊर्जा खपत बढ़ सकती है, और समय के साथ हार्डवेयर को नुकसान हो सकता है। कृपया सुरक्षित और कुशल संचालन सुनिश्चित करने के लिए उपयोग की निगरानी करें।",
     "gpu-power-level": "GPU पावर %",
     "gpu-warning": "उच्च GPU उपयोग से ओवरहीटिंग हो सकती है, ऊर्जा खपत बढ़ सकती है, और समय के साथ हार्डवेयर को नुकसान हो सकता है। कृपया सुरक्षित और कुशल संचालन सुनिश्चित करने के लिए उपयोग की निगरानी करें।",
