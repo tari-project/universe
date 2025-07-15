@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-const _DIALOGS = ['intro', 'view_seedphrase', 'verify_seedphrase', 'create_pin', 'enter_pin', 'forgot_pin'] as const;
+const _DIALOGS = ['intro', 'verify_seedphrase', 'create_pin', 'enter_pin', 'forgot_pin'] as const;
 type DialogsTuple = typeof _DIALOGS;
 export type DialogsType = DialogsTuple[number] | null;
 

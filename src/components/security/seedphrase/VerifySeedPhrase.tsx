@@ -15,6 +15,7 @@ import { AnimatePresence } from 'motion/react';
 import PillCloseIcon from '@app/assets/icons/PillCloseIcon.tsx';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { invoke } from '@tauri-apps/api/core';
+import { useSecurityStore } from '@app/store';
 
 interface VerifySeedPhraseProps {
     words: string[];
@@ -27,7 +28,7 @@ interface SelectedWord {
 
 export function VerifySeedPhrase({ words }: VerifySeedPhraseProps) {
     const { t } = useTranslation(['staged-security'], { useSuspense: false });
-
+    const setModal = useSecurityStore((s) => s.setModal);
     const [completed, setCompleted] = useState(false);
     const [selectedWords, setSelectedWords] = useState<SelectedWord[]>([]);
 
@@ -62,7 +63,9 @@ export function VerifySeedPhrase({ words }: VerifySeedPhraseProps) {
     };
 
     const handleSubmit = async () => {
-        await invoke('set_seed_backed_up');
+        await invoke('set_seed_backed_up').then(() => {
+            setModal(null);
+        });
         await invoke('create_pin');
     };
 

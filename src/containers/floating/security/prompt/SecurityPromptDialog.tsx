@@ -23,13 +23,13 @@ export default function SecurityPromptDialog() {
     const [pinLocked, setPinLocked] = useState(false);
 
     function handleClose() {
-        // setShowModal(false);
+        setModal(null);
     }
     function handleClick() {
         if (!seedBackedUp) {
-            // setModalStep('SeedPhrase');
+            setModal('view_seedphrase');
         } else {
-            invoke('create_pin');
+            void invoke('create_pin');
         }
     }
 
