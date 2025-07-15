@@ -23,7 +23,7 @@ import {
 import { setError } from './appStateStoreActions.ts';
 import { setUITheme } from './uiStoreActions';
 import { displayMode } from '../types';
-import { ConfigCore, ConfigMining, ConfigPools, ConfigPools, ConfigUI, ConfigWallet } from '@app/types/configs.ts';
+import { ConfigCore, ConfigMining, ConfigPools, ConfigUI, ConfigWallet } from '@app/types/configs.ts';
 import { NodeType, updateNodeType as updateNodeTypeForNodeStore } from '../useNodeStore.ts';
 import { setCurrentExchangeMinerId } from '../useExchangeStore.ts';
 import { fetchExchangeContent, refreshXCContent } from '@app/hooks/exchanges/fetchExchangeContent.ts';
@@ -81,9 +81,9 @@ export const setAirdropTokensInConfig = (
 ) => {
     const airdropTokens = airdropTokensParam
         ? {
-            token: airdropTokensParam.token,
-            refresh_token: airdropTokensParam.refreshToken,
-        }
+              token: airdropTokensParam.token,
+              refresh_token: airdropTokensParam.refreshToken,
+          }
         : undefined;
 
     invoke('set_airdrop_tokens', { airdropTokens })

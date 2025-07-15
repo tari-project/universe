@@ -69,21 +69,6 @@ export interface MiningMode {
     cpu_usage_percentage: number;
     gpu_usage_percentage: number;
 }
-
-export enum GpuPools {
-    LuckyPool = 'LuckyPool',
-    SupportXTMPool = 'SupportXTMPool',
-}
-
-export enum CpuPools {
-    GlobalTariPool = 'GlobalTariPool',
-}
-
-export interface BasePoolData {
-    pool_url: string;
-    stats_url: string;
-    pool_name: string;
-}
 export interface ConfigPools {
     was_config_migrated: boolean;
     created_at: string;
@@ -114,11 +99,6 @@ export interface ConfigPools {
     gpu_pool?: { [GpuPools.LuckyPool]: BasePoolData } | { [GpuPools.SupportXTMPool]: BasePoolData };
     cpu_pool_enabled: boolean;
     cpu_pool?: { [CpuPools.GlobalTariPool]: BasePoolData };
-}
-
-export interface ConfigPoolsSelectors {
-    getGpuPool: () => BasePoolData | undefined;
-    getCpuPool: () => BasePoolData | undefined;
 }
 
 export interface ConfigBackendInMemory {
