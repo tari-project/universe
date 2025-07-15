@@ -51,7 +51,6 @@ declare module '@tauri-apps/api/core' {
         param: 'set_mode',
         payload: { mode: MiningModeType; customCpuUsage: number; customGpuUsage: GpuThreads[] }
     ): Promise<void>;
-    function invoke(param: 'get_max_consumption_levels'): Promise<MaxConsumptionLevels>;
     function invoke(param: 'set_display_mode', payload: { displayMode: displayMode }): Promise<void>;
     function invoke(param: 'get_seed_words'): Promise<string[]>;
     function invoke(param: 'revert_to_internal_wallet'): Promise<void>;

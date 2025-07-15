@@ -44,7 +44,6 @@ export {
 
 export {
     changeMiningMode,
-    getMaxAvailableThreads,
     setCustomLevelsDialogOpen,
     setMiningControlsEnabled,
     getMiningNetwork,

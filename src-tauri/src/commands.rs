@@ -27,7 +27,7 @@ use crate::app_in_memory_config::{
 use crate::auto_launcher::AutoLauncher;
 use crate::binaries::{Binaries, BinaryResolver};
 use crate::configs::config_core::{AirdropTokens, ConfigCore, ConfigCoreContent};
-use crate::configs::config_mining::{ConfigMining, ConfigMiningContent, GpuThreads, MiningMode};
+use crate::configs::config_mining::{ConfigMining, ConfigMiningContent, MiningMode};
 use crate::configs::config_pools::{ConfigPools, ConfigPoolsContent};
 use crate::configs::config_ui::{ConfigUI, ConfigUIContent, DisplayMode};
 use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent};
@@ -67,7 +67,7 @@ use std::fmt::Debug;
 use std::fs::{read_dir, remove_dir_all, remove_file, File};
 use std::str::FromStr;
 use std::sync::atomic::Ordering;
-use std::thread::{available_parallelism, sleep};
+use std::thread::sleep;
 use std::time::{Duration, Instant, SystemTime};
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::{TariAddress, TariAddressFeatures};
@@ -435,45 +435,6 @@ pub async fn get_external_dependencies() -> Result<RequiredExternalDependency, S
         );
     }
     Ok(external_dependencies)
-}
-
-#[tauri::command]
-pub async fn get_max_consumption_levels(
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<MaxUsageLevels, String> {
-    // CPU Detection
-    let timer = Instant::now();
-    let max_cpu_available = available_parallelism()
-        .map(|cores| i32::try_from(cores.get()).unwrap_or(1))
-        .map_err(|e| e.to_string())?;
-
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "get_available_cpu_cores took too long: {:?}", timer.elapsed());
-    }
-
-    let gpu_devices = state
-        .gpu_miner
-        .read()
-        .await
-        .get_gpu_devices()
-        .await
-        .map_err(|e| e.to_string())?;
-
-    let mut max_gpus_threads = Vec::new();
-    for gpu_device in gpu_devices {
-        // let max_gpu_threads = gpu_device.max_grid_size;
-        // For some reason this is always return 256, even when the cards can do more like
-        // 4096 or 8192
-        let max_gpu_threads = 8192;
-        max_gpus_threads.push(GpuThreads {
-            gpu_name: gpu_device.device_name,
-            max_gpu_threads,
-        });
-    }
-    Ok(MaxUsageLevels {
-        max_cpu_threads: max_cpu_available,
-        max_gpus_threads,
-    })
 }
 
 #[tauri::command]
@@ -1262,75 +1223,19 @@ pub async fn set_mine_on_app_start(mine_on_app_start: bool) -> Result<(), Invoke
 }
 
 #[tauri::command]
-pub async fn set_mode(
+pub async fn select_mining_mode(
     mode: String,
-    custom_cpu_usage: Option<u32>,
-    custom_gpu_usage: Vec<GpuThreads>,
+    app_handle: tauri::AppHandle,
 ) -> Result<(), InvokeError> {
-    let timer = Instant::now();
-    info!(target: LOG_TARGET, "[set_mode] called with mode: {mode:?}");
+    todo!("This command is deprecated, use set_mode instead");
+}
 
-    if let Some(mode) = MiningMode::from_str(&mode) {
-        ConfigMining::update_field(ConfigMiningContent::set_mode, mode)
-            .await
-            .map_err(InvokeError::from_anyhow)?;
-
-        match mode {
-            MiningMode::Eco => {
-                ConfigMining::update_field(
-                    ConfigMiningContent::set_eco_mode_max_cpu_usage,
-                    custom_cpu_usage,
-                )
-                .await
-                .map_err(InvokeError::from_anyhow)?;
-
-                ConfigMining::update_field(
-                    ConfigMiningContent::set_eco_mode_max_gpu_usage,
-                    custom_gpu_usage,
-                )
-                .await
-                .map_err(InvokeError::from_anyhow)?;
-            }
-            MiningMode::Ludicrous => {
-                ConfigMining::update_field(
-                    ConfigMiningContent::set_ludicrous_mode_max_cpu_usage,
-                    custom_cpu_usage,
-                )
-                .await
-                .map_err(InvokeError::from_anyhow)?;
-
-                ConfigMining::update_field(
-                    ConfigMiningContent::set_ludicrous_mode_max_gpu_usage,
-                    custom_gpu_usage,
-                )
-                .await
-                .map_err(InvokeError::from_anyhow)?;
-            }
-            MiningMode::Custom => {
-                ConfigMining::update_field(
-                    ConfigMiningContent::set_custom_max_cpu_usage,
-                    custom_cpu_usage,
-                )
-                .await
-                .map_err(InvokeError::from_anyhow)?;
-
-                ConfigMining::update_field(
-                    ConfigMiningContent::set_custom_max_gpu_usage,
-                    custom_gpu_usage,
-                )
-                .await
-                .map_err(InvokeError::from_anyhow)?;
-            }
-        }
-    } else {
-        return Err(InvokeError::from("Invalid mode".to_string()));
-    }
-
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "set_mode took too long: {:?}", timer.elapsed());
-    }
-
-    Ok(())
+#[tauri::command]
+pub async fn update_custom_mining_mode(
+    custom_cpu_usage: u32,
+    custom_gpu_usage: u32,
+) -> Result<(), InvokeError> {
+    todo!("This command is deprecated, use set_mode instead");
 }
 
 #[tauri::command]

@@ -21,7 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::{gpu_miner::EngineType, UniverseAppState};
-use std::{sync::LazyLock, time::SystemTime};
+use std::{collections::HashMap, sync::LazyLock, time::SystemTime};
 
 use getset::{Getters, Setters};
 use serde::{Deserialize, Serialize};
@@ -33,28 +33,18 @@ use super::trait_config::{ConfigContentImpl, ConfigImpl};
 static INSTANCE: LazyLock<RwLock<ConfigMining>> =
     LazyLock::new(|| RwLock::new(ConfigMining::new()));
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
-pub enum MiningMode {
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub enum MiningModeType {
     Eco,
     Ludicrous,
     Custom,
 }
-
-impl MiningMode {
-    pub fn from_str(s: &str) -> Option<MiningMode> {
-        match s {
-            "Eco" => Some(MiningMode::Eco),
-            "Ludicrous" => Some(MiningMode::Ludicrous),
-            "Custom" => Some(MiningMode::Custom),
-            _ => None,
-        }
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct GpuThreads {
-    pub gpu_name: String,
-    pub max_gpu_threads: u32,
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MiningMode {
+    pub mode_type: MiningModeType,
+    pub mode_name: String,
+    pub cpu_usage_percentage: u32,
+    pub gpu_usage_percentage: u32,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -66,19 +56,9 @@ pub struct GpuThreads {
 pub struct ConfigMiningContent {
     was_config_migrated: bool,
     created_at: SystemTime,
-    mode: MiningMode,
-    eco_mode_cpu_threads: Option<u32>,
-    eco_mode_cpu_options: Vec<String>,
-    eco_mode_max_cpu_usage: Option<u32>,
-    eco_mode_max_gpu_usage: Vec<GpuThreads>,
+    selected_mining_mode: String,
+    mining_modes: HashMap<String, MiningMode>,
     mine_on_app_start: bool,
-    ludicrous_mode_cpu_threads: Option<u32>,
-    ludicrous_mode_cpu_options: Vec<String>,
-    ludicrous_mode_max_cpu_usage: Option<u32>,
-    ludicrous_mode_max_gpu_usage: Vec<GpuThreads>,
-    custom_mode_cpu_options: Vec<String>,
-    custom_max_cpu_usage: Option<u32>,
-    custom_max_gpu_usage: Vec<GpuThreads>,
     gpu_mining_enabled: bool,
     cpu_mining_enabled: bool,
     gpu_engine: EngineType,
@@ -91,19 +71,37 @@ impl Default for ConfigMiningContent {
         Self {
             was_config_migrated: false,
             created_at: SystemTime::now(),
-            mode: MiningMode::Eco,
-            eco_mode_cpu_threads: None,
+            selected_mining_mode: "Eco".to_string(),
             mine_on_app_start: true,
-            ludicrous_mode_cpu_threads: None,
-            eco_mode_cpu_options: vec![],
-            eco_mode_max_cpu_usage: None,
-            eco_mode_max_gpu_usage: vec![],
-            ludicrous_mode_cpu_options: vec![],
-            ludicrous_mode_max_cpu_usage: None,
-            ludicrous_mode_max_gpu_usage: vec![],
-            custom_mode_cpu_options: vec![],
-            custom_max_cpu_usage: None,
-            custom_max_gpu_usage: vec![],
+            mining_modes: HashMap::from([
+                (
+                    "Eco".to_string(),
+                    MiningMode {
+                        mode_type: MiningModeType::Eco,
+                        mode_name: "Eco".to_string(),
+                        cpu_usage_percentage: 25,
+                        gpu_usage_percentage: 25,
+                    },
+                ),
+                (
+                    "Ludicrous".to_string(),
+                    MiningMode {
+                        mode_type: MiningModeType::Ludicrous,
+                        mode_name: "Ludicrous".to_string(),
+                        cpu_usage_percentage: 80,
+                        gpu_usage_percentage: 90,
+                    },
+                ),
+                (
+                    "Custom".to_string(),
+                    MiningMode {
+                        mode_type: MiningModeType::Custom,
+                        mode_name: "Custom".to_string(),
+                        cpu_usage_percentage: 75,
+                        gpu_usage_percentage: 75,
+                    },
+                ),
+            ]),
             gpu_mining_enabled: true,
             cpu_mining_enabled: true,
             gpu_engine: EngineType::OpenCL,

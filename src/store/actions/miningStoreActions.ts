@@ -19,14 +19,6 @@ interface ChangeMiningModeArgs {
     customCpuLevels?: number;
 }
 
-export function setModeDefaults(maxLevels: MaxConsumptionLevels) {
-    const defaultLevels = getParsedMaxLevels(maxLevels, true);
-    useConfigMiningStore.setState((c) => ({
-        ...defaultLevels,
-        ...c, // only set defaults if there were none
-    }));
-}
-
 export const changeMiningMode = async (params: ChangeMiningModeArgs) => {
     const { mode, customGpuLevels, customCpuLevels } = params;
     console.info(`Changing mode to ${mode}...`);
@@ -80,17 +72,6 @@ export const changeMiningMode = async (params: ChangeMiningModeArgs) => {
         console.error('Failed to change mode: ', e);
     } finally {
         useMiningStore.setState({ isChangingMode: false });
-    }
-};
-export const getMaxAvailableThreads = async () => {
-    console.info('Getting max available threads...');
-    try {
-        const maxAvailableThreads = await invoke('get_max_consumption_levels');
-        useMiningStore.setState({ maxAvailableThreads });
-        setModeDefaults(maxAvailableThreads);
-    } catch (e) {
-        console.error('Failed to get max available threads: ', e);
-        setError(e as string);
     }
 };
 export const restartMining = async () => {

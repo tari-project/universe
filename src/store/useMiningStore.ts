@@ -14,7 +14,6 @@ interface MiningStoreState {
     wasMineOnAppStartExecuted?: boolean;
     sessionMiningTime: number;
     customLevelsDialogOpen: boolean;
-    maxAvailableThreads?: MaxConsumptionLevels;
     network?: Network;
     engine?: string;
     availableEngines: string[];
@@ -22,7 +21,6 @@ interface MiningStoreState {
 
 const initialState: MiningStoreState = {
     customLevelsDialogOpen: false,
-    maxAvailableThreads: undefined,
     counter: 0,
     miningTime: 0,
     sessionMiningTime: 0,
