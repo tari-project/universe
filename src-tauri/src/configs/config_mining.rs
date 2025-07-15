@@ -20,12 +20,13 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::{gpu_miner::EngineType, UniverseAppState};
+use crate::gpu_miner::EngineType;
 use std::{collections::HashMap, sync::LazyLock, time::SystemTime};
 
 use getset::{Getters, Setters};
+use log::warn;
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
 use tokio::sync::RwLock;
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
@@ -111,6 +112,41 @@ impl Default for ConfigMiningContent {
     }
 }
 impl ConfigContentImpl for ConfigMiningContent {}
+impl ConfigMiningContent {
+    pub fn update_custom_mode_cpu_usage(&mut self, cpu_usage_percentage: u32) -> &mut Self {
+        if let Some(custom_mode) = self.mining_modes.get_mut("Custom") {
+            custom_mode.cpu_usage_percentage = cpu_usage_percentage;
+        }
+        self
+    }
+
+    pub fn update_custom_mode_gpu_usage(&mut self, gpu_usage_percentage: u32) -> &mut Self {
+        if let Some(custom_mode) = self.mining_modes.get_mut("Custom") {
+            custom_mode.gpu_usage_percentage = gpu_usage_percentage;
+        }
+        self
+    }
+
+    pub fn get_selected_cpu_usage_percentage(&self) -> u32 {
+        match self.mining_modes.get(&self.selected_mining_mode) {
+            Some(mode) => mode.cpu_usage_percentage,
+            None => {
+                warn!("Mining mode '{}' not found", self.selected_mining_mode);
+                0
+            }
+        }
+    }
+
+    pub fn get_selected_gpu_usage_percentage(&self) -> u32 {
+        match self.mining_modes.get(&self.selected_mining_mode) {
+            Some(mode) => mode.gpu_usage_percentage,
+            None => {
+                warn!("Mining mode '{}' not found", self.selected_mining_mode);
+                0
+            }
+        }
+    }
+}
 
 pub struct ConfigMining {
     content: ConfigMiningContent,
@@ -119,13 +155,8 @@ pub struct ConfigMining {
 
 impl ConfigMining {
     pub async fn initialize(app_handle: AppHandle) {
-        let state = app_handle.state::<UniverseAppState>();
         let mut config = Self::current().write().await;
         config.load_app_handle(app_handle.clone()).await;
-
-        let mut cpu_config = state.cpu_miner_config.write().await;
-        cpu_config.load_from_config_mining(config._get_content());
-        drop(cpu_config);
     }
 }
 

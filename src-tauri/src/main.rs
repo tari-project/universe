@@ -298,11 +298,6 @@ fn main() {
 
     let cpu_config = Arc::new(RwLock::new(CpuMinerConfig {
         node_connection: CpuMinerConnection::BuiltInProxy,
-        eco_mode_xmrig_options: vec![],
-        ludicrous_mode_xmrig_options: vec![],
-        custom_mode_xmrig_options: vec![],
-        eco_mode_cpu_percentage: None,
-        ludicrous_mode_cpu_percentage: None,
         pool_host_name: None,
         pool_port: None,
         monero_address: "".to_string(),
@@ -572,7 +567,6 @@ fn main() {
             commands::get_app_in_memory_config,
             commands::get_applications_versions,
             commands::get_external_dependencies,
-            commands::get_max_consumption_levels,
             commands::get_monero_seed_words,
             commands::get_network,
             commands::get_p2pool_stats,
@@ -596,7 +590,6 @@ fn main() {
             commands::set_display_mode,
             commands::set_gpu_mining_enabled,
             commands::set_mine_on_app_start,
-            commands::set_mode,
             commands::set_monero_address,
             commands::set_monerod_config,
             commands::set_external_tari_address,
@@ -651,6 +644,8 @@ fn main() {
             commands::is_pin_locked,
             commands::set_seed_backed_up,
             commands::is_seed_backed_up,
+            commands::select_mining_mode,
+            commands::update_custom_mining_mode,
         ])
         .build(tauri::generate_context!())
         .inspect_err(|e| {

@@ -41,7 +41,7 @@ const LOG_TARGET: &str = "tari::universe::gpu_miner_sha_adapter";
 #[derive(Clone)]
 pub struct GpuMinerShaAdapter {
     pub tari_address: Option<TariAddress>,
-    pub intensity: Option<u8>,
+    pub intensity: Option<u32>,
     pub batch_size: Option<u32>,
     pub worker_name: Option<String>,
     pub pool_url: Option<String>,

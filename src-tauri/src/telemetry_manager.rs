@@ -27,7 +27,6 @@ use crate::app_in_memory_config::AppInMemoryConfig;
 use crate::commands::CpuMinerStatus;
 use crate::configs::config_core::ConfigCore;
 use crate::configs::config_mining::ConfigMining;
-use crate::configs::config_mining::MiningMode;
 use crate::configs::trait_config::ConfigImpl;
 use crate::gpu_miner_adapter::GpuMinerStatus;
 use crate::hardware::hardware_status_monitor::HardwareStatusMonitor;
@@ -130,24 +129,6 @@ impl From<Network> for TelemetryNetwork {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
-#[serde(rename_all = "lowercase")]
-pub enum TelemetryMiningMode {
-    Eco,
-    Ludicrous,
-    Custom,
-}
-
-impl From<MiningMode> for TelemetryMiningMode {
-    fn from(value: MiningMode) -> Self {
-        match value {
-            MiningMode::Eco => TelemetryMiningMode::Eco,
-            MiningMode::Ludicrous => TelemetryMiningMode::Ludicrous,
-            MiningMode::Custom => TelemetryMiningMode::Custom,
-        }
-    }
-}
-
-#[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 struct UserPoints {
     pub gems: f64,
@@ -192,7 +173,7 @@ pub struct TelemetryData {
     pub gpu_hash_rate: Option<f64>,
     pub gpu_utilization: Option<f32>,
     pub gpu_make: Option<String>,
-    pub mode: TelemetryMiningMode,
+    pub mode: String,
     pub version: String,
     pub p2pool_enabled: bool,
     pub cpu_tribe_name: Option<String>,
@@ -709,7 +690,7 @@ async fn get_telemetry_data_inner(
         block_height,
         is_mining_active,
         network: network.map(|n| n.into()),
-        mode: (*mining_config.mode()).into(),
+        mode: mining_config.selected_mining_mode().to_string(),
         cpu_hash_rate,
         cpu_utilization,
         cpu_make,

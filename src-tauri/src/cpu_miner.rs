@@ -22,7 +22,6 @@
 
 use crate::binaries::Binaries;
 use crate::commands::{CpuMinerConnection, CpuMinerConnectionStatus, CpuMinerStatus};
-use crate::configs::config_mining::{ConfigMiningContent, MiningMode};
 use crate::configs::config_pools::{ConfigPoolsContent, CpuPool};
 use crate::configs::config_wallet::ConfigWalletContent;
 use crate::events_emitter::EventsEmitter;
@@ -47,15 +46,9 @@ use tokio::time::{interval, sleep, timeout};
 use tokio::{select, spawn};
 
 const LOG_TARGET: &str = "tari::universe::cpu_miner";
-const ECO_MODE_CPU_USAGE: u32 = 30;
 
 pub struct CpuMinerConfig {
     pub node_connection: CpuMinerConnection,
-    pub eco_mode_xmrig_options: Vec<String>,
-    pub ludicrous_mode_xmrig_options: Vec<String>,
-    pub custom_mode_xmrig_options: Vec<String>,
-    pub eco_mode_cpu_percentage: Option<u32>,
-    pub ludicrous_mode_cpu_percentage: Option<u32>,
     pub monero_address: String,
     pub pool_host_name: Option<String>,
     pub pool_port: Option<u16>,
@@ -63,15 +56,6 @@ pub struct CpuMinerConfig {
 }
 
 impl CpuMinerConfig {
-    pub fn load_from_config_mining(&mut self, config_mining_content: &ConfigMiningContent) {
-        self.custom_mode_xmrig_options = config_mining_content.custom_mode_cpu_options().clone();
-        self.eco_mode_cpu_percentage = *config_mining_content.eco_mode_cpu_threads();
-        self.ludicrous_mode_cpu_percentage = *config_mining_content.ludicrous_mode_cpu_threads();
-        self.eco_mode_xmrig_options = config_mining_content.eco_mode_cpu_options().clone();
-        self.ludicrous_mode_xmrig_options =
-            config_mining_content.ludicrous_mode_cpu_options().clone();
-    }
-
     pub fn load_from_config_pools(
         &mut self,
         config_pools_content: ConfigPoolsContent,
@@ -150,8 +134,7 @@ impl CpuMiner {
         base_path: PathBuf,
         config_path: PathBuf,
         log_dir: PathBuf,
-        mode: MiningMode,
-        custom_cpu_threads: Option<u32>,
+        cpu_usage_percentage: u32,
         tari_address: &TariAddress,
     ) -> Result<(), anyhow::Error> {
         self.pool_status_shutdown_signal = Shutdown::new();
@@ -235,31 +218,17 @@ impl CpuMiner {
             }
         };
 
-        let eco_mode_threads = cpu_miner_config
-            .eco_mode_cpu_percentage
-            .unwrap_or((ECO_MODE_CPU_USAGE * max_cpu_available) / 100u32);
+        let cpu_cores_to_use = max_cpu_available
+            .saturating_mul(cpu_usage_percentage)
+            .saturating_div(100);
 
-        let cpu_max_percentage = match mode {
-            MiningMode::Eco => Some(eco_mode_threads),
-            MiningMode::Custom => {
-                if custom_cpu_threads.unwrap_or(0) == max_cpu_available {
-                    None
-                } else {
-                    custom_cpu_threads
-                }
-            }
-            MiningMode::Ludicrous => None,
-        };
+        info!(target: LOG_TARGET, "Using {cpu_cores_to_use} CPU cores for mining");
+
         {
             let mut lock = self.watcher.write().await;
 
             lock.adapter.node_connection = Some(xmrig_node_connection);
-            lock.adapter.cpu_threads = Some(cpu_max_percentage);
-            lock.adapter.extra_options = match mode {
-                MiningMode::Eco => cpu_miner_config.eco_mode_xmrig_options.clone(),
-                MiningMode::Ludicrous => cpu_miner_config.ludicrous_mode_xmrig_options.clone(),
-                MiningMode::Custom => cpu_miner_config.custom_mode_xmrig_options.clone(),
-            };
+            lock.adapter.cpu_threads = Some(cpu_cores_to_use);
 
             let shutdown_signal = TasksTrackers::current().hardware_phase.get_signal().await;
             let task_tracker = TasksTrackers::current()
@@ -305,7 +274,7 @@ impl CpuMiner {
         {
             let mut lock = self.watcher.write().await;
             lock.adapter.node_connection = Some(XmrigNodeConnection::Benchmark);
-            lock.adapter.cpu_threads = Some(Some(1));
+            lock.adapter.cpu_threads = Some(1);
             lock.adapter.extra_options = vec![];
 
             lock.start(
