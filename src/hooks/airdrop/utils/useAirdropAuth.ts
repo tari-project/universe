@@ -2,7 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { useCallback, useState } from 'react';
 import { open } from '@tauri-apps/plugin-shell';
 
-import { useCopyToClipboard } from '@app/hooks';
+import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard.ts';
 import { setAllowTelemetry, setAuthUuid, useAirdropStore, useConfigCoreStore } from '@app/store';
 import useFetchAirdropToken from '../stateHelpers/useFetchAirdropToken.ts';
 

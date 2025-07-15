@@ -1,5 +1,8 @@
-import { Typography } from '@app/components/elements/Typography.tsx';
+import { useMemo } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
+import useBlockTime from '@app/hooks/mining/useBlockTime.ts';
+import { useMiningMetricsStore } from '@app/store';
+import { Typography } from '@app/components/elements/Typography.tsx';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import {
     SettingsGroup,
@@ -7,20 +10,20 @@ import {
     SettingsGroupTitle,
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles.ts';
-import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore';
-import { useMemo } from 'react';
-import { useMiningMetricsStore } from '@app/store';
 
 export default function DebugSettings() {
     const { t } = useTranslation('settings');
-    const lastBlockTime = useBlockchainVisualisationStore((state) => state.debugBlockTime);
-    const isConnectedToTariNetwork = useMiningMetricsStore((s) => s.isNodeConnected);
-    const displayTime = useMemo(() => {
-        if (!lastBlockTime) return '-';
 
-        const { daysString, hoursString, minutes, seconds } = lastBlockTime;
+    const isConnectedToTariNetwork = useMiningMetricsStore((s) => s.isNodeConnected);
+
+    const { currentTimeParts } = useBlockTime();
+
+    const displayTime = useMemo(() => {
+        if (!currentTimeParts) return '-';
+
+        const { daysString, hoursString, minutes, seconds } = currentTimeParts;
         return `${daysString} ${hoursString} : ${minutes} : ${seconds}`;
-    }, [lastBlockTime]);
+    }, [currentTimeParts]);
 
     const displayText =
         displayTime && isConnectedToTariNetwork ? (

@@ -29,8 +29,6 @@ use log::{info, warn};
 use tokio::sync::{watch, RwLock};
 use tokio::time::sleep;
 
-use crate::configs::config_core::ConfigCore;
-use crate::configs::trait_config::ConfigImpl;
 use crate::p2pool::models::{Connections, P2poolStats};
 use crate::p2pool_adapter::P2poolAdapter;
 use crate::port_allocator::PortAllocator;
@@ -40,7 +38,7 @@ use crate::tasks_tracker::TasksTrackers;
 
 const LOG_TARGET: &str = "tari::universe::p2pool_manager";
 // const P2POOL_STATS_UPDATE_INTERVAL: Duration = Duration::from_secs(10);
-
+#[allow(dead_code)]
 #[derive(Clone)]
 pub struct P2poolConfig {
     pub grpc_port: u16, // Local
@@ -50,11 +48,11 @@ pub struct P2poolConfig {
     pub squad_override: Option<String>,
     pub randomx_disabled: bool,
 }
-
+#[allow(dead_code)]
 pub struct P2poolConfigBuilder {
     config: P2poolConfig,
 }
-
+#[allow(dead_code)]
 impl P2poolConfigBuilder {
     pub fn new() -> Self {
         Self {
@@ -106,7 +104,7 @@ impl P2poolConfigBuilder {
         })
     }
 }
-
+#[allow(dead_code)]
 impl P2poolConfig {
     pub fn builder() -> P2poolConfigBuilder {
         P2poolConfigBuilder::new()
@@ -133,11 +131,11 @@ impl Clone for P2poolManager {
         }
     }
 }
-
+#[allow(dead_code)]
 pub struct P2poolManager {
     watcher: Arc<RwLock<ProcessWatcher<P2poolAdapter>>>,
 }
-
+#[allow(dead_code)]
 impl P2poolManager {
     pub fn new(
         stats_broadcast: watch::Sender<Option<P2poolStats>>,
@@ -229,22 +227,15 @@ impl P2poolManager {
         Ok(exit_code)
     }
 
-    pub async fn get_grpc_address(&self, use_local: bool) -> String {
-        if use_local {
-            let process_watcher = self.watcher.read().await;
-            let grpc_port = process_watcher
-                .adapter
-                .config
-                .as_ref()
-                .map(|c| c.grpc_port)
-                .unwrap_or_default();
-            format!("http://127.0.0.1:{grpc_port}")
-        } else {
-            ConfigCore::content()
-                .await
-                .remote_base_node_address()
-                .clone()
-        }
+    pub async fn get_grpc_address(&self) -> String {
+        let process_watcher = self.watcher.read().await;
+        let grpc_port = process_watcher
+            .adapter
+            .config
+            .as_ref()
+            .map(|c| c.grpc_port)
+            .unwrap_or_default();
+        format!("http://127.0.0.1:{grpc_port}")
     }
 
     pub async fn get_grpc_port(&self) -> u16 {

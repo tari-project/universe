@@ -12,6 +12,9 @@ export const Wrapper = styled.div`
     position: fixed;
     right: 10px;
     user-select: none;
+
+    mask-image: linear-gradient(to bottom, transparent, black calc(100% - 60px), transparent 100%);
+    -webkit-mask-image: -webkit-linear-gradient(to bottom, tansparent, black calc(100% - 60px), transparent 100%);
 `;
 
 export const Column = styled.div<{ $isNumber?: boolean }>`

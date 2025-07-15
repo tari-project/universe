@@ -148,6 +148,7 @@ pub trait ConfigImpl {
             .await;
         Ok(())
     }
+
     async fn update_field_requires_restart<F, I>(
         setter_callback: F,
         value: I,

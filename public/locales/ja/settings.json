@@ -15,9 +15,9 @@
   "control-port": "コントロールポート",
   "cpu-mining-enabled": "CPUマイニング",
   "custom-power-levels": {
-    "choose-cpu-power-level": "CPUをどれだけマイニングに割り当てるか選択 <span>({{current}}/{{max}} コア)</span>",
-    "choose-gpu-power-level": "GPUをどれだけマイニングに割り当てるか選択 <span>({{current}}/{{max}} スレッド)</span>",
-    "cpu-power-level": "CPUコア",
+    "choose-cpu-power-level": "Choose how big of a percentage you want your CPU to be allocated to mining",
+    "choose-gpu-power-level": "Choose how big of a percentage you want your GPU to be allocated to mining",
+    "cpu-power-level": "CPUパワー％",
     "cpu-warning": "高いCPU使用率は過熱を引き起こし、エネルギー消費を増加させ、時間とともにハードウェアの損傷を引き起こす可能性があります。安全で効率的な操作を確保するために使用状況を監視してください。",
     "gpu-power-level": "GPUパワー％",
     "gpu-warning": "高いGPU使用率は過熱を引き起こし、エネルギー消費を増加させ、時間とともにハードウェアの損傷を引き起こす可能性があります。安全で効率的な操作を確保するために使用状況を監視してください。",
@@ -50,6 +50,7 @@
     "placeholder": "アイドルタイムアウトを秒で入力",
     "title": "マシンがアイドルと見なされるまでの時間"
   },
+  "import-seed-success": "Seed words imported successfully",
   "importing-wallet": "ウォレットのインポート",
   "importing-wallet-copy": "ウォレットがインポートされると、Tari Universe は自動的に再起動します",
   "invalid-seed-words": "スペースで区切って24の単語を入力してください",
@@ -96,6 +97,7 @@
     "load-qr-code": "QRコードを読み込む",
     "passphrase": "パスフレーズ"
   },
+  "pin": "Pin",
   "pool-mining": "プールマイニング",
   "pool-mining-description": "有効にすると、プールでマイニングし、マイナーのグループに参加します。",
   "pre-release": {
@@ -129,6 +131,7 @@
   "send-logs": "ログを送信",
   "set-dynamic-fail-data": "MoneroノードのカスタムURLを設定",
   "settings": "設定",
+  "setup-pin": "Setup Universe Security PIN",
   "setup-tor-settings": "プライバシー管理と接続のためのTor設定をセットアップ",
   "sha-network-hash-rate": "Sha3ネットワークのハッシュレート",
   "should-auto-start": {
@@ -145,6 +148,7 @@
     "general": "一般",
     "mining": "マイニング",
     "p2p": "プールマイニング",
+    "pools": "Mining Pools",
     "releaseNotes": "リリースノート",
     "very_experimental": "非常に実験的",
     "wallet": "ウォレット"

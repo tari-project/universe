@@ -20,7 +20,10 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::events_emitter::EventsEmitter;
+use crate::{
+    configs::config_core::ConfigCore, events_emitter::EventsEmitter,
+    internal_wallet::TariAddressType,
+};
 
 use std::{sync::LazyLock, time::SystemTime};
 
@@ -33,6 +36,13 @@ use tokio::sync::RwLock;
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
 
 static INSTANCE: LazyLock<RwLock<ConfigUI>> = LazyLock::new(|| RwLock::new(ConfigUI::new()));
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+pub enum WalletUIMode {
+    Standard = 0,
+    Seedless = 1,
+    ExchangeSpecificMiner = 2,
+}
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Default)]
 pub enum DisplayMode {
@@ -67,12 +77,12 @@ pub struct ConfigUIContent {
     should_always_use_system_language: bool,
     application_language: String,
     paper_wallet_enabled: bool,
-    custom_power_levels_enabled: bool,
     sharing_enabled: bool,
     visual_mode: bool,
     show_experimental_settings: bool,
     warmup_seen: bool,
-    was_staged_security_modal_shown: bool,
+    was_staged_security_modal_shown: bool, // TODO: Migrated to ConfigWallet, remove after some time
+    wallet_ui_mode: WalletUIMode,
 }
 
 impl Default for ConfigUIContent {
@@ -85,12 +95,12 @@ impl Default for ConfigUIContent {
             should_always_use_system_language: false,
             application_language: "en".to_string(),
             paper_wallet_enabled: true,
-            custom_power_levels_enabled: true,
             sharing_enabled: true,
             visual_mode: true,
             show_experimental_settings: false,
             warmup_seen: false,
             was_staged_security_modal_shown: false,
+            wallet_ui_mode: WalletUIMode::Standard,
         }
     }
 }
@@ -114,11 +124,39 @@ pub struct ConfigUI {
 }
 
 impl ConfigUI {
+    pub async fn handle_wallet_type_update(
+        tari_address_type: TariAddressType,
+    ) -> Result<(), anyhow::Error> {
+        let is_on_exchange_miner_specific_variant = ConfigCore::content()
+            .await
+            .is_on_exchange_specific_variant();
+        let mode = match tari_address_type {
+            TariAddressType::Internal => WalletUIMode::Standard,
+            TariAddressType::External => {
+                if is_on_exchange_miner_specific_variant {
+                    WalletUIMode::ExchangeSpecificMiner
+                } else {
+                    WalletUIMode::Seedless
+                }
+            }
+        };
+
+        Self::set_wallet_ui_mode(mode).await?;
+
+        Ok(())
+    }
+
+    pub async fn set_wallet_ui_mode(mode: WalletUIMode) -> Result<(), anyhow::Error> {
+        Self::update_field(ConfigUIContent::set_wallet_ui_mode, mode).await?;
+        EventsEmitter::emit_wallet_ui_mode_changed(mode).await;
+
+        Ok(())
+    }
+
     pub async fn initialize(app_handle: AppHandle) {
         let mut config = Self::current().write().await;
         config.load_app_handle(app_handle.clone()).await;
 
-        EventsEmitter::emit_ui_config_loaded(config.content.clone()).await;
         drop(config);
 
         let _unused = Self::update_field(

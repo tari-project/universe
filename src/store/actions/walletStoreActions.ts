@@ -1,15 +1,14 @@
 import { invoke } from '@tauri-apps/api/core';
-import { WalletAddress, WalletBalance } from '@app/types/app-status.ts';
-import { BackendBridgeTransaction, useWalletStore } from '../useWalletStore';
+import { WalletBalance } from '@app/types/app-status.ts';
+import { BackendBridgeTransaction, initialState, useWalletStore } from '../useWalletStore';
 import { setError } from './appStateStoreActions';
 import { TxHistoryFilter } from '@app/components/transactions/history/FilterSelect';
 import { WrapTokenService, OpenAPI } from '@tari-project/wxtm-bridge-backend-api';
 import { useConfigBEInMemoryStore } from '../useAppConfigStore';
-
-import { setCurrentExchangeMinerId, universalExchangeMinerOption } from '@app/store/useExchangeStore.ts';
+import { TariAddressUpdatePayload } from '@app/types/events-payloads';
 import { TransactionDetailsItem, TransactionDirection } from '@app/types/transactions';
-import { useUIStore } from '../useUIStore';
-import { setSeedlessUI } from './uiStoreActions';
+import { addToast } from '@app/components/ToastStack/useToastStore';
+import { t } from 'i18next';
 
 // NOTE: Tx status differ for core and proto(grpc)
 export const COINBASE_BITFLAG = 6144;
@@ -110,6 +109,11 @@ export const importSeedWords = async (seedWords: string[]) => {
         await invoke('import_seed_words', { seedWords });
         await refreshTransactions();
         useWalletStore.setState({ is_wallet_importing: false });
+        addToast({
+            title: t('success', { ns: 'airdrop' }),
+            text: t('import-seed-success', { ns: 'settings' }),
+            type: 'success',
+        });
     } catch (error) {
         setError(`Could not import seed words: ${error}`, true);
         useWalletStore.setState({ is_wallet_importing: false });
@@ -133,8 +137,8 @@ export const setExternalTariAddress = async (newAddress: string) => {
             console.info('New Tari address set successfully to:', newAddress);
         })
         .catch((e) => {
-            console.error('Could not set Monero address', e);
-            setError('Could not change Monero address');
+            console.error('Could not set external tari address', e);
+            setError('Could not change external tari address');
         });
 };
 
@@ -174,36 +178,13 @@ export const setTxHistoryFilter = (filter: TxHistoryFilter) => {
 export const setDetailsItem = (detailsItem: TransactionDetailsItem | BackendBridgeTransaction | null) =>
     useWalletStore.setState({ detailsItem });
 
-export const handleExternalWalletAddressUpdate = (payload?: WalletAddress) => {
-    const isSeedlessUI = useUIStore.getState().seedlessUI;
-    if (payload) {
-        useWalletStore.setState((c) => ({
-            ...c,
-            external_tari_address_base58: payload.tari_address_base58,
-            external_tari_address_emoji: payload.tari_address_emoji,
-        }));
-
-        if (!isSeedlessUI) {
-            setSeedlessUI(true);
-        }
-    } else {
-        useWalletStore.setState((c) => ({
-            ...c,
-            external_tari_address_base58: undefined,
-            external_tari_address_emoji: undefined,
-        }));
-        if (isSeedlessUI) {
-            setSeedlessUI(false);
-            setCurrentExchangeMinerId(universalExchangeMinerOption.exchange_id);
-            refreshTransactions();
-        }
-    }
-};
-
-export const handleBaseWalletUpate = (payload: WalletAddress) => {
-    useWalletStore.setState((c) => ({
-        ...c,
-        tari_address_base58: payload.tari_address_base58,
-        tari_address_emoji: payload.tari_address_emoji,
-    }));
+export const handleSelectedTariAddressChange = (payload: TariAddressUpdatePayload) => {
+    const { tari_address_base58, tari_address_emoji, tari_address_type } = payload;
+    useWalletStore.setState({
+        ...initialState,
+        is_wallet_importing: useWalletStore.getState().is_wallet_importing,
+        tari_address_base58,
+        tari_address_emoji,
+        tari_address_type,
+    });
 };

@@ -47,7 +47,7 @@ interface XCOptionProps {
 }
 
 export const XCOption = ({ isCurrent = false, isActive, content, onActiveClick, ref }: XCOptionProps) => {
-    const base_tari_address = useWalletStore((state) => state.external_tari_address_emoji);
+    const last_internal_tari_emoji_address_used = useWalletStore((state) => state.tari_address_emoji);
     const { t } = useTranslation(['exchange', 'settings'], { useSuspense: false });
     const [isAddressValid, setIsAddressValid] = useState(false);
     const [miningAddress, setMiningAddress] = useState('');
@@ -67,7 +67,7 @@ export const XCOption = ({ isCurrent = false, isActive, content, onActiveClick, 
             })
             .catch((e) => {
                 console.error('Could not set Exchange address', e);
-                setError('Could not change Exchange address');
+                setError('Could not change Exchange address: ' + e.message);
             });
     };
 
@@ -125,7 +125,11 @@ export const XCOption = ({ isCurrent = false, isActive, content, onActiveClick, 
                         <ExchangeAddress
                             handleIsAddressValid={setIsAddressValid}
                             handleAddressChanged={setMiningAddress}
-                            value={isCurrent && base_tari_address ? truncateMiddle(base_tari_address, 7, ' ... ') : ''}
+                            value={
+                                isCurrent && last_internal_tari_emoji_address_used
+                                    ? truncateMiddle(last_internal_tari_emoji_address_used, 7, ' ... ')
+                                    : ''
+                            }
                         />
 
                         {content.campaign_description && content.reward_expiry_date ? (

@@ -15,9 +15,9 @@
   "control-port": "कंट्रोल पोर्ट",
   "cpu-mining-enabled": "सीपीयू माइनिंग",
   "custom-power-levels": {
-    "choose-cpu-power-level": "चुनें कि आप अपने CPU को माइनिंग के लिए कितना आवंटित करना चाहते हैं <span>({{current}} में से {{max}} कोर)</span>",
-    "choose-gpu-power-level": "चुनें कि आप अपने GPU को माइनिंग के लिए कितना आवंटित करना चाहते हैं <span>({{current}} में से {{max}} थ्रेड्स)</span>",
-    "cpu-power-level": "CPU कोर",
+    "choose-cpu-power-level": "Choose how big of a percentage you want your CPU to be allocated to mining",
+    "choose-gpu-power-level": "Choose how big of a percentage you want your GPU to be allocated to mining",
+    "cpu-power-level": "CPU पावर %",
     "cpu-warning": "उच्च CPU उपयोग से ओवरहीटिंग हो सकती है, ऊर्जा खपत बढ़ सकती है, और समय के साथ हार्डवेयर को नुकसान हो सकता है। कृपया सुरक्षित और कुशल संचालन सुनिश्चित करने के लिए उपयोग की निगरानी करें।",
     "gpu-power-level": "GPU पावर %",
     "gpu-warning": "उच्च GPU उपयोग से ओवरहीटिंग हो सकती है, ऊर्जा खपत बढ़ सकती है, और समय के साथ हार्डवेयर को नुकसान हो सकता है। कृपया सुरक्षित और कुशल संचालन सुनिश्चित करने के लिए उपयोग की निगरानी करें।",
@@ -50,6 +50,7 @@
     "placeholder": "सेकंड में निष्क्रिय समय सीमा दर्ज करें",
     "title": "समय जिसके बाद मशीन को निष्क्रिय माना जाता है"
   },
+  "import-seed-success": "Seed words imported successfully",
   "importing-wallet": "वॉलेट आयात किया जा रहा है",
   "importing-wallet-copy": "एक बार आपका वॉलेट आयात हो जाने पर Tari Universe स्वचालित रूप से पुनः आरंभ होगा",
   "invalid-seed-words": "24 शब्दों को स्पेस से अलग करके दर्ज करें",
@@ -96,6 +97,7 @@
     "load-qr-code": "QR कोड लोड करें",
     "passphrase": "पासफ्रेज़"
   },
+  "pin": "Pin",
   "pool-mining": "पूल माइनिंग",
   "pool-mining-description": "सक्षम होने पर, आप एक पूल में माइन करेंगे और माइनर्स के समूह में शामिल होंगे।",
   "pre-release": {
@@ -129,6 +131,7 @@
   "send-logs": "लॉग्स भेजें",
   "set-dynamic-fail-data": "मोनरो नोड्स के लिए कस्टम URL सेट करें",
   "settings": "सेटिंग्स",
+  "setup-pin": "Setup Universe Security PIN",
   "setup-tor-settings": "गोपनीयता नियंत्रण और कनेक्टिविटी के लिए टोर सेटिंग्स सेटअप करें",
   "sha-network-hash-rate": "Sha3 नेटवर्क हैशरेट",
   "should-auto-start": {
@@ -145,6 +148,7 @@
     "general": "सामान्य",
     "mining": "माइनिंग",
     "p2p": "पूल माइनिंग",
+    "pools": "Mining Pools",
     "releaseNotes": "रिलीज़ नोट्स",
     "very_experimental": "बहुत प्रयोगात्मक",
     "wallet": "वॉलेट"

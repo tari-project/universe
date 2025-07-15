@@ -20,14 +20,17 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use super::{
+    listeners::SetupFeaturesList,
+    setup_manager::PhaseStatus,
+    trait_setup_phase::{SetupConfiguration, SetupPhaseImpl},
+    utils::{setup_default_adapter::SetupDefaultAdapter, timeout_watcher::TimeoutWatcher},
+};
 use crate::{
     binaries::{Binaries, BinaryResolver},
-    configs::{
-        config_core::ConfigCore, config_mining::ConfigMining, config_wallet::ConfigWallet,
-        trait_config::ConfigImpl,
-    },
+    configs::{config_core::ConfigCore, trait_config::ConfigImpl},
     events_emitter::EventsEmitter,
-    p2pool_manager::P2poolConfig,
+    internal_wallet::InternalWallet,
     progress_trackers::{
         progress_plans::{ProgressPlans, ProgressSetupMiningPlan},
         progress_stepper::ProgressStepperBuilder,
@@ -39,7 +42,6 @@ use crate::{
 };
 use anyhow::Error;
 use log::info;
-use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::ShutdownSignal;
 use tauri::{AppHandle, Manager};
 use tokio::sync::{
@@ -47,13 +49,6 @@ use tokio::sync::{
     Mutex,
 };
 use tokio_util::task::TaskTracker;
-
-use super::{
-    listeners::SetupFeaturesList,
-    setup_manager::PhaseStatus,
-    trait_setup_phase::{SetupConfiguration, SetupPhaseImpl},
-    utils::{setup_default_adapter::SetupDefaultAdapter, timeout_watcher::TimeoutWatcher},
-};
 
 static LOG_TARGET: &str = "tari::universe::phase_hardware";
 
@@ -64,12 +59,8 @@ pub struct MiningSetupPhaseSessionConfiguration {}
 
 #[derive(Clone, Default)]
 pub struct MiningSetupPhaseAppConfiguration {
-    tari_address: TariAddress,
-    p2pool_enabled: bool,
-    p2pool_stats_server_port: Option<u16>,
     mmproxy_monero_nodes: Vec<String>,
     mmproxy_use_monero_fail: bool,
-    squad_override: Option<String>,
 }
 
 pub struct MiningSetupPhase {
@@ -139,32 +130,18 @@ impl SetupPhaseImpl for MiningSetupPhase {
             .add_step(ProgressPlans::Mining(
                 ProgressSetupMiningPlan::BinariesMergeMiningProxy,
             ))
-            .add_step(ProgressPlans::Mining(
-                ProgressSetupMiningPlan::BinariesP2pool,
-            ))
-            .add_step(ProgressPlans::Mining(ProgressSetupMiningPlan::P2Pool))
             .add_step(ProgressPlans::Mining(ProgressSetupMiningPlan::MMProxy))
             .add_step(ProgressPlans::Mining(ProgressSetupMiningPlan::Done))
             .build(app_handle.clone(), timeout_watcher_sender)
     }
 
     async fn load_app_configuration() -> Result<Self::AppConfiguration, Error> {
-        let p2pool_enabled = *ConfigCore::content().await.is_p2pool_enabled();
-        let p2pool_stats_server_port = *ConfigCore::content().await.p2pool_stats_server_port();
         let mmproxy_monero_nodes = ConfigCore::content().await.mmproxy_monero_nodes().clone();
         let mmproxy_use_monero_fail = *ConfigCore::content().await.mmproxy_use_monero_failover();
-        let squad_override = ConfigMining::content().await.squad_override().clone();
-        let tari_address = ConfigWallet::content()
-            .await
-            .get_current_used_tari_address();
 
         Ok(MiningSetupPhaseAppConfiguration {
-            p2pool_enabled,
             mmproxy_use_monero_fail,
             mmproxy_monero_nodes,
-            p2pool_stats_server_port,
-            squad_override,
-            tari_address,
         })
     }
 
@@ -178,7 +155,7 @@ impl SetupPhaseImpl for MiningSetupPhase {
         let mut progress_stepper = self.progress_stepper.lock().await;
         let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
         let state = self.app_handle.state::<UniverseAppState>();
-        let tari_address = self.app_configuration.tari_address.clone();
+        let tari_address = InternalWallet::tari_address().await;
         let telemetry_id = state
             .telemetry_manager
             .read()
@@ -190,80 +167,32 @@ impl SetupPhaseImpl for MiningSetupPhase {
 
         let mmproxy_binary_progress_tracker = progress_stepper.channel_step_range_updates(
             ProgressPlans::Mining(ProgressSetupMiningPlan::BinariesMergeMiningProxy),
-            Some(ProgressPlans::Mining(
-                ProgressSetupMiningPlan::BinariesP2pool,
-            )),
+            Some(ProgressPlans::Mining(ProgressSetupMiningPlan::MMProxy)),
         );
 
         binary_resolver
             .initialize_binary(Binaries::MergeMiningProxy, mmproxy_binary_progress_tracker)
             .await?;
 
-        let p2pool_binary_progress_tracker = progress_stepper.channel_step_range_updates(
-            ProgressPlans::Mining(ProgressSetupMiningPlan::BinariesP2pool),
-            Some(ProgressPlans::Mining(ProgressSetupMiningPlan::P2Pool)),
-        );
-
-        binary_resolver
-            .initialize_binary(Binaries::ShaP2pool, p2pool_binary_progress_tracker)
-            .await?;
-
         let base_node_grpc_address = state.node_manager.get_grpc_address().await?;
-        if self.app_configuration.p2pool_enabled {
-            progress_stepper
-                .resolve_step(ProgressPlans::Mining(ProgressSetupMiningPlan::P2Pool))
-                .await;
-
-            let p2pool_config = P2poolConfig::builder()
-                .with_base_node(base_node_grpc_address.clone())
-                .with_squad_override(self.app_configuration.squad_override.clone())
-                .with_stats_server_port(self.app_configuration.p2pool_stats_server_port)
-                .with_cpu_benchmark_hashrate(Some(
-                    state.cpu_miner.read().await.benchmarked_hashrate,
-                ))
-                .with_randomx_disabled(
-                    self.setup_features
-                        .is_feature_enabled(SetupFeature::CentralizedPool),
-                )
-                .build()?;
-            state
-                .p2pool_manager
-                .ensure_started(
-                    p2pool_config,
-                    data_dir.clone(),
-                    config_dir.clone(),
-                    log_dir.clone(),
-                )
-                .await?;
-        } else {
-            progress_stepper.skip_step(ProgressPlans::Mining(ProgressSetupMiningPlan::P2Pool));
-        }
 
         if self
             .setup_features
-            .is_feature_disabled(SetupFeature::CentralizedPool)
+            .is_feature_disabled(SetupFeature::CpuPool)
         {
             progress_stepper
                 .resolve_step(ProgressPlans::Mining(ProgressSetupMiningPlan::MMProxy))
                 .await;
 
-            let use_local_p2pool_node =
-                state.node_manager.is_local_current().await.unwrap_or(false);
-            let p2pool_node_grpc_address = state
-                .p2pool_manager
-                .get_grpc_address(use_local_p2pool_node)
-                .await;
             state
                 .mm_proxy_manager
                 .start(StartConfig {
                     base_node_grpc_address,
-                    p2pool_node_grpc_address,
                     base_path: data_dir.clone(),
                     config_path: config_dir.clone(),
                     log_path: log_dir.clone(),
                     tari_address: tari_address.clone(),
                     coinbase_extra: telemetry_id,
-                    p2pool_enabled: self.app_configuration.p2pool_enabled,
                     monero_nodes: self.app_configuration.mmproxy_monero_nodes.clone(),
                     use_monero_fail: self.app_configuration.mmproxy_use_monero_fail,
                 })

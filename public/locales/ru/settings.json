@@ -15,9 +15,9 @@
   "control-port": "Порт управления",
   "cpu-mining-enabled": "Майнинг на CPU",
   "custom-power-levels": {
-    "choose-cpu-power-level": "Выберите, сколько ресурсов вашего CPU Вы хотите выделить для майнинга <span>({{current}} из {{max}} ядер)</span>",
-    "choose-gpu-power-level": "Выберите, сколько ресурсов вашего GPU Вы хотите выделить для майнинга <span>({{current}} из {{max}} потоков)</span>",
-    "cpu-power-level": "Ядра CPU",
+    "choose-cpu-power-level": "Choose how big of a percentage you want your CPU to be allocated to mining",
+    "choose-gpu-power-level": "Choose how big of a percentage you want your GPU to be allocated to mining",
+    "cpu-power-level": "Мощность CPU %",
     "cpu-warning": "Высокая загрузка CPU может вызвать перегрев, увеличить потребление энергии и со временем привести к повреждению оборудования. Пожалуйста, следите за использованием для обеспечения безопасной и эффективной работы.",
     "gpu-power-level": "Мощность GPU %",
     "gpu-warning": "Высокая загрузка GPU может вызвать перегрев, увеличить потребление энергии и со временем привести к повреждению оборудования. Пожалуйста, следите за использованием для обеспечения безопасной и эффективной работы.",
@@ -50,6 +50,7 @@
     "placeholder": "Введите время простоя в секундах",
     "title": "Время, после которого машина считается в простое"
   },
+  "import-seed-success": "Seed words imported successfully",
   "importing-wallet": "Импорт кошелька",
   "importing-wallet-copy": "Tari Universe будет автоматически перезапущен, когда Ваш кошелек будет импортирован",
   "invalid-seed-words": "Введите 24 слова, разделенные пробелами",
@@ -96,6 +97,7 @@
     "load-qr-code": "Загрузить QR-код",
     "passphrase": "Парольная фраза"
   },
+  "pin": "Pin",
   "pool-mining": "Майнинг в пуле",
   "pool-mining-description": "При включении Вы будете майнить в пуле и присоединитесь к группе майнеров.",
   "pre-release": {
@@ -129,6 +131,7 @@
   "send-logs": "Отправить логи",
   "set-dynamic-fail-data": "Установить пользовательские URL для узлов Monero",
   "settings": "Настройки",
+  "setup-pin": "Setup Universe Security PIN",
   "setup-tor-settings": "Настройка параметров Tor для управления конфиденциальностью и подключением",
   "sha-network-hash-rate": "Хэшрейт сети Sha3",
   "should-auto-start": {
@@ -145,6 +148,7 @@
     "general": "Общие",
     "mining": "Майнинг",
     "p2p": "Майнинг в пуле",
+    "pools": "Mining Pools",
     "releaseNotes": "Примечания к выпуску",
     "very_experimental": "Очень экспериментальные",
     "wallet": "Кошелек"

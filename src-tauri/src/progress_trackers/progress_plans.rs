@@ -241,9 +241,7 @@ impl ProgressStep for ProgressSetupWalletPlan {
 
 #[derive(Clone, PartialEq, Debug)]
 pub enum ProgressSetupMiningPlan {
-    BinariesP2pool,
     BinariesMergeMiningProxy,
-    P2Pool,
     MMProxy,
     Done,
 }
@@ -257,9 +255,7 @@ impl ProgressStep for ProgressSetupMiningPlan {
 
     fn get_progress_weight(&self) -> u8 {
         match self {
-            ProgressSetupMiningPlan::BinariesP2pool => 2,
             ProgressSetupMiningPlan::BinariesMergeMiningProxy => 2,
-            ProgressSetupMiningPlan::P2Pool => 1,
             ProgressSetupMiningPlan::MMProxy => 1,
             ProgressSetupMiningPlan::Done => 1,
         }
@@ -267,11 +263,9 @@ impl ProgressStep for ProgressSetupMiningPlan {
 
     fn get_title(&self) -> String {
         match self {
-            ProgressSetupMiningPlan::BinariesP2pool => "binaries-p2pool".to_string(),
             ProgressSetupMiningPlan::BinariesMergeMiningProxy => {
                 "binaries-merge-mining-proxy".to_string()
             }
-            ProgressSetupMiningPlan::P2Pool => "p2pool".to_string(),
             ProgressSetupMiningPlan::MMProxy => "mm-proxy".to_string(),
             ProgressSetupMiningPlan::Done => "done".to_string(),
         }

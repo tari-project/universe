@@ -6,22 +6,26 @@ import ludicrousBg from '../backgrounds/ludicrous.png';
 import customBg from '../backgrounds/custom.png';
 import { useMemo } from 'react';
 import { useConfigMiningStore } from '@app/store';
+import { MiningModeType } from '@app/types/configs';
+import { getSelectedMiningMode } from '@app/store/actions/appConfigStoreActions';
 
 export default function LoadingButton() {
-    const selectedMode = useConfigMiningStore((s) => s.mode);
+    const selectedMiningMode = getSelectedMiningMode();
 
     const backgroundImage = useMemo(() => {
-        switch (selectedMode) {
-            case 'Eco':
+        switch (selectedMiningMode.mode_type) {
+            case MiningModeType.Eco:
                 return ecoBg;
-            case 'Ludicrous':
+            case MiningModeType.Ludicrous:
                 return ludicrousBg;
-            case 'Custom':
+            case MiningModeType.Custom:
+                return customBg;
+            case MiningModeType.User:
                 return customBg;
             default:
                 return startBg;
         }
-    }, [selectedMode]);
+    }, [selectedMiningMode]);
 
     return (
         <LoadingWrapper

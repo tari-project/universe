@@ -1,4 +1,4 @@
-import { useMiningStatesSync } from '@app/hooks';
+import { useMiningStatesSync } from '@app/hooks/mining/useMiningStatesSync.ts';
 import DisconnectWrapper from '../Reconnect/DisconnectWrapper.tsx';
 import { DashboardContentContainer } from './styles';
 import { useAirdropStore, useUIStore } from '@app/store';
@@ -15,7 +15,7 @@ export default function Dashboard() {
     useMiningStatesSync();
 
     return (
-        <DashboardContentContainer $tapplet={!!activeTapplet}>
+        <DashboardContentContainer $tapplet={showTapplet}>
             {connectionStatus !== 'connected' && !orphanChainUiDisabled ? <DisconnectWrapper /> : null}
             {showTapplet && activeTapplet ? <Tapplet source={activeTapplet.source} /> : <MiningView />}
         </DashboardContentContainer>

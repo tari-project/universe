@@ -15,9 +15,9 @@
   "control-port": "Port de contrôle",
   "cpu-mining-enabled": "Minage CPU",
   "custom-power-levels": {
-    "choose-cpu-power-level": "Choisissez combien de votre CPU vous souhaitez allouer au minage <span>({{current}} sur {{max}} cœurs)</span>",
-    "choose-gpu-power-level": "Choisissez combien de votre GPU vous souhaitez allouer au minage <span>({{current}} sur {{max}} threads)</span>",
-    "cpu-power-level": "Cœurs CPU",
+    "choose-cpu-power-level": "Choose how big of a percentage you want your CPU to be allocated to mining",
+    "choose-gpu-power-level": "Choose how big of a percentage you want your GPU to be allocated to mining",
+    "cpu-power-level": "Puissance CPU %",
     "cpu-warning": "Une utilisation élevée du CPU peut provoquer une surchauffe, augmenter la consommation d\"énergie et peut entraîner des dommages matériels au fil du temps. Veuillez surveiller l\"utilisation pour assurer un fonctionnement sûr et efficace.",
     "gpu-power-level": "Puissance GPU %",
     "gpu-warning": "Une utilisation élevée du GPU peut provoquer une surchauffe, augmenter la consommation d\"énergie et peut entraîner des dommages matériels au fil du temps. Veuillez surveiller l\"utilisation pour assurer un fonctionnement sûr et efficace.",
@@ -50,6 +50,7 @@
     "placeholder": "Entrez le délai d\"inactivité en secondes",
     "title": "Temps après lequel la machine est considérée comme inactive"
   },
+  "import-seed-success": "Seed words imported successfully",
   "importing-wallet": "Importation du portefeuille",
   "importing-wallet-copy": "Tari Universe redémarrera automatiquement une fois que votre portefeuille aura été importé",
   "invalid-seed-words": "Entrez 24 mots séparés par des espaces",
@@ -96,6 +97,7 @@
     "load-qr-code": "Charger le code QR",
     "passphrase": "Phrase de passe"
   },
+  "pin": "Pin",
   "pool-mining": "Minage en pool",
   "pool-mining-description": "Lorsqu\"il est activé, vous minerez dans un pool et rejoindrez un groupe de mineurs.",
   "pre-release": {
@@ -129,6 +131,7 @@
   "send-logs": "Soumettre un problème et des journaux",
   "set-dynamic-fail-data": "Définir des URL personnalisées pour les nœuds Monero",
   "settings": "Paramètres",
+  "setup-pin": "Setup Universe Security PIN",
   "setup-tor-settings": "Configurer les paramètres Tor pour le contrôle de la confidentialité et la connectivité",
   "sha-network-hash-rate": "Taux de hachage du réseau Sha3",
   "should-auto-start": {
@@ -145,6 +148,7 @@
     "general": "Général",
     "mining": "Minage",
     "p2p": "Minage en pool",
+    "pools": "Mining Pools",
     "releaseNotes": "Notes de version",
     "very_experimental": "Très Expérimental",
     "wallet": "Portefeuille"

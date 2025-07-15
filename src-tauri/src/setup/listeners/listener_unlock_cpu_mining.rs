@@ -134,9 +134,9 @@ impl UnlockConditionsListenerTrait for ListenerUnlockCpuMining {
     }
     async fn select_unlock_strategy(&self) -> Box<dyn UnlockStrategyTrait + Send + Sync> {
         let features = self.features_list.lock().await.clone();
-        if features.is_feature_enabled(SetupFeature::CentralizedPool) {
-            info!(target: LOG_TARGET, "Using CentralizedPoolStrategy for unlocking");
-            Box::new(CentralizedPoolStrategy)
+        if features.is_feature_enabled(SetupFeature::CpuPool) {
+            info!(target: LOG_TARGET, "Using CpuPoolStrategy for unlocking");
+            Box::new(CpuPoolStrategy)
         } else {
             info!(target: LOG_TARGET, "Using DefaultStrategy for unlocking");
             Box::new(DefaultStrategy)
@@ -162,8 +162,8 @@ impl UnlockStrategyTrait for DefaultStrategy {
         ]
     }
 }
-struct CentralizedPoolStrategy;
-impl UnlockStrategyTrait for CentralizedPoolStrategy {
+struct CpuPoolStrategy;
+impl UnlockStrategyTrait for CpuPoolStrategy {
     fn required_channels(&self) -> Vec<SetupPhase> {
         vec![SetupPhase::Core, SetupPhase::Hardware]
     }

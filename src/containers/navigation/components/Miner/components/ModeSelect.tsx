@@ -1,11 +1,10 @@
 import { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { MiningModeType } from '@app/store/types';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { setDialogToShow } from '@app/store/actions/uiStoreActions.ts';
-import { changeMiningMode, setCustomLevelsDialogOpen } from '@app/store/actions/miningStoreActions.ts';
+import { setCustomLevelsDialogOpen } from '@app/store/actions/miningStoreActions.ts';
 import { Select, SelectOption } from '@app/components/elements/inputs/Select.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 
@@ -14,16 +13,42 @@ import fire from '@app/assets/icons/emoji/fire.png';
 import custom from '@app/assets/icons/emoji/custom.png';
 
 import { TileItem, TileTop } from '../styles';
-import { useConfigMiningStore, useConfigUIStore } from '@app/store';
+import { useConfigMiningStore } from '@app/store';
 import { useSetupStore } from '@app/store/useSetupStore';
+import { getSelectedMiningMode, selectMiningMode } from '@app/store/actions/appConfigStoreActions';
+import { MiningModeType } from '@app/types/configs';
 
 interface ModeSelectProps {
     variant?: 'primary' | 'minimal';
     isSync?: boolean;
 }
+
+// const miningTabOptions: SelectOption[] = [
+//     { label: 'ECO', value: 'Eco', iconSrc: eco },
+//     { label: 'Ludicrous', value: 'Ludicrous', iconSrc: fire },
+//     { label: 'Custom', value: 'Custom', iconSrc: custom },
+// ];
+
+const getModeIcon = (modeType: MiningModeType) => {
+    switch (modeType) {
+        case MiningModeType.Eco:
+            return eco;
+        case MiningModeType.Ludicrous:
+            return fire;
+        case MiningModeType.Custom:
+            return custom;
+        case MiningModeType.User:
+            return custom;
+        default:
+            return custom;
+    }
+};
+
 const ModeSelect = memo(function ModeSelect({ variant = 'primary', isSync }: ModeSelectProps) {
     const { t } = useTranslation('common', { useSuspense: false });
-    const mode = useConfigMiningStore((s) => s.mode);
+
+    const selectedMiningMode = getSelectedMiningMode();
+    const miningModes = useConfigMiningStore((s) => s.mining_modes);
     const isCPUMining = useMiningMetricsStore((s) => s.cpu_mining_status.is_mining);
     const isGPUMining = useMiningMetricsStore((s) => s.gpu_mining_status.is_mining);
     const isHardwarePhaseFinished = useSetupStore((s) => s.hardwarePhaseFinished);
@@ -34,7 +59,6 @@ const ModeSelect = memo(function ModeSelect({ variant = 'primary', isSync }: Mod
     const isMining = isCPUMining || isGPUMining;
 
     const isMiningLoading = isMiningInitiated ? !isMining : isMining;
-    const custom_power_levels_enabled = useConfigUIStore((s) => s.custom_power_levels_enabled);
 
     const handleChange = useCallback(async (newMode: string) => {
         if (newMode === 'Custom') {
@@ -45,25 +69,20 @@ const ModeSelect = memo(function ModeSelect({ variant = 'primary', isSync }: Mod
             setDialogToShow('ludicrousConfirmation');
             return;
         }
-        await changeMiningMode({ mode: newMode as MiningModeType });
+        await selectMiningMode(newMode);
     }, []);
 
-    const tabOptions = useMemo(() => {
-        const tabs: SelectOption[] = [
-            { label: 'ECO', value: 'Eco', iconSrc: eco },
-            { label: 'Ludicrous', value: 'Ludicrous', iconSrc: fire },
-        ];
-
-        if (custom_power_levels_enabled) {
-            tabs.push({
-                label: 'Custom',
-                value: 'Custom',
-                iconSrc: custom,
-            });
-        }
-
-        return tabs;
-    }, [custom_power_levels_enabled]);
+    const miningTabOptions = useMemo(() => {
+        return Object.values(miningModes).map((mode) => {
+            const modeName = mode.mode_name;
+            const modeIcon = getModeIcon(mode.mode_type);
+            return {
+                label: modeName,
+                value: modeName,
+                iconSrc: modeIcon,
+            };
+        });
+    }, [miningModes]);
 
     const isMininimal = variant === 'minimal';
 
@@ -76,8 +95,8 @@ const ModeSelect = memo(function ModeSelect({ variant = 'primary', isSync }: Mod
                 (isMining && (isMiningLoading || !isMiningControlsEnabled))
             }
             onChange={handleChange}
-            selectedValue={mode}
-            options={tabOptions}
+            selectedValue={selectedMiningMode.mode_name}
+            options={miningTabOptions}
             forceHeight={21}
             variant={isMininimal ? 'minimal' : 'primary'}
             isSync={isSync}
@@ -88,7 +107,7 @@ const ModeSelect = memo(function ModeSelect({ variant = 'primary', isSync }: Mod
         return selectMarkup;
     }
 
-    const headerIcon = tabOptions.find((option) => option.value === mode)?.iconSrc;
+    const headerIcon = miningTabOptions.find((option) => option.value === selectedMiningMode.mode_name)?.iconSrc;
 
     return (
         <TileItem>

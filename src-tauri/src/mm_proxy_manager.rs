@@ -47,8 +47,6 @@ pub(crate) struct StartConfig {
     pub tari_address: TariAddress,
     pub base_node_grpc_address: String,
     pub coinbase_extra: String,
-    pub p2pool_enabled: bool,
-    pub p2pool_node_grpc_address: String,
     pub monero_nodes: Vec<String>,
     pub use_monero_fail: bool,
 }
@@ -58,9 +56,7 @@ impl StartConfig {
     fn override_by(&self, override_by: MergeMiningProxyConfig) -> Self {
         let cloned = self.clone();
         Self {
-            p2pool_enabled: override_by.p2pool_enabled,
             base_node_grpc_address: override_by.base_node_grpc_address,
-            p2pool_node_grpc_address: override_by.p2pool_node_grpc_address,
             coinbase_extra: override_by.coinbase_extra,
             tari_address: override_by.tari_address,
             use_monero_fail: override_by.use_monero_fail,
@@ -114,9 +110,7 @@ impl MmProxyManager {
             tari_address: config.tari_address.clone(),
             base_node_grpc_address: config.base_node_grpc_address.clone(),
             coinbase_extra: config.coinbase_extra.clone(),
-            p2pool_enabled: config.p2pool_enabled,
             port: PortAllocator::new().assign_port_with_fallback(),
-            p2pool_node_grpc_address: config.p2pool_node_grpc_address,
             monero_nodes: config.monero_nodes.clone(),
             use_monero_fail: config.use_monero_fail,
         };

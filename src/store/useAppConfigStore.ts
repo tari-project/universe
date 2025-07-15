@@ -1,5 +1,13 @@
 import { create } from 'zustand';
-import { ConfigBackendInMemory, ConfigCore, ConfigMining, ConfigUI, ConfigWallet } from '@app/types/configs';
+import {
+    ConfigBackendInMemory,
+    ConfigCore,
+    ConfigMining,
+    ConfigPools,
+    ConfigUI,
+    ConfigWallet,
+} from '@app/types/configs';
+import { WalletUIMode } from '@app/types/events-payloads';
 
 type UIConfigStoreState = ConfigUI & {
     visualModeToggleLoading: boolean;
@@ -34,21 +42,11 @@ const configWalletInitialState: ConfigWallet = {
 const configMininigInitialState: ConfigMining = {
     created_at: '',
     cpu_mining_enabled: true,
-    custom_max_cpu_usage: 2,
-    custom_mode_cpu_options: [],
-    custom_max_gpu_usage: [],
-    eco_mode_cpu_threads: 0,
-    eco_mode_cpu_options: [],
-    eco_mode_max_cpu_usage: 2,
-    eco_mode_max_gpu_usage: [],
     gpu_engine: '',
     gpu_mining_enabled: true,
-    ludicrous_mode_cpu_threads: 0,
-    ludicrous_mode_cpu_options: [],
-    ludicrous_mode_max_cpu_usage: 2,
-    ludicrous_mode_max_gpu_usage: [],
     mine_on_app_start: false,
-    mode: 'Eco',
+    mining_modes: {},
+    selected_mining_mode: 'Eco',
     mining_time: 0,
 };
 
@@ -56,7 +54,6 @@ const configUIInitialState: UIConfigStoreState = {
     visualModeToggleLoading: false,
     created_at: '',
     application_language: 'en',
-    custom_power_levels_enabled: true,
     display_mode: 'system',
     has_system_language_been_proposed: false,
     paper_wallet_enabled: true,
@@ -65,6 +62,15 @@ const configUIInitialState: UIConfigStoreState = {
     should_always_use_system_language: false,
     visual_mode: true,
     warmup_seen: null,
+    wallet_ui_mode: WalletUIMode.Standard,
+    was_staged_security_modal_shown: false,
+};
+
+const configPoolsInitialState: ConfigPools = {
+    was_config_migrated: false,
+    created_at: '',
+    cpu_pool_enabled: false,
+    gpu_pool_enabled: false,
 };
 
 const configBEInMemoryInitialState: ConfigBackendInMemory = {
@@ -89,6 +95,10 @@ export const useConfigMiningStore = create<ConfigMining>()(() => ({
 
 export const useConfigUIStore = create<UIConfigStoreState>()(() => ({
     ...configUIInitialState,
+}));
+
+export const useConfigPoolsStore = create<ConfigPools>()(() => ({
+    ...configPoolsInitialState,
 }));
 
 export const useConfigBEInMemoryStore = create<ConfigBackendInMemory>()(() => ({

@@ -15,11 +15,11 @@
   "control-port": "Control Port",
   "cpu-mining-enabled": "CPU Mining",
   "custom-power-levels": {
-    "choose-cpu-power-level": "Choose how much you want your CPU to be allocated to mining <span>({{current}} out of {{max}} cores)</span>",
-    "choose-gpu-power-level": "Choose how much you want your GPU to be allocated to mining <span>({{current}} out of {{max}} threads)</span>",
-    "cpu-power-level": "CPU Cores",
+    "choose-cpu-power-level": "Choose how big of a percentage you want your CPU to be allocated to mining",
+    "choose-gpu-power-level": "Choose how big of a percentage you want your GPU to be allocated to mining",
+    "cpu-power-level": "CPU Power %",
     "cpu-warning": "Sustained high CPU usage may cause overheating, and hardware failure.",
-    "gpu-power-level": "GPU Power",
+    "gpu-power-level": "GPU Power %",
     "gpu-warning": "Sustained high GPU usage may cause overheating, and hardware failure.",
     "save-changes": "Save Changes",
     "saved": "Applying Changes",
@@ -50,6 +50,7 @@
     "placeholder": "Enter idle timeout in seconds",
     "title": "Time after which mdchine is considered idle"
   },
+  "import-seed-success": "Seed words imported successfully",
   "importing-wallet": "Importing wallet",
   "importing-wallet-copy": "Tari Universe will restart automatically once your wallet has been imported",
   "invalid-seed-words": "Enter 24 words separated by spaces",
@@ -96,6 +97,7 @@
     "load-qr-code": "Load QR code",
     "passphrase": "Passphrase"
   },
+  "pin": "Pin",
   "pool-mining": "Pool Mining",
   "pool-mining-description": "When enabled, you will mine in a pool and join a group of miners.",
   "pre-release": {
@@ -129,6 +131,7 @@
   "send-logs": "Submit an Issue & Logs",
   "set-dynamic-fail-data": "Set custom urls for monero nodes",
   "settings": "Settings",
+  "setup-pin": "Setup Universe Security PIN",
   "setup-tor-settings": "Setup Tor Settings for Privacy Control and Connectivity",
   "sha-network-hash-rate": "Sha3 network hashrate",
   "should-auto-start": {
@@ -145,6 +148,7 @@
     "general": "General",
     "mining": "Mining",
     "p2p": "Pool Mining",
+    "pools": "Mining Pools",
     "releaseNotes": "Release Notes",
     "very_experimental": "Very Experimental",
     "wallet": "Wallet"

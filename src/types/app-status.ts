@@ -4,45 +4,6 @@ export interface TorConfig {
     bridges: string[];
 }
 
-// export interface AppConfig {
-//     allow_telemetry: boolean;
-//     anon_id: string;
-//     application_language: Language;
-//     auto_update: boolean;
-//     config_file?: string;
-//     config_version: number;
-//     cpu_mining_enabled: boolean;
-//     custom_max_cpu_usage: number;
-//     custom_max_gpu_usage: GpuThreads[];
-//     custom_power_levels_enabled: boolean;
-//     display_mode: displayMode;
-//     gpu_mining_enabled: boolean;
-//     has_system_language_been_proposed: boolean;
-//     last_binaries_update_timestamp: string;
-//     mine_on_app_start: boolean;
-//     mmproxy_monero_nodes: string[];
-//     mmproxy_use_monero_fail: boolean;
-//     mode: modeType;
-//     monero_address: string;
-//     p2pool_enabled: boolean;
-//     paper_wallet_enabled: boolean;
-//     sharing_enabled: boolean;
-//     should_always_use_system_language: boolean;
-//     should_auto_launch: boolean;
-//     use_tor: boolean;
-//     visual_mode: boolean;
-//     window_settings: WindowSettings;
-//     show_experimental_settings: boolean;
-//     monero_address_is_generated?: boolean;
-//     created_at: string;
-//     p2pool_stats_server_port: number | null;
-//     pre_release: boolean;
-//     airdrop_tokens?: {
-//         token: string;
-//         refreshToken: string;
-//     };
-// }
-
 export enum ExternalDependencyStatus {
     Installed = 'Installed',
     NotInstalled = 'NotInstalled',
@@ -62,11 +23,6 @@ export interface ExternalDependency {
     version?: string;
     manufacturer: Manufacturer;
     status: ExternalDependencyStatus;
-}
-
-export interface WalletAddress {
-    tari_address_base58: string;
-    tari_address_emoji: string;
 }
 
 export interface TransactionInfo {
@@ -178,10 +134,9 @@ export interface CpuMinerStatus {
     hash_rate: number;
     estimated_earnings: number;
     connection: CpuMinerConnectionStatus;
-    pool_status?: PoolStatus;
 }
 
-export interface PoolStatus {
+export interface PoolStats {
     accepted_shares: number;
     unpaid: number;
     balance: number;
@@ -236,15 +191,6 @@ export interface ApplicationsVersions {
 export interface PaperWalletDetails {
     qr_link: string;
     password: string;
-}
-
-export interface GpuThreads {
-    gpu_name: string;
-    max_gpu_threads: number;
-}
-export interface MaxConsumptionLevels {
-    max_cpu_threads: number;
-    max_gpus_threads: GpuThreads[];
 }
 
 export interface NetworkStatus {

@@ -34,7 +34,6 @@ use tokio::select;
 use tokio::sync::{watch, RwLock};
 
 use crate::binaries::{Binaries, BinaryResolver};
-use crate::configs::config_mining::{GpuThreads, MiningMode};
 use crate::events_emitter::EventsEmitter;
 use crate::gpu_miner_adapter::GpuNodeSource;
 use crate::gpu_status_file::{GpuDevice, GpuStatusFile};
@@ -83,7 +82,9 @@ pub(crate) struct GpuMiner {
     is_available: bool,
     gpu_devices: Vec<GpuDevice>,
     curent_selected_engine: EngineType,
+    #[allow(dead_code)]
     node_status_watch_rx: watch::Receiver<BaseNodeStatus>,
+    #[allow(dead_code)]
     gpu_raw_status_rx: watch::Receiver<Option<GpuMinerStatus>>,
     status_broadcast: watch::Sender<GpuMinerStatus>,
 }
@@ -119,9 +120,8 @@ impl GpuMiner {
         base_path: PathBuf,
         config_path: PathBuf,
         log_path: PathBuf,
-        mining_mode: MiningMode,
         coinbase_extra: String,
-        custom_gpu_grid_size: Vec<GpuThreads>,
+        gpu_usage_percentage: u32,
     ) -> Result<(), anyhow::Error> {
         let shutdown_signal = TasksTrackers::current().hardware_phase.get_signal().await;
         let task_tracker = TasksTrackers::current()
@@ -129,14 +129,15 @@ impl GpuMiner {
             .get_task_tracker()
             .await;
 
-        let mut process_watcher = self.watcher.write().await;
+        let mut process_watcher: tokio::sync::RwLockWriteGuard<
+            '_,
+            ProcessWatcher<GpuMinerAdapter>,
+        > = self.watcher.write().await;
         process_watcher.adapter.tari_address = tari_address;
         process_watcher.adapter.gpu_devices = self.gpu_devices.clone();
-        process_watcher
-            .adapter
-            .set_mode(mining_mode, custom_gpu_grid_size);
         process_watcher.adapter.node_source = Some(node_source);
         process_watcher.adapter.coinbase_extra = coinbase_extra;
+        process_watcher.adapter.gpu_usage_percentage = gpu_usage_percentage;
         info!(target: LOG_TARGET, "Starting xtrgpuminer");
         process_watcher
             .start(
@@ -167,10 +168,6 @@ impl GpuMiner {
         Ok(())
     }
 
-    pub async fn is_running(&self) -> bool {
-        let process_watcher = self.watcher.read().await;
-        process_watcher.is_running()
-    }
     #[allow(dead_code)]
     pub async fn is_pid_file_exists(&self, base_path: PathBuf) -> bool {
         let lock = self.watcher.read().await;
@@ -378,6 +375,7 @@ impl GpuMiner {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub async fn get_gpu_devices(&self) -> Result<Vec<GpuDevice>, anyhow::Error> {
         Ok(self.gpu_devices.clone())
     }

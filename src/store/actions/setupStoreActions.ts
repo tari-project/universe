@@ -1,18 +1,11 @@
 import { loadTowerAnimation, setAnimationState } from '@tari-project/tari-tower';
 
 import { useSetupStore } from '../useSetupStore';
-import {
-    getMaxAvailableThreads,
-    startCpuMining,
-    startGpuMining,
-    stopCpuMining,
-    stopGpuMining,
-} from './miningStoreActions';
+import { startCpuMining, startGpuMining, stopCpuMining, stopGpuMining } from './miningStoreActions';
 import {
     fetchApplicationsVersionsWithRetry,
     fetchCoinbaseTransactions,
     fetchTransactionsHistory,
-    TOWER_CANVAS_ID,
     useConfigMiningStore,
     useConfigUIStore,
     useMiningStore,
@@ -22,7 +15,8 @@ import {
 import { ProgressTrackerUpdatePayload } from '@app/hooks/app/useProgressEventsListener';
 
 import { fetchBridgeTransactionsHistory } from './walletStoreActions';
-import { SetupPhase } from '@app/types/backend-state';
+import { TOWER_CANVAS_ID } from '../types/ui';
+import { SetupPhase } from '@app/types/events-payloads';
 
 export interface DisabledPhasesPayload {
     disabled_phases: SetupPhase[];
@@ -122,7 +116,6 @@ export const handleGpuMiningLocked = async () => {
 };
 
 export const handleHardwarePhaseFinished = async () => {
-    await getMaxAvailableThreads();
     useSetupStore.setState({ hardwarePhaseFinished: true });
 };
 

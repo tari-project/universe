@@ -1,13 +1,10 @@
 import { BaseNodeStatus, CpuMinerStatus, GpuDevice, GpuMinerStatus } from '@app/types/app-status.ts';
 import { setGpuMiningEnabled } from './appConfigStoreActions';
-import {
-    useBlockchainVisualisationStore,
-    useConfigMiningStore,
-    useMiningMetricsStore,
-    useMiningStore,
-    useWalletStore,
-} from '../';
+import { useConfigMiningStore } from '../useAppConfigStore.ts';
 import { setAnimationState } from '@tari-project/tari-tower';
+import { useSetupStore } from '@app/store/useSetupStore.ts';
+import { useMiningMetricsStore } from '../useMiningMetricsStore.ts';
+import { useMiningStore } from '../useMiningStore.ts';
 
 export const setGpuDevices = (gpu_devices: GpuDevice[]) => {
     useMiningMetricsStore.setState({ gpu_devices });
@@ -25,21 +22,17 @@ export const setGpuMiningStatus = (gpu_mining_status: GpuMinerStatus) => {
     useMiningMetricsStore.setState({ gpu_mining_status });
 };
 export const setCpuMiningStatus = (cpu_mining_status: CpuMinerStatus) => {
-    useMiningMetricsStore.setState((current) => {
-        const updatedPoolStatus = cpu_mining_status.pool_status ?? current.cpu_mining_status.pool_status;
-        return {
-            cpu_mining_status: { ...cpu_mining_status, pool_status: updatedPoolStatus },
-        };
-    });
+    useMiningMetricsStore.setState({ cpu_mining_status });
 };
 
-export const setPoolStatus = (pool_status: CpuMinerStatus['pool_status']) => {
-    useMiningMetricsStore.setState((current) => ({ cpu_mining_status: { ...current.cpu_mining_status, pool_status } }));
-};
 export const handleConnectedPeersUpdate = (connected_peers: string[]) => {
     const wasNodeConnected = useMiningMetricsStore.getState().isNodeConnected;
     const isNodeConnected = connected_peers?.length > 0;
     useMiningMetricsStore.setState({ connected_peers, isNodeConnected });
+
+    if (isNodeConnected && !useSetupStore.getState().appUnlocked) {
+        useSetupStore.setState({ appUnlocked: true });
+    }
 
     const miningInitiated =
         useMiningStore.getState().isCpuMiningInitiated || useMiningStore.getState().isGpuMiningInitiated;
@@ -55,14 +48,6 @@ export const handleConnectedPeersUpdate = (connected_peers: string[]) => {
     }
 };
 export const handleBaseNodeStatusUpdate = (base_node_status: BaseNodeStatus) => {
-    const displayBlockHeight = useBlockchainVisualisationStore.getState().displayBlockHeight;
-    const setDisplayBlockHeight = useBlockchainVisualisationStore.getState().setDisplayBlockHeight;
-    const isWalletScanning = useWalletStore.getState()?.wallet_scanning?.is_scanning;
-
-    if (base_node_status.block_height && (!displayBlockHeight || isWalletScanning)) {
-        // setting here before wallet initial scan, later updates via new block height handlers only
-        setDisplayBlockHeight(base_node_status.block_height);
-    }
     useMiningMetricsStore.setState({ base_node_status });
 };
 export const handleMiningModeChange = () => {

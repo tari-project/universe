@@ -14,10 +14,10 @@ export function useGetSeedWords(args?: Arguments) {
 
     const getSeedWords = useCallback(async () => {
         setSeedWordsFetching(true);
+
         const commandName = fetchMoneroSeeds ? 'get_monero_seed_words' : 'get_seed_words';
         try {
             const seedWords: string[] = await invoke(commandName);
-
             if (seedWords.length) {
                 hasFetched.current = true;
                 setSeedWords(seedWords);
@@ -25,10 +25,11 @@ export function useGetSeedWords(args?: Arguments) {
             }
         } catch (e) {
             const errorMessage = e as unknown as string;
-            if (errorMessage && errorMessage.includes('Keychain access')) {
+            if (errorMessage !== 'PIN entry cancelled') {
                 setError(errorMessage);
             }
             console.error('Could not get seed words', e);
+            return [];
         } finally {
             setSeedWordsFetching(false);
         }
@@ -37,6 +38,7 @@ export function useGetSeedWords(args?: Arguments) {
     return {
         seedWords,
         getSeedWords,
+        setSeedWords,
         seedWordsFetched: hasFetched.current,
         seedWordsFetching,
     };

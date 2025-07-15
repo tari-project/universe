@@ -27,11 +27,10 @@ use crate::app_in_memory_config::AppInMemoryConfig;
 use crate::commands::CpuMinerStatus;
 use crate::configs::config_core::ConfigCore;
 use crate::configs::config_mining::ConfigMining;
-use crate::configs::config_mining::MiningMode;
-use crate::configs::config_wallet::ConfigWallet;
 use crate::configs::trait_config::ConfigImpl;
 use crate::gpu_miner_adapter::GpuMinerStatus;
 use crate::hardware::hardware_status_monitor::HardwareStatusMonitor;
+use crate::internal_wallet::InternalWallet;
 use crate::node::node_adapter::BaseNodeStatus;
 use crate::node::node_manager::NodeManager;
 use crate::p2pool::models::P2poolStats;
@@ -60,6 +59,7 @@ use tari_common::configuration::Network;
 use tari_shutdown::ShutdownSignal;
 use tari_utilities::encoding::MBase58;
 use tauri::Emitter;
+use tauri::Manager;
 use tokio::sync::{watch, RwLock};
 use tokio::time::interval;
 
@@ -129,24 +129,6 @@ impl From<Network> for TelemetryNetwork {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
-#[serde(rename_all = "lowercase")]
-pub enum TelemetryMiningMode {
-    Eco,
-    Ludicrous,
-    Custom,
-}
-
-impl From<MiningMode> for TelemetryMiningMode {
-    fn from(value: MiningMode) -> Self {
-        match value {
-            MiningMode::Eco => TelemetryMiningMode::Eco,
-            MiningMode::Ludicrous => TelemetryMiningMode::Ludicrous,
-            MiningMode::Custom => TelemetryMiningMode::Custom,
-        }
-    }
-}
-
-#[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 struct UserPoints {
     pub gems: f64,
@@ -191,7 +173,7 @@ pub struct TelemetryData {
     pub gpu_hash_rate: Option<f64>,
     pub gpu_utilization: Option<f32>,
     pub gpu_make: Option<String>,
-    pub mode: TelemetryMiningMode,
+    pub mode: String,
     pub version: String,
     pub p2pool_enabled: bool,
     pub cpu_tribe_name: Option<String>,
@@ -533,15 +515,15 @@ async fn get_telemetry_data_inner(
     );
 
     // Add payment ID from current tari address
-    let tari_address = ConfigWallet::content().await.tari_address().clone();
-    if let Some(tari_address) = tari_address {
-        let address_str = tari_address.to_base58();
-        if let Ok(Some(payment_id)) = extract_payment_id(&address_str) {
-            extra_data.insert("mining_address_payment_id".to_string(), payment_id);
+    if InternalWallet::is_initialized() {
+        if let Some(_state) = app_handle.try_state::<crate::UniverseAppState>() {
+            let tari_address = InternalWallet::tari_address().await;
+            if let Ok(Some(payment_id)) = extract_payment_id(&tari_address.to_base58()) {
+                extra_data.insert("mining_address_payment_id".to_string(), payment_id);
+            }
+            // Note: If no payment ID, we don't add the field (saves space vs empty string)
         }
-        // Note: If no payment ID, we don't add the field (saves space vs empty string)
     }
-
     let mut squad = None;
     if let Some(stats) = p2pool_stats.as_ref() {
         extra_data.insert(
@@ -708,7 +690,10 @@ async fn get_telemetry_data_inner(
         block_height,
         is_mining_active,
         network: network.map(|n| n.into()),
-        mode: (*mining_config.mode()).into(),
+        mode: mining_config
+            .selected_mining_mode()
+            .to_string()
+            .to_lowercase(),
         cpu_hash_rate,
         cpu_utilization,
         cpu_make,

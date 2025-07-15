@@ -4,6 +4,7 @@ import AnimatedBackground from './components/AnimatedBackground/AnimatedBackgrou
 import { useTranslation } from 'react-i18next';
 import { useConfigMiningStore } from '@app/store';
 import { AnimatePresence } from 'motion/react';
+import { getSelectedMiningMode } from '@app/store/actions/appConfigStoreActions';
 
 interface Props {
     onClick: () => void;
@@ -15,14 +16,14 @@ interface Props {
 
 export default function MiningButton({ onClick, buttonText, icon, isMining, disabled = false }: Props) {
     const { t } = useTranslation('mining-view');
-    const selectedMode = useConfigMiningStore((s) => s.mode);
+    const selectedMiningMode = getSelectedMiningMode();
 
     return (
         <ButtonWrapper
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            $selectedMode={selectedMode}
+            $selectedMode={selectedMiningMode.mode_type}
             $disabled={disabled}
         >
             <HitBox onClick={onClick} disabled={disabled}>

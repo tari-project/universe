@@ -34,6 +34,10 @@ use super::{
 };
 use crate::app_in_memory_config::{MinerType, DEFAULT_EXCHANGE_ID};
 use crate::configs::config_core::ConfigCoreContent;
+use crate::configs::config_pools::ConfigPools;
+use crate::configs::config_ui::WalletUIMode;
+use crate::events::CriticalProblemPayload;
+use crate::internal_wallet::InternalWallet;
 use crate::{
     configs::{
         config_core::ConfigCore, config_mining::ConfigMining, config_ui::ConfigUI,
@@ -274,20 +278,15 @@ impl SetupManager {
         ConfigMining::initialize(app_handle.clone()).await;
         ConfigUI::initialize(app_handle.clone()).await;
 
-        let build_in_exchange_id = in_memory_config.read().await.exchange_id.clone();
-        let is_on_exchange_miner_build =
-            MinerType::from_str(&build_in_exchange_id).is_exchange_mode();
         let node_type = ConfigCore::content().await.node_type().clone();
         info!(target: LOG_TARGET, "Retrieved initial node type: {node_type:?}");
         state.node_manager.set_node_type(node_type).await;
         EventsManager::handle_node_type_update(&app_handle).await;
 
+        let build_in_exchange_id = in_memory_config.read().await.exchange_id.clone();
+        let is_on_exchange_miner_build =
+            MinerType::from_str(&build_in_exchange_id).is_exchange_mode();
         let last_config_exchange_id = ConfigCore::content().await.exchange_id().clone();
-
-        let does_not_have_external_tari_address = ConfigWallet::content()
-            .await
-            .external_tari_address()
-            .is_none();
 
         if is_on_exchange_miner_build {
             let _unused = ConfigCore::update_field(
@@ -295,13 +294,71 @@ impl SetupManager {
                 build_in_exchange_id.clone(),
             )
             .await;
-            EventsEmitter::emit_exchange_id_changed(build_in_exchange_id.clone()).await;
         }
+
+        EventsEmitter::emit_core_config_loaded(&ConfigCore::content().await).await;
+        EventsEmitter::emit_mining_config_loaded(&ConfigMining::content().await).await;
+        EventsEmitter::emit_ui_config_loaded(&ConfigUI::content().await).await;
+
+        let is_on_exchange_specific_variant = ConfigCore::content()
+            .await
+            .is_on_exchange_specific_variant();
+        let is_external_address_selected = ConfigWallet::content()
+            .await
+            .selected_external_tari_address()
+            .is_some();
+        // Default app variant (when build in exchange ID is DEFAULT_EXCHANGE_ID) can have either seedless wallet or standard wallet
+
+        // If there is exchange id set in config_core that is different from DEFAULT_EXCHANGE_ID and external address is provided we want to display seedless wallet UI
+        // This can happen when user was using dedicated exchange miner build before and now is using default app variant
+        // Or user selected exchange on default app variant and reopened the app
+        // In other cases we want to display standard wallet UI
+        if build_in_exchange_id.eq(DEFAULT_EXCHANGE_ID) {
+            if is_external_address_selected && is_on_exchange_specific_variant {
+                let _unused = ConfigUI::set_wallet_ui_mode(WalletUIMode::Seedless).await;
+                if let Err(e) = InternalWallet::initialize_seedless(&app_handle, None).await {
+                    EventsEmitter::emit_critical_problem(CriticalProblemPayload {
+                        title: Some("Wallet not initialized!".to_string()),
+                        description: Some(
+                            "Encountered an error while initializing the wallet.".to_string(),
+                        ),
+                        error_message: Some(e.to_string()),
+                    })
+                    .await;
+                }
+            } else {
+                let _unused = ConfigUI::set_wallet_ui_mode(WalletUIMode::Standard).await;
+                match InternalWallet::initialize_with_seed(&app_handle).await {
+                    Ok(()) => {
+                        if let Err(e) = ConfigWallet::migrate().await {
+                            EventsEmitter::emit_critical_problem(CriticalProblemPayload {
+                                title: Some("Wallet migration failed!".to_string()),
+                                description: Some(
+                                    "Encountered an error while migrating the wallet.".to_string(),
+                                ),
+                                error_message: Some(e.to_string()),
+                            })
+                            .await
+                        }
+                    }
+                    Err(e) => {
+                        // Handle this as critical error
+                        error!(target: LOG_TARGET, "Error loading internal wallet: {e:?}");
+                    }
+                };
+            }
+        }
+
+        ConfigPools::initialize(app_handle.clone()).await;
+
+        // Trigger it here so we can update UI when new wallet is created
+        // We should probably change events to be loaded from internal wallet directly
+        EventsEmitter::emit_wallet_config_loaded(&ConfigWallet::content().await).await;
 
         // If we open different specific exchange miner build then previous one we always want to prompt user to provide tari address
         if is_on_exchange_miner_build
             && build_in_exchange_id.ne(&last_config_exchange_id)
-            && !does_not_have_external_tari_address
+            && !is_external_address_selected
         {
             info!(target: LOG_TARGET, "Exchange ID changed from {last_config_exchange_id} to {build_in_exchange_id}");
             self.exchange_modal_status
@@ -310,7 +367,7 @@ impl SetupManager {
         }
 
         // If we are on exchange miner build we require external tari address to be set
-        if is_on_exchange_miner_build && does_not_have_external_tari_address {
+        if is_on_exchange_miner_build && !is_external_address_selected {
             self.exchange_modal_status
                 .send_replace(ExchangeModalStatus::WaitForCompletion);
             EventsEmitter::emit_should_show_exchange_miner_modal().await;
@@ -321,17 +378,6 @@ impl SetupManager {
 
     pub async fn resolve_setup_features(&self) -> Result<(), anyhow::Error> {
         let mut features = self.features.write().await;
-        let cpu_mining_pool_url = ConfigMining::content().await.cpu_mining_pool_url().clone();
-        let cpu_mining_pool_status_url = ConfigMining::content()
-            .await
-            .cpu_mining_pool_status_url()
-            .clone();
-        let is_cpu_mining_enabled = *ConfigMining::content().await.cpu_mining_enabled();
-
-        let external_tari_address = ConfigWallet::content()
-            .await
-            .external_tari_address()
-            .clone();
 
         info!(target: LOG_TARGET, "Resolving setup features");
         // clear existing features
@@ -340,15 +386,23 @@ impl SetupManager {
         let exchange_id = ConfigCore::content().await.exchange_id().clone();
         let is_exchange_miner_build = exchange_id.ne(DEFAULT_EXCHANGE_ID);
 
-        // Centralized Pool feature
-        if cpu_mining_pool_url.is_some()
-            && cpu_mining_pool_status_url.is_some()
-            && is_cpu_mining_enabled
-        {
-            info!(target: LOG_TARGET, "Centralized pool feature enabled");
-            features.add_feature(SetupFeature::CentralizedPool);
+        let is_cpu_pool_enabled = *ConfigPools::content().await.cpu_pool_enabled();
+        let is_gpu_pool_enabled = *ConfigPools::content().await.gpu_pool_enabled();
+
+        if is_cpu_pool_enabled {
+            info!(target: LOG_TARGET, "Cpu Pool feature enabled");
+            features.add_feature(SetupFeature::CpuPool);
         }
 
+        if is_gpu_pool_enabled {
+            info!(target: LOG_TARGET, "Gpu Pool feature enabled");
+            features.add_feature(SetupFeature::GpuPool);
+        }
+
+        let external_tari_address = ConfigWallet::content()
+            .await
+            .selected_external_tari_address()
+            .clone();
         // Seedless Wallet feature
         if external_tari_address.is_some() || is_exchange_miner_build {
             info!(target: LOG_TARGET, "Seedless wallet feature enabled");

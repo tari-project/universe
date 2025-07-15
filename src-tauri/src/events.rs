@@ -28,6 +28,7 @@ use std::{
 
 use crate::{
     gpu_status_file::GpuDevice,
+    internal_wallet::TariAddressType,
     node::{node_adapter::NodeIdentity, node_manager::NodeType},
     setup::setup_manager::SetupPhase,
     wallet_adapter::{TransactionInfo, WalletBalance},
@@ -38,7 +39,8 @@ pub enum EventType {
     WalletBalanceUpdate,
     BaseNodeUpdate,
     GpuDevicesUpdate,
-    PoolStatusUpdate,
+    CpuPoolStatsUpdate,
+    GpuPoolStatsUpdate,
     CpuMiningUpdate,
     GpuMiningUpdate,
     ConnectedPeersUpdate,
@@ -72,6 +74,7 @@ pub enum EventType {
     ConfigUILoaded,
     ConfigWalletLoaded,
     ConfigMiningLoaded,
+    ConfigPoolsLoaded,
     BackgroundNodeSyncUpdate,
     InitWalletScanningProgress,
     ConnectionStatus,
@@ -79,9 +82,12 @@ pub enum EventType {
     MiningTime,
     ExchangeIdChanged,
     DisabledPhases,
-    ExternalTariAddressChanged,
     ShouldShowExchangeMinerModal,
-    BaseTariAddressChanged,
+    SelectedTariAddressChanged,
+    WalletUIModeChanged,
+    ShowKeyringDialog,
+    CreatePin,
+    EnterPin,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -190,4 +196,8 @@ pub struct DisabledPhasesPayload {
 pub struct TariAddressUpdatePayload {
     pub tari_address_base58: String,
     pub tari_address_emoji: String,
+    pub tari_address_type: TariAddressType,
 }
+
+#[derive(Clone, Debug, Serialize)]
+pub struct ConfigPoolsContentLoadedPayload {}

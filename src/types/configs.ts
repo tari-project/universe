@@ -1,6 +1,5 @@
-import { MiningModeType } from '@app/store';
-import { GpuThreads } from './app-status';
 import { NodeType } from '@app/store/useNodeStore';
+import { WalletUIMode } from './events-payloads';
 
 export interface ConfigCore {
     created_at: string;
@@ -38,31 +37,68 @@ export interface ConfigUI {
     should_always_use_system_language: boolean;
     application_language: string;
     paper_wallet_enabled: boolean;
-    custom_power_levels_enabled: boolean;
     sharing_enabled: boolean;
     visual_mode: boolean;
     show_experimental_settings: boolean;
     warmup_seen: boolean | null;
+    wallet_ui_mode: WalletUIMode;
+    was_staged_security_modal_shown: boolean;
 }
+
 export interface ConfigMining {
     created_at: string;
-    mode: MiningModeType;
-    eco_mode_cpu_threads: number;
     mine_on_app_start: boolean;
-    ludicrous_mode_cpu_threads: number;
-    eco_mode_cpu_options: string[];
-    eco_mode_max_cpu_usage: number;
-    eco_mode_max_gpu_usage: GpuThreads[];
-    ludicrous_mode_max_gpu_usage: GpuThreads[];
-    ludicrous_mode_cpu_options: string[];
-    ludicrous_mode_max_cpu_usage: number;
-    custom_mode_cpu_options: string[];
-    custom_max_cpu_usage: number;
-    custom_max_gpu_usage: GpuThreads[];
+    selected_mining_mode: string;
     gpu_mining_enabled: boolean;
+    mining_modes: Record<string, MiningMode>;
     cpu_mining_enabled: boolean;
     gpu_engine: string;
     mining_time: number;
+}
+
+export enum MiningModeType {
+    Eco = 'Eco',
+    Custom = 'Custom',
+    Ludicrous = 'Ludicrous',
+    User = 'User',
+}
+
+export interface MiningMode {
+    mode_type: MiningModeType;
+    mode_name: string;
+    cpu_usage_percentage: number;
+    gpu_usage_percentage: number;
+}
+export interface ConfigPools {
+    was_config_migrated: boolean;
+    created_at: string;
+    gpu_pool_enabled: boolean;
+    gpu_pool?: { [GpuPools.LuckyPool]: BasePoolData } | { [GpuPools.SupportXTMPool]: BasePoolData };
+    cpu_pool_enabled: boolean;
+    cpu_pool?: { [CpuPools.GlobalTariPool]: BasePoolData };
+}
+
+export enum GpuPools {
+    LuckyPool = 'LuckyPool',
+    SupportXTMPool = 'SupportXTMPool',
+}
+
+export enum CpuPools {
+    GlobalTariPool = 'GlobalTariPool',
+}
+
+export interface BasePoolData {
+    pool_url: string;
+    stats_url: string;
+    pool_name: string;
+}
+export interface ConfigPools {
+    was_config_migrated: boolean;
+    created_at: string;
+    gpu_pool_enabled: boolean;
+    gpu_pool?: { [GpuPools.LuckyPool]: BasePoolData } | { [GpuPools.SupportXTMPool]: BasePoolData };
+    cpu_pool_enabled: boolean;
+    cpu_pool?: { [CpuPools.GlobalTariPool]: BasePoolData };
 }
 
 export interface ConfigBackendInMemory {

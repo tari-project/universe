@@ -16,9 +16,9 @@
   "control-port": "Port kontrolny",
   "cpu-mining-enabled": "Wydobycie CPU",
   "custom-power-levels": {
-    "choose-cpu-power-level": "Wybierz, ile mocy CPU chcesz przeznaczyć na kopanie <span>({{current}} z {{max}} rdzeni)</span>",
-    "choose-gpu-power-level": "Wybierz, ile mocy GPU chcesz przeznaczyć na kopanie <span>({{current}} z {{max}} wątków)</span>",
-    "cpu-power-level": "Rdzenie CPU",
+    "choose-cpu-power-level": "Wybierz, ile procent mocy CPU chcesz przeznaczyć na kopanie",
+    "choose-gpu-power-level": "Wybierz, ile procent mocy GPU chcesz przeznaczyć na kopanie",
+    "cpu-power-level": "Moc CPU %",
     "cpu-warning": "Wysokie zużycie CPU może powodować przegrzewanie, zwiększać zużycie energii i prowadzić do uszkodzenia sprzętu z czasem. Proszę monitorować zużycie, aby zapewnić bezpieczną i efektywną pracę.",
     "gpu-power-level": "Moc GPU %",
     "gpu-warning": "Wysokie zużycie GPU może powodować przegrzewanie, zwiększać zużycie energii i prowadzić do uszkodzenia sprzętu z czasem. Proszę monitorować zużycie, aby zapewnić bezpieczną i efektywną pracę.",
@@ -51,6 +51,7 @@
     "placeholder": "Wprowadź czas bezczynności w sekundach",
     "title": "Czas po którym urządzenie jest uważane za bezczynne"
   },
+  "import-seed-success": "Seed words imported successfully",
   "importing-wallet": "Importowanie portfela",
   "importing-wallet-copy": "Tari Universe uruchomi się ponownie automatycznie po zaimportowaniu portfela",
   "invalid-seed-words": "Wprowadź 24 słowa oddzielone spacjami",
@@ -98,6 +99,7 @@
     "load-qr-code": "Załaduj kod QR",
     "passphrase": "Hasło"
   },
+  "pin": "Pin",
   "pool-mining": "Kopanie w puli",
   "pool-mining-description": "Po włączeniu tej opcji będziesz wydobywać w puli i dołączać do grupy górników (plemienia).",
   "pre-release": {
@@ -131,6 +133,7 @@
   "send-logs": "Wyślij logi",
   "set-dynamic-fail-data": "Ustaw niestandardowe adresy URL dla węzłów Monero",
   "settings": "Ustawienia",
+  "setup-pin": "Setup Universe Security PIN",
   "setup-tor-settings": "Skonfiguruj ustawienia Tor dla kontroli prywatności i łączności",
   "sha-network-hash-rate": "Hashrate sieci Sha3",
   "should-auto-start": {
@@ -147,6 +150,7 @@
     "general": "Ogólne",
     "mining": "Wydobycie",
     "p2p": "Kopanie w puli",
+    "pools": "Mining Pools",
     "releaseNotes": "Notatki o wydaniu",
     "very_experimental": "Bardzo Eksperymentalne",
     "wallet": "Portfel"

@@ -1,6 +1,3 @@
-use std::collections::HashMap;
-use std::sync::LazyLock;
-
 // Copyright 2024. The Tari Project
 //
 // Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -22,12 +19,14 @@ use std::sync::LazyLock;
 // SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+use crate::configs::config_ui::WalletUIMode;
 use crate::events::{
     ConnectionStatusPayload, CriticalProblemPayload, DisabledPhasesPayload,
     InitWalletScanningProgressPayload,
 };
 #[cfg(target_os = "windows")]
 use crate::external_dependencies::RequiredExternalDependency;
+use crate::internal_wallet::TariAddressType;
 use crate::pool_status_watcher::PoolStatus;
 use crate::{
     commands::CpuMinerStatus,
@@ -48,9 +47,13 @@ use crate::{
     BaseNodeStatus, GpuMinerStatus,
 };
 use log::error;
+use std::collections::HashMap;
+use std::sync::LazyLock;
 use tari_common_types::tari_address::TariAddress;
 use tauri::{AppHandle, Emitter};
 use tokio::sync::RwLock;
+
+use crate::configs::config_pools::ConfigPoolsContent;
 
 const LOG_TARGET: &str = "tari::universe::events_emitter";
 const BACKEND_STATE_UPDATE: &str = "backend_state_update";
@@ -140,7 +143,7 @@ impl EventsEmitter {
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit MissingApplications event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit MissingApplications event: {e:?}");
         }
     }
 
@@ -257,7 +260,7 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_core_config_loaded(payload: ConfigCoreContent) {
+    pub async fn emit_core_config_loaded(payload: &ConfigCoreContent) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::ConfigCoreLoaded,
@@ -271,7 +274,7 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_ui_config_loaded(payload: ConfigUIContent) {
+    pub async fn emit_ui_config_loaded(payload: &ConfigUIContent) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::ConfigUILoaded,
@@ -285,7 +288,7 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_wallet_config_loaded(payload: ConfigWalletContent) {
+    pub async fn emit_wallet_config_loaded(payload: &ConfigWalletContent) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
 
         let event = Event {
@@ -300,7 +303,7 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_mining_config_loaded(payload: ConfigMiningContent) {
+    pub async fn emit_mining_config_loaded(payload: &ConfigMiningContent) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::ConfigMiningLoaded,
@@ -311,6 +314,19 @@ impl EventsEmitter {
             .emit(BACKEND_STATE_UPDATE, event)
         {
             error!(target: LOG_TARGET, "Failed to emit MiningConfigLoaded event: {e:?}");
+        }
+    }
+    pub async fn emit_pools_config_loaded(payload: ConfigPoolsContent) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::ConfigPoolsLoaded,
+            payload,
+        };
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
+            error!(target: LOG_TARGET, "Failed to emit PoolsConfigLoaded event: {e:?}");
         }
     }
 
@@ -372,10 +388,10 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_pool_status_update(pool_status: Option<PoolStatus>) {
+    pub async fn emit_cpu_pool_status_update(pool_status: Option<PoolStatus>) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
-            event_type: EventType::PoolStatusUpdate,
+            event_type: EventType::CpuPoolStatsUpdate,
             payload: pool_status,
         };
         if let Err(e) = Self::get_app_handle()
@@ -385,6 +401,21 @@ impl EventsEmitter {
             error!(target: LOG_TARGET, "Failed to emit PoolStatusUpdate event: {e:?}");
         }
     }
+
+    pub async fn emit_gpu_pool_status_update(pool_status: Option<PoolStatus>) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::GpuPoolStatsUpdate,
+            payload: pool_status,
+        };
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
+            error!(target: LOG_TARGET, "Failed to emit GpuPoolStatusUpdate event: {e:?}");
+        }
+    }
+
     pub async fn emit_cpu_mining_update(status: CpuMinerStatus) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
@@ -719,40 +750,40 @@ impl EventsEmitter {
             error!(target: LOG_TARGET, "Failed to emit ExchangeIdChanged event: {e:?}");
         }
     }
-    pub async fn emit_external_tari_address_changed(payload: Option<TariAddress>) {
-        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
 
-        let resolved_payload: Option<TariAddressUpdatePayload> =
-            payload.as_ref().map(|address| TariAddressUpdatePayload {
-                tari_address_base58: address.to_base58(),
-                tari_address_emoji: address.to_emoji_string(),
-            });
-
-        let event = Event {
-            event_type: EventType::ExternalTariAddressChanged,
-            payload: resolved_payload,
-        };
-        if let Err(e) = Self::get_app_handle()
-            .await
-            .emit(BACKEND_STATE_UPDATE, event)
-        {
-            error!(target: LOG_TARGET, "Failed to emit ExternalTariAddressChanged event: {e:?}");
-        }
-    }
-    pub async fn emit_base_tari_address_changed(payload: TariAddress) {
+    pub async fn emit_selected_tari_address_changed(
+        tari_address: &TariAddress,
+        tari_address_type: TariAddressType,
+    ) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
-            event_type: EventType::BaseTariAddressChanged,
+            event_type: EventType::SelectedTariAddressChanged,
             payload: TariAddressUpdatePayload {
-                tari_address_base58: payload.to_base58(),
-                tari_address_emoji: payload.to_emoji_string(),
+                tari_address_type,
+                tari_address_base58: tari_address.to_base58(),
+                tari_address_emoji: tari_address.to_emoji_string(),
             },
         };
         if let Err(e) = Self::get_app_handle()
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit BaseTariAddressChanged event: {e:?}");
+            error!(target: LOG_TARGET, "Failed to emit SelectedTariAddressChanged event: {e:?}");
+        }
+    }
+
+    pub async fn emit_wallet_ui_mode_changed(payload: WalletUIMode) {
+        let _unused: Result<(), tokio::sync::watch::error::RecvError> =
+            FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::WalletUIModeChanged,
+            payload,
+        };
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
+            error!(target: LOG_TARGET, "Failed to emit WalletUIModeChanged event: {e:?}");
         }
     }
 
@@ -780,6 +811,48 @@ impl EventsEmitter {
             .emit(BACKEND_STATE_UPDATE, event)
         {
             error!(target: LOG_TARGET, "Failed to emit ShouldShowExchangeMinerModal event: {e:?}");
+        }
+    }
+
+    pub async fn emit_show_keyring_dialog() {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::ShowKeyringDialog,
+            payload: (),
+        };
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
+            error!(target: LOG_TARGET, "Failed to emit ShowKeyringDialog event: {e:?}");
+        }
+    }
+
+    pub async fn emit_set_pin() {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::CreatePin,
+            payload: (),
+        };
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
+            error!(target: LOG_TARGET, "Failed to emit CreatePin event: {e:?}");
+        }
+    }
+
+    pub async fn emit_ask_for_pin() {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::EnterPin,
+            payload: (),
+        };
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
+            error!(target: LOG_TARGET, "Failed to emit EnterPin event: {e:?}");
         }
     }
 }

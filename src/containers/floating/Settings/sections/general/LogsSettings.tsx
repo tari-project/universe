@@ -8,7 +8,7 @@ import { SendLogsDialog } from '@app/components/dialogs/SendLogsDialog.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
-import { useCopyToClipboard } from '@app/hooks';
+import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard.ts';
 import { useAppStateStore } from '@app/store/appStateStore.ts';
 
 import {

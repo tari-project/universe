@@ -15,9 +15,9 @@
   "control-port": "控制端口",
   "cpu-mining-enabled": "CPU 挖矿",
   "custom-power-levels": {
-    "choose-cpu-power-level": "选择您希望分配给挖矿的CPU数量 <span>（{{current}} / {{max}} 核心）</span>",
-    "choose-gpu-power-level": "选择您希望分配给挖矿的GPU数量 <span>（{{current}} / {{max}} 线程）</span>",
-    "cpu-power-level": "CPU核心",
+    "choose-cpu-power-level": "Choose how big of a percentage you want your CPU to be allocated to mining",
+    "choose-gpu-power-level": "Choose how big of a percentage you want your GPU to be allocated to mining",
+    "cpu-power-level": "CPU功率%",
     "cpu-warning": "高CPU使用率可能导致过热、增加能耗，并可能导致硬件损坏。请监控使用情况以确保安全高效的操作。",
     "gpu-power-level": "GPU功率%",
     "gpu-warning": "高GPU使用率可能导致过热、增加能耗，并可能导致硬件损坏。请监控使用情况以确保安全高效的操作。",
@@ -50,6 +50,7 @@
     "placeholder": "输入空闲超时时间（秒）",
     "title": "机器被视为空闲的时间"
   },
+  "import-seed-success": "Seed words imported successfully",
   "importing-wallet": "正在导入钱包",
   "importing-wallet-copy": "钱包导入后，Tari Universe 将自动重启",
   "invalid-seed-words": "输入24个用空格分隔的单词",
@@ -96,6 +97,7 @@
     "load-qr-code": "加载二维码",
     "passphrase": "密码短语"
   },
+  "pin": "Pin",
   "pool-mining": "矿池挖矿",
   "pool-mining-description": "启用后，您将在矿池中挖矿并加入矿工组。",
   "pre-release": {
@@ -129,6 +131,7 @@
   "send-logs": "发送日志",
   "set-dynamic-fail-data": "设置Monero节点的自定义URL",
   "settings": "设置",
+  "setup-pin": "Setup Universe Security PIN",
   "setup-tor-settings": "设置 Tor 设置以控制隐私和连接",
   "sha-network-hash-rate": "Sha3 网络算力",
   "should-auto-start": {
@@ -145,6 +148,7 @@
     "general": "常规",
     "mining": "挖矿",
     "p2p": "矿池挖矿",
+    "pools": "Mining Pools",
     "releaseNotes": "发布说明",
     "very_experimental": "非常实验性",
     "wallet": "钱包"

@@ -114,6 +114,7 @@ impl SpendWalletManager {
         destination: String,
         payment_id: Option<String>,
         state: tauri::State<'_, UniverseAppState>,
+        app_handle: &tauri::AppHandle,
     ) -> Result<(), Error> {
         self.node_manager.wait_ready().await?;
         let (public_key, public_address) = self.node_manager.get_connection_details().await?;
@@ -127,7 +128,7 @@ impl SpendWalletManager {
 
         let res = self
             .adapter
-            .send_one_sided_to_stealth_address(amount, destination, payment_id, state)
+            .send_one_sided_to_stealth_address(amount, destination, payment_id, state, app_handle)
             .await;
 
         let node_status = *self.base_node_status_rx.borrow();

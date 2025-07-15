@@ -3,14 +3,13 @@ import { listen } from '@tauri-apps/api/event';
 
 import { BACKEND_STATE_UPDATE, BackendStateUpdateEvent } from '@app/types/backend-state.ts';
 
-import { handleNewBlock } from '@app/store/useBlockchainVisualisationStore';
+import { handleNewBlockPayload, useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore';
 import {
     handleBaseNodeStatusUpdate,
     handleConnectedPeersUpdate,
     setCpuMiningStatus,
     setGpuDevices,
     setGpuMiningStatus,
-    setPoolStatus,
 } from '@app/store/actions/miningMetricsStoreActions';
 import {
     handleAskForRestart,
@@ -29,7 +28,7 @@ import {
     setIsStuckOnOrphanChain,
     setNetworkStatus,
 } from '@app/store/actions/appStateStoreActions';
-import { setWalletBalance, updateWalletScanningProgress, useUIStore } from '@app/store';
+import { setWalletBalance, updateWalletScanningProgress, useSecurityStore } from '@app/store';
 import { deepEqual } from '@app/utils/objectDeepEqual.ts';
 import {
     handleAppUnlocked,
@@ -51,11 +50,13 @@ import {
     handleConfigUILoaded,
     handleConfigWalletLoaded,
     handleMiningTimeUpdate,
+    handleWalletUIChanged,
+    handleConfigPoolsLoaded,
 } from '@app/store/actions/appConfigStoreActions';
 import { invoke } from '@tauri-apps/api/core';
-import { handleShowStagedSecurityModal } from '@app/store/actions/stagedSecurityActions';
 import { refreshTransactions } from '@app/hooks/wallet/useFetchTxHistory.ts';
-import { handleBaseWalletUpate, handleExternalWalletAddressUpdate } from '@app/store/actions/walletStoreActions';
+import { loadCpuPoolStats, loadGpuPoolStats } from '@app/store/actions/miningPoolsStoreActions';
+import { handleSelectedTariAddressChange } from '@app/store/actions/walletStoreActions';
 
 const LOG_EVENT_TYPES = ['WalletAddressUpdate', 'CriticalProblem', 'MissingApplications'];
 
@@ -122,22 +123,31 @@ const useTauriEventsListener = () => {
                             handleBaseNodeStatusUpdate(event.payload);
                             break;
                         case 'GpuMiningUpdate':
+                            console.info('GpuMiningUpdate', event.payload);
                             setGpuMiningStatus(event.payload);
                             break;
                         case 'CpuMiningUpdate':
                             setCpuMiningStatus(event.payload);
                             break;
-                        case 'PoolStatusUpdate':
-                            setPoolStatus(event.payload);
+                        case 'CpuPoolStatsUpdate':
+                            loadCpuPoolStats(event.payload);
+                            break;
+                        case 'GpuPoolStatsUpdate':
+                            console.info('GpuPoolStatsUpdate', event.payload);
+                            loadGpuPoolStats(event.payload);
                             break;
                         case 'ConnectedPeersUpdate':
                             handleConnectedPeersUpdate(event.payload);
                             break;
-                        case 'NewBlockHeight':
-                            await handleNewBlock(event.payload);
+                        case 'NewBlockHeight': {
+                            const current = useBlockchainVisualisationStore.getState().latestBlockPayload?.block_height;
+                            if (!current || current < event.payload.block_height) {
+                                await handleNewBlockPayload(event.payload);
+                            }
                             break;
+                        }
                         case 'ConfigCoreLoaded':
-                            handleConfigCoreLoaded(event.payload);
+                            await handleConfigCoreLoaded(event.payload);
                             break;
                         case 'ConfigWalletLoaded':
                             handleConfigWalletLoaded(event.payload);
@@ -147,6 +157,10 @@ const useTauriEventsListener = () => {
                             break;
                         case 'ConfigUILoaded':
                             await handleConfigUILoaded(event.payload);
+                            break;
+                        case 'ConfigPoolsLoaded':
+                            console.info('ConfigPoolsLoaded', event.payload);
+                            handleConfigPoolsLoaded(event.payload);
                             break;
                         case 'CloseSplashscreen':
                             useUIStore.setState({ canCloseSplashscreen: true });
@@ -204,7 +218,7 @@ const useTauriEventsListener = () => {
                             handleConnectionStatusChanged(event.payload);
                             break;
                         case 'ShowStageSecurityModal':
-                            handleShowStagedSecurityModal();
+                            useSecurityStore.setState({ modal: 'intro' });
                             break;
                         case 'MiningTime':
                             handleMiningTimeUpdate(event.payload);
@@ -215,14 +229,23 @@ const useTauriEventsListener = () => {
                         case 'DisabledPhases':
                             handleUpdateDisabledPhases(event.payload);
                             break;
-                        case 'BaseTariAddressChanged':
-                            handleBaseWalletUpate(event.payload);
+                        case 'SelectedTariAddressChanged':
+                            handleSelectedTariAddressChange(event.payload);
                             break;
-                        case 'ExternalTariAddressChanged':
-                            handleExternalWalletAddressUpdate(event.payload);
+                        case 'WalletUIModeChanged':
+                            handleWalletUIChanged(event.payload);
                             break;
                         case 'ShouldShowExchangeMinerModal':
                             setShouldShowExchangeSpecificModal(true);
+                            break;
+                        case 'ShowKeyringDialog':
+                            setDialogToShow('keychain');
+                            break;
+                        case 'CreatePin':
+                            useSecurityStore.setState({ modal: 'create_pin' });
+                            break;
+                        case 'EnterPin':
+                            useSecurityStore.setState({ modal: 'enter_pin' });
                             break;
                         default:
                             console.warn('Unknown event', JSON.stringify(event));

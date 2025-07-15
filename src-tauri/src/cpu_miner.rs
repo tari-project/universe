@@ -22,10 +22,10 @@
 
 use crate::binaries::Binaries;
 use crate::commands::{CpuMinerConnection, CpuMinerConnectionStatus, CpuMinerStatus};
-use crate::configs::config_mining::{ConfigMiningContent, MiningMode};
+use crate::configs::config_pools::{ConfigPoolsContent, CpuPool};
 use crate::configs::config_wallet::ConfigWalletContent;
 use crate::events_emitter::EventsEmitter;
-use crate::pool_status_watcher::SupportXmrStyleAdapter;
+use crate::pool_status_watcher::SupportXmrPoolAdapter;
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
 use crate::tasks_tracker::TasksTrackers;
@@ -46,15 +46,9 @@ use tokio::time::{interval, sleep, timeout};
 use tokio::{select, spawn};
 
 const LOG_TARGET: &str = "tari::universe::cpu_miner";
-const ECO_MODE_CPU_USAGE: u32 = 30;
 
 pub struct CpuMinerConfig {
     pub node_connection: CpuMinerConnection,
-    pub eco_mode_xmrig_options: Vec<String>,
-    pub ludicrous_mode_xmrig_options: Vec<String>,
-    pub custom_mode_xmrig_options: Vec<String>,
-    pub eco_mode_cpu_percentage: Option<u32>,
-    pub ludicrous_mode_cpu_percentage: Option<u32>,
     pub monero_address: String,
     pub pool_host_name: Option<String>,
     pub pool_port: Option<u16>,
@@ -62,31 +56,37 @@ pub struct CpuMinerConfig {
 }
 
 impl CpuMinerConfig {
-    pub fn load_from_config_mining(&mut self, config_mining_content: &ConfigMiningContent) {
-        self.custom_mode_xmrig_options = config_mining_content.custom_mode_cpu_options().clone();
-        self.eco_mode_cpu_percentage = *config_mining_content.eco_mode_cpu_threads();
-        self.ludicrous_mode_cpu_percentage = *config_mining_content.ludicrous_mode_cpu_threads();
-        self.eco_mode_xmrig_options = config_mining_content.eco_mode_cpu_options().clone();
-        self.ludicrous_mode_xmrig_options =
-            config_mining_content.ludicrous_mode_cpu_options().clone();
-        if let Some(ref pool_url) = config_mining_content.cpu_mining_pool_url() {
-            let parts = pool_url.split(':').collect::<Vec<_>>();
-            if parts.len() == 2 {
-                if let Ok(port) = parts[1].parse::<u16>() {
-                    self.pool_port = Some(port);
-                } else {
-                    error!(target: LOG_TARGET, "Invalid port number in pool URL: {pool_url}");
+    pub fn load_from_config_pools(
+        &mut self,
+        config_pools_content: ConfigPoolsContent,
+        tari_address: &TariAddress,
+    ) {
+        if *config_pools_content.cpu_pool_enabled() {
+            match config_pools_content.cpu_pool() {
+                CpuPool::GlobalTariPool(global_tari_pool) => {
+                    self.pool_status_url =
+                        Some(global_tari_pool.get_stats_url(tari_address.to_base58().as_str()));
+                    let pool_url = global_tari_pool.get_pool_url();
+                    let parts = pool_url.split(':').collect::<Vec<_>>();
+                    if parts.len() == 2 {
+                        if let Ok(port) = parts[1].parse::<u16>() {
+                            self.pool_port = Some(port);
+                        } else {
+                            error!(target: LOG_TARGET, "Invalid port number in pool URL: {pool_url}");
+                        }
+                        self.pool_host_name = Some(parts[0].to_string());
+                    } else {
+                        error!(target: LOG_TARGET, "Invalid pool URL format: {pool_url}");
+                    }
+                    self.node_connection = CpuMinerConnection::Pool;
                 }
-                self.pool_host_name = Some(parts[0].to_string());
-            } else {
-                error!(target: LOG_TARGET, "Invalid pool URL format: {pool_url}");
             }
-            self.node_connection = CpuMinerConnection::Pool;
         } else {
+            self.pool_status_url = None;
             self.pool_host_name = None;
+            self.pool_port = None;
+            self.node_connection = CpuMinerConnection::BuiltInProxy;
         }
-
-        self.pool_status_url = config_mining_content.cpu_mining_pool_status_url().clone();
     }
 
     pub fn load_from_config_wallet(&mut self, config_wallet_content: &ConfigWalletContent) {
@@ -100,7 +100,7 @@ pub(crate) struct CpuMiner {
     summary_watch_rx: watch::Receiver<Option<Summary>>,
     node_status_watch_rx: watch::Receiver<BaseNodeStatus>,
     pub benchmarked_hashrate: u64,
-    pool_status_watcher: Option<PoolStatusWatcher<SupportXmrStyleAdapter>>,
+    pool_status_watcher: Option<PoolStatusWatcher<SupportXmrPoolAdapter>>,
     pub pool_status_shutdown_signal: Shutdown,
 }
 
@@ -134,8 +134,7 @@ impl CpuMiner {
         base_path: PathBuf,
         config_path: PathBuf,
         log_dir: PathBuf,
-        mode: MiningMode,
-        custom_cpu_threads: Option<u32>,
+        cpu_usage_percentage: u32,
         tari_address: &TariAddress,
     ) -> Result<(), anyhow::Error> {
         self.pool_status_shutdown_signal = Shutdown::new();
@@ -164,7 +163,7 @@ impl CpuMiner {
                     PoolStatusWatcher::new(
                         url.replace("%MONERO_ADDRESS%", &cpu_miner_config.monero_address)
                             .replace("%TARI_ADDRESS%", &tari_address.to_base58()),
-                        SupportXmrStyleAdapter {},
+                        SupportXmrPoolAdapter {},
                     )
                 });
 
@@ -191,7 +190,7 @@ impl CpuMiner {
                     PoolStatusWatcher::new(
                         url.replace("%MONERO_ADDRESS%", &cpu_miner_config.monero_address)
                             .replace("%TARI_ADDRESS%", &tari_address.to_base58()),
-                        SupportXmrStyleAdapter {},
+                        SupportXmrPoolAdapter {},
                     )
                 });
 
@@ -219,31 +218,17 @@ impl CpuMiner {
             }
         };
 
-        let eco_mode_threads = cpu_miner_config
-            .eco_mode_cpu_percentage
-            .unwrap_or((ECO_MODE_CPU_USAGE * max_cpu_available) / 100u32);
+        let cpu_cores_to_use = max_cpu_available
+            .saturating_mul(cpu_usage_percentage)
+            .saturating_div(100);
 
-        let cpu_max_percentage = match mode {
-            MiningMode::Eco => Some(eco_mode_threads),
-            MiningMode::Custom => {
-                if custom_cpu_threads.unwrap_or(0) == max_cpu_available {
-                    None
-                } else {
-                    custom_cpu_threads
-                }
-            }
-            MiningMode::Ludicrous => None,
-        };
+        info!(target: LOG_TARGET, "Using {cpu_cores_to_use} CPU cores for mining");
+
         {
             let mut lock = self.watcher.write().await;
 
             lock.adapter.node_connection = Some(xmrig_node_connection);
-            lock.adapter.cpu_threads = Some(cpu_max_percentage);
-            lock.adapter.extra_options = match mode {
-                MiningMode::Eco => cpu_miner_config.eco_mode_xmrig_options.clone(),
-                MiningMode::Ludicrous => cpu_miner_config.ludicrous_mode_xmrig_options.clone(),
-                MiningMode::Custom => cpu_miner_config.custom_mode_xmrig_options.clone(),
-            };
+            lock.adapter.cpu_threads = Some(cpu_cores_to_use);
 
             let shutdown_signal = TasksTrackers::current().hardware_phase.get_signal().await;
             let task_tracker = TasksTrackers::current()
@@ -289,7 +274,7 @@ impl CpuMiner {
         {
             let mut lock = self.watcher.write().await;
             lock.adapter.node_connection = Some(XmrigNodeConnection::Benchmark);
-            lock.adapter.cpu_threads = Some(Some(1));
+            lock.adapter.cpu_threads = Some(1);
             lock.adapter.extra_options = vec![];
 
             lock.start(
@@ -418,7 +403,7 @@ impl CpuMiner {
                             None => None,
                         };
 
-                        EventsEmitter::emit_pool_status_update(last_pool_status.clone()).await;
+                        EventsEmitter::emit_cpu_pool_status_update(last_pool_status.clone()).await;
 
                     }
                     _ = summary_watch_rx.changed() => {

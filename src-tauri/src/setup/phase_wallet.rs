@@ -23,11 +23,11 @@ use crate::{
     binaries::{Binaries, BinaryResolver},
     configs::{
         config_core::ConfigCore,
-        config_ui::{ConfigUI, ConfigUIContent},
         config_wallet::{ConfigWallet, ConfigWalletContent},
         trait_config::ConfigImpl,
     },
     events_emitter::EventsEmitter,
+    pin::PinManager,
     progress_trackers::{
         progress_plans::{ProgressPlans, ProgressSetupWalletPlan},
         progress_stepper::ProgressStepperBuilder,
@@ -66,7 +66,6 @@ pub struct WalletSetupPhaseOutput {}
 #[derive(Clone, Default)]
 pub struct WalletSetupPhaseAppConfiguration {
     use_tor: bool,
-    was_staged_security_modal_shown: bool,
 }
 
 pub struct WalletSetupPhase {
@@ -149,12 +148,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
 
     async fn load_app_configuration() -> Result<Self::AppConfiguration, Error> {
         let use_tor = *ConfigCore::content().await.use_tor();
-        let was_staged_security_modal_shown =
-            *ConfigUI::content().await.was_staged_security_modal_shown();
-        Ok(WalletSetupPhaseAppConfiguration {
-            use_tor,
-            was_staged_security_modal_shown,
-        })
+        Ok(WalletSetupPhaseAppConfiguration { use_tor })
     }
 
     async fn setup(self) {
@@ -264,12 +258,13 @@ impl SetupPhaseImpl for WalletSetupPhase {
 
         let app_handle = self.get_app_handle().clone();
 
-        if !self.app_configuration.was_staged_security_modal_shown {
+        let pin_locked = PinManager::pin_locked().await;
+        let seed_backed_up = *ConfigWallet::content().await.seed_backed_up();
+        if !seed_backed_up || !pin_locked {
             let wallet_manager = app_handle
                 .state::<UniverseAppState>()
                 .wallet_manager
                 .clone();
-
             let shutdown_signal = TasksTrackers::current()
                 .wallet_phase
                 .get_signal()
@@ -300,12 +295,13 @@ impl SetupPhaseImpl for WalletSetupPhase {
                                 if balance_sum.gt(&MicroMinotari::zero())
                                     && wallet_manager.is_initial_scan_completed()
                                 {
-                                    EventsEmitter::show_staged_security_modal().await;
-                                    let _unused = ConfigUI::update_field(
-                                        ConfigUIContent::set_was_staged_security_modal_shown,
-                                        true,
-                                    )
-                                    .await;
+                                    let pin_locked = PinManager::pin_locked().await;
+                                    let seed_backed_up =
+                                        *ConfigWallet::content().await.seed_backed_up();
+
+                                    if !pin_locked || !seed_backed_up {
+                                        EventsEmitter::show_staged_security_modal().await;
+                                    }
                                     break;
                                 }
                             }
