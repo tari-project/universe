@@ -81,8 +81,8 @@ impl Default for ConfigMiningContent {
                     MiningMode {
                         mode_type: MiningModeType::Eco,
                         mode_name: "Eco".to_string(),
-                        cpu_usage_percentage: 25,
-                        gpu_usage_percentage: 25,
+                        cpu_usage_percentage: 10,
+                        gpu_usage_percentage: 10,
                     },
                 ),
                 (
