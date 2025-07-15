@@ -18,7 +18,6 @@ export {
     setMineOnAppStart,
     setMoneroAddress,
     setMonerodConfig,
-    setP2poolEnabled,
     setPreRelease,
     setShouldAlwaysUseSystemLanguage,
     setShouldAutoLaunch,
