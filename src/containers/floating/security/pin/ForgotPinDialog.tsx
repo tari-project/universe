@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 
-import { setDialogToShow, setError, useUIStore } from '@app/store';
+import { setError, useSecurityStore } from '@app/store';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import CloseButton from '@app/components/elements/buttons/CloseButton.tsx';
 
@@ -15,10 +15,12 @@ import { invoke } from '@tauri-apps/api/core';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 
 export default function ForgotPinDialog() {
-    const dialogToShow = useUIStore((s) => s.dialogToShow);
-    const isOpen = dialogToShow === 'forgotPin';
-
     const { t } = useTranslation('wallet');
+    const modal = useSecurityStore((s) => s.modal);
+    const setModal = useSecurityStore((s) => s.setModal);
+
+    const isOpen = modal === 'forgot_pin';
+
     const methods = useForm({ defaultValues: { seedWords: '' } });
     const { isValid } = methods.formState;
 
@@ -36,7 +38,7 @@ export default function ForgotPinDialog() {
     };
 
     function handleClose() {
-        setDialogToShow(null);
+        setModal(null);
         methods.reset({ seedWords: '' });
     }
 

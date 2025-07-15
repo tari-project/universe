@@ -1,6 +1,6 @@
 import { ViewSeedPhrase } from '@app/components/security/seedphrase/ViewSeedPhrase.tsx';
 
-import { setDialogToShow, useStagedSecurityStore } from '@app/store';
+import { setDialogToShow, useSecurityStore } from '@app/store';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import { Content, ContentWrapper, Header, StepChip, Subtitle, Title, Wrapper } from '../common.styles.ts';
 import { VerifySeedPhrase } from '@app/components/security/seedphrase/VerifySeedPhrase.tsx';
@@ -11,10 +11,10 @@ import { invoke } from '@tauri-apps/api/core';
 
 export default function SeedPhrase() {
     const { t } = useTranslation('staged-security');
-    const showModal = useStagedSecurityStore((s) => s.showModal);
-    const setShowModal = useStagedSecurityStore((s) => s.setShowModal);
-    const setModalStep = useStagedSecurityStore((s) => s.setModalStep);
-    const step = useStagedSecurityStore((s) => s.step);
+    const showModal = useSecurityStore((s) => s.showModal);
+    const setShowModal = useSecurityStore((s) => s.setShowModal);
+    const setModalStep = useSecurityStore((s) => s.setModalStep);
+    const step = useSecurityStore((s) => s.step);
 
     const [seedPhrase, setSeedPhrase] = useState<string[] | undefined>();
     const isOpen = showModal && (step === 'SeedPhrase' || step === 'VerifySeedPhrase');

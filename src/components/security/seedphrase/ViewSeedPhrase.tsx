@@ -17,7 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard.ts';
 import { useState } from 'react';
 import { AnimatePresence } from 'motion/react';
-import { useStagedSecurityStore } from '@app/store';
+import { useSecurityStore } from '@app/store';
 import CheckIcon from '@app/assets/icons/CheckIcon.tsx';
 import CopyIcon from '@app/assets/icons/CopyIcon.tsx';
 
@@ -40,7 +40,7 @@ export function ViewSeedPhrase({ words }: ViewSeedPhraseProps) {
     const { t } = useTranslation('staged-security');
     const { isCopied, copyToClipboard } = useCopyToClipboard();
 
-    const setModalStep = useStagedSecurityStore((s) => s.setModalStep);
+    const setModalStep = useSecurityStore((s) => s.setModalStep);
     const [checked, setChecked] = useState(false);
 
     function handleCopy() {

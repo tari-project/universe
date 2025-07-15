@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { emit } from '@tauri-apps/api/event';
 
-import { setDialogToShow, useStagedSecurityStore, useUIStore } from '@app/store';
+import { setDialogToShow, useSecurityStore, useUIStore } from '@app/store';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import CloseButton from '@app/components/elements/buttons/CloseButton.tsx';
 
@@ -15,10 +15,10 @@ export default function PinDialog() {
     const { t } = useTranslation('wallet');
     const [showComplete, setShowComplete] = useState(false);
     const dialogToShow = useUIStore((s) => s.dialogToShow);
-    const step = useStagedSecurityStore((s) => s.step);
-    const setStep = useStagedSecurityStore((s) => s.setModalStep);
-    const showModal = useStagedSecurityStore((s) => s.showModal);
-    const setShowModal = useStagedSecurityStore((s) => s.setShowModal);
+    const step = useSecurityStore((s) => s.step);
+    const setStep = useSecurityStore((s) => s.setModalStep);
+    const showModal = useSecurityStore((s) => s.showModal);
+    const setShowModal = useSecurityStore((s) => s.setShowModal);
     const createOpen = showModal && step === 'CreatePin';
     const isOpen = dialogToShow === 'enterPin' || createOpen;
 

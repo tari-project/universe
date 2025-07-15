@@ -30,7 +30,7 @@ import {
     setIsStuckOnOrphanChain,
     setNetworkStatus,
 } from '@app/store/actions/appStateStoreActions';
-import { setWalletBalance, updateWalletScanningProgress, useStagedSecurityStore } from '@app/store';
+import { setWalletBalance, updateWalletScanningProgress, useSecurityStore } from '@app/store';
 import { deepEqual } from '@app/utils/objectDeepEqual.ts';
 import {
     handleAppUnlocked,
@@ -56,7 +56,6 @@ import {
     handleConfigPoolsLoaded,
 } from '@app/store/actions/appConfigStoreActions';
 import { invoke } from '@tauri-apps/api/core';
-import { handleShowStagedSecurityModal } from '@app/store/actions/stagedSecurityActions';
 import { refreshTransactions } from '@app/hooks/wallet/useFetchTxHistory.ts';
 import { loadCpuPoolStats, loadGpuPoolStats } from '@app/store/actions/miningPoolsStoreActions';
 import { handleSelectedTariAddressChange } from '@app/store/actions/walletStoreActions';
@@ -221,7 +220,7 @@ const useTauriEventsListener = () => {
                             handleConnectionStatusChanged(event.payload);
                             break;
                         case 'ShowStageSecurityModal':
-                            handleShowStagedSecurityModal();
+                            useSecurityStore.setState({ modal: 'intro' });
                             break;
                         case 'MiningTime':
                             handleMiningTimeUpdate(event.payload);
@@ -245,10 +244,10 @@ const useTauriEventsListener = () => {
                             setDialogToShow('keychain');
                             break;
                         case 'CreatePin':
-                            useStagedSecurityStore.setState({ showModal: true, step: 'CreatePin' });
+                            useSecurityStore.setState({ modal: 'create_pin' });
                             break;
                         case 'EnterPin':
-                            setDialogToShow('enterPin');
+                            useSecurityStore.setState({ modal: 'enter_pin' });
                             break;
                         default:
                             console.warn('Unknown event', JSON.stringify(event));
