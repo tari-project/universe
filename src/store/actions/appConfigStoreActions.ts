@@ -258,14 +258,7 @@ export const setMonerodConfig = async (useMoneroFail: boolean, moneroNodes: stri
         });
     });
 };
-export const setP2poolEnabled = async (p2poolEnabled: boolean) => {
-    useConfigCoreStore.setState({ is_p2pool_enabled: p2poolEnabled });
-    invoke('set_p2pool_enabled', { p2poolEnabled }).catch((e) => {
-        console.error('Could not set P2pool enabled', e);
-        setError('Could not change P2pool enabled');
-        useConfigCoreStore.setState({ is_p2pool_enabled: !p2poolEnabled });
-    });
-};
+
 export const setPreRelease = async (preRelease: boolean) => {
     useConfigCoreStore.setState({ pre_release: preRelease });
     invoke('set_pre_release', { preRelease }).catch((e) => {

@@ -19,7 +19,6 @@ export {
     setMode,
     setMoneroAddress,
     setMonerodConfig,
-    setP2poolEnabled,
     setPreRelease,
     setShouldAlwaysUseSystemLanguage,
     setShouldAutoLaunch,
