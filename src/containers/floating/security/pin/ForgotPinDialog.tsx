@@ -13,6 +13,7 @@ import { Form } from '@app/components/wallet/seedwords/components/edit.styles.ts
 import { invoke } from '@tauri-apps/api/core';
 
 import { Button } from '@app/components/elements/buttons/Button.tsx';
+import { CTAWrapper } from '@app/components/security/pin/styles.ts';
 
 export default function ForgotPinDialog() {
     const { t } = useTranslation('wallet');
@@ -38,8 +39,8 @@ export default function ForgotPinDialog() {
     };
 
     function handleClose() {
-        setModal(null);
         methods.reset({ seedWords: '' });
+        setModal(null);
     }
 
     return (
@@ -51,14 +52,14 @@ export default function ForgotPinDialog() {
                     </Header>
                     <FormProvider {...methods}>
                         <Form onSubmit={methods.handleSubmit(handleApply)}>
-                            <WalletSettingsGrid>
-                                <InputArea>
-                                    <Edit />
-                                </InputArea>
-                            </WalletSettingsGrid>
-                            <Button fluid type="submit" variant="black" size="xlarge">
-                                {t('security.pin.forgot')}
-                            </Button>
+                            <InputArea>
+                                <Edit />
+                            </InputArea>
+                            <CTAWrapper>
+                                <Button fluid type="submit" variant="black" size="xlarge">
+                                    {t('security.pin.forgot')}
+                                </Button>
+                            </CTAWrapper>
                         </Form>
                     </FormProvider>
                 </Wrapper>

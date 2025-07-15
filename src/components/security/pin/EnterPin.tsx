@@ -37,6 +37,7 @@ export default function EnterPin({ onForgot, onSubmit }: EnterPinProps) {
                 <CTAWrapper>
                     <Button
                         variant="black"
+                        fluid
                         size="xlarge"
                         disabled={currentCode.length !== DEFAULT_PIN_LENGTH}
                         type="submit"

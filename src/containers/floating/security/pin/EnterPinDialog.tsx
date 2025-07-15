@@ -19,7 +19,7 @@ export default function EnterPinDialog() {
     }
 
     function handleSubmit(pin: string) {
-        emit('pin-dialog-response', Number(pin)).then(() => {
+        emit('pin-dialog-response', Number(pin)).finally(() => {
             setModal(null);
         });
     }
