@@ -27,7 +27,7 @@ export default function SecurityPromptDialog() {
     }
     function handleClick() {
         if (!seedBackedUp) {
-            setModal('view_seedphrase');
+            setModal('verify_seedphrase');
         } else {
             void invoke('create_pin');
         }

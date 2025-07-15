@@ -6,7 +6,7 @@ import { useShareRewardStore } from '@app/store/useShareRewardStore';
 
 export function GreenModalsGroup() {
     const { showModal: showPaperWallet, setShowModal: setShowPaperWallet } = usePaperWalletStore();
-    const { showModal: showStagedSecurity, setShowModal: setShowStagedSecurity } = useSecurityStore();
+    const { modal, setModal } = useSecurityStore();
     const { showModal: showShareReward, setShowModal: setShowShareReward } = useShareRewardStore();
 
     return (
@@ -16,7 +16,7 @@ export function GreenModalsGroup() {
                 <AdminButton onClick={() => setShowPaperWallet(!showPaperWallet)} $isActive={showPaperWallet}>
                     Paper Wallet
                 </AdminButton>
-                <AdminButton onClick={() => setShowStagedSecurity(!showStagedSecurity)} $isActive={showStagedSecurity}>
+                <AdminButton onClick={() => setModal('intro')} $isActive={modal === 'intro'}>
                     Staged Security
                 </AdminButton>
                 <AdminButton onClick={() => setShowShareReward(!showShareReward)} $isActive={showShareReward}>

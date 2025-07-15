@@ -18,13 +18,11 @@ const variants = {
 export default function SecurityReminder() {
     const open = useSecurityStore((s) => s.showReminderTip);
     const setOpen = useSecurityStore((s) => s.setShowReminderTip);
-    const setShowModal = useSecurityStore((s) => s.setShowModal);
-    const setModalStep = useSecurityStore((s) => s.setModalStep);
+    const setModal = useSecurityStore((s) => s.setModal);
     const offset = useUIStore((s) => s.towerSidebarOffset);
 
     function handleStart() {
-        setShowModal(true);
-        setModalStep('ProtectIntro');
+        setModal('intro');
         handleClose();
     }
     function handleClose() {
