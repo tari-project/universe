@@ -16,7 +16,6 @@ export {
     setCustomStatsServerPort,
     setGpuMiningEnabled,
     setMineOnAppStart,
-    setMode,
     setMoneroAddress,
     setMonerodConfig,
     setP2poolEnabled,
@@ -43,7 +42,6 @@ export {
 } from './appStateStoreActions.ts';
 
 export {
-    changeMiningMode,
     setCustomLevelsDialogOpen,
     setMiningControlsEnabled,
     getMiningNetwork,

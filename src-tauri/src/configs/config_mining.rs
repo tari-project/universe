@@ -39,6 +39,7 @@ pub enum MiningModeType {
     Eco,
     Ludicrous,
     Custom,
+    User,
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MiningMode {

@@ -21,20 +21,48 @@ import ludicIcon from './images/ludicrous.png';
 import customIcon from '@app/assets/icons/emoji/custom.png';
 import { offset, useClick, useDismiss, useFloating, useInteractions } from '@floating-ui/react';
 import { useTranslation } from 'react-i18next';
-import { useConfigMiningStore, useConfigUIStore } from '@app/store';
+import { useConfigMiningStore } from '@app/store';
 import { setDialogToShow } from '@app/store/actions/uiStoreActions';
-import { changeMiningMode, setCustomLevelsDialogOpen } from '@app/store/actions/miningStoreActions';
-import { MiningModeType } from '@app/store/types';
+import { setCustomLevelsDialogOpen } from '@app/store/actions/miningStoreActions';
+import { MiningModeType } from '@app/types/configs';
+import { selectMiningMode } from '@app/store/actions/appConfigStoreActions';
 
 interface Props {
     disabled?: boolean;
     loading?: boolean;
 }
 
+interface ModeDropdownMiningMode {
+    name: string;
+    mode_type: MiningModeType;
+    icon: string;
+}
+
+const miningModes = [
+    { name: 'Eco', icon: ecoIcon },
+    { name: 'Ludicrous', icon: ludicIcon },
+    { name: 'Custom', icon: customIcon },
+];
+
+const getModeIcon = (mode: MiningModeType) => {
+    switch (mode) {
+        case MiningModeType.Eco:
+            return ecoIcon;
+        case MiningModeType.Ludicrous:
+            return ludicIcon;
+        case MiningModeType.Custom:
+            return customIcon;
+        case MiningModeType.User:
+            return customIcon;
+        default:
+            return customIcon;
+    }
+};
+
 export default function ModeDropdown({ disabled, loading }: Props) {
     const { t } = useTranslation('mining-view');
-    const mode = useConfigMiningStore((s) => s.mode);
-    const custom_power_levels_enabled = useConfigUIStore((s) => s.custom_power_levels_enabled);
+    const selectedMiningMode = useConfigMiningStore((s) => s.getSelectedMode());
+    const miningModes = useConfigMiningStore((s) => s.mining_modes);
     const [isOpen, setIsOpen] = useState(false);
 
     const { refs, floatingStyles, context } = useFloating({
@@ -47,35 +75,36 @@ export default function ModeDropdown({ disabled, loading }: Props) {
     const dismiss = useDismiss(context);
     const { getReferenceProps, getFloatingProps } = useInteractions([click, dismiss]);
 
-    const modes = useMemo(() => {
-        const arr = [
-            { name: 'Eco', icon: ecoIcon },
-            { name: 'Ludicrous', icon: ludicIcon },
-        ];
-        if (custom_power_levels_enabled) arr.push({ name: 'Custom', icon: customIcon });
-        return arr;
-    }, [custom_power_levels_enabled]);
+    const modes: ModeDropdownMiningMode[] = useMemo(() => {
+        return Object.values(miningModes).map((mode) => {
+            return {
+                name: mode.mode_name,
+                mode_type: mode.mode_type,
+                icon: getModeIcon(mode.mode_type),
+            };
+        });
+    }, [miningModes]);
 
     const handleSelectMode = useCallback(
-        async (selected: string) => {
-            if (selected === 'Custom') {
+        async (mode: ModeDropdownMiningMode) => {
+            if (mode.mode_type === MiningModeType.Custom) {
                 setCustomLevelsDialogOpen(true);
                 setIsOpen(false);
                 return;
             }
-            if (selected === 'Ludicrous') {
+            if (mode.mode_type === MiningModeType.Ludicrous) {
                 setDialogToShow('ludicrousConfirmation');
                 setIsOpen(false);
                 return;
             }
-            if (selected === mode) {
+            if (mode.mode_type === selectedMiningMode.mode_type) {
                 setIsOpen(false);
                 return;
             }
-            await changeMiningMode({ mode: selected as MiningModeType });
+            await selectMiningMode(mode.name);
             setIsOpen(false);
         },
-        [mode]
+        [selectedMiningMode, selectMiningMode]
     );
 
     return (
@@ -90,9 +119,9 @@ export default function ModeDropdown({ disabled, loading }: Props) {
                 <TextGroup>
                     <Eyebrow>{t('mode')}</Eyebrow>
                     <SelectedValue>
-                        {mode}
+                        {selectedMiningMode.mode_name}
                         <OptionIcon
-                            src={modes.find((m) => m.name === mode)?.icon}
+                            src={modes.find((mode) => mode.mode_type === selectedMiningMode.mode_type)?.icon}
                             alt=""
                             aria-hidden="true"
                             className="option-icon"
@@ -111,15 +140,17 @@ export default function ModeDropdown({ disabled, loading }: Props) {
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -5 }}
                         >
-                            {modes.map((m) => (
+                            {modes.map((mode) => (
                                 <Option
-                                    key={m.name}
-                                    onClick={() => handleSelectMode(m.name)}
-                                    $isSelected={m.name === mode}
+                                    key={mode.name}
+                                    onClick={() => handleSelectMode(mode)}
+                                    $isSelected={mode.name === selectedMiningMode.mode_name}
                                 >
-                                    <OptionIcon src={m.icon} alt="" aria-hidden="true" className="option-icon" />
-                                    <OptionText>{m.name}</OptionText>
-                                    {m.name === mode && <SelectedIcon className="selected-icon" />}
+                                    <OptionIcon src={mode.icon} alt="" aria-hidden="true" className="option-icon" />
+                                    <OptionText>{mode.name}</OptionText>
+                                    {mode.name === selectedMiningMode.mode_name && (
+                                        <SelectedIcon className="selected-icon" />
+                                    )}
                                 </Option>
                             ))}
                         </Menu>

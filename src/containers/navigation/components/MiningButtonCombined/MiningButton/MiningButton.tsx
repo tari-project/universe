@@ -15,14 +15,14 @@ interface Props {
 
 export default function MiningButton({ onClick, buttonText, icon, isMining, disabled = false }: Props) {
     const { t } = useTranslation('mining-view');
-    const selectedMode = useConfigMiningStore((s) => s.mode);
+    const selectedMiningMode = useConfigMiningStore((s) => s.getSelectedMode());
 
     return (
         <ButtonWrapper
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            $selectedMode={selectedMode}
+            $selectedMode={selectedMiningMode.mode_type}
             $disabled={disabled}
         >
             <HitBox onClick={onClick} disabled={disabled}>

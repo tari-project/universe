@@ -22,20 +22,13 @@ import {
 } from './miningStoreActions';
 import { setError } from './appStateStoreActions.ts';
 import { setUITheme } from './uiStoreActions';
-import { GpuThreads } from '@app/types/app-status.ts';
-import { displayMode, MiningModeType } from '../types';
+import { displayMode } from '../types';
 import { ConfigCore, ConfigMining, ConfigPools, ConfigUI, ConfigWallet } from '@app/types/configs.ts';
 import { NodeType, updateNodeType as updateNodeTypeForNodeStore } from '../useNodeStore.ts';
 import { setCurrentExchangeMinerId } from '../useExchangeStore.ts';
 import { fetchExchangeContent, refreshXCContent } from '@app/hooks/exchanges/fetchExchangeContent.ts';
 import { fetchExchangeList } from '@app/hooks/exchanges/fetchExchanges.ts';
 import { WalletUIMode } from '@app/types/events-payloads.ts';
-
-interface SetModeProps {
-    mode: MiningModeType;
-    customGpuLevels?: GpuThreads[];
-    customCpuLevels?: number;
-}
 
 export const handleConfigCoreLoaded = async (coreConfig: ConfigCore) => {
     useConfigCoreStore.setState((c) => ({ ...c, ...coreConfig }));
@@ -214,24 +207,120 @@ export const setMineOnAppStart = async (mineOnAppStart: boolean) => {
         useConfigMiningStore.setState({ mine_on_app_start: !mineOnAppStart });
     });
 };
-export const setMode = async (params: SetModeProps) => {
-    const { mode, customGpuLevels, customCpuLevels } = params;
+// export const changeMiningMode = async (params: ChangeMiningModeArgs) => {
+//     const { mode, customGpuLevels, customCpuLevels } = params;
+//     console.info(`Changing mode to ${mode}...`);
 
-    invoke('set_mode', { mode, customCpuUsage: customCpuLevels, customGpuUsage: customGpuLevels })
+//     const cpu_mining_status = useMiningMetricsStore.getState().cpu_mining_status;
+//     const gpu_mining_status = useMiningMetricsStore.getState().gpu_mining_status;
+
+//     useMiningStore.setState({ isChangingMode: true });
+//     handleMiningModeChange();
+//     const wasCpuMiningInitiated = useMiningStore.getState().isCpuMiningInitiated;
+//     const wasGpuMiningInitiated = useMiningStore.getState().isGpuMiningInitiated;
+
+//     if (cpu_mining_status.is_mining || gpu_mining_status.is_mining) {
+//         console.info('Pausing mining...');
+//         await stopMining();
+//     }
+
+//     const parsedMax = getParsedMaxLevels(useMiningStore.getState().maxAvailableThreads);
+
+//     let cpu = customCpuLevels;
+//     let gpu = customGpuLevels;
+
+//     switch (mode) {
+//         case 'Eco': {
+//             cpu = parsedMax.eco_mode_max_cpu_usage;
+//             gpu = parsedMax.eco_mode_max_gpu_usage;
+//             break;
+//         }
+//         case 'Ludicrous': {
+//             cpu = parsedMax.ludicrous_mode_max_cpu_usage;
+//             gpu = parsedMax.ludicrous_mode_max_gpu_usage;
+//             break;
+//         }
+//     }
+
+//     try {
+//         await setMode({
+//             mode: mode as MiningModeType,
+//             customCpuLevels: cpu,
+//             customGpuLevels: gpu,
+//         });
+//         console.info(`Mode changed to ${mode}`);
+//         if (wasCpuMiningInitiated) {
+//             await startCpuMining();
+//         }
+
+//         if (wasGpuMiningInitiated) {
+//             await startGpuMining();
+//         }
+//     } catch (e) {
+//         console.error('Failed to change mode: ', e);
+//     } finally {
+//         useMiningStore.setState({ isChangingMode: false });
+//     }
+// };
+
+export const selectMiningMode = async (mode: string) => {
+    console.info(`Changing mode to ${mode}...`);
+
+    useMiningStore.setState({ isChangingMode: true });
+    //     handleMiningModeChange();
+
+    const cpu_mining_status = useMiningMetricsStore.getState().cpu_mining_status;
+    const gpu_mining_status = useMiningMetricsStore.getState().gpu_mining_status;
+    const wasCpuMiningInitiated = useMiningStore.getState().isCpuMiningInitiated;
+    const wasGpuMiningInitiated = useMiningStore.getState().isGpuMiningInitiated;
+
+    if (cpu_mining_status.is_mining) {
+        console.info('Stopping CPU mining...');
+        await stopCpuMining();
+    }
+
+    if (gpu_mining_status.is_mining) {
+        console.info('Stopping GPU mining...');
+        await stopGpuMining();
+    }
+
+    invoke('select_mining_mode', { mode })
         .then(() => {
-            const isCustom = mode === 'Custom';
+            useConfigMiningStore.setState((c) => ({ ...c, selected_mining_mode: mode }));
+            if (wasCpuMiningInitiated) {
+                console.info('Restarting CPU mining...');
+                startCpuMining();
+            }
+
+            if (wasGpuMiningInitiated) {
+                console.info('Restarting GPU mining...');
+                startGpuMining();
+            }
+        })
+        .catch((e) => {
+            console.error('Could not select mining mode', e);
+            setError('Could not change mining mode');
+        })
+        .finally(() => {
+            useMiningStore.setState({ isChangingMode: false });
+        });
+};
+
+export const updateCustomMiningMode = async (customCpuUsage: number, customGpuUsage: number) => {
+    invoke('update_custom_mining_mode', { customCpuUsage, customGpuUsage })
+        .then(() => {
             useConfigMiningStore.setState((c) => ({
                 ...c,
-                mode,
-                custom_max_cpu_usage: isCustom ? customCpuLevels : c.custom_max_cpu_usage,
-                custom_max_gpu_usage: isCustom ? customGpuLevels : c.custom_max_gpu_usage,
+                custom_max_cpu_usage: customCpuUsage,
+                custom_max_gpu_usage: customGpuUsage,
             }));
         })
         .catch((e) => {
-            console.error('Could not set mode', e);
-            setError('Could not change mode');
+            console.error('Could not update custom mining mode', e);
+            setError('Could not change custom mining mode');
         });
 };
+
 export const setMoneroAddress = async (moneroAddress: string) => {
     const prevMoneroAddress = useConfigWalletStore.getState().monero_address;
     useConfigWalletStore.setState({ monero_address: moneroAddress });

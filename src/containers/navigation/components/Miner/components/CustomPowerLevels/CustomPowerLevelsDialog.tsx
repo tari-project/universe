@@ -1,7 +1,6 @@
 import { Typography } from '@app/components/elements/Typography';
 import { useMiningStore } from '@app/store/useMiningStore';
 import { useCallback, useEffect, useState } from 'react';
-import { GpuThreads, MaxConsumptionLevels } from '@app/types/app-status';
 
 import {
     CustomLevelsHeader,
@@ -14,53 +13,42 @@ import { useTranslation } from 'react-i18next';
 
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 import { IoClose } from 'react-icons/io5';
-import { Controller, useFieldArray, useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 
 import { Button } from '@app/components/elements/buttons/Button.tsx';
-import { changeMiningMode } from '@app/store/actions/miningStoreActions.ts';
 import { useConfigMiningStore } from '@app/store/useAppConfigStore.ts';
 
 import { PowerLeveltem } from '@app/containers/navigation/components/Miner/components/CustomPowerLevels/PowerLeveltem.tsx';
-import { getParsedMaxLevels } from '@app/utils/mining/power-levels.ts';
+import { MiningModeType } from '@app/types/configs.ts';
+import { selectMiningMode, updateCustomMiningMode } from '@app/store/actions/appConfigStoreActions.ts';
 
 enum FormFields {
     CPU = 'cpu',
-    GPUS = 'gpus',
+    GPU = 'gpu',
 }
 
 interface FormValues {
     [FormFields.CPU]: number;
-    [FormFields.GPUS]: GpuThreads[];
+    [FormFields.GPU]: number;
 }
 
 interface CustomPowerLevelsDialogProps {
-    maxAvailableThreads: MaxConsumptionLevels;
     handleClose: () => void;
 }
-export function CustomPowerLevelsDialog({ maxAvailableThreads, handleClose }: CustomPowerLevelsDialogProps) {
+export function CustomPowerLevelsDialog({ handleClose }: CustomPowerLevelsDialogProps) {
     const { t } = useTranslation('settings', { useSuspense: false });
     const [saved, setSaved] = useState(false);
 
-    const mode = useConfigMiningStore((s) => s.mode);
-
-    const defaultLevels = getParsedMaxLevels(maxAvailableThreads);
-    const configCpuLevels = useConfigMiningStore((s) => s.custom_max_cpu_usage);
-    const configGpuLevels = useConfigMiningStore((s) => s.custom_max_gpu_usage);
+    const currentSelectedMode = useConfigMiningStore((state) => state.getSelectedMode());
 
     const isChangingMode = useMiningStore((s) => s.isChangingMode);
 
-    const { control, handleSubmit, setValue, formState } = useForm<FormValues>({
+    const { control, handleSubmit, formState } = useForm<FormValues>({
         reValidateMode: 'onSubmit',
         defaultValues: {
-            cpu: configCpuLevels || defaultLevels.eco_mode_max_cpu_usage,
-            gpus: configGpuLevels?.length > 0 ? configGpuLevels : defaultLevels.eco_mode_max_gpu_usage,
+            cpu: currentSelectedMode.cpu_usage_percentage,
+            gpu: currentSelectedMode.gpu_usage_percentage,
         },
-    });
-
-    const { fields } = useFieldArray({
-        control,
-        name: FormFields.GPUS,
-        keyName: 'id',
     });
 
     useEffect(() => {
@@ -74,11 +62,10 @@ export function CustomPowerLevelsDialog({ maxAvailableThreads, handleClose }: Cu
     }, [saved]);
 
     const onSubmit = useCallback(async (data: FormValues) => {
-        await changeMiningMode({
-            mode: 'Custom',
-            customCpuLevels: data[FormFields.CPU],
-            customGpuLevels: data[FormFields.GPUS],
+        await updateCustomMiningMode(data[FormFields.CPU], data[FormFields.GPU]).then(() => {
+            selectMiningMode('Custom');
         });
+
         setSaved(true);
     }, []);
 
@@ -90,7 +77,7 @@ export function CustomPowerLevelsDialog({ maxAvailableThreads, handleClose }: Cu
                 return (
                     <PowerLeveltem
                         value={field.value}
-                        maxLevel={maxAvailableThreads.max_cpu_threads}
+                        maxLevel={100}
                         onChange={field.onChange}
                         label={t('custom-power-levels.cpu-power-level')}
                         descriprion={'custom-power-levels.choose-cpu-power-level'}
@@ -103,39 +90,26 @@ export function CustomPowerLevelsDialog({ maxAvailableThreads, handleClose }: Cu
         />
     );
 
-    const gpuMarkup = fields?.map((gpu, index) => {
-        const maxLevel = maxAvailableThreads?.max_gpus_threads?.[index]?.max_gpu_threads || 8192;
-        return (
-            <Controller
-                key={gpu.id}
-                control={control}
-                name={`${FormFields.GPUS}.${index}.max_gpu_threads`}
-                render={({ field }) => {
-                    return (
-                        <>
-                            <PowerLeveltem
-                                key={gpu.id}
-                                label={`${t('custom-power-levels.gpu-power-level', { index: index + 1 })}: ${gpu.gpu_name}`}
-                                maxLevel={maxLevel}
-                                value={field.value}
-                                minLevel={2}
-                                step={2}
-                                descriprion={'custom-power-levels.choose-gpu-power-level'}
-                                warning={t('custom-power-levels.gpu-warning')}
-                                onChange={(value: number) => {
-                                    setValue(`${FormFields.GPUS}.${index}.max_gpu_threads`, value as never, {
-                                        shouldDirty: true,
-                                    });
-                                }}
-                                isLoading={isChangingMode}
-                            />
-                        </>
-                    );
-                }}
-            />
-        );
-    });
-
+    const gpuMarkup = (
+        <Controller
+            control={control}
+            name={FormFields.GPU}
+            render={({ field }) => {
+                return (
+                    <PowerLeveltem
+                        label={`${t('custom-power-levels.gpu-power-level')}`}
+                        maxLevel={100}
+                        value={field.value}
+                        minLevel={1}
+                        descriprion={'custom-power-levels.choose-gpu-power-level'}
+                        warning={t('custom-power-levels.gpu-warning')}
+                        onChange={field.onChange}
+                        isLoading={isChangingMode}
+                    />
+                );
+            }}
+        />
+    );
     return (
         <>
             <CustomLevelsHeader>
@@ -155,7 +129,10 @@ export function CustomPowerLevelsDialog({ maxAvailableThreads, handleClose }: Cu
                 <CTAWrapper>
                     <Button
                         onClick={handleSubmit(onSubmit)}
-                        disabled={isChangingMode || (mode === 'Custom' && !formState.isDirty)}
+                        disabled={
+                            isChangingMode ||
+                            (currentSelectedMode.mode_type === MiningModeType.Custom && !formState.isDirty)
+                        }
                     >
                         {t(`custom-power-levels.${formState.isDirty ? 'save-changes' : 'use-custom'}`)}
                     </Button>
