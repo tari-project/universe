@@ -15,9 +15,9 @@
   "control-port": "控制端口",
   "cpu-mining-enabled": "CPU 挖矿",
   "custom-power-levels": {
-    "choose-cpu-power-level": "选择您希望分配给挖矿的CPU数量 <span>（{{current}} / {{max}} 核心）</span>",
-    "choose-gpu-power-level": "选择您希望分配给挖矿的GPU数量 <span>（{{current}} / {{max}} 线程）</span>",
-    "cpu-power-level": "CPU核心",
+    "choose-cpu-power-level": "Choose how big of a percentage you want your CPU to be allocated to mining",
+    "choose-gpu-power-level": "Choose how big of a percentage you want your GPU to be allocated to mining",
+    "cpu-power-level": "CPU功率%",
     "cpu-warning": "高CPU使用率可能导致过热、增加能耗，并可能导致硬件损坏。请监控使用情况以确保安全高效的操作。",
     "gpu-power-level": "GPU功率%",
     "gpu-warning": "高GPU使用率可能导致过热、增加能耗，并可能导致硬件损坏。请监控使用情况以确保安全高效的操作。",

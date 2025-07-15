@@ -311,8 +311,14 @@ export const updateCustomMiningMode = async (customCpuUsage: number, customGpuUs
         .then(() => {
             useConfigMiningStore.setState((c) => ({
                 ...c,
-                custom_max_cpu_usage: customCpuUsage,
-                custom_max_gpu_usage: customGpuUsage,
+                mining_modes: {
+                    ...c.mining_modes,
+                    Custom: {
+                        ...c.mining_modes.Custom,
+                        cpu_usage_percentage: customCpuUsage,
+                        gpu_usage_percentage: customGpuUsage,
+                    },
+                },
             }));
         })
         .catch((e) => {
@@ -505,4 +511,25 @@ export const toggleGpuPool = async (enabled: boolean) => {
 
 export const handleWalletUIChanged = (mode: WalletUIMode) => {
     useConfigUIStore.setState({ wallet_ui_mode: mode });
+};
+
+export const getSelectedMiningMode = () => {
+    const selectedMiningMode = useConfigMiningStore.getState().selected_mining_mode;
+    return useConfigMiningStore.getState().mining_modes[selectedMiningMode];
+};
+
+export const getGpuPool = () => {
+    const gpuPool = useConfigPoolsStore.getState().gpu_pool;
+    if (gpuPool) {
+        return Object.values(gpuPool)[0];
+    }
+    return undefined;
+};
+
+export const getCpuPool = () => {
+    const cpuPool = useConfigPoolsStore.getState().cpu_pool;
+    if (cpuPool) {
+        return Object.values(cpuPool)[0];
+    }
+    return undefined;
 };

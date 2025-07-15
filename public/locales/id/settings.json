@@ -15,9 +15,9 @@
   "control-port": "Port Kontrol",
   "cpu-mining-enabled": "Penambangan CPU",
   "custom-power-levels": {
-    "choose-cpu-power-level": "Pilih seberapa banyak Anda ingin CPU Anda dialokasikan untuk menambang <span>({{current}} dari {{max}} inti)</span>",
-    "choose-gpu-power-level": "Pilih seberapa banyak Anda ingin GPU Anda dialokasikan untuk menambang <span>({{current}} dari {{max}} thread)</span>",
-    "cpu-power-level": "Inti CPU",
+    "choose-cpu-power-level": "Choose how big of a percentage you want your CPU to be allocated to mining",
+    "choose-gpu-power-level": "Choose how big of a percentage you want your GPU to be allocated to mining",
+    "cpu-power-level": "Daya CPU %",
     "cpu-warning": "Penggunaan CPU yang tinggi dapat menyebabkan panas berlebih, meningkatkan konsumsi energi, dan dapat menyebabkan kerusakan perangkat keras seiring waktu. Harap pantau penggunaan untuk memastikan operasi yang aman dan efisien.",
     "gpu-power-level": "Daya GPU %",
     "gpu-warning": "Penggunaan GPU yang tinggi dapat menyebabkan panas berlebih, meningkatkan konsumsi energi, dan dapat menyebabkan kerusakan perangkat keras seiring waktu. Harap pantau penggunaan untuk memastikan operasi yang aman dan efisien.",

@@ -25,7 +25,7 @@ import { useConfigMiningStore } from '@app/store';
 import { setDialogToShow } from '@app/store/actions/uiStoreActions';
 import { setCustomLevelsDialogOpen } from '@app/store/actions/miningStoreActions';
 import { MiningModeType } from '@app/types/configs';
-import { selectMiningMode } from '@app/store/actions/appConfigStoreActions';
+import { getSelectedMiningMode, selectMiningMode } from '@app/store/actions/appConfigStoreActions';
 
 interface Props {
     disabled?: boolean;
@@ -61,7 +61,7 @@ const getModeIcon = (mode: MiningModeType) => {
 
 export default function ModeDropdown({ disabled, loading }: Props) {
     const { t } = useTranslation('mining-view');
-    const selectedMiningMode = useConfigMiningStore((s) => s.getSelectedMode());
+    const selectedMiningMode = getSelectedMiningMode();
     const miningModes = useConfigMiningStore((s) => s.mining_modes);
     const [isOpen, setIsOpen] = useState(false);
 

@@ -3,9 +3,7 @@ import {
     ConfigBackendInMemory,
     ConfigCore,
     ConfigMining,
-    ConfigMiningSelectors,
     ConfigPools,
-    ConfigPoolsSelectors,
     ConfigUI,
     ConfigWallet,
 } from '@app/types/configs';
@@ -91,28 +89,16 @@ export const useConfigWalletStore = create<ConfigWallet>()(() => ({
     ...configWalletInitialState,
 }));
 
-export const useConfigMiningStore = create<ConfigMining & ConfigMiningSelectors>()((_, get) => ({
+export const useConfigMiningStore = create<ConfigMining>()(() => ({
     ...configMininigInitialState,
-    getSelectedMode: () => {
-        const selectedMode = get().selected_mining_mode;
-        return get().mining_modes[selectedMode];
-    },
 }));
 
 export const useConfigUIStore = create<UIConfigStoreState>()(() => ({
     ...configUIInitialState,
 }));
 
-export const useConfigPoolsStore = create<ConfigPools & ConfigPoolsSelectors>()((_, get) => ({
+export const useConfigPoolsStore = create<ConfigPools>()(() => ({
     ...configPoolsInitialState,
-    getGpuPool: () => {
-        const gpuPool = get().gpu_pool;
-        return gpuPool ? Object.values(gpuPool)[0] : undefined;
-    },
-    getCpuPool: () => {
-        const cpuPool = get().cpu_pool;
-        return cpuPool ? Object.values(cpuPool)[0] : undefined;
-    },
 }));
 
 export const useConfigBEInMemoryStore = create<ConfigBackendInMemory>()(() => ({

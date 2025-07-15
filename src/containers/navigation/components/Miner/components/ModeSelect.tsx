@@ -15,7 +15,7 @@ import custom from '@app/assets/icons/emoji/custom.png';
 import { TileItem, TileTop } from '../styles';
 import { useConfigMiningStore } from '@app/store';
 import { useSetupStore } from '@app/store/useSetupStore';
-import { selectMiningMode } from '@app/store/actions/appConfigStoreActions';
+import { getSelectedMiningMode, selectMiningMode } from '@app/store/actions/appConfigStoreActions';
 import { MiningModeType } from '@app/types/configs';
 
 interface ModeSelectProps {
@@ -47,7 +47,7 @@ const getModeIcon = (modeType: MiningModeType) => {
 const ModeSelect = memo(function ModeSelect({ variant = 'primary', isSync }: ModeSelectProps) {
     const { t } = useTranslation('common', { useSuspense: false });
 
-    const selectedMiningMode = useConfigMiningStore((s) => s.getSelectedMode());
+    const selectedMiningMode = getSelectedMiningMode();
     const miningModes = useConfigMiningStore((s) => s.mining_modes);
     const isCPUMining = useMiningMetricsStore((s) => s.cpu_mining_status.is_mining);
     const isGPUMining = useMiningMetricsStore((s) => s.gpu_mining_status.is_mining);

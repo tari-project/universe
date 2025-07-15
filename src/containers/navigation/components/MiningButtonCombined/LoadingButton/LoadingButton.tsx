@@ -7,9 +7,10 @@ import customBg from '../backgrounds/custom.png';
 import { useMemo } from 'react';
 import { useConfigMiningStore } from '@app/store';
 import { MiningModeType } from '@app/types/configs';
+import { getSelectedMiningMode } from '@app/store/actions/appConfigStoreActions';
 
 export default function LoadingButton() {
-    const selectedMiningMode = useConfigMiningStore((s) => s.getSelectedMode());
+    const selectedMiningMode = getSelectedMiningMode();
 
     const backgroundImage = useMemo(() => {
         switch (selectedMiningMode.mode_type) {

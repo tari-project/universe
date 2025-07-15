@@ -20,7 +20,11 @@ import { useConfigMiningStore } from '@app/store/useAppConfigStore.ts';
 
 import { PowerLeveltem } from '@app/containers/navigation/components/Miner/components/CustomPowerLevels/PowerLeveltem.tsx';
 import { MiningModeType } from '@app/types/configs.ts';
-import { selectMiningMode, updateCustomMiningMode } from '@app/store/actions/appConfigStoreActions.ts';
+import {
+    getSelectedMiningMode,
+    selectMiningMode,
+    updateCustomMiningMode,
+} from '@app/store/actions/appConfigStoreActions.ts';
 
 enum FormFields {
     CPU = 'cpu',
@@ -39,7 +43,7 @@ export function CustomPowerLevelsDialog({ handleClose }: CustomPowerLevelsDialog
     const { t } = useTranslation('settings', { useSuspense: false });
     const [saved, setSaved] = useState(false);
 
-    const currentSelectedMode = useConfigMiningStore((state) => state.getSelectedMode());
+    const currentSelectedMode = getSelectedMiningMode();
 
     const isChangingMode = useMiningStore((s) => s.isChangingMode);
 

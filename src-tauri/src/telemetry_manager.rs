@@ -690,7 +690,10 @@ async fn get_telemetry_data_inner(
         block_height,
         is_mining_active,
         network: network.map(|n| n.into()),
-        mode: mining_config.selected_mining_mode().to_string(),
+        mode: mining_config
+            .selected_mining_mode()
+            .to_string()
+            .to_lowercase(),
         cpu_hash_rate,
         cpu_utilization,
         cpu_make,
