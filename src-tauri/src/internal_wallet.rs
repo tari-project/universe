@@ -39,7 +39,6 @@ use tari_key_manager::SeedWords;
 use tari_utilities::encoding::MBase58;
 use tari_utilities::message_format::MessageFormat;
 use tari_utilities::{Hidden, SafePassword};
-use tauri::async_runtime::block_on;
 use tauri::{AppHandle, Listener, Manager};
 use tokio::fs;
 use tokio::sync::{oneshot, OnceCell, RwLock};
