@@ -24,13 +24,6 @@ export default function EnterPinDialog() {
         });
     }
 
-    function handleForgotPin() {
-        // stop backend listener for entering the pin
-        emit('pin-dialog-response', { pin: undefined }).then(() => {
-            setModal('forgot_pin');
-        });
-    }
-
     return (
         <Dialog open={isOpen} onOpenChange={handleClose}>
             <DialogContent $transparentBg $unPadded>
@@ -38,7 +31,7 @@ export default function EnterPinDialog() {
                     <Header>
                         <Heading>{t('security.pin.enter')}</Heading> <CloseButton onClick={handleClose} />
                     </Header>
-                    <EnterPin onSubmit={handleSubmit} onForgot={handleForgotPin} />
+                    <EnterPin onSubmit={handleSubmit} />
                 </Wrapper>
             </DialogContent>
         </Dialog>

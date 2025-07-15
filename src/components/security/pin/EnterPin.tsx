@@ -4,15 +4,17 @@ import { TextButton } from '@app/components/elements/buttons/TextButton.tsx';
 import { CodeInputValues, DEFAULT_PIN_LENGTH, PinInput } from './PinInput.tsx';
 import { CTAWrapper, Wrapper } from './styles.ts';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
+import { emit } from '@tauri-apps/api/event';
+import { useSecurityStore } from '@app/store';
 
 const pinArr = Array.from({ length: DEFAULT_PIN_LENGTH }, (_, i) => i);
 
 interface EnterPinProps {
-    onForgot?: () => void;
     onSubmit: (pin: string) => void;
 }
-export default function EnterPin({ onForgot, onSubmit }: EnterPinProps) {
+export default function EnterPin({ onSubmit }: EnterPinProps) {
     const { t } = useTranslation('wallet');
+    const setModal = useSecurityStore((s) => s.setModal);
     const methods = useForm({
         defaultValues: { code: pinArr.map((_) => ({ digit: '' })) },
     });
@@ -26,8 +28,11 @@ export default function EnterPin({ onForgot, onSubmit }: EnterPinProps) {
     }
 
     function handleForgot() {
-        onForgot?.();
-        methods.reset();
+        // stop backend listener for entering the pin
+        emit('pin-dialog-response', { pin: undefined }).then(() => {
+            setModal('forgot_pin');
+            methods.reset();
+        });
     }
 
     return (
