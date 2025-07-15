@@ -12,11 +12,11 @@ export default function CreatePinDialog() {
     const setModal = useSecurityStore((s) => s.setModal);
 
     const [showComplete, setShowComplete] = useState(false);
-
     const isOpen = modal === 'create_pin';
 
     function handleClose() {
         void emit('pin-dialog-response', { pin: undefined });
+        setShowComplete(false);
         setModal(null);
     }
 
@@ -25,6 +25,7 @@ export default function CreatePinDialog() {
             if (!showComplete) {
                 setShowComplete(true);
             } else {
+                setShowComplete(false);
                 setModal(null);
             }
         });
