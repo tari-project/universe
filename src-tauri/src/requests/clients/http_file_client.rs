@@ -176,7 +176,10 @@ impl HttpFileClient {
                 .map_err(|e| anyhow::anyhow!("Failed to create directory: {}", e))?;
         }
 
-        let mut file = File::create(destination_file)
+        let mut file = File::options()
+            .write(true)
+            .create(true)
+            .open(destination_file)
             .await
             .map_err(|e| anyhow::anyhow!("Failed to create file: {}", e))?;
 
