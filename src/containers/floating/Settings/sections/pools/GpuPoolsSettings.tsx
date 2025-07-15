@@ -8,12 +8,12 @@ import {
 } from '../../components/SettingsGroup.styles';
 import { Typography } from '@app/components/elements/Typography';
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch';
-import { toggleGpuPool } from '@app/store/actions/appConfigStoreActions';
+import { getGpuPool, toggleGpuPool } from '@app/store/actions/appConfigStoreActions';
 
 export const GpuPoolsSettings = () => {
     const { t } = useTranslation('settings');
     const isGpuPoolEnabled = useConfigPoolsStore((state) => state.gpu_pool_enabled);
-    const gpuPoolData = useConfigPoolsStore((state) => state.getGpuPool());
+    const gpuPoolData = getGpuPool();
 
     const handleToggleGpuPool = (enabled: boolean) => {
         toggleGpuPool(enabled);

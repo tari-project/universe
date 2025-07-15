@@ -47,11 +47,14 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'set_allow_telemetry', payload: { allow_telemetry: boolean }): Promise<void>;
     function invoke(param: 'send_data_telemetry_service', payload: { eventName: string; data: object }): Promise<void>;
     function invoke(param: 'set_user_inactivity_timeout', payload: { timeout: number }): Promise<void>;
+    function invoke(param: 'select_mining_mode', payload: { mode: string }): Promise<void>;
     function invoke(
-        param: 'set_mode',
-        payload: { mode: MiningModeType; customCpuUsage: number; customGpuUsage: GpuThreads[] }
+        param: 'update_custom_mining_mode',
+        payload: {
+            customCpuUsage: number;
+            customGpuUsage: number;
+        }
     ): Promise<void>;
-    function invoke(param: 'get_max_consumption_levels'): Promise<MaxConsumptionLevels>;
     function invoke(param: 'set_display_mode', payload: { displayMode: displayMode }): Promise<void>;
     function invoke(param: 'get_seed_words'): Promise<string[]>;
     function invoke(param: 'revert_to_internal_wallet'): Promise<void>;

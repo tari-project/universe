@@ -8,7 +8,6 @@ export * from './useAppConfigStore.ts';
 export * from './useBlockchainVisualisationStore.ts';
 export * from './useMiningMetricsStore.ts';
 export * from './useMiningStore.ts';
-export * from './useP2poolStatsStore.ts';
 export * from './usePaperWalletStore.ts';
 export * from './useShareRewardStore.ts';
 export * from './useShellOfSecretsStore.ts';

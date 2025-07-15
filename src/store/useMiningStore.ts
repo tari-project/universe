@@ -1,6 +1,5 @@
 import { Network } from '@app/utils/network';
 import { create } from './create';
-import { MaxConsumptionLevels } from '@app/types/app-status';
 
 interface MiningStoreState {
     hashrateReady?: boolean;
@@ -14,7 +13,6 @@ interface MiningStoreState {
     wasMineOnAppStartExecuted?: boolean;
     sessionMiningTime: number;
     customLevelsDialogOpen: boolean;
-    maxAvailableThreads?: MaxConsumptionLevels;
     network?: Network;
     engine?: string;
     availableEngines: string[];
@@ -22,7 +20,6 @@ interface MiningStoreState {
 
 const initialState: MiningStoreState = {
     customLevelsDialogOpen: false,
-    maxAvailableThreads: undefined,
     counter: 0,
     miningTime: 0,
     sessionMiningTime: 0,
