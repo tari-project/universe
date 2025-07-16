@@ -30,7 +30,7 @@ use crate::configs::config_core::{AirdropTokens, ConfigCore, ConfigCoreContent};
 use crate::configs::config_mining::{ConfigMining, ConfigMiningContent};
 use crate::configs::config_pools::{ConfigPools, ConfigPoolsContent};
 use crate::configs::config_ui::{ConfigUI, ConfigUIContent, DisplayMode};
-use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent};
+use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent, WalletId};
 use crate::configs::trait_config::ConfigImpl;
 use crate::events::ConnectionStatusPayload;
 use crate::events_emitter::EventsEmitter;
@@ -211,7 +211,6 @@ pub async fn select_exchange_miner(
         .await
         .map_err(InvokeError::from_anyhow)?;
 
-    // tutaj
     match InternalWallet::initialize_seedless(&app_handle, Some(new_external_tari_address)).await {
         Ok(_) => {
             log::info!(target: LOG_TARGET, "Internal wallet initialized successfully after \"select_exchange_miner\"");
@@ -768,10 +767,12 @@ pub async fn forgot_pin(
         .await
         .map_err(|e| e.to_string())?;
 
-    let extracted_wallet_details =
-        InternalWallet::get_tari_wallet_details("unused_id".to_string(), tari_cipher_seed.clone())
-            .await
-            .map_err(|e| e.to_string())?;
+    let extracted_wallet_details = InternalWallet::get_tari_wallet_details(
+        WalletId::new("nonsense".to_string()),
+        tari_cipher_seed.clone(),
+    )
+    .await
+    .map_err(|e| e.to_string())?;
 
     if extracted_wallet_details.tari_address != InternalWallet::tari_address().await {
         error!(target: LOG_TARGET, "Seed words do not match current wallet address");
@@ -807,7 +808,7 @@ pub async fn import_seed_words(
             .await
             .map_err(InvokeError::from_anyhow)?;
             EventsEmitter::emit_exchange_id_changed(DEFAULT_EXCHANGE_ID.to_string()).await;
-            log::info!(target: LOG_TARGET, "Seed words imported successfully for wallet #{wallet_id}");
+            log::info!(target: LOG_TARGET, "Seed words imported successfully for wallet #{wallet_id:?}");
         }
         Err(e) => {
             error!(target: LOG_TARGET, "Error importing seed words by internal wallet: {e:?}");

@@ -67,14 +67,8 @@ export default function CreatePin({ onClose, onSubmit }: { onClose?: () => void;
                     <Typography variant="p">{t('security.pin.creation-subtitle', { context })}</Typography>
                 </TextWrapper>
                 <PinInput hasError={noMatch} />
-                {!isConfirm && (
-                    <HelpWrapper>
-                        {`If you forget this PIN, the only way to regain access to your wallet is by restoring it from your seed phrase.`}
-                    </HelpWrapper>
-                )}
-                {isConfirm && noMatch && (
-                    <HelpWrapper>{`That’s not quite right. Try again or create a new PIN.`}</HelpWrapper>
-                )}
+                {!isConfirm && <HelpWrapper>{t('security.pin.explainer')}</HelpWrapper>}
+                {isConfirm && noMatch && <HelpWrapper>{t('security.pin.error-match')}</HelpWrapper>}
 
                 <CTAWrapper>
                     <Button size="xlarge" disabled={submitDisabled} type="submit" fluid variant="black">
