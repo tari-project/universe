@@ -5,7 +5,7 @@ export const ScrollMask = styled.div`
     display: flex;
     align-items: center;
     position: relative;
-    cursor: grab;
+    cursor: default;
     gap: 27px;
     overflow: hidden;
 
@@ -21,10 +21,6 @@ export const ScrollMask = styled.div`
         black calc(100% - 100px),
         transparent 100%
     );
-
-    &:active {
-        cursor: grabbing;
-    }
 `;
 
 export const DragContainer = styled(m.div)`
@@ -33,4 +29,5 @@ export const DragContainer = styled(m.div)`
     will-change: transform;
     padding-right: 600px;
     width: fit-content;
+    user-select: none;
 `;

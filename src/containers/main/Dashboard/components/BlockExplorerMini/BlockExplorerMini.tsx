@@ -13,7 +13,6 @@ export default function BlockExplorerMini() {
     const [stickyEntry, setStickyEntry] = useState<BlockData | null>(null);
     const [scrollList, setScrollList] = useState<BlockData[]>([]);
 
-    const containerRef = useRef<HTMLDivElement>(null);
     const isFirstRender = useRef(true);
 
     useEffect(() => {
@@ -73,7 +72,7 @@ export default function BlockExplorerMini() {
     }
 
     return (
-        <Wrapper ref={containerRef}>
+        <Wrapper>
             <MinerCount />
             <InsideHolder>
                 <StickyEntryWrapper>
@@ -91,7 +90,7 @@ export default function BlockExplorerMini() {
                     )}
                 </StickyEntryWrapper>
 
-                <BlockScrollList data={scrollList} containerRef={containerRef} />
+                <BlockScrollList data={scrollList} />
             </InsideHolder>
         </Wrapper>
     );
