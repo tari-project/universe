@@ -73,7 +73,7 @@ pub struct PoolInfo {
     pub connection_attempts: u32,
     pub uptime_seconds: Option<u64>,
 }
-
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Serialize, Debug, Deserialize, Clone, PartialEq)]
 pub enum GpuVendor {
     NVIDIA,
