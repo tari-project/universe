@@ -919,7 +919,7 @@ async fn handle_critical_problem(
 }
 
 async fn retry_with_keyring_dialog<F, Fut, T>(
-    app_handle: &AppHandle,
+    _app_handle: &AppHandle,
     mut operation: F,
     log_msg: &'static str,
 ) -> Result<T, anyhow::Error>
@@ -946,7 +946,7 @@ where
             Err(CredentialError::Keyring(_)) => {
                 EventsEmitter::emit_show_keyring_dialog().await;
                 let (tx, rx) = oneshot::channel();
-                app_handle.once("keyring-dialog-response", |_event| {
+                _app_handle.once("keyring-dialog-response", |_event| {
                     let _unused = tx.send(true);
                 });
                 let _unused = rx.await.unwrap_or_default();
