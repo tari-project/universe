@@ -15,19 +15,13 @@ import custom from '@app/assets/icons/emoji/custom.png';
 import { TileItem, TileTop } from '../styles';
 import { useConfigMiningStore } from '@app/store';
 import { useSetupStore } from '@app/store/useSetupStore';
-import { getSelectedMiningMode, selectMiningMode } from '@app/store/actions/appConfigStoreActions';
+import { selectMiningMode } from '@app/store/actions/appConfigStoreActions';
 import { MiningModeType } from '@app/types/configs';
 
 interface ModeSelectProps {
     variant?: 'primary' | 'minimal';
     isSync?: boolean;
 }
-
-// const miningTabOptions: SelectOption[] = [
-//     { label: 'ECO', value: 'Eco', iconSrc: eco },
-//     { label: 'Ludicrous', value: 'Ludicrous', iconSrc: fire },
-//     { label: 'Custom', value: 'Custom', iconSrc: custom },
-// ];
 
 const getModeIcon = (modeType: MiningModeType) => {
     switch (modeType) {
@@ -47,7 +41,7 @@ const getModeIcon = (modeType: MiningModeType) => {
 const ModeSelect = memo(function ModeSelect({ variant = 'primary', isSync }: ModeSelectProps) {
     const { t } = useTranslation('common', { useSuspense: false });
 
-    const selectedMiningMode = getSelectedMiningMode();
+    const selectedMiningMode = useConfigMiningStore((s) => s.getSelectedMiningMode());
     const miningModes = useConfigMiningStore((s) => s.mining_modes);
     const isCPUMining = useMiningMetricsStore((s) => s.cpu_mining_status.is_mining);
     const isGPUMining = useMiningMetricsStore((s) => s.gpu_mining_status.is_mining);
@@ -95,7 +89,7 @@ const ModeSelect = memo(function ModeSelect({ variant = 'primary', isSync }: Mod
                 (isMining && (isMiningLoading || !isMiningControlsEnabled))
             }
             onChange={handleChange}
-            selectedValue={selectedMiningMode.mode_name}
+            selectedValue={selectedMiningMode?.mode_name || 'Eco'}
             options={miningTabOptions}
             forceHeight={21}
             variant={isMininimal ? 'minimal' : 'primary'}
@@ -107,7 +101,7 @@ const ModeSelect = memo(function ModeSelect({ variant = 'primary', isSync }: Mod
         return selectMarkup;
     }
 
-    const headerIcon = miningTabOptions.find((option) => option.value === selectedMiningMode.mode_name)?.iconSrc;
+    const headerIcon = miningTabOptions.find((option) => option.value === selectedMiningMode?.mode_name)?.iconSrc;
 
     return (
         <TileItem>

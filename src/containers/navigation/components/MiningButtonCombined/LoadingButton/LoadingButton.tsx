@@ -4,16 +4,15 @@ import startBg from '../backgrounds/start.png';
 import ecoBg from '../backgrounds/eco.png';
 import ludicrousBg from '../backgrounds/ludicrous.png';
 import customBg from '../backgrounds/custom.png';
-import { useMemo } from 'react';
-import { useConfigMiningStore } from '@app/store';
+import { use, useMemo } from 'react';
 import { MiningModeType } from '@app/types/configs';
-import { getSelectedMiningMode } from '@app/store/actions/appConfigStoreActions';
+import { useConfigMiningStore } from '@app/store';
 
 export default function LoadingButton() {
-    const selectedMiningMode = getSelectedMiningMode();
+    const selectedMiningMode = useConfigMiningStore((state) => state.getSelectedMiningMode());
 
     const backgroundImage = useMemo(() => {
-        switch (selectedMiningMode.mode_type) {
+        switch (selectedMiningMode?.mode_type) {
             case MiningModeType.Eco:
                 return ecoBg;
             case MiningModeType.Ludicrous:

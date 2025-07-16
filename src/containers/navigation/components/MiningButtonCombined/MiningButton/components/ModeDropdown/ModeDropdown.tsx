@@ -25,7 +25,7 @@ import { useConfigMiningStore } from '@app/store';
 import { setDialogToShow } from '@app/store/actions/uiStoreActions';
 import { setCustomLevelsDialogOpen } from '@app/store/actions/miningStoreActions';
 import { MiningModeType } from '@app/types/configs';
-import { getSelectedMiningMode, selectMiningMode } from '@app/store/actions/appConfigStoreActions';
+import { selectMiningMode } from '@app/store/actions/appConfigStoreActions';
 
 interface Props {
     disabled?: boolean;
@@ -61,7 +61,7 @@ const getModeIcon = (mode: MiningModeType) => {
 
 export default function ModeDropdown({ disabled, loading }: Props) {
     const { t } = useTranslation('mining-view');
-    const selectedMiningMode = getSelectedMiningMode();
+    const selectedMiningMode = useConfigMiningStore((s) => s.getSelectedMiningMode());
     const miningModes = useConfigMiningStore((s) => s.mining_modes);
     const [isOpen, setIsOpen] = useState(false);
 
@@ -97,7 +97,7 @@ export default function ModeDropdown({ disabled, loading }: Props) {
                 setIsOpen(false);
                 return;
             }
-            if (mode.mode_type === selectedMiningMode.mode_type) {
+            if (mode.mode_type === selectedMiningMode?.mode_type) {
                 setIsOpen(false);
                 return;
             }
@@ -119,9 +119,9 @@ export default function ModeDropdown({ disabled, loading }: Props) {
                 <TextGroup>
                     <Eyebrow>{t('mode')}</Eyebrow>
                     <SelectedValue>
-                        {selectedMiningMode.mode_name}
+                        {selectedMiningMode?.mode_name}
                         <OptionIcon
-                            src={modes.find((mode) => mode.mode_type === selectedMiningMode.mode_type)?.icon}
+                            src={modes.find((mode) => mode.mode_type === selectedMiningMode?.mode_type)?.icon}
                             alt=""
                             aria-hidden="true"
                             className="option-icon"
@@ -144,11 +144,11 @@ export default function ModeDropdown({ disabled, loading }: Props) {
                                 <Option
                                     key={mode.name}
                                     onClick={() => handleSelectMode(mode)}
-                                    $isSelected={mode.name === selectedMiningMode.mode_name}
+                                    $isSelected={mode.name === selectedMiningMode?.mode_name}
                                 >
                                     <OptionIcon src={mode.icon} alt="" aria-hidden="true" className="option-icon" />
                                     <OptionText>{mode.name}</OptionText>
-                                    {mode.name === selectedMiningMode.mode_name && (
+                                    {mode.name === selectedMiningMode?.mode_name && (
                                         <SelectedIcon className="selected-icon" />
                                     )}
                                 </Option>

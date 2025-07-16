@@ -16,15 +16,11 @@ import { IoClose } from 'react-icons/io5';
 import { Controller, useForm } from 'react-hook-form';
 
 import { Button } from '@app/components/elements/buttons/Button.tsx';
-import { useConfigMiningStore } from '@app/store/useAppConfigStore.ts';
 
 import { PowerLeveltem } from '@app/containers/navigation/components/Miner/components/CustomPowerLevels/PowerLeveltem.tsx';
 import { MiningModeType } from '@app/types/configs.ts';
-import {
-    getSelectedMiningMode,
-    selectMiningMode,
-    updateCustomMiningMode,
-} from '@app/store/actions/appConfigStoreActions.ts';
+import { selectMiningMode, updateCustomMiningMode } from '@app/store/actions/appConfigStoreActions.ts';
+import { useConfigMiningStore } from '@app/store/useAppConfigStore.ts';
 
 enum FormFields {
     CPU = 'cpu',
@@ -43,15 +39,15 @@ export function CustomPowerLevelsDialog({ handleClose }: CustomPowerLevelsDialog
     const { t } = useTranslation('settings', { useSuspense: false });
     const [saved, setSaved] = useState(false);
 
-    const currentSelectedMode = getSelectedMiningMode();
+    const currentSelectedMode = useConfigMiningStore((state) => state.getSelectedMiningMode());
 
     const isChangingMode = useMiningStore((s) => s.isChangingMode);
 
     const { control, handleSubmit, formState } = useForm<FormValues>({
         reValidateMode: 'onSubmit',
         defaultValues: {
-            cpu: currentSelectedMode.cpu_usage_percentage,
-            gpu: currentSelectedMode.gpu_usage_percentage,
+            cpu: currentSelectedMode?.cpu_usage_percentage || 0,
+            gpu: currentSelectedMode?.gpu_usage_percentage || 0,
         },
     });
 
@@ -135,7 +131,7 @@ export function CustomPowerLevelsDialog({ handleClose }: CustomPowerLevelsDialog
                         onClick={handleSubmit(onSubmit)}
                         disabled={
                             isChangingMode ||
-                            (currentSelectedMode.mode_type === MiningModeType.Custom && !formState.isDirty)
+                            (currentSelectedMode?.mode_type === MiningModeType.Custom && !formState.isDirty)
                         }
                     >
                         {t(`custom-power-levels.${formState.isDirty ? 'save-changes' : 'use-custom'}`)}
