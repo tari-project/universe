@@ -39,7 +39,6 @@ use tari_key_manager::SeedWords;
 use tari_utilities::encoding::MBase58;
 use tari_utilities::message_format::MessageFormat;
 use tari_utilities::{Hidden, SafePassword};
-use tauri::async_runtime::block_on;
 use tauri::{AppHandle, Listener, Manager};
 use tokio::fs;
 use tokio::sync::{oneshot, OnceCell, RwLock};
@@ -730,15 +729,18 @@ impl InternalWallet {
             else {
                 let wallets = ConfigWallet::content().await.tari_wallets().clone();
                 if let Some(wallet_id) = wallets.first() {
-                    CredentialManager::new_default(wallet_id.clone())
+                    let result = CredentialManager::new_default(wallet_id.clone())
                         .get_credentials()
-                        .await
-                        .map(|cred| cred.encrypted_seed)
-                        .map_err(|e| {
+                        .await;
+
+                    match result {
+                        Ok(cred) => cred.encrypted_seed,
+                        Err(e) => {
                             // Only display once
-                            block_on(EventsEmitter::emit_show_keyring_dialog());
-                            anyhow!("Failed to get tari seed from keyring: {e}")
-                        })?
+                            EventsEmitter::emit_show_keyring_dialog().await;
+                            return Err(anyhow!("Failed to get tari seed from keyring: {e}"));
+                        }
+                    }
                 } else {
                     drop(internal_wallet); // Release lock before await
                     handle_critical_problem("Can't access seed", "[get_tari_seed]", None).await;
