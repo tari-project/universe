@@ -75,7 +75,7 @@ export default function useSync() {
     useEffect(() => {
         const isOpen = shouldShowSync || (!currentPhaseToShow?.is_complete && !isInitialSetupFinished);
         setShowSync(isOpen);
-    }, [currentPhaseToShow?.is_complete, isInitialSetupFinished, shouldShowSync]);
+    }, [currentPhaseToShow, isInitialSetupFinished, shouldShowSync]);
 
     useEffect(() => {
         const hideResumeAppSync =
@@ -92,6 +92,7 @@ export default function useSync() {
         setupTitle: currentPhaseToShow?.title,
         setupProgress: currentPhaseToShow?.progress,
         setupParams: currentPhaseToShow?.title_params ? { ...currentPhaseToShow.title_params } : {},
+        currentPhaseToShow,
         showSync,
     };
 }
