@@ -1,23 +1,20 @@
 import { useSetupStore } from '@app/store/useSetupStore.ts';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { SetupPhase } from '@app/types/events-payloads.ts';
 import { useNodeStore } from '@app/store/useNodeStore.ts';
 
-const initialNodeState = useNodeStore.getState();
 export default function useSync() {
-    const nodeStateRef = useRef(initialNodeState);
     const core = useSetupStore((s) => s.core_phase_setup_payload);
     const hardware = useSetupStore((s) => s.hardware_phase_setup_payload);
     const node = useSetupStore((s) => s.node_phase_setup_payload);
     const mining = useSetupStore((s) => s.mining_phase_setup_payload);
     const wallet = useSetupStore((s) => s.wallet_phase_setup_payload);
     const disabledPhases = useSetupStore((s) => s.disabled_phases);
-    useEffect(() => useNodeStore.subscribe((state) => (nodeStateRef.current = state)), []);
-
-    const lastUpdate = nodeStateRef.current.backgroundNodeSyncLastUpdate;
-    const type = nodeStateRef.current.node_type;
 
     const walletDisabled = disabledPhases.includes(SetupPhase.Wallet);
+    const miningDisabled = disabledPhases.includes(SetupPhase.Mining);
+    const hardwareDisabled = disabledPhases.includes(SetupPhase.Hardware);
+    const nodeDisabled = disabledPhases.includes(SetupPhase.Node);
 
     const getProgress = useCallback(() => {
         const total = 5;
@@ -54,20 +51,22 @@ export default function useSync() {
     ]);
 
     const currentPhaseToShow = useMemo(() => {
-        if (hardware?.is_complete && mining) {
-            return mining;
+        let phase = core;
+        if (!miningDisabled && (wallet?.is_complete || walletDisabled)) {
+            phase = mining;
         }
-        if (node?.is_complete && hardware) {
-            return hardware;
+        if (!walletDisabled && hardware?.is_complete) {
+            phase = wallet;
         }
-        if (core?.is_complete && node) {
-            return node;
+        if (!hardwareDisabled && node?.is_complete) {
+            phase = hardware;
         }
-        return core;
-    }, [core, hardware, node, mining]);
+        if (!nodeDisabled && core?.is_complete) {
+            phase = node;
+        }
+        return phase;
+    }, [core, miningDisabled, wallet, walletDisabled, hardware, hardwareDisabled, node, nodeDisabled, mining]);
 
-    console.debug(`lastUpdate= `, lastUpdate);
-    console.debug(`type= `, type);
     return {
         getProgress,
         setupPhaseTitle: currentPhaseToShow?.phase_title,
