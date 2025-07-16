@@ -8,12 +8,12 @@ import {
 } from '../../components/SettingsGroup.styles';
 import { Typography } from '@app/components/elements/Typography';
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch';
-import { getCpuPool, toggleCpuPool } from '@app/store/actions/appConfigStoreActions';
+import { toggleCpuPool } from '@app/store/actions/appConfigStoreActions';
 
 export const CpuPoolsSettings = () => {
     const { t } = useTranslation('settings');
     const isCpuPoolEnabled = useConfigPoolsStore((state) => state.cpu_pool_enabled);
-    const cpuPoolData = getCpuPool();
+    const cpuPoolData = useConfigPoolsStore((state) => state.getCpuPool());
 
     const handleToggleCpuPool = (enabled: boolean) => {
         toggleCpuPool(enabled);

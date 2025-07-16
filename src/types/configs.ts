@@ -56,6 +56,10 @@ export interface ConfigMining {
     mining_time: number;
 }
 
+export interface ConfigMiningSelectors {
+    getSelectedMiningMode: () => MiningMode | undefined;
+}
+
 export enum MiningModeType {
     Eco = 'Eco',
     Custom = 'Custom',
@@ -76,6 +80,11 @@ export interface ConfigPools {
     gpu_pool?: { [GpuPools.LuckyPool]: BasePoolData } | { [GpuPools.SupportXTMPool]: BasePoolData };
     cpu_pool_enabled: boolean;
     cpu_pool?: { [CpuPools.GlobalTariPool]: BasePoolData };
+}
+
+export interface ConfigPoolsSelectors {
+    getGpuPool: () => BasePoolData | undefined;
+    getCpuPool: () => BasePoolData | undefined;
 }
 
 export enum GpuPools {
