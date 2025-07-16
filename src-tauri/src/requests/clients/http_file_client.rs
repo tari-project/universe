@@ -179,6 +179,7 @@ impl HttpFileClient {
         let mut file = File::options()
             .write(true)
             .create(true)
+            .truncate(true)
             .open(destination_file)
             .await
             .map_err(|e| anyhow::anyhow!("Failed to create file: {}", e))?;
