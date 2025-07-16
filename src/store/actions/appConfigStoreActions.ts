@@ -207,61 +207,6 @@ export const setMineOnAppStart = async (mineOnAppStart: boolean) => {
         useConfigMiningStore.setState({ mine_on_app_start: !mineOnAppStart });
     });
 };
-// export const changeMiningMode = async (params: ChangeMiningModeArgs) => {
-//     const { mode, customGpuLevels, customCpuLevels } = params;
-//     console.info(`Changing mode to ${mode}...`);
-
-//     const cpu_mining_status = useMiningMetricsStore.getState().cpu_mining_status;
-//     const gpu_mining_status = useMiningMetricsStore.getState().gpu_mining_status;
-
-//     useMiningStore.setState({ isChangingMode: true });
-//     handleMiningModeChange();
-//     const wasCpuMiningInitiated = useMiningStore.getState().isCpuMiningInitiated;
-//     const wasGpuMiningInitiated = useMiningStore.getState().isGpuMiningInitiated;
-
-//     if (cpu_mining_status.is_mining || gpu_mining_status.is_mining) {
-//         console.info('Pausing mining...');
-//         await stopMining();
-//     }
-
-//     const parsedMax = getParsedMaxLevels(useMiningStore.getState().maxAvailableThreads);
-
-//     let cpu = customCpuLevels;
-//     let gpu = customGpuLevels;
-
-//     switch (mode) {
-//         case 'Eco': {
-//             cpu = parsedMax.eco_mode_max_cpu_usage;
-//             gpu = parsedMax.eco_mode_max_gpu_usage;
-//             break;
-//         }
-//         case 'Ludicrous': {
-//             cpu = parsedMax.ludicrous_mode_max_cpu_usage;
-//             gpu = parsedMax.ludicrous_mode_max_gpu_usage;
-//             break;
-//         }
-//     }
-
-//     try {
-//         await setMode({
-//             mode: mode as MiningModeType,
-//             customCpuLevels: cpu,
-//             customGpuLevels: gpu,
-//         });
-//         console.info(`Mode changed to ${mode}`);
-//         if (wasCpuMiningInitiated) {
-//             await startCpuMining();
-//         }
-
-//         if (wasGpuMiningInitiated) {
-//             await startGpuMining();
-//         }
-//     } catch (e) {
-//         console.error('Failed to change mode: ', e);
-//     } finally {
-//         useMiningStore.setState({ isChangingMode: false });
-//     }
-// };
 
 export const selectMiningMode = async (mode: string) => {
     console.info(`Changing mode to ${mode}...`);
@@ -504,25 +449,4 @@ export const toggleGpuPool = async (enabled: boolean) => {
 
 export const handleWalletUIChanged = (mode: WalletUIMode) => {
     useConfigUIStore.setState({ wallet_ui_mode: mode });
-};
-
-export const getSelectedMiningMode = () => {
-    const selectedMiningMode = useConfigMiningStore.getState().selected_mining_mode;
-    return useConfigMiningStore.getState().mining_modes[selectedMiningMode];
-};
-
-export const getGpuPool = () => {
-    const gpuPool = useConfigPoolsStore.getState().gpu_pool;
-    if (gpuPool) {
-        return Object.values(gpuPool)[0];
-    }
-    return undefined;
-};
-
-export const getCpuPool = () => {
-    const cpuPool = useConfigPoolsStore.getState().cpu_pool;
-    if (cpuPool) {
-        return Object.values(cpuPool)[0];
-    }
-    return undefined;
 };

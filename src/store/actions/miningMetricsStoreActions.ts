@@ -2,7 +2,6 @@ import { BaseNodeStatus, CpuMinerStatus, GpuDevice, GpuMinerStatus } from '@app/
 import { setGpuMiningEnabled } from './appConfigStoreActions';
 import { useConfigMiningStore } from '../useAppConfigStore.ts';
 import { setAnimationState } from '@tari-project/tari-tower';
-import { useSetupStore } from '@app/store/useSetupStore.ts';
 import { useMiningMetricsStore } from '../useMiningMetricsStore.ts';
 import { useMiningStore } from '../useMiningStore.ts';
 
@@ -29,10 +28,6 @@ export const handleConnectedPeersUpdate = (connected_peers: string[]) => {
     const wasNodeConnected = useMiningMetricsStore.getState().isNodeConnected;
     const isNodeConnected = connected_peers?.length > 0;
     useMiningMetricsStore.setState({ connected_peers, isNodeConnected });
-
-    if (isNodeConnected && !useSetupStore.getState().appUnlocked) {
-        useSetupStore.setState({ appUnlocked: true });
-    }
 
     const miningInitiated =
         useMiningStore.getState().isCpuMiningInitiated || useMiningStore.getState().isGpuMiningInitiated;

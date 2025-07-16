@@ -9,7 +9,7 @@ import {
 } from '../../components/SettingsGroup.styles';
 import { Typography } from '@app/components/elements/Typography';
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch';
-import { getCpuPool, toggleCpuPool } from '@app/store/actions/appConfigStoreActions';
+import { toggleCpuPool } from '@app/store/actions/appConfigStoreActions';
 import { useMiningPoolsStore } from '@app/store/useMiningPoolsStore.ts';
 import { PoolStats } from '@app/containers/floating/Settings/sections/pools/PoolStats.tsx';
 
@@ -17,7 +17,7 @@ export const CpuPoolsSettings = () => {
     const { t } = useTranslation('settings');
     const isCpuPoolEnabled = useConfigPoolsStore((state) => state.cpu_pool_enabled);
     const pool_status = useMiningPoolsStore((s) => s.cpuPoolStats);
-    const cpuPoolData = getCpuPool();
+    const cpuPoolData = useConfigPoolsStore((state) => state.getCpuPool());
 
     const handleToggleCpuPool = (enabled: boolean) => {
         void toggleCpuPool(enabled);

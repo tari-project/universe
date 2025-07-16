@@ -9,7 +9,7 @@ import {
 } from '../../components/SettingsGroup.styles';
 import { Typography } from '@app/components/elements/Typography';
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch';
-import { getGpuPool, toggleGpuPool } from '@app/store/actions/appConfigStoreActions';
+import { toggleGpuPool } from '@app/store/actions/appConfigStoreActions';
 import { useMiningPoolsStore } from '@app/store/useMiningPoolsStore.ts';
 import { PoolStats } from '@app/containers/floating/Settings/sections/pools/PoolStats.tsx';
 
@@ -17,7 +17,7 @@ export const GpuPoolsSettings = () => {
     const { t } = useTranslation('settings');
     const isGpuPoolEnabled = useConfigPoolsStore((state) => state.gpu_pool_enabled);
     const pool_status = useMiningPoolsStore((s) => s.gpuPoolStats);
-    const gpuPoolData = getGpuPool();
+    const gpuPoolData = useConfigPoolsStore((state) => state.getGpuPool());
 
     const handleToggleGpuPool = (enabled: boolean) => {
         void toggleGpuPool(enabled);
