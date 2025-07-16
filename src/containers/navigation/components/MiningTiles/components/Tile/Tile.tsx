@@ -104,14 +104,12 @@ export default function Tile({
     const mainMarkup = !syncing && (
         <NumberGroup>
             {isLoading ? <LoadingDots /> : numberMarkup}
-            <NumberLabel ref={tooltipTriggerRef} {...getReferenceProps?.()}>
-                {mainLabel}
-            </NumberLabel>
+            <NumberLabel>{mainLabel}</NumberLabel>
         </NumberGroup>
     );
 
     return (
-        <Wrapper>
+        <Wrapper ref={tooltipTriggerRef} {...getReferenceProps?.()}>
             <Inside $isSyncing={syncing || isLoading}>
                 <HeadingRow>
                     <LabelWrapper>

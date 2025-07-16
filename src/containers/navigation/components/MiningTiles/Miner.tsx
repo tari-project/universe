@@ -25,6 +25,7 @@ export interface MinerTileProps {
     isPoolEnabled: boolean;
     poolStats?: PoolStats;
     rewardThreshold?: number;
+    showTooltip?: boolean;
 }
 
 export default function MinerTile({
@@ -37,6 +38,7 @@ export default function MinerTile({
     poolStats,
     isPoolEnabled,
     rewardThreshold,
+    showTooltip,
 }: MinerTileProps) {
     const { t } = useTranslation(['mining-view', 'p2p']);
 
@@ -59,7 +61,7 @@ export default function MinerTile({
         open: isOpen,
         onOpenChange: setIsOpen,
         placement: 'bottom-start',
-        middleware: [offset({ crossAxis: -10, mainAxis: 15 })],
+        middleware: [offset({ mainAxis: 10 })],
     });
 
     const hover = useHover(context, {
@@ -95,7 +97,7 @@ export default function MinerTile({
                 {...(isPoolEnabled ? additionalTilePropsForPool : {})}
             />
             <AnimatePresence>
-                {isOpen && (
+                {isOpen && showTooltip && (
                     <Tooltip ref={refs.setFloating} {...getFloatingProps()} style={floatingStyles}>
                         <ExpandedBox
                             initial={{ opacity: 0, y: 10 }}

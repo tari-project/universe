@@ -14,7 +14,7 @@ export const Wrapper = styled.div`
 
 export const Tooltip = styled.div`
     display: flex;
-    position: relative;
+    position: absolute;
     z-index: 2;
 `;
 
@@ -22,7 +22,7 @@ export const ExpandedBox = styled(m.div)`
     display: flex;
     background-color: ${({ theme }) => theme.palette.background.paper};
     border-radius: ${({ theme }) => theme.shape.borderRadius.app};
-    box-shadow: 2px 8px 8px 0 rgba(0, 0, 0, 0.04);
+    box-shadow: 2px 8px 8px 0 rgba(0, 0, 0, 0.3);
     flex-direction: column;
     gap: 6px;
     width: 300px;
