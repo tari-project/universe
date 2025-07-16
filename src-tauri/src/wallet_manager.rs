@@ -169,19 +169,6 @@ impl WalletManager {
         self.watcher.read().await.adapter.grpc_port
     }
 
-    pub async fn sign_message(
-        &self,
-        message: Vec<u8>,
-        tapplet_id: Option<u64>,
-    ) -> Result<SignMessageResponseData, WalletManagerError> {
-        let process_watcher = self.watcher.read().await;
-        process_watcher.adapter.sign_message(message, tapplet_id).await
-            .map_err(|e| match e.code() {
-                tonic::Code::Unavailable => WalletManagerError::WalletNotStarted,
-                _ => WalletManagerError::SigningMessageError,
-            })
-    }
-
     pub fn is_initial_scan_completed(&self) -> bool {
         self.initial_scan_completed
             .load(std::sync::atomic::Ordering::Relaxed)
@@ -206,6 +193,19 @@ impl WalletManager {
     pub async fn get_balance(&self) -> Result<WalletBalance, anyhow::Error> {
         let process_watcher = self.watcher.read().await;
         process_watcher.adapter.get_balance().await
+    }
+
+    pub async fn sign_message(
+        &self,
+        message: Vec<u8>,
+        tapplet_id: Option<u64>,
+    ) -> Result<SignMessageResponseData, WalletManagerError> {
+        let process_watcher = self.watcher.read().await;
+        process_watcher.adapter.sign_message(message, tapplet_id).await
+            .map_err(|e| match e.code() {
+                tonic::Code::Unavailable => WalletManagerError::WalletNotStarted,
+                _ => WalletManagerError::SigningMessageError,
+            })
     }
 
     pub async fn get_transactions(
