@@ -4,7 +4,7 @@ import startBg from '../backgrounds/start.png';
 import ecoBg from '../backgrounds/eco.png';
 import ludicrousBg from '../backgrounds/ludicrous.png';
 import customBg from '../backgrounds/custom.png';
-import { use, useMemo } from 'react';
+import { useMemo } from 'react';
 import { MiningModeType } from '@app/types/configs';
 import { useConfigMiningStore } from '@app/store';
 
