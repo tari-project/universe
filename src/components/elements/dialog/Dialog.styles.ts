@@ -11,8 +11,6 @@ export interface ContentWrapperProps {
 }
 export const ContentWrapper = styled.div<ContentWrapperProps>`
     background-color: ${({ theme }) => theme.palette.background.paper};
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
     border-radius: ${({ theme, $borderRadius }) => $borderRadius || theme.shape.borderRadius.dialog};
     box-shadow: 0 4px 45px 0 rgba(0, 0, 0, 0.08);
     display: flex;
@@ -31,6 +29,8 @@ export const ContentWrapper = styled.div<ContentWrapperProps>`
         $transparentBg &&
         css`
             background-color: ${convertHexToRGBA(theme.palette.background.paper, theme.mode == 'dark' ? 0.75 : 0.65)};
+            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
         `}
 `;
 
