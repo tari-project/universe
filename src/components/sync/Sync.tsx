@@ -14,7 +14,6 @@ export function Sync() {
     const node_type = useNodeStore((s) => s.node_type);
     const isRemoteUntilLocal = node_type === 'RemoteUntilLocal';
 
-    const localSyncMarkup = isRemoteUntilLocal ? <LocalNode /> : null;
     const generalSyncMarkup = showSync ? (
         <Wrapper>
             <TextWrapper>
@@ -30,10 +29,6 @@ export function Sync() {
         </Wrapper>
     ) : null;
 
-    return showSync || isRemoteUntilLocal ? (
-        <SettingsGroupWrapper>
-            {localSyncMarkup}
-            {generalSyncMarkup}
-        </SettingsGroupWrapper>
-    ) : null;
+    const syncMarkup = isRemoteUntilLocal ? <LocalNode /> : generalSyncMarkup;
+    return showSync || isRemoteUntilLocal ? <SettingsGroupWrapper>{syncMarkup}</SettingsGroupWrapper> : null;
 }
