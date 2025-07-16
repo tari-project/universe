@@ -71,7 +71,8 @@ impl PinManager {
         }
 
         // Validate pin against Tari Seed or Monero Seed
-        if InternalWallet::tari_wallet_details().await.is_some() {
+        if InternalWallet::is_initialized() && InternalWallet::tari_wallet_details().await.is_some()
+        {
             match InternalWallet::get_tari_seed(Some(pin_password.clone())).await {
                 Ok(_unused) => {
                     log::info!(target: LOG_TARGET, "Pin validated successfully against Tari Seed!");
@@ -94,7 +95,8 @@ impl PinManager {
                 }
             }
         } else {
-            log::info!(target: LOG_TARGET, "Neither Tari Seed nor Monero Seed available to validate against.");
+            log::error!(target: LOG_TARGET, "Neither Tari Seed nor Monero Seed available to validate against.");
+            panic!("Neither Tari Seed nor Monero Seed available to validate against.");
             // Edge case, we can't actually validate the pin
             // because we don't have neither a Tari wallet nor a Monero wallet
             // to check against.
@@ -145,6 +147,7 @@ where
     if let Some(pin) = pin {
         Ok(pin.to_string())
     } else {
+        log::info!("PIN entry cancelled");
         Err(anyhow::anyhow!("PIN entry cancelled"))
     }
 }
