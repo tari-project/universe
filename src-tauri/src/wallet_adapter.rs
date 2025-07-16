@@ -167,7 +167,7 @@ impl WalletAdapter {
         let res = client
             .sign_message(SignMessageRequest { message })
             .await
-            .map_err(|e| Status::internal(format!("Failed to sign message: {}", e)))?;
+            .map_err(|e| Status::internal(format!("Failed to sign message: {e}")))?;
 
         let inner = res.into_inner();
         Ok(SignMessageResponseData {

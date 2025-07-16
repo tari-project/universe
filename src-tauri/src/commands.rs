@@ -747,7 +747,7 @@ pub async fn sign_message(
         .await
         .map_err(|e| {
             if !matches!(e, WalletManagerError::SigningMessageError) {
-                warn!(target: LOG_TARGET, "Error signing message: {}", e);
+                warn!(target: LOG_TARGET, "Error signing message: {e}");
             }
             e.to_string()
         })?;

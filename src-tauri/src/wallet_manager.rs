@@ -41,7 +41,6 @@ use tari_shutdown::ShutdownSignal;
 use tokio::fs;
 use tokio::sync::watch;
 use tokio::sync::RwLock;
-use tonic;
 
 static LOG_TARGET: &str = "tari::universe::wallet_manager";
 
