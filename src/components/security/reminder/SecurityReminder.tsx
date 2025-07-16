@@ -4,6 +4,7 @@ import { BodyCopy, ChevronWrapper, CTAWrapper, Title, Wrapper } from './styles.t
 import { ChevronSVG } from '@app/assets/icons/chevron.tsx';
 import { TextButton } from '@app/components/elements/buttons/TextButton.tsx';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
+import { t } from 'i18next';
 
 const variants = {
     show: {
@@ -33,8 +34,8 @@ export default function SecurityReminder() {
         <AnimatePresence>
             {open && (
                 <Wrapper variants={variants} initial="hide" animate="show" exit="hide" style={{ left: offset }}>
-                    <Title>{`🔔 Protect your Tari!`}</Title>
-                    <BodyCopy>{`You haven’t secured your wallet yet. Backing up your seed phrase keeps your tokens safe and ensures only you can access them.\nLet's do it now—it'll only take a moment!`}</BodyCopy>
+                    <Title>🔔 {t('security.reminder.title')}</Title>
+                    <BodyCopy>{t('security.reminder.description')}</BodyCopy>
                     <CTAWrapper>
                         <Button
                             variant="black"
@@ -45,8 +46,10 @@ export default function SecurityReminder() {
                                     <ChevronSVG />
                                 </ChevronWrapper>
                             }
-                        >{`Start now`}</Button>
-                        <TextButton onClick={handleClose}>{`Maybe later`}</TextButton>
+                        >
+                            {t('security.reminder.start-now')}
+                        </Button>
+                        <TextButton onClick={handleClose}>{t('security.reminder.maybe-later')}</TextButton>
                     </CTAWrapper>
                 </Wrapper>
             )}
