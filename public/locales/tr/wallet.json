@@ -44,7 +44,7 @@
       "description": "You haven't secured your wallet yet. Backing up your seed phrase keeps your tokens safe and ensures only you can access them.\\nLet's do it now—it'll only take a moment",
       "maybe-later": "Maybe later",
       "start-now": "Start now",
-      "title": "🔔 Protect your Tari"
+      "title": "Protect your Tari"
     }
   },
   "send": {

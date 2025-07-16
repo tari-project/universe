@@ -34,7 +34,7 @@ export default function SecurityReminder() {
         <AnimatePresence>
             {open && (
                 <Wrapper variants={variants} initial="hide" animate="show" exit="hide" style={{ left: offset }}>
-                    <Title>{t('security.reminder.title')}</Title>
+                    <Title>🔔 {t('security.reminder.title')}</Title>
                     <BodyCopy>{t('security.reminder.description')}</BodyCopy>
                     <CTAWrapper>
                         <Button
