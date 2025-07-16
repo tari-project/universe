@@ -21,6 +21,7 @@ import {
     useMergeRefs,
     useRole,
 } from '@floating-ui/react';
+import { type } from '@tauri-apps/plugin-os';
 import { useAppStateStore } from '@app/store/appStateStore.ts';
 import { ContentWrapper, ContentWrapperProps, Overlay } from './Dialog.styles.ts';
 
@@ -114,8 +115,14 @@ export function Dialog({
 
 export const DialogContent = forwardRef<HTMLDivElement, HTMLProps<HTMLDivElement> & ContentWrapperProps>(
     function DialogContent(props, propRef) {
+        const osType = type();
+
+        const isNotLinux = osType !== 'linux';
         const context = useDialogContext();
         const ref = useMergeRefs([context.refs.setFloating, propRef]);
+
+        const transparentBg = props.$transparentBg && isNotLinux;
+
         return (
             <FloatingNode id={context.nodeId} key={context.nodeId}>
                 {context.open ? (
@@ -124,13 +131,13 @@ export const DialogContent = forwardRef<HTMLDivElement, HTMLProps<HTMLDivElement
                             <FloatingFocusManager context={context.context} modal={false}>
                                 <ContentWrapper
                                     ref={ref}
+                                    {...context.getFloatingProps(props)}
                                     aria-labelledby={context.labelId}
                                     aria-describedby={context.descriptionId}
                                     $unPadded={props.$unPadded}
                                     $disableOverflow={props.$disableOverflow}
                                     $borderRadius={props.$borderRadius}
-                                    $transparentBg={props.$transparentBg}
-                                    {...context.getFloatingProps(props)}
+                                    $transparentBg={transparentBg}
                                 >
                                     {props.children}
                                 </ContentWrapper>
