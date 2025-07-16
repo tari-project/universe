@@ -5,16 +5,9 @@ import useSync from '@app/hooks/app/useSyncProgress.ts';
 
 export const AppSyncProgress = () => {
     const { t } = useTranslation('setup-progresses');
-    const { getCurrentPhase, getProgress } = useSync();
-
-    const currentPhaseToShow = getCurrentPhase();
-
+    const { getProgress, setupPhaseTitle, setupTitle, setupParams } = useSync();
     const { progress: stageProgress, total: stageTotal } = getProgress();
 
-    const setupPhaseTitle = currentPhaseToShow?.phase_title;
-    const setupTitle = currentPhaseToShow?.title;
-    const setupParams = currentPhaseToShow?.title_params ? { ...currentPhaseToShow.title_params } : {};
-    console.debug(currentPhaseToShow);
     return (
         <Wrapper>
             <TextWrapper>
