@@ -939,6 +939,7 @@ where
         }
     }
 
+    #[cfg(target_os = "macos")]
     loop {
         match operation().await {
             Ok(result) => return Ok(result),
