@@ -2,6 +2,7 @@ import { useConfigPoolsStore } from '@app/store';
 import { useTranslation } from 'react-i18next';
 import {
     SettingsGroup,
+    SettingsGroupAction,
     SettingsGroupContent,
     SettingsGroupTitle,
     SettingsGroupWrapper,
@@ -9,14 +10,17 @@ import {
 import { Typography } from '@app/components/elements/Typography';
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch';
 import { getGpuPool, toggleGpuPool } from '@app/store/actions/appConfigStoreActions';
+import { useMiningPoolsStore } from '@app/store/useMiningPoolsStore.ts';
+import { PoolStats } from '@app/containers/floating/Settings/sections/pools/PoolStats.tsx';
 
 export const GpuPoolsSettings = () => {
     const { t } = useTranslation('settings');
     const isGpuPoolEnabled = useConfigPoolsStore((state) => state.gpu_pool_enabled);
+    const pool_status = useMiningPoolsStore((s) => s.gpuPoolStats);
     const gpuPoolData = getGpuPool();
 
     const handleToggleGpuPool = (enabled: boolean) => {
-        toggleGpuPool(enabled);
+        void toggleGpuPool(enabled);
     };
 
     return (
@@ -24,23 +28,15 @@ export const GpuPoolsSettings = () => {
             <SettingsGroup>
                 <SettingsGroupContent>
                     <SettingsGroupTitle>
-                        <Typography variant="h5">{'GPU pool'}</Typography>
-                        <ToggleSwitch
-                            checked={isGpuPoolEnabled}
-                            onChange={(e) => handleToggleGpuPool(e.target.checked)}
-                        />
+                        <Typography variant="h6">{'GPU pool'}</Typography>
                     </SettingsGroupTitle>
                     <Typography>{t('mining-toggle-warning')}</Typography>
-                    {gpuPoolData && isGpuPoolEnabled && (
-                        <SettingsGroupContent style={{ marginTop: '4px' }}>
-                            <Typography style={{ fontWeight: 'bold' }}>{gpuPoolData.pool_name}</Typography>
-                            <Typography>
-                                {'Pool url'}: {gpuPoolData.pool_url}
-                            </Typography>
-                        </SettingsGroupContent>
-                    )}
                 </SettingsGroupContent>
+                <SettingsGroupAction>
+                    <ToggleSwitch checked={isGpuPoolEnabled} onChange={(e) => handleToggleGpuPool(e.target.checked)} />
+                </SettingsGroupAction>
             </SettingsGroup>
+            {gpuPoolData && isGpuPoolEnabled && <PoolStats poolStatus={pool_status} poolData={gpuPoolData} />}
         </SettingsGroupWrapper>
     );
 };
