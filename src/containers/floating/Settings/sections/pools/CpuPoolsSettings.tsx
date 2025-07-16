@@ -2,6 +2,7 @@ import { useConfigPoolsStore } from '@app/store';
 import { useTranslation } from 'react-i18next';
 import {
     SettingsGroup,
+    SettingsGroupAction,
     SettingsGroupContent,
     SettingsGroupTitle,
     SettingsGroupWrapper,
@@ -9,14 +10,17 @@ import {
 import { Typography } from '@app/components/elements/Typography';
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch';
 import { toggleCpuPool } from '@app/store/actions/appConfigStoreActions';
+import { useMiningPoolsStore } from '@app/store/useMiningPoolsStore.ts';
+import { PoolStats } from '@app/containers/floating/Settings/sections/pools/PoolStats.tsx';
 
 export const CpuPoolsSettings = () => {
     const { t } = useTranslation('settings');
     const isCpuPoolEnabled = useConfigPoolsStore((state) => state.cpu_pool_enabled);
+    const pool_status = useMiningPoolsStore((s) => s.cpuPoolStats);
     const cpuPoolData = useConfigPoolsStore((state) => state.getCpuPool());
 
     const handleToggleCpuPool = (enabled: boolean) => {
-        toggleCpuPool(enabled);
+        void toggleCpuPool(enabled);
     };
 
     return (
@@ -24,23 +28,16 @@ export const CpuPoolsSettings = () => {
             <SettingsGroup>
                 <SettingsGroupContent>
                     <SettingsGroupTitle>
-                        <Typography variant="h5">{'CPU pool'}</Typography>
-                        <ToggleSwitch
-                            checked={isCpuPoolEnabled}
-                            onChange={(e) => handleToggleCpuPool(e.target.checked)}
-                        />
+                        <Typography variant="h6">{'CPU pool'}</Typography>
                     </SettingsGroupTitle>
                     <Typography>{t('mining-toggle-warning')}</Typography>
-                    {cpuPoolData && isCpuPoolEnabled && (
-                        <SettingsGroupContent style={{ marginTop: '4px' }}>
-                            <Typography style={{ fontWeight: 'bold' }}>{cpuPoolData.pool_name}</Typography>
-                            <Typography>
-                                {'Pool url'}: {cpuPoolData.pool_url}
-                            </Typography>
-                        </SettingsGroupContent>
-                    )}
                 </SettingsGroupContent>
+
+                <SettingsGroupAction>
+                    <ToggleSwitch checked={isCpuPoolEnabled} onChange={(e) => handleToggleCpuPool(e.target.checked)} />
+                </SettingsGroupAction>
             </SettingsGroup>
+            {cpuPoolData && isCpuPoolEnabled && <PoolStats poolStatus={pool_status} poolData={cpuPoolData} />}
         </SettingsGroupWrapper>
     );
 };
