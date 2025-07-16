@@ -26,11 +26,12 @@ use crate::node::node_manager::{NodeManager, NodeManagerError};
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
 use crate::tasks_tracker::TasksTrackers;
-use crate::wallet_adapter::{TransactionInfo, WalletBalance};
+use crate::wallet_adapter::{SignMessageResponseData, TransactionInfo, WalletBalance};
 use crate::wallet_adapter::{TransactionStatus, WalletStatusMonitorError};
 use crate::wallet_adapter::{WalletAdapter, WalletState};
 use crate::BaseNodeStatus;
 use futures_util::future::FusedFuture;
+use tonic;
 use log::info;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::AtomicBool;
@@ -59,6 +60,8 @@ pub enum WalletManagerError {
     WalletNotStarted,
     #[error("Node manager error: {0}")]
     NodeManagerError(#[from] NodeManagerError),
+    #[error("Signing message error")]
+    SigningMessageError,
     #[error("Unknown error: {0}")]
     UnknownError(#[from] anyhow::Error),
 }
@@ -164,6 +167,19 @@ impl WalletManager {
 
     pub async fn get_port(&self) -> u16 {
         self.watcher.read().await.adapter.grpc_port
+    }
+
+    pub async fn sign_message(
+        &self,
+        message: Vec<u8>,
+        tapplet_id: Option<u64>,
+    ) -> Result<SignMessageResponseData, WalletManagerError> {
+        let process_watcher = self.watcher.read().await;
+        process_watcher.adapter.sign_message(message, tapplet_id).await
+            .map_err(|e| match e.code() {
+                tonic::Code::Unavailable => WalletManagerError::WalletNotStarted,
+                _ => WalletManagerError::SigningMessageError,
+            })
     }
 
     pub fn is_initial_scan_completed(&self) -> bool {

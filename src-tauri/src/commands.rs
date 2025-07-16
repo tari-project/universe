@@ -55,6 +55,7 @@ use crate::utils::address_utils::verify_send;
 use crate::utils::app_flow_utils::FrontendReadyChannel;
 use crate::wallet_adapter::{TariAddressVariants, TransactionInfo};
 use crate::wallet_manager::WalletManagerError;
+use crate::wallet_adapter::SignMessageResponseData;
 use crate::websocket_manager::WebsocketManagerStatusMessage;
 use crate::{airdrop, PoolStatus, UniverseAppState};
 
@@ -731,6 +732,31 @@ pub async fn get_airdrop_tokens(
         warn!(target: LOG_TARGET, "get_airdrop_tokens took too long: {:?}", timer.elapsed());
     }
     Ok(airdrop_access_token)
+}
+
+#[tauri::command]
+pub async fn sign_message(
+    state: tauri::State<'_, UniverseAppState>,
+    message: Vec<u8>,
+    tapplet_id: Option<u64>,
+) -> Result<SignMessageResponseData, String> {
+    let timer = Instant::now();
+    let res = state
+        .wallet_manager
+        .sign_message(message, tapplet_id)
+        .await
+        .map_err(|e| {
+            if !matches!(e, WalletManagerError::SigningMessageError) {
+                warn!(target: LOG_TARGET, "Error signing message: {}", e);
+            }
+            e.to_string()
+        })?;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "sign_message took too long: {:?}", timer.elapsed());
+    }
+
+    Ok(res)
 }
 
 #[tauri::command]

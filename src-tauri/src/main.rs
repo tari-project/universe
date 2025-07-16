@@ -574,6 +574,7 @@ fn main() {
             commands::get_seed_words,
             commands::get_tor_config,
             commands::get_tor_entry_guards,
+            commands::sign_message,
             commands::get_transactions,
             commands::import_seed_words,
             commands::revert_to_internal_wallet,
