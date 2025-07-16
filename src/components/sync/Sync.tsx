@@ -8,13 +8,14 @@ import { LocalNode } from '@app/components/sync/LocalNode.tsx';
 
 export function Sync() {
     const { t } = useTranslation('setup-progresses');
-    const node_type = useNodeStore((s) => s.node_type);
-
-    const { getProgress, setupPhaseTitle, setupTitle, setupParams } = useSync();
+    const { getProgress, setupPhaseTitle, setupTitle, setupParams, showSync } = useSync();
     const { progress: stageProgress, total: stageTotal } = getProgress();
 
-    const localSyncMarkup = <LocalNode />;
-    const generalSyncMarkup = (
+    const node_type = useNodeStore((s) => s.node_type);
+    const isRemoteUntilLocal = node_type === 'RemoteUntilLocal';
+
+    const localSyncMarkup = isRemoteUntilLocal ? <LocalNode /> : null;
+    const generalSyncMarkup = showSync ? (
         <Wrapper>
             <TextWrapper>
                 <Title>{t(`phase-title.${setupPhaseTitle}`)}</Title>
@@ -27,23 +28,12 @@ export function Sync() {
                 <CircularProgress />
             </ProgressWrapper>
         </Wrapper>
-    );
-    const syncMarkup =
-        node_type === 'RemoteUntilLocal' ? (
-            <LocalNode />
-        ) : (
-            <Wrapper>
-                <TextWrapper>
-                    <Title>{t(`phase-title.${setupPhaseTitle}`)}</Title>
-                    <Text>{t(`title.${setupTitle}`, { ...setupParams })}</Text>
-                </TextWrapper>
-                <ProgressWrapper>
-                    <Title>
-                        {stageProgress} / {stageTotal}
-                    </Title>
-                    <CircularProgress />
-                </ProgressWrapper>
-            </Wrapper>
-        );
-    return <SettingsGroupWrapper>{syncMarkup}</SettingsGroupWrapper>;
+    ) : null;
+
+    return showSync || isRemoteUntilLocal ? (
+        <SettingsGroupWrapper>
+            {localSyncMarkup}
+            {generalSyncMarkup}
+        </SettingsGroupWrapper>
+    ) : null;
 }

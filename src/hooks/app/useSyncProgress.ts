@@ -1,9 +1,14 @@
 import { useSetupStore } from '@app/store/useSetupStore.ts';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { SetupPhase } from '@app/types/events-payloads.ts';
-import { useNodeStore } from '@app/store/useNodeStore.ts';
+import { useUIStore } from '@app/store';
 
 export default function useSync() {
+    const [showSync, setShowSync] = useState(false);
+
+    const isInitialSetupFinished = useSetupStore((state) => state.isInitialSetupFinished);
+    const shouldShowSync = useUIStore((state) => state.showResumeAppModal);
+
     const core = useSetupStore((s) => s.core_phase_setup_payload);
     const hardware = useSetupStore((s) => s.hardware_phase_setup_payload);
     const node = useSetupStore((s) => s.node_phase_setup_payload);
@@ -67,11 +72,26 @@ export default function useSync() {
         return phase;
     }, [core, miningDisabled, wallet, walletDisabled, hardware, hardwareDisabled, node, nodeDisabled, mining]);
 
+    useEffect(() => {
+        const isOpen = shouldShowSync || (!currentPhaseToShow?.is_complete && !isInitialSetupFinished);
+        setShowSync(isOpen);
+    }, [currentPhaseToShow?.is_complete, isInitialSetupFinished, shouldShowSync]);
+
+    useEffect(() => {
+        const hideResumeAppSync =
+            mining?.is_complete && (wallet?.is_complete || disabledPhases.includes(SetupPhase.Wallet));
+
+        if (hideResumeAppSync) {
+            useUIStore.setState({ showResumeAppModal: false });
+        }
+    }, [mining?.is_complete, wallet?.is_complete, disabledPhases]);
+
     return {
         getProgress,
         setupPhaseTitle: currentPhaseToShow?.phase_title,
         setupTitle: currentPhaseToShow?.title,
         setupProgress: currentPhaseToShow?.progress,
         setupParams: currentPhaseToShow?.title_params ? { ...currentPhaseToShow.title_params } : {},
+        showSync,
     };
 }
