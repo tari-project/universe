@@ -39,6 +39,10 @@ export const Button = styled.button<{ $isActive: boolean; $isToggle?: boolean }>
         opacity: 0.5;
         cursor: default;
         pointer-events: none;
+
+        * {
+            pointer-events: none;
+        }
     }
 
     ${({ $isActive }) =>
