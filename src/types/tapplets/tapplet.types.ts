@@ -29,6 +29,11 @@ export interface SignMessageTappletRequest {
     tapplet_id: number;
 }
 
+export interface SignMessageTappletResponse {
+    signature: string;
+    public_nonce: string;
+}
+
 export interface SendOneSidedRequest {
     amount: string;
     address: string;

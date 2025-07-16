@@ -6,6 +6,7 @@ import {
     BridgeTxDetails,
     SendOneSidedRequest,
     SignMessageTappletRequest,
+    SignMessageTappletResponse,
     TappletSignerParams,
     WindowSize,
 } from './tapplet.types';
@@ -95,14 +96,15 @@ export class TappletSigner {
         }
     }
 
-    public async signMessage(req: SignMessageTappletRequest): Promise<void> {
+    public async signMessage(req: SignMessageTappletRequest): Promise<SignMessageTappletResponse> {
         try {
-            await invoke('sign_message', {
+            return await invoke('sign_message', {
                 message: req.message,
                 tapplet_id: req.tapplet_id,
             });
         } catch (error) {
             setStoreError(`Error signing message: ${error}`);
+            throw error;
         }
     }
 
