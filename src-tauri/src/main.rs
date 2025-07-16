@@ -268,7 +268,7 @@ fn main() {
         LocalNodeAdapter::new(local_node_watch_tx.clone()),
         RemoteNodeAdapter::new(remote_node_watch_tx.clone()),
         // This value is later overriden when retrieved from config
-        NodeType::Local,
+        NodeType::RemoteUntilLocal,
         base_node_watch_tx,
         local_node_watch_rx,
         remote_node_watch_rx,
