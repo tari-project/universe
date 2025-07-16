@@ -39,9 +39,9 @@ use tari_key_manager::SeedWords;
 use tari_utilities::encoding::MBase58;
 use tari_utilities::message_format::MessageFormat;
 use tari_utilities::{Hidden, SafePassword};
-use tauri::{AppHandle, Listener, Manager};
+use tauri::{AppHandle, Manager};
 use tokio::fs;
-use tokio::sync::{oneshot, OnceCell, RwLock};
+use tokio::sync::{OnceCell, RwLock};
 
 use tari_core::transactions::transaction_key_manager::{
     create_memory_db_key_manager_from_seed, SecretTransactionKeyManagerInterface,
@@ -930,13 +930,10 @@ where
     // Skip the keyring dialog for non-macos platforms(only mac os prompts for a keyring)
     #[cfg(not(target_os = "macos"))]
     {
-        match operation().await {
-            Ok(r) => return Ok(r),
-            Err(e) => {
-                log::error!(target: LOG_TARGET, "{log_msg}: {e}");
-                return Err(e.into());
-            }
-        }
+        operation().await.map_err(|e| {
+            log::error!(target: LOG_TARGET, "{log_msg}: {e}");
+            e.into()
+        })
     }
 
     #[cfg(target_os = "macos")]
@@ -944,6 +941,9 @@ where
         match operation().await {
             Ok(result) => return Ok(result),
             Err(CredentialError::Keyring(_)) => {
+                use tauri::Listener;
+                use tokio::sync::oneshot;
+
                 EventsEmitter::emit_show_keyring_dialog().await;
                 let (tx, rx) = oneshot::channel();
                 _app_handle.once("keyring-dialog-response", |_event| {
