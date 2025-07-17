@@ -29,7 +29,7 @@ const MineButton = memo(function MineButton() {
     return (
         <Wrapper>
             <ConnectionWrapper>
-                <ConnectedPulse />
+                <ConnectedPulse size={8} />
             </ConnectionWrapper>
 
             <Button type="button" onClick={handleClick} $isActive={sidebarOpen} $isToggle={true}>

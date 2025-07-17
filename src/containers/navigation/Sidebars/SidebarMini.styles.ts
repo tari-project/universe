@@ -1,8 +1,5 @@
-import * as m from 'motion/react-m';
 import styled from 'styled-components';
-import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 import { SB_MINI_WIDTH } from '@app/theme/styles.ts';
-import { convertHexToRGBA } from '@app/utils';
 
 export const MiniWrapper = styled.div`
     height: 100%;

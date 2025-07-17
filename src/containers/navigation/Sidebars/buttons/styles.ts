@@ -5,9 +5,10 @@ export const Wrapper = styled.div`
 `;
 
 export const Button = styled.button<{ $isActive: boolean; $isToggle?: boolean }>`
-    border: 1px solid #ebebeb;
-    background: #fafafa;
-    color: #111;
+    border: 1px solid ${({ theme }) => theme.palette.divider};
+    background: ${({ theme }) =>
+        theme.mode === 'dark' ? theme.palette.background.default : theme.palette.background.accent};
+    color: ${({ theme }) => theme.palette.text.primary};
 
     display: flex;
     justify-content: center;
@@ -23,16 +24,21 @@ export const Button = styled.button<{ $isActive: boolean; $isToggle?: boolean }>
 
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 
-    &:hover {
-        background: #111;
-        color: #fafafa;
-        border-color: #111;
+    svg {
+        transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    &:hover,
+    &:active {
+        svg {
+            transform: scale(1.1);
+        }
     }
 
     &:active {
-        background: #111;
-        color: #fafafa;
-        border-color: #111;
+        svg {
+            transform: scale(1);
+        }
     }
 
     &:disabled {
@@ -48,10 +54,26 @@ export const Button = styled.button<{ $isActive: boolean; $isToggle?: boolean }>
     ${({ $isActive }) =>
         $isActive &&
         css`
-            background: #111;
-            color: #fafafa;
-            border-color: #111;
+            background: ${({ theme }) => (theme.mode === 'dark' ? theme.palette.divider : theme.palette.text.primary)};
+            color: ${({ theme }) =>
+                theme.mode === 'dark' ? theme.palette.text.primary : theme.palette.background.default};
+            border-color: ${({ theme }) =>
+                theme.mode === 'dark' ? theme.palette.divider : theme.palette.text.primary};
             cursor: default;
+
+            &:hover,
+            &:active {
+                background: ${({ theme }) =>
+                    theme.mode === 'dark' ? theme.palette.divider : theme.palette.text.primary};
+                color: ${({ theme }) =>
+                    theme.mode === 'dark' ? theme.palette.text.primary : theme.palette.background.default};
+                border-color: ${({ theme }) =>
+                    theme.mode === 'dark' ? theme.palette.divider : theme.palette.text.primary};
+
+                svg {
+                    transform: scale(1);
+                }
+            }
         `}
 
     ${({ $isToggle }) =>
@@ -63,7 +85,7 @@ export const Button = styled.button<{ $isActive: boolean; $isToggle?: boolean }>
 
 export const ConnectionWrapper = styled.div`
     position: absolute;
-    top: -2px;
-    left: -2px;
+    top: -5px;
+    left: -5px;
     z-index: 2;
 `;
