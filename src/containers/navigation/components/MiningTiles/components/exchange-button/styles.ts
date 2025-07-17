@@ -28,3 +28,7 @@ export const Button = styled.button`
         background: ${({ theme }) => theme.palette.background.accent};
     }
 `;
+
+export const LogosWrapper = styled.div`
+    height: 24px;
+`;
