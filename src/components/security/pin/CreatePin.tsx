@@ -66,7 +66,7 @@ export default function CreatePin({ onClose, onSubmit }: { onClose?: () => void;
                     <Typography variant="h5">{t('security.pin.creation-title', { context })}</Typography>
                     <Typography variant="p">{t('security.pin.creation-subtitle', { context })}</Typography>
                 </TextWrapper>
-                <PinInput hasError={noMatch} />
+                <PinInput isConfirm={isConfirm} hasError={noMatch} />
                 {!isConfirm && <HelpWrapper>{t('security.pin.explainer')}</HelpWrapper>}
                 {isConfirm && noMatch && <HelpWrapper>{t('security.pin.error-match')}</HelpWrapper>}
 
