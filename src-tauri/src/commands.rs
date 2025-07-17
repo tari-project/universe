@@ -900,13 +900,13 @@ async fn reset_app_configs(
         log::info!(target: LOG_TARGET, "[reset_app_configs] Resetting with wallet.");
         remove_dir_all(&universe_app_configs_dir).map_err(|e| {
             error!(target: LOG_TARGET, "[reset_app_configs] Could not remove {universe_app_configs_dir:?} directory: {e:?}");
-            return anyhow::anyhow!("Could not remove directory: {e}")
+            anyhow::anyhow!("Could not remove directory: {e}")
         })?;
     } else {
         log::info!(target: LOG_TARGET, "[reset_app_configs] Resetting without wallet.");
         // remove all configs but not "config_wallet.json"
-        let mut config_files = std::fs::read_dir(&universe_app_configs_dir)?;
-        while let Some(entry) = config_files.next() {
+        let config_files = std::fs::read_dir(&universe_app_configs_dir)?;
+        for entry in config_files {
             let entry = entry?;
             let path = entry.path();
             if path.is_file() && path.file_name().unwrap_or_default() != "config_wallet.json" {
@@ -963,14 +963,14 @@ pub async fn reset_settings(
     folder_block_list.push("EBWebView");
 
     let mut files_block_list = Vec::new();
-    if !reset_wallet {
-        folder_block_list.push("wallet");
-        files_block_list.push("credentials_backup.bin");
-    } else {
+    if reset_wallet {
         debug!(target: LOG_TARGET, "[reset_settings] Clearing all wallets");
         InternalWallet::clear_all_wallets()
             .await
             .map_err(|e| e.to_string())?;
+    } else {
+        folder_block_list.push("wallet");
+        files_block_list.push("credentials_backup.bin");
     }
     // handle App Config reset individually
     folder_block_list.push("app_configs");
