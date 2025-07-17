@@ -61,7 +61,7 @@ export default function MinerTile({
         open: isOpen,
         onOpenChange: setIsOpen,
         placement: 'bottom-start',
-        middleware: [offset({ mainAxis: 10 })],
+        middleware: [offset({ mainAxis: 2 })],
     });
 
     const hover = useHover(context, {

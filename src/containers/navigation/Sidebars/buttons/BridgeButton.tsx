@@ -18,7 +18,7 @@ const BridgeButton = memo(function BridgeButton() {
     }
 
     return (
-        <Button $isActive={showTapplet} type="button" onClick={handleToggleOpen} disabled={true}>
+        <Button $isActive={showTapplet} type="button" onClick={handleToggleOpen} disabled={isWalletScanning}>
             <svg width="28" height="33" viewBox="0 0 28 33" fill="none">
                 <path
                     d="M15.2582 18.0473L15.2582 12.7737L9.47676 12.7737L0.23841 21.8571L9.48501e-07 21.7388L5.69432e-07 13.0667L7.80789 5.27356L15.2582 5.27356L15.2582 -6.82703e-07L24.4286 8.98146L15.2582 18.0473Z"
