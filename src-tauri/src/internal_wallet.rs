@@ -780,6 +780,7 @@ impl InternalWallet {
         })
     }
 
+    /** Method safe to use before init - fallbacks to the credential manager */
     pub async fn get_tari_seed(
         pin_password: Option<SafePassword>,
     ) -> Result<CipherSeed, anyhow::Error> {
@@ -836,6 +837,7 @@ impl InternalWallet {
         }
     }
 
+    /** Method safe to use before init - fallbacks to the credential manager */
     pub async fn get_monero_seed(
         pin_password: Option<SafePassword>,
     ) -> Result<MoneroSeed, anyhow::Error> {

@@ -70,9 +70,11 @@ impl PinManager {
             ));
         }
 
+        let wallet_config = ConfigWallet::content().await;
+        // TODO: We can set a flag to validate against monero so user don't need to enter kerying twice
+
         // Validate pin against Tari Seed or Monero Seed
-        if InternalWallet::is_initialized() && InternalWallet::tari_wallet_details().await.is_some()
-        {
+        if wallet_config.tari_wallet_details().is_some() {
             match InternalWallet::get_tari_seed(Some(pin_password.clone())).await {
                 Ok(_unused) => {
                     log::info!(target: LOG_TARGET, "Pin validated successfully against Tari Seed!");
