@@ -22,6 +22,7 @@ export default function CPUTile() {
             isPoolEnabled={isCpuPoolEnabled}
             poolStats={cpuPoolStats}
             rewardThreshold={cpuPoolStats?.min_payout || 2000000} // 2.0 XTM in micro units
+            showTooltip={true}
         />
     );
 }

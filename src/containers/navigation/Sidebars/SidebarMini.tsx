@@ -2,11 +2,11 @@ import { memo } from 'react';
 import { TariOutlineSVG } from '@app/assets/icons/tari-outline.tsx';
 import OpenSettingsButton from '@app/containers/floating/Settings/components/OpenSettingsButton.tsx';
 import { AirdropSidebarItems } from '@app/containers/main/Airdrop/sidebar/AirdropSidebarItems.tsx';
-import NavigationButton from './NavigationButton';
 import { GridBottom, GridCenter, GridTop, LogoWrapper, MiniWrapper } from './SidebarMini.styles.ts';
-import BridgeNavigationButton from './BridgeNavigationButton.tsx';
 import { useConfigUIStore } from '@app/store';
 import { WalletUIMode } from '@app/types/events-payloads.ts';
+import MineButton from './buttons/MineButton.tsx';
+import BridgeButton from './buttons/BridgeButton.tsx';
 
 const SidebarMini = memo(function SidebarMini() {
     const isStandardWalletUI = useConfigUIStore((s) => s.wallet_ui_mode === WalletUIMode.Standard);
@@ -19,8 +19,8 @@ const SidebarMini = memo(function SidebarMini() {
                 </LogoWrapper>
             </GridTop>
             <GridCenter>
-                <NavigationButton />
-                {isStandardWalletUI && <BridgeNavigationButton />}
+                <MineButton />
+                {isStandardWalletUI && <BridgeButton />}
             </GridCenter>
             <GridBottom>
                 <AirdropSidebarItems />

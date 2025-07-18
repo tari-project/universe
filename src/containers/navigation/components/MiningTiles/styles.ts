@@ -8,13 +8,24 @@ export const Wrapper = styled.div`
     display: flex;
     justify-content: center;
     align-items: center;
+    flex-direction: column;
+
+    gap: 6px;
+`;
+
+export const TopRow = styled.div`
+    width: 100%;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
 
     gap: 6px;
 `;
 
 export const Tooltip = styled.div`
     display: flex;
-    position: relative;
+    position: absolute;
     z-index: 2;
 `;
 
@@ -22,12 +33,14 @@ export const ExpandedBox = styled(m.div)`
     display: flex;
     background-color: ${({ theme }) => theme.palette.background.paper};
     border-radius: ${({ theme }) => theme.shape.borderRadius.app};
-    box-shadow: 2px 8px 8px 0 rgba(0, 0, 0, 0.04);
+    border: 1px solid ${({ theme }) => theme.palette.divider};
+    box-shadow: 2px 8px 8px 0 rgba(0, 0, 0, 0.3);
     flex-direction: column;
     gap: 6px;
     width: 300px;
     padding: 20px;
     z-index: 10;
+
     h5,
     strong {
         margin: 0;

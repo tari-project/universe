@@ -5,6 +5,7 @@ export const Wrapper = styled(m.div)`
     display: flex;
     transition: scale 0.2s ease;
     pointer-events: all;
+    user-select: none;
 `;
 
 export const BoxWrapper = styled.div`
@@ -50,6 +51,7 @@ export const BlockTitle = styled.div`
     font-style: normal;
     font-weight: 400;
     line-height: 119.8%;
+    user-select: none;
 
     strong {
         font-weight: 600;
@@ -84,6 +86,7 @@ export const MetaData = styled.div`
 export const RewardPill = styled.div<{ $isHovering?: boolean }>`
     border-radius: 100px;
     background: linear-gradient(269deg, #ffa515 -26.57%, #ffdd6c 97.7%);
+    user-select: none;
 
     color: #030303;
     font-family: Poppins, sans-serif;

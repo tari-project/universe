@@ -1,8 +1,5 @@
-import * as m from 'motion/react-m';
 import styled from 'styled-components';
-import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 import { SB_MINI_WIDTH } from '@app/theme/styles.ts';
-import { convertHexToRGBA } from '@app/utils';
 
 export const MiniWrapper = styled.div`
     height: 100%;
@@ -47,44 +44,9 @@ export const GridBottom = styled.div`
     }
 `;
 
-export const NavIconWrapper = styled(m.div)`
-    display: flex;
-    flex-direction: column;
-    z-index: 1;
-`;
-
-export const HoverIconWrapper = styled(m.div)`
-    position: absolute;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    z-index: 2;
-`;
-
 export const LogoWrapper = styled.div`
     width: 32px;
     svg {
         max-width: 100%;
     }
-`;
-export const ConnectionWrapper = styled.div`
-    position: absolute;
-    top: -2px;
-    left: -2px;
-    z-index: 2;
-`;
-export const NavigationWrapper = styled.div`
-    display: flex;
-    flex-direction: column;
-    position: relative;
-    gap: 10px;
-`;
-
-export const StyledIconButton = styled(IconButton).attrs({
-    variant: 'secondary',
-})`
-    position: relative;
-    box-shadow: ${({ theme }) => `${convertHexToRGBA(theme.palette.contrast, 0.03)} 0 0 2px 1px`};
 `;

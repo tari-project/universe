@@ -1,13 +1,17 @@
+import ExchangeButton from './components/exchange-button/ExchangeButton.tsx';
 import CPUTile from './CPU.tsx';
 import GPUTile from './GPU.tsx';
 
-import { Wrapper } from './styles';
+import { TopRow, Wrapper } from './styles';
 
 export default function MiningTiles() {
     return (
         <Wrapper>
-            <CPUTile />
-            <GPUTile />
+            <TopRow>
+                <CPUTile />
+                <GPUTile />
+            </TopRow>
+            <ExchangeButton />
         </Wrapper>
     );
 }
