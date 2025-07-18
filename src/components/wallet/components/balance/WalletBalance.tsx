@@ -7,7 +7,15 @@ import { useConfigWalletStore, useUIStore, useWalletStore } from '@app/store';
 import { roundToTwoDecimals, removeXTMCryptoDecimals, formatNumber, FormatPreset } from '@app/utils';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import NumbersLoadingAnimation from '@app/containers/navigation/components/Wallet/NumbersLoadingAnimation/NumbersLoadingAnimation.tsx';
-import { AvailableWrapper, BalanceTextWrapper, BalanceWrapper, Hidden, SuffixWrapper, Wrapper } from './styles.ts';
+import {
+    AvailableWrapper,
+    BalanceTextWrapper,
+    BalanceWrapper,
+    Hidden,
+    ScanProgressWrapper,
+    SuffixWrapper,
+    Wrapper,
+} from './styles.ts';
 import { toggleHideWalletBalance } from '@app/store/actions/uiStoreActions.ts';
 import { useState } from 'react';
 import { ActionButton } from '@app/components/wallet/components/details/actions/styles.ts';
@@ -85,7 +93,11 @@ export const WalletBalance = () => {
                 <NumbersLoadingAnimation />
             )}
 
-            {isWalletScanning ? <CircularProgress /> : null}
+            {isWalletScanning ? (
+                <ScanProgressWrapper>
+                    <CircularProgress />{' '}
+                </ScanProgressWrapper>
+            ) : null}
         </Wrapper>
     );
 };
