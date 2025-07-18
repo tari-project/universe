@@ -7,7 +7,7 @@ import CloseButton from '@app/components/elements/buttons/CloseButton.tsx';
 import { Header, Heading, Wrapper } from './styles.ts';
 import { FormProvider, useForm } from 'react-hook-form';
 
-import { InputArea, WalletSettingsGrid } from '@app/containers/floating/Settings/sections/wallet/styles.ts';
+import { InputArea } from '@app/containers/floating/Settings/sections/wallet/styles.ts';
 import { Edit } from '@app/components/wallet/seedwords/components/Edit.tsx';
 import { Form } from '@app/components/wallet/seedwords/components/edit.styles.ts';
 import { invoke } from '@tauri-apps/api/core';

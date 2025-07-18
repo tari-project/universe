@@ -38,12 +38,6 @@ interface ModeDropdownMiningMode {
     icon: string;
 }
 
-const miningModes = [
-    { name: 'Eco', icon: ecoIcon },
-    { name: 'Ludicrous', icon: ludicIcon },
-    { name: 'Custom', icon: customIcon },
-];
-
 const getModeIcon = (mode: MiningModeType) => {
     switch (mode) {
         case MiningModeType.Eco:
@@ -104,7 +98,7 @@ export default function ModeDropdown({ disabled, loading }: Props) {
             await selectMiningMode(mode.name);
             setIsOpen(false);
         },
-        [selectedMiningMode, selectMiningMode]
+        [selectedMiningMode]
     );
 
     return (
