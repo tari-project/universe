@@ -29,6 +29,7 @@ export interface ConfigWallet {
     monero_address: string;
     monero_address_is_generated: boolean;
     keyring_accessed: boolean;
+    last_known_balance?: number;
 }
 export interface ConfigUI {
     created_at: string;

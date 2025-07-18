@@ -371,7 +371,7 @@ impl WalletManager {
                                         balance.available_balance
                                     );
 
-                                    ConfigWallet::update_field(ConfigWalletContent::set_last_known_balance, balance.available_balance).await.map_err(|e| e.to_string())?;
+                                    ConfigWallet::update_field(ConfigWalletContent::set_last_known_balance, balance.available_balance).await?;
 
 
                                     EventsEmitter::emit_wallet_balance_update(balance).await;
