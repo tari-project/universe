@@ -7,7 +7,7 @@ export const Wrapper = styled('div')`
     height: 100%;
     top: 0;
     left: 0;
-    z-index: 99;
+    z-index: 101;
 
     display: flex;
     justify-content: center;
