@@ -21,6 +21,7 @@ import { useState } from 'react';
 import { ActionButton } from '@app/components/wallet/components/details/actions/styles.ts';
 import { AnimatePresence } from 'motion/react';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
+import { Progress } from '@app/components/elements/loaders/CircularProgress/Progress.tsx';
 
 export const WalletBalance = () => {
     const { t } = useTranslation('wallet');
@@ -95,7 +96,7 @@ export const WalletBalance = () => {
 
             {isWalletScanning ? (
                 <ScanProgressWrapper>
-                    <CircularProgress />{' '}
+                    <Progress percentage={Math.floor(scanProgress)} />
                 </ScanProgressWrapper>
             ) : null}
         </Wrapper>
