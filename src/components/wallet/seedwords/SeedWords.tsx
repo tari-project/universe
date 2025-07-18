@@ -115,11 +115,12 @@ export default function SeedWords({ isMonero = false }: SeedWordsProps) {
                 getSeedWords().then((r) => {
                     if (r?.length) {
                         copyToClipboard(r.join(' '));
+                        setSeedWords([]);
                     }
                 });
             }
         });
-    }, [copyToClipboard, getSeedWords, seedWords, seedWordsFetched]);
+    }, [copyToClipboard, getSeedWords, seedWords, setSeedWords, seedWordsFetched]);
 
     const displayCTAs = (
         <>

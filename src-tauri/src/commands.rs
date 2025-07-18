@@ -202,14 +202,14 @@ pub async fn select_exchange_miner(
     app_handle: tauri::AppHandle,
     exchange_miner: ExchangeMiner,
     mining_address: String,
-) -> Result<(), InvokeError> {
+) -> Result<(), String> {
     let new_external_tari_address =
         TariAddress::from_str(&mining_address).map_err(|e| format!("Invalid Tari address: {e}"))?;
 
     // Validate PIN if pin locked
     let _unused = PinManager::get_validated_pin_if_defined(&app_handle)
         .await
-        .map_err(InvokeError::from_anyhow)?;
+        .map_err(|e| e.to_string())?;
 
     match InternalWallet::initialize_seedless(&app_handle, Some(new_external_tari_address)).await {
         Ok(_) => {
@@ -226,7 +226,7 @@ pub async fn select_exchange_miner(
         exchange_miner.id.clone(),
     )
     .await
-    .map_err(InvokeError::from_anyhow)?;
+    .map_err(|e| e.to_string())?;
 
     EventsEmitter::emit_exchange_id_changed(exchange_miner.id.clone()).await;
 

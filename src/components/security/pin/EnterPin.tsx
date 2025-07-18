@@ -28,7 +28,7 @@ export default function EnterPin({ onSubmit }: EnterPinProps) {
     }
 
     function handleForgot() {
-        // stop backend listener for entering the pin
+        // close backend listener for entering the pin
         emit('pin-dialog-response', { pin: undefined }).then(() => {
             setModal('forgot_pin');
             methods.reset();
