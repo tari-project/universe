@@ -38,7 +38,7 @@ export default function EnterPin({ onSubmit }: EnterPinProps) {
     return (
         <FormProvider {...methods}>
             <Wrapper onSubmit={methods.handleSubmit(handleSubmit)}>
-                <PinInput />
+                <PinInput autoSubmitFn={methods.handleSubmit(handleSubmit)} />
                 <CTAWrapper>
                     <Button
                         variant="black"
