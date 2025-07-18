@@ -145,7 +145,7 @@ impl ConfigCore {
         let mut config = Self::current().write().await;
         config.load_app_handle(app_handle.clone()).await;
 
-        if config.content.version.eq(&0) {
+        if config.content.version.eq(&0) && config.content.node_type.eq(&NodeType::Local) {
             config.content.node_type = NodeType::RemoteUntilLocal;
             config.content.version = 1;
             let _unused = Self::_save_config(config._get_content().clone());
