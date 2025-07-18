@@ -3,6 +3,7 @@ import styled from 'styled-components';
 export const Wrapper = styled.div`
     display: flex;
     flex-direction: column;
+    position: relative;
 `;
 
 export const Hidden = styled.div`
@@ -43,5 +44,16 @@ export const AvailableWrapper = styled.div`
     display: flex;
     font-size: 11px;
     font-weight: 500;
+    gap: 4px;
     color: rgba(255, 255, 255, 0.7);
+
+    strong {
+        color: #fff;
+    }
+`;
+
+export const ScanProgressWrapper = styled.div`
+    position: absolute;
+    bottom: 0;
+    right: 0;
 `;

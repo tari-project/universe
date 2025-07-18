@@ -25,6 +25,7 @@ use std::{collections::HashMap, sync::LazyLock, time::SystemTime};
 use getset::{Getters, Setters};
 use serde::{Deserialize, Serialize};
 use tari_common_types::tari_address::TariAddress;
+use tari_core::transactions::tari_amount::MicroMinotari;
 use tauri::AppHandle;
 use tokio::sync::RwLock;
 
@@ -90,6 +91,8 @@ pub struct ConfigWalletContent {
     pin_locker_state: PinLockerState,
     #[getset(get = "pub", set = "pub")]
     seed_backed_up: bool,
+    #[getset(get = "pub", set = "pub")]
+    last_known_balance: MicroMinotari,
 }
 
 impl Default for ConfigWalletContent {
@@ -107,6 +110,7 @@ impl Default for ConfigWalletContent {
             tari_wallet_details: None, // Owned tari address details
             pin_locker_state: PinLockerState::default(),
             seed_backed_up: false,
+            last_known_balance: MicroMinotari(0),
         }
     }
 }

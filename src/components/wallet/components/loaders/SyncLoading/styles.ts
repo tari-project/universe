@@ -1,28 +1,7 @@
 import * as m from 'motion/react-m';
 import styled from 'styled-components';
 
-export const Wrapper = styled(m.div)`
-    border-radius: 10px;
-    border: 1px solid ${({ theme }) => theme.palette.background.accent};
-
-    background: ${({ theme }) =>
-        theme.mode === 'dark' ? theme.palette.background.accent : theme.palette.background.paper};
-
-    padding: 17px;
-
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-`;
-
-export const LoadingGroup = styled.div`
-    display: flex;
-    gap: 24px;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-`;
+export const Wrapper = styled(m.div)``;
 
 export const Text = styled.div`
     color: ${({ theme }) => theme.palette.text.secondary};
@@ -40,15 +19,6 @@ export const Text = styled.div`
         color: ${({ theme }) => theme.palette.text.primary};
         font-weight: 700;
     }
-`;
-
-export const Line = styled.div``;
-
-export const LoadingWrapper = styled.div`
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
 `;
 
 export const TooltipPosition = styled.div`
@@ -69,7 +39,7 @@ export const TooltipContent = styled(m.div)`
 
     border-radius: 10px;
     background: ${({ theme }) => theme.palette.background.paper};
-    box-shadow: 0px 4px 45px 0px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 45px 0 rgba(0, 0, 0, 0.08);
 `;
 
 export const TooltipTitle = styled.div`
@@ -88,13 +58,4 @@ export const TooltipDescription = styled.div`
     font-style: normal;
     font-weight: 500;
     line-height: 133.333%;
-`;
-
-export const TextTop = styled.div`
-    color: ${({ theme }) => theme.palette.text.secondary};
-    font-family: Poppins, sans-serif;
-    font-size: 12px;
-    font-style: normal;
-    font-weight: 500;
-    line-height: normal;
 `;

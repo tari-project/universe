@@ -2,21 +2,32 @@ import i18n from 'i18next';
 import NumberFlow, { type Format } from '@number-flow/react';
 import { useTranslation } from 'react-i18next';
 import { IoEyeOffOutline, IoEyeOutline } from 'react-icons/io5';
-import { useUIStore, useWalletStore } from '@app/store';
+import { useConfigWalletStore, useUIStore, useWalletStore } from '@app/store';
 
 import { roundToTwoDecimals, removeXTMCryptoDecimals, formatNumber, FormatPreset } from '@app/utils';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import NumbersLoadingAnimation from '@app/containers/navigation/components/Wallet/NumbersLoadingAnimation/NumbersLoadingAnimation.tsx';
-import { AvailableWrapper, BalanceTextWrapper, BalanceWrapper, Hidden, SuffixWrapper, Wrapper } from './styles.ts';
+import {
+    AvailableWrapper,
+    BalanceTextWrapper,
+    BalanceWrapper,
+    Hidden,
+    ScanProgressWrapper,
+    SuffixWrapper,
+    Wrapper,
+} from './styles.ts';
 import { toggleHideWalletBalance } from '@app/store/actions/uiStoreActions.ts';
 import { useState } from 'react';
 import { ActionButton } from '@app/components/wallet/components/details/actions/styles.ts';
 import { AnimatePresence } from 'motion/react';
+import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
+import { Progress } from '@app/components/elements/loaders/CircularProgress/Progress.tsx';
 
 export const WalletBalance = () => {
     const { t } = useTranslation('wallet');
     const [hovering, setHovering] = useState(false);
 
+    const last_known_balance = useConfigWalletStore((s) => s.last_known_balance);
     const calculated_balance = useWalletStore((s) => s.calculated_balance);
     const available_balance = useWalletStore((s) => s.balance?.available_balance);
 
@@ -24,9 +35,10 @@ export const WalletBalance = () => {
     const availableBalanceValue = removeXTMCryptoDecimals(roundToTwoDecimals(available_balance || 0));
 
     const isWalletScanning = useWalletStore((s) => s.wallet_scanning?.is_scanning);
+    const scanProgress = useWalletStore((s) => s.wallet_scanning?.progress);
     const hideWalletBalance = useUIStore((s) => s.hideWalletBalance);
 
-    const formattedAvailableBalance = formatNumber(available_balance || 0, FormatPreset.XTM_LONG);
+    const formattedAvailableBalance = formatNumber(last_known_balance || available_balance || 0, FormatPreset.XTM_LONG);
     const finalAvailableBalance = hideWalletBalance ? '*******' : formattedAvailableBalance;
 
     const formatOptions: Format = {
@@ -34,10 +46,24 @@ export const WalletBalance = () => {
         notation: 'standard',
         style: 'decimal',
     };
+    const isLoading = !last_known_balance && isWalletScanning;
 
+    const bottomMarkup = !isWalletScanning ? (
+        <AvailableWrapper>
+            {availableBalanceValue != balanceValue ? (
+                <Typography>{`${t('history.available-balance')}: ${finalAvailableBalance} XTM`}</Typography>
+            ) : (
+                <Typography>{t('history.my-balance')}</Typography>
+            )}
+        </AvailableWrapper>
+    ) : (
+        <AvailableWrapper>
+            <strong>{`Wallet is scanning `}</strong> {`${Math.floor(scanProgress)}%`}
+        </AvailableWrapper>
+    );
     return (
         <Wrapper onMouseEnter={() => setHovering(true)} onMouseLeave={() => setHovering(false)}>
-            {!isWalletScanning ? (
+            {!isLoading ? (
                 <>
                     <BalanceWrapper>
                         <BalanceTextWrapper>
@@ -62,17 +88,17 @@ export const WalletBalance = () => {
                         </AnimatePresence>
                     </BalanceWrapper>
 
-                    <AvailableWrapper>
-                        {availableBalanceValue != balanceValue ? (
-                            <Typography>{`${t('history.available-balance')}: ${finalAvailableBalance} XTM`}</Typography>
-                        ) : (
-                            <Typography>{t('history.my-balance')}</Typography>
-                        )}
-                    </AvailableWrapper>
+                    {bottomMarkup}
                 </>
             ) : (
                 <NumbersLoadingAnimation />
             )}
+
+            {isWalletScanning ? (
+                <ScanProgressWrapper>
+                    <Progress percentage={Math.floor(scanProgress)} />
+                </ScanProgressWrapper>
+            ) : null}
         </Wrapper>
     );
 };

@@ -59,12 +59,11 @@ use log4rs::config::RawConfig;
 use std::fs;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use std::time::SystemTime;
 use tari_common::configuration::Network;
 use tauri::async_runtime::block_on;
 use tauri::{Manager, RunEvent};
 use tauri_plugin_sentry::{minidump, sentry};
-use tokio::sync::{Mutex, RwLock};
+use tokio::sync::RwLock;
 use utils::logging_utils::setup_logging;
 
 #[cfg(all(feature = "exchange-ci", not(feature = "release-ci")))]
@@ -172,9 +171,6 @@ const APPLICATION_FOLDER_ID: &str = "com.tari.universe.beta";
 
 #[derive(Clone)]
 struct UniverseAppState {
-    cpu_miner_timestamp_mutex: Arc<Mutex<SystemTime>>,
-    cpu_miner_stop_start_mutex: Arc<Mutex<()>>,
-    gpu_miner_stop_start_mutex: Arc<Mutex<()>>,
     node_status_watch_rx: Arc<watch::Receiver<BaseNodeStatus>>,
     #[allow(dead_code)]
     wallet_state_watch_rx: Arc<watch::Receiver<Option<WalletState>>>,
@@ -367,9 +363,6 @@ fn main() {
         app_in_memory_config.clone(),
     );
     let app_state = UniverseAppState {
-        cpu_miner_timestamp_mutex: Arc::new(Mutex::new(SystemTime::now())),
-        cpu_miner_stop_start_mutex: Arc::new(Mutex::new(())),
-        gpu_miner_stop_start_mutex: Arc::new(Mutex::new(())),
         is_getting_p2pool_connections: Arc::new(AtomicBool::new(false)),
         node_status_watch_rx: Arc::new(base_node_watch_rx),
         wallet_state_watch_rx: Arc::new(wallet_state_watch_rx.clone()),
@@ -632,7 +625,6 @@ fn main() {
             commands::validate_minotari_amount,
             commands::trigger_phases_restart,
             commands::set_node_type,
-            commands::set_warmup_seen,
             commands::set_allow_notifications,
             commands::launch_builtin_tapplet,
             commands::get_bridge_envs,

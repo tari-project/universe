@@ -187,10 +187,6 @@ export type BackendStateUpdateEvent =
           payload: undefined;
       }
     | {
-          event_type: 'MiningTime';
-          payload: number;
-      }
-    | {
           event_type: 'CpuPoolStatsUpdate';
           payload: PoolStats;
       }

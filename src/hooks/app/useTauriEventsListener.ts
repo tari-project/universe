@@ -51,7 +51,6 @@ import {
     handleConfigMiningLoaded,
     handleConfigUILoaded,
     handleConfigWalletLoaded,
-    handleMiningTimeUpdate,
     handleWalletUIChanged,
     handleConfigPoolsLoaded,
 } from '@app/store/actions/appConfigStoreActions';
@@ -221,9 +220,6 @@ const useTauriEventsListener = () => {
                             break;
                         case 'ShowStageSecurityModal':
                             useSecurityStore.setState({ modal: 'intro' });
-                            break;
-                        case 'MiningTime':
-                            handleMiningTimeUpdate(event.payload);
                             break;
                         case 'ExchangeIdChanged':
                             await handleExchangeIdChanged(event.payload);

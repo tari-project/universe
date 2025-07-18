@@ -14,7 +14,7 @@ import { memo, useEffect, useState } from 'react';
 
 const Timer = memo(function Timer() {
     const { t } = useTranslation('sos', { useSuspense: false });
-    const [reminingTime, setRemainingTime] = useState({ days: 0, hours: 0, totalRemainingMs: 0 });
+    const [remainingTime, setRemainingTime] = useState({ days: 0, hours: 0, totalRemainingMs: 0 });
 
     useEffect(() => {
         const intervalId = setInterval(() => {
@@ -35,12 +35,12 @@ const Timer = memo(function Timer() {
 
             <TimerColumn>
                 <NumberGroup>
-                    <Number>{reminingTime.days}</Number>
+                    <Number>{remainingTime.days}</Number>
                     <Label>{t('widget.timer.days')}</Label>
                 </NumberGroup>
 
                 <NumberGroup>
-                    <Number>{reminingTime.hours}</Number>
+                    <Number>{remainingTime.hours}</Number>
                     <Label>{t('widget.timer.hours')}</Label>
                 </NumberGroup>
             </TimerColumn>
