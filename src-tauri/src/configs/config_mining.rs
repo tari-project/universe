@@ -65,7 +65,6 @@ pub struct ConfigMiningContent {
     cpu_mining_enabled: bool,
     gpu_engine: EngineType,
     squad_override: Option<String>,
-    mining_time: u128,
 }
 
 impl Default for ConfigMiningContent {
@@ -108,7 +107,6 @@ impl Default for ConfigMiningContent {
             cpu_mining_enabled: true,
             gpu_engine: EngineType::OpenCL,
             squad_override: None,
-            mining_time: 0,
         }
     }
 }

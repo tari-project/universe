@@ -53,7 +53,6 @@ export interface ConfigMining {
     mining_modes: Record<string, MiningMode>;
     cpu_mining_enabled: boolean;
     gpu_engine: string;
-    mining_time: number;
 }
 
 export interface ConfigMiningSelectors {

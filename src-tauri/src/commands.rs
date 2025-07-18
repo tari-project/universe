@@ -1503,10 +1503,6 @@ pub async fn start_cpu_mining(
     app: tauri::AppHandle,
 ) -> Result<(), String> {
     let timer = Instant::now();
-    let _lock = state.cpu_miner_stop_start_mutex.lock().await;
-    let mut timestamp_lock = state.cpu_miner_timestamp_mutex.lock().await;
-    *timestamp_lock = SystemTime::now();
-
     let cpu_mining_enabled = *ConfigMining::content().await.cpu_mining_enabled();
     let cpu_usage_percentage = ConfigMining::content()
         .await
@@ -1575,7 +1571,6 @@ pub async fn start_gpu_mining(
     }
 
     let timer = Instant::now();
-    let _lock = state.gpu_miner_stop_start_mutex.lock().await;
 
     let mut telemetry_id = state
         .telemetry_manager
@@ -1679,14 +1674,11 @@ pub async fn start_gpu_mining(
         warn!(target: LOG_TARGET, "start_gpu_mining took too long: {:?}", timer.elapsed());
     }
 
-    let mining_time = *ConfigMining::content().await.mining_time();
-    EventsEmitter::emit_mining_time_update(mining_time).await;
     Ok(())
 }
 
 #[tauri::command]
 pub async fn stop_cpu_mining(state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
-    let _lock = state.cpu_miner_stop_start_mutex.lock().await;
     let timer = Instant::now();
     state
         .cpu_miner
@@ -1697,20 +1689,6 @@ pub async fn stop_cpu_mining(state: tauri::State<'_, UniverseAppState>) -> Resul
         .map_err(|e| e.to_string())?;
     info!(target:LOG_TARGET, "cpu miner stopped");
 
-    let timestamp_lock = state.cpu_miner_timestamp_mutex.lock().await;
-    let current_mining_time_ms = *ConfigMining::content().await.mining_time();
-
-    let now = SystemTime::now();
-    let mining_time_duration = now
-        .duration_since(*timestamp_lock)
-        .unwrap_or_default()
-        .as_millis();
-
-    let mining_time = current_mining_time_ms + mining_time_duration;
-    let _unused =
-        ConfigMining::update_field(ConfigMiningContent::set_mining_time, mining_time).await;
-    EventsEmitter::emit_mining_time_update(mining_time).await;
-
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "stop_cpu_mining took too long: {:?}", timer.elapsed());
     }
@@ -1719,7 +1697,6 @@ pub async fn stop_cpu_mining(state: tauri::State<'_, UniverseAppState>) -> Resul
 }
 #[tauri::command]
 pub async fn stop_gpu_mining(state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
-    let _lock = state.gpu_miner_stop_start_mutex.lock().await;
     let timer = Instant::now();
 
     let is_gpu_pool_enabled = *ConfigPools::content().await.gpu_pool_enabled();

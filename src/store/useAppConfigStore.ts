@@ -49,7 +49,6 @@ const configMininigInitialState: ConfigMining = {
     mine_on_app_start: false,
     mining_modes: {},
     selected_mining_mode: 'Eco',
-    mining_time: 0,
 };
 
 const configUIInitialState: UIConfigStoreState = {
