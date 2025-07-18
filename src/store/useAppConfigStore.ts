@@ -57,7 +57,6 @@ const configUIInitialState: UIConfigStoreState = {
     application_language: 'en',
     display_mode: 'Eco',
     has_system_language_been_proposed: false,
-    paper_wallet_enabled: true,
     sharing_enabled: true,
     show_experimental_settings: false,
     should_always_use_system_language: false,

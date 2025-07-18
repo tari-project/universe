@@ -36,7 +36,6 @@ export interface ConfigUI {
     has_system_language_been_proposed: boolean;
     should_always_use_system_language: boolean;
     application_language: string;
-    paper_wallet_enabled: boolean;
     sharing_enabled: boolean;
     visual_mode: boolean;
     show_experimental_settings: boolean;

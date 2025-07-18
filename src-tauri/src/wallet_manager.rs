@@ -20,6 +20,8 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent};
+use crate::configs::trait_config::ConfigImpl;
 use crate::events_emitter::EventsEmitter;
 use crate::internal_wallet::InternalWallet;
 use crate::node::node_manager::{NodeManager, NodeManagerError};
@@ -368,6 +370,10 @@ impl WalletManager {
                                         latest_height,
                                         balance.available_balance
                                     );
+
+                                    ConfigWallet::update_field(ConfigWalletContent::set_last_known_balance, balance.available_balance).await.map_err(|e| e.to_string())?;
+
+
                                     EventsEmitter::emit_wallet_balance_update(balance).await;
                                     EventsEmitter::emit_init_wallet_scanning_progress(
                                         current_target_height,
