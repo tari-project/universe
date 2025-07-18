@@ -121,7 +121,7 @@ impl Default for ConfigCoreContent {
             last_changelog_version: Version::new(0, 0, 0),
             airdrop_tokens: None,
             remote_base_node_address,
-            node_type: NodeType::Local,
+            node_type: NodeType::RemoteUntilLocal,
             exchange_id: DEFAULT_EXCHANGE_ID.to_string(),
         }
     }
@@ -142,6 +142,13 @@ impl ConfigCore {
     pub async fn initialize(app_handle: AppHandle) {
         let mut config = Self::current().write().await;
         config.load_app_handle(app_handle.clone()).await;
+
+        if config.content.node_type.ne(&NodeType::RemoteUntilLocal) {
+            config
+                ._get_content_mut()
+                .set_node_type(NodeType::RemoteUntilLocal);
+            let _unused = Self::_save_config(config._get_content().clone());
+        };
     }
 }
 

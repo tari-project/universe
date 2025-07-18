@@ -51,6 +51,17 @@ pub struct ExternalTariAddressBookRecord {
     pub address: TariAddress,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct WalletId(String);
+impl WalletId {
+    pub fn new(id: String) -> Self {
+        WalletId(id)
+    }
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "snake_case")]
 #[serde(default)]
@@ -59,7 +70,7 @@ pub struct ConfigWalletContent {
     #[getset(get = "pub", set = "pub")]
     version: i32,
     #[getset(get = "pub", set = "pub")]
-    tari_wallets: Vec<String>,
+    tari_wallets: Vec<WalletId>,
     #[getset(get = "pub")]
     monero_address: String,
     #[getset(get = "pub")]

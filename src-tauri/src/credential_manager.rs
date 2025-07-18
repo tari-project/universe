@@ -20,6 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::configs::config_wallet::WalletId;
 use crate::APPLICATION_FOLDER_ID;
 use keyring::{Entry, Error as KeyringError};
 use serde::{Deserialize, Serialize};
@@ -67,12 +68,12 @@ impl CredentialManager {
         }
     }
 
-    pub fn new_default(id: String) -> Self {
+    pub fn new_default(id: WalletId) -> Self {
         let name = format!(
             "{}_{}_{}",
             KEYCHAIN_USERNAME,
             Network::get_current().as_key_str(),
-            id
+            id.as_str()
         );
 
         CredentialManager::new(APPLICATION_FOLDER_ID.into(), name)

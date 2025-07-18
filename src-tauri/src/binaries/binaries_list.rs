@@ -224,16 +224,16 @@ impl Binaries {
             // TODO: Change to proper names once we have the binaries online
             Binaries::GpuMinerSHA3X => match platform {
                 BinaryPlatformAssets::LinuxX64 => {
-                    format!("graxil-linux-x86_64-v{version}-{hash}.zip")
+                    format!("graxil-linux-x86_64-{version}-{hash}.zip")
                 }
                 BinaryPlatformAssets::WindowsX64 => {
-                    format!("graxil-windows-x64-v{version}-{hash}.zip")
+                    format!("graxil-windows-x64-{version}-{hash}.zip")
                 }
                 BinaryPlatformAssets::MacOSX64 => {
-                    format!("graxil-macos-x86_64-v{version}-{hash}.zip")
+                    format!("graxil-macos-x86_64-{version}-{hash}.zip")
                 }
                 BinaryPlatformAssets::MacOSArm64 => {
-                    format!("graxil-macos-arm64-v{version}-{hash}.zip")
+                    format!("graxil-macos-arm64-{version}-{hash}.zip")
                 }
             },
         }

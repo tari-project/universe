@@ -4,8 +4,8 @@
   "empty-tx": "Nie znaleziono transakcji",
   "history": {
     "available-balance": "Dostępne",
-    "my-balance": "My Balance",
     "label-rewards": "Moje nagrody",
+    "my-balance": "My Balance",
     "sync-with-phone": "Synchronizuj z telefonem",
     "transaction-details": "Szczegóły transakcji",
     "view-details": "Zobacz szczegóły"
@@ -39,6 +39,12 @@
       "error-match": "That’s not quite right. Try again or create a new PIN.",
       "explainer": "If you forget this PIN, the only way to regain access to your wallet is by restoring it from your seed phrase.",
       "forgot": "Forgot PIN"
+    },
+    "reminder": {
+      "description": "You haven't secured your wallet yet. Backing up your seed phrase keeps your tokens safe and ensures only you can access them.\\nLet's do it now—it'll only take a moment",
+      "maybe-later": "Maybe later",
+      "start-now": "Start now",
+      "title": "Protect your Tari"
     }
   },
   "send": {

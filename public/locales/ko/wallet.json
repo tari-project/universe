@@ -4,8 +4,8 @@
   "empty-tx": "거래를 찾을 수 없음",
   "history": {
     "available-balance": "사용 가능",
-    "my-balance": "My Balance",
     "label-rewards": "내 보상",
+    "my-balance": "My Balance",
     "sync-with-phone": "전화와 동기화",
     "transaction-details": "거래 세부 정보",
     "view-details": "세부 정보 보기"
@@ -39,6 +39,12 @@
       "error-match": "That’s not quite right. Try again or create a new PIN.",
       "explainer": "If you forget this PIN, the only way to regain access to your wallet is by restoring it from your seed phrase.",
       "forgot": "Forgot PIN"
+    },
+    "reminder": {
+      "description": "You haven't secured your wallet yet. Backing up your seed phrase keeps your tokens safe and ensures only you can access them.\\nLet's do it now—it'll only take a moment",
+      "maybe-later": "Maybe later",
+      "start-now": "Start now",
+      "title": "Protect your Tari"
     }
   },
   "send": {
