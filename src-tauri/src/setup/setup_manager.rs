@@ -318,7 +318,7 @@ impl SetupManager {
                 let _unused = ConfigUI::set_wallet_ui_mode(WalletUIMode::Seedless).await;
                 if let Err(e) = InternalWallet::initialize_seedless(&app_handle, None).await {
                     EventsEmitter::emit_critical_problem(CriticalProblemPayload {
-                        title: Some("Wallet not initialized!".to_string()),
+                        title: Some("Wallet(Seedless) not initialized!".to_string()),
                         description: Some(
                             "Encountered an error while initializing the wallet.".to_string(),
                         ),
@@ -332,7 +332,7 @@ impl SetupManager {
                     Ok(()) => {
                         if let Err(e) = ConfigWallet::migrate().await {
                             EventsEmitter::emit_critical_problem(CriticalProblemPayload {
-                                title: Some("Wallet migration failed!".to_string()),
+                                title: Some("Wallet config migration failed!".to_string()),
                                 description: Some(
                                     "Encountered an error while migrating the wallet.".to_string(),
                                 ),
@@ -342,8 +342,15 @@ impl SetupManager {
                         }
                     }
                     Err(e) => {
-                        // Handle this as critical error
                         error!(target: LOG_TARGET, "Error loading internal wallet: {e:?}");
+                        EventsEmitter::emit_critical_problem(CriticalProblemPayload {
+                            title: Some("Wallet(seed) not initialized!".to_string()),
+                            description: Some(
+                                "Encountered an error while initializing the wallet.".to_string(),
+                            ),
+                            error_message: Some(e.to_string()),
+                        })
+                        .await;
                     }
                 };
             }
