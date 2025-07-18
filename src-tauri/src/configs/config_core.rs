@@ -49,6 +49,7 @@ static INSTANCE: LazyLock<RwLock<ConfigCore>> = LazyLock::new(|| RwLock::new(Con
 #[derive(Getters, Setters)]
 #[getset(get = "pub", set = "pub")]
 pub struct ConfigCoreContent {
+    migration_id: u32,
     was_config_migrated: bool,
     created_at: SystemTime,
     is_p2pool_enabled: bool,
@@ -103,6 +104,7 @@ impl Default for ConfigCoreContent {
             .unwrap_or(ABTestSelector::GroupA);
 
         Self {
+            migration_id: 1,
             was_config_migrated: false,
             created_at: SystemTime::now(),
             is_p2pool_enabled: true,
@@ -121,7 +123,7 @@ impl Default for ConfigCoreContent {
             last_changelog_version: Version::new(0, 0, 0),
             airdrop_tokens: None,
             remote_base_node_address,
-            node_type: NodeType::RemoteUntilLocal,
+            node_type: NodeType::Remote,
             exchange_id: DEFAULT_EXCHANGE_ID.to_string(),
         }
     }
@@ -143,10 +145,9 @@ impl ConfigCore {
         let mut config = Self::current().write().await;
         config.load_app_handle(app_handle.clone()).await;
 
-        if config.content.node_type.ne(&NodeType::RemoteUntilLocal) {
-            config
-                ._get_content_mut()
-                .set_node_type(NodeType::RemoteUntilLocal);
+        if config.content.migration_id.eq(&0) {
+            config.content.node_type = NodeType::RemoteUntilLocal;
+            config.content.migration_id = 1;
             let _unused = Self::_save_config(config._get_content().clone());
         };
     }
