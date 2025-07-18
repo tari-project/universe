@@ -1,24 +1,11 @@
-import LoadingDots from '@app/components/elements/loaders/LoadingDots';
-import {
-    Line,
-    LoadingGroup,
-    LoadingWrapper,
-    Text,
-    TextTop,
-    TooltipContent,
-    TooltipDescription,
-    TooltipPosition,
-    TooltipTitle,
-    Wrapper,
-} from './styles';
-import { useState } from 'react';
+import { TooltipContent, TooltipDescription, TooltipPosition, TooltipTitle, Wrapper } from './styles';
+import { ReactNode, useState } from 'react';
 import { useFloating, useHover, useInteractions, offset, shift, FloatingPortal } from '@floating-ui/react';
 import { AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import { useMiningMetricsStore } from '@app/store';
-import SyncCountdown from '@app/components/wallet/components/loaders/SyncLoading/SyncCountdown.tsx';
 
-export default function SyncLoading() {
+export default function SyncLoading({ children }: { children: ReactNode }) {
     const { t } = useTranslation(['wallet', 'setup-progresses']);
 
     const cpuMining = useMiningMetricsStore((s) => s.cpu_mining_status.is_mining);
@@ -26,8 +13,6 @@ export default function SyncLoading() {
     const isMining = cpuMining || gpuMining;
 
     const [open, setOpen] = useState(false);
-    const [isComplete, setIsComplete] = useState(false);
-    const [isStarted, setIsStarted] = useState(false);
     const { refs, context, floatingStyles } = useFloating({
         open,
         onOpenChange: setOpen,
@@ -39,24 +24,7 @@ export default function SyncLoading() {
     return (
         <>
             <Wrapper ref={refs.setReference} {...getReferenceProps()}>
-                {isMining && <TextTop>{t('sync-message.top-line')}</TextTop>}
-                <LoadingGroup>
-                    <Text>
-                        <Line>
-                            <strong>
-                                <SyncCountdown
-                                    onStarted={() => setIsStarted(true)}
-                                    onCompleted={() => setIsComplete(true)}
-                                />
-                                {isStarted && !isComplete && t('sync-message.line2')}
-                            </strong>
-                        </Line>
-                        <Line>{t('sync-message.line3')}</Line>
-                    </Text>
-                    <LoadingWrapper>
-                        <LoadingDots />
-                    </LoadingWrapper>
-                </LoadingGroup>
+                {children}
             </Wrapper>
             <AnimatePresence>
                 {open && (

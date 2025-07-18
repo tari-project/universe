@@ -43,5 +43,10 @@ export const AvailableWrapper = styled.div`
     display: flex;
     font-size: 11px;
     font-weight: 500;
+    gap: 4px;
     color: rgba(255, 255, 255, 0.7);
+
+    strong {
+        color: #fff;
+    }
 `;
