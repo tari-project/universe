@@ -40,7 +40,6 @@ export interface ConfigUI {
     sharing_enabled: boolean;
     visual_mode: boolean;
     show_experimental_settings: boolean;
-    warmup_seen: boolean | null;
     wallet_ui_mode: WalletUIMode;
     was_staged_security_modal_shown: boolean;
 }

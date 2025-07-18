@@ -68,7 +68,7 @@ use std::fs::{read_dir, remove_dir_all, remove_file, File};
 use std::str::FromStr;
 use std::sync::atomic::Ordering;
 use std::thread::sleep;
-use std::time::{Duration, Instant, SystemTime};
+use std::time::{Duration, Instant};
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::{TariAddress, TariAddressFeatures};
 use tari_core::transactions::tari_amount::{MicroMinotari, Minotari};
@@ -2121,15 +2121,6 @@ pub async fn set_node_type(
     SetupManager::get_instance()
         .restart_phases_from_queue(app_handle)
         .await;
-
-    Ok(())
-}
-
-#[tauri::command]
-pub async fn set_warmup_seen(warmup_seen: bool) -> Result<(), String> {
-    ConfigUI::update_field(ConfigUIContent::set_warmup_seen, warmup_seen)
-        .await
-        .map_err(|e| e.to_string())?;
 
     Ok(())
 }

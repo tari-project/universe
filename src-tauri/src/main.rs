@@ -59,12 +59,11 @@ use log4rs::config::RawConfig;
 use std::fs;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use std::time::SystemTime;
 use tari_common::configuration::Network;
 use tauri::async_runtime::block_on;
 use tauri::{Manager, RunEvent};
 use tauri_plugin_sentry::{minidump, sentry};
-use tokio::sync::{Mutex, RwLock};
+use tokio::sync::RwLock;
 use utils::logging_utils::setup_logging;
 
 #[cfg(all(feature = "exchange-ci", not(feature = "release-ci")))]
@@ -626,7 +625,6 @@ fn main() {
             commands::validate_minotari_amount,
             commands::trigger_phases_restart,
             commands::set_node_type,
-            commands::set_warmup_seen,
             commands::set_allow_notifications,
             commands::launch_builtin_tapplet,
             commands::get_bridge_envs,

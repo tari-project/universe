@@ -62,7 +62,6 @@ const configUIInitialState: UIConfigStoreState = {
     show_experimental_settings: false,
     should_always_use_system_language: false,
     visual_mode: true,
-    warmup_seen: null,
     wallet_ui_mode: WalletUIMode.Standard,
     was_staged_security_modal_shown: false,
 };
