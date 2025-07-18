@@ -1,7 +1,15 @@
 import { BackendBridgeTransaction, setError as setStoreError, useConfigUIStore, useWalletStore } from '@app/store';
 import { invoke } from '@tauri-apps/api/core';
 import { BaseNodeStatus, BridgeEnvs, WalletBalance } from '../app-status';
-import { AccountData, BridgeTxDetails, SendOneSidedRequest, TappletSignerParams, WindowSize } from './tapplet.types';
+import {
+    AccountData,
+    BridgeTxDetails,
+    SendOneSidedRequest,
+    SignMessageTappletRequest,
+    SignMessageTappletResponse,
+    TappletSignerParams,
+    WindowSize,
+} from './tapplet.types';
 import { useTappletsStore } from '@app/store/useTappletsStore';
 
 export class TappletSigner {
@@ -85,6 +93,18 @@ export class TappletSigner {
         } catch (error) {
             setStoreError(`Error sending transaction: ${error}`);
             return false;
+        }
+    }
+
+    public async signMessage(req: SignMessageTappletRequest): Promise<SignMessageTappletResponse> {
+        try {
+            return await invoke('sign_message', {
+                message: req.message,
+                tapplet_id: req.tapplet_id,
+            });
+        } catch (error) {
+            setStoreError(`Error signing message: ${error}`);
+            throw error;
         }
     }
 
