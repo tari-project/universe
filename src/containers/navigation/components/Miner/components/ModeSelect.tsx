@@ -5,7 +5,7 @@ import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { setDialogToShow } from '@app/store/actions/uiStoreActions.ts';
 import { setCustomLevelsDialogOpen } from '@app/store/actions/miningStoreActions.ts';
-import { Select, SelectOption } from '@app/components/elements/inputs/Select.tsx';
+import { Select } from '@app/components/elements/inputs/Select.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 
 import eco from '@app/assets/icons/emoji/eco.png';

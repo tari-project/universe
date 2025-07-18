@@ -99,15 +99,15 @@ impl Default for ConfigWalletContent {
     fn default() -> Self {
         Self {
             version: 0,
-            tari_wallets: Vec::new(),
+            tari_wallets: Vec::new(), // Owned wallets` ids
             monero_address: "".to_string(),
             monero_address_is_generated: false,
             keyring_accessed: false,
             wallet_migration_nonce: 0,
             created_at: SystemTime::now(),
-            selected_external_tari_address: None,
+            selected_external_tari_address: None, // Takes precedence over an owned address
             external_tari_addresses_book: HashMap::new(),
-            tari_wallet_details: None,
+            tari_wallet_details: None, // Owned tari address details
             pin_locker_state: PinLockerState::default(),
             seed_backed_up: false,
             last_known_balance: MicroMinotari(0),
@@ -139,8 +139,7 @@ impl ConfigWalletContent {
                 address,
             },
         );
-        self.tari_wallet_details = None;
-
+        // Don't clear tari_wallet_details
         self
     }
 

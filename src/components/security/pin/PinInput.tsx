@@ -13,8 +13,10 @@ export interface CodeInputValues {
 
 interface PinInputProps {
     hasError?: boolean;
+    isConfirm?: boolean;
+    autoSubmitFn?: VoidFunction;
 }
-export function PinInput({ hasError = false }: PinInputProps) {
+export function PinInput({ hasError = false, isConfirm = false, autoSubmitFn }: PinInputProps) {
     const [focusedIndex, setFocusedIndex] = useState(0);
     const { control, setFocus, getValues, setValue } = useFormContext<CodeInputValues>();
 
@@ -43,6 +45,10 @@ export function PinInput({ hasError = false }: PinInputProps) {
     }, [focusedIndex, getValues]);
 
     useEffect(() => {
+        setFocusedIndex(0);
+    }, [isConfirm]);
+
+    useEffect(() => {
         setFocus(`code.${focusedIndex}.digit`);
     }, [focusedIndex, setFocus]);
 
@@ -62,6 +68,11 @@ export function PinInput({ hasError = false }: PinInputProps) {
             }
         } else {
             setValue(`code.${fieldIndex}.digit`, '', { shouldValidate: true });
+        }
+
+        // Auto Submit when last digit entered
+        if (autoSubmitFn && fieldIndex === fields.length - 1) {
+            autoSubmitFn();
         }
     }
 

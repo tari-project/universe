@@ -26,7 +26,7 @@ const AdminUI = memo(function AdminUI() {
         nodeId,
         open: isOpen,
         onOpenChange: setIsOpen,
-        middleware: [offset(10), flip(), shift()],
+        middleware: [offset(5), flip(), shift()],
         placement: 'bottom-end',
     });
 

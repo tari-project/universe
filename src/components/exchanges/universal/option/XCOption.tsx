@@ -67,7 +67,13 @@ export const XCOption = ({ isCurrent = false, isActive, content, onActiveClick, 
             })
             .catch((e) => {
                 console.error('Could not set Exchange address', e);
-                setError('Could not change Exchange address: ' + e.message);
+                const errorMessage = e as unknown as string;
+                if (
+                    !errorMessage.includes('User canceled the operation') &&
+                    !errorMessage.includes('PIN entry cancelled')
+                ) {
+                    setError(errorMessage);
+                }
             });
     };
 

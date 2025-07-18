@@ -115,7 +115,10 @@ export const importSeedWords = async (seedWords: string[]) => {
             type: 'success',
         });
     } catch (error) {
-        setError(`Could not import seed words: ${error}`, true);
+        const errorMessage = error as unknown as string;
+        if (!errorMessage.includes('User canceled the operation') && !errorMessage.includes('PIN entry cancelled')) {
+            setError(`Could not import seed words: ${error}`, true);
+        }
         useWalletStore.setState({ is_wallet_importing: false });
     } finally {
         useWalletStore.setState({ is_wallet_importing: false });

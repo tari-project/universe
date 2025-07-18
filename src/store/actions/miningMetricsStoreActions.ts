@@ -45,19 +45,3 @@ export const handleConnectedPeersUpdate = (connected_peers: string[]) => {
 export const handleBaseNodeStatusUpdate = (base_node_status: BaseNodeStatus) => {
     useMiningMetricsStore.setState({ base_node_status });
 };
-export const handleMiningModeChange = () => {
-    useMiningMetricsStore.setState((currentState) => ({
-        cpu_mining_status: {
-            ...currentState.cpu_mining_status,
-            is_mining: false,
-            hash_rate: 0,
-            estimated_earnings: 0,
-        },
-        gpu_mining_status: {
-            ...currentState.gpu_mining_status,
-            is_mining: false,
-            hash_rate: 0,
-            estimated_earnings: 0,
-        },
-    }));
-};

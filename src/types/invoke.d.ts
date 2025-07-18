@@ -4,8 +4,6 @@ import {
     P2poolStatsResult,
     TorConfig,
     TransactionInfo,
-    MaxConsumptionLevels,
-    GpuThreads,
     P2poolConnections,
     BridgeEnvs,
     TariAddressVariants,
@@ -13,7 +11,7 @@ import {
 } from './app-status';
 import { Language } from '@app/i18initializer';
 import { PaperWalletDetails } from '@app/types/app-status.ts';
-import { displayMode, MiningModeType } from '@app/store/types.ts';
+import { displayMode } from '@app/store/types.ts';
 import { SignData } from '@app/types/ws.ts';
 import { ConfigBackendInMemory } from '@app/types/configs.ts';
 import { ExchangeMiner } from './exchange';
