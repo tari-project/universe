@@ -1,0 +1,13 @@
+{
+  "earn": "Ganhe até {{amount}}% em XTM bônus",
+  "help-find-address": "Ajude-me a encontrar meu endereço {{ exchange }}",
+  "main-logo-title": "Temporada\nUm",
+  "paste-from-clipboard": "Colar da área de transferência",
+  "season-one-reward": "Bônus da temporada um",
+  "select": {
+    "modal-title": "Comece a minerar Tari (XTM) diretamente para sua carteira em uma exchange suportada"
+  },
+  "selected-exchange-miner": "Você está minerando aqui",
+  "time-left": "Tempo restante",
+  "wallet-address": "Endereço da Carteira"
+}

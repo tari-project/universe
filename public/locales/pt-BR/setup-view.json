@@ -1,0 +1,46 @@
+{
+  "actions": {
+    "earn-gems": "Ganhe gemas",
+    "earn-gems-copy": "Conecte sua conta social para ganhar gemas por convidar amigos",
+    "earn-gems-cta": "Conectar Conta X",
+    "mode": "Personalizar Modo",
+    "mode-copy": "Você sabia que pode personalizar o quão forte sua máquina deve minerar?"
+  },
+  "could-not-auto-update": "Não foi possível atualizar automaticamente o Tari Universe para {{version}} enquanto a máquina estava bloqueada ou em modo de suspensão.",
+  "dont-worry": "Não se preocupe, da próxima vez não demorará tanto",
+  "installing-latest-version": "Instalando a versão {{version}} do Tari Universe",
+  "new-tari-version-available": "Uma nova versão do Tari Universe está disponível!",
+  "no": "Não",
+  "setting-up": "Configurando a máquina da verdade Tari...",
+  "sync": {
+    "header": "Conectando à rede Tari",
+    "subheader": "Sincronizando com a rede Tari"
+  },
+  "this-might-take-a-few-minutes": "Isso pode levar alguns minutos",
+  "title": {
+    "application-started": "Aplicativos iniciados",
+    "benchmarking-network": "Benchmark de Rede",
+    "checking-latest-version-gpuminer": "Verificando a versão mais recente do xtrgpuminer",
+    "checking-latest-version-mmproxy": "Verificando a versão mais recente do mmproxy",
+    "checking-latest-version-node": "Verificando a versão mais recente do nó",
+    "checking-latest-version-sha-p2pool": "Verificando a versão mais recente do sha-p2pool",
+    "checking-latest-version-tor": "Verificando a versão mais recente do tor",
+    "checking-latest-version-wallet": "Verificando a versão mais recente da carteira",
+    "checking-latest-version-xmrig": "Verificando a versão mais recente do xmrig",
+    "download-completed": "Download concluído",
+    "downloading": "Baixando",
+    "minotari-node-restarting": "Os dados do nó Minotari estavam corrompidos, limpando dados antigos",
+    "preparing-for-initial-sync": "Conectando-se a pares da rede {{initial_connected_peers}}/{{required_peers}}",
+    "starting-mmproxy": "Iniciando proxy de mineração de fusão",
+    "starting-p2pool": "Iniciando P2Pool",
+    "starting-up": "Iniciando",
+    "waiting-for-block-sync": "Aguardando sincronização de bloco. {{local_header_height}}/{{tip_header_height}} cabeçalhos e {{local_block_height}}/{{tip_block_height}} blocos sincronizados.",
+    "waiting-for-header-sync": "Aguardando sincronização de cabeçalho. {{local_header_height}}/{{tip_header_height}} cabeçalhos e {{local_block_height}}/{{tip_block_height}} blocos sincronizados. ",
+    "waiting-for-minotari-node-to-start": "Aguardando o nó Minotari iniciar",
+    "waiting-for-node": "Aguardando o nó iniciar",
+    "waiting-for-wallet": "Aguardando carteira",
+    "wallet-started": "Carteira iniciada"
+  },
+  "would-you-like-to-install": "Gostaria de instalar o Tari Universe {{version}} agora?",
+  "yes": "Sim"
+}

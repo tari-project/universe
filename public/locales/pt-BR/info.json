@@ -1,0 +1,21 @@
+{
+    "content": {
+        "step-1": "Tari Universe facilita a mineração de tokens Tari em um Mac ou PC. O futuro sistema financeiro é acessível a todos {{emoji}} {{emoji1}}",
+        "step-2": "Tari é um protocolo blockchain de camada 1 inovador. É extremamente rápido e irá impulsionar experiências de usuário mágicas. Os tokens Tari são o dinheiro da rede Tari.",
+        "step-3": "Minerar Tari é uma corrida. O primeiro computador na rede a resolver o quebra-cabeça será recompensado em tokens Tari (XTM) e gemas. Este processo protege a rede Tari.",
+        "step-4": "Tari está atualmente em modo testnet. Este é o ensaio geral antes do lançamento da mainnet Tari. Os tokens minerados agora (XTM) não têm valor. No entanto, as gemas têm!",
+        "step-5": "Nada! Uma vez sincronizado, você começará a minerar e ganhar gemas automaticamente. Ganhe mais gemas minerando XTM e compartilhando seu link de convite com amigos. Quanto mais gemas você ganhar, maior será seu futuro airdrop!",
+        "step-6": "Tari é pró-humano, pró-liberdade e de código aberto. É alimentado e protegido por todos que executam o Tari Universe. Tari existe por sua causa. {{emoji}}"
+    },
+    "footer": {
+        "heading": "eu sou um rodapé"
+    },
+    "heading": {
+        "step-1": "Bem-vindo ao Tari Universe!",
+        "step-2": "O que é Tari?",
+        "step-3": "O que é Mineração?",
+        "step-4": "Tari está ao vivo agora?",
+        "step-5": "O que devo fazer a seguir?",
+        "step-6": "Você é Tari"
+    }
+}

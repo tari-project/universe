@@ -1,0 +1,45 @@
+{
+  "common": {
+    "got-it": "Entendi"
+  },
+  "completedTip": {
+    "text": "Sua frase semente pode ser encontrada novamente em suas configurações",
+    "title": "Frase semente"
+  },
+  "intro": {
+    "balance": "Sua carteira tem <span>{{balance}}</span> XTM",
+    "button": "Proteger minha carteira",
+    "subtitle": "Agora você tem seus primeiros tokens Tari. Vamos proteger rapidamente sua carteira em duas etapas fáceis.",
+    "text": "O Tari Universe configura automaticamente uma carteira para você quando você começa a minerar. Certifique-se de sempre ter acesso à sua carteira armazenando sua frase semente em um local seguro.",
+    "title": "Vamos proteger sua carteira.",
+    "warning": "Altamente recomendado"
+  },
+  "reminderTip": {
+    "text": "É altamente recomendável fazer backup da sua frase semente para sua carteira única",
+    "title": "Faça backup rápido da sua frase semente nas configurações"
+  },
+  "seedPhrase": {
+    "button": "Verificar frase semente",
+    "checkbox": "Eu entendo que se eu perder minha frase semente de recuperação, não poderei restaurar minha carteira.",
+    "copied": "Copiado!",
+    "copy": "Copiar para a área de transferência",
+    "text": "Você precisará deste código novamente para restaurar sua carteira.",
+    "title": "Anote sua frase semente e guarde-a em um local seguro"
+  },
+  "skip": "Pular por enquanto",
+  "steps": {
+    "complete-false": "Incompleto",
+    "complete-true": "Completo",
+    "step": "Passo {{stepNumber}}",
+    "subtitle-pin": "Impede o acesso não autorizado à carteira",
+    "subtitle-seeds": "Garante que você possa recuperar fundos se perder seu dispositivo",
+    "title-pin": "Definir um PIN seguro",
+    "title-seeds": "Fazer backup da sua Frase Semente"
+  },
+  "verifySeed": {
+    "button": "Confirmar frase semente",
+    "placeholder": "Clique nas palavras abaixo na ordem correta",
+    "text": "Para ter certeza de que você anotou sua frase semente corretamente, selecione as palavras na ordem correta.",
+    "title": "Verifique sua frase semente"
+  }
+}
