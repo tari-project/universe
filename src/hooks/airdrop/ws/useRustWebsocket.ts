@@ -1,10 +1,9 @@
 import { useAirdropStore } from '@app/store';
 import { listen } from '@tauri-apps/api/event';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useHandleWsUserIdEvent } from './useHandleWsUserIdEvent';
 import { GLOBAL_EVENT_NAME, WebsocketGlobalEvent, WebsocketUserEvent } from '@app/types/ws';
 import { useHandleWsGlobalEvent } from './useHandleWsGlobalEvent';
-import './useSendWsMessage'; // dummy import to bypass knip
 import { initialiseSocket } from '@app/utils/socket';
 import { useSetupStore } from '@app/store/useSetupStore';
 
@@ -19,14 +18,15 @@ function useSetupWebsocket() {
     const airdropTokens = useAirdropStore((s) => s.airdropTokens);
     const airdropApiUrl = useAirdropStore((s) => s.backendInMemoryConfig?.airdropApiUrl);
 
-    return useCallback(() => {
+    return useCallback(async () => {
         if (airdropApiUrl && airdropTokens) {
-            initialiseSocket();
+            await initialiseSocket();
         }
     }, [airdropApiUrl, airdropTokens]);
 }
 
 export default function useAirdropWebsocket() {
+    const wsStarted = useRef(false);
     const userId = useAirdropStore((s) => s.userDetails?.user?.id);
     const userEventHandler = useHandleWsUserIdEvent();
     const globalEventHandler = useHandleWsGlobalEvent();
@@ -34,8 +34,11 @@ export default function useAirdropWebsocket() {
     const setupComplete = useSetupStore((s) => s.appUnlocked);
 
     useEffect(() => {
+        if (wsStarted.current) return;
         if (setupComplete) {
-            startWebsocket();
+            startWebsocket().then(() => {
+                wsStarted.current = true;
+            });
         }
     }, [startWebsocket, setupComplete]);
 
@@ -43,7 +46,6 @@ export default function useAirdropWebsocket() {
         const unlistenPromise = listen('ws-status-change', (event) => {
             console.info(`websocket status changed: `, event);
         });
-
         return () => {
             unlistenPromise.then((unlisten) => unlisten());
         };

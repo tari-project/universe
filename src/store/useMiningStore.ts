@@ -1,5 +1,5 @@
+import { create } from 'zustand';
 import { Network } from '@app/utils/network';
-import { create } from './create';
 
 interface MiningStoreState {
     hashrateReady?: boolean;

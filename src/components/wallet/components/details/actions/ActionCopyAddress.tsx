@@ -10,9 +10,8 @@ import { AddressTooltip, ActionButton } from './styles.ts';
 
 export default function ActionCopyAddress() {
     const { t } = useTranslation('wallet');
-
-    const [showAdress, setShowAddress] = useState(false);
     const { copyToClipboard, isCopied } = useCopyToClipboard();
+    const [showAdress, setShowAddress] = useState(false);
     const tariWalletAddress = useWalletStore((state) => state.tari_address_base58);
     const displayAddress = truncateMiddle(tariWalletAddress, 5);
 

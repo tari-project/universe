@@ -1,7 +1,7 @@
-import { create } from './create.ts';
+import { create } from 'zustand';
+import { invoke } from '@tauri-apps/api/core';
 import { ActiveTapplet, BridgeTxDetails } from '@app/types/tapplets/tapplet.types.ts';
 import { useTappletSignerStore } from './useTappletSignerStore.ts';
-import { invoke } from '@tauri-apps/api/core';
 
 interface State {
     isInitialized: boolean;

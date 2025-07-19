@@ -1,4 +1,4 @@
-import { create } from './create';
+import { create } from 'zustand';
 import { Theme } from '@app/theme/types.ts';
 import { AdminShow, CONNECTION_STATUS, DialogType, sidebarTowerOffset, SidebarType } from '@app/store/types/ui.ts';
 
@@ -18,6 +18,7 @@ interface UIStoreState {
     isReconnecting?: boolean;
     shouldShowExchangeSpecificModal: boolean;
     showSplashscreen: boolean;
+    canCloseSplashscreen: boolean;
     hideWalletBalance: boolean;
     showResumeAppModal: boolean;
     towerSidebarOffset: number;
@@ -38,7 +39,6 @@ const initialState: UIStoreState = {
     showExternalDependenciesDialog: false,
     connectionStatus: 'connected',
     isReconnecting: false,
-    showSplashscreen: true,
     hideWalletBalance: false,
     showWarmup: false,
     showResumeAppModal: false,
@@ -47,6 +47,8 @@ const initialState: UIStoreState = {
     towerInitalized: false,
     showTapplet: false,
     blockBubblesEnabled: false,
+    showSplashscreen: true,
+    canCloseSplashscreen: false,
 };
 
 export const useUIStore = create<UIStoreState>()(() => ({

@@ -13,10 +13,8 @@ import {
 } from '@app/store/actions/miningMetricsStoreActions';
 import {
     handleAskForRestart,
-    handleCloseSplashscreen,
     handleConnectionStatusChanged,
     setConnectionStatus,
-    setDialogToShow,
     setShouldShowExchangeSpecificModal,
     setShowExternalDependenciesDialog,
 } from '@app/store/actions/uiStoreActions';
@@ -165,7 +163,7 @@ const useTauriEventsListener = () => {
                             handleConfigPoolsLoaded(event.payload);
                             break;
                         case 'CloseSplashscreen':
-                            handleCloseSplashscreen();
+                            useUIStore.setState({ canCloseSplashscreen: true });
                             break;
                         case 'DetectedDevices':
                             setGpuDevices(event.payload.devices);
