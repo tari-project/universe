@@ -1,0 +1,71 @@
+import styled from 'styled-components';
+
+export const Wrapper = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+`;
+
+export const ActiveMinersWrapper = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 10px;
+`;
+
+export const PhotoWrapper = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 10px;
+`;
+
+export const PhotoImage = styled.img`
+    width: 30px;
+    height: 30px;
+    border-radius: 100px;
+    background: #000;
+    border: 2px solid #323333;
+`;
+
+export const StatusDot = styled.div`
+    width: 11px;
+    height: 11px;
+
+    border-radius: 100px;
+    background: #16ff0a;
+    border: 2px solid #323333;
+`;
+
+export const TextWrapper = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+`;
+
+export const MainText = styled.div`
+    color: #fff;
+    font-family: Poppins, sans-serif;
+    font-size: 16px;
+    font-style: normal;
+    font-weight: 600;
+    line-height: 82.039%;
+    letter-spacing: -0.48px;
+`;
+
+export const LabelText = styled.div`
+    color: #fff;
+    font-family: Poppins, sans-serif;
+    font-size: 12px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: 109.386%;
+    letter-spacing: -0.36px;
+    opacity: 0.5;
+`;
+
+export const Divider = styled.div`
+    width: 1px;
+    height: 30px;
+    opacity: 0.2;
+    background: #fff;
+`;
