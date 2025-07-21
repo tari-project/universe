@@ -19,7 +19,6 @@
   "this-might-take-a-few-minutes": "This might take a few minutes",
   "title": {
     "application-started": "Applications started",
-    "benchmarking-network": "Network Benchmark",
     "checking-latest-version-gpuminer": "Checking for latest version of xtrgpuminer",
     "checking-latest-version-mmproxy": "Checking for latest version of mmproxy",
     "checking-latest-version-node": "Checking for latest version of node",

@@ -99,7 +99,6 @@ pub(crate) struct CpuMiner {
     cpu_miner_status_watch_tx: watch::Sender<CpuMinerStatus>,
     summary_watch_rx: watch::Receiver<Option<Summary>>,
     node_status_watch_rx: watch::Receiver<BaseNodeStatus>,
-    pub benchmarked_hashrate: u64,
     pool_status_watcher: Option<PoolStatusWatcher<SupportXmrPoolAdapter>>,
     pub pool_status_shutdown_signal: Shutdown,
 }
@@ -118,7 +117,6 @@ impl CpuMiner {
             cpu_miner_status_watch_tx,
             summary_watch_rx,
             node_status_watch_rx,
-            benchmarked_hashrate: 0,
             pool_status_watcher: None,
             pool_status_shutdown_signal: Shutdown::new(),
         }
@@ -249,104 +247,6 @@ impl CpuMiner {
 
         self.initialize_status_updates(app_shutdown).await;
 
-        Ok(())
-    }
-
-    pub async fn start_benchmarking(
-        &mut self,
-        duration: Duration,
-        base_path: PathBuf,
-        config_path: PathBuf,
-        log_dir: PathBuf,
-    ) -> Result<(), anyhow::Error> {
-        let shutdown_signal = TasksTrackers::current().hardware_phase.get_signal().await;
-        let task_tracker = TasksTrackers::current()
-            .hardware_phase
-            .get_task_tracker()
-            .await;
-
-        let max_cpu_available = thread::available_parallelism();
-        let max_cpu_available = match max_cpu_available {
-            Ok(available_cpus) => u32::try_from(available_cpus.get()).unwrap_or(1),
-            Err(_) => 1,
-        };
-
-        {
-            let mut lock = self.watcher.write().await;
-            lock.adapter.node_connection = Some(XmrigNodeConnection::Benchmark);
-            lock.adapter.cpu_threads = Some(1);
-            lock.adapter.extra_options = vec![];
-
-            lock.start(
-                base_path.clone(),
-                config_path.clone(),
-                log_dir.clone(),
-                Binaries::Xmrig,
-                shutdown_signal.clone(),
-                task_tracker,
-            )
-            .await?;
-        }
-
-        let status = {
-            let mut status = None;
-            for _ in 0..10 {
-                let lock = self.watcher.read().await;
-                if let Some(s) = lock.status_monitor.as_ref() {
-                    status = Some(s.clone());
-                    break;
-                }
-                drop(lock);
-                sleep(Duration::from_secs(1)).await;
-            }
-
-            match status {
-                Some(s) => s,
-                None => {
-                    error!(target: LOG_TARGET, "Failed to get status for xmrig for benchmarking");
-                    // Stop the miner before returning
-                    self.stop().await?;
-                    return Ok(());
-                }
-            }
-        };
-
-        let timeout_duration = duration + Duration::from_secs(10);
-        let result = match timeout(timeout_duration, async move {
-            let start_time = Instant::now();
-            let mut max_hashrate = 0f64;
-
-            loop {
-                if shutdown_signal.is_triggered() {
-                    break;
-                }
-
-                sleep(Duration::from_secs(1)).await;
-
-                if let Ok(stats) = status.summary().await {
-                    let hash_rate = stats.hashrate.total[0].unwrap_or_default();
-                    if hash_rate > max_hashrate {
-                        max_hashrate = hash_rate;
-                    }
-                    if start_time.elapsed() > duration {
-                        break;
-                    }
-                }
-            }
-
-            #[allow(clippy::cast_possible_truncation)]
-            Ok::<u64, anyhow::Error>(max_hashrate.floor() as u64)
-        })
-        .await
-        {
-            Ok(res) => res? * u64::from(max_cpu_available),
-            Err(_) => 0,
-        };
-
-        // Stop the miner
-        self.stop().await?;
-
-        self.benchmarked_hashrate = result;
         Ok(())
     }
 
