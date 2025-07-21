@@ -15,7 +15,6 @@ import { TOWER_CANVAS_ID } from '@app/store/types/ui.ts';
 import { queryClient } from './queryClient.ts';
 
 import Splashscreen from '../containers/phase/Splashscreen/Splashscreen.tsx';
-import { Progress } from '@app/components/elements/loaders/CircularProgress/Progress.tsx';
 
 const ShuttingDownScreen = lazy(() => import('../containers/phase/ShuttingDownScreen/ShuttingDownScreen.tsx'));
 const FloatingElements = lazy(() => import('../containers/floating/FloatingElements.tsx'));

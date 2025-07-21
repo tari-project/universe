@@ -3,24 +3,6 @@ import styled from 'styled-components';
 
 export const Wrapper = styled(m.div)``;
 
-export const Text = styled.div`
-    color: ${({ theme }) => theme.palette.text.secondary};
-    font-family: Poppins, sans-serif;
-    font-size: 11px;
-    font-style: normal;
-    font-weight: 400;
-    line-height: 154.545%;
-
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-
-    strong {
-        color: ${({ theme }) => theme.palette.text.primary};
-        font-weight: 700;
-    }
-`;
-
 export const TooltipPosition = styled.div`
     position: absolute;
     top: 0;

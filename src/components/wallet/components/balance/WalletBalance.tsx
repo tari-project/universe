@@ -6,7 +6,7 @@ import { useConfigWalletStore, useUIStore, useWalletStore } from '@app/store';
 
 import { roundToTwoDecimals, removeXTMCryptoDecimals, formatNumber, FormatPreset } from '@app/utils';
 import { Typography } from '@app/components/elements/Typography.tsx';
-import NumbersLoadingAnimation from '@app/containers/navigation/components/Wallet/NumbersLoadingAnimation/NumbersLoadingAnimation.tsx';
+
 import {
     AvailableWrapper,
     BalanceTextWrapper,
@@ -20,7 +20,6 @@ import { toggleHideWalletBalance } from '@app/store/actions/uiStoreActions.ts';
 import { useState } from 'react';
 import { ActionButton } from '@app/components/wallet/components/details/actions/styles.ts';
 import { AnimatePresence } from 'motion/react';
-import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
 import { Progress } from '@app/components/elements/loaders/CircularProgress/Progress.tsx';
 
 export const WalletBalance = () => {
@@ -46,7 +45,6 @@ export const WalletBalance = () => {
         notation: 'standard',
         style: 'decimal',
     };
-    const isLoading = !last_known_balance && isWalletScanning;
 
     const bottomMarkup = !isWalletScanning ? (
         <AvailableWrapper>
@@ -63,36 +61,32 @@ export const WalletBalance = () => {
     );
     return (
         <Wrapper onMouseEnter={() => setHovering(true)} onMouseLeave={() => setHovering(false)}>
-            {!isLoading ? (
-                <>
-                    <BalanceWrapper>
-                        <BalanceTextWrapper>
-                            {hideWalletBalance ? (
-                                <Hidden>{`*******`}</Hidden>
-                            ) : (
-                                <NumberFlow locales={i18n.language} format={formatOptions} value={balanceValue} />
-                            )}
-                            <SuffixWrapper>{` XTM`}</SuffixWrapper>
-                        </BalanceTextWrapper>
-                        <AnimatePresence>
-                            {hovering && (
-                                <ActionButton
-                                    initial={{ opacity: 0, x: 10 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: 10 }}
-                                    onClick={toggleHideWalletBalance}
-                                >
-                                    {hideWalletBalance ? <IoEyeOutline /> : <IoEyeOffOutline />}
-                                </ActionButton>
-                            )}
-                        </AnimatePresence>
-                    </BalanceWrapper>
+            <>
+                <BalanceWrapper>
+                    <BalanceTextWrapper>
+                        {hideWalletBalance ? (
+                            <Hidden>{`*******`}</Hidden>
+                        ) : (
+                            <NumberFlow locales={i18n.language} format={formatOptions} value={balanceValue} />
+                        )}
+                        <SuffixWrapper>{` XTM`}</SuffixWrapper>
+                    </BalanceTextWrapper>
+                    <AnimatePresence>
+                        {hovering && (
+                            <ActionButton
+                                initial={{ opacity: 0, x: 10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: 10 }}
+                                onClick={toggleHideWalletBalance}
+                            >
+                                {hideWalletBalance ? <IoEyeOutline /> : <IoEyeOffOutline />}
+                            </ActionButton>
+                        )}
+                    </AnimatePresence>
+                </BalanceWrapper>
 
-                    {bottomMarkup}
-                </>
-            ) : (
-                <NumbersLoadingAnimation />
-            )}
+                {bottomMarkup}
+            </>
 
             {isWalletScanning ? (
                 <ScanProgressWrapper>
