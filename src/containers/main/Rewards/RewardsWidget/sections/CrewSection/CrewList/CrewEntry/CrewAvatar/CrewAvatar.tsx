@@ -1,14 +1,13 @@
-import { AvatarWrapper, AvatarImage, StatusDot } from './styles';
+import { AvatarWrapper, StatusDot } from './styles';
 
 interface Props {
     image: string;
-    status: 'online' | 'offline';
+    isOnline: boolean;
 }
 
-export default function CrewAvatar({ image, status }: Props) {
+export default function CrewAvatar({ image, isOnline }: Props) {
     return (
-        <AvatarWrapper $status={status}>
-            <AvatarImage src={image} alt="crew avatar" />
+        <AvatarWrapper $isOnline={isOnline} $image={image}>
             <StatusDot />
         </AvatarWrapper>
     );

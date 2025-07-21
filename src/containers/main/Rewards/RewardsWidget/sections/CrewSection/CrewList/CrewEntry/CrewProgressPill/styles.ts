@@ -19,6 +19,7 @@ export const ClaimButton = styled.button`
     font-weight: 600;
     line-height: 100%;
     letter-spacing: 0.2px;
+    white-space: nowrap;
 
     cursor: pointer;
     transition: background 0.2s ease-in-out;
@@ -46,6 +47,7 @@ export const NudgeButton = styled.button`
     font-style: normal;
     font-weight: 600;
     line-height: normal;
+    white-space: nowrap;
 
     cursor: pointer;
     transition: background 0.2s ease-in-out;
@@ -73,6 +75,7 @@ export const TimePill = styled.div`
     font-weight: 600;
     line-height: 100%;
     letter-spacing: 0.2px;
+    white-space: nowrap;
 
     span {
         color: rgba(255, 255, 255, 0.5);

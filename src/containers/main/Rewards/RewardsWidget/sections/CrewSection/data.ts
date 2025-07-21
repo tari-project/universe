@@ -1,3 +1,5 @@
+import personImage from '../../../images/person1.png';
+
 interface User {
     avatar: string;
     isOnline: boolean;
@@ -33,15 +35,15 @@ const crewList: CrewEntry[] = [
         progress: 100,
         status: 'completed',
         reward: { amount: 100, token: 'XTM' },
-        user: { avatar: 'user1_avatar.jpg', isOnline: true },
+        user: { avatar: personImage, isOnline: true },
     },
     {
         id: 2,
-        handle: '@airdrop_handle',
+        handle: '@long_handle_name_that_is_long_and_will_overflow',
         progress: 80,
         status: 'in_progress',
         timeRemaining: { current: 36, total: 52, unit: 'Hours' },
-        user: { avatar: 'user2_avatar.jpg', isOnline: true },
+        user: { avatar: personImage, isOnline: true },
     },
     {
         id: 3,
@@ -49,7 +51,7 @@ const crewList: CrewEntry[] = [
         progress: 60,
         status: 'in_progress',
         timeRemaining: { current: 22, total: 52, unit: 'Hours' },
-        user: { avatar: 'user3_avatar.jpg', isOnline: true },
+        user: { avatar: personImage, isOnline: true },
     },
     {
         id: 4,
@@ -57,23 +59,21 @@ const crewList: CrewEntry[] = [
         progress: 40,
         status: 'in_progress',
         timeRemaining: { current: 13, total: 52, unit: 'Hours' },
-        user: { avatar: 'user4_avatar.jpg', isOnline: true },
+        user: { avatar: personImage, isOnline: true },
     },
     {
         id: 5,
         handle: '@airdrop_handle',
         progress: 15,
         status: 'needs_nudge',
-        canNudge: true,
-        user: { avatar: 'user5_avatar.jpg', isOnline: false },
+        user: { avatar: personImage, isOnline: false },
     },
     {
         id: 6,
         handle: '@airdrop_handle',
         progress: 0,
         status: 'needs_nudge',
-        canNudge: true,
-        user: { avatar: 'user6_avatar.jpg', isOnline: false },
+        user: { avatar: personImage, isOnline: false },
     },
 ];
 

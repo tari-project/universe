@@ -4,7 +4,7 @@ export const Wrapper = styled.div`
     display: flex;
     align-items: center;
     align-self: stretch;
-    gap: 20px;
+    gap: 14px;
 
     height: 70px;
     padding: 12px;
@@ -17,7 +17,7 @@ export const Wrapper = styled.div`
 export const ContentWrapper = styled.div`
     display: flex;
     flex-direction: column;
-    gap: 7px;
+    gap: 5px;
     width: 100%;
 `;
 
@@ -34,9 +34,10 @@ export const Username = styled.div`
     font-size: 16px;
     font-style: normal;
     font-weight: 500;
-    line-height: 112.804%;
+    line-height: 1.3;
     letter-spacing: -0.924px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    max-width: 185px;
 `;

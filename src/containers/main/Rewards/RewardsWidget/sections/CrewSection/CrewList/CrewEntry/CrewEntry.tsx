@@ -2,7 +2,6 @@ import { type CrewEntry } from '../../data';
 import { ContentWrapper, Wrapper, TopRow, Username } from './styles';
 import CrewAvatar from './CrewAvatar/CrewAvatar';
 
-import personImage from '../../../../../images/person1.png';
 import CrewProgressBar from './CrewProgressBar/CrewProgressBar';
 import CrewProgressPill from './CrewProgressPill/CrewProgressPill';
 
@@ -11,7 +10,7 @@ interface Props {
 }
 
 export default function CrewEntry({ entry }: Props) {
-    const { handle, reward, progress, timeRemaining, status } = entry;
+    const { handle, reward, progress, timeRemaining, status, user } = entry;
 
     const canClaim = status === 'completed';
     const canNudge = status === 'needs_nudge';
@@ -26,7 +25,7 @@ export default function CrewEntry({ entry }: Props) {
 
     return (
         <Wrapper>
-            <CrewAvatar image={personImage} status="online" />
+            <CrewAvatar image={user.avatar} isOnline={user.isOnline} />
             <ContentWrapper>
                 <TopRow>
                     <Username>{handle}</Username>
