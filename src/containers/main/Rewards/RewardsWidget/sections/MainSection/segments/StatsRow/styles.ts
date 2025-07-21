@@ -39,7 +39,6 @@ export const StatusDot = styled.div`
 export const TextWrapper = styled.div`
     display: flex;
     flex-direction: column;
-    gap: 4px;
 `;
 
 export const MainText = styled.div`
@@ -50,6 +49,15 @@ export const MainText = styled.div`
     font-weight: 600;
     line-height: 82.039%;
     letter-spacing: -0.48px;
+    white-space: nowrap;
+    line-height: 1;
+
+    span {
+        color: rgba(255, 255, 255, 0.5);
+        font-size: 10px;
+        font-weight: 500;
+        letter-spacing: -0.3px;
+    }
 `;
 
 export const LabelText = styled.div`
