@@ -1,6 +1,6 @@
 import i18n from 'i18next';
 import NumberFlow, { type Format } from '@number-flow/react';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import { IoEyeOffOutline, IoEyeOutline } from 'react-icons/io5';
 import { useConfigWalletStore, useMiningMetricsStore, useUIStore, useWalletStore } from '@app/store';
 
@@ -57,17 +57,17 @@ export const WalletBalance = () => {
 
     const loadingMarkup = (
         <Typography>
-            <strong>{`Wallet is scanning `}</strong>{' '}
-            {isConnected ? (
-                `${scanProgress}%`
-            ) : (
+            <Trans>
+                {t('wallet-scanning-with-progress', { progressValue: isConnected ? `${scanProgress}%` : '' })}
+            </Trans>
+            {!isConnected && (
                 <>
                     <SyncCountdown
                         onStarted={() => setIsStarted(true)}
                         onCompleted={() => setIsComplete(true)}
                         isCompact={true}
                     />
-                    {isStarted && !isComplete && t('wallet:sync-message.line2')}
+                    {isStarted && !isComplete && t('sync-message.line2')}
                 </>
             )}
         </Typography>

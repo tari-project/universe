@@ -164,7 +164,7 @@
   "transactions": "Transactions",
   "wallet-connected": "钱包已连接",
   "wallet-is-scanning": "钱包正在扫描...",
-  "wallet-scanning-with-progress": "钱包正在扫描：{{scanned}}/{{total}} ({{percent}}%)",
+  "wallet-scanning-with-progress": "<strong>钱包正在扫描：{{scanned}}/{{total}} ({{percent}}%)",
   "xc": {
     "buy-tari": "Buy Tari from an exchange",
     "buy-tari-subtitle": "Available on selected exchanges.",

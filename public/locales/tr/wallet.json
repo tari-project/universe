@@ -164,7 +164,7 @@
   "transactions": "Transactions",
   "wallet-connected": "Cüzdan Bağlandı",
   "wallet-is-scanning": "Cüzdan taranıyor...",
-  "wallet-scanning-with-progress": "Cüzdan taranıyor: {{scanned}}/{{total}} ({{percent}}%)",
+  "wallet-scanning-with-progress": "<strong>Cüzdan taranıyor</strong> {{progressValue}}",
   "xc": {
     "buy-tari": "Buy Tari from an exchange",
     "buy-tari-subtitle": "Available on selected exchanges.",

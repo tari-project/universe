@@ -164,7 +164,7 @@
   "transactions": "Transactions",
   "wallet-connected": "Dompet Terhubung",
   "wallet-is-scanning": "Dompet sedang memindai...",
-  "wallet-scanning-with-progress": "Dompet sedang memindai: {{scanned}}/{{total}} ({{percent}}%)",
+  "wallet-scanning-with-progress": "<strong>Dompet sedang memindai</strong> {{progressValue}}",
   "xc": {
     "buy-tari": "Buy Tari from an exchange",
     "buy-tari-subtitle": "Available on selected exchanges.",

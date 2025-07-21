@@ -1,6 +1,7 @@
 import * as m from 'motion/react-m';
 import styled, { css, keyframes } from 'styled-components';
 import { Transition } from 'motion';
+import { AnimatePresence } from 'motion/react';
 
 interface ProgressProps {
     percentage?: number;
@@ -14,7 +15,7 @@ const rotate = keyframes`
 100% {
     transform: rotate(360deg);
 }`;
-const Wrapper = styled.div<{ $shouldAnimate?: boolean }>`
+const Wrapper = styled(m.div)<{ $shouldAnimate?: boolean }>`
     margin: auto;
     width: 28px;
     height: 28px;
@@ -49,21 +50,38 @@ export function Progress({ percentage = 0, isInfinite = false }: ProgressProps) 
 
     return (
         <Wrapper key={!percentage && infinite ? 'infinite' : 'progress'} $shouldAnimate={infinite}>
-            <m.svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="14" cy="14" r="12" stroke="white" strokeWidth="3.84" opacity={0.3} />
-                <m.circle
-                    cx="14"
-                    cy="14"
-                    r="12"
-                    strokeLinecap="round"
-                    strokeLinejoin="bevel"
-                    stroke="currentcolor"
+            <AnimatePresence>
+                <m.svg
+                    width="28"
+                    height="28"
+                    viewBox="0 0 28 28"
                     fill="none"
-                    strokeWidth="3.84"
-                    animate={animate}
-                    transition={transition}
-                />
-            </m.svg>
+                    xmlns="http://www.w3.org/2000/svg"
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{
+                        type: 'spring',
+                        visualDuration: 0.25,
+                        bounce: 0.35,
+                        damping: 10,
+                    }}
+                >
+                    <m.circle cx="14" cy="14" r="12" stroke="white" strokeWidth="3.84" opacity={0.3} />
+                    <m.circle
+                        cx="14"
+                        cy="14"
+                        r="12"
+                        strokeLinecap="round"
+                        strokeLinejoin="bevel"
+                        stroke="currentcolor"
+                        fill="none"
+                        strokeWidth="3.84"
+                        initial={{ opacity: 0, pathLength: 0 }}
+                        animate={animate}
+                        transition={transition}
+                    />
+                </m.svg>
+            </AnimatePresence>
         </Wrapper>
     );
 }

@@ -164,7 +164,7 @@
   "transactions": "Transactions",
   "wallet-connected": "वॉलेट कनेक्टेड",
   "wallet-is-scanning": "वॉलेट स्कैन कर रहा है...",
-  "wallet-scanning-with-progress": "वॉलेट स्कैन कर रहा है: {{scanned}}/{{total}} ({{percent}}%)",
+  "wallet-scanning-with-progress": "<strong>वॉलेट स्कैन कर रहा है</strong> {{progressValue}}",
   "xc": {
     "buy-tari": "Buy Tari from an exchange",
     "buy-tari-subtitle": "Available on selected exchanges.",

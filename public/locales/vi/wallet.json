@@ -164,7 +164,7 @@
   "transactions": "Transactions",
   "wallet-connected": "Đã kết nối ví",
   "wallet-is-scanning": "Đang đồng bộ ví...",
-  "wallet-scanning-with-progress": "Ví đang quét: {{scanned}}/{{total}} ({{percent}}%)",
+  "wallet-scanning-with-progress": "<strong>Ví đang quét</strong> {{progressValue}}",
   "xc": {
     "buy-tari": "Buy Tari from an exchange",
     "buy-tari-subtitle": "Available on selected exchanges.",
