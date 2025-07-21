@@ -25,6 +25,7 @@ export function SendForm({ isBack }: Props) {
     const [address, setAddress] = useState('');
     const debouncedAddress = useDebouncedValue(address, 350);
     const [isAddressEmpty, setIsAddressEmpty] = useState(true);
+    const [isAddressValid, setIsAddressValid] = useState(false);
     const availableBalance = useWalletStore((s) => s.balance?.available_balance);
 
     const numericAvailableBalance = Number(Math.floor((availableBalance || 0) / 1_000_000).toFixed(2));
@@ -32,17 +33,21 @@ export function SendForm({ isBack }: Props) {
 
     const { control, formState, setError, setValue, clearErrors, getValues } = useFormContext<SendInputs>();
     const { isSubmitting, errors } = formState;
-    const isAddressValid = !errors.address;
     const isAmountValid = !errors.amount;
     const isValid = isAddressValid && isAmountValid;
 
     useEffect(() => {
-        if (debouncedAddress?.length === 0) return;
+        if (debouncedAddress?.length === 0) {
+            setIsAddressValid(false);
+            return;
+        }
         validateAddress(debouncedAddress).then((isValid) => {
             if (isValid) {
                 clearErrors('address');
+                setIsAddressValid(true);
             } else {
                 setError('address', { message: t('send.error-invalid-address') });
+                setIsAddressValid(false);
             }
         });
     }, [clearErrors, debouncedAddress, setError, t, validateAddress]);
@@ -51,6 +56,9 @@ export function SendForm({ isBack }: Props) {
         const address = getValues().address;
         setIsAddressEmpty(address.length === 0);
         void validateAddress(address);
+        if (address.length === 0) {
+            setIsAddressValid(false);
+        }
     }, [getValues, validateAddress]);
 
     function handleChange(e: ChangeEvent<HTMLInputElement>, name: InputName) {

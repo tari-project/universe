@@ -11,15 +11,15 @@ const pulse = keyframes`
   }
 `;
 
-export const Wrapper = styled('div')`
+export const Wrapper = styled('div')<{ $size: number }>`
     position: relative;
-    width: 9px;
-    height: 9px;
+    width: ${({ $size }) => $size * 2}px;
+    height: ${({ $size }) => $size * 2}px;
 `;
 
-export const Dot = styled('div')<{ $isConnected: boolean }>`
-    width: 5px;
-    height: 5px;
+export const Dot = styled('div')<{ $isConnected: boolean; $size: number }>`
+    width: ${({ $size }) => $size}px;
+    height: ${({ $size }) => $size}px;
     background-color: #31eeaa;
     border-radius: 50%;
 

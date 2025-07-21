@@ -21,6 +21,7 @@ export default function GPUTile() {
             isPoolEnabled={isGpuPoolEnabled}
             poolStats={gpuPoolStats}
             rewardThreshold={gpuPoolStats?.min_payout || 2000000}
+            showTooltip={true}
         />
     );
 }

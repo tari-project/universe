@@ -30,7 +30,6 @@ import {
 } from '@app/store/actions/walletStoreActions.ts';
 
 import ExchangesUrls from '@app/components/transactions/wallet/Exchanges/ExchangesUrls.tsx';
-import ExchangeButton from '@app/components/transactions/wallet/Exchanges/exchange-button/ExchangeButton.tsx';
 import { useFetchExchangeBranding } from '@app/hooks/exchanges/fetchExchangeContent.ts';
 import { ExternalLink } from '@app/components/transactions/components/StatusList/styles.ts';
 import { Typography } from '@app/components/elements/Typography.tsx';
@@ -113,7 +112,6 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
                                 <ExternalLink2SVG />
                             </ExternalLink>
                         )}
-                        <ExchangeButton isScrolled={isScrolled} />
                     </DetailsCardBottomContent>
                 </DetailsCardContent>
             </DetailsCard>
