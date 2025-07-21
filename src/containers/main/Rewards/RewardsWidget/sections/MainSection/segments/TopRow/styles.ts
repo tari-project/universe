@@ -29,5 +29,5 @@ export const Title = styled.div`
 export const RightSide = styled.div`
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 6px;
 `;

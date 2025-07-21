@@ -30,6 +30,7 @@ export const WidgetWrapper = styled('div')`
     width: 411px;
     height: 100%;
     padding: 20px;
+    padding-bottom: 0px;
 
     * {
         pointer-events: all;

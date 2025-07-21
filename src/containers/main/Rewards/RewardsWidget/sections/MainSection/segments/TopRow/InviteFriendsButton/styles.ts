@@ -3,6 +3,7 @@ import styled from 'styled-components';
 export const Wrapper = styled.button`
     display: flex;
     align-items: center;
+    flex-shrink: 0;
     gap: 10px;
 
     color: #fff;
@@ -11,6 +12,21 @@ export const Wrapper = styled.button`
     font-style: normal;
     font-weight: 700;
     line-height: 190%;
+
+    white-space: nowrap;
+
+    border-radius: 60px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+
+    height: 25px;
+    padding: 0px 4px 0px 11px;
+
+    cursor: pointer;
+    transition: background 0.2s ease-in-out;
+
+    &:hover {
+        background: rgba(255, 255, 255, 0.1);
+    }
 `;
 
 export const IconWrapper = styled.div`

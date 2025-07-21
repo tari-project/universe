@@ -6,4 +6,11 @@ export const Wrapper = styled.button`
 
     opacity: 0.5;
     color: #fff;
+
+    cursor: pointer;
+    transition: opacity 0.2s ease-in-out;
+
+    &:hover {
+        opacity: 1;
+    }
 `;
