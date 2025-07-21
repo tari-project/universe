@@ -1,8 +1,9 @@
 import { type CrewEntry } from '../../data';
-import { ContentWrapper, Wrapper, TopRow, Progress, ProgressPercent, ProgressBar } from './styles';
+import { ContentWrapper, Wrapper, TopRow, Username } from './styles';
 import CrewAvatar from './CrewAvatar/CrewAvatar';
 
 import personImage from '../../../../../images/person1.png';
+import CrewProgressBar from './CrewProgressBar/CrewProgressBar';
 
 interface Props {
     entry: CrewEntry;
@@ -16,13 +17,9 @@ export default function CrewEntry({ entry }: Props) {
             <CrewAvatar image={personImage} status="online" />
             <ContentWrapper>
                 <TopRow>
-                    <div>{handle}</div>
-                    <div>{reward?.amount}</div>
+                    <Username>{handle}</Username>
                 </TopRow>
-                <Progress>
-                    <ProgressPercent>{progress}%</ProgressPercent>
-                    <ProgressBar />
-                </Progress>
+                <CrewProgressBar progress={progress} />
             </ContentWrapper>
         </Wrapper>
     );

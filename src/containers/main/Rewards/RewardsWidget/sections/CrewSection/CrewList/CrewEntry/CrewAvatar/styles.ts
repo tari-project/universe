@@ -6,6 +6,7 @@ export const AvatarWrapper = styled.div<{ $status: 'online' | 'offline' }>`
     border-radius: 50%;
     overflow: hidden;
     border: 2px solid #01a405;
+    flex-shrink: 0;
 
     ${({ $status }) =>
         $status === 'offline' &&

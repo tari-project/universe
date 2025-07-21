@@ -18,11 +18,12 @@ export const ContentWrapper = styled.div`
     display: flex;
     flex-direction: column;
     gap: 7px;
+    width: 100%;
 `;
 
 export const TopRow = styled.div``;
 
-export const Handle = styled.div`
+export const Username = styled.div`
     color: #fff;
     font-family: Poppins, sans-serif;
     font-size: 16px;
@@ -31,9 +32,3 @@ export const Handle = styled.div`
     line-height: 112.804%;
     letter-spacing: -0.924px;
 `;
-
-export const Progress = styled.div``;
-
-export const ProgressPercent = styled.div``;
-
-export const ProgressBar = styled.div``;
