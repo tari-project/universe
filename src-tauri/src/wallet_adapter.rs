@@ -65,7 +65,6 @@ pub struct WalletAdapter {
     pub(crate) grpc_port: u16,
     pub(crate) state_broadcast: watch::Sender<Option<WalletState>>,
     pub(crate) wallet_birthday: Option<u16>,
-    pub(crate) http_client_url: Option<String>,
 }
 
 impl WalletAdapter {
@@ -83,7 +82,6 @@ impl WalletAdapter {
             grpc_port,
             state_broadcast,
             wallet_birthday: None,
-            http_client_url: None,
         }
     }
 
@@ -323,11 +321,6 @@ impl ProcessAdapter for WalletAdapter {
                     .ok_or_else(|| anyhow::anyhow!("Base node address not set"))?
             ),
         ];
-
-        if let Some(http_client_url) = &self.http_client_url {
-            args.push("-p".to_string());
-            args.push(format!("wallet.http_server_url={http_client_url}"));
-        }
 
         match self.wallet_birthday {
             Some(wallet_birthday) => {

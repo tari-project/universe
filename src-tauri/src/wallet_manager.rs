@@ -123,7 +123,6 @@ impl WalletManager {
         let (public_key, public_address) = self.node_manager.get_connection_details().await?;
         process_watcher.adapter.base_node_public_key = Some(public_key.clone());
         process_watcher.adapter.base_node_address = Some(public_address.clone());
-        process_watcher.adapter.http_client_url = Some(self.node_manager.get_http_api_url().await?);
         process_watcher.adapter.use_tor(config.use_tor);
         info!(target: LOG_TARGET, "Using Tor: {}", config.use_tor);
         process_watcher

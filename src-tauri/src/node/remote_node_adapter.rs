@@ -113,11 +113,6 @@ impl NodeAdapter for RemoteNodeAdapter {
         self.get_service()
     }
 
-    fn get_http_api_port(&self) -> Option<u16> {
-        log::info!(target: LOG_TARGET, "RemoteNodeAdapter doesn't use http_api_port");
-        None
-    }
-
     fn use_tor(&mut self, use_tor: bool) {
         self.use_tor = use_tor;
     }
