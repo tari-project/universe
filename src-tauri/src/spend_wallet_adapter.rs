@@ -63,6 +63,7 @@ pub struct SpendWalletAdapter {
     log_dir: Option<PathBuf>,
     wallet_binary: Option<PathBuf>,
     pub(crate) wallet_birthday: Option<u16>,
+    pub(crate) http_client_url: Option<String>,
 }
 
 impl SpendWalletAdapter {
@@ -78,6 +79,7 @@ impl SpendWalletAdapter {
             log_dir: None,
             wallet_binary: None,
             wallet_birthday: None,
+            http_client_url: None,
         }
     }
 }
@@ -402,6 +404,11 @@ impl SpendWalletAdapter {
             "-p".to_string(),
             format!("{}.p2p.seeds.dns_seeds={}", network.as_key_str(), dns_seeds),
         ];
+
+        if let Some(http_client_url) = &self.http_client_url {
+            shared_args.push("-p".to_string());
+            shared_args.push(format!("wallet.http_server_url={http_client_url}"));
+        }
 
         match self.wallet_birthday {
             Some(wallet_birthday) => {
