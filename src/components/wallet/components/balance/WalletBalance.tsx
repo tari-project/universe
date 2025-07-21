@@ -21,6 +21,7 @@ import { useState } from 'react';
 import { ActionButton } from '@app/components/wallet/components/details/actions/styles.ts';
 import { AnimatePresence } from 'motion/react';
 import { Progress } from '@app/components/elements/loaders/CircularProgress/Progress.tsx';
+import SyncCountdown from '@app/components/wallet/components/loaders/SyncLoading/SyncCountdown.tsx';
 
 const formatOptions: Format = {
     maximumFractionDigits: 2,
@@ -29,6 +30,8 @@ const formatOptions: Format = {
 };
 
 export const WalletBalance = () => {
+    const [isComplete, setIsComplete] = useState(false);
+    const [isStarted, setIsStarted] = useState(false);
     const { t } = useTranslation('wallet');
     const [hovering, setHovering] = useState(false);
 
@@ -47,21 +50,34 @@ export const WalletBalance = () => {
 
     const displayText = hideBalance ? '*******' : formatNumber(available || 0, FormatPreset.XTM_LONG);
 
+    const isLoading = !isConnected || isScanning;
     const balanceText = balanceMismatch
         ? `${t('history.available-balance')}: ${displayText} XTM`
         : t('history.my-balance');
 
-    const bottomMarkup = !isScanning ? (
-        <Typography>{balanceText}</Typography>
-    ) : (
+    const loadingMarkup = (
         <Typography>
-            <strong>{`Wallet is scanning `}</strong> {`${scanProgress}%`}
+            <strong>{`Wallet is scanning `}</strong>{' '}
+            {isConnected ? (
+                `${scanProgress}%`
+            ) : (
+                <>
+                    <SyncCountdown
+                        onStarted={() => setIsStarted(true)}
+                        onCompleted={() => setIsComplete(true)}
+                        isCompact={true}
+                    />
+                    {isStarted && !isComplete && t('wallet:sync-message.line2')}
+                </>
+            )}
         </Typography>
     );
 
-    const progressMarkup = (isScanning || !isConnected) && (
+    const bottomMarkup = !isLoading ? <Typography>{balanceText}</Typography> : loadingMarkup;
+
+    const progressMarkup = isLoading && (
         <ScanProgressWrapper>
-            <Progress percentage={scanProgress} isInfinite={!isScanning && !isConnected} />
+            <Progress percentage={scanProgress} isInfinite={!isConnected} />
         </ScanProgressWrapper>
     );
 
