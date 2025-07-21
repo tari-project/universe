@@ -5,6 +5,7 @@ export const Wrapper = styled.div`
     align-items: center;
     justify-content: space-between;
     gap: 20px;
+    width: 100%;
 `;
 
 export const ActiveMinersWrapper = styled.div`
@@ -16,7 +17,6 @@ export const ActiveMinersWrapper = styled.div`
 export const PhotoWrapper = styled.div`
     display: flex;
     align-items: center;
-    gap: 10px;
 `;
 
 export const PhotoImage = styled.img`
@@ -25,6 +25,23 @@ export const PhotoImage = styled.img`
     border-radius: 100px;
     background: #000;
     border: 2px solid #323333;
+    position: relative;
+
+    &:not(:first-child) {
+        margin-left: -14px;
+    }
+
+    &:nth-child(1) {
+        z-index: 3;
+    }
+
+    &:nth-child(2) {
+        z-index: 2;
+    }
+
+    &:nth-child(3) {
+        z-index: 1;
+    }
 `;
 
 export const StatusDot = styled.div`
