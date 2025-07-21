@@ -12,6 +12,13 @@ export const Wrapper = styled.div`
     font-weight: 600;
     line-height: 125%;
     white-space: nowrap;
+
+    position: sticky;
+    top: 0;
+    z-index: 1;
+
+    background: linear-gradient(to bottom, #323333 calc(100% - 10px), transparent 100%);
+    padding: 0 0 10px 0;
 `;
 
 export const Line = styled.div`

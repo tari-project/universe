@@ -11,7 +11,7 @@ export const Wrapper = styled.div`
 export const IntroTextWrapper = styled.div`
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 2px;
 `;
 
 export const Title = styled.div`

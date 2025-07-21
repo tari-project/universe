@@ -43,6 +43,13 @@ export const Wrapper = styled.button<{ $isActive: boolean }>`
     border-radius: 50px;
     background: rgba(255, 255, 255, 0.1);
 
+    transition: background 0.2s ease-in-out;
+    cursor: pointer;
+
+    &:hover {
+        background: rgba(255, 255, 255, 0.2);
+    }
+
     ${({ $isActive }) =>
         $isActive &&
         css`
@@ -55,6 +62,10 @@ export const Wrapper = styled.button<{ $isActive: boolean }>`
             ${Number} {
                 color: #fff;
                 background: #000;
+            }
+
+            &:hover {
+                background: #fff;
             }
         `}
 `;

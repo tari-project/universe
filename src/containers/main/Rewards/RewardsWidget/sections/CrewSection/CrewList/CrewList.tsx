@@ -1,6 +1,6 @@
 import CrewDivider from './CrewDivider/CrewDivider';
 import CrewEntry from './CrewEntry/CrewEntry';
-import { Inside, ListGroup, Wrapper } from './styles';
+import { Inside, ListGroup, OuterWrapper, Wrapper } from './styles';
 import { crewList } from '../data';
 
 export default function CrewList() {
@@ -9,29 +9,31 @@ export default function CrewList() {
     const needsNudgeList = crewList.filter((item) => item.status === 'needs_nudge');
 
     return (
-        <Wrapper>
-            <Inside>
-                <CrewDivider text="Completed" />
-                <ListGroup>
-                    {completedList.map((item) => (
-                        <CrewEntry key={item.id} entry={item} />
-                    ))}
-                </ListGroup>
+        <OuterWrapper>
+            <Wrapper>
+                <Inside>
+                    <CrewDivider text="Completed" />
+                    <ListGroup>
+                        {completedList.map((item) => (
+                            <CrewEntry key={item.id} entry={item} />
+                        ))}
+                    </ListGroup>
 
-                <CrewDivider text="In Progress" />
-                <ListGroup>
-                    {inProgressList.map((item) => (
-                        <CrewEntry key={item.id} entry={item} />
-                    ))}
-                </ListGroup>
+                    <CrewDivider text="In Progress" />
+                    <ListGroup>
+                        {inProgressList.map((item) => (
+                            <CrewEntry key={item.id} entry={item} />
+                        ))}
+                    </ListGroup>
 
-                <CrewDivider text="Needs Nudge" />
-                <ListGroup>
-                    {needsNudgeList.map((item) => (
-                        <CrewEntry key={item.id} entry={item} />
-                    ))}
-                </ListGroup>
-            </Inside>
-        </Wrapper>
+                    <CrewDivider text="Needs Nudge" />
+                    <ListGroup>
+                        {needsNudgeList.map((item) => (
+                            <CrewEntry key={item.id} entry={item} />
+                        ))}
+                    </ListGroup>
+                </Inside>
+            </Wrapper>
+        </OuterWrapper>
     );
 }

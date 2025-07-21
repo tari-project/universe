@@ -29,6 +29,7 @@ export const WidgetWrapper = styled('div')`
 
     width: 411px;
     height: 100%;
+    max-height: 830px;
     padding: 20px;
     padding-bottom: 0px;
 
