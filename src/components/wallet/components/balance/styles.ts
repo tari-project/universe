@@ -40,7 +40,7 @@ export const SuffixWrapper = styled.span`
     letter-spacing: -0.56px;
 `;
 
-export const AvailableWrapper = styled.div`
+export const BottomWrapper = styled.div`
     display: flex;
     font-size: 11px;
     font-weight: 500;

@@ -1,8 +1,10 @@
 import * as m from 'motion/react-m';
 import styled from 'styled-components';
+import { Transition } from 'motion';
 
 interface ProgressProps {
     percentage?: number;
+    isInfinite?: boolean;
 }
 
 const Wrapper = styled.div`
@@ -20,7 +22,21 @@ const Wrapper = styled.div`
     }
 `;
 
-export function Progress({ percentage = 0 }: ProgressProps) {
+export function Progress({ percentage = 0, isInfinite = false }: ProgressProps) {
+    const infinite = isInfinite || percentage === 0;
+
+    const transition: Transition = infinite
+        ? { repeat: Infinity, duration: 2 }
+        : { type: 'spring', damping: 3, stiffness: 30 };
+
+    const animate = !infinite
+        ? { pathLength: percentage / 100 }
+        : {
+              pathLength: [0, 0.3, 0.8, 0.8, 0.999],
+              rotate: [0, 300, 360],
+              opacity: [null, 0.4, 0.9, 1],
+          };
+
     return (
         <Wrapper>
             <m.svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -34,7 +50,8 @@ export function Progress({ percentage = 0 }: ProgressProps) {
                     stroke="white"
                     strokeWidth="3.84"
                     style={{ rotate: -90 }}
-                    animate={{ pathLength: percentage / 100 }}
+                    animate={animate}
+                    transition={transition}
                 />
             </m.svg>
         </Wrapper>

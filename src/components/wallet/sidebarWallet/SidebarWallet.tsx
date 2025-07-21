@@ -15,7 +15,7 @@ import {
     DetailsCardBottomContent,
     TabsWrapper,
 } from './styles.ts';
-import { useCallback, useRef, useState, useEffect } from 'react';
+import { useCallback, useRef, useState, useEffect, RefObject } from 'react';
 import { HistoryListWrapper } from '@app/components/wallet/components/history/styles.ts';
 import { List } from '@app/components/transactions/history/List.tsx';
 import { open } from '@tauri-apps/plugin-shell';
@@ -51,12 +51,12 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
     const isConnectedToTariNetwork = useMiningMetricsStore((s) => s.isNodeConnected);
     const isWalletScanning = useWalletStore((s) => s.wallet_scanning?.is_scanning);
 
-    const targetRef = useRef<HTMLDivElement>(null) as React.RefObject<HTMLDivElement>;
+    const targetRef = useRef<HTMLDivElement>(null) as RefObject<HTMLDivElement>;
     const [isScrolled, setIsScrolled] = useState(false);
 
     function handleFilterChange(newFilter: TxHistoryFilter) {
         setTxHistoryFilter(newFilter);
-        fetchTransactionsHistory({ offset: 0, limit: 20, filter: newFilter });
+        void fetchTransactionsHistory({ offset: 0, limit: 20, filter: newFilter });
     }
 
     useEffect(() => {
@@ -71,9 +71,9 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
     const isSwapping = useWalletStore((s) => s.is_swapping);
     const isStandardWalletUI = useConfigUIStore((s) => s.wallet_ui_mode === WalletUIMode.Standard);
 
-    const openLink = useCallback(() => {
+    const openLink = useCallback(async () => {
         if (xcData && xcData.wallet_app_link) {
-            open(xcData.wallet_app_link);
+            await open(xcData.wallet_app_link);
         }
     }, [xcData]);
 
