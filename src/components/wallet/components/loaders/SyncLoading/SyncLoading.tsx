@@ -17,7 +17,7 @@ export default function SyncLoading({ children }: { children: ReactNode }) {
         open,
         onOpenChange: setOpen,
         middleware: [offset(32), shift()],
-        placement: 'right',
+        placement: 'right-end',
     });
     const hover = useHover(context);
     const { getReferenceProps, getFloatingProps } = useInteractions([hover]);

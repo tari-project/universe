@@ -79,7 +79,7 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
 
     const syncMarkup = (
         <>
-            <DetailsCard $isScrolled>
+            <DetailsCard $isScrolled={false}>
                 <AnimatedBG $col1={xcData?.primary_colour || `#0B0A0D`} $col2={xcData?.secondary_colour || `#6F8309`} />
                 <DetailsCardContent>
                     <WalletDetails />

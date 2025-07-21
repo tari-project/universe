@@ -2,7 +2,7 @@ import i18n from 'i18next';
 import NumberFlow, { type Format } from '@number-flow/react';
 import { useTranslation } from 'react-i18next';
 import { IoEyeOffOutline, IoEyeOutline } from 'react-icons/io5';
-import { useConfigWalletStore, useUIStore, useWalletStore } from '@app/store';
+import { useConfigWalletStore, useMiningMetricsStore, useUIStore, useWalletStore } from '@app/store';
 
 import { roundToTwoDecimals, removeXTMCryptoDecimals, formatNumber, FormatPreset } from '@app/utils';
 import { Typography } from '@app/components/elements/Typography.tsx';
@@ -30,14 +30,15 @@ export const WalletBalance = () => {
     const calculated_balance = useWalletStore((s) => s.calculated_balance);
     const available_balance = useWalletStore((s) => s.balance?.available_balance);
 
-    const balanceValue = removeXTMCryptoDecimals(roundToTwoDecimals(calculated_balance || 0));
-    const availableBalanceValue = removeXTMCryptoDecimals(roundToTwoDecimals(available_balance || 0));
-
     const isWalletScanning = useWalletStore((s) => s.wallet_scanning?.is_scanning);
+    const displayBalance = isWalletScanning ? last_known_balance : calculated_balance;
+    const balanceValue = removeXTMCryptoDecimals(roundToTwoDecimals(displayBalance || 0));
+    const availableBalanceValue = removeXTMCryptoDecimals(roundToTwoDecimals(available_balance || 0));
+    const isConnectedToTariNetwork = useMiningMetricsStore((s) => s.isNodeConnected);
     const scanProgress = useWalletStore((s) => s.wallet_scanning?.progress);
     const hideWalletBalance = useUIStore((s) => s.hideWalletBalance);
 
-    const formattedAvailableBalance = formatNumber(last_known_balance || available_balance || 0, FormatPreset.XTM_LONG);
+    const formattedAvailableBalance = formatNumber(available_balance || 0, FormatPreset.XTM_LONG);
     const finalAvailableBalance = hideWalletBalance ? '*******' : formattedAvailableBalance;
 
     const formatOptions: Format = {
@@ -45,7 +46,6 @@ export const WalletBalance = () => {
         notation: 'standard',
         style: 'decimal',
     };
-
     const bottomMarkup = !isWalletScanning ? (
         <AvailableWrapper>
             {availableBalanceValue != balanceValue ? (
@@ -59,6 +59,7 @@ export const WalletBalance = () => {
             <strong>{`Wallet is scanning `}</strong> {`${Math.floor(scanProgress)}%`}
         </AvailableWrapper>
     );
+
     return (
         <Wrapper onMouseEnter={() => setHovering(true)} onMouseLeave={() => setHovering(false)}>
             <>

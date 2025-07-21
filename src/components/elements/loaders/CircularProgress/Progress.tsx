@@ -19,12 +19,6 @@ const Wrapper = styled.div`
         height: auto;
     }
 `;
-const loadingPercentageAnimation = {
-    pathLength: [0, 0.3, 0.8, 0.8, 0.999],
-    rotate: [0, 300, 360],
-    opacity: [null, 0.4, 0.9, 1],
-};
-const loadingPercentageTransition = { repeat: Infinity, duration: 2 };
 
 export function Progress({ percentage = 0 }: ProgressProps) {
     return (
@@ -40,8 +34,7 @@ export function Progress({ percentage = 0 }: ProgressProps) {
                     stroke="white"
                     strokeWidth="3.84"
                     style={{ rotate: -90 }}
-                    animate={percentage === 0 ? loadingPercentageAnimation : { pathLength: percentage / 100 }}
-                    transition={percentage === 0 ? loadingPercentageTransition : undefined}
+                    animate={{ pathLength: percentage / 100 }}
                 />
             </m.svg>
         </Wrapper>
