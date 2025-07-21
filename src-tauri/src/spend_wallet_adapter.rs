@@ -52,7 +52,6 @@ const LOG_TARGET: &str = "tari::universe::spend_wallet_adapter";
 #[derive(Clone)]
 pub struct SpendWalletAdapter {
     pub(crate) base_node_public_key: Option<RistrettoPublicKey>,
-    pub(crate) base_node_address: Option<String>,
     pub(crate) base_node_http_address: Option<String>,
     pub(crate) tcp_listener_port: u16,
     app_shutdown: Option<ShutdownSignal>,
@@ -67,9 +66,8 @@ impl SpendWalletAdapter {
     pub fn new() -> Self {
         let tcp_listener_port = PortAllocator::new().assign_port_with_fallback();
         Self {
-            base_node_address: None,
-            base_node_public_key: None,
             base_node_http_address: None,
+            base_node_public_key: None,
             tcp_listener_port,
             app_shutdown: None,
             data_dir: None,
@@ -89,7 +87,6 @@ impl SpendWalletAdapter {
         config_dir: PathBuf,
         log_dir: PathBuf,
         wallet_binary: PathBuf,
-        app_state: tauri::State<'_, UniverseAppState>,
     ) -> Result<(), Error> {
         info!(target: LOG_TARGET, "Initializing spend wallet adapter");
 
@@ -107,9 +104,7 @@ impl SpendWalletAdapter {
             include_str!("../log4rs/spend_wallet_sample.yml"),
         )?;
 
-        let wallet_birthday = self
-            .get_wallet_birthday(config_dir.clone(), app_state)
-            .await;
+        let wallet_birthday = self.get_wallet_birthday(config_dir.clone()).await;
         self.wallet_birthday = wallet_birthday.ok();
 
         Ok(())
@@ -122,9 +117,7 @@ impl SpendWalletAdapter {
         payment_id: Option<String>,
         state: tauri::State<'_, UniverseAppState>,
     ) -> Result<(), Error> {
-        let seed_words = self
-            .get_seed_words(self.get_config_dir(), state.clone())
-            .await?;
+        let seed_words = self.get_seed_words(self.get_config_dir()).await?;
         let t_amount = Minotari::from_str(_amount.as_str())?;
         let converted_amount = MicroMinotari::from(t_amount);
         let amount = converted_amount.to_string();
@@ -153,18 +146,11 @@ impl SpendWalletAdapter {
         &self,
         seed_words: &str,
     ) -> Result<(i32, Vec<String>, Vec<String>), Error> {
-        let base_node_public_key = self.get_base_node_public_key_hex();
         let base_node_address = self.get_base_node_address();
-        let base_node_http_address = self.get_base_node_http_address();
         let command = ExecutionCommand::new("recovery")
             .with_extra_args(vec![
                 "-p".to_string(),
-                format!(
-                    "wallet.custom_base_node={}::{}",
-                    base_node_public_key, base_node_address
-                ),
-                "-p".to_string(),
-                format!("wallet.http_client_address={}", base_node_http_address),
+                format!("wallet.http_client_address={}", base_node_address),
                 "--recovery".to_string(),
             ])
             .with_extra_envs(HashMap::from([(
@@ -176,17 +162,10 @@ impl SpendWalletAdapter {
     }
 
     async fn execute_sync_command(&self) -> Result<(i32, Vec<String>, Vec<String>), Error> {
-        let base_node_public_key = self.get_base_node_public_key_hex();
         let base_node_address = self.get_base_node_address();
-        let base_node_http_address = self.get_base_node_http_address();
         let command = ExecutionCommand::new("sync").with_extra_args(vec![
             "-p".to_string(),
-            format!(
-                "wallet.custom_base_node={}::{}",
-                base_node_public_key, base_node_address
-            ),
-            "-p".to_string(),
-            format!("wallet.http_client_address={}", base_node_http_address),
+            format!("wallet.http_client_address={}", base_node_address),
             "sync".to_string(),
         ]);
 
@@ -201,18 +180,10 @@ impl SpendWalletAdapter {
     ) -> Result<Option<String>, Error> {
         // Allocate an unused port to ensure the transaction is not successfully broadcasted.
         // This is intentional as we want to export the transaction to the view wallet instead.
-        let fake_base_node_public_key = self.get_base_node_public_key_hex();
-        let fake_base_node_address = format!(
-            "/ip4/127.0.0.1/tcp/{:?}",
-            PortAllocator::new().assign_port_with_fallback()
-        );
-
+        let base_node_address = self.get_base_node_address();
         let mut args = vec![
             "-p".to_string(),
-            format!(
-                "wallet.custom_base_node={}::{}",
-                fake_base_node_public_key, fake_base_node_address
-            ),
+            format!("wallet.http_client_address={}", base_node_address),
             "send-one-sided-to-stealth-address".to_string(),
         ];
         if let Some(id) = payment_id {
@@ -244,19 +215,12 @@ impl SpendWalletAdapter {
     }
 
     pub async fn export_transaction(&self, tx_id: &str) -> Result<PathBuf, Error> {
-        let fake_base_node_public_key = self.get_base_node_public_key_hex();
-        let fake_base_node_address = format!(
-            "/ip4/127.0.0.1/tcp/{:?}",
-            PortAllocator::new().assign_port_with_fallback()
-        );
-        let output_path = self.get_working_dir().join(format!("tx-{}.json", tx_id));
+        let base_node_address = self.get_base_node_address();
+        let output_path = self.get_working_dir().join(format!("tx-{tx_id}.json"));
 
         let command = ExecutionCommand::new("export-tx").with_extra_args(vec![
             "-p".to_string(),
-            format!(
-                "wallet.custom_base_node={}::{}",
-                fake_base_node_public_key, fake_base_node_address
-            ),
+            format!("wallet.http_client_address={}", base_node_address),
             "export-tx".to_string(),
             "-o".to_string(),
             output_path.to_string_lossy().to_string(),
@@ -426,41 +390,20 @@ impl SpendWalletAdapter {
         Ok(shared_args)
     }
 
-    fn get_base_node_public_key_hex(&self) -> String {
-        self.base_node_public_key
-            .as_ref()
-            .map(|k| k.to_hex())
-            .expect("Base node public key not set")
-    }
-
     fn get_base_node_address(&self) -> &str {
-        self.base_node_address
+        self.base_node_http_address
             .as_ref()
             .expect("Base node address not set")
     }
 
-    fn get_base_node_http_address(&self) -> &str {
-        self.base_node_http_address
-            .as_ref()
-            .expect("Base node HTTP address not set")
-    }
-
-    async fn get_seed_words(
-        &self,
-        config_path: PathBuf,
-        state: tauri::State<'_, UniverseAppState>,
-    ) -> Result<String, Error> {
-        let internal_wallet = InternalWallet::load_or_create(config_path, state).await?;
+    async fn get_seed_words(&self, config_path: PathBuf) -> Result<String, Error> {
+        let internal_wallet = InternalWallet::load_or_create(config_path).await?;
         let seed_words = internal_wallet.decrypt_seed_words().await?;
         Ok(seed_words.join(" ").reveal().to_string())
     }
 
-    pub async fn get_wallet_birthday(
-        &self,
-        config_path: PathBuf,
-        state: tauri::State<'_, UniverseAppState>,
-    ) -> Result<u16, anyhow::Error> {
-        let internal_wallet = InternalWallet::load_or_create(config_path, state).await?;
+    pub async fn get_wallet_birthday(&self, config_path: PathBuf) -> Result<u16, anyhow::Error> {
+        let internal_wallet = InternalWallet::load_or_create(config_path).await?;
         internal_wallet.get_birthday().await
     }
 

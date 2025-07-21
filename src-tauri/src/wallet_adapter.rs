@@ -20,6 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::events_emitter::EventsEmitter;
 use crate::port_allocator::PortAllocator;
 use crate::process_adapter::{
     HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
@@ -30,6 +31,7 @@ use crate::utils::file_utils::convert_to_string;
 use crate::utils::logging_utils::setup_logging;
 use anyhow::Error;
 use async_trait::async_trait;
+use axum::response::sse::Event;
 use log::{info, warn};
 use minotari_node_grpc_client::grpc::wallet_client::WalletClient;
 use minotari_node_grpc_client::grpc::{
@@ -326,6 +328,9 @@ impl WalletAdapter {
                                 }
                             }
                         }
+                        if let Some(balance) = &state.balance {
+                            EventsEmitter::emit_wallet_balance_update(balance.clone()).await;
+                        }
                     }
                 },
                 _ = shutdown_signal.wait() => {
@@ -581,7 +586,10 @@ impl StatusMonitor for WalletStatusMonitor {
         match tokio::time::timeout(timeout_duration, self.get_status()).await {
             Ok(status_result) => match status_result {
                 Ok(s) => {
-                    let _result = self.state_broadcast.send(Some(s));
+                    let _result = self.state_broadcast.send(Some(s.clone()));
+                    // if let Some(balance) = s.balance {
+                    //     EventsEmitter::emit_wallet_balance_update(balance).await;
+                    // }
                     HealthStatus::Healthy
                 }
                 Err(e) => {

@@ -122,8 +122,6 @@ impl SpendWalletManager {
             tcp_address,
             http_address,
         } = self.node_manager.get_connection_details().await?;
-        self.adapter.base_node_public_key = Some(public_key.clone());
-        self.adapter.base_node_address = Some(tcp_address.clone());
         self.adapter.base_node_http_address = Some(http_address.clone());
         info!(target: LOG_TARGET, "[send_one_sided_to_stealth_address] with node {:?}:{:?}", public_key, tcp_address);
 
