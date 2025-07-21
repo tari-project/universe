@@ -24,7 +24,6 @@ interface CrewEntry {
     user: User;
     reward?: Reward;
     timeRemaining?: TimeRemaining;
-    canNudge?: boolean;
 }
 
 const crewList: CrewEntry[] = [

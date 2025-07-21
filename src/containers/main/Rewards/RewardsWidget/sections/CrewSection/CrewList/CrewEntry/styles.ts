@@ -21,7 +21,12 @@ export const ContentWrapper = styled.div`
     width: 100%;
 `;
 
-export const TopRow = styled.div``;
+export const TopRow = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+`;
 
 export const Username = styled.div`
     color: #fff;
@@ -31,4 +36,7 @@ export const Username = styled.div`
     font-weight: 500;
     line-height: 112.804%;
     letter-spacing: -0.924px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 `;
