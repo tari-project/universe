@@ -42,11 +42,13 @@ export function Progress({ percentage = 0, isInfinite = false }: ProgressProps) 
     const transition: Transition | undefined = infinite ? { repeat: Infinity, duration: 4, ease: 'linear' } : undefined;
 
     const animate = !infinite
-        ? { pathLength: percentage / 100 }
+        ? { pathLength: percentage / 100, opacity: 1 }
         : {
               pathLength: [0, 0.3, 0.45, 0.8, 0.99],
               opacity: [0, 0.3, 0.45, 1, 1],
           };
+
+    console.debug(percentage);
 
     return (
         <Wrapper key={!percentage && infinite ? 'infinite' : 'progress'} $shouldAnimate={infinite}>
