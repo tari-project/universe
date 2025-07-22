@@ -29,6 +29,8 @@
   },
   "phase-wallet-critical-problem-description": "Pengaturan dompet sangat penting untuk aplikasi ini. Silakan coba mulai ulang aplikasi. Jika masalah berlanjut, silakan hubungi dukungan.",
   "phase-wallet-critical-problem-title": "Pengaturan Dompet Gagal",
+  "phase-ootle-wallet-critical-problem-description": "Pengaturan Ootle Wallet sangat penting untuk aplikasi ini. Silakan coba mulai ulang aplikasi. Jika masalah berlanjut, silakan hubungi dukungan.",
+  "phase-ootle-wallet-critical-problem-title": "Pengaturan Ootle Wallet Gagal",
   "remaining": "tersisa",
   "second_remaining": "detik tersisa",
   "seconds_remaining": "detik tersisa",

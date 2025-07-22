@@ -23,7 +23,7 @@ appenders:
   # An appender named "ootle" that writes to a file with a custom pattern encoder
   ootle:
     kind: rolling_file
-    path: "{{log_dir}}/log/wallet-daemon/ootle.log"
+    path: "{{log_dir}}/ootle_wallet/log/wallet-daemon/ootle.log"
     policy:
       kind: compound
       trigger:
@@ -33,13 +33,13 @@ appenders:
         kind: fixed_window
         base: 1
         count: 5
-        pattern: "{{log_dir}}/log/wallet-daemon/ootle.{}.log"
+        pattern: "{{log_dir}}/ootle_wallet/log/wallet-daemon/ootle.{}.log"
     encoder:
       pattern: "{d(%Y-%m-%d %H:%M:%S.%f)} [{t}] [{X(node-public-key)},{X(node-id)}] {l:5} {m} // {f}:{L}{n}"
 
   json_rpc:
     kind: rolling_file
-    path: "{{log_dir}}/log/wallet-daemon/json_rpc.log"
+    path: "{{log_dir}}/ootle_wallet/log/wallet-daemon/json_rpc.log"
     policy:
       kind: compound
       trigger:
@@ -49,7 +49,7 @@ appenders:
         kind: fixed_window
         base: 1
         count: 5
-        pattern: "{{log_dir}}/log/wallet-daemon/json_rpc.{}.log"
+        pattern: "{{log_dir}}/ootle_wallet/log/wallet-daemon/json_rpc.{}.log"
     encoder:
       pattern: "{d(%Y-%m-%d %H:%M:%S.%f)} [{t}] [{X(node-public-key)},{X(node-id)}] {l:5} {m} // {f}:{L}{n}"
 

@@ -43,7 +43,7 @@ const LOG_TARGET: &str = "tari::universe::ootle_wallet_adapter";
 
 pub struct OotleWalletAdapter {
     pub indexer_urls: Vec<Url>,
-    pub(crate) _web_ui_port: u16,
+    pub(crate) web_ui_port: u16,
     pub(crate) json_rpc_port: u16,
     pub(crate) state_broadcast: watch::Sender<Option<OotleWalletState>>,
 }
@@ -55,7 +55,7 @@ impl OotleWalletAdapter {
         Self {
             indexer_urls: vec![],
             json_rpc_port,
-            _web_ui_port: web_ui_port,
+            web_ui_port,
             state_broadcast,
         }
     }
@@ -69,7 +69,7 @@ impl ProcessAdapter for OotleWalletAdapter {
     fn spawn_inner(
         &self,
         data_dir: PathBuf,
-        config_dir: PathBuf,
+        _config_dir: PathBuf,
         log_dir: PathBuf,
         binary_version_path: PathBuf,
         _is_first_start: bool,
@@ -79,7 +79,6 @@ impl ProcessAdapter for OotleWalletAdapter {
         info!(target: LOG_TARGET, "Starting Ootle wallet");
 
         let working_dir = setup_working_directory(&data_dir, "ootle_wallet")?;
-        let formatted_config_dir = convert_to_string(config_dir)?;
         let formatted_working_dir = convert_to_string(working_dir.clone())?;
         let log_config_path = log_dir
             .join("ootle_wallet")
@@ -96,14 +95,12 @@ impl ProcessAdapter for OotleWalletAdapter {
         let mut args: Vec<String> = vec![
             "-b".to_string(),
             formatted_working_dir,
-            "-c".to_string(),
-            formatted_config_dir,
             "-l".to_string(),
             log_config_path
                 .to_str()
                 .expect("Could not get config dir")
                 .to_string(),
-            "-network".to_string(),
+            "--network".to_string(),
             network.as_key_str().to_string(),
             "-p".to_string(),
             format!(
@@ -113,8 +110,8 @@ impl ProcessAdapter for OotleWalletAdapter {
             .to_string(),
             "-p".to_string(),
             format!(
-                "ootle_wallet_daemon.web_ui_address==127.0.0.1:{}",
-                self.json_rpc_port
+                "ootle_wallet_daemon.web_ui_address=127.0.0.1:{}",
+                self.web_ui_port
             )
             .to_string(),
         ];
@@ -176,14 +173,14 @@ impl StatusMonitor for OotleWalletStatusMonitor {
                     HealthStatus::Healthy
                 }
                 Err(e) => {
-                    warn!(target: LOG_TARGET, "Wallet health check failed: {e}");
+                    warn!(target: LOG_TARGET, "Ootle Wallet health check failed: {e}");
                     HealthStatus::Unhealthy
                 }
             },
             Err(_timeout_error) => {
                 warn!(
                     target: LOG_TARGET,
-                    "Wallet health check timed out after {timeout_duration:?}"
+                    "Ootle Wallet health check timed out after {timeout_duration:?}"
                 );
                 HealthStatus::Warning
             }

@@ -29,6 +29,8 @@
   },
   "phase-wallet-critical-problem-description": "La configuration du portefeuille est essentielle pour l\"application. Veuillez essayer de redémarrer l\"application. Si le problème persiste, veuillez contacter le support.",
   "phase-wallet-critical-problem-title": "Échec de la configuration du portefeuille",
+  "phase-ootle-wallet-critical-problem-description": "La configuration du Ootle Wallet est essentielle pour l'application. Veuillez essayer de redémarrer l'application. Si le problème persiste, veuillez contacter le support.",
+  "phase-ootle-wallet-critical-problem-title": "Échec de la configuration du Ootle Wallet",
   "remaining": "restant",
   "second_remaining": "seconde restante",
   "seconds_remaining": "secondes restantes",

@@ -29,6 +29,8 @@
   },
   "phase-wallet-critical-problem-description": "钱包设置对应用程序至关重要。请尝试重新启动应用程序。如果问题仍然存在，请联系支持。",
   "phase-wallet-critical-problem-title": "钱包设置失败",
+  "phase-ootle-wallet-critical-problem-description": "Ootle 钱包设置对应用程序至关重要。请尝试重新启动应用程序。如果问题仍然存在，请联系支持。",
+  "phase-ootle-wallet-critical-problem-title": "Ootle 钱包设置失败",
   "remaining": "剩余",
   "second_remaining": "剩余秒数",
   "seconds_remaining": "剩余秒数",
