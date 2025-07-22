@@ -3,6 +3,7 @@ import { useTappletSignerStore } from '@app/store/useTappletSignerStore';
 import { TappletContainer } from '@app/containers/main/Dashboard/MiningView/MiningView.styles';
 import { open } from '@tauri-apps/plugin-shell';
 import { useConfigUIStore, useUIStore, setError as setStoreError } from '@app/store';
+import { MessageType, useIframeMessage } from '@app/hooks/swap/useIframeMessage';
 
 interface TappletProps {
     source: string;
@@ -12,7 +13,7 @@ export const Tapplet: React.FC<TappletProps> = ({ source }) => {
     const tappletRef = useRef<HTMLIFrameElement | null>(null);
     const tappSigner = useTappletSignerStore((s) => s.tappletSigner);
     const runTransaction = useTappletSignerStore((s) => s.runTransaction);
-    const appLanguage = useConfigUIStore((s) => s.application_language);
+    const language = useConfigUIStore((s) => s.application_language);
     const theme = useUIStore((s) => s.theme);
 
     const sendWindowSize = useCallback(() => {
@@ -28,11 +29,10 @@ export const Tapplet: React.FC<TappletProps> = ({ source }) => {
         }
     }, [tappSigner]);
 
-    const openExternalLink = useCallback(async (event: MessageEvent) => {
-        if (!event.data.url || typeof event.data.url !== 'string') {
+    const openExternalLink = useCallback(async (url: string) => {
+        if (!url || typeof url !== 'string') {
             console.error('Invalid external tapplet URL');
         }
-        const url = event.data.url;
         console.info('Opening external tapplet URL:', url);
         try {
             await open(url);
@@ -51,35 +51,46 @@ export const Tapplet: React.FC<TappletProps> = ({ source }) => {
     const sendAppLanguage = useCallback(() => {
         if (tappletRef.current) {
             tappletRef.current.contentWindow?.postMessage(
-                { type: 'SET_LANGUAGE', payload: { language: appLanguage } },
+                { type: MessageType.SET_LANGUAGE, payload: { language } },
                 '*'
             );
         }
-    }, [appLanguage]);
+    }, [language]);
 
     const sendTheme = useCallback(() => {
         if (tappletRef.current) {
-            tappletRef.current.contentWindow?.postMessage({ type: 'SET_THEME', payload: { theme } }, '*');
+            tappletRef.current.contentWindow?.postMessage({ type: MessageType.SET_THEME, payload: { theme } }, '*');
         }
     }, [theme]);
 
-    const handleMessage = useCallback(
-        (event: MessageEvent) => {
-            if (event.data.type === 'request-parent-size') {
+    useIframeMessage((event) => {
+        switch (event.data.type) {
+            case MessageType.GET_PARENT_SIZE:
+                console.info('[TAPPLET] handle iframe msg type parent size:', event.data.type);
                 sendWindowSize();
-            } else if (event.data.type === 'signer-call') {
-                runTappletTx(event);
-            } else if (event.data.type === 'open-external-link') {
-                openExternalLink(event);
-            } else if (event.data.type === 'GET_INIT_CONFIG') {
+                break;
+            case MessageType.GET_INIT_CONFIG:
+                console.info('[TAPPLET] handle iframe msg type get config:', event.data.type);
                 sendAppLanguage();
                 sendTheme();
-            } else if (event.data.type === 'ERROR') {
+                break;
+            case MessageType.SIGNER_CALL:
+                console.warn('[TAPPLET] handle iframe msg type signer call:', event.data.type);
+                runTappletTx(event);
+                break;
+            case MessageType.OPEN_EXTERNAL_LINK:
+                console.info('[TAPPLET] handle iframe msg type ext link:', event.data.type);
+                openExternalLink(event.data.payload.url);
+                break;
+            case MessageType.ERROR:
+                console.info('[TAPPLET] handle iframe msg type error:', event.data.type);
                 setStoreError(`${event.data.payload.message}`, true);
-            }
-        },
-        [sendWindowSize, runTappletTx, openExternalLink, sendAppLanguage, sendTheme]
-    );
+                break;
+            default:
+                // Ignore unknown types
+                break;
+        }
+    });
 
     useEffect(() => {
         sendAppLanguage();
@@ -91,15 +102,12 @@ export const Tapplet: React.FC<TappletProps> = ({ source }) => {
 
     useEffect(() => {
         window.addEventListener('resize', sendWindowSize);
-        window.addEventListener('message', handleMessage);
-
         sendWindowSize();
 
         return () => {
             window.removeEventListener('resize', sendWindowSize);
-            window.removeEventListener('message', handleMessage);
         };
-    }, [sendWindowSize, handleMessage]);
+    }, [sendWindowSize]);
 
     return (
         <TappletContainer>

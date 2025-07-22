@@ -15,6 +15,8 @@ export enum MessageType {
     SIGNER_CALL = 'SIGNER_CALL',
     GET_INIT_CONFIG = 'GET_INIT_CONFIG',
     OPEN_EXTERNAL_LINK = 'OPEN_EXTERNAL_LINK',
+    SET_THEME = 'SET_THEME',
+    SET_LANGUAGE = 'SET_LANGUAGE',
 }
 
 interface SwapHeightChangeMessage {
@@ -112,6 +114,20 @@ interface SignerCallMessage {
     type: MessageType.SIGNER_CALL;
 }
 
+interface SetLanguageMessage {
+    type: MessageType.SET_LANGUAGE;
+    payload: {
+        language: string;
+    };
+}
+
+interface SetThemeMessage {
+    type: MessageType.SET_THEME;
+    payload: {
+        theme: string;
+    };
+}
+
 export type IframeMessage =
     | ApproveMessage
     | ApproveSuccessMessage
@@ -125,7 +141,9 @@ export type IframeMessage =
     | OpenLinkMessage
     | GetParentSizeMessage
     | GetInitConfigMessage
-    | SignerCallMessage;
+    | SignerCallMessage
+    | SetThemeMessage
+    | SetLanguageMessage;
 
 // Hook to listen for messages from the parent window
 export function useIframeMessage(onMessage: (event: MessageEvent<IframeMessage>) => void) {
