@@ -445,14 +445,14 @@ impl NodeManager {
         Err(anyhow::anyhow!("grpc_address not set"))
     }
 
-    pub async fn get_http_api_url(&self) -> Result<String, anyhow::Error> {
+    pub async fn get_http_api_url(&self) -> Option<String> {
         let current_adapter = self.current_adapter.read().await;
 
         if let Some(http_api_url) = current_adapter.get_http_api_port() {
-            return Ok(format!("http://127.0.0.1:{http_api_url}"));
+            return Some(format!("http://127.0.0.1:{http_api_url}"));
         }
 
-        Ok("https://rpc.esmeralda.tari.com".to_string())
+        None
     }
 
     pub async fn check_if_is_orphan_chain(&self) -> Result<bool, anyhow::Error> {
