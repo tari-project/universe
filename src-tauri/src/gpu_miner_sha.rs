@@ -147,7 +147,7 @@ impl GpuMinerSha {
                 status_updates_thread.abort();
             }
         }
-        info!(target: LOG_TARGET, "xtrgpuminer stopped");
+        info!(target: LOG_TARGET, "graxil stopped");
         Ok(())
     }
 

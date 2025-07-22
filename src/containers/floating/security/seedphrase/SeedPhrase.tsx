@@ -29,10 +29,11 @@ export default function SeedPhrase() {
             invoke('get_seed_words').then((r) => {
                 if (r?.length) {
                     setSeedPhrase(r);
+                    setModal('verify_seedphrase');
                 }
             });
         }
-    }, [isOpen, seedPhrase?.length]);
+    }, [isOpen, seedPhrase?.length, setModal]);
 
     const content = isVerify ? (
         <>

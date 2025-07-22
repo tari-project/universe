@@ -115,7 +115,7 @@ export const animationDarkBg = [
     { property: 'mainColor', value: '#813bf5' },
     { property: 'failColor', value: '#ff5610' },
     { property: 'particlesColor', value: '#813bf5' },
-    { property: 'goboIntensity', value: 0.75 },
+    { property: 'goboIntensity', value: 0.55 },
     { property: 'particlesOpacity', value: 0.95 },
     { property: 'particlesSize', value: 0.015 },
 ];

@@ -213,7 +213,6 @@ export const selectMiningMode = async (mode: string) => {
     console.info(`Changing mode to ${mode}...`);
 
     useMiningStore.setState({ isChangingMode: true });
-    //     handleMiningModeChange();
 
     const cpu_mining_status = useMiningMetricsStore.getState().cpu_mining_status;
     const gpu_mining_status = useMiningMetricsStore.getState().gpu_mining_status;

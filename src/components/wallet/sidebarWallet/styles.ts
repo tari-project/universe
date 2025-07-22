@@ -25,7 +25,7 @@ export const Wrapper = styled.div<{ $swapsPanel?: boolean; $seedlessUI?: boolean
     overflow-y: auto;
     width: 100%;
     gap: 8px;
-    height: 565px;
+    height: 545px;
 
     @media (max-height: 815px) {
         height: 425px;
@@ -38,7 +38,7 @@ export const Wrapper = styled.div<{ $swapsPanel?: boolean; $seedlessUI?: boolean
             `};
     }
     @media (max-height: 690px) {
-        height: 380px;
+        height: 360px;
         ${({ $swapsPanel, $seedlessUI }) =>
             ($swapsPanel || $seedlessUI) &&
             css`
@@ -65,17 +65,21 @@ export const DetailsCard = styled(m.div)<{ $isScrolled: boolean }>`
 
     transition: height 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     will-change: height;
-    height: 210px;
+    height: 170px;
+
+    @media (max-height: 700px) {
+        height: 140px;
+    }
 
     ${({ $isScrolled }) =>
         $isScrolled &&
         css`
             height: 100px;
-        `}
 
-    @media (max-height: 690px) {
-        padding: 8px 10px;
-    }
+            @media (max-height: 700px) {
+                height: 100px;
+            }
+        `}
 `;
 
 const spin = keyframes`

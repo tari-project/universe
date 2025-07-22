@@ -68,5 +68,4 @@ export {
     setCpuMiningStatus,
     handleConnectedPeersUpdate,
     handleBaseNodeStatusUpdate,
-    handleMiningModeChange,
 } from './miningMetricsStoreActions.ts';

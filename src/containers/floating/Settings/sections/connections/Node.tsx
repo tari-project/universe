@@ -10,7 +10,6 @@ import {
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles.ts';
 import { NodeType, useNodeStore } from '@app/store/useNodeStore.ts';
-import { AppSyncProgress } from '@app/containers/floating/Settings/sections/connections/AppSyncProgress/AppSyncProgress.tsx';
 
 const getNodeType = (nodeType?: NodeType) => {
     if (!nodeType) return 'N/A';
@@ -58,7 +57,6 @@ export default function Node() {
                                     </Typography>
                                 </Stack>
                             </Stack>
-                            <AppSyncProgress />
                         </Stack>
                     </SettingsGroupContent>
                 </SettingsGroupContent>

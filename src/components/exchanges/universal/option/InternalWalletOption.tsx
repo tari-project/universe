@@ -51,7 +51,13 @@ export const InternalWalletOption = ({ isCurrent = false, isActive, onActiveClic
             })
             .catch((e) => {
                 console.error('Could not revert to internal wallet', e);
-                setError('Could not revert to internal wallet', e);
+                const errorMessage = e as unknown as string;
+                if (
+                    !errorMessage.includes('User canceled the operation') &&
+                    !errorMessage.includes('PIN entry cancelled')
+                ) {
+                    setError(errorMessage);
+                }
             });
     };
 

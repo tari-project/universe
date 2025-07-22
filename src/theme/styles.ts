@@ -33,7 +33,7 @@ export const Background = styled.div`
     height: 100%;
     background-size: cover;
     background-position: center;
-    background-image: ${({ theme }) => `${theme.gradients.radialBg}, url(${clouds}`});
+    background-image: ${({ theme }) => `${theme.gradients.radialBg}, url(${clouds})`};
     background-blend-mode: overlay;
     filter: ${({ theme }) => (theme.mode === 'dark' ? 'brightness(0.45)' : 'none')};
 `;

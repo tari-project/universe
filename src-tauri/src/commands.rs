@@ -202,14 +202,14 @@ pub async fn select_exchange_miner(
     app_handle: tauri::AppHandle,
     exchange_miner: ExchangeMiner,
     mining_address: String,
-) -> Result<(), InvokeError> {
+) -> Result<(), String> {
     let new_external_tari_address =
         TariAddress::from_str(&mining_address).map_err(|e| format!("Invalid Tari address: {e}"))?;
 
     // Validate PIN if pin locked
     let _unused = PinManager::get_validated_pin_if_defined(&app_handle)
         .await
-        .map_err(InvokeError::from_anyhow)?;
+        .map_err(|e| e.to_string())?;
 
     match InternalWallet::initialize_seedless(&app_handle, Some(new_external_tari_address)).await {
         Ok(_) => {
@@ -226,7 +226,7 @@ pub async fn select_exchange_miner(
         exchange_miner.id.clone(),
     )
     .await
-    .map_err(InvokeError::from_anyhow)?;
+    .map_err(|e| e.to_string())?;
 
     EventsEmitter::emit_exchange_id_changed(exchange_miner.id.clone()).await;
 
@@ -887,6 +887,37 @@ pub fn open_log_dir(app: tauri::AppHandle) {
     }
 }
 
+async fn reset_app_configs(
+    app_handle: &tauri::AppHandle,
+    reset_wallet: bool,
+) -> Result<(), anyhow::Error> {
+    let app_config_dir = app_handle.path().app_config_dir()?;
+    let universe_app_configs_dir = app_config_dir
+        .join("app_configs")
+        .join(Network::get_current().as_key_str());
+
+    if reset_wallet {
+        log::info!(target: LOG_TARGET, "[reset_app_configs] Resetting with wallet.");
+        remove_dir_all(&universe_app_configs_dir).map_err(|e| {
+            error!(target: LOG_TARGET, "[reset_app_configs] Could not remove {universe_app_configs_dir:?} directory: {e:?}");
+            anyhow::anyhow!("Could not remove directory: {e}")
+        })?;
+    } else {
+        log::info!(target: LOG_TARGET, "[reset_app_configs] Resetting without wallet.");
+        // remove all configs but not "config_wallet.json"
+        let config_files = std::fs::read_dir(&universe_app_configs_dir)?;
+        for entry in config_files {
+            let entry = entry?;
+            let path = entry.path();
+            if path.is_file() && path.file_name().unwrap_or_default() != "config_wallet.json" {
+                std::fs::remove_file(path)?;
+            }
+        }
+    }
+
+    Ok(())
+}
+
 #[tauri::command]
 pub async fn reset_settings(
     reset_wallet: bool,
@@ -902,7 +933,6 @@ pub async fn reset_settings(
 
     TasksTrackers::current().stop_all_processes().await;
     let network = Network::get_current_or_user_setting_or_default().as_key_str();
-
     let app_config_dir = app_handle.path().app_config_dir();
     let app_cache_dir = app_handle.path().app_cache_dir();
     let app_data_dir = app_handle.path().app_data_dir();
@@ -933,11 +963,20 @@ pub async fn reset_settings(
     folder_block_list.push("EBWebView");
 
     let mut files_block_list = Vec::new();
-
-    if !reset_wallet {
+    if reset_wallet {
+        debug!(target: LOG_TARGET, "[reset_settings] Clearing all wallets");
+        InternalWallet::clear_all_wallets()
+            .await
+            .map_err(|e| e.to_string())?;
+    } else {
         folder_block_list.push("wallet");
         files_block_list.push("credentials_backup.bin");
     }
+    // handle App Config reset individually
+    folder_block_list.push("app_configs");
+    reset_app_configs(&app_handle, reset_wallet)
+        .await
+        .map_err(|e| e.to_string())?;
 
     for dir_path in dirs_to_remove.iter().flatten() {
         if dir_path.exists() {
@@ -956,7 +995,7 @@ pub async fn reset_settings(
                             .map_err(|e| e.to_string())?
                             .any(|inner_entry| {
                                 inner_entry
-                                    .map(|e| e.file_name() == "wallet_config.json")
+                                    .map(|e| e.file_name() == "wallet_config.json") // legacy wallet config
                                     .unwrap_or(false)
                             });
 
@@ -991,13 +1030,6 @@ pub async fn reset_settings(
                 }
             }
         }
-    }
-
-    if reset_wallet {
-        debug!(target: LOG_TARGET, "[reset_settings] Clearing all wallets");
-        InternalWallet::clear_all_wallets()
-            .await
-            .map_err(|e| e.to_string())?;
     }
 
     info!(target: LOG_TARGET, "[reset_settings] Restarting the app");

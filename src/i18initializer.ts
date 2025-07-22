@@ -16,6 +16,7 @@ export enum Language {
     RU = 'ru',
     FR = 'fr',
     DE = 'de', // German
+    VI = 'vi', // Vietnamese
 }
 
 // System can have various regional variations for language codes, so we resolve them
@@ -83,6 +84,9 @@ export const resolveI18nLanguage = (languageCode: string): Language => {
         case 'de-LI':
         case 'de-LU':
             return Language.DE;
+        case 'vi':
+        case 'vi-VN':
+            return Language.VI;
         default:
             return Language.EN;
     }
@@ -102,6 +106,7 @@ export const LanguageList: Record<Language, string> = {
     [Language.RU]: 'Русский', // Russian
     [Language.FR]: 'Français', // French
     [Language.DE]: 'Deutsch', // German
+    [Language.VI]: 'Tiếng Việt', // Vietnamese
 };
 
 // Initialize i18n with new supported languages
@@ -130,6 +135,7 @@ i18n.use(HttpBackend)
             Language.RU,
             Language.FR,
             Language.DE,
+            Language.VI,
         ],
         saveMissingTo: 'all',
         contextSeparator: '-',

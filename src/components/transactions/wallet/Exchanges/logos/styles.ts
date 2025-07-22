@@ -25,9 +25,9 @@ export const Logo = styled.div<Props & { $index: number; $bgColour?: string }>`
         switch ($variant) {
             case 'mini': {
                 return css`
-                    width: 20px;
-                    height: 20px;
-                    right: ${`${$index * 10}px`};
+                    width: 24px;
+                    height: 24px;
+                    right: ${`${$index * 13}px`};
                 `;
             }
             case 'primary':

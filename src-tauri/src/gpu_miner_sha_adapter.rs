@@ -69,7 +69,7 @@ impl ProcessAdapter for GpuMinerShaAdapter {
         &self,
         base_folder: PathBuf,
         _config_folder: PathBuf,
-        _log_folder: PathBuf,
+        log_folder: PathBuf,
         binary_version_path: PathBuf,
         _is_first_start: bool,
     ) -> Result<(Self::ProcessInstance, Self::StatusMonitor), anyhow::Error> {
@@ -109,6 +109,9 @@ impl ProcessAdapter for GpuMinerShaAdapter {
             args.push("--worker".to_string());
             args.push(worker_name.clone());
         }
+
+        args.push("--log-dir".to_string());
+        args.push(log_folder.to_string_lossy().to_string());
 
         Ok((
             ProcessInstance {
