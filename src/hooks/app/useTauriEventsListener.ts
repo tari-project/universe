@@ -15,6 +15,7 @@ import {
     handleAskForRestart,
     handleConnectionStatusChanged,
     setConnectionStatus,
+    setDialogToShow,
     setShouldShowExchangeSpecificModal,
     setShowExternalDependenciesDialog,
 } from '@app/store/actions/uiStoreActions';
@@ -28,7 +29,7 @@ import {
     setIsStuckOnOrphanChain,
     setNetworkStatus,
 } from '@app/store/actions/appStateStoreActions';
-import { setWalletBalance, updateWalletScanningProgress, useSecurityStore } from '@app/store';
+import { setWalletBalance, updateWalletScanningProgress, useSecurityStore, useUIStore } from '@app/store';
 import { deepEqual } from '@app/utils/objectDeepEqual.ts';
 import {
     handleAppUnlocked,
