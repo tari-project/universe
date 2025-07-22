@@ -77,6 +77,9 @@ use crate::feedback::Feedback;
 use crate::gpu_miner::GpuMiner;
 use crate::mm_proxy_manager::{MmProxyManager, StartConfig};
 use crate::node::node_manager::NodeManager;
+use crate::ootle::commands as ootle_commands;
+use crate::ootle::ootle_wallet_adapter::OotleWalletState;
+use crate::ootle::ootle_wallet_manager::OotleWalletManager;
 use crate::p2pool::models::P2poolStats;
 use crate::p2pool_manager::P2poolManager;
 use crate::tor_manager::TorManager;
@@ -113,6 +116,7 @@ mod mm_proxy_adapter;
 mod mm_proxy_manager;
 mod network_utils;
 mod node;
+mod ootle;
 mod p2pool;
 mod p2pool_adapter;
 mod p2pool_manager;
@@ -196,6 +200,8 @@ struct UniverseAppState {
     websocket_manager_status_rx: Arc<watch::Receiver<WebsocketManagerStatusMessage>>,
     websocket_manager: Arc<RwLock<WebsocketManager>>,
     websocket_event_manager: Arc<RwLock<WebsocketEventsManager>>,
+    ootle_wallet_state_watch_rx: Arc<watch::Receiver<Option<OotleWalletState>>>,
+    ootle_wallet_manager: OotleWalletManager,
 }
 
 #[derive(Clone, serde::Serialize, serde::Deserialize)]
@@ -319,6 +325,11 @@ fn main() {
     let tor_manager = TorManager::new(tor_watch_tx, &mut stats_collector);
     let mm_proxy_manager = MmProxyManager::new(&mut stats_collector);
 
+    let (ootle_wallet_state_watch_tx, ootle_wallet_state_watch_rx) =
+        watch::channel::<Option<OotleWalletState>>(None);
+    let ootle_wallet_manager =
+        OotleWalletManager::new(ootle_wallet_state_watch_tx, &mut stats_collector);
+
     let telemetry_manager: TelemetryManager = TelemetryManager::new(
         cpu_miner_status_watch_rx.clone(),
         app_in_memory_config.clone(),
@@ -356,6 +367,7 @@ fn main() {
         base_node_watch_rx.clone(),
         app_in_memory_config.clone(),
     );
+
     let app_state = UniverseAppState {
         is_getting_p2pool_connections: Arc::new(AtomicBool::new(false)),
         node_status_watch_rx: Arc::new(base_node_watch_rx),
@@ -384,6 +396,8 @@ fn main() {
         websocket_manager_status_rx: Arc::new(websocket_manager_status_rx.clone()),
         websocket_manager,
         websocket_event_manager: Arc::new(RwLock::new(websocket_events_manager)),
+        ootle_wallet_state_watch_rx: Arc::new(ootle_wallet_state_watch_rx.clone()),
+        ootle_wallet_manager,
     };
     let app_state_clone = app_state.clone();
     #[allow(
@@ -632,7 +646,12 @@ fn main() {
             commands::select_mining_mode,
             commands::update_custom_mining_mode,
             commands::encode_payment_id_to_address,
-            commands::save_wxtm_address
+            commands::save_wxtm_address,
+            commands::get_ootle_wallet_state,
+            ootle_commands::ootle_list_accounts,
+            ootle_commands::ootle_create_account,
+            ootle_commands::ootle_get_balances,
+            ootle_commands::ootle_create_free_test_coins,
         ])
         .build(tauri::generate_context!())
         .inspect_err(|e| {

@@ -44,6 +44,7 @@ use crate::gpu_status_file::GpuStatus;
 use crate::internal_wallet::{mnemonic_to_tari_cipher_seed, InternalWallet, PaperWalletConfig};
 use crate::node::node_adapter::BaseNodeStatus;
 use crate::node::node_manager::NodeType;
+use crate::ootle::ootle_wallet_adapter::OotleWalletState;
 use crate::p2pool::models::{Connections, P2poolStats};
 use crate::pin::PinManager;
 use crate::setup::setup_manager::{SetupManager, SetupPhase};
@@ -2312,4 +2313,12 @@ pub async fn get_base_node_status(
 pub async fn is_pin_locked() -> Result<bool, String> {
     let is_pin_locked = PinManager::pin_locked().await;
     Ok(is_pin_locked)
+}
+
+#[tauri::command]
+pub fn get_ootle_wallet_state(
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<Option<OotleWalletState>, InvokeError> {
+    let state = state.ootle_wallet_state_watch_rx.borrow().clone();
+    Ok(state)
 }

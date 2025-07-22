@@ -67,6 +67,7 @@ impl TaskTrackerUtil {
 
 pub struct TasksTrackers {
     pub wallet_phase: TaskTrackerUtil,
+    pub ootle_wallet_phase: TaskTrackerUtil,
     pub hardware_phase: TaskTrackerUtil,
     pub mining_phase: TaskTrackerUtil,
     pub node_phase: TaskTrackerUtil,
@@ -78,6 +79,7 @@ impl TasksTrackers {
     fn new() -> Self {
         Self {
             wallet_phase: TaskTrackerUtil::new("Wallet phase"),
+            ootle_wallet_phase: TaskTrackerUtil::new("Ootle wallet phase"),
             hardware_phase: TaskTrackerUtil::new("Hardware phase"),
             mining_phase: TaskTrackerUtil::new("Mining phase"),
             node_phase: TaskTrackerUtil::new("Node phase"),

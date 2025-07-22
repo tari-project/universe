@@ -272,6 +272,47 @@ impl ProgressStep for ProgressSetupMiningPlan {
     }
 }
 
+#[derive(Clone, PartialEq, Debug)]
+pub enum ProgressSetupOotleWalletPlan {
+    BinariesWallet,
+    StartWallet,
+    Initialize,
+    Done,
+}
+
+impl ProgressStep for ProgressSetupOotleWalletPlan {
+    type ChannelEvent = ProgressPlanEventPayload;
+
+    fn get_event_type(&self) -> ProgressEvents {
+        ProgressEvents::OotleWallet
+    }
+
+    fn get_progress_weight(&self) -> u8 {
+        match self {
+            ProgressSetupOotleWalletPlan::BinariesWallet => 2,
+            ProgressSetupOotleWalletPlan::StartWallet => 1,
+            ProgressSetupOotleWalletPlan::Initialize => 1,
+            ProgressSetupOotleWalletPlan::Done => 1,
+        }
+    }
+
+    fn get_title(&self) -> String {
+        match self {
+            ProgressSetupOotleWalletPlan::BinariesWallet => "binaries-ootle-wallet".to_string(),
+            ProgressSetupOotleWalletPlan::StartWallet => "start-ootle-wallet".to_string(),
+            ProgressSetupOotleWalletPlan::Initialize => "initialize-ootle-wallet".to_string(),
+            ProgressSetupOotleWalletPlan::Done => "done".to_string(),
+        }
+    }
+
+    fn resolve_to_event(&self) -> Self::ChannelEvent {
+        ProgressPlanEventPayload {
+            event_type: self.get_event_type(),
+            title: self.get_title(),
+        }
+    }
+}
+
 #[allow(dead_code)]
 #[derive(Clone, PartialEq, Debug)]
 pub enum ProgressPlans {
@@ -280,6 +321,7 @@ pub enum ProgressPlans {
     Hardware(ProgressSetupHardwarePlan),
     Wallet(ProgressSetupWalletPlan),
     Mining(ProgressSetupMiningPlan),
+    Ootle(ProgressSetupOotleWalletPlan),
 }
 #[allow(dead_code)]
 impl ProgressPlans {
@@ -290,6 +332,7 @@ impl ProgressPlans {
             ProgressPlans::Hardware(plan) => plan.get_event_type(),
             ProgressPlans::Wallet(plan) => plan.get_event_type(),
             ProgressPlans::Mining(plan) => plan.get_event_type(),
+            ProgressPlans::Ootle(plan) => plan.get_event_type(),
         }
     }
 }
@@ -304,6 +347,7 @@ impl ProgressStep for ProgressPlans {
             ProgressPlans::Hardware(plan) => plan.get_event_type(),
             ProgressPlans::Wallet(plan) => plan.get_event_type(),
             ProgressPlans::Mining(plan) => plan.get_event_type(),
+            ProgressPlans::Ootle(plan) => plan.get_event_type(),
         }
     }
 
@@ -314,6 +358,7 @@ impl ProgressStep for ProgressPlans {
             ProgressPlans::Hardware(plan) => plan.get_title(),
             ProgressPlans::Wallet(plan) => plan.get_title(),
             ProgressPlans::Mining(plan) => plan.get_title(),
+            ProgressPlans::Ootle(plan) => plan.get_title(),
         }
     }
 
@@ -324,6 +369,7 @@ impl ProgressStep for ProgressPlans {
             ProgressPlans::Hardware(plan) => plan.resolve_to_event(),
             ProgressPlans::Wallet(plan) => plan.resolve_to_event(),
             ProgressPlans::Mining(plan) => plan.resolve_to_event(),
+            ProgressPlans::Ootle(plan) => plan.resolve_to_event(),
         }
     }
 
@@ -334,6 +380,7 @@ impl ProgressStep for ProgressPlans {
             ProgressPlans::Hardware(plan) => plan.get_progress_weight(),
             ProgressPlans::Wallet(plan) => plan.get_progress_weight(),
             ProgressPlans::Mining(plan) => plan.get_progress_weight(),
+            ProgressPlans::Ootle(plan) => plan.get_progress_weight(),
         }
     }
 }
@@ -346,6 +393,7 @@ impl ProgressPlans {
             ProgressPlans::Hardware(_) => "setup-hardware".to_string(),
             ProgressPlans::Wallet(_) => "setup-wallet".to_string(),
             ProgressPlans::Mining(_) => "setup-mining".to_string(),
+            ProgressPlans::Ootle(_) => "setup-ootle-wallet".to_string(),
         }
     }
 
@@ -356,6 +404,7 @@ impl ProgressPlans {
             ProgressPlans::Hardware(_) => 0.1,
             ProgressPlans::Wallet(_) => 0.1,
             ProgressPlans::Mining(_) => 0.1,
+            ProgressPlans::Ootle(_) => 0.1,
         }
     }
 
@@ -366,6 +415,7 @@ impl ProgressPlans {
             ProgressPlans::Hardware(_) => 60.0,
             ProgressPlans::Wallet(_) => 80.0,
             ProgressPlans::Mining(_) => 90.0,
+            ProgressPlans::Ootle(_) => 95.0,
         }
     }
 }
