@@ -13,7 +13,7 @@ export default function SyncCountdown({ onCompleted, onStarted, isCompact = fals
     const { t } = useTranslation(['wallet', 'setup-progresses']);
     const startedRef = useRef(false);
     const countdownRef = useRef<Countdown | null>(null);
-    const { countdown } = useProgressCountdown();
+    const { countdown } = useProgressCountdown(isCompact);
     const date = new Date(countdown * 1000);
 
     const renderer = useMemo(

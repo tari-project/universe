@@ -1,4 +1,4 @@
-import { memo, useEffect } from 'react';
+import { useEffect } from 'react';
 import { AnimatePresence } from 'motion/react';
 import { useUIStore } from '@app/store/useUIStore.ts';
 import SidebarMini from './Sidebars/SidebarMini.tsx';
@@ -7,7 +7,7 @@ import { SidebarNavigationWrapper } from './SidebarNavigation.styles.ts';
 import { setSidebarOpen } from '@app/store/actions/uiStoreActions';
 import { useSetupStore } from '@app/store/useSetupStore.ts';
 
-const SidebarNavigation = memo(function SidebarNavigation() {
+export default function SidebarNavigation() {
     const sidebarOpen = useUIStore((s) => s.sidebarOpen);
     const showTapplet = useUIStore((s) => s.showTapplet);
     const isSettingUp = useSetupStore((s) => !s.appUnlocked);
@@ -24,6 +24,4 @@ const SidebarNavigation = memo(function SidebarNavigation() {
             <AnimatePresence>{sidebarOpen && !showTapplet && <Sidebar />}</AnimatePresence>
         </SidebarNavigationWrapper>
     );
-});
-
-export default SidebarNavigation;
+}

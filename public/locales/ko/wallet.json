@@ -150,8 +150,8 @@
     "line1": "Sync in progress. ",
     "line2": " remaining",
     "line3": "until your wallet balance is displayed",
-    "tooltip-description": "Your node is still syncing, so your balance isn't visible yet.",
-    "tooltip-description-mining": "Your node is still syncing, so your balance isn't visible yet. But don't worry, you're actively mining and earning XTM.",
+    "tooltip-description": "This was your last synced balance, we'll update it once the wallet is ready.",
+    "tooltip-description-mining": "This was your last synced balance, we'll update it once the wallet is ready. But don’t worry, you’re actively mining and earning XTM.",
     "tooltip-title": "Why the delay?",
     "top-line": "You are now mining Tari XTM"
   },
@@ -164,7 +164,7 @@
   "transactions": "Transactions",
   "wallet-connected": "지갑 연결됨",
   "wallet-is-scanning": "지갑 스캔 중...",
-  "wallet-scanning-with-progress": "지갑 스캔 중: {{scanned}}/{{total}} ({{percent}}%)",
+  "wallet-scanning-with-progress": "<strong>Wallet is loading</strong> {{progressValue}}",
   "xc": {
     "buy-tari": "Buy Tari from an exchange",
     "buy-tari-subtitle": "Available on selected exchanges.",
