@@ -79,7 +79,6 @@ pub enum EventType {
     InitWalletScanningProgress,
     ConnectionStatus,
     ShowStageSecurityModal,
-    MiningTime,
     ExchangeIdChanged,
     DisabledPhases,
     ShouldShowExchangeMinerModal,
