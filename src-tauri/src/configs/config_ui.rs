@@ -76,11 +76,9 @@ pub struct ConfigUIContent {
     has_system_language_been_proposed: bool,
     should_always_use_system_language: bool,
     application_language: String,
-    paper_wallet_enabled: bool,
     sharing_enabled: bool,
     visual_mode: bool,
     show_experimental_settings: bool,
-    warmup_seen: bool,
     was_staged_security_modal_shown: bool, // TODO: Migrated to ConfigWallet, remove after some time
     wallet_ui_mode: WalletUIMode,
 }
@@ -94,11 +92,9 @@ impl Default for ConfigUIContent {
             has_system_language_been_proposed: false,
             should_always_use_system_language: false,
             application_language: "en".to_string(),
-            paper_wallet_enabled: true,
             sharing_enabled: true,
             visual_mode: true,
             show_experimental_settings: false,
-            warmup_seen: false,
             was_staged_security_modal_shown: false,
             wallet_ui_mode: WalletUIMode::Standard,
         }

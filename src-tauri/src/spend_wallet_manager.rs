@@ -120,7 +120,7 @@ impl SpendWalletManager {
         let (public_key, public_address) = self.node_manager.get_connection_details().await?;
         self.adapter.base_node_public_key = Some(public_key.clone());
         self.adapter.base_node_address = Some(public_address.clone());
-        self.adapter.http_client_url = Some(self.node_manager.get_http_api_url().await?);
+        self.adapter.http_client_url = self.node_manager.get_http_api_url().await;
         info!(target: LOG_TARGET, "[send_one_sided_to_stealth_address] with node {public_key:?}:{public_address:?}");
 
         // Prevent from erasing wallet data when sending in progress
