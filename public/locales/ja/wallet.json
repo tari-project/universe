@@ -164,7 +164,7 @@
   "transactions": "Transactions",
   "wallet-connected": "ウォレット接続済み",
   "wallet-is-scanning": "ウォレットをスキャン中...",
-  "wallet-scanning-with-progress": "<strong>ウォレットをスキャン中</strong> {{progressValue}}",
+  "wallet-scanning-with-progress": "<strong>Wallet is loading</strong> {{progressValue}}",
   "xc": {
     "buy-tari": "Buy Tari from an exchange",
     "buy-tari-subtitle": "Available on selected exchanges.",

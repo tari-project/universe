@@ -164,7 +164,7 @@
   "transactions": "Transactions",
   "wallet-connected": "Кошелек подключен",
   "wallet-is-scanning": "Кошелек сканируется...",
-  "wallet-scanning-with-progress": "<strong>Кошелек сканируется</strong> {{progressValue}}",
+  "wallet-scanning-with-progress": "<strong>Wallet is loading</strong> {{progressValue}}",
   "xc": {
     "buy-tari": "Buy Tari from an exchange",
     "buy-tari-subtitle": "Available on selected exchanges.",

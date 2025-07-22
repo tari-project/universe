@@ -48,8 +48,6 @@ export function Progress({ percentage = 0, isInfinite = false }: ProgressProps) 
               opacity: [0, 0.3, 0.45, 1, 1],
           };
 
-    console.debug(percentage);
-
     return (
         <Wrapper key={!percentage && infinite ? 'infinite' : 'progress'} $shouldAnimate={infinite}>
             <AnimatePresence>

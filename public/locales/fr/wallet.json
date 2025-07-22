@@ -164,7 +164,7 @@
   "transactions": "Transactions",
   "wallet-connected": "Portefeuille connecté",
   "wallet-is-scanning": "Le portefeuille est en cours de scan...",
-  "wallet-scanning-with-progress": "<strong>Le portefeuille est en cours de scan </strong> {{progressValue}}",
+  "wallet-scanning-with-progress": "<strong>Wallet is loading</strong> {{progressValue}}",
   "xc": {
     "buy-tari": "Buy Tari from an exchange",
     "buy-tari-subtitle": "Available on selected exchanges.",
