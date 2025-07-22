@@ -1,26 +1,25 @@
-import { invoke } from '@tauri-apps/api/core';
 import { handleRefreshAirdropTokens } from '@app/hooks/airdrop/stateHelpers/useAirdropTokensRefresh.ts';
+import { handleAirdropRequest } from '@app/hooks/airdrop/utils/useHandleRequest.ts';
 import {
-    AirdropConfigBackendInMemory,
-    AirdropStoreState,
-    AirdropTokens,
-    AnimationType,
-    BonusTier,
-    CommunityMessage,
+    type AirdropConfigBackendInMemory,
+    type AirdropStoreState,
+    type AirdropTokens,
+    type AnimationType,
+    type BonusTier,
+    type CommunityMessage,
     setAirdropTokensInConfig,
+    type UserDetails,
+    type UserEntryPoints,
+    type UserPoints,
     useAirdropStore,
     useConfigBEInMemoryStore,
     useConfigCoreStore,
-    UserDetails,
-    UserEntryPoints,
-    UserPoints,
     useUIStore,
 } from '@app/store';
-import { handleAirdropRequest } from '@app/hooks/airdrop/utils/useHandleRequest.ts';
-import { initialiseSocket, removeSocket } from '@app/utils/socket.ts';
-import { XSpaceEvent } from '@app/types/ws.ts';
 import { handleCloseSplashscreen } from '@app/store/actions/uiStoreActions.ts';
-import { FEATURES } from '@app/store/consts.ts';
+import type { XSpaceEvent } from '@app/types/ws.ts';
+import { initialiseSocket, removeSocket } from '@app/utils/socket.ts';
+import { invoke } from '@tauri-apps/api/core';
 
 interface TokenResponse {
     exp: number;
@@ -38,9 +37,7 @@ function parseJwt(token: string): TokenResponse {
         window
             .atob(base64)
             .split('')
-            .map(function (c) {
-                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-            })
+            .map((c) => `%${`00${c.charCodeAt(0).toString(16)}`.slice(-2)}`)
             .join('')
     );
 
@@ -223,10 +220,14 @@ export const handleUsernameChange = async (username: string, onError?: (e: unkno
     });
 };
 
-export async function fetchFeatureFlag(route: string) {
-    return await handleAirdropRequest<{ access: boolean } | null>({
+export async function fetchFeatureFlag(featureName?: string) {
+    const path = featureName ? `/features/${featureName}` : '/features';
+    return await handleAirdropRequest<{
+        features?: string[];
+        access?: boolean;
+    } | null>({
         publicRequest: true,
-        path: `/features/${route}`,
+        path,
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
@@ -234,28 +235,11 @@ export async function fetchFeatureFlag(route: string) {
     });
 }
 
-export async function fetchPollingFeatureFlag() {
-    const response = await fetchFeatureFlag(FEATURES.FF_POLLING);
-    if (response) {
-        useAirdropStore.setState({ pollingEnabled: response.access });
-        // Let the BE know we're using the polling feature for mining proofs
-        // invoke('set_airdrop_polling', { pollingEnabled: response.access });
-    }
-    return response;
-}
-
-export async function fetchOrphanChainUiFeatureFlag() {
-    const response = await fetchFeatureFlag(FEATURES.FF_UI_ORPHAN_CHAIN_DISABLED);
-    if (response) {
-        useAirdropStore.setState({ orphanChainUiDisabled: response.access });
-    }
-    return response;
-}
-
-export async function fetchBlockBubblesFeatureFlag() {
-    const response = await fetchFeatureFlag(FEATURES.FF_UI_BLOCK_BUBBLES);
-    if (response) {
-        useUIStore.setState({ blockBubblesEnabled: response.access });
+export async function fetchFeatures() {
+    const response = await fetchFeatureFlag();
+    if (response?.features) {
+        const enabledFeatures = response.features;
+        useAirdropStore.setState({ features: enabledFeatures });
     }
     return response;
 }
