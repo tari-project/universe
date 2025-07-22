@@ -91,6 +91,28 @@ export interface CommunityMessage {
     type: MessageType;
 }
 
+export interface CrewMember {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+    joinedAt: string;
+}
+
+export interface CrewAnalytics {
+    totalMembers: number;
+    activeMembers: number;
+    performanceMetrics: Record<string, any>;
+}
+
+export interface Reward {
+    id: string;
+    name: string;
+    description: string;
+    points: number;
+    claimedAt?: string;
+}
+
 export type AirdropConfigBackendInMemory = Omit<ConfigBackendInMemory, 'exchangeId'>;
 
 //////////////////////////////////////////
@@ -107,6 +129,9 @@ export interface AirdropStoreState {
     uiSendRecvEnabled: boolean;
     communityMessages?: CommunityMessage[];
     features?: string[];
+    crewMembers?: CrewMember[];
+    crewAnalytics?: CrewAnalytics;
+    crewRewards?: Reward[];
 }
 
 const initialState: AirdropStoreState = {

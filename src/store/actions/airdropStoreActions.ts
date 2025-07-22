@@ -7,6 +7,9 @@ import {
     type AnimationType,
     type BonusTier,
     type CommunityMessage,
+    type CrewAnalytics,
+    type CrewMember,
+    type Reward,
     setAirdropTokensInConfig,
     type UserDetails,
     type UserEntryPoints,
@@ -276,6 +279,82 @@ export async function fetchLatestXSpaceEvent() {
     }
 
     return response;
+}
+
+export async function fetchCrewMembers() {
+    const response = await handleAirdropRequest<{
+        success: boolean;
+        data: CrewMember[];
+    } | null>({
+        path: '/crew/members',
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+
+    if (response?.success && response.data) {
+        useAirdropStore.setState({ crewMembers: response.data });
+    }
+
+    return response;
+}
+
+export async function fetchCrewAnalytics(dateFrom?: string, dateTo?: string) {
+    const params = new URLSearchParams();
+    if (dateFrom) params.append('dateFrom', dateFrom);
+    if (dateTo) params.append('dateTo', dateTo);
+
+    const queryString = params.toString();
+    const path = queryString ? `/crew/analytics?${queryString}` : '/crew/analytics';
+
+    const response = await handleAirdropRequest<{
+        success: boolean;
+        analytics: CrewAnalytics;
+    } | null>({
+        path,
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+
+    if (response?.success && response.analytics) {
+        useAirdropStore.setState({ crewAnalytics: response.analytics });
+    }
+
+    return response;
+}
+
+export async function sendCrewNudge(message: string, targetMembers: string[]) {
+    return await handleAirdropRequest<{ success: boolean } | null>({
+        path: '/crew/nudge',
+        method: 'POST',
+        body: {
+            message,
+            targetMembers,
+        },
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+}
+
+export async function claimCrewRewards(rewardId: string, memberId: string) {
+    return await handleAirdropRequest<{
+        success: boolean;
+        claimedReward: Reward;
+    } | null>({
+        path: '/crew/rewards/claim',
+        method: 'POST',
+        body: {
+            rewardId,
+            memberId,
+        },
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
 }
 
 export const fetchAllUserData = async () => {

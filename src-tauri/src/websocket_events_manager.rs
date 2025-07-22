@@ -33,7 +33,13 @@ use tokio::{
 };
 
 use crate::{
-    airdrop::decode_jwt_claims_without_exp, commands::{sign_ws_data, CpuMinerStatus, SignWsDataResponse}, configs::{config_core::ConfigCore, trait_config::ConfigImpl}, internal_wallet::InternalWallet, tasks_tracker::TasksTrackers, websocket_manager::WebsocketMessage, BaseNodeStatus, GpuMinerStatus
+    airdrop::decode_jwt_claims_without_exp,
+    commands::{sign_ws_data, CpuMinerStatus, SignWsDataResponse},
+    configs::{config_core::ConfigCore, trait_config::ConfigImpl},
+    internal_wallet::InternalWallet,
+    tasks_tracker::TasksTrackers,
+    websocket_manager::WebsocketMessage,
+    BaseNodeStatus, GpuMinerStatus,
 };
 const LOG_TARGET: &str = "tari::universe::websocket_events_manager";
 static INTERVAL_DURATION: std::time::Duration = Duration::from_secs(15);
@@ -163,8 +169,14 @@ impl WebsocketEventsManager {
 
         if let Some(claims) = decode_jwt_claims_without_exp(&jwt_token) {
             let signable_message = format!(
-                "{},{},{},{},{},{}",
-                app_version, network, app_id, claims.id, is_mining_active, block_height
+                "{},{},{},{},{},{},{}",
+                app_version,
+                network,
+                app_id,
+                claims.id,
+                is_mining_active,
+                block_height,
+                tari_address.to_base58()
             );
             if let Ok(SignWsDataResponse { signature, pub_key }) =
                 sign_ws_data(signable_message).await
@@ -175,8 +187,8 @@ impl WebsocketEventsManager {
                         "blockHeight":block_height,
                         "version":app_version,
                         "network":network,
-                        "walletHash":tari_address.to_base58(),
-                        "userId":claims.id
+                        "userId":claims.id,
+                        "walletHash":tari_address.to_base58()
                 });
 
                 return Some(WebsocketMessage {
