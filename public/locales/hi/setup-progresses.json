@@ -29,6 +29,8 @@
   },
   "phase-wallet-critical-problem-description": "वॉलेट सेटअप एप्लिकेशन के लिए महत्वपूर्ण है। कृपया एप्लिकेशन को पुनः आरंभ करने का प्रयास करें। यदि समस्या बनी रहती है, तो कृपया समर्थन से संपर्क करें।",
   "phase-wallet-critical-problem-title": "वॉलेट सेटअप विफल",
+  "phase-ootle-wallet-critical-problem-description": "Ootle वॉलेट सेटअप एप्लिकेशन के लिए महत्वपूर्ण है। कृपया एप्लिकेशन को पुनः प्रारंभ करने का प्रयास करें। यदि समस्या बनी रहती है, तो कृपया समर्थन से संपर्क करें।",
+  "phase-ootle-wallet-critical-problem-title": "Ootle वॉलेट सेटअप विफल",
   "remaining": "शेष",
   "second_remaining": "सेकंड शेष",
   "seconds_remaining": "सेकंड शेष",

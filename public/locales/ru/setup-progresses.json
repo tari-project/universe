@@ -29,6 +29,8 @@
   },
   "phase-wallet-critical-problem-description": "Настройка кошелька критически важна для приложения. Пожалуйста, попробуйте перезапустить приложение. Если проблема не исчезнет, обратитесь в службу поддержки.",
   "phase-wallet-critical-problem-title": "Ошибка настройки кошелька",
+  "phase-ootle-wallet-critical-problem-description": "Настройка Ootle Wallet критически важна для приложения. Пожалуйста, попробуйте перезапустить приложение. Если проблема не исчезнет, обратитесь в службу поддержки.",
+  "phase-ootle-wallet-critical-problem-title": "Ошибка настройки Ootle Wallet",
   "remaining": "осталось",
   "second_remaining": "осталась секунда",
   "seconds_remaining": "осталось секунд",

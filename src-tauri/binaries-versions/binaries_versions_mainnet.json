@@ -9,6 +9,6 @@
                 "tor": "14.5.1",
                 "bridge": "0.2.0",
                 "graxil": "1.0.4 | 53d6e5f",
-                "ootle_wallet": "0.11.0"
+                "ootle_wallet": "0.11.0 | 7d00259"
         }
 }

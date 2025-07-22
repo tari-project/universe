@@ -29,6 +29,8 @@
   },
   "phase-wallet-critical-problem-description": "Konfiguracja portfela jest kluczowa dla aplikacji. Spróbuj ponownie uruchomić aplikację. Jeśli problem będzie się powtarzał, skontaktuj się z pomocą techniczną.",
   "phase-wallet-critical-problem-title": "Niepowodzenie Konfiguracji Portfela",
+  "phase-ootle-wallet-critical-problem-description": "Konfiguracja portfela Ootle jest kluczowa dla aplikacji. Spróbuj ponownie uruchomić aplikację. Jeśli problem będzie się powtarzał, skontaktuj się z pomocą techniczną.",
+  "phase-ootle-wallet-critical-problem-title": "Niepowodzenie Konfiguracji Portfela Ootle",
   "remaining": "pozostało",
   "second_remaining": "pozostała sekunda",
   "seconds_remaining": "pozostało sekund",

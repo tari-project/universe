@@ -29,6 +29,8 @@
   },
   "phase-wallet-critical-problem-description": "ウォレットの設定はアプリケーションにとって重要です。アプリケーションを再起動してみてください。問題が続く場合は、サポートに連絡してください。",
   "phase-wallet-critical-problem-title": "ウォレット設定に失敗しました",
+  "phase-ootle-wallet-critical-problem-description": "Ootleウォレットの設定はアプリケーションにとって重要です。アプリケーションを再起動してください。問題が解決しない場合は、サポートに連絡してください。",
+  "phase-ootle-wallet-critical-problem-title": "Ootleウォレット設定に失敗しました",
   "remaining": "残り",
   "second_remaining": "残り秒数",
   "seconds_remaining": "残り秒数",

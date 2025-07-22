@@ -51,7 +51,7 @@ impl OotleWalletJsonRpcClient {
         let rpc_url = format!("http://127.0.0.1:{}/json_rpc", self.json_rpc_port);
         let request_body = json!({
             "jsonrpc": "2.0",
-            "id": "0",
+            "id": 1,
             "method": method,
             "params": params
         });

@@ -29,6 +29,8 @@
   },
   "phase-wallet-critical-problem-description": "Cüzdan kurulumu uygulama için kritiktir. Lütfen uygulamayı yeniden başlatmayı deneyin. Sorun devam ederse, lütfen destek ile iletişime geçin.",
   "phase-wallet-critical-problem-title": "Cüzdan Kurulumu Başarısız",
+  "phase-ootle-wallet-critical-problem-description": "Ootle Cüzdan kurulumu uygulama için kritiktir. Lütfen uygulamayı yeniden başlatmayı deneyin. Sorun devam ederse, lütfen destek ile iletişime geçin.",
+  "phase-ootle-wallet-critical-problem-title": "Ootle Cüzdan Kurulumu Başarısız",
   "remaining": "kalan",
   "second_remaining": "kalan saniye",
   "seconds_remaining": "kalan saniye",

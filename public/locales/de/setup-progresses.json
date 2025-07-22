@@ -29,6 +29,8 @@
   },
   "phase-wallet-critical-problem-description": "Die Wallet-Einrichtung ist für die Anwendung entscheidend. Bitte versuchen Sie, die Anwendung neu zu starten. Wenn das Problem weiterhin besteht, wenden Sie sich bitte an den Support.",
   "phase-wallet-critical-problem-title": "Wallet-Einrichtung fehlgeschlagen",
+  "phase-ootle-wallet-critical-problem-description": "Die Ootle Wallet-Einrichtung ist für die Anwendung entscheidend. Bitte versuchen Sie, die Anwendung neu zu starten. Wenn das Problem weiterhin besteht, wenden Sie sich bitte an den Support.",
+  "phase-ootle-wallet-critical-problem-title": "Ootle Wallet-Einrichtung fehlgeschlagen",
   "remaining": "verbleibend",
   "second_remaining": "verbleibende Sekunde",
   "seconds_remaining": "verbleibende Sekunden",

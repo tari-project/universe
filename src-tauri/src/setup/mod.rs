@@ -29,5 +29,5 @@ mod phase_core;
 mod phase_hardware;
 mod phase_mining;
 mod phase_node;
-pub mod phase_ootle_wallet;
+mod phase_ootle_wallet;
 mod phase_wallet;

@@ -29,6 +29,8 @@
   },
   "phase-wallet-critical-problem-description": "Wallet setup is critical to the application. Please try restarting the application. If the problem persists, please contact support.",
   "phase-wallet-critical-problem-title": "Wallet Setup Failed",
+  "phase-ootle-wallet-critical-problem-description": "Ootle Wallet setup is critical to the application. Please try restarting the application. If the problem persists, please contact support.",
+  "phase-ootle-wallet-critical-problem-title": "Ootle Wallet Setup Failed",
   "remaining": "remaining",
   "second_remaining": "second remaining",
   "seconds_remaining": "seconds remaining",
