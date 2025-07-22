@@ -472,6 +472,7 @@ impl StatusMonitor for WalletStatusMonitor {
         match tokio::time::timeout(timeout_duration, self.get_status()).await {
             Ok(status_result) => match status_result {
                 Ok(s) => {
+                    info!(target: LOG_TARGET, "Wallet balance: {:?}", s.balance);
                     let _result = self.state_broadcast.send(Some(s));
                     HealthStatus::Healthy
                 }
