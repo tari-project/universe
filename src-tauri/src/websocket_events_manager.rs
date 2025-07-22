@@ -33,12 +33,7 @@ use tokio::{
 };
 
 use crate::{
-    airdrop::decode_jwt_claims_without_exp,
-    commands::{sign_ws_data, CpuMinerStatus, SignWsDataResponse},
-    configs::{config_core::ConfigCore, trait_config::ConfigImpl},
-    tasks_tracker::TasksTrackers,
-    websocket_manager::WebsocketMessage,
-    BaseNodeStatus, GpuMinerStatus,
+    airdrop::decode_jwt_claims_without_exp, commands::{sign_ws_data, CpuMinerStatus, SignWsDataResponse}, configs::{config_core::ConfigCore, trait_config::ConfigImpl}, internal_wallet::InternalWallet, tasks_tracker::TasksTrackers, websocket_manager::WebsocketMessage, BaseNodeStatus, GpuMinerStatus
 };
 const LOG_TARGET: &str = "tari::universe::websocket_events_manager";
 static INTERVAL_DURATION: std::time::Duration = Duration::from_secs(15);
@@ -164,6 +159,7 @@ impl WebsocketEventsManager {
         let gpu_status = gpu_latest_miner_stats.borrow().clone();
         let network = Network::get_current_or_user_setting_or_default().as_key_str();
         let is_mining_active = cpu_miner_status.hash_rate > 0.0 || gpu_status.hash_rate > 0.0;
+        let tari_address = InternalWallet::tari_address().await;
 
         if let Some(claims) = decode_jwt_claims_without_exp(&jwt_token) {
             let signable_message = format!(
@@ -179,6 +175,7 @@ impl WebsocketEventsManager {
                         "blockHeight":block_height,
                         "version":app_version,
                         "network":network,
+                        "walletHash":tari_address.to_base58(),
                         "userId":claims.id
                 });
 
