@@ -509,6 +509,20 @@ impl EventsEmitter {
         }
     }
 
+    pub async fn emit_ootle_wallet_phase_finished(status: bool) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::OotleWalletPhaseFinished,
+            payload: status,
+        };
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
+            error!(target: LOG_TARGET, "Failed to emit OotleWalletPhaseFinished event: {e:?}");
+        }
+    }
+
     pub async fn emit_hardware_phase_finished(status: bool) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {

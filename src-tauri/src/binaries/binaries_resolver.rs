@@ -180,6 +180,19 @@ impl BinaryResolver {
             ),
         );
 
+        binary_manager.insert(
+            Binaries::OotleWallet,
+            BinaryManager::new(
+                Binaries::OotleWallet.name().to_string(),
+                None,
+                Box::new(GithubReleasesAdapter {
+                    repo: "tari-ootle".to_string(),
+                    owner: "tari-project".to_string(),
+                }),
+                true,
+            ),
+        );
+
         Self {
             managers: binary_manager,
         }
