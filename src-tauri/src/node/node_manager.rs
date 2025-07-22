@@ -72,6 +72,12 @@ pub enum NodeType {
     LocalAfterRemote,
 }
 
+impl Default for NodeType {
+    fn default() -> Self {
+        NodeType::RemoteUntilLocal
+    }
+}
+
 impl NodeType {
     pub fn is_local(&self) -> bool {
         matches!(
@@ -151,10 +157,10 @@ impl NodeManager {
         let shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
         let task_tracker = TasksTrackers::current().node_phase.get_task_tracker().await;
 
-        if self.is_local().await? {
+        if self.is_local().await {
             self.configure_adapter(
                 self.local_node_watcher.clone(),
-                self.is_local_current().await?,
+                self.is_local_current().await,
                 None, // always 127.0.0.1
                 use_tor,
                 tor_control_port,
@@ -171,10 +177,10 @@ impl NodeManager {
             .await?;
             self.wait_migration(migration_tracker).await?;
         }
-        if self.is_remote().await? {
+        if self.is_remote().await {
             self.configure_adapter(
                 self.remote_node_watcher.clone(),
-                self.is_remote_current().await?,
+                self.is_remote_current().await,
                 remote_grpc_address,
                 use_tor,
                 None, // no control port needed
@@ -191,7 +197,7 @@ impl NodeManager {
             .await?;
         }
 
-        let node_type = self.get_node_type().await?;
+        let node_type = self.get_node_type().await;
         start_status_forwarding_thread(
             self.clone(),
             self.base_node_watch_tx.clone(),
@@ -312,7 +318,7 @@ impl NodeManager {
         &self,
         migration_tracker: Option<ChanneledStepUpdate>,
     ) -> Result<(), NodeManagerError> {
-        if self.is_local().await? {
+        if self.is_local().await {
             let current_service = self.get_current_service().await;
             let migration_handle = TasksTrackers::current()
                         .node_phase
@@ -373,10 +379,10 @@ impl NodeManager {
     }
 
     pub async fn wait_ready(&self) -> Result<(), NodeManagerError> {
-        if self.is_remote().await? {
+        if self.is_remote().await {
             ensure_node_identity_reachable(&self.remote_node_watcher, "Remote").await?;
         }
-        if self.is_local().await? {
+        if self.is_local().await {
             ensure_node_identity_reachable(&self.local_node_watcher, "Local").await?;
         }
 
@@ -395,9 +401,9 @@ impl NodeManager {
         Ok(())
     }
 
-    pub async fn get_node_type(&self) -> Result<NodeType, anyhow::Error> {
+    pub async fn get_node_type(&self) -> NodeType {
         let node_type = self.node_type.read().await;
-        Ok(node_type.clone())
+        node_type.clone()
     }
 
     pub async fn get_current_service(&self) -> Result<NodeAdapterService, anyhow::Error> {
@@ -466,26 +472,23 @@ impl NodeManager {
     }
 
     // Self Checks
-    pub async fn is_local(&self) -> Result<bool, anyhow::Error> {
-        let node_type = self.get_node_type().await?;
-        Ok(node_type.is_local())
+    pub async fn is_local(&self) -> bool {
+        let node_type = self.get_node_type().await;
+        node_type.is_local()
     }
 
-    pub async fn is_local_current(&self) -> Result<bool, anyhow::Error> {
-        let node_type = self.get_node_type().await?;
-        Ok(matches!(
-            node_type,
-            NodeType::Local | NodeType::LocalAfterRemote
-        ))
+    pub async fn is_local_current(&self) -> bool {
+        let node_type = self.get_node_type().await;
+        matches!(node_type, NodeType::Local | NodeType::LocalAfterRemote)
     }
 
-    pub async fn is_remote_current(&self) -> Result<bool, anyhow::Error> {
+    pub async fn is_remote_current(&self) -> bool {
         self.is_remote().await
     }
 
-    pub async fn is_remote(&self) -> Result<bool, anyhow::Error> {
-        let node_type = self.get_node_type().await?;
-        Ok(node_type.is_remote())
+    pub async fn is_remote(&self) -> bool {
+        let node_type = self.get_node_type().await;
+        node_type.is_remote()
     }
 }
 
@@ -599,8 +602,7 @@ pub async fn start_status_forwarding_thread(
                 }
                 // Local node status update received
                 Ok(()) = local_node_watch_rx.changed() => {
-                    let is_local_current = node_manager.is_local_current().await;
-                    if is_local_current.unwrap_or(false) {
+                    if node_manager.is_local_current().await {
                         let status = *local_node_watch_rx.borrow();
                         let should_log = match last_local_status {
                             Some(last) => {
@@ -621,8 +623,7 @@ pub async fn start_status_forwarding_thread(
                 }
                 // Remote node status update received
                 Ok(()) = remote_node_watch_rx.changed() => {
-                    let is_remote_current = node_manager.is_remote_current().await;
-                    if is_remote_current.unwrap_or(false) {
+                    if node_manager.is_remote_current().await {
                         let status = *remote_node_watch_rx.borrow();
                         let should_log = match last_remote_status {
                             Some(last) => {

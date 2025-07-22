@@ -192,7 +192,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
         }
 
         let app_state = self.get_app_handle().state::<UniverseAppState>().clone();
-        let is_local_node = app_state.node_manager.is_local_current().await?;
+        let is_local_node = app_state.node_manager.is_local_current().await;
         let wallet_config = WalletStartupConfig {
             base_path: data_dir.clone(),
             config_path: config_dir.clone(),

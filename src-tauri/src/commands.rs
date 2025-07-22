@@ -2141,11 +2141,7 @@ pub async fn set_node_type(
         node_type = NodeType::Local;
     }
 
-    let prev_node_type = state
-        .node_manager
-        .get_node_type()
-        .await
-        .map_err(|e| e.to_string())?;
+    let prev_node_type = state.node_manager.get_node_type().await;
     info!(target: LOG_TARGET, "[set_node_type] from {prev_node_type:?} to: {node_type:?}");
 
     let is_current_local = matches!(prev_node_type, NodeType::Local | NodeType::LocalAfterRemote);
