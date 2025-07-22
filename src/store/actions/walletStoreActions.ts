@@ -159,7 +159,6 @@ const getPendingOutgoingBalance = async () => {
 
 export const setWalletBalance = async (balance: WalletBalance) => {
     const pendingOutgoingBalance = await getPendingOutgoingBalance();
-    console.info('Setting new wallet balance: ', { balance, pendingOutgoingBalance });
     const available_balance = balance.available_balance - pendingOutgoingBalance;
     const pending_outgoing_balance = balance.pending_outgoing_balance + pendingOutgoingBalance;
 
