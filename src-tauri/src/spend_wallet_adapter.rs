@@ -40,10 +40,8 @@ use std::str::FromStr;
 use std::time::Duration;
 use tari_common::configuration::Network;
 use tari_core::transactions::tari_amount::{MicroMinotari, Minotari};
-use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_key_manager::mnemonic::{Mnemonic, MnemonicLanguage};
 use tari_shutdown::{Shutdown, ShutdownSignal};
-use tari_utilities::hex::Hex;
 use tauri_plugin_sentry::sentry;
 use tonic::async_trait;
 // TODO: Ensure we actually need this
@@ -54,8 +52,6 @@ const LOG_TARGET: &str = "tari::universe::spend_wallet_adapter";
 
 #[derive(Clone)]
 pub struct SpendWalletAdapter {
-    pub(crate) base_node_public_key: Option<RistrettoPublicKey>,
-    pub(crate) base_node_address: Option<String>,
     pub(crate) tcp_listener_port: u16,
     app_shutdown: Option<ShutdownSignal>,
     data_dir: Option<PathBuf>,
@@ -70,8 +66,6 @@ impl SpendWalletAdapter {
     pub fn new() -> Self {
         let tcp_listener_port = PortAllocator::new().assign_port_with_fallback();
         Self {
-            base_node_address: None,
-            base_node_public_key: None,
             tcp_listener_port,
             app_shutdown: None,
             data_dir: None,
@@ -152,15 +146,15 @@ impl SpendWalletAdapter {
         &self,
         seed_words: &str,
     ) -> Result<(i32, Vec<String>, Vec<String>), Error> {
-        let base_node_public_key = self.get_base_node_public_key_hex();
-        let base_node_address = self.get_base_node_address();
+        let http_client_url = self
+            .http_client_url
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("HTTP client URL not configured"))?;
+
         let command = ExecutionCommand::new("recovery")
             .with_extra_args(vec![
                 "-p".to_string(),
-                format!(
-                    "wallet.custom_base_node={}::{}",
-                    base_node_public_key, base_node_address
-                ),
+                format!("wallet.http_server_url={http_client_url}"),
                 "--recovery".to_string(),
             ])
             .with_extra_envs(HashMap::from([(
@@ -172,14 +166,14 @@ impl SpendWalletAdapter {
     }
 
     async fn execute_sync_command(&self) -> Result<(i32, Vec<String>, Vec<String>), Error> {
-        let base_node_public_key = self.get_base_node_public_key_hex();
-        let base_node_address = self.get_base_node_address();
+        let http_client_url = self
+            .http_client_url
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("HTTP client URL not configured"))?;
+
         let command = ExecutionCommand::new("sync").with_extra_args(vec![
             "-p".to_string(),
-            format!(
-                "wallet.custom_base_node={}::{}",
-                base_node_public_key, base_node_address
-            ),
+            format!("wallet.http_server_url={http_client_url}"),
             "sync".to_string(),
         ]);
 
@@ -194,17 +188,13 @@ impl SpendWalletAdapter {
     ) -> Result<Option<String>, Error> {
         // Allocate an unused port to ensure the transaction is not successfully broadcasted.
         // This is intentional as we want to export the transaction to the view wallet instead.
-        let fake_base_node_public_key = self.get_base_node_public_key_hex();
-        let fake_base_node_address = format!(
-            "/ip4/127.0.0.1/tcp/{:?}",
+        let fake_base_node_http_url = format!(
+            "http://127.0.0.1/{:?}",
             PortAllocator::new().assign_port_with_fallback()
         );
         let mut args = vec![
             "-p".to_string(),
-            format!(
-                "wallet.custom_base_node={}::{}",
-                fake_base_node_public_key, fake_base_node_address
-            ),
+            format!("wallet.http_server_url={fake_base_node_http_url}"),
             "send-one-sided-to-stealth-address".to_string(),
         ];
         if let Some(id) = payment_id {
@@ -236,19 +226,17 @@ impl SpendWalletAdapter {
     }
 
     pub async fn export_transaction(&self, tx_id: &str) -> Result<PathBuf, Error> {
-        let fake_base_node_public_key = self.get_base_node_public_key_hex();
-        let fake_base_node_address = format!(
-            "/ip4/127.0.0.1/tcp/{:?}",
+        // Allocate an unused port to ensure the transaction is not successfully broadcasted.
+        // This is intentional as we want to export the transaction to the view wallet instead.
+        let fake_base_node_http_url = format!(
+            "http://127.0.0.1/{:?}",
             PortAllocator::new().assign_port_with_fallback()
         );
         let output_path = self.get_working_dir().join(format!("tx-{tx_id}.json"));
 
         let command = ExecutionCommand::new("export-tx").with_extra_args(vec![
             "-p".to_string(),
-            format!(
-                "wallet.custom_base_node={}::{}",
-                fake_base_node_public_key, fake_base_node_address
-            ),
+            format!("wallet.http_server_url={fake_base_node_http_url}"),
             "export-tx".to_string(),
             "-o".to_string(),
             output_path.to_string_lossy().to_string(),
@@ -405,11 +393,6 @@ impl SpendWalletAdapter {
             format!("{}.p2p.seeds.dns_seeds={}", network.as_key_str(), dns_seeds),
         ];
 
-        if let Some(http_client_url) = &self.http_client_url {
-            shared_args.push("-p".to_string());
-            shared_args.push(format!("wallet.http_server_url={http_client_url}"));
-        }
-
         match self.wallet_birthday {
             Some(wallet_birthday) => {
                 shared_args.push("--birthday".to_string());
@@ -421,19 +404,6 @@ impl SpendWalletAdapter {
         }
 
         Ok(shared_args)
-    }
-
-    fn get_base_node_public_key_hex(&self) -> String {
-        self.base_node_public_key
-            .as_ref()
-            .map(|k| k.to_hex())
-            .expect("Base node public key not set")
-    }
-
-    fn get_base_node_address(&self) -> &str {
-        self.base_node_address
-            .as_ref()
-            .expect("Base node address not set")
     }
 
     async fn get_seed_words(&self, app_handle: &tauri::AppHandle) -> Result<String, Error> {
