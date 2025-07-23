@@ -22,8 +22,8 @@ const initialState: State = {
     showWidget: false,
     isOpen: false,
     streakDays: 2,
-    totalFriends: 12,
-    activeFriends: 38,
+    totalFriends: 38,
+    activeFriends: 12,
     bonusXTMEarned: 15000000000,
 };
 
