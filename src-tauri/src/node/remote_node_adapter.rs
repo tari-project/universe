@@ -20,6 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use tari_common::configuration::Network;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::Shutdown;
 use tokio::sync::watch;
@@ -113,9 +114,17 @@ impl NodeAdapter for RemoteNodeAdapter {
         self.get_service()
     }
 
-    fn get_http_api_port(&self) -> Option<u16> {
-        log::info!(target: LOG_TARGET, "RemoteNodeAdapter doesn't use http_api_port");
-        None
+    fn get_http_api_url(&self) -> String {
+        let network = Network::get_current_or_user_setting_or_default();
+        let http_api_url = match network {
+            Network::MainNet => "https://rpc.tari.com",
+            Network::StageNet => "https://rpc.stagenet.tari.com",
+            Network::NextNet => "https://rpc.nextnet.tari.com",
+            Network::LocalNet => "https://rpc.localnet.tari.com",
+            Network::Igor => "https://rpc.igor.tari.com",
+            Network::Esmeralda => "https://rpc.esmeralda.tari.com",
+        };
+        http_api_url.to_string()
     }
 
     fn use_tor(&mut self, use_tor: bool) {

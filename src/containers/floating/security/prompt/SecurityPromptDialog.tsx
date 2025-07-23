@@ -34,14 +34,14 @@ export default function SecurityPromptDialog() {
     }
 
     useEffect(() => {
-        invoke('is_seed_backed_up').then((r) => {
-            setSeedBackedUp(!!r);
-        });
-    }, [isOpen]);
-
-    useEffect(() => {
-        invoke('is_pin_locked').then((r) => setPinLocked(r));
-    }, [isOpen]);
+        const checkFlags = async () => {
+            const backed_up = await invoke('is_seed_backed_up');
+            setSeedBackedUp(backed_up);
+            const locked = await invoke('is_pin_locked');
+            setPinLocked(locked);
+        };
+        checkFlags();
+    }, [modal]);
 
     const steps: StepItem[] = [
         {

@@ -6,6 +6,7 @@ import { RefreshWalletHistory } from './RefreshWalletHistory.tsx';
 import { useConfigUIStore, useConfigWalletStore } from '@app/store/useAppConfigStore.ts';
 import { WalletUIMode } from '@app/types/events-payloads.ts';
 import { PinMarkup } from './PinMarkup';
+import { SyncWithPhone } from './SyncWithPhone.tsx';
 
 export const WalletSettings = () => {
     const monero_address_is_generated = useConfigWalletStore((s) => s.monero_address_is_generated);
@@ -13,6 +14,7 @@ export const WalletSettings = () => {
     return (
         <>
             <PinMarkup />
+            <SyncWithPhone />
             <WalletAddressMarkup />
             {isWalletUIExchangeSpecific ? undefined : <TariSeedWords />}
             <MoneroAddressMarkup />
