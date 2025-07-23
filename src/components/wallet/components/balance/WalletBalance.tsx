@@ -58,7 +58,10 @@ export const WalletBalance = () => {
     const loadingMarkup = (
         <Typography>
             <Trans>
-                {t('wallet-scanning-with-progress', { progressValue: isConnected ? `${scanProgress}%` : '' })}
+                {t('wallet-scanning-with-progress', {
+                    percentage: isConnected ? `${scanProgress}%` : '',
+                    progessValue: `${scanData.scanned_height}/${scanData.total_height}`,
+                })}
             </Trans>
             {!isConnected && (
                 <>
