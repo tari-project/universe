@@ -1,7 +1,7 @@
 import { create } from './create.ts';
 import { PoolStats } from '../types/app-status.ts';
 
-interface RewardValues {
+export interface RewardValues {
     rewardValue?: number;
     unpaidFMT?: string;
 }

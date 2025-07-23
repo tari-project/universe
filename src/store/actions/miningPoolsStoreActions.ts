@@ -1,5 +1,5 @@
 import { PoolStats } from '@app/types/app-status';
-import { useMiningPoolsStore } from '../useMiningPoolsStore';
+import { RewardValues, useMiningPoolsStore } from '../useMiningPoolsStore';
 import { deepEqual } from '@app/utils/objectDeepEqual.ts';
 import i18n from 'i18next';
 import { removeXTMCryptoDecimals } from '@app/utils';
@@ -17,15 +17,20 @@ function canUpdate(stats: PoolStats, currentStats?: PoolStats): boolean {
     return !deepEqual(currentStats, stats);
 }
 
-function parseValues(stats: PoolStats, current?: PoolStats): { stats?: PoolStats; unpaidFMT?: string; diff?: number } {
-    const shouldUpdate = canUpdate(stats, current);
+function parseValues(
+    stats: PoolStats,
+    currentStats?: PoolStats,
+    currentRewards?: RewardValues
+): { stats?: PoolStats; unpaidFMT?: string; diff?: number } {
+    const shouldUpdate = canUpdate(stats, currentStats);
 
-    console.debug(`shouldUpdate= `, shouldUpdate);
-    if (!shouldUpdate) return { stats: current };
+    if (!shouldUpdate) {
+        return { stats: currentStats, unpaidFMT: currentRewards?.unpaidFMT, diff: currentRewards?.rewardValue };
+    }
 
     const unpaid = Math.floor(removeXTMCryptoDecimals(stats.unpaid) * 10_000) / 10_000;
     const unpaidFMT = fmtMatch(Math.floor(unpaid * 100) / 100, 2);
-    const diff = stats.unpaid - (current?.unpaid || 0);
+    const diff = stats.unpaid - (currentStats?.unpaid || 0);
 
     return {
         stats,
@@ -36,25 +41,20 @@ function parseValues(stats: PoolStats, current?: PoolStats): { stats?: PoolStats
 
 export const setCpuPoolStats = (cpuPoolStats: PoolStats) =>
     useMiningPoolsStore.setState((c) => {
-        console.debug(`hi CPU`);
-        const parsed = parseValues(cpuPoolStats, c.cpuPoolStats);
-        console.debug(`CPU`, parsed);
+        const parsed = parseValues(cpuPoolStats, c.cpuPoolStats, c.cpuRewards);
         return {
             ...c,
             cpuPoolStats: parsed.stats,
-            cpuRewards: { ...c.cpuRewards, rewardValue: parsed.diff, unpaidFMT: parsed.unpaidFMT },
+            cpuRewards: { rewardValue: parsed.diff, unpaidFMT: parsed.unpaidFMT },
         };
     });
 
 export const setGpuPoolStats = (gpuPoolStats: PoolStats) =>
     useMiningPoolsStore.setState((c) => {
-        console.debug(`hi GPU`);
-
-        const parsed = parseValues(gpuPoolStats, c.gpuPoolStats);
-        console.debug(`GPU`, parsed);
+        const parsed = parseValues(gpuPoolStats, c.gpuPoolStats, c.gpuRewards);
         return {
             ...c,
             gpuPoolStats: parsed.stats,
-            gpuRewards: { ...c.gpuRewards, rewardValue: parsed.diff, unpaidFMT: parsed.unpaidFMT },
+            gpuRewards: { rewardValue: parsed.diff, unpaidFMT: parsed.unpaidFMT },
         };
     });

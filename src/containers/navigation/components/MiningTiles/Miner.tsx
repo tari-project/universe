@@ -1,7 +1,6 @@
 import { PoolStats } from '@app/types/app-status';
 import { formatHashrate, formatNumber, FormatPreset } from '@app/utils';
 import { Trans, useTranslation } from 'react-i18next';
-import { usePoolRewards } from './usePoolRewards';
 import Tile from './components/Tile/Tile';
 import { AnimatePresence } from 'motion/react';
 import {

@@ -14,7 +14,6 @@ export default function CPUTile() {
     const cpuEnabled = useConfigMiningStore((s) => s.cpu_mining_enabled);
     const cpu_mining_status = useMiningMetricsStore((s) => s.cpu_mining_status);
     const isCpuPoolEnabled = useConfigPoolsStore((s) => s.cpu_pool_enabled);
-    const cpuPoolStats = useMiningPoolsStore((s) => s.cpuPoolStats);
     const { hash_rate, is_mining } = cpu_mining_status;
 
     useEffect(() => useMiningPoolsStore.subscribe((s) => (statsRef.current = s.cpuPoolStats)), []);
@@ -30,10 +29,10 @@ export default function CPUTile() {
             hashRate={hash_rate}
             isPoolEnabled={isCpuPoolEnabled}
             poolStats={statsRef.current}
-            rewardThreshold={cpuPoolStats?.min_payout || 2000000} // 2.0 XTM in micro units
+            rewardThreshold={statsRef.current?.min_payout || 2000000} // 2.0 XTM in micro units
             showTooltip={true}
             progressDiff={rewardsRef.current?.rewardValue}
-            unpaidFMT={rewardsRef.current?.unpaidFMT}
+            unpaidFMT={rewardsRef.current?.unpaidFMT || '-'}
         />
     );
 }
