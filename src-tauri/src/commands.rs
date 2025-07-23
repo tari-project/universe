@@ -1627,6 +1627,22 @@ pub async fn start_gpu_mining(
         .await
         .get_selected_gpu_usage_percentage();
     let is_gpu_pool_enabled = *ConfigPools::content().await.gpu_pool_enabled();
+    let excluded_devices = state
+        .gpu_miner
+        .read()
+        .await
+        .get_gpu_devices()
+        .await
+        .map_err(|e| e.to_string())?
+        .iter()
+        .filter_map(|d| {
+            if d.settings.is_excluded {
+                Some(d.device_index)
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<_>>();
 
     if is_gpu_pool_enabled {
         let mut gpu_miner_sha = state.gpu_miner_sha.write().await;
@@ -1635,6 +1651,7 @@ pub async fn start_gpu_mining(
                 tari_address.clone(),
                 telemetry_id.clone(),
                 gpu_usage_percentage,
+                excluded_devices,
                 app.path()
                     .app_local_data_dir()
                     .expect("Could not get data dir"),
