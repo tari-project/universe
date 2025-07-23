@@ -1,9 +1,9 @@
 {
         "binaries": {
                 "xmrig": "6.24.0",
-                "mmproxy": "4.10.0 | 7fb874f",
-                "minotari_node": "4.10.0 | 7fb874f",
-                "wallet": "4.10.0 | 7fb874f",
+                "mmproxy": "4.10.1-pre.1 | ad5aac9",
+                "minotari_node": "4.10.1-pre.1 | ad5aac9",
+                "wallet": "4.10.1-pre.1 | ad5aac9",
                 "sha-p2pool": "1.0.3 | cff9241",
                 "glytex": "0.2.26 | 78e833f",
                 "tor": "14.5.1",
