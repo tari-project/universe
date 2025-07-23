@@ -44,9 +44,7 @@ use tari_common::configuration::Network;
 use tari_common_types::tari_address::{TariAddress, TariAddressError};
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_core::transactions::transaction_components::payment_id::PaymentId;
-use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::Shutdown;
-use tari_utilities::hex::Hex;
 use tokio::sync::watch;
 
 #[cfg(target_os = "windows")]
@@ -57,8 +55,6 @@ const LOG_TARGET: &str = "tari::universe::wallet_adapter";
 pub struct WalletAdapter {
     use_tor: bool,
     connect_with_local_node: bool,
-    pub(crate) base_node_public_key: Option<RistrettoPublicKey>,
-    pub(crate) base_node_address: Option<String>,
     pub(crate) view_private_key: String,
     pub(crate) spend_key: String,
     pub(crate) tcp_listener_port: u16,
@@ -75,8 +71,6 @@ impl WalletAdapter {
         Self {
             use_tor: false,
             connect_with_local_node: false,
-            base_node_address: None,
-            base_node_public_key: None,
             view_private_key: "".to_string(),
             spend_key: "".to_string(),
             tcp_listener_port,
@@ -311,23 +305,14 @@ impl ProcessAdapter for WalletAdapter {
             "--grpc-enabled".to_string(),
             "--grpc-address".to_string(),
             format!("/ip4/127.0.0.1/tcp/{}", self.grpc_port),
-            "-p".to_string(),
-            format!(
-                "wallet.custom_base_node={}::{}",
-                self.base_node_public_key
-                    .as_ref()
-                    .map(|k| k.to_hex())
-                    .ok_or_else(|| anyhow::anyhow!("Base node public key not set"))?,
-                self.base_node_address
-                    .as_ref()
-                    .ok_or_else(|| anyhow::anyhow!("Base node address not set"))?
-            ),
         ];
 
-        if let Some(http_client_url) = &self.http_client_url {
-            args.push("-p".to_string());
-            args.push(format!("wallet.http_server_url={http_client_url}"));
-        }
+        let http_client_url = self
+            .http_client_url
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("HTTP client URL not configured"))?;
+        args.push("-p".to_string());
+        args.push(format!("wallet.http_server_url={http_client_url}"));
 
         match self.wallet_birthday {
             Some(wallet_birthday) => {
