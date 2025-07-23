@@ -17,9 +17,9 @@ export default function StatsRow() {
         <Wrapper>
             <ActiveMinersWrapper>
                 <PhotoWrapper>
-                    <PhotoImage src={photo1} alt="" aria-hidden="true" />
-                    <PhotoImage src={photo1} alt="" aria-hidden="true" />
-                    <PhotoImage src={photo1} alt="" aria-hidden="true" />
+                    <PhotoImage $image={photo1} aria-hidden="true" />
+                    <PhotoImage $image={photo1} aria-hidden="true" />
+                    <PhotoImage $image={photo1} aria-hidden="true" />
                     <StatusDot />
                 </PhotoWrapper>
 

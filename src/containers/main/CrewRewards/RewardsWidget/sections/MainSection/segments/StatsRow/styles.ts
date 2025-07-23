@@ -17,18 +17,20 @@ export const ActiveMinersWrapper = styled.div`
 export const PhotoWrapper = styled.div`
     display: flex;
     align-items: center;
+    position: relative;
 `;
 
-export const PhotoImage = styled.img`
-    width: 30px;
-    height: 30px;
+export const PhotoImage = styled.img<{ $image: string }>`
+    width: 32px;
+    height: 32px;
     border-radius: 100px;
-    background: #000;
+    background: url(${({ $image }) => $image}) no-repeat center center;
+    background-size: cover;
     border: 2px solid #323333;
     position: relative;
 
     &:not(:first-child) {
-        margin-left: -14px;
+        margin-left: -17px;
     }
 
     &:nth-child(1) {
@@ -51,6 +53,11 @@ export const StatusDot = styled.div`
     border-radius: 100px;
     background: #16ff0a;
     border: 2px solid #323333;
+
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 1;
 `;
 
 export const TextWrapper = styled.div`
