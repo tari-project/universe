@@ -3,20 +3,23 @@ import MinerTile from './Miner';
 import { useMiningPoolsStore } from '@app/store/useMiningPoolsStore';
 import { useEffect, useRef } from 'react';
 
-const initialStats = useMiningPoolsStore.getState().gpuPoolStats;
-const initialRewards = useMiningPoolsStore.getState().gpuRewards;
-
 export default function GPUTile() {
-    const statsRef = useRef(initialStats);
-    const rewardsRef = useRef(initialRewards);
+    const gpuPoolStats = useMiningPoolsStore((s) => s.gpuPoolStats);
+    const gpuRewards = useMiningPoolsStore((s) => s.gpuRewards);
+
+    const statsRef = useRef(gpuPoolStats);
+    const rewardsRef = useRef(gpuRewards);
+
     const gpuEnabled = useConfigMiningStore((s) => s.gpu_mining_enabled);
     const miningInitiated = useMiningStore((s) => s.isGpuMiningInitiated);
     const gpu_mining_status = useMiningMetricsStore((s) => s.gpu_mining_status);
     const isGpuPoolEnabled = useConfigPoolsStore((s) => s.gpu_pool_enabled);
 
     const { hash_rate, is_mining } = gpu_mining_status;
-    useEffect(() => useMiningPoolsStore.subscribe((s) => (statsRef.current = s.gpuPoolStats)), [gpuEnabled]);
-    useEffect(() => useMiningPoolsStore.subscribe((s) => (rewardsRef.current = s.gpuRewards)), [gpuEnabled]);
+
+    useEffect(() => useMiningPoolsStore.subscribe((s) => (statsRef.current = s.gpuPoolStats)), []);
+    useEffect(() => useMiningPoolsStore.subscribe((s) => (rewardsRef.current = s.gpuRewards)), []);
+
     return (
         <MinerTile
             title="GPU"

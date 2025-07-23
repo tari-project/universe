@@ -4,12 +4,12 @@ import { useMiningPoolsStore } from '@app/store/useMiningPoolsStore.ts';
 import MinerTile from './Miner.tsx';
 import { useEffect, useRef } from 'react';
 
-const initialStats = useMiningPoolsStore.getState().cpuPoolStats;
-const initialRewards = useMiningPoolsStore.getState().cpuRewards;
-
 export default function CPUTile() {
-    const statsRef = useRef(initialStats);
-    const rewardsRef = useRef(initialRewards);
+    const cpuPoolStats = useMiningPoolsStore((s) => s.cpuPoolStats);
+    const cpuRewards = useMiningPoolsStore((s) => s.cpuRewards);
+
+    const statsRef = useRef(cpuPoolStats);
+    const rewardsRef = useRef(cpuRewards);
 
     const miningInitiated = useMiningStore((s) => s.isCpuMiningInitiated);
     const cpuEnabled = useConfigMiningStore((s) => s.cpu_mining_enabled);
@@ -17,8 +17,9 @@ export default function CPUTile() {
     const isCpuPoolEnabled = useConfigPoolsStore((s) => s.cpu_pool_enabled);
     const { hash_rate, is_mining } = cpu_mining_status;
 
-    useEffect(() => useMiningPoolsStore.subscribe((s) => (statsRef.current = s.cpuPoolStats)), [isCpuPoolEnabled]);
-    useEffect(() => useMiningPoolsStore.subscribe((s) => (rewardsRef.current = s.cpuRewards)), [isCpuPoolEnabled]);
+    useEffect(() => useMiningPoolsStore.subscribe((s) => (statsRef.current = s.cpuPoolStats)), []);
+    useEffect(() => useMiningPoolsStore.subscribe((s) => (rewardsRef.current = s.cpuRewards)), []);
+
     return (
         <MinerTile
             title="CPU"

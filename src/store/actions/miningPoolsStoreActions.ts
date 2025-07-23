@@ -28,9 +28,9 @@ function parseValues(
         return { stats: currentStats, unpaidFMT: currentRewards?.unpaidFMT, diff: currentRewards?.rewardValue };
     }
 
-    const unpaid = Math.floor(removeXTMCryptoDecimals(stats.unpaid) * 10_000) / 10_000;
-    const unpaidFMT = fmtMatch(Math.floor(unpaid * 100) / 100, 2);
-    const _diff = stats.unpaid - (currentStats?.unpaid || 0);
+    const unpaid = stats?.unpaid ? Math.floor(removeXTMCryptoDecimals(stats?.unpaid) * 10_000) / 10_000 : 0;
+    const unpaidFMT = unpaid ? fmtMatch(Math.floor(unpaid * 100) / 100, 2) : '0';
+    const _diff = stats?.unpaid ? stats?.unpaid - (currentStats?.unpaid || 0) : 0;
     const diff = Math.floor(removeXTMCryptoDecimals(_diff) * 10_000) / 10_000;
     return {
         stats,
@@ -41,7 +41,9 @@ function parseValues(
 export const clearCurrentSuccessValue = (type: PoolType) => {
     if (type === 'GPU') {
         useMiningPoolsStore.setState((c) => ({ gpuRewards: { ...c.gpuRewards, rewardValue: 0 } }));
-    } else {
+    }
+
+    if (type === 'CPU') {
         useMiningPoolsStore.setState((c) => ({ cpuRewards: { ...c.cpuRewards, rewardValue: 0 } }));
     }
 };
