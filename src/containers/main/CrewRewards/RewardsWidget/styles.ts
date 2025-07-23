@@ -5,7 +5,7 @@ export const PositionWrapper = styled(m.div)`
     position: fixed;
     top: 0;
     right: 0;
-    z-index: 999999;
+    z-index: 99;
     pointer-events: none;
     height: 100%;
     padding: 12px;

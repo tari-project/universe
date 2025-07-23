@@ -19,7 +19,7 @@ interface Actions {
 }
 
 const initialState: State = {
-    showWidget: true,
+    showWidget: false,
     isOpen: false,
     streakDays: 2,
     totalFriends: 12,
