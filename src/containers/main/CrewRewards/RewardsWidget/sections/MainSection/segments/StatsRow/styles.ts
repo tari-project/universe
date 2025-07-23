@@ -101,3 +101,14 @@ export const Divider = styled.div`
     opacity: 0.2;
     background: #fff;
 `;
+
+export const InviteFriendsMessage = styled.div`
+    color: #fff;
+    font-family: Poppins, sans-serif;
+    font-size: 12px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: 125%;
+    width: 50%;
+    max-width: 170px;
+`;

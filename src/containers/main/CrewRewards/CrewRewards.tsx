@@ -9,7 +9,7 @@ const CrewRewards = memo(function CrewRewards() {
     const showWidget = useCrewRewardsStore((s) => s.showWidget);
     const crewRewardsEnabled = useAirdropStore((s) => s.features?.includes(FEATURE_FLAGS.FE_CREW_UI));
 
-    if (!crewRewardsEnabled) return null;
+    //if (crewRewardsEnabled) return null;
 
     return <AnimatePresence>{showWidget && <RewardsWidget />}</AnimatePresence>;
 });
