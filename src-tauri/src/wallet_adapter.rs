@@ -307,11 +307,12 @@ impl ProcessAdapter for WalletAdapter {
             format!("/ip4/127.0.0.1/tcp/{}", self.grpc_port),
         ];
 
-        if let Some(http_client_url) = &self.http_client_url {
-            // Used only with local node, for remote node it's built-in by default
-            args.push("-p".to_string());
-            args.push(format!("wallet.http_server_url={http_client_url}"));
-        }
+        let http_client_url = self
+            .http_client_url
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("HTTP client URL not configured"))?;
+        args.push("-p".to_string());
+        args.push(format!("wallet.http_server_url={http_client_url}"));
 
         match self.wallet_birthday {
             Some(wallet_birthday) => {
