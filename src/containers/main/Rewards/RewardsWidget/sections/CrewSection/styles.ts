@@ -7,15 +7,15 @@ export const Wrapper = styled(m.div)`
     gap: 20px;
     height: 100%;
     min-height: 0;
-
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    padding-top: 20px;
 `;
 
 export const IntroTextWrapper = styled.div`
     display: flex;
     flex-direction: column;
     gap: 2px;
+
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 20px;
 `;
 
 export const Title = styled.div`

@@ -1,10 +1,13 @@
+import StreakProgress from '../StreakProgress/StreakProgress';
 import CrewList from './CrewList/CrewList';
 import Filters from './Filters/Filters';
 import { IntroTextWrapper, Text, Title, Wrapper } from './styles';
 
 export default function CrewSection() {
     return (
-        <Wrapper initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}>
+        <Wrapper initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <StreakProgress isInline={true} />
+
             <IntroTextWrapper>
                 <Title>{`My Crew`}</Title>
                 <Text>

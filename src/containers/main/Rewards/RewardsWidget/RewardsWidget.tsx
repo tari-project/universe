@@ -14,7 +14,6 @@ export default function RewardsWidget() {
             <Holder>
                 <WidgetWrapper $isOpen={isOpen}>
                     <MainSection />
-                    {isOpen && <StreakProgress />}
                     <AnimatePresence>{isOpen && <CrewSection />}</AnimatePresence>
                 </WidgetWrapper>
                 {!isOpen && <StreakProgress />}
