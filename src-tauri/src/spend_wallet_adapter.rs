@@ -189,7 +189,7 @@ impl SpendWalletAdapter {
         // Allocate an unused port to ensure the transaction is not successfully broadcasted.
         // This is intentional as we want to export the transaction to the view wallet instead.
         let fake_base_node_http_url = format!(
-            "http://127.0.0.1/{:?}",
+            "http://127.0.0.1:{:?}",
             PortAllocator::new().assign_port_with_fallback()
         );
         let mut args = vec![
@@ -229,7 +229,7 @@ impl SpendWalletAdapter {
         // Allocate an unused port to ensure the transaction is not successfully broadcasted.
         // This is intentional as we want to export the transaction to the view wallet instead.
         let fake_base_node_http_url = format!(
-            "http://127.0.0.1/{:?}",
+            "http://127.0.0.1:{:?}",
             PortAllocator::new().assign_port_with_fallback()
         );
         let output_path = self.get_working_dir().join(format!("tx-{tx_id}.json"));
