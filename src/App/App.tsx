@@ -1,6 +1,6 @@
 import { lazy, Suspense, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LazyMotion, domAnimation, AnimatePresence } from 'motion/react';
+import { LazyMotion, domMax, AnimatePresence } from 'motion/react';
 import { QueryClientProvider } from '@tanstack/react-query';
 
 import { useShuttingDown } from '../hooks/app/useShuttingDown.ts';
@@ -72,7 +72,7 @@ export default function App() {
             <ThemeProvider>
                 <GlobalReset />
                 <GlobalStyle $hideCanvas={showSplashscreen || isShuttingDown} />
-                <LazyMotion features={domAnimation} strict>
+                <LazyMotion features={domMax} strict>
                     <FloatingElements />
                     <CurrentAppSection showSplashscreen={showSplashscreen} isShuttingDown={isShuttingDown} />
                     <canvas id={TOWER_CANVAS_ID} />

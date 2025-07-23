@@ -51,13 +51,12 @@ import {
     handleConfigMiningLoaded,
     handleConfigUILoaded,
     handleConfigWalletLoaded,
-    handleMiningTimeUpdate,
     handleWalletUIChanged,
     handleConfigPoolsLoaded,
 } from '@app/store/actions/appConfigStoreActions';
 import { invoke } from '@tauri-apps/api/core';
 import { refreshTransactions } from '@app/hooks/wallet/useFetchTxHistory.ts';
-import { loadCpuPoolStats, loadGpuPoolStats } from '@app/store/actions/miningPoolsStoreActions';
+import { setCpuPoolStats, setGpuPoolStats } from '@app/store/actions/miningPoolsStoreActions';
 import { handleSelectedTariAddressChange } from '@app/store/actions/walletStoreActions';
 
 const LOG_EVENT_TYPES = ['WalletAddressUpdate', 'CriticalProblem', 'MissingApplications'];
@@ -125,18 +124,16 @@ const useTauriEventsListener = () => {
                             handleBaseNodeStatusUpdate(event.payload);
                             break;
                         case 'GpuMiningUpdate':
-                            console.info('GpuMiningUpdate', event.payload);
                             setGpuMiningStatus(event.payload);
                             break;
                         case 'CpuMiningUpdate':
                             setCpuMiningStatus(event.payload);
                             break;
                         case 'CpuPoolStatsUpdate':
-                            loadCpuPoolStats(event.payload);
+                            setCpuPoolStats(event.payload);
                             break;
                         case 'GpuPoolStatsUpdate':
-                            console.info('GpuPoolStatsUpdate', event.payload);
-                            loadGpuPoolStats(event.payload);
+                            setGpuPoolStats(event.payload);
                             break;
                         case 'ConnectedPeersUpdate':
                             handleConnectedPeersUpdate(event.payload);
@@ -221,9 +218,6 @@ const useTauriEventsListener = () => {
                             break;
                         case 'ShowStageSecurityModal':
                             useSecurityStore.setState({ modal: 'intro' });
-                            break;
-                        case 'MiningTime':
-                            handleMiningTimeUpdate(event.payload);
                             break;
                         case 'ExchangeIdChanged':
                             await handleExchangeIdChanged(event.payload);
