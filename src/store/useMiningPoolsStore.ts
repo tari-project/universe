@@ -1,6 +1,7 @@
 import { create } from './create.ts';
 import { PoolStats } from '../types/app-status.ts';
 
+export type PoolType = 'CPU' | 'GPU';
 export interface RewardValues {
     rewardValue?: number;
     unpaidFMT?: string;

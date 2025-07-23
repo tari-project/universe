@@ -14,8 +14,9 @@ import {
 import { Typography } from '@app/components/elements/Typography';
 import { offset, useFloating, useHover, useInteractions } from '@floating-ui/react';
 import { useState } from 'react';
+import { PoolType } from '@app/store/useMiningPoolsStore.ts';
 export interface MinerTileProps {
-    title: string;
+    title: PoolType;
     mainLabelKey: string;
     enabled: boolean;
     isMiningInitiated: boolean;
@@ -49,7 +50,6 @@ export default function MinerTile({
     const isLoading = (isMiningInitiated && !isMining) || (isMining && !isMiningInitiated) || hashrateLoading;
 
     const formattedHashRate = formatHashrate(hashRate);
-
     const currentUnpaid = (poolStats?.unpaid || 0) / 1_000_000;
 
     const mainNumber = isPoolEnabled ? currentUnpaid : formattedHashRate.value;

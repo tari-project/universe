@@ -2,7 +2,7 @@ import i18n from 'i18next';
 import { Ref, useEffect, useState } from 'react';
 import { AnimatePresence } from 'motion/react';
 import NumberFlow from '@number-flow/react';
-import { useMiningMetricsStore } from '@app/store';
+import { useConfigUIStore, useMiningMetricsStore } from '@app/store';
 import SuccessAnimation from '../SuccessAnimation/SuccessAnimation';
 import SyncData from '@app/containers/navigation/components/MiningTiles/components/SyncData/SyncData.tsx';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
@@ -23,9 +23,12 @@ import {
     NumberUnit,
 } from './styles';
 import { UseInteractionsReturn } from '@floating-ui/react';
+import { setAnimationState } from '@tari-project/tari-tower';
+import { PoolType } from '@app/store/useMiningPoolsStore.ts';
+import { clearCurrentSuccessValue } from '@app/store/actions/miningPoolsStoreActions.ts';
 
 interface Props {
-    title: string;
+    title: PoolType;
     isLoading: boolean;
     isMining: boolean;
     isEnabled: boolean;
@@ -57,12 +60,22 @@ export default function Tile({
     getReferenceProps,
     isSoloMining,
 }: Props) {
+    const visualMode = useConfigUIStore((s) => s.visual_mode);
     const isConnectedToTariNetwork = useMiningMetricsStore((s) => s.isNodeConnected);
     const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
 
     useEffect(() => {
         setShowSuccessAnimation(!!successValue);
-    }, [successValue]);
+
+        if (visualMode && !!successValue) {
+            setAnimationState('success', true);
+        }
+        const resetTimer = setTimeout(() => clearCurrentSuccessValue(title), 5000);
+
+        return () => {
+            clearTimeout(resetTimer);
+        };
+    }, [successValue, title, visualMode]);
 
     const syncing = isSoloMining && isEnabled && !isConnectedToTariNetwork;
     const gpuIdle = isSoloMining && !isMining;

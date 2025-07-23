@@ -1,5 +1,5 @@
 import { PoolStats } from '@app/types/app-status';
-import { RewardValues, useMiningPoolsStore } from '../useMiningPoolsStore';
+import { PoolType, RewardValues, useMiningPoolsStore } from '../useMiningPoolsStore';
 import { deepEqual } from '@app/utils/objectDeepEqual.ts';
 import i18n from 'i18next';
 import { removeXTMCryptoDecimals } from '@app/utils';
@@ -30,15 +30,21 @@ function parseValues(
 
     const unpaid = Math.floor(removeXTMCryptoDecimals(stats.unpaid) * 10_000) / 10_000;
     const unpaidFMT = fmtMatch(Math.floor(unpaid * 100) / 100, 2);
-    const diff = stats.unpaid - (currentStats?.unpaid || 0);
-
+    const _diff = stats.unpaid - (currentStats?.unpaid || 0);
+    const diff = Math.floor(removeXTMCryptoDecimals(_diff) * 10_000) / 10_000;
     return {
         stats,
         unpaidFMT,
         diff,
     };
 }
-
+export const clearCurrentSuccessValue = (type: PoolType) => {
+    if (type === 'GPU') {
+        useMiningPoolsStore.setState((c) => ({ gpuRewards: { ...c.gpuRewards, rewardValue: 0 } }));
+    } else {
+        useMiningPoolsStore.setState((c) => ({ cpuRewards: { ...c.cpuRewards, rewardValue: 0 } }));
+    }
+};
 export const setCpuPoolStats = (cpuPoolStats: PoolStats) =>
     useMiningPoolsStore.setState((c) => {
         const parsed = parseValues(cpuPoolStats, c.cpuPoolStats, c.cpuRewards);
