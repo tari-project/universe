@@ -1,6 +1,6 @@
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 
-export const Wrapper = styled.div`
+export const Wrapper = styled.div<{ $isOpen: boolean }>`
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -10,7 +10,25 @@ export const Wrapper = styled.div`
     background: #00a505;
 
     padding: 8px 10px;
-    height: 33px;
+    min-height: 33px;
+    width: 100%;
+    position: relative;
+    z-index: 1;
+    pointer-events: all;
+
+    * {
+        pointer-events: all;
+    }
+
+    ${({ $isOpen }) =>
+        !$isOpen &&
+        css`
+            position: absolute;
+            top: 95px;
+            left: 0;
+            z-index: 0;
+            padding: 30px 14px 11px 14px;
+        `}
 `;
 
 export const Text = styled.div`

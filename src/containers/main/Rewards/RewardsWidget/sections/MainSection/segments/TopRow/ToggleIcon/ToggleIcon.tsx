@@ -1,12 +1,15 @@
+import { useRewardsStore } from '@app/store/useRewardsStore';
 import { Wrapper } from './styles';
 
 export default function ToggleIcon() {
+    const { isOpen, setIsOpen } = useRewardsStore();
+
     const handleClick = () => {
-        console.log('Toggle');
+        setIsOpen(!isOpen);
     };
 
     return (
-        <Wrapper type="button" onClick={handleClick}>
+        <Wrapper type="button" onClick={handleClick} $isOpen={isOpen}>
             <svg xmlns="http://www.w3.org/2000/svg" width="21" height="21" viewBox="0 0 21 21" fill="none">
                 <g opacity="0.5">
                     <path

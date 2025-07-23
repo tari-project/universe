@@ -4,7 +4,7 @@ import { IntroTextWrapper, Text, Title, Wrapper } from './styles';
 
 export default function CrewSection() {
     return (
-        <Wrapper>
+        <Wrapper initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}>
             <IntroTextWrapper>
                 <Title>{`My Crew`}</Title>
                 <Text>

@@ -1,5 +1,5 @@
 import * as m from 'motion/react-m';
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 
 export const PositionWrapper = styled(m.div)`
     position: fixed;
@@ -11,7 +11,16 @@ export const PositionWrapper = styled(m.div)`
     padding: 12px;
 `;
 
-export const WidgetWrapper = styled('div')`
+export const Holder = styled('div')`
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    pointer-events: none;
+`;
+
+export const WidgetWrapper = styled('div')<{ $isOpen: boolean }>`
     pointer-events: all;
 
     border-radius: 13px;
@@ -29,17 +38,22 @@ export const WidgetWrapper = styled('div')`
 
     width: 411px;
     height: 100%;
-    max-height: 830px;
     padding: 20px;
     padding-bottom: 0px;
+
+    max-height: 115px;
+    position: relative;
+    z-index: 1;
+
+    transition: max-height 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 
     * {
         pointer-events: all;
     }
-`;
 
-export const Divider = styled.div`
-    width: 100%;
-    height: 1px;
-    background: rgba(255, 255, 255, 0.1);
+    ${({ $isOpen }) =>
+        $isOpen &&
+        css`
+            max-height: 830px;
+        `}
 `;
