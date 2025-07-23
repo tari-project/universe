@@ -26,6 +26,8 @@ export interface MinerTileProps {
     poolStats?: PoolStats;
     rewardThreshold?: number;
     showTooltip?: boolean;
+    progressDiff?: number;
+    unpaidFMT?: string;
 }
 
 export default function MinerTile({
@@ -39,6 +41,8 @@ export default function MinerTile({
     isPoolEnabled,
     rewardThreshold,
     showTooltip,
+    progressDiff,
+    unpaidFMT,
 }: MinerTileProps) {
     const { t } = useTranslation(['mining-view', 'p2p']);
 
@@ -46,7 +50,6 @@ export default function MinerTile({
     const isLoading = (isMiningInitiated && !isMining) || (isMining && !isMiningInitiated) || hashrateLoading;
 
     const formattedHashRate = formatHashrate(hashRate);
-    const { progressDiff, unpaidFMT } = usePoolRewards(poolStats);
 
     const currentUnpaid = (poolStats?.unpaid || 0) / 1_000_000;
 
