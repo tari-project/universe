@@ -164,7 +164,7 @@
   "transactions": "Transactions",
   "wallet-connected": "Beursie gekoppel",
   "wallet-is-scanning": "Beursie skandeer...",
-  "wallet-scanning-with-progress": "<strong>Wallet is loading{{percentage}}</strong>{{progressValue}}",
+  "wallet-scanning-with-progress": "<strong>Wallet is loading {{percentage}}%</strong> ({{scanned}}/{{total}})",
   "xc": {
     "buy-tari": "Buy Tari from an exchange",
     "buy-tari-subtitle": "Available on selected exchanges.",

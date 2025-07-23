@@ -43,7 +43,7 @@ export const WalletBalance = () => {
     const scanData = useWalletStore((s) => s.wallet_scanning);
 
     const isScanning = scanData.is_scanning;
-    const scanProgress = Math.floor(scanData.progress);
+    const scanProgress = Math.round(scanData.progress * 10) / 10;
 
     const balance = removeXTMCryptoDecimals(roundToTwoDecimals((isScanning ? cached : total) || 0));
     const balanceMismatch = removeXTMCryptoDecimals(roundToTwoDecimals(available || 0)) != balance;
@@ -57,12 +57,15 @@ export const WalletBalance = () => {
 
     const loadingMarkup = (
         <Typography>
-            <Trans>
-                {t('wallet-scanning-with-progress', {
-                    percentage: isConnected ? `${scanProgress}%` : '',
-                    progessValue: `${scanData.scanned_height}/${scanData.total_height}`,
-                })}
-            </Trans>
+            {scanData ? (
+                <Trans>
+                    {t('wallet-scanning-with-progress', {
+                        percentage: scanProgress,
+                        scanned: scanData.scanned_height,
+                        total: scanData.total_height,
+                    })}
+                </Trans>
+            ) : null}
             {!isConnected && (
                 <>
                     <SyncCountdown
