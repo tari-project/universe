@@ -15,7 +15,7 @@ const initialState: State = {
     isOpen: false,
 };
 
-export const useRewardsStore = create<State & Actions>()((set) => ({
+export const useCrewRewardsStore = create<State & Actions>()((set) => ({
     ...initialState,
     setShowWidget: (showWidget) => set({ showWidget }),
     setIsOpen: (isOpen) => set({ isOpen }),

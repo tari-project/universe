@@ -3,11 +3,11 @@ import MainSection from './sections/MainSection/MainSection';
 import StreakProgress from './sections/StreakProgress/StreakProgress';
 
 import { Holder, PositionWrapper, WidgetWrapper } from './styles';
-import { useRewardsStore } from '../../../../store/useRewardsStore';
+import { useCrewRewardsStore } from '../../../../store/useCrewRewardsStore';
 import { AnimatePresence } from 'motion/react';
 
 export default function RewardsWidget() {
-    const { isOpen } = useRewardsStore();
+    const { isOpen } = useCrewRewardsStore();
 
     return (
         <PositionWrapper initial={{ opacity: 0, x: 100 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 100 }}>
