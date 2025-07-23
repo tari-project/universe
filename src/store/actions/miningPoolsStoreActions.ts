@@ -51,7 +51,7 @@ export const setCpuPoolStats = (cpuPoolStats: PoolStats) =>
         return {
             ...c,
             cpuPoolStats: parsed.stats,
-            cpuRewards: { rewardValue: parsed.diff, unpaidFMT: parsed.unpaidFMT },
+            cpuRewards: { ...c.cpuRewards, rewardValue: parsed.diff, unpaidFMT: parsed.unpaidFMT },
         };
     });
 
@@ -61,6 +61,6 @@ export const setGpuPoolStats = (gpuPoolStats: PoolStats) =>
         return {
             ...c,
             gpuPoolStats: parsed.stats,
-            gpuRewards: { rewardValue: parsed.diff, unpaidFMT: parsed.unpaidFMT },
+            gpuRewards: { ...c.gpuRewards, rewardValue: parsed.diff, unpaidFMT: parsed.unpaidFMT },
         };
     });

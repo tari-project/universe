@@ -10,15 +10,15 @@ const initialRewards = useMiningPoolsStore.getState().cpuRewards;
 export default function CPUTile() {
     const statsRef = useRef(initialStats);
     const rewardsRef = useRef(initialRewards);
+
     const miningInitiated = useMiningStore((s) => s.isCpuMiningInitiated);
     const cpuEnabled = useConfigMiningStore((s) => s.cpu_mining_enabled);
     const cpu_mining_status = useMiningMetricsStore((s) => s.cpu_mining_status);
     const isCpuPoolEnabled = useConfigPoolsStore((s) => s.cpu_pool_enabled);
     const { hash_rate, is_mining } = cpu_mining_status;
 
-    useEffect(() => useMiningPoolsStore.subscribe((s) => (statsRef.current = s.cpuPoolStats)), []);
-    useEffect(() => useMiningPoolsStore.subscribe((s) => (rewardsRef.current = s.cpuRewards)), []);
-
+    useEffect(() => useMiningPoolsStore.subscribe((s) => (statsRef.current = s.cpuPoolStats)), [isCpuPoolEnabled]);
+    useEffect(() => useMiningPoolsStore.subscribe((s) => (rewardsRef.current = s.cpuRewards)), [isCpuPoolEnabled]);
     return (
         <MinerTile
             title="CPU"

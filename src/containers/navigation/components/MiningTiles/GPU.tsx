@@ -15,8 +15,8 @@ export default function GPUTile() {
     const isGpuPoolEnabled = useConfigPoolsStore((s) => s.gpu_pool_enabled);
 
     const { hash_rate, is_mining } = gpu_mining_status;
-    useEffect(() => useMiningPoolsStore.subscribe((s) => (statsRef.current = s.gpuPoolStats)), []);
-    useEffect(() => useMiningPoolsStore.subscribe((s) => (rewardsRef.current = s.gpuRewards)), []);
+    useEffect(() => useMiningPoolsStore.subscribe((s) => (statsRef.current = s.gpuPoolStats)), [gpuEnabled]);
+    useEffect(() => useMiningPoolsStore.subscribe((s) => (rewardsRef.current = s.gpuRewards)), [gpuEnabled]);
     return (
         <MinerTile
             title="GPU"
