@@ -87,6 +87,7 @@ pub enum EventType {
     ShowKeyringDialog,
     CreatePin,
     EnterPin,
+    OotleWalletPhaseFinished,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -96,6 +97,7 @@ pub enum ProgressEvents {
     Hardware,
     Node,
     Mining,
+    OotleWallet,
 }
 #[derive(Clone, Debug, Serialize)]
 pub struct ProgressTrackerUpdatePayload {

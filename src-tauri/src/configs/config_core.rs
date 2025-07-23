@@ -21,6 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use getset::{Getters, Setters};
+use reqwest::Url;
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use std::{sync::LazyLock, time::SystemTime};
@@ -70,6 +71,7 @@ pub struct ConfigCoreContent {
     remote_base_node_address: String,
     node_type: NodeType,
     exchange_id: String,
+    ootle_indexer_urls: Vec<Url>,
 }
 
 fn default_monero_nodes() -> Vec<String> {
@@ -79,6 +81,24 @@ fn default_monero_nodes() -> Vec<String> {
         "https://xmr-gra.tari.com".to_string(),
         "https://xmr-bhs.tari.com".to_string(),
     ]
+}
+
+fn default_ootle_indexer_urls(network: Network) -> Vec<Url> {
+    match network {
+        Network::MainNet => {
+            vec![
+                "https://indexer.tari.com".parse().unwrap(),
+                "https://indexer-mainnet.tari.com".parse().unwrap(),
+            ]
+        }
+        Network::Igor => {
+            vec!["http://18.217.22.26:12500/json_rpc".parse().unwrap()]
+        }
+        Network::LocalNet => {
+            vec!["http://localhost:12500/json_rpc".parse().unwrap()]
+        }
+        _ => vec![],
+    }
 }
 
 impl Default for ConfigCoreContent {
@@ -125,6 +145,7 @@ impl Default for ConfigCoreContent {
             remote_base_node_address,
             node_type: NodeType::Remote,
             exchange_id: DEFAULT_EXCHANGE_ID.to_string(),
+            ootle_indexer_urls: default_ootle_indexer_urls(network),
         }
     }
 }
