@@ -3,7 +3,7 @@ import { IconWrapper, Wrapper } from './styles';
 
 export default function InviteFriendsButton() {
     const handleClick = () => {
-        console.log('Invite Friends');
+        //console.log('Invite Friends');
     };
 
     return (

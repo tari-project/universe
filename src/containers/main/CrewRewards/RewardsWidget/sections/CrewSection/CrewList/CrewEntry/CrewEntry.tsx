@@ -17,11 +17,11 @@ export default function CrewEntry({ entry, isClaimed }: Props) {
     const canNudge = status === 'needs_nudge';
 
     const handleClaim = () => {
-        console.log('claim');
+        //console.log('claim');
     };
 
     const handleNudge = () => {
-        console.log('nudge');
+        //console.log('nudge');
     };
 
     return (
