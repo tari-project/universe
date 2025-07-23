@@ -287,6 +287,17 @@ impl ProcessAdapter for WalletAdapter {
         // Setup working directory using shared utility
         let working_dir = setup_working_directory(&data_dir, "wallet")?;
 
+        // Try to delete the config file if it exists.
+        let wallet_config = working_dir
+            .join(Network::get_current_or_user_setting_or_default().to_string())
+            .join("config");
+        info!(target: LOG_TARGET, "Clearing old wallet config file if it exists: {:?}", wallet_config);
+        if wallet_config.exists() {
+            if let Err(e) = fs::remove_dir_all(&wallet_config) {
+                warn!(target: LOG_TARGET, "Failed to remove old wallet config file: {e}");
+            }
+        }
+
         let formatted_working_dir = convert_to_string(working_dir.clone())?;
         let config_dir = log_dir
             .join("wallet")
@@ -311,17 +322,6 @@ impl ProcessAdapter for WalletAdapter {
             "--grpc-enabled".to_string(),
             "--grpc-address".to_string(),
             format!("/ip4/127.0.0.1/tcp/{}", self.grpc_port),
-            "-p".to_string(),
-            format!(
-                "wallet.custom_base_node={}::{}",
-                self.base_node_public_key
-                    .as_ref()
-                    .map(|k| k.to_hex())
-                    .ok_or_else(|| anyhow::anyhow!("Base node public key not set"))?,
-                self.base_node_address
-                    .as_ref()
-                    .ok_or_else(|| anyhow::anyhow!("Base node address not set"))?
-            ),
         ];
 
         if let Some(http_client_url) = &self.http_client_url {
@@ -472,7 +472,6 @@ impl StatusMonitor for WalletStatusMonitor {
         match tokio::time::timeout(timeout_duration, self.get_status()).await {
             Ok(status_result) => match status_result {
                 Ok(s) => {
-                    info!(target: LOG_TARGET, "Wallet balance: {:?}", s.balance);
                     let _result = self.state_broadcast.send(Some(s));
                     HealthStatus::Healthy
                 }

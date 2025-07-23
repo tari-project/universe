@@ -28,7 +28,7 @@ use crate::tasks_tracker::TasksTrackers;
 use crate::BaseNodeStatus;
 use crate::UniverseAppState;
 use anyhow::Error;
-use log::{debug, info};
+use log::info;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use tari_shutdown::ShutdownSignal;
@@ -86,7 +86,7 @@ impl SpendWalletManager {
             .await?;
 
         self.spawn_cleanup_task(base_path.clone());
-        SpendWalletManager::erase_related_data(base_path.clone())?;
+        SpendWalletManager::erase_related_data(base_path.clone());
 
         self.adapter
             .init(app_shutdown, base_path, config_path, log_path, binary_path)
@@ -158,28 +158,21 @@ impl SpendWalletManager {
                                 "Cleanup threshold reached: {BLOCKS_THRESHOLD} blocks since at height {current_height}. Erasing Spend wallet related data."
                             );
 
-                            match SpendWalletManager::erase_related_data(base_path.clone()) {
-                                Ok(_) => {
-                                    info!(target: LOG_TARGET, "Successfully erased related data");
-                                    let _unused = self.set_next_wallet_data_erasure_block(None);
-                                },
-                                Err(e) => {
-                                    debug!(target: LOG_TARGET, "Error erasing related data: {e:?}");
-                                }
-                            }
+                            SpendWalletManager::erase_related_data(base_path.clone());
+                            let _unused = self.set_next_wallet_data_erasure_block(None);
                         }
                     }
                 },
                 _ = shutdown_signal.wait() => {
+                    SpendWalletManager::erase_related_data(base_path.clone());
                     break;
                 },
             }
         }
     }
 
-    pub fn erase_related_data(base_path: PathBuf) -> Result<(), Error> {
+    pub fn erase_related_data(base_path: PathBuf) {
         let _unused = std::fs::remove_dir_all(base_path.join("spend_wallet"));
-        Ok(())
     }
 
     fn get_next_wallet_data_erasure_block(&self) -> Option<u64> {

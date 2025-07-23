@@ -681,11 +681,11 @@ fn main() {
                     target: LOG_TARGET,
                     "App shutdown request caught with code: {code:#?}"
                 );
-                let base_path = app_handle.path().app_local_data_dir().expect("Could not get data dir");
-                match SpendWalletManager::erase_related_data(base_path) {
-                    Ok(_) => info!(target: LOG_TARGET, "Successfully erased related spend wallet data."),
-                    Err(e) => error!(target: LOG_TARGET, "Failed to erase related spend wallet data: {e:?}"),
-                }
+                let base_path = app_handle
+                    .path()
+                    .app_local_data_dir()
+                    .expect("Could not get data dir");
+                SpendWalletManager::erase_related_data(base_path);
                 if let Some(exit_code) = code {
                     if exit_code == RESTART_EXIT_CODE {
                         // RunEvent does not hold the exit code so we store it separately
