@@ -1,6 +1,6 @@
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 
-export const Wrapper = styled.div`
+export const Wrapper = styled.div<{ $canClaim: boolean; $isClaimed: boolean }>`
     display: flex;
     align-items: center;
     align-self: stretch;
@@ -12,6 +12,14 @@ export const Wrapper = styled.div`
     border-radius: 15px;
     border: 1px solid rgba(227, 227, 227, 0.03);
     background: linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.04) 100%);
+
+    ${({ $canClaim, $isClaimed }) =>
+        $canClaim &&
+        !$isClaimed &&
+        css`
+            border: 1px solid #00a505;
+            background: linear-gradient(180deg, rgba(164, 255, 159, 0.3) 0%, rgba(190, 255, 167, 0.21) 100%);
+        `}
 `;
 
 export const ContentWrapper = styled.div`

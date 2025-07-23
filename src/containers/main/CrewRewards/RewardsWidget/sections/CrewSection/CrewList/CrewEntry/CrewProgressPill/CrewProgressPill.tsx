@@ -9,10 +9,23 @@ interface Props {
     claimAmount: number;
     onClaim: () => void;
     onNudge: () => void;
+    isClaimed: boolean;
 }
 
-export default function CrewProgressPill({ canClaim, canNudge, timeRemaining, claimAmount, onClaim, onNudge }: Props) {
+export default function CrewProgressPill({
+    canClaim,
+    canNudge,
+    timeRemaining,
+    claimAmount,
+    onClaim,
+    onNudge,
+    isClaimed,
+}: Props) {
     const { current, total, unit } = timeRemaining;
+
+    if (isClaimed) {
+        return <TimePill>{`Claimed`}</TimePill>;
+    }
 
     if (canClaim) {
         return <ClaimButton onClick={onClaim}>{`Claim ${claimAmount} XTM`}</ClaimButton>;

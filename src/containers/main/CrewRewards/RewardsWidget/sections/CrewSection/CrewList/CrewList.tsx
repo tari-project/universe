@@ -15,7 +15,7 @@ export default function CrewList() {
                     <CrewDivider text="Completed" />
                     <ListGroup>
                         {completedList.map((item) => (
-                            <CrewEntry key={item.id} entry={item} />
+                            <CrewEntry key={item.id} entry={item} isClaimed={item.isClaimed} />
                         ))}
                     </ListGroup>
 

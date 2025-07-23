@@ -7,9 +7,10 @@ import CrewProgressPill from './CrewProgressPill/CrewProgressPill';
 
 interface Props {
     entry: CrewEntry;
+    isClaimed?: boolean;
 }
 
-export default function CrewEntry({ entry }: Props) {
+export default function CrewEntry({ entry, isClaimed }: Props) {
     const { handle, reward, progress, timeRemaining, status, user } = entry;
 
     const canClaim = status === 'completed';
@@ -24,7 +25,7 @@ export default function CrewEntry({ entry }: Props) {
     };
 
     return (
-        <Wrapper>
+        <Wrapper $canClaim={canClaim ?? false} $isClaimed={isClaimed ?? false}>
             <CrewAvatar image={user.avatar} isOnline={user.isOnline} />
             <ContentWrapper>
                 <TopRow>
@@ -32,6 +33,7 @@ export default function CrewEntry({ entry }: Props) {
                     <CrewProgressPill
                         canClaim={canClaim ?? false}
                         canNudge={canNudge ?? false}
+                        isClaimed={isClaimed ?? false}
                         timeRemaining={timeRemaining ?? { current: 0, total: 0, unit: '' }}
                         claimAmount={reward?.amount ?? 0}
                         onClaim={handleClaim}
