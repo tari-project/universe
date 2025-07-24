@@ -281,6 +281,17 @@ impl ProcessAdapter for WalletAdapter {
         // Setup working directory using shared utility
         let working_dir = setup_working_directory(&data_dir, "wallet")?;
 
+        // Try to delete the config file if it exists.
+        let wallet_config = working_dir
+            .join(Network::get_current_or_user_setting_or_default().to_string())
+            .join("config");
+        info!(target: LOG_TARGET, "Clearing old wallet config file if it exists: {:?}", wallet_config);
+        if wallet_config.exists() {
+            if let Err(e) = fs::remove_dir_all(&wallet_config) {
+                warn!(target: LOG_TARGET, "Failed to remove old wallet config file: {e}");
+            }
+        }
+
         let formatted_working_dir = convert_to_string(working_dir.clone())?;
         let config_dir = log_dir
             .join("wallet")
