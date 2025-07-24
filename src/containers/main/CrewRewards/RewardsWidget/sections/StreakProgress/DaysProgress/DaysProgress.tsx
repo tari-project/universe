@@ -1,4 +1,5 @@
 import { Pill, Pills, Text, Wrapper } from './styles';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
     current: number;
@@ -6,6 +7,8 @@ interface Props {
 }
 
 export default function DaysProgress({ current, total }: Props) {
+    const { t } = useTranslation();
+
     return (
         <Wrapper>
             <Pills>
@@ -14,7 +17,7 @@ export default function DaysProgress({ current, total }: Props) {
                 <Pill $isActive={current >= 3} />
             </Pills>
             <Text>
-                {`Day`} {`${current}/${total}`}
+                {t('airdrop:crewRewards.streak.day')} {`${current}/${total}`}
             </Text>
         </Wrapper>
     );

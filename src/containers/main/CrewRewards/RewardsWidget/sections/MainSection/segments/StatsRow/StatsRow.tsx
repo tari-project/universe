@@ -14,8 +14,10 @@ import {
 import photo1 from '../../../../../images/person1.png';
 import { useCrewRewardsStore } from '@app/store/useCrewRewardsStore';
 import { formatNumber, FormatPreset } from '@app/utils';
+import { useTranslation, Trans } from 'react-i18next';
 
 export default function StatsRow() {
+    const { t } = useTranslation();
     const totalFriends = useCrewRewardsStore((s) => s.totalFriends);
     const activeFriends = useCrewRewardsStore((s) => s.activeFriends);
     const bonusXTMEarned = useCrewRewardsStore((s) => s.bonusXTMEarned);
@@ -36,15 +38,15 @@ export default function StatsRow() {
                         <MainText>
                             {activeFriends}{' '}
                             <span>
-                                {`of`} {totalFriends}
+                                {t('airdrop:crewRewards.of')} {totalFriends}
                             </span>
                         </MainText>
-                        <LabelText>{`Active Miners`}</LabelText>
+                        <LabelText>{t('airdrop:crewRewards.activeMinersStat')}</LabelText>
                     </TextWrapper>
                 </ActiveMinersWrapper>
             ) : (
                 <InviteFriendsMessage>
-                    {`Invite friends and start earning `} <strong>{`bonus XTM!`}</strong>
+                    <Trans i18nKey="airdrop:crewRewards.inviteFriendsMessage" />
                 </InviteFriendsMessage>
             )}
 
@@ -52,7 +54,7 @@ export default function StatsRow() {
 
             <TextWrapper>
                 <MainText>{formatNumber(bonusXTMEarned, FormatPreset.XTM_LONG_DEC)}</MainText>
-                <LabelText>{`Bonus XTM Earned`}</LabelText>
+                <LabelText>{t('airdrop:crewRewards.bonusXTMEarned')}</LabelText>
             </TextWrapper>
         </Wrapper>
     );

@@ -1,6 +1,7 @@
 import { TimeRemaining } from '../../../data';
 import NudgeIcon from './NudgeIcon';
 import { ClaimButton, NudgeButton, TimePill } from './styles';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
     canClaim: boolean;
@@ -21,21 +22,26 @@ export default function CrewProgressPill({
     onNudge,
     isClaimed,
 }: Props) {
+    const { t } = useTranslation();
     const { current, total, unit } = timeRemaining;
 
     if (isClaimed) {
-        return <TimePill>{`Claimed`}</TimePill>;
+        return <TimePill>{t('airdrop:crewRewards.actions.claimed')}</TimePill>;
     }
 
     if (canClaim) {
-        return <ClaimButton onClick={onClaim}>{`Claim ${claimAmount} XTM`}</ClaimButton>;
+        return (
+            <ClaimButton onClick={onClaim}>
+                {t('airdrop:crewRewards.actions.claim', { amount: claimAmount })}
+            </ClaimButton>
+        );
     }
 
     if (canNudge) {
         return (
             <NudgeButton onClick={onNudge}>
                 <NudgeIcon />
-                {`Nudge`}
+                {t('airdrop:crewRewards.actions.nudge')}
             </NudgeButton>
         );
     }
