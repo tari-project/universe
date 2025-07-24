@@ -1,5 +1,5 @@
 import i18n from 'i18next';
-import { Ref, useEffect, useState } from 'react';
+import { Ref, useEffect, useMemo, useState } from 'react';
 import { AnimatePresence } from 'motion/react';
 import NumberFlow from '@number-flow/react';
 import { useConfigUIStore, useMiningMetricsStore } from '@app/store';
@@ -23,7 +23,7 @@ import {
     NumberUnit,
 } from './styles';
 import { UseInteractionsReturn } from '@floating-ui/react';
-import { setAnimationState } from '@tari-project/tari-tower';
+import { setAnimationState, animationStatus } from '@tari-project/tari-tower';
 import { PoolType } from '@app/store/useMiningPoolsStore.ts';
 import { clearCurrentSuccessValue } from '@app/store/actions/miningPoolsStoreActions.ts';
 
@@ -63,15 +63,22 @@ export default function Tile({
     const visualMode = useConfigUIStore((s) => s.visual_mode);
     const isConnectedToTariNetwork = useMiningMetricsStore((s) => s.isNodeConnected);
     const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
+    const animationState = animationStatus;
+
+    const canAnimateTower = useMemo(
+        () => visualMode && showSuccessAnimation && animationState === 'free',
+        [animationState, showSuccessAnimation, visualMode]
+    );
+
+    useEffect(() => {
+        if (canAnimateTower) {
+            setAnimationState('success');
+        }
+    }, [canAnimateTower]);
 
     useEffect(() => {
         setShowSuccessAnimation(!!successValue);
-
-        if (visualMode && !!successValue) {
-            setAnimationState('success', true);
-        }
-        const resetTimer = setTimeout(() => clearCurrentSuccessValue(title), 5000);
-
+        const resetTimer = setTimeout(() => clearCurrentSuccessValue(title), 4000);
         return () => {
             clearTimeout(resetTimer);
         };
