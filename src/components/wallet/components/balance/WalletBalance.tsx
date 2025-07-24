@@ -4,7 +4,7 @@ import { Trans, useTranslation } from 'react-i18next';
 import { IoEyeOffOutline, IoEyeOutline } from 'react-icons/io5';
 import { useConfigWalletStore, useMiningMetricsStore, useUIStore, useWalletStore } from '@app/store';
 
-import { roundToTwoDecimals, removeXTMCryptoDecimals, formatNumber, FormatPreset } from '@app/utils';
+import { roundToTwoDecimals, removeXTMCryptoDecimals, formatNumber, FormatPreset, formatValue } from '@app/utils';
 import { Typography } from '@app/components/elements/Typography.tsx';
 
 import {
@@ -15,6 +15,7 @@ import {
     ScanProgressWrapper,
     SuffixWrapper,
     Wrapper,
+    LoadingText,
 } from './styles.ts';
 import { toggleHideWalletBalance } from '@app/store/actions/uiStoreActions.ts';
 import { useState } from 'react';
@@ -56,14 +57,14 @@ export const WalletBalance = () => {
         : t('history.my-balance');
 
     const loadingMarkup = (
-        <Typography>
+        <LoadingText>
             {scanData ? (
                 <Trans>
                     {scanProgress < 100
                         ? t('wallet-scanning-with-progress', {
                               percentage: scanProgress,
-                              scanned: scanData.scanned_height,
-                              total: scanData.total_height,
+                              scanned: formatValue(scanData.scanned_height),
+                              total: formatValue(scanData.total_height),
                           })
                         : t('wallet-is-scanning')}
                 </Trans>
@@ -78,7 +79,7 @@ export const WalletBalance = () => {
                     {isStarted && !isComplete && t('sync-message.line2')}
                 </>
             )}
-        </Typography>
+        </LoadingText>
     );
 
     const bottomMarkup = !isLoading ? <Typography>{balanceText}</Typography> : loadingMarkup;
