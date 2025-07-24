@@ -1,10 +1,14 @@
 import styled from 'styled-components';
+import * as m from 'motion/react-m';
 
 export const Wrapper = styled.button`
     display: flex;
     align-items: center;
     flex-shrink: 0;
     gap: 10px;
+
+    position: relative;
+    overflow: hidden;
 
     color: #fff;
     font-family: Poppins, sans-serif;
@@ -40,4 +44,25 @@ export const IconWrapper = styled.div`
     border-radius: 100px;
     background: #fff;
     color: #000;
+`;
+
+export const Copied = styled(m.div)`
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+
+    color: #fff;
+    background: #18d92f;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-family: Poppins, sans-serif;
+    font-size: 10px;
+    font-style: normal;
+    font-weight: 700;
+    line-height: 19px;
 `;

@@ -1,13 +1,32 @@
 import LinkIcon from './LinkIcon';
-import { IconWrapper, Wrapper } from './styles';
+import { Copied, IconWrapper, Wrapper } from './styles';
+import { useAirdropStore } from '@app/store';
+import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard.ts';
+import { AnimatePresence } from 'motion/react';
 
 export default function InviteFriendsButton() {
+    const { copyToClipboard, isCopied } = useCopyToClipboard();
+    const airdropUrl = useAirdropStore((state) => state.backendInMemoryConfig?.airdropUrl || '');
+    const referralCode = useAirdropStore((state) => state.userDetails?.user?.referral_code || '');
+
     const handleClick = () => {
-        //console.log('Invite Friends');
+        if (referralCode && airdropUrl && !isCopied) {
+            copyToClipboard(`${airdropUrl}/download/${referralCode}`);
+        }
     };
 
     return (
         <Wrapper type="button" onClick={handleClick}>
+            <AnimatePresence>
+                {isCopied && (
+                    <Copied
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                    >{`Copied!`}</Copied>
+                )}
+            </AnimatePresence>
             {`Invite Friends`}
             <IconWrapper>
                 <LinkIcon />
