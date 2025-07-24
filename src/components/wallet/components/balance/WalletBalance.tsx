@@ -58,7 +58,7 @@ export const WalletBalance = () => {
 
     const loadingMarkup = (
         <LoadingText>
-            {scanData ? (
+            {scanData && isConnected ? (
                 <Trans>
                     {scanProgress < 100
                         ? t('wallet-scanning-with-progress', {
@@ -71,6 +71,7 @@ export const WalletBalance = () => {
             ) : null}
             {!isConnected && (
                 <>
+                    <Trans>{t('wallet-is-scanning')}</Trans>
                     <SyncCountdown
                         onStarted={() => setIsStarted(true)}
                         onCompleted={() => setIsComplete(true)}
