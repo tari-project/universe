@@ -59,11 +59,13 @@ export const WalletBalance = () => {
         <Typography>
             {scanData ? (
                 <Trans>
-                    {t('wallet-scanning-with-progress', {
-                        percentage: scanProgress,
-                        scanned: scanData.scanned_height,
-                        total: scanData.total_height,
-                    })}
+                    {scanProgress < 100
+                        ? t('wallet-scanning-with-progress', {
+                              percentage: scanProgress,
+                              scanned: scanData.scanned_height,
+                              total: scanData.total_height,
+                          })
+                        : t('wallet-is-scanning')}
                 </Trans>
             ) : null}
             {!isConnected && (
@@ -83,7 +85,7 @@ export const WalletBalance = () => {
 
     const progressMarkup = isLoading && (
         <ScanProgressWrapper>
-            <Progress percentage={scanProgress} isInfinite={!isConnected} />
+            <Progress percentage={scanProgress} isInfinite={!isConnected || scanProgress === 100} />
         </ScanProgressWrapper>
     );
 
