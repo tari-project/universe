@@ -1,4 +1,5 @@
 import styled from 'styled-components';
+import { Typography } from '@app/components/elements/Typography.tsx';
 
 export const Wrapper = styled.div`
     display: flex;
@@ -46,14 +47,22 @@ export const BottomWrapper = styled.div`
     font-weight: 500;
     gap: 4px;
     color: rgba(255, 255, 255, 0.7);
-
-    strong {
-        color: #fff;
-    }
 `;
 
 export const ScanProgressWrapper = styled.div`
     position: absolute;
     bottom: 0;
     right: 0;
+`;
+
+export const LoadingText = styled(Typography)`
+    font-weight: 500;
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.5);
+    letter-spacing: -0.21px;
+    strong {
+        font-weight: 500;
+        color: #fff;
+        margin-right: 4px;
+    }
 `;
