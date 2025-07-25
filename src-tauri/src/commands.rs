@@ -58,6 +58,7 @@ use crate::wallet_manager::WalletManagerError;
 use crate::websocket_manager::WebsocketManagerStatusMessage;
 use crate::{airdrop, PoolStatus, UniverseAppState};
 
+use axum::http::HeaderValue;
 use base64::prelude::*;
 use log::{debug, error, info, warn};
 use regex::Regex;
@@ -67,6 +68,7 @@ use std::fmt::Debug;
 use std::fs::{read_dir, remove_dir_all, remove_file, File};
 use std::str::FromStr;
 use std::sync::atomic::Ordering;
+use std::sync::Arc;
 use std::thread::sleep;
 use std::time::{Duration, Instant, SystemTime};
 use tari_common::configuration::Network;
@@ -79,6 +81,7 @@ use tari_utilities::SafePassword;
 use tauri::ipc::InvokeError;
 use tauri::{Manager, PhysicalPosition, PhysicalSize};
 use tauri_plugin_sentry::sentry;
+use tokio::sync::RwLock;
 use urlencoding::encode;
 
 const MAX_ACCEPTABLE_COMMAND_TIME: Duration = Duration::from_secs(1);
@@ -2214,12 +2217,27 @@ pub async fn is_seed_backed_up() -> Result<bool, String> {
     Ok(seed_backed_up)
 }
 
-/*
- ********** TAPPLETS SECTION **********
-*/
+#[tauri::command]
+pub async fn update_csp_policy(
+    csp: String,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    info!(target: LOG_TARGET, "👉👉👉 Update csp command {:?}", &csp);
+    match HeaderValue::from_str(&csp) {
+        Ok(header_value) => {
+            let mut write_lock = state.tapplet_csp_header.write().await;
+            *write_lock = header_value;
+            info!(target: LOG_TARGET, "👉👉👉 Updated success");
+            Ok(())
+        }
+        Err(e) => Err(format!("Invalid CSP header string: {:?}", e)),
+    }
+}
 
 #[tauri::command]
-pub async fn launch_builtin_tapplet() -> Result<ActiveTapplet, String> {
+pub async fn launch_builtin_tapplet(
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<ActiveTapplet, String> {
     let binaries_resolver = BinaryResolver::current();
 
     let tapp_dest_dir = binaries_resolver
@@ -2227,8 +2245,10 @@ pub async fn launch_builtin_tapplet() -> Result<ActiveTapplet, String> {
         .await
         .map_err(|e| e.to_string())?;
 
+    let csp = state.tapplet_csp_header.clone();
+
     let handle_start =
-        tauri::async_runtime::spawn(async move { start_tapplet(tapp_dest_dir).await });
+        tauri::async_runtime::spawn(async move { start_tapplet(tapp_dest_dir, csp).await });
 
     let (addr, _cancel_token) = match handle_start.await {
         Ok(result) => result.map_err(|e| e.to_string())?,

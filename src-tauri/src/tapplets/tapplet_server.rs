@@ -33,29 +33,33 @@ use axum::{
     http::{HeaderValue, Request, Response},
     middleware::{self, Next},
     response::IntoResponse,
-    Router,
+    Extension, Json, Router,
 };
 use log::{error, info};
+use reqwest::StatusCode;
+use serde::Deserialize;
 use std::{net::SocketAddr, path::PathBuf, sync::Arc};
-use tokio::select;
+use tokio::{select, sync::RwLock};
 use tokio_util::sync::CancellationToken;
 use tower_http::services::ServeDir;
 const LOG_TARGET: &str = "tari::tapplet";
 
+
 /// Middleware that adds a CSP header dynamically from the captured `Arc<HeaderValue>`
 async fn add_csp_header(
-    request: Request<Body>,
+    req: Request<Body>,
     next: Next,
-    csp_header: Arc<HeaderValue>,
+    csp_header: Arc<RwLock<HeaderValue>>,
 ) -> Response<Body> {
-    let mut response = next.run(request).await;
+    let mut response = next.run(req).await;
+    let current_csp = csp_header.read().await;
     response
         .headers_mut()
-        .insert("Content-Security-Policy", (*csp_header).clone());
+        .insert("Content-Security-Policy", current_csp.clone());
     response
 }
 
-pub fn using_serve_dir(tapplet_path: PathBuf, csp_header: Arc<HeaderValue>) -> Router {
+pub fn using_serve_dir(tapplet_path: PathBuf, csp_header: Arc<RwLock<HeaderValue>>) -> Router {
     let serve_dir = ServeDir::new(tapplet_path);
 
     Router::new()
@@ -66,26 +70,16 @@ pub fn using_serve_dir(tapplet_path: PathBuf, csp_header: Arc<HeaderValue>) -> R
         }))
 }
 
-pub async fn start_tapplet(tapplet_path: PathBuf) -> Result<(String, CancellationToken), Error> {
+pub async fn start_tapplet(
+    tapplet_path: PathBuf,
+    csp_header: Arc<RwLock<HeaderValue>>,
+) -> Result<(String, CancellationToken), Error> {
     info!(target: LOG_TARGET, "Start tapplet path {:?}", &tapplet_path);
 
     // Dynamically get port from your allocator
     let port = PortAllocator::new().assign_port_with_fallback();
     let addr = SocketAddr::from(([127, 0, 0, 1], port));
     info!(target: LOG_TARGET, "Assigned port: {:?}", port);
-
-    // Build dynamic CSP policy string with the assigned addr
-    let csp_policy_string = format!(
-    "default-src 'self' http://{} http://api.staging-bridge.tari.com https://jsonplaceholder.typicode.com/todos/1; script-src 'self' http://{} 'unsafe-inline'; img-src 'self' data:; style-src 'self' 'unsafe-inline';",
-    addr, addr
-);
-    info!(target: LOG_TARGET, "💥💥💥 CSP {:?}", &csp_policy_string);
-
-    // Wrap it in Arc<HeaderValue> to cheaply clone in middleware
-    let csp_header = Arc::new(
-        HeaderValue::from_str(&csp_policy_string)
-            .expect("Failed to create valid CSP header from dynamic string"),
-    );
 
     // Build router with dynamically created CSP header middleware
     let app = using_serve_dir(tapplet_path, csp_header);

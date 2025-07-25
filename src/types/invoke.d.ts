@@ -139,4 +139,5 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'is_pin_locked'): Promise<boolean>;
     function invoke(param: 'toggle_cpu_pool_mining', payload: { enabled: boolean }): Promise<void>;
     function invoke(param: 'toggle_gpu_pool_mining', payload: { enabled: boolean }): Promise<void>;
+    function invoke(param: 'update_csp_policy', payload: { csp: string }): Promise<void>;
 }
