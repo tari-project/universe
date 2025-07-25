@@ -42,6 +42,7 @@ use crate::process_adapter::{
 use crate::tasks_tracker::TasksTrackers;
 use crate::utils::commands_builder::CommandBuilder;
 use crate::utils::file_utils::convert_to_string;
+use crate::utils::logging_utils::setup_logging;
 
 /// Log target for spend wallet module
 const LOG_TARGET: &str = "tari::universe::spend_wallet";
@@ -107,8 +108,7 @@ impl SpendWallet {
             target: LOG_TARGET,
             "Transaction signing completed with exit code: {}", exit_code
         );
-
-        Ok(())
+        Err(anyhow::anyhow!("FFFOOFOFOFORCCCCEEDD"))
     }
 
     /// Executes a wallet command and waits for its output
@@ -208,7 +208,7 @@ impl SpendWallet {
             convert_to_string(working_dir)?,
             format!("--log-config={}", convert_to_string(log_config_file)?),
             "--non-interactive-mode".to_string(),
-            "--auto-exit".to_string(),
+            "--command-mode-auto-exit".to_string(),
         ])
     }
 
@@ -279,6 +279,16 @@ impl ProcessAdapter for SpendWallet {
         binary_version_path: PathBuf,
         _is_first_start: bool,
     ) -> Result<(Self::ProcessInstance, Self::StatusMonitor), anyhow::Error> {
+        let log4rs_config = log_dir
+            .join("spend_wallet")
+            .join("configs")
+            .join("log4rs_config_spend_wallet.yml");
+        setup_logging(
+            &log4rs_config,
+            &log_dir,
+            include_str!("../../log4rs/spend_wallet_sample.yml"),
+        )?;
+
         let shared_args = self
             .get_shared_args(data_dir.clone(), log_dir)
             .context("Failed to build shared arguments")?;
