@@ -41,7 +41,7 @@ use crate::process_adapter::{
 };
 use crate::tasks_tracker::TasksTrackers;
 use crate::utils::commands_builder::CommandBuilder;
-use crate::utils::file_utils::{convert_to_string, copy_directory_recursively};
+use crate::utils::file_utils::convert_to_string;
 
 /// Log target for spend wallet module
 const LOG_TARGET: &str = "tari::universe::spend_wallet";
@@ -89,6 +89,7 @@ impl SpendWallet {
 
         let sign_command = CommandBuilder::new("sign-one-sided-transaction")
             .add_args(&[
+                "--skip-recovery",
                 "sign-one-sided-transaction",
                 "--input-file",
                 &input_file.to_string_lossy(),
@@ -130,8 +131,9 @@ impl SpendWallet {
         let log_dir = self.get_log_dir(app_handle)?;
         let binary_path = self.get_binary_path().await?;
 
+        let network = Network::get_current_or_user_setting_or_default().to_string();
         // Ensure working directory exists
-        let working_dir = data_dir.join("spend_wallet");
+        let working_dir = data_dir.join("spend_wallet").join(network);
         if !working_dir.exists() {
             std::fs::create_dir_all(&working_dir)
                 .context("Failed to create Spend Wallet working directory")?;
@@ -222,38 +224,6 @@ impl SpendWallet {
             .context("Failed to convert seed to mnemonic")?;
 
         Ok(seed_words.join(" ").reveal().to_string())
-    }
-
-    /// Prepares the spend wallet directory specifically for one-sided transactions
-    ///
-    /// # Returns
-    /// * `Result<(), anyhow::Error>` - Success or failure
-    pub fn prepare_spend_wallet_directory(
-        app_handle: &tauri::AppHandle,
-    ) -> Result<(), anyhow::Error> {
-        let app_local_data_dir = app_handle
-            .path()
-            .app_local_data_dir()
-            .expect("Couldn't get app_local_data_dir to prepare_spend_wallet_directory!");
-        let network = Network::get_current_or_user_setting_or_default().to_string();
-
-        let view_wallet_working_dir = app_local_data_dir.join("wallet").join(&network);
-        let spend_wallet_working_dir = app_local_data_dir.join("spend_wallet").join(&network);
-
-        if !spend_wallet_working_dir.exists() {
-            std::fs::create_dir_all(&spend_wallet_working_dir)?;
-        }
-        // Copy the entire view wallet directory to spend wallet directory if it exists
-        if view_wallet_working_dir.exists() {
-            copy_directory_recursively(&view_wallet_working_dir, &spend_wallet_working_dir)?;
-        } else {
-            return Err(anyhow::anyhow!(
-                "View wallet directory '{}' does not exist so it can't be copied",
-                view_wallet_working_dir.display()
-            ));
-        }
-
-        Ok(())
     }
 
     pub fn get_data_dir(&self, app_handle: &AppHandle) -> Result<PathBuf, Error> {

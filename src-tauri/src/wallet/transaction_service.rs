@@ -139,9 +139,6 @@ impl<'a> TransactionService<'a> {
         unsigned_tx_file: PathBuf,
         tx_id: String,
     ) -> Result<PathBuf, anyhow::Error> {
-        // Prepare the spend wallet working directory
-        SpendWallet::prepare_spend_wallet_directory(self.app_handle)?;
-
         // Define the output file path for the signed transaction
         let wallet_txs_dir = get_transactions_directory(self.app_handle)?;
         let signed_tx_destination_file = wallet_txs_dir.join(format!("{tx_id}.json"));

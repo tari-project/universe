@@ -24,8 +24,6 @@ use std::path::{Component, Path, PathBuf};
 
 use anyhow::anyhow;
 
-const LOG_TARGET: &str = "tari::universe::file_utils";
-
 /// Returns a relative path from one path to another.
 pub fn make_relative_path(root: &Path, current: &Path) -> PathBuf {
     let mut result = PathBuf::new();
@@ -63,66 +61,4 @@ pub fn convert_to_string(path: PathBuf) -> Result<String, anyhow::Error> {
     path.to_str()
         .map(|s| s.to_string())
         .ok_or_else(|| anyhow!("Could not convert path to string"))
-}
-
-/// Copies an entire directory with all its nested content recursively
-///
-/// # Arguments
-/// * `source_dir` - Source directory path to copy from
-/// * `target_dir` - Target directory path to copy to
-///
-/// # Returns
-/// * `Result<(), anyhow::Error>` - Success or failure
-pub fn copy_directory_recursively(
-    source_dir: &PathBuf,
-    target_dir: &PathBuf,
-) -> Result<(), anyhow::Error> {
-    // Create the target directory if it doesn't exist
-    if !target_dir.exists() {
-        std::fs::create_dir_all(target_dir)?;
-    }
-
-    // Ensure source directory exists
-    if !source_dir.exists() {
-        return Err(anyhow::anyhow!(
-            "Source directory '{}' does not exist",
-            source_dir.display()
-        ));
-    }
-
-    log::debug!(
-        target: LOG_TARGET,
-        "Copying directory from '{}' to '{}'",
-        source_dir.display(),
-        target_dir.display()
-    );
-
-    // Iterate through all entries in the source directory
-    for entry in std::fs::read_dir(source_dir)? {
-        let entry = entry?;
-        let path = entry.path();
-        let file_name = path.file_name().ok_or_else(|| {
-            anyhow::anyhow!("Failed to get file name from path: {}", path.display())
-        })?;
-
-        let target_path = target_dir.join(file_name);
-
-        if path.is_dir() {
-            // Recursively copy subdirectories
-            copy_directory_recursively(&path, &target_path)?;
-        } else {
-            // Copy files, but don't overwrite existing ones
-            if !target_path.exists() {
-                log::debug!(
-                    target: LOG_TARGET,
-                    "Copying file from '{}' to '{}'",
-                    path.display(),
-                    target_path.display()
-                );
-                std::fs::copy(&path, &target_path)?;
-            }
-        }
-    }
-
-    Ok(())
 }
