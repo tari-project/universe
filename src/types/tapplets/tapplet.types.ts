@@ -24,6 +24,16 @@ export interface ActiveTapplet {
     supportedChain: SupportedChain[];
 }
 
+export interface SignMessageTappletRequest {
+    message: string;
+    tapplet_id: number;
+}
+
+export interface SignMessageTappletResponse {
+    signature: string;
+    public_nonce: string;
+}
+
 export interface SendOneSidedRequest {
     amount: string;
     address: string;
