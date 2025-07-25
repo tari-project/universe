@@ -56,7 +56,6 @@
     "network-speed-test": "네트워크 속도 테스트",
     "p2pool": "P2Pool 시작 중",
     "platform-prequisites": "플랫폼 필수 조건 초기화 중",
-    "run-cpu-benchmark": "CPU 벤치마크 실행 중",
     "setup-bridge": "Preparing Bridge",
     "setup-bridge-download": "Preparing Bridge | Downloading: {{ progress }}%",
     "start-tor": "Tor 시작 중",

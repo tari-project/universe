@@ -56,7 +56,6 @@
     "network-speed-test": "Netwerk Spoedtoets",
     "p2pool": "Begin P2Pool",
     "platform-prequisites": "Initialiseer Platform Voorvereistes",
-    "run-cpu-benchmark": "Voer CPU Benchmark uit",
     "setup-bridge": "Preparing Bridge",
     "setup-bridge-download": "Preparing Bridge | Downloading: {{ progress }}%",
     "start-tor": "Begin Tor",

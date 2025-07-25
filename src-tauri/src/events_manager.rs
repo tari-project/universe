@@ -114,7 +114,7 @@ impl EventsManager {
 
     pub async fn handle_node_type_update(app_handle: &AppHandle) {
         let node_manager = &app_handle.state::<UniverseAppState>().node_manager;
-        let node_type = node_manager.get_node_type().await.ok();
+        let node_type = Some(node_manager.get_node_type().await);
         let node_identity = node_manager.get_identity().await.ok();
         let node_connection_address = node_manager
             .get_connection_details()

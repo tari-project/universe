@@ -123,7 +123,7 @@ impl Default for ConfigCoreContent {
             last_changelog_version: Version::new(0, 0, 0),
             airdrop_tokens: None,
             remote_base_node_address,
-            node_type: NodeType::Remote,
+            node_type: NodeType::default(),
             exchange_id: DEFAULT_EXCHANGE_ID.to_string(),
         }
     }

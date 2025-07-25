@@ -19,7 +19,6 @@
   "this-might-take-a-few-minutes": "Hierdie mag 'n paar minute neem",
   "title": {
     "application-started": "Toepassings het begin",
-    "benchmarking-network": "Netwerk Benchmark",
     "checking-latest-version-gpuminer": "Bepaal nuutste weergawe van xtrgpuminer",
     "checking-latest-version-mmproxy": "Bepaal nuutste weergawe van mmproxy",
     "checking-latest-version-node": "Bepaal nuutste weergawe van node",

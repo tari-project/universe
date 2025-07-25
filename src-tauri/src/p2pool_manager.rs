@@ -44,7 +44,6 @@ pub struct P2poolConfig {
     pub grpc_port: u16, // Local
     pub stats_server_port: u16,
     pub base_node_address: String,
-    pub cpu_benchmark_hashrate: Option<u64>,
     pub squad_override: Option<String>,
     pub randomx_disabled: bool,
 }
@@ -83,14 +82,6 @@ impl P2poolConfigBuilder {
         self
     }
 
-    pub fn with_cpu_benchmark_hashrate(
-        &mut self,
-        cpu_benchmark_hashrate: Option<u64>,
-    ) -> &mut Self {
-        self.config.cpu_benchmark_hashrate = cpu_benchmark_hashrate;
-        self
-    }
-
     pub fn build(&self) -> Result<P2poolConfig, anyhow::Error> {
         let grpc_port = PortAllocator::new().assign_port_with_fallback();
 
@@ -98,7 +89,6 @@ impl P2poolConfigBuilder {
             grpc_port,
             stats_server_port: self.config.stats_server_port,
             base_node_address: self.config.base_node_address.clone(),
-            cpu_benchmark_hashrate: self.config.cpu_benchmark_hashrate,
             squad_override: self.config.squad_override.clone(),
             randomx_disabled: self.config.randomx_disabled,
         })
@@ -117,7 +107,6 @@ impl Default for P2poolConfig {
             grpc_port: 18145,
             stats_server_port: 19000,
             base_node_address: String::from("http://127.0.0.1:18142"),
-            cpu_benchmark_hashrate: None,
             squad_override: None,
             randomx_disabled: false,
         }

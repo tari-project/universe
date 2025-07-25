@@ -55,7 +55,6 @@ pub enum XmrigNodeConnection {
         monero_address: String,
         tari_address: String,
     },
-    Benchmark,
 }
 
 impl XmrigNodeConnection {
@@ -103,9 +102,6 @@ impl XmrigNodeConnection {
                     "--user".to_string(),
                     format!("{}:{}", monero_address, tari_address),
                 ]
-            }
-            XmrigNodeConnection::Benchmark => {
-                vec!["--benchmark=1m".to_string()]
             }
         }
     }

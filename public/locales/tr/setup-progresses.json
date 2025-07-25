@@ -56,7 +56,6 @@
     "network-speed-test": "Ağ Hız Testi",
     "p2pool": "P2Pool Başlatılıyor",
     "platform-prequisites": "Platform Ön Koşulları Başlatılıyor",
-    "run-cpu-benchmark": "CPU Karşılaştırması Çalıştırılıyor",
     "setup-bridge": "Preparing Bridge",
     "setup-bridge-download": "Preparing Bridge | Downloading: {{ progress }}%",
     "start-tor": "Tor Başlatılıyor",

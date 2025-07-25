@@ -19,7 +19,6 @@
   "this-might-take-a-few-minutes": "To może zająć kilka minut",
   "title": {
     "application-started": "Aplikacje uruchomione",
-    "benchmarking-network": "Test Wydajności Sieci",
     "checking-latest-version-gpuminer": "Sprawdzanie najnowszej wersji xtrgpuminer",
     "checking-latest-version-mmproxy": "Sprawdzanie najnowszej wersji mmproxy",
     "checking-latest-version-node": "Sprawdzanie najnowszej wersji węzła",
