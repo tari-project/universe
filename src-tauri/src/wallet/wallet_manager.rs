@@ -28,9 +28,9 @@ use crate::node::node_manager::{NodeManager, NodeManagerError};
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
 use crate::tasks_tracker::TasksTrackers;
-use crate::wallet_adapter::{TransactionInfo, WalletBalance};
-use crate::wallet_adapter::{TransactionStatus, WalletStatusMonitorError};
-use crate::wallet_adapter::{WalletAdapter, WalletState};
+use crate::wallet::wallet_adapter::WalletAdapter;
+use crate::wallet::wallet_status_monitor::WalletStatusMonitorError;
+use crate::wallet::wallet_types::{TransactionInfo, TransactionStatus, WalletBalance, WalletState};
 use crate::BaseNodeStatus;
 use futures_util::future::FusedFuture;
 use log::info;
@@ -248,14 +248,11 @@ impl WalletManager {
 
         // TODO: check if node is synced?
         self.node_manager.wait_ready().await?;
-        log::info!(
-            "***** Sending one-sided transaction to stealth address with amount: {}",
-            amount_str
-        );
+
         let minotari_amount = Minotari::from_str(&amount_str)
             .map_err(|e| WalletManagerError::UnknownError(e.into()))?;
-        let microminotari_amount = MicroMinotari::from(minotari_amount);
-        let amount = microminotari_amount.as_u64();
+        let micro_minotari_amount = MicroMinotari::from(minotari_amount);
+        let amount = micro_minotari_amount.as_u64();
 
         let res = process_watcher
             .adapter

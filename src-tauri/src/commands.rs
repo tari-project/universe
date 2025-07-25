@@ -53,8 +53,8 @@ use crate::tasks_tracker::TasksTrackers;
 use crate::tor_adapter::TorConfig;
 use crate::utils::address_utils::verify_send;
 use crate::utils::app_flow_utils::FrontendReadyChannel;
-use crate::wallet_adapter::{TariAddressVariants, TransactionInfo};
-use crate::wallet_manager::WalletManagerError;
+use crate::wallet::wallet_manager::WalletManagerError;
+use crate::wallet::wallet_types::{TariAddressVariants, TransactionInfo};
 use crate::websocket_manager::WebsocketManagerStatusMessage;
 use crate::{airdrop, PoolStatus, UniverseAppState};
 

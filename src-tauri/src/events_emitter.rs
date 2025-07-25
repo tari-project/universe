@@ -28,6 +28,7 @@ use crate::events::{
 use crate::external_dependencies::RequiredExternalDependency;
 use crate::internal_wallet::TariAddressType;
 use crate::pool_status_watcher::PoolStatus;
+use crate::wallet::wallet_types::{TransactionInfo, WalletBalance};
 use crate::{
     commands::CpuMinerStatus,
     configs::{
@@ -43,7 +44,6 @@ use crate::{
     hardware::hardware_status_monitor::PublicDeviceProperties,
     setup::setup_manager::SetupPhase,
     utils::app_flow_utils::FrontendReadyChannel,
-    wallet_adapter::{TransactionInfo, WalletBalance},
     BaseNodeStatus, GpuMinerStatus,
 };
 use log::error;

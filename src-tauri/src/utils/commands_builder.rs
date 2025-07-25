@@ -20,20 +20,39 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod address_utils;
-pub mod app_flow_utils;
-pub mod commands_builder;
-pub mod cryptography;
-pub mod file_utils;
-pub mod formatting_utils;
-pub mod locks_utils;
-pub mod logging_utils;
-pub mod macos_utils;
-pub mod math_utils;
-pub mod network_status;
-pub mod platform_utils;
-pub mod rand_utils;
+use std::collections::HashMap;
 
-pub mod system_status;
-#[cfg(windows)]
-pub mod windows_setup_utils;
+/// Helper struct for building command parameters
+#[derive(Debug)]
+pub struct CommandBuilder {
+    /// Name of the command for logging
+    pub(crate) name: String,
+    /// Command arguments
+    pub(crate) args: Vec<String>,
+    /// Environment variables
+    pub(crate) envs: HashMap<String, String>,
+}
+
+impl CommandBuilder {
+    /// Creates a new command builder with the given name
+    pub fn new(name: impl Into<String>) -> Self {
+        Self {
+            name: name.into(),
+            args: Vec::new(),
+            envs: HashMap::new(),
+        }
+    }
+
+    /// Adds a list of arguments to the command
+    pub fn add_args(mut self, args: &[impl AsRef<str>]) -> Self {
+        self.args
+            .extend(args.iter().map(|a| a.as_ref().to_string()));
+        self
+    }
+
+    /// Adds an environment variable to the command
+    pub fn add_env(mut self, key: impl Into<String>, value: impl Into<String>) -> Self {
+        self.envs.insert(key.into(), value.into());
+        self
+    }
+}

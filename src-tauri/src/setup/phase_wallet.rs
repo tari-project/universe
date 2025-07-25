@@ -35,7 +35,7 @@ use crate::{
     },
     setup::setup_manager::SetupPhase,
     tasks_tracker::TasksTrackers,
-    wallet_manager::WalletStartupConfig,
+    wallet::wallet_manager::WalletStartupConfig,
     UniverseAppState,
 };
 use anyhow::Error;
