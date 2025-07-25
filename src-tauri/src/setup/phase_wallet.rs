@@ -138,9 +138,6 @@ impl SetupPhaseImpl for WalletSetupPhase {
                 ProgressSetupWalletPlan::BinariesWallet,
             ))
             .add_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::StartWallet))
-            .add_step(ProgressPlans::Wallet(
-                ProgressSetupWalletPlan::InitializeSpendingWallet,
-            ))
             .add_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::SetupBridge))
             .add_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::Done))
             .build(app_handle, timeout_watcher_sender)
@@ -207,27 +204,6 @@ impl SetupPhaseImpl for WalletSetupPhase {
                 wallet_config,
             )
             .await?;
-
-        progress_stepper
-            .resolve_step(ProgressPlans::Wallet(
-                ProgressSetupWalletPlan::InitializeSpendingWallet,
-            ))
-            .await;
-
-        let mut spend_wallet_manager = state.spend_wallet_manager.write().await;
-        spend_wallet_manager
-            .init(
-                TasksTrackers::current()
-                    .wallet_phase
-                    .get_signal()
-                    .await
-                    .clone(),
-                data_dir,
-                config_dir,
-                log_dir,
-            )
-            .await?;
-        drop(spend_wallet_manager);
 
         let bridge_binary_progress_tracker = progress_stepper.channel_step_range_updates(
             ProgressPlans::Wallet(ProgressSetupWalletPlan::SetupBridge),

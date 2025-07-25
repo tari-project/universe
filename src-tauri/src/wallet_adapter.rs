@@ -20,23 +20,32 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::binaries::{Binaries, BinaryResolver};
+use crate::internal_wallet::InternalWallet;
+use crate::pin::PinManager;
 use crate::port_allocator::PortAllocator;
 use crate::process_adapter::{
-    HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
+    HealthStatus, ProcessAdapter, ProcessInstance, ProcessInstanceTrait, ProcessStartupSpec,
+    StatusMonitor,
 };
 use crate::process_adapter_utils::setup_working_directory;
+use crate::spend_wallet::SpendWallet;
 use crate::tasks_tracker::TasksTrackers;
 use crate::utils::file_utils::convert_to_string;
 use crate::utils::logging_utils::setup_logging;
 use anyhow::Error;
 use async_trait::async_trait;
 use log::{info, warn};
+use minotari_node_grpc_client::grpc::payment_recipient::PaymentType;
 use minotari_node_grpc_client::grpc::wallet_client::WalletClient;
 use minotari_node_grpc_client::grpc::{
-    GetAllCompletedTransactionsRequest, GetBalanceRequest, GetBalanceResponse, GetStateRequest,
-    ImportTransactionsRequest, NetworkStatusResponse,
+    BroadcastSignedOneSidedTransactionRequest, GetAllCompletedTransactionsRequest,
+    GetBalanceRequest, GetBalanceResponse, GetStateRequest, NetworkStatusResponse,
+    PaymentRecipient, PrepareOneSidedTransactionForSigningRequest, UserPaymentId,
 };
+use sentry::protocol::Event;
 use serde::{Serialize, Serializer};
+use std::collections::{BTreeMap, HashMap};
 use std::fs;
 use std::path::PathBuf;
 use std::time::Duration;
@@ -44,7 +53,10 @@ use tari_common::configuration::Network;
 use tari_common_types::tari_address::{TariAddress, TariAddressError};
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_core::transactions::transaction_components::payment_id::PaymentId;
+use tari_key_manager::mnemonic::{Mnemonic, MnemonicLanguage};
 use tari_shutdown::Shutdown;
+use tauri::{AppHandle, Manager};
+use tauri_plugin_sentry::sentry;
 use tokio::sync::watch;
 
 #[cfg(target_os = "windows")]
@@ -99,40 +111,6 @@ impl WalletAdapter {
         let balance = res.into_inner();
 
         Ok(WalletBalance::from_response(balance))
-    }
-
-    pub async fn import_transaction(&self, tx_output_file: PathBuf) -> Result<(), anyhow::Error> {
-        let tx_json = fs::read_to_string(&tx_output_file).map_err(|e| {
-            log::error!(
-                "[import_transaction] Failed to read transaction output file: {e}, output_file:\n{tx_output_file:?}"
-            );
-            anyhow::anyhow!("Failed to read transaction output file: {}", e)
-        })?;
-
-        let mut client = WalletClient::connect(self.wallet_grpc_address())
-            .await
-            .map_err(|e| {
-                log::error!("[import_transaction] Failed to connect to wallet client: {e}");
-                anyhow::anyhow!("Failed to connect to wallet client")
-            })?;
-
-        let res = client
-            .import_transactions(ImportTransactionsRequest {
-                txs: format!("[{}]", tx_json.trim()),
-            })
-            .await
-            .map_err(|e| {
-                log::error!("[import_transaction] Failed to import transactions: {e:?}");
-                anyhow::anyhow!("Failed to import transactions: {:?}", e)
-            })?;
-
-        info!(
-            target: LOG_TARGET,
-            "Transaction imported to the view wallet successfully, tx_id: {:?}",
-            res.into_inner().tx_ids.first()
-        );
-
-        Ok(())
     }
 
     pub async fn get_transactions(
@@ -197,6 +175,158 @@ impl WalletAdapter {
         Ok(transactions)
     }
 
+    pub async fn send_one_sided_to_stealth_address(
+        &self,
+        amount: u64,
+        address: String,
+        payment_id: Option<String>,
+        app_handle: &tauri::AppHandle,
+    ) -> Result<(), anyhow::Error> {
+        let payment_recipient = PaymentRecipient {
+            address,
+            amount,
+            raw_payment_id: vec![],
+            user_payment_id: payment_id.map(|p_id| UserPaymentId {
+                utf8_string: p_id,
+                u256: vec![],
+                user_bytes: vec![],
+            }),
+            fee_per_gram: 150, // TODO: Implement fee calculation logic
+            payment_type: PaymentType::OneSidedToStealthAddress.into(),
+        };
+
+        // GRPC: PrepareOneSidedTransactionForSigning
+        let mut client = WalletClient::connect(self.wallet_grpc_address())
+            .await
+            .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
+        let res = client
+            .prepare_one_sided_transaction_for_signing(
+                PrepareOneSidedTransactionForSigningRequest {
+                    recipient: Some(payment_recipient),
+                },
+            )
+            .await
+            .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?;
+        let prepare_tx_res = res.into_inner();
+        let unsigned_tx_json = match prepare_tx_res.is_success {
+            true => prepare_tx_res.result,
+            false => {
+                return Err(anyhow::anyhow!(
+                    "Transaction preparation failed: {}",
+                    prepare_tx_res.failure_message
+                ))
+            }
+        };
+
+        // 1B Save to file
+        let network = Network::get_current_or_user_setting_or_default()
+            .to_string()
+            .to_lowercase();
+        let wallet_txs_dir = app_handle
+            .path()
+            .app_local_data_dir()
+            .expect("Couldn't get application config directory!")
+            .join(network)
+            .join("sent_transactions");
+        if !wallet_txs_dir.exists() {
+            std::fs::create_dir_all(&wallet_txs_dir).unwrap_or_else(|e| {
+                log::error!(target: LOG_TARGET, "Failed to create directory: {e}");
+            });
+        };
+
+        // Extract tx_id
+        let parsed: serde_json::Value = serde_json::from_str(&unsigned_tx_json)
+            .expect("Failed to parse unsigned transaction JSON");
+        let tx_id = if let Some(tx_id) = parsed.get("tx_id") {
+            println!("xxxxx Transaction ID: {}", tx_id);
+            tx_id.to_string()
+        } else {
+            return Err(anyhow::anyhow!("Transaction ID not found"));
+        };
+
+        let unsigned_tx_file = wallet_txs_dir.join(format!("{tx_id}-unsigned.json"));
+        fs::write(&unsigned_tx_file, &unsigned_tx_json)?;
+
+        // 2(SPEND_WALLET). minotari_console_wallet sign-one-sided-transaction --input-file <unsigned_tx_file> --output-file <signed_tx_file>
+        // CLI COMMAND
+        let signed_tx_file = wallet_txs_dir.join(format!("{tx_id}.json"));
+        //
+
+        let view_wallet_working_dir = app_handle
+            .path()
+            .app_local_data_dir()
+            .expect("Couldn't get application config directory!")
+            .join("spend_wallet");
+        let spend_wallet_working_dir = app_handle
+            .path()
+            .app_local_data_dir()
+            .expect("Couldn't get application config directory!")
+            .join("spend_wallet");
+        if !spend_wallet_working_dir.exists() {
+            std::fs::create_dir_all(&spend_wallet_working_dir)?;
+        }
+        // Copy view wallet directory to spend wallet directory
+        if view_wallet_working_dir.exists() {
+            let entries = std::fs::read_dir(&view_wallet_working_dir)?;
+            for entry in entries {
+                let entry = entry?;
+                let path = entry.path();
+                if path.is_file() {
+                    let target_path = spend_wallet_working_dir.join(path.file_name().unwrap());
+                    if !target_path.exists() {
+                        std::fs::copy(&path, target_path)?;
+                    }
+                }
+            }
+        }
+
+        let spend_wallet = SpendWallet::new();
+        spend_wallet
+            .sign_one_sided_transaction(unsigned_tx_file, signed_tx_file.clone(), app_handle)
+            .await?;
+
+        // let seed_words = self.get_seed_words(app_handle).await?;
+        // let sign_one_sided_transaction_command =
+        //     ExecutionCommand::new("sign-one-sided-transaction")
+        //         .with_extra_args(vec![
+
+        //             "--i".to_string(),
+        //             unsigned_tx_file.to_string_lossy().into_owned(),
+        //             "--o".to_string(),
+        //             signed_tx_file.to_string_lossy().into_owned(),
+        //         ])
+        //         .with_extra_envs(HashMap::from([(
+        //             "MINOTARI_WALLET_SEED_WORDS".to_string(),
+        //             seed_words.to_string(),
+        //         )]));
+
+        // self.execute_command(app_handle, sign_one_sided_transaction_command, vec![0])
+        //     .await?;
+
+        // 3. minotari_console_wallet send-one-sided-transaction --input-file <signed_tx_file>
+        // GRPC: BroadcastSignedOneSidedTransaction
+        let signed_tx_json = fs::read_to_string(&signed_tx_file)?;
+        let res = client
+            .broadcast_signed_one_sided_transaction(BroadcastSignedOneSidedTransactionRequest {
+                request: signed_tx_json,
+            })
+            .await?;
+        let broadcast_signed_tx_res = res.into_inner();
+        match broadcast_signed_tx_res.is_success {
+            true => {
+                log::info!(
+                    "Transaction broadcasted successfully | tx_id: {}",
+                    broadcast_signed_tx_res.transaction_id
+                );
+                Ok(())
+            }
+            false => Err(anyhow::anyhow!(
+                "Transaction preparation failed: {}",
+                broadcast_signed_tx_res.failure_message
+            )),
+        }
+    }
+
     pub async fn wait_for_scan_to_height(
         &self,
         block_height: u64,
@@ -258,6 +388,138 @@ impl WalletAdapter {
 
     pub fn wallet_grpc_address(&self) -> String {
         format!("http://127.0.0.1:{}", self.grpc_port)
+    }
+
+    async fn execute_command(
+        &self,
+        app_handle: &AppHandle,
+        command: ExecutionCommand,
+        allow_exit_codes: Vec<i32>,
+    ) -> Result<(i32, Vec<String>, Vec<String>), Error> {
+        let data_dir = app_handle
+            .path()
+            .app_local_data_dir()
+            .expect("Could not get data dir");
+        let config_dir = app_handle
+            .path()
+            .app_config_dir()
+            .expect("Could not get config dir");
+        let log_dir = app_handle
+            .path()
+            .app_log_dir()
+            .expect("Could not get log dir");
+        let binary_path = BinaryResolver::current()
+            .resolve_path_to_binary_files(Binaries::Wallet)
+            .await?;
+
+        let (mut instance, _monitor) =
+            self.spawn(data_dir, config_dir, log_dir, binary_path, false)?;
+
+        instance
+            .startup_spec
+            .args
+            .extend(command.extra_args.clone());
+        instance
+            .startup_spec
+            .envs
+            .get_or_insert_with(HashMap::new)
+            .extend(command.extra_envs);
+
+        let (exit_code, stdout_lines, stderr_lines) = instance
+            .start_and_wait_for_output(
+                TasksTrackers::current()
+                    .wallet_phase
+                    .get_task_tracker()
+                    .await,
+            )
+            .await?;
+
+        log::info!(
+            target: LOG_TARGET,
+            "Command '{}' execution completed with exit code: {}. Details: {{ stdout_lines: {:?}, stderr_lines: {:?}, extra_args: {:?} }}",
+            command.name,
+            exit_code,
+            stdout_lines.join("\n"),
+            stderr_lines.join("\n"),
+            command.extra_args
+        );
+
+        if !allow_exit_codes.contains(&exit_code) {
+            sentry::capture_event(Event {
+                level: sentry::Level::Error,
+                culprit: Some("WalletAdapter::ExecuteCommand".to_string()),
+                message: Some(format!(
+                    "Command '{}' failed with exit code: {}",
+                    command.name, exit_code
+                )),
+                extra: BTreeMap::from([
+                    (
+                        "exit_code".to_string(),
+                        serde_json::Value::String(exit_code.to_string()),
+                    ),
+                    (
+                        "stdout_lines".to_string(),
+                        serde_json::Value::String(stdout_lines.join("\n")),
+                    ),
+                    (
+                        "stderr_lines".to_string(),
+                        serde_json::Value::String(stderr_lines.join("\n")),
+                    ),
+                    (
+                        "command".to_string(),
+                        serde_json::Value::String(command.name.clone()),
+                    ),
+                    (
+                        "extra_args".to_string(),
+                        serde_json::Value::String(format!("{:?}", command.extra_args)),
+                    ),
+                ]),
+                ..Default::default()
+            });
+
+            return Err(anyhow::anyhow!(
+                "Command '{}' failed with exit code: {}",
+                command.name,
+                exit_code
+            ));
+        }
+
+        Ok((exit_code, stdout_lines, stderr_lines))
+    }
+
+    async fn get_seed_words(&self, app_handle: &tauri::AppHandle) -> Result<String, Error> {
+        let pin_password = PinManager::get_validated_pin_if_defined(app_handle).await?;
+        let tari_cipher_seed = InternalWallet::get_tari_seed(pin_password).await?;
+        let seed_words = tari_cipher_seed.to_mnemonic(MnemonicLanguage::English, None)?;
+        Ok(seed_words.join(" ").reveal().to_string())
+    }
+}
+
+#[derive(Debug)]
+struct ExecutionCommand {
+    name: String,
+    extra_args: Vec<String>,
+    extra_envs: HashMap<String, String>,
+}
+
+impl ExecutionCommand {
+    fn new(name: impl Into<String>) -> Self {
+        Self {
+            name: name.into(),
+            extra_args: Vec::new(),
+            extra_envs: HashMap::new(),
+        }
+    }
+
+    fn with_extra_args(mut self, extra_args: Vec<String>) -> Self {
+        self.extra_args.extend(extra_args);
+        self
+    }
+
+    #[allow(dead_code)]
+    fn with_extra_envs(mut self, extra_envs: HashMap<String, String>) -> Self {
+        self.extra_envs.extend(extra_envs);
+        self
     }
 }
 

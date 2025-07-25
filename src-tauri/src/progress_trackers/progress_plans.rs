@@ -197,7 +197,6 @@ impl ProgressStep for ProgressSetupHardwarePlan {
 pub enum ProgressSetupWalletPlan {
     BinariesWallet,
     StartWallet,
-    InitializeSpendingWallet,
     SetupBridge,
     Done,
 }
@@ -213,7 +212,6 @@ impl ProgressStep for ProgressSetupWalletPlan {
         match self {
             ProgressSetupWalletPlan::BinariesWallet => 2,
             ProgressSetupWalletPlan::StartWallet => 1,
-            ProgressSetupWalletPlan::InitializeSpendingWallet => 1,
             ProgressSetupWalletPlan::SetupBridge => 1,
             ProgressSetupWalletPlan::Done => 1,
         }
@@ -223,9 +221,7 @@ impl ProgressStep for ProgressSetupWalletPlan {
         match self {
             ProgressSetupWalletPlan::BinariesWallet => "binaries-wallet".to_string(),
             ProgressSetupWalletPlan::StartWallet => "start-wallet".to_string(),
-            ProgressSetupWalletPlan::InitializeSpendingWallet => {
-                "initialize-spending-wallet".to_string()
-            }
+
             ProgressSetupWalletPlan::SetupBridge => "setup-bridge".to_string(),
             ProgressSetupWalletPlan::Done => "done".to_string(),
         }

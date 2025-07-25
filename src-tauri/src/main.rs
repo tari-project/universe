@@ -80,7 +80,6 @@ use crate::mm_proxy_manager::{MmProxyManager, StartConfig};
 use crate::node::node_manager::NodeManager;
 use crate::p2pool::models::P2poolStats;
 use crate::p2pool_manager::P2poolManager;
-use crate::spend_wallet_manager::SpendWalletManager;
 use crate::tor_manager::TorManager;
 use crate::wallet_manager::WalletManager;
 
@@ -129,8 +128,7 @@ mod progress_trackers;
 mod release_notes;
 mod requests;
 mod setup;
-mod spend_wallet_adapter;
-mod spend_wallet_manager;
+mod spend_wallet;
 mod systemtray_manager;
 mod tapplets;
 mod tasks_tracker;
@@ -186,7 +184,6 @@ struct UniverseAppState {
     mm_proxy_manager: MmProxyManager,
     node_manager: NodeManager,
     wallet_manager: WalletManager,
-    spend_wallet_manager: Arc<RwLock<SpendWalletManager>>,
     telemetry_manager: Arc<RwLock<TelemetryManager>>,
     telemetry_service: Arc<RwLock<TelemetryService>>,
     feedback: Arc<RwLock<Feedback>>,
@@ -287,8 +284,6 @@ fn main() {
         &mut stats_collector,
         base_node_watch_rx.clone(),
     );
-    let spend_wallet_manager =
-        SpendWalletManager::new(node_manager.clone(), base_node_watch_rx.clone());
     let (p2pool_stats_tx, p2pool_stats_rx) = watch::channel(None);
     let p2pool_manager = P2poolManager::new(p2pool_stats_tx, &mut stats_collector);
 
@@ -377,7 +372,6 @@ fn main() {
         mm_proxy_manager: mm_proxy_manager.clone(),
         node_manager,
         wallet_manager,
-        spend_wallet_manager: Arc::new(RwLock::new(spend_wallet_manager)),
         p2pool_manager,
         telemetry_manager: Arc::new(RwLock::new(telemetry_manager)),
         telemetry_service: Arc::new(RwLock::new(telemetry_service)),
@@ -681,11 +675,6 @@ fn main() {
                     target: LOG_TARGET,
                     "App shutdown request caught with code: {code:#?}"
                 );
-                let base_path = app_handle.path().app_local_data_dir().expect("Could not get data dir");
-                match SpendWalletManager::erase_related_data(base_path) {
-                    Ok(_) => info!(target: LOG_TARGET, "Successfully erased related spend wallet data."),
-                    Err(e) => error!(target: LOG_TARGET, "Failed to erase related spend wallet data: {e:?}"),
-                }
                 if let Some(exit_code) = code {
                     if exit_code == RESTART_EXIT_CODE {
                         // RunEvent does not hold the exit code so we store it separately
