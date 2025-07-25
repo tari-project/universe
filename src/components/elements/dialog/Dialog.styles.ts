@@ -19,16 +19,6 @@ export const ContentWrapper = styled.div<ContentWrapperProps>`
     padding: ${({ $unPadded }) => ($unPadded ? '0' : '20px')};
     position: relative;
 
-    &::before {
-        content: '';
-        position: absolute;
-        width: 100%;
-        height: 100%;
-        -webkit-backdrop-filter: blur(20px);
-        backdrop-filter: blur(20px);
-        z-index: -1;
-    }
-
     ${({ theme, $transparentBg }) =>
         $transparentBg
             ? css`
@@ -36,6 +26,15 @@ export const ContentWrapper = styled.div<ContentWrapperProps>`
                       theme.palette.background.paper,
                       theme.mode == 'dark' ? 0.75 : 0.65
                   )};
+                  &::before {
+                      content: '';
+                      position: absolute;
+                      width: 100%;
+                      height: 100%;
+                      -webkit-backdrop-filter: blur(20px);
+                      backdrop-filter: blur(20px);
+                      z-index: -1;
+                  }
               `
             : css`
                   background-color: ${theme.palette.background.paper};

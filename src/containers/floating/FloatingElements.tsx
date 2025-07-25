@@ -15,7 +15,6 @@ import LudicrousCofirmationDialog from './LudicrousCofirmationDialog/LudicrousCo
 
 import XSpaceEventBanner from './XSpaceBanner/XSpaceBanner.tsx';
 import { CustomPowerLevelsDialogContainer } from '@app/containers/navigation/components/Miner/components/CustomPowerLevels/CustomPowerLevelsDialogContainer.tsx';
-import WarmupDialog from './Warmup/WarmupDialog.tsx';
 import EXModal from '@app/containers/floating/EXModal/EXModal.tsx';
 import UniversalEXSelectorModal from '@app/containers/floating/UniversalEXSelectorModal/UniversalEXSelectorModal.tsx';
 import XCLinkModal from '@app/components/exchanges/LinkModal/LinkModal.tsx';
@@ -46,7 +45,6 @@ const FloatingElements = () => {
             <ReleaseNotesDialog />
             <XSpaceEventBanner />
             <CustomPowerLevelsDialogContainer />
-            <WarmupDialog />
             <EXModal />
             <UniversalEXSelectorModal />
             <XCLinkModal />

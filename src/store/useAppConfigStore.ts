@@ -49,7 +49,6 @@ const configMininigInitialState: ConfigMining = {
     mine_on_app_start: false,
     mining_modes: {},
     selected_mining_mode: 'Eco',
-    mining_time: 0,
 };
 
 const configUIInitialState: UIConfigStoreState = {
@@ -58,12 +57,10 @@ const configUIInitialState: UIConfigStoreState = {
     application_language: 'en',
     display_mode: 'system',
     has_system_language_been_proposed: false,
-    paper_wallet_enabled: true,
     sharing_enabled: true,
     show_experimental_settings: false,
     should_always_use_system_language: false,
     visual_mode: true,
-    warmup_seen: null,
     wallet_ui_mode: WalletUIMode.Standard,
     was_staged_security_modal_shown: false,
 };
