@@ -1,12 +1,49 @@
+import { transformCrewMemberToEntry } from './utils/crewTransformers';
+import type { CrewMember } from '@app/store/useAirdropStore';
 import CrewDivider from './CrewDivider/CrewDivider';
 import CrewEntry from './CrewEntry/CrewEntry';
 import { Inside, ListGroup, OuterWrapper, Wrapper } from './styles';
-import { crewList } from '../data';
 
-export default function CrewList() {
-    const completedList = crewList.filter((item) => item.status === 'completed');
-    const inProgressList = crewList.filter((item) => item.status === 'in_progress');
-    const needsNudgeList = crewList.filter((item) => item.status === 'needs_nudge');
+interface Props {
+    members: CrewMember[];
+    isLoading: boolean;
+    error: Error | null;
+    onRefresh: () => void;
+}
+
+export default function CrewList({ members, isLoading, error, onRefresh }: Props) {
+    if (isLoading) {
+        return (
+            <OuterWrapper>
+                <Wrapper>
+                    <Inside>
+                        <div>Loading crew members...</div>
+                    </Inside>
+                </Wrapper>
+            </OuterWrapper>
+        );
+    }
+
+    if (error) {
+        return (
+            <OuterWrapper>
+                <Wrapper>
+                    <Inside>
+                        <div>Error: {error.message}</div>
+                        <button onClick={onRefresh}>Retry</button>
+                    </Inside>
+                </Wrapper>
+            </OuterWrapper>
+        );
+    }
+
+    // Transform API data to UI format
+    const transformedEntries = members.map(transformCrewMemberToEntry);
+
+    // Filter by status for UI organization
+    const completedList = transformedEntries.filter((item) => item.status === 'completed');
+    const inProgressList = transformedEntries.filter((item) => item.status === 'in_progress');
+    const needsNudgeList = transformedEntries.filter((item) => item.status === 'needs_nudge');
 
     return (
         <OuterWrapper>

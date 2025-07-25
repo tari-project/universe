@@ -8,7 +8,7 @@ import {
     type BonusTier,
     type CommunityMessage,
     type CrewAnalytics,
-    type CrewMember,
+    type CrewMembersResponse,
     type Reward,
     setAirdropTokensInConfig,
     type UserDetails,
@@ -56,6 +56,11 @@ const clearState: AirdropStoreState = {
     bonusTiers: undefined,
     flareAnimationType: undefined,
     uiSendRecvEnabled: true,
+    crewQueryParams: {
+        status: 'all',
+        page: 1,
+        limit: 20,
+    },
 };
 
 const getAirdropInMemoryConfig = async () => {
@@ -284,7 +289,7 @@ export async function fetchLatestXSpaceEvent() {
 export async function fetchCrewMembers() {
     const response = await handleAirdropRequest<{
         success: boolean;
-        data: CrewMember[];
+        data: CrewMembersResponse;
     } | null>({
         path: '/crew/members',
         method: 'GET',
@@ -294,7 +299,7 @@ export async function fetchCrewMembers() {
     });
 
     if (response?.success && response.data) {
-        useAirdropStore.setState({ crewMembers: response.data });
+        useAirdropStore.setState({ crewMembers: response.data.members });
     }
 
     return response;
@@ -356,6 +361,18 @@ export async function claimCrewRewards(rewardId: string, memberId: string) {
         },
     });
 }
+
+export const setCrewQueryParams = (
+    params: Partial<{
+        status: 'all' | 'completed' | 'active' | 'inactive';
+        page: number;
+        limit: number;
+    }>
+) => {
+    useAirdropStore.setState((state) => ({
+        crewQueryParams: { ...state.crewQueryParams, ...params },
+    }));
+};
 
 export const fetchAllUserData = async () => {
     const fetchUserDetails = async () => {
