@@ -31,7 +31,7 @@ use crate::{
     internal_wallet::TariAddressType,
     node::{node_adapter::NodeIdentity, node_manager::NodeType},
     setup::setup_manager::SetupPhase,
-    wallet_adapter::{TransactionInfo, WalletBalance},
+    wallet::wallet_types::{TransactionInfo, WalletBalance},
 };
 
 #[derive(Clone, Debug, Serialize)]
