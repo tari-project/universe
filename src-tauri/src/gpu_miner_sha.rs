@@ -78,6 +78,7 @@ impl GpuMinerSha {
         tari_address: TariAddress,
         telemetry_id: String,
         gpu_usage_percentage: u32,
+        excluded_devices: Vec<u32>,
         base_path: PathBuf,
         config_path: PathBuf,
         log_path: PathBuf,
@@ -114,6 +115,7 @@ impl GpuMinerSha {
         process_watcher.adapter.worker_name = Some(telemetry_id.to_string());
         process_watcher.adapter.batch_size = None; // Its better to allow miner to calculate batch size dynamically
         process_watcher.adapter.intensity = Some(gpu_usage_percentage);
+        process_watcher.adapter.excluded_devices = excluded_devices;
         info!(target: LOG_TARGET, "Starting sha miner");
         process_watcher
             .start(

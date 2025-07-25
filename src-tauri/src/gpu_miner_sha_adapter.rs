@@ -46,6 +46,7 @@ pub struct GpuMinerShaAdapter {
     pub tari_address: Option<TariAddress>,
     pub intensity: Option<u32>,
     pub batch_size: Option<u32>,
+    pub excluded_devices: Vec<u32>,
     pub worker_name: Option<String>,
     pub pool_url: Option<String>,
     pub(crate) gpu_status_sender: Sender<GpuMinerStatus>,
@@ -60,6 +61,7 @@ impl GpuMinerShaAdapter {
             worker_name: None,
             gpu_status_sender,
             pool_url: None,
+            excluded_devices: vec![],
         }
     }
 }
@@ -98,6 +100,17 @@ impl ProcessAdapter for GpuMinerShaAdapter {
             return Err(anyhow::anyhow!(
                 "Tari address must be set before starting the GpuMinerShaAdapter"
             ));
+        }
+
+        if !self.excluded_devices.is_empty() {
+            args.push("--excluded-devices".to_string());
+            args.push(
+                self.excluded_devices
+                    .iter()
+                    .map(|d| d.to_string())
+                    .collect::<Vec<_>>()
+                    .join(","),
+            );
         }
 
         if let Some(intensity) = self.intensity {
