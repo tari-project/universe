@@ -50,7 +50,9 @@ function CurrentAppSection({ showSplashscreen, isShuttingDown }: CurrentAppSecti
         }
         return (
             <AppContentContainer key="splashscreen" initial="visible">
-                <Splashscreen />
+                <Suspense fallback={<div />}>
+                    <Splashscreen />
+                </Suspense>
             </AppContentContainer>
         );
     }, [showSplashscreen, isShuttingDown]);

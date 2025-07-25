@@ -1,10 +1,10 @@
-import { setWalletBalance } from '@app/store/actions';
+import { create } from 'zustand';
+import { setAnimationState } from '@tari-project/tari-tower';
 
-import { create } from './create';
 import { useMiningStore } from './useMiningStore.ts';
+import { setWalletBalance } from '@app/store/actions';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 
-import { setAnimationState } from '@tari-project/tari-tower';
 import { TransactionInfo, WalletBalance } from '@app/types/app-status.ts';
 import { setMiningControlsEnabled } from './actions/miningStoreActions.ts';
 import { updateWalletScanningProgress, useWalletStore } from './useWalletStore.ts';

@@ -11,7 +11,7 @@ import {
 } from '@app/types/configs';
 import { WalletUIMode } from '@app/types/events-payloads';
 
-type UIConfigStoreState = Partial<ConfigUI> & {
+type UIConfigStoreState = ConfigUI & {
     visualModeToggleLoading: boolean;
 };
 const configCoreInitialState: ConfigCore = {
@@ -55,7 +55,7 @@ const configUIInitialState: UIConfigStoreState = {
     visualModeToggleLoading: false,
     created_at: '',
     application_language: 'en',
-    display_mode: 'Eco',
+    display_mode: 'system',
     has_system_language_been_proposed: false,
     sharing_enabled: true,
     show_experimental_settings: false,

@@ -13,7 +13,6 @@ import {
 } from '@app/store/actions/miningMetricsStoreActions';
 import {
     handleAskForRestart,
-    handleCloseSplashscreen,
     handleConnectionStatusChanged,
     setConnectionStatus,
     setDialogToShow,
@@ -30,7 +29,7 @@ import {
     setIsStuckOnOrphanChain,
     setNetworkStatus,
 } from '@app/store/actions/appStateStoreActions';
-import { setWalletBalance, updateWalletScanningProgress, useSecurityStore } from '@app/store';
+import { setWalletBalance, updateWalletScanningProgress, useSecurityStore, useUIStore } from '@app/store';
 import { deepEqual } from '@app/utils/objectDeepEqual.ts';
 import {
     handleAppUnlocked,
@@ -162,7 +161,7 @@ const useTauriEventsListener = () => {
                             handleConfigPoolsLoaded(event.payload);
                             break;
                         case 'CloseSplashscreen':
-                            handleCloseSplashscreen();
+                            useUIStore.setState({ canCloseSplashscreen: true });
                             break;
                         case 'DetectedDevices':
                             setGpuDevices(event.payload.devices);

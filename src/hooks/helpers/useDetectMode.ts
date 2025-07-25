@@ -1,21 +1,27 @@
-import { useEffect } from 'react';
-import { listen } from '@tauri-apps/api/event';
+import { useEffect, useRef } from 'react';
 import { Theme } from '@app/theme/types.ts';
 import { setUITheme, useConfigUIStore } from '@app/store';
 
+const initial = useConfigUIStore.getState().display_mode;
 export function useDetectMode() {
-    const configTheme = useConfigUIStore((s) => s.display_mode);
-
+    const displayModeRef = useRef(initial);
+    useEffect(() => useConfigUIStore.subscribe((state) => (displayModeRef.current = state.display_mode)), []);
     useEffect(() => {
-        if (configTheme !== 'system') return;
-        const listener = listen('tauri://theme-changed', async ({ payload }) => {
-            if (payload) {
-                const themePayload = payload as Theme;
-                setUITheme(themePayload);
-            }
-        });
+        function handleThemeChanged(systemDarkMode: boolean) {
+            const isSystem = displayModeRef.current == 'system';
+            if (!isSystem) return;
+            const newTheme: Theme = systemDarkMode ? 'dark' : 'light';
+            setUITheme(newTheme);
+        }
+        window
+            .matchMedia('(prefers-color-scheme: dark)')
+            .addEventListener('change', (e) => handleThemeChanged(e.matches));
+
+        handleThemeChanged(window.matchMedia('(prefers-color-scheme: dark)').matches);
         return () => {
-            listener.then((unlisten) => unlisten());
+            window
+                .matchMedia('(prefers-color-scheme: dark)')
+                .removeEventListener('change', (e) => handleThemeChanged(e.matches));
         };
-    }, [configTheme]);
+    }, []);
 }

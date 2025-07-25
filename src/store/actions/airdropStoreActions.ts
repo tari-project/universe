@@ -19,7 +19,7 @@ import {
 import { handleAirdropRequest } from '@app/hooks/airdrop/utils/useHandleRequest.ts';
 import { initialiseSocket, removeSocket } from '@app/utils/socket.ts';
 import { XSpaceEvent } from '@app/types/ws.ts';
-import { handleCloseSplashscreen } from '@app/store/actions/uiStoreActions.ts';
+
 import { FEATURES } from '@app/store/consts.ts';
 
 interface TokenResponse {
@@ -132,7 +132,7 @@ export const airdropSetup = async () => {
                 await handleRefreshAirdropTokens();
                 await fetchAllUserData();
                 if (useUIStore.getState().showSplashscreen) {
-                    handleCloseSplashscreen();
+                    useUIStore.setState({ canCloseSplashscreen: true });
                 }
             }
         }
