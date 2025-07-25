@@ -194,7 +194,8 @@ impl SpendWallet {
 
     /// Gets the shared command line arguments for all commands
     fn get_shared_args(&self, data_dir: PathBuf, log_dir: PathBuf) -> Result<Vec<String>, Error> {
-        let working_dir = data_dir.join("spend_wallet");
+        let network = Network::get_current_or_user_setting_or_default().to_string();
+        let working_dir = data_dir.join("spend_wallet").join(network);
         let log_config_file = log_dir
             .join("spend_wallet")
             .join("configs")
