@@ -108,7 +108,7 @@ impl SpendWallet {
             target: LOG_TARGET,
             "Transaction signing completed with exit code: {}", exit_code
         );
-        Err(anyhow::anyhow!("FFFOOFOFOFORCCCCEEDD"))
+        Ok(())
     }
 
     /// Executes a wallet command and waits for its output
