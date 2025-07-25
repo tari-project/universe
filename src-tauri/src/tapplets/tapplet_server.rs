@@ -20,35 +20,86 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::tapplets::error::{
-    Error::{self, TappletServerError},
-    TappletServerError::*,
+use crate::{
+    port_allocator::PortAllocator,
+    tapplets::error::{
+        Error::{self, TappletServerError},
+        TappletServerError::*,
+    },
 };
 
-use axum::Router;
+use axum::{
+    body::Body,
+    http::{HeaderValue, Request, Response},
+    middleware::{self, Next},
+    response::IntoResponse,
+    Router,
+};
 use log::{error, info};
-use std::{net::SocketAddr, path::PathBuf};
+use std::{net::SocketAddr, path::PathBuf, sync::Arc};
 use tokio::select;
 use tokio_util::sync::CancellationToken;
 use tower_http::services::ServeDir;
 const LOG_TARGET: &str = "tari::tapplet";
 
+/// Middleware that adds a CSP header dynamically from the captured `Arc<HeaderValue>`
+async fn add_csp_header(
+    request: Request<Body>,
+    next: Next,
+    csp_header: Arc<HeaderValue>,
+) -> Response<Body> {
+    let mut response = next.run(request).await;
+    response
+        .headers_mut()
+        .insert("Content-Security-Policy", (*csp_header).clone());
+    response
+}
+
+pub fn using_serve_dir(tapplet_path: PathBuf, csp_header: Arc<HeaderValue>) -> Router {
+    let serve_dir = ServeDir::new(tapplet_path);
+
+    Router::new()
+        .nest_service("/", serve_dir)
+        .layer(middleware::from_fn(move |req, next| {
+            let csp_header = csp_header.clone();
+            async move { add_csp_header(req, next, csp_header).await }
+        }))
+}
+
 pub async fn start_tapplet(tapplet_path: PathBuf) -> Result<(String, CancellationToken), Error> {
     info!(target: LOG_TARGET, "Start tapplet path {:?}", &tapplet_path);
-    serve(using_serve_dir(tapplet_path), 0).await
+
+    // Dynamically get port from your allocator
+    let port = PortAllocator::new().assign_port_with_fallback();
+    let addr = SocketAddr::from(([127, 0, 0, 1], port));
+    info!(target: LOG_TARGET, "Assigned port: {:?}", port);
+
+    // Build dynamic CSP policy string with the assigned addr
+    let csp_policy_string = format!(
+    "default-src 'self' http://{} http://api.staging-bridge.tari.com https://jsonplaceholder.typicode.com/todos/1; script-src 'self' http://{} 'unsafe-inline'; img-src 'self' data:; style-src 'self' 'unsafe-inline';",
+    addr, addr
+);
+    info!(target: LOG_TARGET, "💥💥💥 CSP {:?}", &csp_policy_string);
+
+    // Wrap it in Arc<HeaderValue> to cheaply clone in middleware
+    let csp_header = Arc::new(
+        HeaderValue::from_str(&csp_policy_string)
+            .expect("Failed to create valid CSP header from dynamic string"),
+    );
+
+    // Build router with dynamically created CSP header middleware
+    let app = using_serve_dir(tapplet_path, csp_header);
+
+    // Start your server with the known addr
+    serve(app, addr).await
 }
 
-pub fn using_serve_dir(tapplet_path: PathBuf) -> Router {
-    let serve_dir = ServeDir::new(tapplet_path);
-    Router::new().nest_service("/", serve_dir)
-}
-
-pub async fn serve(app: Router, port: u16) -> Result<(String, CancellationToken), Error> {
-    info!(target: LOG_TARGET, "Launch tapplet on port {:?}", &port);
+pub async fn serve(app: Router, addr: SocketAddr) -> Result<(String, CancellationToken), Error> {
+    // info!(target: LOG_TARGET, "Launch tapplet on port {:?}", &port);
     let cancel_token = CancellationToken::new();
     let cancel_token_clone = cancel_token.clone();
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], port));
+    // let addr = SocketAddr::from(([127, 0, 0, 1], port));
     let listener = tokio::net::TcpListener::bind(addr)
         .await
         .inspect_err(|e| error!(target: LOG_TARGET, "Failed to bind port server error: {e:?}"))
