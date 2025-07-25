@@ -55,5 +55,39 @@
   "username-error": "Le nom d\"utilisateur doit comporter entre 3 et 20 caractères et ne contenir que des lettres, des chiffres, des underscores ou des tirets",
   "username-update-success": "Nom d\"utilisateur mis à jour avec succès",
   "you-reached-your-giftinh-goal": "Vous avez atteint votre objectif de cadeau !",
-  "your-friend-accepted-gift": "Un de vos amis a accepté votre cadeau !"
+  "your-friend-accepted-gift": "Un de vos amis a accepté votre cadeau !",
+  "crewRewards": {
+    "title": "Rewards",
+    "myCrew": "My Crew",
+    "earnDescription": "Earn <strong>{{userReward}} XTM</strong> for every <strong>{{daysRequired}} days</strong> your friend mines. Your friend will also earn <strong>{{friendReward}} XTM</strong>.",
+    "inviteFriends": "Invite Friends",
+    "copied": "Copied!",
+    "activeMinersStat": "Active Miners",
+    "bonusXTMEarned": "Bonus XTM Earned",
+    "of": "of",
+    "inviteFriendsMessage": "Invite friends and start earning <strong>bonus XTM!</strong>",
+    "filters": {
+      "all": "All",
+      "complete": "Complete",
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "crewStatus": {
+      "completed": "Completed",
+      "inProgress": "In Progress",
+      "needsNudge": "Needs Nudge"
+    },
+    "actions": {
+      "claimed": "Claimed",
+      "claim": "Claim {{amount}} XTM",
+      "nudge": "Nudge"
+    },
+    "streak": {
+      "unlockBonusRewards": "Unlock your bonus rewards",
+      "mineConsecutiveDays": "Mine for at least <strong>{{streakDaysRequired}} consecutive days</strong> each week to earn your bonus XTM.",
+      "keepStreak": "Keep your streak to keep earning rewards!",
+      "dayStreak": "{{days}} Day Streak 🔥",
+      "day": "Day"
+    }
+  }
 }

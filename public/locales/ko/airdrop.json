@@ -55,5 +55,39 @@
   "username-error": "사용자 이름은 3-20자여야 하며 문자, 숫자, 밑줄 또는 하이픈만 포함해야 합니다",
   "username-update-success": "사용자 이름이 성공적으로 업데이트되었습니다",
   "you-reached-your-giftinh-goal": "선물 목표에 도달했습니다!",
-  "your-friend-accepted-gift": "친구 중 한 명이 당신의 선물을 수락했습니다!"
+  "your-friend-accepted-gift": "친구 중 한 명이 당신의 선물을 수락했습니다!",
+  "crewRewards": {
+    "title": "Rewards",
+    "myCrew": "My Crew",
+    "earnDescription": "Earn <strong>{{userReward}} XTM</strong> for every <strong>{{daysRequired}} days</strong> your friend mines. Your friend will also earn <strong>{{friendReward}} XTM</strong>.",
+    "inviteFriends": "Invite Friends",
+    "copied": "Copied!",
+    "activeMinersStat": "Active Miners",
+    "bonusXTMEarned": "Bonus XTM Earned",
+    "of": "of",
+    "inviteFriendsMessage": "Invite friends and start earning <strong>bonus XTM!</strong>",
+    "filters": {
+      "all": "All",
+      "complete": "Complete",
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "crewStatus": {
+      "completed": "Completed",
+      "inProgress": "In Progress",
+      "needsNudge": "Needs Nudge"
+    },
+    "actions": {
+      "claimed": "Claimed",
+      "claim": "Claim {{amount}} XTM",
+      "nudge": "Nudge"
+    },
+    "streak": {
+      "unlockBonusRewards": "Unlock your bonus rewards",
+      "mineConsecutiveDays": "Mine for at least <strong>{{streakDaysRequired}} consecutive days</strong> each week to earn your bonus XTM.",
+      "keepStreak": "Keep your streak to keep earning rewards!",
+      "dayStreak": "{{days}} Day Streak 🔥",
+      "day": "Day"
+    }
+  }
 }
