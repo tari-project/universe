@@ -82,7 +82,9 @@ impl ProcessAdapter for GpuMinerShaAdapter {
 
         args.push("--algo".to_string());
         args.push("sha3x".to_string());
+        // --web is needed for the web socket to be open
         args.push("--web".to_string());
+        args.push("--gpu".to_string());
 
         if let Some(pool_url) = &self.pool_url {
             args.push("--pool".to_string());
