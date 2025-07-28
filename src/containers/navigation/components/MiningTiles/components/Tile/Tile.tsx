@@ -65,11 +65,17 @@ export default function Tile({
     const isConnectedToTariNetwork = useMiningMetricsStore((s) => s.isNodeConnected);
     const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
 
-    const canAnimateTower = useMemo(() => visualMode && animationState === 'free', [animationState, visualMode]);
+    const canAnimateTower = useMemo(
+        () => visualMode && animationState === 'free' && isMining,
+        [animationState, visualMode, isMining]
+    );
 
     useEffect(() => {
-        setShowSuccessAnimation(!!successValue);
-        const resetTimer = setTimeout(() => clearCurrentSuccessValue(title), 5000);
+        if (!successValue) return;
+        setShowSuccessAnimation(successValue > 0);
+        const resetTimer = setTimeout(() => {
+            clearCurrentSuccessValue(title);
+        }, 5000);
         return () => {
             clearTimeout(resetTimer);
         };
@@ -127,7 +133,7 @@ export default function Tile({
     );
 
     return (
-        <Wrapper ref={tooltipTriggerRef} {...getReferenceProps?.()}>
+        <Wrapper key={title} ref={tooltipTriggerRef} {...getReferenceProps?.()}>
             <Inside $isSyncing={syncing || isLoading}>
                 <HeadingRow>
                     <LabelWrapper>
@@ -150,6 +156,7 @@ export default function Tile({
             </AnimatePresence>
 
             <SuccessAnimation
+                key={`success-${title}`}
                 value={successValue || 0}
                 unit="XTM"
                 show={showSuccessAnimation}
