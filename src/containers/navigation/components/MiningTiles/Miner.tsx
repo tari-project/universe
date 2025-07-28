@@ -26,7 +26,7 @@ export interface MinerTileProps {
     poolStats?: PoolStats;
     rewardThreshold?: number;
     showTooltip?: boolean;
-    progressDiff?: number;
+    progressDiff?: number | null;
     unpaidFMT?: string;
 }
 

@@ -24,42 +24,50 @@ export const setUITheme = (theme: Theme | 'system') => {
 };
 export const setDialogToShow = (dialogToShow?: DialogType) => useUIStore.setState({ dialogToShow });
 export const setIsWebglNotSupported = (isWebglNotSupported: boolean) => {
-    setVisualMode(false);
-    useUIStore.setState({ isWebglNotSupported });
+    setVisualMode(false).then(() => useUIStore.setState({ isWebglNotSupported }));
 };
 
-export const enableTowerAnimation = (enabled: boolean) => {
-    const setupComplete = useSetupStore.getState().appUnlocked;
+async function loadAnimation() {
     const towerSidebarOffset = useUIStore.getState().towerSidebarOffset;
-    useConfigUIStore.setState({ visualModeToggleLoading: true });
-    setVisualMode(enabled);
-    if (enabled) {
-        loadTowerAnimation({ canvasId: TOWER_CANVAS_ID, offset: towerSidebarOffset })
-            .then(() => {
-                if (setupComplete) {
-                    setAnimationState('showVisual');
-                }
-            })
-            .catch((e) => {
-                console.error('Could not enable visual mode. Error at loadTowerAnimation:', e);
-            })
-            .finally(() => {
-                useConfigUIStore.setState({ visualModeToggleLoading: false });
-            });
-    } else {
-        removeTowerAnimation({ canvasId: TOWER_CANVAS_ID })
-            .then(() => {
-                // Force garbage collection to clean up WebGL context
-                if (window.gc) {
-                    window.gc();
-                }
-            })
-            .catch((e) => {
-                console.error('Could not disable visual mode. Error at removeTowerAnimation:', e);
-            })
-            .finally(() => {
-                useConfigUIStore.setState({ visualModeToggleLoading: false });
-            });
+    const isInitialSetupFinished = useSetupStore.getState().isInitialSetupFinished;
+    const appUnlocked = useSetupStore.getState().appUnlocked;
+    const setupComplete = isInitialSetupFinished && appUnlocked;
+
+    try {
+        await loadTowerAnimation({ canvasId: TOWER_CANVAS_ID, offset: towerSidebarOffset });
+        if (setupComplete) {
+            setAnimationState('showVisual');
+        }
+    } catch (e) {
+        console.error('Could not enable visual mode. Error at loadTowerAnimation:', e);
+    }
+}
+async function removeAnimation() {
+    try {
+        await removeTowerAnimation({ canvasId: TOWER_CANVAS_ID });
+        // Force garbage collection to clean up WebGL context
+        if (window.gc) {
+            window.gc();
+        }
+    } catch (e) {
+        console.error('Could not disable visual mode. Error at removeTowerAnimation:', e);
+    }
+}
+export const toggleVisualMode = async (enabled: boolean) => {
+    useConfigUIStore.setState((c) => ({ ...c, visualModeToggleLoading: true }));
+
+    try {
+        await setVisualMode(enabled);
+        if (enabled) {
+            console.info(`Enabling visual mode. Loading animation from UI Store`);
+            await loadAnimation();
+        } else {
+            await removeAnimation();
+        }
+    } catch (e) {
+        console.error('Could not toggle visual mode. Error at setVisualMode:', e);
+    } finally {
+        useConfigUIStore.setState((c) => ({ ...c, visualModeToggleLoading: false }));
     }
 };
 export const handleConnectionStatusChanged = (connectionStatus: ConnectionStatusPayload) => {
@@ -114,7 +122,7 @@ export const animationDarkBg = [
     { property: 'mainColor', value: '#813bf5' },
     { property: 'failColor', value: '#ff5610' },
     { property: 'particlesColor', value: '#813bf5' },
-    { property: 'goboIntensity', value: 0.55 },
+    { property: 'goboIntensity', value: 0.35 },
     { property: 'particlesOpacity', value: 0.95 },
     { property: 'particlesSize', value: 0.015 },
 ];

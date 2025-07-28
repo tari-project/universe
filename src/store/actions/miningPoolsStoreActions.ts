@@ -21,7 +21,7 @@ function parseValues(
     stats: PoolStats,
     currentStats?: PoolStats,
     currentRewards?: RewardValues
-): { stats?: PoolStats; unpaidFMT?: string; diff?: number } {
+): { stats?: PoolStats; unpaidFMT?: string; diff?: number | null; isFirstDiff?: boolean } {
     const shouldUpdate = canUpdate(stats, currentStats);
 
     if (!shouldUpdate) {
@@ -30,21 +30,25 @@ function parseValues(
 
     const unpaid = stats?.unpaid ? Math.floor(removeXTMCryptoDecimals(stats?.unpaid) * 10_000) / 10_000 : 0;
     const unpaidFMT = unpaid ? fmtMatch(Math.floor(unpaid * 100) / 100, 2) : '0';
+
+    const isFirstDiff = currentRewards?.rewardValue === null;
+
     const _diff = stats?.unpaid ? stats?.unpaid - (currentStats?.unpaid || 0) : 0;
     const diff = Math.floor(removeXTMCryptoDecimals(_diff) * 10_000) / 10_000;
     return {
         stats,
         unpaidFMT,
         diff,
+        isFirstDiff,
     };
 }
+
 export const clearCurrentSuccessValue = (type: PoolType) => {
     if (type === 'GPU') {
-        useMiningPoolsStore.setState((c) => ({ gpuRewards: { ...c.gpuRewards, rewardValue: 0 } }));
+        useMiningPoolsStore.setState((c) => ({ ...c, gpuRewards: { ...c.gpuRewards, rewardValue: 0 } }));
     }
-
     if (type === 'CPU') {
-        useMiningPoolsStore.setState((c) => ({ cpuRewards: { ...c.cpuRewards, rewardValue: 0 } }));
+        useMiningPoolsStore.setState((c) => ({ ...c, cpuRewards: { ...c.cpuRewards, rewardValue: 0 } }));
     }
 };
 export const setCpuPoolStats = (cpuPoolStats: PoolStats) =>
@@ -53,7 +57,11 @@ export const setCpuPoolStats = (cpuPoolStats: PoolStats) =>
         return {
             ...c,
             cpuPoolStats: parsed.stats,
-            cpuRewards: { ...c.cpuRewards, rewardValue: parsed.diff, unpaidFMT: parsed.unpaidFMT },
+            cpuRewards: {
+                ...c.cpuRewards,
+                rewardValue: parsed.isFirstDiff ? 0 : parsed.diff,
+                unpaidFMT: parsed.unpaidFMT,
+            },
         };
     });
 
@@ -63,6 +71,10 @@ export const setGpuPoolStats = (gpuPoolStats: PoolStats) =>
         return {
             ...c,
             gpuPoolStats: parsed.stats,
-            gpuRewards: { ...c.gpuRewards, rewardValue: parsed.diff, unpaidFMT: parsed.unpaidFMT },
+            gpuRewards: {
+                ...c.gpuRewards,
+                rewardValue: parsed.isFirstDiff ? 0 : parsed.diff,
+                unpaidFMT: parsed.unpaidFMT,
+            },
         };
     });
