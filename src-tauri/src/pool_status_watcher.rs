@@ -168,7 +168,7 @@ pub struct LuckyPoolStatusResponseBody {
     pub stats: LuckyPoolStats,
     pub workers: Vec<LuckyPoolWorker>,
     #[serde(skip)]
-    pub charts: Option<LuckyPoolCharts>,
+    pub _charts: Option<LuckyPoolCharts>,
     pub payments: Vec<LuckyPoolPayment>,
     pub rewards: Vec<LuckyPoolReward>,
     #[serde(rename = "rewardStats")]
