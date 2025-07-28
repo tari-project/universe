@@ -67,8 +67,8 @@ pub const STOP_ON_ERROR_CODES: [i32; 2] = [114, 102];
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Default)]
 pub enum NodeType {
     Local,
-    Remote,
     #[default]
+    Remote,
     RemoteUntilLocal,
     LocalAfterRemote,
 }
