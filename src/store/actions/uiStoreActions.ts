@@ -59,6 +59,7 @@ export const toggleVisualMode = async (enabled: boolean) => {
     try {
         await setVisualMode(enabled);
         if (enabled) {
+            console.info(`Enabling visual mode. Loading animation from UI Store`);
             await loadAnimation();
         } else {
             await removeAnimation();

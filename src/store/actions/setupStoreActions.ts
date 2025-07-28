@@ -29,7 +29,7 @@ async function initializeAnimation() {
 
     const offset = useUIStore.getState().towerSidebarOffset;
     try {
-        console.info('Loading tower animation');
+        console.info('Loading tower animation from Setup Store');
         let loaded = false;
         try {
             await loadTowerAnimation({ canvasId: TOWER_CANVAS_ID, offset: offset });

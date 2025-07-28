@@ -4,7 +4,7 @@ import { setAnimationState, animationStatus, getTowerLogPrefix } from '@tari-pro
 import { useMiningStore } from '@app/store/useMiningStore';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 import { useSetupStore } from '@app/store/useSetupStore.ts';
-import { useConfigUIStore } from '@app/store';
+import { useConfigUIStore, useUIStore } from '@app/store';
 
 export const useUiMiningStateMachine = () => {
     const setupComplete = useSetupStore((s) => s.appUnlocked);
@@ -14,6 +14,7 @@ export const useUiMiningStateMachine = () => {
     const gpuIsMining = useMiningMetricsStore((s) => s.gpu_mining_status?.is_mining);
     const visualMode = useConfigUIStore((s) => s.visual_mode);
     const visualModeLoading = useConfigUIStore((s) => s.visualModeToggleLoading);
+    const towerInitalized = useUIStore((s) => s.towerInitalized);
 
     const stateTrigger = animationStatus;
     const isMining = cpuIsMining || gpuIsMining;
@@ -71,7 +72,7 @@ export const useUiMiningStateMachine = () => {
     }, []);
 
     useEffect(() => {
-        if (noVisualMode) return;
+        if (noVisualMode || !towerInitalized) return;
         if (shouldStop) {
             forceAnimationStop();
             return;
@@ -82,5 +83,5 @@ export const useUiMiningStateMachine = () => {
         return () => {
             clearStopTimeout();
         };
-    }, [forceAnimationStop, noVisualMode, shouldStart, shouldStop]);
+    }, [towerInitalized, forceAnimationStop, noVisualMode, shouldStart, shouldStop]);
 };

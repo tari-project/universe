@@ -2,7 +2,7 @@ import i18n from 'i18next';
 import { Ref, useEffect, useMemo, useState } from 'react';
 import { AnimatePresence } from 'motion/react';
 import NumberFlow from '@number-flow/react';
-import { useConfigUIStore, useMiningMetricsStore } from '@app/store';
+import { useConfigUIStore, useMiningMetricsStore, useUIStore } from '@app/store';
 import SuccessAnimation from '../SuccessAnimation/SuccessAnimation';
 import SyncData from '@app/containers/navigation/components/MiningTiles/components/SyncData/SyncData.tsx';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
@@ -62,24 +62,26 @@ export default function Tile({
 }: Props) {
     const animationState = animationStatus;
     const visualMode = useConfigUIStore((s) => s.visual_mode);
+    const towerInitalized = useUIStore((s) => s.towerInitalized);
     const isConnectedToTariNetwork = useMiningMetricsStore((s) => s.isNodeConnected);
     const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
 
     const canAnimateTower = useMemo(
-        () => visualMode && animationState === 'free' && isMining,
-        [animationState, visualMode, isMining]
+        () => visualMode && towerInitalized && animationState === 'free' && !isLoading,
+        [animationState, visualMode, isLoading, towerInitalized]
     );
 
     useEffect(() => {
-        if (!successValue) return;
+        if (!successValue || isLoading) return;
         setShowSuccessAnimation(successValue > 0);
         const resetTimer = setTimeout(() => {
             clearCurrentSuccessValue(title);
+            setShowSuccessAnimation(false);
         }, 5000);
         return () => {
             clearTimeout(resetTimer);
         };
-    }, [successValue, title, visualMode]);
+    }, [isLoading, successValue, title, visualMode]);
 
     useEffect(() => {
         if (!canAnimateTower) return;
