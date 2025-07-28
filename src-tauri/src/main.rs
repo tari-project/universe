@@ -113,6 +113,7 @@ mod mm_proxy_adapter;
 mod mm_proxy_manager;
 mod network_utils;
 mod node;
+mod ootle;
 mod p2pool;
 mod p2pool_adapter;
 mod p2pool_manager;

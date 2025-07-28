@@ -96,6 +96,7 @@ pub enum ProgressEvents {
     Hardware,
     Node,
     Mining,
+    OotleWallet,
 }
 #[derive(Clone, Debug, Serialize)]
 pub struct ProgressTrackerUpdatePayload {
