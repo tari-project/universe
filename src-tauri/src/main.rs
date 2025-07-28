@@ -77,6 +77,7 @@ use crate::feedback::Feedback;
 use crate::gpu_miner::GpuMiner;
 use crate::mm_proxy_manager::{MmProxyManager, StartConfig};
 use crate::node::node_manager::NodeManager;
+use crate::ootle::commands as ootle_commands;
 use crate::ootle::ootle_wallet_adapter::OotleWalletState;
 use crate::ootle::ootle_wallet_manager::OotleWalletManager;
 use crate::p2pool::models::P2poolStats;
@@ -645,6 +646,9 @@ fn main() {
             commands::select_mining_mode,
             commands::update_custom_mining_mode,
             commands::get_ootle_wallet_state,
+            ootle_commands::ootle_list_accounts,
+            ootle_commands::ootle_create_account,
+            ootle_commands::ootle_get_balances,
         ])
         .build(tauri::generate_context!())
         .inspect_err(|e| {

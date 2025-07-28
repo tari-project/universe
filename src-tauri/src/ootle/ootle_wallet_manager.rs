@@ -23,6 +23,7 @@
 use crate::ootle::ootle_wallet_adapter::OotleWalletAdapter;
 use crate::ootle::ootle_wallet_adapter::OotleWalletState;
 use crate::ootle::ootle_wallet_json_rpc_client::OotleWalletJsonRpcClient;
+use crate::ootle::temp_types::AccountsCreateRequest;
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
 use crate::tasks_tracker::TasksTrackers;
@@ -148,7 +149,15 @@ impl OotleWalletManager {
             }
             _ => {
                 log::info!(target: LOG_TARGET, "Creating default account");
-                client.create_account("default").await
+                let _ = client
+                    .create_account(AccountsCreateRequest {
+                        account_name: Some("default".to_owned()),
+                        max_fee: None,
+                        is_default: true,
+                        key_id: None,
+                    })
+                    .await?;
+                Ok(())
             }
         }
     }

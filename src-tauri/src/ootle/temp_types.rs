@@ -20,8 +20,60 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod commands;
-pub mod ootle_wallet_adapter;
-pub mod ootle_wallet_json_rpc_client;
-pub mod ootle_wallet_manager;
-pub mod temp_types;
+use serde::{Deserialize, Serialize};
+
+/** Accounts List */
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct AccountsListRequest {
+    pub offset: u64,
+    pub limit: u64,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct Account {
+    pub name: Option<String>,
+    pub address: String,
+    pub key_index: u64,
+    pub is_default: bool,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct AccountInfo {
+    pub account: Account,
+    pub public_key: String,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct AccountsListResponse {
+    pub accounts: Vec<AccountInfo>,
+    pub total: u64,
+}
+
+/** Create Account */
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct AccountsCreateRequest {
+    pub account_name: Option<String>,
+    pub max_fee: Option<u64>,
+    pub is_default: bool,
+    pub key_id: Option<u64>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct AccountsCreateResponse {
+    pub address: String,
+    pub public_key: String,
+    pub result: serde_json::Value,
+}
+
+/** Get Balances */
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct AccountsGetBalancesRequest {
+    pub account: Option<String>,
+    pub refresh: bool,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct AccountsGetBalancesResponse {
+    pub address: String,
+    pub balances: Vec<serde_json::Value>,
+}

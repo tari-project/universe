@@ -25,6 +25,11 @@ use reqwest::Client;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::json;
 
+use crate::ootle::temp_types::{
+    AccountsCreateRequest, AccountsCreateResponse, AccountsGetBalancesRequest,
+    AccountsGetBalancesResponse, AccountsListRequest, AccountsListResponse,
+};
+
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 #[allow(dead_code)]
 pub struct OotleWalletInfo {
@@ -84,16 +89,27 @@ impl OotleWalletJsonRpcClient {
             .map(|s| s.to_string()))
     }
 
-    pub async fn create_account(&self, name: &str) -> Result<(), Error> {
-        let _: serde_json::Value = self
-            .json_rpc_request(
-                "accounts.create",
-                json!({
-                    "account_name": name,
-                    "is_default": true
-                }),
-            )
-            .await?;
-        Ok(())
+    pub async fn list_accounts(
+        &self,
+        request: AccountsListRequest,
+    ) -> Result<AccountsListResponse, Error> {
+        let value = serde_json::to_value(request)?;
+        self.json_rpc_request("accounts.list", value).await
+    }
+
+    pub async fn create_account(
+        &self,
+        request: AccountsCreateRequest,
+    ) -> Result<AccountsCreateResponse, Error> {
+        let value = serde_json::to_value(request)?;
+        self.json_rpc_request("accounts.create", value).await
+    }
+
+    pub async fn get_balances(
+        &self,
+        request: AccountsGetBalancesRequest,
+    ) -> Result<AccountsGetBalancesResponse, Error> {
+        let value = serde_json::to_value(request)?;
+        self.json_rpc_request("accounts.get_balances", value).await
     }
 }
