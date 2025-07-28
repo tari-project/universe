@@ -121,7 +121,7 @@ impl SpendWallet {
 
         info!(
             target: LOG_TARGET,
-            "Transaction signing completed with exit code: {}", exit_code
+            "Transaction signing completed with exit code: {exit_code}"
         );
 
         let data_dir = self.get_data_dir(app_handle)?;

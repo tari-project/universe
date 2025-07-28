@@ -259,7 +259,7 @@ impl WalletManager {
             .send_one_sided_to_stealth_address(amount, destination, payment_id, app_handle)
             .await;
 
-        res.map_err(|e| WalletManagerError::UnknownError(e.into()))
+        res.map_err(|e| WalletManagerError::UnknownError(e))
     }
 
     pub async fn find_coinbase_transaction_for_block(

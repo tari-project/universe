@@ -90,14 +90,13 @@ impl<'a> TransactionService<'a> {
             .await?;
 
         let prepare_tx_res = res.into_inner();
-        let unsigned_tx_json = match prepare_tx_res.is_success {
-            true => prepare_tx_res.result,
-            false => {
-                return Err(anyhow::anyhow!(
-                    "One-sided transaction preparation failed: {}",
-                    prepare_tx_res.failure_message
-                ))
-            }
+        let unsigned_tx_json = if prepare_tx_res.is_success {
+            prepare_tx_res.result
+        } else {
+            return Err(anyhow::anyhow!(
+                "One-sided transaction preparation failed: {}",
+                prepare_tx_res.failure_message
+            ));
         };
 
         // Create directory for transaction files if it doesn't exist
@@ -180,19 +179,18 @@ impl<'a> TransactionService<'a> {
             .await?;
 
         let broadcast_signed_tx_res = res.into_inner();
-        match broadcast_signed_tx_res.is_success {
-            true => {
-                log::info!(
-                    target: LOG_TARGET,
-                    "One-sided transaction broadcasted successfully | tx_id: {}",
-                    broadcast_signed_tx_res.transaction_id
-                );
-                Ok(())
-            }
-            false => Err(anyhow::anyhow!(
+        if broadcast_signed_tx_res.is_success {
+            log::info!(
+                target: LOG_TARGET,
+                "One-sided transaction broadcasted successfully | tx_id: {}",
+                broadcast_signed_tx_res.transaction_id
+            );
+            Ok(())
+        } else {
+            Err(anyhow::anyhow!(
                 "One-sided transaction broadcast failed: {}",
                 broadcast_signed_tx_res.failure_message
-            )),
+            ))
         }
     }
 }
