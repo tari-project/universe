@@ -41,7 +41,6 @@ use crate::process_adapter::{
 };
 use crate::tasks_tracker::TasksTrackers;
 use crate::utils::commands_builder::CommandBuilder;
-use crate::utils::file_utils::convert_to_string;
 use crate::utils::logging_utils::setup_logging;
 
 /// Log target for spend wallet module
@@ -68,6 +67,19 @@ impl SpendWallet {
         Self::default()
     }
 
+    /// Syncs the wallet with the network using the provided seed words(Required to execute other cli commands)
+    async fn sync_wallet(&self, app_handle: &AppHandle, seed_words: &str) -> Result<(), Error> {
+        let sync_command = CommandBuilder::new("sync")
+            .add_args(&["--skip-recovery", "sync"])
+            .add_env("MINOTARI_WALLET_SEED_WORDS", seed_words);
+
+        self.execute_command(app_handle, sync_command, vec![EXIT_CODE_ZERO])
+            .await
+            .map_err(|e| anyhow::anyhow!("Failed to execute sync command: {}", e))?;
+
+        Ok(())
+    }
+
     /// Signs a one-sided transaction from the provided input file and writes the result to the output file
     ///
     /// # Arguments
@@ -88,6 +100,9 @@ impl SpendWallet {
             .await
             .context("Failed to retrieve wallet seed words")?;
 
+        // Required step
+        self.sync_wallet(app_handle, &seed_words).await?;
+
         let sign_command = CommandBuilder::new("sign-one-sided-transaction")
             .add_args(&[
                 "--skip-recovery",
@@ -102,12 +117,20 @@ impl SpendWallet {
         let (exit_code, _stdout, _stderr) = self
             .execute_command(app_handle, sign_command, vec![EXIT_CODE_ZERO])
             .await
-            .context("Failed to execute signing command")?;
+            .map_err(|e| anyhow::anyhow!("Failed to execute signing command: {}", e))?;
 
         info!(
             target: LOG_TARGET,
             "Transaction signing completed with exit code: {}", exit_code
         );
+
+        let data_dir = self.get_data_dir(app_handle)?;
+        let working_dir = data_dir.join("spend_wallet");
+        // Clean up spend wallet working directory
+        std::fs::remove_dir_all(&working_dir)
+            .and_then(|_| std::fs::create_dir_all(&working_dir))
+            .context("Failed to clean up Spend Wallet working directory")?;
+
         Ok(())
     }
 
@@ -168,11 +191,6 @@ impl SpendWallet {
             exit_code
         );
 
-        // Clean up working directory after command execution
-        std::fs::remove_dir_all(&working_dir)
-            .and_then(|_| std::fs::create_dir_all(&working_dir))
-            .context("Failed to clean up Spend Wallet working directory")?;
-
         if !allow_exit_codes.contains(&exit_code) {
             log::error!(
                 target: LOG_TARGET,
@@ -196,19 +214,21 @@ impl SpendWallet {
 
     /// Gets the shared command line arguments for all commands
     fn get_shared_args(&self, data_dir: PathBuf, log_dir: PathBuf) -> Result<Vec<String>, Error> {
-        let network = Network::get_current_or_user_setting_or_default().to_string();
-        let working_dir = data_dir.join("spend_wallet").join(network);
+        let working_dir = data_dir.join("spend_wallet");
         let log_config_file = log_dir
             .join("spend_wallet")
             .join("configs")
             .join("log4rs_config_spend_wallet.yml");
 
+        let working_dir_str = working_dir.to_string_lossy().to_string();
+        let log_config_str = log_config_file.to_string_lossy().to_string();
+
         Ok(vec![
             "-b".to_string(),
-            convert_to_string(working_dir)?,
-            format!("--log-config={}", convert_to_string(log_config_file)?),
+            working_dir_str,
+            format!("--log-config={}", log_config_str),
             "--non-interactive-mode".to_string(),
-            "--command-mode-auto-exit".to_string(),
+            "--auto-exit".to_string(),
         ])
     }
 
