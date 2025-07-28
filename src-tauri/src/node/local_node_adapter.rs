@@ -261,8 +261,6 @@ impl ProcessAdapter for LocalNodeAdapter {
             "-p".to_string(),
             "base_node.grpc_server_allow_methods=\"list_connected_peers, get_blocks\"".to_string(),
             "-p".to_string(),
-            "base_node.p2p.allow_test_addresses=true".to_string(),
-            "-p".to_string(),
             "base_node.p2p.dht.network_discovery.min_desired_peers=12".to_string(),
             "-p".to_string(),
             format!(
