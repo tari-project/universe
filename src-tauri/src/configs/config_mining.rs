@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::{events_emitter::EventsEmitter, gpu_miner::EngineType};
+use crate::gpu_miner::EngineType;
 use std::{collections::HashMap, sync::LazyLock, time::SystemTime};
 
 use getset::{Getters, Setters};
@@ -60,10 +60,6 @@ pub struct GpuDevicesSettings(HashMap<u32, GpuDeviceSettings>);
 impl GpuDevicesSettings {
     pub fn new() -> Self {
         Self(HashMap::new())
-    }
-
-    pub fn get(&self, device_id: u32) -> Option<&GpuDeviceSettings> {
-        self.0.get(&device_id)
     }
 
     pub fn add(&mut self, device_id: u32) {
@@ -136,7 +132,7 @@ impl Default for ConfigMiningContent {
             gpu_mining_enabled: true,
             cpu_mining_enabled: true,
             gpu_engine: EngineType::OpenCL,
-            gpu_devices_settings: GpuDevicesSettings(HashMap::new()),
+            gpu_devices_settings: GpuDevicesSettings::new(),
             squad_override: None,
         }
     }
@@ -168,16 +164,12 @@ impl ConfigMiningContent {
     }
 
     pub fn enable_gpu_device_exclusion(&mut self, device_id: u32) -> &mut Self {
-        if let Some(settings) = self.gpu_devices_settings.0.get_mut(&device_id) {
-            settings.is_excluded = true;
-        }
+        self.gpu_devices_settings.set_excluded(device_id, true);
         self
     }
 
     pub fn disable_gpu_device_exclusion(&mut self, device_id: u32) -> &mut Self {
-        if let Some(settings) = self.gpu_devices_settings.0.get_mut(&device_id) {
-            settings.is_excluded = false;
-        }
+        self.gpu_devices_settings.set_excluded(device_id, false);
         self
     }
 

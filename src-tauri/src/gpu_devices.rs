@@ -66,8 +66,8 @@ impl GpuInformationFile {
         let mut contents = String::new();
         reader.read_to_string(&mut contents).await?;
 
-        let gpu_status_file = serde_json::from_str(&contents)?;
-        Ok(gpu_status_file)
+        let gpu_information_file = serde_json::from_str(&contents)?;
+        Ok(gpu_information_file)
     }
 }
 #[derive(Debug)]
@@ -82,13 +82,22 @@ impl GpuDevices {
         }
     }
 
-    fn _construct_gpu_status_file_path(&self, config_dir: &Path) -> Result<PathBuf, anyhow::Error> {
-        let gpu_status_file_path = config_dir.join("gpuminer").join("gpu_status_opencl.json");
-        gpu_status_file_path
+    fn _gpu_information_file_parent_directory(&self, config_dir: &Path) -> PathBuf {
+        config_dir.join("gpuminer")
+    }
+
+    fn _construct_gpu_information_file_path(
+        &self,
+        config_dir: &Path,
+    ) -> Result<PathBuf, anyhow::Error> {
+        let gpu_information_file_path = self
+            ._gpu_information_file_parent_directory(config_dir)
+            .join("gpu_information_opencl.json");
+        gpu_information_file_path
             .try_exists()
             .map_err(|e| anyhow::anyhow!("Failed to check if gpu status file exists: {}", e))?;
 
-        Ok(gpu_status_file_path)
+        Ok(gpu_information_file_path)
     }
 
     pub fn current() -> &'static RwLock<GpuDevices> {
@@ -96,12 +105,14 @@ impl GpuDevices {
     }
 
     pub async fn detect(&mut self, config_dir: PathBuf) -> Result<(), anyhow::Error> {
-        let gpu_status_file_path = self._construct_gpu_status_file_path(&config_dir)?;
+        let gpu_information_file_directory =
+            self._gpu_information_file_parent_directory(&config_dir);
+        let gpu_information_file_path = self._construct_gpu_information_file_path(&config_dir)?;
 
         let args: Vec<String> = vec![
             "--detect".to_string(),
-            "--gpu-status-file".to_string(),
-            gpu_status_file_path.to_string_lossy().to_string(),
+            "--information-file-dir".to_string(),
+            gpu_information_file_directory.to_string_lossy().to_string(),
         ];
         let gpuminer_bin = BinaryResolver::current()
             .resolve_path_to_binary_files(Binaries::GpuMinerSHA3X)
@@ -114,8 +125,8 @@ impl GpuDevices {
         let output = child.wait_with_output().await?;
         info!(target: LOG_TARGET, "Gpu detect exit code: {:?}", output.status.code().unwrap_or_default());
 
-        let gpu_status_file = GpuInformationFile::load(&gpu_status_file_path).await?;
-        self.devices = gpu_status_file.devices;
+        let gpu_information_file = GpuInformationFile::load(&gpu_information_file_path).await?;
+        self.devices = gpu_information_file.devices;
 
         match output.status.code() {
             Some(0) => {
