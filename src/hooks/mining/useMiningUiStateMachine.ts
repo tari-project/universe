@@ -74,9 +74,13 @@ export const useUiMiningStateMachine = () => {
         if (noVisualMode) return;
         if (shouldStop) {
             forceAnimationStop();
-        } else if (shouldStart) {
-            setAnimationState('start');
-            clearStopTimeout();
+            return;
         }
+        if (shouldStart) {
+            setAnimationState('start');
+        }
+        return () => {
+            clearStopTimeout();
+        };
     }, [forceAnimationStop, noVisualMode, shouldStart, shouldStop]);
 };

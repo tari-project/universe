@@ -60,29 +60,27 @@ export default function Tile({
     getReferenceProps,
     isSoloMining,
 }: Props) {
+    const animationState = animationStatus;
     const visualMode = useConfigUIStore((s) => s.visual_mode);
     const isConnectedToTariNetwork = useMiningMetricsStore((s) => s.isNodeConnected);
     const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
-    const animationState = animationStatus;
 
-    const canAnimateTower = useMemo(
-        () => visualMode && showSuccessAnimation && animationState === 'free',
-        [animationState, showSuccessAnimation, visualMode]
-    );
-
-    useEffect(() => {
-        if (canAnimateTower) {
-            setAnimationState('success');
-        }
-    }, [canAnimateTower]);
+    const canAnimateTower = useMemo(() => visualMode && animationState === 'free', [animationState, visualMode]);
 
     useEffect(() => {
         setShowSuccessAnimation(!!successValue);
-        const resetTimer = setTimeout(() => clearCurrentSuccessValue(title), 4000);
+        const resetTimer = setTimeout(() => clearCurrentSuccessValue(title), 5000);
         return () => {
             clearTimeout(resetTimer);
         };
     }, [successValue, title, visualMode]);
+
+    useEffect(() => {
+        if (!canAnimateTower) return;
+        if (showSuccessAnimation) {
+            setAnimationState('success');
+        }
+    }, [canAnimateTower, showSuccessAnimation]);
 
     const syncing = isSoloMining && isEnabled && !isConnectedToTariNetwork;
     const gpuIdle = isSoloMining && !isMining;

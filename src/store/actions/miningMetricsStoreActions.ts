@@ -10,11 +10,11 @@ export const setGpuDevices = (gpu_devices: GpuDevice[]) => {
     const gpuMiningEnabled = useConfigMiningStore.getState().gpu_mining_enabled;
 
     if (!gpuMiningEnabled && gpu_devices.some((gpu) => gpu.settings.is_available && !gpu.settings.is_excluded)) {
-        setGpuMiningEnabled(true);
+        void setGpuMiningEnabled(true);
     }
 
     if (gpuMiningEnabled && gpu_devices.every((gpu) => gpu.settings.is_excluded)) {
-        setGpuMiningEnabled(false);
+        void setGpuMiningEnabled(false);
     }
 };
 export const setGpuMiningStatus = (gpu_mining_status: GpuMinerStatus) => {
@@ -27,7 +27,7 @@ export const setCpuMiningStatus = (cpu_mining_status: CpuMinerStatus) => {
 export const handleConnectedPeersUpdate = (connected_peers: string[]) => {
     const wasNodeConnected = useMiningMetricsStore.getState().isNodeConnected;
     const isNodeConnected = connected_peers?.length > 0;
-    useMiningMetricsStore.setState({ connected_peers, isNodeConnected });
+    useMiningMetricsStore.setState((c) => ({ ...c, connected_peers, isNodeConnected }));
 
     const miningInitiated =
         useMiningStore.getState().isCpuMiningInitiated || useMiningStore.getState().isGpuMiningInitiated;

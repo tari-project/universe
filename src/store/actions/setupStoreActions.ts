@@ -30,17 +30,24 @@ async function initializeAnimation() {
     const offset = useUIStore.getState().towerSidebarOffset;
     try {
         console.info('Loading tower animation');
+        let loaded = false;
         try {
             await loadTowerAnimation({ canvasId: TOWER_CANVAS_ID, offset: offset });
-            setAnimationState('showVisual');
             useUIStore.setState({ towerInitalized: true });
+            loaded = true;
         } catch (error) {
             console.error('Failed to set animation state:', error);
             useUIStore.setState({ towerInitalized: false });
+            loaded = false;
+        } finally {
+            if (loaded) {
+                setAnimationState('showVisual');
+            }
         }
     } catch (e) {
         console.error('Error at loadTowerAnimation:', e);
-        useConfigUIStore.setState({ visual_mode: false });
+        useConfigUIStore.setState((c) => ({ ...c, visual_mode: false }));
+        useUIStore.setState({ towerInitalized: false });
     }
 }
 
@@ -49,9 +56,9 @@ export const handleAppUnlocked = async () => {
     await fetchBridgeTransactionsHistory().catch((error) => {
         console.error('Could not fetch bridge transactions history:', error);
     });
-    await initializeAnimation();
     // todo move it to event
     await fetchApplicationsVersionsWithRetry();
+    await initializeAnimation();
 };
 export const handleWalletUnlocked = async () => {
     useSetupStore.setState({ walletUnlocked: true });
