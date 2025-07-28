@@ -7,6 +7,7 @@ import { TorMarkup } from './TorMarkup';
 import MonerodMarkup from './MonerodMarkup';
 import P2poolMarkup from './P2poolMarkup.tsx';
 import { useConfigCoreStore, useConfigUIStore } from '@app/store/useAppConfigStore.ts';
+import TappletDev from './TappletDev.tsx';
 
 export const ExperimentalSettings = () => {
     const showExperimental = useConfigUIStore((s) => s.show_experimental_settings);
@@ -23,6 +24,7 @@ export const ExperimentalSettings = () => {
                         <TorMarkup />
                         <MonerodMarkup />
                         {isP2poolEnabled && <P2poolMarkup />}
+                        {<TappletDev />}
                     </>
                 )}
             </AnimatePresence>

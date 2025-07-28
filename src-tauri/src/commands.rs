@@ -66,6 +66,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::fmt::Debug;
 use std::fs::{read_dir, remove_dir_all, remove_file, File};
+use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
@@ -2245,6 +2246,7 @@ pub async fn launch_builtin_tapplet(
         .await
         .map_err(|e| e.to_string())?;
 
+    info!(target: LOG_TARGET, "💥 Built-in tapplet start: {:?}", &tapp_dest_dir);
     let csp = state.tapplet_csp_header.clone();
 
     let handle_start =
@@ -2261,6 +2263,35 @@ pub async fn launch_builtin_tapplet(
     Ok(ActiveTapplet {
         tapplet_id: 0,
         display_name: "Bridge-wXTM".to_string(),
+        source: format!("http://{addr}"),
+        version: "1.0.0".to_string(),
+    })
+}
+
+#[tauri::command]
+pub async fn launch_dev_tapplet(
+    path: String,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<ActiveTapplet, String> {
+    let tapp_dest_dir = PathBuf::from(path);
+    info!(target: LOG_TARGET, "💥 Dev tapplet start: {:?}", &tapp_dest_dir);
+
+    let csp = state.tapplet_csp_header.clone();
+
+    let handle_start =
+        tauri::async_runtime::spawn(async move { start_tapplet(tapp_dest_dir, csp).await });
+
+    let (addr, _cancel_token) = match handle_start.await {
+        Ok(result) => result.map_err(|e| e.to_string())?,
+        Err(e) => {
+            error!(target: LOG_TARGET, "❌ Error handling tapplet start: {e:?}");
+            return Err(e.to_string());
+        }
+    };
+
+    Ok(ActiveTapplet {
+        tapplet_id: 0,
+        display_name: "Dev Tapplet".to_string(),
         source: format!("http://{addr}"),
         version: "1.0.0".to_string(),
     })

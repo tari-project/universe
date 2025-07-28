@@ -14,6 +14,7 @@ interface State {
 interface Actions {
     setActiveTapp: (tapplet?: ActiveTapplet) => Promise<void>;
     setActiveTappById: (tappletId: number, isBuiltIn?: boolean) => Promise<void>;
+    setDevTapplet: (tappPath: string) => Promise<void>;
     deactivateTapplet: () => Promise<void>;
     setOngoingBridgeTx: (tx: BridgeTxDetails) => void;
     removeOngoingBridgeTx: () => void;
@@ -52,6 +53,17 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
 
         // by default tapplets are supposed to work with the Ootle
         // run the Ootle dev/registed tapplet below
+        return;
+    },
+    setDevTapplet: async (tappPath: string) => {
+        console.info('🐦‍🔥 dev tapp path', tappPath);
+        if (!tappPath) return;
+        const tappProviderState = useTappletSignerStore.getState();
+        if (!tappProviderState.isInitialized) tappProviderState.initTappletSigner();
+
+        // dev tapplet
+        const activeTapplet = await invoke('launch_dev_tapplet', { path: tappPath });
+        set({ activeTapplet });
         return;
     },
     setOngoingBridgeTx: (tx: BridgeTxDetails) => {
