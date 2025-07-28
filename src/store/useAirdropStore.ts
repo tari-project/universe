@@ -93,7 +93,7 @@ export interface CommunityMessage {
 
 export type RewardType = 'mining_hours' | 'mining_days' | 'pool_hashes' | 'pool_shares' | 'pool_amount';
 
-export type RewardStatus = 'pending' | 'earned' | 'claimed' | 'expired';
+export type RewardStatus = 'incomplete' | 'pending' | 'earned' | 'claimed' | 'expired';
 
 export interface CrewMemberReward {
     id: string;
@@ -104,14 +104,14 @@ export interface CrewMemberReward {
     claimedAt?: Date;
     readyToClaim: boolean;
     progressTowardsReward: {
-        miningHoursProgress: number; // Raw total mining hours (e.g., 45.5)
-        miningDaysProgress: number; // Raw number of qualifying days completed (e.g., 8)
-        totalDaysRequired: number; // Total days required for completion (e.g., 14)
-        currentDayProgress: number; // Today's progress percentage (0-100%, e.g., 75.0)
-        poolHashesProgress: number; // Raw total hashes (e.g., 1250000)
-        poolSharesProgress: number; // Raw valid shares (e.g., 850)
-        poolAmountProgress: number; // Raw amount paid (e.g., 0.00045)
-        isComplete: boolean; // Boolean completion status
+        miningMinutesProgress: number;
+        miningDaysProgress: number;
+        totalDaysRequired: number;
+        currentDayProgress: number;
+        poolHashesProgress: number;
+        poolSharesProgress: number;
+        poolAmountProgress: number;
+        isComplete: boolean;
     };
 }
 
@@ -121,7 +121,7 @@ export interface CrewMember {
     walletViewKeyHashed: string;
     walletReceiveKeyHashed: string;
     completed: boolean;
-    totalMiningHours: number;
+    totalMiningMinutes: number;
     weeklyGoalProgress: number;
     lastActivityDate: Date;
     milestones: string[];
@@ -129,6 +129,7 @@ export interface CrewMember {
         name: string;
         displayName?: string;
         referralCode?: string;
+        imageUrl?: string;
     };
     rewards: CrewMemberReward[];
 }
@@ -143,13 +144,20 @@ export interface PaginationInfo {
 export interface ReferrerProgress {
     currentStreak: number;
     longestStreak: number;
-    totalMiningHours: number;
-    todayMiningHours: number;
+    totalMiningMinutes: number;
+    todayMiningMinutes: number;
     lastMiningDate: Date;
     isCurrentlyMining: boolean;
     meetsMinimumDays: boolean;
     totalClaimedRewards: number;
     minReferrerDaysRequired: number;
+}
+
+export interface CrewMembersTotals {
+    all: number;
+    completed: number;
+    active: number;
+    inactive: number;
 }
 
 export interface CrewMembersResponse {
@@ -159,18 +167,7 @@ export interface CrewMembersResponse {
         status: 'all' | 'completed' | 'active' | 'inactive';
     };
     referrerProgress: ReferrerProgress;
-    totals: {
-        all: number;
-        completed: number;
-        active: number;
-        inactive: number;
-    };
-}
-
-export interface CrewAnalytics {
-    totalMembers: number;
-    activeMembers: number;
-    performanceMetrics: Record<string, any>;
+    totals: CrewMembersTotals;
 }
 
 export interface Reward {
@@ -198,8 +195,10 @@ export interface AirdropStoreState {
     communityMessages?: CommunityMessage[];
     features?: string[];
     crewMembers?: CrewMember[];
-    crewAnalytics?: CrewAnalytics;
+
     crewRewards?: Reward[];
+    crewTotals?: CrewMembersTotals;
+    referrerProgress?: ReferrerProgress;
     crewQueryParams: {
         status: 'all' | 'completed' | 'active' | 'inactive';
         page: number;
@@ -224,4 +223,6 @@ const initialState: AirdropStoreState = {
     },
 };
 
-export const useAirdropStore = create<AirdropStoreState>()(() => ({ ...initialState }));
+export const useAirdropStore = create<AirdropStoreState>()(() => ({
+    ...initialState,
+}));

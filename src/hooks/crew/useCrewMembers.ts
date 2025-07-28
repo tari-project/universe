@@ -44,7 +44,7 @@ export function useCrewMembers() {
         queryKey: [KEY_CREW_MEMBERS, crewQueryParams, airdropToken],
         queryFn: () => fetchCrewMembersData(crewQueryParams),
         enabled: !!airdropToken, // Only run when authenticated
-        refetchOnWindowFocus: false,
+        refetchOnWindowFocus: true,
         staleTime: 30 * 1000, // 30 seconds
         retry: 2,
     });

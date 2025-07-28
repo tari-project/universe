@@ -15,7 +15,9 @@ export default function CrewEntry({ entry }: Props) {
     const [isClaimingReward, setIsClaimingReward] = useState(false);
     const [isSendingNudge, setIsSendingNudge] = useState(false);
 
-    const canClaim = status === 'completed';
+    console.log(entry);
+
+    const canClaim = progress && progress >= 100 && status !== 'completed';
     const canNudge = status === 'needs_nudge';
 
     const handleClaim = async () => {
@@ -71,7 +73,7 @@ export default function CrewEntry({ entry }: Props) {
                 <TopRow>
                     <Username>{handle}</Username>
                     <CrewProgressPill
-                        canClaim={canClaim && !isClaimingReward}
+                        canClaim={Boolean(canClaim && !isClaimingReward)}
                         canNudge={canNudge && !isSendingNudge}
                         timeRemaining={timeRemaining ?? { current: 0, total: 0, unit: '' }}
                         claimAmount={reward?.amount ?? 0}

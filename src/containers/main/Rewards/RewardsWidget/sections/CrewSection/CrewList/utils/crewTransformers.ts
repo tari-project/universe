@@ -14,8 +14,7 @@ export const calculateProgress = (progressTowardsReward: any): number => {
 
     const totalProgress = completedDaysProgress + currentDayContribution;
 
-    // Cap at 99% if not complete to show there's still work to do
-    return Math.min(99, Math.round(totalProgress));
+    return Math.min(100, totalProgress);
 };
 
 export const determineStatus = (member: CrewMember): CrewStatus => {
@@ -52,13 +51,13 @@ export const mapUserInfo = (member: CrewMember) => {
     const recentActivity = Date.now() - new Date(member.lastActivityDate).getTime() < 1000 * 60 * 60 * 2; // 2 hours
 
     return {
-        avatar: '', // Will need default avatar
+        avatar: member.user?.imageUrl || '',
         isOnline: isActiveToday || recentActivity,
     };
 };
 
 export const mapReward = (member: CrewMember) => {
-    const claimableReward = member.rewards.find((r) => r.readyToClaim);
+    const claimableReward = member.rewards.find((r) => r.status === 'incomplete');
     return claimableReward
         ? {
               amount: claimableReward.amount,
@@ -103,13 +102,12 @@ export const transformCrewMemberToEntry = (
 
     return {
         id: parseInt(member.id),
-        handle: mapHandle(member), // No @ symbol
-        progress, // Now includes current day progress
+        handle: mapHandle(member),
+        progress,
         status,
         user: mapUserInfo(member),
         reward: mapReward(member),
         timeRemaining: calculateTimeRemaining(member),
-        // Additional data needed for API calls
         memberId: member.id,
         claimableRewardId: claimableReward?.id,
     };

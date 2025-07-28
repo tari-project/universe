@@ -29,8 +29,8 @@ export default function CrewList({ members, isLoading, error, onRefresh }: Props
             <OuterWrapper>
                 <Wrapper>
                     <Inside>
-                        <div>Error: {error.message}</div>
-                        <button onClick={onRefresh}>Retry</button>
+                        <div>{error.message}</div>
+                        <button onClick={onRefresh}>{'Retry'}</button>
                     </Inside>
                 </Wrapper>
             </OuterWrapper>
