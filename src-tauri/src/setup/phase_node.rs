@@ -187,7 +187,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
             progress_stepper.skip_step(ProgressPlans::Node(ProgressSetupNodePlan::BinariesTor));
         };
 
-        if NodeType::is_local(&node_type) {
+        if node_type.is_local() {
             let node_binary_progress_tracker = progress_stepper.channel_step_range_updates(
                 ProgressPlans::Node(ProgressSetupNodePlan::BinariesNode),
                 Some(ProgressPlans::Node(ProgressSetupNodePlan::StartTor)),
@@ -266,7 +266,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
             .resolve_step(ProgressPlans::Node(ProgressSetupNodePlan::StartingNode))
             .await;
 
-        if NodeType::is_local(&node_type) {
+        if node_type.is_local() {
             self.wait_node_synced_with_progress(progress_stepper)
                 .await?;
         } else {
