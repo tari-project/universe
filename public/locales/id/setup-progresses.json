@@ -56,7 +56,6 @@
     "network-speed-test": "Tes Kecepatan Jaringan",
     "p2pool": "Memulai P2Pool",
     "platform-prequisites": "Memulai Prasyarat Platform",
-    "run-cpu-benchmark": "Menjalankan Benchmark CPU",
     "setup-bridge": "Preparing Bridge",
     "setup-bridge-download": "Preparing Bridge | Downloading: {{ progress }}%",
     "start-tor": "Memulai Tor",

@@ -56,7 +56,6 @@
     "network-speed-test": "网络速度测试",
     "p2pool": "启动 P2Pool",
     "platform-prequisites": "初始化平台先决条件",
-    "run-cpu-benchmark": "运行 CPU 基准测试",
     "setup-bridge": "Preparing Bridge",
     "setup-bridge-download": "Preparing Bridge | Downloading: {{ progress }}%",
     "start-tor": "启动 Tor",
