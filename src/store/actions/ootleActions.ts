@@ -11,7 +11,7 @@ import { setError } from './appStateStoreActions';
 
 export const ootleListAccounts = async (request: AccountsListRequest): Promise<AccountsListResponse | undefined> => {
     try {
-        return await invoke('ootle_list_accounts', request);
+        return await invoke('ootle_list_accounts', { request });
     } catch (e) {
         const message = 'Could not list Ootle accounts';
         console.error(message, e);
@@ -23,7 +23,7 @@ export const ootleCreateAccount = async (
     request: AccountsCreateRequest
 ): Promise<AccountsCreateResponse | undefined> => {
     try {
-        return await invoke('ootle_create_account', request);
+        return await invoke('ootle_create_account', { request });
     } catch (e) {
         const message = 'Could not create Ootle account';
         console.error(message, e);
@@ -35,7 +35,7 @@ export const ootleGetBalances = async (
     request: AccountsGetBalancesRequest
 ): Promise<AccountsGetBalancesResponse | undefined> => {
     try {
-        return await invoke('ootle_get_balances', request);
+        return await invoke('ootle_get_balances', { request });
     } catch (e) {
         const message = 'Could not get Ootle balances';
         console.error(message, e);

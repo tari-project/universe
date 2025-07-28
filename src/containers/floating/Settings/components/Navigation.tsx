@@ -20,6 +20,9 @@ export default function SettingsNavigation({ activeSection, onChangeActiveSectio
         <Container>
             <ButtonContainer>
                 {SETTINGS_TYPES.map((type: SettingsType) => {
+                    if (process.env.NODE_ENV !== 'development' && activeSection === 'ootleDemo') {
+                        return undefined;
+                    }
                     const isActiveSection = activeSection === type;
                     const name = t(`tabs.${type}`);
                     return (
