@@ -36,6 +36,7 @@ use minotari_node_grpc_client::grpc::{
     GetAllCompletedTransactionsRequest, GetBalanceRequest, GetBalanceResponse, GetStateRequest,
     ImportTransactionsRequest, NetworkStatusResponse,
 };
+use minotari_wallet_grpc_client::grpc::SignMessageRequest;
 use serde::{Serialize, Serializer};
 use std::fs;
 use std::path::PathBuf;
@@ -46,11 +47,19 @@ use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_core::transactions::transaction_components::payment_id::PaymentId;
 use tari_shutdown::Shutdown;
 use tokio::sync::watch;
+use tonic::Status;
 
 #[cfg(target_os = "windows")]
 use crate::utils::windows_setup_utils::add_firewall_rule;
 
 const LOG_TARGET: &str = "tari::universe::wallet_adapter";
+
+/// contains signature and public_nonce encoded in hex
+#[derive(Debug, Clone, Serialize)]
+pub struct SignMessageResponseData {
+    pub signature: String,
+    pub public_nonce: String,
+}
 
 pub struct WalletAdapter {
     use_tor: bool,
@@ -133,6 +142,32 @@ impl WalletAdapter {
         );
 
         Ok(())
+    }
+
+    pub async fn sign_message(
+        &self,
+        mut message: Vec<u8>,
+        tapplet_id: Option<u64>,
+    ) -> Result<SignMessageResponseData, Status> {
+        let mut client = WalletClient::connect(self.wallet_grpc_address())
+            .await
+            .map_err(|_e| Status::unavailable("Wallet not started"))?;
+
+        if let Some(tapplet_id) = tapplet_id {
+            let tapplet_id_bytes = tapplet_id.to_le_bytes();
+            message.extend_from_slice(&tapplet_id_bytes);
+        }
+
+        let res = client
+            .sign_message(SignMessageRequest { message })
+            .await
+            .map_err(|e| Status::internal(format!("Failed to sign message: {e}")))?;
+
+        let inner = res.into_inner();
+        Ok(SignMessageResponseData {
+            signature: inner.signature,
+            public_nonce: inner.public_nonce,
+        })
     }
 
     pub async fn get_transactions(
