@@ -1,21 +1,11 @@
 import { BaseNodeStatus, CpuMinerStatus, GpuDevice, GpuMinerStatus } from '@app/types/app-status.ts';
-import { setGpuMiningEnabled } from './appConfigStoreActions';
-import { useConfigMiningStore } from '../useAppConfigStore.ts';
+
 import { setAnimationState } from '@tari-project/tari-tower';
 import { useMiningMetricsStore } from '../useMiningMetricsStore.ts';
 import { useMiningStore } from '../useMiningStore.ts';
 
 export const setGpuDevices = (gpu_devices: GpuDevice[]) => {
     useMiningMetricsStore.setState({ gpu_devices });
-    const gpuMiningEnabled = useConfigMiningStore.getState().gpu_mining_enabled;
-
-    if (!gpuMiningEnabled && gpu_devices.some((gpu) => gpu.settings.is_available && !gpu.settings.is_excluded)) {
-        setGpuMiningEnabled(true);
-    }
-
-    if (gpuMiningEnabled && gpu_devices.every((gpu) => gpu.settings.is_excluded)) {
-        setGpuMiningEnabled(false);
-    }
 };
 export const setGpuMiningStatus = (gpu_mining_status: GpuMinerStatus) => {
     useMiningMetricsStore.setState({ gpu_mining_status });

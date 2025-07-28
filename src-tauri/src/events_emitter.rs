@@ -1,3 +1,4 @@
+use crate::configs::config_mining::GpuDevicesSettings;
 // Copyright 2024. The Tari Project
 //
 // Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -26,6 +27,7 @@ use crate::events::{
 };
 #[cfg(target_os = "windows")]
 use crate::external_dependencies::RequiredExternalDependency;
+use crate::gpu_devices::GpuDeviceInformation;
 use crate::internal_wallet::TariAddressType;
 use crate::pool_status_watcher::PoolStatus;
 use crate::{
@@ -39,7 +41,6 @@ use crate::{
         NetworkStatusPayload, NewBlockHeightPayload, NodeTypeUpdatePayload, ProgressEvents,
         ProgressTrackerUpdatePayload, ShowReleaseNotesPayload, TariAddressUpdatePayload,
     },
-    gpu_status_file::GpuDevice,
     hardware::hardware_status_monitor::PublicDeviceProperties,
     setup::setup_manager::SetupPhase,
     utils::app_flow_utils::FrontendReadyChannel,
@@ -189,7 +190,7 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_detected_devices(devices: Vec<GpuDevice>) {
+    pub async fn emit_detected_devices(devices: Vec<GpuDeviceInformation>) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::DetectedDevices,
@@ -840,6 +841,20 @@ impl EventsEmitter {
             .emit(BACKEND_STATE_UPDATE, event)
         {
             error!(target: LOG_TARGET, "Failed to emit EnterPin event: {e:?}");
+        }
+    }
+
+    pub async fn emit_update_gpu_devices_settings(payload: GpuDevicesSettings) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::UpdateGpuDevicesSettings,
+            payload,
+        };
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
+            error!(target: LOG_TARGET, "Failed to emit UpdateDevicesSettings event: {e:?}");
         }
     }
 }
