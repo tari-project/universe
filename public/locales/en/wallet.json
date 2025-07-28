@@ -163,8 +163,8 @@
   "tari": "Tari",
   "transactions": "Transactions",
   "wallet-connected": "Wallet Connected",
-  "wallet-is-scanning": "Syncing wallet...",
-  "wallet-scanning-with-progress": "<strong>Wallet is loading {{percentage}}%</strong> ({{scanned}}/{{total}})",
+  "wallet-is-scanning": "<strong>Wallet is loading...</strong>",
+  "wallet-scanning-with-progress": "<strong>Wallet is loading {{percentage}}%</strong> {{scanned}} / {{total}}",
   "xc": {
     "buy-tari": "Buy Tari from an exchange",
     "buy-tari-subtitle": "Available on selected exchanges.",
