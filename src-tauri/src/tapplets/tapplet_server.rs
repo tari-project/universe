@@ -22,9 +22,12 @@
 
 use crate::{
     port_allocator::PortAllocator,
-    tapplets::error::{
-        Error::{self, TappletServerError},
-        TappletServerError::*,
+    tapplets::{
+        error::{
+            Error::{self, JsonParsingError, TappletServerError},
+            TappletServerError::*,
+        },
+        interface::{TappletConfig, TappletPermissions},
     },
 };
 
@@ -35,44 +38,38 @@ use axum::{
     response::IntoResponse,
     Extension, Json, Router,
 };
-use log::{error, info};
+use log::{error, info, warn};
 use reqwest::StatusCode;
 use serde::Deserialize;
-use std::{net::SocketAddr, path::PathBuf, sync::Arc};
+use std::{fs, net::SocketAddr, path::PathBuf, sync::Arc};
 use tokio::{select, sync::RwLock};
 use tokio_util::sync::CancellationToken;
 use tower_http::services::ServeDir;
 const LOG_TARGET: &str = "tari::tapplet";
 
-
 /// Middleware that adds a CSP header dynamically from the captured `Arc<HeaderValue>`
-async fn add_csp_header(
-    req: Request<Body>,
-    next: Next,
-    csp_header: Arc<RwLock<HeaderValue>>,
-) -> Response<Body> {
+async fn add_csp_header(req: Request<Body>, next: Next, csp_header: HeaderValue) -> Response<Body> {
     let mut response = next.run(req).await;
-    let current_csp = csp_header.read().await;
     response
         .headers_mut()
-        .insert("Content-Security-Policy", current_csp.clone());
+        .insert("Content-Security-Policy", csp_header);
     response
 }
 
-pub fn using_serve_dir(tapplet_path: PathBuf, csp_header: Arc<RwLock<HeaderValue>>) -> Router {
+pub fn using_serve_dir(tapplet_path: PathBuf, csp_header: HeaderValue) -> Router {
     let serve_dir = ServeDir::new(tapplet_path);
 
     Router::new()
         .nest_service("/", serve_dir)
         .layer(middleware::from_fn(move |req, next| {
-            let csp_header = csp_header.clone();
-            async move { add_csp_header(req, next, csp_header).await }
+            let csp = csp_header.clone();
+            async move { add_csp_header(req, next, csp).await }
         }))
 }
 
 pub async fn start_tapplet(
     tapplet_path: PathBuf,
-    csp_header: Arc<RwLock<HeaderValue>>,
+    csp_header: HeaderValue,
 ) -> Result<(String, CancellationToken), Error> {
     info!(target: LOG_TARGET, "Start tapplet path {:?}", &tapplet_path);
 
@@ -124,4 +121,36 @@ async fn shutdown_signal(cancel_token: CancellationToken) {
     select! {
         _ = cancel_token.cancelled() => {}
     }
+}
+
+pub fn get_tapplet_config(tapp_path: PathBuf) -> Result<TappletConfig, Error> {
+    // this is dev tapplet so the tapplet.config.json file is in root dir
+    let tapp_config = tapp_path.join("tapplet.config.json");
+    info!(target: LOG_TARGET, "💥 get_config {:?}", &tapp_config);
+
+    if !tapp_config.exists() {
+        warn!(target: LOG_TARGET, "❌ Failed to get Tapplet permissions. Config file not found.");
+        return Err(Error::TappletConfigNotFound);
+    }
+
+    let config = fs::read_to_string(tapp_config.clone()).unwrap_or_default();
+    info!(target: LOG_TARGET, "💥 Dev tapplet config: {:?}", &config);
+    let tapplet_config: TappletConfig =
+        serde_json::from_str(&config).map_err(|e| JsonParsingError(e))?;
+    info!(target: LOG_TARGET, "💥 Dev tapplet full config: {:?}", &tapplet_config);
+    Ok(tapplet_config)
+}
+
+pub fn get_tapplet_permissions(tapp_path: PathBuf) -> Result<TappletPermissions, Error> {
+    let tapp_config = get_tapplet_config(tapp_path).unwrap_or_default();
+    Ok(TappletPermissions {
+        required_permissions: tapp_config.permissions.required_permissions,
+        optional_permissions: tapp_config.permissions.optional_permissions,
+    })
+}
+
+pub fn get_tapplet_csp(tapp_path: PathBuf) -> Result<String, Error> {
+    info!(target: LOG_TARGET, "💥 get_csp");
+    let tapp_config = get_tapplet_config(tapp_path).unwrap_or_default();
+    Ok(tapp_config.csp)
 }

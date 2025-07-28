@@ -34,6 +34,8 @@ pub enum Error {
     TauriError(#[from] tauri::Error),
     #[error(transparent)]
     JsonParsingError(#[from] serde_json::Error),
+    #[error("failed-to-find-tapplet-config")]
+    TappletConfigNotFound,
 }
 
 impl serde::Serialize for Error {

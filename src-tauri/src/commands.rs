@@ -48,7 +48,7 @@ use crate::p2pool::models::{Connections, P2poolStats};
 use crate::pin::PinManager;
 use crate::setup::setup_manager::{SetupManager, SetupPhase};
 use crate::tapplets::interface::ActiveTapplet;
-use crate::tapplets::tapplet_server::start_tapplet;
+use crate::tapplets::tapplet_server::{get_tapplet_csp, start_tapplet};
 use crate::tasks_tracker::TasksTrackers;
 use crate::tor_adapter::TorConfig;
 use crate::utils::address_utils::verify_send;
@@ -2226,8 +2226,9 @@ pub async fn update_csp_policy(
     info!(target: LOG_TARGET, "👉👉👉 Update csp command {:?}", &csp);
     match HeaderValue::from_str(&csp) {
         Ok(header_value) => {
-            let mut write_lock = state.tapplet_csp_header.write().await;
-            *write_lock = header_value;
+            // let mut write_lock = state.tapplet_csp_header.write().await;
+            // *write_lock = header_value;
+            // TODO restart tapplet with the new csp
             info!(target: LOG_TARGET, "👉👉👉 Updated success");
             Ok(())
         }
@@ -2236,10 +2237,10 @@ pub async fn update_csp_policy(
 }
 
 #[tauri::command]
-pub async fn launch_builtin_tapplet(
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<ActiveTapplet, String> {
+pub async fn launch_builtin_tapplet() -> Result<ActiveTapplet, String> {
     let binaries_resolver = BinaryResolver::current();
+    // TODO
+    const DEFAULT_TAPPLET_CSP: &str = "default-src 'self' http://{}; script-src 'self' http://{} 'unsafe-inline'; img-src 'self' data:; style-src 'self' 'unsafe-inline';";
 
     let tapp_dest_dir = binaries_resolver
         .resolve_path_to_binary_files(Binaries::BridgeTapplet)
@@ -2247,10 +2248,11 @@ pub async fn launch_builtin_tapplet(
         .map_err(|e| e.to_string())?;
 
     info!(target: LOG_TARGET, "💥 Built-in tapplet start: {:?}", &tapp_dest_dir);
-    let csp = state.tapplet_csp_header.clone();
+
+    let csp_header = HeaderValue::from_str(DEFAULT_TAPPLET_CSP).unwrap();
 
     let handle_start =
-        tauri::async_runtime::spawn(async move { start_tapplet(tapp_dest_dir, csp).await });
+        tauri::async_runtime::spawn(async move { start_tapplet(tapp_dest_dir, csp_header).await });
 
     let (addr, _cancel_token) = match handle_start.await {
         Ok(result) => result.map_err(|e| e.to_string())?,
@@ -2269,17 +2271,16 @@ pub async fn launch_builtin_tapplet(
 }
 
 #[tauri::command]
-pub async fn launch_dev_tapplet(
-    path: String,
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<ActiveTapplet, String> {
+pub async fn launch_dev_tapplet(path: String) -> Result<ActiveTapplet, String> {
     let tapp_dest_dir = PathBuf::from(path);
     info!(target: LOG_TARGET, "💥 Dev tapplet start: {:?}", &tapp_dest_dir);
 
-    let csp = state.tapplet_csp_header.clone();
+    let csp = get_tapplet_csp(tapp_dest_dir.clone()).unwrap_or_default();
+    let csp_header = HeaderValue::from_str(&csp).unwrap();
+    info!(target: LOG_TARGET, "💥 Dev tapplet csp: {:?}", &csp);
 
     let handle_start =
-        tauri::async_runtime::spawn(async move { start_tapplet(tapp_dest_dir, csp).await });
+        tauri::async_runtime::spawn(async move { start_tapplet(tapp_dest_dir, csp_header).await });
 
     let (addr, _cancel_token) = match handle_start.await {
         Ok(result) => result.map_err(|e| e.to_string())?,

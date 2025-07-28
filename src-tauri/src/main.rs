@@ -157,7 +157,6 @@ const IGNORED_SENTRY_ERRORS: [&str; 2] = [
     "Failed to initialize gtk backend",
     "SIGABRT / SI_TKILL / 0x0",
 ];
-const DEFAULT_TAPPLET_CSP: &str = "default-src 'self' http://{}; script-src 'self' http://{} 'unsafe-inline'; img-src 'self' data:; style-src 'self' 'unsafe-inline';";
 
 #[cfg(not(any(
     feature = "release-ci",
@@ -206,7 +205,6 @@ struct UniverseAppState {
     websocket_manager_status_rx: Arc<watch::Receiver<WebsocketManagerStatusMessage>>,
     websocket_manager: Arc<RwLock<WebsocketManager>>,
     websocket_event_manager: Arc<RwLock<WebsocketEventsManager>>,
-    tapplet_csp_header: Arc<RwLock<HeaderValue>>,
 }
 
 #[derive(Clone, serde::Serialize, serde::Deserialize)]
@@ -401,7 +399,6 @@ fn main() {
         websocket_manager_status_rx: Arc::new(websocket_manager_status_rx.clone()),
         websocket_manager,
         websocket_event_manager: Arc::new(RwLock::new(websocket_events_manager)),
-        tapplet_csp_header: Arc::new(RwLock::new(HeaderValue::from_static(DEFAULT_TAPPLET_CSP))),
     };
     let app_state_clone = app_state.clone();
     #[allow(
@@ -639,6 +636,7 @@ fn main() {
             commands::set_warmup_seen,
             commands::set_allow_notifications,
             commands::launch_builtin_tapplet,
+            commands::launch_dev_tapplet,
             commands::get_bridge_envs,
             commands::parse_tari_address,
             commands::refresh_wallet_history,

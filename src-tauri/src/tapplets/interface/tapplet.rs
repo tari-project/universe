@@ -51,3 +51,57 @@ pub struct ActiveTapplet {
     pub source: String,
     pub version: String,
 }
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct TappletPermissions {
+    #[serde(rename = "requiredPermissions")]
+    pub required_permissions: Vec<TariPermission>,
+    #[serde(rename = "optionalPermissions")]
+    pub optional_permissions: Vec<TariPermission>,
+}
+
+impl Default for TappletPermissions {
+    fn default() -> Self {
+        TappletPermissions {
+            required_permissions: Vec::new(),
+            optional_permissions: Vec::new(),
+        }
+    }
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct TappletConfig {
+    #[serde(rename = "packageName")]
+    pub package_name: String,
+    pub version: String,
+    #[serde(rename = "supportedChain")]
+    pub supported_chain: Vec<String>,
+    pub permissions: TappletPermissions,
+    pub csp: String,
+}
+
+impl Default for TappletConfig {
+    fn default() -> Self {
+        TappletConfig {
+            package_name: String::from("package_name"),
+            version: String::from("0.1.0"),
+            supported_chain: vec![],
+            permissions: TappletPermissions::default(),
+            csp: String::from("default-src 'self';"),
+        }
+    }
+}
+
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+pub enum TariPermission {
+    TariPermissionNftGetOwnershipProof,
+    TariPermissionAccountBalance,
+    TariPermissionAccountInfo,
+    TariPermissionAccountList,
+    TariPermissionKeyList,
+    TariPermissionTransactionGet,
+    TariPermissionTransactionSend,
+    TariPermissionGetNft,
+    TariPermissionSubstatesRead,
+    TariPermissionTemplatesRead,
+}
