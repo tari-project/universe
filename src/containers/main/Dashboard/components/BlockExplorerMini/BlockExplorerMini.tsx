@@ -64,12 +64,10 @@ export default function BlockExplorerMini() {
     }, [blockBubblesData]);
 
     if (isLoading) {
-        console.debug(`isLoading= `, isLoading);
         return <LoadingPlaceholder />;
     }
 
     if (isError) {
-        console.debug(`isError= `, isError);
         return <LoadingPlaceholder />;
     }
 

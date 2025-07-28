@@ -130,7 +130,6 @@ const useTauriEventsListener = () => {
                             setCpuMiningStatus(event.payload);
                             break;
                         case 'CpuPoolStatsUpdate':
-                            console.debug('CpuPoolStatsUpdate', event.payload);
                             setCpuPoolStats(event.payload);
                             break;
                         case 'GpuPoolStatsUpdate':

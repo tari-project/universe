@@ -8,18 +8,20 @@ import { MiningViewContainer } from './MiningView.styles.ts';
 
 export default function MiningView() {
     const visualModeEnabled = useConfigUIStore((s) => s.visual_mode);
+    const bubblesMarkup = visualModeEnabled && <BlockExplorerMini />;
+    const rulerMarkup = !visualModeEnabled && (
+        <>
+            <BlockHeightAccent />
+            <Ruler />
+            <BlockTime />
+        </>
+    );
+
     return (
         <MiningViewContainer>
             <Earnings />
-            {!visualModeEnabled ? (
-                <>
-                    <BlockHeightAccent />
-                    <Ruler />
-                    <BlockTime />
-                </>
-            ) : (
-                <BlockExplorerMini />
-            )}
+            {rulerMarkup}
+            {bubblesMarkup}
         </MiningViewContainer>
     );
 }

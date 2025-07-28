@@ -6,7 +6,7 @@ import { useMiningMetricsStore } from '../useMiningMetricsStore.ts';
 import { useMiningStore } from '../useMiningStore.ts';
 
 export const setGpuDevices = (gpu_devices: GpuDevice[]) => {
-    useMiningMetricsStore.setState({ gpu_devices });
+    useMiningMetricsStore.setState((c) => ({ ...c, gpu_devices }));
     const gpuMiningEnabled = useConfigMiningStore.getState().gpu_mining_enabled;
 
     if (!gpuMiningEnabled && gpu_devices.some((gpu) => gpu.settings.is_available && !gpu.settings.is_excluded)) {
@@ -18,10 +18,10 @@ export const setGpuDevices = (gpu_devices: GpuDevice[]) => {
     }
 };
 export const setGpuMiningStatus = (gpu_mining_status: GpuMinerStatus) => {
-    useMiningMetricsStore.setState({ gpu_mining_status });
+    useMiningMetricsStore.setState((c) => ({ ...c, gpu_mining_status }));
 };
 export const setCpuMiningStatus = (cpu_mining_status: CpuMinerStatus) => {
-    useMiningMetricsStore.setState({ cpu_mining_status });
+    useMiningMetricsStore.setState((c) => ({ ...c, cpu_mining_status }));
 };
 
 export const handleConnectedPeersUpdate = (connected_peers: string[]) => {
@@ -43,5 +43,5 @@ export const handleConnectedPeersUpdate = (connected_peers: string[]) => {
     }
 };
 export const handleBaseNodeStatusUpdate = (base_node_status: BaseNodeStatus) => {
-    useMiningMetricsStore.setState({ base_node_status });
+    useMiningMetricsStore.setState((c) => ({ ...c, base_node_status }));
 };

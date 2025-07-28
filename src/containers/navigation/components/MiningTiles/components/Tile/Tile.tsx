@@ -37,7 +37,7 @@ interface Props {
     mainNumber: number;
     mainUnit: string;
     mainLabel: string;
-    successValue?: number;
+    successValue?: number | null;
     isIdle?: boolean;
     isSoloMining?: boolean;
     tooltipTriggerRef?: Ref<HTMLDivElement>;
