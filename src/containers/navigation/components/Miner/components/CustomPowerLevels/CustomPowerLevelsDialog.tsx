@@ -39,15 +39,15 @@ export function CustomPowerLevelsDialog({ handleClose }: CustomPowerLevelsDialog
     const { t } = useTranslation('settings', { useSuspense: false });
     const [saved, setSaved] = useState(false);
 
-    const currentSelectedMode = useConfigMiningStore((state) => state.getSelectedMiningMode());
-
+    const currentMode = useConfigMiningStore((state) => state.getSelectedMiningMode());
+    const storedCustomLevels = useConfigMiningStore((s) => s.mining_modes[MiningModeType.Custom]);
     const isChangingMode = useMiningStore((s) => s.isChangingMode);
 
     const { control, handleSubmit, formState } = useForm<FormValues>({
         reValidateMode: 'onSubmit',
         defaultValues: {
-            cpu: currentSelectedMode?.cpu_usage_percentage || 0,
-            gpu: currentSelectedMode?.gpu_usage_percentage || 0,
+            cpu: storedCustomLevels?.cpu_usage_percentage || 0,
+            gpu: storedCustomLevels?.gpu_usage_percentage || 0,
         },
     });
 
@@ -116,20 +116,21 @@ export function CustomPowerLevelsDialog({ handleClose }: CustomPowerLevelsDialog
                     <SuccessContainer $visible={isChangingMode || saved}>
                         {t('custom-power-levels.saved')}
                     </SuccessContainer>
+
                     <IconButton onClick={handleClose}>
                         <IoClose size={18} />
                     </IconButton>
                 </TopRightContainer>
             </CustomLevelsHeader>
             <CustomLevelsContent>
+                <Typography variant="p">{`${t('custom-power-levels.current-mode')}: ${currentMode?.mode_name} | CPU: ${currentMode?.cpu_usage_percentage}% | GPU: ${currentMode?.gpu_usage_percentage}`}</Typography>
                 {cpuMarkup}
                 {gpuMarkup}
                 <CTAWrapper>
                     <Button
                         onClick={handleSubmit(onSubmit)}
                         disabled={
-                            isChangingMode ||
-                            (currentSelectedMode?.mode_type === MiningModeType.Custom && !formState.isDirty)
+                            isChangingMode || (currentMode?.mode_type === MiningModeType.Custom && !formState.isDirty)
                         }
                     >
                         {t(`custom-power-levels.${formState.isDirty ? 'save-changes' : 'use-custom'}`)}

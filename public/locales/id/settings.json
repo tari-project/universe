@@ -17,8 +17,10 @@
   "custom-power-levels": {
     "cpu-power-level": "Daya CPU %",
     "cpu-warning": "Penggunaan CPU yang tinggi dapat menyebabkan panas berlebih, meningkatkan konsumsi energi, dan dapat menyebabkan kerusakan perangkat keras seiring waktu. Harap pantau penggunaan untuk memastikan operasi yang aman dan efisien.",
+    "current-mode": "Current mode",
     "gpu-power-level": "Daya GPU %",
     "gpu-warning": "Penggunaan GPU yang tinggi dapat menyebabkan panas berlebih, meningkatkan konsumsi energi, dan dapat menyebabkan kerusakan perangkat keras seiring waktu. Harap pantau penggunaan untuk memastikan operasi yang aman dan efisien.",
+    "input_description": "{{percentage}}% of {{type}} allocated",
     "save-changes": "Simpan Perubahan",
     "saved": "Menerapkan Perubahan",
     "title": "Mode Kustom",

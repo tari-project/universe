@@ -17,8 +17,10 @@
   "custom-power-levels": {
     "cpu-power-level": "CPU Gücü %",
     "cpu-warning": "Yüksek CPU kullanımı aşırı ısınmaya, enerji tüketiminin artmasına ve zamanla donanım hasarına yol açabilir. Güvenli ve verimli bir çalışma sağlamak için kullanımı izleyin.",
+    "current-mode": "Current mode",
     "gpu-power-level": "GPU Gücü %",
     "gpu-warning": "Yüksek GPU kullanımı aşırı ısınmaya, enerji tüketiminin artmasına ve zamanla donanım hasarına yol açabilir. Güvenli ve verimli bir çalışma sağlamak için kullanımı izleyin.",
+    "input_description": "{{percentage}}% of {{type}} allocated",
     "save-changes": "Değişiklikleri Kaydet",
     "saved": "Değişiklikler Uygulanıyor",
     "title": "Özel Mod",

@@ -17,8 +17,10 @@
   "custom-power-levels": {
     "cpu-power-level": "CPU功率%",
     "cpu-warning": "高CPU使用率可能导致过热、增加能耗，并可能导致硬件损坏。请监控使用情况以确保安全高效的操作。",
+    "current-mode": "Current mode",
     "gpu-power-level": "GPU功率%",
     "gpu-warning": "高GPU使用率可能导致过热、增加能耗，并可能导致硬件损坏。请监控使用情况以确保安全高效的操作。",
+    "input_description": "{{percentage}}% of {{type}} allocated",
     "save-changes": "保存更改",
     "saved": "应用更改",
     "title": "自定义模式",
