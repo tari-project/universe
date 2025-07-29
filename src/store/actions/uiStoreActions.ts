@@ -35,16 +35,19 @@ async function loadAnimation() {
 
     try {
         await loadTowerAnimation({ canvasId: TOWER_CANVAS_ID, offset: towerSidebarOffset });
+        useUIStore.setState((c) => ({ ...c, towerInitalized: true }));
         if (setupComplete) {
             setAnimationState('showVisual');
         }
     } catch (e) {
         console.error('Could not enable visual mode. Error at loadTowerAnimation:', e);
+        useUIStore.setState((c) => ({ ...c, towerInitalized: false }));
     }
 }
 async function removeAnimation() {
     try {
         await removeTowerAnimation({ canvasId: TOWER_CANVAS_ID });
+        useUIStore.setState((c) => ({ ...c, towerInitalized: false }));
         // Force garbage collection to clean up WebGL context
         if (window.gc) {
             window.gc();

@@ -34,10 +34,12 @@ async function initializeAnimation() {
         try {
             await loadTowerAnimation({ canvasId: TOWER_CANVAS_ID, offset: offset });
             useUIStore.setState({ towerInitalized: true });
+
             loaded = true;
         } catch (error) {
             console.error('Failed to set animation state:', error);
             useUIStore.setState({ towerInitalized: false });
+
             loaded = false;
         } finally {
             if (loaded) {
