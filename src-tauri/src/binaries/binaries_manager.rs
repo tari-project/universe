@@ -190,7 +190,7 @@ impl BinaryManager {
                 )
             })?;
 
-        info!(target: LOG_TARGET, "Checksum file downloaded to: {checksum_file:?}" );
+        info!(target: LOG_TARGET, "Checksum file downloaded to: {checksum_file:?}");
 
         let expected_checksum = self
             .adapter
@@ -369,7 +369,7 @@ impl BinaryManager {
         let fallback_url = download_info.fallback_url.clone();
 
         info!(target: LOG_TARGET, "Downloading binary: {} from url: {}", self.binary_name, &download_url);
-        let mut archive_destination_path: PathBuf;
+        let archive_destination_path: PathBuf;
 
         let (chunk_progress_sender, main_progress_sender_shutdown) = self
             .resolve_progress_channel(progress_channel.clone())

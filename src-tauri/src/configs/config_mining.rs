@@ -63,9 +63,7 @@ impl GpuDevicesSettings {
     }
 
     pub fn add(&mut self, device_id: u32) {
-        if !self.0.contains_key(&device_id) {
-            self.0.insert(device_id, GpuDeviceSettings::default());
-        }
+        self.0.entry(device_id).or_default();
     }
     pub fn set_excluded(&mut self, device_id: u32, is_excluded: bool) {
         if let Some(settings) = self.0.get_mut(&device_id) {
