@@ -15,8 +15,6 @@
   "control-port": "Control Port",
   "cpu-mining-enabled": "CPU Mining",
   "custom-power-levels": {
-    "choose-cpu-power-level": "Choose how big of a percentage you want your CPU to be allocated to mining",
-    "choose-gpu-power-level": "Choose how big of a percentage you want your GPU to be allocated to mining",
     "cpu-power-level": "CPU Power %",
     "cpu-warning": "Sustained high CPU usage may cause overheating, and hardware failure.",
     "gpu-power-level": "GPU Power %",

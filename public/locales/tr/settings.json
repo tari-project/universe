@@ -15,8 +15,6 @@
   "control-port": "Kontrol Portu",
   "cpu-mining-enabled": "CPU Madenciliği",
   "custom-power-levels": {
-    "choose-cpu-power-level": "Choose how big of a percentage you want your CPU to be allocated to mining",
-    "choose-gpu-power-level": "Choose how big of a percentage you want your GPU to be allocated to mining",
     "cpu-power-level": "CPU Gücü %",
     "cpu-warning": "Yüksek CPU kullanımı aşırı ısınmaya, enerji tüketiminin artmasına ve zamanla donanım hasarına yol açabilir. Güvenli ve verimli bir çalışma sağlamak için kullanımı izleyin.",
     "gpu-power-level": "GPU Gücü %",

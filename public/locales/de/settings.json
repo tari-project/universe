@@ -15,8 +15,6 @@
   "control-port": "Steuerport",
   "cpu-mining-enabled": "CPU-Mining",
   "custom-power-levels": {
-    "choose-cpu-power-level": "Choose how big of a percentage you want your CPU to be allocated to mining",
-    "choose-gpu-power-level": "Choose how big of a percentage you want your GPU to be allocated to mining",
     "cpu-power-level": "CPU-Leistung %",
     "cpu-warning": "Hohe CPU-Nutzung kann Überhitzung verursachen, den Energieverbrauch erhöhen und im Laufe der Zeit zu Hardwareschäden führen. Bitte überwachen Sie die Nutzung, um einen sicheren und effizienten Betrieb zu gewährleisten.",
     "gpu-power-level": "GPU-Leistung %",

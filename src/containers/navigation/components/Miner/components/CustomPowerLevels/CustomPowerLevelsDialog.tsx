@@ -80,7 +80,6 @@ export function CustomPowerLevelsDialog({ handleClose }: CustomPowerLevelsDialog
                         maxLevel={100}
                         onChange={field.onChange}
                         label={t('custom-power-levels.cpu-power-level')}
-                        descriprion={'custom-power-levels.choose-cpu-power-level'}
                         warning={t('custom-power-levels.cpu-warning')}
                         isLoading={isChangingMode}
                         minLevel={1}
@@ -101,7 +100,6 @@ export function CustomPowerLevelsDialog({ handleClose }: CustomPowerLevelsDialog
                         maxLevel={100}
                         value={field.value}
                         minLevel={1}
-                        descriprion={'custom-power-levels.choose-gpu-power-level'}
                         warning={t('custom-power-levels.gpu-warning')}
                         onChange={field.onChange}
                         isLoading={isChangingMode}

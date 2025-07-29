@@ -15,8 +15,6 @@
   "control-port": "コントロールポート",
   "cpu-mining-enabled": "CPUマイニング",
   "custom-power-levels": {
-    "choose-cpu-power-level": "Choose how big of a percentage you want your CPU to be allocated to mining",
-    "choose-gpu-power-level": "Choose how big of a percentage you want your GPU to be allocated to mining",
     "cpu-power-level": "CPUパワー％",
     "cpu-warning": "高いCPU使用率は過熱を引き起こし、エネルギー消費を増加させ、時間とともにハードウェアの損傷を引き起こす可能性があります。安全で効率的な操作を確保するために使用状況を監視してください。",
     "gpu-power-level": "GPUパワー％",

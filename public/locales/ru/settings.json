@@ -15,8 +15,6 @@
   "control-port": "Порт управления",
   "cpu-mining-enabled": "Майнинг на CPU",
   "custom-power-levels": {
-    "choose-cpu-power-level": "Choose how big of a percentage you want your CPU to be allocated to mining",
-    "choose-gpu-power-level": "Choose how big of a percentage you want your GPU to be allocated to mining",
     "cpu-power-level": "Мощность CPU %",
     "cpu-warning": "Высокая загрузка CPU может вызвать перегрев, увеличить потребление энергии и со временем привести к повреждению оборудования. Пожалуйста, следите за использованием для обеспечения безопасной и эффективной работы.",
     "gpu-power-level": "Мощность GPU %",

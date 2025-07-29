@@ -15,8 +15,6 @@
   "control-port": "Beheerpoort",
   "cpu-mining-enabled": "SVE Mynbou",
   "custom-power-levels": {
-    "choose-cpu-power-level": "Choose how big of a percentage you want your CPU to be allocated to mining",
-    "choose-gpu-power-level": "Choose how big of a percentage you want your GPU to be allocated to mining",
     "cpu-power-level": "SVE Krag %",
     "cpu-warning": "Hoë SVE-gebruik kan oorverhitting veroorsaak, energieverbruik verhoog, en kan oor tyd tot hardeware skade lei. Monitor asseblief gebruik om veilige en doeltreffende werking te verseker.",
     "gpu-power-level": "GPU Krag %",

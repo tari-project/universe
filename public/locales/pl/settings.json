@@ -16,8 +16,6 @@
   "control-port": "Port kontrolny",
   "cpu-mining-enabled": "Wydobycie CPU",
   "custom-power-levels": {
-    "choose-cpu-power-level": "Wybierz, ile procent mocy CPU chcesz przeznaczyć na kopanie",
-    "choose-gpu-power-level": "Wybierz, ile procent mocy GPU chcesz przeznaczyć na kopanie",
     "cpu-power-level": "Moc CPU %",
     "cpu-warning": "Wysokie zużycie CPU może powodować przegrzewanie, zwiększać zużycie energii i prowadzić do uszkodzenia sprzętu z czasem. Proszę monitorować zużycie, aby zapewnić bezpieczną i efektywną pracę.",
     "gpu-power-level": "Moc GPU %",
