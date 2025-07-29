@@ -39,6 +39,7 @@ export default function TappletCspDialog() {
                     </Header>
                     <TextWrapper>{tappletCsp}</TextWrapper>
                     <TextButton onClick={handleSubmit}>{'Allow CSP'}</TextButton>
+                    <TextButton onClick={handleClose}>{'Reject CSP'}</TextButton>
                 </Wrapper>
             </DialogContent>
         </Dialog>
