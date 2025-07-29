@@ -351,9 +351,7 @@ impl BinaryManager {
         let fallback_url = download_info.fallback_url.clone();
 
         info!(target: LOG_TARGET, "Downloading binary: {} from url: {}", self.binary_name, &download_url);
-
-        let archive_destination_path: Option<PathBuf>;
-        let destination_path: PathBuf;
+        let mut archive_destination_path: PathBuf;
 
         let (chunk_progress_sender, main_progress_sender_shutdown) = self
             .resolve_progress_channel(progress_channel.clone())
@@ -365,7 +363,7 @@ impl BinaryManager {
             .with_file_extract()
             .with_progress_status_sender(chunk_progress_sender.clone())
             .with_download_resume()
-            .build(download_url.clone(), destination_dir.clone())
+            .build(download_url.clone(), destination_dir.clone())?
             .execute()
             .await
             .map_err(|e| anyhow!("Error downloading version: {:?}. Error: {:?}", version, e));
@@ -381,11 +379,11 @@ impl BinaryManager {
                 .await
                 .map_err(|e| anyhow!("Error resolving progress channel: {:?}", e))?;
 
-            (destination_path, archive_destination_path) = HttpFileClient::builder()
+            archive_destination_path = HttpFileClient::builder()
                 .with_file_extract()
                 .with_progress_status_sender(chunk_progress_sender.clone())
                 .with_download_resume()
-                .build(fallback_url.clone(), destination_dir.clone())
+                .build(fallback_url.clone(), destination_dir.clone())?
                 .execute()
                 .await
                 .inspect_err(|_| {
@@ -394,14 +392,16 @@ impl BinaryManager {
                     }
                 })?;
         } else {
-            (destination_path, archive_destination_path) = main_file_download_result?;
+            archive_destination_path = main_file_download_result?;
         }
 
         if self.should_validate_checksum {
-            if let Some(archive_destination_path) = archive_destination_path {
-                self.validate_checksum(download_info, destination_path, archive_destination_path)
-                    .await?;
-            }
+            self.validate_checksum(
+                download_info,
+                destination_dir.clone(),
+                archive_destination_path,
+            )
+            .await?;
         }
 
         Ok(())
