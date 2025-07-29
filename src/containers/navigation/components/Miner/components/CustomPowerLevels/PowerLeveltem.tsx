@@ -1,12 +1,13 @@
 import { useTranslation } from 'react-i18next';
 import { SliderInput } from '@app/components/elements/inputs/range/Slider.tsx';
-import { RangeLabel, WarningContainer } from './RangeInput.styles.ts';
+import { InputDescription, RangeLabel, WarningContainer } from './RangeInput.styles.ts';
 import { PowerLeveltemWrapper } from '@app/components/elements/inputs/range/styles.ts';
 
 interface PowerLeveltemProps {
     label: string;
     maxLevel: number;
     minLevel: number;
+    descriprion: string;
     value: number;
     onChange: (value: number) => void;
     warning?: string;
@@ -22,6 +23,7 @@ export const PowerLeveltem = ({
     maxLevel,
     minLevel,
     value,
+    descriprion,
     onChange,
     warning,
     step = 1,
@@ -44,6 +46,7 @@ export const PowerLeveltem = ({
                 isStepped={!!step}
                 isLoading={isLoading}
             />
+            <InputDescription>{descriprion}</InputDescription>
             <WarningContainer $visible={hasWarning}>
                 <strong>{t('custom-power-levels.warning')}</strong>: {warning}
             </WarningContainer>

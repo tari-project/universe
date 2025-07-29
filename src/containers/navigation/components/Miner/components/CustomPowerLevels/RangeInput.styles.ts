@@ -10,10 +10,9 @@ export const RangeLabel = styled.label`
 
 export const InputDescription = styled.div`
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
     font-size: 12px;
-    color: ${({ theme }) => theme.palette.text.secondary};
+    color: ${({ theme }) => theme.palette.text.accent};
     gap: 4px;
     span {
         font-weight: bold;

@@ -4,7 +4,8 @@ export const CustomLevelsContent = styled.div`
     padding: 0 10px;
     display: flex;
     flex-direction: column;
-    width: 700px;
+    width: min(720px, 60vw);
+    gap: 8px;
 `;
 
 export const CTAWrapper = styled.div`
@@ -50,4 +51,14 @@ export const TopRightContainer = styled.div`
     justify-content: flex-end;
     align-items: center;
     gap: 10px;
+`;
+
+export const CurrentModeDetails = styled.div`
+    p {
+        color: ${({ theme }) => theme.palette.text.accent};
+        span {
+            opacity: 0.7;
+            margin: 0 2px 0 0;
+        }
+    }
 `;

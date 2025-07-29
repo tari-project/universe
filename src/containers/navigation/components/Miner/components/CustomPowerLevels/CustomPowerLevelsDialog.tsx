@@ -8,6 +8,7 @@ import {
     SuccessContainer,
     TopRightContainer,
     CTAWrapper,
+    CurrentModeDetails,
 } from './CustomPowerLevelsDialog.styles.ts';
 import { useTranslation } from 'react-i18next';
 
@@ -76,6 +77,7 @@ export function CustomPowerLevelsDialog({ handleClose }: CustomPowerLevelsDialog
             render={({ field }) => {
                 return (
                     <PowerLeveltem
+                        descriprion={`${t('custom-power-levels.input-label', { percentage: field.value, type: 'CPU' })}`}
                         value={field.value}
                         maxLevel={100}
                         onChange={field.onChange}
@@ -96,6 +98,7 @@ export function CustomPowerLevelsDialog({ handleClose }: CustomPowerLevelsDialog
             render={({ field }) => {
                 return (
                     <PowerLeveltem
+                        descriprion={`${t('custom-power-levels.input-label', { percentage: field.value, type: field.name.toUpperCase() })}`}
                         label={`${t('custom-power-levels.gpu-power-level')}`}
                         maxLevel={100}
                         value={field.value}
@@ -108,6 +111,7 @@ export function CustomPowerLevelsDialog({ handleClose }: CustomPowerLevelsDialog
             }}
         />
     );
+
     return (
         <>
             <CustomLevelsHeader>
@@ -123,7 +127,14 @@ export function CustomPowerLevelsDialog({ handleClose }: CustomPowerLevelsDialog
                 </TopRightContainer>
             </CustomLevelsHeader>
             <CustomLevelsContent>
-                <Typography variant="p">{`${t('custom-power-levels.current-mode')}: ${currentMode?.mode_name} | CPU: ${currentMode?.cpu_usage_percentage}% | GPU: ${currentMode?.gpu_usage_percentage}`}</Typography>
+                {!!currentMode && (
+                    <CurrentModeDetails>
+                        <Typography variant="p">
+                            <span>{`${t('custom-power-levels.current-mode')}: `}</span>
+                            {`${currentMode?.mode_name} • CPU ${currentMode?.cpu_usage_percentage}% • GPU ${currentMode?.gpu_usage_percentage}%`}
+                        </Typography>
+                    </CurrentModeDetails>
+                )}
                 {cpuMarkup}
                 {gpuMarkup}
                 <CTAWrapper>

@@ -20,7 +20,7 @@
     "current-mode": "Current mode",
     "gpu-power-level": "GPU Power",
     "gpu-warning": "Sustained high GPU usage may cause overheating, and hardware failure.",
-    "input_description": "{{percentage}}% of {{type}} allocated",
+    "input-label": "{{percentage}}% of {{type}} power allocated",
     "save-changes": "Save Changes",
     "saved": "Applying Changes",
     "title": "Custom Mode",
