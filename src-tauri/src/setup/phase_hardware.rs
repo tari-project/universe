@@ -24,6 +24,7 @@ use crate::{
     binaries::{Binaries, BinaryResolver},
     configs::{config_mining::ConfigMining, trait_config::ConfigImpl},
     events_emitter::EventsEmitter,
+    gpu_devices::GpuDevices,
     gpu_miner::EngineType,
     hardware::hardware_status_monitor::HardwareStatusMonitor,
     progress_trackers::{
@@ -205,6 +206,12 @@ impl SetupPhaseImpl for HardwareSetupPhase {
             )
             .await
             .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {e:?}"));
+
+        GpuDevices::current()
+            .write()
+            .await
+            .detect(config_dir.clone())
+            .await?;
 
         HardwareStatusMonitor::current().initialize().await?;
 

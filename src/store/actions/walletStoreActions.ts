@@ -6,7 +6,7 @@ import { TxHistoryFilter } from '@app/components/transactions/history/FilterSele
 import { WrapTokenService, OpenAPI } from '@tari-project/wxtm-bridge-backend-api';
 import { useConfigBEInMemoryStore } from '../useAppConfigStore';
 import { TariAddressUpdatePayload } from '@app/types/events-payloads';
-import { TransactionDetailsItem, TransactionDirection } from '@app/types/transactions';
+import { TransactionDetailsItem } from '@app/types/transactions';
 import { addToast } from '@app/components/ToastStack/useToastStore';
 import { t } from 'i18next';
 
@@ -145,27 +145,11 @@ export const setExternalTariAddress = async (newAddress: string) => {
         });
 };
 
-const getPendingOutgoingBalance = async () => {
-    try {
-        const fetchedTxs = await invoke('get_transactions', { limit: 20, statusBitflag: 3, offset: 0 });
-        return fetchedTxs
-            .filter((tx) => tx.direction == TransactionDirection.Outbound)
-            .reduce((acc, tx) => acc + tx.amount, 0);
-    } catch (error) {
-        console.error('Failed to fetch transactions:', error);
-        return 0;
-    }
-};
-
 export const setWalletBalance = async (balance: WalletBalance) => {
-    const pendingOutgoingBalance = await getPendingOutgoingBalance();
-    console.info('Setting new wallet balance: ', { balance, pendingOutgoingBalance });
-    const available_balance = balance.available_balance - pendingOutgoingBalance;
-    const pending_outgoing_balance = balance.pending_outgoing_balance + pendingOutgoingBalance;
-
-    const calculated_balance = available_balance + balance.timelocked_balance + balance.pending_incoming_balance;
+    const calculated_balance =
+        balance.available_balance + balance.timelocked_balance + balance.pending_incoming_balance;
     useWalletStore.setState({
-        balance: { ...balance, available_balance, pending_outgoing_balance },
+        balance: { ...balance },
         calculated_balance,
     });
 };
