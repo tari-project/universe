@@ -174,8 +174,7 @@ impl WebsocketEventsManager {
                 network,
                 app_id,
                 claims.id,
-                // is_mining_active,
-                true,
+                is_mining_active,
                 block_height,
                 tari_address.to_base58()
             );
@@ -183,8 +182,7 @@ impl WebsocketEventsManager {
                 sign_ws_data(signable_message).await
             {
                 let payload = serde_json::json!({
-                        // "isMining":is_mining_active,
-                        "isMining":true,
+                        "isMining":is_mining_active,
                         "appId":app_id,
                         "blockHeight":block_height,
                         "version":app_version,

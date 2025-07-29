@@ -350,7 +350,7 @@ export async function claimCrewRewards(rewardId: string, memberId: string) {
         success: boolean;
         claimedReward: Reward;
     } | null>({
-        path: '/crew/rewards/claim',
+        path: `/crew/rewards/${rewardId}/claim`,
         method: 'POST',
         body: {
             rewardId,
