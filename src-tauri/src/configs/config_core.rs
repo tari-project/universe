@@ -36,6 +36,8 @@ use crate::utils::rand_utils;
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
 
+pub const L2_NETWORK: Network = Network::Igor;
+
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct AirdropTokens {
     pub token: String,
@@ -145,7 +147,7 @@ impl Default for ConfigCoreContent {
             remote_base_node_address,
             node_type: NodeType::default(),
             exchange_id: DEFAULT_EXCHANGE_ID.to_string(),
-            ootle_indexer_urls: default_ootle_indexer_urls(network),
+            ootle_indexer_urls: default_ootle_indexer_urls(L2_NETWORK),
         }
     }
 }
@@ -174,8 +176,7 @@ impl ConfigCore {
 
         // Original core config is already persisted without indexer URLs
         if config.content.ootle_indexer_urls.is_empty() {
-            let network = Network::get_current_or_user_setting_or_default();
-            config.content.ootle_indexer_urls = default_ootle_indexer_urls(network);
+            config.content.ootle_indexer_urls = default_ootle_indexer_urls(L2_NETWORK);
             let _ = Self::_save_config(config._get_content().clone());
         }
     }

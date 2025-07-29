@@ -20,6 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::configs::config_core::L2_NETWORK;
 use crate::ootle::ootle_wallet_json_rpc_client::{OotleWalletInfo, OotleWalletJsonRpcClient};
 use crate::port_allocator::PortAllocator;
 use crate::process_adapter::{
@@ -35,7 +36,6 @@ use reqwest::Url;
 use serde::Serialize;
 use std::path::PathBuf;
 use std::time::Duration;
-use tari_common::configuration::Network;
 use tari_shutdown::Shutdown;
 use tokio::sync::watch;
 
@@ -91,7 +91,7 @@ impl ProcessAdapter for OotleWalletAdapter {
             include_str!("../../log4rs/ootle_wallet_sample.yml"),
         )?;
 
-        let network = Network::get_current_or_user_setting_or_default();
+        let network = L2_NETWORK;
         let mut args: Vec<String> = vec![
             "-b".to_string(),
             formatted_working_dir,
