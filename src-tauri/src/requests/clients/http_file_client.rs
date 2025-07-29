@@ -166,8 +166,9 @@ impl HttpFileClient {
         let destination = self.get_destination();
         let destination_file = destination.join(&self.file_name);
 
-        if self.destination.exists() {
-            std::fs::remove_dir_all(&self.destination)?;
+        if destination_file.exists() {
+            std::fs::remove_file(destination_file.clone())
+                .map_err(|e| anyhow::anyhow!("Failed to remove file: {}", e))?;
         }
 
         if !destination.exists() {

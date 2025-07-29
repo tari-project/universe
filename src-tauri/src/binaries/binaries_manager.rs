@@ -182,7 +182,7 @@ impl BinaryManager {
             .download_and_get_checksum_path(destination_dir.clone(), download_info.clone())
             .await
             .map_err(|e| {
-                std::fs::remove_dir_all(destination_dir.clone()).ok();
+                // std::fs::remove_dir_all(destination_dir.clone()).ok();
                 anyhow!(
                     "Error downloading checksum file for version: {:?}. Error: {:?}",
                     selected_version,
@@ -200,19 +200,30 @@ impl BinaryManager {
         info!(target: LOG_TARGET, "Expected checksum: {:?}", expected_checksum);
         info!(target: LOG_TARGET, "In-progress file zip path: {:?}", in_progress_file_zip);
 
+        // Debug: Check if the file actually exists before attempting validation
+        if !in_progress_file_zip.exists() {
+            error!(target: LOG_TARGET, "Archive file does not exist at path: {:?}", in_progress_file_zip);
+            return Err(anyhow!(
+                "Archive file not found at path: {:?}",
+                in_progress_file_zip
+            ));
+        }
+
+        info!(target: LOG_TARGET, "Archive file exists, proceeding with checksum validation");
+
         match validate_checksum(in_progress_file_zip.clone(), expected_checksum).await {
-            Ok(validate_checksum) => {
-                if validate_checksum {
+            Ok(is_valid_checksum) => {
+                if is_valid_checksum {
                     info!(target: LOG_TARGET, "Checksum validation succeeded for binary: {} with version: {:?}", self.binary_name, selected_version);
                     Ok(())
                 } else {
                     error!(target: LOG_TARGET, "Checksum invalid for binary: {} with version: {:?}", self.binary_name, selected_version);
-                    std::fs::remove_dir_all(destination_dir.clone()).ok();
+                    // std::fs::remove_dir_all(destination_dir.clone()).ok();
                     Err(anyhow!("Checksums mismatched!"))
                 }
             }
             Err(e) => {
-                std::fs::remove_dir_all(destination_dir.clone()).ok();
+                // std::fs::remove_dir_all(destination_dir.clone()).ok();
                 error!(target: LOG_TARGET, "Checksum validation failed for binary: {} with version: {:?}. Error: {:?}", self.binary_name, selected_version, e);
                 Err(anyhow!(
                     "Checksum validation failed for version: {:?}. Error: {:?}",
@@ -320,7 +331,10 @@ impl BinaryManager {
                 .download_selected_version(progress_channel.clone())
                 .await
             {
-                Ok(_) => return Ok(()),
+                Ok(_) => {
+                    info!(target: LOG_TARGET, "Successfully downloaded binary: {} on retry: {}", self.binary_name, retry);
+                    return Ok(());
+                }
                 Err(error) => {
                     last_error_message = format!(
                         "Failed to download binary: {}. Error: {:?}",
