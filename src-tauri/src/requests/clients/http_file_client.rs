@@ -240,8 +240,8 @@ impl HttpFileClient {
 
             let file_size = get_content_size_from_file(&file).await?;
 
-            info!(target: LOG_TARGET, "Expected file size: {}", expected_size);
-            info!(target: LOG_TARGET, "Current file size: {}", file_size);
+            info!(target: LOG_TARGET, "Expected file size: {expected_size}");
+            info!(target: LOG_TARGET, "Current file size: {file_size}");
 
             // Check if file is already complete
             if file_size >= expected_size {
