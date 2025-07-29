@@ -5,7 +5,6 @@ import { TappletContainer } from '@app/containers/main/Dashboard/MiningView/Mini
 import { open } from '@tauri-apps/plugin-shell';
 import { useConfigUIStore, useUIStore, setError as setStoreError } from '@app/store';
 import { MessageType, useIframeMessage } from '@app/hooks/swap/useIframeMessage';
-import { invoke } from '@tauri-apps/api/core';
 
 interface TappletProps {
     source: string;
@@ -149,7 +148,7 @@ export const Tapplet: React.FC<TappletProps> = ({ source }) => {
                 const csp =
                     "default-src 'self' http://{} http://api.staging-bridge.tari.com https://jsonplaceholder.typicode.com/todos/1; connect-src 'self' http://api.staging-bridge.tari.com https://jsonplaceholder.typicode.com/todos/1; script-src 'self' http://api.staging-bridge.tari.com 'unsafe-inline'; img-src 'self' data:; style-src 'self' 'unsafe-inline';";
                 console.warn('UPDATE CSP:', csp);
-                await invoke('update_csp_policy', { csp });
+                // await invoke('update_csp_policy', { csp });
             }
         } catch (e) {
             console.error('Error approving domains:', e);

@@ -1,4 +1,5 @@
 import {
+    AllowTappletCspPayload,
     BackgroundNodeSyncUpdatePayload,
     ConnectedPeersUpdatePayload,
     ConnectionStatusPayload,
@@ -229,4 +230,8 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'EnterPin';
           payload: undefined;
+      }
+    | {
+          event_type: 'AllowTappletCsp';
+          payload: AllowTappletCspPayload;
       };

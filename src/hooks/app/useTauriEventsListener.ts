@@ -249,6 +249,10 @@ const useTauriEventsListener = () => {
                         case 'EnterPin':
                             useSecurityStore.setState({ modal: 'enter_pin' });
                             break;
+                        case 'AllowTappletCsp':
+                            useSecurityStore.setState({ tappletCsp: event.payload.csp });
+                            useSecurityStore.setState({ modal: 'allow_tapplet_csp' });
+                            break;
                         default:
                             console.warn('Unknown event', JSON.stringify(event));
                             break;

@@ -65,6 +65,12 @@ export function DialogsGroup() {
                 >
                     Forgot Pin
                 </AdminButton>
+                <AdminButton
+                    onClick={() => setDialogToShow(dialogToShow === 'allowTappletCsp' ? undefined : 'allowTappletCsp')}
+                    $isActive={dialogToShow === 'allowTappletCsp'}
+                >
+                    Forgot Pin
+                </AdminButton>
             </ButtonGroup>
         </>
     );

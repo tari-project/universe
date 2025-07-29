@@ -22,4 +22,5 @@
 
 pub mod error;
 pub mod interface;
+pub mod tapplet_manager;
 pub mod tapplet_server;

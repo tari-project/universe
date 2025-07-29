@@ -48,6 +48,7 @@ use crate::p2pool::models::{Connections, P2poolStats};
 use crate::pin::PinManager;
 use crate::setup::setup_manager::{SetupManager, SetupPhase};
 use crate::tapplets::interface::ActiveTapplet;
+use crate::tapplets::tapplet_manager::TappletManager;
 use crate::tapplets::tapplet_server::{get_tapplet_csp, start_tapplet};
 use crate::tasks_tracker::TasksTrackers;
 use crate::tor_adapter::TorConfig;
@@ -2240,7 +2241,7 @@ pub async fn update_csp_policy(
 pub async fn launch_builtin_tapplet() -> Result<ActiveTapplet, String> {
     let binaries_resolver = BinaryResolver::current();
     // TODO
-    const DEFAULT_TAPPLET_CSP: &str = "default-src 'self' http://{}; script-src 'self' http://{} 'unsafe-inline'; img-src 'self' data:; style-src 'self' 'unsafe-inline';";
+    const DEFAULT_TAPPLET_CSP: &str = "default-src 'self'";
 
     let tapp_dest_dir = binaries_resolver
         .resolve_path_to_binary_files(Binaries::BridgeTapplet)
@@ -2271,13 +2272,21 @@ pub async fn launch_builtin_tapplet() -> Result<ActiveTapplet, String> {
 }
 
 #[tauri::command]
-pub async fn launch_dev_tapplet(path: String) -> Result<ActiveTapplet, String> {
+pub async fn launch_dev_tapplet(
+    path: String,
+    app_handle: tauri::AppHandle,
+) -> Result<ActiveTapplet, String> {
     let tapp_dest_dir = PathBuf::from(path);
     info!(target: LOG_TARGET, "💥 Dev tapplet start: {:?}", &tapp_dest_dir);
 
     let csp = get_tapplet_csp(tapp_dest_dir.clone()).unwrap_or_default();
     let csp_header = HeaderValue::from_str(&csp).unwrap();
     info!(target: LOG_TARGET, "💥 Dev tapplet csp: {:?}", &csp);
+
+    let allow_csp = TappletManager::allow_tapplet_csp(csp, &app_handle)
+        .await
+        .map_err(|e| InvokeError::from_anyhow(anyhow::anyhow!(e.to_string())));
+    info!(target: LOG_TARGET, "💥 Allow CSP result: {:?}", allow_csp);
 
     let handle_start =
         tauri::async_runtime::spawn(async move { start_tapplet(tapp_dest_dir, csp_header).await });

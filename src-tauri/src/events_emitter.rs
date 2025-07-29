@@ -21,7 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 use crate::configs::config_ui::WalletUIMode;
 use crate::events::{
-    ConnectionStatusPayload, CriticalProblemPayload, DisabledPhasesPayload,
+    AllowTappletCspPayload, ConnectionStatusPayload, CriticalProblemPayload, DisabledPhasesPayload,
     InitWalletScanningProgressPayload,
 };
 #[cfg(target_os = "windows")]
@@ -853,6 +853,20 @@ impl EventsEmitter {
             .emit(BACKEND_STATE_UPDATE, event)
         {
             error!(target: LOG_TARGET, "Failed to emit EnterPin event: {e:?}");
+        }
+    }
+
+    pub async fn emit_allow_tapplet_csp(csp: String) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::AllowTappletCsp,
+            payload: AllowTappletCspPayload { csp },
+        };
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
+            error!(target: LOG_TARGET, "Failed to emit AllowTappletCsp event: {e:?}");
         }
     }
 }

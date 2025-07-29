@@ -88,6 +88,7 @@ pub enum EventType {
     ShowKeyringDialog,
     CreatePin,
     EnterPin,
+    AllowTappletCsp,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -201,3 +202,8 @@ pub struct TariAddressUpdatePayload {
 
 #[derive(Clone, Debug, Serialize)]
 pub struct ConfigPoolsContentLoadedPayload {}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct AllowTappletCspPayload {
+    pub csp: String,
+}

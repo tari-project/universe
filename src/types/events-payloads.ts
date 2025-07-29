@@ -85,3 +85,7 @@ export type BackgroundNodeSyncUpdatePayload =
       };
 
 export type ConnectionStatusPayload = 'InProgress' | 'Succeed' | 'Failed';
+
+export interface AllowTappletCspPayload {
+    csp: string;
+}
