@@ -6,15 +6,6 @@ import { useMiningStore } from '../useMiningStore.ts';
 
 export const setGpuDevices = (gpu_devices: GpuDevice[]) => {
     useMiningMetricsStore.setState({ gpu_devices });
-    const gpuMiningEnabled = useConfigMiningStore.getState().gpu_mining_enabled;
-
-    if (!gpuMiningEnabled && gpu_devices.some((gpu) => gpu.settings.is_available && !gpu.settings.is_excluded)) {
-        void setGpuMiningEnabled(true);
-    }
-
-    if (gpuMiningEnabled && gpu_devices.every((gpu) => gpu.settings.is_excluded)) {
-        void setGpuMiningEnabled(false);
-    }
 };
 export const setGpuMiningStatus = (gpu_mining_status: GpuMinerStatus) => {
     useMiningMetricsStore.setState((c) => ({ ...c, gpu_mining_status }));
