@@ -3,7 +3,7 @@ import { PoolStats } from '../types/app-status.ts';
 
 export type PoolType = 'CPU' | 'GPU';
 export interface RewardValues {
-    rewardValue?: number;
+    rewardValue?: number | null;
     unpaidFMT?: string;
 }
 interface MiningPoolsStoreState {
@@ -14,7 +14,7 @@ interface MiningPoolsStoreState {
 }
 
 const initialRewards: RewardValues = {
-    rewardValue: 0,
+    rewardValue: null,
     unpaidFMT: '0',
 };
 const initialState: MiningPoolsStoreState = {

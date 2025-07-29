@@ -11,7 +11,7 @@ import {
     SettingsGroupWrapper,
 } from '@app/containers/floating/Settings/components/SettingsGroup.styles';
 import { useConfigUIStore, useUIStore } from '@app/store';
-import { enableTowerAnimation } from '@app/store/actions/uiStoreActions';
+import { toggleVisualMode } from '@app/store/actions/uiStoreActions';
 
 const ErrorTypography = styled(Typography)(({ theme }) => ({
     color: theme.palette.error.main,
@@ -25,7 +25,7 @@ function VisualMode() {
 
     const handleSwitch = useCallback(() => {
         if (visualModeToggleLoading) return;
-        enableTowerAnimation(!visualMode);
+        toggleVisualMode(!visualMode);
     }, [visualMode, visualModeToggleLoading]);
 
     return (

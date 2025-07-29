@@ -2,7 +2,7 @@ import i18n from 'i18next';
 import { Ref, useEffect, useMemo, useState } from 'react';
 import { AnimatePresence } from 'motion/react';
 import NumberFlow from '@number-flow/react';
-import { useConfigUIStore, useMiningMetricsStore } from '@app/store';
+import { useConfigUIStore, useMiningMetricsStore, useUIStore } from '@app/store';
 import SuccessAnimation from '../SuccessAnimation/SuccessAnimation';
 import SyncData from '@app/containers/navigation/components/MiningTiles/components/SyncData/SyncData.tsx';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
@@ -37,7 +37,7 @@ interface Props {
     mainNumber: number;
     mainUnit: string;
     mainLabel: string;
-    successValue?: number;
+    successValue?: number | null;
     isIdle?: boolean;
     isSoloMining?: boolean;
     tooltipTriggerRef?: Ref<HTMLDivElement>;
@@ -60,29 +60,35 @@ export default function Tile({
     getReferenceProps,
     isSoloMining,
 }: Props) {
+    const animationState = animationStatus;
     const visualMode = useConfigUIStore((s) => s.visual_mode);
+    const towerInitalized = useUIStore((s) => s.towerInitalized);
     const isConnectedToTariNetwork = useMiningMetricsStore((s) => s.isNodeConnected);
     const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
-    const animationState = animationStatus;
 
     const canAnimateTower = useMemo(
-        () => visualMode && showSuccessAnimation && animationState === 'free',
-        [animationState, showSuccessAnimation, visualMode]
+        () => visualMode && towerInitalized && animationState === 'free' && !isLoading,
+        [animationState, visualMode, isLoading, towerInitalized]
     );
 
     useEffect(() => {
-        if (canAnimateTower) {
-            setAnimationState('success');
-        }
-    }, [canAnimateTower]);
-
-    useEffect(() => {
-        setShowSuccessAnimation(!!successValue);
-        const resetTimer = setTimeout(() => clearCurrentSuccessValue(title), 4000);
+        if (!successValue || isLoading) return;
+        setShowSuccessAnimation(successValue > 0);
+        const resetTimer = setTimeout(() => {
+            clearCurrentSuccessValue(title);
+            setShowSuccessAnimation(false);
+        }, 5000);
         return () => {
             clearTimeout(resetTimer);
         };
-    }, [successValue, title, visualMode]);
+    }, [isLoading, successValue, title, visualMode]);
+
+    useEffect(() => {
+        if (!canAnimateTower) return;
+        if (showSuccessAnimation) {
+            setAnimationState('success');
+        }
+    }, [canAnimateTower, showSuccessAnimation]);
 
     const syncing = isSoloMining && isEnabled && !isConnectedToTariNetwork;
     const gpuIdle = isSoloMining && !isMining;
@@ -129,7 +135,7 @@ export default function Tile({
     );
 
     return (
-        <Wrapper ref={tooltipTriggerRef} {...getReferenceProps?.()}>
+        <Wrapper key={title} ref={tooltipTriggerRef} {...getReferenceProps?.()}>
             <Inside $isSyncing={syncing || isLoading}>
                 <HeadingRow>
                     <LabelWrapper>
@@ -152,6 +158,7 @@ export default function Tile({
             </AnimatePresence>
 
             <SuccessAnimation
+                key={`success-${title}`}
                 value={successValue || 0}
                 unit="XTM"
                 show={showSuccessAnimation}

@@ -56,7 +56,6 @@
     "network-speed-test": "नेटवर्क स्पीड टेस्ट",
     "p2pool": "पी2पूल शुरू कर रहे हैं",
     "platform-prequisites": "प्लेटफ़ॉर्म पूर्वापेक्षाएँ प्रारंभ कर रहे हैं",
-    "run-cpu-benchmark": "सीपीयू बेंचमार्क चला रहे हैं",
     "setup-bridge": "Preparing Bridge",
     "setup-bridge-download": "Preparing Bridge | Downloading: {{ progress }}%",
     "start-tor": "टोर शुरू कर रहे हैं",
