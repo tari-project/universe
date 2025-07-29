@@ -68,7 +68,6 @@ impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
         directory: PathBuf,
         download_info: BinaryDownloadInfo,
     ) -> Result<PathBuf, Error> {
-        let checksum_path = directory.join("in_progress").join("SHA256SUMS");
         let checksum_url = match download_info.main_url.rfind('/') {
             Some(pos) => format!("{}/{}", &download_info.main_url[..pos], "SHA256SUMS"),
             None => download_info.main_url,
@@ -76,11 +75,11 @@ impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
 
         match HttpFileClient::builder()
             .with_cloudflare_cache_check()
-            .build(checksum_url.clone(), checksum_path.clone())
+            .build(checksum_url.clone(), directory.clone())?
             .execute()
             .await
         {
-            Ok(_) => Ok(checksum_path),
+            Ok(checksum_path) => Ok(checksum_path),
             Err(_) => {
                 let checksum_fallback_url = match download_info.fallback_url.rfind('/') {
                     Some(pos) => format!("{}/{}", &download_info.fallback_url[..pos], "SHA256SUMS"),
@@ -88,10 +87,9 @@ impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
                 };
                 info!(target: LOG_TARGET, "Fallback URL: {checksum_fallback_url}");
                 HttpFileClient::builder()
-                    .build(checksum_fallback_url.clone(), checksum_path.clone())
+                    .build(checksum_fallback_url.clone(), directory.clone())?
                     .execute()
-                    .await?;
-                Ok(checksum_path)
+                    .await
             }
         }
     }

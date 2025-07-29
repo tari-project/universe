@@ -179,10 +179,7 @@ impl BinaryManager {
 
         let checksum_file = self
             .adapter
-            .download_and_get_checksum_path(
-                destination_dir.clone().to_path_buf(),
-                download_info.clone(),
-            )
+            .download_and_get_checksum_path(destination_dir.clone(), download_info.clone())
             .await
             .map_err(|e| {
                 std::fs::remove_dir_all(destination_dir.clone()).ok();
@@ -193,23 +190,41 @@ impl BinaryManager {
                 )
             })?;
 
+        info!(target: LOG_TARGET, "Checksum file downloaded to: {checksum_file:?}" );
+
         let expected_checksum = self
             .adapter
             .get_expected_checksum(checksum_file.clone(), &download_info.name)
             .await?;
 
+        info!(target: LOG_TARGET, "Expected checksum: {expected_checksum:?}");
+        info!(target: LOG_TARGET, "In-progress file zip path: {in_progress_file_zip:?}");
+
+        // Debug: Check if the file actually exists before attempting validation
+        if !in_progress_file_zip.exists() {
+            error!(target: LOG_TARGET, "Archive file does not exist at path: {in_progress_file_zip:?}");
+            return Err(anyhow!(
+                "Archive file not found at path: {:?}",
+                in_progress_file_zip
+            ));
+        }
+
+        info!(target: LOG_TARGET, "Archive file exists, proceeding with checksum validation");
+
         match validate_checksum(in_progress_file_zip.clone(), expected_checksum).await {
-            Ok(validate_checksum) => {
-                if validate_checksum {
+            Ok(is_valid_checksum) => {
+                if is_valid_checksum {
                     info!(target: LOG_TARGET, "Checksum validation succeeded for binary: {} with version: {:?}", self.binary_name, selected_version);
                     Ok(())
                 } else {
+                    error!(target: LOG_TARGET, "Checksum invalid for binary: {} with version: {:?}", self.binary_name, selected_version);
                     std::fs::remove_dir_all(destination_dir.clone()).ok();
                     Err(anyhow!("Checksums mismatched!"))
                 }
             }
             Err(e) => {
                 std::fs::remove_dir_all(destination_dir.clone()).ok();
+                error!(target: LOG_TARGET, "Checksum validation failed for binary: {} with version: {:?}. Error: {:?}", self.binary_name, selected_version, e);
                 Err(anyhow!(
                     "Checksum validation failed for version: {:?}. Error: {:?}",
                     selected_version,
@@ -316,7 +331,10 @@ impl BinaryManager {
                 .download_selected_version(progress_channel.clone())
                 .await
             {
-                Ok(_) => return Ok(()),
+                Ok(_) => {
+                    info!(target: LOG_TARGET, "Successfully downloaded binary: {} on retry: {}", self.binary_name, retry);
+                    return Ok(());
+                }
                 Err(error) => {
                     last_error_message = format!(
                         "Failed to download binary: {}. Error: {:?}",
@@ -351,9 +369,7 @@ impl BinaryManager {
         let fallback_url = download_info.fallback_url.clone();
 
         info!(target: LOG_TARGET, "Downloading binary: {} from url: {}", self.binary_name, &download_url);
-
-        let archive_destination_path: Option<PathBuf>;
-        let destination_path: PathBuf;
+        let mut archive_destination_path: PathBuf;
 
         let (chunk_progress_sender, main_progress_sender_shutdown) = self
             .resolve_progress_channel(progress_channel.clone())
@@ -365,7 +381,7 @@ impl BinaryManager {
             .with_file_extract()
             .with_progress_status_sender(chunk_progress_sender.clone())
             .with_download_resume()
-            .build(download_url.clone(), destination_dir.clone())
+            .build(download_url.clone(), destination_dir.clone())?
             .execute()
             .await
             .map_err(|e| anyhow!("Error downloading version: {:?}. Error: {:?}", version, e));
@@ -381,11 +397,11 @@ impl BinaryManager {
                 .await
                 .map_err(|e| anyhow!("Error resolving progress channel: {:?}", e))?;
 
-            (destination_path, archive_destination_path) = HttpFileClient::builder()
+            archive_destination_path = HttpFileClient::builder()
                 .with_file_extract()
                 .with_progress_status_sender(chunk_progress_sender.clone())
                 .with_download_resume()
-                .build(fallback_url.clone(), destination_dir.clone())
+                .build(fallback_url.clone(), destination_dir.clone())?
                 .execute()
                 .await
                 .inspect_err(|_| {
@@ -394,14 +410,16 @@ impl BinaryManager {
                     }
                 })?;
         } else {
-            (destination_path, archive_destination_path) = main_file_download_result?;
+            archive_destination_path = main_file_download_result?;
         }
 
         if self.should_validate_checksum {
-            if let Some(archive_destination_path) = archive_destination_path {
-                self.validate_checksum(download_info, destination_path, archive_destination_path)
-                    .await?;
-            }
+            self.validate_checksum(
+                download_info,
+                destination_dir.clone(),
+                archive_destination_path,
+            )
+            .await?;
         }
 
         Ok(())
