@@ -21,13 +21,15 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use anyhow::{anyhow, Error};
-use reqwest::Client;
+use reqwest::{header::AUTHORIZATION, Client};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::json;
 
 use crate::ootle::temp_types::{
-    AccountsCreateRequest, AccountsCreateResponse, AccountsGetBalancesRequest,
-    AccountsGetBalancesResponse, AccountsListRequest, AccountsListResponse,
+    AccountsCreateFreeTestCoinsRequest, AccountsCreateFreeTestCoinsResponse, AccountsCreateRequest,
+    AccountsCreateResponse, AccountsGetBalancesRequest, AccountsGetBalancesResponse,
+    AccountsListRequest, AccountsListResponse, AuthLoginAcceptRequest, AuthLoginAcceptResponse,
+    AuthLoginRequest, AuthLoginResponse,
 };
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
@@ -41,11 +43,15 @@ pub struct OotleWalletInfo {
 #[derive(Debug, Clone)]
 pub struct OotleWalletJsonRpcClient {
     json_rpc_port: u16,
+    token: Option<String>,
 }
 
 impl OotleWalletJsonRpcClient {
     pub fn new(json_rpc_port: u16) -> Self {
-        Self { json_rpc_port }
+        Self {
+            json_rpc_port,
+            token: None,
+        }
     }
 
     async fn json_rpc_request<T: DeserializeOwned>(
@@ -62,7 +68,11 @@ impl OotleWalletJsonRpcClient {
         });
 
         let client = Client::new();
-        let response = client.post(rpc_url).json(&request_body).send().await?;
+        let mut builder = client.post(rpc_url).json(&request_body);
+        if let Some(token) = &self.token {
+            builder = builder.header(AUTHORIZATION, format!("Bearer {}", token));
+        }
+        let response = builder.send().await?;
         let response_text = response.text().await?;
         let response_json: serde_json::Value = serde_json::from_str(&response_text)?;
         if let Some(error) = response_json.get("error") {
@@ -72,6 +82,31 @@ impl OotleWalletJsonRpcClient {
             .get("result")
             .ok_or_else(|| anyhow!("No result in response"))?;
         Ok(serde_json::from_value(result.clone())?)
+    }
+
+    pub async fn authenticate(&mut self) -> Result<(), Error> {
+        let auth_login_request = AuthLoginRequest {
+            permissions: vec!["Admin".to_string()],
+            duration: None,
+            webauthn_finish_auth_request: None,
+        };
+        let auth_login_request_value = serde_json::to_value(auth_login_request)?;
+        let AuthLoginResponse { auth_token, .. } = self
+            .json_rpc_request("auth.request", auth_login_request_value)
+            .await?;
+
+        let auth_login_accept = AuthLoginAcceptRequest {
+            auth_token,
+            name: "TU Token".to_string(),
+        };
+        let auth_login_accept_value = serde_json::to_value(auth_login_accept)?;
+        let auth_response: AuthLoginAcceptResponse = self
+            .json_rpc_request("auth.accept", auth_login_accept_value)
+            .await?;
+
+        self.token = Some(auth_response.permissions_token);
+
+        Ok(())
     }
 
     pub async fn get_wallet_info(&self) -> Result<OotleWalletInfo, Error> {
@@ -103,6 +138,15 @@ impl OotleWalletJsonRpcClient {
     ) -> Result<AccountsCreateResponse, Error> {
         let value = serde_json::to_value(request)?;
         self.json_rpc_request("accounts.create", value).await
+    }
+
+    pub async fn create_free_test_coins(
+        &self,
+        request: AccountsCreateFreeTestCoinsRequest,
+    ) -> Result<AccountsCreateFreeTestCoinsResponse, Error> {
+        let value = serde_json::to_value(request)?;
+        self.json_rpc_request("accounts.create_free_test_coins", value)
+            .await
     }
 
     pub async fn get_balances(

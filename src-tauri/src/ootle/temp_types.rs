@@ -65,6 +65,25 @@ pub struct AccountsCreateResponse {
     pub result: serde_json::Value,
 }
 
+/** Create Account with free test coins */
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct AccountsCreateFreeTestCoinsRequest {
+    pub account: Option<serde_json::Value>,
+    pub amount: u64,
+    pub max_fee: Option<u64>,
+    pub key_id: Option<u64>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct AccountsCreateFreeTestCoinsResponse {
+    pub account: Account,
+    pub transaction_id: String,
+    pub amount: u64,
+    pub fee: u64,
+    pub result: serde_json::Value,
+    pub public_key: String,
+}
+
 /** Get Balances */
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct AccountsGetBalancesRequest {
@@ -76,4 +95,29 @@ pub struct AccountsGetBalancesRequest {
 pub struct AccountsGetBalancesResponse {
     pub address: String,
     pub balances: Vec<serde_json::Value>,
+}
+
+/** Auth Login */
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct AuthLoginRequest {
+    pub permissions: Vec<String>,
+    pub duration: Option<serde_json::Value>,
+    pub webauthn_finish_auth_request: Option<serde_json::Value>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct AuthLoginResponse {
+    pub auth_token: String,
+    pub valid_for_secs: u64,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct AuthLoginAcceptRequest {
+    pub auth_token: String,
+    pub name: String,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct AuthLoginAcceptResponse {
+    pub permissions_token: String,
 }

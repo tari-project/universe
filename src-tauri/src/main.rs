@@ -649,6 +649,7 @@ fn main() {
             ootle_commands::ootle_list_accounts,
             ootle_commands::ootle_create_account,
             ootle_commands::ootle_get_balances,
+            ootle_commands::ootle_create_free_test_coins,
         ])
         .build(tauri::generate_context!())
         .inspect_err(|e| {

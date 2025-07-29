@@ -1,5 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import {
+    AccountsCreateFreeTestCoinsRequest,
+    AccountsCreateFreeTestCoinsResponse,
     AccountsCreateRequest,
     AccountsCreateResponse,
     AccountsGetBalancesRequest,
@@ -26,6 +28,18 @@ export const ootleCreateAccount = async (
         return await invoke('ootle_create_account', { request });
     } catch (e) {
         const message = 'Could not create Ootle account';
+        console.error(message, e);
+        setError(message);
+    }
+};
+
+export const ootleCreateDefaultAccount = async (
+    request: AccountsCreateFreeTestCoinsRequest
+): Promise<AccountsCreateFreeTestCoinsResponse | undefined> => {
+    try {
+        return await invoke('ootle_create_free_test_coins', { request });
+    } catch (e) {
+        const message = 'Could not create Default Ootle account';
         console.error(message, e);
         setError(message);
     }

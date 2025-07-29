@@ -54,12 +54,14 @@ pub enum OotleWalletManagerError {
 
 pub struct OotleWalletManager {
     watcher: Arc<RwLock<ProcessWatcher<OotleWalletAdapter>>>,
+    client: Arc<RwLock<Option<OotleWalletJsonRpcClient>>>,
 }
 
 impl Clone for OotleWalletManager {
     fn clone(&self) -> Self {
         Self {
             watcher: self.watcher.clone(),
+            client: self.client.clone(),
         }
     }
 }
@@ -74,6 +76,7 @@ impl OotleWalletManager {
 
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),
+            client: Arc::new(RwLock::new(None)),
         }
     }
 
@@ -99,6 +102,7 @@ impl OotleWalletManager {
             return Ok(());
         }
 
+        info!(target: LOG_TARGET, "Ootle wallet indexer urls: {:?}", config.indexer_urls);
         process_watcher.adapter.indexer_urls = config.indexer_urls;
         process_watcher
             .start(
@@ -117,6 +121,20 @@ impl OotleWalletManager {
 
     pub async fn get_json_rpc_port(&self) -> u16 {
         self.watcher.read().await.adapter.json_rpc_port
+    }
+
+    pub async fn get_client(&self) -> Result<OotleWalletJsonRpcClient, OotleWalletManagerError> {
+        let mut client_option = self.client.write().await;
+
+        if let Some(ref client) = *client_option {
+            Ok(client.clone())
+        } else {
+            let port = self.get_json_rpc_port().await;
+            let mut new_client = OotleWalletJsonRpcClient::new(port);
+            new_client.authenticate().await?;
+            *client_option = Some(new_client.clone());
+            Ok(new_client)
+        }
     }
 
     #[allow(dead_code)]

@@ -19,6 +19,8 @@ import { ActiveTapplet } from '@app/types/tapplets/tapplet.types';
 import {
     AccountsListRequest,
     AccountsListResponse,
+    AccountsCreateFreeTestCoinsRequest,
+    AccountsCreateFreeTestCoinsResponse,
     AccountsCreateRequest,
     AccountsCreateResponse,
     AccountsGetBalancesRequest,
@@ -148,6 +150,10 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'toggle_cpu_pool_mining', payload: { enabled: boolean }): Promise<void>;
     function invoke(param: 'toggle_gpu_pool_mining', payload: { enabled: boolean }): Promise<void>;
     function invoke(param: 'ootle_list_accounts', payload: AccountsListRequest): Promise<AccountsListResponse>;
+    function invoke(
+        param: 'ootle_create_free_test_coins',
+        payload: AccountsCreateFreeTestCoinsRequest
+    ): Promise<AccountsCreateFreeTestCoinsResponse>;
     function invoke(param: 'ootle_create_account', payload: AccountsCreateRequest): Promise<AccountsCreateResponse>;
     function invoke(
         param: 'ootle_get_balances',

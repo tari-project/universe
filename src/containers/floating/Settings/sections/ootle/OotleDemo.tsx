@@ -1,6 +1,12 @@
 import { useState } from 'react';
-import { ootleListAccounts, ootleCreateAccount, ootleGetBalances } from '../../../../../store/actions/ootleActions';
 import {
+    ootleListAccounts,
+    ootleCreateAccount,
+    ootleGetBalances,
+    ootleCreateDefaultAccount,
+} from '../../../../../store/actions/ootleActions';
+import {
+    AccountsCreateFreeTestCoinsRequest,
     AccountsCreateRequest,
     AccountsGetBalancesRequest,
     AccountsListRequest,
@@ -32,6 +38,17 @@ export const OotleDemo = () => {
         setResponse(JSON.stringify(result, null, 2));
     };
 
+    const handleCreateDefaultAccount = async () => {
+        const request: AccountsCreateFreeTestCoinsRequest = {
+            account: { Name: 'default-account' },
+            amount: 1_000_000_000,
+            max_fee: 1000,
+            key_id: null,
+        };
+        const result = await ootleCreateDefaultAccount(request);
+        setResponse(JSON.stringify(result, null, 2));
+    };
+
     const handleGetBalances = async () => {
         const request: AccountsGetBalancesRequest = { account: null, refresh: false };
         const result = await ootleGetBalances(request);
@@ -43,6 +60,7 @@ export const OotleDemo = () => {
             <h1>{title}</h1>
             <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
                 <Button onClick={handleListAccounts}>{'List Accounts'}</Button>
+                <Button onClick={handleCreateDefaultAccount}>{'Create Default Account'}</Button>
                 <Button onClick={handleCreateAccount}>{'Create Account'}</Button>
                 <Button onClick={handleGetBalances}>{'Get Balances'}</Button>
             </div>
@@ -51,7 +69,7 @@ export const OotleDemo = () => {
                     <h2>{'Response:'}</h2>
                     <pre
                         style={{
-                            background: '#f0f0f0',
+                            background: 'black',
                             padding: '10px',
                             border: '1px solid #ccc',
                             whiteSpace: 'pre-wrap',

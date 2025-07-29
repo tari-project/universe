@@ -171,6 +171,13 @@ impl ConfigCore {
             config.content.version = 1;
             let _unused = Self::_save_config(config._get_content().clone());
         };
+
+        // Original core config is already persisted without indexer URLs
+        if config.content.ootle_indexer_urls.is_empty() {
+            let network = Network::get_current_or_user_setting_or_default();
+            config.content.ootle_indexer_urls = default_ootle_indexer_urls(network);
+            let _ = Self::_save_config(config._get_content().clone());
+        }
     }
 }
 
