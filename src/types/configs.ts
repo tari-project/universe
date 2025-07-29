@@ -50,12 +50,18 @@ export interface ConfigMining {
     selected_mining_mode: string;
     gpu_mining_enabled: boolean;
     mining_modes: Record<string, MiningMode>;
+    gpu_devices_settings: Record<number, GpuDeviceSettings>;
     cpu_mining_enabled: boolean;
     gpu_engine: string;
 }
 
 export interface ConfigMiningSelectors {
     getSelectedMiningMode: () => MiningMode | undefined;
+}
+
+export interface GpuDeviceSettings {
+    device_id: number;
+    is_excluded: boolean;
 }
 
 export enum MiningModeType {

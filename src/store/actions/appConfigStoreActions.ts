@@ -12,18 +12,18 @@ import {
     useMiningMetricsStore,
     useMiningStore,
 } from '../index.ts';
-import {
-    restartMining,
-    startCpuMining,
-    startGpuMining,
-    stopCpuMining,
-    stopGpuMining,
-    toggleDeviceExclusion,
-} from './miningStoreActions';
+import { restartMining, startCpuMining, startGpuMining, stopCpuMining, stopGpuMining } from './miningStoreActions';
 import { setError } from './appStateStoreActions.ts';
 import { setUITheme } from './uiStoreActions';
 import { displayMode } from '../types';
-import { ConfigCore, ConfigMining, ConfigPools, ConfigUI, ConfigWallet } from '@app/types/configs.ts';
+import {
+    ConfigCore,
+    ConfigMining,
+    ConfigPools,
+    ConfigUI,
+    ConfigWallet,
+    GpuDeviceSettings,
+} from '@app/types/configs.ts';
 import { NodeType, updateNodeType as updateNodeTypeForNodeStore } from '../useNodeStore.ts';
 import { setCurrentExchangeMinerId } from '../useExchangeStore.ts';
 import { fetchExchangeContent, refreshXCContent } from '@app/hooks/exchanges/fetchExchangeContent.ts';
@@ -106,7 +106,7 @@ export const setAllowNotifications = async (allowNotifications: boolean) => {
 
 export const setApplicationLanguage = async (applicationLanguage: Language) => {
     const prevApplicationLanguage = useConfigUIStore.getState().application_language;
-    useConfigUIStore.setState({ application_language: applicationLanguage });
+    useConfigUIStore.setState((c) => ({ ...c, application_language: applicationLanguage }));
     invoke('set_application_language', { applicationLanguage })
         .then(() => {
             changeLanguage(applicationLanguage);
@@ -114,7 +114,7 @@ export const setApplicationLanguage = async (applicationLanguage: Language) => {
         .catch((e) => {
             console.error('Could not set application language', e);
             setError('Could not change application language');
-            useConfigUIStore.setState({ application_language: prevApplicationLanguage });
+            useConfigUIStore.setState((c) => ({ ...c, application_language: prevApplicationLanguage }));
         });
 };
 export const setAutoUpdate = async (autoUpdate: boolean) => {
@@ -163,7 +163,7 @@ export const setGpuMiningEnabled = async (enabled: boolean) => {
     const anyMiningInitiated =
         useMiningStore.getState().isCpuMiningInitiated || useMiningStore.getState().isGpuMiningInitiated;
     const gpuMining = useMiningMetricsStore.getState().gpu_mining_status.is_mining;
-    const gpuDevices = useMiningMetricsStore.getState().gpu_devices;
+    const gpuDevicesSettings = Object.values(useConfigMiningStore.getState().gpu_devices_settings);
     if (gpuMining) {
         await stopGpuMining();
     }
@@ -174,14 +174,14 @@ export const setGpuMiningEnabled = async (enabled: boolean) => {
         } else {
             void stopGpuMining();
         }
-        if (enabled && gpuDevices.every((device) => device.settings.is_excluded)) {
-            for (const device of gpuDevices) {
-                await toggleDeviceExclusion(device.device_index, false);
+        if (enabled && gpuDevicesSettings.every((device) => device.is_excluded)) {
+            for (const device of gpuDevicesSettings) {
+                await toggleDeviceExclusion(device.device_id, false);
             }
         }
-        if (!enabled && gpuDevices.some((device) => !device.settings.is_excluded)) {
-            for (const device of gpuDevices) {
-                await toggleDeviceExclusion(device.device_index, true);
+        if (!enabled && gpuDevicesSettings.some((device) => !device.is_excluded)) {
+            for (const device of gpuDevicesSettings) {
+                await toggleDeviceExclusion(device.device_id, true);
             }
         }
     } catch (e) {
@@ -301,11 +301,11 @@ export const setPreRelease = async (preRelease: boolean) => {
     });
 };
 export const setShouldAlwaysUseSystemLanguage = async (shouldAlwaysUseSystemLanguage: boolean) => {
-    useConfigUIStore.setState({ should_always_use_system_language: shouldAlwaysUseSystemLanguage });
+    useConfigUIStore.setState((c) => ({ ...c, should_always_use_system_language: shouldAlwaysUseSystemLanguage }));
     invoke('set_should_always_use_system_language', { shouldAlwaysUseSystemLanguage }).catch((e) => {
         console.error('Could not set should always use system language', e);
         setError('Could not change system language');
-        useConfigUIStore.setState({ should_always_use_system_language: !shouldAlwaysUseSystemLanguage });
+        useConfigUIStore.setState((c) => ({ ...c, should_always_use_system_language: !shouldAlwaysUseSystemLanguage }));
     });
 };
 export const setShouldAutoLaunch = async (shouldAutoLaunch: boolean) => {
@@ -317,22 +317,22 @@ export const setShouldAutoLaunch = async (shouldAutoLaunch: boolean) => {
     });
 };
 export const setShowExperimentalSettings = async (showExperimentalSettings: boolean) => {
-    useConfigUIStore.setState({ show_experimental_settings: showExperimentalSettings });
+    useConfigUIStore.setState((c) => ({ ...c, show_experimental_settings: showExperimentalSettings }));
     invoke('set_show_experimental_settings', { showExperimentalSettings }).catch((e) => {
         console.error('Could not set show experimental settings', e);
         setError('Could not change experimental settings');
-        useConfigUIStore.setState({ show_experimental_settings: !showExperimentalSettings });
+        useConfigUIStore.setState((c) => ({ ...c, show_experimental_settings: !showExperimentalSettings }));
     });
 };
 
 export const setDisplayMode = async (displayMode: displayMode) => {
     const previousDisplayMode = useConfigUIStore.getState().display_mode;
-    useConfigUIStore.setState({ display_mode: displayMode });
+    useConfigUIStore.setState((c) => ({ ...c, display_mode: displayMode }));
 
     invoke('set_display_mode', { displayMode: displayMode as displayMode }).catch((e) => {
         console.error('Could not set theme', e);
         setError('Could not change theme');
-        useConfigUIStore.setState({ display_mode: previousDisplayMode });
+        useConfigUIStore.setState((c) => ({ ...c, display_mode: previousDisplayMode }));
     });
 };
 
@@ -344,11 +344,12 @@ export const setUseTor = async (useTor: boolean) => {
         useConfigCoreStore.setState({ use_tor: !useTor });
     });
 };
-export const setVisualMode = (enabled: boolean) => {
-    useConfigUIStore.setState({ visual_mode: enabled });
+export const setVisualMode = async (enabled: boolean) => {
+    useConfigUIStore.setState((c) => ({ ...c, visual_mode: enabled }));
     invoke('set_visual_mode', { enabled }).catch((e) => {
         console.error('Could not set visual mode', e);
         setError('Could not change visual mode');
+        useConfigUIStore.setState((c) => ({ ...c, visual_mode: !enabled }));
     });
 };
 export const setNodeType = async (nodeType: NodeType) => {
@@ -441,5 +442,37 @@ export const toggleGpuPool = async (enabled: boolean) => {
 };
 
 export const handleWalletUIChanged = (mode: WalletUIMode) => {
-    useConfigUIStore.setState({ wallet_ui_mode: mode });
+    useConfigUIStore.setState((c) => ({ ...c, wallet_ui_mode: mode }));
+};
+
+export const handleGpuDevicesSettingsUpdated = (gpuDevicesSettings: Record<number, GpuDeviceSettings>) => {
+    useConfigMiningStore.setState({ gpu_devices_settings: gpuDevicesSettings });
+};
+
+export const toggleDeviceExclusion = async (deviceIndex: number, excluded: boolean) => {
+    try {
+        const wasGpuMiningInitiated = useMiningStore.getState().isGpuMiningInitiated;
+        const metricsState = useMiningMetricsStore.getState();
+        if (metricsState.gpu_mining_status.is_mining) {
+            console.info('Stoping mining...');
+            await stopGpuMining();
+        }
+        await invoke('toggle_device_exclusion', { deviceIndex, excluded });
+        const devices = useConfigMiningStore.getState().gpu_devices_settings;
+        const updatedDevices = { ...devices, [deviceIndex]: { ...devices[deviceIndex], is_excluded: excluded } };
+        useConfigMiningStore.setState({ gpu_devices_settings: updatedDevices });
+
+        const isAllExcluded = Object.values(updatedDevices).every((device) => device.is_excluded);
+        if (isAllExcluded) {
+            setGpuMiningEnabled(false);
+        }
+        if (wasGpuMiningInitiated) {
+            console.info('Restarting mining...');
+            await startGpuMining();
+        }
+        useMiningStore.setState({ isExcludingGpuDevices: false });
+    } catch (e) {
+        console.error('Could not set excluded gpu device: ', e);
+        setError(e as string);
+    }
 };

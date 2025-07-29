@@ -78,7 +78,7 @@ export function SliderInput({
 
     return (
         <Wrapper $isLoading={isLoading}>
-            <RangeLimits>{startingValue}</RangeLimits>
+            <RangeLimits>{`${startingValue}%`}</RangeLimits>
 
             <SliderWrapper
                 $isLoading={isLoading}
@@ -128,7 +128,7 @@ export function SliderInput({
                     </TrackWrapper>
                 </Slider>
             </SliderWrapper>
-            <RangeLimits>{maxValue}</RangeLimits>
+            <RangeLimits>{`${maxValue}%`}</RangeLimits>
         </Wrapper>
     );
 }

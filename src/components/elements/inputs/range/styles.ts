@@ -1,6 +1,7 @@
 import styled, { css } from 'styled-components';
 import * as m from 'motion/react-m';
 import { Typography } from '@app/components/elements/Typography.tsx';
+import { convertHexToRGBA } from '@app/utils';
 
 const SLIDER_THUMB_WIDTH = 20;
 export const Wrapper = styled.div<{ $isLoading?: boolean }>`
@@ -38,7 +39,7 @@ export const Slider = styled.div`
     position: relative;
     display: flex;
     width: 100%;
-    max-width: calc(100% - 40px);
+    max-width: calc(100% - 16px);
     flex-grow: 1;
     cursor: grab;
     touch-action: none;
@@ -113,7 +114,7 @@ export const ValueIndicator = styled(m.div)`
 `;
 
 export const RangeLimits = styled(Typography)`
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 500;
     text-align: center;
 `;
@@ -141,6 +142,6 @@ export const PowerLeveltemWrapper = styled.div`
     flex-direction: column;
     gap: 16px;
     width: 100%;
-    border-bottom: 1px solid ${({ theme }) => theme.palette.divider};
-    padding: 16px 0;
+    border-bottom: 1px solid ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.03)};
+    padding: 24px 0 16px 0;
 `;

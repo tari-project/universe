@@ -21,7 +21,7 @@ import {
     PoolStats,
     WalletBalance,
 } from './app-status.ts';
-import { ConfigCore, ConfigMining, ConfigPools, ConfigUI, ConfigWallet } from './configs.ts';
+import { ConfigCore, ConfigMining, ConfigPools, ConfigUI, ConfigWallet, GpuDeviceSettings } from './configs.ts';
 import { DisabledPhasesPayload } from '@app/store/actions/setupStoreActions.ts';
 
 export const BACKEND_STATE_UPDATE = 'backend_state_update';
@@ -225,4 +225,8 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'EnterPin';
           payload: undefined;
+      }
+    | {
+          event_type: 'UpdateGpuDevicesSettings';
+          payload: Record<number, GpuDeviceSettings>;
       };

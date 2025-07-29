@@ -53,6 +53,7 @@ import {
     handleConfigWalletLoaded,
     handleWalletUIChanged,
     handleConfigPoolsLoaded,
+    handleGpuDevicesSettingsUpdated,
 } from '@app/store/actions/appConfigStoreActions';
 import { invoke } from '@tauri-apps/api/core';
 import { refreshTransactions } from '@app/hooks/wallet/useFetchTxHistory.ts';
@@ -242,6 +243,9 @@ const useTauriEventsListener = () => {
                             break;
                         case 'EnterPin':
                             useSecurityStore.setState({ modal: 'enter_pin' });
+                            break;
+                        case 'UpdateGpuDevicesSettings':
+                            handleGpuDevicesSettingsUpdated(event.payload);
                             break;
                         default:
                             console.warn('Unknown event', JSON.stringify(event));

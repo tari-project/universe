@@ -20,12 +20,11 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::time::Duration;
-
 use crate::{
     binaries::{Binaries, BinaryResolver},
     configs::{config_mining::ConfigMining, trait_config::ConfigImpl},
     events_emitter::EventsEmitter,
+    gpu_devices::GpuDevices,
     gpu_miner::EngineType,
     hardware::hardware_status_monitor::HardwareStatusMonitor,
     progress_trackers::{
@@ -143,9 +142,6 @@ impl SetupPhaseImpl for HardwareSetupPhase {
             .add_step(ProgressPlans::Hardware(
                 ProgressSetupHardwarePlan::DetectGPU,
             ))
-            .add_step(ProgressPlans::Hardware(
-                ProgressSetupHardwarePlan::RunCpuBenchmark,
-            ))
             .add_step(ProgressPlans::Hardware(ProgressSetupHardwarePlan::Done))
             .build(app_handle.clone(), timeout_watcher_sender)
     }
@@ -162,7 +158,7 @@ impl SetupPhaseImpl for HardwareSetupPhase {
 
     async fn setup_inner(&self) -> Result<(), Error> {
         let mut progress_stepper = self.progress_stepper.lock().await;
-        let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
+        let (_data_dir, config_dir, _log_dir) = self.get_app_dirs()?;
         let state = self.app_handle.state::<UniverseAppState>();
 
         let binary_resolver = BinaryResolver::current();
@@ -211,24 +207,13 @@ impl SetupPhaseImpl for HardwareSetupPhase {
             .await
             .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {e:?}"));
 
-        HardwareStatusMonitor::current().initialize().await?;
-
-        progress_stepper
-            .resolve_step(ProgressPlans::Hardware(
-                ProgressSetupHardwarePlan::RunCpuBenchmark,
-            ))
-            .await;
-
-        let mut cpu_miner = state.cpu_miner.write().await;
-        cpu_miner
-            .start_benchmarking(
-                Duration::from_secs(30),
-                data_dir.clone(),
-                config_dir.clone(),
-                log_dir.clone(),
-            )
+        GpuDevices::current()
+            .write()
+            .await
+            .detect(config_dir.clone())
             .await?;
-        drop(cpu_miner);
+
+        HardwareStatusMonitor::current().initialize().await?;
 
         Ok(())
     }

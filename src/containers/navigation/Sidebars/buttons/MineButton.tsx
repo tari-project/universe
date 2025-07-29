@@ -4,9 +4,11 @@ import { useUIStore } from '@app/store/useUIStore.ts';
 import { setSidebarOpen, setShowTapplet } from '@app/store/actions/uiStoreActions';
 import { setAnimationProperties } from '@tari-project/tari-tower';
 import ConnectedPulse from '../../components/VersionChip/ConnectedPulse/ConnectedPulse.tsx';
+import { useConfigUIStore } from '@app/store';
 
 const MineButton = memo(function MineButton() {
     const sidebarOpen = useUIStore((s) => s.sidebarOpen);
+    const visualMode = useConfigUIStore((s) => s.visual_mode);
     const towerSidebarOffset = useUIStore((s) => s.towerSidebarOffset);
     const showTapplet = useUIStore((s) => s.showTapplet);
 
@@ -20,11 +22,12 @@ const MineButton = memo(function MineButton() {
     }
 
     useEffect(() => {
+        if (!visualMode) return;
         setAnimationProperties([
             { property: 'offsetX', value: towerSidebarOffset },
             { property: 'cameraOffsetX', value: towerSidebarOffset / window.innerWidth },
         ]);
-    }, [towerSidebarOffset]);
+    }, [visualMode, towerSidebarOffset]);
 
     return (
         <Wrapper>

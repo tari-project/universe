@@ -151,11 +151,9 @@ impl SetupPhaseImpl for NodeSetupPhase {
     }
 
     async fn load_app_configuration() -> Result<Self::AppConfiguration, Error> {
-        let use_tor = *ConfigCore::content().await.use_tor();
-        let base_node_grpc_address = ConfigCore::content()
-            .await
-            .remote_base_node_address()
-            .clone();
+        let config_core = ConfigCore::content().await;
+        let use_tor = *config_core.use_tor();
+        let base_node_grpc_address = config_core.remote_base_node_address().clone();
 
         Ok(NodeSetupPhaseAppConfiguration {
             use_tor,
@@ -169,11 +167,13 @@ impl SetupPhaseImpl for NodeSetupPhase {
 
     #[allow(clippy::too_many_lines)]
     async fn setup_inner(&self) -> Result<(), Error> {
-        let mut progress_stepper = self.progress_stepper.lock().await;
         let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
         let state = self.app_handle.state::<UniverseAppState>();
+        let node_type = state.node_manager.get_node_type().await;
+        log::info!(target: LOG_TARGET, "Phase Node Setup for {node_type:?}");
 
         let binary_resolver = BinaryResolver::current();
+        let mut progress_stepper = self.progress_stepper.lock().await;
 
         if self.app_configuration.use_tor && !cfg!(target_os = "macos") {
             let tor_binary_progress_tracker = progress_stepper.channel_step_range_updates(
@@ -187,13 +187,18 @@ impl SetupPhaseImpl for NodeSetupPhase {
             progress_stepper.skip_step(ProgressPlans::Node(ProgressSetupNodePlan::BinariesTor));
         };
 
-        let node_binary_progress_tracker = progress_stepper.channel_step_range_updates(
-            ProgressPlans::Node(ProgressSetupNodePlan::BinariesNode),
-            Some(ProgressPlans::Node(ProgressSetupNodePlan::StartTor)),
-        );
-        binary_resolver
-            .initialize_binary(Binaries::MinotariNode, node_binary_progress_tracker)
-            .await?;
+        if node_type.is_local() {
+            let node_binary_progress_tracker = progress_stepper.channel_step_range_updates(
+                ProgressPlans::Node(ProgressSetupNodePlan::BinariesNode),
+                Some(ProgressPlans::Node(ProgressSetupNodePlan::StartTor)),
+            );
+            binary_resolver
+                .initialize_binary(Binaries::MinotariNode, node_binary_progress_tracker)
+                .await?;
+        } else {
+            info!(target: LOG_TARGET, "Skipping node binary installation for remote node");
+            progress_stepper.skip_step(ProgressPlans::Node(ProgressSetupNodePlan::BinariesNode));
+        }
 
         if self.app_configuration.use_tor && !cfg!(target_os = "macos") {
             progress_stepper
@@ -205,15 +210,11 @@ impl SetupPhaseImpl for NodeSetupPhase {
                 .await?;
         }
 
-        let tor_control_port = state.tor_manager.get_control_port().await?;
-
         // Set up migration progress tracking
         let migration_tracker = progress_stepper.channel_step_range_updates(
             ProgressPlans::Node(ProgressSetupNodePlan::MigratingDatabase),
             Some(ProgressPlans::Node(ProgressSetupNodePlan::StartingNode)),
         );
-
-        info!(target: LOG_TARGET, "Starting node manager, grpc address: {}", self.app_configuration.base_node_grpc_address);
 
         progress_stepper
             .resolve_step(ProgressPlans::Node(
@@ -222,6 +223,8 @@ impl SetupPhaseImpl for NodeSetupPhase {
             .await;
 
         for _i in 0..2 {
+            let tor_control_port = state.tor_manager.get_control_port().await?;
+            info!(target: LOG_TARGET, "Starting node manager, grpc address: {}", self.app_configuration.base_node_grpc_address);
             match state
                 .node_manager
                 .ensure_started(
@@ -263,73 +266,22 @@ impl SetupPhaseImpl for NodeSetupPhase {
             .resolve_step(ProgressPlans::Node(ProgressSetupNodePlan::StartingNode))
             .await;
 
-        let (progress_params_tx, mut progress_params_rx) =
-            watch::channel(HashMap::<String, String>::new());
-        let (progress_percentage_tx, progress_percentage_rx) = watch::channel(0f64);
-        let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
-
-        let wait_for_initial_sync_tracker = progress_stepper.channel_step_range_updates(
-            ProgressPlans::Node(ProgressSetupNodePlan::WaitingForInitialSync),
-            Some(ProgressPlans::Node(
+        if node_type.is_local() {
+            self.wait_node_synced_with_progress(progress_stepper)
+                .await?;
+        } else {
+            info!(target: LOG_TARGET, "Skipping syncing condition for remote node");
+            // Assume remote node is already synced
+            progress_stepper.skip_step(ProgressPlans::Node(
+                ProgressSetupNodePlan::WaitingForInitialSync,
+            ));
+            progress_stepper.skip_step(ProgressPlans::Node(
                 ProgressSetupNodePlan::WaitingForHeaderSync,
-            )),
-        );
-        let wait_for_header_sync_tracker = progress_stepper.channel_step_range_updates(
-            ProgressPlans::Node(ProgressSetupNodePlan::WaitingForHeaderSync),
-            Some(ProgressPlans::Node(
+            ));
+            progress_stepper.skip_step(ProgressPlans::Node(
                 ProgressSetupNodePlan::WaitingForBlockSync,
-            )),
-        );
-        let wait_for_block_sync_tracker = progress_stepper.channel_step_range_updates(
-            ProgressPlans::Node(ProgressSetupNodePlan::WaitingForBlockSync),
-            Some(ProgressPlans::Node(ProgressSetupNodePlan::Done)),
-        );
-
-        let progress_handle = TasksTrackers::current()
-            .node_phase
-            .get_task_tracker()
-            .await
-            .spawn(async move {
-                loop {
-                    tokio::select! {
-                        _ = progress_params_rx.changed() => {
-                            let progress_params = progress_params_rx.borrow().clone();
-                            let percentage = *progress_percentage_rx.borrow();
-                            if let Some(step) = progress_params.get("step").cloned() {
-                                let tracker = match step.as_str() {
-                                    "Startup" => &wait_for_initial_sync_tracker,
-                                    "Header" => &wait_for_header_sync_tracker,
-                                    "Block" => &wait_for_block_sync_tracker,
-                                    _ => {
-                                        warn!("Unknown step: {step}");
-                                        continue;
-                                    }
-                                };
-
-                                if let Some(tracker) = tracker {
-                                    tracker.send_update(progress_params.clone(), percentage).await;
-                                    if step == "Block" && percentage == 1.0 {
-                                        break;
-                                    }
-                                } else {
-                                    warn!("Progress tracker not found for step: {step}");
-                                }
-                            }
-                            tokio::time::sleep(Duration::from_secs(1)).await;
-                        },
-                        _ = shutdown_signal.wait() => {
-                            break;
-                        }
-                    }
-                }
-            });
-
-        state
-            .node_manager
-            .wait_synced(&progress_params_tx, &progress_percentage_tx)
-            .await?;
-        progress_handle.abort();
-        let _unused = progress_handle.await;
+            ));
+        }
 
         Ok(())
     }
@@ -439,6 +391,84 @@ impl SetupPhaseImpl for NodeSetupPhase {
             }
         }
     });
+
+        Ok(())
+    }
+}
+
+impl NodeSetupPhase {
+    async fn wait_node_synced_with_progress(
+        &self,
+        mut progress_stepper: tokio::sync::MutexGuard<'_, ProgressStepper>,
+    ) -> Result<(), anyhow::Error> {
+        let (progress_params_tx, mut progress_params_rx) =
+            watch::channel(HashMap::<String, String>::new());
+        let (progress_percentage_tx, progress_percentage_rx) = watch::channel(0f64);
+        let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
+
+        let wait_for_initial_sync_tracker = progress_stepper.channel_step_range_updates(
+            ProgressPlans::Node(ProgressSetupNodePlan::WaitingForInitialSync),
+            Some(ProgressPlans::Node(
+                ProgressSetupNodePlan::WaitingForHeaderSync,
+            )),
+        );
+        let wait_for_header_sync_tracker = progress_stepper.channel_step_range_updates(
+            ProgressPlans::Node(ProgressSetupNodePlan::WaitingForHeaderSync),
+            Some(ProgressPlans::Node(
+                ProgressSetupNodePlan::WaitingForBlockSync,
+            )),
+        );
+        let wait_for_block_sync_tracker = progress_stepper.channel_step_range_updates(
+            ProgressPlans::Node(ProgressSetupNodePlan::WaitingForBlockSync),
+            Some(ProgressPlans::Node(ProgressSetupNodePlan::Done)),
+        );
+
+        let progress_handle = TasksTrackers::current()
+            .node_phase
+            .get_task_tracker()
+            .await
+            .spawn(async move {
+                loop {
+                    tokio::select! {
+                        _ = progress_params_rx.changed() => {
+                            let progress_params = progress_params_rx.borrow().clone();
+                            let percentage = *progress_percentage_rx.borrow();
+                            if let Some(step) = progress_params.get("step").cloned() {
+                                let tracker = match step.as_str() {
+                                    "Startup" => &wait_for_initial_sync_tracker,
+                                    "Header" => &wait_for_header_sync_tracker,
+                                    "Block" => &wait_for_block_sync_tracker,
+                                    _ => {
+                                        warn!("Unknown step: {step}");
+                                        continue;
+                                    }
+                                };
+
+                                if let Some(tracker) = tracker {
+                                    tracker.send_update(progress_params.clone(), percentage).await;
+                                    if step == "Block" && percentage == 1.0 {
+                                        break;
+                                    }
+                                } else {
+                                    warn!("Progress tracker not found for step: {step}");
+                                }
+                            }
+                            tokio::time::sleep(Duration::from_secs(1)).await;
+                        },
+                        _ = shutdown_signal.wait() => {
+                            break;
+                        }
+                    }
+                }
+            });
+
+        let state = self.app_handle.state::<UniverseAppState>();
+        state
+            .node_manager
+            .wait_synced(&progress_params_tx, &progress_percentage_tx)
+            .await?;
+        progress_handle.abort();
+        let _unused = progress_handle.await;
 
         Ok(())
     }
