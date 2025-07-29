@@ -88,9 +88,12 @@ impl From<AppInMemoryConfig> for AirdropInMemoryConfig {
 impl Default for AppInMemoryConfig {
     fn default() -> Self {
         AppInMemoryConfig {
+            // airdrop_url: "https://airdrop.tari.com".into(),
+            // airdrop_api_url: "https://ut.tari.com".into(),
+            // telemetry_api_url: "https://ut.tari.com/push".into(),
             airdrop_url: "https://rwa-fe.yat.rip".into(),
             airdrop_api_url: "https://rwa.yat.fyi".into(),
-            telemetry_api_url: "https://rwa.yat.fyi/push".into(),
+            telemetry_api_url: "https://ut.tari.com/push".into(),
             exchange_id: EXCHANGE_ID.into(),
             bridge_backend_api_url: BRIDGE_BACKEND_API_URL.into(),
             wallet_connect_project_id: WALLET_CONNECT_PROJECT_ID.into(),
