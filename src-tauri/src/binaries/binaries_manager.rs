@@ -182,7 +182,7 @@ impl BinaryManager {
             .download_and_get_checksum_path(destination_dir.clone(), download_info.clone())
             .await
             .map_err(|e| {
-                // std::fs::remove_dir_all(destination_dir.clone()).ok();
+                std::fs::remove_dir_all(destination_dir.clone()).ok();
                 anyhow!(
                     "Error downloading checksum file for version: {:?}. Error: {:?}",
                     selected_version,
@@ -218,12 +218,12 @@ impl BinaryManager {
                     Ok(())
                 } else {
                     error!(target: LOG_TARGET, "Checksum invalid for binary: {} with version: {:?}", self.binary_name, selected_version);
-                    // std::fs::remove_dir_all(destination_dir.clone()).ok();
+                    std::fs::remove_dir_all(destination_dir.clone()).ok();
                     Err(anyhow!("Checksums mismatched!"))
                 }
             }
             Err(e) => {
-                // std::fs::remove_dir_all(destination_dir.clone()).ok();
+                std::fs::remove_dir_all(destination_dir.clone()).ok();
                 error!(target: LOG_TARGET, "Checksum validation failed for binary: {} with version: {:?}. Error: {:?}", self.binary_name, selected_version, e);
                 Err(anyhow!(
                     "Checksum validation failed for version: {:?}. Error: {:?}",
