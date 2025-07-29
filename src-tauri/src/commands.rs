@@ -53,8 +53,8 @@ use crate::tasks_tracker::TasksTrackers;
 use crate::tor_adapter::TorConfig;
 use crate::utils::address_utils::verify_send;
 use crate::utils::app_flow_utils::FrontendReadyChannel;
-use crate::wallet_adapter::{TariAddressVariants, TransactionInfo};
-use crate::wallet_manager::WalletManagerError;
+use crate::wallet::wallet_manager::WalletManagerError;
+use crate::wallet::wallet_types::{TariAddressVariants, TransactionInfo};
 use crate::websocket_manager::WebsocketManagerStatusMessage;
 use crate::{airdrop, PoolStatus, UniverseAppState};
 
@@ -2005,16 +2005,9 @@ pub async fn send_one_sided_to_stealth_address(
 ) -> Result<(), String> {
     let timer = Instant::now();
     info!(target: LOG_TARGET, "[send_one_sided_to_stealth_address] called with args: (amount: {amount:?}, destination: {destination:?}, payment_id: {payment_id:?})");
-    let state_clone = state.clone();
-    let mut spend_wallet_manager = state_clone.spend_wallet_manager.write().await;
-    spend_wallet_manager
-        .send_one_sided_to_stealth_address(
-            amount,
-            destination,
-            payment_id,
-            state.clone(),
-            &app_handle,
-        )
+    state
+        .wallet_manager
+        .send_one_sided_to_stealth_address(amount, destination, payment_id, &app_handle)
         .await
         .map_err(|e| e.to_string())?;
 
