@@ -31,6 +31,7 @@ const XSpaceEventBanner = () => {
     const containerRef = useRef<HTMLDivElement>(null);
     const { t } = useTranslation('common', { useSuspense: false });
     const crewRewardsActive = useCrewRewardsStore((s) => s.showWidget);
+    const isLoggedIn = useAirdropStore((s) => !!s.airdropTokens);
 
     useEffect(() => {
         if (!latestXSpaceEvent) return;
@@ -78,6 +79,7 @@ const XSpaceEventBanner = () => {
                         open(latestXSpaceEvent.link);
                     }}
                     $crewRewardsActive={crewRewardsActive}
+                    $isLoggedIn={isLoggedIn}
                 >
                     <FlexWrapper>
                         <IconContainer>

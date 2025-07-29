@@ -20,11 +20,10 @@ export const Holder = styled('div')`
     pointer-events: none;
 `;
 
-export const WidgetWrapper = styled('div')<{ $isOpen: boolean }>`
+export const WidgetWrapper = styled('div')<{ $isOpen: boolean; $isLogin?: boolean }>`
     pointer-events: all;
 
     border-radius: 13px;
-    border: 1px solid rgba(225, 225, 225, 0.1);
     background: #323333;
     box-shadow:
         0px 4px 25px 0px rgba(0, 0, 0, 0.25),
@@ -32,16 +31,16 @@ export const WidgetWrapper = styled('div')<{ $isOpen: boolean }>`
 
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
+    justify-content: ${({ $isLogin }) => ($isLogin ? 'flex-end' : 'flex-start')};
     flex-shrink: 0;
     gap: 20px;
 
-    width: 411px;
+    width: ${({ $isLogin }) => ($isLogin ? '344px' : '411px')};
     height: 100%;
     padding: 20px;
     padding-bottom: 0px;
 
-    max-height: 115px;
+    max-height: ${({ $isLogin }) => ($isLogin ? '274px' : '115px')};
     position: relative;
     z-index: 1;
 

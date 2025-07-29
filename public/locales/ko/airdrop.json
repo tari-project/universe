@@ -88,6 +88,12 @@
       "keepStreak": "Keep your streak to keep earning rewards!",
       "dayStreak": "{{days}} Day Streak 🔥",
       "day": "Day"
+    },
+    "login": {
+      "title": "Mine with friends. <strong>Earn together.</strong>",
+      "description": "You earn <strong>{{userReward}} bonus XTM/week</strong> AND your friend earns <strong>{{friendReward}} bonus XTM/week</strong> when you and your friend both mine",
+      "bonusText": "Earn bonus rewards up to {{maxWeeks}} weeks per invite",
+      "loginButton": "Log in & Start Earning!"
     }
   }
 }
