@@ -19,7 +19,6 @@
   "this-might-take-a-few-minutes": "Bu birkaç dakika sürebilir",
   "title": {
     "application-started": "Uygulamalar başladı",
-    "benchmarking-network": "Ağ Karşılaştırması",
     "checking-latest-version-gpuminer": "xtrgpuminer'in en son sürümü kontrol ediliyor",
     "checking-latest-version-mmproxy": "mmproxy'nin son sürümü kontrol ediliyor",
     "checking-latest-version-node": "Düğümün en son sürümü kontrol ediliyor",

@@ -36,7 +36,7 @@ export default function MiningButtonCombined() {
         await stopMining();
     }, []);
 
-    let button: ReactElement | null = null;
+    let button: ReactElement | null;
 
     if (isAppLoading) {
         button = <LoadingButton key="loading" />;

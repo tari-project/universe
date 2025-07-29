@@ -129,14 +129,18 @@ impl BinaryManager {
             .adapter
             .get_base_fallback_download_url(&selected_version);
 
-        let network = match Network::get_current_or_user_setting_or_default() {
+        let mut network = match Network::get_current_or_user_setting_or_default() {
             Network::NextNet => "nextnet",
-            Network::Esmeralda => "testnet",
+            Network::Esmeralda => "esme",
             Network::StageNet => "nextnet",
             Network::MainNet => "mainnet",
             Network::LocalNet => "testnet",
             Network::Igor => "testnet",
         };
+
+        if binary.eq(&Binaries::GpuMiner) && network.eq("esme") {
+            network = "testnet";
+        }
 
         let platform = match PlatformUtils::detect_current_os() {
             CurrentOperatingSystem::Windows => BinaryPlatformAssets::WindowsX64,

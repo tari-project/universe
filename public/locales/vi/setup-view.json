@@ -19,7 +19,6 @@
   "this-might-take-a-few-minutes": "Việc này có thể mất vài phút",
   "title": {
     "application-started": "Ứng dụng đã khởi động",
-    "benchmarking-network": "Kiểm tra hiệu năng mạng",
     "checking-latest-version-gpuminer": "Đang kiểm tra phiên bản mới nhất của xtrgpuminer",
     "checking-latest-version-mmproxy": "Đang kiểm tra phiên bản mới nhất của mmproxy",
     "checking-latest-version-node": "Đang kiểm tra phiên bản mới nhất của node",
