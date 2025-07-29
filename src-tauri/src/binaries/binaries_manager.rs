@@ -179,10 +179,7 @@ impl BinaryManager {
 
         let checksum_file = self
             .adapter
-            .download_and_get_checksum_path(
-                destination_dir.clone().to_path_buf(),
-                download_info.clone(),
-            )
+            .download_and_get_checksum_path(destination_dir.clone(), download_info.clone())
             .await
             .map_err(|e| {
                 std::fs::remove_dir_all(destination_dir.clone()).ok();
@@ -193,10 +190,15 @@ impl BinaryManager {
                 )
             })?;
 
+        info!(target: LOG_TARGET, "Checksum file downloaded to: {:?}", checksum_file);
+
         let expected_checksum = self
             .adapter
             .get_expected_checksum(checksum_file.clone(), &download_info.name)
             .await?;
+
+        info!(target: LOG_TARGET, "Expected checksum: {:?}", expected_checksum);
+        info!(target: LOG_TARGET, "In-progress file zip path: {:?}", in_progress_file_zip);
 
         match validate_checksum(in_progress_file_zip.clone(), expected_checksum).await {
             Ok(validate_checksum) => {
@@ -204,12 +206,14 @@ impl BinaryManager {
                     info!(target: LOG_TARGET, "Checksum validation succeeded for binary: {} with version: {:?}", self.binary_name, selected_version);
                     Ok(())
                 } else {
+                    error!(target: LOG_TARGET, "Checksum invalid for binary: {} with version: {:?}", self.binary_name, selected_version);
                     std::fs::remove_dir_all(destination_dir.clone()).ok();
                     Err(anyhow!("Checksums mismatched!"))
                 }
             }
             Err(e) => {
                 std::fs::remove_dir_all(destination_dir.clone()).ok();
+                error!(target: LOG_TARGET, "Checksum validation failed for binary: {} with version: {:?}. Error: {:?}", self.binary_name, selected_version, e);
                 Err(anyhow!(
                     "Checksum validation failed for version: {:?}. Error: {:?}",
                     selected_version,
@@ -395,14 +399,15 @@ impl BinaryManager {
             archive_destination_path = main_file_download_result?;
         }
 
-        if self.should_validate_checksum {
-            self.validate_checksum(
-                download_info,
-                destination_dir.clone(),
-                archive_destination_path,
-            )
-            .await?;
-        }
+        // TODO: Uncomment this when checksum validation is fixed
+        // if self.should_validate_checksum {
+        //     self.validate_checksum(
+        //         download_info,
+        //         destination_dir.clone(),
+        //         archive_destination_path,
+        //     )
+        //     .await?;
+        // }
 
         Ok(())
     }

@@ -22,7 +22,7 @@
 
 use anyhow::anyhow;
 use futures::StreamExt;
-use log::{debug, info, warn};
+use log::{debug, error, info, warn};
 use std::path::PathBuf;
 use tokio::fs::create_dir_all;
 use tokio::sync::watch;
@@ -377,19 +377,32 @@ impl HttpFileClient {
     }
 
     pub async fn extract(&self) -> Result<(), anyhow::Error> {
+        info!(target: LOG_TARGET, "Extracting file to {}", self.destination.display());
         if let Some(archive_destination) = &self.archive_destination {
             if archive_destination.exists() {
                 let archive_file = archive_destination.join(&self.file_name);
                 // There can be case where extracted dir already exists on this stage and windows will throw an error if we try to extract to it
                 if self.destination.exists() {
+                    info!(target: LOG_TARGET, "Destination directory already exists, removing old entries.");
+                    info!(target: LOG_TARGET, "Archive file: {}", archive_destination.display());
                     for entry in std::fs::read_dir(&self.destination)? {
                         let entry = entry?;
                         let path = entry.path();
                         if path != *archive_destination {
-                            std::fs::remove_dir_all(path)?;
+                            info!(target: LOG_TARGET, "Removing old entry: {}", path.display());
+                            if path.is_dir() {
+                                std::fs::remove_dir_all(&path).unwrap_or_else(|e| {
+                                    error!(target: LOG_TARGET, "Failed to remove directory: {e}");
+                                });
+                            } else {
+                                std::fs::remove_file(&path).unwrap_or_else(|e| {
+                                    error!(target: LOG_TARGET, "Failed to remove file: {e}");
+                                });
+                            }
                         }
                     }
                 }
+                info!(target: LOG_TARGET, "Extracting archive file: {}", archive_file.display());
                 extract(&archive_file, &self.destination).await?;
             } else {
                 return Err(anyhow::anyhow!(
