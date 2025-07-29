@@ -12,18 +12,18 @@ import {
     useMiningMetricsStore,
     useMiningStore,
 } from '../index.ts';
-import {
-    restartMining,
-    startCpuMining,
-    startGpuMining,
-    stopCpuMining,
-    stopGpuMining,
-    toggleDeviceExclusion,
-} from './miningStoreActions';
+import { restartMining, startCpuMining, startGpuMining, stopCpuMining, stopGpuMining } from './miningStoreActions';
 import { setError } from './appStateStoreActions.ts';
 import { setUITheme } from './uiStoreActions';
 import { displayMode } from '../types';
-import { ConfigCore, ConfigMining, ConfigPools, ConfigUI, ConfigWallet } from '@app/types/configs.ts';
+import {
+    ConfigCore,
+    ConfigMining,
+    ConfigPools,
+    ConfigUI,
+    ConfigWallet,
+    GpuDeviceSettings,
+} from '@app/types/configs.ts';
 import { NodeType, updateNodeType as updateNodeTypeForNodeStore } from '../useNodeStore.ts';
 import { setCurrentExchangeMinerId } from '../useExchangeStore.ts';
 import { fetchExchangeContent, refreshXCContent } from '@app/hooks/exchanges/fetchExchangeContent.ts';
@@ -163,7 +163,7 @@ export const setGpuMiningEnabled = async (enabled: boolean) => {
     const anyMiningInitiated =
         useMiningStore.getState().isCpuMiningInitiated || useMiningStore.getState().isGpuMiningInitiated;
     const gpuMining = useMiningMetricsStore.getState().gpu_mining_status.is_mining;
-    const gpuDevices = useMiningMetricsStore.getState().gpu_devices;
+    const gpuDevicesSettings = Object.values(useConfigMiningStore.getState().gpu_devices_settings);
     if (gpuMining) {
         await stopGpuMining();
     }
@@ -174,14 +174,14 @@ export const setGpuMiningEnabled = async (enabled: boolean) => {
         } else {
             void stopGpuMining();
         }
-        if (enabled && gpuDevices.every((device) => device.settings.is_excluded)) {
-            for (const device of gpuDevices) {
-                await toggleDeviceExclusion(device.device_index, false);
+        if (enabled && gpuDevicesSettings.every((device) => device.is_excluded)) {
+            for (const device of gpuDevicesSettings) {
+                await toggleDeviceExclusion(device.device_id, false);
             }
         }
-        if (!enabled && gpuDevices.some((device) => !device.settings.is_excluded)) {
-            for (const device of gpuDevices) {
-                await toggleDeviceExclusion(device.device_index, true);
+        if (!enabled && gpuDevicesSettings.some((device) => !device.is_excluded)) {
+            for (const device of gpuDevicesSettings) {
+                await toggleDeviceExclusion(device.device_id, true);
             }
         }
     } catch (e) {
@@ -443,4 +443,36 @@ export const toggleGpuPool = async (enabled: boolean) => {
 
 export const handleWalletUIChanged = (mode: WalletUIMode) => {
     useConfigUIStore.setState((c) => ({ ...c, wallet_ui_mode: mode }));
+};
+
+export const handleGpuDevicesSettingsUpdated = (gpuDevicesSettings: Record<number, GpuDeviceSettings>) => {
+    useConfigMiningStore.setState({ gpu_devices_settings: gpuDevicesSettings });
+};
+
+export const toggleDeviceExclusion = async (deviceIndex: number, excluded: boolean) => {
+    try {
+        const wasGpuMiningInitiated = useMiningStore.getState().isGpuMiningInitiated;
+        const metricsState = useMiningMetricsStore.getState();
+        if (metricsState.gpu_mining_status.is_mining) {
+            console.info('Stoping mining...');
+            await stopGpuMining();
+        }
+        await invoke('toggle_device_exclusion', { deviceIndex, excluded });
+        const devices = useConfigMiningStore.getState().gpu_devices_settings;
+        const updatedDevices = { ...devices, [deviceIndex]: { ...devices[deviceIndex], is_excluded: excluded } };
+        useConfigMiningStore.setState({ gpu_devices_settings: updatedDevices });
+
+        const isAllExcluded = Object.values(updatedDevices).every((device) => device.is_excluded);
+        if (isAllExcluded) {
+            setGpuMiningEnabled(false);
+        }
+        if (wasGpuMiningInitiated) {
+            console.info('Restarting mining...');
+            await startGpuMining();
+        }
+        useMiningStore.setState({ isExcludingGpuDevices: false });
+    } catch (e) {
+        console.error('Could not set excluded gpu device: ', e);
+        setError(e as string);
+    }
 };

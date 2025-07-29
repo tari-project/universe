@@ -99,6 +99,7 @@ mod events_emitter;
 mod events_manager;
 mod external_dependencies;
 mod feedback;
+mod gpu_devices;
 mod gpu_miner;
 mod gpu_miner_adapter;
 mod gpu_miner_sha;

@@ -1195,22 +1195,25 @@ pub async fn set_display_mode(display_mode: &str) -> Result<(), InvokeError> {
     Ok(())
 }
 #[tauri::command]
-pub async fn toggle_device_exclusion(
-    device_index: u32,
-    excluded: bool,
-    app: tauri::AppHandle,
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<(), String> {
-    let mut gpu_miner = state.gpu_miner.write().await;
-    let config_dir = app
-        .path()
-        .app_config_dir()
-        .expect("Could not get config dir");
-    gpu_miner
-        .toggle_device_exclusion(config_dir, device_index, excluded)
+pub async fn toggle_device_exclusion(device_index: u32, excluded: bool) -> Result<(), String> {
+    if excluded {
+        info!(target: LOG_TARGET, "Excluding device {device_index}");
+        ConfigMining::update_field(
+            ConfigMiningContent::enable_gpu_device_exclusion,
+            device_index,
+        )
         .await
-        .inspect_err(|e| error!("error at toggle_device_exclusion {e:?}"))
         .map_err(|e| e.to_string())?;
+    } else {
+        info!(target: LOG_TARGET, "Including device {device_index}");
+        ConfigMining::update_field(
+            ConfigMiningContent::disable_gpu_device_exclusion,
+            device_index,
+        )
+        .await
+        .map_err(|e| e.to_string())?;
+    }
+
     Ok(())
 }
 
@@ -1667,10 +1670,6 @@ pub async fn start_gpu_mining(
         let source = GpuNodeSource::BaseNode { grpc_address };
 
         let mut gpu_miner = state.gpu_miner.write().await;
-        let gpu_available = gpu_miner.is_gpu_mining_available();
-        if !gpu_available {
-            return Err("No GPU available for mining".to_string());
-        }
 
         let res = gpu_miner
             .start(

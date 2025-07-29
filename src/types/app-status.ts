@@ -111,22 +111,28 @@ interface P2poolBlockStats {
     submitted: number;
 }
 
-interface GpuStatus {
-    recommended_grid_size: number;
-    recommended_block_size: number;
-    max_grid_size: number;
+export enum GpuVendor {
+    NVIDIA,
+    AMD,
+    Intel,
+    Unknown,
 }
 
-export interface GpuSettings {
-    is_excluded: boolean;
-    is_available: boolean;
+export enum GpuDeviceType {
+    Integrated,
+    Dedicated,
+    Unknown,
 }
 
 export interface GpuDevice {
-    device_name: string;
-    device_index: number;
-    status: GpuStatus;
-    settings: GpuSettings;
+    name: string;
+    device_id: number;
+    platform_name: string;
+    vendor: GpuVendor;
+    max_work_group_size: number;
+    max_compute_units: number;
+    global_mem_size: number;
+    device_type: GpuDeviceType;
 }
 
 export interface CpuMinerStatus {

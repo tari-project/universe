@@ -79,7 +79,6 @@ impl EngineType {
 
 pub(crate) struct GpuMiner {
     watcher: Arc<RwLock<ProcessWatcher<GpuMinerAdapter>>>,
-    is_available: bool,
     gpu_devices: Vec<GpuDevice>,
     curent_selected_engine: EngineType,
     #[allow(dead_code)]
@@ -103,7 +102,6 @@ impl GpuMiner {
 
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),
-            is_available: false,
             gpu_devices: Vec::new(),
             curent_selected_engine: EngineType::OpenCL,
             status_broadcast,
@@ -220,7 +218,6 @@ impl GpuMiner {
         self.gpu_devices = gpu_status_file.gpu_devices;
         match output.status.code() {
             Some(0) => {
-                self.is_available = true;
                 EventsEmitter::emit_detected_available_gpu_engines(
                     self.get_available_gpu_engines(config_dir)
                         .await?
@@ -231,16 +228,14 @@ impl GpuMiner {
                 )
                 .await;
 
-                EventsEmitter::emit_detected_devices(self.gpu_devices.clone()).await;
+                // Device detection now is handled in gpu_devices.rs
+                // EventsEmitter::emit_detected_devices(self.gpu_devices.clone()).await;
                 Ok(())
             }
-            _ => {
-                self.is_available = false;
-                Err(anyhow::anyhow!(
-                    "Non-zero exit code: {:?}",
-                    output.status.code()
-                ))
-            }
+            _ => Err(anyhow::anyhow!(
+                "Non-zero exit code: {:?}",
+                output.status.code()
+            )),
         }
     }
 
@@ -323,37 +318,6 @@ impl GpuMiner {
         });
     }
 
-    pub fn is_gpu_mining_available(&self) -> bool {
-        self.is_available
-    }
-
-    pub async fn toggle_device_exclusion(
-        &mut self,
-        config_dir: PathBuf,
-        device_index: u32,
-        excluded: bool,
-    ) -> Result<(), anyhow::Error> {
-        let device = self
-            .gpu_devices
-            .iter_mut()
-            .find(|gpu_device| gpu_device.device_index == device_index);
-
-        if let Some(gpu_device) = device {
-            gpu_device.settings.is_excluded = excluded;
-        }
-
-        let path = get_gpu_engines_statuses_path(&config_dir)
-            .join(format!("{}_gpu_status.json", self.curent_selected_engine));
-        GpuStatusFile::save(
-            GpuStatusFile {
-                gpu_devices: self.gpu_devices.clone(),
-            },
-            &path,
-        )?;
-
-        Ok(())
-    }
-
     pub async fn set_selected_engine(
         &mut self,
         engine: EngineType,
@@ -370,15 +334,12 @@ impl GpuMiner {
 
         self.gpu_devices = gpu_settings.gpu_devices;
 
-        EventsEmitter::emit_detected_devices(self.gpu_devices.clone()).await;
+        // Device detection now is handled in gpu_devices.rs
+        // EventsEmitter::emit_detected_devices(self.gpu_devices.clone()).await;
 
         Ok(())
     }
 
-    #[allow(dead_code)]
-    pub async fn get_gpu_devices(&self) -> Result<Vec<GpuDevice>, anyhow::Error> {
-        Ok(self.gpu_devices.clone())
-    }
     pub async fn get_port(&self) -> u16 {
         let lock = self.watcher.read().await;
         lock.adapter.http_api_port
