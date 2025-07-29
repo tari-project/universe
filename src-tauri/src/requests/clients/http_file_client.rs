@@ -225,6 +225,22 @@ impl HttpFileClient {
                 .map_err(|e| anyhow::anyhow!("Failed to create file: {}", e))?;
         }
 
+        let file_size = get_content_size_from_file(
+            &File::options().append(true).open(&destination_file).await?,
+        )
+        .await?;
+
+        if file_size > expected_size {
+            warn!(target: LOG_TARGET, "File is probably corrupted, expected size: {expected_size}, but got: {file_size}");
+            info!(target: LOG_TARGET, "Removing corrupted file: {}", destination_file.display());
+            std::fs::remove_file(&destination_file)
+                .map_err(|e| anyhow::anyhow!("Failed to remove corrupted file: {}", e))?;
+            info!(target: LOG_TARGET, "Creating new file at {}", destination_file.display());
+            File::create(&destination_file)
+                .await
+                .map_err(|e| anyhow::anyhow!("Failed to create file: {}", e))?;
+        }
+
         let mut file = File::options()
             .append(true)
             .open(&destination_file)
@@ -244,8 +260,8 @@ impl HttpFileClient {
             info!(target: LOG_TARGET, "Current file size: {file_size}");
 
             // Check if file is already complete
-            if file_size >= expected_size {
-                info!(target: LOG_TARGET, "File already downloaded to {}, size: {}", destination_file.display(), file_size);
+            if file_size.eq(&expected_size) {
+                info!(target: LOG_TARGET, "File downloaded to {}, size: {}", destination_file.display(), file_size);
                 break;
             }
 
