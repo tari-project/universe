@@ -399,15 +399,14 @@ impl BinaryManager {
             archive_destination_path = main_file_download_result?;
         }
 
-        // TODO: Uncomment this when checksum validation is fixed
-        // if self.should_validate_checksum {
-        //     self.validate_checksum(
-        //         download_info,
-        //         destination_dir.clone(),
-        //         archive_destination_path,
-        //     )
-        //     .await?;
-        // }
+        if self.should_validate_checksum {
+            self.validate_checksum(
+                download_info,
+                destination_dir.clone(),
+                archive_destination_path,
+            )
+            .await?;
+        }
 
         Ok(())
     }
