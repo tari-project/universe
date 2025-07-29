@@ -7,7 +7,7 @@ interface PowerLeveltemProps {
     label: string;
     maxLevel: number;
     minLevel: number;
-    descriprion: string;
+    description: string;
     value: number;
     onChange: (value: number) => void;
     warning?: string;
@@ -23,7 +23,7 @@ export const PowerLeveltem = ({
     maxLevel,
     minLevel,
     value,
-    descriprion,
+    description,
     onChange,
     warning,
     step = 1,
@@ -46,7 +46,7 @@ export const PowerLeveltem = ({
                 isStepped={!!step}
                 isLoading={isLoading}
             />
-            <InputDescription>{descriprion}</InputDescription>
+            <InputDescription>{description}</InputDescription>
             <WarningContainer $visible={hasWarning}>
                 <strong>{t('custom-power-levels.warning')}</strong>: {warning}
             </WarningContainer>

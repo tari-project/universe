@@ -77,7 +77,7 @@ export function CustomPowerLevelsDialog({ handleClose }: CustomPowerLevelsDialog
             render={({ field }) => {
                 return (
                     <PowerLeveltem
-                        descriprion={`${t('custom-power-levels.input-label', { percentage: field.value, type: 'CPU' })}`}
+                        description={`${t('custom-power-levels.input-label', { percentage: field.value, type: 'CPU' })}`}
                         value={field.value}
                         maxLevel={100}
                         onChange={field.onChange}
@@ -98,7 +98,7 @@ export function CustomPowerLevelsDialog({ handleClose }: CustomPowerLevelsDialog
             render={({ field }) => {
                 return (
                     <PowerLeveltem
-                        descriprion={`${t('custom-power-levels.input-label', { percentage: field.value, type: field.name.toUpperCase() })}`}
+                        description={`${t('custom-power-levels.input-label', { percentage: field.value, type: field.name.toUpperCase() })}`}
                         label={`${t('custom-power-levels.gpu-power-level')}`}
                         maxLevel={100}
                         value={field.value}
