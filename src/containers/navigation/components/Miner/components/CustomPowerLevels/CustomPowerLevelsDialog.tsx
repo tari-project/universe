@@ -8,6 +8,7 @@ import {
     SuccessContainer,
     TopRightContainer,
     CTAWrapper,
+    CurrentModeDetails,
 } from './CustomPowerLevelsDialog.styles.ts';
 import { useTranslation } from 'react-i18next';
 
@@ -39,15 +40,15 @@ export function CustomPowerLevelsDialog({ handleClose }: CustomPowerLevelsDialog
     const { t } = useTranslation('settings', { useSuspense: false });
     const [saved, setSaved] = useState(false);
 
-    const currentSelectedMode = useConfigMiningStore((state) => state.getSelectedMiningMode());
-
+    const currentMode = useConfigMiningStore((state) => state.getSelectedMiningMode());
+    const storedCustomLevels = useConfigMiningStore((s) => s.mining_modes[MiningModeType.Custom]);
     const isChangingMode = useMiningStore((s) => s.isChangingMode);
 
     const { control, handleSubmit, formState } = useForm<FormValues>({
         reValidateMode: 'onSubmit',
         defaultValues: {
-            cpu: currentSelectedMode?.cpu_usage_percentage || 0,
-            gpu: currentSelectedMode?.gpu_usage_percentage || 0,
+            cpu: storedCustomLevels?.cpu_usage_percentage || 0,
+            gpu: storedCustomLevels?.gpu_usage_percentage || 0,
         },
     });
 
@@ -76,11 +77,11 @@ export function CustomPowerLevelsDialog({ handleClose }: CustomPowerLevelsDialog
             render={({ field }) => {
                 return (
                     <PowerLeveltem
+                        description={`${t('custom-power-levels.input-label', { percentage: field.value, type: 'CPU' })}`}
                         value={field.value}
                         maxLevel={100}
                         onChange={field.onChange}
                         label={t('custom-power-levels.cpu-power-level')}
-                        descriprion={'custom-power-levels.choose-cpu-power-level'}
                         warning={t('custom-power-levels.cpu-warning')}
                         isLoading={isChangingMode}
                         minLevel={1}
@@ -97,11 +98,11 @@ export function CustomPowerLevelsDialog({ handleClose }: CustomPowerLevelsDialog
             render={({ field }) => {
                 return (
                     <PowerLeveltem
+                        description={`${t('custom-power-levels.input-label', { percentage: field.value, type: field.name.toUpperCase() })}`}
                         label={`${t('custom-power-levels.gpu-power-level')}`}
                         maxLevel={100}
                         value={field.value}
                         minLevel={1}
-                        descriprion={'custom-power-levels.choose-gpu-power-level'}
                         warning={t('custom-power-levels.gpu-warning')}
                         onChange={field.onChange}
                         isLoading={isChangingMode}
@@ -110,6 +111,7 @@ export function CustomPowerLevelsDialog({ handleClose }: CustomPowerLevelsDialog
             }}
         />
     );
+
     return (
         <>
             <CustomLevelsHeader>
@@ -118,20 +120,28 @@ export function CustomPowerLevelsDialog({ handleClose }: CustomPowerLevelsDialog
                     <SuccessContainer $visible={isChangingMode || saved}>
                         {t('custom-power-levels.saved')}
                     </SuccessContainer>
+
                     <IconButton onClick={handleClose}>
                         <IoClose size={18} />
                     </IconButton>
                 </TopRightContainer>
             </CustomLevelsHeader>
             <CustomLevelsContent>
+                {!!currentMode && (
+                    <CurrentModeDetails>
+                        <Typography variant="p">
+                            <span>{`${t('custom-power-levels.current-mode')}: `}</span>
+                            {`${currentMode?.mode_name} • CPU ${currentMode?.cpu_usage_percentage}% • GPU ${currentMode?.gpu_usage_percentage}%`}
+                        </Typography>
+                    </CurrentModeDetails>
+                )}
                 {cpuMarkup}
                 {gpuMarkup}
                 <CTAWrapper>
                     <Button
                         onClick={handleSubmit(onSubmit)}
                         disabled={
-                            isChangingMode ||
-                            (currentSelectedMode?.mode_type === MiningModeType.Custom && !formState.isDirty)
+                            isChangingMode || (currentMode?.mode_type === MiningModeType.Custom && !formState.isDirty)
                         }
                     >
                         {t(`custom-power-levels.${formState.isDirty ? 'save-changes' : 'use-custom'}`)}
