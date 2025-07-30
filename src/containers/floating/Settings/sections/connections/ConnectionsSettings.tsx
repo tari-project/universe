@@ -10,7 +10,7 @@ export const ConnectionsSettings = () => {
     return (
         <>
             <Sync />
-            {import.meta.env.MODE == 'development' && <NodeTypeConfiguration />}
+            <NodeTypeConfiguration />
             <Node />
             {!isAppSettingUp && (
                 <>

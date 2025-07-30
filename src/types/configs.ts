@@ -29,6 +29,7 @@ export interface ConfigWallet {
     monero_address: string;
     monero_address_is_generated: boolean;
     keyring_accessed: boolean;
+    last_known_balance?: number;
 }
 export interface ConfigUI {
     created_at: string;
@@ -36,11 +37,9 @@ export interface ConfigUI {
     has_system_language_been_proposed: boolean;
     should_always_use_system_language: boolean;
     application_language: string;
-    paper_wallet_enabled: boolean;
     sharing_enabled: boolean;
     visual_mode: boolean;
     show_experimental_settings: boolean;
-    warmup_seen: boolean | null;
     wallet_ui_mode: WalletUIMode;
     was_staged_security_modal_shown: boolean;
 }
@@ -51,13 +50,18 @@ export interface ConfigMining {
     selected_mining_mode: string;
     gpu_mining_enabled: boolean;
     mining_modes: Record<string, MiningMode>;
+    gpu_devices_settings: Record<number, GpuDeviceSettings>;
     cpu_mining_enabled: boolean;
     gpu_engine: string;
-    mining_time: number;
 }
 
 export interface ConfigMiningSelectors {
     getSelectedMiningMode: () => MiningMode | undefined;
+}
+
+export interface GpuDeviceSettings {
+    device_id: number;
+    is_excluded: boolean;
 }
 
 export enum MiningModeType {

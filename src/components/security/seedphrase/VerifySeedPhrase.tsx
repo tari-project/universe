@@ -66,7 +66,10 @@ export function VerifySeedPhrase({ words }: VerifySeedPhraseProps) {
         await invoke('set_seed_backed_up').then(() => {
             setModal(null);
         });
-        await invoke('create_pin');
+        const isPinLocked = await invoke('is_pin_locked');
+        if (!isPinLocked) {
+            await invoke('create_pin');
+        }
     };
 
     return (

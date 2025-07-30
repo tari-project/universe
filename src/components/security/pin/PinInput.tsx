@@ -88,6 +88,7 @@ export function PinInput({ hasError = false, isConfirm = false, autoSubmitFn }: 
                         <DigitInput
                             {...field}
                             ref={field.ref}
+                            type="password"
                             $isInvalid={(!!field.value && fieldState.invalid) || hasError}
                             onFocus={() => setFocusedIndex(i)}
                             onChange={(e) => {

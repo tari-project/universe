@@ -36,6 +36,9 @@ use crate::{
     GpuMinerStatus,
 };
 
+#[cfg(target_os = "windows")]
+use crate::utils::windows_setup_utils::add_firewall_rule;
+
 const LOG_TARGET: &str = "tari::universe::gpu_miner_sha_adapter";
 
 #[derive(Clone)]
@@ -79,7 +82,9 @@ impl ProcessAdapter for GpuMinerShaAdapter {
 
         args.push("--algo".to_string());
         args.push("sha3x".to_string());
+        // --web is needed for the web socket to be open
         args.push("--web".to_string());
+        args.push("--gpu".to_string());
 
         if let Some(pool_url) = &self.pool_url {
             args.push("--pool".to_string());
@@ -112,6 +117,9 @@ impl ProcessAdapter for GpuMinerShaAdapter {
 
         args.push("--log-dir".to_string());
         args.push(log_folder.to_string_lossy().to_string());
+
+        #[cfg(target_os = "windows")]
+        add_firewall_rule("graxil.exe".to_string(), binary_version_path.clone())?;
 
         Ok((
             ProcessInstance {

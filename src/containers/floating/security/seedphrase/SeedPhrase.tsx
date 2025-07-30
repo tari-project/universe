@@ -1,6 +1,6 @@
 import { ViewSeedPhrase } from '@app/components/security/seedphrase/ViewSeedPhrase.tsx';
 
-import { useSecurityStore } from '@app/store';
+import { setError, useSecurityStore } from '@app/store';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import { Content, ContentWrapper, Header, StepChip, Subtitle, Title, Wrapper } from '../common.styles.ts';
 import { VerifySeedPhrase } from '@app/components/security/seedphrase/VerifySeedPhrase.tsx';
@@ -26,12 +26,23 @@ export default function SeedPhrase() {
     useEffect(() => {
         if (isOpen) {
             if (seedPhrase?.length && seedPhrase?.length > 0) return;
-            invoke('get_seed_words').then((r) => {
-                if (r?.length) {
-                    setSeedPhrase(r);
-                    setModal('verify_seedphrase');
-                }
-            });
+            invoke('get_seed_words')
+                .then((r) => {
+                    if (r?.length) {
+                        setSeedPhrase(r);
+                        setModal('verify_seedphrase');
+                    }
+                })
+                .catch((error) => {
+                    const errorMessage = error as unknown as string;
+                    console.error('Error fetching seed words:', errorMessage);
+                    if (
+                        !errorMessage.includes('User canceled the operation') &&
+                        !errorMessage.includes('PIN entry cancelled')
+                    ) {
+                        setError(errorMessage);
+                    }
+                });
         }
     }, [isOpen, seedPhrase?.length, setModal]);
 

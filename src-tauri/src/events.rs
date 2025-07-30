@@ -27,11 +27,11 @@ use std::{
 };
 
 use crate::{
-    gpu_status_file::GpuDevice,
+    gpu_devices::GpuDeviceInformation,
     internal_wallet::TariAddressType,
     node::{node_adapter::NodeIdentity, node_manager::NodeType},
     setup::setup_manager::SetupPhase,
-    wallet_adapter::{TransactionInfo, WalletBalance},
+    wallet::wallet_types::{TransactionInfo, WalletBalance},
 };
 
 #[derive(Clone, Debug, Serialize)]
@@ -79,7 +79,6 @@ pub enum EventType {
     InitWalletScanningProgress,
     ConnectionStatus,
     ShowStageSecurityModal,
-    MiningTime,
     ExchangeIdChanged,
     DisabledPhases,
     ShouldShowExchangeMinerModal,
@@ -88,6 +87,7 @@ pub enum EventType {
     ShowKeyringDialog,
     CreatePin,
     EnterPin,
+    UpdateGpuDevicesSettings,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -135,7 +135,7 @@ pub struct DetectedAvailableGpuEnginesPayload {
 
 #[derive(Clone, Debug, Serialize)]
 pub struct DetectedDevicesPayload {
-    pub devices: Vec<GpuDevice>,
+    pub devices: Vec<GpuDeviceInformation>,
 }
 
 #[derive(Clone, Debug, Serialize)]

@@ -70,13 +70,15 @@ export default function ModeDropdown({ disabled, loading }: Props) {
     const { getReferenceProps, getFloatingProps } = useInteractions([click, dismiss]);
 
     const modes: ModeDropdownMiningMode[] = useMemo(() => {
-        return Object.values(miningModes).map((mode) => {
-            return {
-                name: mode.mode_name,
-                mode_type: mode.mode_type,
-                icon: getModeIcon(mode.mode_type),
-            };
-        });
+        return Object.values(miningModes)
+            .map((mode) => {
+                return {
+                    name: mode.mode_name,
+                    mode_type: mode.mode_type,
+                    icon: getModeIcon(mode.mode_type),
+                };
+            })
+            .sort((a, b) => a.name.localeCompare(b.name));
     }, [miningModes]);
 
     const handleSelectMode = useCallback(

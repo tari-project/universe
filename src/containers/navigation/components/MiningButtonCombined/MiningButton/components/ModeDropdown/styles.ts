@@ -102,12 +102,12 @@ export const Menu = styled(m.div)`
     align-items: flex-start;
 
     border-radius: 10px;
-    box-shadow: 0px 16px 30px 0px rgba(0, 0, 0, 0.25);
-    backdrop-filter: blur(12.5px);
+    box-shadow: 0 16px 30px 0 rgba(0, 0, 0, 0.25);
+    backdrop-filter: blur(12px);
 
     width: 197px;
     padding: 10px;
-
+    gap: 4px;
     background: ${({ theme }) => theme.palette.background.paper};
 `;
 

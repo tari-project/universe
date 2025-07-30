@@ -46,7 +46,6 @@ export {
     getMiningNetwork,
     startMining,
     stopMining,
-    toggleDeviceExclusion,
 } from './miningStoreActions.ts';
 export {
     setShowExternalDependenciesDialog,

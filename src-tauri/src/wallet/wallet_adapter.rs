@@ -21,32 +21,27 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::port_allocator::PortAllocator;
-use crate::process_adapter::{
-    HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
-};
+use crate::process_adapter::{ProcessAdapter, ProcessInstance, ProcessStartupSpec};
 use crate::process_adapter_utils::setup_working_directory;
 use crate::tasks_tracker::TasksTrackers;
 use crate::utils::file_utils::convert_to_string;
 use crate::utils::logging_utils::setup_logging;
+use crate::wallet::transaction_service::TransactionService;
+use crate::wallet::wallet_status_monitor::{WalletStatusMonitor, WalletStatusMonitorError};
+use crate::wallet::wallet_types::{
+    ConnectivityStatus, TransactionInfo, TransactionStatus, WalletBalance, WalletState,
+};
 use anyhow::Error;
-use async_trait::async_trait;
 use log::{info, warn};
 use minotari_node_grpc_client::grpc::wallet_client::WalletClient;
-use minotari_node_grpc_client::grpc::{
-    GetAllCompletedTransactionsRequest, GetBalanceRequest, GetBalanceResponse, GetStateRequest,
-    ImportTransactionsRequest, NetworkStatusResponse,
-};
-use serde::{Serialize, Serializer};
-use std::fs;
+use minotari_node_grpc_client::grpc::{GetAllCompletedTransactionsRequest, GetBalanceRequest};
 use std::path::PathBuf;
 use std::time::Duration;
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::{TariAddress, TariAddressError};
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_core::transactions::transaction_components::payment_id::PaymentId;
-use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::Shutdown;
-use tari_utilities::hex::Hex;
 use tokio::sync::watch;
 
 #[cfg(target_os = "windows")]
@@ -57,8 +52,6 @@ const LOG_TARGET: &str = "tari::universe::wallet_adapter";
 pub struct WalletAdapter {
     use_tor: bool,
     connect_with_local_node: bool,
-    pub(crate) base_node_public_key: Option<RistrettoPublicKey>,
-    pub(crate) base_node_address: Option<String>,
     pub(crate) view_private_key: String,
     pub(crate) spend_key: String,
     pub(crate) tcp_listener_port: u16,
@@ -75,8 +68,6 @@ impl WalletAdapter {
         Self {
             use_tor: false,
             connect_with_local_node: false,
-            base_node_address: None,
-            base_node_public_key: None,
             view_private_key: "".to_string(),
             spend_key: "".to_string(),
             tcp_listener_port,
@@ -105,40 +96,6 @@ impl WalletAdapter {
         let balance = res.into_inner();
 
         Ok(WalletBalance::from_response(balance))
-    }
-
-    pub async fn import_transaction(&self, tx_output_file: PathBuf) -> Result<(), anyhow::Error> {
-        let tx_json = fs::read_to_string(&tx_output_file).map_err(|e| {
-            log::error!(
-                "[import_transaction] Failed to read transaction output file: {e}, output_file:\n{tx_output_file:?}"
-            );
-            anyhow::anyhow!("Failed to read transaction output file: {}", e)
-        })?;
-
-        let mut client = WalletClient::connect(self.wallet_grpc_address())
-            .await
-            .map_err(|e| {
-                log::error!("[import_transaction] Failed to connect to wallet client: {e}");
-                anyhow::anyhow!("Failed to connect to wallet client")
-            })?;
-
-        let res = client
-            .import_transactions(ImportTransactionsRequest {
-                txs: format!("[{}]", tx_json.trim()),
-            })
-            .await
-            .map_err(|e| {
-                log::error!("[import_transaction] Failed to import transactions: {e:?}");
-                anyhow::anyhow!("Failed to import transactions: {:?}", e)
-            })?;
-
-        info!(
-            target: LOG_TARGET,
-            "Transaction imported to the view wallet successfully, tx_id: {:?}",
-            res.into_inner().tx_ids.first()
-        );
-
-        Ok(())
     }
 
     pub async fn get_transactions(
@@ -201,6 +158,24 @@ impl WalletAdapter {
             .collect::<Result<Vec<_>, TariAddressError>>()?;
 
         Ok(transactions)
+    }
+
+    pub async fn send_one_sided_to_stealth_address(
+        &self,
+        amount: u64,
+        address: String,
+        payment_id: Option<String>,
+        app_handle: &tauri::AppHandle,
+    ) -> Result<(), anyhow::Error> {
+        let tx_service = TransactionService::new(self, app_handle);
+
+        let (unsigned_tx_file, tx_id) = tx_service
+            .prepare_one_sided_transaction_for_signing(amount, address, payment_id)
+            .await?;
+        let signed_tx_file = tx_service
+            .sign_one_sided_tx(unsigned_tx_file, tx_id)
+            .await?;
+        tx_service.broadcast_one_sided_tx(signed_tx_file).await
     }
 
     pub async fn wait_for_scan_to_height(
@@ -296,7 +271,7 @@ impl ProcessAdapter for WalletAdapter {
         setup_logging(
             &config_dir.clone(),
             &log_dir,
-            include_str!("../log4rs/wallet_sample.yml"),
+            include_str!("../../log4rs/wallet_sample.yml"),
         )?;
 
         let mut args: Vec<String> = vec![
@@ -311,23 +286,14 @@ impl ProcessAdapter for WalletAdapter {
             "--grpc-enabled".to_string(),
             "--grpc-address".to_string(),
             format!("/ip4/127.0.0.1/tcp/{}", self.grpc_port),
-            "-p".to_string(),
-            format!(
-                "wallet.custom_base_node={}::{}",
-                self.base_node_public_key
-                    .as_ref()
-                    .map(|k| k.to_hex())
-                    .ok_or_else(|| anyhow::anyhow!("Base node public key not set"))?,
-                self.base_node_address
-                    .as_ref()
-                    .ok_or_else(|| anyhow::anyhow!("Base node address not set"))?
-            ),
         ];
 
-        if let Some(http_client_url) = &self.http_client_url {
-            args.push("-p".to_string());
-            args.push(format!("wallet.http_server_url={http_client_url}"));
-        }
+        let http_client_url = self
+            .http_client_url
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("HTTP client URL not configured"))?;
+        args.push("-p".to_string());
+        args.push(format!("wallet.http_server_url={http_client_url}"));
 
         match self.wallet_birthday {
             Some(wallet_birthday) => {
@@ -436,10 +402,7 @@ impl ProcessAdapter for WalletAdapter {
                     name: self.name().to_string(),
                 },
             },
-            WalletStatusMonitor {
-                grpc_port: self.grpc_port,
-                state_broadcast: self.state_broadcast.clone(),
-            },
+            WalletStatusMonitor::new(self.grpc_port, self.state_broadcast.clone()),
         ))
     }
 
@@ -449,241 +412,5 @@ impl ProcessAdapter for WalletAdapter {
 
     fn pid_file_name(&self) -> &str {
         "wallet_pid"
-    }
-}
-
-pub struct WalletStatusMonitor {
-    grpc_port: u16,
-    state_broadcast: watch::Sender<Option<WalletState>>,
-}
-
-impl Clone for WalletStatusMonitor {
-    fn clone(&self) -> Self {
-        Self {
-            grpc_port: self.grpc_port,
-            state_broadcast: self.state_broadcast.clone(),
-        }
-    }
-}
-
-#[async_trait]
-impl StatusMonitor for WalletStatusMonitor {
-    async fn check_health(&self, _uptime: Duration, timeout_duration: Duration) -> HealthStatus {
-        match tokio::time::timeout(timeout_duration, self.get_status()).await {
-            Ok(status_result) => match status_result {
-                Ok(s) => {
-                    let _result = self.state_broadcast.send(Some(s));
-                    HealthStatus::Healthy
-                }
-                Err(e) => {
-                    warn!(target: LOG_TARGET, "Wallet health check failed: {e}");
-                    HealthStatus::Unhealthy
-                }
-            },
-            Err(_timeout_error) => {
-                warn!(
-                    target: LOG_TARGET,
-                    "Wallet health check timed out after {timeout_duration:?}"
-                );
-                HealthStatus::Warning
-            }
-        }
-    }
-}
-
-impl WalletStatusMonitor {
-    fn wallet_grpc_address(&self) -> String {
-        format!("http://127.0.0.1:{}", self.grpc_port)
-    }
-
-    pub async fn get_status(&self) -> Result<WalletState, WalletStatusMonitorError> {
-        let mut client = WalletClient::connect(self.wallet_grpc_address())
-            .await
-            .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
-        let res = client
-            .get_state(GetStateRequest {})
-            .await
-            .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?;
-        let status = res.into_inner();
-
-        Ok(WalletState {
-            scanned_height: status.scanned_height,
-            balance: WalletBalance::from_option(status.balance),
-            network: NetworkStatus::from(status.network),
-        })
-    }
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum WalletStatusMonitorError {
-    #[error("Wallet not started")]
-    WalletNotStarted,
-    #[error("Tari address conversion error: {0}")]
-    TariAddress(#[from] TariAddressError),
-    #[error("Unknown error: {0}")]
-    UnknownError(#[from] anyhow::Error),
-}
-
-#[allow(dead_code)]
-#[derive(Debug, Clone, Default)]
-pub struct WalletState {
-    pub scanned_height: u64,
-    pub balance: Option<WalletBalance>,
-    pub network: Option<NetworkStatus>,
-}
-
-#[allow(dead_code)]
-#[derive(Debug, Copy, Clone, Default)]
-pub struct NetworkStatus {
-    pub status: ConnectivityStatus,
-    pub avg_latency_ms: u32,
-    pub num_node_connections: u32,
-}
-
-impl NetworkStatus {
-    pub fn from(res: Option<NetworkStatusResponse>) -> Option<Self> {
-        match res {
-            Some(res) => Some(Self {
-                status: match res.status {
-                    0 => ConnectivityStatus::Initializing,
-                    1 => ConnectivityStatus::Online(res.num_node_connections as usize),
-                    2 => ConnectivityStatus::Degraded(res.num_node_connections as usize),
-                    3 => ConnectivityStatus::Offline,
-                    _ => return None,
-                },
-                avg_latency_ms: res.avg_latency_ms,
-                num_node_connections: res.num_node_connections,
-            }),
-            None => None,
-        }
-    }
-}
-
-#[allow(dead_code)]
-#[derive(Default, Debug, Copy, Clone)]
-pub enum ConnectivityStatus {
-    /// Initial connectivity status before the Connectivity actor has initialized.
-    #[default]
-    Initializing,
-    /// Connectivity is online.
-    Online(usize),
-    /// Connectivity is less than the required minimum, but some connections are still active.
-    Degraded(usize),
-    /// There are no active connections.
-    Offline,
-}
-
-#[derive(Debug, Clone, Serialize)]
-pub struct WalletBalance {
-    pub available_balance: MicroMinotari,
-    pub timelocked_balance: MicroMinotari,
-    pub pending_incoming_balance: MicroMinotari,
-    pub pending_outgoing_balance: MicroMinotari,
-}
-
-impl WalletBalance {
-    pub fn from_response(res: GetBalanceResponse) -> Self {
-        Self {
-            available_balance: MicroMinotari(res.available_balance),
-            timelocked_balance: MicroMinotari(res.timelocked_balance),
-            pending_incoming_balance: MicroMinotari(res.pending_incoming_balance),
-            pending_outgoing_balance: MicroMinotari(res.pending_outgoing_balance),
-        }
-    }
-
-    pub fn from_option(res: Option<GetBalanceResponse>) -> Option<Self> {
-        res.map(Self::from_response)
-    }
-}
-
-#[derive(Debug, Serialize, Clone)]
-pub struct TransactionInfo {
-    pub tx_id: String,
-    pub source_address: String,
-    pub dest_address: String,
-    pub status: TransactionStatus,
-    pub amount: MicroMinotari,
-    pub is_cancelled: bool,
-    pub direction: i32,
-    pub excess_sig: Vec<u8>,
-    pub fee: u64,
-    pub timestamp: u64,
-    pub payment_id: String,
-    pub mined_in_block_height: u64,
-    pub payment_reference: Option<String>,
-}
-
-#[derive(Debug, Serialize, Clone)]
-pub struct TariAddressVariants {
-    pub emoji_string: String,
-    pub base58: String,
-    pub hex: String,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-#[repr(i32)]
-pub enum TransactionStatus {
-    /// This transaction has been completed between the parties but has not been broadcast to the base layer network.
-    Completed = 0,
-    /// This transaction has been broadcast to the base layer network and is currently in one or more base node mempools.
-    Broadcast = 1,
-    /// This transaction has been mined and included in a block.
-    MinedUnconfirmed = 2,
-    /// This transaction was generated as part of importing a spendable UTXO
-    Imported = 3,
-    /// This transaction is still being negotiated by the parties
-    Pending = 4,
-    /// This is a created Coinbase Transaction
-    Coinbase = 5,
-    /// This transaction is mined and confirmed at the current base node's height
-    MinedConfirmed = 6,
-    /// The transaction was rejected by the mempool
-    Rejected = 7,
-    /// This is faux transaction mainly for one-sided transaction outputs or wallet recovery outputs have been found
-    OneSidedUnconfirmed = 8,
-    /// All Imported and FauxUnconfirmed transactions will end up with this status when the outputs have been confirmed
-    OneSidedConfirmed = 9,
-    /// This transaction is still being queued for sending
-    Queued = 10,
-    /// The transaction was not found by the wallet its in transaction database
-    NotFound = 11,
-    /// This is Coinbase transaction that is detected from chain
-    CoinbaseUnconfirmed = 12,
-    /// This is Coinbase transaction that is detected from chain
-    CoinbaseConfirmed = 13,
-    /// This is Coinbase transaction that is not currently detected as mined
-    CoinbaseNotInBlockChain = 14,
-}
-
-// We should decide which format we wanna use
-impl Serialize for TransactionStatus {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        serializer.serialize_i32(*self as i32)
-    }
-}
-
-impl From<i32> for TransactionStatus {
-    fn from(value: i32) -> Self {
-        match value {
-            0 => TransactionStatus::Completed,
-            1 => TransactionStatus::Broadcast,
-            2 => TransactionStatus::MinedUnconfirmed,
-            3 => TransactionStatus::Imported,
-            4 => TransactionStatus::Pending,
-            5 => TransactionStatus::Coinbase,
-            6 => TransactionStatus::MinedConfirmed,
-            7 => TransactionStatus::Rejected,
-            8 => TransactionStatus::OneSidedUnconfirmed,
-            9 => TransactionStatus::OneSidedConfirmed,
-            10 => TransactionStatus::Queued,
-            11 => TransactionStatus::NotFound,
-            12 => TransactionStatus::CoinbaseUnconfirmed,
-            13 => TransactionStatus::CoinbaseConfirmed,
-            14 => TransactionStatus::CoinbaseNotInBlockChain,
-            _ => TransactionStatus::NotFound,
-        }
     }
 }

@@ -9,7 +9,6 @@ interface UIStoreState {
     latestVersion?: string;
     sidebarOpen: boolean;
     showExperimental: boolean;
-    showWarmup: boolean;
     showExternalDependenciesDialog: boolean;
     dialogToShow?: DialogType;
     isWebglNotSupported: boolean;
@@ -39,7 +38,6 @@ const initialState: UIStoreState = {
     isReconnecting: false,
     showSplashscreen: true,
     hideWalletBalance: false,
-    showWarmup: false,
     showResumeAppModal: false,
     shouldShowExchangeSpecificModal: false,
     towerSidebarOffset: sidebarTowerOffset,

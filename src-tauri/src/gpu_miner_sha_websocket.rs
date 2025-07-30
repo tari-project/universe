@@ -26,7 +26,7 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use tungstenite::{connect, Message};
 
-use crate::tasks_tracker::TasksTrackers;
+use crate::{gpu_devices::GpuVendor, tasks_tracker::TasksTrackers};
 
 const LOG_TARGET: &str = "tari::universe::gpu_miner_sha_adapter";
 
@@ -72,14 +72,6 @@ pub struct PoolInfo {
     pub latency_ms: Option<u64>,
     pub connection_attempts: u32,
     pub uptime_seconds: Option<u64>,
-}
-#[allow(clippy::upper_case_acronyms)]
-#[derive(Serialize, Debug, Deserialize, Clone, PartialEq)]
-pub enum GpuVendor {
-    NVIDIA,
-    AMD,
-    Intel,
-    Unknown,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
