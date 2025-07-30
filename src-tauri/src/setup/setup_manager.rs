@@ -358,6 +358,31 @@ impl SetupManager {
             }
         }
 
+        // Case when we are on exchange miner build and already selected external tari address ( Second time we open app )
+        if is_on_exchange_miner_build
+            && is_external_address_selected
+            && build_in_exchange_id.eq(&last_config_exchange_id)
+        {
+            let external_tari_address = ConfigWallet::content()
+                .await
+                .selected_external_tari_address()
+                .clone();
+            info!(target: LOG_TARGET, "External address selected on exchange miner build");
+            let _unused = ConfigUI::set_wallet_ui_mode(WalletUIMode::Seedless).await;
+            if let Err(e) =
+                InternalWallet::initialize_seedless(&app_handle, external_tari_address).await
+            {
+                EventsEmitter::emit_critical_problem(CriticalProblemPayload {
+                    title: Some("Wallet(Seedless) not initialized!".to_string()),
+                    description: Some(
+                        "Encountered an error while initializing the wallet.".to_string(),
+                    ),
+                    error_message: Some(e.to_string()),
+                })
+                .await;
+            }
+        }
+
         // Trigger it here so we can update UI when new wallet is created
         // We should probably change events to be loaded from internal wallet directly
         EventsEmitter::emit_wallet_config_loaded(&ConfigWallet::content().await).await;

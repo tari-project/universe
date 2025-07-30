@@ -27,6 +27,7 @@ use crate::{
         trait_config::ConfigImpl,
     },
     events_emitter::EventsEmitter,
+    internal_wallet::InternalWallet,
     pin::PinManager,
     progress_trackers::{
         progress_plans::{ProgressPlans, ProgressSetupWalletPlan},
@@ -220,10 +221,12 @@ impl SetupPhaseImpl for WalletSetupPhase {
     async fn finalize_setup(&self) -> Result<(), Error> {
         let app_state = self.get_app_handle().state::<UniverseAppState>().clone();
         let node_status_watch_rx = (*app_state.node_status_watch_rx).clone();
-        app_state
-            .wallet_manager
-            .wait_for_initial_wallet_scan(node_status_watch_rx)
-            .await?;
+        if InternalWallet::is_internal().await {
+            app_state
+                .wallet_manager
+                .wait_for_initial_wallet_scan(node_status_watch_rx)
+                .await?;
+        }
 
         self.status_sender.send(PhaseStatus::Success).ok();
         self.progress_stepper
@@ -232,60 +235,61 @@ impl SetupPhaseImpl for WalletSetupPhase {
             .resolve_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::Done))
             .await;
 
-        let app_handle = self.get_app_handle().clone();
+        if InternalWallet::is_internal().await {
+            let app_handle = self.get_app_handle().clone();
+            let pin_locked = PinManager::pin_locked().await;
+            let seed_backed_up = *ConfigWallet::content().await.seed_backed_up();
+            if !seed_backed_up || !pin_locked {
+                let wallet_manager = app_handle
+                    .state::<UniverseAppState>()
+                    .wallet_manager
+                    .clone();
+                let shutdown_signal = TasksTrackers::current()
+                    .wallet_phase
+                    .get_signal()
+                    .await
+                    .clone();
 
-        let pin_locked = PinManager::pin_locked().await;
-        let seed_backed_up = *ConfigWallet::content().await.seed_backed_up();
-        if !seed_backed_up || !pin_locked {
-            let wallet_manager = app_handle
-                .state::<UniverseAppState>()
-                .wallet_manager
-                .clone();
-            let shutdown_signal = TasksTrackers::current()
-                .wallet_phase
-                .get_signal()
-                .await
-                .clone();
+                TasksTrackers::current()
+                    .wallet_phase
+                    .get_task_tracker()
+                    .await
+                    .spawn(async move {
+                        let wallet_state_watcher = app_handle
+                            .state::<UniverseAppState>()
+                            .wallet_state_watch_rx
+                            .clone();
 
-            TasksTrackers::current()
-                .wallet_phase
-                .get_task_tracker()
-                .await
-                .spawn(async move {
-                    let wallet_state_watcher = app_handle
-                        .state::<UniverseAppState>()
-                        .wallet_state_watch_rx
-                        .clone();
+                        loop {
+                            if shutdown_signal.is_triggered() {
+                                break;
+                            }
 
-                    loop {
-                        if shutdown_signal.is_triggered() {
-                            break;
-                        }
+                            let wallet_state = wallet_state_watcher.borrow().clone();
+                            if let Some(wallet_state) = wallet_state {
+                                if let Some(balance) = wallet_state.balance {
+                                    let balance_sum = balance.available_balance
+                                        + balance.pending_incoming_balance
+                                        + balance.timelocked_balance;
+                                    if balance_sum.gt(&MicroMinotari::zero())
+                                        && wallet_manager.is_initial_scan_completed()
+                                    {
+                                        let pin_locked = PinManager::pin_locked().await;
+                                        let seed_backed_up =
+                                            *ConfigWallet::content().await.seed_backed_up();
 
-                        let wallet_state = wallet_state_watcher.borrow().clone();
-                        if let Some(wallet_state) = wallet_state {
-                            if let Some(balance) = wallet_state.balance {
-                                let balance_sum = balance.available_balance
-                                    + balance.pending_incoming_balance
-                                    + balance.timelocked_balance;
-                                if balance_sum.gt(&MicroMinotari::zero())
-                                    && wallet_manager.is_initial_scan_completed()
-                                {
-                                    let pin_locked = PinManager::pin_locked().await;
-                                    let seed_backed_up =
-                                        *ConfigWallet::content().await.seed_backed_up();
-
-                                    if !pin_locked || !seed_backed_up {
-                                        EventsEmitter::show_staged_security_modal().await;
+                                        if !pin_locked || !seed_backed_up {
+                                            EventsEmitter::show_staged_security_modal().await;
+                                        }
+                                        break;
                                     }
-                                    break;
                                 }
                             }
-                        }
 
-                        tokio::time::sleep(std::time::Duration::from_secs(5)).await;
-                    }
-                });
+                            tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+                        }
+                    });
+            }
         }
 
         EventsEmitter::emit_wallet_phase_finished(true).await;
