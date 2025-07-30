@@ -23,7 +23,6 @@
 use crate::ootle::ootle_wallet_adapter::OotleWalletAdapter;
 use crate::ootle::ootle_wallet_adapter::OotleWalletState;
 use crate::ootle::ootle_wallet_json_rpc_client::OotleWalletJsonRpcClient;
-use crate::ootle::temp_types::AccountsCreateRequest;
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
 use crate::tasks_tracker::TasksTrackers;
@@ -33,8 +32,8 @@ use reqwest::Url;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tari_shutdown::ShutdownSignal;
-use tokio::sync::watch;
 use tokio::sync::RwLock;
+use tokio::sync::{watch, Notify};
 
 static LOG_TARGET: &str = "tari::universe::ootle_wallet_manager";
 
@@ -55,6 +54,7 @@ pub enum OotleWalletManagerError {
 pub struct OotleWalletManager {
     watcher: Arc<RwLock<ProcessWatcher<OotleWalletAdapter>>>,
     client: Arc<RwLock<Option<OotleWalletJsonRpcClient>>>,
+    unhealthy_notification: Arc<Notify>,
 }
 
 impl Clone for OotleWalletManager {
@@ -62,6 +62,7 @@ impl Clone for OotleWalletManager {
         Self {
             watcher: self.watcher.clone(),
             client: self.client.clone(),
+            unhealthy_notification: self.unhealthy_notification.clone(),
         }
     }
 }
@@ -71,12 +72,14 @@ impl OotleWalletManager {
         wallet_state_watch_tx: watch::Sender<Option<OotleWalletState>>,
         stats_collector: &mut ProcessStatsCollectorBuilder,
     ) -> Self {
-        let adapter = OotleWalletAdapter::new(wallet_state_watch_tx);
+        let unhealthy_notification = Arc::new(Notify::new());
+        let adapter =
+            OotleWalletAdapter::new(wallet_state_watch_tx, unhealthy_notification.clone());
         let process_watcher = ProcessWatcher::new(adapter, stats_collector.take_ootle_wallet());
-
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),
             client: Arc::new(RwLock::new(None)),
+            unhealthy_notification,
         }
     }
 
@@ -101,6 +104,18 @@ impl OotleWalletManager {
         {
             return Ok(());
         }
+
+        // Spawn a task to listen for unhealthy notifications and reset the client
+        let client_for_task = self.client.clone();
+        let unhealthy_notification_clone = self.unhealthy_notification.clone();
+        task_tracker.spawn(async move {
+            loop {
+                unhealthy_notification_clone.notified().await;
+                info!(target: LOG_TARGET, "Received unhealthy notification, resetting Ootle wallet client.");
+                let mut client_lock = client_for_task.write().await;
+                *client_lock = None;
+            }
+        });
 
         info!(target: LOG_TARGET, "Ootle wallet indexer urls: {:?}", config.indexer_urls);
         process_watcher.adapter.indexer_urls = config.indexer_urls;
@@ -154,29 +169,5 @@ impl OotleWalletManager {
     pub async fn is_pid_file_exists(&self, base_path: PathBuf) -> bool {
         let lock = self.watcher.read().await;
         lock.is_pid_file_exists(base_path)
-    }
-
-    pub async fn create_default_account(&self) -> Result<(), anyhow::Error> {
-        let port = self.get_json_rpc_port().await;
-        let client = OotleWalletJsonRpcClient::new(port);
-        let default_account = client.get_default_account().await;
-        match default_account {
-            Ok(Some(_)) => {
-                // Default account exists
-                Ok(())
-            }
-            _ => {
-                log::info!(target: LOG_TARGET, "Creating default account");
-                let _ = client
-                    .create_account(AccountsCreateRequest {
-                        account_name: Some("default".to_owned()),
-                        max_fee: None,
-                        is_default: true,
-                        key_id: None,
-                    })
-                    .await?;
-                Ok(())
-            }
-        }
     }
 }

@@ -35,9 +35,11 @@ use log::{info, warn};
 use reqwest::Url;
 use serde::Serialize;
 use std::path::PathBuf;
+use std::sync::Arc;
 use std::time::Duration;
 use tari_shutdown::Shutdown;
 use tokio::sync::watch;
+use tokio::sync::Notify;
 
 const LOG_TARGET: &str = "tari::universe::ootle_wallet_adapter";
 
@@ -46,10 +48,14 @@ pub struct OotleWalletAdapter {
     pub(crate) web_ui_port: u16,
     pub(crate) json_rpc_port: u16,
     pub(crate) state_broadcast: watch::Sender<Option<OotleWalletState>>,
+    unhealthy_notification: Arc<Notify>,
 }
 
 impl OotleWalletAdapter {
-    pub fn new(state_broadcast: watch::Sender<Option<OotleWalletState>>) -> Self {
+    pub fn new(
+        state_broadcast: watch::Sender<Option<OotleWalletState>>,
+        unhealthy_notification: Arc<Notify>,
+    ) -> Self {
         let json_rpc_port = PortAllocator::new().assign_port_with_fallback();
         let web_ui_port = PortAllocator::new().assign_port_with_fallback();
         Self {
@@ -57,6 +63,7 @@ impl OotleWalletAdapter {
             json_rpc_port,
             web_ui_port,
             state_broadcast,
+            unhealthy_notification,
         }
     }
 }
@@ -136,6 +143,7 @@ impl ProcessAdapter for OotleWalletAdapter {
             OotleWalletStatusMonitor {
                 json_rpc_port: self.json_rpc_port,
                 state_broadcast: self.state_broadcast.clone(),
+                unhealthy_notification: self.unhealthy_notification.clone(),
             },
         ))
     }
@@ -152,6 +160,7 @@ impl ProcessAdapter for OotleWalletAdapter {
 pub struct OotleWalletStatusMonitor {
     json_rpc_port: u16,
     state_broadcast: watch::Sender<Option<OotleWalletState>>,
+    unhealthy_notification: Arc<Notify>,
 }
 
 impl Clone for OotleWalletStatusMonitor {
@@ -159,6 +168,7 @@ impl Clone for OotleWalletStatusMonitor {
         Self {
             json_rpc_port: self.json_rpc_port,
             state_broadcast: self.state_broadcast.clone(),
+            unhealthy_notification: self.unhealthy_notification.clone(),
         }
     }
 }
@@ -185,6 +195,12 @@ impl StatusMonitor for OotleWalletStatusMonitor {
                 HealthStatus::Warning
             }
         }
+    }
+
+    async fn handle_unhealthy(&self) -> Result<(), Error> {
+        info!(target: LOG_TARGET, "OotleWalletStatusMonitor: Notifying unhealthy status.");
+        self.unhealthy_notification.notify_one();
+        Ok(())
     }
 }
 

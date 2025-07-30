@@ -113,17 +113,6 @@ impl OotleWalletJsonRpcClient {
         self.json_rpc_request("wallet.get_info", json!({})).await
     }
 
-    pub async fn get_default_account(&self) -> Result<Option<String>, Error> {
-        let result: serde_json::Value = self
-            .json_rpc_request("accounts.get_default", json!({}))
-            .await?;
-        Ok(result
-            .get("account")
-            .and_then(|acc| acc.get("name"))
-            .and_then(|v| v.as_str())
-            .map(|s| s.to_string()))
-    }
-
     pub async fn list_accounts(
         &self,
         request: AccountsListRequest,

@@ -207,13 +207,6 @@ impl SetupPhaseImpl for OotleWalletSetupPhase {
     }
 
     async fn finalize_setup(&self) -> Result<(), Error> {
-        let app_handle = self.get_app_handle().clone();
-        let ootle_wallet_manager = app_handle
-            .state::<UniverseAppState>()
-            .ootle_wallet_manager
-            .clone();
-        ootle_wallet_manager.create_default_account().await?;
-
         self.status_sender.send(PhaseStatus::Success).ok();
         self.progress_stepper
             .lock()
