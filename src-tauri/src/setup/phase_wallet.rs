@@ -134,9 +134,6 @@ impl SetupPhaseImpl for WalletSetupPhase {
         timeout_watcher_sender: Sender<u64>,
     ) -> ProgressStepper {
         ProgressStepperBuilder::new()
-            .add_step(ProgressPlans::Wallet(
-                ProgressSetupWalletPlan::BinariesWallet,
-            ))
             .add_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::StartWallet))
             .add_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::SetupBridge))
             .add_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::Done))
@@ -158,15 +155,6 @@ impl SetupPhaseImpl for WalletSetupPhase {
         let state = self.app_handle.state::<UniverseAppState>();
 
         let binary_resolver = BinaryResolver::current();
-
-        let wallet_binary_progress_tracker = progress_stepper.channel_step_range_updates(
-            ProgressPlans::Wallet(ProgressSetupWalletPlan::BinariesWallet),
-            Some(ProgressPlans::Wallet(ProgressSetupWalletPlan::StartWallet)),
-        );
-
-        binary_resolver
-            .initialize_binary(Binaries::Wallet, wallet_binary_progress_tracker)
-            .await?;
 
         progress_stepper
             .resolve_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::StartWallet))
