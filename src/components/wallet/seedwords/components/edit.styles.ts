@@ -13,7 +13,8 @@ export const StyledTextArea = styled(TextArea)<{ $hasError: boolean }>`
     padding: 10px;
     width: 100%;
     background-color: ${({ theme }) => theme.palette.background.default};
-    border: ${({ theme, $hasError }) => ($hasError ? theme.palette.error.main : theme.colorsAlpha.darkAlpha[10])};
+    border: 1px solid
+        ${({ theme, $hasError }) => ($hasError ? theme.palette.error.main : theme.colorsAlpha.darkAlpha[10])};
     font-size: ${({ theme }) => theme.typography.h6.fontSize};
     line-height: ${({ theme }) => theme.typography.h6.lineHeight};
 `;
