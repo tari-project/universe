@@ -15,7 +15,7 @@ _July 30, 2025_
 
 ---
 
-�🔥 HOTFIX v1.2.17: XMRig extraction bug on windows
+🔥 HOTFIX v1.2.17: XMRig extraction bug on windows
 
 _July 10, 2025_
 
