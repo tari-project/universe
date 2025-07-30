@@ -4,6 +4,8 @@ import CrewAvatar from './CrewAvatar/CrewAvatar';
 
 import CrewProgressBar from './CrewProgressBar/CrewProgressBar';
 import CrewProgressPill from './CrewProgressPill/CrewProgressPill';
+import CrewActionFeedback from './CrewActionFeedback/CrewActionFeedback';
+import { useState } from 'react';
 
 interface Props {
     entry: CrewEntry;
@@ -16,16 +18,25 @@ export default function CrewEntry({ entry, isClaimed }: Props) {
     const canClaim = status === 'completed';
     const canNudge = status === 'needs_nudge';
 
+    const [showNudge, setShowNudge] = useState(false);
+    const [showClaim, setShowClaim] = useState(false);
+
     const handleClaim = () => {
-        //console.log('claim');
+        setShowClaim(true);
     };
 
     const handleNudge = () => {
-        //console.log('nudge');
+        setShowNudge(true);
     };
 
     return (
         <Wrapper $canClaim={canClaim ?? false} $isClaimed={isClaimed ?? false}>
+            <CrewActionFeedback
+                showNudge={showNudge}
+                setShowNudge={setShowNudge}
+                showClaim={showClaim}
+                setShowClaim={setShowClaim}
+            />
             <CrewAvatar image={user.avatar} isOnline={user.isOnline} />
             <ContentWrapper>
                 <TopRow>

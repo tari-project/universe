@@ -13,6 +13,9 @@ export const Wrapper = styled.div<{ $canClaim: boolean; $isClaimed: boolean }>`
     border: 1px solid rgba(227, 227, 227, 0.03);
     background: linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.04) 100%);
 
+    position: relative;
+    overflow: hidden;
+
     ${({ $canClaim, $isClaimed }) =>
         $canClaim &&
         !$isClaimed &&

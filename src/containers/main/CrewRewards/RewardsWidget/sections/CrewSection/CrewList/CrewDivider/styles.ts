@@ -15,7 +15,7 @@ export const Wrapper = styled.div`
 
     position: sticky;
     top: 0;
-    z-index: 1;
+    z-index: 2;
 
     background: linear-gradient(to bottom, #323333 calc(100% - 10px), transparent 100%);
     padding: 0 0 10px 0;
