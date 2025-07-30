@@ -17,7 +17,6 @@ export const ListItemsWrapper = styled.div`
     flex-direction: column;
     gap: 4px;
     width: 100%;
-    padding-top: 6px;
 `;
 
 export const Rectangle = styled(m.div)`
