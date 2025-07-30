@@ -85,7 +85,7 @@
       "unlockBonusRewards": "Unlock your bonus rewards",
       "mineConsecutiveDays": "Mine for at least <strong>{{streakDaysRequired}} consecutive days</strong> each week to earn your bonus XTM.",
       "keepStreak": "Keep your streak to keep earning rewards!",
-      "dayStreak": "{{days}} Day Streak 🔥",
+      "dayStreak": "{{days}} Day Streak",
       "day": "Day"
     },
     "login": {

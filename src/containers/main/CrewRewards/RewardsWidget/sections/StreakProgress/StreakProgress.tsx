@@ -36,7 +36,7 @@ export default function StreakProgress({ isInline = false }: Props) {
             ) : (
                 <StreakMessage $isInline={isInline}>
                     <Text>{t('airdrop:crewRewards.streak.keepStreak')}</Text>
-                    <StreakText>{t('airdrop:crewRewards.streak.dayStreak', { days: streakDays })}</StreakText>
+                    <StreakText>{t('airdrop:crewRewards.streak.dayStreak', { days: streakDays })} 🔥</StreakText>
                 </StreakMessage>
             )}
         </Wrapper>
