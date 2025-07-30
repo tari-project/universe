@@ -1,4 +1,4 @@
-� TARI UNIVERSE v1.5.3: The Season of Light: Part 4
+🚀 TARI UNIVERSE v1.5.3: The Season of Light: Part 4
 
 _July 30, 2025_
 
