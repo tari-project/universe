@@ -16,20 +16,28 @@ export function Sync() {
 
     const generalSyncMarkup =
         showSync && !!currentPhaseToShow ? (
-            <Wrapper>
-                <TextWrapper>
-                    {setupPhaseTitle ? <Title>{t(`phase-title.${setupPhaseTitle}`)}</Title> : null}
-                    {setupTitle ? <Text>{t(`title.${setupTitle}`, { ...setupParams })}</Text> : null}
-                </TextWrapper>
-                <ProgressWrapper>
-                    <Title>
-                        {stageProgress} / {stageTotal}
-                    </Title>
-                    <CircularProgress />
-                </ProgressWrapper>
-            </Wrapper>
+            <SettingsGroupWrapper>
+                <Wrapper>
+                    <TextWrapper>
+                        {setupPhaseTitle ? <Title>{t(`phase-title.${setupPhaseTitle}`)}</Title> : null}
+                        {setupTitle ? <Text>{t(`title.${setupTitle}`, { ...setupParams })}</Text> : null}
+                    </TextWrapper>
+                    <ProgressWrapper>
+                        <Title>
+                            {stageProgress} / {stageTotal}
+                        </Title>
+                        <CircularProgress />
+                    </ProgressWrapper>
+                </Wrapper>
+            </SettingsGroupWrapper>
         ) : null;
 
-    const syncMarkup = isRemoteUntilLocal ? <LocalNode /> : generalSyncMarkup;
-    return showSync || isRemoteUntilLocal ? <SettingsGroupWrapper>{syncMarkup}</SettingsGroupWrapper> : null;
+    const syncMarkup = isRemoteUntilLocal ? (
+        <SettingsGroupWrapper>
+            <LocalNode />
+        </SettingsGroupWrapper>
+    ) : (
+        generalSyncMarkup
+    );
+    return showSync || isRemoteUntilLocal ? syncMarkup : null;
 }
