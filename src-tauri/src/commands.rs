@@ -49,7 +49,7 @@ use crate::pin::PinManager;
 use crate::setup::setup_manager::{SetupManager, SetupPhase};
 use crate::tapplets::interface::ActiveTapplet;
 use crate::tapplets::tapplet_manager::TappletManager;
-use crate::tapplets::tapplet_server::{get_tapplet_csp, start_tapplet};
+use crate::tapplets::tapplet_server::{get_tapplet_config, start_tapplet};
 use crate::tasks_tracker::TasksTrackers;
 use crate::tor_adapter::TorConfig;
 use crate::utils::address_utils::verify_send;
@@ -70,7 +70,6 @@ use std::fs::{read_dir, remove_dir_all, remove_file, File};
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::atomic::Ordering;
-use std::sync::Arc;
 use std::thread::sleep;
 use std::time::{Duration, Instant, SystemTime};
 use tari_common::configuration::Network;
@@ -83,7 +82,6 @@ use tari_utilities::SafePassword;
 use tauri::ipc::InvokeError;
 use tauri::{Manager, PhysicalPosition, PhysicalSize};
 use tauri_plugin_sentry::sentry;
-use tokio::sync::RwLock;
 use urlencoding::encode;
 
 const MAX_ACCEPTABLE_COMMAND_TIME: Duration = Duration::from_secs(1);
@@ -2279,14 +2277,19 @@ pub async fn launch_dev_tapplet(
     let tapp_dest_dir = PathBuf::from(path);
     info!(target: LOG_TARGET, "💥 Dev tapplet start: {:?}", &tapp_dest_dir);
 
-    let csp = get_tapplet_csp(tapp_dest_dir.clone()).unwrap_or_default();
-    let csp_header = HeaderValue::from_str(&csp).unwrap();
-    info!(target: LOG_TARGET, "💥 Dev tapplet csp: {:?}", &csp);
+    let config = get_tapplet_config(tapp_dest_dir.clone()).unwrap_or_default();
+    let csp_header = HeaderValue::from_str(&config.csp).unwrap();
 
-    let allow_csp = TappletManager::allow_tapplet_csp(csp, &app_handle)
+    let allow_csp = TappletManager::allow_tapplet_csp(config.csp, &app_handle)
         .await
-        .map_err(|e| InvokeError::from_anyhow(anyhow::anyhow!(e.to_string())));
+        .map_err(|e| e.to_string())?;
     info!(target: LOG_TARGET, "💥 Allow CSP result: {:?}", allow_csp);
+
+    let granted_permissions =
+        TappletManager::grant_tapplet_permissions(config.permissions.to_string(), &app_handle)
+            .await
+            .map_err(|e| e.to_string())?;
+    info!(target: LOG_TARGET, "💥 Grant permissions result: {:?}", granted_permissions);
 
     let handle_start =
         tauri::async_runtime::spawn(async move { start_tapplet(tapp_dest_dir, csp_header).await });

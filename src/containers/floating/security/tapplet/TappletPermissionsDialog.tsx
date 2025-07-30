@@ -8,34 +8,25 @@ import { TextWrapper } from '@app/components/sync/styles.ts';
 import { TextButton } from '@app/components/elements/buttons/TextButton.tsx';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 
-function extractCspDirectives(csp: string): string[] {
-    if (!csp) return [];
-    return csp
-        .split(';')
-        .map((directive) => directive.trim())
-        .filter((directive) => directive.length > 0);
-}
-
-export default function TappletCspDialog() {
+export default function TappletPermissionsDialog() {
     const { t } = useTranslation('staged-security');
     const modal = useSecurityStore((s) => s.modal);
     const setModal = useSecurityStore((s) => s.setModal);
-    const setTappletCsp = useSecurityStore((s) => s.setTappletCsp);
-    const csp = useSecurityStore((s) => s.tappletCsp);
-    const cspList = extractCspDirectives(csp);
+    const setTappletPermissions = useSecurityStore((s) => s.setTappletPermissions);
+    const tappletPermissions = useSecurityStore((s) => s.tappletPermissions);
 
-    const isOpen = modal === 'tapplet_csp';
+    const isOpen = modal === 'tapplet_permissions';
 
     function handleClose() {
         void emit('tapplet-dialog-response', { response: '' });
         setModal(null);
-        setTappletCsp('');
+        setTappletPermissions('');
     }
 
     function handleSubmit() {
-        emit('tapplet-dialog-response', { response: csp }).finally(() => {
+        emit('tapplet-dialog-response', { response: tappletPermissions }).finally(() => {
             setModal(null);
-            setTappletCsp('');
+            setTappletPermissions('');
         });
     }
 
@@ -47,13 +38,7 @@ export default function TappletCspDialog() {
                     <Header>
                         <CloseButton onClick={handleClose} />
                     </Header>
-                    <TextWrapper>
-                        <ul style={{ paddingLeft: '1.2em', margin: 0 }}>
-                            {cspList.map((directive, index) => (
-                                <li key={index}>{directive}</li>
-                            ))}
-                        </ul>
-                    </TextWrapper>
+                    <TextWrapper>{tappletPermissions}</TextWrapper>
                 </Wrapper>
                 <Wrapper>
                     <CTAWrapper>
@@ -62,13 +47,13 @@ export default function TappletCspDialog() {
                             variant="black"
                             fluid
                             size="xlarge"
-                            disabled={!csp}
+                            disabled={!tappletPermissions}
                             type="submit"
                         >
-                            {t('Allow Tapplet CSP')}
+                            {t('Allow Tapplet Tari Permissions')}
                         </Button>
                         <TextButton color="greyscale" onClick={handleClose}>
-                            {'Reject Tapplet CSP'}
+                            {'Reject Tapplet Tari Permissions'}
                         </TextButton>
                     </CTAWrapper>
                 </Wrapper>

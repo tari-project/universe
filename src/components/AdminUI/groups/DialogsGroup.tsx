@@ -69,7 +69,17 @@ export function DialogsGroup() {
                     onClick={() => setDialogToShow(dialogToShow === 'allowTappletCsp' ? undefined : 'allowTappletCsp')}
                     $isActive={dialogToShow === 'allowTappletCsp'}
                 >
-                    Forgot Pin
+                    Allow Tapplet CSP
+                </AdminButton>
+                <AdminButton
+                    onClick={() =>
+                        setDialogToShow(
+                            dialogToShow === 'grantTappletPermissions' ? undefined : 'grantTappletPermissions'
+                        )
+                    }
+                    $isActive={dialogToShow === 'grantTappletPermissions'}
+                >
+                    Grant Tapplet Permissions
                 </AdminButton>
             </ButtonGroup>
         </>

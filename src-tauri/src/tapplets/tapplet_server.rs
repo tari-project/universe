@@ -27,7 +27,7 @@ use crate::{
             Error::{self, JsonParsingError, TappletServerError},
             TappletServerError::*,
         },
-        interface::{TappletConfig, TappletPermissions},
+        interface::TappletConfig,
     },
 };
 
@@ -35,14 +35,11 @@ use axum::{
     body::Body,
     http::{HeaderValue, Request, Response},
     middleware::{self, Next},
-    response::IntoResponse,
-    Extension, Json, Router,
+    Router,
 };
 use log::{error, info, warn};
-use reqwest::StatusCode;
-use serde::Deserialize;
-use std::{fs, net::SocketAddr, path::PathBuf, sync::Arc};
-use tokio::{select, sync::RwLock};
+use std::{fs, net::SocketAddr, path::PathBuf};
+use tokio::select;
 use tokio_util::sync::CancellationToken;
 use tower_http::services::ServeDir;
 const LOG_TARGET: &str = "tari::tapplet";
@@ -139,18 +136,4 @@ pub fn get_tapplet_config(tapp_path: PathBuf) -> Result<TappletConfig, Error> {
         serde_json::from_str(&config).map_err(|e| JsonParsingError(e))?;
     info!(target: LOG_TARGET, "💥 Dev tapplet full config: {:?}", &tapplet_config);
     Ok(tapplet_config)
-}
-
-pub fn get_tapplet_permissions(tapp_path: PathBuf) -> Result<TappletPermissions, Error> {
-    let tapp_config = get_tapplet_config(tapp_path).unwrap_or_default();
-    Ok(TappletPermissions {
-        required_permissions: tapp_config.permissions.required_permissions,
-        optional_permissions: tapp_config.permissions.optional_permissions,
-    })
-}
-
-pub fn get_tapplet_csp(tapp_path: PathBuf) -> Result<String, Error> {
-    info!(target: LOG_TARGET, "💥 get_csp");
-    let tapp_config = get_tapplet_config(tapp_path).unwrap_or_default();
-    Ok(tapp_config.csp)
 }

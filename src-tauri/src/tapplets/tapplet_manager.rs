@@ -20,6 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use log::info;
 use tauri::{AppHandle, Listener};
 use tokio::sync::oneshot;
 
@@ -34,8 +35,17 @@ impl TappletManager {
         csp: String,
         app_handle: &AppHandle,
     ) -> Result<String, anyhow::Error> {
-        let csp = allow_csp_dialog(csp, app_handle).await?;
-        Ok(csp)
+        let allowed_csp = allow_csp_dialog(csp, app_handle).await?;
+        info!(target: LOG_TARGET, "Tapplet's CSP accepted. CSP: {:?}", &allowed_csp);
+        Ok(allowed_csp)
+    }
+    pub async fn grant_tapplet_permissions(
+        permissions: String,
+        app_handle: &AppHandle,
+    ) -> Result<String, anyhow::Error> {
+        let granted_permissions = grant_permissions_dialog(permissions, app_handle).await?;
+        info!(target: LOG_TARGET, "Tapplet's permissions granted: {:?}", &granted_permissions);
+        Ok(granted_permissions)
     }
 }
 
@@ -53,29 +63,40 @@ where
 
     // Listen for the CSP dialog response event
     let (tx, rx) = oneshot::channel();
-    app_handle.once("tapplet-csp-dialog-response", move |event| {
-        let csp = event.payload().trim();
+    app_handle.once("tapplet-dialog-response", move |event| {
+        let response = event.payload().trim();
 
-        if csp.len() > 0 {
-            let _unused = tx.send(Some(csp.to_string()));
+        if response.len() > 0 {
+            let _unused = tx.send(Some(response.to_string()));
         } else {
             let _unused = tx.send(None);
         }
     });
 
     // Await the response
-    let csp = rx.await.unwrap_or_default();
-    if let Some(csp) = csp {
-        Ok(csp.to_string())
+    let response = rx.await.unwrap_or_default();
+    if let Some(response) = response {
+        log::info!("📩 RESPOSNE RECEIVED {:?}", &response);
+        Ok(response)
     } else {
-        log::info!("Granting tapplet CSP failed");
-        Err(anyhow::anyhow!("Granting tapplet CSP failed"))
+        log::info!("Granting tapplet permissions failed");
+        Err(anyhow::anyhow!("Granting tapplet permissions failed"))
     }
 }
 
 async fn allow_csp_dialog(csp: String, app_handle: &AppHandle) -> Result<String, anyhow::Error> {
     csp_dialog_with_emitter(app_handle, || {
         EventsEmitter::emit_allow_tapplet_csp(csp.clone())
+    })
+    .await
+}
+
+async fn grant_permissions_dialog(
+    permissions: String,
+    app_handle: &AppHandle,
+) -> Result<String, anyhow::Error> {
+    csp_dialog_with_emitter(app_handle, || {
+        EventsEmitter::emit_grant_tapplet_permissions(permissions.clone())
     })
     .await
 }

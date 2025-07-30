@@ -69,6 +69,31 @@ impl Default for TappletPermissions {
     }
 }
 
+use std::fmt;
+impl fmt::Display for TappletPermissions {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "Required Permissions:")?;
+        if self.required_permissions.is_empty() {
+            writeln!(f, "  None")?;
+        } else {
+            for perm in &self.required_permissions {
+                writeln!(f, "  - {:?}", perm)?;
+            }
+        }
+
+        writeln!(f, "Optional Permissions:")?;
+        if self.optional_permissions.is_empty() {
+            writeln!(f, "  None")?;
+        } else {
+            for perm in &self.optional_permissions {
+                writeln!(f, "  - {:?}", perm)?;
+            }
+        }
+
+        Ok(())
+    }
+}
+
 #[derive(Debug, serde::Deserialize)]
 pub struct TappletConfig {
     #[serde(rename = "packageName")]
