@@ -317,7 +317,7 @@ impl EventsEmitter {
             error!(target: LOG_TARGET, "Failed to emit MiningConfigLoaded event: {e:?}");
         }
     }
-    pub async fn emit_pools_config_loaded(payload: ConfigPoolsContent) {
+    pub async fn emit_pools_config_loaded(payload: &ConfigPoolsContent) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::ConfigPoolsLoaded,

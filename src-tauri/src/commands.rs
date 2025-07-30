@@ -1545,6 +1545,12 @@ pub async fn start_cpu_mining(
 
     let cpu_miner = state.cpu_miner.read().await;
     let cpu_miner_running = cpu_miner.is_running().await;
+
+    let mut cpu_config = state.cpu_miner_config.write().await;
+    let tari_address = InternalWallet::tari_address().await;
+    cpu_config.load_from_config_pools(ConfigPools::content().await.clone(), &tari_address);
+    drop(cpu_config);
+
     drop(cpu_miner);
     let cpu_miner_config = state.cpu_miner_config.read().await;
     drop(cpu_miner_config);
