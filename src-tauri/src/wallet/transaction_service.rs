@@ -74,7 +74,7 @@ impl<'a> TransactionService<'a> {
                 u256: vec![],
                 user_bytes: vec![],
             }),
-            fee_per_gram: 150, // TODO: Implement fee calculation logic
+            fee_per_gram: 1, // TODO: Implement fee calculation logic
             payment_type: PaymentType::OneSidedToStealthAddress.into(),
         };
 
