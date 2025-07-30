@@ -20,6 +20,7 @@ import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 import { getTimestampFromTransaction, isBridgeTransaction, isTransactionInfo } from './helpers.ts';
 import { UserTransactionDTO } from '@tari-project/wxtm-bridge-backend-api';
 import { BridgeHistoryListItem } from '@app/components/transactions/history/BridgeListItem.tsx';
+import { TariAddressType } from '@app/types/events-payloads.ts';
 
 interface Props {
     setIsScrolled: (isScrolled: boolean) => void;
@@ -33,6 +34,8 @@ export function List({ setIsScrolled, targetRef }: Props) {
     const currentBlockHeight = useMiningMetricsStore((s) => s.base_node_status.block_height);
     const coldWalletAddress = useWalletStore((s) => s.cold_wallet_address);
     const tx_history_filter = useWalletStore((s) => s.tx_history_filter);
+    const tariAddress = useWalletStore((s) => s.tari_address_base58);
+    const tariAddressType = useWalletStore((s) => s.tari_address_type);
     const { data, fetchNextPage, isFetchingNextPage, isFetching, hasNextPage } = useFetchTxHistory();
     const isFetchBridgeTransactionsFailed = useRef(false);
 
@@ -65,6 +68,7 @@ export function List({ setIsScrolled, targetRef }: Props) {
         );
 
         if (
+            tariAddressType === TariAddressType.Internal &&
             !isFetchBridgeTransactionsFailed.current &&
             (isThereANewBridgeTransaction || isThereEmptyBridgeTransactionAndFoundInWallet)
         ) {
@@ -74,7 +78,7 @@ export function List({ setIsScrolled, targetRef }: Props) {
                 }
             });
         }
-    }, [baseTx, bridgeTransactions, coldWalletAddress, currentBlockHeight]);
+    }, [baseTx, bridgeTransactions, coldWalletAddress, currentBlockHeight, tariAddress, tariAddressType]);
 
     const combinedTransactions = useMemo(() => {
         const transactions: (TransactionInfo | UserTransactionDTO)[] = [...baseTx];
