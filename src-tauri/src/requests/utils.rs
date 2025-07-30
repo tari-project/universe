@@ -20,8 +20,6 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::os::unix::fs::MetadataExt;
-
 use reqwest::Response;
 use tokio::fs::File;
 
@@ -66,7 +64,7 @@ pub async fn get_content_size_from_file(file: &File) -> Result<u64, anyhow::Erro
         .metadata()
         .await
         .map_err(|e| anyhow::anyhow!("Failed to get metadata for file: {}", e))?;
-    Ok(metadata.size())
+    Ok(metadata.len())
 }
 
 pub fn create_exponential_timeout(attempt: u32) -> tokio::time::Duration {

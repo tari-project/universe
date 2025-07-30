@@ -190,14 +190,11 @@ impl BinaryManager {
                 )
             })?;
 
-        info!(target: LOG_TARGET, "Checksum file downloaded to: {checksum_file:?}");
-
         let expected_checksum = self
             .adapter
             .get_expected_checksum(checksum_file.clone(), &download_info.name)
             .await?;
 
-        info!(target: LOG_TARGET, "Expected checksum: {expected_checksum:?}");
         info!(target: LOG_TARGET, "In-progress file zip path: {in_progress_file_zip:?}");
 
         // Debug: Check if the file actually exists before attempting validation
@@ -208,8 +205,6 @@ impl BinaryManager {
                 in_progress_file_zip
             ));
         }
-
-        info!(target: LOG_TARGET, "Archive file exists, proceeding with checksum validation");
 
         match validate_checksum(in_progress_file_zip.clone(), expected_checksum).await {
             Ok(is_valid_checksum) => {
