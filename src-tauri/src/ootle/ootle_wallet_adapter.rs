@@ -29,7 +29,7 @@ use crate::process_adapter::{
 use crate::process_adapter_utils::setup_working_directory;
 use crate::utils::file_utils::convert_to_string;
 use crate::utils::logging_utils::setup_logging;
-use anyhow::Error;
+use anyhow::{Error, Result};
 use async_trait::async_trait;
 use log::{info, warn};
 use reqwest::Url;
@@ -38,6 +38,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 use tari_shutdown::Shutdown;
+use tari_utilities::Hidden;
 use tokio::sync::watch;
 use tokio::sync::Notify;
 
@@ -49,6 +50,7 @@ pub struct OotleWalletAdapter {
     pub(crate) json_rpc_port: u16,
     pub(crate) state_broadcast: watch::Sender<Option<OotleWalletState>>,
     unhealthy_notification: Arc<Notify>,
+    pub seed_words: Option<Hidden<String>>,
 }
 
 impl OotleWalletAdapter {
@@ -64,6 +66,7 @@ impl OotleWalletAdapter {
             web_ui_port,
             state_broadcast,
             unhealthy_notification,
+            seed_words: None,
         }
     }
 }
@@ -125,6 +128,10 @@ impl ProcessAdapter for OotleWalletAdapter {
         if let Some(indexer_url) = self.indexer_urls.first() {
             args.push("-i".to_string());
             args.push(indexer_url.to_string());
+        }
+        if let Some(seed_words) = &self.seed_words {
+            args.push("--seed-words".to_string());
+            args.push(seed_words.clone().reveal().to_owned());
         }
 
         Ok((

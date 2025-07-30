@@ -23,7 +23,9 @@ use crate::{
     binaries::{Binaries, BinaryResolver},
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
     events_emitter::EventsEmitter,
+    internal_wallet::InternalWallet,
     ootle::ootle_wallet_manager::OotleWalletStartupConfig,
+    pin::PinManager,
     progress_trackers::{
         progress_plans::{ProgressPlans, ProgressSetupOotleWalletPlan},
         progress_stepper::ProgressStepperBuilder,
@@ -33,10 +35,12 @@ use crate::{
     tasks_tracker::TasksTrackers,
     UniverseAppState,
 };
-use anyhow::Error;
+use anyhow::{Context, Error};
 use log::info;
 use reqwest::Url;
+use tari_key_manager::mnemonic::{Mnemonic, MnemonicLanguage};
 use tari_shutdown::ShutdownSignal;
+use tari_utilities::Hidden;
 use tauri::{AppHandle, Manager};
 use tokio::sync::{
     watch::{Receiver, Sender},
@@ -69,6 +73,22 @@ pub struct OotleWalletSetupPhase {
     status_sender: Sender<PhaseStatus>,
     _setup_features: SetupFeaturesList,
     timeout_watcher: TimeoutWatcher,
+}
+
+impl OotleWalletSetupPhase {
+    async fn get_seed_words(&self, app_handle: &AppHandle) -> Result<String, Error> {
+        let pin_password = PinManager::get_validated_pin_if_defined(app_handle)
+            .await
+            .context("Failed to validate PIN")?;
+        let tari_cipher_seed = InternalWallet::get_tari_seed(pin_password)
+            .await
+            .context("Failed to get Tari seed")?;
+        let seed_words = tari_cipher_seed
+            .to_mnemonic(MnemonicLanguage::English, None)
+            .context("Failed to convert seed to mnemonic")?;
+
+        Ok(seed_words.join(" ").reveal().to_string())
+    }
 }
 
 impl SetupPhaseImpl for OotleWalletSetupPhase {
@@ -180,11 +200,13 @@ impl SetupPhaseImpl for OotleWalletSetupPhase {
             .await;
 
         info!(target: LOG_TARGET, "Starting Ootle wallet");
+        let seed_words = self.get_seed_words(&self.app_handle).await?;
         let ootle_wallet_config = OotleWalletStartupConfig {
             base_path: data_dir.clone(),
             config_path: config_dir.clone(),
             log_path: log_dir.clone(),
             indexer_urls: self.app_configuration.indexer_urls.clone(),
+            seed_words: Hidden::hide(seed_words),
         };
         state
             .ootle_wallet_manager

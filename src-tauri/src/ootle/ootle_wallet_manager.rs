@@ -32,6 +32,7 @@ use reqwest::Url;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tari_shutdown::ShutdownSignal;
+use tari_utilities::Hidden;
 use tokio::sync::RwLock;
 use tokio::sync::{watch, Notify};
 
@@ -43,6 +44,7 @@ pub struct OotleWalletStartupConfig {
     pub config_path: PathBuf,
     pub log_path: PathBuf,
     pub indexer_urls: Vec<Url>,
+    pub seed_words: Hidden<String>,
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -117,8 +119,8 @@ impl OotleWalletManager {
             }
         });
 
-        info!(target: LOG_TARGET, "Ootle wallet indexer urls: {:?}", config.indexer_urls);
         process_watcher.adapter.indexer_urls = config.indexer_urls;
+        process_watcher.adapter.seed_words = Some(config.seed_words);
         process_watcher
             .start(
                 config.base_path,
