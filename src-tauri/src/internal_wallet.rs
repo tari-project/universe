@@ -110,14 +110,6 @@ impl InternalWallet {
         Ok(())
     }
 
-    pub async fn is_external() -> bool {
-        let internal_wallet_guard = InternalWallet::current().read().await;
-        matches!(
-            internal_wallet_guard.tari_address_type,
-            TariAddressType::External
-        )
-    }
-
     pub async fn is_internal() -> bool {
         let internal_wallet_guard = InternalWallet::current().read().await;
         matches!(

@@ -24,12 +24,10 @@ use getset::{Getters, Setters};
 use serde::{Deserialize, Serialize};
 use std::{sync::LazyLock, time::SystemTime};
 use tari_common::configuration::Network;
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
 use tokio::sync::RwLock;
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
-use crate::internal_wallet::InternalWallet;
-use crate::{EventsEmitter, UniverseAppState};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SupportXTMPoolConfig {
