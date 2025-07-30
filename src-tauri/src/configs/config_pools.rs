@@ -188,16 +188,8 @@ pub struct ConfigPools {
 
 impl ConfigPools {
     pub async fn initialize(app_handle: AppHandle) {
-        let state = app_handle.state::<UniverseAppState>();
         let mut config = Self::current().write().await;
         config.load_app_handle(app_handle.clone()).await;
-
-        let mut cpu_config = state.cpu_miner_config.write().await;
-        let tari_address = InternalWallet::tari_address().await;
-        cpu_config.load_from_config_pools(config.content.clone(), &tari_address);
-        drop(cpu_config);
-
-        EventsEmitter::emit_pools_config_loaded(config.content.clone()).await;
     }
 }
 

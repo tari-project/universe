@@ -277,6 +277,7 @@ impl SetupManager {
         ConfigWallet::initialize(app_handle.clone()).await;
         ConfigMining::initialize(app_handle.clone()).await;
         ConfigUI::initialize(app_handle.clone()).await;
+        ConfigPools::initialize(app_handle.clone()).await;
 
         let node_type = ConfigCore::content().await.node_type().clone();
         info!(target: LOG_TARGET, "Retrieved initial node type: {node_type:?}");
@@ -299,6 +300,7 @@ impl SetupManager {
         EventsEmitter::emit_core_config_loaded(&ConfigCore::content().await).await;
         EventsEmitter::emit_mining_config_loaded(&ConfigMining::content().await).await;
         EventsEmitter::emit_ui_config_loaded(&ConfigUI::content().await).await;
+        EventsEmitter::emit_pools_config_loaded(&ConfigPools::content().await).await;
 
         let is_on_exchange_specific_variant = ConfigCore::content()
             .await
@@ -355,8 +357,6 @@ impl SetupManager {
                 };
             }
         }
-
-        ConfigPools::initialize(app_handle.clone()).await;
 
         // Trigger it here so we can update UI when new wallet is created
         // We should probably change events to be loaded from internal wallet directly
