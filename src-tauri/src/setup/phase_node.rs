@@ -132,6 +132,10 @@ impl SetupPhaseImpl for NodeSetupPhase {
         ProgressStepperBuilder::new()
             .add_step(ProgressPlans::Node(ProgressSetupNodePlan::BinariesTor))
             .add_step(ProgressPlans::Node(ProgressSetupNodePlan::BinariesNode))
+            .add_step(ProgressPlans::Node(ProgressSetupNodePlan::BinariesWallet))
+            .add_step(ProgressPlans::Node(
+                ProgressSetupNodePlan::BinariesMergeMiningProxy,
+            ))
             .add_step(ProgressPlans::Node(ProgressSetupNodePlan::StartTor))
             .add_step(ProgressPlans::Node(
                 ProgressSetupNodePlan::MigratingDatabase,
@@ -190,7 +194,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
         if node_type.is_local() {
             let node_binary_progress_tracker = progress_stepper.channel_step_range_updates(
                 ProgressPlans::Node(ProgressSetupNodePlan::BinariesNode),
-                Some(ProgressPlans::Node(ProgressSetupNodePlan::StartTor)),
+                Some(ProgressPlans::Node(ProgressSetupNodePlan::BinariesWallet)),
             );
             binary_resolver
                 .initialize_binary(Binaries::MinotariNode, node_binary_progress_tracker)
@@ -199,6 +203,26 @@ impl SetupPhaseImpl for NodeSetupPhase {
             info!(target: LOG_TARGET, "Skipping node binary installation for remote node");
             progress_stepper.skip_step(ProgressPlans::Node(ProgressSetupNodePlan::BinariesNode));
         }
+
+        let wallet_binary_progress_tracker = progress_stepper.channel_step_range_updates(
+            ProgressPlans::Node(ProgressSetupNodePlan::BinariesWallet),
+            Some(ProgressPlans::Node(
+                ProgressSetupNodePlan::BinariesMergeMiningProxy,
+            )),
+        );
+
+        binary_resolver
+            .initialize_binary(Binaries::Wallet, wallet_binary_progress_tracker)
+            .await?;
+
+        let mmproxy_binary_progress_tracker = progress_stepper.channel_step_range_updates(
+            ProgressPlans::Node(ProgressSetupNodePlan::BinariesMergeMiningProxy),
+            Some(ProgressPlans::Node(ProgressSetupNodePlan::StartTor)),
+        );
+
+        binary_resolver
+            .initialize_binary(Binaries::MergeMiningProxy, mmproxy_binary_progress_tracker)
+            .await?;
 
         if self.app_configuration.use_tor && !cfg!(target_os = "macos") {
             progress_stepper
