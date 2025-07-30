@@ -112,11 +112,7 @@ impl GpuMinerSha {
 
         process_watcher.adapter.tari_address = Some(tari_address);
         process_watcher.adapter.worker_name = Some(telemetry_id.to_string());
-        process_watcher.adapter.batch_size = if gpu_usage_percentage.gt(&50) {
-            Some(10000)
-        } else {
-            Some(1000)
-        };
+        process_watcher.adapter.batch_size = None; // Its better to allow miner to calculate batch size dynamically
         process_watcher.adapter.intensity = Some(gpu_usage_percentage);
         info!(target: LOG_TARGET, "Starting sha miner");
         process_watcher

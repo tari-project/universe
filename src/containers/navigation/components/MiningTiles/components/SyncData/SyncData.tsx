@@ -20,7 +20,7 @@ export default function SyncData() {
                     />
                     {isStarted && !isComplete && t('wallet:sync-message.line2')}
                 </CountdownText>
-                <Label>{t(`phase-title.${setupPhaseTitle}`, { context: 'compact' })}</Label>
+                {setupPhaseTitle && <Label>{t(`phase-title.${setupPhaseTitle}`, { context: 'compact' })}</Label>}
             </TextWrapper>
         </Wrapper>
     );

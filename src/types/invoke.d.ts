@@ -121,7 +121,6 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'validate_minotari_amount', payload: { amount: string }): Promise<string>;
     function invoke(param: 'trigger_phases_restart'): Promise<void>;
     function invoke(param: 'set_node_type', payload: { nodeType: NodeType }): Promise<void>;
-    function invoke(param: 'set_warmup_seen', payload: { warmupSeen: boolean }): Promise<void>;
     function invoke(param: 'set_external_tari_address', payload: { address: string }): Promise<void>;
     function invoke(param: 'confirm_exchange_address', payload: { address: string }): Promise<void>;
     function invoke(param: 'get_app_in_memory_config'): Promise<ConfigBackendInMemory>;
@@ -138,6 +137,7 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'create_pin'): Promise<void>;
     function invoke(param: 'forgot_pin', payload: { seedWords: string[] }): Promise<void>;
     function invoke(param: 'is_pin_locked'): Promise<boolean>;
+    function invoke(param: 'is_seed_backed_up'): Promise<boolean>;
     function invoke(param: 'toggle_cpu_pool_mining', payload: { enabled: boolean }): Promise<void>;
     function invoke(param: 'toggle_gpu_pool_mining', payload: { enabled: boolean }): Promise<void>;
     function invoke(param: 'update_csp_policy', payload: { csp: string }): Promise<void>;

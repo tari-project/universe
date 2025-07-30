@@ -27,7 +27,6 @@ use super::{
     utils::{setup_default_adapter::SetupDefaultAdapter, timeout_watcher::TimeoutWatcher},
 };
 use crate::{
-    binaries::{Binaries, BinaryResolver},
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
     events_emitter::EventsEmitter,
     internal_wallet::InternalWallet,
@@ -127,9 +126,6 @@ impl SetupPhaseImpl for MiningSetupPhase {
         timeout_watcher_sender: Sender<u64>,
     ) -> ProgressStepper {
         ProgressStepperBuilder::new()
-            .add_step(ProgressPlans::Mining(
-                ProgressSetupMiningPlan::BinariesMergeMiningProxy,
-            ))
             .add_step(ProgressPlans::Mining(ProgressSetupMiningPlan::MMProxy))
             .add_step(ProgressPlans::Mining(ProgressSetupMiningPlan::Done))
             .build(app_handle.clone(), timeout_watcher_sender)
@@ -153,29 +149,6 @@ impl SetupPhaseImpl for MiningSetupPhase {
     async fn setup_inner(&self) -> Result<(), Error> {
         info!(target: LOG_TARGET, "[ {} Phase ] Starting setup inner", SetupPhase::Mining);
         let mut progress_stepper = self.progress_stepper.lock().await;
-        let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
-        let state = self.app_handle.state::<UniverseAppState>();
-        let tari_address = InternalWallet::tari_address().await;
-        let telemetry_id = state
-            .telemetry_manager
-            .read()
-            .await
-            .get_unique_string()
-            .await;
-
-        let binary_resolver = BinaryResolver::current();
-
-        let mmproxy_binary_progress_tracker = progress_stepper.channel_step_range_updates(
-            ProgressPlans::Mining(ProgressSetupMiningPlan::BinariesMergeMiningProxy),
-            Some(ProgressPlans::Mining(ProgressSetupMiningPlan::MMProxy)),
-        );
-
-        binary_resolver
-            .initialize_binary(Binaries::MergeMiningProxy, mmproxy_binary_progress_tracker)
-            .await?;
-
-        let base_node_grpc_address = state.node_manager.get_grpc_address().await?;
-
         if self
             .setup_features
             .is_feature_disabled(SetupFeature::CpuPool)
@@ -183,6 +156,16 @@ impl SetupPhaseImpl for MiningSetupPhase {
             progress_stepper
                 .resolve_step(ProgressPlans::Mining(ProgressSetupMiningPlan::MMProxy))
                 .await;
+            let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
+            let tari_address = InternalWallet::tari_address().await;
+            let state = self.app_handle.state::<UniverseAppState>();
+            let telemetry_id = state
+                .telemetry_manager
+                .read()
+                .await
+                .get_unique_string()
+                .await;
+            let base_node_grpc_address = state.node_manager.get_grpc_address().await?;
 
             state
                 .mm_proxy_manager

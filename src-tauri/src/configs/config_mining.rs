@@ -49,6 +49,29 @@ pub struct MiningMode {
     pub gpu_usage_percentage: u32,
 }
 
+#[derive(Serialize, Deserialize, Clone, Default)]
+pub struct GpuDeviceSettings {
+    device_id: u32,
+    is_excluded: bool,
+}
+#[derive(Serialize, Deserialize, Clone)]
+pub struct GpuDevicesSettings(HashMap<u32, GpuDeviceSettings>);
+
+impl GpuDevicesSettings {
+    pub fn new() -> Self {
+        Self(HashMap::new())
+    }
+
+    pub fn add(&mut self, device_id: u32) {
+        self.0.entry(device_id).or_default();
+    }
+    pub fn set_excluded(&mut self, device_id: u32, is_excluded: bool) {
+        if let Some(settings) = self.0.get_mut(&device_id) {
+            settings.is_excluded = is_excluded;
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "snake_case")]
 #[serde(default)]
@@ -64,8 +87,8 @@ pub struct ConfigMiningContent {
     gpu_mining_enabled: bool,
     cpu_mining_enabled: bool,
     gpu_engine: EngineType,
+    gpu_devices_settings: GpuDevicesSettings,
     squad_override: Option<String>,
-    mining_time: u128,
 }
 
 impl Default for ConfigMiningContent {
@@ -107,8 +130,8 @@ impl Default for ConfigMiningContent {
             gpu_mining_enabled: true,
             cpu_mining_enabled: true,
             gpu_engine: EngineType::OpenCL,
+            gpu_devices_settings: GpuDevicesSettings::new(),
             squad_override: None,
-            mining_time: 0,
         }
     }
 }
@@ -125,6 +148,26 @@ impl ConfigMiningContent {
         if let Some(custom_mode) = self.mining_modes.get_mut("Custom") {
             custom_mode.gpu_usage_percentage = gpu_usage_percentage;
         }
+        self
+    }
+
+    /// Populate the GPU devices settings with the given device IDs.
+    /// If a device ID already exists, it will not be added again.
+    pub fn populate_gpu_devices_settings(&mut self, device_ids: Vec<u32>) -> &mut Self {
+        for device_id in device_ids {
+            self.gpu_devices_settings.add(device_id);
+        }
+
+        self
+    }
+
+    pub fn enable_gpu_device_exclusion(&mut self, device_id: u32) -> &mut Self {
+        self.gpu_devices_settings.set_excluded(device_id, true);
+        self
+    }
+
+    pub fn disable_gpu_device_exclusion(&mut self, device_id: u32) -> &mut Self {
+        self.gpu_devices_settings.set_excluded(device_id, false);
         self
     }
 

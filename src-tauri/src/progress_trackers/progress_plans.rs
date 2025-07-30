@@ -97,6 +97,8 @@ impl ProgressStep for ProgressSetupCorePlan {
 pub enum ProgressSetupNodePlan {
     BinariesTor,
     BinariesNode,
+    BinariesWallet,
+    BinariesMergeMiningProxy,
     StartTor,
     MigratingDatabase,
     StartingNode,
@@ -117,6 +119,8 @@ impl ProgressStep for ProgressSetupNodePlan {
         match self {
             ProgressSetupNodePlan::BinariesTor => 1,
             ProgressSetupNodePlan::BinariesNode => 1,
+            ProgressSetupNodePlan::BinariesWallet => 1,
+            ProgressSetupNodePlan::BinariesMergeMiningProxy => 1,
             ProgressSetupNodePlan::StartTor => 1,
             ProgressSetupNodePlan::MigratingDatabase => 1,
             ProgressSetupNodePlan::StartingNode => 1,
@@ -131,6 +135,10 @@ impl ProgressStep for ProgressSetupNodePlan {
         match self {
             ProgressSetupNodePlan::BinariesTor => "binaries-tor".to_string(),
             ProgressSetupNodePlan::BinariesNode => "binaries-node".to_string(),
+            ProgressSetupNodePlan::BinariesWallet => "binaries-wallet".to_string(),
+            ProgressSetupNodePlan::BinariesMergeMiningProxy => {
+                "binaries-merge-mining-proxy".to_string()
+            }
             ProgressSetupNodePlan::StartTor => "start-tor".to_string(),
             ProgressSetupNodePlan::MigratingDatabase => "migrating-database".to_string(),
             ProgressSetupNodePlan::StartingNode => "starting-node".to_string(),
@@ -154,7 +162,6 @@ pub enum ProgressSetupHardwarePlan {
     BinariesCpuMiner,
     BinariesGpuMiner,
     DetectGPU,
-    RunCpuBenchmark,
     Done,
 }
 
@@ -170,7 +177,6 @@ impl ProgressStep for ProgressSetupHardwarePlan {
             ProgressSetupHardwarePlan::BinariesCpuMiner => 2,
             ProgressSetupHardwarePlan::BinariesGpuMiner => 2,
             ProgressSetupHardwarePlan::DetectGPU => 1,
-            ProgressSetupHardwarePlan::RunCpuBenchmark => 1,
             ProgressSetupHardwarePlan::Done => 1,
         }
     }
@@ -180,7 +186,6 @@ impl ProgressStep for ProgressSetupHardwarePlan {
             ProgressSetupHardwarePlan::BinariesCpuMiner => "binaries-cpu-miner".to_string(),
             ProgressSetupHardwarePlan::BinariesGpuMiner => "binaries-gpu-miner".to_string(),
             ProgressSetupHardwarePlan::DetectGPU => "detect-gpu".to_string(),
-            ProgressSetupHardwarePlan::RunCpuBenchmark => "run-cpu-benchmark".to_string(),
             ProgressSetupHardwarePlan::Done => "done".to_string(),
         }
     }
@@ -195,9 +200,7 @@ impl ProgressStep for ProgressSetupHardwarePlan {
 
 #[derive(Clone, PartialEq, Debug)]
 pub enum ProgressSetupWalletPlan {
-    BinariesWallet,
     StartWallet,
-    InitializeSpendingWallet,
     SetupBridge,
     Done,
 }
@@ -211,9 +214,7 @@ impl ProgressStep for ProgressSetupWalletPlan {
 
     fn get_progress_weight(&self) -> u8 {
         match self {
-            ProgressSetupWalletPlan::BinariesWallet => 2,
             ProgressSetupWalletPlan::StartWallet => 1,
-            ProgressSetupWalletPlan::InitializeSpendingWallet => 1,
             ProgressSetupWalletPlan::SetupBridge => 1,
             ProgressSetupWalletPlan::Done => 1,
         }
@@ -221,11 +222,8 @@ impl ProgressStep for ProgressSetupWalletPlan {
 
     fn get_title(&self) -> String {
         match self {
-            ProgressSetupWalletPlan::BinariesWallet => "binaries-wallet".to_string(),
             ProgressSetupWalletPlan::StartWallet => "start-wallet".to_string(),
-            ProgressSetupWalletPlan::InitializeSpendingWallet => {
-                "initialize-spending-wallet".to_string()
-            }
+
             ProgressSetupWalletPlan::SetupBridge => "setup-bridge".to_string(),
             ProgressSetupWalletPlan::Done => "done".to_string(),
         }
@@ -241,7 +239,6 @@ impl ProgressStep for ProgressSetupWalletPlan {
 
 #[derive(Clone, PartialEq, Debug)]
 pub enum ProgressSetupMiningPlan {
-    BinariesMergeMiningProxy,
     MMProxy,
     Done,
 }
@@ -255,7 +252,6 @@ impl ProgressStep for ProgressSetupMiningPlan {
 
     fn get_progress_weight(&self) -> u8 {
         match self {
-            ProgressSetupMiningPlan::BinariesMergeMiningProxy => 2,
             ProgressSetupMiningPlan::MMProxy => 1,
             ProgressSetupMiningPlan::Done => 1,
         }
@@ -263,9 +259,6 @@ impl ProgressStep for ProgressSetupMiningPlan {
 
     fn get_title(&self) -> String {
         match self {
-            ProgressSetupMiningPlan::BinariesMergeMiningProxy => {
-                "binaries-merge-mining-proxy".to_string()
-            }
             ProgressSetupMiningPlan::MMProxy => "mm-proxy".to_string(),
             ProgressSetupMiningPlan::Done => "done".to_string(),
         }

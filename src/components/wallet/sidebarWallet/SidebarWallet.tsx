@@ -15,7 +15,7 @@ import {
     DetailsCardBottomContent,
     TabsWrapper,
 } from './styles.ts';
-import { useCallback, useRef, useState, useEffect } from 'react';
+import { useCallback, useRef, useState, useEffect, RefObject } from 'react';
 import { HistoryListWrapper } from '@app/components/wallet/components/history/styles.ts';
 import { List } from '@app/components/transactions/history/List.tsx';
 import { open } from '@tauri-apps/plugin-shell';
@@ -49,13 +49,14 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
     const filter = useWalletStore((s) => s.tx_history_filter);
 
     const isConnectedToTariNetwork = useMiningMetricsStore((s) => s.isNodeConnected);
+    const isWalletScanning = useWalletStore((s) => s.wallet_scanning?.is_scanning);
 
-    const targetRef = useRef<HTMLDivElement>(null) as React.RefObject<HTMLDivElement>;
+    const targetRef = useRef<HTMLDivElement>(null) as RefObject<HTMLDivElement>;
     const [isScrolled, setIsScrolled] = useState(false);
 
     function handleFilterChange(newFilter: TxHistoryFilter) {
         setTxHistoryFilter(newFilter);
-        fetchTransactionsHistory({ offset: 0, limit: 20, filter: newFilter });
+        void fetchTransactionsHistory({ offset: 0, limit: 20, filter: newFilter });
     }
 
     useEffect(() => {
@@ -66,16 +67,29 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
         return () => el.removeEventListener('scroll', onScroll);
     }, []);
 
-    const isSyncing = !isConnectedToTariNetwork;
+    const isSyncing = !isConnectedToTariNetwork || isWalletScanning;
     const isSwapping = useWalletStore((s) => s.is_swapping);
     const isStandardWalletUI = useConfigUIStore((s) => s.wallet_ui_mode === WalletUIMode.Standard);
 
-    const openLink = useCallback(() => {
+    const openLink = useCallback(async () => {
         if (xcData && xcData.wallet_app_link) {
-            open(xcData.wallet_app_link);
+            await open(xcData.wallet_app_link);
         }
     }, [xcData]);
 
+    const syncMarkup = (
+        <>
+            <DetailsCard $isScrolled={false}>
+                <AnimatedBG $col1={xcData?.primary_colour || `#0B0A0D`} $col2={xcData?.secondary_colour || `#6F8309`} />
+                <DetailsCardContent>
+                    <WalletDetails />
+                    <DetailsCardBottomContent>
+                        {isStandardWalletUI ? <WalletBalance /> : <WalletBalanceHidden />}
+                    </DetailsCardBottomContent>
+                </DetailsCardContent>
+            </DetailsCard>
+        </>
+    );
     const walletMarkup = (
         <>
             <DetailsCard $isScrolled={isScrolled}>
@@ -129,7 +143,7 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
                 ) : (
                     <WalletWrapper key="wallet" variants={swapTransition} initial="show" exit="hide" animate="show">
                         <Wrapper $seedlessUI={!isStandardWalletUI || isSyncing}>
-                            {isSyncing ? <SyncLoading /> : walletMarkup}
+                            {isSyncing ? <SyncLoading>{syncMarkup}</SyncLoading> : walletMarkup}
                             <BuyTariButton onClick={() => setIsSwapping(true)}>{'Buy Tari (XTM)'}</BuyTariButton>
                         </Wrapper>
                     </WalletWrapper>

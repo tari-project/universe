@@ -179,4 +179,4 @@ export const formatCountdown = (targetDate: string): string => {
     return `${days}D ${hours}H ${minutes}M`;
 };
 
-export { formatDecimalCompact, roundToTwoDecimals, removeDecimals, removeXTMCryptoDecimals };
+export { formatDecimalCompact, roundToTwoDecimals, removeDecimals, removeXTMCryptoDecimals, formatValue };

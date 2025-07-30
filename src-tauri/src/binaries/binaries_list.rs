@@ -180,44 +180,44 @@ impl Binaries {
             },
             Binaries::MergeMiningProxy => match platform {
                 BinaryPlatformAssets::LinuxX64 => {
-                    format!("tari_suite-{version}-{hash}-linux-x86_64.zip")
+                    format!("tari_suite-{version}-{network}-{hash}-linux-x86_64.zip")
                 }
                 BinaryPlatformAssets::WindowsX64 => {
-                    format!("tari_suite-{version}-{hash}-windows-x64.exe.zip")
+                    format!("tari_suite-{version}-{network}-{hash}-windows-x64.exe.zip")
                 }
                 BinaryPlatformAssets::MacOSX64 => {
-                    format!("tari_suite-{version}-{hash}-macos-x86_64.zip")
+                    format!("tari_suite-{version}-{network}-{hash}-macos-x86_64.zip")
                 }
                 BinaryPlatformAssets::MacOSArm64 => {
-                    format!("tari_suite-{version}-{hash}-macos-arm64.zip")
+                    format!("tari_suite-{version}-{network}-{hash}-macos-arm64.zip")
                 }
             },
             Binaries::MinotariNode => match platform {
                 BinaryPlatformAssets::LinuxX64 => {
-                    format!("tari_suite-{version}-{hash}-linux-x86_64.zip")
+                    format!("tari_suite-{version}-{network}-{hash}-linux-x86_64.zip")
                 }
                 BinaryPlatformAssets::WindowsX64 => {
-                    format!("tari_suite-{version}-{hash}-windows-x64.exe.zip")
+                    format!("tari_suite-{version}-{network}-{hash}-windows-x64.exe.zip")
                 }
                 BinaryPlatformAssets::MacOSX64 => {
-                    format!("tari_suite-{version}-{hash}-macos-x86_64.zip")
+                    format!("tari_suite-{version}-{network}-{hash}-macos-x86_64.zip")
                 }
                 BinaryPlatformAssets::MacOSArm64 => {
-                    format!("tari_suite-{version}-{hash}-macos-arm64.zip")
+                    format!("tari_suite-{version}-{network}-{hash}-macos-arm64.zip")
                 }
             },
             Binaries::Wallet => match platform {
                 BinaryPlatformAssets::LinuxX64 => {
-                    format!("tari_suite-{version}-{hash}-linux-x86_64.zip")
+                    format!("tari_suite-{version}-{network}-{hash}-linux-x86_64.zip")
                 }
                 BinaryPlatformAssets::WindowsX64 => {
-                    format!("tari_suite-{version}-{hash}-windows-x64.exe.zip")
+                    format!("tari_suite-{version}-{network}-{hash}-windows-x64.exe.zip")
                 }
                 BinaryPlatformAssets::MacOSX64 => {
-                    format!("tari_suite-{version}-{hash}-macos-x86_64.zip")
+                    format!("tari_suite-{version}-{network}-{hash}-macos-x86_64.zip")
                 }
                 BinaryPlatformAssets::MacOSArm64 => {
-                    format!("tari_suite-{version}-{hash}-macos-arm64.zip")
+                    format!("tari_suite-{version}-{network}-{hash}-macos-arm64.zip")
                 }
             },
 

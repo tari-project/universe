@@ -54,8 +54,8 @@ use crate::tasks_tracker::TasksTrackers;
 use crate::tor_adapter::TorConfig;
 use crate::utils::address_utils::verify_send;
 use crate::utils::app_flow_utils::FrontendReadyChannel;
-use crate::wallet_adapter::{TariAddressVariants, TransactionInfo};
-use crate::wallet_manager::WalletManagerError;
+use crate::wallet::wallet_manager::WalletManagerError;
+use crate::wallet::wallet_types::{TariAddressVariants, TransactionInfo};
 use crate::websocket_manager::WebsocketManagerStatusMessage;
 use crate::{airdrop, PoolStatus, UniverseAppState};
 
@@ -71,7 +71,7 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::atomic::Ordering;
 use std::thread::sleep;
-use std::time::{Duration, Instant, SystemTime};
+use std::time::{Duration, Instant};
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::{TariAddress, TariAddressFeatures};
 use tari_core::transactions::tari_amount::{MicroMinotari, Minotari};
@@ -1198,22 +1198,25 @@ pub async fn set_display_mode(display_mode: &str) -> Result<(), InvokeError> {
     Ok(())
 }
 #[tauri::command]
-pub async fn toggle_device_exclusion(
-    device_index: u32,
-    excluded: bool,
-    app: tauri::AppHandle,
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<(), String> {
-    let mut gpu_miner = state.gpu_miner.write().await;
-    let config_dir = app
-        .path()
-        .app_config_dir()
-        .expect("Could not get config dir");
-    gpu_miner
-        .toggle_device_exclusion(config_dir, device_index, excluded)
+pub async fn toggle_device_exclusion(device_index: u32, excluded: bool) -> Result<(), String> {
+    if excluded {
+        info!(target: LOG_TARGET, "Excluding device {device_index}");
+        ConfigMining::update_field(
+            ConfigMiningContent::enable_gpu_device_exclusion,
+            device_index,
+        )
         .await
-        .inspect_err(|e| error!("error at toggle_device_exclusion {e:?}"))
         .map_err(|e| e.to_string())?;
+    } else {
+        info!(target: LOG_TARGET, "Including device {device_index}");
+        ConfigMining::update_field(
+            ConfigMiningContent::disable_gpu_device_exclusion,
+            device_index,
+        )
+        .await
+        .map_err(|e| e.to_string())?;
+    }
+
     Ok(())
 }
 
@@ -1538,10 +1541,6 @@ pub async fn start_cpu_mining(
     app: tauri::AppHandle,
 ) -> Result<(), String> {
     let timer = Instant::now();
-    let _lock = state.cpu_miner_stop_start_mutex.lock().await;
-    let mut timestamp_lock = state.cpu_miner_timestamp_mutex.lock().await;
-    *timestamp_lock = SystemTime::now();
-
     let cpu_mining_enabled = *ConfigMining::content().await.cpu_mining_enabled();
     let cpu_usage_percentage = ConfigMining::content()
         .await
@@ -1549,6 +1548,12 @@ pub async fn start_cpu_mining(
 
     let cpu_miner = state.cpu_miner.read().await;
     let cpu_miner_running = cpu_miner.is_running().await;
+
+    let mut cpu_config = state.cpu_miner_config.write().await;
+    let tari_address = InternalWallet::tari_address().await;
+    cpu_config.load_from_config_pools(ConfigPools::content().await.clone(), &tari_address);
+    drop(cpu_config);
+
     drop(cpu_miner);
     let cpu_miner_config = state.cpu_miner_config.read().await;
     drop(cpu_miner_config);
@@ -1610,7 +1615,6 @@ pub async fn start_gpu_mining(
     }
 
     let timer = Instant::now();
-    let _lock = state.gpu_miner_stop_start_mutex.lock().await;
 
     let mut telemetry_id = state
         .telemetry_manager
@@ -1675,10 +1679,6 @@ pub async fn start_gpu_mining(
         let source = GpuNodeSource::BaseNode { grpc_address };
 
         let mut gpu_miner = state.gpu_miner.write().await;
-        let gpu_available = gpu_miner.is_gpu_mining_available();
-        if !gpu_available {
-            return Err("No GPU available for mining".to_string());
-        }
 
         let res = gpu_miner
             .start(
@@ -1714,14 +1714,11 @@ pub async fn start_gpu_mining(
         warn!(target: LOG_TARGET, "start_gpu_mining took too long: {:?}", timer.elapsed());
     }
 
-    let mining_time = *ConfigMining::content().await.mining_time();
-    EventsEmitter::emit_mining_time_update(mining_time).await;
     Ok(())
 }
 
 #[tauri::command]
 pub async fn stop_cpu_mining(state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
-    let _lock = state.cpu_miner_stop_start_mutex.lock().await;
     let timer = Instant::now();
     state
         .cpu_miner
@@ -1732,20 +1729,6 @@ pub async fn stop_cpu_mining(state: tauri::State<'_, UniverseAppState>) -> Resul
         .map_err(|e| e.to_string())?;
     info!(target:LOG_TARGET, "cpu miner stopped");
 
-    let timestamp_lock = state.cpu_miner_timestamp_mutex.lock().await;
-    let current_mining_time_ms = *ConfigMining::content().await.mining_time();
-
-    let now = SystemTime::now();
-    let mining_time_duration = now
-        .duration_since(*timestamp_lock)
-        .unwrap_or_default()
-        .as_millis();
-
-    let mining_time = current_mining_time_ms + mining_time_duration;
-    let _unused =
-        ConfigMining::update_field(ConfigMiningContent::set_mining_time, mining_time).await;
-    EventsEmitter::emit_mining_time_update(mining_time).await;
-
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "stop_cpu_mining took too long: {:?}", timer.elapsed());
     }
@@ -1754,7 +1737,6 @@ pub async fn stop_cpu_mining(state: tauri::State<'_, UniverseAppState>) -> Resul
 }
 #[tauri::command]
 pub async fn stop_gpu_mining(state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
-    let _lock = state.gpu_miner_stop_start_mutex.lock().await;
     let timer = Instant::now();
 
     let is_gpu_pool_enabled = *ConfigPools::content().await.gpu_pool_enabled();
@@ -2031,16 +2013,9 @@ pub async fn send_one_sided_to_stealth_address(
 ) -> Result<(), String> {
     let timer = Instant::now();
     info!(target: LOG_TARGET, "[send_one_sided_to_stealth_address] called with args: (amount: {amount:?}, destination: {destination:?}, payment_id: {payment_id:?})");
-    let state_clone = state.clone();
-    let mut spend_wallet_manager = state_clone.spend_wallet_manager.write().await;
-    spend_wallet_manager
-        .send_one_sided_to_stealth_address(
-            amount,
-            destination,
-            payment_id,
-            state.clone(),
-            &app_handle,
-        )
+    state
+        .wallet_manager
+        .send_one_sided_to_stealth_address(amount, destination, payment_id, &app_handle)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -2144,11 +2119,7 @@ pub async fn set_node_type(
         node_type = NodeType::Local;
     }
 
-    let prev_node_type = state
-        .node_manager
-        .get_node_type()
-        .await
-        .map_err(|e| e.to_string())?;
+    let prev_node_type = state.node_manager.get_node_type().await;
     info!(target: LOG_TARGET, "[set_node_type] from {prev_node_type:?} to: {node_type:?}");
 
     let is_current_local = matches!(prev_node_type, NodeType::Local | NodeType::LocalAfterRemote);
@@ -2179,15 +2150,6 @@ pub async fn set_node_type(
     SetupManager::get_instance()
         .restart_phases_from_queue(app_handle)
         .await;
-
-    Ok(())
-}
-
-#[tauri::command]
-pub async fn set_warmup_seen(warmup_seen: bool) -> Result<(), String> {
-    ConfigUI::update_field(ConfigUIContent::set_warmup_seen, warmup_seen)
-        .await
-        .map_err(|e| e.to_string())?;
 
     Ok(())
 }

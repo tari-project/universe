@@ -20,9 +20,8 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::{fs::File, path::PathBuf};
-
 use reqwest::Response;
+use tokio::fs::File;
 
 pub fn create_user_agent() -> String {
     let user_agent = format!(
@@ -60,8 +59,17 @@ pub fn get_content_length_from_head_response(response: &Response) -> u64 {
         .map_or(0, |v| v.to_str().unwrap_or_default().parse().unwrap_or(0))
 }
 
-pub async fn get_content_size_from_file(path: PathBuf) -> Result<u64, anyhow::Error> {
-    let file = File::open(path)?;
-    let metadata = file.metadata()?;
+pub async fn get_content_size_from_file(file: &File) -> Result<u64, anyhow::Error> {
+    let metadata = file
+        .metadata()
+        .await
+        .map_err(|e| anyhow::anyhow!("Failed to get metadata for file: {}", e))?;
     Ok(metadata.len())
+}
+
+pub fn create_exponential_timeout(attempt: u32) -> tokio::time::Duration {
+    let base_delay = 2; // seconds
+    let max_delay = 60; // seconds
+    let delay = base_delay * (2_u64.pow(attempt));
+    tokio::time::Duration::from_secs(delay.min(max_delay))
 }

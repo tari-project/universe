@@ -1,7 +1,6 @@
 import { PoolStats } from '@app/types/app-status';
 import { formatHashrate, formatNumber, FormatPreset } from '@app/utils';
 import { Trans, useTranslation } from 'react-i18next';
-import { usePoolRewards } from './usePoolRewards';
 import Tile from './components/Tile/Tile';
 import { AnimatePresence } from 'motion/react';
 import {
@@ -15,8 +14,9 @@ import {
 import { Typography } from '@app/components/elements/Typography';
 import { offset, useFloating, useHover, useInteractions } from '@floating-ui/react';
 import { useState } from 'react';
+import { PoolType } from '@app/store/useMiningPoolsStore.ts';
 export interface MinerTileProps {
-    title: string;
+    title: PoolType;
     mainLabelKey: string;
     enabled: boolean;
     isMiningInitiated: boolean;
@@ -26,6 +26,8 @@ export interface MinerTileProps {
     poolStats?: PoolStats;
     rewardThreshold?: number;
     showTooltip?: boolean;
+    progressDiff?: number | null;
+    unpaidFMT?: string;
 }
 
 export default function MinerTile({
@@ -39,6 +41,8 @@ export default function MinerTile({
     isPoolEnabled,
     rewardThreshold,
     showTooltip,
+    progressDiff,
+    unpaidFMT,
 }: MinerTileProps) {
     const { t } = useTranslation(['mining-view', 'p2p']);
 
@@ -46,8 +50,6 @@ export default function MinerTile({
     const isLoading = (isMiningInitiated && !isMining) || (isMining && !isMiningInitiated) || hashrateLoading;
 
     const formattedHashRate = formatHashrate(hashRate);
-    const { progressDiff, unpaidFMT } = usePoolRewards(poolStats);
-
     const currentUnpaid = (poolStats?.unpaid || 0) / 1_000_000;
 
     const mainNumber = isPoolEnabled ? currentUnpaid : formattedHashRate.value;

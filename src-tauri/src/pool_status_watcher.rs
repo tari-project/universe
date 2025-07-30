@@ -21,7 +21,6 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use anyhow::Error;
-
 use serde::{Deserialize, Serialize};
 
 #[allow(dead_code)]
@@ -96,11 +95,12 @@ impl PoolApiAdapter for SupportXmrPoolAdapter {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Default)]
+#[serde(default)]
 pub struct LuckyPoolStats {
     pub wallet: String,
     #[serde(rename = "rejectedShares")]
-    pub rejected_shares: String,
+    pub rejected_shares: Option<String>,
     pub hashrate: u64,
     pub email: Option<String>,
     pub paid: u64,
@@ -112,7 +112,7 @@ pub struct LuckyPoolStats {
     pub locked: u64,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Default)]
 pub struct HashrateAvg {
     #[serde(rename = "1h")]
     pub one_hour: u64,
@@ -121,7 +121,8 @@ pub struct HashrateAvg {
     #[serde(rename = "24h")]
     pub twenty_four_hours: u64,
 }
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Default)]
+#[serde(default)]
 pub struct LuckyPoolWorker {
     pub name: String,
     #[serde(rename = "minerAgent")]
@@ -135,7 +136,7 @@ pub struct LuckyPoolWorker {
     #[serde(rename = "lastJobDiff")]
     pub last_job_diff: String,
     #[serde(rename = "rejectedShares")]
-    pub rejected_shares: String,
+    pub rejected_shares: Option<String>,
     pub hashrate: u64,
     #[serde(rename = "hashrateAvg")]
     pub hashrate_avg: HashrateAvg,
@@ -144,7 +145,7 @@ pub struct LuckyPoolWorker {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct LuckyPoolCharts {
     #[serde(rename = "hashrate")]
-    pub hashrate: Option<String>, // Assuming this is a string representation of the chart data
+    pub hashrate: Option<String>,
 }
 #[derive(Serialize, Deserialize, Debug)]
 pub struct LuckyPoolPayment {}
@@ -166,12 +167,14 @@ pub struct LuckyPoolRewardStats {
 pub struct LuckyPoolStatusResponseBody {
     pub stats: LuckyPoolStats,
     pub workers: Vec<LuckyPoolWorker>,
-    pub charts: LuckyPoolCharts,
+    #[serde(skip)]
+    pub _charts: Option<LuckyPoolCharts>,
     pub payments: Vec<LuckyPoolPayment>,
     pub rewards: Vec<LuckyPoolReward>,
     #[serde(rename = "rewardStats")]
     pub reward_stats: Vec<LuckyPoolRewardStats>,
 }
+
 #[derive(Clone, Debug)]
 pub struct LuckyPoolAdapter {}
 

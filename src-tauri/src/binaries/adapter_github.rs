@@ -76,26 +76,22 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
         directory: PathBuf,
         download_info: BinaryDownloadInfo,
     ) -> Result<PathBuf, Error> {
-        let checksum_path = directory
-            .join("in_progress")
-            .join(format!("{}.sha256", download_info.name));
         let checksum_url = format!("{}.sha256", download_info.main_url);
 
         match HttpFileClient::builder()
             .with_cloudflare_cache_check()
-            .build(checksum_url.clone(), checksum_path.clone())
+            .build(checksum_url.clone(), directory.clone())?
             .execute()
             .await
         {
-            Ok(_) => Ok(checksum_path),
+            Ok(checksum_path) => Ok(checksum_path),
             Err(_) => {
                 let checksum_fallback_url = format!("{}.sha256", download_info.fallback_url);
                 info!(target: LOG_TARGET, "Fallback URL: {checksum_fallback_url}");
                 HttpFileClient::builder()
-                    .build(checksum_fallback_url.clone(), checksum_path.clone())
+                    .build(checksum_fallback_url.clone(), directory.clone())?
                     .execute()
-                    .await?;
-                Ok(checksum_path)
+                    .await
             }
         }
     }

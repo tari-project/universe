@@ -56,7 +56,6 @@
     "network-speed-test": "Netzwerk-Geschwindigkeitstest",
     "p2pool": "P2Pool wird gestartet",
     "platform-prequisites": "Plattform-Voraussetzungen werden initialisiert",
-    "run-cpu-benchmark": "CPU-Benchmark wird ausgeführt",
     "setup-bridge": "Preparing Bridge",
     "setup-bridge-download": "Preparing Bridge | Downloading: {{ progress }}%",
     "start-tor": "Tor wird gestartet",

@@ -8,15 +8,16 @@ export const EditWrapper = styled.div`
     gap: 14px;
 `;
 
-export const StyledTextArea = styled(TextArea)<{ $hasError: boolean }>(({ $hasError, theme }) => ({
-    backgroundColor: theme.palette.background.default,
-    width: '100%',
-    borderRadius: '10px',
-    border: `1px solid ${$hasError ? theme.palette.error.main : theme.colorsAlpha.darkAlpha[10]}`,
-    padding: '10px',
-    fontSize: theme.typography.h6.fontSize,
-    lineHeight: theme.typography.h6.lineHeight,
-}));
+export const StyledTextArea = styled(TextArea)<{ $hasError: boolean }>`
+    border-radius: 10px;
+    padding: 10px;
+    width: 100%;
+    background-color: ${({ theme }) => theme.palette.background.default};
+    border: 1px solid
+        ${({ theme, $hasError }) => ($hasError ? theme.palette.error.main : theme.colorsAlpha.darkAlpha[10])};
+    font-size: ${({ theme }) => theme.typography.h6.fontSize};
+    line-height: ${({ theme }) => theme.typography.h6.lineHeight};
+`;
 
 export const Form = styled.form`
     display: flex;

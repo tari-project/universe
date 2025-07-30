@@ -20,23 +20,27 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent};
+use crate::configs::trait_config::ConfigImpl;
 use crate::events_emitter::EventsEmitter;
 use crate::internal_wallet::InternalWallet;
 use crate::node::node_manager::{NodeManager, NodeManagerError};
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
 use crate::tasks_tracker::TasksTrackers;
-use crate::wallet_adapter::{TransactionInfo, WalletBalance};
-use crate::wallet_adapter::{TransactionStatus, WalletStatusMonitorError};
-use crate::wallet_adapter::{WalletAdapter, WalletState};
+use crate::wallet::wallet_adapter::WalletAdapter;
+use crate::wallet::wallet_status_monitor::WalletStatusMonitorError;
+use crate::wallet::wallet_types::{TransactionInfo, TransactionStatus, WalletBalance, WalletState};
 use crate::BaseNodeStatus;
 use futures_util::future::FusedFuture;
 use log::info;
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use std::time::Duration;
 use tari_common::configuration::Network;
+use tari_core::transactions::tari_amount::{MicroMinotari, Minotari};
 use tari_shutdown::ShutdownSignal;
 use tokio::fs;
 use tokio::sync::watch;
@@ -120,10 +124,7 @@ impl WalletManager {
             return Ok(());
         }
 
-        let (public_key, public_address) = self.node_manager.get_connection_details().await?;
-        process_watcher.adapter.base_node_public_key = Some(public_key.clone());
-        process_watcher.adapter.base_node_address = Some(public_address.clone());
-        process_watcher.adapter.http_client_url = self.node_manager.get_http_api_url().await;
+        process_watcher.adapter.http_client_url = Some(self.node_manager.get_http_api_url().await);
         process_watcher.poll_time = Duration::from_secs(5);
         process_watcher.adapter.use_tor(config.use_tor);
         info!(target: LOG_TARGET, "Using Tor: {}", config.use_tor);
@@ -212,18 +213,6 @@ impl WalletManager {
             })
     }
 
-    pub async fn import_transaction(&self, tx_output_file: PathBuf) -> Result<(), anyhow::Error> {
-        let process_watcher = self.watcher.read().await;
-        if !process_watcher.is_running() {
-            return Err(anyhow::Error::msg("Wallet not started"));
-        }
-
-        process_watcher
-            .adapter
-            .import_transaction(tx_output_file)
-            .await
-    }
-
     pub async fn wait_for_scan_to_height(
         &self,
         block_height: u64,
@@ -243,6 +232,34 @@ impl WalletManager {
                 WalletStatusMonitorError::WalletNotStarted => WalletManagerError::WalletNotStarted,
                 _ => WalletManagerError::UnknownError(e.into()),
             })
+    }
+
+    pub async fn send_one_sided_to_stealth_address(
+        &self,
+        amount_str: String,
+        destination: String,
+        payment_id: Option<String>,
+        app_handle: &tauri::AppHandle,
+    ) -> Result<(), WalletManagerError> {
+        let process_watcher = self.watcher.read().await;
+        if !process_watcher.is_running() {
+            return Err(WalletManagerError::WalletNotStarted);
+        }
+
+        // TODO: check if node is synced?
+        self.node_manager.wait_ready().await?;
+
+        let minotari_amount = Minotari::from_str(&amount_str)
+            .map_err(|e| WalletManagerError::UnknownError(e.into()))?;
+        let micro_minotari_amount = MicroMinotari::from(minotari_amount);
+        let amount = micro_minotari_amount.as_u64();
+
+        let res = process_watcher
+            .adapter
+            .send_one_sided_to_stealth_address(amount, destination, payment_id, app_handle)
+            .await;
+
+        res.map_err(WalletManagerError::UnknownError)
     }
 
     pub async fn find_coinbase_transaction_for_block(
@@ -369,6 +386,10 @@ impl WalletManager {
                                         latest_height,
                                         balance.available_balance
                                     );
+
+                                    ConfigWallet::update_field(ConfigWalletContent::set_last_known_balance, balance.available_balance).await?;
+
+
                                     EventsEmitter::emit_wallet_balance_update(balance).await;
                                     EventsEmitter::emit_init_wallet_scanning_progress(
                                         current_target_height,
