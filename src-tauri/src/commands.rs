@@ -70,6 +70,7 @@ use std::sync::atomic::Ordering;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 use tari_common::configuration::Network;
+use tari_common_types::tari_address::dual_address::DualAddress;
 use tari_common_types::tari_address::{TariAddress, TariAddressFeatures};
 use tari_core::transactions::tari_amount::{MicroMinotari, Minotari};
 use tari_key_manager::mnemonic::{Mnemonic, MnemonicLanguage};
@@ -2258,6 +2259,47 @@ pub async fn refresh_wallet_history(
     SetupManager::get_instance()
         .resume_phases(app_handle, vec![SetupPhase::Wallet])
         .await;
+
+    Ok(())
+}
+
+// Used in convertEthAddressToTariAddress [bridgeApiActions.ts]
+// This function encodes a payment ID into a Tari address creating new address for mining
+// It easier to encode it here as Bridge backend is not written in rust
+#[tauri::command]
+pub async fn encode_payment_id_to_address(
+    payment_id: String,
+    tari_address: String,
+) -> Result<String, String> {
+    info!(target: LOG_TARGET, "encode_payment_id_to_address called with payment_id: {payment_id:?}, tari_address: {tari_address:?}");
+    let mut address_with_memo_field =
+        DualAddress::from_base58(tari_address.as_str()).map_err(|e| {
+            error!(target: LOG_TARGET, "Failed to parse Tari address: {e}");
+            e.to_string()
+        })?;
+    address_with_memo_field
+        .add_payment_id_user_data(payment_id.as_bytes().to_vec())
+        .map_err(|e| {
+            error!(target: LOG_TARGET, "Failed to add payment ID to Tari address: {e}");
+            e.to_string()
+        })?;
+    let address_base58 = address_with_memo_field.to_base58();
+    info!(target: LOG_TARGET, "Encoded Tari address with payment ID: {address_base58:?}");
+
+    Ok(address_base58)
+}
+
+#[tauri::command]
+pub async fn save_wxtm_eth_address(
+    tari_address: String,
+    exchange_id: String,
+) -> Result<(), String> {
+    ConfigWallet::update_field(
+        ConfigWalletContent::add_wxtm_eth_address,
+        (exchange_id, tari_address),
+    )
+    .await
+    .map_err(|e| e.to_string())?;
 
     Ok(())
 }

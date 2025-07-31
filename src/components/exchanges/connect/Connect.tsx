@@ -22,7 +22,9 @@ import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
 import { setAllowTelemetry, useConfigCoreStore } from '@app/store';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { useFetchExchangeBranding } from '@app/hooks/exchanges/fetchExchangeContent.ts';
-import { useValidate } from '@app/hooks/wallet/useValidate.ts';
+import { useValidateTariAddress } from '@app/hooks/wallet/useValidate.ts';
+import { convertEthAddressToTariAddress } from '@app/store/actions/bridgeApiActions.ts';
+import { isAddress } from 'ethers';
 
 interface ConnectFormFields {
     address: string;
@@ -36,7 +38,7 @@ export const Connect = () => {
     const [displayAddress, setDisplayAddress] = useState(address);
     const allowTelemetry = useConfigCoreStore((s) => s.allow_telemetry);
     const debouncedAddress = useDebouncedValue(address, 350);
-    const { validateAddress, validationErrorMessage } = useValidate();
+    const { validateAddress, validationErrorMessage } = useValidateTariAddress();
 
     const { register, handleSubmit, setError, formState } = useForm<ConnectFormFields>({
         defaultValues: { address: '' },
@@ -61,17 +63,33 @@ export const Connect = () => {
             setError('address', { message: 'Address cannot be empty.' });
             return;
         }
-        validateAddress(debouncedAddress).then((isValid) => {
-            setAddressIsValid(isValid);
-            if (!isValid) {
-                setError('address', { message: validationErrorMessage });
+        if (data?.wxtm_mode) {
+            if (isAddress(debouncedAddress)) {
+                setAddressIsValid(true);
+                setError('address', { message: 'Ethereum address is invalid.' });
             }
-        });
+        } else {
+            validateAddress(debouncedAddress).then((isValid) => {
+                setAddressIsValid(isValid);
+                if (!isValid) {
+                    setError('address', { message: validationErrorMessage });
+                }
+            });
+        }
     }, [debouncedAddress, setError, validateAddress, validationErrorMessage]);
 
     async function onSubmit(_unused: ConnectFormFields) {
         try {
-            await invoke('confirm_exchange_address', { address });
+            let tariAddress = address;
+
+            // In wxtm_mode we are converting the ETH address to a Tari address
+            if (data?.wxtm_mode) {
+                const encodedAddress = await convertEthAddressToTariAddress(address, data?.id || 'unknown');
+                console.info('Original Tari address:', address);
+                console.info('Encoded Tari address:', encodedAddress);
+                tariAddress = encodedAddress;
+            }
+            await invoke('confirm_exchange_address', { address: tariAddress });
             setSeedlessUI(true);
             setShowExchangeModal(false);
             setShouldShowExchangeSpecificModal(false);

@@ -7,19 +7,22 @@ import { ClipboardViewer } from '../clipboardViewer/ClipboardViewer';
 import { useTranslation } from 'react-i18next';
 import CheckIcon from '@app/components/transactions/components/CheckIcon.tsx';
 import { IoClose } from 'react-icons/io5';
-import { useValidate } from '@app/hooks/wallet/useValidate.ts';
-
+import { useValidateTariAddress } from '@app/hooks/wallet/useValidate.ts';
+import { WalletAddressNetwork } from '@app/types/transactions';
+import { isAddress } from 'ethers';
 interface ExchangeAddressProps {
     handleIsAddressValid: (isValid: boolean) => void;
     handleAddressChanged: (address: string) => void;
     value?: string;
     disabled?: boolean;
+    walletAddressNetwork: WalletAddressNetwork;
 }
 export const ExchangeAddress = ({
     handleIsAddressValid,
     handleAddressChanged: handleAddressChange,
     value,
     disabled,
+    walletAddressNetwork,
 }: ExchangeAddressProps) => {
     const { t } = useTranslation('exchange');
     const {
@@ -33,7 +36,7 @@ export const ExchangeAddress = ({
     const [showClipboard, setShowClipboard] = useState(false);
     const address = watch('address');
 
-    const { validateAddress } = useValidate();
+    const { validateAddress } = useValidateTariAddress();
     useEffect(() => {
         trigger('address');
         handleAddressChange(address || '');
@@ -55,7 +58,10 @@ export const ExchangeAddress = ({
 
     const validationRules = {
         validate: async (value: string) => {
-            const isValid = await validateAddress(value);
+            const isValid =
+                walletAddressNetwork === WalletAddressNetwork.Ethereum
+                    ? isAddress(value)
+                    : await validateAddress(value);
             handleIsAddressValid(isValid);
             return isValid || 'Invalid address format';
         },

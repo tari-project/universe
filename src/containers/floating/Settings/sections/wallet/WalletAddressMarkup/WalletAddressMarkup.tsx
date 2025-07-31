@@ -17,7 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { setExternalTariAddress } from '@app/store/actions/walletStoreActions';
 import AddressEditor from '../components/AddressEditor';
 import { CTASArea, InputArea, WalletSettingsGrid } from '@app/containers/floating/Settings/sections/wallet/styles.ts';
-import { useValidate } from '@app/hooks/wallet/useValidate.ts';
+import { useValidateTariAddress } from '@app/hooks/wallet/useValidate.ts';
 
 const Dot = styled.div`
     width: 4px;
@@ -75,7 +75,9 @@ const WalletAddressMarkup = () => {
     const { t } = useTranslation('settings', { useSuspense: false });
     const walletAddress = useWalletStore((state) => state.tari_address_base58);
     const walletAddressEmoji = useWalletStore((state) => state.tari_address_emoji);
-    const { validateAddress } = useValidate();
+    // should only exist in case mining to exchange with wxtm_mode enabled
+    const ethAddress = useWalletStore((state) => state.getETHAddressOfCurrentExchange());
+    const { validateAddress } = useValidateTariAddress();
     const [isCondensed, setIsCondensed] = useState(true);
 
     function condenseEmojiAddress(emojiAddress: string | undefined) {
@@ -110,7 +112,6 @@ const WalletAddressMarkup = () => {
     const validationRules = {
         validate: async (value) => {
             const isValid = await validateAddress(value);
-
             return isValid || 'Invalid address format';
         },
     };

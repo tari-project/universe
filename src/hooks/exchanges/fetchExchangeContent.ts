@@ -19,6 +19,8 @@ export const queryfn = async (exchangeId: string) => {
         const res = await fetch(endpoint);
         const content = (await res.json()) as ExchangeBranding;
 
+        console.log('Fetched exchange content:', content);
+
         if (content) {
             const shouldShowExchangeSpecificModal = useUIStore.getState().shouldShowExchangeSpecificModal;
             setShowExchangeModal(shouldShowExchangeSpecificModal);

@@ -11,6 +11,7 @@ import {
     useConfigWalletStore,
     useMiningMetricsStore,
     useMiningStore,
+    useWalletStore,
 } from '../index.ts';
 import { restartMining, startCpuMining, startGpuMining, stopCpuMining, stopGpuMining } from './miningStoreActions';
 import { setError } from './appStateStoreActions.ts';
@@ -44,6 +45,9 @@ export const handleConfigCoreLoaded = async (coreConfig: ConfigCore) => {
 };
 export const handleConfigWalletLoaded = (walletConfig: ConfigWallet) => {
     useConfigWalletStore.setState((c) => ({ ...c, ...walletConfig }));
+    useWalletStore.setState({
+        exchange_eth_addresses: walletConfig.wxtm_eth_addresses, // This is the Ethereum address used for WXTm mode
+    });
 };
 export const handleConfigUILoaded = async (uiConfig: ConfigUI) => {
     useConfigUIStore.setState((c) => ({ ...c, ...uiConfig }));
@@ -367,6 +371,7 @@ export const setNodeType = async (nodeType: NodeType) => {
 
 export const fetchBackendInMemoryConfig = async () => {
     try {
+        console.info('Fetching backend in memory config...');
         const appInMemoryConfig = await invoke('get_app_in_memory_config');
         if (appInMemoryConfig) {
             useConfigBEInMemoryStore.setState({ ...appInMemoryConfig });

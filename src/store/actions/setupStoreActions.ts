@@ -14,9 +14,9 @@ import {
 } from '@app/store';
 import { ProgressTrackerUpdatePayload } from '@app/hooks/app/useProgressEventsListener';
 
-import { fetchBridgeTransactionsHistory } from './walletStoreActions';
 import { TOWER_CANVAS_ID } from '../types/ui';
 import { SetupPhase } from '@app/types/events-payloads';
+import { fetchBridgeTransactionsHistory } from './bridgeApiActions';
 
 export interface DisabledPhasesPayload {
     disabled_phases: SetupPhase[];

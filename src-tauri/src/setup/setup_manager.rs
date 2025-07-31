@@ -36,6 +36,7 @@ use crate::app_in_memory_config::{MinerType, DEFAULT_EXCHANGE_ID};
 use crate::configs::config_core::ConfigCoreContent;
 use crate::configs::config_pools::ConfigPools;
 use crate::configs::config_ui::WalletUIMode;
+use crate::configs::config_wallet::ConfigWalletContent;
 use crate::events::CriticalProblemPayload;
 use crate::internal_wallet::InternalWallet;
 use crate::{
@@ -311,6 +312,12 @@ impl SetupManager {
             .is_some();
         // Default app variant (when build in exchange ID is DEFAULT_EXCHANGE_ID) can have either seedless wallet or standard wallet
 
+        info!(target: LOG_TARGET, "Is on exchange miner build: {is_on_exchange_miner_build}");
+        info!(target: LOG_TARGET, "Build in exchange ID: {build_in_exchange_id}");
+        info!(target: LOG_TARGET, "Last config exchange ID: {last_config_exchange_id}");
+        info!(target: LOG_TARGET, "Is on exchange specific variant: {is_on_exchange_specific_variant}");
+        info!(target: LOG_TARGET, "Is external address selected: {is_external_address_selected}");
+
         // If there is exchange id set in config_core that is different from DEFAULT_EXCHANGE_ID and external address is provided we want to display seedless wallet UI
         // This can happen when user was using dedicated exchange miner build before and now is using default app variant
         // Or user selected exchange on default app variant and reopened the app
@@ -388,14 +395,16 @@ impl SetupManager {
         EventsEmitter::emit_wallet_config_loaded(&ConfigWallet::content().await).await;
 
         // If we open different specific exchange miner build then previous one we always want to prompt user to provide tari address
-        if is_on_exchange_miner_build
-            && build_in_exchange_id.ne(&last_config_exchange_id)
-            && !is_external_address_selected
-        {
+        if is_on_exchange_miner_build && build_in_exchange_id.ne(&last_config_exchange_id) {
             info!(target: LOG_TARGET, "Exchange ID changed from {last_config_exchange_id} to {build_in_exchange_id}");
             self.exchange_modal_status
                 .send_replace(ExchangeModalStatus::WaitForCompletion);
             EventsEmitter::emit_should_show_exchange_miner_modal().await;
+            let _unused = ConfigWallet::update_field(
+                ConfigWalletContent::set_selected_external_tari_address,
+                None,
+            )
+            .await;
         }
 
         // If we are on exchange miner build we require external tari address to be set

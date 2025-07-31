@@ -18,6 +18,7 @@ export const universalExchangeMinerOption: ExchangeBranding = {
     is_hidden: false,
     exchange_id: 'universal',
     logo_img_small_url: UNIVERSE_LOGO_PATH,
+    wxtm_mode: false,
 };
 
 const initialState = {
