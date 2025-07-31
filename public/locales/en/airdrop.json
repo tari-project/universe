@@ -65,6 +65,7 @@
     "bonusXTMEarned": "Bonus XTM Earned",
     "of": "of",
     "inviteFriendsMessage": "Invite friends and start earning <strong>bonus XTM!</strong>",
+    "errorLoadingData": "Error loading crew data. Please try again.",
     "filters": {
       "all": "All",
       "complete": "Complete",
@@ -86,7 +87,14 @@
       "mineConsecutiveDays": "Mine for at least <strong>{{streakDaysRequired}} consecutive days</strong> each week to earn your bonus XTM.",
       "keepStreak": "Keep your streak to keep earning rewards!",
       "dayStreak": "{{days}} Day Streak",
-      "day": "Day"
+      "day": "Day",
+      "loadingStreak": "Loading streak...",
+      "startYourStreak": "Start Your Streak! 🚀",
+      "oneDayStreak": "1 Day Streak 🔥",
+      "multiDayStreak": "{{days}} Day Streak 🔥",
+      "startMiningMessage": "Start mining to begin your streak and earn rewards!",
+      "minimumRequirementsMet": "Great job! You've met the minimum requirements. Keep going!",
+      "daysToMinimum": "{{days}} more days to meet minimum requirements!"
     },
     "login": {
       "title": "Mine with friends. <strong>Earn together.</strong>",
