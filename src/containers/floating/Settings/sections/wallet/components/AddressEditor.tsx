@@ -31,7 +31,7 @@ const StyledInput = styled(Input)`
 const StyledForm = styled.form`
     width: 100%;
     // Reserve space for error message
-    min-height: 60px;
+    min-height: 64px;
 `;
 
 const AddressEditor = ({ initialAddress, onApply, rules, isWXTM }: AddressEditorProps) => {
@@ -81,6 +81,7 @@ const AddressEditor = ({ initialAddress, onApply, rules, isWXTM }: AddressEditor
         </IconButton>
     ) : null;
 
+    const hideValidationError = isWXTM && address === initialAddress;
     return (
         <StyledForm onSubmit={handleSubmit(handleApply)} onReset={handleReset}>
             <WalletSettingsGrid>
@@ -127,7 +128,7 @@ const AddressEditor = ({ initialAddress, onApply, rules, isWXTM }: AddressEditor
                 </CTASArea>
             </WalletSettingsGrid>
 
-            {errors.address && !isWXTM && (
+            {errors.address && !hideValidationError && (
                 <span style={{ color: 'red', fontSize: '12px' }}>{errors.address.message}</span>
             )}
         </StyledForm>

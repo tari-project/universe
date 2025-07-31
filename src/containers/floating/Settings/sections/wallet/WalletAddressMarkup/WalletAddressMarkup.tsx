@@ -3,7 +3,7 @@ import {
     SettingsGroupWrapper,
 } from '@app/containers/floating/Settings/components/SettingsGroup.styles';
 import { useCallback, useState } from 'react';
-
+import * as m from 'motion/react-m';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { IconButton } from '@app/components/elements/buttons/IconButton';
 import { IoCheckmarkOutline, IoCopyOutline } from 'react-icons/io5';
@@ -16,10 +16,16 @@ import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard.ts';
 import { useTranslation } from 'react-i18next';
 import { setExternalTariAddress } from '@app/store/actions/walletStoreActions';
 import AddressEditor from '../components/AddressEditor';
-import { CTASArea, InputArea, WalletSettingsGrid } from '@app/containers/floating/Settings/sections/wallet/styles.ts';
+import {
+    CTASArea,
+    InputArea,
+    SecondaryAddressesWrapper,
+    WalletSettingsGrid,
+} from '@app/containers/floating/Settings/sections/wallet/styles.ts';
 import { useValidateTariAddress } from '@app/hooks/wallet/useValidate.ts';
 import { useFetchExchangeBranding } from '@app/hooks/exchanges/fetchExchangeContent.ts';
 import { Input } from '@app/components/elements/inputs/Input.tsx';
+import { truncateMiddle } from '@app/utils';
 
 const Dot = styled.div`
     width: 4px;
@@ -36,13 +42,13 @@ const DotContainer = styled.div`
     margin: 0 4px;
 `;
 
-const AddressContainer = styled.div`
+const AddressContainer = styled(m.div)`
     overflow-x: auto;
     font-size: 12px;
     letter-spacing: 1px;
     line-height: 1.3;
     width: 100%;
-    height: 40px;
+    min-height: 40px;
     align-items: center;
     display: flex;
     padding: 8px;
@@ -52,8 +58,8 @@ const AddressContainer = styled.div`
 `;
 
 const AddressInner = styled.div`
-    //width: max-content;
     display: flex;
+    height: 100%;
 `;
 
 export const CopyToClipboard = ({ text }: { text: string | undefined }) => {
@@ -124,12 +130,12 @@ const WalletAddressMarkup = () => {
 
     const ethMarkup = !!ethAddress?.length && (
         <>
-            <SettingsGroupTitle>
-                <Typography variant="h6">{`ETH Address`}</Typography>
+            <SettingsGroupTitle style={{ marginBottom: 10 }}>
+                <Typography variant="h6">{`Exchange ETH Address`}</Typography>
             </SettingsGroupTitle>
             <WalletSettingsGrid>
                 <InputArea>
-                    <Input disabled value={ethAddress} style={{ fontSize: '12px' }} />
+                    <Input disabled value={truncateMiddle(ethAddress, 8)} style={{ fontSize: '12px' }} />
                 </InputArea>
                 <CTASArea>
                     <CopyToClipboard text={ethAddress} />
@@ -143,15 +149,12 @@ const WalletAddressMarkup = () => {
             <SettingsGroupTitle>
                 <Typography variant="h6">{t('tari-wallet-address')}</Typography>
             </SettingsGroupTitle>
-            <AddressEditor
-                initialAddress={walletAddress}
-                onApply={setExternalTariAddress}
-                rules={validationRules}
-                isWXTM={!!isWXTM}
-            />
             <WalletSettingsGrid>
                 <InputArea>
-                    <AddressContainer style={{ height: isCondensed ? '40px' : 'auto' }}>
+                    <AddressContainer
+                        animate={{ height: isCondensed ? '40px' : 'auto' }}
+                        transition={{ duration: 0.1, ease: 'linear' }}
+                    >
                         <AddressInner>
                             <Typography
                                 style={{
@@ -172,7 +175,16 @@ const WalletAddressMarkup = () => {
                     <CopyToClipboard text={walletAddressEmoji} />
                 </CTASArea>
             </WalletSettingsGrid>
-            {ethMarkup}
+            <SecondaryAddressesWrapper>
+                <AddressEditor
+                    initialAddress={walletAddress}
+                    onApply={setExternalTariAddress}
+                    rules={validationRules}
+                    isWXTM={!!isWXTM}
+                />
+
+                {ethMarkup}
+            </SecondaryAddressesWrapper>
         </SettingsGroupWrapper>
     );
 };
