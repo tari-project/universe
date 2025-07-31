@@ -285,15 +285,15 @@ impl SetupManager {
         state.node_manager.set_node_type(node_type).await;
         EventsManager::handle_node_type_update(&app_handle).await;
 
-        let build_in_exchange_id = in_memory_config.read().await.exchange_id.clone();
+        let built_in_exchange_id = in_memory_config.read().await.exchange_id.clone();
         let is_on_exchange_miner_build =
-            MinerType::from_str(&build_in_exchange_id).is_exchange_mode();
+            MinerType::from_str(&built_in_exchange_id).is_exchange_mode();
         let last_config_exchange_id = ConfigCore::content().await.exchange_id().clone();
 
         if is_on_exchange_miner_build {
             let _unused = ConfigCore::update_field(
                 ConfigCoreContent::set_exchange_id,
-                build_in_exchange_id.clone(),
+                built_in_exchange_id.clone(),
             )
             .await;
         }
@@ -310,10 +310,10 @@ impl SetupManager {
             .await
             .selected_external_tari_address()
             .is_some();
-        // Default app variant (when build in exchange ID is DEFAULT_EXCHANGE_ID) can have either seedless wallet or standard wallet
+        // Default app variant (when built-in exchange ID is DEFAULT_EXCHANGE_ID) can have either seedless wallet or standard wallet
 
         info!(target: LOG_TARGET, "Is on exchange miner build: {is_on_exchange_miner_build}");
-        info!(target: LOG_TARGET, "Build in exchange ID: {build_in_exchange_id}");
+        info!(target: LOG_TARGET, "Built-in exchange ID: {built_in_exchange_id}");
         info!(target: LOG_TARGET, "Last config exchange ID: {last_config_exchange_id}");
         info!(target: LOG_TARGET, "Is on exchange specific variant: {is_on_exchange_specific_variant}");
         info!(target: LOG_TARGET, "Is external address selected: {is_external_address_selected}");
@@ -322,7 +322,7 @@ impl SetupManager {
         // This can happen when user was using dedicated exchange miner build before and now is using default app variant
         // Or user selected exchange on default app variant and reopened the app
         // In other cases we want to display standard wallet UI
-        if build_in_exchange_id.eq(DEFAULT_EXCHANGE_ID) {
+        if built_in_exchange_id.eq(DEFAULT_EXCHANGE_ID) {
             if is_external_address_selected && is_on_exchange_specific_variant {
                 let _unused = ConfigUI::set_wallet_ui_mode(WalletUIMode::Seedless).await;
                 if let Err(e) = InternalWallet::initialize_seedless(&app_handle, None).await {
@@ -368,7 +368,7 @@ impl SetupManager {
         // Case when we are on exchange miner build and already selected external tari address ( Second time we open app )
         if is_on_exchange_miner_build
             && is_external_address_selected
-            && build_in_exchange_id.eq(&last_config_exchange_id)
+            && built_in_exchange_id.eq(&last_config_exchange_id)
         {
             let external_tari_address = ConfigWallet::content()
                 .await
@@ -395,8 +395,8 @@ impl SetupManager {
         EventsEmitter::emit_wallet_config_loaded(&ConfigWallet::content().await).await;
 
         // If we open different specific exchange miner build then previous one we always want to prompt user to provide tari address
-        if is_on_exchange_miner_build && build_in_exchange_id.ne(&last_config_exchange_id) {
-            info!(target: LOG_TARGET, "Exchange ID changed from {last_config_exchange_id} to {build_in_exchange_id}");
+        if is_on_exchange_miner_build && built_in_exchange_id.ne(&last_config_exchange_id) {
+            info!(target: LOG_TARGET, "Exchange ID changed from {last_config_exchange_id} to {built_in_exchange_id}");
             self.exchange_modal_status
                 .send_replace(ExchangeModalStatus::WaitForCompletion);
             EventsEmitter::emit_should_show_exchange_miner_modal().await;

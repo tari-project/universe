@@ -66,7 +66,7 @@ export const Connect = () => {
         }
         if (data?.wxtm_mode) {
             const isValid = isAddress(debouncedAddress);
-            setAddressIsValid(true);
+            setAddressIsValid(isValid);
             if (!isValid) {
                 setError('address', { message: 'Ethereum address is invalid.' });
             }

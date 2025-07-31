@@ -16,7 +16,7 @@ export interface WalletStoreState {
     tari_address_base58: string;
     tari_address_emoji: string;
     tari_address_type: TariAddressType;
-    exchange_eth_addresses: Record<string, string>;
+    exchange_wxtm_addresses: Record<string, string>;
     balance?: WalletBalance;
     calculated_balance?: number;
     coinbase_transactions: TransactionInfo[];
@@ -45,7 +45,7 @@ export const initialState: WalletStoreState = {
     tari_address_emoji: '',
     tari_address_type: TariAddressType.Internal,
     coinbase_transactions: [],
-    exchange_eth_addresses: {},
+    exchange_wxtm_addresses: {},
     tx_history_filter: 'all-activity',
     tx_history: [],
     bridge_transactions: [],
@@ -68,7 +68,7 @@ export const useWalletStore = create<WalletStoreState & WalletStoreSelectors>()(
     ...initialState,
     getETHAddressOfCurrentExchange: () => {
         const exchangeId = useExchangeStore.getState().currentExchangeMinerId;
-        return get().exchange_eth_addresses[exchangeId] || undefined;
+        return get().exchange_wxtm_addresses[exchangeId] || undefined;
     },
 }));
 

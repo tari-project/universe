@@ -143,8 +143,5 @@ declare module '@tauri-apps/api/core' {
         param: 'encode_payment_id_to_address',
         payload: { paymentId: string; tariAddress: string }
     ): Promise<string>;
-    function invoke(
-        param: 'save_wxtm_eth_address',
-        payload: { tariAddress: string; exchangeId: string }
-    ): Promise<void>;
+    function invoke(param: 'save_wxtm_address', payload: { address: string; exchangeId: string }): Promise<void>;
 }

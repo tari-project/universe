@@ -146,8 +146,8 @@ export const setExchangeETHAdress = (ethAddress: string, exchangeId: string) => 
 
     useWalletStore.setState((c) => ({
         ...c,
-        exchange_eth_addresses: {
-            ...c.exchange_eth_addresses,
+        exchange_wxtm_addresses: {
+            ...c.exchange_wxtm_addresses,
             ...newEntry,
         },
     }));

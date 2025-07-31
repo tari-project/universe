@@ -47,7 +47,7 @@ export const handleConfigWalletLoaded = (walletConfig: ConfigWallet) => {
     useConfigWalletStore.setState((c) => ({ ...c, ...walletConfig }));
     useWalletStore.setState((c) => ({
         ...c,
-        exchange_eth_addresses: walletConfig.wxtm_eth_addresses, // This is the Ethereum address used for WXTm mode
+        exchange_wxtm_addresses: walletConfig.eth_addresses, // This is the Ethereum address used for WXTm mode
     }));
 };
 export const handleConfigUILoaded = async (uiConfig: ConfigUI) => {

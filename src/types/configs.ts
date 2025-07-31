@@ -28,7 +28,7 @@ export interface ConfigWallet {
     created_at: string;
     monero_address: string;
     monero_address_is_generated: boolean;
-    wxtm_eth_addresses: Record<string, string>; // Ethereum addresses used for WXTm mode
+    eth_addresses: Record<string, string>; // Ethereum addresses used for WXTm mode
     keyring_accessed: boolean;
     last_known_balance?: number;
 }
