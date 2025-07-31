@@ -11,7 +11,7 @@ import {
     AddressInputLabel,
     OptInWrapper,
 } from './connect.styles.ts';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import useDebouncedValue from '@app/hooks/helpers/useDebounce.ts';
 import { truncateMiddle } from '@app/utils';
 import { CheckIconWrapper } from '@app/components/transactions/components/TxInput.style.ts';
@@ -36,6 +36,7 @@ export const Connect = () => {
     const [isFocused, setIsFocused] = useState(false);
     const [addressIsValid, setAddressIsValid] = useState(false);
     const [displayAddress, setDisplayAddress] = useState(address);
+    const [tariAddress, setTariAddress] = useState(address);
     const allowTelemetry = useConfigCoreStore((s) => s.allow_telemetry);
     const debouncedAddress = useDebouncedValue(address, 350);
     const { validateAddress, validationErrorMessage } = useValidateTariAddress();
@@ -64,8 +65,9 @@ export const Connect = () => {
             return;
         }
         if (data?.wxtm_mode) {
-            if (isAddress(debouncedAddress)) {
-                setAddressIsValid(true);
+            const isValid = isAddress(debouncedAddress);
+            setAddressIsValid(isValid);
+            if (!isValid) {
                 setError('address', { message: 'Ethereum address is invalid.' });
             }
         } else {
@@ -76,18 +78,20 @@ export const Connect = () => {
                 }
             });
         }
-    }, [debouncedAddress, setError, validateAddress, validationErrorMessage]);
+    }, [data?.wxtm_mode, debouncedAddress, setError, validateAddress, validationErrorMessage]);
+
+    const handleWXTMSubmit = useCallback(async () => {
+        const encodedAddress = await convertEthAddressToTariAddress(address, data?.id || 'unknown');
+        console.info('Original Tari address:', address);
+        console.info('Encoded Tari address:', encodedAddress);
+        setTariAddress(encodedAddress);
+    }, [address, data?.id]);
 
     async function onSubmit(_unused: ConnectFormFields) {
         try {
-            let tariAddress = address;
-
-            // In wxtm_mode we are converting the ETH address to a Tari address
             if (data?.wxtm_mode) {
-                const encodedAddress = await convertEthAddressToTariAddress(address, data?.id || 'unknown');
-                console.info('Original Tari address:', address);
-                console.info('Encoded Tari address:', encodedAddress);
-                tariAddress = encodedAddress;
+                // In wxtm_mode we are converting the ETH address to a Tari address
+                await handleWXTMSubmit();
             }
             await invoke('confirm_exchange_address', { address: tariAddress });
             setSeedlessUI(true);
@@ -98,12 +102,18 @@ export const Connect = () => {
         }
     }
 
+    const labelCopy = data?.wxtm_mode
+        ? `Enter your ${data?.name} ETH Address`
+        : `Enter your ${data?.name} Tari Address`;
+
+    const CTACopy = data?.wxtm_mode ? `Mine wXTM on ${data?.name}` : data?.campaign_cta || `Connect`;
+
     return isPending ? (
         <LoadingDots />
     ) : (
         <Wrapper>
             <ConnectForm onSubmit={handleSubmit(onSubmit)}>
-                <AddressInputLabel>{`Enter your ${data?.name} Tari Address`}</AddressInputLabel>
+                <AddressInputLabel>{labelCopy}</AddressInputLabel>
                 <AddressInputWrapper>
                     <AddressInput
                         {...register('address', {
@@ -134,11 +144,7 @@ export const Connect = () => {
                     type="submit"
                     disabled={!allowTelemetry || formState.isSubmitting || !addressIsValid}
                 >
-                    {formState.isSubmitting || formState.isLoading ? (
-                        <LoadingDots />
-                    ) : (
-                        <CTAText>{data?.campaign_cta || `Connect`}</CTAText>
-                    )}
+                    {formState.isSubmitting || formState.isLoading ? <LoadingDots /> : <CTAText>{CTACopy}</CTAText>}
                 </CTA>
             </ConnectForm>
         </Wrapper>

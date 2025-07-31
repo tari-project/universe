@@ -58,6 +58,7 @@ export const fetchBridgeColdWalletAddress = async () => {
 
 export const convertEthAddressToTariAddress = async (ethAddress: string, exchangeId: string): Promise<string> => {
     const baseUrl = useConfigBEInMemoryStore.getState().bridgeBackendApiUrl;
+    const setETHAdrress = useWalletStore.getState().setETHAdrress;
     try {
         OpenAPI.BASE = baseUrl;
         const payload: MineToExchangeConfigDTO = {
@@ -71,11 +72,8 @@ export const convertEthAddressToTariAddress = async (ethAddress: string, exchang
         });
 
         console.info('Converted ETH address to Tari address:', encodedTariAddress);
-        const exchangeEthAddresses = useWalletStore.getState().exchange_eth_addresses;
-        exchangeEthAddresses[exchangeId] = ethAddress;
-        useWalletStore.setState({
-            exchange_eth_addresses: exchangeEthAddresses,
-        });
+
+        setETHAdrress(ethAddress, exchangeId);
 
         await invoke('save_wxtm_eth_address', {
             tariAddress: encodedTariAddress,

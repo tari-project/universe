@@ -1,4 +1,4 @@
-import { create } from './create';
+import { create } from 'zustand';
 import { TransactionInfo, WalletBalance } from '../types/app-status.ts';
 import { refreshTransactions } from './actions/walletStoreActions.ts';
 import { TxHistoryFilter } from '@app/components/transactions/history/FilterSelect.tsx';
@@ -40,6 +40,10 @@ export interface WalletStoreSelectors {
     getETHAddressOfCurrentExchange: () => string | undefined;
 }
 
+interface WalletStoreActions {
+    setETHAdrress: (ethAddress: string, exchangeId: string) => void;
+}
+
 export const initialState: WalletStoreState = {
     tari_address_base58: '',
     tari_address_emoji: '',
@@ -64,8 +68,10 @@ const MAX_TRANSACTIONS_IN_MEMORY = 1000; // Keep only the latest 1000 transactio
 const MAX_COINBASE_TRANSACTIONS_IN_MEMORY = 500; // Keep only the latest 500 coinbase transactions
 // const MAX_PENDING_TRANSACTIONS = 100; // Keep only the latest 100 pending transactions
 
-export const useWalletStore = create<WalletStoreState & WalletStoreSelectors>()((_, get) => ({
+export const useWalletStore = create<WalletStoreState & WalletStoreSelectors & WalletStoreActions>()((set, get) => ({
     ...initialState,
+    setETHAdrress: (ethAddress: string, exchangeId: string) =>
+        set((c) => ({ exchange_eth_addresses: { ...c.exchange_eth_addresses, [exchangeId]: ethAddress } })),
     getETHAddressOfCurrentExchange: () => {
         const exchangeId = useExchangeStore.getState().currentExchangeMinerId;
         return get().exchange_eth_addresses[exchangeId] || undefined;

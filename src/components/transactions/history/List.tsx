@@ -205,10 +205,10 @@ export function List({ setIsScrolled, targetRef }: Props) {
             loadingText={
                 walletScanning.is_scanning && walletScanning.total_height > 0
                     ? t('wallet-scanning-with-progress', {
-                        scanned: walletScanning.scanned_height.toLocaleString(),
-                        total: walletScanning.total_height.toLocaleString(),
-                        percent: walletScanning.progress.toFixed(1),
-                    })
+                          scanned: walletScanning.scanned_height.toLocaleString(),
+                          total: walletScanning.total_height.toLocaleString(),
+                          percent: walletScanning.progress.toFixed(1),
+                      })
                     : t('wallet-is-scanning')
             }
         />
