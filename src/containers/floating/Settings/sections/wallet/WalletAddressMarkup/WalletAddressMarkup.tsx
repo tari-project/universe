@@ -12,6 +12,7 @@ import BaseAddress from './BaseAddress.tsx';
 import ETHAddress from './ETHAddress.tsx';
 
 import { SettingsGroupTitle, SettingsGroupWrapper } from '../../../components/SettingsGroup.styles';
+import { SecondaryAddressesWrapper } from './styles.ts';
 
 export const CopyToClipboard = ({ text }: { text: string | undefined }) => {
     const { copyToClipboard, isCopied } = useCopyToClipboard();
@@ -39,8 +40,10 @@ const WalletAddressMarkup = () => {
                 <Typography variant="h6">{t('tari-wallet-address')}</Typography>
             </SettingsGroupTitle>
             <EmojiAddress />
-            <BaseAddress />
-            <ETHAddress />
+            <SecondaryAddressesWrapper>
+                <BaseAddress />
+                <ETHAddress />
+            </SecondaryAddressesWrapper>
         </SettingsGroupWrapper>
     );
 };
