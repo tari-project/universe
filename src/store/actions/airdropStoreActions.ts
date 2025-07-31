@@ -7,8 +7,6 @@ import {
     type AnimationType,
     type BonusTier,
     type CommunityMessage,
-    type CrewAnalytics,
-    type CrewMembersResponse,
     type Reward,
     setAirdropTokensInConfig,
     type UserDetails,
