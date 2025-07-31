@@ -34,6 +34,7 @@ export function SendForm({ isBack }: Props) {
     const { control, formState, setError, setValue, clearErrors, getValues } = useFormContext<SendInputs>();
     const { isSubmitting, errors } = formState;
     const isAmountValid = !errors.amount;
+
     const isValid = isAddressValid && isAmountValid;
 
     useEffect(() => {
@@ -58,6 +59,8 @@ export function SendForm({ isBack }: Props) {
         void validateAddress(address);
         if (address.length === 0) {
             setIsAddressValid(false);
+        } else {
+            setAddress(address);
         }
     }, [getValues, validateAddress]);
 
