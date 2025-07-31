@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ListItemsWrapper, LoadingText, Rectangle, Wrapper } from './styles';
+import { Trans } from 'react-i18next';
 
 interface Props {
     loadingText?: string;
@@ -46,7 +47,9 @@ export default function ListLoadingAnimation({ loadingText }: Props) {
 
     return (
         <Wrapper>
-            <LoadingText>{loadingText}</LoadingText>
+            <LoadingText>
+                <Trans>{loadingText}</Trans>
+            </LoadingText>
             <ListItemsWrapper>
                 {Array.from({ length: totalSquares }).map((_, index) => (
                     <Rectangle
