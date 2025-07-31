@@ -75,7 +75,7 @@ pub struct ConfigWalletContent {
     #[getset(get = "pub")]
     monero_address: String,
     #[getset(get = "pub", set = "pub")]
-    eth_addresses: HashMap<String, String>, // This is the Ethereum address used for WXTm mode | Maps exchange ID to address
+    wxtm_addresses: HashMap<String, String>, // This is the Ethereum address used for WXTm mode | Maps exchange ID to address
     #[getset(get = "pub")]
     monero_address_is_generated: bool,
     #[getset(get = "pub", set = "pub")]
@@ -105,7 +105,7 @@ impl Default for ConfigWalletContent {
             monero_address: "".to_string(),
             monero_address_is_generated: false,
             keyring_accessed: false,
-            eth_addresses: HashMap::new(), // Ethereum addresses used for WXTm mode
+            wxtm_addresses: HashMap::new(), // Ethereum addresses used for WXTm mode
             wallet_migration_nonce: 0,
             created_at: SystemTime::now(),
             selected_external_tari_address: None, // Takes precedence over an owned address
@@ -122,7 +122,7 @@ impl ConfigContentImpl for ConfigWalletContent {}
 impl ConfigWalletContent {
     pub fn add_wxtm_address(&mut self, payload: (String, String)) -> &mut Self {
         let (exchange_id, address) = payload;
-        self.eth_addresses.insert(exchange_id, address);
+        self.wxtm_addresses.insert(exchange_id, address);
         self
     }
 
