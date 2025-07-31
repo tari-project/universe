@@ -18,9 +18,7 @@ export const WalletSettings = () => {
             <WalletAddressMarkup />
             {isWalletUIExchangeSpecific ? undefined : <TariSeedWords />}
             <MoneroAddressMarkup />
-
             {monero_address_is_generated ? <MoneroSeedWordSettings /> : undefined}
-
             <RefreshWalletHistory />
         </>
     );

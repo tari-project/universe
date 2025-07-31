@@ -36,7 +36,9 @@ export const PinMarkup = () => {
     return !isPinLocked ? (
         <SettingsGroupWrapper>
             <SettingsGroupTitle>
-                <Typography variant="h6">{t('pin', { ns: 'settings' })}</Typography>
+                <Typography variant="h6" style={{ textTransform: 'uppercase' }}>
+                    {t('pin', { ns: 'settings' })}
+                </Typography>
             </SettingsGroupTitle>
             <SettingsGroup>
                 <SettingsGroupContent>
