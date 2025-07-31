@@ -305,32 +305,6 @@ export async function fetchCrewMembers() {
     return response;
 }
 
-export async function fetchCrewAnalytics(dateFrom?: string, dateTo?: string) {
-    const params = new URLSearchParams();
-    if (dateFrom) params.append('dateFrom', dateFrom);
-    if (dateTo) params.append('dateTo', dateTo);
-
-    const queryString = params.toString();
-    const path = queryString ? `/crew/analytics?${queryString}` : '/crew/analytics';
-
-    const response = await handleAirdropRequest<{
-        success: boolean;
-        analytics: CrewAnalytics;
-    } | null>({
-        path,
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-    });
-
-    if (response?.success && response.analytics) {
-        useAirdropStore.setState({ crewAnalytics: response.analytics });
-    }
-
-    return response;
-}
-
 export async function sendCrewNudge(message: string, targetMembers: string[]) {
     return await handleAirdropRequest<{ success: boolean } | null>({
         path: '/crew/nudge',
