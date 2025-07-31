@@ -39,6 +39,7 @@ const configWalletInitialState: ConfigWallet = {
     keyring_accessed: false,
     monero_address: '',
     monero_address_is_generated: false,
+    wxtm_eth_addresses: {},
 };
 
 const configMininigInitialState: ConfigMining = {

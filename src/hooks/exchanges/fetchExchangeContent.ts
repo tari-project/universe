@@ -19,8 +19,6 @@ export const queryfn = async (exchangeId: string) => {
         const res = await fetch(endpoint);
         const content = (await res.json()) as ExchangeBranding;
 
-        console.log('Fetched exchange content:', content);
-
         if (content) {
             const shouldShowExchangeSpecificModal = useUIStore.getState().shouldShowExchangeSpecificModal;
             setShowExchangeModal(shouldShowExchangeSpecificModal);
@@ -49,7 +47,8 @@ export function useFetchExchangeBranding() {
                     logo_img_url = data.dark_logo_img_url ?? data.logo_img_url;
                 }
 
-                return { ...data, logo_img_url, logo_img_small_url };
+                return { ...data, logo_img_url, logo_img_small_url, wxtm_mode: true };
+                // return { ...data, logo_img_url, logo_img_small_url };
             }
         },
         refetchOnWindowFocus: true,

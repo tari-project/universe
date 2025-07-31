@@ -3,8 +3,7 @@ import { WalletBalance } from '@app/types/app-status.ts';
 import { BackendBridgeTransaction, initialState, useWalletStore } from '../useWalletStore';
 import { setError } from './appStateStoreActions';
 import { TxHistoryFilter } from '@app/components/transactions/history/FilterSelect';
-import { WrapTokenService, OpenAPI } from '@tari-project/wxtm-bridge-backend-api';
-import { useConfigBEInMemoryStore } from '../useAppConfigStore';
+
 import { TariAddressUpdatePayload } from '@app/types/events-payloads';
 import { TransactionDetailsItem } from '@app/types/transactions';
 import { addToast } from '@app/components/ToastStack/useToastStore';
@@ -34,9 +33,7 @@ const filterToBitflag = (filter: TxHistoryFilter): number => {
 export const fetchTransactionsHistory = async ({ offset = 0, limit, filter = 'all-activity' }: TxArgs) => {
     const bitflag = filterToBitflag(filter);
     try {
-        const fetchedTxs = await invoke('get_transactions', { offset, limit, statusBitflag: bitflag });
-
-        return fetchedTxs;
+        return await invoke('get_transactions', { offset, limit, statusBitflag: bitflag });
     } catch (error) {
         console.error(`Could not get transaction history for rewards: `, error);
         return [];

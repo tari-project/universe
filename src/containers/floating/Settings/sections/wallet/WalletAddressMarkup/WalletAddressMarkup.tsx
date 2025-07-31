@@ -77,6 +77,7 @@ const WalletAddressMarkup = () => {
     const walletAddressEmoji = useWalletStore((state) => state.tari_address_emoji);
     // should only exist in case mining to exchange with wxtm_mode enabled
     const ethAddress = useWalletStore((state) => state.getETHAddressOfCurrentExchange());
+    console.debug(`ethAddress= `, ethAddress);
     const { validateAddress } = useValidateTariAddress();
     const [isCondensed, setIsCondensed] = useState(true);
 
