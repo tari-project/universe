@@ -7,6 +7,9 @@ import {
     type AnimationType,
     type BonusTier,
     type CommunityMessage,
+    type CrewAnalytics,
+    type CrewMembersResponse,
+    type Reward,
     setAirdropTokensInConfig,
     type UserDetails,
     type UserEntryPoints,
@@ -53,6 +56,11 @@ const clearState: AirdropStoreState = {
     bonusTiers: undefined,
     flareAnimationType: undefined,
     uiSendRecvEnabled: true,
+    crewQueryParams: {
+        status: 'all',
+        page: 1,
+        limit: 20,
+    },
 };
 
 const getAirdropInMemoryConfig = async () => {
@@ -277,6 +285,68 @@ export async function fetchLatestXSpaceEvent() {
 
     return response;
 }
+
+export async function fetchCrewMembers() {
+    const response = await handleAirdropRequest<{
+        success: boolean;
+        data: CrewMembersResponse;
+    } | null>({
+        path: '/crew/members',
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+
+    if (response?.success && response.data) {
+        useAirdropStore.setState({ crewMembers: response.data.members });
+    }
+
+    return response;
+}
+
+export async function sendCrewNudge(message: string, targetMembers: string[]) {
+    return await handleAirdropRequest<{ success: boolean } | null>({
+        path: '/crew/nudge',
+        method: 'POST',
+        body: {
+            message,
+            targetMembers,
+        },
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+}
+
+export async function claimCrewRewards(rewardId: string, memberId: string) {
+    return await handleAirdropRequest<{
+        success: boolean;
+        claimedReward: Reward;
+    } | null>({
+        path: `/crew/rewards/${rewardId}/claim`,
+        method: 'POST',
+        body: {
+            rewardId,
+            memberId,
+        },
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+}
+
+export const setCrewQueryParams = (
+    params: Partial<{
+        status: 'all' | 'completed' | 'active' | 'inactive';
+        page: number;
+        limit: number;
+    }>
+) => {
+    useAirdropStore.setState((state) => ({
+        crewQueryParams: { ...state.crewQueryParams, ...params },
+    }));
+};
 
 export const fetchAllUserData = async () => {
     const fetchUserDetails = async () => {

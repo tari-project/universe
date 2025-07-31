@@ -1,3 +1,6 @@
+import { useCrewMembers } from '@app/hooks/crew/useCrewMembers';
+import { useAirdropStore } from '@app/store';
+import { setCrewQueryParams } from '@app/store/actions/airdropStoreActions';
 import StreakProgress from '../StreakProgress/StreakProgress';
 import CrewList from './CrewList/CrewList';
 import Filters from './Filters/Filters';
@@ -6,6 +9,14 @@ import { useTranslation, Trans } from 'react-i18next';
 
 export default function CrewSection() {
     const { t } = useTranslation();
+    const { data, isLoading, error, refetch } = useCrewMembers();
+
+    // Get current filter state from store (query params only)
+    const activeFilter = useAirdropStore((state) => state.crewQueryParams.status);
+
+    const handleFilterChange = (status: 'all' | 'completed' | 'active' | 'inactive') => {
+        setCrewQueryParams({ status, page: 1 }); // Reset to page 1 when filter changes
+    };
 
     return (
         <Wrapper initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
@@ -25,9 +36,9 @@ export default function CrewSection() {
                 </Text>
             </IntroTextWrapper>
 
-            <Filters />
+            <Filters totals={data?.totals} activeFilter={activeFilter} onFilterChange={handleFilterChange} />
 
-            <CrewList />
+            <CrewList members={data?.members || []} isLoading={isLoading} error={error} onRefresh={refetch} />
         </Wrapper>
     );
 }

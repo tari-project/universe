@@ -1,6 +1,6 @@
-import { XSpaceEvent } from '@app/types/ws';
+import type { ConfigBackendInMemory } from '@app/types/configs.ts';
+import type { XSpaceEvent } from '@app/types/ws';
 import { create } from './create';
-import { ConfigBackendInMemory } from '@app/types/configs.ts';
 
 export const GIFT_GEMS = 5000;
 
@@ -91,6 +91,93 @@ export interface CommunityMessage {
     type: MessageType;
 }
 
+export type RewardType = 'mining_hours' | 'mining_days' | 'pool_hashes' | 'pool_shares' | 'pool_amount';
+
+export type RewardStatus = 'incomplete' | 'pending' | 'earned' | 'claimed' | 'expired';
+
+export interface CrewMemberReward {
+    id: string;
+    rewardType: RewardType;
+    amount: number;
+    status: RewardStatus;
+    earnedAt: Date;
+    claimedAt?: Date;
+    readyToClaim: boolean;
+    progressTowardsReward: {
+        miningMinutesProgress: number;
+        miningDaysProgress: number;
+        totalDaysRequired: number;
+        currentDayProgress: number;
+        poolHashesProgress: number;
+        poolSharesProgress: number;
+        poolAmountProgress: number;
+        isComplete: boolean;
+    };
+}
+
+export interface CrewMember {
+    id: string;
+    userId: string;
+    walletViewKeyHashed: string;
+    walletReceiveKeyHashed: string;
+    completed: boolean;
+    totalMiningMinutes: number;
+    weeklyGoalProgress: number;
+    lastActivityDate: Date;
+    milestones: string[];
+    user?: {
+        name: string;
+        displayName?: string;
+        referralCode?: string;
+        imageUrl?: string;
+    };
+    rewards: CrewMemberReward[];
+}
+
+export interface PaginationInfo {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+}
+
+export interface ReferrerProgress {
+    currentStreak: number;
+    longestStreak: number;
+    totalMiningMinutes: number;
+    todayMiningMinutes: number;
+    lastMiningDate: Date;
+    isCurrentlyMining: boolean;
+    meetsMinimumDays: boolean;
+    totalClaimedRewards: number;
+    minReferrerDaysRequired: number;
+}
+
+export interface CrewMembersTotals {
+    all: number;
+    completed: number;
+    active: number;
+    inactive: number;
+}
+
+export interface CrewMembersResponse {
+    members: CrewMember[];
+    pagination: PaginationInfo;
+    filters: {
+        status: 'all' | 'completed' | 'active' | 'inactive';
+    };
+    referrerProgress: ReferrerProgress;
+    totals: CrewMembersTotals;
+}
+
+export interface Reward {
+    id: string;
+    name: string;
+    description: string;
+    points: number;
+    claimedAt?: string;
+}
+
 export type AirdropConfigBackendInMemory = Omit<ConfigBackendInMemory, 'exchangeId'>;
 
 //////////////////////////////////////////
@@ -107,6 +194,16 @@ export interface AirdropStoreState {
     uiSendRecvEnabled: boolean;
     communityMessages?: CommunityMessage[];
     features?: string[];
+    crewMembers?: CrewMember[];
+
+    crewRewards?: Reward[];
+    crewTotals?: CrewMembersTotals;
+    referrerProgress?: ReferrerProgress;
+    crewQueryParams: {
+        status: 'all' | 'completed' | 'active' | 'inactive';
+        page: number;
+        limit: number;
+    };
 }
 
 const initialState: AirdropStoreState = {
@@ -119,6 +216,13 @@ const initialState: AirdropStoreState = {
     flareAnimationType: undefined,
     latestXSpaceEvent: null,
     uiSendRecvEnabled: true,
+    crewQueryParams: {
+        status: 'all',
+        page: 1,
+        limit: 20,
+    },
 };
 
-export const useAirdropStore = create<AirdropStoreState>()(() => ({ ...initialState }));
+export const useAirdropStore = create<AirdropStoreState>()(() => ({
+    ...initialState,
+}));

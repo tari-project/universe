@@ -20,5 +20,4 @@ const CrewRewards = memo(function CrewRewards() {
 
     return <AnimatePresence>{showWidget && <RewardsWidget />}</AnimatePresence>;
 });
-
 export default CrewRewards;
