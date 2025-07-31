@@ -8171,6 +8171,7 @@ dependencies = [
  "der",
  "device_query",
  "diesel",
+ "diesel_migrations",
  "dirs 5.0.1",
  "dotenvy",
  "dunce",

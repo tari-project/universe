@@ -24,7 +24,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use app_in_memory_config::AppInMemoryConfig;
-use axum::http::HeaderValue;
 use commands::CpuMinerStatus;
 use cpu_miner::CpuMinerConfig;
 use events_emitter::EventsEmitter;
@@ -71,9 +70,11 @@ use app_in_memory_config::EXCHANGE_ID;
 
 use telemetry_manager::TelemetryManager;
 
+use crate::consts::DB_FILE_NAME;
 use crate::cpu_miner::CpuMiner;
 
 use crate::commands::CpuMinerConnection;
+use crate::database::store::DatabaseConnection;
 use crate::feedback::Feedback;
 use crate::gpu_miner::GpuMiner;
 use crate::mm_proxy_manager::{MmProxyManager, StartConfig};
@@ -94,6 +95,7 @@ mod configs;
 mod consts;
 mod cpu_miner;
 mod credential_manager;
+mod database;
 mod download_utils;
 mod events;
 mod events_emitter;
@@ -423,6 +425,16 @@ fn main() {
                 .path()
                 .app_config_dir()
                 .expect("Could not get config dir");
+
+            // TODO move if needed to better place
+            let app_data_dir = app
+                .path()
+                .app_data_dir()
+                .expect("Could not get app data dir");
+            let db_path = app_data_dir.join(DB_FILE_NAME);
+            app.manage(DatabaseConnection(Arc::new(std::sync::Mutex::new(
+                database::establish_connection(db_path.to_str().unwrap_or_default()),
+            ))));
 
             // Remove this after it's been rolled out for a few versions
             let log_path = app.path().app_log_dir().map_err(|e| e.to_string())?;

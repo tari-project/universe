@@ -1,5 +1,4 @@
-use crate::database::schema::*;
-use crate::interface::TappletRegistryManifest;
+use crate::{database::schema::*, tapplets::interface::TappletRegistryManifest};
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 

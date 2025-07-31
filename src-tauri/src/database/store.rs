@@ -10,12 +10,12 @@ use crate::database::models::TappletVersion;
 use crate::database::models::{
     CreateInstalledTapplet, CreateTapplet, InstalledTapplet, Tapplet, UpdateTapplet,
 };
-use crate::interface::InstalledTappletWithName;
-use crate::interface::TappletSemver;
-use crate::ootle::error::{
+use crate::tapplets::error::{
     DatabaseError::*,
     Error::{self, DatabaseError},
 };
+use crate::tapplets::interface::InstalledTappletWithName;
+use crate::tapplets::interface::TappletSemver;
 
 use super::models::CreateDevTapplet;
 use super::models::CreateTappletAsset;
@@ -28,6 +28,8 @@ use super::models::UpdateInstalledTapplet;
 use super::models::UpdateTappletAsset;
 use super::models::UpdateTappletAudit;
 use super::models::UpdateTappletVersion;
+
+pub struct DatabaseConnection(pub Arc<Mutex<SqliteConnection>>);
 
 pub struct SqliteStore {
     connection: Arc<Mutex<SqliteConnection>>,

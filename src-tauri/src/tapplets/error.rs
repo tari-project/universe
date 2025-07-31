@@ -36,6 +36,12 @@ pub enum Error {
     JsonParsingError(#[from] serde_json::Error),
     #[error("failed-to-find-tapplet-config")]
     TappletConfigNotFound,
+    #[error(transparent)]
+    DatabaseError(#[from] DatabaseError),
+    #[error("failed-to-parse-tapplet-version")]
+    VersionParseError,
+    #[error("failed-to-find-tapplet-version")]
+    VersionNotFound,
 }
 
 impl serde::Serialize for Error {
@@ -61,4 +67,21 @@ pub enum TappletServerError {
 pub enum IOError {
     #[error("failed-to-parse-int")]
     ParseIntError(#[from] ParseIntError),
+}
+
+#[derive(Debug, Error)]
+pub enum DatabaseError {
+    #[error("already-exists | entity_name-{entity_name} & field_name-{field_name}")]
+    AlreadyExists {
+        entity_name: String,
+        field_name: String,
+    },
+    #[error("failed-to-retrieve-data | entity_name-{entity_name}")]
+    FailedToRetrieveData { entity_name: String },
+    #[error("failed-to-delete | entity_name-{entity_name}")]
+    FailedToDelete { entity_name: String },
+    #[error("failed-to-update | entity_name-{entity_name}")]
+    FailedToUpdate { entity_name: String },
+    #[error("failed-to-create | entity_name-{entity_name}")]
+    FailedToCreate { entity_name: String },
 }
