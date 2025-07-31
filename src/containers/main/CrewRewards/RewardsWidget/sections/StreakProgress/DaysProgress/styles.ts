@@ -3,7 +3,8 @@ import styled, { css } from 'styled-components';
 export const Wrapper = styled.div`
     display: flex;
     align-items: center;
-    gap: 9px;
+    gap: 7px;
+    flex-shrink: 1;
 `;
 
 export const Pills = styled.div`
@@ -13,9 +14,9 @@ export const Pills = styled.div`
 `;
 
 export const Pill = styled.div<{ $isActive?: boolean }>`
-    width: 31px;
-    height: 5px;
-    flex-shrink: 0;
+    width: 33.33333%;
+    height: 6px;
+    min-width: 6px;
 
     border-radius: 100px;
     opacity: 0.4;
@@ -32,9 +33,9 @@ export const Pill = styled.div<{ $isActive?: boolean }>`
 export const Text = styled.div`
     color: #fff;
     font-family: Poppins, sans-serif;
-    font-size: 12px;
+    font-size: 10px;
     font-style: normal;
-    font-weight: 500;
-    line-height: 109.386%;
-    letter-spacing: -0.36px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+    white-space: nowrap;
 `;

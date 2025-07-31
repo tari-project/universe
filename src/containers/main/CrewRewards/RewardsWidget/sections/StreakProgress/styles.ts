@@ -25,7 +25,7 @@ const MessageBox = styled.div<{ $isInline: boolean }>`
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 20px;
+    gap: 10px;
     width: 100%;
 
     padding: 8px 10px;
@@ -55,7 +55,11 @@ export const Text = styled.div`
     font-style: normal;
     font-weight: 600;
 
+    white-space: nowrap;
     letter-spacing: -0.3px;
+    min-height: 16px;
+    display: flex;
+    align-items: center;
 `;
 
 export const StreakText = styled.div`

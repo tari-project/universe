@@ -13,7 +13,6 @@ export const Trigger = styled.div`
     justify-content: center;
 
     width: 16px;
-    height: 16px;
 
     svg {
         width: 12px;
@@ -49,4 +48,5 @@ export const TooltipBox = styled(m.div)`
 
     max-width: 248px;
     width: max-content;
+    white-space: normal;
 `;
