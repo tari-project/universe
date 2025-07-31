@@ -89,9 +89,9 @@
       "dayStreak": "{{days}} Day Streak",
       "day": "Day",
       "loadingStreak": "Loading streak...",
-      "startYourStreak": "Start Your Streak! 🚀",
-      "oneDayStreak": "1 Day Streak 🔥",
-      "multiDayStreak": "{{days}} Day Streak 🔥",
+      "startYourStreak": "Start Your Streak!",
+      "oneDayStreak": "1 Day Streak",
+      "multiDayStreak": "{{days}} Day Streak",
       "startMiningMessage": "Start mining to begin your streak and earn rewards!",
       "minimumRequirementsMet": "Great job! You've met the minimum requirements. Keep going!",
       "daysToMinimum": "{{days}} more days to meet minimum requirements!"

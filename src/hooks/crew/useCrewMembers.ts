@@ -1,7 +1,7 @@
 import { handleAirdropRequest } from '@app/hooks/airdrop/utils/useHandleRequest.ts';
 import { useAirdropStore } from '@app/store';
 import type { CrewMembersResponse } from '@app/store/useAirdropStore';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 export const KEY_CREW_MEMBERS = 'crew_members';
 
@@ -40,7 +40,9 @@ export function useCrewMembers() {
     // Read airdrop token from store for dependency array
     const airdropToken = useAirdropStore((state) => state.airdropTokens?.token);
 
-    return useQuery({
+    const queryClient = useQueryClient();
+
+    const query = useQuery({
         queryKey: [KEY_CREW_MEMBERS, crewQueryParams, airdropToken],
         queryFn: () => fetchCrewMembersData(crewQueryParams),
         enabled: !!airdropToken, // Only run when authenticated
@@ -48,4 +50,15 @@ export function useCrewMembers() {
         staleTime: 30 * 1000, // 30 seconds
         retry: 2,
     });
+
+    const invalidate = () => {
+        queryClient.invalidateQueries({
+            queryKey: [KEY_CREW_MEMBERS],
+        });
+    };
+
+    return {
+        ...query,
+        invalidate,
+    };
 }
