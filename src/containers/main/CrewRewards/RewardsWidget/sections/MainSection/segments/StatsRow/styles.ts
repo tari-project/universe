@@ -112,3 +112,8 @@ export const InviteFriendsMessage = styled.div`
     width: 50%;
     max-width: 170px;
 `;
+
+export const LoadingPlaceholder = styled.div`
+    width: 100%;
+    height: 30px;
+`;

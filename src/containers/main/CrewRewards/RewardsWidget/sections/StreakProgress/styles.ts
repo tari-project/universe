@@ -40,12 +40,16 @@ const MessageBox = styled.div<{ $isInline: boolean }>`
         `}
 `;
 
-export const StreakMessage = styled(MessageBox)<{ $isInline: boolean }>`
+export const StreakMessage = styled(MessageBox)`
     background: #00a505;
 `;
 
-export const UnlockMessage = styled(MessageBox)<{ $isInline: boolean }>`
+export const UnlockMessage = styled(MessageBox)`
     background: #df881c;
+`;
+
+export const LoadingMessage = styled(MessageBox)`
+    background: #5b5c5c;
 `;
 
 export const Text = styled.div`

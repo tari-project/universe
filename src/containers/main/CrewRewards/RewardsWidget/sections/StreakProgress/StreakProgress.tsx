@@ -1,7 +1,7 @@
 import { useReferrerProgress } from '@app/hooks/crew/useReferrerProgress';
 import InfoTooltip from '../../components/InfoTooltip/InfoTooltip';
 import DaysProgress from './DaysProgress/DaysProgress';
-import { Wrapper, Text, StreakText, StreakMessage, UnlockMessage } from './styles';
+import { Wrapper, Text, StreakText, StreakMessage, UnlockMessage, LoadingMessage } from './styles';
 import { useTranslation, Trans } from 'react-i18next';
 
 interface Props {
@@ -23,10 +23,9 @@ export default function StreakProgress({ isInline = false }: Props) {
     if (isLoading) {
         return (
             <Wrapper $isInline={isInline}>
-                <StreakMessage $isInline={isInline}>
-                    <Text>{t('airdrop:crewRewards.streak.loadingStreak')}</Text>
-                    <StreakText>🔥</StreakText>
-                </StreakMessage>
+                <LoadingMessage $isInline={isInline}>
+                    <Text></Text>
+                </LoadingMessage>
             </Wrapper>
         );
     }

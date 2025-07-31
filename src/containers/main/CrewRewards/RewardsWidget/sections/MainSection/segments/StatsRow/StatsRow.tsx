@@ -9,6 +9,7 @@ import {
     LabelText,
     Divider,
     InviteFriendsMessage,
+    LoadingPlaceholder,
 } from './styles';
 
 import photo1 from '../../../../../images/person1.png';
@@ -35,28 +36,7 @@ export default function StatsRow() {
     if (isLoading) {
         return (
             <Wrapper>
-                <ActiveMinersWrapper>
-                    <PhotoWrapper>
-                        <PhotoImage $image={photo1} aria-hidden="true" />
-                        <PhotoImage $image={photo1} aria-hidden="true" />
-                        <PhotoImage $image={photo1} aria-hidden="true" />
-                        <StatusDot />
-                    </PhotoWrapper>
-
-                    <TextWrapper>
-                        <MainText>
-                            -- <span>{`${t('airdrop:crewRewards.of')} --`}</span>
-                        </MainText>
-                        <LabelText>{t('airdrop:crewRewards.activeMinersStat')}</LabelText>
-                    </TextWrapper>
-                </ActiveMinersWrapper>
-
-                <Divider />
-
-                <TextWrapper>
-                    <MainText>--</MainText>
-                    <LabelText>{t('airdrop:crewRewards.bonusXTMEarned')}</LabelText>
-                </TextWrapper>
+                <LoadingPlaceholder />
             </Wrapper>
         );
     }
