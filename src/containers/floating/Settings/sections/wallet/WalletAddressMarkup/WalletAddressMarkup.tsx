@@ -19,6 +19,7 @@ import AddressEditor from '../components/AddressEditor';
 import { CTASArea, InputArea, WalletSettingsGrid } from '@app/containers/floating/Settings/sections/wallet/styles.ts';
 import { useValidateTariAddress } from '@app/hooks/wallet/useValidate.ts';
 import { useFetchExchangeBranding } from '@app/hooks/exchanges/fetchExchangeContent.ts';
+import { Input } from '@app/components/elements/inputs/Input.tsx';
 
 const Dot = styled.div`
     width: 4px;
@@ -81,9 +82,7 @@ const WalletAddressMarkup = () => {
     const isWXTM = data?.wxtm_mode && walletType.toString() === 'External'; //TariAddressType.External;
     // should only exist in case mining to exchange with wxtm_mode enabled
     const ethAddress = useWalletStore((state) => state.getETHAddressOfCurrentExchange());
-    const eth = useWalletStore((s) => s.exchange_eth_addresses);
-    console.debug(`ethAddress= `, ethAddress);
-    console.debug(`eth= `, eth);
+
     const { validateAddress } = useValidateTariAddress();
     const [isCondensed, setIsCondensed] = useState(true);
 
@@ -123,6 +122,22 @@ const WalletAddressMarkup = () => {
         },
     };
 
+    const ethMarkup = !!ethAddress?.length && (
+        <>
+            <SettingsGroupTitle>
+                <Typography variant="h6">{`ETH Address`}</Typography>
+            </SettingsGroupTitle>
+            <WalletSettingsGrid>
+                <InputArea>
+                    <Input disabled value={ethAddress} style={{ fontSize: '12px' }} />
+                </InputArea>
+                <CTASArea>
+                    <CopyToClipboard text={ethAddress} />
+                </CTASArea>
+            </WalletSettingsGrid>
+        </>
+    );
+
     return (
         <SettingsGroupWrapper>
             <SettingsGroupTitle>
@@ -157,6 +172,7 @@ const WalletAddressMarkup = () => {
                     <CopyToClipboard text={walletAddressEmoji} />
                 </CTASArea>
             </WalletSettingsGrid>
+            {ethMarkup}
         </SettingsGroupWrapper>
     );
 };

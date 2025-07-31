@@ -40,10 +40,6 @@ export interface WalletStoreSelectors {
     getETHAddressOfCurrentExchange: () => string | undefined;
 }
 
-interface WalletStoreActions {
-    setETHAddress: (ethAddress: string, exchangeId: string) => void;
-}
-
 export const initialState: WalletStoreState = {
     tari_address_base58: '',
     tari_address_emoji: '',
@@ -68,10 +64,8 @@ const MAX_TRANSACTIONS_IN_MEMORY = 1000; // Keep only the latest 1000 transactio
 const MAX_COINBASE_TRANSACTIONS_IN_MEMORY = 500; // Keep only the latest 500 coinbase transactions
 // const MAX_PENDING_TRANSACTIONS = 100; // Keep only the latest 100 pending transactions
 
-export const useWalletStore = create<WalletStoreState & WalletStoreSelectors & WalletStoreActions>()((set, get) => ({
+export const useWalletStore = create<WalletStoreState & WalletStoreSelectors>()((_, get) => ({
     ...initialState,
-    setETHAddress: (ethAddress: string, exchangeId: string) =>
-        set((c) => ({ exchange_eth_addresses: { ...c.exchange_eth_addresses, [exchangeId]: ethAddress } })),
     getETHAddressOfCurrentExchange: () => {
         const exchangeId = useExchangeStore.getState().currentExchangeMinerId;
         return get().exchange_eth_addresses[exchangeId] || undefined;
@@ -98,12 +92,13 @@ export const updateWalletScanningProgress = (payload: {
     progress: number;
 }) => {
     const is_scanning = payload.scanned_height < payload.total_height;
-    useWalletStore.setState({
+    useWalletStore.setState((c) => ({
+        ...c,
         wallet_scanning: {
             is_scanning,
             ...payload,
         },
-    });
+    }));
     if (!is_scanning) {
         refreshTransactions();
     }
