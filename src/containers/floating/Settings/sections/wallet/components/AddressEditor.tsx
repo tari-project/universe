@@ -9,6 +9,7 @@ import { CTASArea, InputArea, WalletSettingsGrid } from '../styles';
 
 interface AddressEditorProps {
     initialAddress: string;
+    isWXTM: boolean;
     onApply: (newAddress: string) => Promise<void>;
     rules:
         | Omit<
@@ -33,7 +34,7 @@ const StyledForm = styled.form`
     min-height: 60px;
 `;
 
-const AddressEditor = ({ initialAddress, onApply, rules }: AddressEditorProps) => {
+const AddressEditor = ({ initialAddress, onApply, rules, isWXTM }: AddressEditorProps) => {
     const {
         control,
         watch,
@@ -49,6 +50,8 @@ const AddressEditor = ({ initialAddress, onApply, rules }: AddressEditorProps) =
     const [editing, setEditing] = useState(false);
     const { copyToClipboard, isCopied } = useCopyToClipboard();
     const address = watch('address');
+
+    console.debug(`errors= `, errors);
 
     function handleEditClick() {
         setFocus('address', { shouldSelect: true });
@@ -126,7 +129,9 @@ const AddressEditor = ({ initialAddress, onApply, rules }: AddressEditorProps) =
                 </CTASArea>
             </WalletSettingsGrid>
 
-            {errors.address && <span style={{ color: 'red', fontSize: '12px' }}>{errors.address.message}</span>}
+            {errors.address && !isWXTM && (
+                <span style={{ color: 'red', fontSize: '12px' }}>{errors.address.message}</span>
+            )}
         </StyledForm>
     );
 };
