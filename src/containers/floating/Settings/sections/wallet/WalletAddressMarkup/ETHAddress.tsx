@@ -7,10 +7,14 @@ import AddressEditor from '@app/containers/floating/Settings/sections/wallet/com
 
 import { ETHAddressWrapper } from './styles.ts';
 import { convertEthAddressToTariAddress } from '@app/store/actions/bridgeApiActions.ts';
-import { useExchangeStore } from '@app/store/useExchangeStore.ts';
+import { invoke } from '@tauri-apps/api/core';
+import { restartMining } from '@app/store/actions/miningStoreActions.ts';
+import { addToast } from '@app/components/ToastStack/useToastStore.tsx';
+import { ExchangeMiner } from '@app/types/exchange.ts';
+import { useFetchExchangeBranding } from '@app/hooks/exchanges/fetchExchangeContent.ts';
 
 export default function ETHAddress() {
-    const currentExchangeId = useExchangeStore((s) => s.currentExchangeMinerId);
+    const { data } = useFetchExchangeBranding();
     // should only exist in case mining to exchange with wxtm_mode enabled
     const ethAddress = useWalletStore((state) => state.getETHAddressOfCurrentExchange());
 
@@ -22,7 +26,20 @@ export default function ETHAddress() {
     };
 
     async function handleSubmit(address: string) {
-        await convertEthAddressToTariAddress(address, currentExchangeId);
+        if (!data) return;
+        const exchangeMiner: ExchangeMiner = {
+            id: data.id,
+            slug: data.slug,
+            name: data.name,
+        };
+        const newEncoded = await convertEthAddressToTariAddress(address, exchangeMiner.id);
+        await invoke('select_exchange_miner', { exchangeMiner, miningAddress: newEncoded });
+        addToast({
+            type: 'success',
+            title: 'Address updated',
+            text: 'Your converted Tari Address has also been updated',
+        });
+        await restartMining();
     }
 
     return ethAddress?.length ? (

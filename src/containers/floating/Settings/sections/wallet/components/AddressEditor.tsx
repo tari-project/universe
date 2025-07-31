@@ -71,13 +71,6 @@ const AddressEditor = ({ initialAddress, onApply, rules, isWXTM }: AddressEditor
         setEditing(false);
     }, [initialAddress, reset]);
 
-    function handleBlur() {
-        if (!address.length) {
-            handleReset();
-        }
-        setEditing(false);
-    }
-
     useEffect(() => {
         trigger('address');
     }, [address, trigger]);
@@ -104,7 +97,6 @@ const AddressEditor = ({ initialAddress, onApply, rules, isWXTM }: AddressEditor
                                     type="text"
                                     hasError={!!errors.address}
                                     onFocus={() => setEditing(true)}
-                                    onBlur={handleBlur}
                                 />
                             );
                         }}
