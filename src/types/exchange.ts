@@ -16,6 +16,8 @@ export interface ExchangeData extends ExchangeMiner {
     download_link_mac?: string | null;
     download_link_win?: string | null;
     download_link_linux?: string | null;
+
+    wxtm_mode: boolean; // When true, the exchange is in WXT mode, which means that the user will be able to enter ETH address to receive WXT tokens on exchange
 }
 
 export interface ExchangeBranding extends ExchangeData {

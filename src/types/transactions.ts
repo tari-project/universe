@@ -26,3 +26,8 @@ export enum TransactionStatus {
     CoinbaseConfirmed = 13,
     CoinbaseNotInBlockChain = 14,
 }
+
+export enum WalletAddressNetwork {
+    Ethereum,
+    Tari,
+}

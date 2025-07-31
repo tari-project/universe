@@ -1,10 +1,11 @@
-import { create } from './create';
+import { create } from 'zustand';
 import { TransactionInfo, WalletBalance } from '../types/app-status.ts';
 import { refreshTransactions } from './actions/walletStoreActions.ts';
 import { TxHistoryFilter } from '@app/components/transactions/history/FilterSelect.tsx';
 import { UserTransactionDTO } from '@tari-project/wxtm-bridge-backend-api';
 import { TransactionDetailsItem } from '@app/types/transactions.ts';
 import { TariAddressType } from '@app/types/events-payloads.ts';
+import { useExchangeStore } from './useExchangeStore.ts';
 
 export interface BackendBridgeTransaction extends UserTransactionDTO {
     sourceAddress?: string;
@@ -15,6 +16,7 @@ export interface WalletStoreState {
     tari_address_base58: string;
     tari_address_emoji: string;
     tari_address_type: TariAddressType;
+    exchange_wxtm_addresses: Record<string, string>;
     balance?: WalletBalance;
     calculated_balance?: number;
     coinbase_transactions: TransactionInfo[];
@@ -34,11 +36,16 @@ export interface WalletStoreState {
     };
 }
 
+export interface WalletStoreSelectors {
+    getETHAddressOfCurrentExchange: () => string | undefined;
+}
+
 export const initialState: WalletStoreState = {
     tari_address_base58: '',
     tari_address_emoji: '',
     tari_address_type: TariAddressType.Internal,
     coinbase_transactions: [],
+    exchange_wxtm_addresses: {},
     tx_history_filter: 'all-activity',
     tx_history: [],
     bridge_transactions: [],
@@ -57,8 +64,12 @@ const MAX_TRANSACTIONS_IN_MEMORY = 1000; // Keep only the latest 1000 transactio
 const MAX_COINBASE_TRANSACTIONS_IN_MEMORY = 500; // Keep only the latest 500 coinbase transactions
 // const MAX_PENDING_TRANSACTIONS = 100; // Keep only the latest 100 pending transactions
 
-export const useWalletStore = create<WalletStoreState>()(() => ({
+export const useWalletStore = create<WalletStoreState & WalletStoreSelectors>()((_, get) => ({
     ...initialState,
+    getETHAddressOfCurrentExchange: () => {
+        const exchangeId = useExchangeStore.getState().currentExchangeMinerId;
+        return get().exchange_wxtm_addresses[exchangeId] || undefined;
+    },
 }));
 
 // Helper function to prune large arrays
@@ -81,12 +92,13 @@ export const updateWalletScanningProgress = (payload: {
     progress: number;
 }) => {
     const is_scanning = payload.scanned_height < payload.total_height;
-    useWalletStore.setState({
+    useWalletStore.setState((c) => ({
+        ...c,
         wallet_scanning: {
             is_scanning,
             ...payload,
         },
-    });
+    }));
     if (!is_scanning) {
         refreshTransactions();
     }
