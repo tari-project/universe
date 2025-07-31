@@ -1,3 +1,20 @@
+🚀 TARI UNIVERSE v1.5.3: The Season of Light: Part 4
+
+_July 30, 2025_
+
+✨ WHAT'S NEW
+
+- ⚡ Near-instant GPU (SHA3) Mining – Instead of waiting for many minutes or hours to sync, your GPU will now mine to a community-supported pool FAST (nearly instantly!)
+   -  You can toggle between Remote + Local (the default if you are upgrading), Remote only (default for new installs), or Local only
+   -  You can disable pool mining which will fall back to solo mining (merge-mined RX, and SHA3)
+- 🔧 Better GPU Miner – We've integrated a new community-supported GPU miner that's ~15% more efficient than before
+- 💳 Faster Wallet Sync – Say goodbye to waiting hours! Since you don't have to wait for local node sync, your wallet transactions will show up faster (and your balance instantly)
+- 🔐 Enhanced Security – Major upgrades to seed word handling to keep your XTM even safer
+- 🛜 Massive Bandwidth Savings – Tari Universe will now use ~80% less bandwidth by default. This is a HUGE deal and one of our most requested improvements!
+- 💾 Massive Disk Storage Savings – By default, Tari Universe will consume a lot less disk storage
+
+---
+
 🔥 HOTFIX v1.2.17: XMRig extraction bug on windows
 
 _July 10, 2025_
