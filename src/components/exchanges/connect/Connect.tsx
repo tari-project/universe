@@ -36,7 +36,6 @@ export const Connect = () => {
     const [isFocused, setIsFocused] = useState(false);
     const [addressIsValid, setAddressIsValid] = useState(false);
     const [displayAddress, setDisplayAddress] = useState(address);
-    const [tariAddress, setTariAddress] = useState(address);
     const allowTelemetry = useConfigCoreStore((s) => s.allow_telemetry);
     const debouncedAddress = useDebouncedValue(address, 350);
     const { validateAddress, validationErrorMessage } = useValidateTariAddress();
@@ -84,23 +83,29 @@ export const Connect = () => {
         const encodedAddress = await convertEthAddressToTariAddress(address, data?.id || 'unknown');
         console.info('Original Tari address:', address);
         console.info('Encoded Tari address:', encodedAddress);
-        setTariAddress(encodedAddress);
+        return encodedAddress;
     }, [address, data?.id]);
 
-    async function onSubmit(_unused: ConnectFormFields) {
-        try {
-            if (data?.wxtm_mode) {
-                // In wxtm_mode we are converting the ETH address to a Tari address
-                await handleWXTMSubmit();
+    const onSubmit = useCallback(
+        async (_unused: ConnectFormFields) => {
+            let tariAddress = address;
+            try {
+                if (data?.wxtm_mode) {
+                    // In wxtm_mode we are converting the ETH address to a Tari address
+                    tariAddress = await handleWXTMSubmit();
+                }
+
+                console.debug(`tariAddress= `, tariAddress);
+                await invoke('confirm_exchange_address', { address: tariAddress });
+                setSeedlessUI(true);
+                setShowExchangeModal(false);
+                setShouldShowExchangeSpecificModal(false);
+            } catch (e) {
+                console.error('Error confirming exchange address:', e);
             }
-            await invoke('confirm_exchange_address', { address: tariAddress });
-            setSeedlessUI(true);
-            setShowExchangeModal(false);
-            setShouldShowExchangeSpecificModal(false);
-        } catch (e) {
-            console.error('Error confirming exchange address:', e);
-        }
-    }
+        },
+        [address, data?.wxtm_mode, handleWXTMSubmit]
+    );
 
     const labelCopy = data?.wxtm_mode
         ? `Enter your ${data?.name} ETH Address`
