@@ -3,9 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { useMiningMetricsStore } from '../useMiningMetricsStore.ts';
 
 import { useMiningStore } from '../useMiningStore.ts';
-import { setGpuMiningEnabled } from './appConfigStoreActions.ts';
 import { setError } from './appStateStoreActions.ts';
-import { setGpuDevices } from '../actions/miningMetricsStoreActions.ts';
 import { useSetupStore } from '@app/store/useSetupStore.ts';
 import { useConfigMiningStore } from '../useAppConfigStore.ts';
 import { Network } from '@app/utils/network.ts';
