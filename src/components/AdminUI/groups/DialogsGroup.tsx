@@ -4,20 +4,16 @@ import { AdminButton, ButtonGroup, CategoryLabel } from '../styles';
 import { useAppStateStore } from '@app/store/appStateStore';
 import { setCriticalProblem, setDialogToShow, setShowExternalDependenciesDialog } from '@app/store/actions';
 import { useUIStore } from '@app/store/useUIStore.ts';
-import { setShowExchangeModal, useExchangeStore } from '@app/store/useExchangeStore.ts';
 
 export function DialogsGroup() {
     const criticalProblem = useAppStateStore((s) => s.criticalProblem);
     const dialogToShow = useUIStore((s) => s.dialogToShow);
     const showExternalDependenciesDialog = useUIStore((s) => s.showExternalDependenciesDialog);
-    const showModal = useExchangeStore((s) => s.showExchangeAddressModal);
+
     return (
         <>
             <CategoryLabel>Dialogs</CategoryLabel>
             <ButtonGroup>
-                <AdminButton onClick={() => setShowExchangeModal(!showModal)} $isActive={!!showModal}>
-                    XC Miner
-                </AdminButton>
                 <AdminButton
                     onClick={() =>
                         setCriticalProblem(

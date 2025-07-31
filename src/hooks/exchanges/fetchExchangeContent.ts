@@ -47,8 +47,7 @@ export function useFetchExchangeBranding() {
                     logo_img_url = data.dark_logo_img_url ?? data.logo_img_url;
                 }
 
-                return { ...data, logo_img_url, logo_img_small_url, wxtm_mode: true };
-                // return { ...data, logo_img_url, logo_img_small_url };
+                return { ...data, logo_img_url, logo_img_small_url };
             }
         },
         refetchOnWindowFocus: true,
