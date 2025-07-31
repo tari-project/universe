@@ -19,6 +19,7 @@ import {
     MiningSettings,
     WalletSettings,
     ReleaseNotes,
+    OotleDemo,
 } from './sections';
 
 import { Container, ContentContainer, EndContainer, HeaderContainer, SectionWrapper } from './SettingsModal.styles.ts';
@@ -40,6 +41,7 @@ const SettingsModal = memo(function SettingsModal() {
         airdrop: <AirdropSettings />,
         experimental: <ExperimentalSettings />,
         releaseNotes: <ReleaseNotes />,
+        ootleDemo: <OotleDemo />,
     };
 
     const sectionMarkup = markups[activeSection];

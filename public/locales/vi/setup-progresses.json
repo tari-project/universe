@@ -23,6 +23,8 @@
   "phase-unknown-critical-problem-title": "Thiết lập đào thất bại",
   "phase-wallet-critical-problem-description": "Thiết lập ví rất quan trọng với ứng dụng. Vui lòng thử khởi động lại. Nếu vẫn gặp lỗi, hãy liên hệ hỗ trợ.",
   "phase-wallet-critical-problem-title": "Thiết lập ví thất bại",
+  "phase-ootle-wallet-critical-problem-description": "Thiết lập Ootle Wallet rất quan trọng với ứng dụng. Vui lòng thử khởi động lại. Nếu vẫn gặp lỗi, hãy liên hệ hỗ trợ.",
+  "phase-ootle-wallet-critical-problem-title": "Thiết lập Ootle Wallet thất bại",
   "remaining": "còn lại",
   "second_remaining": "giây còn lại",
   "seconds_remaining": "giây còn lại",

@@ -16,6 +16,16 @@ import { SignData } from '@app/types/ws.ts';
 import { ConfigBackendInMemory } from '@app/types/configs.ts';
 import { ExchangeMiner } from './exchange';
 import { ActiveTapplet } from '@app/types/tapplets/tapplet.types';
+import {
+    AccountsListRequest,
+    AccountsListResponse,
+    AccountsCreateFreeTestCoinsRequest,
+    AccountsCreateFreeTestCoinsResponse,
+    AccountsCreateRequest,
+    AccountsCreateResponse,
+    AccountsGetBalancesRequest,
+    AccountsGetBalancesResponse,
+} from '@tari-project/typescript-bindings';
 
 declare module '@tauri-apps/api/core' {
     function invoke(
@@ -139,4 +149,14 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'is_seed_backed_up'): Promise<boolean>;
     function invoke(param: 'toggle_cpu_pool_mining', payload: { enabled: boolean }): Promise<void>;
     function invoke(param: 'toggle_gpu_pool_mining', payload: { enabled: boolean }): Promise<void>;
+    function invoke(param: 'ootle_list_accounts', payload: AccountsListRequest): Promise<AccountsListResponse>;
+    function invoke(
+        param: 'ootle_create_free_test_coins',
+        payload: AccountsCreateFreeTestCoinsRequest
+    ): Promise<AccountsCreateFreeTestCoinsResponse>;
+    function invoke(param: 'ootle_create_account', payload: AccountsCreateRequest): Promise<AccountsCreateResponse>;
+    function invoke(
+        param: 'ootle_get_balances',
+        payload: AccountsGetBalancesRequest
+    ): Promise<AccountsGetBalancesResponse>;
 }

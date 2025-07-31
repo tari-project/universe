@@ -20,14 +20,8 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod setup_manager;
-mod trait_setup_phase;
-pub mod utils;
-
-pub mod listeners;
-mod phase_core;
-mod phase_hardware;
-mod phase_mining;
-mod phase_node;
-mod phase_ootle_wallet;
-mod phase_wallet;
+pub mod commands;
+pub mod ootle_wallet_adapter;
+pub mod ootle_wallet_json_rpc_client;
+pub mod ootle_wallet_manager;
+pub mod temp_types;
