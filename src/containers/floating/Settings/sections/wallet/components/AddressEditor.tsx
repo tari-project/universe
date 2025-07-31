@@ -9,7 +9,7 @@ import { CTASArea, InputArea, WalletSettingsGrid } from '../styles';
 
 interface AddressEditorProps {
     initialAddress: string;
-    isWXTM: boolean;
+    isWXTM?: boolean;
     onApply: (newAddress: string) => Promise<void>;
     rules:
         | Omit<
@@ -50,8 +50,6 @@ const AddressEditor = ({ initialAddress, onApply, rules, isWXTM }: AddressEditor
     const [editing, setEditing] = useState(false);
     const { copyToClipboard, isCopied } = useCopyToClipboard();
     const address = watch('address');
-
-    console.debug(`errors= `, errors);
 
     function handleEditClick() {
         setFocus('address', { shouldSelect: true });

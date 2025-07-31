@@ -41,7 +41,7 @@ export interface WalletStoreSelectors {
 }
 
 interface WalletStoreActions {
-    setETHAdrress: (ethAddress: string, exchangeId: string) => void;
+    setETHAddress: (ethAddress: string, exchangeId: string) => void;
 }
 
 export const initialState: WalletStoreState = {
@@ -70,7 +70,7 @@ const MAX_COINBASE_TRANSACTIONS_IN_MEMORY = 500; // Keep only the latest 500 coi
 
 export const useWalletStore = create<WalletStoreState & WalletStoreSelectors & WalletStoreActions>()((set, get) => ({
     ...initialState,
-    setETHAdrress: (ethAddress: string, exchangeId: string) =>
+    setETHAddress: (ethAddress: string, exchangeId: string) =>
         set((c) => ({ exchange_eth_addresses: { ...c.exchange_eth_addresses, [exchangeId]: ethAddress } })),
     getETHAddressOfCurrentExchange: () => {
         const exchangeId = useExchangeStore.getState().currentExchangeMinerId;

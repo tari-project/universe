@@ -81,7 +81,9 @@ const WalletAddressMarkup = () => {
     const isWXTM = data?.wxtm_mode && walletType.toString() === 'External'; //TariAddressType.External;
     // should only exist in case mining to exchange with wxtm_mode enabled
     const ethAddress = useWalletStore((state) => state.getETHAddressOfCurrentExchange());
+    const eth = useWalletStore((s) => s.exchange_eth_addresses);
     console.debug(`ethAddress= `, ethAddress);
+    console.debug(`eth= `, eth);
     const { validateAddress } = useValidateTariAddress();
     const [isCondensed, setIsCondensed] = useState(true);
 

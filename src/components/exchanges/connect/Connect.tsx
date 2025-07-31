@@ -19,7 +19,7 @@ import CheckIcon from '@app/components/transactions/components/CheckIcon.tsx';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 import { setSeedlessUI, setShouldShowExchangeSpecificModal } from '@app/store/actions/uiStoreActions.ts';
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
-import { setAllowTelemetry, useConfigCoreStore } from '@app/store';
+import { setAllowTelemetry, useConfigCoreStore, useWalletStore } from '@app/store';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { useFetchExchangeBranding } from '@app/hooks/exchanges/fetchExchangeContent.ts';
 import { useValidateTariAddress } from '@app/hooks/wallet/useValidate.ts';
@@ -37,6 +37,7 @@ export const Connect = () => {
     const [addressIsValid, setAddressIsValid] = useState(false);
     const [displayAddress, setDisplayAddress] = useState(address);
     const allowTelemetry = useConfigCoreStore((s) => s.allow_telemetry);
+    const eth = useWalletStore((s) => s.exchange_eth_addresses);
     const debouncedAddress = useDebouncedValue(address, 350);
     const { validateAddress, validationErrorMessage } = useValidateTariAddress();
 
@@ -96,6 +97,8 @@ export const Connect = () => {
                 }
 
                 console.debug(`tariAddress= `, tariAddress);
+                console.debug(`eth= `, eth);
+
                 await invoke('confirm_exchange_address', { address: tariAddress });
                 setSeedlessUI(true);
                 setShowExchangeModal(false);
@@ -104,7 +107,7 @@ export const Connect = () => {
                 console.error('Error confirming exchange address:', e);
             }
         },
-        [address, data?.wxtm_mode, handleWXTMSubmit]
+        [address, data?.wxtm_mode, eth, handleWXTMSubmit]
     );
 
     const labelCopy = data?.wxtm_mode
