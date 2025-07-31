@@ -9,7 +9,7 @@ interface Actions {
 }
 
 const initialState: State = {
-    showWidget: true,
+    showWidget: false,
 };
 
 export const useRewardsStore = create<State & Actions>()((set) => ({

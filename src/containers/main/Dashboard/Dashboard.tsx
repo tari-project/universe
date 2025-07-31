@@ -11,7 +11,9 @@ export default function Dashboard() {
     const activeTapplet = useTappletsStore((s) => s.activeTapplet);
     const showTapplet = useUIStore((s) => s.showTapplet);
     const connectionStatus = useUIStore((s) => s.connectionStatus);
-    const orphanChainUiDisabled = useAirdropStore((s) => s.features?.includes(FEATURE_FLAGS.FF_UI_ORPHAN_CHAIN_DISABLED));
+    const orphanChainUiDisabled = useAirdropStore((s) =>
+        s.features?.includes(FEATURE_FLAGS.FF_UI_ORPHAN_CHAIN_DISABLED)
+    );
 
     useMiningStatesSync();
 

@@ -8,8 +8,6 @@ import { IntroTextWrapper, Text, Title, Wrapper } from './styles';
 export default function CrewSection() {
     const { data, isLoading, error, refetch } = useCrewMembers();
 
-    console.log(data);
-
     // Get current filter state from store (query params only)
     const activeFilter = useAirdropStore((state) => state.crewQueryParams.status);
 
