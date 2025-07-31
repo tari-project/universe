@@ -139,4 +139,9 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'is_seed_backed_up'): Promise<boolean>;
     function invoke(param: 'toggle_cpu_pool_mining', payload: { enabled: boolean }): Promise<void>;
     function invoke(param: 'toggle_gpu_pool_mining', payload: { enabled: boolean }): Promise<void>;
+    function invoke(
+        param: 'encode_payment_id_to_address',
+        payload: { paymentId: string; tariAddress: string }
+    ): Promise<string>;
+    function invoke(param: 'save_wxtm_address', payload: { address: string; exchangeId: string }): Promise<void>;
 }

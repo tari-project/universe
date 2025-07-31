@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ClipboardIcon, ClipboardText, Container, ContentContainer, TextContainer, Title } from './styles';
 import { useTranslation } from 'react-i18next';
 import { readText } from '@tauri-apps/plugin-clipboard-manager';
-import { useValidate } from '@app/hooks/wallet/useValidate.ts';
+import { useValidateTariAddress } from '@app/hooks/wallet/useValidate.ts';
 
 export interface ClipboardViewerProps {
     handlePaste: (text: string) => void;
@@ -12,7 +12,7 @@ export const ClipboardViewer: React.FC<ClipboardViewerProps> = ({ handlePaste })
     const [clipboardText, setClipboardText] = useState<string | undefined>();
     const { t } = useTranslation('exchange');
 
-    const { validateAddress } = useValidate();
+    const { validateAddress } = useValidateTariAddress();
 
     useEffect(() => {
         const readClipboard = async () => {

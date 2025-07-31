@@ -24,6 +24,7 @@ import { useUIStore } from '@app/store';
 
 const XSpaceEventBanner = () => {
     const latestXSpaceEvent = useAirdropStore((state) => state.latestXSpaceEvent);
+    const showTapplet = useUIStore((s) => s.showTapplet);
     const [isTextTooLong, setIsTextTooLong] = useState(false);
     const [transitionPixelWidth, setTransitionPixelWidth] = useState(0);
     const [isVisible, setIsVisible] = useState(false);
@@ -33,7 +34,6 @@ const XSpaceEventBanner = () => {
     const { t } = useTranslation('common', { useSuspense: false });
     const crewRewardsActive = useCrewRewardsStore((s) => s.showWidget);
     const isLoggedIn = useAirdropStore((s) => !!s.airdropTokens);
-    const showTapplet = useUIStore((s) => s.showTapplet);
 
     useEffect(() => {
         if (!latestXSpaceEvent) return;
@@ -75,7 +75,7 @@ const XSpaceEventBanner = () => {
 
     return (
         <AnimatePresence>
-            {latestXSpaceEvent && isVisible && (
+            {latestXSpaceEvent && isVisible && !showTapplet && (
                 <BannerContent
                     onClick={() => {
                         open(latestXSpaceEvent.link);

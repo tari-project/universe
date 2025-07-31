@@ -109,7 +109,7 @@ export default function SeedWords({ isMonero = false }: SeedWordsProps) {
     }
     const handleCopyClick = useCallback(() => {
         startTransition(async () => {
-            if (seedWords && seedWordsFetched) {
+            if (seedWords?.length && seedWordsFetched) {
                 copyToClipboard(seedWords.join(' '));
             } else {
                 getSeedWords().then((r) => {

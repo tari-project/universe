@@ -37,6 +37,8 @@ import { Divider } from '@app/components/elements/Divider.tsx';
 import { ExternalLinkSVG } from '@app/assets/icons/external-link.tsx';
 import { truncateMiddle } from '@app/utils';
 import { AnimatePresence } from 'motion/react';
+import { convertEthAddressToTariAddress } from '@app/store/actions/bridgeApiActions.ts';
+import { WalletAddressNetwork } from '@app/types/transactions.ts';
 
 interface XCOptionProps {
     isCurrent?: boolean;
@@ -58,12 +60,22 @@ export const XCOption = ({ isCurrent = false, isActive, content, onActiveClick, 
             slug: content.slug,
             name: content.name,
         };
-        await invoke('select_exchange_miner', { exchangeMiner: selectedExchangeMiner, miningAddress })
+
+        let tariAddress = miningAddress;
+
+        if (content.wxtm_mode) {
+            const encodedAddress = await convertEthAddressToTariAddress(miningAddress, selectedExchangeMiner.id);
+            console.info('Original Tari address:', miningAddress);
+            console.info('Encoded Tari address:', encodedAddress);
+            tariAddress = encodedAddress;
+        }
+
+        await invoke('select_exchange_miner', { exchangeMiner: selectedExchangeMiner, miningAddress: tariAddress })
             .then(() => {
                 setShowUniversalModal(false);
                 restartMining();
                 setSeedlessUI(true);
-                console.info('New Tari address set successfully to:', miningAddress);
+                console.info('New Tari address set successfully to:', tariAddress);
             })
             .catch((e) => {
                 console.error('Could not set Exchange address', e);
@@ -129,6 +141,9 @@ export const XCOption = ({ isCurrent = false, isActive, content, onActiveClick, 
                 {isActive ? (
                     <ContentBodyWrapper>
                         <ExchangeAddress
+                            walletAddressNetwork={
+                                content.wxtm_mode ? WalletAddressNetwork.Ethereum : WalletAddressNetwork.Tari
+                            }
                             handleIsAddressValid={setIsAddressValid}
                             handleAddressChanged={setMiningAddress}
                             value={

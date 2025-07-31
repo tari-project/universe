@@ -15,12 +15,13 @@ import { LoadingText } from '@app/containers/navigation/components/Wallet/ListLo
 import { HistoryListItem } from './ListItem.tsx';
 import { PlaceholderItem } from './ListItem.styles.ts';
 import { ListItemWrapper, ListWrapper } from './List.styles.ts';
-import { fetchBridgeTransactionsHistory, setDetailsItem } from '@app/store/actions/walletStoreActions.ts';
+import { setDetailsItem } from '@app/store/actions/walletStoreActions.ts';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 import { getTimestampFromTransaction, isBridgeTransaction, isTransactionInfo } from './helpers.ts';
 import { UserTransactionDTO } from '@tari-project/wxtm-bridge-backend-api';
 import { BridgeHistoryListItem } from '@app/components/transactions/history/BridgeListItem.tsx';
 import { TariAddressType } from '@app/types/events-payloads.ts';
+import { fetchBridgeTransactionsHistory } from '@app/store/actions/bridgeApiActions.ts';
 
 interface Props {
     setIsScrolled: (isScrolled: boolean) => void;
