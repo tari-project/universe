@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { claimCrewRewards, sendCrewNudge, fetchCrewMembers } from '@app/store/actions/airdropStoreActions';
+import { claimCrewRewards, sendCrewNudge } from '@app/store/actions/airdropStoreActions';
+import { useCrewMembers } from '@app/hooks/crew/useCrewMembers';
 import { type CrewEntry } from '../../data';
 import { ContentWrapper, Wrapper, TopRow, Username } from './styles';
 import CrewAvatar from './CrewAvatar/CrewAvatar';
@@ -16,6 +17,8 @@ export default function CrewEntry({ entry, isClaimed }: Props) {
     const { handle, reward, progress, timeRemaining, status, user, memberId, claimableRewardId } = entry;
     const [isClaimingReward, setIsClaimingReward] = useState(false);
     const [isSendingNudge, setIsSendingNudge] = useState(false);
+
+    const { invalidate } = useCrewMembers();
 
     const canClaim = progress && progress >= 100 && status !== 'completed';
     const canNudge = status === 'needs_nudge';
@@ -35,7 +38,7 @@ export default function CrewEntry({ entry, isClaimed }: Props) {
                 console.info('Reward claimed successfully:', result.claimedReward);
                 setShowClaim(true);
                 // Refresh crew data to show updated state
-                await fetchCrewMembers();
+                invalidate();
             } else {
                 console.error('Failed to claim reward');
             }
