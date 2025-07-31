@@ -21,6 +21,8 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 pub mod error;
+pub mod hash_calculator;
 pub mod interface;
+pub mod tapplet_installer;
 pub mod tapplet_manager;
 pub mod tapplet_server;

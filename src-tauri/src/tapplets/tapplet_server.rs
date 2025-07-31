@@ -73,7 +73,6 @@ pub async fn start_tapplet(
     // Dynamically get port from your allocator
     let port = PortAllocator::new().assign_port_with_fallback();
     let addr = SocketAddr::from(([127, 0, 0, 1], port));
-    info!(target: LOG_TARGET, "Assigned port: {:?}", port);
 
     // Build router with dynamically created CSP header middleware
     let app = using_serve_dir(tapplet_path, csp_header);

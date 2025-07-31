@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use serde::Serialize;
+use tokio_util::sync::CancellationToken;
 
 use crate::{
     database::models::{InstalledTapplet, TappletVersion},
@@ -69,6 +70,13 @@ pub struct InstalledTappletWithName {
     pub installed_version: String,
     pub latest_version: String,
 }
+
+#[derive(Serialize)]
+pub struct TappletAssets {
+    pub icon_url: String,
+    pub background_url: String,
+}
+
 #[derive(Debug)]
 pub struct TappletSemver {
     pub tapplet_version: TappletVersion,
@@ -85,4 +93,9 @@ impl TryFrom<TappletVersion> for TappletSemver {
             semver,
         })
     }
+}
+
+pub struct AssetServer {
+    pub addr: String,
+    pub cancel_token: CancellationToken,
 }
