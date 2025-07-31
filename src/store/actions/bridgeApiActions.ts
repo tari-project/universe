@@ -7,6 +7,7 @@ import {
 import { useConfigBEInMemoryStore } from '../useAppConfigStore';
 import { useWalletStore } from '../useWalletStore';
 import { invoke } from '@tauri-apps/api/core';
+import { setExchangeETHAdress } from '@app/store/actions/walletStoreActions.ts';
 
 export const fetchBridgeTransactionsHistory = async () => {
     console.info('Fetching bridge transactions history...');
@@ -58,7 +59,7 @@ export const fetchBridgeColdWalletAddress = async () => {
 
 export const convertEthAddressToTariAddress = async (ethAddress: string, exchangeId: string): Promise<string> => {
     const baseUrl = useConfigBEInMemoryStore.getState().bridgeBackendApiUrl;
-    const setETHAdrress = useWalletStore.getState().setETHAdrress;
+
     try {
         OpenAPI.BASE = baseUrl;
         const payload: MineToExchangeConfigDTO = {
@@ -70,16 +71,13 @@ export const convertEthAddressToTariAddress = async (ethAddress: string, exchang
             tariAddress: walletAddress,
             paymentId: paymentId,
         });
-
         console.info('Converted ETH address to Tari address:', encodedTariAddress);
-
-        setETHAdrress(ethAddress, exchangeId);
-
         await invoke('save_wxtm_eth_address', {
-            tariAddress: encodedTariAddress,
+            tariAddress: ethAddress,
             exchangeId: exchangeId,
         });
 
+        setExchangeETHAdress(ethAddress, exchangeId);
         return encodedTariAddress;
     } catch (error) {
         console.error('Could not convert ETH address to Tari address: ', error);

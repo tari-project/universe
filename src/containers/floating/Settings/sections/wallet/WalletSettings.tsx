@@ -1,4 +1,4 @@
-import WalletAddressMarkup from './WalletAddressMarkup';
+import WalletAddressMarkup from './WalletAddressMarkup/WalletAddressMarkup.tsx';
 import MoneroAddressMarkup from './MoneroAddressMarkup';
 import TariSeedWords from './TariSeedWords/TariSeedWords.tsx';
 import MoneroSeedWordSettings from './MoneroSeedWords/MoneroSeedWordSettings.tsx';

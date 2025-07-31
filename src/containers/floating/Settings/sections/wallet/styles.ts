@@ -26,3 +26,9 @@ export const CTASArea = styled.div`
     gap: 6px;
     height: 36px;
 `;
+
+export const SecondaryAddressesWrapper = styled.div`
+    gap: 0;
+    display: flex;
+    flex-direction: column;
+`;

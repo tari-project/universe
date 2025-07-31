@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import { WalletBalance } from '@app/types/app-status.ts';
-import { BackendBridgeTransaction, initialState, useWalletStore } from '../useWalletStore';
+import { BackendBridgeTransaction, useWalletStore } from '../useWalletStore';
 import { setError } from './appStateStoreActions';
 import { TxHistoryFilter } from '@app/components/transactions/history/FilterSelect';
 
@@ -47,7 +47,7 @@ export const fetchCoinbaseTransactions = async ({ offset = 0, limit }: Omit<TxAr
         const fetchedTxs = await invoke('get_transactions', { offset, limit, statusBitflag: bitflag });
 
         const coinbase_transactions = offset > 0 ? [...currentTxs, ...fetchedTxs] : fetchedTxs;
-        useWalletStore.setState({ coinbase_transactions: coinbase_transactions });
+        useWalletStore.setState((c) => ({ ...c, coinbase_transactions: coinbase_transactions }));
         return coinbase_transactions;
     } catch (error) {
         console.error(`Could not get transaction history for rewards: `, error);
@@ -56,7 +56,8 @@ export const fetchCoinbaseTransactions = async ({ offset = 0, limit }: Omit<TxAr
 };
 
 export const importSeedWords = async (seedWords: string[]) => {
-    useWalletStore.setState({
+    useWalletStore.setState((c) => ({
+        ...c,
         is_wallet_importing: true,
         coinbase_transactions: [],
         tx_history: [],
@@ -67,11 +68,11 @@ export const importSeedWords = async (seedWords: string[]) => {
             total_height: 0,
             progress: 0,
         },
-    });
+    }));
     try {
         await invoke('import_seed_words', { seedWords });
         await refreshTransactions();
-        useWalletStore.setState({ is_wallet_importing: false });
+        useWalletStore.setState((c) => ({ ...c, is_wallet_importing: false }));
         addToast({
             title: t('success', { ns: 'airdrop' }),
             text: t('import-seed-success', { ns: 'settings' }),
@@ -82,9 +83,9 @@ export const importSeedWords = async (seedWords: string[]) => {
         if (!errorMessage.includes('User canceled the operation') && !errorMessage.includes('PIN entry cancelled')) {
             setError(`Could not import seed words: ${error}`, true);
         }
-        useWalletStore.setState({ is_wallet_importing: false });
+        useWalletStore.setState((c) => ({ ...c, is_wallet_importing: false }));
     } finally {
-        useWalletStore.setState({ is_wallet_importing: false });
+        useWalletStore.setState((c) => ({ ...c, is_wallet_importing: false }));
     }
 };
 
@@ -111,30 +112,43 @@ export const setExternalTariAddress = async (newAddress: string) => {
 export const setWalletBalance = async (balance: WalletBalance) => {
     const calculated_balance =
         balance.available_balance + balance.timelocked_balance + balance.pending_incoming_balance;
-    useWalletStore.setState({
+    useWalletStore.setState((c) => ({
+        ...c,
         balance: { ...balance },
         calculated_balance,
-    });
+    }));
 };
 
 export const setIsSwapping = (isSwapping: boolean) => {
-    useWalletStore.setState({ is_swapping: isSwapping });
+    useWalletStore.setState((c) => ({ ...c, is_swapping: isSwapping }));
 };
 
 export const setTxHistoryFilter = (filter: TxHistoryFilter) => {
-    useWalletStore.setState({ tx_history_filter: filter });
+    useWalletStore.setState((c) => ({ ...c, tx_history_filter: filter }));
 };
 
 export const setDetailsItem = (detailsItem: TransactionDetailsItem | BackendBridgeTransaction | null) =>
-    useWalletStore.setState({ detailsItem });
+    useWalletStore.setState((c) => ({ ...c, detailsItem }));
 
 export const handleSelectedTariAddressChange = (payload: TariAddressUpdatePayload) => {
     const { tari_address_base58, tari_address_emoji, tari_address_type } = payload;
-    useWalletStore.setState({
-        ...initialState,
+    useWalletStore.setState((c) => ({
+        ...c,
         is_wallet_importing: useWalletStore.getState().is_wallet_importing,
         tari_address_base58,
         tari_address_emoji,
         tari_address_type,
-    });
+    }));
+};
+
+export const setExchangeETHAdress = (ethAddress: string, exchangeId: string) => {
+    const newEntry = { [exchangeId]: ethAddress };
+
+    useWalletStore.setState((c) => ({
+        ...c,
+        exchange_eth_addresses: {
+            ...c.exchange_eth_addresses,
+            ...newEntry,
+        },
+    }));
 };

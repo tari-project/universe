@@ -3,21 +3,29 @@ import {
     SettingsGroupWrapper,
 } from '@app/containers/floating/Settings/components/SettingsGroup.styles';
 import { useCallback, useState } from 'react';
-
+import * as m from 'motion/react-m';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { IconButton } from '@app/components/elements/buttons/IconButton';
-import { IoCopyOutline, IoCheckmarkOutline } from 'react-icons/io5';
+import { IoCheckmarkOutline, IoCopyOutline } from 'react-icons/io5';
 import emojiRegex from 'emoji-regex';
 import { styled } from 'styled-components';
-import { BsArrowsExpandVertical, BsArrowsCollapseVertical } from 'react-icons/bs';
+import { BsArrowsCollapseVertical, BsArrowsExpandVertical } from 'react-icons/bs';
 import { useWalletStore } from '@app/store/useWalletStore';
 
 import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard.ts';
 import { useTranslation } from 'react-i18next';
 import { setExternalTariAddress } from '@app/store/actions/walletStoreActions';
 import AddressEditor from '../components/AddressEditor';
-import { CTASArea, InputArea, WalletSettingsGrid } from '@app/containers/floating/Settings/sections/wallet/styles.ts';
+import {
+    CTASArea,
+    InputArea,
+    SecondaryAddressesWrapper,
+    WalletSettingsGrid,
+} from '@app/containers/floating/Settings/sections/wallet/styles.ts';
 import { useValidateTariAddress } from '@app/hooks/wallet/useValidate.ts';
+import { useFetchExchangeBranding } from '@app/hooks/exchanges/fetchExchangeContent.ts';
+import { Input } from '@app/components/elements/inputs/Input.tsx';
+import { truncateMiddle } from '@app/utils';
 
 const Dot = styled.div`
     width: 4px;
@@ -34,13 +42,13 @@ const DotContainer = styled.div`
     margin: 0 4px;
 `;
 
-const AddressContainer = styled.div`
+const AddressContainer = styled(m.div)`
     overflow-x: auto;
     font-size: 12px;
     letter-spacing: 1px;
     line-height: 1.3;
     width: 100%;
-    height: 40px;
+    min-height: 40px;
     align-items: center;
     display: flex;
     padding: 8px;
@@ -50,8 +58,8 @@ const AddressContainer = styled.div`
 `;
 
 const AddressInner = styled.div`
-    //width: max-content;
     display: flex;
+    height: 100%;
 `;
 
 export const CopyToClipboard = ({ text }: { text: string | undefined }) => {
@@ -73,11 +81,14 @@ export const CopyToClipboard = ({ text }: { text: string | undefined }) => {
 
 const WalletAddressMarkup = () => {
     const { t } = useTranslation('settings', { useSuspense: false });
+    const { data } = useFetchExchangeBranding();
+    const walletType = useWalletStore((state) => state.tari_address_type);
     const walletAddress = useWalletStore((state) => state.tari_address_base58);
     const walletAddressEmoji = useWalletStore((state) => state.tari_address_emoji);
+    const isWXTM = data?.wxtm_mode && walletType.toString() === 'External'; //TariAddressType.External;
     // should only exist in case mining to exchange with wxtm_mode enabled
     const ethAddress = useWalletStore((state) => state.getETHAddressOfCurrentExchange());
-    console.debug(`ethAddress= `, ethAddress);
+
     const { validateAddress } = useValidateTariAddress();
     const [isCondensed, setIsCondensed] = useState(true);
 
@@ -117,15 +128,33 @@ const WalletAddressMarkup = () => {
         },
     };
 
+    const ethMarkup = !!ethAddress?.length && (
+        <>
+            <SettingsGroupTitle style={{ marginBottom: 10 }}>
+                <Typography variant="h6">{`Exchange ETH Address`}</Typography>
+            </SettingsGroupTitle>
+            <WalletSettingsGrid>
+                <InputArea>
+                    <Input disabled value={truncateMiddle(ethAddress, 8)} style={{ fontSize: '12px' }} />
+                </InputArea>
+                <CTASArea>
+                    <CopyToClipboard text={ethAddress} />
+                </CTASArea>
+            </WalletSettingsGrid>
+        </>
+    );
+
     return (
         <SettingsGroupWrapper>
             <SettingsGroupTitle>
                 <Typography variant="h6">{t('tari-wallet-address')}</Typography>
             </SettingsGroupTitle>
-            <AddressEditor initialAddress={walletAddress} onApply={setExternalTariAddress} rules={validationRules} />
             <WalletSettingsGrid>
                 <InputArea>
-                    <AddressContainer style={{ height: isCondensed ? '40px' : 'auto' }}>
+                    <AddressContainer
+                        animate={{ height: isCondensed ? '40px' : 'auto' }}
+                        transition={{ duration: 0.1, ease: 'linear' }}
+                    >
                         <AddressInner>
                             <Typography
                                 style={{
@@ -146,6 +175,16 @@ const WalletAddressMarkup = () => {
                     <CopyToClipboard text={walletAddressEmoji} />
                 </CTASArea>
             </WalletSettingsGrid>
+            <SecondaryAddressesWrapper>
+                <AddressEditor
+                    initialAddress={walletAddress}
+                    onApply={setExternalTariAddress}
+                    rules={validationRules}
+                    isWXTM={!!isWXTM}
+                />
+
+                {ethMarkup}
+            </SecondaryAddressesWrapper>
         </SettingsGroupWrapper>
     );
 };
