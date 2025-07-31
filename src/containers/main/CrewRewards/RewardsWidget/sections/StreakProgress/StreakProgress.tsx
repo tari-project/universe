@@ -24,7 +24,7 @@ export default function StreakProgress({ isInline = false }: Props) {
         return (
             <Wrapper $isInline={isInline}>
                 <StreakMessage $isInline={isInline}>
-                    <Text>Loading streak...</Text>
+                    <Text>{t('airdrop:crewRewards.streak.loadingStreak')}</Text>
                     <StreakText>🔥</StreakText>
                 </StreakMessage>
             </Wrapper>
@@ -36,14 +36,14 @@ export default function StreakProgress({ isInline = false }: Props) {
     // Determine streak display
     const getStreakDisplay = () => {
         if (currentStreak === 0) {
-            return 'Start Your Streak! 🚀';
+            return t('airdrop:crewRewards.streak.startYourStreak');
         }
 
         if (currentStreak === 1) {
-            return '1 Day Streak 🔥';
+            return t('airdrop:crewRewards.streak.oneDayStreak');
         }
 
-        return `${currentStreak} Day Streak 🔥`;
+        return t('airdrop:crewRewards.streak.multiDayStreak', { days: currentStreak });
     };
 
     // Determine message based on progress
@@ -53,16 +53,16 @@ export default function StreakProgress({ isInline = false }: Props) {
         }
 
         if (currentStreak === 0) {
-            return 'Start mining to begin your streak and earn rewards!';
+            return t('airdrop:crewRewards.streak.startMiningMessage');
         }
 
         if (meetsMinimumDays) {
-            return "Great job! You've met the minimum requirements. Keep going!";
+            return t('airdrop:crewRewards.streak.minimumRequirementsMet');
         }
 
         const daysNeeded = minReferrerDaysRequired - currentStreak;
         if (daysNeeded > 0) {
-            return `${daysNeeded} more days to meet minimum requirements!`;
+            return t('airdrop:crewRewards.streak.daysToMinimum', { days: daysNeeded });
         }
 
         return t('airdrop:crewRewards.streak.keepStreak');
