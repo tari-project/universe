@@ -24,12 +24,10 @@ use getset::{Getters, Setters};
 use serde::{Deserialize, Serialize};
 use std::{sync::LazyLock, time::SystemTime};
 use tari_common::configuration::Network;
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
 use tokio::sync::RwLock;
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
-use crate::internal_wallet::InternalWallet;
-use crate::{EventsEmitter, UniverseAppState};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SupportXTMPoolConfig {
@@ -188,16 +186,8 @@ pub struct ConfigPools {
 
 impl ConfigPools {
     pub async fn initialize(app_handle: AppHandle) {
-        let state = app_handle.state::<UniverseAppState>();
         let mut config = Self::current().write().await;
         config.load_app_handle(app_handle.clone()).await;
-
-        let mut cpu_config = state.cpu_miner_config.write().await;
-        let tari_address = InternalWallet::tari_address().await;
-        cpu_config.load_from_config_pools(config.content.clone(), &tari_address);
-        drop(cpu_config);
-
-        EventsEmitter::emit_pools_config_loaded(config.content.clone()).await;
     }
 }
 

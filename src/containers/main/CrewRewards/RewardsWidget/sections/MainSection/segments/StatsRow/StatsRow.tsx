@@ -1,0 +1,109 @@
+import {
+    Wrapper,
+    ActiveMinersWrapper,
+    PhotoWrapper,
+    PhotoImage,
+    StatusDot,
+    TextWrapper,
+    MainText,
+    LabelText,
+    Divider,
+    InviteFriendsMessage,
+} from './styles';
+
+import photo1 from '../../../../../images/person1.png';
+import { useCrewMembers } from '@app/hooks/crew/useCrewMembers';
+import { useReferrerProgress } from '@app/hooks/crew/useReferrerProgress';
+import { formatNumber, FormatPreset } from '@app/utils';
+import { useTranslation, Trans } from 'react-i18next';
+
+export default function StatsRow() {
+    const { t } = useTranslation();
+
+    // Get data directly from React Query
+    const { data: crewData, isLoading: crewLoading, error: crewError } = useCrewMembers();
+    const { referrerProgress, isLoading: progressLoading } = useReferrerProgress();
+
+    const totalFriends = crewData?.totals?.all || 0;
+    const activeFriends = crewData?.totals?.active || 0;
+    const bonusXTMEarned = referrerProgress?.totalClaimedRewards || 0;
+
+    const isLoading = crewLoading || progressLoading;
+    const hasError = !!crewError;
+    const hasFriends = totalFriends > 0;
+
+    if (isLoading) {
+        return (
+            <Wrapper>
+                <ActiveMinersWrapper>
+                    <PhotoWrapper>
+                        <PhotoImage $image={photo1} aria-hidden="true" />
+                        <PhotoImage $image={photo1} aria-hidden="true" />
+                        <PhotoImage $image={photo1} aria-hidden="true" />
+                        <StatusDot />
+                    </PhotoWrapper>
+
+                    <TextWrapper>
+                        <MainText>
+                            -- <span>{`${t('airdrop:crewRewards.of')} --`}</span>
+                        </MainText>
+                        <LabelText>{t('airdrop:crewRewards.activeMinersStat')}</LabelText>
+                    </TextWrapper>
+                </ActiveMinersWrapper>
+
+                <Divider />
+
+                <TextWrapper>
+                    <MainText>--</MainText>
+                    <LabelText>{t('airdrop:crewRewards.bonusXTMEarned')}</LabelText>
+                </TextWrapper>
+            </Wrapper>
+        );
+    }
+
+    if (hasError) {
+        return (
+            <Wrapper>
+                <InviteFriendsMessage>
+                    <Trans i18nKey="airdrop:crewRewards.errorLoadingData" />
+                </InviteFriendsMessage>
+            </Wrapper>
+        );
+    }
+
+    return (
+        <Wrapper>
+            {hasFriends ? (
+                <ActiveMinersWrapper>
+                    <PhotoWrapper>
+                        <PhotoImage $image={photo1} aria-hidden="true" />
+                        <PhotoImage $image={photo1} aria-hidden="true" />
+                        <PhotoImage $image={photo1} aria-hidden="true" />
+                        <StatusDot />
+                    </PhotoWrapper>
+
+                    <TextWrapper>
+                        <MainText>
+                            {activeFriends}{' '}
+                            <span>
+                                {t('airdrop:crewRewards.of')} {totalFriends}
+                            </span>
+                        </MainText>
+                        <LabelText>{t('airdrop:crewRewards.activeMinersStat')}</LabelText>
+                    </TextWrapper>
+                </ActiveMinersWrapper>
+            ) : (
+                <InviteFriendsMessage>
+                    <Trans i18nKey="airdrop:crewRewards.inviteFriendsMessage" />
+                </InviteFriendsMessage>
+            )}
+
+            <Divider />
+
+            <TextWrapper>
+                <MainText>{formatNumber(bonusXTMEarned, FormatPreset.XTM_LONG_DEC)}</MainText>
+                <LabelText>{t('airdrop:crewRewards.bonusXTMEarned')}</LabelText>
+            </TextWrapper>
+        </Wrapper>
+    );
+}

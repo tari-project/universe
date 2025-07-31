@@ -1,7 +1,7 @@
-import { useQuery } from '@tanstack/react-query';
-import { useAirdropStore } from '@app/store';
 import { handleAirdropRequest } from '@app/hooks/airdrop/utils/useHandleRequest.ts';
+import { useAirdropStore } from '@app/store';
 import type { CrewMembersResponse } from '@app/store/useAirdropStore';
+import { useQuery } from '@tanstack/react-query';
 
 export const KEY_CREW_MEMBERS = 'crew_members';
 
