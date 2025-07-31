@@ -254,6 +254,12 @@ impl WalletManager {
         let micro_minotari_amount = MicroMinotari::from(minotari_amount);
         let amount = micro_minotari_amount.as_u64();
 
+        // Payment ID can't be an empty string
+        let payment_id = match payment_id {
+            Some(s) if s.is_empty() => None,
+            _ => payment_id,
+        };
+
         let res = process_watcher
             .adapter
             .send_one_sided_to_stealth_address(amount, destination, payment_id, app_handle)

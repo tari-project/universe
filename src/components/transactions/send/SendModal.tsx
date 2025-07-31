@@ -15,7 +15,7 @@ interface SendModalProps {
     setSection: (section: string) => void;
 }
 export type SendStatus = 'fields' | 'reviewing' | 'processing' | 'completed';
-const defaultValues = { message: '', address: '', amount: undefined };
+const defaultValues = { message: undefined, address: '', amount: undefined };
 
 export default function SendModal({ section, setSection }: SendModalProps) {
     const { t } = useTranslation('wallet');
