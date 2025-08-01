@@ -80,6 +80,7 @@ pub struct ConfigUIContent {
     visual_mode: bool,
     show_experimental_settings: bool,
     was_staged_security_modal_shown: bool, // TODO: Migrated to ConfigWallet, remove after some time
+    last_staged_security_modal_shown: Option<SystemTime>,
     wallet_ui_mode: WalletUIMode,
 }
 
@@ -96,6 +97,7 @@ impl Default for ConfigUIContent {
             visual_mode: true,
             show_experimental_settings: false,
             was_staged_security_modal_shown: false,
+            last_staged_security_modal_shown: None,
             wallet_ui_mode: WalletUIMode::Standard,
         }
     }
@@ -160,6 +162,28 @@ impl ConfigUI {
             "en-US".to_string(),
         )
         .await;
+    }
+
+    pub async fn should_show_staged_security_modal() -> bool {
+        const TWO_DAYS_IN_SECONDS: u64 = 172800;
+        let content = Self::content().await;
+
+        if let Some(last_shown) = content.last_staged_security_modal_shown() {
+            if let Ok(duration) = SystemTime::now().duration_since(*last_shown) {
+                return duration.as_secs() >= TWO_DAYS_IN_SECONDS;
+            }
+            return false; // If we can't determine the duration, don't show it
+        }
+
+        true
+    }
+
+    pub async fn update_last_staged_security_modal_shown() -> Result<(), anyhow::Error> {
+        Self::update_field(
+            ConfigUIContent::set_last_staged_security_modal_shown,
+            Some(SystemTime::now()),
+        )
+        .await
     }
 }
 
