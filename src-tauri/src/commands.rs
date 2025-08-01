@@ -59,7 +59,8 @@ use crate::tapplets::error::{
     TappletServerError::*,
 };
 use crate::tapplets::interface::{
-    ActiveTapplet, AssetServer, InstalledTappletWithName, TappletPermissions,
+    ActiveTapplet, AssetServer, InstalledTappletWithName, TappletConfig, TappletManifest,
+    TappletPermissions,
 };
 use crate::tapplets::tapplet_installer::{
     check_files_and_validate_checksum, delete_tapplet, download_asset,
@@ -97,7 +98,7 @@ use tari_key_manager::mnemonic_wordlists::MNEMONIC_ENGLISH_WORDS;
 use tari_utilities::encoding::MBase58;
 use tari_utilities::SafePassword;
 use tauri::ipc::InvokeError;
-use tauri::{Manager, PhysicalPosition, PhysicalSize};
+use tauri::{Manager, PhysicalPosition, PhysicalSize, Url};
 use tauri_plugin_sentry::sentry;
 use urlencoding::encode;
 
@@ -2593,42 +2594,62 @@ pub async fn update_installed_tapplet(
     return Ok(installed_tapplets);
 }
 
+fn is_http_or_localhost(s: &str) -> bool {
+    if let Ok(url) = Url::parse(s) {
+        let scheme = url.scheme();
+        if scheme == "http" || scheme == "https" {
+            return true;
+        }
+    }
+    // Also check if string contains "localhost", "http", or "https" (case insensitive)
+    let s_lower = s.to_lowercase();
+    s_lower.contains("localhost") || s_lower.contains("http") || s_lower.contains("https")
+}
+
 #[tauri::command]
 pub async fn add_dev_tapplet(
     endpoint: String,
     db_connection: tauri::State<'_, DatabaseConnection>,
 ) -> Result<DevTapplet, Error> {
     // let manifest_endpoint = format!("{}/tapplet.manifest.json", endpoint);
-    let config_endpoint = format!("{}/tapplet.config.json", endpoint);
-    info!("🌟 Add dev tapplet to db endpoint: {:?}", &config_endpoint);
-    // let tapp_manifest = reqwest::get(&config_endpoint)
-    //     .await
-    //     .inspect_err(|e| {
-    //         error!(
-    //             "❌ Fetching tapplet manifest endpoint {:?} error: {:?}",
-    //             config_endpoint, e
-    //         )
-    //     })
-    //     .map_err(|_| {
-    //         RequestError(FetchManifestError {
-    //             endpoint: endpoint.clone(),
-    //         })
-    //     })?
-    //     .json::<DevTappletResponse>()
-    //     .await
-    //     .map_err(|_| {
-    //         RequestError(ManifestResponseError {
-    //             endpoint: endpoint.clone(),
-    //         })
-    //     })?;
-    let tapp_dest_dir = PathBuf::from(&endpoint);
-    let tapp_manifest = get_tapplet_manifest(tapp_dest_dir).unwrap();
-    info!("🌟 Add dev tapplet manifest: {:?}", &tapp_manifest);
+    let tapp_config: TappletConfig;
+
+    if is_http_or_localhost(&endpoint) {
+        info!("❌ LOCALHOST endpoint {:?}", &endpoint);
+        // IF source is the type of localhost or http address
+        let config_endpoint = format!("{}/tapplet.config.json", endpoint);
+        tapp_config = reqwest::get(&config_endpoint)
+            .await
+            .inspect_err(|e| {
+                error!(
+                    "❌ Fetching tapplet manifest endpoint {:?} error: {:?}",
+                    config_endpoint, e
+                )
+            })
+            .map_err(|_| {
+                RequestError(FetchManifestError {
+                    endpoint: endpoint.clone(),
+                })
+            })?
+            .json::<TappletConfig>()
+            .await
+            .map_err(|_| {
+                RequestError(ManifestResponseError {
+                    endpoint: endpoint.clone(),
+                })
+            })?;
+    } else {
+        // IF source is type of path like /home/user/path-to-app
+        let tapp_dest_dir = PathBuf::from(&endpoint);
+        tapp_config = get_tapplet_config(tapp_dest_dir).unwrap();
+    }
+
+    info!("🌟 Add dev tapplet manifest: {:?}", &tapp_config);
     let mut store = SqliteStore::new(db_connection.0.clone());
     let new_dev_tapplet = CreateDevTapplet {
         endpoint: &endpoint,
-        package_name: &tapp_manifest.package_name,
-        display_name: &tapp_manifest.package_name,
+        package_name: &tapp_config.package_name,
+        display_name: &tapp_config.package_name,
     };
     match store.create(&new_dev_tapplet) {
         Ok(dev_tapplet) => {

@@ -41,7 +41,7 @@ export default function TappletsDev() {
     const handleLaunch = useCallback(
         async (tappletId: number) => {
             try {
-                setActiveTappById(tappletId, true);
+                setActiveTappById(tappletId, false, true);
                 setIsSettingsOpen(!isSettingsOpen);
                 setShowTapplet(true);
                 setSidebarOpen(false);

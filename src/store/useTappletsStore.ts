@@ -5,6 +5,7 @@ import {
     DevTapplet,
     InstalledTappletWithAssets,
     RegisteredTapplet,
+    TappletConfig,
 } from '@app/types/tapplets/tapplet.types.ts';
 import { useTappletSignerStore } from './useTappletSignerStore.ts';
 import { invoke } from '@tauri-apps/api/core';
@@ -23,7 +24,7 @@ interface State {
 
 interface Actions {
     setActiveTapp: (tapplet?: ActiveTapplet) => Promise<void>;
-    setActiveTappById: (tappletId: number, isBuiltIn?: boolean) => Promise<void>;
+    setActiveTappById: (tappletId: number, isBuiltIn?: boolean, isDev?: boolean) => Promise<void>;
     setDevTapplet: (tappPath: string) => Promise<void>;
     deactivateTapplet: () => Promise<void>;
     setOngoingBridgeTx: (tx: BridgeTxDetails) => void;
@@ -59,10 +60,45 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
     deactivateTapplet: async () => {
         set({ activeTapplet: undefined });
     },
-    setActiveTappById: async (tappletId, isBuiltIn = false) => {
+    setActiveTappById: async (tappletId, isBuiltIn = false, isDev = false) => {
         if (tappletId == get().activeTapplet?.tapplet_id) return;
         const tappProviderState = useTappletSignerStore.getState();
         if (!tappProviderState.isInitialized) tappProviderState.initTappletSigner();
+
+        //TODO add case if dev tapplet's already running and if not - run local server (launch_builtin_tapplet)
+        if (isDev) {
+            try {
+                console.info('Set Dev Tapplet');
+                const tapplet = get().devTapplets.find((tapp) => tapp.id === tappletId);
+                console.info('Set Dev Tapplet: ', tapplet?.display_name);
+                if (!tapplet) return;
+                const TAPPLET_CONFIG_FILE = 'tapplet.config.json'; //TODO
+                const url = `${tapplet.endpoint}/${TAPPLET_CONFIG_FILE}`;
+                console.info('Dev Tapplet fetch url: ', url);
+                const resp = await fetch(url, {
+                    method: 'GET',
+                });
+                console.info('Dev Tapplet fetch resp: ', resp);
+                if (!resp.ok) return;
+                const config: TappletConfig = await resp.json();
+                console.info('Dev Tapplet config', config);
+                if (!config) return;
+                const activeTapplet: ActiveTapplet = {
+                    tapplet_id: tapplet.id,
+                    version: config.version,
+                    display_name: tapplet.display_name,
+                    source: tapplet.endpoint,
+                    permissions: config.permissions,
+                    supportedChain: config.supportedChain,
+                };
+                set({ activeTapplet });
+                tappProviderState.setTappletSigner(config.packageName);
+            } catch (error) {
+                console.error('Error running Dev Tapplet: ', error);
+                setError(`'Error running Dev Tapplet: ${error}`);
+            }
+            return;
+        }
 
         // built-in tapplet
         if (isBuiltIn) {
