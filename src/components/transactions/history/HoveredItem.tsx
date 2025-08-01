@@ -10,9 +10,10 @@ import { handleWinReplay } from '@app/store/useBlockchainVisualisationStore.ts';
 import { ReplaySVG } from '@app/assets/icons/replay.tsx';
 import { ButtonWrapper, FlexButton, GemImage, GemPill, HoverWrapper, ReplayButton } from './ListItem.styles.ts';
 import { useConfigUIStore } from '@app/store/useAppConfigStore.ts';
+import { CombinedBridgeWalletTransaction } from '@app/store/useWalletStore.ts';
 
 interface Props {
-    item: TransactionInfo;
+    item: CombinedBridgeWalletTransaction;
     button?: React.ReactNode;
 }
 

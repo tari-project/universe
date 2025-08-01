@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import { WalletBalance } from '@app/types/app-status.ts';
-import { BackendBridgeTransaction, useWalletStore } from '../useWalletStore';
+import { BackendBridgeTransaction, CombinedBridgeWalletTransaction, useWalletStore } from '../useWalletStore';
 import { setError } from './appStateStoreActions';
 import { TxHistoryFilter } from '@app/components/transactions/history/FilterSelect';
 
@@ -127,7 +127,7 @@ export const setTxHistoryFilter = (filter: TxHistoryFilter) => {
     useWalletStore.setState((c) => ({ ...c, tx_history_filter: filter }));
 };
 
-export const setDetailsItem = (detailsItem: TransactionDetailsItem | BackendBridgeTransaction | null) =>
+export const setDetailsItem = (detailsItem: CombinedBridgeWalletTransaction | null) =>
     useWalletStore.setState((c) => ({ ...c, detailsItem }));
 
 export const handleSelectedTariAddressChange = (payload: TariAddressUpdatePayload) => {

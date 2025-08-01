@@ -3,7 +3,12 @@ import { useInView } from 'react-intersection-observer';
 import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/core';
 
-import { BackendBridgeTransaction, useMiningMetricsStore, useWalletStore } from '@app/store';
+import {
+    BackendBridgeTransaction,
+    CombinedBridgeWalletTransaction,
+    useMiningMetricsStore,
+    useWalletStore,
+} from '@app/store';
 
 import { TransactionInfo } from '@app/types/app-status.ts';
 
@@ -17,8 +22,7 @@ import { PlaceholderItem } from './ListItem.styles.ts';
 import { ListItemWrapper, ListWrapper } from './List.styles.ts';
 import { setDetailsItem } from '@app/store/actions/walletStoreActions.ts';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
-import { getTimestampFromTransaction, isBridgeTransaction, isTransactionInfo } from './helpers.ts';
-import { UserTransactionDTO } from '@tari-project/wxtm-bridge-backend-api';
+import { convertWalletTransactionToCombinedTransaction, isBridgeTransaction, isTransactionInfo } from './helpers.ts';
 import { BridgeHistoryListItem } from '@app/components/transactions/history/BridgeListItem.tsx';
 import { TariAddressType } from '@app/types/events-payloads.ts';
 import { fetchBridgeTransactionsHistory } from '@app/store/actions/bridgeApiActions.ts';
@@ -34,7 +38,6 @@ export function List({ setIsScrolled, targetRef }: Props) {
     const bridgeTransactions = useWalletStore((s) => s.bridge_transactions);
     const currentBlockHeight = useMiningMetricsStore((s) => s.base_node_status.block_height);
     const coldWalletAddress = useWalletStore((s) => s.cold_wallet_address);
-    const tx_history_filter = useWalletStore((s) => s.tx_history_filter);
     const tariAddress = useWalletStore((s) => s.tari_address_base58);
     const tariAddressType = useWalletStore((s) => s.tari_address_type);
     const { data, fetchNextPage, isFetchingNextPage, isFetching, hasNextPage } = useFetchTxHistory();
@@ -53,19 +56,22 @@ export function List({ setIsScrolled, targetRef }: Props) {
         onChange: () => hasNextPage && fetchNextPage(),
     });
 
-    const baseTx = useMemo(() => data?.pages.flatMap((p) => p) || [], [data?.pages]);
+    const baseTx = useMemo(
+        () => data?.pages.flatMap((p) => p.map((tx) => convertWalletTransactionToCombinedTransaction(tx))) || [],
+        [data?.pages]
+    );
 
     useEffect(() => {
         const isThereANewBridgeTransaction = baseTx.find(
             (tx) =>
-                tx.dest_address === coldWalletAddress &&
+                tx.destinationAddress === coldWalletAddress &&
                 !bridgeTransactions.some(
-                    (bridgeTx) => bridgeTx.paymentId === tx.payment_id && Number(bridgeTx.tokenAmount) === tx.amount
+                    (bridgeTx) => bridgeTx.paymentId === tx.paymentId && Number(bridgeTx.tokenAmount) === tx.tokenAmount
                 )
         );
 
         const isThereEmptyBridgeTransactionAndFoundInWallet = baseTx.find(
-            (tx) => tx.dest_address === coldWalletAddress && bridgeTransactions.length === 0
+            (tx) => tx.destinationAddress === coldWalletAddress && bridgeTransactions.length === 0
         );
 
         if (
@@ -81,81 +87,38 @@ export function List({ setIsScrolled, targetRef }: Props) {
         }
     }, [baseTx, bridgeTransactions, coldWalletAddress, currentBlockHeight, tariAddress, tariAddressType]);
 
-    const combinedTransactions = useMemo(() => {
-        const transactions: (TransactionInfo | UserTransactionDTO)[] = [...baseTx];
+    const adjustedTransactions: CombinedBridgeWalletTransaction[] = useMemo(() => {
+        const extendedTransactions: CombinedBridgeWalletTransaction[] = [...baseTx];
+        bridgeTransactions.forEach((bridgeTx) => {
+            const walletBridgeTransaction = extendedTransactions.findIndex((tx) => tx.paymentId === bridgeTx.paymentId);
+            extendedTransactions[walletBridgeTransaction] = {
+                ...extendedTransactions[walletBridgeTransaction],
+                bridgeTransactionDetails: {
+                    status: bridgeTx.status,
+                    transactionHash: bridgeTx.transactionHash,
+                    amountAfterFee: bridgeTx.amountAfterFee,
+                },
+            };
+        });
 
-        const includeBridgeTx = tx_history_filter === 'transactions' || tx_history_filter === 'all-activity';
-        if (includeBridgeTx) {
-            transactions.push(...bridgeTransactions);
-        }
+        return extendedTransactions;
+    }, [baseTx, bridgeTransactions, coldWalletAddress]);
 
-        return transactions.sort((a, b) => getTimestampFromTransaction(b) - getTimestampFromTransaction(a));
-    }, [baseTx, bridgeTransactions, tx_history_filter]);
-
-    const adjustedTransactions = useMemo(() => {
-        return combinedTransactions.reduce(
-            (acc, tx, index) => {
-                if (isBridgeTransaction(tx) && index > 0) {
-                    const previousTransactions = acc.slice(-5); // Get up to the last 5 transactions
-                    const matchingTransaction = previousTransactions.find(
-                        (prevTx) =>
-                            isTransactionInfo(prevTx) &&
-                            prevTx.amount === Number(tx.tokenAmount) &&
-                            prevTx.payment_id === tx.paymentId &&
-                            prevTx.dest_address === coldWalletAddress
-                    );
-
-                    if (matchingTransaction) {
-                        const removedBridgeTransaction = acc.splice(acc.indexOf(matchingTransaction), 1)[0];
-                        if (removedBridgeTransaction && isTransactionInfo(removedBridgeTransaction)) {
-                            const updatedTransaction: BackendBridgeTransaction = {
-                                sourceAddress: removedBridgeTransaction.source_address,
-                                destinationAddress: tx.destinationAddress,
-                                status: tx.status,
-                                createdAt: tx.createdAt,
-                                tokenAmount: tx.tokenAmount,
-                                amountAfterFee: tx.amountAfterFee,
-                                feeAmount: tx.feeAmount,
-                                paymentId: tx.paymentId,
-                                mined_in_block_height: removedBridgeTransaction.mined_in_block_height,
-                            };
-                            acc.push(updatedTransaction);
-                            return acc;
-                        }
-                    }
-                }
-                acc.push(tx);
-                return acc;
-            },
-            [] as (TransactionInfo | UserTransactionDTO)[]
-        );
-    }, [combinedTransactions, coldWalletAddress]);
-
-    const handleDetailsChange = useCallback(async (tx: TransactionInfo | null) => {
-        if (!tx) {
+    const handleDetailsChange = useCallback(async (transaction: CombinedBridgeWalletTransaction | null) => {
+        if (!transaction || !transaction.walletTransactionDetails) {
             setDetailsItem(null);
             return;
         }
-        const dest_address_emoji = await invoke('parse_tari_address', { address: tx.dest_address })
+        const dest_address_emoji = await invoke('parse_tari_address', { address: transaction.destinationAddress })
             .then((result) => result?.emoji_string)
             .catch(() => undefined);
-        // Specify order here
+
         setDetailsItem({
-            tx_id: tx.tx_id,
-            payment_reference: tx.payment_reference,
-            amount: tx.amount,
-            payment_id: tx.payment_id,
-            status: tx.status,
-            source_address: tx.source_address,
-            dest_address: tx.dest_address,
-            dest_address_emoji,
-            message: tx.message,
-            direction: tx.direction,
-            fee: tx.fee,
-            is_cancelled: tx.is_cancelled,
-            excess_sig: tx.excess_sig,
-            timestamp: tx.timestamp,
-            mined_in_block_height: tx.mined_in_block_height,
+            ...transaction,
+            walletTransactionDetails: {
+                ...transaction.walletTransactionDetails,
+                destAddressEmoji: dest_address_emoji,
+            },
         });
     }, []);
 
@@ -165,31 +128,15 @@ export function List({ setIsScrolled, targetRef }: Props) {
     const listMarkup = (
         <ListItemWrapper>
             {adjustedTransactions?.map((tx, i) => {
-                if (isTransactionInfo(tx)) {
-                    return (
-                        <HistoryListItem
-                            key={`item-${i}-${tx.tx_id}`}
-                            item={tx}
-                            index={i}
-                            itemIsNew={false}
-                            setDetailsItem={handleDetailsChange}
-                        />
-                    );
-                }
-                if (isBridgeTransaction(tx)) {
-                    return (
-                        <BridgeHistoryListItem
-                            key={tx.createdAt}
-                            item={tx}
-                            index={i}
-                            itemIsNew={i === 0}
-                            setDetailsItem={setDetailsItem}
-                        />
-                    );
-                }
-                // If we reach here, it means the transaction is neither a TransactionInfo nor a UserTransactionDTO
-                console.warn('Unexpected transaction type:', tx);
-                return null; // or handle accordingly
+                return (
+                    <HistoryListItem
+                        key={`item-${i}-${tx.walletTransactionDetails.txId}`}
+                        item={tx}
+                        index={i}
+                        itemIsNew={false}
+                        setDetailsItem={handleDetailsChange}
+                    />
+                );
             })}
 
             {/* fill the list with placeholders if there are less than 4 entries */}

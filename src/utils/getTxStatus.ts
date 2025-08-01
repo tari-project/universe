@@ -5,7 +5,7 @@ import { TransationType } from '@app/components/transactions/types.ts';
 import { TransactionInfo } from '@app/types/app-status.ts';
 import { UserTransactionDTO } from '@tari-project/wxtm-bridge-backend-api';
 import { isTransactionInfo } from '@app/components/transactions/history/helpers';
-import { BackendBridgeTransaction } from '@app/store';
+import { BackendBridgeTransaction, CombinedBridgeWalletTransaction } from '@app/store';
 
 const txTypes = {
     oneSided: [
@@ -37,34 +37,41 @@ const txStates = {
     ],
 };
 
-export function getTxTypeByStatus(transaction: TransactionInfo): TransationType {
-    if (txTypes.mined.includes(transaction.status)) {
+export function getTxTypeByStatus(transaction: CombinedBridgeWalletTransaction): TransationType {
+    if (txTypes.mined.includes(transaction.walletTransactionDetails.status)) {
         return 'mined';
     }
-    if (txTypes.oneSided.includes(transaction.status)) {
-        return transaction.direction === TransactionDirection.Inbound ? 'received' : 'sent';
+    if (txTypes.oneSided.includes(transaction.walletTransactionDetails.status)) {
+        return transaction.walletTransactionDetails.direction === TransactionDirection.Inbound ? 'received' : 'sent';
     }
     return 'unknown';
 }
 
-export function getTxStatusTitleKey(transaction: TransactionInfo | BackendBridgeTransaction): string | undefined {
-    if (isTransactionInfo(transaction)) {
-        return Object.keys(txStates).find((key) => {
-            if (txStates[key].includes(transaction.status)) {
-                return key;
-            }
-        });
-    } else {
-        return transaction.status === UserTransactionDTO.status.SUCCESS ? 'complete' : 'pending';
+export function getTxStatusTitleKey(transaction: CombinedBridgeWalletTransaction): string | undefined {
+    if (transaction.bridgeTransactionDetails) {
+        return transaction.bridgeTransactionDetails.status === UserTransactionDTO.status.SUCCESS
+            ? 'complete'
+            : 'pending';
     }
+    return Object.keys(txStates).find((key) => {
+        if (txStates[key].includes(transaction.walletTransactionDetails.status)) {
+            return key;
+        }
+    });
 }
-export function getTxTitle(transaction: TransactionInfo): string {
+export function getTxTitle(transaction: CombinedBridgeWalletTransaction): string {
+    if (transaction.bridgeTransactionDetails) {
+        return 'Bridge XTM to WXTM';
+    }
+
     const itemType = getTxTypeByStatus(transaction);
-    const txMessage = transaction.payment_id;
+    const txMessage = transaction.paymentId;
     const statusTitleKey = getTxStatusTitleKey(transaction);
     const statusTitle = i18n.t(`common:${statusTitleKey}`);
     const typeTitle =
-        itemType === 'unknown' ? TransactionDirection[transaction.direction] : i18n.t(`common:${itemType}`);
+        itemType === 'unknown'
+            ? TransactionDirection[transaction.walletTransactionDetails.direction]
+            : i18n.t(`common:${itemType}`);
 
     if (itemType === 'mined' && transaction.mined_in_block_height) {
         return `${i18n.t('sidebar:block')} #${transaction.mined_in_block_height}`;

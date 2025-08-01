@@ -1,15 +1,14 @@
-import { BackendBridgeTransaction } from '@app/store';
-import { TransactionInfo } from '@app/types/app-status.ts';
+import { BackendBridgeTransaction, CombinedBridgeWalletTransaction } from '@app/store';
 import { TransactionDirection } from '@app/types/transactions.ts';
 import { UserTransactionDTO } from '@tari-project/wxtm-bridge-backend-api';
 
 export type TransationType = 'mined' | 'sent' | 'received' | 'unknown';
 
 export interface HistoryListItemProps {
-    item: TransactionInfo;
+    item: CombinedBridgeWalletTransaction;
     index: number;
     itemIsNew?: boolean;
-    setDetailsItem?: (item: TransactionInfo | null) => void;
+    setDetailsItem?: (item: CombinedBridgeWalletTransaction | null) => void;
 }
 
 export interface BridgeHistoryListItemProps {
@@ -25,7 +24,6 @@ export interface BaseItemProps {
     time: string;
     value: string;
     chip?: string;
-    status?: number;
     onClick?: () => void;
 }
 
