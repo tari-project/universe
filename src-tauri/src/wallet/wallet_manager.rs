@@ -433,7 +433,7 @@ impl WalletManager {
                 WalletManager::validate_balance_after_scan(wallet_state_receiver_clone)
                     .await
                     .inspect_err(|e| {
-                        log::error!(target: LOG_TARGET, "Balance validation failed: {}", e);
+                        log::error!(target: LOG_TARGET, "Balance validation failed: {e}");
                     })
             });
 
