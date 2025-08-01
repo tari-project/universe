@@ -2,10 +2,8 @@ import i18n from 'i18next';
 
 import { TransactionDirection, TransactionStatus } from '@app/types/transactions.ts';
 import { TransationType } from '@app/components/transactions/types.ts';
-import { TransactionInfo } from '@app/types/app-status.ts';
 import { UserTransactionDTO } from '@tari-project/wxtm-bridge-backend-api';
-import { isTransactionInfo } from '@app/components/transactions/history/helpers';
-import { BackendBridgeTransaction, CombinedBridgeWalletTransaction } from '@app/store';
+import { CombinedBridgeWalletTransaction } from '@app/store';
 
 const txTypes = {
     oneSided: [

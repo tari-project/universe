@@ -3,14 +3,7 @@ import { useInView } from 'react-intersection-observer';
 import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/core';
 
-import {
-    BackendBridgeTransaction,
-    CombinedBridgeWalletTransaction,
-    useMiningMetricsStore,
-    useWalletStore,
-} from '@app/store';
-
-import { TransactionInfo } from '@app/types/app-status.ts';
+import { CombinedBridgeWalletTransaction, useMiningMetricsStore, useWalletStore } from '@app/store';
 
 import { useFetchTxHistory } from '@app/hooks/wallet/useFetchTxHistory.ts';
 
@@ -22,8 +15,7 @@ import { PlaceholderItem } from './ListItem.styles.ts';
 import { ListItemWrapper, ListWrapper } from './List.styles.ts';
 import { setDetailsItem } from '@app/store/actions/walletStoreActions.ts';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
-import { convertWalletTransactionToCombinedTransaction, isBridgeTransaction, isTransactionInfo } from './helpers.ts';
-import { BridgeHistoryListItem } from '@app/components/transactions/history/BridgeListItem.tsx';
+import { convertWalletTransactionToCombinedTransaction } from './helpers.ts';
 import { TariAddressType } from '@app/types/events-payloads.ts';
 import { fetchBridgeTransactionsHistory } from '@app/store/actions/bridgeApiActions.ts';
 
@@ -102,7 +94,7 @@ export function List({ setIsScrolled, targetRef }: Props) {
         });
 
         return extendedTransactions;
-    }, [baseTx, bridgeTransactions, coldWalletAddress]);
+    }, [baseTx, bridgeTransactions]);
 
     const handleDetailsChange = useCallback(async (transaction: CombinedBridgeWalletTransaction | null) => {
         if (!transaction || !transaction.walletTransactionDetails) {
