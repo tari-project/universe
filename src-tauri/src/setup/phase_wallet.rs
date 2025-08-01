@@ -23,6 +23,7 @@ use crate::{
     binaries::{Binaries, BinaryResolver},
     configs::{
         config_core::ConfigCore,
+        config_ui::ConfigUI,
         config_wallet::{ConfigWallet, ConfigWalletContent},
         trait_config::ConfigImpl,
     },
@@ -232,11 +233,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
                     .state::<UniverseAppState>()
                     .wallet_manager
                     .clone();
-                let shutdown_signal = TasksTrackers::current()
-                    .wallet_phase
-                    .get_signal()
-                    .await
-                    .clone();
+                let mut shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
 
                 TasksTrackers::current()
                     .wallet_phase
@@ -249,32 +246,39 @@ impl SetupPhaseImpl for WalletSetupPhase {
                             .clone();
 
                         loop {
-                            if shutdown_signal.is_triggered() {
-                                break;
-                            }
+                            tokio::select! {
+                                _ = shutdown_signal.wait() => {
+                                    break;
+                                }
+                                _ = tokio::time::sleep(std::time::Duration::from_secs(10)) => {
+                                    let wallet_state = wallet_state_watcher.borrow().clone();
+                                    if let Some(wallet_state) = wallet_state {
+                                        if let Some(balance) = wallet_state.balance {
+                                            let balance_sum = balance.available_balance
+                                                + balance.pending_incoming_balance
+                                                + balance.timelocked_balance;
+                                                let should_show_staged_security_modal = ConfigUI::should_show_staged_security_modal().await;
 
-                            let wallet_state = wallet_state_watcher.borrow().clone();
-                            if let Some(wallet_state) = wallet_state {
-                                if let Some(balance) = wallet_state.balance {
-                                    let balance_sum = balance.available_balance
-                                        + balance.pending_incoming_balance
-                                        + balance.timelocked_balance;
-                                    if balance_sum.gt(&MicroMinotari::zero())
-                                        && wallet_manager.is_initial_scan_completed()
-                                    {
-                                        let pin_locked = PinManager::pin_locked().await;
-                                        let seed_backed_up =
-                                            *ConfigWallet::content().await.seed_backed_up();
+                                            if balance_sum.gt(&MicroMinotari::zero())
+                                                && wallet_manager.is_initial_scan_completed()
+                                                && should_show_staged_security_modal
+                                            {
 
-                                        if !pin_locked || !seed_backed_up {
-                                            EventsEmitter::show_staged_security_modal().await;
+                                                let pin_locked = PinManager::pin_locked().await;
+                                                let seed_backed_up =
+                                                    *ConfigWallet::content().await.seed_backed_up();
+
+                                                if !pin_locked || !seed_backed_up  {
+                                                    EventsEmitter::show_staged_security_modal().await;
+                                                    let _unused = ConfigUI::update_last_staged_security_modal_shown().await;
+                                                } else {
+                                                    break;
+                                                }
+                                            }
                                         }
-                                        break;
                                     }
                                 }
                             }
-
-                            tokio::time::sleep(std::time::Duration::from_secs(5)).await;
                         }
                     });
             }
