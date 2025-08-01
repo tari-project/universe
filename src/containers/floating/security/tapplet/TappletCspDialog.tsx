@@ -1,6 +1,6 @@
 import { useSecurityStore } from '@app/store';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
-import { CTAWrapper, Header, Wrapper } from '../common.styles.ts';
+import { Content, ContentWrapper, CTAWrapper, Header, Subtitle, Title, Wrapper } from '../common.styles.ts';
 import CloseButton from '@app/components/elements/buttons/CloseButton.tsx';
 import { useTranslation } from 'react-i18next';
 import { emit } from '@tauri-apps/api/event';
@@ -47,30 +47,33 @@ export default function TappletCspDialog() {
                     <Header>
                         <CloseButton onClick={handleClose} />
                     </Header>
-                    <TextWrapper>
-                        <ul style={{ paddingLeft: '1.2em', margin: 0 }}>
-                            {cspList.map((directive, index) => (
-                                <li key={index}>{directive}</li>
-                            ))}
-                        </ul>
-                    </TextWrapper>
-                </Wrapper>
-                <Wrapper>
-                    <CTAWrapper>
-                        <Button
-                            onClick={handleSubmit}
-                            variant="black"
-                            fluid
-                            size="xlarge"
-                            disabled={!csp}
-                            type="submit"
-                        >
-                            {t('Allow Tapplet CSP')}
-                        </Button>
-                        <TextButton color="greyscale" onClick={handleClose}>
-                            {'Reject Tapplet CSP'}
-                        </TextButton>
-                    </CTAWrapper>
+                    <Content>
+                        <Title>{'Grant CSP Permissions'}</Title>
+                        <Subtitle>{'Your tapplet asks for some permissions. Do you agree?'}</Subtitle>
+
+                        <ContentWrapper>
+                            <ul style={{ paddingLeft: '1.2em', margin: 0 }}>
+                                {cspList.map((directive, index) => (
+                                    <li key={index}>{directive}</li>
+                                ))}
+                            </ul>
+                        </ContentWrapper>
+                        <CTAWrapper>
+                            <Button
+                                onClick={handleSubmit}
+                                variant="black"
+                                fluid
+                                size="xlarge"
+                                disabled={!csp}
+                                type="submit"
+                            >
+                                {t('Allow Tapplet CSP')}
+                            </Button>
+                            <TextButton color="greyscale" onClick={handleClose}>
+                                {'Reject Tapplet CSP'}
+                            </TextButton>
+                        </CTAWrapper>
+                    </Content>
                 </Wrapper>
             </DialogContent>
         </Dialog>

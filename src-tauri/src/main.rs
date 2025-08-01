@@ -646,6 +646,7 @@ fn main() {
             commands::select_mining_mode,
             commands::update_custom_mining_mode,
             commands::update_csp_policy,
+            commands::fetch_registered_tapplets,
             commands::insert_tapp_registry_db,
             commands::read_tapp_registry_db,
             commands::get_assets_server_addr,
@@ -657,7 +658,7 @@ fn main() {
             commands::add_dev_tapplet,
             commands::read_dev_tapplets,
             commands::delete_dev_tapplet,
-            commands::update_installed_tapplet,
+            commands::update_installed_tapplet
         ])
         .build(tauri::generate_context!())
         .inspect_err(|e| {

@@ -19,8 +19,9 @@
 // SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, serde::Serialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct Tapplet {
     pub id: Option<i32>,
     pub registry_id: String,
@@ -35,7 +36,7 @@ pub struct Tapplet {
     pub category: String,
 }
 
-#[derive(Debug, Clone, serde::Serialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct TappletVersion {
     pub id: Option<i32>,
     pub tapplet_id: Option<i32>,
@@ -44,7 +45,7 @@ pub struct TappletVersion {
     pub registry_url: String,
 }
 
-#[derive(Debug, Clone, serde::Serialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct ActiveTapplet {
     pub tapplet_id: i32,
     pub display_name: String,
@@ -52,7 +53,7 @@ pub struct ActiveTapplet {
     pub version: String,
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Serialize, serde::Deserialize)]
 pub struct TappletPermissions {
     #[serde(rename = "requiredPermissions")]
     pub required_permissions: Vec<TariPermission>,
@@ -117,7 +118,7 @@ impl Default for TappletConfig {
     }
 }
 
-#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Clone, serde::Deserialize, Serialize)]
 pub enum TariPermission {
     TariPermissionNftGetOwnershipProof,
     TariPermissionAccountBalance,
@@ -132,10 +133,82 @@ pub enum TariPermission {
 }
 
 #[derive(Debug, serde::Deserialize)]
-pub struct DevTappletResponse {
+pub struct TappletManifest {
     #[serde(rename = "packageName")]
     pub package_name: String,
+    pub version: String,
+    #[serde(rename = "supportedChain")]
+    pub supported_chain: Vec<String>,
+    pub permissions: TappletPermissions,
+    pub csp: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Package {
+    #[serde(rename = "packageName")]
+    pub package_name: String,
+    pub version: String,
     #[serde(rename = "displayName")]
     pub display_name: String,
-    pub version: String, //TODO save ver in db
+    pub status: String,
+    pub category: String,
+    pub author: Author,
+    pub about: About,
+    pub audits: Vec<Audit>,
+    pub design: Design,
+    pub repository: Repository,
+    pub source: Source,
+    #[serde(rename = "supportedChain")]
+    pub supported_chain: Vec<String>,
+    pub permissions: Permissions,
+    #[serde(rename = "manifestVersion")]
+    pub manifest_version: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Author {
+    pub name: String,
+    pub website: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct About {
+    pub summary: String,
+    pub description: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Audit {
+    pub auditor: String,
+    #[serde(rename = "reportUrl")]
+    pub report_url: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Design {
+    #[serde(rename = "logoPath")]
+    pub logo_path: String,
+    #[serde(rename = "backgroundPath")]
+    pub background_path: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Repository {
+    #[serde(rename = "type")]
+    pub repo_type: String,
+    pub url: String,
+    pub codeowners: Vec<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Source {
+    pub location: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Permissions {
+    #[serde(rename = "requiredPermissions")]
+    pub required_permissions: Vec<String>,
+    #[serde(rename = "optionalPermissions")]
+    pub optional_permissions: Vec<String>,
 }

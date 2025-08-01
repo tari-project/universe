@@ -6,6 +6,7 @@ import { MiningSettings } from './mining/MiningSettings.tsx';
 
 import { WalletSettings } from './wallet/WalletSettings.tsx';
 import { ReleaseNotes } from './releaseNotes/ReleaseNotes.tsx';
+import { OotleSettings } from './ootle/OotleSettings.tsx';
 
 export {
     AirdropSettings,
@@ -15,4 +16,5 @@ export {
     MiningSettings,
     WalletSettings,
     ReleaseNotes,
+    OotleSettings,
 };

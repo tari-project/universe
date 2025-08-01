@@ -34,8 +34,8 @@ use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent, WalletId}
 use crate::configs::trait_config::ConfigImpl;
 use crate::consts::TAPPLET_ARCHIVE;
 use crate::database::models::{
-    CreateDevTapplet, CreateInstalledTapplet, CreateTapplet, DevTapplet, InstalledTapplet, Tapplet,
-    UpdateInstalledTapplet,
+    CreateDevTapplet, CreateInstalledTapplet, CreateTapplet, CreateTappletAsset,
+    CreateTappletVersion, DevTapplet, InstalledTapplet, Tapplet, UpdateInstalledTapplet,
 };
 use crate::database::store::{DatabaseConnection, SqliteStore, Store};
 use crate::events::ConnectionStatusPayload;
@@ -59,14 +59,14 @@ use crate::tapplets::error::{
     TappletServerError::*,
 };
 use crate::tapplets::interface::{
-    ActiveTapplet, AssetServer, DevTappletResponse, InstalledTappletWithName, TappletPermissions,
+    ActiveTapplet, AssetServer, InstalledTappletWithName, TappletPermissions,
 };
 use crate::tapplets::tapplet_installer::{
     check_files_and_validate_checksum, delete_tapplet, download_asset,
     fetch_tapp_registry_manifest, get_tapp_download_path, get_tapp_permissions,
 };
 use crate::tapplets::tapplet_manager::TappletManager;
-use crate::tapplets::tapplet_server::{get_tapplet_config, start_tapplet};
+use crate::tapplets::tapplet_server::{get_tapplet_config, get_tapplet_manifest, start_tapplet};
 use crate::tasks_tracker::TasksTrackers;
 use crate::tor_adapter::TorConfig;
 use crate::utils::address_utils::verify_send;
@@ -2359,6 +2359,75 @@ pub async fn is_pin_locked() -> Result<bool, String> {
 /**
  * TAPPLETS REGISTRY - STORES ALL REGISTERED TAPPLETS IN THE TARI UNIVERSE
  */
+#[tauri::command]
+pub async fn fetch_registered_tapplets(
+    app_handle: tauri::AppHandle,
+    db_connection: tauri::State<'_, DatabaseConnection>,
+) -> Result<(), String> {
+    let tapplets = match fetch_tapp_registry_manifest().await {
+        Ok(tapp) => tapp,
+        Err(e) => {
+            return Err(e.to_string());
+        }
+    };
+
+    let mut store = SqliteStore::new(db_connection.0.clone());
+
+    for tapplet_manifest in tapplets.registered_tapplets.values() {
+        let inserted_tapplet = store
+            .create(&CreateTapplet::from(tapplet_manifest))
+            .map_err(|e| e.to_string())?;
+
+        // TODO uncomment if audit data in manifest
+        // for audit_data in tapplet_manifest.metadata.audits.iter() {
+        //   store.create(
+        //     &(CreateTappletAudit {
+        //       tapplet_id: inserted_tapplet.id,
+        //       auditor: &audit_data.auditor,
+        //       report_url: &audit_data.report_url,
+        //     })
+        //   )?;
+        // }
+
+        for (version, version_data) in tapplet_manifest.versions.iter() {
+            let _ = store
+                .create(
+                    &(CreateTappletVersion {
+                        tapplet_id: inserted_tapplet.id,
+                        version: &version,
+                        integrity: &version_data.integrity,
+                        registry_url: &version_data.registry_url,
+                    }),
+                )
+                .map_err(|e| e.to_string());
+        }
+        match store.get_tapplet_assets_by_tapplet_id(inserted_tapplet.id.unwrap()) {
+            Ok(Some(_)) => {}
+            Ok(None) => {
+                match download_asset(app_handle.clone(), inserted_tapplet.registry_id).await {
+                    Ok(tapplet_assets) => {
+                        let _ = store
+                            .create(
+                                &(CreateTappletAsset {
+                                    tapplet_id: inserted_tapplet.id,
+                                    icon_url: &tapplet_assets.icon_url,
+                                    background_url: &tapplet_assets.background_url,
+                                }),
+                            )
+                            .map_err(|e| e.to_string());
+                    }
+                    Err(e) => {
+                        error!(target: LOG_TARGET, "Could not download tapplet assets: {}", e);
+                    }
+                }
+            }
+            Err(e) => {
+                return Err(e.to_string());
+            }
+        }
+    }
+    Ok(())
+}
 
 #[tauri::command]
 pub fn insert_tapp_registry_db(
@@ -2532,32 +2601,34 @@ pub async fn add_dev_tapplet(
     // let manifest_endpoint = format!("{}/tapplet.manifest.json", endpoint);
     let config_endpoint = format!("{}/tapplet.config.json", endpoint);
     info!("🌟 Add dev tapplet to db endpoint: {:?}", &config_endpoint);
-    let tapp_manifest = reqwest::get(&config_endpoint)
-        .await
-        .inspect_err(|e| {
-            error!(
-                "❌ Fetching tapplet manifest endpoint {:?} error: {:?}",
-                config_endpoint, e
-            )
-        })
-        .map_err(|_| {
-            RequestError(FetchManifestError {
-                endpoint: endpoint.clone(),
-            })
-        })?
-        .json::<DevTappletResponse>()
-        .await
-        .map_err(|_| {
-            RequestError(ManifestResponseError {
-                endpoint: endpoint.clone(),
-            })
-        })?;
+    // let tapp_manifest = reqwest::get(&config_endpoint)
+    //     .await
+    //     .inspect_err(|e| {
+    //         error!(
+    //             "❌ Fetching tapplet manifest endpoint {:?} error: {:?}",
+    //             config_endpoint, e
+    //         )
+    //     })
+    //     .map_err(|_| {
+    //         RequestError(FetchManifestError {
+    //             endpoint: endpoint.clone(),
+    //         })
+    //     })?
+    //     .json::<DevTappletResponse>()
+    //     .await
+    //     .map_err(|_| {
+    //         RequestError(ManifestResponseError {
+    //             endpoint: endpoint.clone(),
+    //         })
+    //     })?;
+    let tapp_dest_dir = PathBuf::from(&endpoint);
+    let tapp_manifest = get_tapplet_manifest(tapp_dest_dir).unwrap();
     info!("🌟 Add dev tapplet manifest: {:?}", &tapp_manifest);
     let mut store = SqliteStore::new(db_connection.0.clone());
     let new_dev_tapplet = CreateDevTapplet {
         endpoint: &endpoint,
         package_name: &tapp_manifest.package_name,
-        display_name: &tapp_manifest.display_name,
+        display_name: &tapp_manifest.package_name,
     };
     match store.create(&new_dev_tapplet) {
         Ok(dev_tapplet) => {
