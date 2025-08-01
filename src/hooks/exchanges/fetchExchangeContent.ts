@@ -1,9 +1,10 @@
-import { useConfigBEInMemoryStore, useUIStore } from '@app/store';
+import { useUIStore } from '@app/store';
 import { useQuery } from '@tanstack/react-query';
 import { setShowExchangeModal, universalExchangeMinerOption, useExchangeStore } from '@app/store/useExchangeStore.ts';
 import { ExchangeBranding } from '@app/types/exchange.ts';
 import { queryClient } from '@app/App/queryClient.ts';
 import { useTheme } from 'styled-components';
+import { handleAirdropRequest } from '@app/hooks/airdrop/utils/useHandleRequest.ts';
 
 export const KEY_XC_CONTENT = 'branding';
 
@@ -11,19 +12,19 @@ export const queryfn = async (exchangeId: string) => {
     if (exchangeId === 'universal') {
         return Promise.resolve(universalExchangeMinerOption);
     }
-
-    const apiUrl = useConfigBEInMemoryStore.getState().airdropApiUrl;
-    const endpoint = `${apiUrl}/miner/exchanges/${exchangeId}`;
-
+    const path = `/miner/exchanges/${exchangeId}`;
     try {
-        const res = await fetch(endpoint);
-        const content = (await res.json()) as ExchangeBranding;
+        const res = await handleAirdropRequest<ExchangeBranding>({
+            path,
+            method: 'GET',
+            publicRequest: true,
+        });
 
-        if (content) {
+        if (res) {
             const shouldShowExchangeSpecificModal = useUIStore.getState().shouldShowExchangeSpecificModal;
             setShowExchangeModal(shouldShowExchangeSpecificModal);
         }
-        return content;
+        return res;
     } catch (e) {
         console.error('Could not fetch exchange content', e);
     }
