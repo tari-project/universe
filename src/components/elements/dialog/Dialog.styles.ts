@@ -8,6 +8,7 @@ export interface ContentWrapperProps {
     $disableOverflow?: boolean;
     $borderRadius?: string;
     $transparentBg?: boolean;
+    $zIndex?: number;
 }
 export const ContentWrapper = styled.div<ContentWrapperProps>`
     border-radius: ${({ theme, $borderRadius }) => $borderRadius || theme.shape.borderRadius.dialog};
@@ -47,10 +48,14 @@ export const ContentWrapper = styled.div<ContentWrapperProps>`
         `}
 `;
 
-export const Overlay = styled(FloatingOverlay)`
+interface OverlayProps {
+    $zIndex?: number;
+}
+
+export const Overlay = styled(FloatingOverlay)<OverlayProps>`
     display: flex;
     align-items: center;
     justify-content: center;
     background-color: ${colorsAll.darkAlpha[50]};
-    z-index: 100;
+    z-index: ${({ $zIndex }) => $zIndex || 100};
 `;
