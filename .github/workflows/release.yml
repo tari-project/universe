@@ -35,12 +35,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: 'ubuntu-22.04'
-            args: '--bundles deb,appimage'
-            extra: '-x64'
-          - platform: 'ubuntu-24.04-arm'
-            args: '--bundles deb,appimage'
-            best_effort: true
+          # Too many people with too many variations.
+          # We can't handle all the linux versions right now it's spreading efforts too thin.
+          # - platform: 'ubuntu-22.04'
+          #   args: '--bundles deb,appimage'
+          #   extra: '-x64'
+          # - platform: 'ubuntu-24.04-arm'
+          #   args: '--bundles deb,appimage'
+          #   best_effort: true
           # Too slow. Maybe some day though... some day...
           # - platform: 'ubuntu-22.04'
           #   args: '--bundles rpm'
