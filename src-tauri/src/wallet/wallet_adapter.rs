@@ -172,10 +172,19 @@ impl WalletAdapter {
         let (unsigned_tx_file, tx_id) = tx_service
             .prepare_one_sided_transaction_for_signing(amount, address, payment_id)
             .await?;
-        let signed_tx_file = tx_service
-            .sign_one_sided_tx(unsigned_tx_file, tx_id)
-            .await?;
-        tx_service.broadcast_one_sided_tx(signed_tx_file).await
+        let sign_result = tx_service
+            .sign_one_sided_tx(unsigned_tx_file, tx_id.clone())
+            .await;
+        match sign_result {
+            Ok(signed_tx_file) => tx_service.broadcast_one_sided_tx(signed_tx_file).await,
+            Err(e) => {
+                let cancel_res = tx_service.cancel_transaction(tx_id).await;
+                if let Err(cancel_err) = cancel_res {
+                    log::error!(target: LOG_TARGET, "Failed to cancel transaction after failed to sign one sided tx: {}:{}", cancel_err, e);
+                }
+                Err(e)
+            }
+        }
     }
 
     pub async fn wait_for_scan_to_height(
