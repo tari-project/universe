@@ -1,8 +1,8 @@
-import { useReferrerProgress } from '@app/hooks/crew/useReferrerProgress';
 import InfoTooltip from '../../components/InfoTooltip/InfoTooltip';
 import DaysProgress from './DaysProgress/DaysProgress';
 import { Wrapper, Text, StreakText, StreakMessage, UnlockMessage, LoadingMessage } from './styles';
 import { useTranslation, Trans } from 'react-i18next';
+import { useCrewMembers } from '@app/hooks/crew/useCrewMembers';
 
 interface Props {
     isInline?: boolean;
@@ -14,7 +14,8 @@ export default function StreakProgress({ isInline = false }: Props) {
     const { t } = useTranslation();
 
     // Get data directly from React Query
-    const { referrerProgress, isLoading } = useReferrerProgress();
+    const { data, isLoading } = useCrewMembers();
+    const referrerProgress = data?.referrerProgress;
 
     const currentStreak = referrerProgress?.currentStreak || 0;
     const meetsMinimumDays = referrerProgress?.meetsMinimumDays || false;

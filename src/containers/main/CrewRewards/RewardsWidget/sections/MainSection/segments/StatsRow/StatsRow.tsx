@@ -14,7 +14,6 @@ import {
 
 import photo1 from '../../../../../images/person1.png';
 import { useCrewMembers } from '@app/hooks/crew/useCrewMembers';
-import { useReferrerProgress } from '@app/hooks/crew/useReferrerProgress';
 import { formatNumber, FormatPreset } from '@app/utils';
 import { useTranslation, Trans } from 'react-i18next';
 
@@ -23,13 +22,13 @@ export default function StatsRow() {
 
     // Get data directly from React Query
     const { data: crewData, isLoading: crewLoading, error: crewError } = useCrewMembers();
-    const { referrerProgress, isLoading: progressLoading } = useReferrerProgress();
+    const referrerProgress = crewData?.referrerProgress;
 
     const totalFriends = crewData?.totals?.all || 0;
     const activeFriends = crewData?.totals?.active || 0;
     const bonusXTMEarned = referrerProgress?.totalClaimedRewards || 0;
 
-    const isLoading = crewLoading || progressLoading;
+    const isLoading = crewLoading || crewLoading;
     const hasError = !!crewError;
     const hasFriends = totalFriends > 0;
 
