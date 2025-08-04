@@ -83,7 +83,6 @@ function getUnifiedDisplayOrder(transaction: CombinedBridgeWalletTransaction): s
             'mined_in_block_height',
             'transactionHash',
             'status',
-            'paymentReference',
             'txId',
         ];
     }
@@ -174,7 +173,7 @@ const unifiedValueHandlers: Record<
 
     paymentReference: (transaction) => {
         return {
-            label: i18n.t('wallet:receive.payment-reference'),
+            label: 'Payment Reference',
             value: getPaymentReferenceValue(transaction),
         };
     },
