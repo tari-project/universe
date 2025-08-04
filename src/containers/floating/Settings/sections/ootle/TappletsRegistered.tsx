@@ -52,7 +52,7 @@ export default function TappletsRegistered() {
                                 {registeredTapplets.map((item, index) => (
                                     <TappletListItem
                                         key={index}
-                                        item={{ id: item.id, display_name: item.display_name }}
+                                        item={{ id: item.id, displayName: item.display_name }}
                                         handleStart={() => handleInstall(item.id)}
                                     />
                                 ))}

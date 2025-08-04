@@ -80,7 +80,7 @@ export default function TappletsInstalled() {
                                     {installedTapplets.map((item, index) => (
                                         <TappletListItem
                                             key={index}
-                                            item={{ id: item.installed_tapplet.id, display_name: item.display_name }}
+                                            item={{ id: item.installed_tapplet.id, displayName: item.display_name }}
                                             handleStart={() => handleLaunch(item.installed_tapplet.id)}
                                             handleRemove={() => handleDelete(item.installed_tapplet.id)}
                                         />

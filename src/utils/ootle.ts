@@ -1,4 +1,5 @@
 import { ActiveTapplet, DevTapplet, TappletConfig } from '@app/types/tapplets/tapplet.types';
+const TAPPLET_CONFIG_FILE = 'config.json'; // Adjust filename if needed
 
 export function isHttpOrLocalhost(s: string): boolean {
     try {
@@ -14,29 +15,6 @@ export function isHttpOrLocalhost(s: string): boolean {
     const sLower = s.toLowerCase();
     return sLower.includes('localhost') || sLower.includes('http') || sLower.includes('https');
 }
-
-// interface Tapplet {
-//     id: string;
-//     endpoint: string;
-//     display_name: string;
-// }
-
-// interface TappletConfig {
-//     version: string;
-//     permissions: string[];
-//     supportedChain: string;
-// }
-
-// interface ActiveTapplet {
-//     tapplet_id: string;
-//     version: string;
-//     display_name: string;
-//     source: string;
-//     permissions: string[];
-//     supportedChain: string;
-// }
-
-const TAPPLET_CONFIG_FILE = 'config.json'; // Adjust filename if needed
 
 export async function fetchActiveTapplet(tapplet: DevTapplet): Promise<ActiveTapplet | undefined> {
     const url = `${tapplet.endpoint}/${TAPPLET_CONFIG_FILE}`;
@@ -55,9 +33,9 @@ export async function fetchActiveTapplet(tapplet: DevTapplet): Promise<ActiveTap
 
         const activeTapplet: ActiveTapplet = {
             tapplet_id: tapplet.id,
-            packageName: tapplet.package_name,
+            package_name: tapplet.package_name,
             version: config.version,
-            displayName: tapplet.displayName,
+            display_name: tapplet.display_name,
             source: tapplet.endpoint,
             permissions: config.permissions,
             supportedChain: config.supportedChain,

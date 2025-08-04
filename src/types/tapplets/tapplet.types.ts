@@ -35,7 +35,7 @@ export interface RegisteredTapplet {
     id: string;
     registry_id: string;
     package_name: string;
-    displayName: string;
+    display_name: string;
     author_name: string;
     author_website: string;
     about_summary: string;
@@ -56,7 +56,7 @@ export interface InstalledTapplet {
 
 export interface InstalledTappletWithAssets {
     installed_tapplet: InstalledTapplet;
-    displayName: string;
+    display_name: string;
     installed_version: string;
     latest_version: string;
     logoAddr: string;
@@ -67,7 +67,7 @@ export interface DevTapplet {
     id: number;
     package_name: string;
     endpoint: string;
-    displayName: string;
+    display_name: string;
     about_summary: string;
     about_description: string;
 }
@@ -100,8 +100,8 @@ export interface TappletAudit {
 }
 
 export interface TappletConfig {
-    packageName: string;
-    displayName: string;
+    package_name: string;
+    display_name: string;
     version: string;
     permissions: TariPermissions;
     supportedChain: SupportedChain[];

@@ -14,7 +14,7 @@ import { fetchActiveTapplet, isHttpOrLocalhost } from '@app/utils/ootle.ts';
 interface State {
     isInitialized: boolean;
     isFetching: boolean;
-    activeTapplet: ActiveTapplet | undefined;
+    activeTapplet: ActiveTapplet | null;
     ongoingBridgeTx: BridgeTxDetails | undefined;
     isPendingTappletTx: boolean;
     devTapplets: DevTapplet[];
@@ -44,7 +44,7 @@ type TappletsStoreState = State & Actions;
 const initialState: State = {
     isFetching: false,
     isInitialized: false,
-    activeTapplet: undefined,
+    activeTapplet: null,
     ongoingBridgeTx: undefined,
     isPendingTappletTx: false,
     installedTapplets: [],
@@ -58,9 +58,10 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
         set({ activeTapplet: tapplet });
     },
     deactivateTapplet: async () => {
-        set({ activeTapplet: undefined });
+        set({ activeTapplet: null });
     },
     setActiveTappById: async (tappletId, isBuiltIn = false) => {
+        console.info('Set Active Tapplet: ', tappletId, isBuiltIn);
         if (tappletId == get().activeTapplet?.tapplet_id) return;
         const tappProviderState = useTappletSignerStore.getState();
         if (!tappProviderState.isInitialized) tappProviderState.initTappletSigner();
@@ -73,11 +74,11 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
         //TODO add case if dev tapplet's already running and if not - run local server (launch_builtin_tapplet)
         if (isHttpOrLocalhost(tapplet.endpoint)) {
             try {
-                console.info('Set Dev Tapplet: ', tapplet?.displayName);
+                console.info('Set Dev Tapplet: ', tapplet?.display_name);
                 const activeTapplet = await fetchActiveTapplet(tapplet);
                 if (!activeTapplet) return;
                 set({ activeTapplet });
-                tappProviderState.setTappletSigner(activeTapplet?.packageName);
+                tappProviderState.setTappletSigner(activeTapplet?.package_name); //TODO
             } catch (error) {
                 console.error('Error running Dev Tapplet: ', error);
                 setError(`'Error running Dev Tapplet: ${error}`);
@@ -165,7 +166,7 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
             console.info('[STORE] fetch tapp success', tapplet, installedTapplet);
             // TODO refactor types and assets path
             const tapp: InstalledTappletWithAssets = {
-                displayName: tapplet.displayName,
+                display_name: tapplet.displayName,
                 installed_tapplet: installedTapplet,
                 installed_version: installedTapplet.tapplet_version_id,
                 latest_version: '',

@@ -71,7 +71,7 @@ export default function TappletsDev() {
                                 {devTapplets.map((item, index) => (
                                     <TappletListItem
                                         key={index}
-                                        item={{ id: item.id, display_name: item.display_name }}
+                                        item={{ id: item.id, displayName: item.display_name }}
                                         handleStart={() => handleLaunch(item.id)}
                                         handleRemove={() => handleDelete(item.id)}
                                     />

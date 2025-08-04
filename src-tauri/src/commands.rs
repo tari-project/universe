@@ -2649,7 +2649,7 @@ pub async fn add_dev_tapplet(
     let new_dev_tapplet = CreateDevTapplet {
         endpoint: &endpoint,
         package_name: &tapp_config.package_name,
-        display_name: &tapp_config.package_name,
+        display_name: &tapp_config.display_name,
     };
     match store.create(&new_dev_tapplet) {
         Ok(dev_tapplet) => {
