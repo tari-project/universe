@@ -1,7 +1,7 @@
-import type { CrewMember } from '@app/store/useAirdropStore';
+import type { CrewMember, CrewMemberReward } from '@app/store/useAirdropStore';
 import type { CrewEntry, CrewStatus } from './RewardsWidget/sections/CrewSection/data';
 
-export const calculateProgress = (progressTowardsReward: any): number => {
+export const calculateProgress = (progressTowardsReward: CrewMemberReward['progressTowardsReward']): number => {
     if (progressTowardsReward.isComplete) return 100;
 
     // Calculate base progress from completed days
