@@ -39,11 +39,8 @@ async function fetchCrewMembersData(props: {
 }
 
 export function useCrewMembers() {
-    // Read query params from store
     const crewQueryParams = useAirdropStore((state) => state.crewQueryParams);
     const walletReceiveKey = useWalletStore((s) => s.tari_address_base58);
-
-    // Read airdrop token from store for dependency array
     const airdropToken = useAirdropStore((state) => state.airdropTokens?.token);
 
     const queryClient = useQueryClient();
@@ -51,9 +48,9 @@ export function useCrewMembers() {
     const query = useQuery({
         queryKey: [KEY_CREW_MEMBERS, crewQueryParams, airdropToken, walletReceiveKey],
         queryFn: () => fetchCrewMembersData({ ...crewQueryParams, walletReceiveKey }),
-        enabled: !!airdropToken, // Only run when authenticated
+        enabled: !!airdropToken && !!walletReceiveKey,
         refetchOnWindowFocus: true,
-        staleTime: 30 * 1000, // 30 seconds
+        staleTime: 30 * 1000,
         retry: 2,
     });
 
