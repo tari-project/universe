@@ -37,6 +37,7 @@ import { ExternalLink2SVG } from '@app/assets/icons/external-link2.tsx';
 import SyncLoading from '../components/loaders/SyncLoading/SyncLoading.tsx';
 import { FilterSelect, TxHistoryFilter } from '@app/components/transactions/history/FilterSelect.tsx';
 import { WalletUIMode } from '@app/types/events-payloads.ts';
+import SecureWalletWarning from './SecureWalletWarning/SecureWalletWarning.tsx';
 
 interface SidebarWalletProps {
     section: string;
@@ -90,6 +91,7 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
             </DetailsCard>
         </>
     );
+
     const walletMarkup = (
         <>
             <DetailsCard $isScrolled={isScrolled}>
@@ -112,6 +114,7 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
                                 <ExternalLink2SVG />
                             </ExternalLink>
                         )}
+                        <SecureWalletWarning $isScrolled={isScrolled} />
                     </DetailsCardBottomContent>
                 </DetailsCardContent>
             </DetailsCard>
