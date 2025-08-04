@@ -4,6 +4,7 @@ import { setRewardData, universalExchangeMinerOption } from '@app/store/useExcha
 import { ExchangeBranding } from '@app/types/exchange.ts';
 import { queryClient } from '@app/App/queryClient.ts';
 import { WalletUIMode } from '@app/types/events-payloads';
+import { handleAirdropRequest } from '@app/hooks/airdrop/utils/useHandleRequest.ts';
 
 export const KEY_XC_LIST = 'exchanges';
 
@@ -21,16 +22,17 @@ function handleRewardData(list: ExchangeBranding[]) {
 
 export const queryFn = async () => {
     const apiUrl = useConfigBEInMemoryStore.getState().airdropApiUrl;
-    const endpoint = `${apiUrl}/miner/exchanges`;
+    const path = `/miner/exchanges?include_wXTM=true`;
 
     if (!apiUrl.length) return [];
     try {
-        const res = await fetch(`${endpoint}`);
-        if (res.ok) {
-            const list = (await res.json()) as {
-                exchanges: ExchangeBranding[];
-            };
-            const filteredList = list.exchanges.filter((ex) => !ex.is_hidden);
+        const res = await handleAirdropRequest<{ exchanges: ExchangeBranding[] }>({
+            path,
+            method: 'GET',
+            publicRequest: true,
+        });
+        if (res?.exchanges) {
+            const filteredList = res.exchanges.filter((ex) => !ex.is_hidden);
             if (filteredList.length) {
                 handleRewardData(filteredList);
             }

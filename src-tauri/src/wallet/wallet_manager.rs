@@ -409,23 +409,6 @@ impl WalletManager {
                                 } else {
                                     log::warn!(target: LOG_TARGET, "Wallet Balance is None after initial scanning");
                                 }
-
-                                // Balance might be invalid right after initial scanning but it should be revalidated every 5 seconds for 2 minutes
-                                let mut interval = tokio::time::interval(Duration::from_secs(5));
-                                let end_time = tokio::time::Instant::now() + Duration::from_secs(120);
-
-                                while tokio::time::Instant::now() < end_time {
-                                    interval.tick().await;
-                                    let wallet_status = wallet_state_receiver.borrow().clone();
-                                    if let Some(wallet_state) = wallet_status {
-                                        if let Some(balance) = wallet_state.balance {
-                                            info!(target: LOG_TARGET, "Updating wallet balance after initial scanning: {balance:?}");
-
-                                            ConfigWallet::update_field(ConfigWalletContent::set_last_known_balance, balance.available_balance).await?;
-                                            EventsEmitter::emit_wallet_balance_update(balance).await;
-                                        }
-                                    }
-                                }
                                 break;
                             }
                             Err(e) => {
@@ -439,6 +422,52 @@ impl WalletManager {
 
             Ok(())
         });
+
+        // Balance might be invalid right after initial scanning but it should be revalidated shortly after
+        let wallet_state_receiver_clone = wallet_state_receiver.clone();
+        TasksTrackers::current()
+            .wallet_phase
+            .get_task_tracker()
+            .await
+            .spawn(async move {
+                WalletManager::validate_balance_after_scan(wallet_state_receiver_clone)
+                    .await
+                    .inspect_err(|e| {
+                        log::error!(target: LOG_TARGET, "Balance validation failed: {e}");
+                    })
+            });
+
+        Ok(())
+    }
+
+    async fn validate_balance_after_scan(
+        wallet_state_receiver: watch::Receiver<Option<WalletState>>,
+    ) -> Result<(), WalletManagerError> {
+        let mut interval = tokio::time::interval(Duration::from_secs(2));
+        let end_time = tokio::time::Instant::now() + Duration::from_secs(120);
+        let mut shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
+
+        loop {
+            tokio::select! {
+                _ = shutdown_signal.wait() => {
+                    info!(target: LOG_TARGET, "Shutdown signal received, stopping balance validation");
+                    break;
+                }
+                _ = interval.tick() => {
+                    if tokio::time::Instant::now() >= end_time {
+                        break;
+                    }
+
+                    let wallet_status = wallet_state_receiver.borrow().clone();
+                    if let Some(wallet_state) = wallet_status {
+                        if let Some(balance) = wallet_state.balance {
+                            ConfigWallet::update_field(ConfigWalletContent::set_last_known_balance, balance.available_balance).await?;
+                            EventsEmitter::emit_wallet_balance_update(balance).await;
+                        }
+                    }
+                }
+            }
+        }
 
         Ok(())
     }
