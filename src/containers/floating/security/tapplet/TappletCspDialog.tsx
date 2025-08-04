@@ -27,13 +27,13 @@ export default function TappletCspDialog() {
     const isOpen = modal === 'tapplet_csp';
 
     function handleClose() {
-        void emit('tapplet-dialog-response', { response: '' });
+        void emit('tapplet-dialog-response', undefined);
         setModal(null);
         setTappletCsp('');
     }
 
     function handleSubmit() {
-        emit('tapplet-dialog-response', { response: csp }).finally(() => {
+        emit('tapplet-dialog-response', csp).finally(() => {
             setModal(null);
             setTappletCsp('');
         });

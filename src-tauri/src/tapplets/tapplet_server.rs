@@ -46,6 +46,7 @@ const LOG_TARGET: &str = "tari::tapplet";
 
 /// Middleware that adds a CSP header dynamically from the captured `Arc<HeaderValue>`
 async fn add_csp_header(req: Request<Body>, next: Next, csp_header: HeaderValue) -> Response<Body> {
+    info!(target: LOG_TARGET, "👀 add csp header {:?}", &csp_header.to_str());
     let mut response = next.run(req).await;
     response
         .headers_mut()

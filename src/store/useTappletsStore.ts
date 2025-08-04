@@ -72,9 +72,10 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
         }
 
         //TODO add case if dev tapplet's already running and if not - run local server (launch_builtin_tapplet)
+        console.info('is http?', isHttpOrLocalhost(tapplet.endpoint));
         if (isHttpOrLocalhost(tapplet.endpoint)) {
             try {
-                console.info('Set Dev Tapplet: ', tapplet?.display_name);
+                console.info('🚗 RUN HTTP ', tapplet?.display_name);
                 const activeTapplet = await fetchActiveTapplet(tapplet);
                 if (!activeTapplet) return;
                 set({ activeTapplet });
@@ -88,6 +89,7 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
 
         // built-in tapplet
         if (isBuiltIn) {
+            console.info('🚗 RUN BUILDIN');
             const activeTapplet = await invoke('launch_builtin_tapplet');
             set({ activeTapplet });
             return;
@@ -95,6 +97,9 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
 
         // by default tapplets are supposed to work with the Ootle
         // run the Ootle dev/registed tapplet below
+        console.info('🚗 RUN DEV');
+        const activeTapplet = await invoke('launch_dev_tapplet', { path: tapplet.endpoint });
+        set({ activeTapplet });
         return;
     },
     setDevTapplet: async (tappPath: string) => {

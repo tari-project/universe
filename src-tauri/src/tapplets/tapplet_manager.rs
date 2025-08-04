@@ -36,7 +36,7 @@ impl TappletManager {
         app_handle: &AppHandle,
     ) -> Result<String, anyhow::Error> {
         let allowed_csp = allow_csp_dialog(csp, app_handle).await?;
-        info!(target: LOG_TARGET, "Tapplet's CSP accepted. CSP: {:?}", &allowed_csp);
+        info!(target: LOG_TARGET, "💭 Tapplet's CSP accepted. CSP: {:?}", &allowed_csp);
         Ok(allowed_csp)
     }
     pub async fn grant_tapplet_permissions(
@@ -44,7 +44,7 @@ impl TappletManager {
         app_handle: &AppHandle,
     ) -> Result<String, anyhow::Error> {
         let granted_permissions = grant_permissions_dialog(permissions, app_handle).await?;
-        info!(target: LOG_TARGET, "Tapplet's permissions granted: {:?}", &granted_permissions);
+        info!(target: LOG_TARGET, "💭 Tapplet's permissions granted: {:?}", &granted_permissions);
         Ok(granted_permissions)
     }
 }
@@ -66,18 +66,17 @@ where
     app_handle.once("tapplet-dialog-response", move |event| {
         let response = event.payload().trim();
 
-        if response.len() > 0 {
-            let _unused = tx.send(Some(response.to_string()));
+        if response.is_empty() {
+            let _ = tx.send(None);
         } else {
-            let _unused = tx.send(None);
+            let _ = tx.send(Some(response.to_string()));
         }
     });
 
-    // Await the response
     let response = rx.await.unwrap_or_default();
-    if let Some(response) = response {
-        log::info!("📩 RESPOSNE RECEIVED {:?}", &response);
-        Ok(response)
+    if let Some(response_str) = response {
+        log::info!("📩 RESPONSE RECEIVED {:?}", &response_str);
+        Ok(response_str)
     } else {
         log::info!("Granting tapplet permissions failed");
         Err(anyhow::anyhow!("Granting tapplet permissions failed"))

@@ -59,8 +59,8 @@ use crate::tapplets::error::{
     TappletServerError::*,
 };
 use crate::tapplets::interface::{
-    ActiveTapplet, AssetServer, InstalledTappletWithName, TappletConfig, TappletManifest,
-    TappletPermissions,
+    ActiveTapplet, AssetServer, InstalledTappletWithName, TappletConfig, TappletCsp,
+    TappletManifest, TappletPermissions,
 };
 use crate::tapplets::tapplet_installer::{
     check_files_and_validate_checksum, delete_tapplet, download_asset,
@@ -2258,12 +2258,17 @@ pub async fn launch_dev_tapplet(
     info!(target: LOG_TARGET, "💥 Dev tapplet start: {:?}", &tapp_dest_dir);
 
     let config = get_tapplet_config(tapp_dest_dir.clone()).unwrap_or_default();
-    let csp_header = HeaderValue::from_str(&config.csp).unwrap();
 
-    let allow_csp = TappletManager::allow_tapplet_csp(config.csp, &app_handle)
+    let allowed_csp = TappletManager::allow_tapplet_csp(config.csp, &app_handle)
         .await
         .map_err(|e| e.to_string())?;
-    info!(target: LOG_TARGET, "💥 Allow CSP result: {:?}", allow_csp);
+
+    let csp = TappletCsp::from_str(&allowed_csp).unwrap_or_default();
+    let csp_header = csp
+        .to_header_value()
+        .map_err(|e| format!("Failed to parse CSP header: {}", e))?;
+
+    info!(target: LOG_TARGET, "👀 created csp header {:?}", &csp_header.to_str());
 
     let granted_permissions =
         TappletManager::grant_tapplet_permissions(config.permissions.to_string(), &app_handle)

@@ -18,13 +18,13 @@ export default function TappletPermissionsDialog() {
     const isOpen = modal === 'tapplet_permissions';
 
     function handleClose() {
-        void emit('tapplet-dialog-response', { response: '' });
+        void emit('tapplet-dialog-response', undefined);
         setModal(null);
         setTappletPermissions('');
     }
 
     function handleSubmit() {
-        emit('tapplet-dialog-response', { response: tappletPermissions }).finally(() => {
+        emit('tapplet-dialog-response', tappletPermissions).finally(() => {
             setModal(null);
             setTappletPermissions('');
         });

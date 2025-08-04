@@ -145,9 +145,9 @@ export const Tapplet: React.FC<TappletProps> = ({ source }) => {
                 setAllowedDomains((prev) => Array.from(new Set([...prev, ...pendingDomains])));
                 setPendingDomains(null);
                 setShowDomainPopup(false);
-                const csp =
-                    "default-src 'self' http://{} http://api.staging-bridge.tari.com https://jsonplaceholder.typicode.com/todos/1; connect-src 'self' http://api.staging-bridge.tari.com https://jsonplaceholder.typicode.com/todos/1; script-src 'self' http://api.staging-bridge.tari.com 'unsafe-inline'; img-src 'self' data:; style-src 'self' 'unsafe-inline';";
-                console.warn('UPDATE CSP:', csp);
+                // const csp =
+                //     "default-src 'self' http://{} http://api.staging-bridge.tari.com https://jsonplaceholder.typicode.com/todos/1; connect-src 'self' http://api.staging-bridge.tari.com https://jsonplaceholder.typicode.com/todos/1; script-src 'self' http://api.staging-bridge.tari.com 'unsafe-inline'; img-src 'self' data:; style-src 'self' 'unsafe-inline';";
+                // console.warn('UPDATE CSP:', csp);
                 // await invoke('update_csp_policy', { csp });
             }
         } catch (e) {
