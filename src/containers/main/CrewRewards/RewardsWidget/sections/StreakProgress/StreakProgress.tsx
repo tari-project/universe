@@ -13,7 +13,6 @@ const STREAK_DAYS_REQUIRED = 3;
 export default function StreakProgress({ isInline = false }: Props) {
     const { t } = useTranslation();
 
-    // Get data directly from React Query
     const { data, isLoading } = useCrewMembers();
     const referrerProgress = data?.referrerProgress;
 

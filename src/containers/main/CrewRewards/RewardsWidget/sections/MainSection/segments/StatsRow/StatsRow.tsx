@@ -20,7 +20,6 @@ import { useTranslation, Trans } from 'react-i18next';
 export default function StatsRow() {
     const { t } = useTranslation();
 
-    // Get data directly from React Query
     const { data: crewData, isLoading: crewLoading, error: crewError } = useCrewMembers();
     const referrerProgress = crewData?.referrerProgress;
 
