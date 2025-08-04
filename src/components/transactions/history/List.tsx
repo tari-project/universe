@@ -59,7 +59,7 @@ export function List({ setIsScrolled, targetRef }: Props) {
         );
         convertedTransactions.current = [...convertedTransactions.current, ...converted];
         return convertedTransactions.current;
-    }, [data?.pages.length]);
+    }, [data?.pages.length]); // Re-run only when the number of pages changes
 
     useEffect(() => {
         const isThereANewBridgeTransaction = baseTx.find(
