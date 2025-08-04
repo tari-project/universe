@@ -12,6 +12,7 @@ import {
 import { AnimatePresence } from 'motion/react';
 import { invoke } from '@tauri-apps/api/core';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
     $isScrolled: boolean;
@@ -19,6 +20,7 @@ interface Props {
 
 export default function SecureWalletWarning({ $isScrolled }: Props) {
     const { setModal } = useSecurityStore();
+    const { t } = useTranslation('staged-security');
 
     const [seedBackedUp, setSeedBackedUp] = useState(false);
     const [pinLocked, setPinLocked] = useState(false);
@@ -51,10 +53,10 @@ export default function SecureWalletWarning({ $isScrolled }: Props) {
                 >
                     <SecureWalletWarningButton onClick={handleClick}>
                         <LeftTextGroup>
-                            <SecureIcon aria-hidden="true">❗</SecureIcon> {`Secure your wallet`}
+                            <SecureIcon aria-hidden="true">❗</SecureIcon> {t('warning.title')}
                         </LeftTextGroup>
                         <StepsWrapper>
-                            <StepsText>{`Steps`}</StepsText>
+                            <StepsText>{t('warning.steps')}</StepsText>
                             <StepsDots>
                                 <StepsDot $isActive={seedBackedUp} />
                                 <StepsDot $isActive={pinLocked} />
