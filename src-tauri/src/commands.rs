@@ -2284,9 +2284,9 @@ pub async fn launch_dev_tapplet(
 
     Ok(ActiveTapplet {
         tapplet_id: 0,
-        display_name: "Dev Tapplet".to_string(),
+        display_name: config.display_name,
         source: format!("http://{addr}"),
-        version: "1.0.0".to_string(),
+        version: config.version,
     })
 }
 

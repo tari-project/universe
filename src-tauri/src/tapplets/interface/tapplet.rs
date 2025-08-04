@@ -99,6 +99,8 @@ impl fmt::Display for TappletPermissions {
 pub struct TappletConfig {
     #[serde(rename = "packageName")]
     pub package_name: String,
+    #[serde(rename = "displayName")]
+    pub display_name: String,
     pub version: String,
     #[serde(rename = "supportedChain")]
     pub supported_chain: Vec<String>,
@@ -110,6 +112,7 @@ impl Default for TappletConfig {
     fn default() -> Self {
         TappletConfig {
             package_name: String::from("package_name"),
+            display_name: String::from("display_name"),
             version: String::from("0.1.0"),
             supported_chain: vec![],
             permissions: TappletPermissions::default(),
