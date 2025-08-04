@@ -129,7 +129,7 @@ export interface CrewMember {
         name: string;
         displayName?: string;
         referralCode?: string;
-        imageUrl?: string;
+        image?: string;
     };
     rewards: CrewMemberReward[];
 }

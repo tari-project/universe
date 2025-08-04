@@ -51,7 +51,7 @@ export const mapUserInfo = (member: CrewMember) => {
     const recentActivity = Date.now() - new Date(member.lastActivityDate).getTime() < 1000 * 60 * 60 * 2; // 2 hours
 
     return {
-        avatar: member.user?.imageUrl || '',
+        avatar: member.user?.image || '',
         isOnline: isActiveToday || recentActivity,
     };
 };

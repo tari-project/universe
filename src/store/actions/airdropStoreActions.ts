@@ -16,6 +16,7 @@ import {
     useConfigBEInMemoryStore,
     useConfigCoreStore,
     useUIStore,
+    useWalletStore,
 } from '@app/store';
 import { handleCloseSplashscreen } from '@app/store/actions/uiStoreActions.ts';
 import type { XSpaceEvent } from '@app/types/ws.ts';
@@ -299,6 +300,10 @@ export async function sendCrewNudge(message: string, targetMembers: string[]) {
 }
 
 export async function claimCrewRewards(rewardId: string, memberId: string) {
+    const walletAddress = useWalletStore.getState().tari_address_base58;
+    if (!walletAddress) {
+        throw new Error('No wallet address found');
+    }
     return await handleAirdropRequest<{
         success: boolean;
         claimedReward: Reward;
@@ -308,6 +313,7 @@ export async function claimCrewRewards(rewardId: string, memberId: string) {
         body: {
             rewardId,
             memberId,
+            targetWalletAddress: walletAddress,
         },
         headers: {
             'Content-Type': 'application/json',
