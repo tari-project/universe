@@ -90,9 +90,31 @@ export function List({ setIsScrolled, targetRef }: Props) {
     const adjustedTransactions: CombinedBridgeWalletTransaction[] = useMemo(() => {
         const extendedTransactions: CombinedBridgeWalletTransaction[] = [...baseTx];
         bridgeTransactions.forEach((bridgeTx) => {
-            const walletBridgeTransaction = extendedTransactions.findIndex((tx) => tx.paymentId === bridgeTx.paymentId);
-            extendedTransactions[walletBridgeTransaction] = {
-                ...extendedTransactions[walletBridgeTransaction],
+            // If the bridge transaction has no paymentId, we try to find it by tokenAmount and destinationAddress which should equal the cold wallet address
+            // This supports older transactions that might not have a paymentId
+            const depracatedWalletTransactionIndex = extendedTransactions.findIndex(
+                (tx) =>
+                    !bridgeTx.paymentId &&
+                    tx.tokenAmount === Number(bridgeTx.tokenAmount) &&
+                    tx.destinationAddress === coldWalletAddress
+            );
+
+            // Currently we can find the bridge transaction by paymentId
+            const originalWalletBridgeTransactionIndex = extendedTransactions.findIndex(
+                (tx) => tx.paymentId === bridgeTx.paymentId
+            );
+
+            // Index found by paymentId should be always preferred, but if it is not found we use the deprecated method if exists
+            const walletBridgeTransactionIndex =
+                originalWalletBridgeTransactionIndex >= 0
+                    ? originalWalletBridgeTransactionIndex
+                    : depracatedWalletTransactionIndex;
+
+            // Don't process if we can't find the transaction in the wallet transactions
+            if (walletBridgeTransactionIndex < 0) return;
+
+            extendedTransactions[walletBridgeTransactionIndex] = {
+                ...extendedTransactions[walletBridgeTransactionIndex],
                 bridgeTransactionDetails: {
                     status: bridgeTx.status,
                     transactionHash: bridgeTx.transactionHash,
