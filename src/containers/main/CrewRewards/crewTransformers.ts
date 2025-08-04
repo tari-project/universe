@@ -1,7 +1,7 @@
-import type { CrewMember } from '@app/store/useAirdropStore';
+import type { CrewMember, CrewMemberReward } from '@app/store/useAirdropStore';
 import type { CrewEntry, CrewStatus } from './RewardsWidget/sections/CrewSection/data';
 
-export const calculateProgress = (progressTowardsReward: any): number => {
+export const calculateProgress = (progressTowardsReward: CrewMemberReward['progressTowardsReward']): number => {
     if (progressTowardsReward.isComplete) return 100;
 
     // Calculate base progress from completed days
@@ -51,7 +51,7 @@ export const mapUserInfo = (member: CrewMember) => {
     const recentActivity = Date.now() - new Date(member.lastActivityDate).getTime() < 1000 * 60 * 60 * 2; // 2 hours
 
     return {
-        avatar: member.user?.imageUrl || '',
+        avatar: member.user?.image || '',
         isOnline: isActiveToday || recentActivity,
     };
 };
