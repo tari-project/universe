@@ -34,6 +34,7 @@ export function List({ setIsScrolled, targetRef }: Props) {
     const tariAddressType = useWalletStore((s) => s.tari_address_type);
     const { data, fetchNextPage, isFetchingNextPage, isFetching, hasNextPage } = useFetchTxHistory();
     const isFetchBridgeTransactionsFailed = useRef(false);
+    const convertedTransactions: RefObject<CombinedBridgeWalletTransaction[]> = useRef([]);
 
     useEffect(() => {
         const el = targetRef?.current;
@@ -48,10 +49,17 @@ export function List({ setIsScrolled, targetRef }: Props) {
         onChange: () => hasNextPage && fetchNextPage(),
     });
 
-    const baseTx = useMemo(
-        () => data?.pages.flatMap((p) => p.map((tx) => convertWalletTransactionToCombinedTransaction(tx))) || [],
-        [data?.pages]
-    );
+    const baseTx = useMemo(() => {
+        // We are caching converted transactions to avoid re-converting all of them on every execution
+        // If someone have 200 transactions it is more efficient to convert only new ~20 then 200
+        const sanitizedData = data?.pages.flatMap((page) => page) || [];
+        const newTransactions = sanitizedData.slice(convertedTransactions.current.length);
+        const converted = newTransactions.map((transaction) =>
+            convertWalletTransactionToCombinedTransaction(transaction)
+        );
+        convertedTransactions.current = [...convertedTransactions.current, ...converted];
+        return convertedTransactions.current;
+    }, [data?.pages.length]);
 
     useEffect(() => {
         const isThereANewBridgeTransaction = baseTx.find(
