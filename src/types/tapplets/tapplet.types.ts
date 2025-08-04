@@ -18,14 +18,6 @@ export interface AccountData {
     address: string;
 }
 
-export interface ActiveTapplet {
-    tapplet_id: number;
-    display_name: string;
-    source: string;
-    version: string;
-    supportedChain: SupportedChain[];
-}
-
 export interface SendOneSidedRequest {
     amount: string;
     address: string;
@@ -43,7 +35,7 @@ export interface RegisteredTapplet {
     id: string;
     registry_id: string;
     package_name: string;
-    display_name: string;
+    displayName: string;
     author_name: string;
     author_website: string;
     about_summary: string;
@@ -64,7 +56,7 @@ export interface InstalledTapplet {
 
 export interface InstalledTappletWithAssets {
     installed_tapplet: InstalledTapplet;
-    display_name: string;
+    displayName: string;
     installed_version: string;
     latest_version: string;
     logoAddr: string;
@@ -75,7 +67,7 @@ export interface DevTapplet {
     id: number;
     package_name: string;
     endpoint: string;
-    display_name: string;
+    displayName: string;
     about_summary: string;
     about_description: string;
 }
@@ -107,18 +99,15 @@ export interface TappletAudit {
     report_url: string;
 }
 
-export interface ActiveTapplet {
-    tapplet_id: number;
-    display_name: string;
-    source: string;
-    version: string;
-    permissions?: TariPermissions;
-    supportedChain: SupportedChain[];
-}
-
 export interface TappletConfig {
     packageName: string;
+    displayName: string;
     version: string;
     permissions: TariPermissions;
     supportedChain: SupportedChain[];
 }
+
+export type ActiveTapplet = TappletConfig & {
+    tapplet_id: number;
+    source: string;
+};

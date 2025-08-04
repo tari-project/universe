@@ -5,11 +5,11 @@ import {
     DevTapplet,
     InstalledTappletWithAssets,
     RegisteredTapplet,
-    TappletConfig,
 } from '@app/types/tapplets/tapplet.types.ts';
 import { useTappletSignerStore } from './useTappletSignerStore.ts';
 import { invoke } from '@tauri-apps/api/core';
 import { setError } from './index.ts';
+import { fetchActiveTapplet, isHttpOrLocalhost } from '@app/utils/ootle.ts';
 
 interface State {
     isInitialized: boolean;
@@ -23,7 +23,7 @@ interface State {
 }
 
 interface Actions {
-    setActiveTapp: (tapplet?: ActiveTapplet) => Promise<void>;
+    setActiveTapp: (tapplet: ActiveTapplet) => Promise<void>;
     setActiveTappById: (tappletId: number, isBuiltIn?: boolean, isDev?: boolean) => Promise<void>;
     setDevTapplet: (tappPath: string) => Promise<void>;
     deactivateTapplet: () => Promise<void>;
@@ -60,39 +60,24 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
     deactivateTapplet: async () => {
         set({ activeTapplet: undefined });
     },
-    setActiveTappById: async (tappletId, isBuiltIn = false, isDev = false) => {
+    setActiveTappById: async (tappletId, isBuiltIn = false) => {
         if (tappletId == get().activeTapplet?.tapplet_id) return;
         const tappProviderState = useTappletSignerStore.getState();
         if (!tappProviderState.isInitialized) tappProviderState.initTappletSigner();
+        const tapplet = get().devTapplets.find((tapp) => tapp.id === tappletId);
+        if (!tapplet) {
+            setError(`Tapplet with id: ${tappletId} not found`);
+            return;
+        }
 
         //TODO add case if dev tapplet's already running and if not - run local server (launch_builtin_tapplet)
-        if (isDev) {
+        if (isHttpOrLocalhost(tapplet.endpoint)) {
             try {
-                console.info('Set Dev Tapplet');
-                const tapplet = get().devTapplets.find((tapp) => tapp.id === tappletId);
-                console.info('Set Dev Tapplet: ', tapplet?.display_name);
-                if (!tapplet) return;
-                const TAPPLET_CONFIG_FILE = 'tapplet.config.json'; //TODO
-                const url = `${tapplet.endpoint}/${TAPPLET_CONFIG_FILE}`;
-                console.info('Dev Tapplet fetch url: ', url);
-                const resp = await fetch(url, {
-                    method: 'GET',
-                });
-                console.info('Dev Tapplet fetch resp: ', resp);
-                if (!resp.ok) return;
-                const config: TappletConfig = await resp.json();
-                console.info('Dev Tapplet config', config);
-                if (!config) return;
-                const activeTapplet: ActiveTapplet = {
-                    tapplet_id: tapplet.id,
-                    version: config.version,
-                    display_name: tapplet.display_name,
-                    source: tapplet.endpoint,
-                    permissions: config.permissions,
-                    supportedChain: config.supportedChain,
-                };
+                console.info('Set Dev Tapplet: ', tapplet?.displayName);
+                const activeTapplet = await fetchActiveTapplet(tapplet);
+                if (!activeTapplet) return;
                 set({ activeTapplet });
-                tappProviderState.setTappletSigner(config.packageName);
+                tappProviderState.setTappletSigner(activeTapplet?.packageName);
             } catch (error) {
                 console.error('Error running Dev Tapplet: ', error);
                 setError(`'Error running Dev Tapplet: ${error}`);
@@ -180,7 +165,7 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
             console.info('[STORE] fetch tapp success', tapplet, installedTapplet);
             // TODO refactor types and assets path
             const tapp: InstalledTappletWithAssets = {
-                display_name: tapplet.display_name,
+                displayName: tapplet.displayName,
                 installed_tapplet: installedTapplet,
                 installed_version: installedTapplet.tapplet_version_id,
                 latest_version: '',

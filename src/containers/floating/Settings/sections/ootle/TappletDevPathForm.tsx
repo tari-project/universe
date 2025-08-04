@@ -23,6 +23,7 @@ const StyledForm = styled.form`
     min-height: 60px;
 `;
 
+// TODO ADD RULES TO THE CONTROLLER TO CHECK IF ENDPOINT (CAN'T END WITH `/` SIGN) OR PATH ARE CORRECT
 const TappletDevPathForm = () => {
     const { t } = useTranslation('settings', { useSuspense: false });
     const {
@@ -89,7 +90,7 @@ const TappletDevPathForm = () => {
                                         <StyledInput
                                             {...field}
                                             type="text"
-                                            placeholder="Dev Tapplet build path, e.g.: /home/user/tapplet/dist"
+                                            placeholder="Path (eg. /home/user/tapplet/dist) OR endpoint (eg. http://localhost:18000)"
                                             hasError={!!errors.tappPath}
                                             onFocus={() => setEditing(true)}
                                         />
