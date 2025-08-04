@@ -1,5 +1,6 @@
 import { useAirdropStore } from '@app/store/useAirdropStore';
 import { handleRefreshAirdropTokens } from '@app/hooks/airdrop/stateHelpers/useAirdropTokensRefresh.ts';
+import { useConfigBEInMemoryStore } from '@app/store';
 
 interface RequestProps {
     path: string;
@@ -22,9 +23,11 @@ async function retryHandler(errorMessage: string) {
 }
 
 export async function handleAirdropRequest<T>({ body, method, path, onError, headers, publicRequest }: RequestProps) {
+    // use useConfigBEInMemoryStore now, not airdrop store for the URL
+    const baseUrl = useConfigBEInMemoryStore.getState().airdropApiUrl; // TODO rename url vars?
+
     const airdropToken = useAirdropStore.getState().airdropTokens?.token;
     const airdropTokenExpiration = useAirdropStore.getState().airdropTokens?.expiresAt;
-    const baseUrl = useAirdropStore.getState().backendInMemoryConfig?.airdropApiUrl;
 
     const isTokenExpired = !airdropTokenExpiration || airdropTokenExpiration * 1000 < Date.now();
 
@@ -47,7 +50,7 @@ export async function handleAirdropRequest<T>({ body, method, path, onError, hea
 
     // If no token and no public request, return
     if (!baseUrl || (!airdropToken && !publicRequest)) {
-        console.warn(`No token or baseUrl, skipping request to ${path}`);
+        console.warn(`No ${!baseUrl ? 'baseUrl' : 'token'}, skipping request to ${path}`);
         return;
     }
 
