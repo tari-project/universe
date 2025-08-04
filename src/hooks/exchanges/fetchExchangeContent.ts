@@ -1,4 +1,4 @@
-import { useUIStore } from '@app/store';
+import { useConfigBEInMemoryStore, useUIStore } from '@app/store';
 import { useQuery } from '@tanstack/react-query';
 import { setShowExchangeModal, universalExchangeMinerOption, useExchangeStore } from '@app/store/useExchangeStore.ts';
 import { ExchangeBranding } from '@app/types/exchange.ts';
@@ -33,10 +33,11 @@ export const queryfn = async (exchangeId: string) => {
 export function useFetchExchangeBranding() {
     const theme = useTheme();
     const exchangeId = useExchangeStore((s) => s.currentExchangeMinerId);
+    const baseUrl = useConfigBEInMemoryStore((s) => s.airdropApiUrl);
 
     return useQuery({
         queryKey: [KEY_XC_CONTENT, exchangeId],
-        enabled: !!exchangeId?.length,
+        enabled: !!exchangeId?.length && !!baseUrl.length,
         queryFn: () => queryfn(exchangeId),
         select: (data) => {
             if (data) {
