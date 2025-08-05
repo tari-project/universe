@@ -2292,10 +2292,10 @@ pub async fn launch_dev_tapplet(
             .map_err(|e| e.to_string())?;
     info!(target: LOG_TARGET, "💥 Grant permissions result: {:?}", granted_permissions);
 
-    // let mut updated_dev_tapp = UpdateDevTapplet::from(&dev_tapplet);
-    // updated_dev_tapp.csp = allowed_csp.clone();
-    // updated_dev_tapp.tari_permissions = granted_permissions.clone();
-    // let _ = update_dev_tapp_db(tapplet_id, updated_dev_tapp, db_connection);
+    let mut updated_dev_tapp = UpdateDevTapplet::from(&dev_tapplet);
+    updated_dev_tapp.csp = allowed_csp.clone();
+    updated_dev_tapp.tari_permissions = granted_permissions.clone();
+    let _ = update_dev_tapp_db(tapplet_id, updated_dev_tapp, db_connection);
 
     let handle_start =
         tauri::async_runtime::spawn(async move { start_tapplet(tapp_dest_dir, csp_header).await });
@@ -2453,6 +2453,10 @@ pub async fn fetch_registered_tapplets(
         //     })
         //   )?;
         // }
+        info!(
+            "❌ FETCHED MANFIEST created tapp db{:?}",
+            &tapplets.registered_tapplets.len()
+        );
 
         for (version, version_data) in tapplet_manifest.versions.iter() {
             let _ = store

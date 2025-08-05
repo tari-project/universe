@@ -83,8 +83,8 @@ impl<'a> From<&'a TappletRegistryManifest> for CreateTapplet<'a> {
             about_summary: &tapplet_manifest.metadata.about.summary,
             about_description: &tapplet_manifest.metadata.about.description,
             category: &tapplet_manifest.metadata.category,
-            csp: "",
-            tari_permissions: "",
+            csp: "default-src 'self'",
+            tari_permissions: "admin",
         }
     }
 }

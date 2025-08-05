@@ -97,7 +97,7 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
 
         // by default tapplets are supposed to work with the Ootle
         // run the Ootle dev/registed tapplet below
-        console.info('🚗 RUN DEV');
+        console.info('🚗 RUN DEV', tappletId);
         const activeTapplet = await invoke('launch_dev_tapplet', { tapplet_id: tappletId, path: tapplet.endpoint });
         set({ activeTapplet });
         return;

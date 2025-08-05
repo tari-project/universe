@@ -31,9 +31,9 @@ export default function TappletsRegistered() {
         [installRegisteredTapp]
     );
 
-    // useEffect(() => {
-    //     fetchRegisteredTapplets();
-    // }, []);
+    useEffect(() => {
+        fetchRegisteredTapplets();
+    }, []);
 
     return (
         <TappletsGroupWrapper $category="Tapplets Registered">
