@@ -7,11 +7,11 @@ import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard.ts';
 import { useAppStateStore } from '@app/store/appStateStore';
 import { invoke } from '@tauri-apps/api/core';
 
-import { memo, useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { IoCheckmarkOutline, IoCopyOutline } from 'react-icons/io5';
 
-const CriticalProblemDialog = memo(function CriticalProblemDialog() {
+export default function CriticalProblemDialog() {
     const { t } = useTranslation(['setup-progresses', 'common'], { useSuspense: false });
     const criticalProblem = useAppStateStore((s) => s.criticalProblem);
     const [isExiting, setIsExiting] = useState(false);
@@ -114,6 +114,4 @@ const CriticalProblemDialog = memo(function CriticalProblemDialog() {
             </DialogContent>
         </Dialog>
     );
-});
-
-export default CriticalProblemDialog;
+}

@@ -1,4 +1,3 @@
-import { memo } from 'react';
 import { Button } from './styles.ts';
 import { useUIStore } from '@app/store/useUIStore.ts';
 import { setSidebarOpen, setShowTapplet } from '@app/store/actions/uiStoreActions';
@@ -7,7 +6,7 @@ import { useTappletsStore } from '@app/store/useTappletsStore.ts';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
 import { useSetupStore } from '@app/store/useSetupStore.ts';
 
-const BridgeButton = memo(function BridgeButton() {
+export default function BridgeButton() {
     const showTapplet = useUIStore((s) => s.showTapplet);
     const setActiveTappById = useTappletsStore((s) => s.setActiveTappById);
     const isWalletScanning = useWalletStore((s) => s.wallet_scanning?.is_scanning);
@@ -17,9 +16,10 @@ const BridgeButton = memo(function BridgeButton() {
 
     function handleToggleOpen() {
         if (isDisabled) return;
-        setActiveTappById(BRIDGE_TAPPLET_ID, true);
-        setShowTapplet(true);
-        setSidebarOpen(false);
+        setActiveTappById(BRIDGE_TAPPLET_ID, true).then(() => {
+            setShowTapplet(true);
+            setSidebarOpen(false);
+        });
     }
 
     return (
@@ -36,6 +36,4 @@ const BridgeButton = memo(function BridgeButton() {
             </svg>
         </Button>
     );
-});
-
-export default BridgeButton;
+}

@@ -1,5 +1,6 @@
-import { BackButton, IframeContainer, SectionHeaderWrapper, SwapsContainer, SwapsIframe } from './Swap.styles';
-import { HeaderLabel, TabHeader } from '../../components/Tabs/tab.styles';
+import { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+
 import {
     SwapConfirmation,
     SwapConfirmationTransactionProps,
@@ -9,16 +10,17 @@ import {
     ProcessingTransaction,
 } from '@app/containers/floating/SwapDialogs/sections/ProcessingTransaction/ProcessingTransaction';
 
-import { useState, memo, useRef, useEffect, useCallback } from 'react'; // Added useRef
 import { SignApprovalMessage } from '@app/containers/floating/SwapDialogs/sections/SignMessage/SignApprovalMessage';
-import { useTranslation } from 'react-i18next';
+
 import { setIsSwapping } from '@app/store/actions/walletStoreActions';
 import { MessageType, useIframeMessage } from '@app/hooks/swap/useIframeMessage';
 import { useUIStore } from '@app/store';
 import { useIframeUrl } from '@app/hooks/swap/useIframeUrl';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots';
+import { BackButton, IframeContainer, SectionHeaderWrapper, SwapsContainer, SwapsIframe } from './Swap.styles';
+import { HeaderLabel, TabHeader } from '../../components/Tabs/tab.styles';
 
-export const Swap = memo(function Swap() {
+export function Swap() {
     const theme = useUIStore((s) => s.theme);
     const [processingOpen, setProcessingOpen] = useState(false);
     const [processingTransaction, setProcessingTransaction] = useState<ProccessingTransactionProps | null>(null);
@@ -34,22 +36,19 @@ export const Swap = memo(function Swap() {
 
     const { t } = useTranslation(['wallet'], { useSuspense: false });
 
-    const handleSetTheme = useCallback(() => {
+    useEffect(() => {
+        // Keep the iframe theme in sync with the app theme
         if (!iframeUrl) return;
-        setTimeout(() => {
+        function handleSetTheme() {
             if (iframeRef.current) {
                 iframeRef.current.contentWindow?.postMessage({ type: 'SET_THEME', payload: { theme } }, '*');
             }
-        }, 1000);
-    }, [iframeUrl, theme]);
-    useEffect(() => {
-        // Keep the iframe theme in sync with the app theme
-        handleSetTheme();
+        }
         const timeout = setTimeout(handleSetTheme, 1000);
         return () => {
             clearTimeout(timeout);
         };
-    }, [handleSetTheme]);
+    }, [iframeUrl, theme]);
 
     const handleClearState = () => {
         setApproving(false);
@@ -130,7 +129,6 @@ export const Swap = memo(function Swap() {
                         ref={iframeRef}
                         src={iframeUrl}
                         title="Swap Iframe"
-                        onLoad={handleSetTheme}
                     />
                 ) : (
                     <LoadingDots />
@@ -166,4 +164,4 @@ export const Swap = memo(function Swap() {
             <SignApprovalMessage isOpen={approving} setIsOpen={setApproving} />
         </SwapsContainer>
     );
-});
+}

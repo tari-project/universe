@@ -1,5 +1,7 @@
-import { memo, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { AnimatePresence } from 'motion/react';
+import { useTranslation } from 'react-i18next';
+
 import { formatNumber, FormatPreset, truncateMiddle } from '@app/utils';
 import { BridgeBaseItemProps, BridgeHistoryListItemProps } from '../types.ts';
 import BridgeItemHover from './BridgeHoveredItem.tsx';
@@ -16,11 +18,10 @@ import {
     ValueWrapper,
 } from './ListItem.styles.ts';
 import { useUIStore } from '@app/store';
-import { useTranslation } from 'react-i18next';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { formatTimeStamp, getTimestampFromTransaction } from './helpers.ts';
 
-const BaseItem = memo(function BaseItem({ title, time, value, chip, onClick }: BridgeBaseItemProps) {
+function BaseItem({ title, time, value, chip, onClick }: BridgeBaseItemProps) {
     // note re. isPositiveValue:
     // amounts in the tx response are always positive numbers but
     // if the transaction is Outbound, the value is negative
@@ -49,14 +50,9 @@ const BaseItem = memo(function BaseItem({ title, time, value, chip, onClick }: B
             </Content>
         </ContentWrapper>
     );
-});
+}
 
-const BridgeHistoryListItem = memo(function ListItem({
-    item,
-    index,
-    itemIsNew = false,
-    setDetailsItem,
-}: BridgeHistoryListItemProps) {
+function BridgeHistoryListItem({ item, index, itemIsNew = false, setDetailsItem }: BridgeHistoryListItemProps) {
     const { t } = useTranslation('wallet');
     const hideWalletBalance = useUIStore((s) => s.hideWalletBalance);
 
@@ -104,6 +100,6 @@ const BridgeHistoryListItem = memo(function ListItem({
             {baseItem}
         </ItemWrapper>
     );
-});
+}
 
 export { BridgeHistoryListItem };

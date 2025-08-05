@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getSOSTimeRemaining } from '@app/store/useShellOfSecretsStore';
 import {
     Wrapper,
@@ -9,10 +11,8 @@ import {
     Number,
     Label,
 } from './styles';
-import { useTranslation } from 'react-i18next';
-import { memo, useEffect, useState } from 'react';
 
-const Timer = memo(function Timer() {
+export default function Timer() {
     const { t } = useTranslation('sos', { useSuspense: false });
     const [remainingTime, setRemainingTime] = useState({ days: 0, hours: 0, totalRemainingMs: 0 });
 
@@ -46,6 +46,4 @@ const Timer = memo(function Timer() {
             </TimerColumn>
         </Wrapper>
     );
-});
-
-export default Timer;
+}
