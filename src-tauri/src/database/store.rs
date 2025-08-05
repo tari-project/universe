@@ -215,7 +215,7 @@ impl<'a> Store<Tapplet, CreateTapplet<'a>, UpdateTapplet> for SqliteStore {
             .get_result(self.get_connection().deref_mut())
             .map_err(|_| {
                 DatabaseError(FailedToCreate {
-                    entity_name: "Tapplet".to_string(),
+                    entity_name: item.display_name.to_string(),
                 })
             })
     }
@@ -227,7 +227,7 @@ impl<'a> Store<Tapplet, CreateTapplet<'a>, UpdateTapplet> for SqliteStore {
             .execute(self.get_connection().deref_mut())
             .map_err(|_| {
                 DatabaseError(FailedToDelete {
-                    entity_name: "Tapplet".to_string(),
+                    entity_name: entity.display_name.to_string(),
                 })
             })
     }
@@ -240,7 +240,7 @@ impl<'a> Store<Tapplet, CreateTapplet<'a>, UpdateTapplet> for SqliteStore {
             .execute(self.get_connection().deref_mut())
             .map_err(|_| {
                 DatabaseError(FailedToUpdate {
-                    entity_name: "Tapplet".to_string(),
+                    entity_name: old.display_name.to_string(),
                 })
             })
     }
@@ -491,8 +491,8 @@ impl<'a> Store<DevTapplet, CreateDevTapplet<'a>, UpdateDevTapplet> for SqliteSto
             .get_result(self.get_connection().deref_mut())
             .map_err(|_| {
                 DatabaseError(AlreadyExists {
-                    entity_name: "Dev Tapplet".to_string(),
-                    field_name: "endpoint".to_string(),
+                    entity_name: item.display_name.to_string(),
+                    field_name: "field name".to_string(),
                 })
             })
     }
@@ -505,7 +505,7 @@ impl<'a> Store<DevTapplet, CreateDevTapplet<'a>, UpdateDevTapplet> for SqliteSto
             .execute(self.get_connection().deref_mut())
             .map_err(|_| {
                 DatabaseError(FailedToUpdate {
-                    entity_name: "Dev Tapplet".to_string(),
+                    entity_name: old.display_name.to_string(),
                 })
             })
     }
@@ -517,7 +517,7 @@ impl<'a> Store<DevTapplet, CreateDevTapplet<'a>, UpdateDevTapplet> for SqliteSto
             .execute(self.get_connection().deref_mut())
             .map_err(|_| {
                 DatabaseError(FailedToDelete {
-                    entity_name: "Dev Tapplet".to_string(),
+                    entity_name: entity.display_name.to_string(),
                 })
             })
     }

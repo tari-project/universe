@@ -5,9 +5,9 @@
                 "minotari_node": "4.10.1-pre.1 | ad5aac9",
                 "wallet": "4.10.1-pre.1 | ad5aac9",
                 "sha-p2pool": "1.0.3 | cff9241",
-                "glytex": "0.2.31 | 4e3148b",
+                "glytex": "0.2.26 | 78e833f",
                 "tor": "14.5.1",
                 "bridge": "0.2.0",
-                "graxil": "1.0.10 | 2c0ba0c"
+                "graxil": "1.0.9 | d8a2b58"
         }
 }

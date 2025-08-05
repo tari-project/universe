@@ -41,6 +41,8 @@ export interface RegisteredTapplet {
     about_summary: string;
     about_description: string;
     category: string;
+    csp: string;
+    tapplet_permissions: string;
 }
 
 export type RegisteredTappletWithAssets = RegisteredTapplet & {
@@ -70,6 +72,8 @@ export interface DevTapplet {
     display_name: string;
     about_summary: string;
     about_description: string;
+    csp: string;
+    tapplet_permissions: string;
 }
 
 export type DevTappletWithAssets = DevTapplet & {
@@ -105,6 +109,8 @@ export interface TappletConfig {
     version: string;
     permissions: TariPermissions;
     supportedChain: SupportedChain[];
+    csp: string;
+    tapplet_permissions: string;
 }
 
 export type ActiveTapplet = TappletConfig & {

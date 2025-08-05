@@ -83,8 +83,8 @@ impl<'a> From<&'a TappletRegistryManifest> for CreateTapplet<'a> {
             about_summary: &tapplet_manifest.metadata.about.summary,
             about_description: &tapplet_manifest.metadata.about.description,
             category: &tapplet_manifest.metadata.category,
-            csp: &tapplet_manifest.metadata.csp,
-            tari_permissions: &tapplet_manifest.metadata.tari_permissions,
+            csp: "",
+            tari_permissions: "",
         }
     }
 }
@@ -207,6 +207,18 @@ pub struct UpdateDevTapplet {
     pub display_name: String,
     pub csp: String,
     pub tari_permissions: String,
+}
+
+impl From<&DevTapplet> for UpdateDevTapplet {
+    fn from(dev_tapplet: &DevTapplet) -> Self {
+        UpdateDevTapplet {
+            endpoint: dev_tapplet.endpoint.clone(),
+            package_name: dev_tapplet.package_name.clone(),
+            display_name: dev_tapplet.display_name.clone(),
+            csp: dev_tapplet.csp.clone(),
+            tari_permissions: dev_tapplet.tari_permissions.clone(),
+        }
+    }
 }
 
 #[derive(Queryable, Selectable, Debug, Serialize)]

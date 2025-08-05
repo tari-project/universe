@@ -2255,9 +2255,21 @@ pub async fn launch_builtin_tapplet() -> Result<ActiveTapplet, String> {
 
 #[tauri::command]
 pub async fn launch_dev_tapplet(
+    tapplet_id: Option<i32>,
     path: String,
     app_handle: tauri::AppHandle,
+    db_connection: tauri::State<'_, DatabaseConnection>,
 ) -> Result<ActiveTapplet, String> {
+    let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
+
+    // Find the dev tapplet to update by id (or another unique field)
+    let dev_tapplet: DevTapplet = match tapplet_id {
+        Some(id) => tapplet_store.get_by_id(id).map_err(|e| e.to_string())?,
+        None => {
+            return Err("Tapplet not found".to_string());
+        }
+    };
+
     let tapp_dest_dir = PathBuf::from(path);
     info!(target: LOG_TARGET, "💥 Dev tapplet start: {:?}", &tapp_dest_dir);
 
@@ -2279,6 +2291,11 @@ pub async fn launch_dev_tapplet(
             .await
             .map_err(|e| e.to_string())?;
     info!(target: LOG_TARGET, "💥 Grant permissions result: {:?}", granted_permissions);
+
+    // let mut updated_dev_tapp = UpdateDevTapplet::from(&dev_tapplet);
+    // updated_dev_tapp.csp = allowed_csp.clone();
+    // updated_dev_tapp.tari_permissions = granted_permissions.clone();
+    // let _ = update_dev_tapp_db(tapplet_id, updated_dev_tapp, db_connection);
 
     let handle_start =
         tauri::async_runtime::spawn(async move { start_tapplet(tapp_dest_dir, csp_header).await });
@@ -2418,7 +2435,7 @@ pub async fn fetch_registered_tapplets(
             return Err(e.to_string());
         }
     };
-
+    info!("❌ FETCHED MANFIEST {:?}", &tapplets);
     let mut store = SqliteStore::new(db_connection.0.clone());
 
     for tapplet_manifest in tapplets.registered_tapplets.values() {
@@ -2691,7 +2708,11 @@ pub async fn add_dev_tapplet(
         tapp_config = get_tapplet_config(tapp_dest_dir).unwrap();
     }
 
-    info!("🌟 Add dev tapplet manifest: {:?}", &tapp_config);
+    info!("🌟 Add dev tapplet config: {:?}", &tapp_config);
+    info!(
+        "🌟 Add dev tapp permissions: {:?}",
+        &tapp_config.permissions.all_permissions_to_string()
+    );
     let mut store = SqliteStore::new(db_connection.0.clone());
     let new_dev_tapplet = CreateDevTapplet {
         endpoint: &endpoint,
@@ -2747,8 +2768,8 @@ pub fn update_dev_tapp_db(
     db_connection: tauri::State<'_, DatabaseConnection>,
 ) -> Result<usize, Error> {
     let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
+    info!(target: LOG_TARGET, "🛠️ UPDATE DEV TAPPLET DB {:?}", &tapplet.csp);
 
-    // Find the dev tapplet to update by id (or another unique field)
     let dev_tapplet = match id {
         Some(id) => tapplet_store.get_by_id(id)?,
         None => {

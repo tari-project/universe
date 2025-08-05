@@ -35,8 +35,6 @@ pub struct Metadata {
     pub about: About,
     // pub audits: Vec<Audit>,
     pub category: String,
-    pub csp: String,
-    pub tari_permissions: String,
 }
 
 #[derive(Debug, serde::Deserialize, Clone)]
@@ -100,4 +98,12 @@ impl TryFrom<TappletVersion> for TappletSemver {
 pub struct AssetServer {
     pub addr: String,
     pub cancel_token: CancellationToken,
+}
+
+// TODO use it?
+#[derive(Debug, serde::Deserialize, Clone)]
+pub struct Security {
+    pub csp: String,
+    #[serde(rename = "tariPermissions")]
+    pub tari_permissions: String,
 }

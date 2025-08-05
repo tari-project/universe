@@ -98,19 +98,19 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
         // by default tapplets are supposed to work with the Ootle
         // run the Ootle dev/registed tapplet below
         console.info('🚗 RUN DEV');
-        const activeTapplet = await invoke('launch_dev_tapplet', { path: tapplet.endpoint });
+        const activeTapplet = await invoke('launch_dev_tapplet', { tapplet_id: tappletId, path: tapplet.endpoint });
         set({ activeTapplet });
         return;
     },
     setDevTapplet: async (tappPath: string) => {
-        console.info('🐦‍🔥 dev tapp path', tappPath);
+        console.info('🐦‍🔥 SET DEV TAPPLET CURRENTLY UNAVAILABLE', tappPath);
         if (!tappPath) return;
         const tappProviderState = useTappletSignerStore.getState();
         if (!tappProviderState.isInitialized) tappProviderState.initTappletSigner();
 
         // dev tapplet
-        const activeTapplet = await invoke('launch_dev_tapplet', { path: tappPath });
-        set({ activeTapplet });
+        // const activeTapplet = await invoke('launch_dev_tapplet', { path: tappPath });
+        // set({ activeTapplet });
         return;
     },
     setOngoingBridgeTx: (tx: BridgeTxDetails) => {
