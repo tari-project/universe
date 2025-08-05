@@ -21,7 +21,9 @@ export const calculateProgress = (
 
 export const determineStatus = (member: CrewMember): CrewStatus => {
     const latestReward = member.rewards[0];
-    if (!latestReward) return 'needs_nudge';
+    const lastActivityMoreThan24HoursAgo =
+        Date.now() - new Date(member.lastActivityDate).getTime() > 1000 * 60 * 60 * 24;
+    if (!latestReward || lastActivityMoreThan24HoursAgo) return 'needs_nudge';
 
     // If reward is ready to claim or complete
     if (latestReward.status === 'earned' && latestReward.readyToClaim) {
@@ -46,15 +48,9 @@ export const determineStatus = (member: CrewMember): CrewStatus => {
 
 export const mapUserInfo = (member: CrewMember) => {
     const latestReward = member.rewards[0];
-    const currentDayProgress = latestReward?.progressTowardsReward.currentDayProgress || 0;
-
-    // Consider online if they have good progress today or recent activity
-    const isActiveToday = currentDayProgress > 20;
-    const recentActivity = Date.now() - new Date(member.lastActivityDate).getTime() < 1000 * 60 * 60 * 2; // 2 hours
-
     return {
         avatar: member.user?.image || '',
-        isOnline: isActiveToday || recentActivity,
+        isOnline: !!latestReward?.active,
     };
 };
 
