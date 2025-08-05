@@ -78,7 +78,7 @@ export const Connect = () => {
                 }
             });
         }
-    }, [data?.wxtm_mode, debouncedAddress, setError, validateAddress, validationErrorMessage]);
+    }, [data, debouncedAddress, setError, validateAddress, validationErrorMessage]);
 
     const handleWXTMSubmit = useCallback(async () => {
         const encodedAddress = await convertEthAddressToTariAddress(address, data?.id || 'unknown');

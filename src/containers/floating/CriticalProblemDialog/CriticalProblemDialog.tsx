@@ -40,10 +40,11 @@ export default function CriticalProblemDialog() {
     }, []);
 
     const handleSendFeedback = async () => {
+        const feedbackTitle = t(criticalProblem?.title || 'installation-problem', { lng: 'en' });
         try {
             setIsSubmittingLogs(true);
             await invoke('send_feedback', {
-                feedback: t(criticalProblem?.title || 'installation-problem', { lng: 'en' }),
+                feedback: feedbackTitle,
                 includeLogs: true,
             }).then((submissionId) => {
                 setLogsSubmissionId(submissionId);
