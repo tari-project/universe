@@ -77,13 +77,10 @@ export const calculateTimeRemaining = (member: CrewMember, minRequirements: MinR
 
     if (daysRemaining <= 0) return undefined;
 
-    // Convert days to hours for display
-    const hoursRemaining = daysRemaining * 24;
-
     return {
-        current: Math.round(hoursRemaining),
-        total: minRequirements.totalDaysRequired * 24, // Total hours for the goal
-        unit: 'Hours',
+        current: daysRemaining,
+        total: minRequirements.totalDaysRequired,
+        unit: 'Days',
     };
 };
 
