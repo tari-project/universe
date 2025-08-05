@@ -7,7 +7,7 @@ interface Props {
 export default function CrewProgressBar({ progress }: Props) {
     return (
         <Wrapper>
-            <ProgressPercent>{progress}%</ProgressPercent>
+            <ProgressPercent>{progress.toFixed(2)}%</ProgressPercent>
             <ProgressBar $progress={progress} />
         </Wrapper>
     );

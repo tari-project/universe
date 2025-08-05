@@ -106,7 +106,6 @@ export interface CrewMemberReward {
     progressTowardsReward: {
         miningMinutesProgress: number;
         miningDaysProgress: number;
-        totalDaysRequired: number;
         currentDayProgress: number;
         poolHashesProgress: number;
         poolSharesProgress: number;
@@ -118,8 +117,7 @@ export interface CrewMemberReward {
 export interface CrewMember {
     id: string;
     userId: string;
-    walletViewKeyHashed: string;
-    walletReceiveKeyHashed: string;
+    walletReceiveKey: string;
     completed: boolean;
     totalMiningMinutes: number;
     weeklyGoalProgress: number;
@@ -160,6 +158,14 @@ export interface CrewMembersTotals {
     inactive: number;
 }
 
+export interface MinRequirements {
+    minDailyMiningMinutes: number;
+    totalDaysRequired: number;
+    minShares: number;
+    minHashes: number;
+    minAmtPaid: bigint;
+}
+
 export interface CrewMembersResponse {
     members: CrewMember[];
     pagination: PaginationInfo;
@@ -168,6 +174,7 @@ export interface CrewMembersResponse {
     };
     referrerProgress: ReferrerProgress;
     totals: CrewMembersTotals;
+    minRequirements: MinRequirements;
 }
 
 export interface Reward {
@@ -199,6 +206,7 @@ export interface AirdropStoreState {
     crewRewards?: Reward[];
     crewTotals?: CrewMembersTotals;
     referrerProgress?: ReferrerProgress;
+    minRequirements?: MinRequirements;
     crewQueryParams: {
         status: 'all' | 'completed' | 'active' | 'inactive';
         page: number;
