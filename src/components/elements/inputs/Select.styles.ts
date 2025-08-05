@@ -83,6 +83,7 @@ export const Options = styled.div<StyleProps>`
     z-index: 10;
     max-height: 200px;
     overflow-y: auto;
+    overscroll-behavior: contain;
 `;
 
 export const SelectedOption = styled.div<StyleProps>`
