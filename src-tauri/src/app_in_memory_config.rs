@@ -88,12 +88,8 @@ impl From<AppInMemoryConfig> for AirdropInMemoryConfig {
 impl Default for AppInMemoryConfig {
     fn default() -> Self {
         AppInMemoryConfig {
-            // TODO: use these before merging to production
-            // airdrop_url: "https://airdrop.tari.com".into(),
-            // airdrop_api_url: "https://ut.tari.com".into(),
-
-            airdrop_url: "http://rwa-fe.yat.rip".into(),
-            airdrop_api_url: "https://rwa.yat.fyi".into(),
+            airdrop_url: "https://airdrop.tari.com".into(),
+            airdrop_api_url: "https://ut.tari.com".into(),
             telemetry_api_url: "https://ut.tari.com/push".into(),
             exchange_id: EXCHANGE_ID.into(),
             bridge_backend_api_url: BRIDGE_BACKEND_API_URL.into(),
