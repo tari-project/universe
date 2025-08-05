@@ -54,9 +54,14 @@ export default function StatsRow() {
             {hasFriends ? (
                 <ActiveMinersWrapper>
                     <PhotoWrapper>
-                        <PhotoImage $image={photo1} aria-hidden="true" />
-                        <PhotoImage $image={photo1} aria-hidden="true" />
-                        <PhotoImage $image={photo1} aria-hidden="true" />
+                        {crewData?.members
+                            .slice(0, 3)
+                            .map(
+                                (member) =>
+                                    member.user?.image && (
+                                        <PhotoImage $image={member.user?.image} aria-hidden="true" key={member.id} />
+                                    )
+                            )}
                         <StatusDot />
                     </PhotoWrapper>
 
