@@ -48,9 +48,10 @@ export const determineStatus = (member: CrewMember): CrewStatus => {
 
 export const mapUserInfo = (member: CrewMember) => {
     const latestReward = member.rewards[0];
+    const lastActivityMoreThan1Hour = Date.now() - new Date(member.lastActivityDate).getTime() > 1000 * 60 * 60;
     return {
         avatar: member.user?.image || '',
-        isOnline: !!latestReward?.active,
+        isOnline: !lastActivityMoreThan1Hour && !!latestReward?.active,
     };
 };
 
