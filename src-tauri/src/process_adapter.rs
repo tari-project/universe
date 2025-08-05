@@ -144,11 +144,20 @@ pub enum HealthStatus {
     Initializing,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum HandleUnhealthyResult {
+    Continue,
+    Stop,
+}
+
 #[async_trait]
 pub(crate) trait StatusMonitor: Clone + Sync + Send + 'static {
     async fn check_health(&self, uptime: Duration, timeout_duration: Duration) -> HealthStatus;
-    async fn handle_unhealthy(&self) -> Result<(), anyhow::Error> {
-        Ok(())
+    async fn handle_unhealthy(
+        &self,
+        &mut duration_since_last_healthy_status: Duration,
+    ) -> Result<HandleUnhealthyResult, anyhow::Error> {
+        Ok(HandleUnhealthyResult::Continue)
     }
 }
 

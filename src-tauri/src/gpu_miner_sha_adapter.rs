@@ -31,7 +31,8 @@ use tokio::sync::watch::Sender;
 use crate::{
     gpu_miner_sha_websocket::GpuMinerShaWebSocket,
     process_adapter::{
-        HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
+        HandleUnhealthyResult, HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec,
+        StatusMonitor,
     },
     GpuMinerStatus,
 };
@@ -158,6 +159,19 @@ pub struct GpuMinerShaStatusMonitor {
 
 #[async_trait]
 impl StatusMonitor for GpuMinerShaStatusMonitor {
+    async fn handle_unhealthy(
+        &self,
+        duration_since_last_healthy_status: Duration,
+    ) -> Result<HandleUnhealthyResult, anyhow::Error> {
+        // Fallback to solo mining if the miner has been unhealthy for more than 30 minutes
+        if duration_since_last_healthy_status.as_secs().gt(60 * 30) {
+            warn!(target: LOG_TARGET, "GpuMinerShaAdapter has been unhealthy for more than 30 minutes. Restarting...");
+            return Ok(HandleUnhealthyResult::Stop);
+        } else {
+            return Ok(HandleUnhealthyResult::Continue);
+        }
+    }
+
     async fn check_health(&self, uptime: Duration, timeout_duration: Duration) -> HealthStatus {
         info!(target: LOG_TARGET, "Checking health of ShaMiner");
         let status = match tokio::time::timeout(timeout_duration, self.status()).await {
