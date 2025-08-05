@@ -24,6 +24,7 @@ import {
     useFloating,
     useInteractions,
     useRole,
+    FloatingFocusManager,
     UseFloatingOptions,
 } from '@floating-ui/react';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
@@ -90,9 +91,10 @@ export function Select({
         onChange(value);
         setIsOpen(false);
     }
+
     const click = useClick(context);
     const dismiss = useDismiss(context);
-    const role = useRole(context);
+    const role = useRole(context, { role: 'listbox' });
 
     const { getReferenceProps, getFloatingProps } = useInteractions([click, dismiss, role]);
 
@@ -125,6 +127,10 @@ export function Select({
                 $isBordered={isBordered}
                 $variant={variant}
                 $isSync={isSync}
+                role="combobox"
+                aria-expanded={isOpen}
+                aria-haspopup="listbox"
+                tabIndex={disabled ? -1 : 0}
             >
                 {triggerOption}
                 {customIcon ? (
@@ -138,33 +144,47 @@ export function Select({
                 )}
             </TriggerWrapper>
             {isOpen && (
-                <OptionsPosition ref={refs.setFloating} {...getFloatingProps()} style={floatingStyles}>
-                    <Options $isBordered={isBordered}>
-                        {options.map(({ label, value, iconSrc }) => {
-                            const selected = value === selectedOption?.value;
-                            const disableClick = loading && !selected && value !== 'Custom';
-                            return (
-                                <StyledOption
-                                    onClick={() => handleChange(value, disableClick)}
-                                    key={`opt-${value}-${label}`}
-                                    $selected={selected}
-                                    $loading={loading && !selected}
-                                    $isBordered={isBordered}
-                                >
-                                    <OptionLabelWrapper>
-                                        {iconSrc ? <img src={iconSrc} alt={`Select option: ${value} icon `} /> : null}
-                                        <Typography {...optionItemTypographyProps}>{label}</Typography>
-                                    </OptionLabelWrapper>
-                                    {selected ? (
-                                        <IconWrapper>
-                                            <CheckSvg />
-                                        </IconWrapper>
-                                    ) : null}
-                                </StyledOption>
-                            );
-                        })}
-                    </Options>
-                </OptionsPosition>
+                <FloatingFocusManager context={context} modal={true}>
+                    <OptionsPosition ref={refs.setFloating} {...getFloatingProps()} style={floatingStyles}>
+                        <Options $isBordered={isBordered} role="listbox">
+                            {options.map(({ label, value, iconSrc }) => {
+                                const selected = value === selectedOption?.value;
+                                const disableClick = loading && !selected && value !== 'Custom';
+                                return (
+                                    <StyledOption
+                                        onClick={() => handleChange(value, disableClick)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' || e.key === ' ') {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                handleChange(value, disableClick);
+                                            }
+                                        }}
+                                        key={`opt-${value}-${label}`}
+                                        $selected={selected}
+                                        $loading={loading && !selected}
+                                        $isBordered={isBordered}
+                                        role="option"
+                                        aria-selected={selected}
+                                        tabIndex={0}
+                                    >
+                                        <OptionLabelWrapper>
+                                            {iconSrc ? (
+                                                <img src={iconSrc} alt={`Select option: ${value} icon `} />
+                                            ) : null}
+                                            <Typography {...optionItemTypographyProps}>{label}</Typography>
+                                        </OptionLabelWrapper>
+                                        {selected ? (
+                                            <IconWrapper>
+                                                <CheckSvg />
+                                            </IconWrapper>
+                                        ) : null}
+                                    </StyledOption>
+                                );
+                            })}
+                        </Options>
+                    </OptionsPosition>
+                </FloatingFocusManager>
             )}
         </Wrapper>
     );
