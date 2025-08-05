@@ -125,6 +125,7 @@ export interface CrewMember {
     lastActivityDate: Date;
     milestones: string[];
     user?: {
+        id: string;
         name: string;
         displayName?: string;
         referralCode?: string;

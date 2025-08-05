@@ -56,9 +56,8 @@ export default function CrewEntry({ entry, isClaimed }: Props) {
             setIsSendingNudge(true);
 
             const message = `Hey ${handle}, keep up the great work! You're making progress on your mining goals.`;
-            const targetMembers = [memberId];
 
-            const result = await sendCrewNudge(message, targetMembers);
+            const result = await sendCrewNudge(message, memberId);
 
             if (result?.success) {
                 console.info('Nudge sent successfully');

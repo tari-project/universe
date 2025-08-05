@@ -105,7 +105,7 @@ export const transformCrewMemberToEntry = (
         user: mapUserInfo(member),
         reward: mapReward(member),
         timeRemaining: calculateTimeRemaining(member, minRequirements),
-        memberId: member.id,
+        memberId: member?.user?.id || '',
         claimableRewardId: claimableReward?.id,
     };
 };
