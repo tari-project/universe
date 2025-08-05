@@ -1,4 +1,4 @@
-import WalletAddressMarkup from './WalletAddressMarkup';
+import WalletAddressMarkup from './WalletAddressMarkup/WalletAddressMarkup.tsx';
 import MoneroAddressMarkup from './MoneroAddressMarkup';
 import TariSeedWords from './TariSeedWords/TariSeedWords.tsx';
 import MoneroSeedWordSettings from './MoneroSeedWords/MoneroSeedWordSettings.tsx';
@@ -18,9 +18,7 @@ export const WalletSettings = () => {
             <WalletAddressMarkup />
             {isWalletUIExchangeSpecific ? undefined : <TariSeedWords />}
             <MoneroAddressMarkup />
-
             {monero_address_is_generated ? <MoneroSeedWordSettings /> : undefined}
-
             <RefreshWalletHistory />
         </>
     );

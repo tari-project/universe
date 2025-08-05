@@ -254,6 +254,12 @@ impl WalletManager {
         let micro_minotari_amount = MicroMinotari::from(minotari_amount);
         let amount = micro_minotari_amount.as_u64();
 
+        // Payment ID can't be an empty string
+        let payment_id = match payment_id {
+            Some(s) if s.is_empty() => None,
+            _ => payment_id,
+        };
+
         let res = process_watcher
             .adapter
             .send_one_sided_to_stealth_address(amount, destination, payment_id, app_handle)
@@ -297,13 +303,14 @@ impl WalletManager {
             return Err(WalletManagerError::WalletNotStarted);
         }
         let wallet_state_receiver = process_watcher.adapter.state_broadcast.subscribe();
+        let wallet_state_receiver_clone = wallet_state_receiver.clone();
         drop(process_watcher);
 
         let node_status_watch_rx_progress = node_status_watch_rx.clone();
         let initial_scan_completed = self.initial_scan_completed.clone();
         // Start a background task to monitor the wallet state and emit scan progress updates
         TasksTrackers::current().wallet_phase.get_task_tracker().await.spawn(async move {
-            let mut wallet_state_rx = wallet_state_receiver;
+            let mut wallet_state_rx = wallet_state_receiver_clone;
             let mut shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
 
             loop {
@@ -415,6 +422,52 @@ impl WalletManager {
 
             Ok(())
         });
+
+        // Balance might be invalid right after initial scanning but it should be revalidated shortly after
+        let wallet_state_receiver_clone = wallet_state_receiver.clone();
+        TasksTrackers::current()
+            .wallet_phase
+            .get_task_tracker()
+            .await
+            .spawn(async move {
+                WalletManager::validate_balance_after_scan(wallet_state_receiver_clone)
+                    .await
+                    .inspect_err(|e| {
+                        log::error!(target: LOG_TARGET, "Balance validation failed: {e}");
+                    })
+            });
+
+        Ok(())
+    }
+
+    async fn validate_balance_after_scan(
+        wallet_state_receiver: watch::Receiver<Option<WalletState>>,
+    ) -> Result<(), WalletManagerError> {
+        let mut interval = tokio::time::interval(Duration::from_secs(2));
+        let end_time = tokio::time::Instant::now() + Duration::from_secs(120);
+        let mut shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
+
+        loop {
+            tokio::select! {
+                _ = shutdown_signal.wait() => {
+                    info!(target: LOG_TARGET, "Shutdown signal received, stopping balance validation");
+                    break;
+                }
+                _ = interval.tick() => {
+                    if tokio::time::Instant::now() >= end_time {
+                        break;
+                    }
+
+                    let wallet_status = wallet_state_receiver.borrow().clone();
+                    if let Some(wallet_state) = wallet_status {
+                        if let Some(balance) = wallet_state.balance {
+                            ConfigWallet::update_field(ConfigWalletContent::set_last_known_balance, balance.available_balance).await?;
+                            EventsEmitter::emit_wallet_balance_update(balance).await;
+                        }
+                    }
+                }
+            }
+        }
 
         Ok(())
     }

@@ -131,8 +131,20 @@ export const BuyTariButton = styled.button`
     transition: all 0.2s ease-in-out;
     flex-shrink: 0;
 
+    span {
+        transition: transform 0.2s ease-in-out;
+    }
+
     &:hover {
-        opacity: 0.9;
+        span {
+            transform: scale(1.075);
+        }
+    }
+
+    &:active {
+        span {
+            transform: scale(1);
+        }
     }
 `;
 

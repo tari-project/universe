@@ -127,7 +127,7 @@ export const DialogContent = forwardRef<HTMLDivElement, HTMLProps<HTMLDivElement
             <FloatingNode id={context.nodeId} key={context.nodeId}>
                 {context.open ? (
                     <FloatingPortal>
-                        <Overlay lockScroll className="overlay">
+                        <Overlay lockScroll className="overlay" $zIndex={props.$zIndex}>
                             <FloatingFocusManager context={context.context} modal={false}>
                                 <ContentWrapper
                                     ref={ref}

@@ -645,6 +645,8 @@ fn main() {
             commands::is_seed_backed_up,
             commands::select_mining_mode,
             commands::update_custom_mining_mode,
+            commands::encode_payment_id_to_address,
+            commands::save_wxtm_address,
             commands::update_csp_policy,
             commands::fetch_registered_tapplets,
             commands::insert_tapp_registry_db,

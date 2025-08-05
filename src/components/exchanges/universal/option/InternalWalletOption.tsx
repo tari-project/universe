@@ -30,6 +30,7 @@ import { restartMining } from '@app/store/actions/miningStoreActions.ts';
 import { refreshTransactions } from '@app/hooks/wallet/useFetchTxHistory.ts';
 import { truncateMiddle } from '@app/utils/truncateString.ts';
 import { Ref } from 'react';
+import { WalletAddressNetwork } from '@app/types/transactions.ts';
 
 interface XCOptionProps {
     isCurrent?: boolean;
@@ -102,6 +103,7 @@ export const InternalWalletOption = ({ isCurrent = false, isActive, onActiveClic
                         handleAddressChanged={() => null}
                         value={truncateMiddle(base_tari_address, 7, ' ... ')}
                         disabled
+                        walletAddressNetwork={WalletAddressNetwork.Tari} // always true for internal option
                     />
                     <SeasonReward>
                         <LeftContent>

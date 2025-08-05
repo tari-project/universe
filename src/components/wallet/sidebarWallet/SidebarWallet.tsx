@@ -143,8 +143,10 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
                 ) : (
                     <WalletWrapper key="wallet" variants={swapTransition} initial="show" exit="hide" animate="show">
                         <Wrapper $seedlessUI={!isStandardWalletUI || isSyncing}>
-                            {isSyncing ? <SyncLoading>{syncMarkup}</SyncLoading> : walletMarkup}
-                            <BuyTariButton onClick={() => setIsSwapping(true)}>{'Buy Tari (XTM)'}</BuyTariButton>
+                            {isSyncing && isStandardWalletUI ? <SyncLoading>{syncMarkup}</SyncLoading> : walletMarkup}
+                            <BuyTariButton onClick={() => setIsSwapping(true)}>
+                                <span>{'Buy Tari (XTM)'}</span>
+                            </BuyTariButton>
                         </Wrapper>
                     </WalletWrapper>
                 )}

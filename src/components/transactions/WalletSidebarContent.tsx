@@ -15,7 +15,7 @@ export default function WalletSidebarContent() {
                 <SidebarWallet section={section} setSection={setSection} />
             </WalletSections>
 
-            <SendModal section={section} setSection={setSection} />
+            {section !== 'history' && <SendModal section={section} setSection={setSection} />}
 
             <TransactionModal
                 show={section === 'receive'}

@@ -13,7 +13,7 @@ import { BottomWrapper, FormFieldsWrapper } from './Send.styles';
 
 import useDebouncedValue from '@app/hooks/helpers/useDebounce.ts';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
-import { useValidate } from '@app/hooks/wallet/useValidate.ts';
+import { useValidateTariAddress } from '@app/hooks/wallet/useValidate.ts';
 
 interface Props {
     isBack?: boolean;
@@ -21,7 +21,7 @@ interface Props {
 
 export function SendForm({ isBack }: Props) {
     const { t } = useTranslation('wallet');
-    const { validateAddress, validateAmount, validationErrorMessage } = useValidate();
+    const { validateAddress, validateAmount, validationErrorMessage } = useValidateTariAddress();
     const [address, setAddress] = useState('');
     const debouncedAddress = useDebouncedValue(address, 350);
     const [isAddressEmpty, setIsAddressEmpty] = useState(true);
@@ -34,6 +34,7 @@ export function SendForm({ isBack }: Props) {
     const { control, formState, setError, setValue, clearErrors, getValues } = useFormContext<SendInputs>();
     const { isSubmitting, errors } = formState;
     const isAmountValid = !errors.amount;
+
     const isValid = isAddressValid && isAmountValid;
 
     useEffect(() => {
@@ -58,6 +59,8 @@ export function SendForm({ isBack }: Props) {
         void validateAddress(address);
         if (address.length === 0) {
             setIsAddressValid(false);
+        } else {
+            setAddress(address);
         }
     }, [getValues, validateAddress]);
 

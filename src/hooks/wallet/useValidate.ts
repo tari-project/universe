@@ -1,7 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import { useCallback, useState } from 'react';
 
-export function useValidate() {
+export function useValidateTariAddress() {
     const [validationErrorMessage, setValidationErrorMessage] = useState<string | undefined>();
     const validateAddress = useCallback(async (address: string) => {
         try {

@@ -11,6 +11,7 @@ import {
     useConfigWalletStore,
     useMiningMetricsStore,
     useMiningStore,
+    useWalletStore,
 } from '../index.ts';
 import { restartMining, startCpuMining, startGpuMining, stopCpuMining, stopGpuMining } from './miningStoreActions';
 import { setError } from './appStateStoreActions.ts';
@@ -44,6 +45,10 @@ export const handleConfigCoreLoaded = async (coreConfig: ConfigCore) => {
 };
 export const handleConfigWalletLoaded = (walletConfig: ConfigWallet) => {
     useConfigWalletStore.setState((c) => ({ ...c, ...walletConfig }));
+    useWalletStore.setState((c) => ({
+        ...c,
+        exchange_wxtm_addresses: walletConfig.wxtm_addresses, // This is the non-Tari address used for wXTM mode
+    }));
 };
 export const handleConfigUILoaded = async (uiConfig: ConfigUI) => {
     useConfigUIStore.setState((c) => ({ ...c, ...uiConfig }));
@@ -82,25 +87,25 @@ export const setAirdropTokensInConfig = (
 
     invoke('set_airdrop_tokens', { airdropTokens })
         .then(() => {
-            useConfigCoreStore.setState({ airdrop_tokens: airdropTokensParam });
+            useConfigCoreStore.setState((c) => ({ ...c, airdrop_tokens: airdropTokensParam }));
             isSuccessFn?.(airdropTokens);
         })
         .catch((e) => console.error('Failed to store airdrop tokens: ', e));
 };
 export const setAllowTelemetry = async (allowTelemetry: boolean) => {
-    useConfigCoreStore.setState({ allow_telemetry: allowTelemetry });
+    useConfigCoreStore.setState((c) => ({ ...c, allow_telemetry: allowTelemetry }));
     invoke('set_allow_telemetry', { allowTelemetry }).catch((e) => {
         console.error('Could not set telemetry mode to ', allowTelemetry, e);
         setError('Could not change telemetry mode');
-        useConfigCoreStore.setState({ allow_telemetry: !allowTelemetry });
+        useConfigCoreStore.setState((c) => ({ ...c, allow_telemetry: !allowTelemetry }));
     });
 };
 export const setAllowNotifications = async (allowNotifications: boolean) => {
-    useConfigCoreStore.setState({ allow_notifications: allowNotifications });
+    useConfigCoreStore.setState((c) => ({ ...c, allow_notifications: allowNotifications }));
     invoke('set_allow_notifications', { allowNotifications }).catch((e) => {
         console.error('Could not set notifications mode to ', allowNotifications, e);
         setError('Could not change notifications mode');
-        useConfigCoreStore.setState({ allow_notifications: !allowNotifications });
+        useConfigCoreStore.setState((c) => ({ ...c, allow_notifications: !allowNotifications }));
     });
 };
 
@@ -118,15 +123,15 @@ export const setApplicationLanguage = async (applicationLanguage: Language) => {
         });
 };
 export const setAutoUpdate = async (autoUpdate: boolean) => {
-    useConfigCoreStore.setState({ auto_update: autoUpdate });
+    useConfigCoreStore.setState((c) => ({ ...c, auto_update: autoUpdate }));
     invoke('set_auto_update', { autoUpdate }).catch((e) => {
         console.error('Could not set auto update', e);
         setError('Could not change auto update');
-        useConfigCoreStore.setState({ auto_update: !autoUpdate });
+        useConfigCoreStore.setState((c) => ({ ...c, auto_update: !autoUpdate }));
     });
 };
 export const setCpuMiningEnabled = async (enabled: boolean) => {
-    useConfigMiningStore.setState({ cpu_mining_enabled: enabled });
+    useConfigMiningStore.setState((c) => ({ ...c, cpu_mining_enabled: enabled }));
     const anyMiningInitiated =
         useMiningStore.getState().isCpuMiningInitiated || useMiningStore.getState().isGpuMiningInitiated;
     const cpuMining = useMiningMetricsStore.getState().cpu_mining_status.is_mining;
@@ -144,22 +149,22 @@ export const setCpuMiningEnabled = async (enabled: boolean) => {
         .catch((e) => {
             console.error('Could not set CPU mining enabled', e);
             setError('Could not change CPU mining enabled');
-            useConfigMiningStore.setState({ cpu_mining_enabled: !enabled });
+            useConfigMiningStore.setState((c) => ({ ...c, cpu_mining_enabled: !enabled }));
             if (useMiningStore.getState().isCpuMiningInitiated && !cpuMining) {
                 void stopCpuMining();
             }
         });
 };
 export const setCustomStatsServerPort = async (port?: number) => {
-    useConfigCoreStore.setState({ p2pool_stats_server_port: port });
+    useConfigCoreStore.setState((c) => ({ ...c, p2pool_stats_server_port: port }));
     invoke('set_p2pool_stats_server_port', { port }).catch((e) => {
         console.error('Could not set p2pool stats server port', e);
         setError('Could not change p2pool stats server port');
-        useConfigCoreStore.setState({ p2pool_stats_server_port: port });
+        useConfigCoreStore.setState((c) => ({ ...c, p2pool_stats_server_port: port }));
     });
 };
 export const setGpuMiningEnabled = async (enabled: boolean) => {
-    useConfigMiningStore.setState({ gpu_mining_enabled: enabled });
+    useConfigMiningStore.setState((c) => ({ ...c, gpu_mining_enabled: enabled }));
     const anyMiningInitiated =
         useMiningStore.getState().isCpuMiningInitiated || useMiningStore.getState().isGpuMiningInitiated;
     const gpuMining = useMiningMetricsStore.getState().gpu_mining_status.is_mining;
@@ -187,25 +192,25 @@ export const setGpuMiningEnabled = async (enabled: boolean) => {
     } catch (e) {
         console.error('Could not set GPU mining enabled', e);
         setError('Could not change GPU mining enabled');
-        useConfigMiningStore.setState({ gpu_mining_enabled: !enabled });
+        useConfigMiningStore.setState((c) => ({ ...c, gpu_mining_enabled: !enabled }));
         if (useMiningStore.getState().isGpuMiningInitiated && !gpuMining) {
             void stopGpuMining();
         }
     }
 };
 export const setMineOnAppStart = async (mineOnAppStart: boolean) => {
-    useConfigMiningStore.setState({ mine_on_app_start: mineOnAppStart });
+    useConfigMiningStore.setState((c) => ({ ...c, mine_on_app_start: mineOnAppStart }));
     invoke('set_mine_on_app_start', { mineOnAppStart }).catch((e) => {
         console.error('Could not set mine on app start', e);
         setError('Could not change mine on app start');
-        useConfigMiningStore.setState({ mine_on_app_start: !mineOnAppStart });
+        useConfigMiningStore.setState((c) => ({ ...c, mine_on_app_start: !mineOnAppStart }));
     });
 };
 
 export const selectMiningMode = async (mode: string) => {
     console.info(`Changing mode to ${mode}...`);
 
-    useMiningStore.setState({ isChangingMode: true });
+    useMiningStore.setState((c) => ({ ...c, isChangingMode: true }));
 
     const cpu_mining_status = useMiningMetricsStore.getState().cpu_mining_status;
     const gpu_mining_status = useMiningMetricsStore.getState().gpu_mining_status;
@@ -240,7 +245,7 @@ export const selectMiningMode = async (mode: string) => {
             setError('Could not change mining mode');
         })
         .finally(() => {
-            useMiningStore.setState({ isChangingMode: false });
+            useMiningStore.setState((c) => ({ ...c, isChangingMode: false }));
         });
 };
 
@@ -267,8 +272,8 @@ export const updateCustomMiningMode = async (customCpuUsage: number, customGpuUs
 
 export const setMoneroAddress = async (moneroAddress: string) => {
     const prevMoneroAddress = useConfigWalletStore.getState().monero_address;
-    useConfigWalletStore.setState({ monero_address: moneroAddress });
-    useConfigWalletStore.setState({ monero_address_is_generated: false });
+    useConfigWalletStore.setState((c) => ({ ...c, monero_address: moneroAddress }));
+    useConfigWalletStore.setState((c) => ({ ...c, monero_address_is_generated: false }));
     invoke('set_monero_address', { moneroAddress })
         .then(() => {
             restartMining();
@@ -276,28 +281,33 @@ export const setMoneroAddress = async (moneroAddress: string) => {
         .catch((e) => {
             console.error('Could not set Monero address', e);
             setError('Could not change Monero address');
-            useConfigWalletStore.setState({ monero_address: prevMoneroAddress });
+            useConfigWalletStore.setState((c) => ({ ...c, monero_address: prevMoneroAddress }));
         });
 };
 export const setMonerodConfig = async (useMoneroFail: boolean, moneroNodes: string[]) => {
     const prevMoneroNodes = useConfigCoreStore.getState().mmproxy_monero_nodes;
-    useConfigCoreStore.setState({ mmproxy_use_monero_failover: useMoneroFail, mmproxy_monero_nodes: moneroNodes });
+    useConfigCoreStore.setState((c) => ({
+        ...c,
+        mmproxy_use_monero_failover: useMoneroFail,
+        mmproxy_monero_nodes: moneroNodes,
+    }));
     invoke('set_monerod_config', { useMoneroFail, moneroNodes }).catch((e) => {
         console.error('Could not set monerod config', e);
         setError('Could not change monerod config');
-        useConfigCoreStore.setState({
+        useConfigCoreStore.setState((c) => ({
+            ...c,
             mmproxy_use_monero_failover: !useMoneroFail,
             mmproxy_monero_nodes: prevMoneroNodes,
-        });
+        }));
     });
 };
 
 export const setPreRelease = async (preRelease: boolean) => {
-    useConfigCoreStore.setState({ pre_release: preRelease });
+    useConfigCoreStore.setState((c) => ({ ...c, pre_release: preRelease }));
     invoke('set_pre_release', { preRelease }).catch((e) => {
         console.error('Could not set pre release', e);
         setError('Could not change pre release');
-        useConfigCoreStore.setState({ pre_release: !preRelease });
+        useConfigCoreStore.setState((c) => ({ ...c, pre_release: !preRelease }));
     });
 };
 export const setShouldAlwaysUseSystemLanguage = async (shouldAlwaysUseSystemLanguage: boolean) => {
@@ -309,11 +319,11 @@ export const setShouldAlwaysUseSystemLanguage = async (shouldAlwaysUseSystemLang
     });
 };
 export const setShouldAutoLaunch = async (shouldAutoLaunch: boolean) => {
-    useConfigCoreStore.setState({ should_auto_launch: shouldAutoLaunch });
+    useConfigCoreStore.setState((c) => ({ ...c, should_auto_launch: shouldAutoLaunch }));
     invoke('set_should_auto_launch', { shouldAutoLaunch }).catch((e) => {
         console.error('Could not set auto launch', e);
         setError('Could not change auto launch');
-        useConfigCoreStore.setState({ should_auto_launch: !shouldAutoLaunch });
+        useConfigCoreStore.setState((c) => ({ ...c, should_auto_launch: !shouldAutoLaunch }));
     });
 };
 export const setShowExperimentalSettings = async (showExperimentalSettings: boolean) => {
@@ -337,11 +347,11 @@ export const setDisplayMode = async (displayMode: displayMode) => {
 };
 
 export const setUseTor = async (useTor: boolean) => {
-    useConfigCoreStore.setState({ use_tor: useTor });
+    useConfigCoreStore.setState((c) => ({ ...c, use_tor: useTor }));
     invoke('set_use_tor', { useTor }).catch((e) => {
         console.error('Could not set use Tor', e);
         setError('Could not change Tor usage');
-        useConfigCoreStore.setState({ use_tor: !useTor });
+        useConfigCoreStore.setState((c) => ({ ...c, use_tor: !useTor }));
     });
 };
 export const setVisualMode = async (enabled: boolean) => {
@@ -354,22 +364,23 @@ export const setVisualMode = async (enabled: boolean) => {
 };
 export const setNodeType = async (nodeType: NodeType) => {
     const previousNodeType = useConfigCoreStore.getState().node_type;
-    useConfigCoreStore.setState({ node_type: nodeType });
+    useConfigCoreStore.setState((c) => ({ ...c, node_type: nodeType }));
     updateNodeTypeForNodeStore(nodeType);
 
     invoke('set_node_type', { nodeType: nodeType }).catch((e) => {
         console.error('Could not set node type', e);
         setError('Could not change node type');
-        useConfigCoreStore.setState({ node_type: previousNodeType });
+        useConfigCoreStore.setState((c) => ({ ...c, node_type: previousNodeType }));
         updateNodeTypeForNodeStore(nodeType);
     });
 };
 
 export const fetchBackendInMemoryConfig = async () => {
     try {
+        console.info('Fetching backend in memory config...');
         const appInMemoryConfig = await invoke('get_app_in_memory_config');
         if (appInMemoryConfig) {
-            useConfigBEInMemoryStore.setState({ ...appInMemoryConfig });
+            useConfigBEInMemoryStore.setState((c) => ({ ...c, ...appInMemoryConfig }));
         }
     } catch (e) {
         console.error('Could not fetch backend in memory config', e);
@@ -383,7 +394,7 @@ export const handleExchangeIdChanged = async (payload: string) => {
 
 export const toggleCpuPool = async (enabled: boolean) => {
     const previousCpuPoolEnabledState = useConfigPoolsStore.getState().cpu_pool_enabled;
-    useConfigPoolsStore.setState({ cpu_pool_enabled: enabled });
+    useConfigPoolsStore.setState((c) => ({ ...c, cpu_pool_enabled: enabled }));
 
     const isCpuMiningEnabled = useConfigMiningStore.getState().cpu_mining_enabled;
     const anyMiningInitiated =
@@ -404,7 +415,7 @@ export const toggleCpuPool = async (enabled: boolean) => {
         .catch((e) => {
             console.error('Could not toggle CPU pool mining', e);
             setError('Could not change CPU pool mining');
-            useConfigPoolsStore.setState({ cpu_pool_enabled: previousCpuPoolEnabledState });
+            useConfigPoolsStore.setState((c) => ({ ...c, cpu_pool_enabled: previousCpuPoolEnabledState }));
             if (useMiningStore.getState().isCpuMiningInitiated && !cpuMining) {
                 void stopCpuMining();
             }
@@ -412,7 +423,7 @@ export const toggleCpuPool = async (enabled: boolean) => {
 };
 export const toggleGpuPool = async (enabled: boolean) => {
     const previousGpuPoolEnabledState = useConfigPoolsStore.getState().gpu_pool_enabled;
-    useConfigPoolsStore.setState({ gpu_pool_enabled: enabled });
+    useConfigPoolsStore.setState((c) => ({ ...c, gpu_pool_enabled: enabled }));
 
     const isGpuMiningEnabled = useConfigMiningStore.getState().gpu_mining_enabled;
     const anyMiningInitiated =
@@ -434,7 +445,7 @@ export const toggleGpuPool = async (enabled: boolean) => {
         .catch((e) => {
             console.error('Could not toggle GPU pool mining', e);
             setError('Could not change GPU pool mining');
-            useConfigPoolsStore.setState({ gpu_pool_enabled: previousGpuPoolEnabledState });
+            useConfigPoolsStore.setState((c) => ({ ...c, gpu_pool_enabled: previousGpuPoolEnabledState }));
             if (useMiningStore.getState().isGpuMiningInitiated && !gpuMining) {
                 void stopGpuMining();
             }
@@ -446,7 +457,7 @@ export const handleWalletUIChanged = (mode: WalletUIMode) => {
 };
 
 export const handleGpuDevicesSettingsUpdated = (gpuDevicesSettings: Record<number, GpuDeviceSettings>) => {
-    useConfigMiningStore.setState({ gpu_devices_settings: gpuDevicesSettings });
+    useConfigMiningStore.setState((c) => ({ ...c, gpu_devices_settings: gpuDevicesSettings }));
 };
 
 export const toggleDeviceExclusion = async (deviceIndex: number, excluded: boolean) => {
@@ -460,7 +471,7 @@ export const toggleDeviceExclusion = async (deviceIndex: number, excluded: boole
         await invoke('toggle_device_exclusion', { deviceIndex, excluded });
         const devices = useConfigMiningStore.getState().gpu_devices_settings;
         const updatedDevices = { ...devices, [deviceIndex]: { ...devices[deviceIndex], is_excluded: excluded } };
-        useConfigMiningStore.setState({ gpu_devices_settings: updatedDevices });
+        useConfigMiningStore.setState((c) => ({ ...c, gpu_devices_settings: updatedDevices }));
 
         const isAllExcluded = Object.values(updatedDevices).every((device) => device.is_excluded);
         if (isAllExcluded) {
@@ -470,7 +481,7 @@ export const toggleDeviceExclusion = async (deviceIndex: number, excluded: boole
             console.info('Restarting mining...');
             await startGpuMining();
         }
-        useMiningStore.setState({ isExcludingGpuDevices: false });
+        useMiningStore.setState((c) => ({ ...c, isExcludingGpuDevices: false }));
     } catch (e) {
         console.error('Could not set excluded gpu device: ', e);
         setError(e as string);

@@ -19,9 +19,11 @@ import { XSpaceEventType } from '@app/utils/XSpaceEventType';
 import { useTranslation } from 'react-i18next';
 import { formatDateForEvent } from './formatDate';
 import { AnimatePresence } from 'motion/react';
+import { useUIStore } from '@app/store';
 
 const XSpaceEventBanner = () => {
     const latestXSpaceEvent = useAirdropStore((state) => state.latestXSpaceEvent);
+    const showTapplet = useUIStore((s) => s.showTapplet);
     const [isTextTooLong, setIsTextTooLong] = useState(false);
     const [transitionPixelWidth, setTransitionPixelWidth] = useState(0);
     const [isVisible, setIsVisible] = useState(false);
@@ -70,7 +72,7 @@ const XSpaceEventBanner = () => {
 
     return (
         <AnimatePresence>
-            {latestXSpaceEvent && isVisible && (
+            {latestXSpaceEvent && isVisible && !showTapplet && (
                 <BannerContent
                     onClick={() => {
                         open(latestXSpaceEvent.link);
