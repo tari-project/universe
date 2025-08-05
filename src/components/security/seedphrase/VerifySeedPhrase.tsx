@@ -32,7 +32,7 @@ export function VerifySeedPhrase({ words }: VerifySeedPhraseProps) {
     const [completed, setCompleted] = useState(false);
     const [selectedWords, setSelectedWords] = useState<SelectedWord[]>([]);
 
-    const shuffledWords = useMemo(() => [...words].sort(() => Math.random() - 0.5), [words]);
+    const shuffledWords = words?.length ? [...words].sort(() => Math.random() - 0.5) : [];
 
     const checkCompletion = (selectedWords: string[]) => {
         if (selectedWords.length === words.length) {

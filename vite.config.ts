@@ -3,12 +3,44 @@ import { defineConfig, UserConfig } from 'vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import eslintPlugin from '@nabla/vite-plugin-eslint';
 import react from '@vitejs/plugin-react';
+import log from 'eslint-plugin-react/lib/util/log';
 
 const plugins: UserConfig['plugins'] = [
     react({
         babel: {
             plugins: [
-                ['babel-plugin-react-compiler'],
+                [
+                    'babel-plugin-react-compiler',
+                    {
+                        logger: {
+                            logEvent(filename, event) {
+                                const shouldLog =
+                                    event.kind === 'CompileError' ||
+                                    event.kind === 'PipelineError' ||
+                                    event.kind === 'CompileSkip';
+                                if (shouldLog) {
+                                    console.log(`=============================Compiler=============================`);
+                                    console.error(`[Compiler] ${event.kind}: ${filename}`);
+                                    console.error(`[Compiler] Reason: ${event.detail.reason}`);
+
+                                    if (event.detail.description) {
+                                        console.error(`[Compiler] Details: ${event.detail.description}`);
+                                    }
+
+                                    if (event.detail.loc) {
+                                        const { line, column } = event.detail.loc.start;
+                                        console.error(`[Compiler] Location: Line ${line}, Column ${column}`);
+                                    }
+
+                                    if (event.detail.suggestions) {
+                                        console.error('[Compiler] Suggestions:', event.detail.suggestions);
+                                    }
+                                    console.log(`=============================End=============================`);
+                                }
+                            },
+                        },
+                    },
+                ],
                 [
                     'babel-plugin-styled-components',
                     {

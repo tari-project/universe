@@ -39,7 +39,7 @@ export default function CriticalProblemDialog() {
         setIsExiting(false);
     }, []);
 
-    const handleSendFeedback = useCallback(async () => {
+    const handleSendFeedback = async () => {
         try {
             setIsSubmittingLogs(true);
             await invoke('send_feedback', {
@@ -52,7 +52,7 @@ export default function CriticalProblemDialog() {
             console.error('Error sending feedback| handleSendFeedback in CriticalProblemDialog: ', e);
         }
         setIsSubmittingLogs(false);
-    }, [criticalProblem?.title, t]);
+    };
 
     const handleCopyLogsSubmissionId = useCallback(() => {
         if (logsSubmissionId) {
