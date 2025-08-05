@@ -12,6 +12,8 @@ CREATE TABLE tapplet (
   about_summary TEXT NOT NULL,
   about_description TEXT NOT NULL,
   category TEXT NOT NULL,
+  csp TEXT NOT NULL,
+  tari_permissions TEXT NOT NULL,
   UNIQUE(registry_id),
   UNIQUE(package_name)
 );
@@ -49,6 +51,8 @@ CREATE TABLE dev_tapplet (
   package_name TEXT NOT NULL,
   endpoint TEXT NOT NULL,
   display_name TEXT NOT NULL,
+  csp TEXT NOT NULL,
+  tari_permissions TEXT NOT NULL,
   UNIQUE(endpoint)
 );
 

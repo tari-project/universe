@@ -49,6 +49,8 @@ pub struct Tapplet {
     pub about_summary: String,
     pub about_description: String,
     pub category: String,
+    pub csp: String,
+    pub tari_permissions: String,
 }
 
 #[derive(Insertable, Debug, Deserialize)]
@@ -163,6 +165,8 @@ pub struct DevTapplet {
     pub package_name: String,
     pub endpoint: String,
     pub display_name: String,
+    pub csp: String,
+    pub tari_permissions: String,
 }
 
 #[derive(Insertable, Debug)]

@@ -6,6 +6,8 @@ diesel::table! {
         package_name -> Text,
         endpoint -> Text,
         display_name -> Text,
+        csp -> Text,
+        tari_permissions -> Text,
     }
 }
 
@@ -30,6 +32,8 @@ diesel::table! {
         about_summary -> Text,
         about_description -> Text,
         category -> Text,
+        csp -> Text,
+        tari_permissions -> Text,
     }
 }
 
