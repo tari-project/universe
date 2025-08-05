@@ -1,16 +1,18 @@
-import type { CrewMember, CrewMemberReward } from '@app/store/useAirdropStore';
+import type { CrewMember, CrewMemberReward, MinRequirements } from '@app/store/useAirdropStore';
 import type { CrewEntry, CrewStatus } from './RewardsWidget/sections/CrewSection/data';
 
-export const calculateProgress = (progressTowardsReward: CrewMemberReward['progressTowardsReward']): number => {
+export const calculateProgress = (
+    progressTowardsReward: CrewMemberReward['progressTowardsReward'],
+    minRequirements: MinRequirements
+): number => {
     if (progressTowardsReward.isComplete) return 100;
 
     // Calculate base progress from completed days
-    const completedDaysProgress =
-        (progressTowardsReward.miningDaysProgress / progressTowardsReward.totalDaysRequired) * 100;
+    const completedDaysProgress = (progressTowardsReward.miningDaysProgress / minRequirements.totalDaysRequired) * 100;
 
-    // Add current day progress as a fraction of one day
-    const currentDayContribution =
-        (progressTowardsReward.currentDayProgress / 100) * (100 / progressTowardsReward.totalDaysRequired);
+    const currentDayProgress = progressTowardsReward.currentDayProgress / minRequirements.minDailyMiningMinutes;
+    // Add current day progress as a fraction of one day using minDailyMiningMinutes
+    const currentDayContribution = (currentDayProgress * 100) / minRequirements.totalDaysRequired;
 
     const totalProgress = completedDaysProgress + currentDayContribution;
 
@@ -66,22 +68,19 @@ export const mapReward = (member: CrewMember) => {
         : undefined;
 };
 
-export const calculateTimeRemaining = (member: CrewMember) => {
+export const calculateTimeRemaining = (member: CrewMember, minRequirements: MinRequirements) => {
     const latestReward = member.rewards[0];
     if (!latestReward || latestReward.progressTowardsReward.isComplete) return undefined;
 
     const progress = latestReward.progressTowardsReward;
-    const daysRemaining = progress.totalDaysRequired - progress.miningDaysProgress;
+    const daysRemaining = minRequirements.totalDaysRequired - progress.miningDaysProgress;
 
     if (daysRemaining <= 0) return undefined;
 
-    // Convert days to hours for display
-    const hoursRemaining = daysRemaining * 24;
-
     return {
-        current: Math.round(hoursRemaining),
-        total: progress.totalDaysRequired * 24, // Total hours for the goal
-        unit: daysRemaining > 1 ? 'Days' : 'Hours',
+        current: daysRemaining,
+        total: minRequirements.totalDaysRequired,
+        unit: 'Days',
     };
 };
 
@@ -90,14 +89,15 @@ export const mapHandle = (member: CrewMember): string => {
 };
 
 export const transformCrewMemberToEntry = (
-    member: CrewMember
+    member: CrewMember,
+    minRequirements: MinRequirements
 ): CrewEntry & {
     memberId: string;
     claimableRewardId?: string;
 } => {
     const status = determineStatus(member);
     const latestReward = member.rewards[0];
-    const progress = latestReward ? calculateProgress(latestReward.progressTowardsReward) : 0;
+    const progress = latestReward ? calculateProgress(latestReward.progressTowardsReward, minRequirements) : 0;
     const claimableReward = member.rewards.find((r) => r.readyToClaim);
 
     return {
@@ -107,7 +107,7 @@ export const transformCrewMemberToEntry = (
         status,
         user: mapUserInfo(member),
         reward: mapReward(member),
-        timeRemaining: calculateTimeRemaining(member),
+        timeRemaining: calculateTimeRemaining(member, minRequirements),
         memberId: member.id,
         claimableRewardId: claimableReward?.id,
     };

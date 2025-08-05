@@ -38,7 +38,13 @@ export default function CrewSection() {
 
             <Filters totals={data?.totals} activeFilter={activeFilter} onFilterChange={handleFilterChange} />
 
-            <CrewList members={data?.members || []} isLoading={isLoading} error={error} onRefresh={refetch} />
+            <CrewList
+                members={data?.members || []}
+                minRequirements={data?.minRequirements}
+                isLoading={isLoading}
+                error={error}
+                onRefresh={refetch}
+            />
         </Wrapper>
     );
 }
