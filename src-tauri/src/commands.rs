@@ -35,7 +35,8 @@ use crate::configs::trait_config::ConfigImpl;
 use crate::consts::TAPPLET_ARCHIVE;
 use crate::database::models::{
     CreateDevTapplet, CreateInstalledTapplet, CreateTapplet, CreateTappletAsset,
-    CreateTappletVersion, DevTapplet, InstalledTapplet, Tapplet, UpdateInstalledTapplet,
+    CreateTappletVersion, DevTapplet, InstalledTapplet, Tapplet, UpdateDevTapplet,
+    UpdateInstalledTapplet,
 };
 use crate::database::store::{DatabaseConnection, SqliteStore, Store};
 use crate::events::ConnectionStatusPayload;
@@ -53,9 +54,11 @@ use crate::node::node_manager::NodeType;
 use crate::p2pool::models::{Connections, P2poolStats};
 use crate::pin::PinManager;
 use crate::setup::setup_manager::{SetupManager, SetupPhase};
+use crate::tapplets::error::Error::RequestError;
+use crate::tapplets::error::RequestError::FetchManifestError;
+use crate::tapplets::error::RequestError::ManifestResponseError;
 use crate::tapplets::error::{
-    Error::{self, RequestError, TappletServerError},
-    RequestError::*,
+    Error::{self, DatabaseError, TappletServerError},
     TappletServerError::*,
 };
 use crate::tapplets::interface::{
@@ -2694,6 +2697,8 @@ pub async fn add_dev_tapplet(
         endpoint: &endpoint,
         package_name: &tapp_config.package_name,
         display_name: &tapp_config.display_name,
+        csp: &tapp_config.csp,
+        tari_permissions: &tapp_config.permissions.all_permissions_to_string(),
     };
     match store.create(&new_dev_tapplet) {
         Ok(dev_tapplet) => {
@@ -2733,4 +2738,27 @@ pub fn delete_dev_tapplet(
             return Err(e);
         }
     }
+}
+
+#[tauri::command]
+pub fn update_dev_tapp_db(
+    id: Option<i32>,
+    tapplet: UpdateDevTapplet,
+    db_connection: tauri::State<'_, DatabaseConnection>,
+) -> Result<usize, Error> {
+    let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
+
+    // Find the dev tapplet to update by id (or another unique field)
+    let dev_tapplet = match id {
+        Some(id) => tapplet_store.get_by_id(id)?,
+        None => {
+            return Err(Error::DatabaseError(
+                crate::tapplets::error::DatabaseError::FailedToUpdate {
+                    entity_name: tapplet.display_name,
+                },
+            ))
+        }
+    };
+
+    tapplet_store.update(dev_tapplet, &tapplet)
 }

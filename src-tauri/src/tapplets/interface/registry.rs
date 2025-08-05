@@ -35,6 +35,8 @@ pub struct Metadata {
     pub about: About,
     // pub audits: Vec<Audit>,
     pub category: String,
+    pub csp: String,
+    pub tari_permissions: String,
 }
 
 #[derive(Debug, serde::Deserialize, Clone)]

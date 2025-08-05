@@ -66,6 +66,8 @@ pub struct CreateTapplet<'a> {
     pub about_summary: &'a str,
     pub about_description: &'a str,
     pub category: &'a str,
+    pub csp: &'a str,
+    pub tari_permissions: &'a str,
 }
 
 impl<'a> From<&'a TappletRegistryManifest> for CreateTapplet<'a> {
@@ -81,6 +83,8 @@ impl<'a> From<&'a TappletRegistryManifest> for CreateTapplet<'a> {
             about_summary: &tapplet_manifest.metadata.about.summary,
             about_description: &tapplet_manifest.metadata.about.description,
             category: &tapplet_manifest.metadata.category,
+            csp: &tapplet_manifest.metadata.csp,
+            tari_permissions: &tapplet_manifest.metadata.tari_permissions,
         }
     }
 }
@@ -98,6 +102,8 @@ impl<'a> From<&CreateTapplet<'a>> for UpdateTapplet {
             about_summary: create_tapplet.about_summary.to_string(),
             about_description: create_tapplet.about_description.to_string(),
             category: create_tapplet.category.to_string(),
+            csp: create_tapplet.csp.to_string(),
+            tari_permissions: create_tapplet.tari_permissions.to_string(),
         }
     }
 }
@@ -115,6 +121,8 @@ pub struct UpdateTapplet {
     pub about_summary: String,
     pub about_description: String,
     pub category: String,
+    pub csp: String,
+    pub tari_permissions: String,
 }
 
 #[derive(Queryable, Selectable, Debug, Serialize, Clone)]
@@ -175,6 +183,8 @@ pub struct CreateDevTapplet<'a> {
     pub endpoint: &'a str,
     pub package_name: &'a str,
     pub display_name: &'a str,
+    pub csp: &'a str,
+    pub tari_permissions: &'a str,
 }
 
 impl<'a> From<&CreateDevTapplet<'a>> for UpdateDevTapplet {
@@ -183,6 +193,8 @@ impl<'a> From<&CreateDevTapplet<'a>> for UpdateDevTapplet {
             endpoint: create_dev_tapplet.endpoint.to_string(),
             package_name: create_dev_tapplet.package_name.to_string(),
             display_name: create_dev_tapplet.display_name.to_string(),
+            csp: create_dev_tapplet.csp.to_string(),
+            tari_permissions: create_dev_tapplet.tari_permissions.to_string(),
         }
     }
 }
@@ -193,6 +205,8 @@ pub struct UpdateDevTapplet {
     pub endpoint: String,
     pub package_name: String,
     pub display_name: String,
+    pub csp: String,
+    pub tari_permissions: String,
 }
 
 #[derive(Queryable, Selectable, Debug, Serialize)]

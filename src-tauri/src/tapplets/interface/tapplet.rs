@@ -95,6 +95,38 @@ impl fmt::Display for TappletPermissions {
     }
 }
 
+impl TappletPermissions {
+    pub fn all_permissions_to_string(&self) -> String {
+        let mut parts = Vec::new();
+
+        if !self.required_permissions.is_empty() {
+            let req = self
+                .required_permissions
+                .iter()
+                .map(|p| format!("{:?}", p))
+                .collect::<Vec<_>>()
+                .join(", ");
+            parts.push(format!("Required: {}", req));
+        }
+
+        if !self.optional_permissions.is_empty() {
+            let opt = self
+                .optional_permissions
+                .iter()
+                .map(|p| format!("{:?}", p))
+                .collect::<Vec<_>>()
+                .join(", ");
+            parts.push(format!("Optional: {}", opt));
+        }
+
+        if parts.is_empty() {
+            "No permissions".to_string()
+        } else {
+            parts.join(" | ")
+        }
+    }
+}
+
 #[derive(Debug, serde::Deserialize)]
 pub struct TappletConfig {
     #[serde(rename = "packageName")]
