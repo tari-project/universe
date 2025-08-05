@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import Hls from 'hls.js';
-import { URL_BLOCK, URL_BLOCK_SOLVED } from '@app/App/AppWrapper.tsx';
+
+import { URL_BLOCK, URL_BLOCK_SOLVED } from '../../../BlockExplorerMini';
 
 interface HLSPlayerProps {
     src: string;
@@ -12,21 +13,21 @@ interface HLSPlayerProps {
 
 function HLSPlayer({ src, autoPlay = true, muted = true, loop = true, playsInline = true }: HLSPlayerProps) {
     const videoRef = useRef<HTMLVideoElement>(null);
+    const hlsRef = useRef<Hls | null>(null);
 
     useEffect(() => {
         const videoElement = videoRef.current;
         if (!videoElement) return;
 
-        let hls: Hls | null = null;
-
         if (Hls.isSupported()) {
-            hls = new Hls();
+            const hls = new Hls();
+            hlsRef.current = hls;
             hls.loadSource(src);
             hls.attachMedia(videoElement);
             hls.on(Hls.Events.MANIFEST_PARSED, () => {
                 if (autoPlay) {
                     videoElement.play().catch((error) => {
-                        console.error('Failed to autoplay video:', error);
+                        console.warn('Failed to autoplay video:', error);
                     });
                 }
             });
@@ -34,14 +35,15 @@ function HLSPlayer({ src, autoPlay = true, muted = true, loop = true, playsInlin
             videoElement.src = src;
             if (autoPlay) {
                 videoElement.play().catch((error) => {
-                    console.error('Failed to autoplay video:', error);
+                    console.warn('Failed to autoplay video:', error);
                 });
             }
         }
 
         return () => {
-            if (hls) {
-                hls.destroy();
+            if (hlsRef.current) {
+                hlsRef.current.destroy();
+                hlsRef.current = null;
             }
         };
     }, [src, autoPlay]);
