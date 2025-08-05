@@ -285,13 +285,13 @@ export async function fetchLatestXSpaceEvent() {
     return response;
 }
 
-export async function sendCrewNudge(message: string, targetMembers: string[]) {
+export async function sendCrewNudge(message: string, userId: string) {
     return await handleAirdropRequest<{ success: boolean } | null>({
         path: '/crew/nudge',
         method: 'POST',
         body: {
             message,
-            targetMembers,
+            userId,
         },
         headers: {
             'Content-Type': 'application/json',

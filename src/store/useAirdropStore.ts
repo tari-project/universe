@@ -103,6 +103,7 @@ export interface CrewMemberReward {
     earnedAt: Date;
     claimedAt?: Date;
     readyToClaim: boolean;
+    active: boolean;
     progressTowardsReward: {
         miningMinutesProgress: number;
         miningDaysProgress: number;
@@ -124,6 +125,7 @@ export interface CrewMember {
     lastActivityDate: Date;
     milestones: string[];
     user?: {
+        id: string;
         name: string;
         displayName?: string;
         referralCode?: string;
