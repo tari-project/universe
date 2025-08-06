@@ -6,7 +6,6 @@ interface Arguments {
     fetchMoneroSeeds?: boolean;
 }
 export function useGetSeedWords(args?: Arguments) {
-    const hasFetched = useRef(false);
     const [seedWords, setSeedWords] = useState<string[]>([]);
     const [seedWordsFetching, setSeedWordsFetching] = useState(false);
 
@@ -19,7 +18,6 @@ export function useGetSeedWords(args?: Arguments) {
         try {
             const seedWords: string[] = await invoke(commandName);
             if (seedWords.length) {
-                hasFetched.current = true;
                 setSeedWords(seedWords);
                 return seedWords;
             }
@@ -36,8 +34,6 @@ export function useGetSeedWords(args?: Arguments) {
         }
         setSeedWordsFetching(false);
     }, [fetchMoneroSeeds]);
-
-    const seedWordsFetched = hasFetched.current;
 
     return {
         seedWords,

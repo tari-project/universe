@@ -1,5 +1,3 @@
-'use client';
-
 import styled, { keyframes } from 'styled-components';
 
 const gradient = keyframes`
