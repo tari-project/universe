@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, RefObject, useState } from 'react';
+import { useCallback, useEffect, useRef, RefObject, useState } from 'react';
 import { useInView } from 'react-intersection-observer';
 import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/core';
@@ -34,8 +34,11 @@ export function List({ setIsScrolled, targetRef }: Props) {
     const [baseTx, setBaseTx] = useState<CombinedBridgeWalletTransaction[]>(
         data?.pages?.flatMap((page) => page as unknown as CombinedBridgeWalletTransaction[]) || []
     );
+
+    const [adjustedTransactions, setAdjustedTransactions] = useState<CombinedBridgeWalletTransaction[]>(
+        data?.pages?.flatMap((page) => page as unknown as CombinedBridgeWalletTransaction[]) || []
+    );
     const dataPagesRef = useRef(data?.pages);
-    const coldWalletAddressRef = useRef(coldWalletAddress);
     const isFetchBridgeTransactionsFailed = useRef(false);
     const convertedTransactions: RefObject<CombinedBridgeWalletTransaction[]> = useRef([]);
     const lastTransactionFilter = useRef(tx_history_filter);
@@ -44,10 +47,6 @@ export function List({ setIsScrolled, targetRef }: Props) {
     useEffect(() => {
         dataPagesRef.current = data?.pages;
     }, [data?.pages]);
-
-    useEffect(() => {
-        coldWalletAddressRef.current = coldWalletAddress;
-    }, [coldWalletAddress]);
 
     useEffect(() => {
         const el = targetRef?.current;
@@ -85,14 +84,14 @@ export function List({ setIsScrolled, targetRef }: Props) {
     useEffect(() => {
         const isThereANewBridgeTransaction = baseTx.find(
             (tx) =>
-                tx.destinationAddress === coldWalletAddressRef.current &&
+                tx.destinationAddress === coldWalletAddress &&
                 !bridgeTransactions.some(
                     (bridgeTx) => bridgeTx.paymentId === tx.paymentId && Number(bridgeTx.tokenAmount) === tx.tokenAmount
                 )
         );
 
         const isThereEmptyBridgeTransactionAndFoundInWallet = baseTx.find(
-            (tx) => tx.destinationAddress === coldWalletAddressRef.current && bridgeTransactions.length === 0
+            (tx) => tx.destinationAddress === coldWalletAddress && bridgeTransactions.length === 0
         );
 
         if (
@@ -106,9 +105,9 @@ export function List({ setIsScrolled, targetRef }: Props) {
                 }
             });
         }
-    }, [baseTx, bridgeTransactions, currentBlockHeight, tariAddress, tariAddressType]);
+    }, [baseTx, bridgeTransactions, coldWalletAddress, currentBlockHeight, tariAddress, tariAddressType]);
 
-    const adjustedTransactions: CombinedBridgeWalletTransaction[] = useMemo(() => {
+    useEffect(() => {
         const extendedTransactions: CombinedBridgeWalletTransaction[] = [...baseTx];
         bridgeTransactions.forEach((bridgeTx) => {
             // If the bridge transaction has no paymentId, we try to find it by tokenAmount and destinationAddress which should equal the cold wallet address
@@ -117,7 +116,7 @@ export function List({ setIsScrolled, targetRef }: Props) {
                 (tx) =>
                     !bridgeTx.paymentId &&
                     tx.tokenAmount === Number(bridgeTx.tokenAmount) &&
-                    tx.destinationAddress === coldWalletAddressRef.current
+                    tx.destinationAddress === coldWalletAddress
             );
 
             // Currently we can find the bridge transaction by paymentId
@@ -144,8 +143,8 @@ export function List({ setIsScrolled, targetRef }: Props) {
             };
         });
 
-        return extendedTransactions;
-    }, [baseTx, bridgeTransactions]);
+        setAdjustedTransactions(extendedTransactions);
+    }, [baseTx, bridgeTransactions, coldWalletAddress]);
 
     const handleDetailsChange = useCallback(async (transaction: CombinedBridgeWalletTransaction | null) => {
         if (!transaction || !transaction.walletTransactionDetails) {

@@ -3,7 +3,8 @@ import { defineConfig, UserConfig } from 'vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import eslintPlugin from '@nabla/vite-plugin-eslint';
 import react from '@vitejs/plugin-react';
-import log from 'eslint-plugin-react/lib/util/log';
+
+const compilerErrFiles = [];
 
 const plugins: UserConfig['plugins'] = [
     react({
@@ -16,6 +17,9 @@ const plugins: UserConfig['plugins'] = [
                             logEvent(filename, event) {
                                 const shouldLog = event.kind === 'CompileError';
                                 if (shouldLog) {
+                                    if (!compilerErrFiles.includes(filename)) {
+                                        compilerErrFiles.push(filename);
+                                    }
                                     console.log(
                                         `\n==========================================================Compiler==========================================================`
                                     );
@@ -37,6 +41,19 @@ const plugins: UserConfig['plugins'] = [
                                     console.log(
                                         `============================================================End============================================================\n`
                                     );
+                                    if (compilerErrFiles.length) {
+                                        console.log(
+                                            `\n==========================================================Compiler Totals==========================================================`
+                                        );
+                                        console.log(`[Compiler] Total Errors: ${compilerErrFiles.length}`);
+
+                                        compilerErrFiles.forEach((file) => {
+                                            console.log(`[Compiler] files: ${file}`);
+                                        });
+                                        console.log(
+                                            `============================================================Totals End============================================================\n`
+                                        );
+                                    }
                                 }
                             },
                         },
