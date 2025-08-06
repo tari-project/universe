@@ -14,28 +14,29 @@ const plugins: UserConfig['plugins'] = [
                     {
                         logger: {
                             logEvent(filename, event) {
-                                const shouldLog =
-                                    event.kind === 'CompileError' ||
-                                    event.kind === 'PipelineError' ||
-                                    event.kind === 'CompileSkip';
+                                const shouldLog = event.kind === 'CompileError';
                                 if (shouldLog) {
-                                    console.log(`=============================Compiler=============================`);
-                                    console.error(`[Compiler] ${event.kind}: ${filename}`);
-                                    console.error(`[Compiler] Reason: ${event.detail.reason}`);
-
+                                    console.log(
+                                        `\n==========================================================Compiler==========================================================`
+                                    );
+                                    const line = event?.detail?.loc?.start?.line;
+                                    console.error(`[Compiler] ${event.kind}: ${filename}${line ? `:${line}` : ''}`);
+                                    if (event.detail.severity) {
+                                        console.error('[Compiler] Severity:', event.detail.severity);
+                                    }
+                                    if (event.detail.reason) {
+                                        console.error('[Compiler] Reason:', event.detail.reason);
+                                    }
                                     if (event.detail.description) {
-                                        console.error(`[Compiler] Details: ${event.detail.description}`);
+                                        console.error('[Compiler] Description:', event.detail.description);
                                     }
-
-                                    if (event.detail.loc) {
-                                        const { line, column } = event.detail.loc.start;
-                                        console.error(`[Compiler] Location: Line ${line}, Column ${column}`);
-                                    }
-
                                     if (event.detail.suggestions) {
                                         console.error('[Compiler] Suggestions:', event.detail.suggestions);
                                     }
-                                    console.log(`=============================End=============================`);
+
+                                    console.log(
+                                        `============================================================End============================================================\n`
+                                    );
                                 }
                             },
                         },

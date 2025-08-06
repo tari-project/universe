@@ -5,13 +5,18 @@ import { useMinerStats } from '@app/hooks/mining/useMinerCount.ts';
 
 import { Content, CountText, Dot, Wrapper } from './styles.ts';
 import { useTranslation } from 'react-i18next';
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export default function MinerCount() {
     const { t } = useTranslation('mining-view');
     const { data: totalMiners } = useMinerStats();
+    const [contentWidth, setContentWidth] = useState(0);
     const contentRef = useRef<HTMLDivElement>(null);
-    const contentWidth = contentRef.current?.clientWidth;
+
+    useEffect(() => {
+        setContentWidth(contentRef.current?.clientWidth || 0);
+    }, []);
+
     return (
         <Wrapper $contentWidth={contentWidth}>
             <Content ref={contentRef}>

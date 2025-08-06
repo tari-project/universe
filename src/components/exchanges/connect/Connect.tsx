@@ -104,7 +104,7 @@ export const Connect = () => {
                 console.error('Error confirming exchange address:', e);
             }
         },
-        [address, data?.wxtm_mode, handleWXTMSubmit]
+        [address, data, handleWXTMSubmit]
     );
 
     const labelCopy = data?.wxtm_mode

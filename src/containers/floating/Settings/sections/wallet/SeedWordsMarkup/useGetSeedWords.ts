@@ -37,11 +37,13 @@ export function useGetSeedWords(args?: Arguments) {
         setSeedWordsFetching(false);
     }, [fetchMoneroSeeds]);
 
+    const seedWordsFetched = hasFetched.current;
+
     return {
         seedWords,
         getSeedWords,
         setSeedWords,
-        seedWordsFetched: hasFetched.current,
+        seedWordsFetched,
         seedWordsFetching,
     };
 }
