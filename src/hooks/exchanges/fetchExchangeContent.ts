@@ -45,8 +45,8 @@ export function useFetchExchangeBranding() {
                 let logo_img_url = data.logo_img_url;
 
                 if (theme.mode === 'dark') {
-                    logo_img_small_url = data.dark_logo_img_small_url ?? data.logo_img_small_url;
-                    logo_img_url = data.dark_logo_img_url ?? data.logo_img_url;
+                    logo_img_small_url = data.dark_logo_img_small_url || data.logo_img_small_url;
+                    logo_img_url = data.dark_logo_img_url || data.logo_img_url;
                 }
 
                 return { ...data, logo_img_url, logo_img_small_url };
