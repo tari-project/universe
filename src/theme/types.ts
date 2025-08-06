@@ -38,6 +38,7 @@ interface Palette {
     base: string;
     contrast: string;
     contrastAlpha: string;
+    focusOutline: string;
     primary: Omit<StandardColour, 'primary' | 'secondary' | 'default'>;
     secondary: Colour;
     success: Colour;

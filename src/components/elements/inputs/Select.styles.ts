@@ -35,7 +35,7 @@ export const TriggerWrapper = styled.div<StyleProps>`
     }
 
     &:focus-visible {
-        outline: 2px solid ${({ theme }) => theme.palette.primary.main};
+        outline: 2px solid ${({ theme }) => theme.palette.focusOutline};
         outline-offset: 2px;
     }
 
@@ -47,7 +47,7 @@ export const TriggerWrapper = styled.div<StyleProps>`
             padding: 0 15px;
 
             &:focus-visible {
-                outline: 2px solid ${({ theme }) => theme.palette.primary.main};
+                outline: 2px solid ${({ theme }) => theme.palette.focusOutline};
                 outline-offset: 2px;
             }
         `}
@@ -149,7 +149,7 @@ export const StyledOption = styled.div<StyleProps>`
     }
 
     &:focus-visible {
-        outline: 2px solid ${({ theme }) => theme.palette.primary.main};
+        outline: 2px solid ${({ theme }) => theme.palette.focusOutline};
         outline-offset: -2px;
     }
 
