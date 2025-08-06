@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use log::info;
+use log::{info, warn};
 use tauri::{AppHandle, Listener};
 use tokio::sync::oneshot;
 
@@ -36,16 +36,26 @@ impl TappletManager {
         app_handle: &AppHandle,
     ) -> Result<String, anyhow::Error> {
         let allowed_csp = allow_csp_dialog(csp, app_handle).await?;
-        info!(target: LOG_TARGET, "💭 Tapplet's CSP accepted. CSP: {:?}", &allowed_csp);
-        Ok(allowed_csp)
+        if allowed_csp.to_lowercase() != "null" {
+            info!(target: LOG_TARGET, "💭 Tapplet's CSP accepted. CSP: {:?}", &allowed_csp);
+            Ok(allowed_csp)
+        } else {
+            warn!(target: LOG_TARGET, "Tapplet's CSP was not accepted (null)");
+            Err(anyhow::anyhow!("Tapplet's CSP was not accepted"))
+        }
     }
     pub async fn grant_tapplet_permissions(
         permissions: String,
         app_handle: &AppHandle,
     ) -> Result<String, anyhow::Error> {
         let granted_permissions = grant_permissions_dialog(permissions, app_handle).await?;
-        info!(target: LOG_TARGET, "💭 Tapplet's permissions granted: {:?}", &granted_permissions);
-        Ok(granted_permissions)
+        if granted_permissions.to_lowercase() != "null" {
+            info!(target: LOG_TARGET, "💭 Tapplet's permissions granted: {:?}", &granted_permissions);
+            Ok(granted_permissions)
+        } else {
+            warn!(target: LOG_TARGET, "Tapplet's permissions were not granted (null)");
+            Err(anyhow::anyhow!("Tapplet's permissions were not granted"))
+        }
     }
 }
 

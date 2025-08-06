@@ -21,6 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::{
+    database::models::DevTapplet,
     port_allocator::PortAllocator,
     tapplets::{
         error::{
@@ -65,17 +66,41 @@ pub fn using_serve_dir(tapplet_path: PathBuf, csp_header: HeaderValue) -> Router
         }))
 }
 
-pub async fn start_tapplet(
-    tapplet_path: PathBuf,
-    csp_header: HeaderValue,
-) -> Result<(String, CancellationToken), Error> {
+pub async fn start_tapplet(tapplet_path: PathBuf) -> Result<(String, CancellationToken), Error> {
     info!(target: LOG_TARGET, "Start tapplet path {:?}", &tapplet_path);
 
     // Dynamically get port from your allocator
     let port = PortAllocator::new().assign_port_with_fallback();
     let addr = SocketAddr::from(([127, 0, 0, 1], port));
 
+    // let csp_header = HeaderValue::from_str(csp.trim_matches('"')).unwrap_or_else(|e| {
+    //     warn!(target: LOG_TARGET, "Failed to create HeaderValue: {}", e);
+    //     HeaderValue::from_static("default-src 'self'")
+    // });
+    let csp_header = HeaderValue::from_static("default-src 'self'");
+
     // Build router with dynamically created CSP header middleware
+    let app = using_serve_dir(tapplet_path, csp_header);
+
+    // Start your server with the known addr
+    serve(app, addr).await
+}
+
+pub async fn start_dev_tapplet(tapp: DevTapplet) -> Result<(String, CancellationToken), Error> {
+    // info!(target: LOG_TARGET, "Start tapplet path {:?}", &tapplet_path);
+
+    // Dynamically get port from your allocator
+    let port = PortAllocator::new().assign_port_with_fallback();
+    let addr = SocketAddr::from(([127, 0, 0, 1], port));
+
+    let csp_header = HeaderValue::from_str(tapp.csp.trim_matches('"')).unwrap_or_else(|e| {
+        warn!(target: LOG_TARGET, "Failed to create HeaderValue: {}", e);
+        HeaderValue::from_static("default-src 'self'")
+    });
+
+    info!(target: LOG_TARGET, "🚨📢🔔⚠️ SERVER WITH CSP {:?}", &csp_header);
+    // Build router with dynamically created CSP header middleware
+    let tapplet_path = PathBuf::from(tapp.endpoint);
     let app = using_serve_dir(tapplet_path, csp_header);
 
     // Start your server with the known addr

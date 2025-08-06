@@ -70,7 +70,9 @@ use crate::tapplets::tapplet_installer::{
     fetch_tapp_registry_manifest, get_tapp_download_path, get_tapp_permissions,
 };
 use crate::tapplets::tapplet_manager::TappletManager;
-use crate::tapplets::tapplet_server::{get_tapplet_config, get_tapplet_manifest, start_tapplet};
+use crate::tapplets::tapplet_server::{
+    get_tapplet_config, get_tapplet_manifest, start_dev_tapplet, start_tapplet,
+};
 use crate::tasks_tracker::TasksTrackers;
 use crate::tor_adapter::TorConfig;
 use crate::utils::address_utils::verify_send;
@@ -2235,7 +2237,7 @@ pub async fn launch_builtin_tapplet() -> Result<ActiveTapplet, String> {
     let csp_header = HeaderValue::from_str(DEFAULT_TAPPLET_CSP).unwrap();
 
     let handle_start =
-        tauri::async_runtime::spawn(async move { start_tapplet(tapp_dest_dir, csp_header).await });
+        tauri::async_runtime::spawn(async move { start_tapplet(tapp_dest_dir).await });
 
     let (addr, _cancel_token) = match handle_start.await {
         Ok(result) => result.map_err(|e| e.to_string())?,
@@ -2263,10 +2265,7 @@ pub async fn launch_dev_tapplet(
     let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
     info!(target: LOG_TARGET, "💥 Try to launch dev id: {:?}", &dev_tapplet_id);
 
-    let all = tapplet_store.get_all_dev_tapplets().unwrap();
-    info!(target: LOG_TARGET, "💥 All {:?}", &all);
-
-    let dev_tapplet: DevTapplet = tapplet_store
+    let mut dev_tapplet: DevTapplet = tapplet_store
         .get_by_id(dev_tapplet_id)
         .map_err(|e| e.to_string())?;
 
@@ -2276,27 +2275,58 @@ pub async fn launch_dev_tapplet(
     let config = get_tapplet_config(tapp_dest_dir.clone()).unwrap_or_default();
     info!(target: LOG_TARGET, "💥 Dev tapplet csp: {}", &config.csp);
 
-    let allowed_csp = TappletManager::allow_tapplet_csp(config.csp, &app_handle)
-        .await
-        .map_err(|e| e.to_string())?;
-    let csp_header = HeaderValue::from_str(allowed_csp.trim_matches('"'))
-        .map_err(|e| format!("Failed to create HeaderValue: {}", e))?;
-
-    info!(target: LOG_TARGET, "👀 created csp header {:?}", &csp_header.to_str());
-
-    let granted_permissions =
-        TappletManager::grant_tapplet_permissions(config.permissions.to_string(), &app_handle)
-            .await
-            .map_err(|e| e.to_string())?;
-    info!(target: LOG_TARGET, "💥 Grant permissions result: {:?}", granted_permissions);
-
     let mut updated_dev_tapp = UpdateDevTapplet::from(&dev_tapplet);
-    updated_dev_tapp.csp = allowed_csp.clone();
-    updated_dev_tapp.tari_permissions = granted_permissions.clone();
-    let _ = update_dev_tapp_db(dev_tapplet_id, updated_dev_tapp, db_connection);
+
+    let mut should_update_csp = config.csp.trim_matches('"') != dev_tapplet.csp.trim_matches('"');
+    info!(target: LOG_TARGET, "👀 SHOULD UPDATE CSP?{:?}", should_update_csp);
+    if should_update_csp {
+        let allowed_csp_result = TappletManager::allow_tapplet_csp(config.csp, &app_handle).await;
+        should_update_csp = match allowed_csp_result {
+            Ok(csp) => {
+                updated_dev_tapp.csp = csp.clone();
+                info!(target: LOG_TARGET, "💥 allowed to update {}", &csp);
+                true
+            }
+            Err(e) => {
+                warn!(target: LOG_TARGET, "Tapplet's CSP was not accepted: {}", e);
+                false
+            }
+        }
+    };
+
+    let mut should_update_permissions = config.permissions.all_permissions_to_string()
+        != dev_tapplet.tari_permissions.trim_matches('"');
+    info!(target: LOG_TARGET, "👀 SHOULD UPDATE PERMISSIONS?{:?}", should_update_permissions);
+    info!(target: LOG_TARGET, "👀 PERMISSIONS CONFIG {:?}", config.permissions.all_permissions_to_string());
+    info!(target: LOG_TARGET, "👀 PERMISSIONS TAPPLE {:?}",dev_tapplet.tari_permissions.trim_matches('"'));
+    if should_update_permissions {
+        let granted_permissions = TappletManager::grant_tapplet_permissions(
+            config.permissions.all_permissions_to_string(),
+            &app_handle,
+        )
+        .await
+        .map_err(|e| e.to_string());
+        info!(target: LOG_TARGET, "💥 Grant permissions result: {:?}", granted_permissions);
+
+        should_update_permissions = match granted_permissions {
+            Ok(p) => {
+                updated_dev_tapp.tari_permissions = p.clone();
+                true
+            }
+            Err(e) => {
+                warn!(target: LOG_TARGET, "Tapplet's CSP was not accepted: {}", e);
+                false
+            }
+        };
+    }
+
+    if should_update_permissions || should_update_csp {
+        dev_tapplet = update_dev_tapp_db(dev_tapplet_id, updated_dev_tapp, db_connection)
+            .map_err(|e| e.to_string())?;
+    }
 
     let handle_start =
-        tauri::async_runtime::spawn(async move { start_tapplet(tapp_dest_dir, csp_header).await });
+        tauri::async_runtime::spawn(async move { start_dev_tapplet(dev_tapplet).await });
 
     let (addr, _cancel_token) = match handle_start.await {
         Ok(result) => result.map_err(|e| e.to_string())?,
@@ -2767,7 +2797,7 @@ pub fn update_dev_tapp_db(
     id: i32,
     tapplet: UpdateDevTapplet,
     db_connection: tauri::State<'_, DatabaseConnection>,
-) -> Result<usize, Error> {
+) -> Result<DevTapplet, Error> {
     let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
     info!(target: LOG_TARGET, "🛠️ UPDATE DEV TAPPLET DB {:?}", &tapplet.csp);
 
@@ -2777,5 +2807,5 @@ pub fn update_dev_tapp_db(
     let size = tapplet_store.update(dev_tapplet, &tapplet)?;
     let dev_updated: DevTapplet = tapplet_store.get_by_id(id)?;
     info!(target: LOG_TARGET, "🛠️ after {:?}", dev_updated.csp);
-    return Ok(size);
+    return Ok(dev_updated);
 }

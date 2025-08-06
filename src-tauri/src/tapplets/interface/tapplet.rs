@@ -106,7 +106,7 @@ impl TappletPermissions {
                 .map(|p| format!("{:?}", p))
                 .collect::<Vec<_>>()
                 .join(", ");
-            parts.push(format!("Required: {}", req));
+            parts.push(format!("requiredPermissions: {}", req));
         }
 
         if !self.optional_permissions.is_empty() {
@@ -116,7 +116,7 @@ impl TappletPermissions {
                 .map(|p| format!("{:?}", p))
                 .collect::<Vec<_>>()
                 .join(", ");
-            parts.push(format!("Optional: {}", opt));
+            parts.push(format!("optionalPermissions: {}", opt));
         }
 
         if parts.is_empty() {
