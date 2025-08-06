@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -30,25 +30,39 @@ export function Swap() {
     const [error, setError] = useState<string | null>(null);
     const [walletConnectOpen, setWalletConnectOpen] = useState(false);
     const [swapHeight, setSwapHeight] = useState(0);
+    const [iframeOpacity, setIFrameOpacity] = useState(0);
     const iframeUrl = useIframeUrl();
     const iframeRef = useRef<HTMLIFrameElement | null>(null);
     const [isFullscreen, setIsFullscreen] = useState(false);
 
     const { t } = useTranslation(['wallet'], { useSuspense: false });
 
-    useEffect(() => {
-        // Keep the iframe theme in sync with the app theme
+    const handleSetTheme = useCallback(() => {
         if (!iframeUrl) return;
-        function handleSetTheme() {
+
+        const themeTimeout = setTimeout(() => {
             if (iframeRef.current) {
+                setIFrameOpacity(0);
                 iframeRef.current.contentWindow?.postMessage({ type: 'SET_THEME', payload: { theme } }, '*');
             }
-        }
-        const timeout = setTimeout(handleSetTheme, 1000);
+        }, 75);
+        const opacityTimeout = setTimeout(() => {
+            setIFrameOpacity(1);
+        }, 450);
+        return () => {
+            clearTimeout(themeTimeout);
+            clearTimeout(opacityTimeout);
+        };
+    }, [iframeUrl, theme]);
+
+    useEffect(() => {
+        // Keep the iframe theme in sync with the app theme
+        handleSetTheme();
+        const timeout = setTimeout(handleSetTheme, 50);
         return () => {
             clearTimeout(timeout);
         };
-    }, [iframeUrl, theme]);
+    }, [handleSetTheme]);
 
     const handleClearState = () => {
         setApproving(false);
@@ -125,10 +139,12 @@ export function Swap() {
                 {iframeUrl ? (
                     <SwapsIframe
                         $swapHeight={swapHeight}
+                        $opacity={iframeOpacity}
                         $walletConnectOpen={walletConnectOpen}
                         ref={iframeRef}
                         src={iframeUrl}
                         title="Swap Iframe"
+                        onLoad={handleSetTheme}
                     />
                 ) : (
                     <LoadingDots />

@@ -1,9 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { handleAirdropRequest } from '../airdrop/utils/useHandleRequest';
 
 export const useIframeUrl = () => {
-    const urlRef = useRef<string | null>(null);
-    const [url, setUrl] = useState<string | null>(urlRef.current);
+    const [url, setUrl] = useState<string | null>(null);
 
     const handleFetchUrl = useCallback((onSuccess?: () => void) => {
         handleAirdropRequest<{ url: string }>({
@@ -16,15 +15,15 @@ export const useIframeUrl = () => {
                 console.error('Failed to fetch swaps url');
                 return;
             }
-            urlRef.current = data.url;
-            setUrl(urlRef.current);
+
+            setUrl(data.url);
             onSuccess?.();
         });
     }, []);
 
     useEffect(() => {
         const interval = setInterval(() => {
-            if (!urlRef.current && url === null) {
+            if (url === null) {
                 console.info('Fetching swaps url');
                 handleFetchUrl(() => {
                     clearInterval(interval);
@@ -33,7 +32,9 @@ export const useIframeUrl = () => {
                 clearInterval(interval);
             }
         }, 1000);
-        return () => clearInterval(interval);
+        return () => {
+            clearInterval(interval);
+        };
     }, [handleFetchUrl, url]);
 
     return url || 'https://tari.com/swaps';
