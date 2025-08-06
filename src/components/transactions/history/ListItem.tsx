@@ -81,7 +81,7 @@ function HistoryListItem({ item, index, itemIsNew = false, setDetailsItem }: His
             title={itemTitle}
             time={itemTime}
             value={earningsFormatted}
-            direction={item.walletTransactionDetails.direction}
+            direction={item.walletTransactionDetails?.direction}
             chip={itemIsNew ? t('new') : ''}
         />
     );

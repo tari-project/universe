@@ -90,8 +90,9 @@ export const Connect = () => {
     const onSubmit = useCallback(
         async (_unused: ConnectFormFields) => {
             let tariAddress = address;
+            const wxtm_mode = data?.wxtm_mode;
             try {
-                if (data?.wxtm_mode) {
+                if (wxtm_mode) {
                     // In wxtm_mode we are converting the ETH address to a Tari address
                     tariAddress = await handleWXTMSubmit();
                 }

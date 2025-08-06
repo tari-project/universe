@@ -17,7 +17,7 @@ export const useIframeUrl = () => {
                 return;
             }
             urlRef.current = data.url;
-            setUrl(data.url);
+            setUrl(urlRef.current);
             onSuccess?.();
         });
     }, []);
@@ -36,5 +36,5 @@ export const useIframeUrl = () => {
         return () => clearInterval(interval);
     }, [handleFetchUrl, url]);
 
-    return url || urlRef.current || 'https://tari.com/swaps';
+    return url || 'https://tari.com/swaps';
 };

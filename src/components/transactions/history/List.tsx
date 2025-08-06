@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, RefObject } from 'react';
+import { useCallback, useEffect, useMemo, useRef, RefObject, useState } from 'react';
 import { useInView } from 'react-intersection-observer';
 import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/core';
@@ -33,7 +33,9 @@ export function List({ setIsScrolled, targetRef }: Props) {
     const tariAddress = useWalletStore((s) => s.tari_address_base58);
     const tariAddressType = useWalletStore((s) => s.tari_address_type);
     const { data, fetchNextPage, isFetchingNextPage, isFetching, hasNextPage } = useFetchTxHistory();
-
+    const [baseTx, setBaseTx] = useState<CombinedBridgeWalletTransaction[]>(
+        data?.pages?.flatMap((page) => page as unknown as CombinedBridgeWalletTransaction[]) || []
+    );
     const dataPagesRef = useRef(data?.pages);
     const coldWalletAddressRef = useRef(coldWalletAddress);
     const isFetchBridgeTransactionsFailed = useRef(false);
@@ -61,17 +63,18 @@ export function List({ setIsScrolled, targetRef }: Props) {
         onChange: () => hasNextPage && fetchNextPage(),
     });
 
-    const baseTx = useMemo(() => {
-        if (!data?.pages?.length) return convertedTransactions.current || [];
-        // We are caching converted transactions to avoid re-converting all of them on every execution
-        // If someone have 200 transactions it is more efficient to convert only new ~20 then 200
-        const sanitizedData = dataPagesRef.current?.flatMap((page) => page) || [];
-        const newTransactions = sanitizedData.slice(convertedTransactions.current.length);
-        const converted = newTransactions.map((transaction) =>
-            convertWalletTransactionToCombinedTransaction(transaction)
-        );
-        convertedTransactions.current = [...convertedTransactions.current, ...converted];
-        return convertedTransactions.current;
+    useEffect(() => {
+        if (data?.pages?.length) {
+            // We are caching converted transactions to avoid re-converting all of them on every execution
+            // If someone have 200 transactions it is more efficient to convert only new ~20 then 200
+            const sanitizedData = dataPagesRef.current?.flatMap((page) => page) || [];
+            const newTransactions = sanitizedData.slice(convertedTransactions.current.length);
+            const converted = newTransactions.map((transaction) =>
+                convertWalletTransactionToCombinedTransaction(transaction)
+            );
+            convertedTransactions.current = [...convertedTransactions.current, ...converted];
+            setBaseTx(convertedTransactions.current);
+        }
     }, [data?.pages?.length]); // Re-run only when the number of pages changes
 
     useEffect(() => {
@@ -163,9 +166,12 @@ export function List({ setIsScrolled, targetRef }: Props) {
     const listMarkup = (
         <ListItemWrapper>
             {adjustedTransactions?.map((tx, i) => {
+                const itemId =
+                    tx?.walletTransactionDetails?.txId || tx?.bridgeTransactionDetails?.transactionHash?.slice(0, 4);
+                const itemKey = `item:${i}_${tx.paymentId}_${itemId}`;
                 return (
                     <HistoryListItem
-                        key={`item-${i}-${tx.walletTransactionDetails.txId}`}
+                        key={itemKey}
                         item={tx}
                         index={i}
                         itemIsNew={false}
