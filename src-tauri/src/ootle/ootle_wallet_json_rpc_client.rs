@@ -70,7 +70,7 @@ impl OotleWalletJsonRpcClient {
         let client = Client::new();
         let mut builder = client.post(rpc_url).json(&request_body);
         if let Some(token) = &self.token {
-            builder = builder.header(AUTHORIZATION, format!("Bearer {}", token));
+            builder = builder.header(AUTHORIZATION, format!("Bearer {token}"));
         }
         let response = builder.send().await?;
         let response_text = response.text().await?;
