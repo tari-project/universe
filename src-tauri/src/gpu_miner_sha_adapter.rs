@@ -175,8 +175,8 @@ impl StatusMonitor for GpuMinerShaStatusMonitor {
                     info!(target: LOG_TARGET, "GpuMinerShaAdapter: GPU Pool feature turned off due to prolonged unhealthiness.");
                     return Ok(HandleUnhealthyResult::Stop);
                 }
-                Err(e) => {
-                    warn!(target: LOG_TARGET, "GpuMinerShaAdapter: Failed to turn off GPU Pool feature: {} | Continuing to monitor.", e);
+                Err(error) => {
+                    warn!(target: LOG_TARGET, "GpuMinerShaAdapter: Failed to turn off GPU Pool feature: {error} | Continuing to monitor.");
                     return Ok(HandleUnhealthyResult::Continue);
                 }
             }

@@ -246,8 +246,8 @@ impl StatusMonitor for XmrigStatusMonitor {
                     info!(target: LOG_TARGET, "XmrigAdapter: CPU Pool feature turned off due to prolonged unhealthiness.");
                     return Ok(HandleUnhealthyResult::Stop);
                 }
-                Err(e) => {
-                    warn!(target: LOG_TARGET, "XmrigAdapter: Failed to turn off CPU Pool feature: {} | Continuing to monitor.", e);
+                Err(error) => {
+                    warn!(target: LOG_TARGET, "XmrigAdapter: Failed to turn off CPU Pool feature: {error} | Continuing to monitor.");
                     return Ok(HandleUnhealthyResult::Continue);
                 }
             }

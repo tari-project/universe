@@ -774,7 +774,7 @@ impl SetupManager {
         // Start mining will now pickup that GPU Pool is turn off and will start glytex instead
         start_gpu_mining(app_state.clone(), app_handle.clone())
             .await
-            .map_err(|e| anyhow::Error::msg(e))?;
+            .map_err(anyhow::Error::msg)?;
 
         Ok(())
     }
@@ -808,7 +808,7 @@ impl SetupManager {
 
         start_cpu_mining(app_state.clone(), app_handle.clone())
             .await
-            .map_err(|e| anyhow::Error::msg(e))?;
+            .map_err(anyhow::Error::msg)?;
 
         Ok(())
     }
