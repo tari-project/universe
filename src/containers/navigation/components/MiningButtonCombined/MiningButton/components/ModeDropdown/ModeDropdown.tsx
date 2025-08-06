@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import ArrowDown from './icons/ArrowDown';
 import {
     Eyebrow,

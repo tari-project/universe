@@ -74,12 +74,12 @@ export const SwapConfirmation = ({
             symbol: 'eth',
             width: 20,
         });
-    }, [fromTokenDisplay?.symbol]);
+    }, [fromTokenDisplay]);
 
     const receiveTokenSymbol = useMemo(() => {
         if (toTokenSymbol) return toTokenSymbol;
         return direction === 'toXtm' ? 'wXTM' : (fromTokenDisplay?.symbol ?? '');
-    }, [direction, fromTokenDisplay?.symbol, toTokenSymbol]);
+    }, [direction, fromTokenDisplay, toTokenSymbol]);
 
     const items = useMemo(() => {
         const baseItems: StatusListEntry[] = [];

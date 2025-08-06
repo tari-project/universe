@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { setError } from '@app/store';
 
@@ -39,7 +39,6 @@ export function useGetSeedWords(args?: Arguments) {
         seedWords,
         getSeedWords,
         setSeedWords,
-        seedWordsFetched,
         seedWordsFetching,
     };
 }

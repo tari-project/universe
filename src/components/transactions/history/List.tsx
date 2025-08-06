@@ -7,12 +7,9 @@ import { CombinedBridgeWalletTransaction, useMiningMetricsStore, useWalletStore 
 
 import { useFetchTxHistory } from '@app/hooks/wallet/useFetchTxHistory.ts';
 
-import ListLoadingAnimation from '@app/containers/navigation/components/Wallet/ListLoadingAnimation/ListLoadingAnimation.tsx';
-import { LoadingText } from '@app/containers/navigation/components/Wallet/ListLoadingAnimation/styles.ts';
-
 import { HistoryListItem } from './ListItem.tsx';
 import { PlaceholderItem } from './ListItem.styles.ts';
-import { ListItemWrapper, ListWrapper } from './List.styles.ts';
+import { ListItemWrapper, ListWrapper, LoadingText } from './List.styles.ts';
 import { setDetailsItem } from '@app/store/actions/walletStoreActions.ts';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 import { convertWalletTransactionToCombinedTransaction } from './helpers.ts';
@@ -171,7 +168,7 @@ export function List({ setIsScrolled, targetRef }: Props) {
     // Calculate how many placeholder items we need to add
     const transactionsCount = adjustedTransactions?.length || 0;
     const placeholdersNeeded = Math.max(0, 5 - transactionsCount);
-    const listMarkup = (
+    const baseMarkup = (
         <ListItemWrapper>
             {adjustedTransactions?.map((tx, i) => {
                 const itemId =
@@ -194,22 +191,6 @@ export function List({ setIsScrolled, targetRef }: Props) {
             ))}
             {isFetchingNextPage || isFetching ? <LoadingDots /> : null}
         </ListItemWrapper>
-    );
-
-    const baseMarkup = walletScanning.is_scanning ? (
-        <ListLoadingAnimation
-            loadingText={
-                walletScanning.is_scanning && walletScanning.total_height > 0
-                    ? t('wallet-scanning-with-progress', {
-                          scanned: walletScanning.scanned_height.toLocaleString(),
-                          total: walletScanning.total_height.toLocaleString(),
-                          percent: walletScanning.progress.toFixed(1),
-                      })
-                    : t('wallet-is-scanning')
-            }
-        />
-    ) : (
-        listMarkup
     );
 
     const isEmpty = !walletScanning.is_scanning && !adjustedTransactions?.length;
