@@ -171,8 +171,10 @@ export function List({ setIsScrolled, targetRef }: Props) {
         <ListItemWrapper>
             {adjustedTransactions?.map((tx, i) => {
                 const itemId =
-                    tx?.walletTransactionDetails?.txId || tx?.bridgeTransactionDetails?.transactionHash?.slice(0, 4);
-                const itemKey = `item:${i}_${tx.paymentId}_${itemId}`;
+                    tx?.walletTransactionDetails?.txId ||
+                    tx?.bridgeTransactionDetails?.transactionHash?.slice(0, 10) ||
+                    i; // don't use i as key unless we absolutely need to
+                const itemKey = `item:${tx.paymentId}_${itemId}`;
                 return (
                     <HistoryListItem
                         key={itemKey}

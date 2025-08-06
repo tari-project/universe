@@ -22,8 +22,8 @@ export function StatusList({ entries }: Props) {
         <Wrapper>
             {entries
                 .filter((entry) => Boolean(entry.value))
-                .map(({ label, value, valueRight, status, externalLink }, index) => (
-                    <Entry key={index}>
+                .map(({ label, value, valueRight, status, externalLink }) => (
+                    <Entry key={`item-${label}-${value}${status}`}>
                         <Label>{label}</Label>
                         <Value $status={status}>
                             {!externalLink ? (
