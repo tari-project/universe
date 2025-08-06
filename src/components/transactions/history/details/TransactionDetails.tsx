@@ -1,4 +1,3 @@
-import { TransactionInfo } from '@app/types/app-status.ts';
 import { useTranslation } from 'react-i18next';
 import TransactionModal from '@app/components/TransactionModal/TransactionModal.tsx';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
@@ -8,10 +7,10 @@ import { Wrapper } from './styles.ts';
 import { StatusList } from '@app/components/transactions/components/StatusList/StatusList.tsx';
 import { getListEntries } from './getListEntries.tsx';
 import { useCallback, useRef, useState } from 'react';
-import { BackendBridgeTransaction } from '@app/store/useWalletStore.ts';
+import { CombinedBridgeWalletTransaction } from '@app/store';
 
 interface TransactionDetailsProps {
-    item: TransactionInfo | BackendBridgeTransaction;
+    item: CombinedBridgeWalletTransaction;
     expanded: boolean;
     handleClose: () => void;
 }
