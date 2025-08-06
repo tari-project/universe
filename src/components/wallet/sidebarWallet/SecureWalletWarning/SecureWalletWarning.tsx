@@ -16,9 +16,10 @@ import { useTranslation } from 'react-i18next';
 
 interface Props {
     $isScrolled: boolean;
+    $isHidden: boolean;
 }
 
-export default function SecureWalletWarning({ $isScrolled }: Props) {
+export default function SecureWalletWarning({ $isScrolled, $isHidden }: Props) {
     const { setModal } = useSecurityStore();
     const { t } = useTranslation('staged-security');
 
@@ -39,7 +40,7 @@ export default function SecureWalletWarning({ $isScrolled }: Props) {
         checkFlags();
     }, []);
 
-    if (seedBackedUp && pinLocked) {
+    if ((seedBackedUp && pinLocked) || $isHidden) {
         return null;
     }
 
