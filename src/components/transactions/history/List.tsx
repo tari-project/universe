@@ -33,8 +33,20 @@ export function List({ setIsScrolled, targetRef }: Props) {
     const tariAddress = useWalletStore((s) => s.tari_address_base58);
     const tariAddressType = useWalletStore((s) => s.tari_address_type);
     const { data, fetchNextPage, isFetchingNextPage, isFetching, hasNextPage } = useFetchTxHistory();
+
+    const dataPagesRef = useRef(data?.pages);
+    const coldWalletAddressRef = useRef(coldWalletAddress);
     const isFetchBridgeTransactionsFailed = useRef(false);
     const convertedTransactions: RefObject<CombinedBridgeWalletTransaction[]> = useRef([]);
+
+    // setRefs
+    useEffect(() => {
+        dataPagesRef.current = data?.pages;
+    }, [data?.pages]);
+
+    useEffect(() => {
+        coldWalletAddressRef.current = coldWalletAddress;
+    }, [coldWalletAddress]);
 
     useEffect(() => {
         const el = targetRef?.current;
@@ -50,28 +62,29 @@ export function List({ setIsScrolled, targetRef }: Props) {
     });
 
     const baseTx = useMemo(() => {
+        if (!data?.pages?.length) return convertedTransactions.current || [];
         // We are caching converted transactions to avoid re-converting all of them on every execution
         // If someone have 200 transactions it is more efficient to convert only new ~20 then 200
-        const sanitizedData = data?.pages.flatMap((page) => page) || [];
+        const sanitizedData = dataPagesRef.current?.flatMap((page) => page) || [];
         const newTransactions = sanitizedData.slice(convertedTransactions.current.length);
         const converted = newTransactions.map((transaction) =>
             convertWalletTransactionToCombinedTransaction(transaction)
         );
         convertedTransactions.current = [...convertedTransactions.current, ...converted];
         return convertedTransactions.current;
-    }, [data?.pages.length]); // Re-run only when the number of pages changes
+    }, [data?.pages?.length]); // Re-run only when the number of pages changes
 
     useEffect(() => {
         const isThereANewBridgeTransaction = baseTx.find(
             (tx) =>
-                tx.destinationAddress === coldWalletAddress &&
+                tx.destinationAddress === coldWalletAddressRef.current &&
                 !bridgeTransactions.some(
                     (bridgeTx) => bridgeTx.paymentId === tx.paymentId && Number(bridgeTx.tokenAmount) === tx.tokenAmount
                 )
         );
 
         const isThereEmptyBridgeTransactionAndFoundInWallet = baseTx.find(
-            (tx) => tx.destinationAddress === coldWalletAddress && bridgeTransactions.length === 0
+            (tx) => tx.destinationAddress === coldWalletAddressRef.current && bridgeTransactions.length === 0
         );
 
         if (
@@ -85,7 +98,7 @@ export function List({ setIsScrolled, targetRef }: Props) {
                 }
             });
         }
-    }, [baseTx, bridgeTransactions, coldWalletAddress, currentBlockHeight, tariAddress, tariAddressType]);
+    }, [baseTx, bridgeTransactions, currentBlockHeight, tariAddress, tariAddressType]);
 
     const adjustedTransactions: CombinedBridgeWalletTransaction[] = useMemo(() => {
         const extendedTransactions: CombinedBridgeWalletTransaction[] = [...baseTx];
@@ -96,7 +109,7 @@ export function List({ setIsScrolled, targetRef }: Props) {
                 (tx) =>
                     !bridgeTx.paymentId &&
                     tx.tokenAmount === Number(bridgeTx.tokenAmount) &&
-                    tx.destinationAddress === coldWalletAddress
+                    tx.destinationAddress === coldWalletAddressRef.current
             );
 
             // Currently we can find the bridge transaction by paymentId
