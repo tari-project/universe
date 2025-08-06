@@ -89,17 +89,29 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
 
         // built-in tapplet
         if (isBuiltIn) {
-            console.info('🚗 RUN BUILDIN');
-            const activeTapplet = await invoke('launch_builtin_tapplet');
-            set({ activeTapplet });
+            try {
+                console.info('🚗 RUN BUILDIN');
+                const activeTapplet = await invoke('launch_builtin_tapplet');
+                set({ activeTapplet });
+            } catch (error) {
+                console.error('Error running built-in tapplet: ', error);
+            }
             return;
         }
 
         // by default tapplets are supposed to work with the Ootle
         // run the Ootle dev/registed tapplet below
         console.info('🚗 RUN DEV', tappletId);
-        const activeTapplet = await invoke('launch_dev_tapplet', { tapplet_id: tappletId, path: tapplet.endpoint });
-        set({ activeTapplet });
+
+        try {
+            const activeTapplet = await invoke('launch_dev_tapplet', {
+                devTappletId: tappletId,
+                path: tapplet.endpoint,
+            });
+            set({ activeTapplet });
+        } catch (error) {
+            console.error('Error running dev tapplet: ', error);
+        }
         return;
     },
     setDevTapplet: async (tappPath: string) => {
@@ -192,7 +204,7 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
         console.info('[STORE] add dev tapp endpoint', endpoint);
         const devTapp = await invoke('add_dev_tapplet', { endpoint });
         console.info('[STORE] add dev tapp', devTapp);
-        const devTapplets = await invoke('read_dev_tapplets');
+        const devTapplets = await invoke('read_dev_tapplets_db');
         console.info('[STORE] add dev tapplets', devTapplets);
         set({ devTapplets });
     },
@@ -202,7 +214,7 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
         set((state) => ({ devTapplets: state.devTapplets.filter((tapp) => tapp.id !== devTappletId) }));
     },
     getDevTapps: async () => {
-        const devTapplets = await invoke('read_dev_tapplets');
+        const devTapplets = await invoke('read_dev_tapplets_db');
         console.info('[STORE get dev tapplets', devTapplets);
         set({ devTapplets });
     },

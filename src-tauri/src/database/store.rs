@@ -177,6 +177,17 @@ impl SqliteStore {
                 })
             })
     }
+
+    pub fn get_all_dev_tapplets(&mut self) -> Result<Vec<DevTapplet>, Error> {
+        use crate::database::schema::dev_tapplet::dsl::*;
+        dev_tapplet
+            .load::<DevTapplet>(self.get_connection().deref_mut())
+            .map_err(|_| {
+                DatabaseError(FailedToRetrieveData {
+                    entity_name: "dev_tapplet table".to_string(),
+                })
+            })
+    }
 }
 
 impl<'a> Store<Tapplet, CreateTapplet<'a>, UpdateTapplet> for SqliteStore {

@@ -2255,34 +2255,32 @@ pub async fn launch_builtin_tapplet() -> Result<ActiveTapplet, String> {
 
 #[tauri::command]
 pub async fn launch_dev_tapplet(
-    tapplet_id: Option<i32>,
+    dev_tapplet_id: i32,
     path: String,
     app_handle: tauri::AppHandle,
     db_connection: tauri::State<'_, DatabaseConnection>,
 ) -> Result<ActiveTapplet, String> {
     let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
+    info!(target: LOG_TARGET, "💥 Try to launch dev id: {:?}", &dev_tapplet_id);
 
-    // Find the dev tapplet to update by id (or another unique field)
-    let dev_tapplet: DevTapplet = match tapplet_id {
-        Some(id) => tapplet_store.get_by_id(id).map_err(|e| e.to_string())?,
-        None => {
-            return Err("Tapplet not found".to_string());
-        }
-    };
+    let all = tapplet_store.get_all_dev_tapplets().unwrap();
+    info!(target: LOG_TARGET, "💥 All {:?}", &all);
+
+    let dev_tapplet: DevTapplet = tapplet_store
+        .get_by_id(dev_tapplet_id)
+        .map_err(|e| e.to_string())?;
 
     let tapp_dest_dir = PathBuf::from(path);
     info!(target: LOG_TARGET, "💥 Dev tapplet start: {:?}", &tapp_dest_dir);
 
     let config = get_tapplet_config(tapp_dest_dir.clone()).unwrap_or_default();
+    info!(target: LOG_TARGET, "💥 Dev tapplet csp: {}", &config.csp);
 
     let allowed_csp = TappletManager::allow_tapplet_csp(config.csp, &app_handle)
         .await
         .map_err(|e| e.to_string())?;
-
-    let csp = TappletCsp::from_str(&allowed_csp).unwrap_or_default();
-    let csp_header = csp
-        .to_header_value()
-        .map_err(|e| format!("Failed to parse CSP header: {}", e))?;
+    let csp_header = HeaderValue::from_str(allowed_csp.trim_matches('"'))
+        .map_err(|e| format!("Failed to create HeaderValue: {}", e))?;
 
     info!(target: LOG_TARGET, "👀 created csp header {:?}", &csp_header.to_str());
 
@@ -2295,7 +2293,7 @@ pub async fn launch_dev_tapplet(
     let mut updated_dev_tapp = UpdateDevTapplet::from(&dev_tapplet);
     updated_dev_tapp.csp = allowed_csp.clone();
     updated_dev_tapp.tari_permissions = granted_permissions.clone();
-    let _ = update_dev_tapp_db(tapplet_id, updated_dev_tapp, db_connection);
+    let _ = update_dev_tapp_db(dev_tapplet_id, updated_dev_tapp, db_connection);
 
     let handle_start =
         tauri::async_runtime::spawn(async move { start_tapplet(tapp_dest_dir, csp_header).await });
@@ -2435,7 +2433,7 @@ pub async fn fetch_registered_tapplets(
             return Err(e.to_string());
         }
     };
-    info!("❌ FETCHED MANFIEST {:?}", &tapplets);
+    info!("❌ FETCHED MANFIEST");
     let mut store = SqliteStore::new(db_connection.0.clone());
 
     for tapplet_manifest in tapplets.registered_tapplets.values() {
@@ -2453,10 +2451,6 @@ pub async fn fetch_registered_tapplets(
         //     })
         //   )?;
         // }
-        info!(
-            "❌ FETCHED MANFIEST created tapp db{:?}",
-            &tapplets.registered_tapplets.len()
-        );
 
         for (version, version_data) in tapplet_manifest.versions.iter() {
             let _ = store
@@ -2722,8 +2716,8 @@ pub async fn add_dev_tapplet(
         endpoint: &endpoint,
         package_name: &tapp_config.package_name,
         display_name: &tapp_config.display_name,
-        csp: &tapp_config.csp,
-        tari_permissions: &tapp_config.permissions.all_permissions_to_string(),
+        csp: "default-src 'self';", //&tapp_config.csp, //TODO set default csp and then ask for permissions
+        tari_permissions: "requiredPermissions:[], optionalPermissions:[]", //&tapp_config.permissions.all_permissions_to_string(),
     };
     match store.create(&new_dev_tapplet) {
         Ok(dev_tapplet) => {
@@ -2738,11 +2732,14 @@ pub async fn add_dev_tapplet(
 }
 
 #[tauri::command]
-pub fn read_dev_tapplets(
+pub fn read_dev_tapplets_db(
     db_connection: tauri::State<'_, DatabaseConnection>,
-) -> Result<Vec<DevTapplet>, Error> {
-    let mut store = SqliteStore::new(db_connection.0.clone());
-    store.get_all()
+) -> Result<Vec<DevTapplet>, String> {
+    let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
+    match tapplet_store.get_all_dev_tapplets() {
+        Ok(dev_tapplets) => Ok(dev_tapplets),
+        Err(e) => Err(e.to_string()),
+    }
 }
 
 #[tauri::command]
@@ -2767,23 +2764,18 @@ pub fn delete_dev_tapplet(
 
 #[tauri::command]
 pub fn update_dev_tapp_db(
-    id: Option<i32>,
+    id: i32,
     tapplet: UpdateDevTapplet,
     db_connection: tauri::State<'_, DatabaseConnection>,
 ) -> Result<usize, Error> {
     let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
     info!(target: LOG_TARGET, "🛠️ UPDATE DEV TAPPLET DB {:?}", &tapplet.csp);
 
-    let dev_tapplet = match id {
-        Some(id) => tapplet_store.get_by_id(id)?,
-        None => {
-            return Err(Error::DatabaseError(
-                crate::tapplets::error::DatabaseError::FailedToUpdate {
-                    entity_name: tapplet.display_name,
-                },
-            ))
-        }
-    };
+    let dev_tapplet: DevTapplet = tapplet_store.get_by_id(id)?;
+    info!(target: LOG_TARGET, "🛠️ BEFORE {:?}", dev_tapplet.csp);
 
-    tapplet_store.update(dev_tapplet, &tapplet)
+    let size = tapplet_store.update(dev_tapplet, &tapplet)?;
+    let dev_updated: DevTapplet = tapplet_store.get_by_id(id)?;
+    info!(target: LOG_TARGET, "🛠️ after {:?}", dev_updated.csp);
+    return Ok(size);
 }

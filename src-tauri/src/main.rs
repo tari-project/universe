@@ -658,7 +658,7 @@ fn main() {
             commands::update_installed_tapp_db,
             commands::delete_installed_tapplet,
             commands::add_dev_tapplet,
-            commands::read_dev_tapplets,
+            commands::read_dev_tapplets_db,
             commands::delete_dev_tapplet,
             commands::update_installed_tapplet
         ])
