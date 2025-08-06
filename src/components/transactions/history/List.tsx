@@ -31,6 +31,7 @@ export function List({ setIsScrolled, targetRef }: Props) {
     const currentBlockHeight = useMiningMetricsStore((s) => s.base_node_status.block_height);
     const coldWalletAddress = useWalletStore((s) => s.cold_wallet_address);
     const tariAddress = useWalletStore((s) => s.tari_address_base58);
+    const tx_history_filter = useWalletStore((s) => s.tx_history_filter);
     const tariAddressType = useWalletStore((s) => s.tari_address_type);
     const { data, fetchNextPage, isFetchingNextPage, isFetching, hasNextPage } = useFetchTxHistory();
     const [baseTx, setBaseTx] = useState<CombinedBridgeWalletTransaction[]>(
@@ -40,6 +41,7 @@ export function List({ setIsScrolled, targetRef }: Props) {
     const coldWalletAddressRef = useRef(coldWalletAddress);
     const isFetchBridgeTransactionsFailed = useRef(false);
     const convertedTransactions: RefObject<CombinedBridgeWalletTransaction[]> = useRef([]);
+    const lastTransactionFilter = useRef(tx_history_filter);
 
     // setRefs
     useEffect(() => {
@@ -68,14 +70,20 @@ export function List({ setIsScrolled, targetRef }: Props) {
             // We are caching converted transactions to avoid re-converting all of them on every execution
             // If someone have 200 transactions it is more efficient to convert only new ~20 then 200
             const sanitizedData = dataPagesRef.current?.flatMap((page) => page) || [];
-            const newTransactions = sanitizedData.slice(convertedTransactions.current.length);
+            const startingIndex =
+                lastTransactionFilter.current === tx_history_filter ? convertedTransactions.current.length : 0;
+            const newTransactions = sanitizedData.slice(startingIndex);
             const converted = newTransactions.map((transaction) =>
                 convertWalletTransactionToCombinedTransaction(transaction)
             );
+            if (lastTransactionFilter.current !== tx_history_filter) {
+                convertedTransactions.current = [];
+                lastTransactionFilter.current = tx_history_filter;
+            }
             convertedTransactions.current = [...convertedTransactions.current, ...converted];
             setBaseTx(convertedTransactions.current);
         }
-    }, [data?.pages?.length]); // Re-run only when the number of pages changes
+    }, [data?.pages?.length, tx_history_filter]); // Re-run only when the number of pages changes
 
     useEffect(() => {
         const isThereANewBridgeTransaction = baseTx.find(
