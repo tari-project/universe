@@ -22,6 +22,7 @@ import { Button } from '@app/components/elements/buttons/Button.tsx';
 
 import { getTxTitle, getTxTypeByStatus } from '@app/utils/getTxStatus.ts';
 import { TransactionDirection } from '@app/types/transactions.ts';
+import BridgeItemHover from './BridgeHoveredItem.tsx';
 
 function BaseItem({ title, time, value, direction, chip, onClick }: BaseItemProps) {
     // note re. isPositiveValue:
@@ -72,16 +73,15 @@ function HistoryListItem({ item, index, itemIsNew = false, setDetailsItem }: His
     const itemTitle = getTxTitle(item);
     const earningsFormatted = hideWalletBalance
         ? `***`
-        : formatNumber(item.amount, FormatPreset.XTM_COMPACT).toLowerCase();
-    const itemTime = formatTimeStamp(item.timestamp);
+        : formatNumber(item.tokenAmount, FormatPreset.XTM_COMPACT).toLowerCase();
+    const itemTime = formatTimeStamp(item.createdAt);
 
     const baseItem = (
         <BaseItem
             title={itemTitle}
             time={itemTime}
             value={earningsFormatted}
-            direction={item.direction}
-            status={item?.status}
+            direction={item.walletTransactionDetails.direction}
             chip={itemIsNew ? t('new') : ''}
         />
     );
@@ -107,7 +107,11 @@ function HistoryListItem({ item, index, itemIsNew = false, setDetailsItem }: His
             onMouseEnter={() => setHovering(true)}
             onMouseLeave={() => setHovering(false)}
         >
-            <AnimatePresence>{hovering && <ItemHover item={item} button={detailsButton} />}</AnimatePresence>
+            {item.bridgeTransactionDetails ? (
+                <AnimatePresence>{hovering && <BridgeItemHover button={detailsButton} />}</AnimatePresence>
+            ) : (
+                <AnimatePresence>{hovering && <ItemHover item={item} button={detailsButton} />}</AnimatePresence>
+            )}
             {baseItem}
         </ItemWrapper>
     );

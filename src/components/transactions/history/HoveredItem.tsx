@@ -1,7 +1,6 @@
-import { ReactNode } from 'react';
+import React, { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { TransactionInfo } from '@app/types/app-status.ts';
 import { GIFT_GEMS, useAirdropStore } from '@app/store/useAirdropStore.ts';
 import { useShareRewardStore } from '@app/store/useShareRewardStore.ts';
 
@@ -10,13 +9,14 @@ import { handleWinReplay } from '@app/store/useBlockchainVisualisationStore.ts';
 import { ReplaySVG } from '@app/assets/icons/replay.tsx';
 import { ButtonWrapper, FlexButton, GemImage, GemPill, HoverWrapper, ReplayButton } from './ListItem.styles.ts';
 import { useConfigUIStore } from '@app/store/useAppConfigStore.ts';
+import { CombinedBridgeWalletTransaction } from '@app/store/useWalletStore.ts';
 
 interface Props {
-    item: TransactionInfo;
-    button?: ReactNode;
+    item: CombinedBridgeWalletTransaction;
+    button?: React.ReactNode;
 }
 
-export default function ItemHover({ item, button }: Props) {
+const ItemHover = memo(function ItemHover({ item, button }: Props) {
     const { t } = useTranslation('sidebar', { useSuspense: false });
     const sharingEnabled = useConfigUIStore((s) => s.sharing_enabled);
     const airdropTokens = useAirdropStore((s) => s.airdropTokens);
@@ -55,4 +55,6 @@ export default function ItemHover({ item, button }: Props) {
             </ButtonWrapper>
         </HoverWrapper>
     );
-}
+});
+
+export default ItemHover;
