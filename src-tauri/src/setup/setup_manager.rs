@@ -33,7 +33,7 @@ use super::{
     phase_node::NodeSetupPhase, phase_wallet::WalletSetupPhase, utils::phase_builder::PhaseBuilder,
 };
 use crate::app_in_memory_config::{MinerType, DEFAULT_EXCHANGE_ID};
-use crate::commands::{start_cpu_mining, start_gpu_mining, stop_cpu_mining, stop_gpu_mining};
+use crate::commands::{start_cpu_mining, start_gpu_mining};
 use crate::configs::config_core::ConfigCoreContent;
 use crate::configs::config_pools::{ConfigPools, ConfigPoolsContent};
 use crate::configs::config_ui::WalletUIMode;
@@ -60,7 +60,7 @@ use std::{
     sync::LazyLock,
     time::Duration,
 };
-use tauri::{AppHandle, Listener, Manager, State};
+use tauri::{AppHandle, Listener, Manager};
 use tokio::{
     select,
     sync::{watch::Sender, Mutex, RwLock},
@@ -747,32 +747,70 @@ impl SetupManager {
         self.setup_mining_phase().await;
     }
 
-    pub async fn turn_off_gpu_pool_feature(&self) {
+    /// Used in handle_unhealthy for graxil miner
+    /// Should be triggered after x amount of time passed of graxil being unhealthy
+    pub async fn turn_off_gpu_pool_feature(&self) -> Result<(), anyhow::Error> {
         info!(target: LOG_TARGET, "Turning off GPU Pool feature");
 
-        let _unused =
-            ConfigPools::update_field(ConfigPoolsContent::set_gpu_pool_enabled, false).await;
-
         let app_handle = self.app_handle().await;
         let app_state = app_handle.state::<UniverseAppState>().clone();
 
-        stop_cpu_mining(app_state.clone()).await;
-        start_cpu_mining(app_state.clone(), app_handle.clone()).await;
+        // At the point of calling this method gpu miner will be stopped by do_health_check method
+        // It handles stopping the process of miner but is not stopping the status updates
+        // So we need to stop the status updates here as its more complicated to do it in stop method called by do_health_check
+
+        app_state
+            .gpu_miner_sha
+            .write()
+            .await
+            .stop_status_updates()
+            .await?;
+
+        // Updates the config to disable GPU Pool feature in next resolve_setup_features call
+        ConfigPools::update_field(ConfigPoolsContent::set_gpu_pool_enabled, false).await?;
+        // TODO Implement solution for telling frontend about one field updates in configs without emitting full config or adding event per field
+        EventsEmitter::emit_pools_config_loaded(&ConfigPools::content().await).await;
+
+        // Start mining will now pickup that GPU Pool is turn off and will start glytex instead
+        start_gpu_mining(app_state.clone(), app_handle.clone())
+            .await
+            .map_err(|e| anyhow::Error::msg(e))?;
+
+        Ok(())
     }
 
-    pub async fn turn_off_cpu_pool_feature(&self) {
+    /// Used in handle_unhealthy for xmrig miner
+    /// Should be triggered after x amount of time passed of xmrig being unhealthy
+    /// It will make only difference in case of pool connection issues as we do not use other cpu miner
+    pub async fn turn_off_cpu_pool_feature(&self) -> Result<(), anyhow::Error> {
         info!(target: LOG_TARGET, "Turning off CPU Pool feature");
-
-        let _unused =
-            ConfigPools::update_field(ConfigPoolsContent::set_cpu_pool_enabled, false).await;
-
-        self.restart_phases(vec![SetupPhase::Mining]).await;
-
         let app_handle = self.app_handle().await;
         let app_state = app_handle.state::<UniverseAppState>().clone();
 
-        stop_gpu_mining(app_state.clone()).await;
-        start_gpu_mining(app_state.clone(), app_handle.clone()).await;
+        // At the point of calling this method cpu miner will be stopped by do_health_check method
+        // It handles stopping the process of miner but is not stopping the status updates
+        // So we need to stop the status updates here as its more complicated to do it in stop method called by do_health_check
+
+        app_state
+            .cpu_miner
+            .write()
+            .await
+            .stop_status_updates()
+            .await?;
+
+        // Updates the config to disable CPU Pool feature in next resolve_setup_features call
+        ConfigPools::update_field(ConfigPoolsContent::set_cpu_pool_enabled, false).await?;
+        // TODO Implement solution for telling frontend about one field updates in configs without emitting full config or adding event per field
+        EventsEmitter::emit_pools_config_loaded(&ConfigPools::content().await).await;
+
+        // Solo mining will require mmproxy to be running
+        self.restart_phases(vec![SetupPhase::Mining]).await;
+
+        start_cpu_mining(app_state.clone(), app_handle.clone())
+            .await
+            .map_err(|e| anyhow::Error::msg(e))?;
+
+        Ok(())
     }
 
     pub async fn handle_switch_to_local_node(&self) {

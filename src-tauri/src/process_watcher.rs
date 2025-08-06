@@ -162,6 +162,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
             watch_timer.set_missed_tick_behavior(MissedTickBehavior::Delay);
             let mut warning_count = 0;
             let mut duration_since_last_healthy_status = Duration::from_secs(0);
+            let mut unhealthy_timer = Instant::now();
             // read events such as stdout
             loop {
                 select! {
@@ -173,7 +174,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                             status_monitor3,
                             name.clone(),
                             &mut uptime,
-                            &mut duration_since_last_healthy_status,
+                            duration_since_last_healthy_status,
                             expected_startup_time,
                             health_timeout,
                             global_shutdown_signal.clone(),
@@ -197,6 +198,9 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                 if let Err(_unused) = stats_broadcast.send(stats.clone()) {
                     warn!(target: LOG_TARGET, "Failed to broadcast process watcher stats");
                 }
+
+                duration_since_last_healthy_status += unhealthy_timer.elapsed();
+                unhealthy_timer = Instant::now();
             }
         }));
         Ok(())
@@ -227,6 +231,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
     }
 
     pub async fn stop(&mut self) -> Result<i32, anyhow::Error> {
+        info!(target: LOG_TARGET, "Stopping process watcher for {}", self.adapter.name());
         self.internal_shutdown.trigger();
         if let Some(task) = self.watcher_task.take() {
             let exit_code = task.await??;
@@ -243,7 +248,7 @@ async fn do_health_check<TStatusMonitor: StatusMonitor, TProcessInstance: Proces
     status_monitor3: TStatusMonitor,
     name: String,
     uptime: &mut Instant,
-    duration_since_last_healthy_status: &mut Duration,
+    duration_since_last_healthy_status: Duration,
     expected_startup_time: Duration,
     health_timeout: Duration,
     global_shutdown_signal: ShutdownSignal,
@@ -307,7 +312,6 @@ async fn do_health_check<TStatusMonitor: StatusMonitor, TProcessInstance: Proces
         && !inner_shutdown.is_triggered()
     {
         stats.num_failures += 1;
-        *duration_since_last_healthy_status += health_check_duration;
         if uptime.elapsed() < expected_startup_time && !ping_failed {
             warn!(target: LOG_TARGET, "{name} is not healthy. Waiting for startup time to elapse");
         } else {
@@ -336,7 +340,7 @@ async fn do_health_check<TStatusMonitor: StatusMonitor, TProcessInstance: Proces
             stats.num_restarts += 1;
             stats.current_uptime = uptime.elapsed();
             match status_monitor3
-                .handle_unhealthy(duration_since_last_healthy_status.clone())
+                .handle_unhealthy(duration_since_last_healthy_status)
                 .await
             {
                 Ok(HandleUnhealthyResult::Continue) => {
@@ -356,7 +360,6 @@ async fn do_health_check<TStatusMonitor: StatusMonitor, TProcessInstance: Proces
         }
     } else {
         stats.current_uptime = uptime.elapsed();
-        duration_since_last_healthy_status = Duration::from_secs(0);
     }
     Ok(None)
 }

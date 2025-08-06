@@ -455,7 +455,7 @@ impl StatusMonitor for NodeStatusMonitor {
 
     async fn handle_unhealthy(
         &self,
-        duration_since_last_healthy_status: Duration,
+        _duration_since_last_healthy_status: Duration,
     ) -> Result<HandleUnhealthyResult, anyhow::Error> {
         if self.node_type == NodeType::Remote {
             // Do not clear local node files for remote nodes

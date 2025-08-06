@@ -349,7 +349,7 @@ impl StatusMonitor for TorStatusMonitor {
 
     async fn handle_unhealthy(
         &self,
-        duration_since_last_healthy_status: Duration,
+        _duration_since_last_healthy_status: Duration,
     ) -> Result<HandleUnhealthyResult, anyhow::Error> {
         fs::remove_dir_all(self.base_path.join("tor-data")).await?;
 

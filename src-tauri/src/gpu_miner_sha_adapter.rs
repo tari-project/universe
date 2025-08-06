@@ -34,6 +34,7 @@ use crate::{
         HandleUnhealthyResult, HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec,
         StatusMonitor,
     },
+    setup::setup_manager::SetupManager,
     GpuMinerStatus,
 };
 
@@ -124,7 +125,7 @@ impl ProcessAdapter for GpuMinerShaAdapter {
 
         Ok((
             ProcessInstance {
-                shutdown: inner_shutdown,
+                shutdown: inner_shutdown.clone(),
                 startup_spec: ProcessStartupSpec {
                     file_path: binary_version_path,
                     envs: None,
@@ -164,9 +165,21 @@ impl StatusMonitor for GpuMinerShaStatusMonitor {
         duration_since_last_healthy_status: Duration,
     ) -> Result<HandleUnhealthyResult, anyhow::Error> {
         // Fallback to solo mining if the miner has been unhealthy for more than 30 minutes
-        if duration_since_last_healthy_status.as_secs().gt(60 * 30) {
-            warn!(target: LOG_TARGET, "GpuMinerShaAdapter has been unhealthy for more than 30 minutes. Restarting...");
-            return Ok(HandleUnhealthyResult::Stop);
+        info!(target: LOG_TARGET, "Handling unhealthy status for GpuMinerShaAdapter | Duration since last healthy status: {:?}", duration_since_last_healthy_status.as_secs());
+        if duration_since_last_healthy_status.as_secs().gt(&(60 * 30)) {
+            match SetupManager::get_instance()
+                .turn_off_gpu_pool_feature()
+                .await
+            {
+                Ok(_) => {
+                    info!(target: LOG_TARGET, "GpuMinerShaAdapter: GPU Pool feature turned off due to prolonged unhealthiness.");
+                    return Ok(HandleUnhealthyResult::Stop);
+                }
+                Err(e) => {
+                    warn!(target: LOG_TARGET, "GpuMinerShaAdapter: Failed to turn off GPU Pool feature: {} | Continuing to monitor.", e);
+                    return Ok(HandleUnhealthyResult::Continue);
+                }
+            }
         } else {
             return Ok(HandleUnhealthyResult::Continue);
         }
