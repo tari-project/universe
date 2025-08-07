@@ -27,9 +27,7 @@ use crate::configs::config_wallet::ConfigWalletContent;
 use crate::configs::pools::cpu_pools::CpuPool;
 use crate::configs::trait_config::ConfigImpl;
 use crate::events_emitter::EventsEmitter;
-use crate::pool_status_watcher::{
-    LuckyPoolAdapter, PoolApiAdapter, PoolApiAdapters, SupportXmrPoolAdapter,
-};
+use crate::pool_status_watcher::{LuckyPoolAdapter, PoolApiAdapters, SupportXmrPoolAdapter};
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
 use crate::tasks_tracker::TasksTrackers;
