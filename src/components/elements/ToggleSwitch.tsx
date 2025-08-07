@@ -56,7 +56,8 @@ const Switch = styled.div<{ $hasDecorators?: boolean }>`
               : theme.colors.grey[300]};
 
     border-radius: 24px;
-    transition: 300ms all;
+    transition: background 0.2s ease-in-out;
+
     width: 36px;
     height: 20px;
     padding: 3px 2px;
@@ -90,8 +91,8 @@ const Input = styled.input<{ $isSolid?: boolean; $hasDecorators?: boolean; $isLo
         cursor: not-allowed;
     }
 
-    &:focus + ${Switch} {
-        outline: 3px solid #c9eb00;
+    &:focus-visible + ${Switch} {
+        outline: 2px solid ${({ theme }) => theme.palette.focusOutline};
         outline-offset: 2px;
     }
 
@@ -138,7 +139,7 @@ const Decorator = styled.div<{ $first?: boolean; $checked?: boolean }>`
     height: 20px;
 
     color: ${({ $checked, theme }) => theme.colors.greyscale[$checked ? 50 : 950]};
-    // TODO: revisit and make proper custom component for this
+
     ${({ $first }) =>
         $first
             ? css`
@@ -148,7 +149,7 @@ const Decorator = styled.div<{ $first?: boolean; $checked?: boolean }>`
             : css`
                   top: -1px;
                   right: -3px;
-              `};
+              `}
 `;
 
 interface ToggleSwitchProps extends InputHTMLAttributes<HTMLInputElement> {

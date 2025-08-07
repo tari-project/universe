@@ -62,9 +62,6 @@ static LOG_TARGET: &str = "tari::universe::phase_wallet";
 const WALLET_MIGRATION_NONCE: u64 = 1;
 
 #[derive(Clone, Default)]
-pub struct WalletSetupPhaseOutput {}
-
-#[derive(Clone, Default)]
 pub struct WalletSetupPhaseAppConfiguration {
     use_tor: bool,
 }
