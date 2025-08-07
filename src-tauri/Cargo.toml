@@ -9,6 +9,7 @@ version = "1.5.5"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [build-dependencies]
+dotenvy = "0.15.7"
 embed-resource = "2.5.0"
 tauri-build = { version = "2", features = ["isolation"] }
 
@@ -27,7 +28,7 @@ console-subscriber = "0.4.1"
 der = "0.7.9"
 device_query = "2.1.0"
 dirs = "5.0.1"
-dotenv = "0.15.0"
+dotenvy = "0.15.7"
 dunce = "1.0.5"
 dyn-clone = "1.0.17"
 fix-path-env = { git = "https://github.com/tauri-apps/fix-path-env-rs" }

@@ -205,11 +205,6 @@ struct FEPayload {
 
 #[allow(clippy::too_many_lines)]
 fn main() {
-    // If an env var for TU_CONFIG is set, use it to load a dotenv file.
-    if let Some(env) = option_env!("TU_CONFIG") {
-        let _ = dotenv::from_filename(format!("env.{}", env)).ok();
-    }
-
     #[cfg(target_os = "linux")]
     {
         if std::path::Path::new("/dev/dri").exists()
