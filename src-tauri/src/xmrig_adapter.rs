@@ -237,7 +237,7 @@ impl StatusMonitor for XmrigStatusMonitor {
     ) -> Result<HandleUnhealthyResult, anyhow::Error> {
         // Fallback to solo mining if the miner has been unhealthy for more than 30 minutes
         info!(target: LOG_TARGET, "Handling unhealthy status for Xmrig | Duration since last healthy status: {:?}", duration_since_last_healthy_status.as_secs());
-        if duration_since_last_healthy_status.as_secs().gt(&(60 * 1)) {
+        if duration_since_last_healthy_status.as_secs().gt(&(60 * 30)) {
             match SetupManager::get_instance()
                 .turn_off_cpu_pool_feature()
                 .await
