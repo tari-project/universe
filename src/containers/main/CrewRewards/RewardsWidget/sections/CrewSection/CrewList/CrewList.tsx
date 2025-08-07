@@ -11,11 +11,12 @@ interface Props {
     members: CrewMember[];
     minRequirements?: MinRequirements;
     isLoading: boolean;
+    isFiltered?: boolean;
     error: Error | null;
     onRefresh: (options?: RefetchOptions) => Promise<QueryObserverResult<CrewMembersResponse, Error>>;
 }
 
-export default function CrewList({ members, minRequirements, isLoading, error, onRefresh }: Props) {
+export default function CrewList({ members, minRequirements, isLoading, error, onRefresh, isFiltered = false }: Props) {
     const { t } = useTranslation();
 
     if (isLoading) {
@@ -63,12 +64,36 @@ export default function CrewList({ members, minRequirements, isLoading, error, o
         )
     );
 
-    // Filter by status for UI organization
-    const completedList = transformedEntries?.filter((item) => item.status === 'completed');
-    const inProgressList = transformedEntries?.filter((item) => item.status === 'in_progress');
-    const needsNudgeList = transformedEntries?.filter((item) => item.status === 'needs_nudge');
+    const isEmpty = transformedEntries.length === 0;
 
-    const isEmpty = !completedList.length && !inProgressList.length && !needsNudgeList.length;
+    if (isFiltered) {
+        return (
+            <OuterWrapper>
+                <Wrapper>
+                    <Inside>
+                        {isEmpty ? (
+                            <MessageWrapper>
+                                <MessageText>{'No crew members found'}</MessageText>
+                            </MessageWrapper>
+                        ) : (
+                            <>
+                                <ListGroup>
+                                    {transformedEntries.map((item) => (
+                                        <CrewEntry key={item.id} entry={item} isClaimed={item.isClaimed} />
+                                    ))}
+                                </ListGroup>
+                            </>
+                        )}
+                    </Inside>
+                </Wrapper>
+            </OuterWrapper>
+        );
+    }
+
+    // Filter by status for UI organization
+    const completedList = transformedEntries?.filter((item) => item.progress === 100);
+    const inProgressList = transformedEntries?.filter((item) => item.progress < 100 && item.status !== 'needs_nudge');
+    const needsNudgeList = transformedEntries?.filter((item) => item.status === 'needs_nudge');
 
     return (
         <OuterWrapper>
