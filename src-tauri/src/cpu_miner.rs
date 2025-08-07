@@ -281,11 +281,20 @@ impl CpuMiner {
     }
 
     pub async fn stop(&mut self) -> Result<(), anyhow::Error> {
-        let mut lock = self.watcher.write().await;
-        lock.stop().await?;
+        {
+            let mut lock: tokio::sync::RwLockWriteGuard<'_, ProcessWatcher<XmrigAdapter>> =
+                self.watcher.write().await;
+            lock.stop().await?;
+        }
         let _result = self
             .cpu_miner_status_watch_tx
             .send_replace(CpuMinerStatus::default());
+        self.stop_status_updates().await?;
+        Ok(())
+    }
+
+    pub async fn stop_status_updates(&mut self) -> Result<(), anyhow::Error> {
+        info!(target: LOG_TARGET, "Stopping status updates");
         self.pool_status_shutdown_signal.trigger();
         Ok(())
     }

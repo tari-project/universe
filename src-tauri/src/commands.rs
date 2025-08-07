@@ -40,8 +40,7 @@ use crate::external_dependencies::{
     ExternalDependencies, ExternalDependency, RequiredExternalDependency,
 };
 use crate::gpu_miner::EngineType;
-use crate::gpu_miner_adapter::{GpuMinerStatus, GpuNodeSource};
-use crate::gpu_status_file::GpuStatus;
+use crate::gpu_miner_adapter::GpuNodeSource;
 use crate::internal_wallet::{mnemonic_to_tari_cipher_seed, InternalWallet, PaperWalletConfig};
 use crate::node::node_adapter::BaseNodeStatus;
 use crate::node::node_manager::NodeType;
@@ -110,12 +109,6 @@ pub struct ApplicationsVersions {
     sha_p2pool: ApplicationsInformation,
     xtrgpuminer: ApplicationsInformation,
     bridge: ApplicationsInformation,
-}
-
-#[derive(Debug, Serialize, Clone)]
-pub struct GpuMinerMetrics {
-    hardware: Vec<GpuStatus>,
-    mining: GpuMinerStatus,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -233,7 +226,7 @@ pub async fn select_exchange_miner(
     EventsEmitter::emit_exchange_id_changed(exchange_miner.id.clone()).await;
 
     SetupManager::get_instance()
-        .restart_phases(app_handle, vec![SetupPhase::Wallet, SetupPhase::Mining])
+        .restart_phases(vec![SetupPhase::Wallet, SetupPhase::Mining])
         .await;
 
     Ok(())
@@ -514,10 +507,7 @@ pub async fn get_p2pool_connections(
 }
 
 #[tauri::command]
-pub async fn set_p2pool_stats_server_port(
-    port: Option<u16>,
-    app_handle: tauri::AppHandle,
-) -> Result<(), InvokeError> {
+pub async fn set_p2pool_stats_server_port(port: Option<u16>) -> Result<(), InvokeError> {
     if let Some(port) = port {
         if port.le(&1024) || port.gt(&65535) {
             return Err(InvokeError::from("Port must be between 1024 and 65535"));
@@ -533,7 +523,7 @@ pub async fn set_p2pool_stats_server_port(
     .map_err(InvokeError::from_anyhow)?;
 
     SetupManager::get_instance()
-        .restart_phases_from_queue(app_handle)
+        .restart_phases_from_queue()
         .await;
     Ok(())
 }
@@ -829,7 +819,7 @@ pub async fn import_seed_words(
         .map_err(|e| e.to_string())?;
 
     SetupManager::get_instance()
-        .resume_phases(app_handle, vec![SetupPhase::Wallet, SetupPhase::Mining])
+        .resume_phases(vec![SetupPhase::Wallet, SetupPhase::Mining])
         .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
@@ -861,7 +851,7 @@ pub async fn revert_to_internal_wallet(
     EventsEmitter::emit_exchange_id_changed(DEFAULT_EXCHANGE_ID.to_string()).await;
 
     SetupManager::get_instance()
-        .resume_phases(app_handle, vec![SetupPhase::Wallet, SetupPhase::Mining])
+        .resume_phases(vec![SetupPhase::Wallet, SetupPhase::Mining])
         .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
@@ -1298,10 +1288,7 @@ pub async fn update_custom_mining_mode(
 }
 
 #[tauri::command]
-pub async fn set_monero_address(
-    monero_address: String,
-    app_handle: tauri::AppHandle,
-) -> Result<(), InvokeError> {
+pub async fn set_monero_address(monero_address: String) -> Result<(), InvokeError> {
     let timer = Instant::now();
     SetupManager::get_instance()
         .add_phases_to_restart_queue(vec![SetupPhase::Mining])
@@ -1312,7 +1299,7 @@ pub async fn set_monero_address(
         .map_err(InvokeError::from_anyhow)?;
 
     SetupManager::get_instance()
-        .restart_phases_from_queue(app_handle)
+        .restart_phases_from_queue()
         .await;
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "set_monero_address took too long: {:?}", timer.elapsed());
@@ -1324,7 +1311,6 @@ pub async fn set_monero_address(
 pub async fn set_monerod_config(
     use_monero_fail: bool,
     monero_nodes: Vec<String>,
-    app_handle: tauri::AppHandle,
 ) -> Result<(), InvokeError> {
     let timer = Instant::now();
     info!(target: LOG_TARGET, "[set_monerod_config] called with use_monero_fail: {use_monero_fail:?}, monero_nodes: {monero_nodes:?}");
@@ -1345,7 +1331,7 @@ pub async fn set_monerod_config(
     .map_err(InvokeError::from_anyhow)?;
 
     SetupManager::get_instance()
-        .restart_phases_from_queue(app_handle)
+        .restart_phases_from_queue()
         .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
@@ -1356,10 +1342,7 @@ pub async fn set_monerod_config(
 }
 
 #[tauri::command]
-pub async fn set_p2pool_enabled(
-    p2pool_enabled: bool,
-    app_handle: tauri::AppHandle,
-) -> Result<(), InvokeError> {
+pub async fn set_p2pool_enabled(p2pool_enabled: bool) -> Result<(), InvokeError> {
     let timer = Instant::now();
     ConfigCore::update_field_requires_restart(
         ConfigCoreContent::set_is_p2pool_enabled,
@@ -1370,7 +1353,7 @@ pub async fn set_p2pool_enabled(
     .map_err(InvokeError::from_anyhow)?;
 
     SetupManager::get_instance()
-        .restart_phases_from_queue(app_handle)
+        .restart_phases_from_queue()
         .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
@@ -1429,7 +1412,6 @@ pub async fn set_tor_config(
     config: TorConfig,
     _window: tauri::Window,
     state: tauri::State<'_, UniverseAppState>,
-    app_handle: tauri::AppHandle,
 ) -> Result<TorConfig, String> {
     let timer = Instant::now();
     info!(target: LOG_TARGET, "[set_tor_config] called with config: {config:?}");
@@ -1440,10 +1422,11 @@ pub async fn set_tor_config(
         .map_err(|e| e.to_string())?;
 
     SetupManager::get_instance()
-        .restart_phases(
-            app_handle,
-            vec![SetupPhase::Node, SetupPhase::Wallet, SetupPhase::Mining],
-        )
+        .restart_phases(vec![
+            SetupPhase::Node,
+            SetupPhase::Wallet,
+            SetupPhase::Mining,
+        ])
         .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
@@ -1464,7 +1447,7 @@ pub async fn set_use_tor(use_tor: bool, app_handle: tauri::AppHandle) -> Result<
     .map_err(InvokeError::from_anyhow)?;
 
     SetupManager::get_instance()
-        .restart_phases_from_queue(app_handle.clone())
+        .restart_phases_from_queue()
         .await;
 
     let config_dir = app_handle
@@ -1503,10 +1486,7 @@ pub async fn set_visual_mode(enabled: bool) -> Result<(), InvokeError> {
 
 #[allow(clippy::too_many_lines)]
 #[tauri::command]
-pub async fn set_airdrop_tokens(
-    airdrop_tokens: Option<AirdropTokens>,
-    app_handle: tauri::AppHandle,
-) -> Result<(), InvokeError> {
+pub async fn set_airdrop_tokens(airdrop_tokens: Option<AirdropTokens>) -> Result<(), InvokeError> {
     let old_id = ConfigCore::content()
         .await
         .airdrop_tokens()
@@ -1528,7 +1508,7 @@ pub async fn set_airdrop_tokens(
     if user_id_changed {
         // If the user id changed, we need to restart the mining phases to ensure that the new telemetry_id ( unique_string value )is used
         SetupManager::get_instance()
-            .restart_phases(app_handle.clone(), vec![SetupPhase::Mining])
+            .restart_phases(vec![SetupPhase::Mining])
             .await;
     }
     Ok(())
@@ -1767,7 +1747,7 @@ pub async fn stop_gpu_mining(state: tauri::State<'_, UniverseAppState>) -> Resul
 }
 
 #[tauri::command]
-pub async fn toggle_cpu_pool_mining(enabled: bool, app: tauri::AppHandle) -> Result<(), String> {
+pub async fn toggle_cpu_pool_mining(enabled: bool) -> Result<(), String> {
     let timer = Instant::now();
 
     ConfigPools::update_field(ConfigPoolsContent::set_cpu_pool_enabled, enabled)
@@ -1775,7 +1755,7 @@ pub async fn toggle_cpu_pool_mining(enabled: bool, app: tauri::AppHandle) -> Res
         .map_err(|e| e.to_string())?;
 
     SetupManager::get_instance()
-        .restart_phases(app.clone(), vec![SetupPhase::Mining])
+        .restart_phases(vec![SetupPhase::Mining])
         .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
@@ -1993,12 +1973,10 @@ pub async fn websocket_connect(
 }
 
 #[tauri::command]
-pub async fn reconnect(app_handle: tauri::AppHandle) -> Result<(), String> {
+pub async fn reconnect() -> Result<(), String> {
     EventsEmitter::emit_connection_status_changed(ConnectionStatusPayload::InProgress).await;
     let setup_manager = SetupManager::get_instance();
-    setup_manager
-        .restart_phases(app_handle, SetupPhase::all())
-        .await;
+    setup_manager.restart_phases(SetupPhase::all()).await;
     Ok(())
 }
 
@@ -2096,9 +2074,9 @@ pub fn validate_minotari_amount(
 }
 
 #[tauri::command]
-pub async fn trigger_phases_restart(app_handle: tauri::AppHandle) -> Result<(), InvokeError> {
+pub async fn trigger_phases_restart() -> Result<(), InvokeError> {
     SetupManager::get_instance()
-        .restart_phases_from_queue(app_handle)
+        .restart_phases_from_queue()
         .await;
 
     Ok(())
@@ -2107,8 +2085,8 @@ pub async fn trigger_phases_restart(app_handle: tauri::AppHandle) -> Result<(), 
 #[tauri::command]
 pub async fn set_node_type(
     mut node_type: NodeType,
-    app_handle: tauri::AppHandle,
     state: tauri::State<'_, UniverseAppState>,
+    app_handle: tauri::AppHandle,
 ) -> Result<(), InvokeError> {
     // map LocalAfterRemote or unknown value to Local
     if node_type != NodeType::Local
@@ -2147,7 +2125,7 @@ pub async fn set_node_type(
     EventsManager::handle_node_type_update(&app_handle).await;
 
     SetupManager::get_instance()
-        .restart_phases_from_queue(app_handle)
+        .restart_phases_from_queue()
         .await;
 
     Ok(())
@@ -2326,7 +2304,7 @@ pub async fn refresh_wallet_history(
     EventsEmitter::emit_init_wallet_scanning_progress(0, node_status.block_height, 0.0).await;
 
     SetupManager::get_instance()
-        .resume_phases(app_handle, vec![SetupPhase::Wallet])
+        .resume_phases(vec![SetupPhase::Wallet])
         .await;
 
     Ok(())

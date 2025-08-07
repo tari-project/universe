@@ -672,7 +672,7 @@ fn main() {
                     SetupManager::get_instance()
                         .start_setup(handle_clone.clone())
                         .await;
-                    SetupManager::spawn_sleep_mode_handler(handle_clone.clone()).await;
+                    SetupManager::spawn_sleep_mode_handler().await;
                 });
             }
             tauri::RunEvent::ExitRequested { api: _, code, .. } => {

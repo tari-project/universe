@@ -52,11 +52,6 @@ use tokio_util::task::TaskTracker;
 static LOG_TARGET: &str = "tari::universe::phase_hardware";
 
 #[derive(Clone, Default)]
-pub struct MiningSetupPhaseOutput {}
-#[derive(Clone, Default)]
-pub struct MiningSetupPhaseSessionConfiguration {}
-
-#[derive(Clone, Default)]
 pub struct MiningSetupPhaseAppConfiguration {
     mmproxy_monero_nodes: Vec<String>,
     mmproxy_use_monero_fail: bool,

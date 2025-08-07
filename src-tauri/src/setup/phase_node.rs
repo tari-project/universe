@@ -60,9 +60,6 @@ use super::{
 static LOG_TARGET: &str = "tari::universe::phase_hardware";
 
 #[derive(Clone, Default)]
-pub struct NodeSetupPhaseOutput {}
-
-#[derive(Clone, Default)]
 pub struct NodeSetupPhaseAppConfiguration {
     use_tor: bool,
     base_node_grpc_address: String,
