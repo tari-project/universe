@@ -31,6 +31,7 @@ const lightPalette: ThemePalette = {
         base: '#fff',
         contrast: '#000000',
         contrastAlpha: colorsAlpha.darkAlpha[5],
+        focusOutline: c.tariPurple[500],
         primary: {
             main: c.tariPurple[600],
             dark: c.tariPurple[700],
