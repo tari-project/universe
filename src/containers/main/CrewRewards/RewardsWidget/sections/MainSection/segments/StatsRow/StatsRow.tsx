@@ -24,7 +24,7 @@ export default function StatsRow() {
 
     const totalFriends = crewData?.totals?.all || 0;
     const activeFriends = crewData?.totals?.active || 0;
-    const bonusXTMEarned = referrerProgress?.totalClaimedRewards || 0;
+    const bonusXTMEarned = (referrerProgress?.totalClaimedRewards || 0) * 1000000;
 
     const isLoading = crewLoading || crewLoading;
     const hasError = !!crewError;
