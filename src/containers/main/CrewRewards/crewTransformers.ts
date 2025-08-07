@@ -98,7 +98,7 @@ export const transformCrewMemberToEntry = (
     const claimableReward = member.rewards.find((r) => r.readyToClaim);
 
     return {
-        id: parseInt(member.id),
+        id: member.id,
         handle: mapHandle(member),
         progress,
         status,
