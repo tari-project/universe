@@ -85,7 +85,7 @@ impl ProcessAdapter for GpuMinerShaAdapter {
             "sha3x".to_string(),
             // --web is needed for the web socket to be open
             "--web".to_string(),
-            "--gpu".to_string()
+            "--gpu".to_string(),
         ];
 
         if let Some(pool_url) = &self.pool_url {
