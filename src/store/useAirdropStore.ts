@@ -128,7 +128,6 @@ export interface CrewMember {
         id: string;
         name: string;
         displayName?: string;
-        referralCode?: string;
         image?: string;
     };
     rewards: CrewMemberReward[];
@@ -178,6 +177,12 @@ export interface CrewMembersResponse {
     totals: CrewMembersTotals;
     minRequirements: MinRequirements;
     memberImages: string[];
+    membersToNudge: {
+        id: string;
+        name: string;
+        displayName?: string;
+        imageUrl?: string;
+    }[];
 }
 
 export interface Reward {

@@ -42,6 +42,7 @@ export default function CrewSection() {
                 isFiltered={activeFilter !== 'all'}
                 members={data?.members || []}
                 minRequirements={data?.minRequirements}
+                membersToNudge={data?.membersToNudge || []}
                 isLoading={isLoading}
                 error={error}
                 onRefresh={refetch}

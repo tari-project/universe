@@ -3,7 +3,6 @@ import {
     ActiveMinersWrapper,
     PhotoWrapper,
     PhotoImage,
-    StatusDot,
     TextWrapper,
     MainText,
     LabelText,

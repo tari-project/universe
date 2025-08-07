@@ -9,6 +9,7 @@ import CrewEntrySkeleton from './CrewEntrySkeleton/CrewEntrySkeleton';
 
 interface Props {
     members: CrewMember[];
+    membersToNudge: CrewMember['user'][];
     minRequirements?: MinRequirements;
     isLoading: boolean;
     isFiltered?: boolean;
@@ -16,7 +17,15 @@ interface Props {
     onRefresh: (options?: RefetchOptions) => Promise<QueryObserverResult<CrewMembersResponse, Error>>;
 }
 
-export default function CrewList({ members, minRequirements, isLoading, error, onRefresh, isFiltered = false }: Props) {
+export default function CrewList({
+    members,
+    membersToNudge,
+    minRequirements,
+    isLoading,
+    error,
+    onRefresh,
+    isFiltered = false,
+}: Props) {
     const { t } = useTranslation();
 
     if (isLoading) {
@@ -94,6 +103,7 @@ export default function CrewList({ members, minRequirements, isLoading, error, o
     const completedList = transformedEntries?.filter((item) => item.progress === 100);
     const inProgressList = transformedEntries?.filter((item) => item.progress < 100 && item.status !== 'needs_nudge');
     const needsNudgeList = transformedEntries?.filter((item) => item.status === 'needs_nudge');
+    console.log(needsNudgeList.length > 0 || membersToNudge.length > 0);
 
     return (
         <OuterWrapper>
@@ -127,15 +137,38 @@ export default function CrewList({ members, minRequirements, isLoading, error, o
                                 </>
                             )}
 
+                            {(needsNudgeList.length > 0 || membersToNudge.length > 0) && (
+                                <CrewDivider text={t('airdrop:crewRewards.crewStatus.needsNudge')} />
+                            )}
+
                             {needsNudgeList.length > 0 && (
-                                <>
-                                    <CrewDivider text={t('airdrop:crewRewards.crewStatus.needsNudge')} />
-                                    <ListGroup>
-                                        {needsNudgeList.map((item) => (
-                                            <CrewEntry key={item.id} entry={item} />
-                                        ))}
-                                    </ListGroup>
-                                </>
+                                <ListGroup>
+                                    {needsNudgeList.map((item) => (
+                                        <CrewEntry key={item.id} entry={item} />
+                                    ))}
+                                </ListGroup>
+                            )}
+
+                            {membersToNudge.length > 0 && (
+                                <ListGroup>
+                                    {membersToNudge.map((item, index) => (
+                                        <CrewEntry
+                                            key={item?.id || index}
+                                            entry={{
+                                                ...item,
+                                                id: item?.id || '',
+                                                claimableRewardId: undefined,
+                                                handle: item?.name || '',
+                                                user: {
+                                                    avatar: item?.image || '',
+                                                    isOnline: false,
+                                                },
+                                                progress: 0,
+                                                status: 'needs_nudge',
+                                            }}
+                                        />
+                                    ))}
+                                </ListGroup>
                             )}
                         </>
                     )}

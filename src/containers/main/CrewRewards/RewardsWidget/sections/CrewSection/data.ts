@@ -19,7 +19,7 @@ interface TimeRemaining {
 type CrewStatus = 'completed' | 'in_progress' | 'needs_nudge';
 
 interface CrewEntry {
-    id: number;
+    id: string;
     handle: string;
     progress: number;
     status: CrewStatus;
@@ -31,7 +31,7 @@ interface CrewEntry {
 
 const crewList: CrewEntry[] = [
     {
-        id: 1,
+        id: '1',
         handle: '@airdrop_handle',
         progress: 100,
         status: 'completed',
@@ -40,7 +40,7 @@ const crewList: CrewEntry[] = [
         isClaimed: false,
     },
     {
-        id: 2,
+        id: '2',
         handle: '@airdrop_handle',
         progress: 100,
         status: 'completed',
@@ -49,7 +49,7 @@ const crewList: CrewEntry[] = [
         isClaimed: true,
     },
     {
-        id: 3,
+        id: '3',
         handle: '@long_handle_name_that_is_long_and_will_overflow',
         progress: 80,
         status: 'in_progress',
@@ -57,7 +57,7 @@ const crewList: CrewEntry[] = [
         user: { avatar: personImage, isOnline: true },
     },
     {
-        id: 4,
+        id: '4',
         handle: '@airdrop_handle',
         progress: 60,
         status: 'in_progress',
@@ -65,7 +65,7 @@ const crewList: CrewEntry[] = [
         user: { avatar: personImage, isOnline: true },
     },
     {
-        id: 5,
+        id: '5',
         handle: '@airdrop_handle',
         progress: 40,
         status: 'in_progress',
@@ -73,14 +73,14 @@ const crewList: CrewEntry[] = [
         user: { avatar: personImage, isOnline: true },
     },
     {
-        id: 6,
+        id: '6',
         handle: '@airdrop_handle',
         progress: 15,
         status: 'needs_nudge',
         user: { avatar: personImage, isOnline: false },
     },
     {
-        id: 7,
+        id: '7',
         handle: '@airdrop_handle',
         progress: 0,
         status: 'needs_nudge',
