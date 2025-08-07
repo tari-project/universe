@@ -77,7 +77,7 @@ export const Options = styled.div<StyleProps>`
     display: flex;
     flex-direction: column;
     box-shadow: 0 20px 40px 0 rgba(0, 0, 0, 0.3);
-    background: ${({ theme }) => theme.palette.background.paper};
+    background: ${({ theme }) => theme.palette.background.tooltip};
     border-radius: ${({ theme }) => theme.shape.borderRadius.app};
     height: auto;
     transition: all 0.1s ease-in;
