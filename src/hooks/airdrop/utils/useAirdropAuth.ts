@@ -39,9 +39,8 @@ export function useAirdropAuth() {
                 } catch (e) {
                     copyToClipboard(url);
                     console.error('Airdrop auth URL error: ', e);
-                } finally {
-                    setLinkOpened(true);
                 }
+                setLinkOpened(true);
             }
         },
         [copyToClipboard, prepareAirdropLink]

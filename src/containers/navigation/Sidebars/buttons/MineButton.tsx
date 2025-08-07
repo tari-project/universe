@@ -1,4 +1,4 @@
-import { memo, useEffect } from 'react';
+import { useEffect } from 'react';
 import { Button, ConnectionWrapper, Wrapper } from './styles.ts';
 import { useUIStore } from '@app/store/useUIStore.ts';
 import { setSidebarOpen, setShowTapplet } from '@app/store/actions/uiStoreActions';
@@ -6,7 +6,7 @@ import { setAnimationProperties } from '@tari-project/tari-tower';
 import ConnectedPulse from '../../components/VersionChip/ConnectedPulse/ConnectedPulse.tsx';
 import { useConfigUIStore } from '@app/store';
 
-const MineButton = memo(function MineButton() {
+export default function MineButton() {
     const sidebarOpen = useUIStore((s) => s.sidebarOpen);
     const visualMode = useConfigUIStore((s) => s.visual_mode);
     const towerSidebarOffset = useUIStore((s) => s.towerSidebarOffset);
@@ -45,6 +45,4 @@ const MineButton = memo(function MineButton() {
             </Button>
         </Wrapper>
     );
-});
-
-export default MineButton;
+}

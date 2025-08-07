@@ -1,5 +1,3 @@
-'use client';
-
 import { m } from 'motion/react';
 import styled, { keyframes } from 'styled-components';
 

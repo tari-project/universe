@@ -27,6 +27,7 @@ export const useUiMiningStateMachine = () => {
     const noVisualMode = !visualMode || visualModeLoading;
 
     const timeoutIdRef = useRef<NodeJS.Timeout | null>(null);
+    const retryCountRef = useRef(0);
 
     function clearStopTimeout() {
         if (timeoutIdRef.current) {
@@ -36,17 +37,17 @@ export const useUiMiningStateMachine = () => {
     }
 
     const forceAnimationStop = useCallback(() => {
-        let retryCount = 0;
         const maxRetries = 15;
         const interval = 2000; // 2 seconds
 
         const attemptStop = () => {
-            if (animationStatus === 'not-started') {
+            if (animationStatus === 'not-started' || stateTrigger === 'not-started') {
                 console.info(getTowerLogPrefix('info'), `Animation stopped: status=${animationStatus}`);
+                retryCountRef.current = 0;
                 return;
             }
 
-            if (retryCount >= maxRetries) {
+            if (retryCountRef.current >= maxRetries) {
                 console.info(
                     getTowerLogPrefix('warn'),
                     `Animation Stop failed after ${maxRetries} retries: status=${animationStatus}`
@@ -55,21 +56,20 @@ export const useUiMiningStateMachine = () => {
             }
 
             setAnimationState('stop');
-            retryCount++;
 
             timeoutIdRef.current = setTimeout(() => {
                 attemptStop();
             }, interval);
+
+            retryCountRef.current += 1;
         };
 
-        timeoutIdRef.current = setTimeout(() => {
-            attemptStop();
-        }, interval);
+        attemptStop();
 
         return () => {
             clearStopTimeout();
         };
-    }, []);
+    }, [stateTrigger]);
 
     useEffect(() => {
         if (noVisualMode || !towerInitalized) return;

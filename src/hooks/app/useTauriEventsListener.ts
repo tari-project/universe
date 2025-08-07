@@ -196,10 +196,10 @@ const useTauriEventsListener = () => {
                         case 'ShowReleaseNotes':
                             handleShowRelesaeNotes(event.payload);
                             break;
-                        case `NetworkStatus`:
+                        case 'NetworkStatus':
                             setNetworkStatus(event.payload);
                             break;
-                        case `NodeTypeUpdate`:
+                        case 'NodeTypeUpdate':
                             setNodeStoreState(event.payload);
                             break;
                         case 'RestartingPhases':

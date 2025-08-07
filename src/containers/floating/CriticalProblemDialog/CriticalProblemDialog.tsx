@@ -7,11 +7,11 @@ import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard.ts';
 import { useAppStateStore } from '@app/store/appStateStore';
 import { invoke } from '@tauri-apps/api/core';
 
-import { memo, useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { IoCheckmarkOutline, IoCopyOutline } from 'react-icons/io5';
 
-const CriticalProblemDialog = memo(function CriticalProblemDialog() {
+export default function CriticalProblemDialog() {
     const { t } = useTranslation(['setup-progresses', 'common'], { useSuspense: false });
     const criticalProblem = useAppStateStore((s) => s.criticalProblem);
     const [isExiting, setIsExiting] = useState(false);
@@ -39,11 +39,12 @@ const CriticalProblemDialog = memo(function CriticalProblemDialog() {
         setIsExiting(false);
     }, []);
 
-    const handleSendFeedback = useCallback(async () => {
+    const handleSendFeedback = async () => {
+        const feedbackTitle = t(criticalProblem?.title || 'installation-problem', { lng: 'en' });
         try {
             setIsSubmittingLogs(true);
             await invoke('send_feedback', {
-                feedback: t(criticalProblem?.title || 'installation-problem', { lng: 'en' }),
+                feedback: feedbackTitle,
                 includeLogs: true,
             }).then((submissionId) => {
                 setLogsSubmissionId(submissionId);
@@ -52,7 +53,7 @@ const CriticalProblemDialog = memo(function CriticalProblemDialog() {
             console.error('Error sending feedback| handleSendFeedback in CriticalProblemDialog: ', e);
         }
         setIsSubmittingLogs(false);
-    }, [criticalProblem?.title, t]);
+    };
 
     const handleCopyLogsSubmissionId = useCallback(() => {
         if (logsSubmissionId) {
@@ -114,6 +115,4 @@ const CriticalProblemDialog = memo(function CriticalProblemDialog() {
             </DialogContent>
         </Dialog>
     );
-});
-
-export default CriticalProblemDialog;
+}
