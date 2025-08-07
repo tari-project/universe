@@ -23,124 +23,15 @@
 use getset::{Getters, Setters};
 use serde::{Deserialize, Serialize};
 use std::{sync::LazyLock, time::SystemTime};
-use tari_common::configuration::Network;
 use tauri::AppHandle;
 use tokio::sync::RwLock;
 
+use crate::configs::pools::{
+    cpu_pools::{CpuPool, LuckyPoolCpuConfig, SupportXTMCpuPoolConfig},
+    gpu_pools::{GpuPool, LuckyPoolGpuConfig, SupportXTMGpuPoolConfig},
+};
+
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SupportXTMPoolConfig {
-    pool_url: String,
-    stats_url: String,
-    pool_name: String,
-}
-
-impl Default for SupportXTMPoolConfig {
-    fn default() -> Self {
-        Self {
-            pool_url: "pool.sha3x.supportxtm.com:6118".to_string(),
-            stats_url: "https://backend.sha3x.supportxtm.com/api/miner/%TARI_ADDRESS%/stats"
-                .to_string(),
-            pool_name: "SupportXTM".to_string(),
-        }
-    }
-}
-
-impl SupportXTMPoolConfig {
-    pub fn get_stats_url(&self, tari_address: &str) -> String {
-        self.stats_url.replace("%TARI_ADDRESS%", tari_address)
-    }
-    pub fn get_pool_url(&self) -> String {
-        self.pool_url.clone()
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct LuckyGpuPoolConfig {
-    pool_url: String,
-    stats_url: String,
-    pool_name: String,
-}
-
-impl Default for LuckyGpuPoolConfig {
-    fn default() -> Self {
-        Self {
-            pool_url: "pl-eu.luckypool.io:6118".to_string(),
-            stats_url: "https://api-tari.luckypool.io/stats_address?address=%TARI_ADDRESS%"
-                .to_string(),
-            pool_name: "LuckyPool".to_string(),
-        }
-    }
-}
-
-impl LuckyGpuPoolConfig {
-    pub fn get_stats_url(&self, tari_address: &str) -> String {
-        self.stats_url.replace("%TARI_ADDRESS%", tari_address)
-    }
-    pub fn get_pool_url(&self) -> String {
-        self.pool_url.clone()
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum GpuPool {
-    LuckyPool(LuckyGpuPoolConfig),
-    SupportXTMPool(SupportXTMPoolConfig),
-}
-
-fn global_tari_cpu_mining_pool_url() -> String {
-    match Network::get_current_or_user_setting_or_default() {
-        Network::MainNet => "fr-tarirx.luckypool.io:9118".to_string(),
-        Network::NextNet | Network::StageNet => "69.164.205.243:3333".to_string(),
-        Network::LocalNet | Network::Igor | Network::Esmeralda => "69.164.205.243:3333".to_string(),
-    }
-}
-
-fn global_tari_cpu_mining_pool_status_url() -> String {
-    match Network::get_current_or_user_setting_or_default() {
-        Network::MainNet => {
-            "https://api-tari.luckypool.io/stats_address?address=%TARI_ADDRESS%".to_string()
-        }
-        Network::NextNet | Network::StageNet => {
-            "http://69.164.205.243:3333/api/miner/%TARI_ADDRESS%/stats".to_string()
-        }
-        Network::LocalNet | Network::Igor | Network::Esmeralda => {
-            "http://69.164.205.243:3333/api/miner/%TARI_ADDRESS%/stats".to_string()
-        }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct GlobalTariCpuPoolConfig {
-    pool_url: String,
-    stats_url: String,
-    pool_name: String,
-}
-
-impl Default for GlobalTariCpuPoolConfig {
-    fn default() -> Self {
-        Self {
-            pool_url: global_tari_cpu_mining_pool_url(),
-            stats_url: global_tari_cpu_mining_pool_status_url(),
-            pool_name: "GlobalTariPool".to_string(),
-        }
-    }
-}
-
-impl GlobalTariCpuPoolConfig {
-    pub fn get_stats_url(&self, tari_address: &str) -> String {
-        self.stats_url.replace("%TARI_ADDRESS%", tari_address)
-    }
-    pub fn get_pool_url(&self) -> String {
-        self.pool_url.clone()
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum CpuPool {
-    GlobalTariPool(GlobalTariCpuPoolConfig),
-}
 
 static INSTANCE: LazyLock<RwLock<ConfigPools>> = LazyLock::new(|| RwLock::new(ConfigPools::new()));
 
@@ -149,17 +40,26 @@ static INSTANCE: LazyLock<RwLock<ConfigPools>> = LazyLock::new(|| RwLock::new(Co
 #[serde(rename_all = "snake_case")]
 #[serde(default)]
 #[derive(Getters, Setters)]
-#[getset(get = "pub", set = "pub")]
 pub struct ConfigPoolsContent {
     // ======= Config internals =======
+    #[getset(get = "pub", set = "pub")]
     was_config_migrated: bool,
+    #[getset(get = "pub", set = "pub")]
     created_at: SystemTime,
     // ======= Gpu Pool =======
+    #[getset(get = "pub", set = "pub")]
     gpu_pool_enabled: bool,
-    gpu_pool: GpuPool,
+    #[getset(set = "pub")]
+    selected_gpu_pool: String,
+    #[getset(get = "pub", set = "pub")]
+    available_gpu_pools: Vec<GpuPool>,
     // ======= Cpu Pool =======
+    #[getset(get = "pub", set = "pub")]
     cpu_pool_enabled: bool,
-    cpu_pool: CpuPool,
+    #[getset(set = "pub")]
+    selected_cpu_pool: String,
+    #[getset(get = "pub", set = "pub")]
+    available_cpu_pools: Vec<CpuPool>,
 }
 
 impl Default for ConfigPoolsContent {
@@ -170,15 +70,39 @@ impl Default for ConfigPoolsContent {
             created_at: SystemTime::now(),
             // ======= Gpu Pool =======
             gpu_pool_enabled: true,
-            gpu_pool: GpuPool::SupportXTMPool(SupportXTMPoolConfig::default()),
+            selected_gpu_pool: GpuPool::default().name(),
+            available_gpu_pools: vec![
+                GpuPool::SupportXTMPool(SupportXTMGpuPoolConfig::default()),
+                GpuPool::LuckyPool(LuckyPoolGpuConfig::default()),
+            ],
             // ======= Cpu Pool =======
             cpu_pool_enabled: true,
-            cpu_pool: CpuPool::GlobalTariPool(GlobalTariCpuPoolConfig::default()),
+            selected_cpu_pool: CpuPool::default().name(),
+            available_cpu_pools: vec![
+                CpuPool::SupportXTMPool(SupportXTMCpuPoolConfig::default()),
+                CpuPool::LuckyPool(LuckyPoolCpuConfig::default()),
+            ],
         }
     }
 }
 impl ConfigContentImpl for ConfigPoolsContent {}
+impl ConfigPoolsContent {
+    pub fn selected_gpu_pool(&self) -> GpuPool {
+        self.available_gpu_pools
+            .iter()
+            .find(|pool| pool.name() == self.selected_gpu_pool)
+            .cloned()
+            .unwrap_or_else(GpuPool::default)
+    }
 
+    pub fn selected_cpu_pool(&self) -> CpuPool {
+        self.available_cpu_pools
+            .iter()
+            .find(|pool| pool.name() == self.selected_cpu_pool)
+            .cloned()
+            .unwrap_or_else(CpuPool::default)
+    }
+}
 pub struct ConfigPools {
     content: ConfigPoolsContent,
     app_handle: RwLock<Option<AppHandle>>,

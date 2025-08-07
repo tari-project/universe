@@ -30,6 +30,7 @@ import { setCurrentExchangeMinerId } from '../useExchangeStore.ts';
 import { fetchExchangeContent, refreshXCContent } from '@app/hooks/exchanges/fetchExchangeContent.ts';
 import { fetchExchangeList } from '@app/hooks/exchanges/fetchExchanges.ts';
 import { WalletUIMode } from '@app/types/events-payloads.ts';
+import { getSelectedCpuPool, getSelectedGpuPool } from '../selectors/appConfigStoreSelectors.ts';
 
 export const handleConfigCoreLoaded = async (coreConfig: ConfigCore) => {
     useConfigCoreStore.setState((c) => ({ ...c, ...coreConfig }));
@@ -450,6 +451,62 @@ export const toggleGpuPool = async (enabled: boolean) => {
                 void stopGpuMining();
             }
         });
+};
+
+export const changeGpuPool = async (gpuPool: string) => {
+    const previousGpuPool = getSelectedGpuPool(useConfigPoolsStore.getState())?.pool_name;
+    useConfigPoolsStore.setState((c) => ({ ...c, selected_gpu_pool: gpuPool }));
+
+    const isGpuMiningEnabled = useConfigMiningStore.getState().gpu_mining_enabled;
+    const anyMiningInitiated =
+        useMiningStore.getState().isCpuMiningInitiated || useMiningStore.getState().isGpuMiningInitiated;
+    const gpuMining = useMiningMetricsStore.getState().gpu_mining_status.is_mining;
+
+    try {
+        if (gpuMining) {
+            await stopGpuMining();
+        }
+
+        invoke('change_gpu_pool', { gpuPool }).then(() => {
+            console.info('GPU pool changed to:', gpuPool);
+        });
+
+        if (anyMiningInitiated && isGpuMiningEnabled) {
+            await startGpuMining();
+        }
+    } catch (e) {
+        console.error('Could not change GPU pool', e);
+        setError('Could not change GPU pool');
+        useConfigPoolsStore.setState((c) => ({ ...c, selected_gpu_pool: previousGpuPool }));
+    }
+};
+
+export const changeCpuPool = async (cpuPool: string) => {
+    const previousCpuPool = getSelectedCpuPool(useConfigPoolsStore.getState())?.pool_name;
+    useConfigPoolsStore.setState((c) => ({ ...c, selected_cpu_pool: cpuPool }));
+
+    const isCpuMiningEnabled = useConfigMiningStore.getState().cpu_mining_enabled;
+    const anyMiningInitiated =
+        useMiningStore.getState().isCpuMiningInitiated || useMiningStore.getState().isGpuMiningInitiated;
+    const cpuMining = useMiningMetricsStore.getState().cpu_mining_status.is_mining;
+
+    try {
+        if (cpuMining) {
+            await stopCpuMining();
+        }
+
+        invoke('change_cpu_pool', { cpuPool }).then(() => {
+            console.info('CPU pool changed to:', cpuPool);
+        });
+
+        if (anyMiningInitiated && isCpuMiningEnabled) {
+            await startCpuMining();
+        }
+    } catch (e) {
+        console.error('Could not change CPU pool', e);
+        setError('Could not change CPU pool');
+        useConfigPoolsStore.setState((c) => ({ ...c, selected_cpu_pool: previousCpuPool }));
+    }
 };
 
 export const handleWalletUIChanged = (mode: WalletUIMode) => {

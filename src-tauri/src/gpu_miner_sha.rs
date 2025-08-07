@@ -32,10 +32,7 @@ use tokio::{
 
 use crate::{
     binaries::Binaries,
-    configs::{
-        config_pools::{ConfigPools, GpuPool},
-        trait_config::ConfigImpl,
-    },
+    configs::{config_pools::ConfigPools, pools::gpu_pools::GpuPool, trait_config::ConfigImpl},
     gpu_miner_sha_adapter::GpuMinerShaAdapter,
     pool_status_watcher::{LuckyPoolAdapter, PoolApiAdapters, SupportXmrPoolAdapter},
     process_watcher::ProcessWatcher,
@@ -92,7 +89,7 @@ impl GpuMinerSha {
 
         let pools_config = ConfigPools::content().await;
         if *pools_config.gpu_pool_enabled() {
-            match pools_config.gpu_pool() {
+            match pools_config.selected_gpu_pool() {
                 GpuPool::LuckyPool(lucky_pool_config) => {
                     process_watcher.adapter.pool_url = Some(lucky_pool_config.get_pool_url());
                     self.pool_status_watcher = Some(PoolStatusWatcher::new(

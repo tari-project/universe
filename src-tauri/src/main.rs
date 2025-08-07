@@ -632,7 +632,9 @@ fn main() {
             commands::select_mining_mode,
             commands::update_custom_mining_mode,
             commands::encode_payment_id_to_address,
-            commands::save_wxtm_address
+            commands::save_wxtm_address,
+            commands::change_cpu_pool,
+            commands::change_gpu_pool
         ])
         .build(tauri::generate_context!())
         .inspect_err(|e| {

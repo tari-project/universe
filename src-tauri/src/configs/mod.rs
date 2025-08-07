@@ -27,4 +27,5 @@ pub mod config_mining;
 pub mod config_pools;
 pub mod config_ui;
 pub mod config_wallet;
+pub mod pools;
 pub mod trait_config;

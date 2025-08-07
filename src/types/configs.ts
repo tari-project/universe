@@ -78,18 +78,21 @@ export interface MiningMode {
     cpu_usage_percentage: number;
     gpu_usage_percentage: number;
 }
+
 export interface ConfigPools {
+    // ======= Config internals =======
     was_config_migrated: boolean;
     created_at: string;
-    gpu_pool_enabled: boolean;
-    gpu_pool?: { [GpuPools.LuckyPool]: BasePoolData } | { [GpuPools.SupportXTMPool]: BasePoolData };
-    cpu_pool_enabled: boolean;
-    cpu_pool?: { [CpuPools.GlobalTariPool]: BasePoolData };
-}
-
-export interface ConfigPoolsSelectors {
-    getGpuPool: () => BasePoolData | undefined;
-    getCpuPool: () => BasePoolData | undefined;
+    // ======= Gpu Pool =======
+    // When false we are solo mining with glytex, if true we are pool mining with graxil
+    gpu_pool_enabled: boolean; // Whether GPU pool mining is enabled | defaults to true
+    selected_gpu_pool?: string; // Name of the selected GPU pool => defaults to LuckyPool
+    available_gpu_pools?: [{ [GpuPools.LuckyPool]: BasePoolData }, { [GpuPools.SupportXTMPool]: BasePoolData }]; // Available GPU pools
+    // ======= Cpu Pool =======
+    // When false we are solo mining with xmrig and mmproxy if true we are pool mining with xmrig
+    cpu_pool_enabled: boolean; // Whether CPU pool mining is enabled | defaults to true
+    selected_cpu_pool?: string; // Name of the selected CPU pool => defaults to LuckyPool
+    available_cpu_pools?: [{ [CpuPools.LuckyPool]: BasePoolData }, { [CpuPools.SupportXTMPool]: BasePoolData }]; // Available CPU pools
 }
 
 export enum GpuPools {
@@ -98,21 +101,14 @@ export enum GpuPools {
 }
 
 export enum CpuPools {
-    GlobalTariPool = 'GlobalTariPool',
+    LuckyPool = 'LuckyPool',
+    SupportXTMPool = 'SupportXTMPool',
 }
 
 export interface BasePoolData {
     pool_url: string;
     stats_url: string;
     pool_name: string;
-}
-export interface ConfigPools {
-    was_config_migrated: boolean;
-    created_at: string;
-    gpu_pool_enabled: boolean;
-    gpu_pool?: { [GpuPools.LuckyPool]: BasePoolData } | { [GpuPools.SupportXTMPool]: BasePoolData };
-    cpu_pool_enabled: boolean;
-    cpu_pool?: { [CpuPools.GlobalTariPool]: BasePoolData };
 }
 
 export interface ConfigBackendInMemory {
