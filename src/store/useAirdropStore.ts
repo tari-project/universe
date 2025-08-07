@@ -177,6 +177,7 @@ export interface CrewMembersResponse {
     referrerProgress: ReferrerProgress;
     totals: CrewMembersTotals;
     minRequirements: MinRequirements;
+    memberImages: string[];
 }
 
 export interface Reward {

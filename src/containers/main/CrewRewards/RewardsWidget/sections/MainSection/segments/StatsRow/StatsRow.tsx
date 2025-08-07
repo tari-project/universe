@@ -12,7 +12,6 @@ import {
     LoadingPlaceholder,
 } from './styles';
 
-import photo1 from '../../../../../images/person1.png';
 import { useCrewMembers } from '@app/hooks/crew/useCrewMembers';
 import { formatNumber, FormatPreset } from '@app/utils';
 import { useTranslation, Trans } from 'react-i18next';
@@ -54,14 +53,9 @@ export default function StatsRow() {
             {hasFriends ? (
                 <ActiveMinersWrapper>
                     <PhotoWrapper>
-                        {crewData?.members
-                            .slice(0, 3)
-                            .map(
-                                (member) =>
-                                    member.user?.image && (
-                                        <PhotoImage $image={member.user?.image} aria-hidden="true" key={member.id} />
-                                    )
-                            )}
+                        {crewData?.memberImages.map((image) => (
+                            <PhotoImage $image={image} key={image} />
+                        ))}
                         <StatusDot />
                     </PhotoWrapper>
 
