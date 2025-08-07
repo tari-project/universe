@@ -36,6 +36,7 @@ use tokio::sync::watch;
 use tokio::time::timeout;
 
 use crate::port_allocator::PortAllocator;
+use crate::process_adapter::HandleUnhealthyResult;
 use crate::tor_control_client::{TorControlClient, TorStatus};
 use crate::{
     process_adapter::{
@@ -346,10 +347,13 @@ impl StatusMonitor for TorStatusMonitor {
         }
     }
 
-    async fn handle_unhealthy(&self) -> Result<(), anyhow::Error> {
+    async fn handle_unhealthy(
+        &self,
+        _duration_since_last_healthy_status: Duration,
+    ) -> Result<HandleUnhealthyResult, anyhow::Error> {
         fs::remove_dir_all(self.base_path.join("tor-data")).await?;
 
-        Ok(())
+        Ok(HandleUnhealthyResult::Continue)
     }
 }
 

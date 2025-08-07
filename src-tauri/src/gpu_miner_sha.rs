@@ -49,6 +49,7 @@ pub struct GpuMinerSha {
     watcher: Arc<RwLock<ProcessWatcher<GpuMinerShaAdapter>>>,
     status_sender: Sender<GpuMinerStatus>,
     status_updates_thread: RwLock<Option<tokio::task::JoinHandle<()>>>,
+    status_updates_shutdown: Shutdown,
     pool_status_watcher: Option<PoolStatusWatcher<PoolApiAdapters>>,
     pub pool_status_shutdown_signal: Shutdown,
 }
@@ -68,6 +69,7 @@ impl GpuMinerSha {
             watcher: Arc::new(RwLock::new(process_watcher)),
             status_sender,
             status_updates_thread: RwLock::new(None),
+            status_updates_shutdown: Shutdown::new(),
             pool_status_watcher: None,
             pool_status_shutdown_signal: Shutdown::new(),
         }
@@ -82,6 +84,7 @@ impl GpuMinerSha {
         config_path: PathBuf,
         log_path: PathBuf,
     ) -> Result<(), anyhow::Error> {
+        self.pool_status_shutdown_signal = Shutdown::new();
         let shutdown_signal = TasksTrackers::current().hardware_phase.get_signal().await;
         let task_tracker = TasksTrackers::current()
             .hardware_phase
@@ -132,18 +135,27 @@ impl GpuMinerSha {
         Ok(())
     }
 
-    pub async fn stop(&self) -> Result<(), anyhow::Error> {
+    pub async fn stop(&mut self) -> Result<(), anyhow::Error> {
         info!(target: LOG_TARGET, "Stopping sha miner");
         {
             let mut process_watcher = self.watcher.write().await;
             process_watcher.status_monitor = None;
             process_watcher.stop().await?;
             let _res = self.status_sender.send(GpuMinerStatus::default());
-            if let Some(status_updates_thread) = self.status_updates_thread.write().await.take() {
-                status_updates_thread.abort();
-            }
         }
+        self.stop_status_updates().await?;
         info!(target: LOG_TARGET, "graxil stopped");
+        Ok(())
+    }
+
+    pub async fn stop_status_updates(&mut self) -> Result<(), anyhow::Error> {
+        info!(target: LOG_TARGET, "Stopping status updates");
+        let mut status_updates_thread_guard = self.status_updates_thread.write().await;
+        if let Some(status_updates_thread) = status_updates_thread_guard.take() {
+            info!(target: LOG_TARGET, "Aborting status updates thread");
+            status_updates_thread.abort();
+            self.status_updates_shutdown.trigger();
+        }
         Ok(())
     }
 
@@ -160,6 +172,7 @@ impl GpuMinerSha {
         let mut pool_shutdown_signal = self.pool_status_shutdown_signal.to_signal();
 
         let mut shutdown_signal = TasksTrackers::current().hardware_phase.get_signal().await;
+        let mut status_updates_signal = self.status_updates_shutdown.to_signal();
 
         let status_updates_thread = TasksTrackers::current()
             .hardware_phase
@@ -167,6 +180,7 @@ impl GpuMinerSha {
             .await
             .spawn(async move {
                 loop {
+                    info!(target: LOG_TARGET, "Checking pool status");
                     select! {
                         _ = pool_status_check.tick() => {
                             let last_pool_status = match pool_status_watcher {
@@ -184,6 +198,10 @@ impl GpuMinerSha {
                             info!(target: LOG_TARGET, "Pool status update: {last_pool_status:?}");
                             EventsEmitter::emit_gpu_pool_status_update(last_pool_status.clone()).await;
                         }
+                        _ = status_updates_signal.wait() => {
+                            info!(target: LOG_TARGET, "Status updates shutdown signal received, stopping updates");
+                            break;
+                        },
                         _ = shutdown_signal.wait() => {
                             break;
                         },
