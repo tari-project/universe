@@ -36,6 +36,7 @@ use crate::{
     airdrop::decode_jwt_claims_without_exp,
     commands::{sign_ws_data, CpuMinerStatus, SignWsDataResponse},
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
+    internal_wallet::InternalWallet,
     tasks_tracker::TasksTrackers,
     websocket_manager::WebsocketMessage,
     BaseNodeStatus, GpuMinerStatus,
@@ -164,11 +165,18 @@ impl WebsocketEventsManager {
         let gpu_status = gpu_latest_miner_stats.borrow().clone();
         let network = Network::get_current_or_user_setting_or_default().as_key_str();
         let is_mining_active = cpu_miner_status.hash_rate > 0.0 || gpu_status.hash_rate > 0.0;
+        let tari_address = InternalWallet::tari_address().await;
 
         if let Some(claims) = decode_jwt_claims_without_exp(&jwt_token) {
             let signable_message = format!(
-                "{},{},{},{},{},{}",
-                app_version, network, app_id, claims.id, is_mining_active, block_height
+                "{},{},{},{},{},{},{}",
+                app_version,
+                network,
+                app_id,
+                claims.id,
+                is_mining_active,
+                block_height,
+                tari_address.to_base58()
             );
             if let Ok(SignWsDataResponse { signature, pub_key }) =
                 sign_ws_data(signable_message).await
@@ -179,7 +187,8 @@ impl WebsocketEventsManager {
                         "blockHeight":block_height,
                         "version":app_version,
                         "network":network,
-                        "userId":claims.id
+                        "userId":claims.id,
+                        "walletHash":tari_address.to_base58()
                 });
 
                 return Some(WebsocketMessage {
