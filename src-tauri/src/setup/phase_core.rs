@@ -52,9 +52,6 @@ use super::{
 static LOG_TARGET: &str = "tari::universe::phase_core";
 
 #[derive(Clone, Default)]
-pub struct CoreSetupPhaseOutput {}
-
-#[derive(Clone, Default)]
 pub struct CoreSetupPhaseAppConfiguration {
     is_auto_launcher_enabled: bool,
 }
