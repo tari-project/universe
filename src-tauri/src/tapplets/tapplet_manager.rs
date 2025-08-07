@@ -27,19 +27,33 @@ use tauri::{AppHandle, Listener};
 use tokio::sync::oneshot;
 
 use crate::{
-    database::{
-        models::{DevTapplet, UpdateDevTapplet},
-        store::{DatabaseConnection, SqliteStore, Store},
-    },
+    database::models::{DevTapplet, UpdateDevTapplet},
     events_emitter::EventsEmitter,
-    tapplets::{error::Error, tapplet_server::get_tapplet_config},
+    tapplets::{
+        error::Error,
+        server_manager::ServerManager,
+        tapplet_server::{get_tapplet_config, start_tapplet_server},
+    },
 };
 
 static LOG_TARGET: &str = "tari::universe::tapplet_manager";
 
-pub struct TappletManager {}
-
+pub(crate) struct TappletManager {
+    server_manager: ServerManager,
+}
+impl Clone for TappletManager {
+    fn clone(&self) -> Self {
+        Self {
+            server_manager: self.server_manager.clone(),
+        }
+    }
+}
 impl TappletManager {
+    pub fn new() -> Self {
+        Self {
+            server_manager: ServerManager::new(),
+        }
+    }
     pub async fn allow_tapplet_csp(
         csp: String,
         app_handle: &AppHandle,
@@ -124,6 +138,38 @@ impl TappletManager {
             should_update_csp || should_update_permissions,
             updated_dev_tapp,
         ));
+    }
+
+    /// Wrapper to start the server and track it by tapplet_id
+    pub async fn start_server(
+        &self,
+        tapplet_id: i32,
+        tapplet_path: PathBuf,
+        csp: &String,
+    ) -> Result<String, Error> {
+        // Pass tapplet_id to the start_and_register function
+        // start_and_register_tapplet_server(tapplet_id, tapplet_path, csp, &self.server_manager).await
+        info!(target: LOG_TARGET, "👉👉👉 Start server with manager {:?}", &tapplet_id);
+        let (address, cancel_token) = start_tapplet_server(tapplet_path, csp).await?;
+
+        self.server_manager
+            .add_server(tapplet_id, address.clone(), cancel_token)
+            .await;
+
+        Ok(address)
+    }
+
+    /// Stops a server gracefully by its tapplet_id
+    pub async fn stop_server(&self, tapplet_id: i32) -> Result<String, String> {
+        self.server_manager.stop_server_by_id(tapplet_id).await
+    }
+    /// Check if tapplet server is running by tapplet_id
+    pub async fn is_server_running(&self, tapplet_id: i32) -> bool {
+        let address_opt = self.server_manager.get_address(tapplet_id).await;
+        match address_opt {
+            Some(addr) => self.server_manager.is_running(&addr).await,
+            None => false,
+        }
     }
 }
 

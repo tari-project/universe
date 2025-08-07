@@ -81,6 +81,7 @@ use crate::mm_proxy_manager::{MmProxyManager, StartConfig};
 use crate::node::node_manager::NodeManager;
 use crate::p2pool::models::P2poolStats;
 use crate::p2pool_manager::P2poolManager;
+use crate::tapplets::tapplet_manager::TappletManager;
 use crate::tor_manager::TorManager;
 use crate::wallet::wallet_manager::WalletManager;
 use crate::wallet::wallet_types::WalletState;
@@ -199,6 +200,7 @@ struct UniverseAppState {
     websocket_manager_status_rx: Arc<watch::Receiver<WebsocketManagerStatusMessage>>,
     websocket_manager: Arc<RwLock<WebsocketManager>>,
     websocket_event_manager: Arc<RwLock<WebsocketEventsManager>>,
+    tapplet_manager: TappletManager,
 }
 
 #[derive(Clone, serde::Serialize, serde::Deserialize)]
@@ -359,6 +361,7 @@ fn main() {
         base_node_watch_rx.clone(),
         app_in_memory_config.clone(),
     );
+    let tapplet_manager = TappletManager::new();
     let app_state = UniverseAppState {
         is_getting_p2pool_connections: Arc::new(AtomicBool::new(false)),
         node_status_watch_rx: Arc::new(base_node_watch_rx),
@@ -380,6 +383,7 @@ fn main() {
         feedback: Arc::new(RwLock::new(feedback)),
         tor_manager,
         updates_manager,
+        tapplet_manager: tapplet_manager.clone(),
         cached_p2pool_connections: Arc::new(RwLock::new(None)),
         systemtray_manager: Arc::new(RwLock::new(SystemTrayManager::new())),
         mining_status_manager: Arc::new(RwLock::new(mining_status_manager)),
@@ -435,6 +439,7 @@ fn main() {
             app.manage(DatabaseConnection(Arc::new(std::sync::Mutex::new(
                 database::establish_connection(db_path.to_str().unwrap_or_default()),
             ))));
+            app.manage(tapplet_manager);
 
             // Remove this after it's been rolled out for a few versions
             let log_path = app.path().app_log_dir().map_err(|e| e.to_string())?;
@@ -660,7 +665,9 @@ fn main() {
             commands::add_dev_tapplet,
             commands::read_dev_tapplets_db,
             commands::delete_dev_tapplet,
-            commands::update_installed_tapplet
+            commands::update_installed_tapplet,
+            commands::stop_tapplet,
+            commands::is_tapplet_server_running
         ])
         .build(tauri::generate_context!())
         .inspect_err(|e| {

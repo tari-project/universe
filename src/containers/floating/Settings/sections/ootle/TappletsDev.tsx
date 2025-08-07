@@ -19,9 +19,21 @@ export default function TappletsDev() {
     const setActiveTappById = useTappletsStore((s) => s.setActiveTappById);
     const deleteDevTapp = useTappletsStore((s) => s.deleteDevTapp);
     const getDevTapps = useTappletsStore((s) => s.getDevTapps);
+    const stopTapp = useTappletsStore((s) => s.stopTapp);
     const devTapplets = useTappletsStore((s) => s.devTapplets);
     const { isSettingsOpen } = useAppStateStore();
     const devTappletsCount = devTapplets?.length || 0;
+
+    const handleStop = useCallback(
+        async (tappletId: number) => {
+            try {
+                stopTapp(tappletId);
+            } catch (e) {
+                setError(`Error while launching dev tapplet: ${e}`);
+            }
+        },
+        [stopTapp]
+    );
 
     const handleDelete = useCallback(
         async (tappletId: number) => {
@@ -33,10 +45,6 @@ export default function TappletsDev() {
         },
         [deleteDevTapp]
     );
-
-    useEffect(() => {
-        getDevTapps();
-    }, []);
 
     const handleLaunch = useCallback(
         async (tappletId: number) => {
@@ -52,6 +60,10 @@ export default function TappletsDev() {
         },
         [isSettingsOpen, setActiveTappById]
     );
+
+    useEffect(() => {
+        getDevTapps();
+    }, []);
 
     return (
         <TappletsGroupWrapper $category="Dev Tapplets">
@@ -74,6 +86,7 @@ export default function TappletsDev() {
                                         item={{ id: item.id, displayName: item.display_name }}
                                         handleStart={() => handleLaunch(item.id)}
                                         handleRemove={() => handleDelete(item.id)}
+                                        handleStop={() => handleStop(item.id)}
                                     />
                                 ))}
                             </ListItemWrapper>

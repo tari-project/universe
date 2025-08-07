@@ -37,6 +37,7 @@ interface Actions {
     deleteInstalledTapp: (tappletId: number) => Promise<void>;
     updateInstalledTapp: (tappletId: number, installedTappletId: number) => Promise<void>;
     getDevTapps: () => Promise<void>;
+    stopTapp: (tappletId: number) => Promise<void>;
 }
 
 type TappletsStoreState = State & Actions;
@@ -229,5 +230,11 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
         const installedTapplets = await invoke('update_installed_tapplet', { tappletId, installedTappletId });
         console.info('[STORE] update tapp: id | installedTappId', tappletId, installedTappletId);
         set({ installedTapplets });
+    },
+    stopTapp: async (tappletId: number) => {
+        const isRunning = await invoke('is_tapplet_server_running', { tappletId });
+        console.info('[STORE] tapplet_stopped', tappletId, isRunning);
+        const serverAddress = await invoke('stop_tapplet', { tappletId });
+        console.info('[STORE] tapplet_stopped', tappletId, serverAddress);
     },
 }));

@@ -130,6 +130,8 @@ declare module '@tauri-apps/api/core' {
     ): Promise<void>;
     function invoke(param: 'launch_builtin_tapplet', payload: { binaryName: string }): Promise<ActiveTapplet>;
     function invoke(param: 'launch_dev_tapplet', payload: { devTappletId: number }): Promise<ActiveTapplet>;
+    function invoke(param: 'is_tapplet_server_running', payload: { tappletId: number }): Promise<boolean>;
+    function invoke(param: 'stop_tapplet', payload: { tappletId: number }): Promise<string>;
     function invoke(param: 'get_bridge_envs'): Promise<BridgeEnvs>;
     function invoke(param: 'parse_tari_address', payload: { address: string }): Promise<TariAddressVariants>;
     function invoke(param: 'refresh_wallet_history'): Promise<void>;

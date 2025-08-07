@@ -38,6 +38,7 @@ use crate::database::models::{
     CreateTappletVersion, DevTapplet, InstalledTapplet, Tapplet, UpdateDevTapplet,
     UpdateInstalledTapplet,
 };
+use crate::database::schema::tapplet;
 use crate::database::store::{DatabaseConnection, SqliteStore, Store};
 use crate::events::ConnectionStatusPayload;
 use crate::events_emitter::EventsEmitter;
@@ -2257,6 +2258,7 @@ pub async fn launch_dev_tapplet(
     dev_tapplet_id: i32,
     app_handle: tauri::AppHandle,
     db_connection: tauri::State<'_, DatabaseConnection>,
+    tapplet_manager: tauri::State<'_, TappletManager>,
 ) -> Result<ActiveTapplet, String> {
     let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
     info!(target: LOG_TARGET, "💥 Try to launch dev id: {:?}", &dev_tapplet_id);
@@ -2279,24 +2281,66 @@ pub async fn launch_dev_tapplet(
     }
 
     let tapplet_path = PathBuf::from(&dev_tapplet.endpoint);
-    let handle_start = tauri::async_runtime::spawn(async move {
-        start_tapplet_server(tapplet_path, &dev_tapplet.csp).await
-    });
+    // let handle_start = tauri::async_runtime::spawn(async move {
+    //     start_tapplet_server(tapplet_path, &dev_tapplet.csp).await
+    // });
 
-    let (addr, _cancel_token) = match handle_start.await {
-        Ok(result) => result.map_err(|e| e.to_string())?,
-        Err(e) => {
-            error!(target: LOG_TARGET, "❌ Error handling tapplet start: {e:?}");
-            return Err(e.to_string());
-        }
-    };
+    // CHECK IF SPAWN HERE IS NEEDED
+    // let manager = tapplet_manager.clone();
+    // let handle_start = tauri::async_runtime::spawn(async move {
+    //     manager
+    //         .start_server(dev_tapplet_id, tapplet_path, &dev_tapplet.csp)
+    //         .await
+    // });
+    let addr = tapplet_manager
+        .start_server(dev_tapplet_id, tapplet_path, &dev_tapplet.csp)
+        .await
+        .map_err(|e| {
+            error!(target: LOG_TARGET, "Failed to start tapplet with id {}: {}", dev_tapplet_id, &e);
+            e.to_string()
+        })?;
 
+    // let addr = match handle_start.await {
+    //     Ok(result) => result.map_err(|e| e.to_string())?,
+    //     Err(e) => {
+    //         error!(target: LOG_TARGET, "❌ Error handling tapplet start: {e:?}");
+    //         return Err(e.to_string());
+    //     }
+    // };
+
+    let is_running = tapplet_manager.is_server_running(dev_tapplet_id).await;
+    info!(target: LOG_TARGET, "🎉🎉🎉 IS RUNNING: {:?}", is_running);
     Ok(ActiveTapplet {
         tapplet_id: 0,
         display_name: "dev_tapplet.display_name".to_string(),
         source: format!("http://{addr}"),
         version: "0.1.0".to_string(), //TODO
     })
+}
+
+#[tauri::command]
+pub async fn stop_tapplet(
+    tapplet_id: i32,
+    tapplet_manager: tauri::State<'_, TappletManager>,
+) -> Result<String, String> {
+    info!(target: LOG_TARGET, "👉👉👉 stop tapp id: {:?}", &tapplet_id);
+
+    let address = tapplet_manager.stop_server(tapplet_id).await.map_err(|e| {
+        error!(target: LOG_TARGET, "Failed to stop tapplet with id {}: {}", tapplet_id, &e);
+        e
+    })?;
+    Ok(address)
+}
+
+#[tauri::command]
+pub async fn is_tapplet_server_running(
+    tapplet_id: i32,
+    tapplet_manager: tauri::State<'_, TappletManager>,
+) -> Result<bool, String> {
+    info!(target: LOG_TARGET, "👉👉👉 stop tapp id: {:?}", &tapplet_id);
+
+    let is_running: bool = tapplet_manager.is_server_running(tapplet_id).await;
+    Ok(is_running)
 }
 
 #[tauri::command]
