@@ -196,7 +196,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                     }
                 }
                 if let Err(_unused) = stats_broadcast.send(stats.clone()) {
-                    warn!(target: LOG_TARGET, "Failed to broadcast process watcher stats");
+                    warn!(target: LOG_TARGET, "Failed to broadcast process watcher stats for {name}");
                 }
 
                 duration_since_last_healthy_status += unhealthy_timer.elapsed();
@@ -333,6 +333,7 @@ async fn do_health_check<TStatusMonitor: StatusMonitor, TProcessInstance: Proces
                     //   return Err(e);
                 }
             }
+
             // Restart dead app
             sleep(Duration::from_secs(1)).await;
             warn!(target: LOG_TARGET, "Restarting {name} after health check failure");
@@ -348,7 +349,7 @@ async fn do_health_check<TStatusMonitor: StatusMonitor, TProcessInstance: Proces
                 }
                 Ok(HandleUnhealthyResult::Stop) => {
                     info!(target: LOG_TARGET, "Stopping watcher after unhealthy state for {name}");
-                    return Ok(None);
+                    return Ok(Some(1));
                 }
                 Err(e) => {
                     error!(target: LOG_TARGET, "Error handling unhealthy state for {name}: {e}");
