@@ -22,7 +22,7 @@
 
 use anyhow::Error;
 use async_trait::async_trait;
-use log::warn;
+use log::{info, warn};
 use std::path::PathBuf;
 use std::time::Duration;
 use tari_shutdown::Shutdown;
@@ -30,8 +30,10 @@ use tokio::sync::watch;
 
 use crate::port_allocator::PortAllocator;
 use crate::process_adapter::{
-    HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
+    HandleUnhealthyResult, HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec,
+    StatusMonitor,
 };
+use crate::setup::setup_manager::SetupManager;
 use crate::xmrig;
 use crate::xmrig::http_api::models::Summary;
 use crate::xmrig::http_api::XmrigHttpApiClient;
@@ -229,6 +231,31 @@ pub struct XmrigStatusMonitor {
 
 #[async_trait]
 impl StatusMonitor for XmrigStatusMonitor {
+    async fn handle_unhealthy(
+        &self,
+        duration_since_last_healthy_status: Duration,
+    ) -> Result<HandleUnhealthyResult, anyhow::Error> {
+        // Fallback to solo mining if the miner has been unhealthy for more than 30 minutes
+        info!(target: LOG_TARGET, "Handling unhealthy status for Xmrig | Duration since last healthy status: {:?}", duration_since_last_healthy_status.as_secs());
+        if duration_since_last_healthy_status.as_secs().gt(&(60 * 30)) {
+            match SetupManager::get_instance()
+                .turn_off_cpu_pool_feature()
+                .await
+            {
+                Ok(_) => {
+                    info!(target: LOG_TARGET, "XmrigAdapter: CPU Pool feature turned off due to prolonged unhealthiness.");
+                    return Ok(HandleUnhealthyResult::Stop);
+                }
+                Err(error) => {
+                    warn!(target: LOG_TARGET, "XmrigAdapter: Failed to turn off CPU Pool feature: {error} | Continuing to monitor.");
+                    return Ok(HandleUnhealthyResult::Continue);
+                }
+            }
+        } else {
+            return Ok(HandleUnhealthyResult::Continue);
+        }
+    }
+
     async fn check_health(&self, _uptime: Duration, timeout_duration: Duration) -> HealthStatus {
         match tokio::time::timeout(timeout_duration, self.summary()).await {
             Ok(summary_result) => match summary_result {
