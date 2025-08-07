@@ -105,26 +105,38 @@ export default function CrewList({ members, minRequirements, isLoading, error, o
                         </MessageWrapper>
                     ) : (
                         <>
-                            <CrewDivider text={t('airdrop:crewRewards.crewStatus.completed')} />
-                            <ListGroup>
-                                {completedList.map((item) => (
-                                    <CrewEntry key={item.id} entry={item} isClaimed={item.isClaimed} />
-                                ))}
-                            </ListGroup>
+                            {completedList.length > 0 && (
+                                <>
+                                    <CrewDivider text={t('airdrop:crewRewards.crewStatus.completed')} />
+                                    <ListGroup>
+                                        {completedList.map((item) => (
+                                            <CrewEntry key={item.id} entry={item} isClaimed={item.isClaimed} />
+                                        ))}
+                                    </ListGroup>
+                                </>
+                            )}
 
-                            <CrewDivider text={t('airdrop:crewRewards.crewStatus.inProgress')} />
-                            <ListGroup>
-                                {inProgressList.map((item) => (
-                                    <CrewEntry key={item.id} entry={item} />
-                                ))}
-                            </ListGroup>
+                            {inProgressList.length > 0 && (
+                                <>
+                                    <CrewDivider text={t('airdrop:crewRewards.crewStatus.inProgress')} />
+                                    <ListGroup>
+                                        {inProgressList.map((item) => (
+                                            <CrewEntry key={item.id} entry={item} />
+                                        ))}
+                                    </ListGroup>
+                                </>
+                            )}
 
-                            <CrewDivider text={t('airdrop:crewRewards.crewStatus.needsNudge')} />
-                            <ListGroup>
-                                {needsNudgeList.map((item) => (
-                                    <CrewEntry key={item.id} entry={item} />
-                                ))}
-                            </ListGroup>
+                            {needsNudgeList.length > 0 && (
+                                <>
+                                    <CrewDivider text={t('airdrop:crewRewards.crewStatus.needsNudge')} />
+                                    <ListGroup>
+                                        {needsNudgeList.map((item) => (
+                                            <CrewEntry key={item.id} entry={item} />
+                                        ))}
+                                    </ListGroup>
+                                </>
+                            )}
                         </>
                     )}
                 </Inside>
