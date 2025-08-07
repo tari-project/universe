@@ -91,7 +91,7 @@ pub enum GpuPool {
 
 fn global_tari_cpu_mining_pool_url() -> String {
     match Network::get_current_or_user_setting_or_default() {
-        Network::MainNet => "pool-global.tari.snipanet.com:3333".to_string(),
+        Network::MainNet => "fr-tarirx.luckypool.io:9118".to_string(),
         Network::NextNet | Network::StageNet => "69.164.205.243:3333".to_string(),
         Network::LocalNet | Network::Igor | Network::Esmeralda => "69.164.205.243:3333".to_string(),
     }
@@ -100,7 +100,7 @@ fn global_tari_cpu_mining_pool_url() -> String {
 fn global_tari_cpu_mining_pool_status_url() -> String {
     match Network::get_current_or_user_setting_or_default() {
         Network::MainNet => {
-            "https://pool.rxt.tari.jagtech.io/api/miner/%TARI_ADDRESS%/stats".to_string()
+            "https://api-tari.luckypool.io/stats_address?address=%TARI_ADDRESS%".to_string()
         }
         Network::NextNet | Network::StageNet => {
             "http://69.164.205.243:3333/api/miner/%TARI_ADDRESS%/stats".to_string()

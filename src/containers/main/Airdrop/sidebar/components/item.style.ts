@@ -24,8 +24,10 @@ export const ActionWrapper = styled.div`
     height: 60px;
     width: 60px;
 
-    &:hover {
+    &:hover,
+    &:focus {
         box-shadow: ${({ theme }) => `${convertHexToRGBA(theme.palette.contrast, 0.03)} 0 0 2px 2px`};
+        outline: none;
     }
 `;
 
