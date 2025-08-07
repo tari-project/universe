@@ -55,24 +55,18 @@ use crate::p2pool::models::{Connections, P2poolStats};
 use crate::pin::PinManager;
 use crate::setup::setup_manager::{SetupManager, SetupPhase};
 use crate::tapplets::error::Error::RequestError;
+use crate::tapplets::error::Error::{self};
 use crate::tapplets::error::RequestError::FetchManifestError;
 use crate::tapplets::error::RequestError::ManifestResponseError;
-use crate::tapplets::error::{
-    Error::{self, DatabaseError, TappletServerError},
-    TappletServerError::*,
-};
 use crate::tapplets::interface::{
-    ActiveTapplet, AssetServer, InstalledTappletWithName, TappletConfig, TappletCsp,
-    TappletManifest, TappletPermissions,
+    ActiveTapplet, AssetServer, InstalledTappletWithName, TappletConfig,
 };
 use crate::tapplets::tapplet_installer::{
     check_files_and_validate_checksum, delete_tapplet, download_asset,
-    fetch_tapp_registry_manifest, get_tapp_download_path, get_tapp_permissions,
+    fetch_tapp_registry_manifest, get_tapp_download_path,
 };
 use crate::tapplets::tapplet_manager::TappletManager;
-use crate::tapplets::tapplet_server::{
-    get_tapplet_config, get_tapplet_manifest, start_dev_tapplet, start_tapplet,
-};
+use crate::tapplets::tapplet_server::{get_tapplet_config, start_tapplet_server};
 use crate::tasks_tracker::TasksTrackers;
 use crate::tor_adapter::TorConfig;
 use crate::utils::address_utils::verify_send;
@@ -2222,22 +2216,25 @@ pub async fn update_csp_policy(
 }
 
 #[tauri::command]
-pub async fn launch_builtin_tapplet() -> Result<ActiveTapplet, String> {
+pub async fn launch_builtin_tapplet(binary_name: &str) -> Result<ActiveTapplet, String> {
     let binaries_resolver = BinaryResolver::current();
     // TODO
-    const DEFAULT_TAPPLET_CSP: &str = "default-src 'self'";
-
+    let binary = Binaries::from_name(binary_name);
     let tapp_dest_dir = binaries_resolver
-        .resolve_path_to_binary_files(Binaries::BridgeTapplet)
+        .resolve_path_to_binary_files(binary)
         .await
         .map_err(|e| e.to_string())?;
 
     info!(target: LOG_TARGET, "💥 Built-in tapplet start: {:?}", &tapp_dest_dir);
 
-    let csp_header = HeaderValue::from_str(DEFAULT_TAPPLET_CSP).unwrap();
+    // TODO assign default csp for builtin tapplets
+    const DEFAULT_BUILTIN_TAPPLET_CSP: &str = "default-src 'self' 'unsafe-inline'";
+    // let config = get_tapplet_config(&tapp_dest_dir).unwrap_or_default();
+    // let csp_header = HeaderValue::from_str(&config.csp).unwrap();
 
-    let handle_start =
-        tauri::async_runtime::spawn(async move { start_tapplet(tapp_dest_dir).await });
+    let handle_start = tauri::async_runtime::spawn(async move {
+        start_tapplet_server(tapp_dest_dir, &DEFAULT_BUILTIN_TAPPLET_CSP.to_string()).await
+    });
 
     let (addr, _cancel_token) = match handle_start.await {
         Ok(result) => result.map_err(|e| e.to_string())?,
@@ -2248,7 +2245,7 @@ pub async fn launch_builtin_tapplet() -> Result<ActiveTapplet, String> {
     };
 
     Ok(ActiveTapplet {
-        tapplet_id: 0,
+        tapplet_id: 1000,
         display_name: "Bridge-wXTM".to_string(),
         source: format!("http://{addr}"),
         version: "1.0.0".to_string(),
@@ -2281,8 +2278,10 @@ pub async fn launch_dev_tapplet(
             .map_err(|e| e.to_string())?;
     }
 
-    let handle_start =
-        tauri::async_runtime::spawn(async move { start_dev_tapplet(&dev_tapplet).await });
+    let tapplet_path = PathBuf::from(&dev_tapplet.endpoint);
+    let handle_start = tauri::async_runtime::spawn(async move {
+        start_tapplet_server(tapplet_path, &dev_tapplet.csp).await
+    });
 
     let (addr, _cancel_token) = match handle_start.await {
         Ok(result) => result.map_err(|e| e.to_string())?,
@@ -2689,7 +2688,7 @@ pub async fn add_dev_tapplet(
     } else {
         // IF source is type of path like /home/user/path-to-app
         let tapp_dest_dir = PathBuf::from(&endpoint);
-        tapp_config = get_tapplet_config(tapp_dest_dir).unwrap();
+        tapp_config = get_tapplet_config(&tapp_dest_dir).unwrap();
     }
 
     info!("🌟 Add dev tapplet config: {:?}", &tapp_config);

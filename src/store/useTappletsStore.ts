@@ -65,6 +65,19 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
         if (tappletId == get().activeTapplet?.tapplet_id) return;
         const tappProviderState = useTappletSignerStore.getState();
         if (!tappProviderState.isInitialized) tappProviderState.initTappletSigner();
+
+        // built-in tapplet
+        if (isBuiltIn) {
+            try {
+                console.info('🚗 RUN BUILDIN');
+                const activeTapplet = await invoke('launch_builtin_tapplet', { binaryName: 'bridge' });
+                set({ activeTapplet });
+            } catch (error) {
+                console.error('Error running built-in tapplet: ', error);
+            }
+            return;
+        }
+
         const tapplet = get().devTapplets.find((tapp) => tapp.id === tappletId);
         if (!tapplet) {
             setError(`Tapplet with id: ${tappletId} not found`);
@@ -83,18 +96,6 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
             } catch (error) {
                 console.error('Error running Dev Tapplet: ', error);
                 setError(`'Error running Dev Tapplet: ${error}`);
-            }
-            return;
-        }
-
-        // built-in tapplet
-        if (isBuiltIn) {
-            try {
-                console.info('🚗 RUN BUILDIN');
-                const activeTapplet = await invoke('launch_builtin_tapplet');
-                set({ activeTapplet });
-            } catch (error) {
-                console.error('Error running built-in tapplet: ', error);
             }
             return;
         }
