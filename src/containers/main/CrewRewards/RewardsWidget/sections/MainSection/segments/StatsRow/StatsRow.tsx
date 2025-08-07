@@ -56,7 +56,6 @@ export default function StatsRow() {
                         {crewData?.memberImages.map((image) => (
                             <PhotoImage $image={image} key={image} />
                         ))}
-                        <StatusDot />
                     </PhotoWrapper>
 
                     <TextWrapper>
