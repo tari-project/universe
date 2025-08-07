@@ -1,9 +1,9 @@
-import { memo, useCallback } from 'react';
+import { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
 
-import { useTranslation } from 'react-i18next';
 import {
     SettingsGroup,
     SettingsGroupContent,
@@ -18,7 +18,7 @@ import { useConfigMiningStore } from '@app/store/useAppConfigStore.ts';
 import { useSetupStore } from '@app/store/useSetupStore.ts';
 import { toggleDeviceExclusion } from '@app/store/actions/appConfigStoreActions.ts';
 
-const GpuDevices = memo(function GpuDevices() {
+export default function GpuDevices() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
     const gpuDevices = useMiningMetricsStore((s) => s.gpu_devices);
     const gpuDevicesSettings = useConfigMiningStore((s) => s.gpu_devices_settings);
@@ -78,6 +78,4 @@ const GpuDevices = memo(function GpuDevices() {
             </SettingsGroupWrapper>
         </>
     );
-});
-
-export default GpuDevices;
+}
