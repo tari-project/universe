@@ -74,6 +74,7 @@ export interface DevTapplet {
     about_description: string;
     csp: string;
     tapplet_permissions: string;
+    isRunning: boolean;
 }
 
 export type DevTappletWithAssets = DevTapplet & {

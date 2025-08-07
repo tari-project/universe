@@ -38,7 +38,6 @@ use crate::database::models::{
     CreateTappletVersion, DevTapplet, InstalledTapplet, Tapplet, UpdateDevTapplet,
     UpdateInstalledTapplet,
 };
-use crate::database::schema::tapplet;
 use crate::database::store::{DatabaseConnection, SqliteStore, Store};
 use crate::events::ConnectionStatusPayload;
 use crate::events_emitter::EventsEmitter;
@@ -2309,7 +2308,7 @@ pub async fn launch_dev_tapplet(
     // };
 
     let is_running = tapplet_manager.is_server_running(dev_tapplet_id).await;
-    info!(target: LOG_TARGET, "🎉🎉🎉 IS RUNNING: {:?}", is_running);
+    info!(target: LOG_TARGET, "🎉🎉🎉 IS RUNNING: {:?} at address {:?}", is_running, addr);
     Ok(ActiveTapplet {
         tapplet_id: 0,
         display_name: "dev_tapplet.display_name".to_string(),

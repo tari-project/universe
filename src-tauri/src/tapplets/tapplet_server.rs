@@ -21,7 +21,6 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::{
-    database::models::DevTapplet,
     port_allocator::PortAllocator,
     tapplets::{
         error::{
@@ -29,7 +28,6 @@ use crate::{
             TappletServerError::*,
         },
         interface::{TappletConfig, TappletManifest},
-        server_manager::ServerManager,
     },
 };
 
@@ -48,7 +46,6 @@ const LOG_TARGET: &str = "tari::tapplet";
 
 /// Middleware that adds a CSP header dynamically from the captured `Arc<HeaderValue>`
 async fn add_csp_header(req: Request<Body>, next: Next, csp_header: HeaderValue) -> Response<Body> {
-    info!(target: LOG_TARGET, "👀 add csp header {:?}", &csp_header.to_str());
     let mut response = next.run(req).await;
     response
         .headers_mut()
@@ -160,19 +157,3 @@ pub fn get_tapplet_manifest(tapp_path: PathBuf) -> Result<TappletManifest, Error
     info!(target: LOG_TARGET, "💥 Dev tapplet full config: {:?}", &manifest);
     Ok(manifest)
 }
-
-// not used = moved to tapplet_manager
-// pub async fn start_and_register_tapplet_server(
-//     tapplet_id: i32,
-//     tapplet_path: PathBuf,
-//     csp: &String,
-//     server_manager: &ServerManager,
-// ) -> Result<String, Error> {
-//     let (address, cancel_token) = start_tapplet_server(tapplet_path, csp).await?;
-
-//     server_manager
-//         .add_server(tapplet_id, address.clone(), cancel_token)
-//         .await;
-
-//     Ok(address)
-// }
