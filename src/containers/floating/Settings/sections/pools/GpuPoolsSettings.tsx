@@ -9,7 +9,7 @@ import {
 } from '../../components/SettingsGroup.styles';
 import { Typography } from '@app/components/elements/Typography';
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch';
-import { changeGpuPool, toggleGpuPool } from '@app/store/actions/appConfigStoreActions';
+import { changeGpuPool, changeGpuPoolConfiguration, toggleGpuPool } from '@app/store/actions/appConfigStoreActions';
 import { useMiningPoolsStore } from '@app/store/useMiningPoolsStore.ts';
 import { PoolStats } from '@app/containers/floating/Settings/sections/pools/PoolStats.tsx';
 import { getAvailableGpuPools, getSelectedGpuPool } from '@app/store/selectors/appConfigStoreSelectors';
@@ -42,7 +42,7 @@ export const GpuPoolsSettings = () => {
     }, []);
 
     const handlePoolConfigurationChange = useCallback((updatedConfig: BasePoolData) => {
-        console.log('Updated GPU pool configuration:', updatedConfig);
+        changeGpuPoolConfiguration(updatedConfig);
     }, []);
 
     return (

@@ -9,7 +9,7 @@ import {
 } from '../../components/SettingsGroup.styles';
 import { Typography } from '@app/components/elements/Typography';
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch';
-import { changeCpuPool, toggleCpuPool } from '@app/store/actions/appConfigStoreActions';
+import { changeCpuPool, changeCpuPoolConfiguration, toggleCpuPool } from '@app/store/actions/appConfigStoreActions';
 import { useMiningPoolsStore } from '@app/store/useMiningPoolsStore.ts';
 import { PoolStats } from '@app/containers/floating/Settings/sections/pools/PoolStats.tsx';
 import { Select } from '@app/components/elements/inputs/Select';
@@ -43,7 +43,7 @@ export const CpuPoolsSettings = () => {
     }, []);
 
     const handlePoolConfigurationChange = useCallback((updatedConfig: BasePoolData) => {
-        console.log('Updated CPU pool configuration:', updatedConfig);
+        changeCpuPoolConfiguration(updatedConfig);
     }, []);
 
     console.log('Selected CPU Pool Data:', selectedCpuPoolData);

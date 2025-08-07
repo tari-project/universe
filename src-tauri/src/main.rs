@@ -634,7 +634,9 @@ fn main() {
             commands::encode_payment_id_to_address,
             commands::save_wxtm_address,
             commands::change_cpu_pool,
-            commands::change_gpu_pool
+            commands::change_gpu_pool,
+            commands::update_selected_gpu_pool_config,
+            commands::update_selected_cpu_pool_config
         ])
         .build(tauri::generate_context!())
         .inspect_err(|e| {

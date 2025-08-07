@@ -102,6 +102,30 @@ impl ConfigPoolsContent {
             .cloned()
             .unwrap_or_else(CpuPool::default)
     }
+
+    pub fn update_selected_cpu_config(&mut self, updated_config: CpuPool) -> &mut Self {
+        if let Some(pool) = self
+            .available_cpu_pools
+            .iter_mut()
+            .find(|pool| pool.name() == updated_config.name())
+        {
+            *pool = updated_config.clone();
+        }
+        self.selected_cpu_pool = updated_config.name();
+        self
+    }
+
+    pub fn update_selected_gpu_config(&mut self, updated_config: GpuPool) -> &mut Self {
+        if let Some(pool) = self
+            .available_gpu_pools
+            .iter_mut()
+            .find(|pool| pool.name() == updated_config.name())
+        {
+            *pool = updated_config.clone();
+        }
+        self.selected_gpu_pool = updated_config.name();
+        self
+    }
 }
 pub struct ConfigPools {
     content: ConfigPoolsContent,

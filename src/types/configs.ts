@@ -87,12 +87,12 @@ export interface ConfigPools {
     // When false we are solo mining with glytex, if true we are pool mining with graxil
     gpu_pool_enabled: boolean; // Whether GPU pool mining is enabled | defaults to true
     selected_gpu_pool?: string; // Name of the selected GPU pool => defaults to LuckyPool
-    available_gpu_pools?: [{ [GpuPools.LuckyPool]: BasePoolData }, { [GpuPools.SupportXTMPool]: BasePoolData }]; // Available GPU pools
+    available_gpu_pools?: Record<GpuPools, BasePoolData>; // Available GPU pools
     // ======= Cpu Pool =======
     // When false we are solo mining with xmrig and mmproxy if true we are pool mining with xmrig
     cpu_pool_enabled: boolean; // Whether CPU pool mining is enabled | defaults to true
     selected_cpu_pool?: string; // Name of the selected CPU pool => defaults to LuckyPool
-    available_cpu_pools?: [{ [CpuPools.LuckyPool]: BasePoolData }, { [CpuPools.SupportXTMPool]: BasePoolData }]; // Available CPU pools
+    available_cpu_pools?: Record<CpuPools, BasePoolData>; // Available CPU pools
 }
 
 export enum GpuPools {

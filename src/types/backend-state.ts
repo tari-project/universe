@@ -1,5 +1,6 @@
 import {
     BackgroundNodeSyncUpdatePayload,
+    ConfigPoosPayload,
     ConnectedPeersUpdatePayload,
     ConnectionStatusPayload,
     CriticalProblemPayload,
@@ -156,7 +157,7 @@ export type BackendStateUpdateEvent =
       }
     | {
           event_type: 'ConfigPoolsLoaded';
-          payload: ConfigPools;
+          payload: ConfigPoosPayload;
       }
     | {
           event_type: 'RestartingPhases';
