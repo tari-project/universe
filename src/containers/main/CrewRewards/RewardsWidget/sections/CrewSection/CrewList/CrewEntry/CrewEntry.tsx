@@ -17,11 +17,16 @@ export default function CrewEntry({ entry, isClaimed }: Props) {
     const { handle, reward, progress, timeRemaining, status, user, memberId, claimableRewardId } = entry;
     const [isClaimingReward, setIsClaimingReward] = useState(false);
     const [isSendingNudge, setIsSendingNudge] = useState(false);
+    const [nudgeCooldowns, setNudgeCooldowns] = useState<Record<string, number>>({});
 
     const { invalidate } = useCrewMembers();
 
     const canClaim = progress && progress >= 100 && status !== 'completed';
-    const canNudge = status === 'needs_nudge';
+
+    const isNudgeOnCooldown =
+        memberId && nudgeCooldowns[memberId] ? Date.now() - nudgeCooldowns[memberId] < 5 * 60 * 1000 : false;
+
+    const canNudge = status === 'needs_nudge' && !isNudgeOnCooldown;
 
     const [showNudge, setShowNudge] = useState(false);
     const [showClaim, setShowClaim] = useState(false);
@@ -60,8 +65,14 @@ export default function CrewEntry({ entry, isClaimed }: Props) {
             const result = await sendCrewNudge(message, memberId);
 
             if (result?.success) {
-                console.info('Nudge sent successfully');
-                // Optionally refresh crew data or show success message
+                setShowNudge(true);
+
+                if (memberId) {
+                    setNudgeCooldowns((prev) => ({
+                        ...prev,
+                        [memberId]: Date.now(),
+                    }));
+                }
             } else {
                 console.error('Failed to send nudge');
             }
