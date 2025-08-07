@@ -20,7 +20,7 @@ interface Props {
 }
 
 export default function SecureWalletWarning({ $isScrolled, $isHidden }: Props) {
-    const { setModal } = useSecurityStore();
+    const setModal = useSecurityStore((s) => s.setModal);
     const { t } = useTranslation('staged-security');
 
     const [seedBackedUp, setSeedBackedUp] = useState(false);
@@ -31,13 +31,11 @@ export default function SecureWalletWarning({ $isScrolled, $isHidden }: Props) {
     };
 
     useEffect(() => {
-        const checkFlags = async () => {
-            const backed_up = await invoke('is_seed_backed_up');
-            setSeedBackedUp(backed_up);
-            const locked = await invoke('is_pin_locked');
-            setPinLocked(locked);
-        };
-        checkFlags();
+        invoke('is_pin_locked').then((locked) => setPinLocked(locked));
+    }, []);
+
+    useEffect(() => {
+        invoke('is_seed_backed_up').then((backed_up) => setSeedBackedUp(backed_up));
     }, []);
 
     if ((seedBackedUp && pinLocked) || $isHidden) {
