@@ -54,6 +54,7 @@ interface Palette {
         accent: string;
         main: string;
         secondary: string;
+        tooltip: string;
     };
     action: {
         hover: Colour;
