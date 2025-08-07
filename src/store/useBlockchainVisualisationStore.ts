@@ -7,7 +7,7 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 import { setAnimationState } from '@tari-project/tari-tower';
 import { TransactionInfo, WalletBalance } from '@app/types/app-status.ts';
 import { setMiningControlsEnabled } from './actions/miningStoreActions.ts';
-import { updateWalletScanningProgress, useWalletStore } from './useWalletStore.ts';
+import { CombinedBridgeWalletTransaction, updateWalletScanningProgress, useWalletStore } from './useWalletStore.ts';
 import { useConfigUIStore } from '@app/store/useAppConfigStore.ts';
 import { refreshTransactions } from '@app/hooks/wallet/useFetchTxHistory.ts';
 
@@ -26,8 +26,8 @@ interface State {
     recapData?: Recap;
     recapCount?: number;
     rewardCount?: number;
-    recapIds: TransactionInfo['tx_id'][];
-    replayItem?: TransactionInfo;
+    recapIds: number[];
+    replayItem?: CombinedBridgeWalletTransaction;
     latestBlockPayload?: LatestBlockPayload;
 }
 
@@ -102,8 +102,8 @@ export const handleWinRecap = (recapData: Recap) => {
     setAnimationState(successTier);
     useBlockchainVisualisationStore.setState((c) => ({ ...c, recapData, recapCount: recapData.count }));
 };
-export const handleWinReplay = (txItem: TransactionInfo) => {
-    const earnings = txItem.amount;
+export const handleWinReplay = (txItem: CombinedBridgeWalletTransaction) => {
+    const earnings = txItem.tokenAmount;
     const successTier = getSuccessTier(earnings);
     useBlockchainVisualisationStore.setState((c) => ({ ...c, replayItem: txItem }));
     setAnimationState(successTier, true);
