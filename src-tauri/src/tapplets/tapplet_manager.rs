@@ -20,11 +20,20 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::path::PathBuf;
+
 use log::{info, warn};
 use tauri::{AppHandle, Listener};
 use tokio::sync::oneshot;
 
-use crate::events_emitter::EventsEmitter;
+use crate::{
+    database::{
+        models::{DevTapplet, UpdateDevTapplet},
+        store::{DatabaseConnection, SqliteStore, Store},
+    },
+    events_emitter::EventsEmitter,
+    tapplets::{error::Error, tapplet_server::get_tapplet_config},
+};
 
 static LOG_TARGET: &str = "tari::universe::tapplet_manager";
 
@@ -56,6 +65,65 @@ impl TappletManager {
             warn!(target: LOG_TARGET, "Tapplet's permissions were not granted (null)");
             Err(anyhow::anyhow!("Tapplet's permissions were not granted"))
         }
+    }
+    pub async fn check_permissions_config(
+        tapplet: &DevTapplet,
+        app_handle: tauri::AppHandle,
+    ) -> Result<(bool, UpdateDevTapplet), anyhow::Error> {
+        let tapp_path = PathBuf::from(&tapplet.endpoint);
+        let config = get_tapplet_config(tapp_path).unwrap_or_default();
+        info!(target: LOG_TARGET, "💥 Dev tapplet csp: {}", &config.csp);
+
+        let mut updated_dev_tapp = UpdateDevTapplet::from(tapplet);
+
+        let mut should_update_csp = config.csp.trim_matches('"') != tapplet.csp.trim_matches('"');
+        info!(target: LOG_TARGET, "👀 SHOULD UPDATE CSP?{:?}", should_update_csp);
+        if should_update_csp {
+            let allowed_csp_result =
+                TappletManager::allow_tapplet_csp(config.csp, &app_handle).await;
+            should_update_csp = match allowed_csp_result {
+                Ok(csp) => {
+                    updated_dev_tapp.csp = csp.clone();
+                    info!(target: LOG_TARGET, "💥 allowed to update {}", &csp);
+                    true
+                }
+                Err(e) => {
+                    warn!(target: LOG_TARGET, "Tapplet's CSP was not accepted: {}", e);
+                    false
+                }
+            }
+        };
+
+        let mut should_update_permissions = config.permissions.all_permissions_to_string()
+            != tapplet.tari_permissions.trim_matches('"');
+        info!(target: LOG_TARGET, "👀 SHOULD UPDATE PERMISSIONS?{:?}", should_update_permissions);
+        info!(target: LOG_TARGET, "👀 PERMISSIONS CONFIG {:?}", config.permissions.all_permissions_to_string());
+        info!(target: LOG_TARGET, "👀 PERMISSIONS TAPPLE {:?}",tapplet.tari_permissions.trim_matches('"'));
+        if should_update_permissions {
+            let granted_permissions = TappletManager::grant_tapplet_permissions(
+                config.permissions.all_permissions_to_string(),
+                &app_handle,
+            )
+            .await
+            .map_err(|e| e.to_string());
+            info!(target: LOG_TARGET, "💥 Grant permissions result: {:?}", granted_permissions);
+
+            should_update_permissions = match granted_permissions {
+                Ok(p) => {
+                    updated_dev_tapp.tari_permissions = p.clone();
+                    true
+                }
+                Err(e) => {
+                    warn!(target: LOG_TARGET, "Tapplet's CSP was not accepted: {}", e);
+                    false
+                }
+            };
+        }
+
+        return Ok((
+            should_update_csp || should_update_permissions,
+            updated_dev_tapp,
+        ));
     }
 }
 
