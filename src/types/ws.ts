@@ -1,4 +1,4 @@
-import { XSpaceEventType } from '@app/utils/XSpaceEventType';
+import type { XSpaceEventType } from '@app/utils/XSpaceEventType';
 
 export const GLOBAL_EVENT_NAME = 'global-event';
 
@@ -6,7 +6,6 @@ export enum WebsocketEventNames {
     COMPLETED_QUEST = 'completed_quest',
     REFERRAL_INSTALL_REWARD = 'referral_install_reward',
     USER_SCORE_UPDATE = 'user_score_update',
-    COOKIE_CLAIMED = 'cookie_claimed',
     X_SPACE_EVENT = 'x_space_event',
     CREW_NUDGE = 'crew_nudge',
 }
