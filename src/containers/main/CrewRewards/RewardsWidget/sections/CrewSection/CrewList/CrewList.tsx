@@ -157,6 +157,7 @@ export default function CrewList({
                                             entry={{
                                                 ...item,
                                                 id: item?.id || '',
+                                                memberId: item?.id,
                                                 claimableRewardId: undefined,
                                                 handle: item?.name || '',
                                                 user: {

@@ -66,13 +66,6 @@ export default function CrewEntry({ entry, isClaimed }: Props) {
 
             if (result?.success) {
                 setShowNudge(true);
-
-                if (memberId) {
-                    setNudgeCooldowns((prev) => ({
-                        ...prev,
-                        [memberId]: Date.now(),
-                    }));
-                }
             } else {
                 console.error('Failed to send nudge');
             }
@@ -80,6 +73,12 @@ export default function CrewEntry({ entry, isClaimed }: Props) {
             console.error('Error sending nudge:', error);
         } finally {
             setIsSendingNudge(false);
+            if (memberId) {
+                setNudgeCooldowns((prev) => ({
+                    ...prev,
+                    [memberId]: Date.now(),
+                }));
+            }
         }
     };
 
