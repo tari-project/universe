@@ -5,11 +5,10 @@ export const GLOBAL_EVENT_NAME = 'global-event';
 export enum WebsocketEventNames {
     COMPLETED_QUEST = 'completed_quest',
     REFERRAL_INSTALL_REWARD = 'referral_install_reward',
-    MINING_STATUS_CREW_UPDATE = 'mining_status_crew_update',
-    MINING_STATUS_CREW_DISCONNECTED = 'mining_status_crew_disconnected',
-    MINING_STATUS_USER_UPDATE = 'mining_status_user_update',
     USER_SCORE_UPDATE = 'user_score_update',
+    COOKIE_CLAIMED = 'cookie_claimed',
     X_SPACE_EVENT = 'x_space_event',
+    CREW_NUDGE = 'crew_nudge',
 }
 
 export interface SignData {
@@ -39,28 +38,6 @@ export interface CrewMember {
     profileImageUrl: string | null;
     lastHandshakeAt: Date | null;
     active?: boolean;
-}
-
-interface MiningStatusCrewUpdateEvent {
-    name: WebsocketEventNames.MINING_STATUS_CREW_UPDATE;
-    data: {
-        totalTimeBonusMs: number;
-        crewMember: { id: string };
-    };
-}
-
-interface MiningStatusUserUpdateEvent {
-    name: WebsocketEventNames.MINING_STATUS_USER_UPDATE;
-    data: {
-        totalTimeBonusMs: number;
-    };
-}
-
-interface MiningStatusCrewDisconnectedEvent {
-    name: WebsocketEventNames.MINING_STATUS_CREW_DISCONNECTED;
-    data: {
-        crewMemberId: string;
-    };
 }
 
 interface ReferralInstallRewardEvent {
@@ -95,13 +72,15 @@ export interface XSpaceEvent {
     id: string;
 }
 
+export interface CrewNudgeEvent {
+    name: WebsocketEventNames.CREW_NUDGE;
+}
+
 export type WebsocketUserEvent =
     | UserScoreUpdate
     | ReferralInstallRewardEvent
-    | MiningStatusCrewDisconnectedEvent
     | QuestCompletedEvent
-    | MiningStatusCrewUpdateEvent
-    | MiningStatusUserUpdateEvent
-    | XSpaceEventUpdate;
+    | XSpaceEventUpdate
+    | CrewNudgeEvent;
 
 export type WebsocketGlobalEvent = XSpaceEventUpdate;
