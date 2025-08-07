@@ -21,6 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use getset::{Getters, Setters};
+use reqwest::Url;
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use std::{sync::LazyLock, time::SystemTime};
@@ -34,6 +35,8 @@ use crate::node::node_manager::NodeType;
 use crate::utils::rand_utils;
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
+
+pub const L2_NETWORK: Network = Network::Igor;
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct AirdropTokens {
@@ -70,6 +73,7 @@ pub struct ConfigCoreContent {
     remote_base_node_address: String,
     node_type: NodeType,
     exchange_id: String,
+    ootle_indexer_urls: Vec<Url>,
 }
 
 fn default_monero_nodes() -> Vec<String> {
@@ -79,6 +83,30 @@ fn default_monero_nodes() -> Vec<String> {
         "https://xmr-gra.tari.com".to_string(),
         "https://xmr-bhs.tari.com".to_string(),
     ]
+}
+
+fn default_ootle_indexer_urls(network: Network) -> Vec<Url> {
+    match network {
+        Network::MainNet => {
+            vec![
+                "https://indexer.tari.com".parse().expect("Invalid URL"),
+                "https://indexer-mainnet.tari.com"
+                    .parse()
+                    .expect("Invalid URL"),
+            ]
+        }
+        Network::Igor => {
+            vec!["http://18.217.22.26:12500/json_rpc"
+                .parse()
+                .expect("Invalid URL")]
+        }
+        Network::LocalNet => {
+            vec!["http://localhost:12500/json_rpc"
+                .parse()
+                .expect("Invalid URL")]
+        }
+        _ => vec![],
+    }
 }
 
 impl Default for ConfigCoreContent {
@@ -125,6 +153,7 @@ impl Default for ConfigCoreContent {
             remote_base_node_address,
             node_type: NodeType::default(),
             exchange_id: DEFAULT_EXCHANGE_ID.to_string(),
+            ootle_indexer_urls: default_ootle_indexer_urls(L2_NETWORK),
         }
     }
 }
@@ -150,6 +179,12 @@ impl ConfigCore {
             config.content.version = 1;
             let _unused = Self::_save_config(config._get_content().clone());
         };
+
+        // Original core config is already persisted without indexer URLs
+        if config.content.ootle_indexer_urls.is_empty() {
+            config.content.ootle_indexer_urls = default_ootle_indexer_urls(L2_NETWORK);
+            let _unused = Self::_save_config(config._get_content().clone());
+        }
     }
 }
 

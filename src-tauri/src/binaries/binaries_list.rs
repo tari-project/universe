@@ -40,6 +40,7 @@ pub enum Binaries {
     Tor,
     BridgeTapplet,
     GpuMinerSHA3X,
+    OotleWallet,
 }
 impl Binaries {
     pub fn name(&self) -> &str {
@@ -53,6 +54,7 @@ impl Binaries {
             Binaries::Tor => "tor",
             Binaries::BridgeTapplet => "bridge",
             Binaries::GpuMinerSHA3X => "graxil",
+            Binaries::OotleWallet => "ootle_wallet",
         }
     }
 
@@ -67,6 +69,7 @@ impl Binaries {
             "tor" => Binaries::Tor,
             "bridge" => Binaries::BridgeTapplet,
             "graxil" => Binaries::GpuMinerSHA3X,
+            "ootle_wallet" => Binaries::OotleWallet,
             _ => panic!("Unknown binary name: {name}"),
         }
     }
@@ -109,6 +112,7 @@ impl Binaries {
                 let file_name = "graxil";
                 PathBuf::from(file_name)
             }
+            Binaries::OotleWallet => PathBuf::from("tari_ootle_walletd"),
         }
     }
 
@@ -234,6 +238,20 @@ impl Binaries {
                 }
                 BinaryPlatformAssets::MacOSArm64 => {
                     format!("graxil-macos-arm64-{version}-{hash}.zip")
+                }
+            },
+            Binaries::OotleWallet => match platform {
+                BinaryPlatformAssets::LinuxX64 => {
+                    format!("tari_ootle-{version}-{hash}-linux-x86_64.zip")
+                }
+                BinaryPlatformAssets::WindowsX64 => {
+                    format!("tari_ootle-{version}-{hash}-windows-x64.exe.zip")
+                }
+                BinaryPlatformAssets::MacOSX64 => {
+                    format!("tari_ootle-{version}-{hash}-macos-x86_64.zip")
+                }
+                BinaryPlatformAssets::MacOSArm64 => {
+                    format!("tari_ootle-{version}-{hash}-macos-arm64.zip")
                 }
             },
         }

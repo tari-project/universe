@@ -8,6 +8,7 @@
                 "glytex": "0.2.31 | 4e3148b",
                 "tor": "14.5.1",
                 "bridge": "0.2.0",
-                "graxil": "1.0.10 | 2c0ba0c"
+                "graxil": "1.0.10 | 2c0ba0c",
+                "ootle_wallet": "0.11.0 | 7d00259"
         }
 }
