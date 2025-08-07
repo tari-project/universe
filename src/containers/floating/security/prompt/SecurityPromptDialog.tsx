@@ -23,7 +23,9 @@ export default function SecurityPromptDialog() {
     const [pinLocked, setPinLocked] = useState(false);
 
     function handleClose() {
-        setModal(null);
+        invoke('set_security_warning_dismissed').then(() => {
+            setModal(null);
+        });
     }
     function handleClick() {
         if (!seedBackedUp) {

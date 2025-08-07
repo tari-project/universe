@@ -114,7 +114,7 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
                                 <ExternalLink2SVG />
                             </ExternalLink>
                         )}
-                        <SecureWalletWarning $isScrolled={isScrolled} $isHidden={xcData?.id !== 'universal'} />
+                        <SecureWalletWarning $isScrolled={isScrolled} isExchangeMiner={xcData?.id !== 'universal'} />
                     </DetailsCardBottomContent>
                 </DetailsCardContent>
             </DetailsCard>

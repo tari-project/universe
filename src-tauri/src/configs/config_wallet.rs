@@ -95,6 +95,8 @@ pub struct ConfigWalletContent {
     seed_backed_up: bool,
     #[getset(get = "pub", set = "pub")]
     last_known_balance: MicroMinotari,
+    #[getset(get = "pub", set = "pub")]
+    security_warning_dismissed: bool,
 }
 
 impl Default for ConfigWalletContent {
@@ -114,6 +116,7 @@ impl Default for ConfigWalletContent {
             pin_locker_state: PinLockerState::default(),
             seed_backed_up: false,
             last_known_balance: MicroMinotari(0),
+            security_warning_dismissed: false,
         }
     }
 }

@@ -16,18 +16,18 @@ import { useTranslation } from 'react-i18next';
 
 interface Props {
     $isScrolled: boolean;
-    $isHidden: boolean;
+    isExchangeMiner: boolean;
 }
 
-export default function SecureWalletWarning({ $isScrolled, $isHidden }: Props) {
-    const setModal = useSecurityStore((s) => s.setModal);
+export default function SecureWalletWarning({ $isScrolled, isExchangeMiner }: Props) {
     const { t } = useTranslation('staged-security');
+    const setModal = useSecurityStore((s) => s.setModal);
 
     const [seedBackedUp, setSeedBackedUp] = useState(false);
     const [pinLocked, setPinLocked] = useState(false);
 
     const handleClick = () => {
-        setModal('intro');
+        setModal(isExchangeMiner ? 'create_pin' : 'intro');
     };
 
     useEffect(() => {
@@ -38,11 +38,9 @@ export default function SecureWalletWarning({ $isScrolled, $isHidden }: Props) {
         invoke('is_seed_backed_up').then((backed_up) => setSeedBackedUp(backed_up));
     }, []);
 
-    if ((seedBackedUp && pinLocked) || $isHidden) {
-        return null;
-    }
+    const isHidden = isExchangeMiner ? pinLocked : seedBackedUp && pinLocked;
 
-    return (
+    return !isHidden ? (
         <AnimatePresence>
             {!$isScrolled && (
                 <Wrapper
@@ -54,16 +52,18 @@ export default function SecureWalletWarning({ $isScrolled, $isHidden }: Props) {
                         <LeftTextGroup>
                             <SecureIcon aria-hidden="true">❗</SecureIcon> {t('warning.title')}
                         </LeftTextGroup>
-                        <StepsWrapper>
-                            <StepsText>{t('warning.steps')}</StepsText>
-                            <StepsDots>
-                                <StepsDot $isActive={seedBackedUp} />
-                                <StepsDot $isActive={pinLocked} />
-                            </StepsDots>
-                        </StepsWrapper>
+                        {!isExchangeMiner && (
+                            <StepsWrapper>
+                                <StepsText>{t('warning.steps')}</StepsText>
+                                <StepsDots>
+                                    <StepsDot $isActive={seedBackedUp} />
+                                    <StepsDot $isActive={pinLocked} />
+                                </StepsDots>
+                            </StepsWrapper>
+                        )}
                     </SecureWalletWarningButton>
                 </Wrapper>
             )}
         </AnimatePresence>
-    );
+    ) : null;
 }
