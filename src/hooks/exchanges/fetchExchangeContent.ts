@@ -33,7 +33,7 @@ export const queryfn = async (exchangeId: string) => {
 export function useFetchExchangeBranding() {
     const theme = useTheme();
     const exchangeId = useExchangeStore((s) => s.currentExchangeMinerId);
-    const baseUrl = useConfigBEInMemoryStore((s) => s.airdropApiUrl);
+    const baseUrl = useConfigBEInMemoryStore((s) => s.airdrop_api_url);
 
     return useQuery({
         queryKey: [KEY_XC_CONTENT, exchangeId],

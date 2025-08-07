@@ -116,10 +116,9 @@ export interface ConfigPools {
 }
 
 export interface ConfigBackendInMemory {
-    airdropUrl: string;
-    airdropApiUrl: string;
-    airdropTwitterAuthUrl: string;
-    exchangeId: string;
-    bridgeBackendApiUrl: string;
-    walletConnectProjectId?: string;
+    airdrop_url: string;
+    airdrop_api_url: string;
+    airdrop_twitter_auth_url: string;
+    exchange_id: string;
+    bridge_backend_api_url: string;
 }

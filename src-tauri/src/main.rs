@@ -294,7 +294,7 @@ fn main() {
         pool_status_url: None,
     }));
 
-    let app_in_memory_config = Arc::new(RwLock::new(AppInMemoryConfig::init()));
+    let app_in_memory_config = Arc::new(RwLock::new(AppInMemoryConfig::default()));
     let cpu_miner: Arc<RwLock<CpuMiner>> = Arc::new(
         CpuMiner::new(
             &mut stats_collector,

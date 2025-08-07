@@ -131,9 +131,6 @@ rand = "0.8.5"
 sys-locale = "0.3.1"
 
 [features]
-airdrop-env = []
-telemetry-env = []
-airdrop-local = []
 custom-protocol = [
   "tauri/custom-protocol",
 ] # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!

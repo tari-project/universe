@@ -75,11 +75,11 @@ const configPoolsInitialState: ConfigPools = {
 };
 
 const configBEInMemoryInitialState: ConfigBackendInMemory = {
-    airdropUrl: '',
-    airdropApiUrl: '',
-    airdropTwitterAuthUrl: '',
-    exchangeId: '',
-    bridgeBackendApiUrl: '',
+    airdrop_url: '',
+    airdrop_api_url: '',
+    airdrop_twitter_auth_url: '',
+    exchange_id: '',
+    bridge_backend_api_url: '',
 };
 
 export const useConfigCoreStore = create<ConfigCore>()(() => ({

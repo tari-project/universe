@@ -20,10 +20,8 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::app_in_memory_config::{
-    get_der_encode_pub_key, get_websocket_key, AirdropInMemoryConfig, ExchangeMiner,
-    DEFAULT_EXCHANGE_ID,
-};
+use crate::airdrop::{get_der_encode_pub_key, get_websocket_key};
+use crate::app_in_memory_config::{AppInMemoryConfig, ExchangeMiner, DEFAULT_EXCHANGE_ID};
 use crate::auto_launcher::AutoLauncher;
 use crate::binaries::{Binaries, BinaryResolver};
 use crate::configs::config_core::{AirdropTokens, ConfigCore, ConfigCoreContent};
@@ -314,9 +312,9 @@ pub async fn get_app_in_memory_config(
     _window: tauri::Window,
     state: tauri::State<'_, UniverseAppState>,
     _app: tauri::AppHandle,
-) -> Result<AirdropInMemoryConfig, ()> {
+) -> Result<AppInMemoryConfig, ()> {
     let timer = Instant::now();
-    let res = state.in_memory_config.read().await.clone().into();
+    let res = state.in_memory_config.read().await.clone();
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET,
             "get_app_in_memory_config took too long: {:?}",

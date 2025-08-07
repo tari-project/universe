@@ -33,7 +33,7 @@ import { WalletUIMode } from '@app/types/events-payloads.ts';
 
 export const handleConfigCoreLoaded = async (coreConfig: ConfigCore) => {
     useConfigCoreStore.setState((c) => ({ ...c, ...coreConfig }));
-    const buildInExchangeId = useConfigBEInMemoryStore.getState().exchangeId;
+    const buildInExchangeId = useConfigBEInMemoryStore.getState().exchange_id;
     const isAppExchangeSpecific = Boolean(buildInExchangeId !== 'universal');
     setCurrentExchangeMinerId(coreConfig.exchange_id as string);
 
