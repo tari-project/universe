@@ -80,13 +80,13 @@ impl ProcessAdapter for GpuMinerShaAdapter {
     ) -> Result<(Self::ProcessInstance, Self::StatusMonitor), anyhow::Error> {
         let inner_shutdown = Shutdown::new();
 
-        let mut args: Vec<String> = vec![];
-
-        args.push("--algo".to_string());
-        args.push("sha3x".to_string());
-        // --web is needed for the web socket to be open
-        args.push("--web".to_string());
-        args.push("--gpu".to_string());
+        let mut args: Vec<String> = vec![
+            "--algo".to_string(),
+            "sha3x".to_string(),
+            // --web is needed for the web socket to be open
+            "--web".to_string(),
+            "--gpu".to_string()
+        ];
 
         if let Some(pool_url) = &self.pool_url {
             args.push("--pool".to_string());

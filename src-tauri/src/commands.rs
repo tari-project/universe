@@ -39,8 +39,7 @@ use crate::external_dependencies::{
     ExternalDependencies, ExternalDependency, RequiredExternalDependency,
 };
 use crate::gpu_miner::EngineType;
-use crate::gpu_miner_adapter::{GpuMinerStatus, GpuNodeSource};
-use crate::gpu_status_file::GpuStatus;
+use crate::gpu_miner_adapter::{GpuNodeSource};
 use crate::internal_wallet::{mnemonic_to_tari_cipher_seed, InternalWallet, PaperWalletConfig};
 use crate::node::node_adapter::BaseNodeStatus;
 use crate::node::node_manager::NodeType;
@@ -109,12 +108,6 @@ pub struct ApplicationsVersions {
     sha_p2pool: ApplicationsInformation,
     xtrgpuminer: ApplicationsInformation,
     bridge: ApplicationsInformation,
-}
-
-#[derive(Debug, Serialize, Clone)]
-pub struct GpuMinerMetrics {
-    hardware: Vec<GpuStatus>,
-    mining: GpuMinerStatus,
 }
 
 #[derive(Debug, Serialize, Clone)]

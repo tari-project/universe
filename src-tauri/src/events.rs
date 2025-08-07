@@ -198,6 +198,3 @@ pub struct TariAddressUpdatePayload {
     pub tari_address_emoji: String,
     pub tari_address_type: TariAddressType,
 }
-
-#[derive(Clone, Debug, Serialize)]
-pub struct ConfigPoolsContentLoadedPayload {}
