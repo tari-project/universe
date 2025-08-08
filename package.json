@@ -7,7 +7,7 @@
         "dev": "vite dev",
         "build": "tsc && vite build",
         "preview": "vite preview",
-        "tauri": "dotenv -e ./src-tauri/env.${TARI_NETWORK:-esme} -- cargo tauri",
+        "tauri": "dotenv -e ./src-tauri/env.${TARI_NETWORK:-esme} -- tauri",
         "lint": "knip && eslint src/",
         "lint:fix": "eslint src/ --fix",
         "lint:taplo": "taplo format --check",
