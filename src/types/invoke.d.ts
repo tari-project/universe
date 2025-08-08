@@ -128,7 +128,7 @@ declare module '@tauri-apps/api/core' {
         param: 'select_exchange_miner',
         payload: { exchange_miner: ExchangeMiner; mining_address: string }
     ): Promise<void>;
-    function invoke(param: 'launch_builtin_tapplet', payload: { binaryName: string }): Promise<ActiveTapplet>;
+    function invoke(param: 'start_tari_tapplet_binary', payload: { binaryName: string }): Promise<ActiveTapplet>;
     function invoke(param: 'launch_dev_tapplet', payload: { devTappletId: number }): Promise<ActiveTapplet>;
     function invoke(param: 'is_tapplet_server_running', payload: { tappletId: number }): Promise<boolean>;
     function invoke(param: 'stop_tapplet', payload: { tappletId: number }): Promise<string>;

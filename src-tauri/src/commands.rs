@@ -2216,7 +2216,7 @@ pub async fn update_csp_policy(
 }
 
 #[tauri::command]
-pub async fn launch_builtin_tapplet(binary_name: &str) -> Result<ActiveTapplet, String> {
+pub async fn start_tari_tapplet_binary(binary_name: &str) -> Result<ActiveTapplet, String> {
     let binaries_resolver = BinaryResolver::current();
     // TODO
     let binary = Binaries::from_name(binary_name);

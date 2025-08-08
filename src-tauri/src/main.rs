@@ -637,7 +637,7 @@ fn main() {
             commands::trigger_phases_restart,
             commands::set_node_type,
             commands::set_allow_notifications,
-            commands::launch_builtin_tapplet,
+            commands::start_tari_tapplet_binary,
             commands::launch_dev_tapplet,
             commands::get_bridge_envs,
             commands::parse_tari_address,

@@ -71,7 +71,7 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
         if (isBuiltIn) {
             try {
                 console.info('🚗 RUN BUILDIN');
-                const activeTapplet = await invoke('launch_builtin_tapplet', { binaryName: 'bridge' });
+                const activeTapplet = await invoke('start_tari_tapplet_binary', { binaryName: 'bridge' });
                 set({ activeTapplet });
             } catch (error) {
                 console.error('Error running built-in tapplet: ', error);
@@ -85,7 +85,7 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
             return;
         }
 
-        //TODO add case if dev tapplet's already running and if not - run local server (launch_builtin_tapplet)
+        //TODO add case if dev tapplet's already running and if not - run local server (start_tari_tapplet_binary)
         console.info('is http?', isHttpOrLocalhost(tapplet.endpoint));
         if (isHttpOrLocalhost(tapplet.endpoint)) {
             try {
