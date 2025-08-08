@@ -80,6 +80,7 @@
   "monero-seed-words": "Monero 种子词",
   "network": "网络",
   "no-entry-guard": "未连接入口守卫！",
+  "no-pool-configuration-available": "No pool configuration available",
   "node-configuration": "节点配置",
   "node-configuration-description": "连接远程、本地或两者，直到您的本地节点准备好使用",
   "node-connection-address": "连接地址",
@@ -101,6 +102,7 @@
     "passphrase": "密码短语"
   },
   "pin": "Pin",
+  "pool-configuration": "Pool Configuration",
   "pool-mining": "矿池挖矿",
   "pool-mining-description": "启用后，您将在矿池中挖矿并加入矿工组。",
   "pre-release": {
@@ -131,6 +133,7 @@
   "restart-now": "立即重启",
   "restart-universe": "重启 Tari 宇宙？",
   "save": "保存",
+  "save-configuration": "Save configuration",
   "seed-words": "种子词",
   "send-logs": "发送日志",
   "set-dynamic-fail-data": "设置Monero节点的自定义URL",

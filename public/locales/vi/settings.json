@@ -80,6 +80,7 @@
   "monero-seed-words": "Monero Seed Words",
   "network": "Network",
   "no-entry-guard": "No Entry Guard connected!",
+  "no-pool-configuration-available": "No pool configuration available",
   "node-configuration": "Node configuration",
   "node-configuration-description": "Connect with Remote, Local or both until your Local is ready to use",
   "node-connection-address": "Connection address",
@@ -101,6 +102,7 @@
     "passphrase": "Passphrase"
   },
   "pin": "Pin",
+  "pool-configuration": "Pool Configuration",
   "pool-mining": "Pool Mining",
   "pool-mining-description": "When enabled, you will mine in a pool and join a group of miners.",
   "pre-release": {
@@ -131,6 +133,7 @@
   "restart-now": "Restart Now",
   "restart-universe": "Restart Tari Universe?",
   "save": "Save",
+  "save-configuration": "Save configuration",
   "seed-words": "Seed words",
   "send-logs": "Submit an Issue & Logs",
   "set-dynamic-fail-data": "Set custom urls for monero nodes",

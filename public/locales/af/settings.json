@@ -80,6 +80,7 @@
   "monero-seed-words": "Monero Saadwoorde",
   "network": "Netwerk",
   "no-entry-guard": "Geen Toegangsbewaarder verbind nie!",
+  "no-pool-configuration-available": "No pool configuration available",
   "node-configuration": "Node-konfigurasie",
   "node-configuration-description": "Koppel met Afstand, Plaaslik of albei totdat jou Plaaslike gereed is om te gebruik",
   "node-connection-address": "Verbindingsadres",
@@ -101,6 +102,7 @@
     "passphrase": "Wagwoordfrase"
   },
   "pin": "Pin",
+  "pool-configuration": "Pool Configuration",
   "pool-mining": "Poel Mynbou",
   "pool-mining-description": "Wanneer geaktiveer, sal u in \"n poel myn en by \"n groep mynwerkers aansluit.",
   "pre-release": {
@@ -131,6 +133,7 @@
   "restart-now": "Herbegin Nou",
   "restart-universe": "Herbegin Tari Universe?",
   "save": "Stoor",
+  "save-configuration": "Save configuration",
   "seed-words": "Saadwoorde",
   "send-logs": "Stuur logs",
   "set-dynamic-fail-data": "Stel pasgemaakte URL\"s vir monero nodusse",

@@ -80,6 +80,7 @@
   "monero-seed-words": "Mots de récupération Monero",
   "network": "Réseau",
   "no-entry-guard": "Aucun Entry Guard connecté !",
+  "no-pool-configuration-available": "No pool configuration available",
   "node-configuration": "Configuration du nœud",
   "node-configuration-description": "Connectez-vous avec Remote, Local ou les deux jusqu\"à ce que votre Local soit prêt à être utilisé",
   "node-connection-address": "Adresse de connexion",
@@ -101,6 +102,7 @@
     "passphrase": "Phrase de passe"
   },
   "pin": "Pin",
+  "pool-configuration": "Pool Configuration",
   "pool-mining": "Minage en pool",
   "pool-mining-description": "Lorsqu\"il est activé, vous minerez dans un pool et rejoindrez un groupe de mineurs.",
   "pre-release": {
@@ -131,6 +133,7 @@
   "restart-now": "Redémarrer maintenant",
   "restart-universe": "Redémarrer Tari Universe ?",
   "save": "Enregistrer",
+  "save-configuration": "Save configuration",
   "seed-words": "Mots de récupération",
   "send-logs": "Soumettre un problème et des journaux",
   "set-dynamic-fail-data": "Définir des URL personnalisées pour les nœuds Monero",
