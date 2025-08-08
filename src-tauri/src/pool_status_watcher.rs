@@ -21,7 +21,6 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use anyhow::Error;
-use log::{error, info};
 use serde::{Deserialize, Serialize};
 
 #[allow(dead_code)]
