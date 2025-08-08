@@ -157,7 +157,7 @@ declare module '@tauri-apps/api/core' {
         payload: { tappletId: string; installedTappletId: string }
     ): Promise<InstalledTappletWithAssets[]>;
     function invoke(param: 'get_assets_server_addr'): Promise<string>;
-    function invoke(param: 'add_dev_tapplet', payload: { endpoint: string }): Promise<DevTapplet>;
+    function invoke(param: 'add_dev_tapplet', payload: { source: string }): Promise<DevTapplet>;
     function invoke(param: 'read_dev_tapplets_db'): Promise<DevTapplet[]>;
     function invoke(param: 'delete_dev_tapplet', payload: { devTappletId: number }): Promise<number>;
     function invoke(param: 'delete_installed_tapplet', payload: { tappletId: number }): Promise<number>;

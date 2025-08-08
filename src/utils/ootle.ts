@@ -3,21 +3,18 @@ const TAPPLET_CONFIG_FILE = 'tapplet.config.json'; // Adjust filename if needed
 
 export function isHttpOrLocalhost(s: string): boolean {
     try {
-        const url = new URL(s);
-        const scheme = url.protocol.replace(':', '');
-        if (scheme === 'http' || scheme === 'https') {
+        const sLower = s.toLowerCase();
+        if (sLower.startsWith('http://') || sLower.startsWith('https://') || sLower.includes('localhost')) {
             return true;
         }
     } catch (e) {
         console.warn('Failed to check tapplet source:', e);
     }
-
-    const sLower = s.toLowerCase();
-    return sLower.includes('localhost') || sLower.includes('http') || sLower.includes('https');
+    return false;
 }
 
 export async function fetchActiveTapplet(tapplet: DevTapplet): Promise<ActiveTapplet | undefined> {
-    const url = `${tapplet.endpoint}/${TAPPLET_CONFIG_FILE}`;
+    const url = `${tapplet.source}/${TAPPLET_CONFIG_FILE}`;
     console.info('Dev Tapplet fetch url: ', url);
 
     try {
@@ -36,7 +33,7 @@ export async function fetchActiveTapplet(tapplet: DevTapplet): Promise<ActiveTap
             package_name: tapplet.package_name,
             version: config.version,
             display_name: tapplet.display_name,
-            source: tapplet.endpoint,
+            source: tapplet.source,
             permissions: config.permissions,
             supportedChain: config.supportedChain,
             csp: config.csp,

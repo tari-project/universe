@@ -56,7 +56,7 @@ use crate::pin::PinManager;
 use crate::setup::setup_manager::{SetupManager, SetupPhase};
 use crate::tapplets::error::Error::RequestError;
 use crate::tapplets::error::Error::{self};
-use crate::tapplets::error::RequestError::FetchManifestError;
+use crate::tapplets::error::RequestError::FetchConfigError;
 use crate::tapplets::error::RequestError::ManifestResponseError;
 use crate::tapplets::interface::{
     ActiveTapplet, AssetServer, InstalledTappletWithName, TappletConfig,
@@ -2283,7 +2283,7 @@ pub async fn start_dev_tapplet(
             .map_err(|e| e.to_string())?;
     }
 
-    let tapplet_path = PathBuf::from(&dev_tapplet.endpoint);
+    let tapplet_path = PathBuf::from(&dev_tapplet.source);
 
     let addr = tapplet_manager
         .start_server(dev_tapplet_id, tapplet_path, &dev_tapplet.csp)
@@ -2328,7 +2328,7 @@ pub async fn restart_tapplet(
     let dev_tapplet: DevTapplet = tapplet_store
         .get_by_id(tapplet_id)
         .map_err(|e| e.to_string())?;
-    let tapplet_path = PathBuf::from(&dev_tapplet.endpoint);
+    let tapplet_path = PathBuf::from(&dev_tapplet.source);
 
     let address = tapplet_manager
         .restart_server(tapplet_id, tapplet_path, &dev_tapplet.csp)
@@ -2504,7 +2504,7 @@ pub async fn fetch_registered_tapplets(
         match store.get_tapplet_assets_by_tapplet_id(inserted_tapplet.id.unwrap()) {
             Ok(Some(_)) => {}
             Ok(None) => {
-                match download_asset(app_handle.clone(), inserted_tapplet.registry_id).await {
+                match download_asset(app_handle.clone(), inserted_tapplet.tapp_registry_id).await {
                     Ok(tapplet_assets) => {
                         let _ = store
                             .create(
@@ -2568,7 +2568,7 @@ pub async fn download_and_extract_tapp(
 
     // get download path
     let tapplet_path = get_tapp_download_path(
-        tapp.registry_id.clone(),
+        tapp.tapp_registry_id.clone(),
         tapp_version.version.clone(),
         app.clone(),
     )
@@ -2654,7 +2654,7 @@ pub fn delete_installed_tapplet(
     let (_installed_tapp, registered_tapp, tapp_version) =
         store.get_installed_tapplet_full_by_id(tapplet_id)?;
     let tapplet_path = get_tapp_download_path(
-        registered_tapp.registry_id,
+        registered_tapp.tapp_registry_id,
         tapp_version.version,
         app_handle,
     )
@@ -2707,39 +2707,40 @@ fn is_http_or_localhost(s: &str) -> bool {
 
 #[tauri::command]
 pub async fn add_dev_tapplet(
-    endpoint: String,
+    source: String,
     db_connection: tauri::State<'_, DatabaseConnection>,
 ) -> Result<DevTapplet, Error> {
-    // let manifest_endpoint = format!("{}/tapplet.manifest.json", endpoint);
+    // let manifest_source = format!("{}/tapplet.manifest.json", source);
     let tapp_config: TappletConfig;
 
-    if is_http_or_localhost(&endpoint) {
-        info!("❌ LOCALHOST endpoint {:?}", &endpoint);
+    if is_http_or_localhost(&source) {
         // IF source is the type of localhost or http address
-        let config_endpoint = format!("{}/tapplet.config.json", endpoint);
-        tapp_config = reqwest::get(&config_endpoint)
+        let config_source = format!("{}/tapplet.config.json", source);
+        info!("❌ LOCALHOST source {:?}", &config_source);
+        tapp_config = reqwest::get(&config_source)
             .await
-            .inspect_err(|e| {
+            .inspect_err(|err| {
                 error!(
-                    "❌ Fetching tapplet manifest endpoint {:?} error: {:?}",
-                    config_endpoint, e
+                    "❌ Fetching tapplet manifest source {:?} error: {:?}",
+                    config_source, err
                 )
             })
             .map_err(|_| {
-                RequestError(FetchManifestError {
-                    endpoint: endpoint.clone(),
+                RequestError(FetchConfigError {
+                    endpoint: source.clone(),
                 })
             })?
             .json::<TappletConfig>()
             .await
-            .map_err(|_| {
+            .map_err(|err| {
                 RequestError(ManifestResponseError {
-                    endpoint: endpoint.clone(),
+                    endpoint: source.clone(),
+                    e: err.to_string(),
                 })
             })?;
     } else {
         // IF source is type of path like /home/user/path-to-app
-        let tapp_dest_dir = PathBuf::from(&endpoint);
+        let tapp_dest_dir = PathBuf::from(&source);
         tapp_config = get_tapplet_config(&tapp_dest_dir).unwrap();
     }
 
@@ -2750,11 +2751,11 @@ pub async fn add_dev_tapplet(
     );
     let mut store = SqliteStore::new(db_connection.0.clone());
     let new_dev_tapplet = CreateDevTapplet {
-        endpoint: &endpoint,
+        source: &source,
         package_name: &tapp_config.package_name,
         display_name: &tapp_config.display_name,
-        csp: "default-src 'self';", //&tapp_config.csp, //TODO set default csp and then ask for permissions
-        tari_permissions: "requiredPermissions:[], optionalPermissions:[]", //&tapp_config.permissions.all_permissions_to_string(),
+        csp: "default-src 'self';", //set default csp and then ask to allow from config
+        tari_permissions: "requiredPermissions:[], optionalPermissions:[]", //set default permissions and then ask to allow from config
     };
     match store.create(&new_dev_tapplet) {
         Ok(dev_tapplet) => {
@@ -2762,7 +2763,7 @@ pub async fn add_dev_tapplet(
             Ok(dev_tapplet)
         }
         Err(e) => {
-            warn!(target: LOG_TARGET, "❌ Error while adding dev tapplet (endpoint {:?}) to db: {:?}", endpoint, e);
+            warn!(target: LOG_TARGET, "❌ Error while adding dev tapplet (source {:?}) to db: {:?}", source, e);
             return Err(e);
         }
     }

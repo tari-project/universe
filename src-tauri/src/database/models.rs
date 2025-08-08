@@ -39,8 +39,7 @@ pub struct UpdateInstalledTapplet {
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct Tapplet {
     pub id: Option<i32>,
-    pub registry_id: String,
-    pub package_name: String,
+    pub tapp_registry_id: String,
     pub display_name: String,
     pub logo_url: String,
     pub background_url: String,
@@ -56,8 +55,7 @@ pub struct Tapplet {
 #[derive(Insertable, Debug, Deserialize)]
 #[diesel(table_name = tapplet)]
 pub struct CreateTapplet<'a> {
-    pub registry_id: &'a str,
-    pub package_name: &'a str,
+    pub tapp_registry_id: &'a str,
     pub display_name: &'a str,
     pub logo_url: &'a str,
     pub background_url: &'a str,
@@ -73,8 +71,7 @@ pub struct CreateTapplet<'a> {
 impl<'a> From<&'a TappletRegistryManifest> for CreateTapplet<'a> {
     fn from(tapplet_manifest: &'a TappletRegistryManifest) -> Self {
         CreateTapplet {
-            registry_id: &tapplet_manifest.id,
-            package_name: &tapplet_manifest.id,
+            tapp_registry_id: &tapplet_manifest.id,
             display_name: &tapplet_manifest.metadata.display_name,
             logo_url: &tapplet_manifest.metadata.logo_url,
             background_url: &tapplet_manifest.metadata.background_url,
@@ -84,7 +81,7 @@ impl<'a> From<&'a TappletRegistryManifest> for CreateTapplet<'a> {
             about_description: &tapplet_manifest.metadata.about.description,
             category: &tapplet_manifest.metadata.category,
             csp: "default-src 'self'",
-            tari_permissions: "admin",
+            tari_permissions: "requiredPermissions:[],optionalPermissions:[]",
         }
     }
 }
@@ -92,8 +89,7 @@ impl<'a> From<&'a TappletRegistryManifest> for CreateTapplet<'a> {
 impl<'a> From<&CreateTapplet<'a>> for UpdateTapplet {
     fn from(create_tapplet: &CreateTapplet) -> Self {
         UpdateTapplet {
-            registry_id: create_tapplet.registry_id.to_string(),
-            package_name: create_tapplet.package_name.to_string(),
+            tapp_registry_id: create_tapplet.tapp_registry_id.to_string(),
             display_name: create_tapplet.display_name.to_string(),
             logo_url: create_tapplet.logo_url.to_string(),
             background_url: create_tapplet.background_url.to_string(),
@@ -111,8 +107,7 @@ impl<'a> From<&CreateTapplet<'a>> for UpdateTapplet {
 #[derive(Debug, AsChangeset)]
 #[diesel(table_name = tapplet)]
 pub struct UpdateTapplet {
-    pub registry_id: String,
-    pub package_name: String,
+    pub tapp_registry_id: String,
     pub display_name: String,
     pub logo_url: String,
     pub background_url: String,
@@ -171,7 +166,7 @@ pub struct UpdateTappletVersion {
 pub struct DevTapplet {
     pub id: Option<i32>,
     pub package_name: String,
-    pub endpoint: String,
+    pub source: String,
     pub display_name: String,
     pub csp: String,
     pub tari_permissions: String,
@@ -180,7 +175,7 @@ pub struct DevTapplet {
 #[derive(Insertable, Debug)]
 #[diesel(table_name = dev_tapplet)]
 pub struct CreateDevTapplet<'a> {
-    pub endpoint: &'a str,
+    pub source: &'a str,
     pub package_name: &'a str,
     pub display_name: &'a str,
     pub csp: &'a str,
@@ -190,7 +185,7 @@ pub struct CreateDevTapplet<'a> {
 impl<'a> From<&CreateDevTapplet<'a>> for UpdateDevTapplet {
     fn from(create_dev_tapplet: &CreateDevTapplet) -> Self {
         UpdateDevTapplet {
-            endpoint: create_dev_tapplet.endpoint.to_string(),
+            source: create_dev_tapplet.source.to_string(),
             package_name: create_dev_tapplet.package_name.to_string(),
             display_name: create_dev_tapplet.display_name.to_string(),
             csp: create_dev_tapplet.csp.to_string(),
@@ -202,7 +197,7 @@ impl<'a> From<&CreateDevTapplet<'a>> for UpdateDevTapplet {
 #[derive(Debug, AsChangeset)]
 #[diesel(table_name = dev_tapplet)]
 pub struct UpdateDevTapplet {
-    pub endpoint: String,
+    pub source: String,
     pub package_name: String,
     pub display_name: String,
     pub csp: String,
@@ -212,7 +207,7 @@ pub struct UpdateDevTapplet {
 impl From<&DevTapplet> for UpdateDevTapplet {
     fn from(dev_tapplet: &DevTapplet) -> Self {
         UpdateDevTapplet {
-            endpoint: dev_tapplet.endpoint.clone(),
+            source: dev_tapplet.source.clone(),
             package_name: dev_tapplet.package_name.clone(),
             display_name: dev_tapplet.display_name.clone(),
             csp: dev_tapplet.csp.clone(),

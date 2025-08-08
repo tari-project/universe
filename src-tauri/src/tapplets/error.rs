@@ -126,12 +126,12 @@ pub enum IOError {
 
 #[derive(Debug, Error)]
 pub enum RequestError {
-    #[error("fetch-manifest-error | endpoint-{endpoint}")]
+    #[error("fetch-manifest-error | {endpoint}")]
     FetchManifestError { endpoint: String },
-    #[error("fetch-config-error | endpoint-{endpoint}")]
+    #[error("fetch-config-error | {endpoint}")]
     FetchConfigError { endpoint: String },
-    #[error("manifest-response-error | endpoint-{endpoint}")]
-    ManifestResponseError { endpoint: String },
+    #[error("manifest-response-error | {endpoint}: {e}")]
+    ManifestResponseError { endpoint: String, e: String },
     #[error("failed-to-download | url-{url}")]
     FailedToDownload { url: String },
 }

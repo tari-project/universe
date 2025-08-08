@@ -170,9 +170,10 @@ pub async fn fetch_tapp_registry_manifest() -> Result<RegisteredTapplets, Error>
         })?
         .text()
         .await
-        .map_err(|_| {
+        .map_err(|error| {
             RequestError(ManifestResponseError {
                 endpoint: manifest_endpoint.clone(),
+                e: error.to_string(),
             })
         })?;
 

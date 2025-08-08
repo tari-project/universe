@@ -4,7 +4,7 @@ diesel::table! {
     dev_tapplet (id) {
         id -> Nullable<Integer>,
         package_name -> Text,
-        endpoint -> Text,
+        source -> Text,
         display_name -> Text,
         csp -> Text,
         tari_permissions -> Text,
@@ -22,8 +22,7 @@ diesel::table! {
 diesel::table! {
     tapplet (id) {
         id -> Nullable<Integer>,
-        registry_id -> Text,
-        package_name -> Text,
+        tapp_registry_id -> Text,
         display_name -> Text,
         logo_url -> Text,
         background_url -> Text,

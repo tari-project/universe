@@ -31,7 +31,7 @@ interface Actions {
     installRegisteredTapp: (tappletId: string) => Promise<void>;
     fetchRegisteredTapps: () => Promise<void>;
     getInstalledTapps: () => Promise<void>;
-    addDevTapp: (endpoint: string) => Promise<void>;
+    addDevTapp: (source: string) => Promise<void>;
     deleteDevTapp: (devTappletId: number) => Promise<void>;
     deleteInstalledTapp: (tappletId: number) => Promise<void>;
     updateInstalledTapp: (tappletId: number, installedTappletId: number) => Promise<void>;
@@ -86,8 +86,8 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
         }
 
         //TODO add case if dev tapplet's already running and if not - run local server (start_tari_tapplet_binary)
-        console.info('is http?', isHttpOrLocalhost(tapplet.endpoint));
-        if (isHttpOrLocalhost(tapplet.endpoint)) {
+        console.info('is http?', isHttpOrLocalhost(tapplet.source));
+        if (isHttpOrLocalhost(tapplet.source)) {
             try {
                 console.info('🚗 RUN HTTP ', tapplet?.display_name);
                 const activeTapplet = await fetchActiveTapplet(tapplet);
@@ -190,9 +190,9 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
             setError(`'Error installing tapplet: ${error}`);
         }
     },
-    addDevTapp: async (endpoint) => {
-        console.info('[STORE] add dev tapp endpoint', endpoint);
-        const devTapp = await invoke('add_dev_tapplet', { endpoint });
+    addDevTapp: async (source) => {
+        console.info('[STORE] add dev tapp source', source);
+        const devTapp = await invoke('add_dev_tapplet', { source });
         console.info('[STORE] add dev tapp', devTapp);
         const devTapplets = await invoke('read_dev_tapplets_db');
         console.info('[STORE] add dev tapplets', devTapplets);

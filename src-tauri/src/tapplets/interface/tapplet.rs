@@ -24,8 +24,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize)]
 pub struct Tapplet {
     pub id: Option<i32>,
-    pub registry_id: String,
-    pub package_name: String,
+    pub tapp_registry_id: String,
     pub display_name: String,
     pub logo_url: String,
     pub background_url: String,

@@ -84,7 +84,7 @@ impl TappletManager {
         tapplet: &DevTapplet,
         app_handle: tauri::AppHandle,
     ) -> Result<(bool, UpdateDevTapplet), anyhow::Error> {
-        let tapp_path = PathBuf::from(&tapplet.endpoint);
+        let tapp_path = PathBuf::from(&tapplet.source);
         let config = get_tapplet_config(&tapp_path).unwrap_or_default();
         info!(target: LOG_TARGET, "💥 Dev tapplet csp: {}", &config.csp);
 

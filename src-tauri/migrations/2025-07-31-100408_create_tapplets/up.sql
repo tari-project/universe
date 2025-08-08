@@ -2,8 +2,7 @@
 -- This file should undo anything in `up.sql`
 CREATE TABLE tapplet (
   id INTEGER PRIMARY KEY,
-  registry_id TEXT NOT NULL,
-  package_name TEXT NOT NULL,
+  tapp_registry_id TEXT NOT NULL,
   display_name TEXT NOT NULL,
   logo_url TEXT NOT NULL,
   background_url TEXT NOT NULL,
@@ -14,8 +13,7 @@ CREATE TABLE tapplet (
   category TEXT NOT NULL,
   csp TEXT NOT NULL,
   tari_permissions TEXT NOT NULL,
-  UNIQUE(registry_id),
-  UNIQUE(package_name)
+  UNIQUE(tapp_registry_id)
 );
 
 CREATE TABLE tapplet_version (
@@ -49,11 +47,11 @@ CREATE TABLE installed_tapplet (
 CREATE TABLE dev_tapplet (
   id INTEGER PRIMARY KEY,
   package_name TEXT NOT NULL,
-  endpoint TEXT NOT NULL,
+  source TEXT NOT NULL,
   display_name TEXT NOT NULL,
   csp TEXT NOT NULL,
   tari_permissions TEXT NOT NULL,
-  UNIQUE(endpoint)
+  UNIQUE(source)
 );
 
 CREATE TABLE tapplet_asset (
