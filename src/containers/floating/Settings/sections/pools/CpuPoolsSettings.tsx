@@ -46,8 +46,6 @@ export const CpuPoolsSettings = () => {
         changeCpuPoolConfiguration(updatedConfig);
     }, []);
 
-    console.log('Selected CPU Pool Data:', selectedCpuPoolData);
-
     return (
         <SettingsGroupWrapper style={{ gap: '16px' }}>
             <SettingsGroup>

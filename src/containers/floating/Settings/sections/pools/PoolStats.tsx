@@ -4,7 +4,6 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 import { convertHexToRGBA, formatNumber, FormatPreset } from '@app/utils';
 import { PoolStats as IPoolStats } from '@app/types/app-status.ts';
-import { BasePoolData } from '@app/types/configs.ts';
 import styled from 'styled-components';
 
 interface PoolStatsProps {

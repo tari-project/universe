@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { Controller, useForm, FieldValues, Path } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { BasePoolData } from '@app/types/configs';
