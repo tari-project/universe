@@ -6,15 +6,8 @@ import BlockScrollList from './BlockScrollList/BlockScrollList';
 import { timeAgo } from './utils/formatting';
 import MinerCount from '@app/containers/main/Dashboard/components/BlockExplorerMini/MinerCount/MinerCount.tsx';
 import { Wrapper, StickyEntryWrapper, LoadingPlaceholder, InsideHolder } from './styles';
-import { preload } from 'react-dom';
-
-export const URL_BLOCK_SOLVED = `https://customer-o6ocjyfui1ltpm5h.cloudflarestream.com/852dac0dc91d50d399a7349dcc7316a1/manifest/video.m3u8`;
-export const URL_BLOCK = `https://customer-o6ocjyfui1ltpm5h.cloudflarestream.com/3ed05f3d4fbfd3eec7c4bb911915d1c2/manifest/video.m3u8`;
 
 export default function BlockExplorerMini() {
-    preload(URL_BLOCK, { as: 'video' });
-    preload(URL_BLOCK_SOLVED, { as: 'video' });
-
     const { data, isLoading, isError } = useFetchExplorerData();
     const blockBubblesData = data?.blockBubblesData;
     const [stickyEntry, setStickyEntry] = useState<BlockData | null>(null);

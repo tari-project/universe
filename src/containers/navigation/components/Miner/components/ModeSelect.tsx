@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
@@ -38,7 +38,7 @@ const getModeIcon = (modeType: MiningModeType) => {
     }
 };
 
-export default function ModeSelect({ variant = 'primary', isSync }: ModeSelectProps) {
+const ModeSelect = memo(function ModeSelect({ variant = 'primary', isSync }: ModeSelectProps) {
     const { t } = useTranslation('common', { useSuspense: false });
 
     const selectedMiningMode = useConfigMiningStore((s) => s.getSelectedMiningMode());
@@ -122,4 +122,6 @@ export default function ModeSelect({ variant = 'primary', isSync }: ModeSelectPr
             {selectMarkup}
         </TileItem>
     );
-}
+});
+
+export default ModeSelect;

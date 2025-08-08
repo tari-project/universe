@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useMemo } from 'react';
 
 type Seed = number;
 
@@ -37,38 +37,30 @@ interface StyleObject {
     backgroundPosition?: string;
 }
 
-export function useAvatarGradient({ username, image, fallback = 'rgb(0, 0, 0, 0.15)' }: GradientOptions): StyleObject {
-    const [style, setStyle] = useState<StyleObject>({
-        backgroundColor: fallback,
-        backgroundImage: 'none',
-    });
-
-    useEffect(() => {
-        if (image) {
-            setStyle({
+export function useAvatarGradient({ username, fallback = 'rgb(0, 0, 0, 0.15)', image }: GradientOptions): StyleObject {
+    return useMemo(() => {
+        if (image)
+            return {
                 backgroundColor: fallback,
                 backgroundImage: `url(${image})`,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
-            });
-        } else if (username) {
-            const seed = hashString(username);
-            const color1 = generateColor(seed);
-            const color2 = generateColor(seed + 3);
-            const xPos = Math.floor(seededRandom(seed + 6) * 100);
-            const yPos = Math.floor(seededRandom(seed + 7) * 100);
-
-            setStyle({
-                backgroundColor: fallback,
-                backgroundImage: `radial-gradient(circle at ${xPos}% ${yPos}%, ${color1}, ${color2})`,
-            });
-        } else {
-            setStyle({
+            };
+        if (!username || username === '')
+            return {
                 backgroundColor: fallback,
                 backgroundImage: 'none',
-            });
-        }
-    }, [username, fallback, image]);
+            };
 
-    return style;
+        const seed = hashString(username);
+        const color1 = generateColor(seed);
+        const color2 = generateColor(seed + 3);
+        const xPos = Math.floor(seededRandom(seed + 6) * 100);
+        const yPos = Math.floor(seededRandom(seed + 7) * 100);
+
+        return {
+            backgroundColor: fallback,
+            backgroundImage: `radial-gradient(circle at ${xPos}% ${yPos}%, ${color1}, ${color2})`,
+        };
+    }, [username, fallback, image]);
 }

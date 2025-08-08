@@ -1,12 +1,12 @@
-import { useCallback } from 'react';
 import { useUIStore } from '@app/store/useUIStore';
 import { DialogContent, Dialog } from '@app/components/elements/dialog/Dialog';
+import { memo, useCallback } from 'react';
 import { ReleaseNotes } from '../Settings/sections';
 import { Button, ButtonWrapper, Title, Wrapper } from './styles';
 import { useTranslation } from 'react-i18next';
 import { setDialogToShow } from '@app/store';
 
-export default function ReleaseNotesDialog() {
+const ReleaseNotesDialog = memo(function ReleaseNotesDialog() {
     const open = useUIStore((s) => s.dialogToShow === 'releaseNotes');
 
     const { t } = useTranslation('components', { useSuspense: false });
@@ -30,4 +30,6 @@ export default function ReleaseNotesDialog() {
             </DialogContent>
         </Dialog>
     );
-}
+});
+
+export default ReleaseNotesDialog;

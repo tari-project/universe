@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IoClose } from 'react-icons/io5';
 
@@ -26,7 +26,7 @@ import { setIsSettingsOpen } from '@app/store';
 import VersionChip from '@app/containers/navigation/components/VersionChip/VersionChip.tsx';
 import { PoolsSettings } from './sections/pools/PoolsSettings.tsx';
 
-export default function SettingsModal() {
+const SettingsModal = memo(function SettingsModal() {
     const { t } = useTranslation(['settings'], { useSuspense: false });
     const [activeSection, setActiveSection] = useState<SettingsType>(SETTINGS_TYPES[0]);
     const isSettingsOpen = useAppStateStore((s) => s.isSettingsOpen);
@@ -77,4 +77,6 @@ export default function SettingsModal() {
             </DialogContent>
         </Dialog>
     );
-}
+});
+
+export default SettingsModal;

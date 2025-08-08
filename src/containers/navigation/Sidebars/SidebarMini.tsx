@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { TariOutlineSVG } from '@app/assets/icons/tari-outline.tsx';
 import OpenSettingsButton from '@app/containers/floating/Settings/components/OpenSettingsButton.tsx';
 import { AirdropSidebarItems } from '@app/containers/main/Airdrop/sidebar/AirdropSidebarItems.tsx';
@@ -7,8 +8,9 @@ import { WalletUIMode } from '@app/types/events-payloads.ts';
 import MineButton from './buttons/MineButton.tsx';
 import BridgeButton from './buttons/BridgeButton.tsx';
 
-export default function SidebarMini() {
+const SidebarMini = memo(function SidebarMini() {
     const isStandardWalletUI = useConfigUIStore((s) => s.wallet_ui_mode === WalletUIMode.Standard);
+
     return (
         <MiniWrapper>
             <GridTop>
@@ -26,4 +28,6 @@ export default function SidebarMini() {
             </GridBottom>
         </MiniWrapper>
     );
-}
+});
+
+export default SidebarMini;

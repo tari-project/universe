@@ -36,11 +36,11 @@ const txStates = {
 };
 
 export function getTxTypeByStatus(transaction: CombinedBridgeWalletTransaction): TransationType {
-    if (txTypes.mined.includes(transaction.walletTransactionDetails?.status)) {
+    if (txTypes.mined.includes(transaction.walletTransactionDetails.status)) {
         return 'mined';
     }
-    if (txTypes.oneSided.includes(transaction.walletTransactionDetails?.status)) {
-        return transaction.walletTransactionDetails?.direction === TransactionDirection.Inbound ? 'received' : 'sent';
+    if (txTypes.oneSided.includes(transaction.walletTransactionDetails.status)) {
+        return transaction.walletTransactionDetails.direction === TransactionDirection.Inbound ? 'received' : 'sent';
     }
     return 'unknown';
 }
@@ -52,7 +52,7 @@ export function getTxStatusTitleKey(transaction: CombinedBridgeWalletTransaction
             : 'pending';
     }
     return Object.keys(txStates).find((key) => {
-        if (txStates[key].includes(transaction.walletTransactionDetails?.status)) {
+        if (txStates[key].includes(transaction.walletTransactionDetails.status)) {
             return key;
         }
     });
@@ -68,7 +68,7 @@ export function getTxTitle(transaction: CombinedBridgeWalletTransaction): string
     const statusTitle = i18n.t(`common:${statusTitleKey}`);
     const typeTitle =
         itemType === 'unknown'
-            ? TransactionDirection[transaction.walletTransactionDetails?.direction]
+            ? TransactionDirection[transaction.walletTransactionDetails.direction]
             : i18n.t(`common:${itemType}`);
 
     if (itemType === 'mined' && transaction.mined_in_block_height) {

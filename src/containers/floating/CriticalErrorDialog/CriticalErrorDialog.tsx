@@ -4,14 +4,14 @@ import { Typography } from '@app/components/elements/Typography';
 import { useTranslation } from 'react-i18next';
 import { useAppStateStore } from '@app/store/appStateStore';
 import { invoke } from '@tauri-apps/api/core';
-import { useCallback, useState } from 'react';
+import { memo, useCallback, useState } from 'react';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { SpinnerIcon } from '@app/components/elements/loaders/SpinnerIcon.tsx';
 
 // currently only used with macOS installation location error
 // no logs or restart required as user will need to move to the Applications directory first
 
-export default function CriticalErrorDialog() {
+const CriticalErrorDialog = memo(function CriticalErrorDialog() {
     const { t } = useTranslation('common', { useSuspense: false });
     const criticalError = useAppStateStore((s) => s.criticalError);
     const [isExiting, setIsExiting] = useState(false);
@@ -48,4 +48,6 @@ export default function CriticalErrorDialog() {
             </DialogContent>
         </Dialog>
     );
-}
+});
+
+export default CriticalErrorDialog;

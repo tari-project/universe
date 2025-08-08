@@ -78,7 +78,7 @@ export const Connect = () => {
                 }
             });
         }
-    }, [data, debouncedAddress, setError, validateAddress, validationErrorMessage]);
+    }, [data?.wxtm_mode, debouncedAddress, setError, validateAddress, validationErrorMessage]);
 
     const handleWXTMSubmit = useCallback(async () => {
         const encodedAddress = await convertEthAddressToTariAddress(address, data?.id || 'unknown');
@@ -90,9 +90,8 @@ export const Connect = () => {
     const onSubmit = useCallback(
         async (_unused: ConnectFormFields) => {
             let tariAddress = address;
-            const wxtm_mode = data?.wxtm_mode;
             try {
-                if (wxtm_mode) {
+                if (data?.wxtm_mode) {
                     // In wxtm_mode we are converting the ETH address to a Tari address
                     tariAddress = await handleWXTMSubmit();
                 }
@@ -105,7 +104,7 @@ export const Connect = () => {
                 console.error('Error confirming exchange address:', e);
             }
         },
-        [address, data, handleWXTMSubmit]
+        [address, data?.wxtm_mode, handleWXTMSubmit]
     );
 
     const labelCopy = data?.wxtm_mode

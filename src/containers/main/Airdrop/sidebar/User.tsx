@@ -1,9 +1,9 @@
-import { Trans, useTranslation } from 'react-i18next';
 import { useAirdropStore } from '@app/store';
 import { useAvatarGradient } from '@app/hooks/airdrop/utils/useAvatarGradient.ts';
 import { SidebarItem } from './components/SidebarItem';
 import { Avatar, TooltipAction } from './items.style';
 import { Typography } from '@app/components/elements/Typography.tsx';
+import { Trans, useTranslation } from 'react-i18next';
 import { handleAirdropLogout } from '@app/store';
 
 export default function User() {

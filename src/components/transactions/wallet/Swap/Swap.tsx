@@ -1,6 +1,5 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
-import { useTranslation } from 'react-i18next';
-
+import { BackButton, IframeContainer, SectionHeaderWrapper, SwapsContainer, SwapsIframe } from './Swap.styles';
+import { HeaderLabel, TabHeader } from '../../components/Tabs/tab.styles';
 import {
     SwapConfirmation,
     SwapConfirmationTransactionProps,
@@ -10,17 +9,16 @@ import {
     ProcessingTransaction,
 } from '@app/containers/floating/SwapDialogs/sections/ProcessingTransaction/ProcessingTransaction';
 
+import { useState, memo, useRef, useEffect, useCallback } from 'react'; // Added useRef
 import { SignApprovalMessage } from '@app/containers/floating/SwapDialogs/sections/SignMessage/SignApprovalMessage';
-
+import { useTranslation } from 'react-i18next';
 import { setIsSwapping } from '@app/store/actions/walletStoreActions';
 import { MessageType, useIframeMessage } from '@app/hooks/swap/useIframeMessage';
 import { useUIStore } from '@app/store';
 import { useIframeUrl } from '@app/hooks/swap/useIframeUrl';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots';
-import { BackButton, IframeContainer, SectionHeaderWrapper, SwapsContainer, SwapsIframe } from './Swap.styles';
-import { HeaderLabel, TabHeader } from '../../components/Tabs/tab.styles';
 
-export function Swap() {
+export const Swap = memo(function Swap() {
     const theme = useUIStore((s) => s.theme);
     const [processingOpen, setProcessingOpen] = useState(false);
     const [processingTransaction, setProcessingTransaction] = useState<ProccessingTransactionProps | null>(null);
@@ -30,7 +28,6 @@ export function Swap() {
     const [error, setError] = useState<string | null>(null);
     const [walletConnectOpen, setWalletConnectOpen] = useState(false);
     const [swapHeight, setSwapHeight] = useState(0);
-    const [iframeOpacity, setIFrameOpacity] = useState(0);
     const iframeUrl = useIframeUrl();
     const iframeRef = useRef<HTMLIFrameElement | null>(null);
     const [isFullscreen, setIsFullscreen] = useState(false);
@@ -39,26 +36,16 @@ export function Swap() {
 
     const handleSetTheme = useCallback(() => {
         if (!iframeUrl) return;
-
-        const themeTimeout = setTimeout(() => {
+        setTimeout(() => {
             if (iframeRef.current) {
-                setIFrameOpacity(0);
                 iframeRef.current.contentWindow?.postMessage({ type: 'SET_THEME', payload: { theme } }, '*');
             }
-        }, 75);
-        const opacityTimeout = setTimeout(() => {
-            setIFrameOpacity(1);
-        }, 450);
-        return () => {
-            clearTimeout(themeTimeout);
-            clearTimeout(opacityTimeout);
-        };
+        }, 1000);
     }, [iframeUrl, theme]);
-
     useEffect(() => {
         // Keep the iframe theme in sync with the app theme
         handleSetTheme();
-        const timeout = setTimeout(handleSetTheme, 50);
+        const timeout = setTimeout(handleSetTheme, 1000);
         return () => {
             clearTimeout(timeout);
         };
@@ -139,7 +126,6 @@ export function Swap() {
                 {iframeUrl ? (
                     <SwapsIframe
                         $swapHeight={swapHeight}
-                        $opacity={iframeOpacity}
                         $walletConnectOpen={walletConnectOpen}
                         ref={iframeRef}
                         src={iframeUrl}
@@ -180,4 +166,4 @@ export function Swap() {
             <SignApprovalMessage isOpen={approving} setIsOpen={setApproving} />
         </SwapsContainer>
     );
-}
+});

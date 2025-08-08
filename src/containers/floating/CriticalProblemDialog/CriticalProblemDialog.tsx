@@ -7,11 +7,11 @@ import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard.ts';
 import { useAppStateStore } from '@app/store/appStateStore';
 import { invoke } from '@tauri-apps/api/core';
 
-import { useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { IoCheckmarkOutline, IoCopyOutline } from 'react-icons/io5';
 
-export default function CriticalProblemDialog() {
+const CriticalProblemDialog = memo(function CriticalProblemDialog() {
     const { t } = useTranslation(['setup-progresses', 'common'], { useSuspense: false });
     const criticalProblem = useAppStateStore((s) => s.criticalProblem);
     const [isExiting, setIsExiting] = useState(false);
@@ -39,12 +39,11 @@ export default function CriticalProblemDialog() {
         setIsExiting(false);
     }, []);
 
-    const handleSendFeedback = async () => {
-        const feedbackTitle = t(criticalProblem?.title || 'installation-problem', { lng: 'en' });
+    const handleSendFeedback = useCallback(async () => {
         try {
             setIsSubmittingLogs(true);
             await invoke('send_feedback', {
-                feedback: feedbackTitle,
+                feedback: t(criticalProblem?.title || 'installation-problem', { lng: 'en' }),
                 includeLogs: true,
             }).then((submissionId) => {
                 setLogsSubmissionId(submissionId);
@@ -53,7 +52,7 @@ export default function CriticalProblemDialog() {
             console.error('Error sending feedback| handleSendFeedback in CriticalProblemDialog: ', e);
         }
         setIsSubmittingLogs(false);
-    };
+    }, [criticalProblem?.title, t]);
 
     const handleCopyLogsSubmissionId = useCallback(() => {
         if (logsSubmissionId) {
@@ -115,4 +114,6 @@ export default function CriticalProblemDialog() {
             </DialogContent>
         </Dialog>
     );
-}
+});
+
+export default CriticalProblemDialog;

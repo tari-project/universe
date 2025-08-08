@@ -12,14 +12,14 @@ import {
     FloatingPortal,
     useFloatingNodeId,
 } from '@floating-ui/react';
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { ThemeGroup } from './groups/ThemeGroup';
 import { DialogsGroup } from './groups/DialogsGroup';
 import { GreenModalsGroup } from './groups/GreenModalsGroup';
 import { OtherUIGroup } from './groups/OtherUIGroup';
 import { AnimatePresence } from 'motion/react';
 
-export default function AdminUI() {
+const AdminUI = memo(function AdminUI() {
     const [isOpen, setIsOpen] = useState(false);
     const nodeId = useFloatingNodeId();
     const { refs, floatingStyles, context } = useFloating({
@@ -61,4 +61,6 @@ export default function AdminUI() {
             </AnimatePresence>
         </>
     );
-}
+});
+
+export default AdminUI;

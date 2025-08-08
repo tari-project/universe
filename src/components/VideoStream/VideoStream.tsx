@@ -66,8 +66,8 @@ const VideoStream: React.FC<VideoStreamProps> = ({
                 });
             });
 
-            hls.on(Hls.Events.ERROR, (_event, data) => {
-                console.warn('HLS error:', data);
+            hls.on(Hls.Events.ERROR, (event, data) => {
+                console.error('HLS error:', data);
                 onError?.(data);
             });
 

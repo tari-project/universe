@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { IconImage, MarkdownWrapper, Text, TextWrapper, Title, UpgradeButton, VersionWrapper, Wrapper } from './styles';
 import { AccordionItem } from './AccordionItem/AccordionItem';
@@ -50,7 +50,7 @@ export const ReleaseNotes = ({ noHeader, showScrollBars }: Props) => {
     const needsUpgrade = useAppStateStore((state) => state.isAppUpdateAvailable);
     const [openSectionIndex, setOpenSectionIndex] = useState<number | null>(0);
 
-    const sections = releaseNotes ? parseMarkdownSections(releaseNotes) : null;
+    const sections = useMemo(() => parseMarkdownSections(releaseNotes), [releaseNotes]);
 
     const toggleSection = (index: number) => {
         setOpenSectionIndex(openSectionIndex === index ? null : index);
@@ -83,7 +83,7 @@ export const ReleaseNotes = ({ noHeader, showScrollBars }: Props) => {
             )}
 
             <MarkdownWrapper $showScrollBars={showScrollBars}>
-                {sections?.map((section, index) => (
+                {sections.map((section, index) => (
                     <AccordionItem
                         key={index}
                         title={section.title}

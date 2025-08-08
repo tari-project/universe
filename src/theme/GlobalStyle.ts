@@ -1,6 +1,6 @@
-'use memo';
 import { createGlobalStyle } from 'styled-components';
 import { TOWER_CANVAS_ID } from '@app/store/types/ui.ts';
+
 export const GlobalReset = createGlobalStyle`
     *:focus {
         outline: none;
@@ -25,8 +25,8 @@ export const GlobalReset = createGlobalStyle`
         }
     }
 
-    textarea,
     fieldset,
+    textarea,
     dialog,
     input {
         all: unset;

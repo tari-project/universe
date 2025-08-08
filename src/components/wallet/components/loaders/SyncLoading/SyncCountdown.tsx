@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import Countdown from 'react-countdown';
 import { useProgressCountdown } from '@app/containers/main/Sync/components/useProgressCountdown.ts';
@@ -11,8 +11,7 @@ interface SyncCountdownProps {
 }
 export default function SyncCountdown({ onCompleted, onStarted, isCompact = false }: SyncCountdownProps) {
     const { t } = useTranslation(['wallet', 'setup-progresses']);
-    const [hasStarted, setHasStarted] = useState(false);
-    const startedRef = useRef(hasStarted);
+    const startedRef = useRef(false);
     const countdownRef = useRef<Countdown | null>(null);
     const { countdown } = useProgressCountdown(isCompact);
     const date = new Date(countdown * 1000);
@@ -37,14 +36,12 @@ export default function SyncCountdown({ onCompleted, onStarted, isCompact = fals
             startedRef.current = true;
         }
 
-        setHasStarted(startedRef.current);
-
         if (startedRef.current && countdown < 80) {
             api?.stop();
         }
     }, [countdown]);
 
-    if (!hasStarted) {
+    if (!startedRef.current) {
         return <LoadingText text={t('setup-progresses:calculating_time', { context: isCompact && 'compact' })} />;
     }
 

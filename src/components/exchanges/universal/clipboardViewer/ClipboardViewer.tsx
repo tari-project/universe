@@ -20,9 +20,7 @@ export const ClipboardViewer: React.FC<ClipboardViewerProps> = ({ handlePaste })
                 const text = await readText();
                 if (text) {
                     const isValidAddress = await validateAddress(text);
-                    if (isValidAddress) {
-                        setClipboardText(text);
-                    } else setClipboardText(undefined);
+                    setClipboardText(isValidAddress ? text : undefined);
                 }
             } catch (err) {
                 console.error('Unable to read clipboard: ' + err);

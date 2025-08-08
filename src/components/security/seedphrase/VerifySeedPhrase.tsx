@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -32,7 +32,7 @@ export function VerifySeedPhrase({ words }: VerifySeedPhraseProps) {
     const [completed, setCompleted] = useState(false);
     const [selectedWords, setSelectedWords] = useState<SelectedWord[]>([]);
 
-    const shuffledWords = words?.length ? [...words].sort(() => Math.random() - 0.5) : [];
+    const shuffledWords = useMemo(() => [...words].sort(() => Math.random() - 0.5), [words]);
 
     const checkCompletion = (selectedWords: string[]) => {
         if (selectedWords.length === words.length) {

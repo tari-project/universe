@@ -74,12 +74,12 @@ export const SwapConfirmation = ({
             symbol: 'eth',
             width: 20,
         });
-    }, [fromTokenDisplay]);
+    }, [fromTokenDisplay?.symbol]);
 
     const receiveTokenSymbol = useMemo(() => {
         if (toTokenSymbol) return toTokenSymbol;
         return direction === 'toXtm' ? 'wXTM' : (fromTokenDisplay?.symbol ?? '');
-    }, [direction, fromTokenDisplay, toTokenSymbol]);
+    }, [direction, fromTokenDisplay?.symbol, toTokenSymbol]);
 
     const items = useMemo(() => {
         const baseItems: StatusListEntry[] = [];
@@ -124,33 +124,39 @@ export const SwapConfirmation = ({
         return baseItems.filter((item) => item.value !== null && item.value !== undefined);
     }, [executionPrice, networkFee, minimumReceived, priceImpact, t, transactionId, paidTransactionFee]);
 
-    const xtmOptionMarkup = (
-        <SwapOption>
-            <span> {direction === 'toXtm' ? t('swap.receive-estimated') : t('swap.sell')} </span>
-            <SwapOptionAmount>
-                <SwapAmountInput disabled type="text" inputMode="decimal" placeholder="0.00" value={targetAmount} />
-                <SwapOptionCurrency>
-                    {getCurrencyIcon({ symbol: receiveTokenSymbol, width: 25 })}
-                    <span>{receiveTokenSymbol}</span>
-                </SwapOptionCurrency>
-            </SwapOptionAmount>
-            <span>{toTokenDisplay?.balance}</span>
-        </SwapOption>
-    );
+    const xtmOptionMarkup = useMemo(() => {
+        return (
+            <SwapOption>
+                <span> {direction === 'toXtm' ? t('swap.receive-estimated') : t('swap.sell')} </span>
+                <SwapOptionAmount>
+                    <SwapAmountInput disabled type="text" inputMode="decimal" placeholder="0.00" value={targetAmount} />
+                    <SwapOptionCurrency>
+                        {getCurrencyIcon({ symbol: receiveTokenSymbol, width: 25 })}
+                        <span>{receiveTokenSymbol}</span>
+                    </SwapOptionCurrency>
+                </SwapOptionAmount>
+                <span>{toTokenDisplay?.balance}</span>
+            </SwapOption>
+        );
+    }, [direction, receiveTokenSymbol, t, targetAmount, toTokenDisplay?.balance]);
 
-    const ethOptionMarkup = (
-        <SwapOption>
-            <span> {direction === 'toXtm' ? t('swap.sell') : t('swap.receive-estimated')} </span>
-            <SwapOptionAmount>
-                <SwapAmountInput disabled type="text" inputMode="decimal" placeholder="0.00" value={amount} />
-                <SwapOptionCurrency>
-                    {fromTokenDisplay?.symbol ? getCurrencyIcon({ symbol: fromTokenDisplay?.symbol, width: 25 }) : null}
-                    <span>{fromTokenDisplay?.symbol}</span>
-                </SwapOptionCurrency>
-            </SwapOptionAmount>
-            <span>{fromTokenDisplay?.balance}</span>
-        </SwapOption>
-    );
+    const ethOptionMarkup = useMemo(() => {
+        return (
+            <SwapOption>
+                <span> {direction === 'toXtm' ? t('swap.sell') : t('swap.receive-estimated')} </span>
+                <SwapOptionAmount>
+                    <SwapAmountInput disabled type="text" inputMode="decimal" placeholder="0.00" value={amount} />
+                    <SwapOptionCurrency>
+                        {fromTokenDisplay?.symbol
+                            ? getCurrencyIcon({ symbol: fromTokenDisplay?.symbol, width: 25 })
+                            : null}
+                        <span>{fromTokenDisplay?.symbol}</span>
+                    </SwapOptionCurrency>
+                </SwapOptionAmount>
+                <span>{fromTokenDisplay?.balance}</span>
+            </SwapOption>
+        );
+    }, [direction, t, amount, fromTokenDisplay?.symbol, fromTokenDisplay?.balance]);
 
     return (
         <TransactionModal show={isOpen} handleClose={() => setIsOpen(false)} noHeader>
