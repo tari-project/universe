@@ -62,9 +62,14 @@ impl CpuMinerConfig {
         let parts: Vec<&str> = pool_url.split(':').collect();
         if parts.len() == 2 {
             let host_name = parts[0].to_string();
-            let port = parts[1]
-                .parse::<u16>()
-                .expect("Invalid port number in pool URL");
+            let port = parts[1].parse::<u16>().map_err(|error| {
+                anyhow::anyhow!(
+                    "Invalid port number in pool URL: {} : {} | error: {}",
+                    pool_url,
+                    parts[1],
+                    error
+                )
+            })?;
             Ok((host_name, port))
         } else {
             Err(anyhow::anyhow!("Invalid pool URL format: {}", pool_url))
