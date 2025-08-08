@@ -2227,8 +2227,11 @@ pub async fn launch_builtin_tapplet(binary_name: &str) -> Result<ActiveTapplet, 
 
     info!(target: LOG_TARGET, "💥 Built-in tapplet start: {:?}", &tapp_dest_dir);
 
-    // TODO assign default csp for builtin tapplets
-    const DEFAULT_BUILTIN_TAPPLET_CSP: &str = "default-src 'self' 'unsafe-inline'";
+    // TODO only our tapplet should get by default 'insafe-inline'
+    // see: https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Security-Policy#unsafe-inline
+    const DEFAULT_BUILTIN_TAPPLET_CSP: &str = "default-src 'self' https: 'unsafe-inline';";
+
+    // TODO csp should be taken from the tapplet config, the bridge tapplet is exception because is 'built-in' by us
     // let config = get_tapplet_config(&tapp_dest_dir).unwrap_or_default();
     // let csp_header = HeaderValue::from_str(&config.csp).unwrap();
 
