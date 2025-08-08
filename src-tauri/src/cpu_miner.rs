@@ -22,10 +22,12 @@
 
 use crate::binaries::Binaries;
 use crate::commands::{CpuMinerConnection, CpuMinerConnectionStatus, CpuMinerStatus};
-use crate::configs::config_pools::{ConfigPoolsContent, CpuPool};
+use crate::configs::config_pools::{ConfigPools, ConfigPoolsContent};
 use crate::configs::config_wallet::ConfigWalletContent;
+use crate::configs::pools::cpu_pools::CpuPool;
+use crate::configs::trait_config::ConfigImpl;
 use crate::events_emitter::EventsEmitter;
-use crate::pool_status_watcher::SupportXmrPoolAdapter;
+use crate::pool_status_watcher::{LuckyPoolAdapter, PoolApiAdapters, SupportXmrPoolAdapter};
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
 use crate::tasks_tracker::TasksTrackers;
@@ -56,28 +58,57 @@ pub struct CpuMinerConfig {
 }
 
 impl CpuMinerConfig {
+    fn split_url_to_hostname_port(pool_url: &str) -> Result<(String, u16), anyhow::Error> {
+        let parts: Vec<&str> = pool_url.split(':').collect();
+        if parts.len() == 2 {
+            let host_name = parts[0].to_string();
+            let port = parts[1].parse::<u16>().map_err(|error| {
+                anyhow::anyhow!(
+                    "Invalid port number in pool URL: {} : {} | error: {}",
+                    pool_url,
+                    parts[1],
+                    error
+                )
+            })?;
+            Ok((host_name, port))
+        } else {
+            Err(anyhow::anyhow!("Invalid pool URL format: {}", pool_url))
+        }
+    }
+
     pub fn load_from_config_pools(
         &mut self,
         config_pools_content: ConfigPoolsContent,
         tari_address: &TariAddress,
     ) {
         if *config_pools_content.cpu_pool_enabled() {
-            match config_pools_content.cpu_pool() {
-                CpuPool::GlobalTariPool(global_tari_pool) => {
+            match config_pools_content.selected_cpu_pool() {
+                CpuPool::SupportXTMPool(global_tari_pool) => {
                     self.pool_status_url =
                         Some(global_tari_pool.get_stats_url(tari_address.to_base58().as_str()));
                     let pool_url = global_tari_pool.get_pool_url();
-                    let parts = pool_url.split(':').collect::<Vec<_>>();
-                    if parts.len() == 2 {
-                        if let Ok(port) = parts[1].parse::<u16>() {
-                            self.pool_port = Some(port);
-                        } else {
-                            error!(target: LOG_TARGET, "Invalid port number in pool URL: {pool_url}");
-                        }
-                        self.pool_host_name = Some(parts[0].to_string());
+
+                    if let Ok((host_name, port)) = Self::split_url_to_hostname_port(&pool_url) {
+                        self.pool_host_name = Some(host_name);
+                        self.pool_port = Some(port);
                     } else {
                         error!(target: LOG_TARGET, "Invalid pool URL format: {pool_url}");
                     }
+
+                    self.node_connection = CpuMinerConnection::Pool;
+                }
+                CpuPool::LuckyPool(lucky_pool) => {
+                    self.pool_status_url =
+                        Some(lucky_pool.get_stats_url(tari_address.to_base58().as_str()));
+                    let pool_url = lucky_pool.get_pool_url();
+
+                    if let Ok((host_name, port)) = Self::split_url_to_hostname_port(&pool_url) {
+                        self.pool_host_name = Some(host_name);
+                        self.pool_port = Some(port);
+                    } else {
+                        error!(target: LOG_TARGET, "Invalid pool URL format: {pool_url}");
+                    }
+
                     self.node_connection = CpuMinerConnection::Pool;
                 }
             }
@@ -99,7 +130,7 @@ pub(crate) struct CpuMiner {
     cpu_miner_status_watch_tx: watch::Sender<CpuMinerStatus>,
     summary_watch_rx: watch::Receiver<Option<Summary>>,
     node_status_watch_rx: watch::Receiver<BaseNodeStatus>,
-    pool_status_watcher: Option<PoolStatusWatcher<SupportXmrPoolAdapter>>,
+    pool_status_watcher: Option<PoolStatusWatcher<PoolApiAdapters>>,
     pub pool_status_shutdown_signal: Shutdown,
 }
 
@@ -157,13 +188,17 @@ impl CpuMiner {
                         }
                     };
 
-                let status_watch = cpu_miner_config.pool_status_url.as_ref().map(|url| {
-                    PoolStatusWatcher::new(
-                        url.replace("%MONERO_ADDRESS%", &cpu_miner_config.monero_address)
-                            .replace("%TARI_ADDRESS%", &tari_address.to_base58()),
-                        SupportXmrPoolAdapter {},
-                    )
-                });
+                let pool_status_watcher: Option<PoolStatusWatcher<PoolApiAdapters>> =
+                    match ConfigPools::content().await.selected_cpu_pool() {
+                        CpuPool::SupportXTMPool(global_tari_pool) => Some(PoolStatusWatcher::new(
+                            global_tari_pool.get_stats_url(tari_address.to_base58().as_str()),
+                            PoolApiAdapters::SupportXmrPool(SupportXmrPoolAdapter {}),
+                        )),
+                        CpuPool::LuckyPool(lucky_pool) => Some(PoolStatusWatcher::new(
+                            lucky_pool.get_stats_url(tari_address.to_base58().as_str()),
+                            PoolApiAdapters::LuckyPool(LuckyPoolAdapter {}),
+                        )),
+                    };
 
                 (
                     XmrigNodeConnection::Pool {
@@ -171,7 +206,7 @@ impl CpuMiner {
                         port,
                         tari_address: tari_address.to_base58(),
                     },
-                    status_watch,
+                    pool_status_watcher,
                 )
             }
             CpuMinerConnection::MergeMinedPool => {
@@ -188,7 +223,7 @@ impl CpuMiner {
                     PoolStatusWatcher::new(
                         url.replace("%MONERO_ADDRESS%", &cpu_miner_config.monero_address)
                             .replace("%TARI_ADDRESS%", &tari_address.to_base58()),
-                        SupportXmrPoolAdapter {},
+                        PoolApiAdapters::SupportXmrPool(SupportXmrPoolAdapter {}),
                     )
                 });
 

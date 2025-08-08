@@ -29,6 +29,7 @@ use crate::configs::config_mining::{ConfigMining, ConfigMiningContent};
 use crate::configs::config_pools::{ConfigPools, ConfigPoolsContent};
 use crate::configs::config_ui::{ConfigUI, ConfigUIContent, DisplayMode};
 use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent, WalletId};
+use crate::configs::pools::{cpu_pools::CpuPool, gpu_pools::GpuPool};
 use crate::configs::trait_config::ConfigImpl;
 use crate::events::ConnectionStatusPayload;
 use crate::events_emitter::EventsEmitter;
@@ -2124,6 +2125,74 @@ pub async fn set_node_type(
     SetupManager::get_instance()
         .restart_phases_from_queue()
         .await;
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn change_cpu_pool(cpu_pool: String) -> Result<(), InvokeError> {
+    let timer = Instant::now();
+    info!(target: LOG_TARGET, "[change_cpu_pool] called with cpu_pool: {cpu_pool:?}");
+
+    ConfigPools::update_field(ConfigPoolsContent::set_selected_cpu_pool, cpu_pool)
+        .await
+        .map_err(InvokeError::from_anyhow)?;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "change_cpu_pool took too long: {:?}", timer.elapsed());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn change_gpu_pool(gpu_pool: String) -> Result<(), InvokeError> {
+    let timer = Instant::now();
+    info!(target: LOG_TARGET, "[change_gpu_pool] called with gpu_pool: {gpu_pool:?}");
+
+    ConfigPools::update_field(ConfigPoolsContent::set_selected_gpu_pool, gpu_pool)
+        .await
+        .map_err(InvokeError::from_anyhow)?;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "change_gpu_pool took too long: {:?}", timer.elapsed());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn update_selected_gpu_pool_config(updated_config: GpuPool) -> Result<(), InvokeError> {
+    let timer = Instant::now();
+    info!(target: LOG_TARGET, "[update_selected_gpu_pool_config] called with updated_config: {updated_config:?}");
+
+    ConfigPools::update_field(
+        ConfigPoolsContent::update_selected_gpu_config,
+        updated_config,
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "update_selected_gpu_pool_config took too long: {:?}", timer.elapsed());
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn update_selected_cpu_pool_config(updated_config: CpuPool) -> Result<(), InvokeError> {
+    let timer = Instant::now();
+    info!(target: LOG_TARGET, "[update_selected_cpu_pool_config] called with updated_config: {updated_config:?}");
+
+    ConfigPools::update_field(
+        ConfigPoolsContent::update_selected_cpu_config,
+        updated_config,
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "update_selected_cpu_pool_config took too long: {:?}", timer.elapsed());
+    }
 
     Ok(())
 }
