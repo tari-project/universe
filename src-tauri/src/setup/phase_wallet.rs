@@ -262,8 +262,13 @@ impl SetupPhaseImpl for WalletSetupPhase {
                                         let pin_locked = PinManager::pin_locked().await;
                                         let seed_backed_up =
                                             *ConfigWallet::content().await.seed_backed_up();
+                                        let security_warning_dismissed = *ConfigWallet::content()
+                                            .await
+                                            .security_warning_dismissed();
 
-                                        if !pin_locked || !seed_backed_up {
+                                        if (!pin_locked || !seed_backed_up)
+                                            && !security_warning_dismissed
+                                        {
                                             EventsEmitter::show_staged_security_modal().await;
                                         }
                                         break;

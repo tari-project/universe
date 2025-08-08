@@ -2358,3 +2358,12 @@ pub async fn is_pin_locked() -> Result<bool, String> {
     let is_pin_locked = PinManager::pin_locked().await;
     Ok(is_pin_locked)
 }
+
+#[tauri::command]
+pub async fn set_security_warning_dismissed() -> Result<(), String> {
+    ConfigWallet::update_field(ConfigWalletContent::set_security_warning_dismissed, true)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
+}

@@ -633,6 +633,7 @@ fn main() {
             commands::update_custom_mining_mode,
             commands::encode_payment_id_to_address,
             commands::save_wxtm_address,
+            commands::set_security_warning_dismissed,
             commands::change_cpu_pool,
             commands::change_gpu_pool,
             commands::update_selected_gpu_pool_config,

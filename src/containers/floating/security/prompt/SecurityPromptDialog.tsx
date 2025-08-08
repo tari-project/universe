@@ -23,7 +23,9 @@ export default function SecurityPromptDialog() {
     const [pinLocked, setPinLocked] = useState(false);
 
     function handleClose() {
-        setModal(null);
+        invoke('set_security_warning_dismissed').then(() => {
+            setModal(null);
+        });
     }
     function handleClick() {
         if (!seedBackedUp) {
@@ -34,14 +36,14 @@ export default function SecurityPromptDialog() {
     }
 
     useEffect(() => {
-        const checkFlags = async () => {
-            const backed_up = await invoke('is_seed_backed_up');
-            setSeedBackedUp(backed_up);
-            const locked = await invoke('is_pin_locked');
-            setPinLocked(locked);
-        };
-        checkFlags();
-    }, [modal]);
+        if (!isOpen) return;
+        invoke('is_pin_locked').then((locked) => setPinLocked(locked));
+    }, [isOpen]);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        invoke('is_seed_backed_up').then((backed_up) => setSeedBackedUp(backed_up));
+    }, [isOpen]);
 
     const steps: StepItem[] = [
         {
