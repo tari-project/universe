@@ -1,5 +1,5 @@
 import { ActiveTapplet, DevTapplet, TappletConfig } from '@app/types/tapplets/tapplet.types';
-const TAPPLET_CONFIG_FILE = 'config.json'; // Adjust filename if needed
+const TAPPLET_CONFIG_FILE = 'tapplet.config.json'; // Adjust filename if needed
 
 export function isHttpOrLocalhost(s: string): boolean {
     try {
@@ -39,6 +39,8 @@ export async function fetchActiveTapplet(tapplet: DevTapplet): Promise<ActiveTap
             source: tapplet.endpoint,
             permissions: config.permissions,
             supportedChain: config.supportedChain,
+            csp: config.csp,
+            tapplet_permissions: config.tapplet_permissions,
         };
 
         return activeTapplet;
