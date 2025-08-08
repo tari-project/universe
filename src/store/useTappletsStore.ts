@@ -106,7 +106,7 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
         console.info('🚗 RUN DEV', tappletId);
 
         try {
-            const activeTapplet = await invoke('launch_dev_tapplet', {
+            const activeTapplet = await invoke('start_dev_tapplet', {
                 devTappletId: tappletId,
             });
             set({ activeTapplet });

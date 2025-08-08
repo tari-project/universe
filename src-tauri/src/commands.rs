@@ -2257,7 +2257,7 @@ pub async fn start_tari_tapplet_binary(binary_name: &str) -> Result<ActiveTapple
 }
 
 #[tauri::command]
-pub async fn launch_dev_tapplet(
+pub async fn start_dev_tapplet(
     dev_tapplet_id: i32,
     app_handle: tauri::AppHandle,
     db_connection: tauri::State<'_, DatabaseConnection>,
