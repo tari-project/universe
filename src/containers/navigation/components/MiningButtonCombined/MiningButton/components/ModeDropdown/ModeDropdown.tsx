@@ -1,4 +1,5 @@
-import { useCallback, useState } from 'react';
+'use client';
+import { useCallback, useMemo, useState } from 'react';
 import ArrowDown from './icons/ArrowDown';
 import {
     Eyebrow,
@@ -68,15 +69,17 @@ export default function ModeDropdown({ disabled, loading }: Props) {
     const dismiss = useDismiss(context);
     const { getReferenceProps, getFloatingProps } = useInteractions([click, dismiss]);
 
-    const modes: ModeDropdownMiningMode[] = Object.values(miningModes)
-        .map((mode) => {
-            return {
-                name: mode.mode_name,
-                mode_type: mode.mode_type,
-                icon: getModeIcon(mode.mode_type),
-            };
-        })
-        .sort((a, b) => a.name.localeCompare(b.name));
+    const modes: ModeDropdownMiningMode[] = useMemo(() => {
+        return Object.values(miningModes)
+            .map((mode) => {
+                return {
+                    name: mode.mode_name,
+                    mode_type: mode.mode_type,
+                    icon: getModeIcon(mode.mode_type),
+                };
+            })
+            .sort((a, b) => a.name.localeCompare(b.name));
+    }, [miningModes]);
 
     const handleSelectMode = useCallback(
         async (mode: ModeDropdownMiningMode) => {

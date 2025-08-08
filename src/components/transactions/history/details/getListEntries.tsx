@@ -222,7 +222,9 @@ const unifiedValueHandlers: Record<
 };
 
 function shouldShowField(key: string, showHidden: boolean): boolean {
-    return !(!showHidden && HIDDEN_KEYS.includes(key));
+    if (!showHidden && HIDDEN_KEYS.includes(key)) return false;
+
+    return true;
 }
 
 function parseUnifiedTransactionValue(
@@ -240,7 +242,7 @@ function parseUnifiedTransactionValue(
     }
 
     // Default fallback for unhandled keys - get from main transaction object
-    const value = transaction[key];
+    const value = (transaction as any)[key];
     if (value === undefined) return null;
 
     return { value: String(value) };

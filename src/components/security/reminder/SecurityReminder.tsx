@@ -22,13 +22,12 @@ export default function SecurityReminder() {
     const setModal = useSecurityStore((s) => s.setModal);
     const offset = useUIStore((s) => s.towerSidebarOffset);
 
-    function handleClose() {
-        setOpen(false);
-    }
-
     function handleStart() {
         setModal('intro');
         handleClose();
+    }
+    function handleClose() {
+        setOpen(false);
     }
 
     return (

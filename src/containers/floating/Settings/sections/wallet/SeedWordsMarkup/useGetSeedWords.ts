@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { setError } from '@app/store';
 
@@ -6,6 +6,7 @@ interface Arguments {
     fetchMoneroSeeds?: boolean;
 }
 export function useGetSeedWords(args?: Arguments) {
+    const hasFetched = useRef(false);
     const [seedWords, setSeedWords] = useState<string[]>([]);
     const [seedWordsFetching, setSeedWordsFetching] = useState(false);
 
@@ -18,6 +19,7 @@ export function useGetSeedWords(args?: Arguments) {
         try {
             const seedWords: string[] = await invoke(commandName);
             if (seedWords.length) {
+                hasFetched.current = true;
                 setSeedWords(seedWords);
                 return seedWords;
             }
@@ -31,14 +33,16 @@ export function useGetSeedWords(args?: Arguments) {
             }
             console.error('Could not get seed words', e);
             return [];
+        } finally {
+            setSeedWordsFetching(false);
         }
-        setSeedWordsFetching(false);
     }, [fetchMoneroSeeds]);
 
     return {
         seedWords,
         getSeedWords,
         setSeedWords,
+        seedWordsFetched: hasFetched.current,
         seedWordsFetching,
     };
 }

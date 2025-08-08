@@ -7,12 +7,12 @@ import { useAppStateStore } from '@app/store/appStateStore';
 import { useUIStore } from '@app/store/useUIStore';
 import { ExternalDependencyStatus } from '@app/types/app-status';
 import { invoke } from '@tauri-apps/api/core';
-import { useCallback, useState } from 'react';
+import { memo, useCallback, useState } from 'react';
 import { ExternalDependencyCard } from './ExternalDependencyCard';
 import { useTranslation } from 'react-i18next';
 import { setShowExternalDependenciesDialog } from '@app/store';
 
-export default function ExternalDependenciesDialog() {
+const ExternalDependenciesDialog = memo(function ExternalDependenciesDialog() {
     const { t } = useTranslation('external-dependency-dialog', { useSuspense: false });
     const showExternalDependenciesDialog = useUIStore((s) => s.showExternalDependenciesDialog);
     const externalDependencies = useAppStateStore((s) => s.externalDependencies);
@@ -78,4 +78,5 @@ export default function ExternalDependenciesDialog() {
             </DialogContent>
         </Dialog>
     );
-}
+});
+export default ExternalDependenciesDialog;

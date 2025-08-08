@@ -36,7 +36,7 @@ export default function SeedWords({ isMonero = false }: SeedWordsProps) {
 
     const { t } = useTranslation('settings', { useSuspense: false });
     const { copyToClipboard, isCopied } = useCopyToClipboard();
-    const { seedWords, getSeedWords, setSeedWords, seedWordsFetching } = useGetSeedWords({
+    const { seedWords, getSeedWords, setSeedWords, seedWordsFetched, seedWordsFetching } = useGetSeedWords({
         fetchMoneroSeeds: isMonero,
     });
     const methods = useForm({ defaultValues: { seedWords: seedWords?.join(' ').trim() } });
@@ -61,17 +61,17 @@ export default function SeedWords({ isMonero = false }: SeedWordsProps) {
     }, [isEditView, isWalletImporting, setSeedWords, stopCountdown]);
     // Start countdown when seed words become visible
     useEffect(() => {
-        if (isVisible && seedWords?.length && !seedWordsFetching) {
+        if (isVisible && seedWords?.length && seedWordsFetched) {
             startCountdown();
         } else {
             stopCountdown();
         }
-    }, [isVisible, seedWords, seedWordsFetching, startCountdown, stopCountdown]);
+    }, [isVisible, seedWords, seedWordsFetched, startCountdown, stopCountdown]);
 
     const handleConfirmed = useCallback(async () => {
         if (!isValid || !newSeedWords) return;
 
-        await importSeedWords(newSeedWords);
+        importSeedWords(newSeedWords);
         setShowConfirm(false);
         setIsEditView(false);
     }, [isValid, newSeedWords]);
@@ -83,7 +83,7 @@ export default function SeedWords({ isMonero = false }: SeedWordsProps) {
 
     function onToggleVisibility() {
         startTransition(() => {
-            if (!seedWords?.length || !seedWordsFetching) {
+            if (!seedWords?.length || !seedWordsFetched) {
                 getSeedWords()
                     .then((r) => {
                         if (r?.length) {
@@ -109,7 +109,7 @@ export default function SeedWords({ isMonero = false }: SeedWordsProps) {
     }
     const handleCopyClick = useCallback(() => {
         startTransition(async () => {
-            if (seedWords?.length && !seedWordsFetching) {
+            if (seedWords?.length && seedWordsFetched) {
                 copyToClipboard(seedWords.join(' '));
             } else {
                 getSeedWords().then((r) => {
@@ -120,7 +120,7 @@ export default function SeedWords({ isMonero = false }: SeedWordsProps) {
                 });
             }
         });
-    }, [copyToClipboard, getSeedWords, seedWords, setSeedWords, seedWordsFetching]);
+    }, [copyToClipboard, getSeedWords, seedWords, setSeedWords, seedWordsFetched]);
 
     const displayCTAs = (
         <>

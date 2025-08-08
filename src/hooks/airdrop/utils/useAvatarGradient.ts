@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useMemo } from 'react';
 
 type Seed = number;
 
@@ -38,24 +38,19 @@ interface StyleObject {
 }
 
 export function useAvatarGradient({ username, fallback = 'rgb(0, 0, 0, 0.15)', image }: GradientOptions): StyleObject {
-    const [style, setStyle] = useState<StyleObject>({
-        backgroundColor: fallback,
-        backgroundImage: `radial-gradient(circle at 20% 45%, #010101, #000)`,
-    });
-
-    useEffect(() => {
+    return useMemo(() => {
         if (image)
-            setStyle({
+            return {
                 backgroundColor: fallback,
                 backgroundImage: `url(${image})`,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
-            });
+            };
         if (!username || username === '')
-            setStyle({
+            return {
                 backgroundColor: fallback,
                 backgroundImage: 'none',
-            });
+            };
 
         const seed = hashString(username);
         const color1 = generateColor(seed);
@@ -63,11 +58,9 @@ export function useAvatarGradient({ username, fallback = 'rgb(0, 0, 0, 0.15)', i
         const xPos = Math.floor(seededRandom(seed + 6) * 100);
         const yPos = Math.floor(seededRandom(seed + 7) * 100);
 
-        setStyle({
+        return {
             backgroundColor: fallback,
             backgroundImage: `radial-gradient(circle at ${xPos}% ${yPos}%, ${color1}, ${color2})`,
-        });
+        };
     }, [username, fallback, image]);
-
-    return style;
 }

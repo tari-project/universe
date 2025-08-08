@@ -1,8 +1,9 @@
-import { IoEyeOffOutline, IoEyeOutline } from 'react-icons/io5';
+import { memo } from 'react';
+import { AddSeedWordsWrapper, CTAWrapper, DisplayWrapper, HiddenWrapper, WordsWrapper } from './display.styles.ts';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
+import { IoEyeOffOutline, IoEyeOutline } from 'react-icons/io5';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
-import { AddSeedWordsWrapper, CTAWrapper, DisplayWrapper, HiddenWrapper, WordsWrapper } from './display.styles.ts';
 
 interface DisplayProps {
     words: string[];
@@ -11,7 +12,7 @@ interface DisplayProps {
     onToggleClick?: (currentVisibilty?: boolean) => void;
     isSeedlessUI?: boolean;
 }
-export default function Display({ isVisible, words, onToggleClick, isLoading, isSeedlessUI }: DisplayProps) {
+const Display = memo(function Display({ isVisible, words, onToggleClick, isLoading, isSeedlessUI }: DisplayProps) {
     function handleToggleClick() {
         onToggleClick?.(isVisible);
     }
@@ -63,4 +64,6 @@ export default function Display({ isVisible, words, onToggleClick, isLoading, is
             {isSeedlessUI ? emptySeedWords : generatedDisplay}
         </DisplayWrapper>
     );
-}
+});
+
+export default Display;
