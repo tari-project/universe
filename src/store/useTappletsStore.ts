@@ -25,7 +25,6 @@ interface State {
 interface Actions {
     setActiveTapp: (tapplet: ActiveTapplet) => Promise<void>;
     setActiveTappById: (tappletId: number, isBuiltIn?: boolean, isDev?: boolean) => Promise<void>;
-    setDevTapplet: (tappPath: string) => Promise<void>;
     deactivateTapplet: () => Promise<void>;
     setOngoingBridgeTx: (tx: BridgeTxDetails) => void;
     removeOngoingBridgeTx: () => void;
@@ -113,17 +112,6 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
         } catch (error) {
             console.error('Error running dev tapplet: ', error);
         }
-        return;
-    },
-    setDevTapplet: async (tappPath: string) => {
-        console.info('🐦‍🔥 SET DEV TAPPLET CURRENTLY UNAVAILABLE', tappPath);
-        if (!tappPath) return;
-        const tappProviderState = useTappletSignerStore.getState();
-        if (!tappProviderState.isInitialized) tappProviderState.initTappletSigner();
-
-        // dev tapplet
-        // const activeTapplet = await invoke('launch_dev_tapplet', { path: tappPath });
-        // set({ activeTapplet });
         return;
     },
     setOngoingBridgeTx: (tx: BridgeTxDetails) => {
