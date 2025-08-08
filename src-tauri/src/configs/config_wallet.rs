@@ -67,6 +67,7 @@ impl WalletId {
 #[serde(rename_all = "snake_case")]
 #[serde(default)]
 #[derive(Getters, Setters)]
+#[allow(clippy::struct_excessive_bools)]
 pub struct ConfigWalletContent {
     #[getset(get = "pub", set = "pub")]
     version: i32,
