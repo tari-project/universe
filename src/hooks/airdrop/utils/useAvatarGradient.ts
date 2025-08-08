@@ -37,37 +37,36 @@ interface StyleObject {
     backgroundPosition?: string;
 }
 
-export function useAvatarGradient({ username, image, fallback = 'rgb(0, 0, 0, 0.15)' }: GradientOptions): StyleObject {
+export function useAvatarGradient({ username, fallback = 'rgb(0, 0, 0, 0.15)', image }: GradientOptions): StyleObject {
     const [style, setStyle] = useState<StyleObject>({
         backgroundColor: fallback,
-        backgroundImage: 'none',
+        backgroundImage: `radial-gradient(circle at 20% 45%, #010101, #000)`,
     });
 
     useEffect(() => {
-        if (image) {
+        if (image)
             setStyle({
                 backgroundColor: fallback,
                 backgroundImage: `url(${image})`,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
             });
-        } else if (username) {
-            const seed = hashString(username);
-            const color1 = generateColor(seed);
-            const color2 = generateColor(seed + 3);
-            const xPos = Math.floor(seededRandom(seed + 6) * 100);
-            const yPos = Math.floor(seededRandom(seed + 7) * 100);
-
-            setStyle({
-                backgroundColor: fallback,
-                backgroundImage: `radial-gradient(circle at ${xPos}% ${yPos}%, ${color1}, ${color2})`,
-            });
-        } else {
+        if (!username || username === '')
             setStyle({
                 backgroundColor: fallback,
                 backgroundImage: 'none',
             });
-        }
+
+        const seed = hashString(username);
+        const color1 = generateColor(seed);
+        const color2 = generateColor(seed + 3);
+        const xPos = Math.floor(seededRandom(seed + 6) * 100);
+        const yPos = Math.floor(seededRandom(seed + 7) * 100);
+
+        setStyle({
+            backgroundColor: fallback,
+            backgroundImage: `radial-gradient(circle at ${xPos}% ${yPos}%, ${color1}, ${color2})`,
+        });
     }, [username, fallback, image]);
 
     return style;
