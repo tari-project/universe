@@ -9,7 +9,12 @@ import {
 } from '../../components/SettingsGroup.styles';
 import { Typography } from '@app/components/elements/Typography';
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch';
-import { changeCpuPool, changeCpuPoolConfiguration, toggleCpuPool } from '@app/store/actions/appConfigStoreActions';
+import {
+    changeCpuPool,
+    changeCpuPoolConfiguration,
+    resetCpuPoolConfiguration,
+    toggleCpuPool,
+} from '@app/store/actions/appConfigStoreActions';
 import { useMiningPoolsStore } from '@app/store/useMiningPoolsStore.ts';
 import { PoolStats } from '@app/containers/floating/Settings/sections/pools/PoolStats.tsx';
 import { Select } from '@app/components/elements/inputs/Select';
@@ -46,6 +51,11 @@ export const CpuPoolsSettings = () => {
         await changeCpuPoolConfiguration(updatedConfig);
     }, []);
 
+    const handleResetToDefaultPoolConfiguration = useCallback(async () => {
+        if (!selectedCpuPoolData) return;
+        await resetCpuPoolConfiguration(selectedCpuPoolData.pool_name);
+    }, []);
+
     return (
         <SettingsGroupWrapper style={{ gap: '16px' }}>
             <SettingsGroup>
@@ -80,7 +90,11 @@ export const CpuPoolsSettings = () => {
                             variant="bordered"
                             forceHeight={36}
                         />
-                        <PoolConfiguration poolConfig={selectedCpuPoolData} onSave={handlePoolConfigurationChange} />
+                        <PoolConfiguration
+                            poolConfig={selectedCpuPoolData}
+                            onSave={handlePoolConfigurationChange}
+                            onReset={handleResetToDefaultPoolConfiguration}
+                        />
                     </SettingsGroupContent>
                 </SettingsGroup>
             </SettingsGroupWrapper>

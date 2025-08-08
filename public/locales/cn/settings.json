@@ -128,6 +128,7 @@
   "reset-permanently": "您确定要永久重置所有设置吗？",
   "reset-restart": "重置完成后，Tari Universe 将自动重启",
   "reset-settings": "重置设置",
+  "reset-to-defaults": "Reset to default",
   "reset-wallet": "重置钱包",
   "restart-later": "稍后重启",
   "restart-now": "立即重启",

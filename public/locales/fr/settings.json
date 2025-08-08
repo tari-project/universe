@@ -128,6 +128,7 @@
   "reset-permanently": "Êtes-vous sûr de vouloir réinitialiser tous les paramètres de manière permanente ?",
   "reset-restart": "Tari Universe redémarrera automatiquement une fois la réinitialisation terminée",
   "reset-settings": "Réinitialiser les paramètres",
+  "reset-to-defaults": "Reset to default",
   "reset-wallet": "Réinitialiser le portefeuille",
   "restart-later": "Redémarrer plus tard",
   "restart-now": "Redémarrer maintenant",

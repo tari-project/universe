@@ -154,4 +154,6 @@ declare module '@tauri-apps/api/core' {
         param: 'update_selected_gpu_pool',
         payload: { gpuPool: Record<string, BasePoolData> }
     ): Promise<void>;
+    function invoke(param: 'reset_gpu_pool_config', payload: { gpuPoolName: string }): Promise<void>;
+    function invoke(param: 'reset_cpu_pool_config', payload: { cpuPoolName: string }): Promise<void>;
 }

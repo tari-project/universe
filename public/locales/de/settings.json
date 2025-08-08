@@ -128,6 +128,7 @@
   "reset-permanently": "Bist du sicher, dass du alle Einstellungen dauerhaft zurücksetzen möchtest?",
   "reset-restart": "Tari Universe wird automatisch neu gestartet, sobald das Zurücksetzen abgeschlossen ist",
   "reset-settings": "Einstellungen zurücksetzen",
+  "reset-to-defaults": "Reset to default",
   "reset-wallet": "Wallet zurücksetzen",
   "restart-later": "Später neu starten",
   "restart-now": "Jetzt neu starten",

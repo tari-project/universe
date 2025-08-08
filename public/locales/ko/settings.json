@@ -128,6 +128,7 @@
   "reset-permanently": "모든 설정을 영구적으로 초기화하시겠습니까?",
   "reset-restart": "재설정이 완료되면 Tari Universe가 자동으로 재시작됩니다",
   "reset-settings": "설정 초기화",
+  "reset-to-defaults": "Reset to default",
   "reset-wallet": "지갑 초기화",
   "restart-later": "나중에 재시작",
   "restart-now": "지금 재시작",

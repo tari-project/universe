@@ -116,4 +116,12 @@ impl CpuPool {
             CpuPool::LuckyPool(config) => config.pool_name.clone(),
         }
     }
+
+    pub fn default_from_name(name: &str) -> Result<Self, anyhow::Error> {
+        match name {
+            "LuckyPool" => Ok(CpuPool::LuckyPool(LuckyPoolCpuConfig::default())),
+            "SupportXTMPool" => Ok(CpuPool::SupportXTMPool(SupportXTMCpuPoolConfig::default())),
+            _ => Err(anyhow::anyhow!("Unknown CPU pool name: {}", name)),
+        }
+    }
 }

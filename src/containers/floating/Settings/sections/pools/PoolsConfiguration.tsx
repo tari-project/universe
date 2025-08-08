@@ -18,6 +18,7 @@ import {
 export interface PoolConfigurationProps<T extends FieldValues = BasePoolData> {
     poolConfig: T | undefined;
     onSave?: (updatedConfig: T) => void;
+    onReset?: () => void;
     isReadOnly?: boolean;
     hiddenFields?: (keyof T)[];
 }
@@ -40,6 +41,7 @@ const getFieldType = (value: unknown): 'string' | 'number' | 'boolean' => {
 export const PoolConfiguration = <T extends FieldValues = BasePoolData>({
     poolConfig,
     onSave,
+    onReset,
     isReadOnly = false,
     hiddenFields = ['pool_name'] as (keyof T)[],
 }: PoolConfigurationProps<T>) => {
@@ -178,13 +180,20 @@ export const PoolConfiguration = <T extends FieldValues = BasePoolData>({
             <Stack direction="column" gap={4}>
                 {configFields.map(([fieldName, value]) => renderField(fieldName as keyof T, value))}
 
-                {!isReadOnly && onSave && (
+                {!isReadOnly && (onSave || onReset) && (
                     <SettingsGroup style={{ marginTop: '4px' }}>
                         <SettingsGroupContent />
-                        <SettingsGroupAction>
-                            <Button onClick={handleSubmit(onSubmit)} disabled={!isDirty}>
-                                {t('save-configuration')}
-                            </Button>
+                        <SettingsGroupAction style={{ display: 'flex', gap: '8px' }}>
+                            {onReset && (
+                                <Button variant="outlined" onClick={onReset}>
+                                    {t('reset-to-defaults')}
+                                </Button>
+                            )}
+                            {onSave && (
+                                <Button variant="green" onClick={handleSubmit(onSubmit)} disabled={!isDirty}>
+                                    {t('save-configuration')}
+                                </Button>
+                            )}
                         </SettingsGroupAction>
                     </SettingsGroup>
                 )}

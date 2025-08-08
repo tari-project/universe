@@ -128,6 +128,7 @@
   "reset-permanently": "すべての設定を永久にリセットしてもよろしいですか？",
   "reset-restart": "リセットが完了すると、Tari Universeは自動的に再起動します",
   "reset-settings": "設定をリセット",
+  "reset-to-defaults": "Reset to default",
   "reset-wallet": "ウォレットをリセット",
   "restart-later": "後で再起動",
   "restart-now": "今すぐ再起動",
