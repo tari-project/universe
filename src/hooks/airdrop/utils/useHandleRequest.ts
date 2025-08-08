@@ -24,7 +24,7 @@ async function retryHandler(errorMessage: string) {
 
 export async function handleAirdropRequest<T>({ body, method, path, onError, headers, publicRequest }: RequestProps) {
     // use useConfigBEInMemoryStore now, not airdrop store for the URL
-    const baseUrl = useConfigBEInMemoryStore.getState().airdropApiUrl; // TODO rename url vars?
+    const baseUrl = useConfigBEInMemoryStore.getState().airdrop_api_url;
 
     const airdropToken = useAirdropStore.getState().airdropTokens?.token;
     const airdropTokenExpiration = useAirdropStore.getState().airdropTokens?.expiresAt;

@@ -46,7 +46,7 @@ export default function ShareRewardModal() {
         setItemData(null);
     };
 
-    const airdropUrl = useAirdropStore((state) => state.backendInMemoryConfig?.airdropUrl || '');
+    const airdropUrl = useAirdropStore((state) => state.backendInMemoryConfig?.airdrop_url || '');
     const userDetails = useAirdropStore((s) => s.userDetails);
     const referralCode = userDetails?.user?.referral_code || '';
     const gemsValue = GIFT_GEMS.toLocaleString();

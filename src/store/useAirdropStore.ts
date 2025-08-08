@@ -91,7 +91,7 @@ export interface CommunityMessage {
     type: MessageType;
 }
 
-export type AirdropConfigBackendInMemory = Omit<ConfigBackendInMemory, 'exchangeId'>;
+export type AirdropConfigBackendInMemory = Omit<ConfigBackendInMemory, 'exchange_id'>;
 
 //////////////////////////////////////////
 export interface AirdropStoreState {
