@@ -95,4 +95,11 @@ impl GpuPool {
             GpuPool::SupportXTMPool(config) => config.pool_name.clone(),
         }
     }
+    pub fn default_from_name(name: &str) -> Result<Self, anyhow::Error> {
+        match name {
+            "LuckyPool" => Ok(GpuPool::LuckyPool(LuckyPoolGpuConfig::default())),
+            "SupportXTMPool" => Ok(GpuPool::SupportXTMPool(SupportXTMGpuPoolConfig::default())),
+            _ => Err(anyhow::anyhow!("Unknown GPU pool name: {}", name)),
+        }
+    }
 }

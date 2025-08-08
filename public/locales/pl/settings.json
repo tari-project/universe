@@ -130,6 +130,7 @@
   "reset-permanently": "Czy na pewno chcesz trwale zresetować ustawienia?",
   "reset-restart": "Tari Universe uruchomi się ponownie automatycznie po zakończeniu resetowania",
   "reset-settings": "Resetuj ustawienia",
+  "reset-to-defaults": "Reset to default",
   "reset-wallet": "Resetuj porfel",
   "restart-later": "Zrestartuj później",
   "restart-now": "Zrestartuj teraz",

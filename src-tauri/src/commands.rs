@@ -2198,6 +2198,42 @@ pub async fn update_selected_cpu_pool_config(updated_config: CpuPool) -> Result<
 }
 
 #[tauri::command]
+pub async fn reset_gpu_pool_config(gpu_pool_name: String) -> Result<(), InvokeError> {
+    let timer = Instant::now();
+    info!(target: LOG_TARGET, "[reset_pool_gpu_pool_config] called with gpu_pool_name: {gpu_pool_name:?}");
+
+    let gpu_pool = GpuPool::default_from_name(&gpu_pool_name).map_err(InvokeError::from_anyhow)?;
+
+    ConfigPools::update_field(ConfigPoolsContent::update_selected_gpu_config, gpu_pool)
+        .await
+        .map_err(InvokeError::from_anyhow)?;
+    EventsEmitter::emit_pools_config_loaded(&ConfigPools::content().await.clone()).await;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "reset_pool_gpu_pool_config took too long: {:?}", timer.elapsed());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn reset_cpu_pool_config(cpu_pool_name: String) -> Result<(), InvokeError> {
+    let timer = Instant::now();
+    info!(target: LOG_TARGET, "[reset_pool_cpu_pool_config] called with cpu_pool_name: {cpu_pool_name:?}");
+
+    let cpu_pool = CpuPool::default_from_name(&cpu_pool_name).map_err(InvokeError::from_anyhow)?;
+
+    ConfigPools::update_field(ConfigPoolsContent::update_selected_cpu_config, cpu_pool)
+        .await
+        .map_err(InvokeError::from_anyhow)?;
+    EventsEmitter::emit_pools_config_loaded(&ConfigPools::content().await.clone()).await;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "reset_pool_cpu_pool_config took too long: {:?}", timer.elapsed());
+    }
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn create_pin(app_handle: tauri::AppHandle) -> Result<(), String> {
     InternalWallet::create_pin(&app_handle)
         .await

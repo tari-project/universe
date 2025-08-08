@@ -9,7 +9,12 @@ import {
 } from '../../components/SettingsGroup.styles';
 import { Typography } from '@app/components/elements/Typography';
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch';
-import { changeGpuPool, changeGpuPoolConfiguration, toggleGpuPool } from '@app/store/actions/appConfigStoreActions';
+import {
+    changeGpuPool,
+    changeGpuPoolConfiguration,
+    resetGpuPoolConfiguration,
+    toggleGpuPool,
+} from '@app/store/actions/appConfigStoreActions';
 import { useMiningPoolsStore } from '@app/store/useMiningPoolsStore.ts';
 import { PoolStats } from '@app/containers/floating/Settings/sections/pools/PoolStats.tsx';
 import { getAvailableGpuPools, getSelectedGpuPool } from '@app/store/selectors/appConfigStoreSelectors';
@@ -43,6 +48,11 @@ export const GpuPoolsSettings = () => {
 
     const handlePoolConfigurationChange = useCallback(async (updatedConfig: BasePoolData) => {
         await changeGpuPoolConfiguration(updatedConfig);
+    }, []);
+
+    const handleResetToDefaultPoolConfiguration = useCallback(async () => {
+        if (!selectedGpuPoolData) return;
+        await resetGpuPoolConfiguration(selectedGpuPoolData.pool_name);
     }, []);
 
     return (
@@ -79,7 +89,11 @@ export const GpuPoolsSettings = () => {
                             variant="bordered"
                             forceHeight={36}
                         />
-                        <PoolConfiguration poolConfig={selectedGpuPoolData} onSave={handlePoolConfigurationChange} />
+                        <PoolConfiguration
+                            poolConfig={selectedGpuPoolData}
+                            onSave={handlePoolConfigurationChange}
+                            onReset={handleResetToDefaultPoolConfiguration}
+                        />
                     </SettingsGroupContent>
                 </SettingsGroup>
             </SettingsGroupWrapper>

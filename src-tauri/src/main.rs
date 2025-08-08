@@ -637,7 +637,9 @@ fn main() {
             commands::change_cpu_pool,
             commands::change_gpu_pool,
             commands::update_selected_gpu_pool_config,
-            commands::update_selected_cpu_pool_config
+            commands::update_selected_cpu_pool_config,
+            commands::reset_gpu_pool_config,
+            commands::reset_cpu_pool_config,
         ])
         .build(tauri::generate_context!())
         .inspect_err(|e| {

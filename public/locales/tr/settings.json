@@ -128,6 +128,7 @@
   "reset-permanently": "Tüm ayarları kalıcı olarak sıfırlamak istediğinizden emin misiniz?",
   "reset-restart": "Sıfırlama tamamlandığında Tari Universe otomatik olarak yeniden başlayacak",
   "reset-settings": "Ayarları sıfırla",
+  "reset-to-defaults": "Reset to default",
   "reset-wallet": "Cüzdanı Sıfırla",
   "restart-later": "Daha Sonra Yeniden Başlat",
   "restart-now": "Şimdi Yeniden Başlat",

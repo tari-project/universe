@@ -625,6 +625,56 @@ export const changeGpuPoolConfiguration = async (updatedConfig: BasePoolData) =>
     }
 };
 
+export const resetGpuPoolConfiguration = async (gpuPoolName: string) => {
+    const isGpuMiningEnabled = useConfigMiningStore.getState().gpu_mining_enabled;
+    const anyMiningInitiated =
+        useMiningStore.getState().isCpuMiningInitiated || useMiningStore.getState().isGpuMiningInitiated;
+    const isGpuMiningInitiated = useMiningStore.getState().isGpuMiningInitiated;
+    const gpuMining = useMiningMetricsStore.getState().gpu_mining_status.is_mining;
+
+    try {
+        if (gpuMining || isGpuMiningInitiated) {
+            console.info('Stopping GPU mining...');
+            await stopGpuMining();
+        }
+
+        await invoke('reset_gpu_pool_config', { gpuPoolName });
+
+        if (anyMiningInitiated && isGpuMiningEnabled) {
+            console.info('Restarting GPU mining...');
+            await startGpuMining();
+        }
+    } catch (e) {
+        console.error('Could not reset GPU pool configuration', e);
+        setError('Could not reset GPU pool configuration');
+    }
+};
+
+export const resetCpuPoolConfiguration = async (cpuPoolName: string) => {
+    const isCpuMiningEnabled = useConfigMiningStore.getState().cpu_mining_enabled;
+    const anyMiningInitiated =
+        useMiningStore.getState().isCpuMiningInitiated || useMiningStore.getState().isGpuMiningInitiated;
+    const isCpuMiningInitiated = useMiningStore.getState().isCpuMiningInitiated;
+    const cpuMining = useMiningMetricsStore.getState().cpu_mining_status.is_mining;
+
+    try {
+        if (cpuMining || isCpuMiningInitiated) {
+            console.info('Stopping CPU mining...');
+            await stopCpuMining();
+        }
+
+        await invoke('reset_cpu_pool_config', { cpuPoolName });
+
+        if (anyMiningInitiated && isCpuMiningEnabled) {
+            console.info('Restarting CPU mining...');
+            await startCpuMining();
+        }
+    } catch (e) {
+        console.error('Could not reset CPU pool configuration', e);
+        setError('Could not reset CPU pool configuration');
+    }
+};
+
 export const handleWalletUIChanged = (mode: WalletUIMode) => {
     useConfigUIStore.setState((c) => ({ ...c, wallet_ui_mode: mode }));
 };
