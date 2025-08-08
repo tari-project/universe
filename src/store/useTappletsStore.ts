@@ -232,9 +232,11 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
         set({ installedTapplets });
     },
     stopTapp: async (tappletId: number) => {
-        const isRunning = await invoke('is_tapplet_server_running', { tappletId });
-        console.info('[STORE] tapplet_stopped', tappletId, isRunning);
         const serverAddress = await invoke('stop_tapplet', { tappletId });
-        console.info('[STORE] tapplet_stopped', tappletId, serverAddress);
+        console.info('[STORE] tapplet stopped', tappletId, serverAddress);
+    },
+    restartTapp: async (tappletId: number) => {
+        const serverAddress = await invoke('restart_tapplet', { tappletId });
+        console.info('[STORE] tapplet restarted', tappletId, serverAddress);
     },
 }));

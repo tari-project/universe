@@ -667,6 +667,7 @@ fn main() {
             commands::delete_dev_tapplet,
             commands::update_installed_tapplet,
             commands::stop_tapplet,
+            commands::restart_tapplet,
             commands::is_tapplet_server_running
         ])
         .build(tauri::generate_context!())

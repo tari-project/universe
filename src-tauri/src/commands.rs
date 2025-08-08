@@ -2280,17 +2280,7 @@ pub async fn launch_dev_tapplet(
     }
 
     let tapplet_path = PathBuf::from(&dev_tapplet.endpoint);
-    // let handle_start = tauri::async_runtime::spawn(async move {
-    //     start_tapplet_server(tapplet_path, &dev_tapplet.csp).await
-    // });
 
-    // CHECK IF SPAWN HERE IS NEEDED
-    // let manager = tapplet_manager.clone();
-    // let handle_start = tauri::async_runtime::spawn(async move {
-    //     manager
-    //         .start_server(dev_tapplet_id, tapplet_path, &dev_tapplet.csp)
-    //         .await
-    // });
     let addr = tapplet_manager
         .start_server(dev_tapplet_id, tapplet_path, &dev_tapplet.csp)
         .await
@@ -2298,14 +2288,6 @@ pub async fn launch_dev_tapplet(
             error!(target: LOG_TARGET, "Failed to start tapplet with id {}: {}", dev_tapplet_id, &e);
             e.to_string()
         })?;
-
-    // let addr = match handle_start.await {
-    //     Ok(result) => result.map_err(|e| e.to_string())?,
-    //     Err(e) => {
-    //         error!(target: LOG_TARGET, "❌ Error handling tapplet start: {e:?}");
-    //         return Err(e.to_string());
-    //     }
-    // };
 
     let is_running = tapplet_manager.is_server_running(dev_tapplet_id).await;
     info!(target: LOG_TARGET, "🎉🎉🎉 IS RUNNING: {:?} at address {:?}", is_running, addr);
@@ -2328,6 +2310,29 @@ pub async fn stop_tapplet(
         error!(target: LOG_TARGET, "Failed to stop tapplet with id {}: {}", tapplet_id, &e);
         e
     })?;
+    Ok(address)
+}
+
+#[tauri::command]
+pub async fn restart_tapplet(
+    tapplet_id: i32,
+    db_connection: tauri::State<'_, DatabaseConnection>,
+    tapplet_manager: tauri::State<'_, TappletManager>,
+) -> Result<String, String> {
+    info!(target: LOG_TARGET, "👉👉👉 restart tapp id: {:?}", &tapplet_id);
+    let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
+    let dev_tapplet: DevTapplet = tapplet_store
+        .get_by_id(tapplet_id)
+        .map_err(|e| e.to_string())?;
+    let tapplet_path = PathBuf::from(&dev_tapplet.endpoint);
+
+    let address = tapplet_manager
+        .restart_server(tapplet_id, tapplet_path, &dev_tapplet.csp)
+        .await
+        .map_err(|e| {
+            error!(target: LOG_TARGET, "Failed to restart tapplet with id {}: {}", tapplet_id, &e);
+            e
+        })?;
     Ok(address)
 }
 
