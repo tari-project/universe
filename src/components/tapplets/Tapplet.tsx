@@ -91,8 +91,7 @@ export const Tapplet: React.FC<TappletProps> = ({ source }) => {
             case MessageType.OPEN_EXTERNAL_LINK: {
                 console.info('[TAPPLET] handle iframe msg type ext link:', event.data.type);
                 console.info('[TAPPLET] domains ', allowedDomains);
-                // openExternalLink(event.data.payload.url);
-                // break;
+
                 const url = event.data.payload.url;
                 try {
                     const { hostname } = new URL(url);
@@ -145,15 +144,12 @@ export const Tapplet: React.FC<TappletProps> = ({ source }) => {
                 setAllowedDomains((prev) => Array.from(new Set([...prev, ...pendingDomains])));
                 setPendingDomains(null);
                 setShowDomainPopup(false);
-                // const csp =
-                //     "default-src 'self' http://{} http://api.staging-bridge.tari.com https://jsonplaceholder.typicode.com/todos/1; connect-src 'self' http://api.staging-bridge.tari.com https://jsonplaceholder.typicode.com/todos/1; script-src 'self' http://api.staging-bridge.tari.com 'unsafe-inline'; img-src 'self' data:; style-src 'self' 'unsafe-inline';";
-                // console.warn('UPDATE CSP:', csp);
-                // await invoke('update_csp_policy', { csp });
             }
         } catch (e) {
             console.error('Error approving domains:', e);
         }
     }, [pendingDomains]);
+
     const handleRejectDomains = () => {
         setPendingDomains(null);
         setShowDomainPopup(false);

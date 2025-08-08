@@ -8,8 +8,8 @@ export function isHttpOrLocalhost(s: string): boolean {
         if (scheme === 'http' || scheme === 'https') {
             return true;
         }
-    } catch {
-        // If parsing fails, ignore and continue to string check
+    } catch (e) {
+        console.warn('Failed to check tapplet source:', e);
     }
 
     const sLower = s.toLowerCase();
