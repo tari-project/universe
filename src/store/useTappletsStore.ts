@@ -37,6 +37,7 @@ interface Actions {
     updateInstalledTapp: (tappletId: number, installedTappletId: number) => Promise<void>;
     getDevTapps: () => Promise<void>;
     stopTapp: (tappletId: number) => Promise<void>;
+    restartTapp: (tappletId: number) => Promise<void>;
 }
 
 type TappletsStoreState = State & Actions;

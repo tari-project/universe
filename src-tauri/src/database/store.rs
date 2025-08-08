@@ -1,6 +1,5 @@
 use diesel::prelude::*;
 use diesel::SqliteConnection;
-use log::warn;
 use std::ops::DerefMut;
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -218,7 +217,6 @@ impl<'a> Store<Tapplet, CreateTapplet<'a>, UpdateTapplet> for SqliteStore {
 
     fn create(&mut self, item: &CreateTapplet) -> Result<Tapplet, Error> {
         use crate::database::schema::tapplet;
-        warn!("❌ CREATE ITEM {:?}", &item);
 
         diesel::insert_into(tapplet::table)
             .values(item)

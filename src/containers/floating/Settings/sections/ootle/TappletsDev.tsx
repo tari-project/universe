@@ -20,6 +20,7 @@ export default function TappletsDev() {
     const deleteDevTapp = useTappletsStore((s) => s.deleteDevTapp);
     const getDevTapps = useTappletsStore((s) => s.getDevTapps);
     const stopTapp = useTappletsStore((s) => s.stopTapp);
+    const restartTapp = useTappletsStore((s) => s.restartTapp);
     const devTapplets = useTappletsStore((s) => s.devTapplets);
     const { isSettingsOpen } = useAppStateStore();
     const devTappletsCount = devTapplets?.length || 0;
@@ -46,6 +47,22 @@ export default function TappletsDev() {
         [deleteDevTapp]
     );
 
+    const handleRestart = useCallback(
+        async (tappletId: number) => {
+            try {
+                await restartTapp(tappletId);
+                setActiveTappById(tappletId, false);
+                setIsSettingsOpen(!isSettingsOpen);
+                setShowTapplet(true);
+                setSidebarOpen(false);
+                setIsSettingsOpen(false);
+            } catch (e) {
+                setError(`Error while launching dev tapplet: ${e}`);
+            }
+        },
+        [isSettingsOpen, restartTapp, setActiveTappById]
+    );
+
     const handleLaunch = useCallback(
         async (tappletId: number) => {
             try {
@@ -63,7 +80,7 @@ export default function TappletsDev() {
 
     useEffect(() => {
         getDevTapps();
-    }, []);
+    }, [getDevTapps]);
 
     return (
         <TappletsGroupWrapper $category="Dev Tapplets">
@@ -89,8 +106,9 @@ export default function TappletsDev() {
                                             isRunning: item.isRunning ?? false,
                                         }}
                                         handleStart={() => handleLaunch(item.id)}
-                                        handleRemove={() => handleDelete(item.id)}
+                                        handleDelete={() => handleDelete(item.id)}
                                         handleStop={() => handleStop(item.id)}
+                                        handleRestart={() => handleRestart(item.id)}
                                     />
                                 ))}
                             </ListItemWrapper>
