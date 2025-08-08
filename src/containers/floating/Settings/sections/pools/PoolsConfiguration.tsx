@@ -67,9 +67,6 @@ export const PoolConfiguration = <T extends FieldValues = BasePoolData>({
             <SettingsGroupWrapper>
                 <SettingsGroup>
                     <SettingsGroupContent>
-                        <SettingsGroupTitle>
-                            <Typography variant="h6">{t('pool-configuration')}</Typography>
-                        </SettingsGroupTitle>
                         <Typography>{t('no-pool-configuration-available')}</Typography>
                     </SettingsGroupContent>
                 </SettingsGroup>
@@ -84,9 +81,6 @@ export const PoolConfiguration = <T extends FieldValues = BasePoolData>({
             <SettingsGroupWrapper>
                 <SettingsGroup>
                     <SettingsGroupContent>
-                        <SettingsGroupTitle>
-                            <Typography variant="h6">{t('pool-configuration')}</Typography>
-                        </SettingsGroupTitle>
                         <Typography>{t('no-pool-configuration-available')}</Typography>
                     </SettingsGroupContent>
                 </SettingsGroup>
