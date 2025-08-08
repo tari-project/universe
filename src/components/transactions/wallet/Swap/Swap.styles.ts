@@ -21,15 +21,17 @@ export const SectionHeaderWrapper = styled.div`
     align-items: center;
 `;
 
-export const SwapsIframe = styled.iframe<{ $walletConnectOpen: boolean; $swapHeight: number }>`
+export const SwapsIframe = styled.iframe<{ $walletConnectOpen: boolean; $swapHeight: number; $opacity: number }>`
     width: 100%;
     height: 100%;
-    min-height: ${({ $walletConnectOpen, $swapHeight }) => ($walletConnectOpen ? 470 : $swapHeight || 397)}px;
+    min-height: ${({ $walletConnectOpen, $swapHeight }) => ($walletConnectOpen ? 470 : $swapHeight || 395)}px;
     border: none;
     pointer-events: all;
-    border-radius: ${({ $walletConnectOpen }) => ($walletConnectOpen ? '30px' : '20px')};
+    border-radius: ${({ $walletConnectOpen }) => ($walletConnectOpen ? '38px' : '20px')};
+    margin-top: ${({ $walletConnectOpen }) => ($walletConnectOpen ? '10px' : '0')};
     overflow: hidden;
-    transition: all 0.1s ease;
+    opacity: ${({ $opacity }) => $opacity};
+    transition: all 0.2s ease opacity 0.3s ease;
 `;
 
 export const IframeContainer = styled.div`

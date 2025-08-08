@@ -19,12 +19,12 @@ import {
 import genericHeroImage from './images/generic-image.png';
 import gemImage from '@app/assets/images/gem.png';
 
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { GIFT_GEMS, useAirdropStore } from '@app/store/useAirdropStore';
 import { formatNumber, FormatPreset } from '@app/utils/formatters';
 
-const ShareRewardModal = memo(function ShareRewardModal() {
+export default function ShareRewardModal() {
     const { t } = useTranslation('sidebar', { useSuspense: false });
 
     const { setShowModal, setItemData } = useShareRewardStore((s) => s);
@@ -103,6 +103,4 @@ const ShareRewardModal = memo(function ShareRewardModal() {
             )}
         </AnimatePresence>
     );
-});
-
-export default ShareRewardModal;
+}

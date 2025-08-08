@@ -1,4 +1,4 @@
-import { memo, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { AnimatePresence } from 'motion/react';
 import { formatNumber, FormatPreset, truncateMiddle } from '@app/utils';
 import { BaseItemProps, HistoryListItemProps } from '../types.ts';
@@ -24,7 +24,7 @@ import { getTxTitle, getTxTypeByStatus } from '@app/utils/getTxStatus.ts';
 import { TransactionDirection } from '@app/types/transactions.ts';
 import BridgeItemHover from './BridgeHoveredItem.tsx';
 
-const BaseItem = memo(function BaseItem({ title, time, value, direction, chip, onClick }: BaseItemProps) {
+function BaseItem({ title, time, value, direction, chip, onClick }: BaseItemProps) {
     // note re. isPositiveValue:
     // amounts in the tx response are always positive numbers but
     // if the transaction is Outbound, the value is negative
@@ -56,14 +56,9 @@ const BaseItem = memo(function BaseItem({ title, time, value, direction, chip, o
             </Content>
         </ContentWrapper>
     );
-});
+}
 
-const HistoryListItem = memo(function ListItem({
-    item,
-    index,
-    itemIsNew = false,
-    setDetailsItem,
-}: HistoryListItemProps) {
+function HistoryListItem({ item, index, itemIsNew = false, setDetailsItem }: HistoryListItemProps) {
     const { t } = useTranslation('wallet');
     const hideWalletBalance = useUIStore((s) => s.hideWalletBalance);
 
@@ -86,7 +81,7 @@ const HistoryListItem = memo(function ListItem({
             title={itemTitle}
             time={itemTime}
             value={earningsFormatted}
-            direction={item.walletTransactionDetails.direction}
+            direction={item.walletTransactionDetails?.direction}
             chip={itemIsNew ? t('new') : ''}
         />
     );
@@ -120,6 +115,6 @@ const HistoryListItem = memo(function ListItem({
             {baseItem}
         </ItemWrapper>
     );
-});
+}
 
 export { HistoryListItem };

@@ -1,22 +1,22 @@
-import { memo, useCallback, useState } from 'react';
+import { useState } from 'react';
 import { AnimatePresence } from 'motion/react';
 import { useSetupStore } from '@app/store/useSetupStore.ts';
 import { useToastStore } from './useToastStore';
 import { Toast } from './Toast/Toast';
 import { Inside, Wrapper } from './styles';
 
-const ToastStack = memo(function ToastStack() {
+export default function ToastStack() {
     const { toasts } = useToastStore();
     const isSettingUp = useSetupStore((s) => !s.appUnlocked);
     const [isHovered, setIsHovered] = useState(false);
 
-    const handleMouseEnter = useCallback(() => {
+    function handleMouseEnter() {
         setIsHovered(true);
-    }, []);
+    }
 
-    const handleMouseLeave = useCallback(() => {
+    function handleMouseLeave() {
         setIsHovered(false);
-    }, []);
+    }
 
     const reversedToasts = [...toasts].reverse();
 
@@ -42,6 +42,4 @@ const ToastStack = memo(function ToastStack() {
             </Wrapper>
         </>
     );
-});
-
-export default ToastStack;
+}

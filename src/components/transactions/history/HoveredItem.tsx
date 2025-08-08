@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { GIFT_GEMS, useAirdropStore } from '@app/store/useAirdropStore.ts';
@@ -13,10 +13,10 @@ import { CombinedBridgeWalletTransaction } from '@app/store/useWalletStore.ts';
 
 interface Props {
     item: CombinedBridgeWalletTransaction;
-    button?: React.ReactNode;
+    button?: ReactNode;
 }
 
-const ItemHover = memo(function ItemHover({ item, button }: Props) {
+export default function ItemHover({ item, button }: Props) {
     const { t } = useTranslation('sidebar', { useSuspense: false });
     const sharingEnabled = useConfigUIStore((s) => s.sharing_enabled);
     const airdropTokens = useAirdropStore((s) => s.airdropTokens);
@@ -55,6 +55,4 @@ const ItemHover = memo(function ItemHover({ item, button }: Props) {
             </ButtonWrapper>
         </HoverWrapper>
     );
-});
-
-export default ItemHover;
+}

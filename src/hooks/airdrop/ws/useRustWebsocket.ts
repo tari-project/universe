@@ -58,7 +58,7 @@ export default function useAirdropWebsocket() {
                     globalEventHandler(data as WebsocketGlobalEvent);
                     break;
                 }
-                case `${userId}`: {
+                case userId: {
                     userEventHandler(data as WebsocketUserEvent);
                     break;
                 }

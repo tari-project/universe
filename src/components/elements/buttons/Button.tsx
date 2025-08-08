@@ -1,4 +1,3 @@
-import { memo } from 'react';
 import { CommonButtonProps } from './button.types.ts';
 import { StyledButton, ChildrenWrapper, IconWrapper } from './BaseButton.styles.ts';
 
@@ -6,7 +5,7 @@ type ButtonProps = CommonButtonProps & {
     disableColour?: boolean;
 };
 
-const Button = memo(function Button({
+function Button({
     children,
     variant = 'primary',
     color,
@@ -39,5 +38,6 @@ const Button = memo(function Button({
             ) : null}
         </StyledButton>
     );
-});
+}
+
 export { Button };
