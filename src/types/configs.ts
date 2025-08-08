@@ -78,18 +78,21 @@ export interface MiningMode {
     cpu_usage_percentage: number;
     gpu_usage_percentage: number;
 }
+
 export interface ConfigPools {
+    // ======= Config internals =======
     was_config_migrated: boolean;
     created_at: string;
-    gpu_pool_enabled: boolean;
-    gpu_pool?: { [GpuPools.LuckyPool]: BasePoolData } | { [GpuPools.SupportXTMPool]: BasePoolData };
-    cpu_pool_enabled: boolean;
-    cpu_pool?: { [CpuPools.GlobalTariPool]: BasePoolData };
-}
-
-export interface ConfigPoolsSelectors {
-    getGpuPool: () => BasePoolData | undefined;
-    getCpuPool: () => BasePoolData | undefined;
+    // ======= Gpu Pool =======
+    // When false we are solo mining with glytex, if true we are pool mining with graxil
+    gpu_pool_enabled: boolean; // Whether GPU pool mining is enabled | defaults to true
+    selected_gpu_pool?: string; // Name of the selected GPU pool => defaults to LuckyPool
+    available_gpu_pools?: Record<GpuPools, BasePoolData>; // Available GPU pools
+    // ======= Cpu Pool =======
+    // When false we are solo mining with xmrig and mmproxy if true we are pool mining with xmrig
+    cpu_pool_enabled: boolean; // Whether CPU pool mining is enabled | defaults to true
+    selected_cpu_pool?: string; // Name of the selected CPU pool => defaults to LuckyPool
+    available_cpu_pools?: Record<CpuPools, BasePoolData>; // Available CPU pools
 }
 
 export enum GpuPools {
@@ -98,7 +101,8 @@ export enum GpuPools {
 }
 
 export enum CpuPools {
-    GlobalTariPool = 'GlobalTariPool',
+    LuckyPool = 'LuckyPool',
+    SupportXTMPool = 'SupportXTMPool',
 }
 
 export interface BasePoolData {
@@ -106,20 +110,11 @@ export interface BasePoolData {
     stats_url: string;
     pool_name: string;
 }
-export interface ConfigPools {
-    was_config_migrated: boolean;
-    created_at: string;
-    gpu_pool_enabled: boolean;
-    gpu_pool?: { [GpuPools.LuckyPool]: BasePoolData } | { [GpuPools.SupportXTMPool]: BasePoolData };
-    cpu_pool_enabled: boolean;
-    cpu_pool?: { [CpuPools.GlobalTariPool]: BasePoolData };
-}
 
 export interface ConfigBackendInMemory {
-    airdropUrl: string;
-    airdropApiUrl: string;
-    airdropTwitterAuthUrl: string;
-    exchangeId: string;
-    bridgeBackendApiUrl: string;
-    walletConnectProjectId?: string;
+    airdrop_url: string;
+    airdrop_api_url: string;
+    airdrop_twitter_auth_url: string;
+    exchange_id: string;
+    bridge_backend_api_url: string;
 }

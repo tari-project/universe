@@ -8,7 +8,7 @@ interface MinerStats {
 }
 
 async function fetchMinerStats() {
-    const airdropApiUrl = useAirdropStore.getState().backendInMemoryConfig?.airdropApiUrl;
+    const airdropApiUrl = useAirdropStore.getState().backendInMemoryConfig?.airdrop_api_url;
     const res = await fetch(`${airdropApiUrl}/miner/stats`);
 
     if (!res.ok) {

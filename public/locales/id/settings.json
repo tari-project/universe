@@ -80,6 +80,7 @@
   "monero-seed-words": "Kata Kunci Pemulihan Monero",
   "network": "Jaringan",
   "no-entry-guard": "Tidak ada Penjaga Masuk yang terhubung!",
+  "no-pool-configuration-available": "No pool configuration available",
   "node-configuration": "Konfigurasi Node",
   "node-configuration-description": "Hubungkan dengan Remote, Lokal, atau keduanya hingga Lokal Anda siap digunakan",
   "node-connection-address": "Alamat koneksi",
@@ -101,6 +102,7 @@
     "passphrase": "Kata Sandi"
   },
   "pin": "Pin",
+  "pool-configuration": "Pool Configuration",
   "pool-mining": "Penambangan Pool",
   "pool-mining-description": "Ketika diaktifkan, Anda akan menambang dalam pool dan bergabung dengan kelompok penambang.",
   "pre-release": {
@@ -131,6 +133,7 @@
   "restart-now": "Mulai Ulang Sekarang",
   "restart-universe": "Mulai Ulang Tari Universe?",
   "save": "Simpan",
+  "save-configuration": "Save configuration",
   "seed-words": "Kata-kata benih",
   "send-logs": "Kirim log",
   "set-dynamic-fail-data": "Atur URL kustom untuk node monero",

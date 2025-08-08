@@ -101,6 +101,8 @@ pub struct LuckyPoolStats {
     pub wallet: String,
     #[serde(rename = "rejectedShares")]
     pub rejected_shares: Option<String>,
+    #[serde(rename = "acceptedShares")]
+    pub accepted_shares: Option<String>,
     pub hashrate: u64,
     pub email: Option<String>,
     pub paid: u64,
@@ -182,9 +184,14 @@ impl PoolApiAdapter for LuckyPoolAdapter {
     fn convert_api_data(&self, data: &str) -> Result<PoolStatus, Error> {
         let converted_data: LuckyPoolStatusResponseBody = serde_json::from_str(data)?;
         let pool_status = PoolStatus {
-            accepted_shares: converted_data.stats.hashrate,
-            unpaid: converted_data.stats.unlocked,
-            balance: converted_data.stats.paid + converted_data.stats.unlocked,
+            accepted_shares: converted_data
+                .stats
+                .accepted_shares
+                .unwrap_or_default()
+                .parse()
+                .unwrap_or(0),
+            unpaid: converted_data.stats.unlocked + converted_data.stats.locked,
+            balance: converted_data.stats.paid,
             min_payout: converted_data.stats.payment_threshold,
         };
         Ok(pool_status)

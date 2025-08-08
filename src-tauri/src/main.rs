@@ -294,7 +294,7 @@ fn main() {
         pool_status_url: None,
     }));
 
-    let app_in_memory_config = Arc::new(RwLock::new(AppInMemoryConfig::init()));
+    let app_in_memory_config = Arc::new(RwLock::new(AppInMemoryConfig::default()));
     let cpu_miner: Arc<RwLock<CpuMiner>> = Arc::new(
         CpuMiner::new(
             &mut stats_collector,
@@ -633,7 +633,11 @@ fn main() {
             commands::update_custom_mining_mode,
             commands::encode_payment_id_to_address,
             commands::save_wxtm_address,
-            commands::set_security_warning_dismissed
+            commands::set_security_warning_dismissed,
+            commands::change_cpu_pool,
+            commands::change_gpu_pool,
+            commands::update_selected_gpu_pool_config,
+            commands::update_selected_cpu_pool_config
         ])
         .build(tauri::generate_context!())
         .inspect_err(|e| {
