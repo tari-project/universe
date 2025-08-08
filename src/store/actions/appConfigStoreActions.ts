@@ -30,7 +30,7 @@ import { NodeType, updateNodeType as updateNodeTypeForNodeStore } from '../useNo
 import { setCurrentExchangeMinerId } from '../useExchangeStore.ts';
 import { fetchExchangeContent, refreshXCContent } from '@app/hooks/exchanges/fetchExchangeContent.ts';
 import { fetchExchangeList } from '@app/hooks/exchanges/fetchExchanges.ts';
-import { ConfigPoosPayload, WalletUIMode } from '@app/types/events-payloads.ts';
+import { ConfigPoolsPayload, WalletUIMode } from '@app/types/events-payloads.ts';
 import { getSelectedCpuPool, getSelectedGpuPool } from '../selectors/appConfigStoreSelectors.ts';
 
 export const handleConfigCoreLoaded = async (coreConfig: ConfigCore) => {
@@ -72,7 +72,7 @@ export const handleConfigMiningLoaded = (miningConfig: ConfigMining) => {
     useConfigMiningStore.setState((c) => ({ ...c, ...miningConfig }));
 };
 
-export const handleConfigPoolsLoaded = (poolsConfig: ConfigPoosPayload) => {
+export const handleConfigPoolsLoaded = (poolsConfig: ConfigPoolsPayload) => {
     const formattedPoolsConfig: ConfigPools = {
         ...poolsConfig,
         available_gpu_pools: poolsConfig.available_gpu_pools?.reduce(

@@ -87,7 +87,7 @@ export type BackgroundNodeSyncUpdatePayload =
 
 export type ConnectionStatusPayload = 'InProgress' | 'Succeed' | 'Failed';
 
-export interface ConfigPoosPayload extends Omit<ConfigPools, 'available_gpu_pools' | 'available_cpu_pools'> {
+export interface ConfigPoolsPayload extends Omit<ConfigPools, 'available_gpu_pools' | 'available_cpu_pools'> {
     available_gpu_pools?: [{ [GpuPools.LuckyPool]: BasePoolData }, { [GpuPools.SupportXTMPool]: BasePoolData }]; // Available GPU pools
     available_cpu_pools?: [{ [CpuPools.LuckyPool]: BasePoolData }, { [CpuPools.SupportXTMPool]: BasePoolData }]; // Available CPU pools
 }
