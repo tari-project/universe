@@ -61,7 +61,7 @@ export const GpuPoolsSettings = () => {
             </SettingsGroup>
 
             {selectedGpuPoolData && <PoolStats poolStatus={pool_status} />}
-            <SettingsGroupWrapper $subGroup>
+            <SettingsGroupWrapper $subGroup style={{ marginTop: '12px' }}>
                 <SettingsGroup>
                     <SettingsGroupTitle>
                         <Typography variant="h5">{t('pool-configuration')}</Typography>
