@@ -41,8 +41,8 @@ export const GpuPoolsSettings = () => {
         await changeGpuPool(value);
     }, []);
 
-    const handlePoolConfigurationChange = useCallback((updatedConfig: BasePoolData) => {
-        changeGpuPoolConfiguration(updatedConfig);
+    const handlePoolConfigurationChange = useCallback(async (updatedConfig: BasePoolData) => {
+        await changeGpuPoolConfiguration(updatedConfig);
     }, []);
 
     return (

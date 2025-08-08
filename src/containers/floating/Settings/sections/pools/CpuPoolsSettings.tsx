@@ -42,8 +42,8 @@ export const CpuPoolsSettings = () => {
         await changeCpuPool(value);
     }, []);
 
-    const handlePoolConfigurationChange = useCallback((updatedConfig: BasePoolData) => {
-        changeCpuPoolConfiguration(updatedConfig);
+    const handlePoolConfigurationChange = useCallback(async (updatedConfig: BasePoolData) => {
+        await changeCpuPoolConfiguration(updatedConfig);
     }, []);
 
     return (
