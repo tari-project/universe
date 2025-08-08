@@ -483,9 +483,8 @@ export const changeGpuPool = async (gpuPool: string) => {
             await stopGpuMining();
         }
 
-        await invoke('change_gpu_pool', { gpuPool }).then(() => {
-            console.info('GPU pool changed to:', gpuPool);
-        });
+        await invoke('change_gpu_pool', { gpuPool });
+        console.info('GPU pool changed to:', gpuPool);
 
         if (anyMiningInitiated && isGpuMiningEnabled) {
             await startGpuMining();
@@ -512,9 +511,8 @@ export const changeCpuPool = async (cpuPool: string) => {
             await stopCpuMining();
         }
 
-        await invoke('change_cpu_pool', { cpuPool }).then(() => {
-            console.info('CPU pool changed to:', cpuPool);
-        });
+        await invoke('change_cpu_pool', { cpuPool });
+        console.info('CPU pool changed to:', cpuPool);
 
         if (anyMiningInitiated && isCpuMiningEnabled) {
             await startCpuMining();
