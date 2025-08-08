@@ -13,7 +13,7 @@ if (result.error) {
   dotenv.config();
 }
 
-const child = spawn('cargo', ['tauri', ...args], {
+const child = spawn('tauri', [...args], {
   stdio: 'inherit',
   env: process.env,
 });
