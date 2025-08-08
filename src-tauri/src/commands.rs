@@ -2229,14 +2229,15 @@ pub async fn launch_builtin_tapplet(binary_name: &str) -> Result<ActiveTapplet, 
 
     // TODO only our tapplet should get by default 'insafe-inline'
     // see: https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Security-Policy#unsafe-inline
-    const DEFAULT_BUILTIN_TAPPLET_CSP: &str = "default-src 'self' https: 'unsafe-inline';";
+    const DEFAULT_TARI_BINARY_TAPPLET_CSP: &str =
+        "default-src 'self' https:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'";
 
     // TODO csp should be taken from the tapplet config, the bridge tapplet is exception because is 'built-in' by us
     // let config = get_tapplet_config(&tapp_dest_dir).unwrap_or_default();
     // let csp_header = HeaderValue::from_str(&config.csp).unwrap();
 
     let handle_start = tauri::async_runtime::spawn(async move {
-        start_tapplet_server(tapp_dest_dir, &DEFAULT_BUILTIN_TAPPLET_CSP.to_string()).await
+        start_tapplet_server(tapp_dest_dir, &DEFAULT_TARI_BINARY_TAPPLET_CSP.to_string()).await
     });
 
     let (addr, _cancel_token) = match handle_start.await {
@@ -2810,7 +2811,7 @@ pub fn update_dev_tapp_db(
     let dev_tapplet: DevTapplet = tapplet_store.get_by_id(id)?;
     info!(target: LOG_TARGET, "🛠️ BEFORE {:?}", dev_tapplet.csp);
 
-    let size = tapplet_store.update(dev_tapplet, &tapplet)?;
+    let _size = tapplet_store.update(dev_tapplet, &tapplet)?;
     let dev_updated: DevTapplet = tapplet_store.get_by_id(id)?;
     info!(target: LOG_TARGET, "🛠️ after {:?}", dev_updated.csp);
     return Ok(dev_updated);
