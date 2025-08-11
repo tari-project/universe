@@ -2,7 +2,7 @@ import InfoTooltip from '../../components/InfoTooltip/InfoTooltip';
 import DaysProgress from './DaysProgress/DaysProgress';
 import { Wrapper, Text, StreakText, StreakMessage, UnlockMessage, LoadingMessage } from './styles';
 import { useTranslation, Trans } from 'react-i18next';
-import { useCrewMembers } from '@app/hooks/crew/useCrewMembers';
+import { useReferrerProgress } from '@app/hooks/crew/useReferrerProgress';
 
 interface Props {
     isInline?: boolean;
@@ -13,7 +13,7 @@ const STREAK_DAYS_REQUIRED = 3;
 export default function StreakProgress({ isInline = false }: Props) {
     const { t } = useTranslation();
 
-    const { data, isLoading } = useCrewMembers();
+    const { data, isLoading } = useReferrerProgress();
     const referrerProgress = data?.referrerProgress;
 
     const currentStreak = referrerProgress?.currentStreak || 0;

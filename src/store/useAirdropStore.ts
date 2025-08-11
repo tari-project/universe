@@ -167,16 +167,19 @@ export interface MinRequirements {
     minAmtPaid: bigint;
 }
 
-export interface CrewMembersResponse {
+export interface MembersResponse {
     members: CrewMember[];
     pagination: PaginationInfo;
     filters: {
         status: 'all' | 'completed' | 'active' | 'inactive';
     };
+}
+
+export interface ReferrerProgressResponse {
     referrerProgress: ReferrerProgress;
     totals: CrewMembersTotals;
-    minRequirements: MinRequirements;
     memberImages: string[];
+    minRequirements: MinRequirements;
     membersToNudge: {
         id: string;
         name: string;

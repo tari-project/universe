@@ -1,4 +1,5 @@
 import { useCrewMembers } from '@app/hooks/crew/useCrewMembers';
+import { useReferrerProgress } from '@app/hooks/crew/useReferrerProgress';
 import { useAirdropStore } from '@app/store';
 import { setCrewQueryParams } from '@app/store/actions/airdropStoreActions';
 import StreakProgress from '../StreakProgress/StreakProgress';
@@ -10,10 +11,10 @@ import { useTranslation, Trans } from 'react-i18next';
 export default function CrewSection() {
     const { t } = useTranslation();
     const {
-        data,
-        isLoading,
-        error,
-        refetch,
+        data: membersData,
+        isLoading: membersLoading,
+        error: membersError,
+        refetch: refetchMembers,
         // Pagination controls
         nextPage,
         prevPage,
@@ -25,6 +26,13 @@ export default function CrewSection() {
         hasNextPage,
         hasPrevPage,
     } = useCrewMembers();
+
+    const {
+        data: progressData,
+        isLoading: progressLoading,
+        error: progressError,
+        refetch: refetchProgress,
+    } = useReferrerProgress();
 
     // Get current filter state from store (query params only)
     const activeFilter = useAirdropStore((state) => state.crewQueryParams.status);
@@ -51,16 +59,18 @@ export default function CrewSection() {
                 </Text>
             </IntroTextWrapper>
 
-            <Filters totals={data?.totals} activeFilter={activeFilter} onFilterChange={handleFilterChange} />
+            <Filters totals={progressData?.totals} activeFilter={activeFilter} onFilterChange={handleFilterChange} />
 
             <CrewList
                 isFiltered={activeFilter !== 'all'}
-                members={data?.members || []}
-                minRequirements={data?.minRequirements}
-                membersToNudge={data?.membersToNudge || []}
-                isLoading={isLoading}
-                error={error}
-                onRefresh={refetch}
+                members={membersData?.members || []}
+                minRequirements={progressData?.minRequirements}
+                membersToNudge={progressData?.membersToNudge || []}
+                isLoading={membersLoading || progressLoading}
+                error={membersError || progressError}
+                onRefresh={async () => {
+                    await Promise.all([refetchMembers(), refetchProgress()]);
+                }}
                 // Pagination props
                 currentPage={currentPage}
                 totalPages={totalPages}

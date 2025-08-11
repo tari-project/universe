@@ -1,7 +1,7 @@
 import { handleAirdropRequest } from '@app/hooks/airdrop/utils/useHandleRequest.ts';
 import { useAirdropStore, useWalletStore } from '@app/store';
 import { setCrewQueryParams } from '@app/store/actions/airdropStoreActions';
-import type { CrewMembersResponse } from '@app/store/useAirdropStore';
+import type { MembersResponse } from '@app/store/useAirdropStore';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 export const KEY_CREW_MEMBERS = 'crew_members';
@@ -11,7 +11,7 @@ async function fetchCrewMembersData(props: {
     walletReceiveKey: string;
     page: number;
     limit: number;
-}): Promise<CrewMembersResponse> {
+}): Promise<MembersResponse> {
     const { walletReceiveKey, ...params } = props;
     const searchParams = new URLSearchParams();
     if (params.status && params.status !== 'all') searchParams.append('status', params.status);
@@ -21,7 +21,7 @@ async function fetchCrewMembersData(props: {
     const queryString = searchParams.toString();
     const path = `/crew/members?${queryString}`;
 
-    const response = await handleAirdropRequest<CrewMembersResponse>({
+    const response = await handleAirdropRequest<MembersResponse>({
         path,
         method: 'POST',
         body: {

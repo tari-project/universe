@@ -2,8 +2,7 @@ import CrewDivider from './CrewDivider/CrewDivider';
 import CrewEntry from './CrewEntry/CrewEntry';
 import { Inside, ListGroup, MessageButton, MessageText, MessageWrapper, OuterWrapper, Wrapper } from './styles';
 import { useTranslation } from 'react-i18next';
-import type { CrewMember, CrewMembersResponse, MinRequirements } from '@app/store/useAirdropStore';
-import type { RefetchOptions, QueryObserverResult } from '@tanstack/react-query';
+import type { CrewMember, MinRequirements } from '@app/store/useAirdropStore';
 import { transformCrewMemberToEntry } from '@app/containers/main/CrewRewards/crewTransformers';
 import CrewEntrySkeleton from './CrewEntrySkeleton/CrewEntrySkeleton';
 import PaginationControls from './PaginationControls/PaginationControls';
@@ -15,7 +14,7 @@ interface Props {
     isLoading: boolean;
     isFiltered?: boolean;
     error: Error | null;
-    onRefresh: (options?: RefetchOptions) => Promise<QueryObserverResult<CrewMembersResponse, Error>>;
+    onRefresh: () => Promise<void>;
     // Pagination props
     currentPage?: number;
     totalPages?: number;
