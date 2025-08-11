@@ -20,10 +20,8 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::app_in_memory_config::{
-    get_der_encode_pub_key, get_websocket_key, AirdropInMemoryConfig, ExchangeMiner,
-    DEFAULT_EXCHANGE_ID,
-};
+use crate::airdrop::{get_der_encode_pub_key, get_websocket_key};
+use crate::app_in_memory_config::{AppInMemoryConfig, ExchangeMiner, DEFAULT_EXCHANGE_ID};
 use crate::auto_launcher::AutoLauncher;
 use crate::binaries::{Binaries, BinaryResolver};
 use crate::configs::config_core::{AirdropTokens, ConfigCore, ConfigCoreContent};
@@ -31,6 +29,7 @@ use crate::configs::config_mining::{ConfigMining, ConfigMiningContent};
 use crate::configs::config_pools::{ConfigPools, ConfigPoolsContent};
 use crate::configs::config_ui::{ConfigUI, ConfigUIContent, DisplayMode};
 use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent, WalletId};
+use crate::configs::pools::{cpu_pools::CpuPool, gpu_pools::GpuPool};
 use crate::configs::trait_config::ConfigImpl;
 use crate::events::ConnectionStatusPayload;
 use crate::events_emitter::EventsEmitter;
@@ -314,9 +313,9 @@ pub async fn get_app_in_memory_config(
     _window: tauri::Window,
     state: tauri::State<'_, UniverseAppState>,
     _app: tauri::AppHandle,
-) -> Result<AirdropInMemoryConfig, ()> {
+) -> Result<AppInMemoryConfig, ()> {
     let timer = Instant::now();
-    let res = state.in_memory_config.read().await.clone().into();
+    let res = state.in_memory_config.read().await.clone();
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET,
             "get_app_in_memory_config took too long: {:?}",
@@ -2131,11 +2130,117 @@ pub async fn set_node_type(
 }
 
 #[tauri::command]
+pub async fn change_cpu_pool(cpu_pool: String) -> Result<(), InvokeError> {
+    let timer = Instant::now();
+    info!(target: LOG_TARGET, "[change_cpu_pool] called with cpu_pool: {cpu_pool:?}");
+
+    ConfigPools::update_field(ConfigPoolsContent::set_selected_cpu_pool, cpu_pool)
+        .await
+        .map_err(InvokeError::from_anyhow)?;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "change_cpu_pool took too long: {:?}", timer.elapsed());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn change_gpu_pool(gpu_pool: String) -> Result<(), InvokeError> {
+    let timer = Instant::now();
+    info!(target: LOG_TARGET, "[change_gpu_pool] called with gpu_pool: {gpu_pool:?}");
+
+    ConfigPools::update_field(ConfigPoolsContent::set_selected_gpu_pool, gpu_pool)
+        .await
+        .map_err(InvokeError::from_anyhow)?;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "change_gpu_pool took too long: {:?}", timer.elapsed());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn update_selected_gpu_pool_config(updated_config: GpuPool) -> Result<(), InvokeError> {
+    let timer = Instant::now();
+    info!(target: LOG_TARGET, "[update_selected_gpu_pool_config] called with updated_config: {updated_config:?}");
+
+    ConfigPools::update_field(
+        ConfigPoolsContent::update_selected_gpu_config,
+        updated_config,
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "update_selected_gpu_pool_config took too long: {:?}", timer.elapsed());
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn update_selected_cpu_pool_config(updated_config: CpuPool) -> Result<(), InvokeError> {
+    let timer = Instant::now();
+    info!(target: LOG_TARGET, "[update_selected_cpu_pool_config] called with updated_config: {updated_config:?}");
+
+    ConfigPools::update_field(
+        ConfigPoolsContent::update_selected_cpu_config,
+        updated_config,
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "update_selected_cpu_pool_config took too long: {:?}", timer.elapsed());
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn reset_gpu_pool_config(gpu_pool_name: String) -> Result<(), InvokeError> {
+    let timer = Instant::now();
+    info!(target: LOG_TARGET, "[reset_pool_gpu_pool_config] called with gpu_pool_name: {gpu_pool_name:?}");
+
+    let gpu_pool = GpuPool::default_from_name(&gpu_pool_name).map_err(InvokeError::from_anyhow)?;
+
+    ConfigPools::update_field(ConfigPoolsContent::update_selected_gpu_config, gpu_pool)
+        .await
+        .map_err(InvokeError::from_anyhow)?;
+    EventsEmitter::emit_pools_config_loaded(&ConfigPools::content().await.clone()).await;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "reset_pool_gpu_pool_config took too long: {:?}", timer.elapsed());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn reset_cpu_pool_config(cpu_pool_name: String) -> Result<(), InvokeError> {
+    let timer = Instant::now();
+    info!(target: LOG_TARGET, "[reset_pool_cpu_pool_config] called with cpu_pool_name: {cpu_pool_name:?}");
+
+    let cpu_pool = CpuPool::default_from_name(&cpu_pool_name).map_err(InvokeError::from_anyhow)?;
+
+    ConfigPools::update_field(ConfigPoolsContent::update_selected_cpu_config, cpu_pool)
+        .await
+        .map_err(InvokeError::from_anyhow)?;
+    EventsEmitter::emit_pools_config_loaded(&ConfigPools::content().await.clone()).await;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "reset_pool_cpu_pool_config took too long: {:?}", timer.elapsed());
+    }
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn create_pin(app_handle: tauri::AppHandle) -> Result<(), String> {
     InternalWallet::create_pin(&app_handle)
         .await
         .map_err(|e| e.to_string())?;
     info!(target: LOG_TARGET, "PIN created successfully");
+
+    EventsEmitter::emit_pin_locked(true).await;
 
     Ok(())
 }
@@ -2146,13 +2251,9 @@ pub async fn set_seed_backed_up() -> Result<(), String> {
         .await
         .map_err(|e| e.to_string())?;
 
-    Ok(())
-}
+    EventsEmitter::emit_seed_backed_up(true).await;
 
-#[tauri::command]
-pub async fn is_seed_backed_up() -> Result<bool, String> {
-    let seed_backed_up = *ConfigWallet::content().await.seed_backed_up();
-    Ok(seed_backed_up)
+    Ok(())
 }
 
 /*
@@ -2287,7 +2388,10 @@ pub async fn get_base_node_status(
 }
 
 #[tauri::command]
-pub async fn is_pin_locked() -> Result<bool, String> {
-    let is_pin_locked = PinManager::pin_locked().await;
-    Ok(is_pin_locked)
+pub async fn set_security_warning_dismissed() -> Result<(), String> {
+    ConfigWallet::update_field(ConfigWalletContent::set_security_warning_dismissed, true)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
 }

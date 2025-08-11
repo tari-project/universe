@@ -6,7 +6,7 @@ import { useEffect } from 'react';
 export default function useFetchAirdropToken({ canListen = false }: { canListen?: boolean }) {
     const { authUuid, apiUrl } = useAirdropStore((s) => ({
         authUuid: s.authUuid,
-        apiUrl: s.backendInMemoryConfig?.airdropApiUrl,
+        apiUrl: s.backendInMemoryConfig?.airdrop_api_url,
     }));
 
     useEffect(() => {

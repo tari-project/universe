@@ -4,11 +4,12 @@ description = "Tari Universe"
 edition = "2021"
 name = "tari-universe"
 repository = "https://github.com/tari-project/universe"
-version = "1.5.5"
+version = "1.5.6"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [build-dependencies]
+dotenvy = "0.15.7"
 embed-resource = "2.5.0"
 tauri-build = { version = "2", features = ["isolation"] }
 
@@ -129,9 +130,6 @@ rand = "0.8.5"
 sys-locale = "0.3.1"
 
 [features]
-airdrop-env = []
-telemetry-env = []
-airdrop-local = []
 custom-protocol = [
   "tauri/custom-protocol",
 ] # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!

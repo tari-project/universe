@@ -41,5 +41,9 @@
     "placeholder": "Klicken Sie die Wörter unten in der richtigen Reihenfolge an",
     "text": "Um sicherzustellen, dass Sie Ihre Seed-Wörter korrekt aufgeschrieben haben, wählen Sie bitte die Wörter in der richtigen Reihenfolge aus.",
     "title": "Überprüfen Sie Ihre Seed-Wörter"
+  },
+  "warning": {
+    "title": "Secure your wallet",
+    "steps": "Steps"
   }
 }

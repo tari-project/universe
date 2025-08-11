@@ -1,5 +1,6 @@
 import {
     BackgroundNodeSyncUpdatePayload,
+    ConfigPoolsPayload,
     ConnectedPeersUpdatePayload,
     ConnectionStatusPayload,
     CriticalProblemPayload,
@@ -21,7 +22,7 @@ import {
     PoolStats,
     WalletBalance,
 } from './app-status.ts';
-import { ConfigCore, ConfigMining, ConfigPools, ConfigUI, ConfigWallet, GpuDeviceSettings } from './configs.ts';
+import { ConfigCore, ConfigMining, ConfigUI, ConfigWallet, GpuDeviceSettings } from './configs.ts';
 import { DisabledPhasesPayload } from '@app/store/actions/setupStoreActions.ts';
 
 export const BACKEND_STATE_UPDATE = 'backend_state_update';
@@ -156,7 +157,7 @@ export type BackendStateUpdateEvent =
       }
     | {
           event_type: 'ConfigPoolsLoaded';
-          payload: ConfigPools;
+          payload: ConfigPoolsPayload;
       }
     | {
           event_type: 'RestartingPhases';
@@ -181,10 +182,6 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'ConnectionStatus';
           payload: ConnectionStatusPayload;
-      }
-    | {
-          event_type: 'ShowStageSecurityModal';
-          payload: undefined;
       }
     | {
           event_type: 'CpuPoolStatsUpdate';
@@ -229,4 +226,12 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'UpdateGpuDevicesSettings';
           payload: Record<number, GpuDeviceSettings>;
+      }
+    | {
+          event_type: 'PinLocked';
+          payload: boolean;
+      }
+    | {
+          event_type: 'SeedBackedUp';
+          payload: boolean;
       };

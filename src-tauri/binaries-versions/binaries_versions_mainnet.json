@@ -2,7 +2,7 @@
         "binaries": {
                 "bridge": "0.2.0",
                 "glytex": "0.2.32 | ad20e05",
-                "graxil": "1.0.10 | 2c0ba0c",
+                "graxil": "1.0.11 | fcff347",
                 "minotari_node": "4.10.1-pre.1 | ad5aac9",
                 "mmproxy": "4.10.1-pre.1 | ad5aac9",
                 "sha-p2pool": "1.0.3 | cff9241",

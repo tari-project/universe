@@ -162,9 +162,9 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
             watch_timer.set_missed_tick_behavior(MissedTickBehavior::Delay);
             let mut warning_count = 0;
             let mut duration_since_last_healthy_status = Duration::from_secs(0);
-            let mut unhealthy_timer = Instant::now();
             // read events such as stdout
             loop {
+                let unhealthy_timer = Instant::now();
                 select! {
                       _ = watch_timer.tick() => {
                         let status_monitor3 = status_monitor2.clone();
@@ -174,7 +174,8 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                             status_monitor3,
                             name.clone(),
                             &mut uptime,
-                            duration_since_last_healthy_status,
+                            &mut duration_since_last_healthy_status,
+                            unhealthy_timer,
                             expected_startup_time,
                             health_timeout,
                             global_shutdown_signal.clone(),
@@ -198,9 +199,6 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                 if let Err(_unused) = stats_broadcast.send(stats.clone()) {
                     warn!(target: LOG_TARGET, "Failed to broadcast process watcher stats for {name}");
                 }
-
-                duration_since_last_healthy_status += unhealthy_timer.elapsed();
-                unhealthy_timer = Instant::now();
             }
         }));
         Ok(())
@@ -248,7 +246,8 @@ async fn do_health_check<TStatusMonitor: StatusMonitor, TProcessInstance: Proces
     status_monitor3: TStatusMonitor,
     name: String,
     uptime: &mut Instant,
-    duration_since_last_healthy_status: Duration,
+    duration_since_last_healthy_status: &mut Duration,
+    unhealthy_timer: Instant,
     expected_startup_time: Duration,
     health_timeout: Duration,
     global_shutdown_signal: ShutdownSignal,
@@ -341,7 +340,7 @@ async fn do_health_check<TStatusMonitor: StatusMonitor, TProcessInstance: Proces
             stats.num_restarts += 1;
             stats.current_uptime = uptime.elapsed();
             match status_monitor3
-                .handle_unhealthy(duration_since_last_healthy_status)
+                .handle_unhealthy(*duration_since_last_healthy_status)
                 .await
             {
                 Ok(HandleUnhealthyResult::Continue) => {
@@ -358,9 +357,19 @@ async fn do_health_check<TStatusMonitor: StatusMonitor, TProcessInstance: Proces
             child.start(task_tracker).await?;
             // Wait for a bit before checking health again
             // sleep(Duration::from_secs(10)).await;
+
+            // We are adding unhealthy_timer.elapsed() to the duration since last healthy status instead of health_timer.elapsed()
+            // because we get there by watcher tick and we want to measure the time since the last healthy status
+            // for GraxilMiner for example time between this line execution is around 10 seconds
+            // health_timer.elapsed() is resolves to around 1 second
+            // unhealthy_timer.elapsed() resolves to around 10 seconds
+            *duration_since_last_healthy_status += unhealthy_timer.elapsed();
         }
     } else {
         stats.current_uptime = uptime.elapsed();
+        // Reset the duration once we have a healthy status
+        *duration_since_last_healthy_status = Duration::from_secs(0);
     }
+
     Ok(None)
 }

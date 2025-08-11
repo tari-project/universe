@@ -92,7 +92,7 @@ const getAirdropInMemoryConfig = async () => {
         throw `get_airdrop_tokens error: ${e}`;
     }
 
-    if (!airdropInMemoryConfig?.airdropUrl?.length) {
+    if (!airdropInMemoryConfig?.airdrop_url?.length) {
         console.error('Error getting BE in memory config');
     }
     return airdropInMemoryConfig;
@@ -131,7 +131,7 @@ export const airdropSetup = async () => {
         if (beConfig) {
             console.info('Getting existing tokens');
             await getExistingTokens();
-            if (beConfig.airdropUrl) {
+            if (beConfig.airdrop_url) {
                 console.info('Refreshing airdrop tokens');
                 await handleRefreshAirdropTokens();
                 await fetchAllUserData();
@@ -173,7 +173,7 @@ export const setAirdropTokens = async (airdropTokens?: AirdropTokens) => {
             }
         );
 
-        const airdropApiUrl = useAirdropStore.getState().backendInMemoryConfig?.airdropApiUrl;
+        const airdropApiUrl = useAirdropStore.getState().backendInMemoryConfig?.airdrop_api_url;
         const authToken = airdropTokens?.token;
     } else {
         // User not connected

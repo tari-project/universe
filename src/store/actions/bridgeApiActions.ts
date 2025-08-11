@@ -11,7 +11,7 @@ import { setExchangeETHAdress } from '@app/store/actions/walletStoreActions.ts';
 
 export const fetchBridgeTransactionsHistory = async () => {
     console.info('Fetching bridge transactions history...');
-    const baseUrl = useConfigBEInMemoryStore.getState().bridgeBackendApiUrl;
+    const baseUrl = useConfigBEInMemoryStore.getState().bridge_backend_api_url;
     if (baseUrl?.includes('env var not defined')) return;
     OpenAPI.BASE = baseUrl;
     await WrapTokenService.getUserTransactions(useWalletStore.getState().tari_address_base58)
@@ -28,7 +28,7 @@ export const fetchBridgeTransactionsHistory = async () => {
 };
 
 export const fetchBridgeColdWalletAddress = async () => {
-    const baseUrl = useConfigBEInMemoryStore.getState().bridgeBackendApiUrl;
+    const baseUrl = useConfigBEInMemoryStore.getState().bridge_backend_api_url;
     if (baseUrl?.includes('env var not defined')) return;
     try {
         OpenAPI.BASE = baseUrl;
@@ -58,7 +58,7 @@ export const fetchBridgeColdWalletAddress = async () => {
  */
 
 export const convertEthAddressToTariAddress = async (ethAddress: string, exchangeId: string): Promise<string> => {
-    const baseUrl = useConfigBEInMemoryStore.getState().bridgeBackendApiUrl;
+    const baseUrl = useConfigBEInMemoryStore.getState().bridge_backend_api_url;
 
     try {
         OpenAPI.BASE = baseUrl;
