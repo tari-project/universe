@@ -13,8 +13,8 @@ import {
 } from '@tari-project/typescript-bindings';
 import { Button } from '@app/components/elements/buttons/Button';
 
-export const OotleDemo = () => {
-    const title = 'Ootle Demo';
+export const OotleWallet = () => {
+    const title = 'Ootle Wallet';
     const [response, setResponse] = useState<string | null>(null);
 
     const handleListAccounts = async () => {

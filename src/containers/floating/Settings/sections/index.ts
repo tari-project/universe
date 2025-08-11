@@ -5,7 +5,7 @@ import { GeneralSettings } from './general/GeneralSettings.tsx';
 import { MiningSettings } from './mining/MiningSettings.tsx';
 import { WalletSettings } from './wallet/WalletSettings.tsx';
 import { ReleaseNotes } from './releaseNotes/ReleaseNotes.tsx';
-import { OotleDemo } from './ootle/OotleDemo.tsx';
+import { OotleWallet } from './ootle/OotleWallet.tsx';
 import { TappletsSettings } from './ootle/TappletsSettings.tsx';
 
 export {
@@ -16,6 +16,6 @@ export {
     MiningSettings,
     WalletSettings,
     ReleaseNotes,
-    OotleDemo,
+    OotleWallet,
     TappletsSettings,
 };

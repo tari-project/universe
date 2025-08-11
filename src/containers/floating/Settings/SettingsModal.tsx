@@ -19,7 +19,7 @@ import {
     MiningSettings,
     WalletSettings,
     ReleaseNotes,
-    OotleDemo,
+    OotleWallet,
 } from './sections';
 
 import { Container, ContentContainer, EndContainer, HeaderContainer, SectionWrapper } from './SettingsModal.styles.ts';
@@ -42,7 +42,7 @@ const SettingsModal = memo(function SettingsModal() {
         airdrop: <AirdropSettings />,
         experimental: <ExperimentalSettings />,
         releaseNotes: <ReleaseNotes />,
-        ootleDemo: <OotleDemo />,
+        ootleWallet: <OotleWallet />,
         tapplets: <TappletsSettings />,
     };
 
