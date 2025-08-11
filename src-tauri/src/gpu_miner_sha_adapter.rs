@@ -31,8 +31,10 @@ use tokio::sync::watch::Sender;
 use crate::{
     gpu_miner_sha_websocket::GpuMinerShaWebSocket,
     process_adapter::{
-        HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
+        HandleUnhealthyResult, HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec,
+        StatusMonitor,
     },
+    setup::setup_manager::SetupManager,
     GpuMinerStatus,
 };
 
@@ -78,13 +80,13 @@ impl ProcessAdapter for GpuMinerShaAdapter {
     ) -> Result<(Self::ProcessInstance, Self::StatusMonitor), anyhow::Error> {
         let inner_shutdown = Shutdown::new();
 
-        let mut args: Vec<String> = vec![];
-
-        args.push("--algo".to_string());
-        args.push("sha3x".to_string());
-        // --web is needed for the web socket to be open
-        args.push("--web".to_string());
-        args.push("--gpu".to_string());
+        let mut args: Vec<String> = vec![
+            "--algo".to_string(),
+            "sha3x".to_string(),
+            // --web is needed for the web socket to be open
+            "--web".to_string(),
+            "--gpu".to_string(),
+        ];
 
         if let Some(pool_url) = &self.pool_url {
             args.push("--pool".to_string());
@@ -123,7 +125,7 @@ impl ProcessAdapter for GpuMinerShaAdapter {
 
         Ok((
             ProcessInstance {
-                shutdown: inner_shutdown,
+                shutdown: inner_shutdown.clone(),
                 startup_spec: ProcessStartupSpec {
                     file_path: binary_version_path,
                     envs: None,
@@ -158,6 +160,31 @@ pub struct GpuMinerShaStatusMonitor {
 
 #[async_trait]
 impl StatusMonitor for GpuMinerShaStatusMonitor {
+    async fn handle_unhealthy(
+        &self,
+        duration_since_last_healthy_status: Duration,
+    ) -> Result<HandleUnhealthyResult, anyhow::Error> {
+        // Fallback to solo mining if the miner has been unhealthy for more than 30 minutes
+        info!(target: LOG_TARGET, "Handling unhealthy status for GpuMinerShaAdapter | Duration since last healthy status: {:?}", duration_since_last_healthy_status.as_secs());
+        if duration_since_last_healthy_status.as_secs().gt(&(60 * 30)) {
+            match SetupManager::get_instance()
+                .turn_off_gpu_pool_feature()
+                .await
+            {
+                Ok(_) => {
+                    info!(target: LOG_TARGET, "GpuMinerShaAdapter: GPU Pool feature turned off due to prolonged unhealthiness.");
+                    return Ok(HandleUnhealthyResult::Stop);
+                }
+                Err(error) => {
+                    warn!(target: LOG_TARGET, "GpuMinerShaAdapter: Failed to turn off GPU Pool feature: {error} | Continuing to monitor.");
+                    return Ok(HandleUnhealthyResult::Continue);
+                }
+            }
+        } else {
+            return Ok(HandleUnhealthyResult::Continue);
+        }
+    }
+
     async fn check_health(&self, uptime: Duration, timeout_duration: Duration) -> HealthStatus {
         info!(target: LOG_TARGET, "Checking health of ShaMiner");
         let status = match tokio::time::timeout(timeout_duration, self.status()).await {

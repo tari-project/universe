@@ -62,9 +62,6 @@ use super::{
 static LOG_TARGET: &str = "tari::universe::phase_hardware";
 
 #[derive(Clone, Default)]
-pub struct HardwareSetupPhaseOutput {}
-
-#[derive(Clone, Default)]
 pub struct HardwareSetupPhaseAppConfiguration {
     gpu_engine: EngineType,
 }

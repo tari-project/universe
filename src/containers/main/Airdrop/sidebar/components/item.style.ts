@@ -24,8 +24,10 @@ export const ActionWrapper = styled.div`
     height: 60px;
     width: 60px;
 
-    &:hover {
+    &:hover,
+    &:focus {
         box-shadow: ${({ theme }) => `${convertHexToRGBA(theme.palette.contrast, 0.03)} 0 0 2px 2px`};
+        outline: none;
     }
 `;
 
@@ -45,8 +47,8 @@ export const ActionHoveredWrapper = styled.div`
 `;
 
 export const TooltipBox = styled(m.div)`
-    background: ${({ theme }) => theme.palette.background.main};
-    box-shadow: 0 0 45px 0 rgba(0, 0, 0, 0.15);
+    background: ${({ theme }) => theme.palette.background.tooltip};
+    box-shadow: 0 3px 25px 0 rgba(0, 0, 0, 0.25);
     border-radius: 10px;
     padding: 16px;
     display: flex;
