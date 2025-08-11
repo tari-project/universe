@@ -2240,6 +2240,8 @@ pub async fn create_pin(app_handle: tauri::AppHandle) -> Result<(), String> {
         .map_err(|e| e.to_string())?;
     info!(target: LOG_TARGET, "PIN created successfully");
 
+    EventsEmitter::emit_pin_locked(true).await;
+
     Ok(())
 }
 
@@ -2249,13 +2251,9 @@ pub async fn set_seed_backed_up() -> Result<(), String> {
         .await
         .map_err(|e| e.to_string())?;
 
-    Ok(())
-}
+    EventsEmitter::emit_seed_backed_up(true).await;
 
-#[tauri::command]
-pub async fn is_seed_backed_up() -> Result<bool, String> {
-    let seed_backed_up = *ConfigWallet::content().await.seed_backed_up();
-    Ok(seed_backed_up)
+    Ok(())
 }
 
 /*
@@ -2387,12 +2385,6 @@ pub async fn get_base_node_status(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<BaseNodeStatus, String> {
     Ok(*state.node_status_watch_rx.borrow())
-}
-
-#[tauri::command]
-pub async fn is_pin_locked() -> Result<bool, String> {
-    let is_pin_locked = PinManager::pin_locked().await;
-    Ok(is_pin_locked)
 }
 
 #[tauri::command]

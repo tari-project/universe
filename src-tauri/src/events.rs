@@ -88,6 +88,8 @@ pub enum EventType {
     CreatePin,
     EnterPin,
     UpdateGpuDevicesSettings,
+    PinLocked,
+    SeedBackedUp,
 }
 
 #[derive(Clone, Debug, Serialize)]

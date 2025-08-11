@@ -220,67 +220,11 @@ impl SetupPhaseImpl for WalletSetupPhase {
             .resolve_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::Done))
             .await;
 
-        if InternalWallet::is_internal().await {
-            let app_handle = self.get_app_handle().clone();
-            let pin_locked = PinManager::pin_locked().await;
-            let seed_backed_up = *ConfigWallet::content().await.seed_backed_up();
-            if !seed_backed_up || !pin_locked {
-                let wallet_manager = app_handle
-                    .state::<UniverseAppState>()
-                    .wallet_manager
-                    .clone();
-                let shutdown_signal = TasksTrackers::current()
-                    .wallet_phase
-                    .get_signal()
-                    .await
-                    .clone();
-
-                TasksTrackers::current()
-                    .wallet_phase
-                    .get_task_tracker()
-                    .await
-                    .spawn(async move {
-                        let wallet_state_watcher = app_handle
-                            .state::<UniverseAppState>()
-                            .wallet_state_watch_rx
-                            .clone();
-
-                        loop {
-                            if shutdown_signal.is_triggered() {
-                                break;
-                            }
-
-                            let wallet_state = wallet_state_watcher.borrow().clone();
-                            if let Some(wallet_state) = wallet_state {
-                                if let Some(balance) = wallet_state.balance {
-                                    let balance_sum = balance.available_balance
-                                        + balance.pending_incoming_balance
-                                        + balance.timelocked_balance;
-                                    if balance_sum.gt(&MicroMinotari::zero())
-                                        && wallet_manager.is_initial_scan_completed()
-                                    {
-                                        let pin_locked = PinManager::pin_locked().await;
-                                        let seed_backed_up =
-                                            *ConfigWallet::content().await.seed_backed_up();
-                                        let security_warning_dismissed = *ConfigWallet::content()
-                                            .await
-                                            .security_warning_dismissed();
-
-                                        if (!pin_locked || !seed_backed_up)
-                                            && !security_warning_dismissed
-                                        {
-                                            EventsEmitter::show_staged_security_modal().await;
-                                        }
-                                        break;
-                                    }
-                                }
-                            }
-
-                            tokio::time::sleep(std::time::Duration::from_secs(5)).await;
-                        }
-                    });
-            }
-        }
+        let config_wallet = ConfigWallet::content().await;
+        let is_pin_locked = PinManager::pin_locked().await;
+        EventsEmitter::emit_pin_locked(is_pin_locked).await;
+        let is_seed_backed_up = *config_wallet.seed_backed_up();
+        EventsEmitter::emit_seed_backed_up(is_seed_backed_up).await;
 
         EventsEmitter::emit_wallet_phase_finished(true).await;
 
