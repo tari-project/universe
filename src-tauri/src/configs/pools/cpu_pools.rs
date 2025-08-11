@@ -80,7 +80,7 @@ pub struct LuckyPoolCpuConfig {
 impl Default for LuckyPoolCpuConfig {
     fn default() -> Self {
         Self {
-            pool_url: "pl-tarirx.luckypool.io:9118".to_string(),
+            pool_url: "turx.luckypool.io:10118".to_string(),
             stats_url: "https://tarirx.luckypool.io/api/stats_address?address=%TARI_ADDRESS%"
                 .to_string(),
             pool_name: "LuckyPool".to_string(),

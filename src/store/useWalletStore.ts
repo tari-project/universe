@@ -58,6 +58,8 @@ export interface WalletStoreState {
         total_height: number;
         progress: number;
     };
+    is_pin_locked: boolean;
+    is_seed_backed_up: boolean;
 }
 
 export interface WalletStoreSelectors {
@@ -81,6 +83,8 @@ export const initialState: WalletStoreState = {
         total_height: 0,
         progress: 0,
     },
+    is_pin_locked: false,
+    is_seed_backed_up: false,
 };
 
 // Configuration for memory management
