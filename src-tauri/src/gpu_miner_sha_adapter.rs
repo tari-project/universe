@@ -23,7 +23,7 @@
 use axum::async_trait;
 
 use log::{info, warn};
-use std::{path::PathBuf, time::Duration};
+use std::{path::PathBuf, sync::atomic::AtomicBool, time::Duration};
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
 use tokio::sync::watch::Sender;
@@ -151,6 +151,10 @@ impl ProcessAdapter for GpuMinerShaAdapter {
         "gpu_miner_sha.pid"
     }
 }
+
+// This is a flag to indicate if the fallback to solo mining has been triggered
+// We want to avoid triggering it multiple times per session
+static WAS_FALLBACK_TO_SOLO_MINING_TRIGGERED: AtomicBool = AtomicBool::new(false);
 
 #[derive(Clone)]
 pub struct GpuMinerShaStatusMonitor {
