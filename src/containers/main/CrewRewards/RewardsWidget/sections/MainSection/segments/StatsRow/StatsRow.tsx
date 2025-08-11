@@ -11,14 +11,14 @@ import {
     LoadingPlaceholder,
 } from './styles';
 
-import { useCrewMembers } from '@app/hooks/crew/useCrewMembers';
+import { useReferrerProgress } from '@app/hooks/crew/useReferrerProgress';
 import { formatNumber, FormatPreset } from '@app/utils';
 import { useTranslation, Trans } from 'react-i18next';
 
 export default function StatsRow() {
     const { t } = useTranslation();
 
-    const { data: crewData, isLoading: crewLoading, error: crewError } = useCrewMembers();
+    const { data: crewData, isLoading: crewLoading, error: crewError } = useReferrerProgress();
     const referrerProgress = crewData?.referrerProgress;
 
     const totalFriends = crewData?.totals?.all || 0;
