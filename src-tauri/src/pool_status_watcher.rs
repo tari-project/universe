@@ -21,11 +21,12 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use anyhow::Error;
+use log::warn;
 use serde::{Deserialize, Serialize};
 
 #[allow(dead_code)]
 const LOG_TARGET: &str = "tari::universe::pool_status_watcher";
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, Default)]
 pub(crate) struct PoolStatus {
     pub accepted_shares: u64,
     pub unpaid: u64,
@@ -270,6 +271,11 @@ pub struct LuckyPoolAdapter {}
 
 impl PoolApiAdapter for LuckyPoolAdapter {
     fn convert_api_data(&self, data: &str) -> Result<PoolStatus, Error> {
+        if data.contains("Address not found") {
+            warn!(target: LOG_TARGET, "Received 'Address not found' error from LuckyPool API");
+            return Ok(PoolStatus::default());
+        };
+
         let converted_data: LuckyPoolStatusResponseBody = serde_json::from_str(data)?;
         let pool_status = PoolStatus {
             accepted_shares: converted_data.stats.accepted_shares.get_number(),
