@@ -487,3 +487,7 @@ export const toggleDeviceExclusion = async (deviceIndex: number, excluded: boole
         setError(e as string);
     }
 };
+
+export const setShowOotleSettings = async (showOotleSettings: boolean) => {
+    useConfigUIStore.setState((c) => ({ ...c, show_ootle_settings: showOotleSettings }));
+};

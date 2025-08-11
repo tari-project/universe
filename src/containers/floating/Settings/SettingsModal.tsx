@@ -26,6 +26,7 @@ import { Container, ContentContainer, EndContainer, HeaderContainer, SectionWrap
 import { setIsSettingsOpen } from '@app/store';
 import VersionChip from '@app/containers/navigation/components/VersionChip/VersionChip.tsx';
 import { PoolsSettings } from './sections/pools/PoolsSettings.tsx';
+import { OotleSettings } from './sections/ootle/OotleSettings.tsx';
 
 const SettingsModal = memo(function SettingsModal() {
     const { t } = useTranslation(['settings'], { useSuspense: false });
@@ -41,6 +42,7 @@ const SettingsModal = memo(function SettingsModal() {
         airdrop: <AirdropSettings />,
         experimental: <ExperimentalSettings />,
         releaseNotes: <ReleaseNotes />,
+        ootle: <OotleSettings />,
         ootleDemo: <OotleDemo />,
     };
 

@@ -70,9 +70,11 @@ use app_in_memory_config::EXCHANGE_ID;
 
 use telemetry_manager::TelemetryManager;
 
+use crate::consts::DB_FILE_NAME;
 use crate::cpu_miner::CpuMiner;
 
 use crate::commands::CpuMinerConnection;
+use crate::database::store::DatabaseConnection;
 use crate::feedback::Feedback;
 use crate::gpu_miner::GpuMiner;
 use crate::mm_proxy_manager::{MmProxyManager, StartConfig};
@@ -82,6 +84,7 @@ use crate::ootle::ootle_wallet_adapter::OotleWalletState;
 use crate::ootle::ootle_wallet_manager::OotleWalletManager;
 use crate::p2pool::models::P2poolStats;
 use crate::p2pool_manager::P2poolManager;
+use crate::tapplets::tapplet_manager::TappletManager;
 use crate::tor_manager::TorManager;
 use crate::wallet::wallet_manager::WalletManager;
 use crate::wallet::wallet_types::WalletState;
@@ -96,6 +99,7 @@ mod configs;
 mod consts;
 mod cpu_miner;
 mod credential_manager;
+mod database;
 mod download_utils;
 mod events;
 mod events_emitter;
@@ -200,6 +204,7 @@ struct UniverseAppState {
     websocket_manager_status_rx: Arc<watch::Receiver<WebsocketManagerStatusMessage>>,
     websocket_manager: Arc<RwLock<WebsocketManager>>,
     websocket_event_manager: Arc<RwLock<WebsocketEventsManager>>,
+    tapplet_manager: TappletManager,
     ootle_wallet_state_watch_rx: Arc<watch::Receiver<Option<OotleWalletState>>>,
     ootle_wallet_manager: OotleWalletManager,
 }
@@ -367,6 +372,7 @@ fn main() {
         base_node_watch_rx.clone(),
         app_in_memory_config.clone(),
     );
+    let tapplet_manager = TappletManager::new();
 
     let app_state = UniverseAppState {
         is_getting_p2pool_connections: Arc::new(AtomicBool::new(false)),
@@ -389,6 +395,7 @@ fn main() {
         feedback: Arc::new(RwLock::new(feedback)),
         tor_manager,
         updates_manager,
+        tapplet_manager: tapplet_manager.clone(),
         cached_p2pool_connections: Arc::new(RwLock::new(None)),
         systemtray_manager: Arc::new(RwLock::new(SystemTrayManager::new())),
         mining_status_manager: Arc::new(RwLock::new(mining_status_manager)),
@@ -436,6 +443,17 @@ fn main() {
                 .path()
                 .app_config_dir()
                 .expect("Could not get config dir");
+
+            // TODO move if needed to better place
+            let app_data_dir = app
+                .path()
+                .app_data_dir()
+                .expect("Could not get app data dir");
+            let db_path = app_data_dir.join(DB_FILE_NAME);
+            app.manage(DatabaseConnection(Arc::new(std::sync::Mutex::new(
+                database::establish_connection(db_path.to_str().unwrap_or_default()),
+            ))));
+            app.manage(tapplet_manager);
 
             // Remove this after it's been rolled out for a few versions
             let log_path = app.path().app_log_dir().map_err(|e| e.to_string())?;
@@ -633,7 +651,8 @@ fn main() {
             commands::trigger_phases_restart,
             commands::set_node_type,
             commands::set_allow_notifications,
-            commands::launch_builtin_tapplet,
+            commands::start_tari_tapplet_binary,
+            commands::start_dev_tapplet,
             commands::get_bridge_envs,
             commands::parse_tari_address,
             commands::refresh_wallet_history,
@@ -646,6 +665,24 @@ fn main() {
             commands::select_mining_mode,
             commands::update_custom_mining_mode,
             commands::encode_payment_id_to_address,
+            commands::save_wxtm_address,
+            commands::update_csp_policy,
+            commands::fetch_registered_tapplets,
+            commands::insert_tapp_registry_db,
+            commands::read_tapp_registry_db,
+            commands::get_assets_server_addr,
+            commands::download_and_extract_tapp,
+            commands::insert_installed_tapp_db,
+            commands::read_installed_tapp_db,
+            commands::update_installed_tapp_db,
+            commands::delete_installed_tapplet,
+            commands::add_dev_tapplet,
+            commands::read_dev_tapplets_db,
+            commands::delete_dev_tapplet,
+            commands::update_installed_tapplet,
+            commands::stop_tapplet,
+            commands::restart_tapplet,
+            commands::is_tapplet_server_running,
             commands::save_wxtm_address,
             commands::get_ootle_wallet_state,
             ootle_commands::ootle_list_accounts,

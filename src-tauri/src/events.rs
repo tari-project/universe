@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
     hash::{Hash, Hasher},
@@ -88,6 +88,8 @@ pub enum EventType {
     CreatePin,
     EnterPin,
     UpdateGpuDevicesSettings,
+    AllowTappletCsp,
+    GrantTappletPermissions,
     OotleWalletPhaseFinished,
 }
 
@@ -203,3 +205,13 @@ pub struct TariAddressUpdatePayload {
 
 #[derive(Clone, Debug, Serialize)]
 pub struct ConfigPoolsContentLoadedPayload {}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct AllowTappletCspPayload {
+    pub csp: String,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct GrantTappletPermissionsPayload {
+    pub permissions: String,
+}

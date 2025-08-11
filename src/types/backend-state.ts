@@ -1,10 +1,12 @@
 import {
+    AllowTappletCspPayload,
     BackgroundNodeSyncUpdatePayload,
     ConnectedPeersUpdatePayload,
     ConnectionStatusPayload,
     CriticalProblemPayload,
     DetectedAvailableGpuEngines,
     DetectedDevicesPayload,
+    GrantTappletPermissionsPayload,
     NewBlockHeightPayload,
     NodeTypeUpdatePayload,
     SetupPhase,
@@ -229,4 +231,12 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'UpdateGpuDevicesSettings';
           payload: Record<number, GpuDeviceSettings>;
+      }
+    | {
+          event_type: 'AllowTappletCsp';
+          payload: AllowTappletCspPayload;
+      }
+    | {
+          event_type: 'GrantTappletPermissions';
+          payload: GrantTappletPermissionsPayload;
       };
