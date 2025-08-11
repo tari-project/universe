@@ -152,9 +152,11 @@
     "experimental": "실험적",
     "general": "일반",
     "mining": "채굴",
+    "ootleDemo": "Ootle Demo",
     "p2p": "풀 채굴",
     "pools": "Mining Pools",
     "releaseNotes": "릴리스 노트",
+    "tapplets": "Tapplets",
     "very_experimental": "매우 실험적",
     "wallet": "지갑"
   },

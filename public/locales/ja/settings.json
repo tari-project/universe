@@ -152,9 +152,11 @@
     "experimental": "実験的",
     "general": "一般",
     "mining": "マイニング",
+    "ootleDemo": "Ootle Demo",
     "p2p": "プールマイニング",
     "pools": "Mining Pools",
     "releaseNotes": "リリースノート",
+    "tapplets": "Tapplets",
     "very_experimental": "非常に実験的",
     "wallet": "ウォレット"
   },

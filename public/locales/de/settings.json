@@ -152,9 +152,11 @@
     "experimental": "Experimentell",
     "general": "Allgemein",
     "mining": "Mining",
+    "ootleDemo": "Ootle Demo",
     "p2p": "Pool-Mining",
     "pools": "Mining Pools",
     "releaseNotes": "Versionshinweise",
+    "tapplets": "Tapplets",
     "very_experimental": "Sehr experimentell",
     "wallet": "Wallet"
   },

@@ -152,9 +152,11 @@
     "experimental": "Eksperimental",
     "general": "Umum",
     "mining": "Penambangan",
+    "ootleDemo": "Ootle Demo",
     "p2p": "Penambangan Pool",
     "pools": "Mining Pools",
     "releaseNotes": "Catatan Rilis",
+    "tapplets": "Tapplets",
     "very_experimental": "Sangat Eksperimental",
     "wallet": "Dompet"
   },
