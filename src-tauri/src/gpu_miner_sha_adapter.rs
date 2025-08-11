@@ -23,7 +23,11 @@
 use axum::async_trait;
 
 use log::{info, warn};
-use std::{path::PathBuf, sync::atomic::AtomicBool, time::Duration};
+use std::{
+    path::PathBuf,
+    sync::atomic::{AtomicBool, Ordering},
+    time::Duration,
+};
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
 use tokio::sync::watch::Sender;
@@ -170,13 +174,16 @@ impl StatusMonitor for GpuMinerShaStatusMonitor {
     ) -> Result<HandleUnhealthyResult, anyhow::Error> {
         // Fallback to solo mining if the miner has been unhealthy for more than 30 minutes
         info!(target: LOG_TARGET, "Handling unhealthy status for GpuMinerShaAdapter | Duration since last healthy status: {:?}", duration_since_last_healthy_status.as_secs());
-        if duration_since_last_healthy_status.as_secs().gt(&(60 * 30)) {
+        if duration_since_last_healthy_status.as_secs().gt(&(60 * 30))
+            && !WAS_FALLBACK_TO_SOLO_MINING_TRIGGERED.load(Ordering::SeqCst)
+        {
             match SetupManager::get_instance()
                 .turn_off_gpu_pool_feature()
                 .await
             {
                 Ok(_) => {
                     info!(target: LOG_TARGET, "GpuMinerShaAdapter: GPU Pool feature turned off due to prolonged unhealthiness.");
+                    WAS_FALLBACK_TO_SOLO_MINING_TRIGGERED.store(true, Ordering::SeqCst);
                     return Ok(HandleUnhealthyResult::Stop);
                 }
                 Err(error) => {
