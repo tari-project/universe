@@ -40,7 +40,6 @@ use crate::{
     UniverseAppState,
 };
 use anyhow::Error;
-use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::ShutdownSignal;
 use tauri::{AppHandle, Manager};
 use tokio::sync::{
