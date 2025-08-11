@@ -340,7 +340,7 @@ async fn do_health_check<TStatusMonitor: StatusMonitor, TProcessInstance: Proces
             stats.num_restarts += 1;
             stats.current_uptime = uptime.elapsed();
             match status_monitor3
-                .handle_unhealthy(duration_since_last_healthy_status.clone())
+                .handle_unhealthy(*duration_since_last_healthy_status)
                 .await
             {
                 Ok(HandleUnhealthyResult::Continue) => {
