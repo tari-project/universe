@@ -221,9 +221,6 @@ const useTauriEventsListener = () => {
                         case 'ConnectionStatus':
                             handleConnectionStatusChanged(event.payload);
                             break;
-                        case 'ShowStageSecurityModal':
-                            useSecurityStore.setState({ modal: 'intro' });
-                            break;
                         case 'ExchangeIdChanged':
                             await handleExchangeIdChanged(event.payload);
                             break;

@@ -184,10 +184,6 @@ export type BackendStateUpdateEvent =
           payload: ConnectionStatusPayload;
       }
     | {
-          event_type: 'ShowStageSecurityModal';
-          payload: undefined;
-      }
-    | {
           event_type: 'CpuPoolStatsUpdate';
           payload: PoolStats;
       }

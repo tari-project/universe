@@ -78,7 +78,6 @@ pub enum EventType {
     BackgroundNodeSyncUpdate,
     InitWalletScanningProgress,
     ConnectionStatus,
-    ShowStageSecurityModal,
     ExchangeIdChanged,
     DisabledPhases,
     ShouldShowExchangeMinerModal,
