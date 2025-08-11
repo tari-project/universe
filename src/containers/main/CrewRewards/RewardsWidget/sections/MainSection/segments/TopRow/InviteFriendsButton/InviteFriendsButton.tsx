@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 export default function InviteFriendsButton() {
     const { t } = useTranslation();
     const { copyToClipboard, isCopied } = useCopyToClipboard();
-    const airdropUrl = useAirdropStore((state) => state.backendInMemoryConfig?.airdropUrl || '');
+    const airdropUrl = useAirdropStore((state) => state.backendInMemoryConfig?.airdrop_url || '');
     const referralCode = useAirdropStore((state) => state.userDetails?.user?.referral_code || '');
 
     const handleClick = () => {

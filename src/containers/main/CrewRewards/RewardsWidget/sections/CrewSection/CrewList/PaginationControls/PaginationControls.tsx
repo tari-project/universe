@@ -30,7 +30,7 @@ export default function PaginationControls({
         <PaginationWrapper>
             <ItemsInfo>
                 <Typography variant="p" fontSize="12px">
-                    Showing {startItem}-{endItem} of {totalItems} members
+                    {`Showing ${startItem}-${endItem} of ${totalItems} members`}
                 </Typography>
             </ItemsInfo>
 
@@ -41,7 +41,7 @@ export default function PaginationControls({
 
                 <PageInfo>
                     <Typography variant="p" fontSize="12px">
-                        Page {currentPage} of {totalPages}
+                        {`Page ${currentPage} of ${totalPages}`}
                     </Typography>
                 </PageInfo>
 

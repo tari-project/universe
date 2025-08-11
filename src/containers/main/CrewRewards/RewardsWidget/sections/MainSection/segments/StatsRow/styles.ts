@@ -46,20 +46,6 @@ export const PhotoImage = styled.img<{ $image: string }>`
     }
 `;
 
-export const StatusDot = styled.div`
-    width: 11px;
-    height: 11px;
-
-    border-radius: 100px;
-    background: #16ff0a;
-    border: 2px solid #323333;
-
-    position: absolute;
-    top: 0;
-    right: 0;
-    z-index: 1;
-`;
-
 export const TextWrapper = styled.div`
     display: flex;
     flex-direction: column;
