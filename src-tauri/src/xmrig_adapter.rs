@@ -259,8 +259,14 @@ impl StatusMonitor for XmrigStatusMonitor {
     async fn check_health(&self, _uptime: Duration, timeout_duration: Duration) -> HealthStatus {
         match tokio::time::timeout(timeout_duration, self.summary()).await {
             Ok(summary_result) => match summary_result {
-                Ok(s) => {
-                    let _result = self.summary_broadcast.send(Some(s));
+                Ok(summary) => {
+                    let _result = self.summary_broadcast.send(Some(summary.clone()));
+
+                    if summary.hashrate.total.iter().all(|x| x.eq(&Some(0.0))) {
+                        warn!(target: LOG_TARGET, "Xmrig has zero hashrate reported.");
+                        return HealthStatus::Unhealthy;
+                    }
+
                     HealthStatus::Healthy
                 }
                 Err(e) => {
