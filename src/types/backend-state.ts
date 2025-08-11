@@ -230,4 +230,12 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'UpdateGpuDevicesSettings';
           payload: Record<number, GpuDeviceSettings>;
+      }
+    | {
+          event_type: 'PinLocked';
+          payload: boolean;
+      }
+    | {
+          event_type: 'SeedBackedUp';
+          payload: boolean;
       };

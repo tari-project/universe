@@ -1,4 +1,4 @@
-import { useSecurityStore } from '@app/store';
+import { useSecurityStore, useWalletStore } from '@app/store';
 import {
     LeftTextGroup,
     SecureIcon,
@@ -10,9 +10,8 @@ import {
     Wrapper,
 } from './styles';
 import { AnimatePresence } from 'motion/react';
-import { invoke } from '@tauri-apps/api/core';
-import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSetupStore } from '@app/store/useSetupStore';
 
 interface Props {
     $isScrolled: boolean;
@@ -22,21 +21,18 @@ interface Props {
 export default function SecureWalletWarning({ $isScrolled, isExchangeMiner }: Props) {
     const { t } = useTranslation('staged-security');
     const setModal = useSecurityStore((s) => s.setModal);
+    const pinLocked = useWalletStore((s) => s.is_pin_locked);
+    const seedBackedUp = useWalletStore((s) => s.is_seed_backed_up);
+    const walletUnlocked = useSetupStore((s) => s.walletUnlocked);
 
-    const [seedBackedUp, setSeedBackedUp] = useState(false);
-    const [pinLocked, setPinLocked] = useState(false);
+    if (!walletUnlocked) {
+        // Don't show anything until the wallet is unlocked
+        return null;
+    }
 
     const handleClick = () => {
         setModal(isExchangeMiner ? 'create_pin' : 'intro');
     };
-
-    useEffect(() => {
-        invoke('is_pin_locked').then((locked) => setPinLocked(locked));
-    }, []);
-
-    useEffect(() => {
-        invoke('is_seed_backed_up').then((backed_up) => setSeedBackedUp(backed_up));
-    }, []);
 
     const isHidden = isExchangeMiner ? pinLocked : seedBackedUp && pinLocked;
 
