@@ -1,3 +1,6 @@
+// Copyright 2022 The Tari Project
+// SPDX-License-Identifier: BSD-3-Clauses
+
 import { spawn } from 'child_process';
 import dotenv from 'dotenv';
 
