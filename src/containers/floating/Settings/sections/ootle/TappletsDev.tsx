@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Typography } from '@app/components/elements/Typography.tsx';
 
 import { SettingsGroupContent, SettingsGroupTitle } from '../../components/SettingsGroup.styles.ts';
-import { TappletsGroup, TappletsGroupWrapper, Count } from './OotleSettings.styles.ts';
+import { TappletsGroup, TappletsGroupWrapper, Count } from './TappletsSettings.styles.ts';
 import { useTappletsStore } from '@app/store/useTappletsStore.ts';
 import { useCallback, useEffect } from 'react';
 import { useAppStateStore } from '@app/store/appStateStore.ts';

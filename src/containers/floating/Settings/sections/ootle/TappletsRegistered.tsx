@@ -4,10 +4,10 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 
 import { SettingsGroupContent, SettingsGroupTitle } from '../../components/SettingsGroup.styles.ts';
 import { SquaredButton } from '@app/components/elements/buttons/SquaredButton.tsx';
-import { TappletsGroup, TappletsGroupWrapper } from './OotleSettings.styles.ts';
+import { TappletsGroup, TappletsGroupWrapper } from './TappletsSettings.styles.ts';
 import { useTappletsStore } from '@app/store/useTappletsStore.ts';
 import { useCallback, useEffect } from 'react';
-import { Count } from './OotleSettings.styles.ts';
+import { Count } from './TappletsSettings.styles.ts';
 import { PlaceholderItem } from '@app/components/transactions/history/ListItem.styles.ts';
 import { ListItemWrapper } from '@app/components/transactions/history/List.styles.ts';
 import { ListWrapper } from './styles/List.styles.ts';

@@ -4,10 +4,10 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 
 import { SettingsGroupContent, SettingsGroupTitle } from '../../components/SettingsGroup.styles.ts';
 import { useCallback, useEffect } from 'react';
-import { TappletsGroup, TappletsGroupWrapper } from './OotleSettings.styles.ts';
+import { TappletsGroup, TappletsGroupWrapper } from './TappletsSettings.styles.ts';
 import { useTappletsStore } from '@app/store/useTappletsStore.ts';
 import { useAppStateStore } from '@app/store/appStateStore.ts';
-import { Count } from './OotleSettings.styles.ts';
+import { Count } from './TappletsSettings.styles.ts';
 import { setIsSettingsOpen } from '@app/store/index.ts';
 import { ListItemWrapper } from '@app/components/transactions/history/List.styles.ts';
 import { ListWrapper } from './styles/List.styles.ts';
@@ -82,7 +82,7 @@ export default function TappletsInstalled() {
                                             key={index}
                                             item={{ id: item.installed_tapplet.id, displayName: item.display_name }}
                                             handleStart={() => handleLaunch(item.installed_tapplet.id)}
-                                            handleRemove={() => handleDelete(item.installed_tapplet.id)}
+                                            handleDelete={() => handleDelete(item.installed_tapplet.id)}
                                         />
                                     ))}
                                 </ListItemWrapper>

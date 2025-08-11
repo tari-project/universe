@@ -4,7 +4,7 @@ import { IconButton } from '@app/components/elements/buttons/IconButton';
 import { IoEnterOutline, IoRemoveCircle, IoRepeatOutline, IoStopCircle } from 'react-icons/io5';
 
 interface TappletItemProps {
-    item: { id: number | string; displayName: string; isRunning: boolean }; // added item with displayName and image
+    item: { id: number | string; displayName: string; isRunning?: boolean }; // added item with displayName and image
     handleStart?: () => void;
     handleDelete?: () => void;
     handleStop?: () => void;
@@ -22,7 +22,7 @@ export const TappletListItem = memo(function BaseItem({
         <ContentWrapper>
             <Content>
                 <TitleWrapper title={item.displayName}>
-                    {item.id}. {item.displayName} {item.isRunning ? '1' : '0'}
+                    {item.id}. {item.displayName} {item.isRunning ? 'ON' : ''}
                 </TitleWrapper>
                 <IconButton size="medium" type="button" onClick={handleStart}>
                     <IoEnterOutline />

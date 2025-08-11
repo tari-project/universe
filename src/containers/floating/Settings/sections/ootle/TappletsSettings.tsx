@@ -13,15 +13,15 @@ import { useTranslation } from 'react-i18next';
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch';
 import { useCallback } from 'react';
 import { TappletsOverview } from './TappletsOverview';
-import { setShowOotleSettings } from '@app/store/actions/appConfigStoreActions';
+import { setShowTappletsSettings } from '@app/store/actions/appConfigStoreActions';
 
-export const OotleSettings = () => {
+export const TappletsSettings = () => {
     const { t } = useTranslation(['settings', 'ootle'], { useSuspense: false });
-    const showOotle = useConfigUIStore((s) => s.show_ootle_settings);
+    const showTapplets = useConfigUIStore((s) => s.show_tapplets_settings);
 
-    const handleOotleSwitch = useCallback(() => {
-        setShowOotleSettings(!showOotle);
-    }, [showOotle]);
+    const handleTappletsSwitch = useCallback(() => {
+        setShowTappletsSettings(!showTapplets);
+    }, [showTapplets]);
 
     return (
         <>
@@ -29,16 +29,16 @@ export const OotleSettings = () => {
                 <SettingsGroup>
                     <SettingsGroupContent>
                         <SettingsGroupTitle>
-                            <Typography variant="h6">{t('Ootle', { ns: 'settings' })}</Typography>
+                            <Typography variant="h6">{t('tapplets', { ns: 'settings' })}</Typography>
                         </SettingsGroupTitle>
                         <Typography>{t('Enable or disable the Tari Ootle')}</Typography>
                     </SettingsGroupContent>
                     <SettingsGroupAction style={{ alignItems: 'center' }}>
-                        <ToggleSwitch checked={showOotle} onChange={handleOotleSwitch} />
+                        <ToggleSwitch checked={showTapplets} onChange={handleTappletsSwitch} />
                     </SettingsGroupAction>
                 </SettingsGroup>
             </SettingsGroupWrapper>
-            {showOotle && (
+            {showTapplets && (
                 <>
                     <SettingsGroupWrapper>
                         <TappletsOverview />
