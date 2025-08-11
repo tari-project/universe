@@ -51,7 +51,12 @@ export function List({ setIsScrolled, targetRef }: Props) {
         onChange: () => hasNextPage && fetchNextPage(),
     });
 
+    const latestTxId = data?.pages?.[0]?.[0]?.tx_id;
     const baseTx = useMemo(() => {
+        const latestConvertedTxId = convertedTransactions.current[0]?.walletTransactionDetails.txId;
+        if (latestTxId && latestTxId != latestConvertedTxId) {
+            convertedTransactions.current = [];
+        }
         // We are caching converted transactions to avoid re-converting all of them on every execution
         // If someone have 200 transactions it is more efficient to convert only new ~20 then 200
         const sanitizedData = data?.pages.flatMap((page) => page) || [];
@@ -69,7 +74,7 @@ export function List({ setIsScrolled, targetRef }: Props) {
 
         convertedTransactions.current = [...convertedTransactions.current, ...converted];
         return convertedTransactions.current;
-    }, [data?.pages.length, tx_history_filter]); // Re-run only when the number of pages changes
+    }, [latestTxId, data?.pages.length, tx_history_filter]); // Re-run only when the number of pages changes
 
     useEffect(() => {
         const isThereANewBridgeTransaction = baseTx.find(
