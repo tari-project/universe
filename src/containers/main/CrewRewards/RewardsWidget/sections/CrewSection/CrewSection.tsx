@@ -9,7 +9,22 @@ import { useTranslation, Trans } from 'react-i18next';
 
 export default function CrewSection() {
     const { t } = useTranslation();
-    const { data, isLoading, error, refetch } = useCrewMembers();
+    const {
+        data,
+        isLoading,
+        error,
+        refetch,
+        // Pagination controls
+        nextPage,
+        prevPage,
+        // Pagination metadata
+        currentPage,
+        totalPages,
+        totalItems,
+        pageSize,
+        hasNextPage,
+        hasPrevPage,
+    } = useCrewMembers();
 
     // Get current filter state from store (query params only)
     const activeFilter = useAirdropStore((state) => state.crewQueryParams.status);
@@ -46,6 +61,15 @@ export default function CrewSection() {
                 isLoading={isLoading}
                 error={error}
                 onRefresh={refetch}
+                // Pagination props
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={totalItems}
+                pageSize={pageSize}
+                hasNextPage={hasNextPage}
+                hasPrevPage={hasPrevPage}
+                onNextPage={nextPage}
+                onPrevPage={prevPage}
             />
         </Wrapper>
     );

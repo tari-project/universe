@@ -1,5 +1,6 @@
 import { handleAirdropRequest } from '@app/hooks/airdrop/utils/useHandleRequest.ts';
 import { useAirdropStore, useWalletStore } from '@app/store';
+import { setCrewQueryParams } from '@app/store/actions/airdropStoreActions';
 import type { CrewMembersResponse } from '@app/store/useAirdropStore';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -60,8 +61,55 @@ export function useCrewMembers() {
         });
     };
 
+    // Pagination controls
+    const nextPage = () => {
+        const pagination = query.data?.pagination;
+        if (pagination && crewQueryParams.page < pagination.totalPages) {
+            setCrewQueryParams({ page: crewQueryParams.page + 1 });
+        }
+    };
+
+    const prevPage = () => {
+        if (crewQueryParams.page > 1) {
+            setCrewQueryParams({ page: crewQueryParams.page - 1 });
+        }
+    };
+
+    const goToPage = (page: number) => {
+        const pagination = query.data?.pagination;
+        if (pagination && page >= 1 && page <= pagination.totalPages) {
+            setCrewQueryParams({ page });
+        }
+    };
+
+    const setPageSize = (limit: number) => {
+        setCrewQueryParams({ limit, page: 1 });
+    };
+
+    // Pagination metadata
+    const pagination = query.data?.pagination;
+    const currentPage = crewQueryParams.page;
+    const pageSize = crewQueryParams.limit;
+    const totalPages = pagination?.totalPages ?? 0;
+    const totalItems = pagination?.total ?? 0;
+    const hasNextPage = pagination ? currentPage < pagination.totalPages : false;
+    const hasPrevPage = currentPage > 1;
+
     return {
         ...query,
         invalidate,
+        // Pagination controls
+        nextPage,
+        prevPage,
+        goToPage,
+        setPageSize,
+        // Pagination metadata
+        currentPage,
+        pageSize,
+        totalPages,
+        totalItems,
+        hasNextPage,
+        hasPrevPage,
+        pagination,
     };
 }

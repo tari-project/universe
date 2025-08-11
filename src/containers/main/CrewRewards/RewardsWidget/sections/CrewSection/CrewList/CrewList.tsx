@@ -6,6 +6,7 @@ import type { CrewMember, CrewMembersResponse, MinRequirements } from '@app/stor
 import type { RefetchOptions, QueryObserverResult } from '@tanstack/react-query';
 import { transformCrewMemberToEntry } from '@app/containers/main/CrewRewards/crewTransformers';
 import CrewEntrySkeleton from './CrewEntrySkeleton/CrewEntrySkeleton';
+import PaginationControls from './PaginationControls/PaginationControls';
 
 interface Props {
     members: CrewMember[];
@@ -15,6 +16,15 @@ interface Props {
     isFiltered?: boolean;
     error: Error | null;
     onRefresh: (options?: RefetchOptions) => Promise<QueryObserverResult<CrewMembersResponse, Error>>;
+    // Pagination props
+    currentPage?: number;
+    totalPages?: number;
+    totalItems?: number;
+    pageSize?: number;
+    hasNextPage?: boolean;
+    hasPrevPage?: boolean;
+    onNextPage?: () => void;
+    onPrevPage?: () => void;
 }
 
 export default function CrewList({
@@ -25,6 +35,15 @@ export default function CrewList({
     error,
     onRefresh,
     isFiltered = false,
+    // Pagination props
+    currentPage = 1,
+    totalPages = 1,
+    totalItems = 0,
+    pageSize = 20,
+    hasNextPage = false,
+    hasPrevPage = false,
+    onNextPage,
+    onPrevPage,
 }: Props) {
     const { t } = useTranslation();
 
@@ -73,7 +92,7 @@ export default function CrewList({
         )
     );
 
-    const isEmpty = transformedEntries.length === 0;
+    const isEmpty = transformedEntries.length === 0 && membersToNudge.length === 0;
 
     if (isFiltered) {
         return (
@@ -91,6 +110,18 @@ export default function CrewList({
                                         <CrewEntry key={item.id} entry={item} isClaimed={item.isClaimed} />
                                     ))}
                                 </ListGroup>
+                                {totalPages > 1 && onNextPage && onPrevPage && (
+                                    <PaginationControls
+                                        currentPage={currentPage}
+                                        totalPages={totalPages}
+                                        totalItems={totalItems}
+                                        pageSize={pageSize}
+                                        hasNextPage={hasNextPage}
+                                        hasPrevPage={hasPrevPage}
+                                        onNextPage={onNextPage}
+                                        onPrevPage={onPrevPage}
+                                    />
+                                )}
                             </>
                         )}
                     </Inside>
@@ -103,7 +134,6 @@ export default function CrewList({
     const completedList = transformedEntries?.filter((item) => item.progress === 100);
     const inProgressList = transformedEntries?.filter((item) => item.progress < 100 && item.status !== 'needs_nudge');
     const needsNudgeList = transformedEntries?.filter((item) => item.status === 'needs_nudge');
-    console.log(needsNudgeList.length > 0 || membersToNudge.length > 0);
 
     return (
         <OuterWrapper>

@@ -38,7 +38,7 @@ export const determineStatus = (member: CrewMember): CrewStatus => {
     if (latestReward.progressTowardsReward.currentDayProgress < 10) {
         // Also check if they haven't been active recently
         const daysSinceActivity = (Date.now() - new Date(member.lastActivityDate).getTime()) / (1000 * 60 * 60 * 24);
-        if (daysSinceActivity > 1) {
+        if (daysSinceActivity > 1 && !latestReward.progressTowardsReward.isComplete) {
             return 'needs_nudge';
         }
     }
