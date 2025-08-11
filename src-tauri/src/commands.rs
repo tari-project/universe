@@ -38,6 +38,7 @@ use crate::database::models::{
     CreateTappletVersion, DevTapplet, InstalledTapplet, Tapplet, UpdateDevTapplet,
     UpdateInstalledTapplet,
 };
+use crate::database::schema::dev_tapplet;
 use crate::database::store::{DatabaseConnection, SqliteStore, Store};
 use crate::events::ConnectionStatusPayload;
 use crate::events_emitter::EventsEmitter;
@@ -2215,10 +2216,12 @@ pub async fn update_csp_policy(
     }
 }
 
+// the tapplet is not a binary, it's a compressed dir, but the process of downloading
+// the appropriate version and checking the checksum is the same as for the binary
 #[tauri::command]
 pub async fn start_tari_tapplet_binary(binary_name: &str) -> Result<ActiveTapplet, String> {
     let binaries_resolver = BinaryResolver::current();
-    // TODO
+
     let binary = Binaries::from_name(binary_name);
     let tapp_dest_dir = binaries_resolver
         .resolve_path_to_binary_files(binary)
@@ -2227,14 +2230,14 @@ pub async fn start_tari_tapplet_binary(binary_name: &str) -> Result<ActiveTapple
 
     info!(target: LOG_TARGET, "💥 Built-in tapplet start: {:?}", &tapp_dest_dir);
 
+    // TODO csp should be taken from the tapplet config, the bridge tapplet is exception because is 'built-in' by us
+    let config = get_tapplet_config(&tapp_dest_dir).unwrap_or_default();
+    // let csp_header = HeaderValue::from_str(&config.csp).unwrap();
+
     // TODO only our tapplet should get by default 'insafe-inline'
     // see: https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Security-Policy#unsafe-inline
     const DEFAULT_TARI_BINARY_TAPPLET_CSP: &str =
         "default-src 'self' https:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'";
-
-    // TODO csp should be taken from the tapplet config, the bridge tapplet is exception because is 'built-in' by us
-    // let config = get_tapplet_config(&tapp_dest_dir).unwrap_or_default();
-    // let csp_header = HeaderValue::from_str(&config.csp).unwrap();
 
     let handle_start = tauri::async_runtime::spawn(async move {
         start_tapplet_server(tapp_dest_dir, &DEFAULT_TARI_BINARY_TAPPLET_CSP.to_string()).await
@@ -2248,11 +2251,12 @@ pub async fn start_tari_tapplet_binary(binary_name: &str) -> Result<ActiveTapple
         }
     };
 
+    // TODO
     Ok(ActiveTapplet {
         tapplet_id: 1000,
-        display_name: "Bridge-wXTM".to_string(),
+        display_name: config.display_name,
         source: format!("http://{addr}"),
-        version: "1.0.0".to_string(),
+        version: config.version,
     })
 }
 
@@ -2296,8 +2300,8 @@ pub async fn start_dev_tapplet(
     let is_running = tapplet_manager.is_server_running(dev_tapplet_id).await;
     info!(target: LOG_TARGET, "🎉🎉🎉 IS RUNNING: {:?} at address {:?}", is_running, addr);
     Ok(ActiveTapplet {
-        tapplet_id: 0,
-        display_name: "dev_tapplet.display_name".to_string(),
+        tapplet_id: dev_tapplet_id,
+        display_name: dev_tapplet.display_name,
         source: format!("http://{addr}"),
         version: "0.1.0".to_string(), //TODO
     })
@@ -2456,9 +2460,6 @@ pub async fn is_pin_locked() -> Result<bool, String> {
     Ok(is_pin_locked)
 }
 
-/**
- * TAPPLETS REGISTRY - STORES ALL REGISTERED TAPPLETS IN THE TARI UNIVERSE
- */
 #[tauri::command]
 pub async fn fetch_registered_tapplets(
     app_handle: tauri::AppHandle,
@@ -2606,9 +2607,6 @@ pub async fn download_and_extract_tapp(
     Ok(tapp)
 }
 
-/**
- * INSTALLED TAPPLETS - STORES ALL THE USER'S INSTALLED TAPPLETS
- */
 
 #[tauri::command]
 pub fn insert_installed_tapp_db(

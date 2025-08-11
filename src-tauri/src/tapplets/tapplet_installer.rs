@@ -125,7 +125,6 @@ pub async fn download_asset(
     app_handle: tauri::AppHandle,
     tapplet_name: String,
 ) -> Result<TappletAssets, Error> {
-    // let tapp_root_dir: PathBuf = app_handle.path().app_data_dir().unwrap().to_path_buf();
     let tapp_root_dir: PathBuf = app_handle
         .path()
         .app_data_dir()

@@ -44,7 +44,7 @@ use tokio_util::sync::CancellationToken;
 use tower_http::services::ServeDir;
 const LOG_TARGET: &str = "tari::tapplet";
 
-/// Middleware that adds a CSP header dynamically from the captured `Arc<HeaderValue>`
+/// Middleware that adds a CSP header dynamically
 async fn add_csp_header(req: Request<Body>, next: Next, csp_header: HeaderValue) -> Response<Body> {
     let mut response = next.run(req).await;
     response
@@ -68,7 +68,6 @@ pub async fn start_tapplet_server(
     tapplet_path: PathBuf,
     csp: &String,
 ) -> Result<(String, CancellationToken), Error> {
-    // Dynamically get port from your allocator
     let port = PortAllocator::new().assign_port_with_fallback();
     let addr = SocketAddr::from(([127, 0, 0, 1], port));
     let csp_header = HeaderValue::from_str(csp.trim_matches('"')).unwrap_or_else(|e| {
@@ -80,16 +79,13 @@ pub async fn start_tapplet_server(
     // Build router with dynamically created CSP header middleware
     let app = using_serve_dir(tapplet_path, csp_header);
 
-    // Start your server with the known addr
     serve(app, addr).await
 }
 
 pub async fn serve(app: Router, addr: SocketAddr) -> Result<(String, CancellationToken), Error> {
-    // info!(target: LOG_TARGET, "Launch tapplet on port {:?}", &port);
     let cancel_token = CancellationToken::new();
     let cancel_token_clone = cancel_token.clone();
 
-    // let addr = SocketAddr::from(([127, 0, 0, 1], port));
     let listener = tokio::net::TcpListener::bind(addr)
         .await
         .inspect_err(|e| error!(target: LOG_TARGET, "Failed to bind port server error: {e:?}"))
@@ -123,7 +119,7 @@ async fn shutdown_signal(cancel_token: CancellationToken) {
 }
 
 pub fn get_tapplet_config(tapp_path: &PathBuf) -> Result<TappletConfig, Error> {
-    // this is dev tapplet so the tapplet.config.json file is in root dir
+    // for a dev tapplet the tapplet.config.json file is in root dir
     let tapp_config = tapp_path.join("tapplet.config.json");
     info!(target: LOG_TARGET, "💥 get_config {:?}", &tapp_config);
 
@@ -141,7 +137,7 @@ pub fn get_tapplet_config(tapp_path: &PathBuf) -> Result<TappletConfig, Error> {
 }
 
 pub fn get_tapplet_manifest(tapp_path: PathBuf) -> Result<TappletManifest, Error> {
-    // this is dev tapplet so the tapplet.config.json file is in root dir
+    // for a dev tapplet the tapplet.manifest.json file is in root dir
     let tapp_manifest = tapp_path.join("tapplet.manifest.json");
     info!(target: LOG_TARGET, "💥 get_config {:?}", &tapp_manifest);
 

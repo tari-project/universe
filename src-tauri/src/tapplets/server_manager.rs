@@ -47,13 +47,11 @@ impl ServerManager {
         }
     }
 
-    /// Check if a server is running
     pub async fn is_running(&self, address: &str) -> bool {
         let servers = self.servers.lock().await;
         servers.contains_key(address)
     }
 
-    /// Add server and associate it with tapplet_id
     pub async fn add_server(
         &self,
         tapplet_id: i32,
@@ -74,13 +72,11 @@ impl ServerManager {
         id_map.insert(tapplet_id, address);
     }
 
-    /// Get the address for a given tapplet_id
     pub async fn get_address(&self, tapplet_id: i32) -> Option<String> {
         let id_map = self.tapplet_id_map.lock().await;
         id_map.get(&tapplet_id).cloned()
     }
 
-    /// Stop a server by tapplet_id (looks up address then cancels)
     pub async fn stop_server_by_id(&self, tapplet_id: i32) -> Result<String, String> {
         let address_opt = self.get_address(tapplet_id).await;
         info!(target: LOG_TARGET, "👉👉👉 stop_server_by_id: {:?}", &tapplet_id);
@@ -95,7 +91,6 @@ impl ServerManager {
                     );
                     handle.cancel_token.cancel();
 
-                    // Also remove the tapplet_id -> address mapping:
                     let mut id_map = self.tapplet_id_map.lock().await;
                     id_map.remove(&tapplet_id);
 

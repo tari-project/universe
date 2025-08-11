@@ -147,8 +147,6 @@ impl TappletManager {
         tapplet_path: PathBuf,
         csp: &String,
     ) -> Result<String, Error> {
-        // Pass tapplet_id to the start_and_register function
-        // start_and_register_tapplet_server(tapplet_id, tapplet_path, csp, &self.server_manager).await
         info!(target: LOG_TARGET, "👉👉👉 Start server with manager {:?}", &tapplet_id);
         let (address, cancel_token) = start_tapplet_server(tapplet_path, csp).await?;
 
