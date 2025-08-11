@@ -9,8 +9,7 @@ import { Content, Header, Subtitle, Title, Wrapper, CTAWrapper, ContentWrapper }
 import { TextButton } from '@app/components/elements/buttons/TextButton.tsx';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { invoke } from '@tauri-apps/api/core';
-import { useEffect, useState } from 'react';
-import { useSecurityStore } from '@app/store';
+import { useSecurityStore, useWalletStore } from '@app/store';
 
 export default function SecurityPromptDialog() {
     const { t } = useTranslation(['staged-security']);
@@ -19,8 +18,8 @@ export default function SecurityPromptDialog() {
 
     const isOpen = modal === 'intro';
 
-    const [seedBackedUp, setSeedBackedUp] = useState(false);
-    const [pinLocked, setPinLocked] = useState(false);
+    const seedBackedUp = useWalletStore((s) => s.is_seed_backed_up);
+    const pinLocked = useWalletStore((s) => s.is_pin_locked);
 
     function handleClose() {
         invoke('set_security_warning_dismissed').then(() => {
@@ -34,16 +33,6 @@ export default function SecurityPromptDialog() {
             void invoke('create_pin');
         }
     }
-
-    useEffect(() => {
-        if (!isOpen) return;
-        invoke('is_pin_locked').then((locked) => setPinLocked(locked));
-    }, [isOpen]);
-
-    useEffect(() => {
-        if (!isOpen) return;
-        invoke('is_seed_backed_up').then((backed_up) => setSeedBackedUp(backed_up));
-    }, [isOpen]);
 
     const steps: StepItem[] = [
         {
