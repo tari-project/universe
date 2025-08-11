@@ -1,17 +1,15 @@
 import { useTranslation } from 'react-i18next';
-
 import { Typography } from '@app/components/elements/Typography.tsx';
-
-import { SettingsGroupContent, SettingsGroupTitle } from '../../components/SettingsGroup.styles.ts';
-import { SquaredButton } from '@app/components/elements/buttons/SquaredButton.tsx';
+import { SettingsGroup, SettingsGroupContent, SettingsGroupTitle } from '../../components/SettingsGroup.styles.ts';
 import { TappletsGroup, TappletsGroupWrapper } from './TappletsSettings.styles.ts';
 import { useTappletsStore } from '@app/store/useTappletsStore.ts';
 import { useCallback, useEffect } from 'react';
 import { Count } from './TappletsSettings.styles.ts';
-import { PlaceholderItem } from '@app/components/transactions/history/ListItem.styles.ts';
 import { ListItemWrapper } from '@app/components/transactions/history/List.styles.ts';
 import { ListWrapper } from './styles/List.styles.ts';
 import { TappletListItem } from './styles/TappletListItem.tsx';
+import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
+import { IoRefreshCircle } from 'react-icons/io5';
 
 export default function TappletsRegistered() {
     const { t } = useTranslation('ootle', { useSuspense: false });
@@ -19,6 +17,7 @@ export default function TappletsRegistered() {
     const registeredTapplets = useTappletsStore((s) => s.registeredTapplets);
     const installRegisteredTapp = useTappletsStore((s) => s.installRegisteredTapp);
     const registeredTappletsCount = registeredTapplets?.length || 0;
+    const isInitialized = useTappletsStore((s) => s.isInitialized);
 
     const handleInstall = useCallback(
         async (id: string) => {
@@ -32,8 +31,10 @@ export default function TappletsRegistered() {
     );
 
     useEffect(() => {
-        fetchRegisteredTapplets();
-    }, []);
+        if (!isInitialized) {
+            fetchRegisteredTapplets();
+        }
+    }, [fetchRegisteredTapplets, isInitialized]);
 
     return (
         <TappletsGroupWrapper $category="Tapplets Registered">
@@ -41,10 +42,19 @@ export default function TappletsRegistered() {
                 <SettingsGroupContent>
                     <SettingsGroupTitle>
                         <Typography variant="h6">{t('Registered Tapplets')}</Typography>
-
-                        <Count $count={registeredTappletsCount}>
-                            <Typography>{registeredTappletsCount}</Typography>
-                        </Count>
+                        <SettingsGroup>
+                            <IconButton
+                                color="brightGreen"
+                                size="medium"
+                                type="button"
+                                onClick={() => fetchRegisteredTapplets()}
+                            >
+                                <IoRefreshCircle />
+                            </IconButton>
+                            <Count $count={registeredTappletsCount}>
+                                <Typography>{registeredTappletsCount}</Typography>
+                            </Count>
+                        </SettingsGroup>
                     </SettingsGroupTitle>
                     <ListWrapper>
                         {registeredTappletsCount ? (
