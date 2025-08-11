@@ -5,7 +5,7 @@ import MoneroSeedWordSettings from './MoneroSeedWords/MoneroSeedWordSettings.tsx
 import { RefreshWalletHistory } from './RefreshWalletHistory.tsx';
 import { useConfigUIStore, useConfigWalletStore } from '@app/store/useAppConfigStore.ts';
 import { WalletUIMode } from '@app/types/events-payloads.ts';
-import { WalletSecurityMarkup } from './WalletSecurityMarkup';
+import { PinMarkup } from './PinMarkup.tsx';
 import { SyncWithPhone } from './SyncWithPhone.tsx';
 
 export const WalletSettings = () => {
@@ -13,7 +13,7 @@ export const WalletSettings = () => {
     const isWalletUIExchangeSpecific = useConfigUIStore((s) => s.wallet_ui_mode === WalletUIMode.ExchangeSpecificMiner);
     return (
         <>
-            {!isWalletUIExchangeSpecific && <WalletSecurityMarkup />}
+            {!isWalletUIExchangeSpecific && <PinMarkup />}
             <SyncWithPhone />
             <WalletAddressMarkup />
             {isWalletUIExchangeSpecific ? undefined : <TariSeedWords />}
