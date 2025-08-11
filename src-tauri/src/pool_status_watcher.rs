@@ -257,13 +257,16 @@ pub struct LuckyPoolRewardStats {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct LuckyPoolStatusResponseBody {
     pub stats: LuckyPoolStats,
-    pub workers: Vec<LuckyPoolWorker>,
+    #[serde(skip)]
+    pub _workers: Vec<LuckyPoolWorker>,
     #[serde(skip)]
     pub _charts: Option<LuckyPoolCharts>,
-    pub payments: Vec<LuckyPoolPayment>,
-    pub rewards: Vec<LuckyPoolReward>,
-    #[serde(rename = "rewardStats")]
-    pub reward_stats: Vec<LuckyPoolRewardStats>,
+    #[serde(skip)]
+    pub _payments: Vec<LuckyPoolPayment>,
+    #[serde(skip)]
+    pub _rewards: Vec<LuckyPoolReward>,
+    #[serde(rename = "rewardStats", skip)]
+    pub _reward_stats: Vec<LuckyPoolRewardStats>,
 }
 
 #[derive(Clone, Debug)]
