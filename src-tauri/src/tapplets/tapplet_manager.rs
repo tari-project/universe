@@ -22,19 +22,21 @@
 
 use std::path::PathBuf;
 
-use log::{info, warn};
-use tauri::{AppHandle, Listener};
-use tokio::sync::oneshot;
-
 use crate::{
     database::models::{DevTapplet, UpdateDevTapplet},
     events_emitter::EventsEmitter,
+    requests::clients::http_file_client::HttpFileClient,
     tapplets::{
         error::Error,
         server_manager::ServerManager,
+        tapplet_installer::check_files_and_validate_checksum,
         tapplet_server::{get_tapplet_config, start_tapplet_server},
     },
 };
+use anyhow::anyhow;
+use log::{info, warn};
+use tauri::{AppHandle, Listener};
+use tokio::sync::oneshot;
 
 static LOG_TARGET: &str = "tari::universe::tapplet_manager";
 
@@ -182,6 +184,46 @@ impl TappletManager {
             Some(addr) => self.server_manager.is_running(&addr).await,
             None => false,
         }
+    }
+
+    pub async fn download_selected_version(
+        &self,
+        download_url: String,
+        fallback_url: String,
+        destination_dir: PathBuf,
+    ) -> Result<PathBuf, anyhow::Error> {
+        info!(target: LOG_TARGET, "Downloading tapplet from url: {}", &download_url);
+        let archive_destination_path: PathBuf;
+
+        let main_file_download_result = HttpFileClient::builder()
+            .with_cloudflare_cache_check()
+            .with_file_extract()
+            .with_download_resume()
+            .build(download_url, destination_dir.clone())?
+            .execute()
+            .await
+            .map_err(|e| anyhow!("Error downloading tapplet. Error: {:?}", e));
+
+        if main_file_download_result.is_err() {
+            info!(target: LOG_TARGET, "Downloading tapplet from fallback url: {}", &fallback_url);
+
+            archive_destination_path = HttpFileClient::builder()
+                .with_file_extract()
+                .with_download_resume()
+                .build(fallback_url, destination_dir)?
+                .execute()
+                .await
+                .map_err(|e| {
+                    anyhow!(
+                        "Error downloading tapplet from fallback url. Error: {:?}",
+                        e
+                    )
+                })?;
+        } else {
+            archive_destination_path = main_file_download_result?;
+        }
+
+        Ok(archive_destination_path)
     }
 }
 

@@ -2558,6 +2558,7 @@ pub async fn download_and_extract_tapp(
     tapplet_id: i32,
     db_connection: tauri::State<'_, DatabaseConnection>,
     app: tauri::AppHandle,
+    tapplet_manager: tauri::State<'_, TappletManager>,
 ) -> Result<Tapplet, String> {
     let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
     // let (tapp, tapp_version) = tapplet_store.get_registered_tapplet_with_version(tapplet_id);
@@ -2569,32 +2570,26 @@ pub async fn download_and_extract_tapp(
     };
 
     // get download path
-    let tapplet_path = get_tapp_download_path(
+    let dest_dir = get_tapp_download_path(
         tapp.tapp_registry_id.clone(),
         tapp_version.version.clone(),
         app.clone(),
     )
     .unwrap_or_default();
     // download tarball
-    let url = tapp_version.registry_url.clone();
-    let file_path = tapplet_path.join(TAPPLET_ARCHIVE);
-    let destination_dir = file_path.clone();
-    //TODO handle download
-    // let handle_download = tauri::async_runtime::spawn(async move {
-    //     download_file_with_retries(&url, &destination_dir, progress_tracker).await
-    // });
-    // let _ = handle_download
-    //     .await
-    //     .inspect_err(|e| error!(target: LOG_TARGET, "❌ Error downloading file: {:?}", e))
-    //     .map_err(|_| {
-    //         Error::RequestError(FailedToDownload {
-    //             url: tapp_version.registry_url.clone(),
-    //         })
-    //     });
+    let download_url = tapp_version.registry_url.clone();
+    let fallback_url = tapp_version.registry_url.clone();
 
-    // let _ = extract(&file_path, &tapplet_path.clone())
-    //     .await
-    //     .inspect_err(|e| error!(target: LOG_TARGET, "❌ Error extracting file: {:?}", e));
+    let tapplet_path = match tapplet_manager
+        .download_selected_version(download_url, fallback_url, dest_dir)
+        .await
+    {
+        Ok(path) => path,
+        Err(e) => {
+            return Err(e.to_string());
+        }
+    };
+
     //TODO should compare integrity field with the one stored in db or from github manifest?
     match check_files_and_validate_checksum(tapp_version, tapplet_path.clone()) {
         Ok(is_valid) => {
@@ -2607,7 +2602,6 @@ pub async fn download_and_extract_tapp(
     }
     Ok(tapp)
 }
-
 
 #[tauri::command]
 pub fn insert_installed_tapp_db(
