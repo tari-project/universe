@@ -109,7 +109,7 @@ pub struct LuckyPoolStats {
     #[serde(rename = "paymentEnabled")]
     pub payment_enabled: bool,
     #[serde(rename = "paymentThreshold")]
-    pub payment_threshold: u64,
+    pub payment_threshold: String,
     pub unlocked: u64,
     pub locked: u64,
 }
@@ -192,7 +192,7 @@ impl PoolApiAdapter for LuckyPoolAdapter {
                 .unwrap_or(0),
             unpaid: converted_data.stats.unlocked + converted_data.stats.locked,
             balance: converted_data.stats.paid,
-            min_payout: converted_data.stats.payment_threshold,
+            min_payout: converted_data.stats.payment_threshold.parse()?,
         };
         Ok(pool_status)
     }
