@@ -69,12 +69,14 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
 
         // built-in tapplet
         if (isBuiltIn) {
+            const name = 'bridge'; //TODO add names for more options
             try {
                 console.info('🚗 RUN BUILDIN');
-                const activeTapplet = await invoke('start_tari_tapplet_binary', { binaryName: 'bridge' });
+                const activeTapplet = await invoke('start_tari_tapplet_binary', { binaryName: name });
                 set({ activeTapplet });
             } catch (error) {
-                console.error('Error running built-in tapplet: ', error);
+                console.error(`Tapplet (id: ${tappletId} name: ${name}) startup error: ${error}`);
+                setError(`Tapplet (id: ${tappletId} name: ${name}) startup error: ${error}`);
             }
             return;
         }
@@ -95,8 +97,8 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
                 set({ activeTapplet });
                 tappProviderState.setTappletSigner(activeTapplet?.package_name); //TODO
             } catch (error) {
-                console.error('Error running Dev Tapplet: ', error);
-                setError(`'Error running Dev Tapplet: ${error}`);
+                console.error(`Running dev tapplet localhost error: ${error}`);
+                setError(`Running dev tapplet localhost error: ${error}`);
             }
             return;
         }
@@ -111,7 +113,8 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
             });
             set({ activeTapplet });
         } catch (error) {
-            console.error('Error running dev tapplet: ', error);
+            console.error(`Tapplet startup error: ${error}`);
+            setError(`Tapplet startup error: ${error}`);
         }
         return;
     },
@@ -148,8 +151,8 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
 
             set({ isFetching: false, isInitialized: true, registeredTapplets: registeredTapplets });
         } catch (error) {
-            console.error('Error fetching registered tapplets: ', error);
-            setError(`'Error fetching registered tapplets: ${error}`);
+            console.error(`Fetching registered tapplets error: ${error}`);
+            setError(`Fetching registered tapplets error: ${error}`);
         }
     },
     getInstalledTapps: async () => {
@@ -160,8 +163,8 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
             console.info('[STORE] get installed tapp success', installedTapplets);
             set({ installedTapplets });
         } catch (error) {
-            console.error('Error fetching registered tapplets: ', error);
-            setError(`'Error fetching registered tapplets: ${error}`);
+            console.error(`Getting installed tapplets error: ${error}`);
+            setError(`Getting installed tapplets error: ${error}`);
         }
     },
     installRegisteredTapp: async (tappletId: string) => {
@@ -186,46 +189,81 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
                 installedTapplets: [...state.installedTapplets, tapp],
             }));
         } catch (error) {
-            console.error('Error installing tapplet: ', error);
-            setError(`'Error installing tapplet: ${error}`);
+            console.error(`Installing registered tapplet error: ${error}`);
+            setError(`Installing registered tapplet error: ${error}`);
         }
     },
     addDevTapp: async (source) => {
-        console.info('[STORE] add dev tapp source', source);
-        const devTapp = await invoke('add_dev_tapplet', { source });
-        console.info('[STORE] add dev tapp', devTapp);
-        const devTapplets = await invoke('read_dev_tapplets_db');
-        console.info('[STORE] add dev tapplets', devTapplets);
-        set({ devTapplets });
+        try {
+            console.info('[STORE] add dev tapp source', source);
+            const devTapp = await invoke('add_dev_tapplet', { source });
+            console.info('[STORE] add dev tapp', devTapp);
+            const devTapplets = await invoke('read_dev_tapplets_db');
+            console.info('[STORE] add dev tapplets', devTapplets);
+            set({ devTapplets });
+        } catch (error) {
+            console.error(`Adding dev tapplet error: ${error}`);
+            setError(`Adding dev tapplet error: ${error}`);
+        }
     },
     deleteDevTapp: async (devTappletId) => {
-        const removedTappSize = await invoke('delete_dev_tapplet', { devTappletId });
-        console.info('[STORE] delete dev tapp: id | db removedTappSize', devTappletId, removedTappSize);
-        set((state) => ({ devTapplets: state.devTapplets.filter((tapp) => tapp.id !== devTappletId) }));
+        try {
+            const removedTappSize = await invoke('delete_dev_tapplet', { devTappletId });
+            console.info('[STORE] delete dev tapp: id | db removedTappSize', devTappletId, removedTappSize);
+            set((state) => ({ devTapplets: state.devTapplets.filter((tapp) => tapp.id !== devTappletId) }));
+        } catch (error) {
+            console.error(`Deleting tapplet error: ${error}`);
+            setError(`Deleting tapplet error: ${error}`);
+        }
     },
     getDevTapps: async () => {
-        const devTapplets = await invoke('read_dev_tapplets_db');
-        console.info('[STORE get dev tapplets', devTapplets);
-        set({ devTapplets });
+        try {
+            const devTapplets = await invoke('read_dev_tapplets_db');
+            console.info('[STORE get dev tapplets', devTapplets);
+            set({ devTapplets });
+        } catch (error) {
+            console.error(`Reading dev tapplets db error: ${error}`);
+            setError(`Reading dev tapplets db error: ${error}`);
+        }
     },
     deleteInstalledTapp: async (tappletId) => {
-        const removedTappSize = await invoke('delete_installed_tapplet', { tappletId });
-        console.info('[STORE] delete installed tapp: id | db removedTappSize', tappletId, removedTappSize);
-        set((state) => ({
-            installedTapplets: state.installedTapplets.filter((tapp) => tapp.installed_tapplet.id !== tappletId),
-        }));
+        try {
+            const removedTappSize = await invoke('delete_installed_tapplet', { tappletId });
+            console.info('[STORE] delete installed tapp: id | db removedTappSize', tappletId, removedTappSize);
+            set((state) => ({
+                installedTapplets: state.installedTapplets.filter((tapp) => tapp.installed_tapplet.id !== tappletId),
+            }));
+        } catch (error) {
+            console.error(`Deleting dev tapplet error: ${error}`);
+            setError(`Deleting dev tapplet error: ${error}`);
+        }
     },
     updateInstalledTapp: async (tappletId, installedTappletId) => {
-        const installedTapplets = await invoke('update_installed_tapplet', { tappletId, installedTappletId });
-        console.info('[STORE] update tapp: id | installedTappId', tappletId, installedTappletId);
-        set({ installedTapplets });
+        try {
+            const installedTapplets = await invoke('update_installed_tapplet', { tappletId, installedTappletId });
+            console.info('[STORE] update tapp: id | installedTappId', tappletId, installedTappletId);
+            set({ installedTapplets });
+        } catch (error) {
+            console.error(`Updating tapplet error: ${error}`);
+            setError(`Updating tapplet error: ${error}`);
+        }
     },
     stopTapp: async (tappletId: number) => {
-        const serverAddress = await invoke('stop_tapplet', { tappletId });
-        console.info('[STORE] tapplet stopped', tappletId, serverAddress);
+        try {
+            const serverAddress = await invoke('stop_tapplet', { tappletId });
+            console.info('[STORE] tapplet stopped', tappletId, serverAddress);
+        } catch (error) {
+            console.error(`Stopping tapplet error: ${error}`);
+            setError(`Stopping tapplet error: ${error}`);
+        }
     },
     restartTapp: async (tappletId: number) => {
-        const serverAddress = await invoke('restart_tapplet', { tappletId });
-        console.info('[STORE] tapplet restarted', tappletId, serverAddress);
+        try {
+            const serverAddress = await invoke('restart_tapplet', { tappletId });
+            console.info('[STORE] tapplet restarted', tappletId, serverAddress);
+        } catch (error) {
+            console.error(`Restarting tapplet error: ${error}`);
+            setError(`Restarting tapplet error: ${error}`);
+        }
     },
 }));

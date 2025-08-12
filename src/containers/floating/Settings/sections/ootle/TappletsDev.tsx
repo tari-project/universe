@@ -89,7 +89,6 @@ export default function TappletsDev() {
                 <SettingsGroupContent>
                     <SettingsGroupTitle>
                         <Typography variant="h6">{t('Dev tapplets')}</Typography>
-
                         <Count $count={devTappletsCount}>
                             <Typography>{devTappletsCount}</Typography>
                         </Count>

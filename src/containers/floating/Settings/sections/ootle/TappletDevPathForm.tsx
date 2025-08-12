@@ -12,6 +12,8 @@ import { useTranslation } from 'react-i18next';
 import { useTappletsStore } from '@app/store/useTappletsStore.ts';
 
 const DEFAULT_DEV_TAPP_PATH = '';
+// eslint-disable-next-line no-useless-escape
+const DEV_TAPP_PATH_REGEX = /^(https?:\/\/)?(localhost|127\.0\.0\.1):\d{1,6}$|^\/?[\w\-]+([\\/][\w\-]+)*$/;
 
 const StyledInput = styled(Input)`
     font-size: 12px;
@@ -85,6 +87,12 @@ const TappletDevPathForm = () => {
                             <Controller
                                 name="tappPath"
                                 control={control}
+                                rules={{
+                                    pattern: {
+                                        value: DEV_TAPP_PATH_REGEX,
+                                        message: 'Invalid endpoint format',
+                                    },
+                                }}
                                 render={({ field }) => {
                                     return (
                                         <StyledInput
