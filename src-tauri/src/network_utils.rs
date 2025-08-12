@@ -20,16 +20,18 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use reqwest::header::{HeaderMap, HeaderName, HeaderValue, USER_AGENT};
+use crate::requests::utils::create_user_agent;
+use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use serde::Deserialize;
 use std::fmt::Write as _;
 use tari_common::configuration::Network;
 
 fn create_client() -> Result<reqwest::Client, anyhow::Error> {
+    let version = env!("CARGO_PKG_VERSION").to_string();
     let mut headers = HeaderMap::new();
     headers.insert(
         HeaderName::from_static("x-requested-with"),
-        HeaderValue::from_static("tari-universe"),
+        HeaderValue::from_static(create_user_agent()),
     );
 
     let client = reqwest::Client::builder()
