@@ -28,17 +28,21 @@ export function useFetchExplorerData() {
         queryKey: [KEY_EXPLORER],
         queryFn: async () => {
             const data = await fetchExplorerData();
+            if (!data) {
+                console.error('Explorer data is empty.');
+                return { blockBubblesData: [], currentBlock: {} as BlockDataExtended };
+            }
             const currentBlock = {
-                ...data.stats[0],
-                timestamp: data.headers[0].timestamp,
-                parsedTimestamp: data.stats[0].timestamp,
+                ...data?.stats?.[0],
+                timestamp: data.headers?.[0]?.timestamp,
+                parsedTimestamp: data.stats?.[0]?.timestamp,
             };
 
-            const blockBubblesData = data.stats.slice(0, 10).map((block) => ({
+            const blockBubblesData = data.stats?.slice(0, 10).map((block) => ({
                 ...block,
                 id: block.height,
                 minersSolved: block.numCoinbases,
-                reward: parseInt(block.totalCoinbaseXtm.split('.')[0].replace(/,/g, ''), 10),
+                reward: parseInt(block.totalCoinbaseXtm?.split('.')?.[0]?.replace(/,/g, ''), 10),
                 timeAgo: block.timestamp,
                 blocks: block.numOutputsNoCoinbases,
                 isSolved: false,
