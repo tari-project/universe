@@ -239,4 +239,8 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'GrantTappletPermissions';
           payload: GrantTappletPermissionsPayload;
+      }
+    | {
+          event_type: 'OotleWalletPhaseFinished';
+          payload: boolean;
       };
