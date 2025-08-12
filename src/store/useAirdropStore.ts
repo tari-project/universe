@@ -33,7 +33,7 @@ export interface User {
     yat_user_id: string;
     name: string;
     role: string;
-    profileimageurl: string;
+    image_url: string;
     rank: {
         gems: number;
         shells: number;
