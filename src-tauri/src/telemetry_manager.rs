@@ -715,6 +715,9 @@ async fn get_telemetry_data_inner(
         wallet_view_key_hashed,
         exchange_id,
     };
+
+    info!(target: LOG_TARGET, "Telemetry data collected: {:?}", data);
+
     Ok(data)
 }
 
