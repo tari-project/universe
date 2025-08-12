@@ -1,0 +1,28 @@
+{
+  "auto-miner": "Minerador Automático",
+  "auto-miner-description": "O minerador automático ligará seu minerador quando sua máquina estiver ociosa",
+  "block": "Bloco",
+  "hide-history": "Ocultar histórico",
+  "history-hide-button": "Ocultar Histórico",
+  "history-show-button": "Histórico",
+  "lost-connection": "Conexão perdida com a Rede Tari. Reconectando..",
+  "mining-schedules": "Agendamentos de Mineração",
+  "mining-schedules-description": "Agende sua atividade de mineração",
+  "next-milestone": "Próximo Marco",
+  "paper-wallet-button": "Sincronizar com o Telefone",
+  "paper-wallet-tooltip-message": "Acompanhe seu saldo XTM em qualquer lugar sincronizando o Universe com o Tari Universe Mobile.",
+  "paper-wallet-tooltip-title": "Sincronizar com o Telefone",
+  "recent-wins": "Vitórias recentes",
+  "rewards": "Recompensas",
+  "setup-scheduler": "Configurar Agendador",
+  "share": {
+    "button-text": "MOSTRAR E CONVIDAR",
+    "copied": "Link Copiado!",
+    "history-item-button": "Mostrar e Convidar",
+    "reward": "minha recompensa",
+    "title": "Acabei de minerar tari",
+    "winner-pill": "Vencedor do bloco"
+  },
+  "show-history": "Mostrar histórico",
+  "wallet-balance": "Saldo da Carteira"
+}
