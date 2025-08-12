@@ -716,8 +716,6 @@ async fn get_telemetry_data_inner(
         exchange_id,
     };
 
-    info!(target: LOG_TARGET, "Telemetry data collected: {:?}", data);
-
     Ok(data)
 }
 

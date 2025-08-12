@@ -98,13 +98,13 @@ struct GpuStatusFileContent {
 #[derive(Debug, Deserialize, Clone, Default)]
 struct GpuStatusFileEntry {
     name: String,
-    device_id: u32,
+    _device_id: u32,
     device_type: String,
-    platform_name: String,
-    vendor: String,
-    max_work_group_size: u32,
-    max_compute_units: u32,
-    global_mem_size: u64,
+    _platform_name: String,
+    _vendor: String,
+    _max_work_group_size: u32,
+    _max_compute_units: u32,
+    _global_mem_size: u64,
 }
 
 #[derive(Debug, Serialize, Clone, Default)]
