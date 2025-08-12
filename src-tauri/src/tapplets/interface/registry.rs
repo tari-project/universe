@@ -27,14 +27,34 @@ pub struct TappletRegistryManifest {
 pub struct Metadata {
     #[serde(rename = "displayName")]
     pub display_name: String,
-    #[serde(rename = "logoUrl")]
+    #[serde(rename = "logoPath")]
+    #[serde(default)]
     pub logo_url: String,
     #[serde(rename = "backgroundUrl")]
+    #[serde(default)]
     pub background_url: String,
+    #[serde(default)]
     pub author: Author,
+    #[serde(default)]
     pub about: About,
-    // pub audits: Vec<Audit>,
+    #[serde(default)]
+    pub audits: Vec<Audit>,
+    #[serde(default)]
     pub category: String,
+}
+
+impl Default for Metadata {
+    fn default() -> Self {
+        Metadata {
+            display_name: "".to_string(),
+            logo_url: "".to_string(),
+            background_url: "".to_string(),
+            author: Author::default(),
+            about: About::default(),
+            audits: vec![],
+            category: "".to_string(),
+        }
+    }
 }
 
 #[derive(Debug, serde::Deserialize, Clone)]
@@ -50,10 +70,28 @@ pub struct Author {
     pub website: String,
 }
 
+impl Default for Author {
+    fn default() -> Self {
+        Author {
+            name: "".to_string(),
+            website: "".to_string(),
+        }
+    }
+}
+
 #[derive(Debug, serde::Deserialize, Clone)]
 pub struct About {
     pub summary: String,
     pub description: String,
+}
+
+impl Default for About {
+    fn default() -> Self {
+        About {
+            summary: "".to_string(),
+            description: "".to_string(),
+        }
+    }
 }
 
 #[derive(Debug, serde::Deserialize, Clone)]
@@ -61,6 +99,15 @@ pub struct Audit {
     pub auditor: String,
     #[serde(rename = "reportUrl")]
     pub report_url: String,
+}
+
+impl Default for Audit {
+    fn default() -> Self {
+        Audit {
+            auditor: "".to_string(),
+            report_url: "".to_string(),
+        }
+    }
 }
 
 #[derive(Serialize)]
@@ -98,12 +145,4 @@ impl TryFrom<TappletVersion> for TappletSemver {
 pub struct AssetServer {
     pub addr: String,
     pub cancel_token: CancellationToken,
-}
-
-// TODO use it?
-#[derive(Debug, serde::Deserialize, Clone)]
-pub struct Security {
-    pub csp: String,
-    #[serde(rename = "tariPermissions")]
-    pub tari_permissions: String,
 }
