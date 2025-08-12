@@ -157,27 +157,31 @@ pub fn get_asset_urls(tapplet_name: String) -> Result<TappletAssets, Error> {
 }
 
 pub async fn fetch_tapp_registry_manifest() -> Result<RegisteredTapplets, Error> {
-    let manifest_endpoint = format!("{}/dist/tapplets-registry.manifest.json", REGISTRY_URL);
-    info!(target: LOG_TARGET, "📋 fetch_tapp_registry_manifest: {:?}", &manifest_endpoint);
+    let manifest_endpoint = format!("{}/tapplets-registry.manifest.json", REGISTRY_URL);
 
-    let manifest_res = reqwest::get(&manifest_endpoint)
-        .await
-        .map_err(|_| {
-            RequestError(FetchManifestError {
-                endpoint: manifest_endpoint.clone(),
-            })
-        })?
-        .text()
-        .await
-        .map_err(|error| {
-            RequestError(ManifestResponseError {
-                endpoint: manifest_endpoint.clone(),
-                e: error.to_string(),
-            })
-        })?;
+    let response = reqwest::get(&manifest_endpoint).await.map_err(|_| {
+        RequestError(FetchManifestError {
+            endpoint: manifest_endpoint.clone(),
+        })
+    })?;
+
+    if response.status() == reqwest::StatusCode::NOT_FOUND {
+        return Err(RequestError(ManifestResponseError {
+            endpoint: manifest_endpoint,
+            e: "Manifest not found".to_string(),
+        }));
+    }
+
+    let manifest_res = response.text().await.map_err(|error| {
+        RequestError(ManifestResponseError {
+            endpoint: manifest_endpoint.clone(),
+            e: error.to_string(),
+        })
+    })?;
 
     let tapplets: RegisteredTapplets =
         serde_json::from_str(&manifest_res).map_err(|e| JsonParsingError(e))?;
+    info!(target: LOG_TARGET, "📋 Tapplet Registry manifest v{} fetched: {:?}", &tapplets.manifest_version, &manifest_endpoint);
     Ok(tapplets)
 }
 

@@ -34,8 +34,8 @@ use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent, WalletId}
 use crate::configs::trait_config::ConfigImpl;
 use crate::database::models::{
     CreateDevTapplet, CreateInstalledTapplet, CreateTapplet, CreateTappletAsset,
-    CreateTappletVersion, DevTapplet, InstalledTapplet, Tapplet, UpdateDevTapplet,
-    UpdateInstalledTapplet,
+    CreateTappletAudit, CreateTappletVersion, DevTapplet, InstalledTapplet, Tapplet,
+    UpdateDevTapplet, UpdateInstalledTapplet,
 };
 use crate::database::store::{DatabaseConnection, SqliteStore, Store};
 use crate::events::ConnectionStatusPayload;
@@ -2470,7 +2470,6 @@ pub async fn fetch_registered_tapplets(
             return Err(e.to_string());
         }
     };
-    info!("❌ FETCHED MANFIEST");
     let mut store = SqliteStore::new(db_connection.0.clone());
 
     for tapplet_manifest in tapplets.registered_tapplets.values() {
@@ -2479,15 +2478,17 @@ pub async fn fetch_registered_tapplets(
             .map_err(|e| e.to_string())?;
 
         // TODO uncomment if audit data in manifest
-        // for audit_data in tapplet_manifest.metadata.audits.iter() {
-        //   store.create(
-        //     &(CreateTappletAudit {
-        //       tapplet_id: inserted_tapplet.id,
-        //       auditor: &audit_data.auditor,
-        //       report_url: &audit_data.report_url,
-        //     })
-        //   )?;
-        // }
+        for audit_data in tapplet_manifest.metadata.audits.iter() {
+            let _ = store
+                .create(
+                    &(CreateTappletAudit {
+                        tapplet_id: inserted_tapplet.id,
+                        auditor: &audit_data.auditor,
+                        report_url: &audit_data.report_url,
+                    }),
+                )
+                .map_err(|e| e.to_string());
+        }
 
         for (version, version_data) in tapplet_manifest.versions.iter() {
             let _ = store
