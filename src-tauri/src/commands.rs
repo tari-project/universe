@@ -32,13 +32,11 @@ use crate::configs::config_pools::{ConfigPools, ConfigPoolsContent};
 use crate::configs::config_ui::{ConfigUI, ConfigUIContent, DisplayMode};
 use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent, WalletId};
 use crate::configs::trait_config::ConfigImpl;
-use crate::consts::TAPPLET_ARCHIVE;
 use crate::database::models::{
     CreateDevTapplet, CreateInstalledTapplet, CreateTapplet, CreateTappletAsset,
     CreateTappletVersion, DevTapplet, InstalledTapplet, Tapplet, UpdateDevTapplet,
     UpdateInstalledTapplet,
 };
-use crate::database::schema::dev_tapplet;
 use crate::database::store::{DatabaseConnection, SqliteStore, Store};
 use crate::events::ConnectionStatusPayload;
 use crate::events_emitter::EventsEmitter;
@@ -2670,7 +2668,12 @@ pub async fn update_installed_tapplet(
         db_connection.clone(),
         app_handle.clone(),
     )
-    .inspect_err(|e| error!("❌ Delete installed tapplet from db error: {:?}", e));
+    .inspect_err(|e| {
+        error!(
+            "❌ Delete installed tapplet (id: {:?}) from db error: {:?}",
+            tapplet_id, e
+        )
+    });
 
     // TODO
     // let _ = download_and_extract_tapp(tapplet_id, db_connection.clone(), app_handle.clone())

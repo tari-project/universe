@@ -1,20 +1,5 @@
 import styled from 'styled-components';
-import * as m from 'motion/react-m';
 import { Typography } from '@app/components/elements/Typography.tsx';
-import { convertHexToRGBA } from '@app/utils';
-
-export const ItemWrapper = styled(m.div)`
-    display: flex;
-    align-items: center;
-    width: 100%;
-    border-radius: 10px;
-    padding: 6px 0;
-    flex-direction: column;
-    overflow: hidden;
-    position: relative;
-    box-shadow: ${({ theme }) => `${convertHexToRGBA(theme.palette.contrast, 0.025)} 0 1px 2px -1px`};
-    background-color: ${({ theme }) => (theme.mode === 'dark' ? '#1B1B1B' : theme.palette.background.paper)};
-`;
 
 export const ContentWrapper = styled.div`
     width: 100%;

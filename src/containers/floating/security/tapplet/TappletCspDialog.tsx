@@ -4,7 +4,6 @@ import { Content, ContentWrapper, CTAWrapper, Header, Subtitle, Title, Wrapper }
 import CloseButton from '@app/components/elements/buttons/CloseButton.tsx';
 import { useTranslation } from 'react-i18next';
 import { emit } from '@tauri-apps/api/event';
-import { TextWrapper } from '@app/components/sync/styles.ts';
 import { TextButton } from '@app/components/elements/buttons/TextButton.tsx';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 

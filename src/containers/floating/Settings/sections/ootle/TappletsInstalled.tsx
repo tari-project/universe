@@ -23,7 +23,7 @@ export default function TappletsInstalled() {
     const installedTapplets = useTappletsStore((s) => s.installedTapplets);
     const installedTappletsCount = installedTapplets?.length || 0;
 
-    const updateInstalledTappletHandler = useCallback(
+    const _updateInstalledTappletHandler = useCallback(
         async (id: number, installedTappletId: number) => {
             try {
                 console.info('Update id, tapp id ', id, installedTappletId);

@@ -136,7 +136,7 @@ pub fn get_tapplet_config(tapp_path: &PathBuf) -> Result<TappletConfig, Error> {
     Ok(tapplet_config)
 }
 
-pub fn get_tapplet_manifest(tapp_path: PathBuf) -> Result<TappletManifest, Error> {
+pub fn _get_tapplet_manifest(tapp_path: PathBuf) -> Result<TappletManifest, Error> {
     // for a dev tapplet the tapplet.manifest.json file is in root dir
     let tapp_manifest = tapp_path.join("tapplet.manifest.json");
     info!(target: LOG_TARGET, "💥 get_config {:?}", &tapp_manifest);

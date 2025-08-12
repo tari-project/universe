@@ -104,7 +104,7 @@ impl ServerManager {
     }
 
     /// Optionally, get the cancel token or server handle for given tapplet_id
-    pub async fn get_server_handle_by_id(&self, tapplet_id: i32) -> Option<ServerHandle> {
+    pub async fn _get_server_handle_by_id(&self, tapplet_id: i32) -> Option<ServerHandle> {
         let id_map = self.tapplet_id_map.lock().await;
         let servers = self.servers.lock().await;
         id_map

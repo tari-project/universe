@@ -20,9 +20,3 @@ export const ListItemWrapper = styled.div`
     position: relative;
     gap: 4px;
 `;
-
-export const FilterWrapper = styled.div`
-    display: flex;
-    gap: 12px;
-    flex-shrink: 0;
-`;

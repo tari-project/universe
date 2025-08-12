@@ -1,6 +1,4 @@
 import styled from 'styled-components';
-import { Stack } from '@app/components/elements/Stack.tsx';
-import { Input } from '@app/components/elements/inputs/Input.tsx';
 
 export const TappletsGroupWrapper = styled.div<{ $category?: string }>`
 display: flex;
@@ -46,37 +44,6 @@ export const TappletsGroup = styled.div`
             }
         }
     }
-`;
-
-export const TappletsGroupTitle = styled.div`
-    display: flex;
-    color: ${({ theme }) => theme.palette.text.primary};
-    justify-content: space-between;
-`;
-export const TappletsGroupContent = styled.div`
-    display: flex;
-    gap: 4px;
-    flex-direction: column;
-    width: 100%;
-`;
-export const TappletsGroupAction = styled.div`
-    display: flex;
-    font-size: 12px;
-    gap: 6px;
-`;
-
-export const StyledStack = styled(Stack)`
-    width: 100%;
-`;
-
-export const StyledInput = styled(Input)`
-    font-size: 12px;
-`;
-
-export const StyledForm = styled.form`
-    width: 100%;
-    // Reserve space for error message
-    min-height: 53px;
 `;
 
 export const Count = styled.div<{ $count: number }>`
