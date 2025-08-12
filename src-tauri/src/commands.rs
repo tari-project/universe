@@ -2577,7 +2577,7 @@ pub async fn download_and_extract_tapp(
     .unwrap_or_default();
     // download tarball
     let download_url = tapp_version.registry_url.clone();
-    let fallback_url = tapp_version.registry_url.clone();
+    let fallback_url = tapp_version.registry_url.clone(); //TODO change if fallback available
 
     let tapplet_path = match tapplet_manager
         .download_selected_version(download_url, fallback_url, dest_dir)
@@ -2606,15 +2606,22 @@ pub async fn download_and_extract_tapp(
 pub fn insert_installed_tapp_db(
     tapplet_id: i32,
     db_connection: tauri::State<'_, DatabaseConnection>,
-) -> Result<InstalledTapplet, Error> {
+) -> Result<InstalledTappletWithName, Error> {
     let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
-    let (tapp, version_data) = tapplet_store.get_registered_tapplet_with_version(tapplet_id)?;
+    let (tapp, latest_version) = tapplet_store.get_registered_tapplet_with_version(tapplet_id)?;
 
-    let installed_tapplet = CreateInstalledTapplet {
+    let tapp_created = CreateInstalledTapplet {
         tapplet_id: tapp.id,
-        tapplet_version_id: version_data.id,
+        tapplet_version_id: latest_version.id,
     };
-    tapplet_store.create(&installed_tapplet)
+    let installed_tapp = tapplet_store.create(&tapp_created)?;
+
+    return Ok(InstalledTappletWithName {
+        installed_tapplet: installed_tapp,
+        display_name: tapp.display_name,
+        installed_version: latest_version.version.clone(),
+        latest_version: latest_version.version,
+    });
 }
 
 #[tauri::command]

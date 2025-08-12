@@ -170,16 +170,14 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
     installRegisteredTapp: async (tappletId: number) => {
         console.info('[STORE] fetch tapp');
         try {
-            // TODO invoke to add tapplet
             const tapplet = await invoke('download_and_extract_tapp', { tappletId });
-            const installedTapplet = await invoke('insert_installed_tapp_db', { tappletId });
-            console.info('[STORE] fetch tapp success', tapplet, installedTapplet);
-            // TODO refactor types and assets path
+            const installedTappleWithName = await invoke('insert_installed_tapp_db', { tappletId });
+
             const tapp: InstalledTappletWithAssets = {
-                display_name: tapplet.displayName,
-                installed_tapplet: installedTapplet,
-                installed_version: installedTapplet.tapplet_version_id,
-                latest_version: '',
+                installed_tapplet: installedTappleWithName.installed_tapplet,
+                display_name: installedTappleWithName.displayName,
+                installed_version: installedTappleWithName.installed_version,
+                latest_version: installedTappleWithName.latest_version,
                 logoAddr: tapplet.logoAddr,
                 backgroundAddr: tapplet.backgroundAddr,
             };

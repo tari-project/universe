@@ -72,14 +72,14 @@ impl SqliteStore {
             .load::<(InstalledTapplet, Tapplet, TappletVersion)>(self.get_connection().deref_mut())
             .map_err(|_| {
                 DatabaseError(FailedToRetrieveData {
-                    entity_name: "installed tapplet".to_string(),
+                    entity_name: "installed_tapplet".to_string(),
                 })
             })?;
 
         let result = tapplets
             .into_iter()
             .map(|(installed_tapp, tapp, tapp_version)| {
-                let test1 = self
+                let (_registered_tapp, latest_version) = self
                     .get_registered_tapplet_with_version(tapp.id.unwrap())
                     .unwrap();
 
@@ -87,7 +87,7 @@ impl SqliteStore {
                     installed_tapplet: installed_tapp,
                     display_name: tapp.display_name,
                     installed_version: tapp_version.version,
-                    latest_version: test1.1.version,
+                    latest_version: latest_version.version,
                 };
             })
             .collect();
@@ -129,7 +129,7 @@ impl SqliteStore {
         use crate::database::schema::tapplet::dsl::*;
         use crate::database::schema::tapplet_version::dsl::*;
 
-        let boxed_tapplet = tapplet
+        let registered_tapplet = tapplet
             .filter(id.eq(registered_tapplet_id))
             .first::<Tapplet>(self.get_connection().deref_mut())
             .map_err(|_| {
@@ -157,7 +157,7 @@ impl SqliteStore {
             .max_by_key(|ver| ver.semver.clone())
             .ok_or(Error::VersionNotFound)?;
 
-        return Ok((boxed_tapplet, latest_version.tapplet_version));
+        return Ok((registered_tapplet, latest_version.tapplet_version));
     }
 
     pub fn get_tapplet_assets_by_tapplet_id(

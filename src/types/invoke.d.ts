@@ -159,13 +159,12 @@ declare module '@tauri-apps/api/core' {
     ): Promise<string>;
     function invoke(param: 'save_wxtm_address', payload: { address: string; exchangeId: string }): Promise<void>;
     function invoke(param: 'update_csp_policy', payload: { csp: string }): Promise<void>;
-    function invoke(param: 'read_installed_tapp_db'): Promise<InstalledTappletWithAssets[]>;
+    function invoke(param: 'read_installed_tapp_db'): Promise<InstalledTappletWithName[]>;
     function invoke(param: 'read_tapp_registry_db'): Promise<RegisteredTapplet[]>;
-    function invoke(param: 'insert_installed_tapp_db', payload: { tappletId: number }): Promise<InstalledTapplet>;
     function invoke(
-        param: 'update_tapp',
-        payload: { tappletId: string; installedTappletId: string }
-    ): Promise<InstalledTappletWithAssets[]>;
+        param: 'insert_installed_tapp_db',
+        payload: { tappletId: number }
+    ): Promise<InstalledTappletWithName>;
     function invoke(param: 'get_assets_server_addr'): Promise<string>;
     function invoke(param: 'add_dev_tapplet', payload: { source: string }): Promise<DevTapplet>;
     function invoke(param: 'read_dev_tapplets_db'): Promise<DevTapplet[]>;

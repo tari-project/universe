@@ -44,11 +44,12 @@ export interface RegisteredTapplet {
     csp: string;
     tapplet_permissions: string;
 }
-
-export type RegisteredTappletWithAssets = RegisteredTapplet & {
+export interface Assets {
     logoAddr: string;
     backgroundAddr: string;
-};
+}
+
+export type RegisteredTappletWithAssets = RegisteredTapplet & Assets;
 
 export interface InstalledTapplet {
     id: number;
@@ -56,14 +57,14 @@ export interface InstalledTapplet {
     tapplet_version_id: number;
 }
 
-export interface InstalledTappletWithAssets {
+export interface InstalledTappletWithName {
     installed_tapplet: InstalledTapplet;
     display_name: string;
     installed_version: string;
     latest_version: string;
-    logoAddr: string;
-    backgroundAddr: string;
 }
+
+export type InstalledTappletWithAssets = InstalledTappletWithName & Assets;
 
 export interface DevTapplet {
     id: number;
