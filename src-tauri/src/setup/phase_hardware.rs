@@ -155,7 +155,7 @@ impl SetupPhaseImpl for HardwareSetupPhase {
 
     async fn setup_inner(&self) -> Result<(), Error> {
         let mut progress_stepper = self.progress_stepper.lock().await;
-        let (_data_dir, config_dir, _log_dir) = self.get_app_dirs()?;
+        let (data_dir, config_dir, _log_dir) = self.get_app_dirs()?;
         let state = self.app_handle.state::<UniverseAppState>();
 
         let binary_resolver = BinaryResolver::current();
@@ -207,7 +207,7 @@ impl SetupPhaseImpl for HardwareSetupPhase {
         GpuDevices::current()
             .write()
             .await
-            .detect(config_dir.clone())
+            .detect(data_dir.clone())
             .await?;
 
         HardwareStatusMonitor::current().initialize().await?;
