@@ -23,15 +23,19 @@ export const determineStatus = (member: CrewMember): CrewStatus => {
     const latestReward = member.rewards[0];
     const lastActivityMoreThan24HoursAgo =
         Date.now() - new Date(member.lastActivityDate).getTime() > 1000 * 60 * 60 * 24;
-    if (!latestReward || lastActivityMoreThan24HoursAgo) return 'needs_nudge';
+
+    if (!latestReward) return 'needs_nudge';
 
     // If reward is ready to claim or complete
-    if (latestReward.status === 'earned' && latestReward.readyToClaim) {
+    if (
+        (latestReward.status === 'earned' && latestReward.readyToClaim) ||
+        latestReward.progressTowardsReward.isComplete
+    ) {
         return 'completed';
     }
 
-    if (latestReward.progressTowardsReward.isComplete) {
-        return 'completed';
+    if (lastActivityMoreThan24HoursAgo) {
+        return 'needs_nudge';
     }
 
     // Check current day progress - if very low, might need nudge
