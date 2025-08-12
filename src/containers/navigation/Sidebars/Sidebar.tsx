@@ -7,7 +7,20 @@ import { AnimatePresence } from 'motion/react';
 export default function Sidebar() {
     const isSwapping = useWalletStore((s) => s.is_swapping);
     return (
-        <SidebarWrapper key="sidebar">
+        <SidebarWrapper
+            initial={{
+                opacity: 0,
+                left: -10,
+            }}
+            animate={{
+                opacity: 1,
+                left: 0,
+            }}
+            exit={{
+                opacity: 0,
+                left: -10,
+            }}
+        >
             <WrapperGrid>
                 <GridAreaTop>
                     <MiningSection />
