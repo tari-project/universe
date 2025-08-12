@@ -2218,38 +2218,44 @@ pub async fn update_csp_policy(
 // the tapplet is not a binary, it's a compressed dir, but the process of downloading
 // the appropriate version and checking the checksum is the same as for the binary
 #[tauri::command]
-pub async fn start_tari_tapplet_binary(binary_name: &str) -> Result<ActiveTapplet, String> {
+pub async fn start_tari_tapplet_binary(
+    binary_name: &str,
+    tapplet_manager: tauri::State<'_, TappletManager>,
+) -> Result<ActiveTapplet, String> {
     let binaries_resolver = BinaryResolver::current();
 
     let binary = Binaries::from_name(binary_name);
-    let tapp_dest_dir = binaries_resolver
+    let tapp_path = binaries_resolver
         .resolve_path_to_binary_files(binary)
         .await
         .map_err(|e| e.to_string())?;
 
-    info!(target: LOG_TARGET, "💥 Built-in tapplet start: {:?}", &tapp_dest_dir);
+    info!(target: LOG_TARGET, "💥 Built-in tapplet start: {:?}", &tapp_path);
 
     // TODO csp should be taken from the tapplet config, the bridge tapplet is exception because is 'built-in' by us
-    let config = get_tapplet_config(&tapp_dest_dir).unwrap_or_default();
+    let config = get_tapplet_config(&tapp_path).unwrap_or_default();
     // let csp_header = HeaderValue::from_str(&config.csp).unwrap();
 
     // TODO only our tapplet should get by default 'insafe-inline'
     // see: https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Security-Policy#unsafe-inline
-    const DEFAULT_TARI_BINARY_TAPPLET_CSP: &str =
-        "default-src 'self' https:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'";
+    // const DEFAULT_TARI_BINARY_TAPPLET_CSP: &str =
+    //     "default-src 'self' https:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'";
+    // let handle_start = tauri::async_runtime::spawn(async move {
+    //     start_tapplet_server(tapp_dest_dir, &DEFAULT_TARI_BINARY_TAPPLET_CSP.to_string()).await
+    // });
+    let csp_bridge = String::from("default-src 'self' https:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'");
+    let tapp_id = 0; //TODO get from installed_tapp db
 
-    let handle_start = tauri::async_runtime::spawn(async move {
-        start_tapplet_server(tapp_dest_dir, &DEFAULT_TARI_BINARY_TAPPLET_CSP.to_string()).await
-    });
+    let addr = tapplet_manager
+        .start_server(tapp_id, tapp_path, &csp_bridge)
+        .await
+        .map_err(|e| {
+            error!(target: LOG_TARGET, "Failed to start tapplet with id {}: {}", tapp_id, &e);
+            e.to_string()
+        })?;
 
-    let (addr, _cancel_token) = match handle_start.await {
-        Ok(result) => result.map_err(|e| e.to_string())?,
-        Err(e) => {
-            error!(target: LOG_TARGET, "❌ Error handling tapplet start: {e:?}");
-            return Err(e.to_string());
-        }
-    };
-
+    let is_running = tapplet_manager.is_server_running(tapp_id).await;
+    info!(target: LOG_TARGET, "🎉🎉🎉 TAPP IS RUNNING: {:?} at address {:?}", is_running, addr);
     // TODO
     Ok(ActiveTapplet {
         tapplet_id: 1000,
