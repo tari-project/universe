@@ -20,9 +20,24 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use reqwest::header::{HeaderMap, HeaderName, HeaderValue, USER_AGENT};
 use serde::Deserialize;
 use std::fmt::Write as _;
 use tari_common::configuration::Network;
+
+fn create_client() -> Result<reqwest::Client, anyhow::Error> {
+    let mut headers = HeaderMap::new();
+    headers.insert(
+        HeaderName::from_static("x-requested-with"),
+        HeaderValue::from_static("tari-universe"),
+    );
+
+    let client = reqwest::Client::builder()
+        .default_headers(headers)
+        .build()?;
+
+    Ok(client)
+}
 
 fn get_text_explore_blocks_url(network: Network, block_height: u64) -> String {
     match network {
@@ -64,7 +79,8 @@ pub(crate) async fn get_best_block_from_block_scan(network: Network) -> Result<u
         best_block_height: String,
     }
 
-    let response = reqwest::get(&get_text_explore_url(network)).await?;
+    let client = create_client()?;
+    let response = client.get(&get_text_explore_url(network)).send().await?;
     if response.status() == reqwest::StatusCode::NOT_FOUND {
         return Err(anyhow::anyhow!("Block scan API not found"));
     }
@@ -99,7 +115,11 @@ pub(crate) async fn get_block_info_from_block_scan(
         header: BlockHeader,
     }
 
-    let response = reqwest::get(&get_text_explore_blocks_url(network, *block_height)).await?;
+    let client = create_client()?;
+    let response = client
+        .get(&get_text_explore_blocks_url(network, *block_height))
+        .send()
+        .await?;
     if response.status() == reqwest::StatusCode::NOT_FOUND {
         return Err(anyhow::anyhow!(
             "Block {} not found on block scan",
