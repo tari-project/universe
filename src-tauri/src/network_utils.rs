@@ -31,7 +31,7 @@ fn create_client() -> Result<reqwest::Client, anyhow::Error> {
     let mut headers = HeaderMap::new();
     headers.insert(
         HeaderName::from_static("x-requested-with"),
-        HeaderValue::from_static(agent),
+        HeaderValue::from_str(&agent),
     );
 
     let client = reqwest::Client::builder()
