@@ -27,8 +27,12 @@ export function useFetchExplorerData() {
         queryKey: [KEY_EXPLORER],
         queryFn: async () => {
             const data = await fetchExplorerData();
+            if (!data) {
+                console.error('Explorer data is empty.');
+                return { blockBubblesData: [], currentBlock: {} as BlockDataExtended };
+            }
             const currentBlock = {
-                ...data.stats[0],
+                ...data?.stats?.[0],
                 timestamp: data.headers[0].timestamp,
                 parsedTimestamp: data.stats[0].timestamp,
             };
