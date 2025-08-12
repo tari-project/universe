@@ -1,5 +1,4 @@
-/* eslint-disable i18next/no-literal-string */
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useTappletSignerStore } from '@app/store/useTappletSignerStore';
 import { TappletContainer } from '@app/containers/main/Dashboard/MiningView/MiningView.styles';
 import { open } from '@tauri-apps/plugin-shell';
@@ -16,9 +15,9 @@ export const Tapplet: React.FC<TappletProps> = ({ source }) => {
     const runTransaction = useTappletSignerStore((s) => s.runTransaction);
     const language = useConfigUIStore((s) => s.application_language);
     const theme = useUIStore((s) => s.theme);
-    const [allowedDomains, setAllowedDomains] = useState<string[]>([]);
-    const [pendingDomains, setPendingDomains] = useState<string[] | null>(null);
-    const [showDomainPopup, setShowDomainPopup] = useState(false);
+    // const [allowedDomains, setAllowedDomains] = useState<string[]>([]);
+    // const [pendingDomains, setPendingDomains] = useState<string[] | null>(null);
+    // const [showDomainPopup, setShowDomainPopup] = useState(false);
 
     const sendWindowSize = useCallback(() => {
         if (tappletRef.current) {
@@ -69,12 +68,6 @@ export const Tapplet: React.FC<TappletProps> = ({ source }) => {
 
     useIframeMessage((event) => {
         switch (event.data.type) {
-            case MessageType.SET_ALLOWED_DOMAINS: {
-                const domains = event.data.payload?.domains || [];
-                setPendingDomains(domains);
-                setShowDomainPopup(true);
-                break;
-            }
             case MessageType.GET_PARENT_SIZE:
                 console.info('[TAPPLET] handle iframe msg type parent size:', event.data.type);
                 sendWindowSize();
@@ -90,26 +83,34 @@ export const Tapplet: React.FC<TappletProps> = ({ source }) => {
                 break;
             case MessageType.OPEN_EXTERNAL_LINK: {
                 console.info('[TAPPLET] handle iframe msg type ext link:', event.data.type);
-                console.info('[TAPPLET] domains ', allowedDomains);
 
                 const url = event.data.payload.url;
                 try {
                     const { hostname } = new URL(url);
                     console.info('[TAPPLET] url ', url);
                     console.info('[TAPPLET] hos ', hostname);
-                    if (allowedDomains.includes(hostname)) {
-                        openExternalLink(url);
-                    } else {
-                        setStoreError(
-                            `Can't access the external domain due to permission restrictions: ${hostname}`,
-                            true
-                        );
-                    }
+                    openExternalLink(url);
+
+                    // handle check if permissions are granted
+                    // if (allowedDomains.includes(hostname)) {
+                    //     openExternalLink(url);
+                    // } else {
+                    //     setStoreError(
+                    //         `Can't access the external domain due to permission restrictions: ${hostname}`,
+                    //         true
+                    //     );
+                    // }
                 } catch {
                     setStoreError(`Invalid URL: ${url}`, true);
                 }
                 break;
             }
+            // case MessageType.SET_ALLOWED_DOMAINS: {
+            //     const domains = event.data.payload?.domains || [];
+            //     setPendingDomains(domains);
+            //     setShowDomainPopup(true);
+            //     break;
+            // }
             case MessageType.ERROR:
                 console.info('[TAPPLET] handle iframe msg type error:', event.data.type);
                 setStoreError(`${event.data.payload.message}`, true);
@@ -137,27 +138,28 @@ export const Tapplet: React.FC<TappletProps> = ({ source }) => {
         };
     }, [sendWindowSize]);
 
+    // TODO refactor to handle massage send by the tapplet
     // Popup approval handler
-    const handleApproveDomains = useCallback(async () => {
-        try {
-            if (pendingDomains) {
-                setAllowedDomains((prev) => Array.from(new Set([...prev, ...pendingDomains])));
-                setPendingDomains(null);
-                setShowDomainPopup(false);
-            }
-        } catch (e) {
-            console.error('Error approving domains:', e);
-        }
-    }, [pendingDomains]);
+    // const handleApproveDomains = useCallback(async () => {
+    //     try {
+    //         if (pendingDomains) {
+    //             setAllowedDomains((prev) => Array.from(new Set([...prev, ...pendingDomains])));
+    //             setPendingDomains(null);
+    //             setShowDomainPopup(false);
+    //         }
+    //     } catch (e) {
+    //         console.error('Error approving domains:', e);
+    //     }
+    // }, [pendingDomains]);
 
-    const handleRejectDomains = () => {
-        setPendingDomains(null);
-        setShowDomainPopup(false);
-    };
+    // const handleRejectDomains = () => {
+    //     setPendingDomains(null);
+    //     setShowDomainPopup(false);
+    // };
 
     return (
         <TappletContainer>
-            {showDomainPopup && pendingDomains && (
+            {/* {showDomainPopup && pendingDomains && (
                 <div
                     style={{
                         position: 'absolute',
@@ -180,7 +182,7 @@ export const Tapplet: React.FC<TappletProps> = ({ source }) => {
                     <button onClick={handleApproveDomains}>Approve</button>
                     <button onClick={handleRejectDomains}>Reject</button>
                 </div>
-            )}
+            )} */}
             <iframe
                 src={source}
                 width="100%"
