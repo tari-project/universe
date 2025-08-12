@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use log::{info, warn};
+use log::{debug, info, warn};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -139,7 +139,7 @@ impl GpuMinerShaWebSocket {
 
     pub async fn connect(self) {
         if self.socket_listener_thread.lock().await.is_some() {
-            warn!(target: LOG_TARGET, "WebSocket listener is already running");
+            debug!(target: LOG_TARGET, "WebSocket listener is already running");
             return;
         }
 
