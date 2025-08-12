@@ -104,7 +104,7 @@ impl TappletManager {
                     true
                 }
                 Err(e) => {
-                    warn!(target: LOG_TARGET, "Tapplet's CSP was not accepted: {}", e);
+                    warn!(target: LOG_TARGET, "CSP Error: {}", e);
                     false
                 }
             }
@@ -130,7 +130,7 @@ impl TappletManager {
                     true
                 }
                 Err(e) => {
-                    warn!(target: LOG_TARGET, "Tapplet's CSP was not accepted: {}", e);
+                    warn!(target: LOG_TARGET, "Tari permissions error: {}", e);
                     false
                 }
             };
