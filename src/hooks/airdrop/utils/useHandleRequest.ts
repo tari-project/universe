@@ -1,6 +1,7 @@
 import { useAirdropStore } from '@app/store/useAirdropStore';
 import { handleRefreshAirdropTokens } from '@app/hooks/airdrop/stateHelpers/useAirdropTokensRefresh.ts';
 import { useConfigBEInMemoryStore } from '@app/store';
+import { defaultHeaders } from '@app/utils';
 
 interface RequestProps {
     path: string;
@@ -60,6 +61,7 @@ export async function handleAirdropRequest<T>({ body, method, path, onError, hea
         const response = await fetch(fullUrl, {
             method: method,
             headers: {
+                ...defaultHeaders,
                 'Content-Type': 'application/json',
                 ...headersWithAuth,
                 ...headers,

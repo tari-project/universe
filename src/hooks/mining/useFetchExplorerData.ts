@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { defaultHeaders } from '@app/utils';
 import { getExplorerUrl } from '@app/utils/network.ts';
 import { BlockData, BlockDataExtended, BlocksStats } from '@app/types/mining/blocks.ts';
 import { processNewBlock, useBlockchainVisualisationStore } from '@app/store';
@@ -7,7 +8,7 @@ export const KEY_EXPLORER = 'block_explorer';
 
 async function fetchExplorerData(): Promise<BlocksStats> {
     const explorerUrl = getExplorerUrl();
-    const response = await fetch(`${explorerUrl}/?json`);
+    const response = await fetch(`${explorerUrl}/?json`, { headers: defaultHeaders });
 
     if (!response.ok) {
         throw new Error('Failed to fetch blocks');
