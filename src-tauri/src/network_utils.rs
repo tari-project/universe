@@ -27,14 +27,15 @@ use std::fmt::Write as _;
 use tari_common::configuration::Network;
 
 fn create_client() -> Result<reqwest::Client, anyhow::Error> {
-    let version = env!("CARGO_PKG_VERSION").to_string();
+    let agent = create_user_agent();
     let mut headers = HeaderMap::new();
     headers.insert(
         HeaderName::from_static("x-requested-with"),
-        HeaderValue::from_static(create_user_agent()),
+        HeaderValue::from_static(agent),
     );
 
     let client = reqwest::Client::builder()
+        .user_agent(agent)
         .default_headers(headers)
         .build()?;
 
