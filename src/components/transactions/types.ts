@@ -17,4 +17,5 @@ export interface BaseItemProps {
     value: string;
     chip?: string;
     onClick?: () => void;
+    hideWalletBalance?: boolean;
 }
