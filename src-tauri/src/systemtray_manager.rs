@@ -64,17 +64,30 @@ impl SystrayItemId {
         }
     }
 }
+
+#[derive(Debug, Clone, Default)]
+pub struct SystemTrayGpuData {
+    pub gpu_hashrate: f64,
+    pub estimated_earning: u64,
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct SystemTrayCpuData {
+    pub cpu_hashrate: f64,
+    pub estimated_earning: u64,
+}
+
 #[derive(Debug, Clone, Default)]
 pub struct SystemTrayData {
-    pub cpu_hashrate: f64,
-    pub gpu_hashrate: f64,
-    pub estimated_earning: f64,
+    pub cpu: SystemTrayCpuData,
+    pub gpu: SystemTrayGpuData,
 }
 
 #[derive(Clone)]
 pub struct SystemTrayManager {
     pub tray: Option<TrayIcon>,
     pub menu: Option<Menu<Wry>>,
+    pub data: SystemTrayData,
 }
 
 impl SystemTrayManager {
@@ -82,6 +95,7 @@ impl SystemTrayManager {
         Self {
             tray: None,
             menu: None,
+            data: SystemTrayData::default(),
         }
     }
 
@@ -142,9 +156,12 @@ impl SystemTrayManager {
             CurrentOperatingSystem::Linux => None,
             _ => Some(format!(
                 "CPU Power: {}\nGPU Power: {}\nEst. earning: {}",
-                format_hashrate(data.cpu_hashrate),
-                format_hashrate(data.gpu_hashrate),
-                format_currency(data.estimated_earning / 1_000_000.0, "XTM/day")
+                format_hashrate(data.cpu.cpu_hashrate),
+                format_hashrate(data.gpu.gpu_hashrate),
+                format_currency(
+                    (data.cpu.estimated_earning + data.gpu.estimated_earning) / 1_000_000,
+                    "XTM/day"
+                )
             )),
         }
     }
@@ -200,6 +217,16 @@ impl SystemTrayManager {
         Ok(())
     }
 
+    pub fn update_tray_with_gpu_data(&mut self, data: SystemTrayGpuData) {
+        self.data.gpu = data;
+        update_tray(self, self.data.clone());
+    }
+
+    pub fn update_tray_with_cpu_data(&mut self, data: SystemTrayCpuData) {
+        self.data.cpu = data;
+        update_tray(self, self.data.clone());
+    }
+
     pub fn update_tray(&mut self, data: SystemTrayData) {
         if let Some(tray) = &self.tray {
             if let Err(e) = tray.set_tooltip(self.get_tooltip_text(data.clone())) {
@@ -210,11 +237,11 @@ impl SystemTrayManager {
         }
         if let Some(menu) = &self.menu {
             for (id, value) in [
-                (SystrayItemId::CpuHashrate, data.cpu_hashrate),
-                (SystrayItemId::GpuHashrate, data.gpu_hashrate),
+                (SystrayItemId::CpuHashrate, data.cpu.cpu_hashrate),
+                (SystrayItemId::GpuHashrate, data.gpu.gpu_hashrate),
                 (
                     SystrayItemId::EstimatedEarning,
-                    data.estimated_earning / 1_000_000.0,
+                    (data.cpu.estimated_earning + data.gpu.estimated_earning) / 1_000_000,
                 ),
             ] {
                 if let Some(item) = menu.get(id.to_str()) {

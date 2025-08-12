@@ -37,6 +37,25 @@ use trait_listener::UnlockConditionsListenerTrait;
 
 use super::setup_manager::{PhaseStatus, SetupPhase};
 
+#[derive(Clone)]
+pub enum AppModule {
+    MainApp,   // Main application view after setup
+    CpuMining, // CPU mining
+    GpuMining, // GPU mining
+    Wallet,    // Wallet
+}
+
+/// Status that is communicated between modules listeners and frontend UI
+/// This states representations is mainly used for frontend UI to display the current status of certain module
+#[derive(Clone, Default)]
+pub enum AppModuleStatus {
+    #[default]
+    NotInitialized, // Default initial state
+    Initializing,                       // Waiting for specified setup phases to complete
+    Initialized,                        // All required setup phases completed
+    Error(HashMap<SetupPhase, String>), // One of required setup phases failed, contains last error message for each phase that failed
+}
+
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum SetupFeature {
     SeedlessWallet,

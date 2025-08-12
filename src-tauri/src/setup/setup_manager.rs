@@ -98,20 +98,20 @@ impl ExchangeModalStatus {
 #[derive(Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Debug)]
 pub enum SetupPhase {
     Core,
+    CpuMining,
+    GpuMining,
     Wallet,
-    Hardware,
     Node,
-    Mining,
 }
 
 impl Display for SetupPhase {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
-            SetupPhase::Core => write!(f, "Core"),
-            SetupPhase::Wallet => write!(f, "Wallet"),
-            SetupPhase::Hardware => write!(f, "Hardware"),
-            SetupPhase::Node => write!(f, "Node"),
-            SetupPhase::Mining => write!(f, "Mining"),
+            Self::Core => write!(f, "Core"),
+            Self::CpuMining => write!(f, "CPU Mining"),
+            Self::GpuMining => write!(f, "GPU Mining"),
+            Self::Wallet => write!(f, "Wallet"),
+            Self::Node => write!(f, "Node"),
         }
     }
 }
@@ -119,30 +119,30 @@ impl Display for SetupPhase {
 impl SetupPhase {
     pub fn all() -> Vec<SetupPhase> {
         vec![
-            SetupPhase::Core,
-            SetupPhase::Hardware,
-            SetupPhase::Node,
-            SetupPhase::Wallet,
-            SetupPhase::Mining,
+            Self::Core,
+            Self::CpuMining,
+            Self::GpuMining,
+            Self::Node,
+            Self::Wallet,
         ]
     }
     pub fn get_critical_problem_title(&self) -> String {
         match self {
-            SetupPhase::Core => "phase-core-critical-problem-title".to_string(),
-            SetupPhase::Hardware => "phase-hardware-critical-problem-title".to_string(),
-            SetupPhase::Node => "phase-node-critical-problem-title".to_string(),
-            SetupPhase::Wallet => "phase-wallet-critical-problem-title".to_string(),
-            SetupPhase::Mining => "phase-mining-critical-problem-title".to_string(),
+            Self::Core => "phase-core-critical-problem-title".to_string(),
+            Self::CpuMining => "phase-cpu-mining-critical-problem-title".to_string(),
+            Self::GpuMining => "phase-gpu-mining-critical-problem-title".to_string(),
+            Self::Node => "phase-node-critical-problem-title".to_string(),
+            Self::Wallet => "phase-wallet-critical-problem-title".to_string(),
         }
     }
 
     pub fn get_critical_problem_description(&self) -> String {
         match self {
-            SetupPhase::Core => "phase-core-critical-problem-description".to_string(),
-            SetupPhase::Hardware => "phase-hardware-critical-problem-description".to_string(),
-            SetupPhase::Node => "phase-node-critical-problem-description".to_string(),
-            SetupPhase::Wallet => "phase-wallet-critical-problem-description".to_string(),
-            SetupPhase::Mining => "phase-mining-critical-problem-description".to_string(),
+            Self::Core => "phase-core-critical-problem-description".to_string(),
+            Self::CpuMining => "phase-cpu-mining-critical-problem-description".to_string(),
+            Self::GpuMining => "phase-gpu-mining-critical-problem-description".to_string(),
+            Self::Node => "phase-node-critical-problem-description".to_string(),
+            Self::Wallet => "phase-wallet-critical-problem-description".to_string(),
         }
     }
 }
@@ -190,10 +190,10 @@ impl PhaseStatus {
 pub struct SetupManager {
     pub features: RwLock<SetupFeaturesList>,
     core_phase_status: Sender<PhaseStatus>,
-    hardware_phase_status: Sender<PhaseStatus>,
+    cpu_mining_phase_status: Sender<PhaseStatus>,
+    gpu_mining_phase_status: Sender<PhaseStatus>,
     node_phase_status: Sender<PhaseStatus>,
     wallet_phase_status: Sender<PhaseStatus>,
-    mining_phase_status: Sender<PhaseStatus>,
     exchange_modal_status: Sender<ExchangeModalStatus>,
     phases_to_restart_queue: Mutex<Vec<SetupPhase>>,
     app_handle: Mutex<Option<AppHandle>>,
@@ -479,20 +479,20 @@ impl SetupManager {
         core_phase_setup.setup().await;
     }
 
-    async fn setup_hardware_phase(&self) {
-        let app_handle = self.app_handle().await;
-        let setup_features = self.features.read().await.clone();
-        let hardware_phase_setup = PhaseBuilder::new()
-            .with_setup_timeout_duration(Duration::from_secs(60 * 10)) // 10 minutes
-            .with_listeners_for_required_phases_statuses(vec![self.core_phase_status.subscribe()])
-            .build::<HardwareSetupPhase>(
-                app_handle.clone(),
-                self.hardware_phase_status.clone(),
-                setup_features,
-            )
-            .await;
-        hardware_phase_setup.setup().await;
-    }
+    // async fn setup_hardware_phase(&self) {
+    //     let app_handle = self.app_handle().await;
+    //     let setup_features = self.features.read().await.clone();
+    //     let hardware_phase_setup = PhaseBuilder::new()
+    //         .with_setup_timeout_duration(Duration::from_secs(60 * 10)) // 10 minutes
+    //         .with_listeners_for_required_phases_statuses(vec![self.core_phase_status.subscribe()])
+    //         .build::<HardwareSetupPhase>(
+    //             app_handle.clone(),
+    //             self.hardware_phase_status.clone(),
+    //             setup_features,
+    //         )
+    //         .await;
+    //     hardware_phase_setup.setup().await;
+    // }
 
     async fn setup_node_phase(&self) {
         let app_handle = self.app_handle().await;
@@ -525,23 +525,23 @@ impl SetupManager {
         wallet_phase_setup.setup().await;
     }
 
-    async fn setup_mining_phase(&self) {
-        let app_handle = self.app_handle().await;
-        let setup_features = self.features.read().await.clone();
-        let mining_phase_setup = PhaseBuilder::new()
-            .with_setup_timeout_duration(Duration::from_secs(60 * 10)) // 10 minutes
-            .with_listeners_for_required_phases_statuses(vec![
-                self.node_phase_status.subscribe(),
-                self.hardware_phase_status.subscribe(),
-            ])
-            .build::<MiningSetupPhase>(
-                app_handle.clone(),
-                self.mining_phase_status.clone(),
-                setup_features,
-            )
-            .await;
-        mining_phase_setup.setup().await;
-    }
+    // async fn setup_mining_phase(&self) {
+    //     let app_handle = self.app_handle().await;
+    //     let setup_features = self.features.read().await.clone();
+    //     let mining_phase_setup = PhaseBuilder::new()
+    //         .with_setup_timeout_duration(Duration::from_secs(60 * 10)) // 10 minutes
+    //         .with_listeners_for_required_phases_statuses(vec![
+    //             self.node_phase_status.subscribe(),
+    //             self.hardware_phase_status.subscribe(),
+    //         ])
+    //         .build::<MiningSetupPhase>(
+    //             app_handle.clone(),
+    //             self.mining_phase_status.clone(),
+    //             setup_features,
+    //         )
+    //         .await;
+    //     mining_phase_setup.setup().await;
+    // }
 
     pub async fn mark_exchange_modal_as_completed(&self) -> Result<(), anyhow::Error> {
         self.exchange_modal_status

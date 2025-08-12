@@ -95,7 +95,6 @@ pub enum ProgressSetupNodePlan {
     BinariesTor,
     BinariesNode,
     BinariesWallet,
-    BinariesMergeMiningProxy,
     StartTor,
     MigratingDatabase,
     StartingNode,
@@ -117,7 +116,6 @@ impl ProgressStep for ProgressSetupNodePlan {
             ProgressSetupNodePlan::BinariesTor => 1,
             ProgressSetupNodePlan::BinariesNode => 1,
             ProgressSetupNodePlan::BinariesWallet => 1,
-            ProgressSetupNodePlan::BinariesMergeMiningProxy => 1,
             ProgressSetupNodePlan::StartTor => 1,
             ProgressSetupNodePlan::MigratingDatabase => 1,
             ProgressSetupNodePlan::StartingNode => 1,
@@ -133,9 +131,6 @@ impl ProgressStep for ProgressSetupNodePlan {
             ProgressSetupNodePlan::BinariesTor => "binaries-tor".to_string(),
             ProgressSetupNodePlan::BinariesNode => "binaries-node".to_string(),
             ProgressSetupNodePlan::BinariesWallet => "binaries-wallet".to_string(),
-            ProgressSetupNodePlan::BinariesMergeMiningProxy => {
-                "binaries-merge-mining-proxy".to_string()
-            }
             ProgressSetupNodePlan::StartTor => "start-tor".to_string(),
             ProgressSetupNodePlan::MigratingDatabase => "migrating-database".to_string(),
             ProgressSetupNodePlan::StartingNode => "starting-node".to_string(),
@@ -143,47 +138,6 @@ impl ProgressStep for ProgressSetupNodePlan {
             ProgressSetupNodePlan::WaitingForHeaderSync => "waiting-for-header-sync".to_string(),
             ProgressSetupNodePlan::WaitingForBlockSync => "waiting-for-block-sync".to_string(),
             ProgressSetupNodePlan::Done => "done".to_string(),
-        }
-    }
-
-    fn resolve_to_event(&self) -> Self::ChannelEvent {
-        ProgressPlanEventPayload {
-            event_type: self.get_event_type(),
-            title: self.get_title(),
-        }
-    }
-}
-
-#[derive(Clone, PartialEq, Debug)]
-pub enum ProgressSetupHardwarePlan {
-    BinariesCpuMiner,
-    BinariesGpuMiner,
-    DetectGPU,
-    Done,
-}
-
-impl ProgressStep for ProgressSetupHardwarePlan {
-    type ChannelEvent = ProgressPlanEventPayload;
-
-    fn get_event_type(&self) -> ProgressEvents {
-        ProgressEvents::Hardware
-    }
-
-    fn get_progress_weight(&self) -> u8 {
-        match self {
-            ProgressSetupHardwarePlan::BinariesCpuMiner => 2,
-            ProgressSetupHardwarePlan::BinariesGpuMiner => 2,
-            ProgressSetupHardwarePlan::DetectGPU => 1,
-            ProgressSetupHardwarePlan::Done => 1,
-        }
-    }
-
-    fn get_title(&self) -> String {
-        match self {
-            ProgressSetupHardwarePlan::BinariesCpuMiner => "binaries-cpu-miner".to_string(),
-            ProgressSetupHardwarePlan::BinariesGpuMiner => "binaries-gpu-miner".to_string(),
-            ProgressSetupHardwarePlan::DetectGPU => "detect-gpu".to_string(),
-            ProgressSetupHardwarePlan::Done => "done".to_string(),
         }
     }
 
@@ -235,12 +189,13 @@ impl ProgressStep for ProgressSetupWalletPlan {
 }
 
 #[derive(Clone, PartialEq, Debug)]
-pub enum ProgressSetupMiningPlan {
+pub enum ProgressSetupCpuMiningPlan {
+    BinariesCpuMiner,
+    BinariesMergeMiningProxy,
     MMProxy,
     Done,
 }
-
-impl ProgressStep for ProgressSetupMiningPlan {
+impl ProgressStep for ProgressSetupCpuMiningPlan {
     type ChannelEvent = ProgressPlanEventPayload;
 
     fn get_event_type(&self) -> ProgressEvents {
@@ -249,15 +204,59 @@ impl ProgressStep for ProgressSetupMiningPlan {
 
     fn get_progress_weight(&self) -> u8 {
         match self {
-            ProgressSetupMiningPlan::MMProxy => 1,
-            ProgressSetupMiningPlan::Done => 1,
+            ProgressSetupCpuMiningPlan::BinariesCpuMiner => 2,
+            ProgressSetupCpuMiningPlan::BinariesMergeMiningProxy => 1,
+            ProgressSetupCpuMiningPlan::MMProxy => 1,
+            ProgressSetupCpuMiningPlan::Done => 1,
         }
     }
 
     fn get_title(&self) -> String {
         match self {
-            ProgressSetupMiningPlan::MMProxy => "mm-proxy".to_string(),
-            ProgressSetupMiningPlan::Done => "done".to_string(),
+            ProgressSetupCpuMiningPlan::BinariesCpuMiner => "binaries-cpu-miner".to_string(),
+            ProgressSetupNodePlan::BinariesMergeMiningProxy => {
+                "binaries-merge-mining-proxy".to_string()
+            }
+            ProgressSetupCpuMiningPlan::MMProxy => "mm-proxy".to_string(),
+            ProgressSetupCpuMiningPlan::Done => "done".to_string(),
+        }
+    }
+
+    fn resolve_to_event(&self) -> Self::ChannelEvent {
+        ProgressPlanEventPayload {
+            event_type: self.get_event_type(),
+            title: self.get_title(),
+        }
+    }
+}
+
+#[derive(Clone, PartialEq, Debug)]
+pub enum ProgressSetupGpuMiningPlan {
+    BinariesGpuMiner,
+    DetectGPU,
+    Done,
+}
+
+impl ProgressStep for ProgressSetupGpuMiningPlan {
+    type ChannelEvent = ProgressPlanEventPayload;
+
+    fn get_event_type(&self) -> ProgressEvents {
+        ProgressEvents::Hardware
+    }
+
+    fn get_progress_weight(&self) -> u8 {
+        match self {
+            ProgressSetupGpuMiningPlan::BinariesGpuMiner => 2,
+            ProgressSetupGpuMiningPlan::DetectGPU => 1,
+            ProgressSetupGpuMiningPlan::Done => 1,
+        }
+    }
+
+    fn get_title(&self) -> String {
+        match self {
+            ProgressSetupGpuMiningPlan::BinariesGpuMiner => "binaries-gpu-miner".to_string(),
+            ProgressSetupGpuMiningPlan::DetectGPU => "detect-gpu".to_string(),
+            ProgressSetupGpuMiningPlan::Done => "done".to_string(),
         }
     }
 
@@ -273,20 +272,20 @@ impl ProgressStep for ProgressSetupMiningPlan {
 #[derive(Clone, PartialEq, Debug)]
 pub enum ProgressPlans {
     Core(ProgressSetupCorePlan),
+    CpuMining(ProgressSetupCpuMiningPlan),
+    GpuMining(ProgressSetupGpuMiningPlan),
     Node(ProgressSetupNodePlan),
-    Hardware(ProgressSetupHardwarePlan),
     Wallet(ProgressSetupWalletPlan),
-    Mining(ProgressSetupMiningPlan),
 }
 #[allow(dead_code)]
 impl ProgressPlans {
     fn get_event_type(&self) -> ProgressEvents {
         match self {
             ProgressPlans::Core(plan) => plan.get_event_type(),
+            ProgressPlans::GpuMining(plan) => plan.get_event_type(),
+            ProgressPlans::CpuMining(plan) => plan.get_event_type(),
             ProgressPlans::Node(plan) => plan.get_event_type(),
-            ProgressPlans::Hardware(plan) => plan.get_event_type(),
             ProgressPlans::Wallet(plan) => plan.get_event_type(),
-            ProgressPlans::Mining(plan) => plan.get_event_type(),
         }
     }
 }
@@ -297,40 +296,40 @@ impl ProgressStep for ProgressPlans {
     fn get_event_type(&self) -> ProgressEvents {
         match self {
             ProgressPlans::Core(plan) => plan.get_event_type(),
+            ProgressPlans::GpuMining(plan) => plan.get_event_type(),
+            ProgressPlans::CpuMining(plan) => plan.get_event_type(),
             ProgressPlans::Node(plan) => plan.get_event_type(),
-            ProgressPlans::Hardware(plan) => plan.get_event_type(),
             ProgressPlans::Wallet(plan) => plan.get_event_type(),
-            ProgressPlans::Mining(plan) => plan.get_event_type(),
         }
     }
 
     fn get_title(&self) -> String {
         match self {
             ProgressPlans::Core(plan) => plan.get_title(),
+            ProgressPlans::GpuMining(plan) => plan.get_title(),
+            ProgressPlans::CpuMining(plan) => plan.get_title(),
             ProgressPlans::Node(plan) => plan.get_title(),
-            ProgressPlans::Hardware(plan) => plan.get_title(),
             ProgressPlans::Wallet(plan) => plan.get_title(),
-            ProgressPlans::Mining(plan) => plan.get_title(),
         }
     }
 
     fn resolve_to_event(&self) -> Self::ChannelEvent {
         match self {
             ProgressPlans::Core(plan) => plan.resolve_to_event(),
+            ProgressPlans::GpuMining(plan) => plan.resolve_to_event(),
+            ProgressPlans::CpuMining(plan) => plan.resolve_to_event(),
             ProgressPlans::Node(plan) => plan.resolve_to_event(),
-            ProgressPlans::Hardware(plan) => plan.resolve_to_event(),
             ProgressPlans::Wallet(plan) => plan.resolve_to_event(),
-            ProgressPlans::Mining(plan) => plan.resolve_to_event(),
         }
     }
 
     fn get_progress_weight(&self) -> u8 {
         match self {
             ProgressPlans::Core(plan) => plan.get_progress_weight(),
+            ProgressPlans::GpuMining(plan) => plan.get_progress_weight(),
+            ProgressPlans::CpuMining(plan) => plan.get_progress_weight(),
             ProgressPlans::Node(plan) => plan.get_progress_weight(),
-            ProgressPlans::Hardware(plan) => plan.get_progress_weight(),
             ProgressPlans::Wallet(plan) => plan.get_progress_weight(),
-            ProgressPlans::Mining(plan) => plan.get_progress_weight(),
         }
     }
 }
@@ -339,20 +338,20 @@ impl ProgressPlans {
     pub fn get_phase_title(&self) -> String {
         match self {
             ProgressPlans::Core(_) => "setup-core".to_string(),
+            ProgressPlans::GpuMining(_) => "setup-gpu-mining".to_string(),
+            ProgressPlans::CpuMining(_) => "setup-cpu-mining".to_string(),
             ProgressPlans::Node(_) => "setup-local-node".to_string(),
-            ProgressPlans::Hardware(_) => "setup-hardware".to_string(),
             ProgressPlans::Wallet(_) => "setup-wallet".to_string(),
-            ProgressPlans::Mining(_) => "setup-mining".to_string(),
         }
     }
 
     pub fn get_phase_percentage_multiplyer(&self) -> f64 {
         match self {
             ProgressPlans::Core(_) => 0.2,
+            ProgressPlans::GpuMining(_) => 0.1,
+            ProgressPlans::CpuMining(_) => 0.1,
             ProgressPlans::Node(_) => 0.4,
-            ProgressPlans::Hardware(_) => 0.1,
             ProgressPlans::Wallet(_) => 0.1,
-            ProgressPlans::Mining(_) => 0.1,
         }
     }
 
@@ -360,9 +359,9 @@ impl ProgressPlans {
         match self {
             ProgressPlans::Core(_) => 0.0,
             ProgressPlans::Node(_) => 20.0,
-            ProgressPlans::Hardware(_) => 60.0,
+            ProgressPlans::GpuMining(_) => 40.0,
+            ProgressPlans::CpuMining(_) => 60.0,
             ProgressPlans::Wallet(_) => 80.0,
-            ProgressPlans::Mining(_) => 90.0,
         }
     }
 }

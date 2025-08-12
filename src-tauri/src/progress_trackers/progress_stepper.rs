@@ -44,18 +44,14 @@ const LOG_TARGET: &str = "tari::universe::progress_tracker";
 pub struct ChanneledStepUpdate {
     step: ProgressPlans,
     step_percentage: f64,
-    next_step_percentage: Option<f64>,
+    next_step_percentage: f64,
     timeout_watcher_sender: Sender<u64>,
 }
 
 impl ChanneledStepUpdate {
     pub async fn send_update(&self, params: HashMap<String, String>, current_step_percentage: f64) {
         let resolved_percentage = self.step_percentage
-            + (self
-                .next_step_percentage
-                .unwrap_or(100.0 * (1.0 - self.step.get_phase_percentage_multiplyer()))
-                - self.step_percentage)
-                * current_step_percentage;
+            + (self.next_step_percentage - self.step_percentage) * current_step_percentage;
 
         let payload = ProgressTrackerUpdatePayload {
             phase_title: self.step.get_phase_title(),
@@ -78,21 +74,18 @@ pub struct ProgressStepper {
 }
 
 impl ProgressStepper {
-    pub async fn resolve_step(&mut self, step: ProgressPlans) {
-        if let Some(index) = self.plan.iter().position(|x| x.eq(&step)) {
-            let resolved_step = self.plan.remove(index);
-            let resolved_percentage = self.percentage_steps.remove(index);
-
+    pub async fn resolve_step(&mut self) {
+        if let (Some(resolved_step), Some(resolved_percentage)) =
+            (self.plan.pop(), self.percentage_steps.pop())
+        {
             let event = resolved_step.resolve_to_event();
-
-            let is_completed = self.plan.is_empty();
 
             let payload = ProgressTrackerUpdatePayload {
                 phase_title: resolved_step.get_phase_title(),
                 title: event.get_title(),
                 progress: resolved_percentage,
                 title_params: None,
-                is_complete: is_completed,
+                is_complete: self.plan.is_empty(),
             };
 
             let _unused = &self
@@ -121,36 +114,25 @@ impl ProgressStepper {
                     }),
                 )
                 .await;
-        } else {
-            warn!(
-                target: LOG_TARGET,
-                "Step: {} not found in plan, skipping",
-                step.get_title()
-            );
         }
     }
 
-    pub fn channel_step_range_updates(
-        &mut self,
-        step: ProgressPlans,
-        next_step: Option<ProgressPlans>,
-    ) -> Option<ChanneledStepUpdate> {
-        if let Some(first_index) = self.plan.iter().position(|x| x.eq(&step)) {
-            let resolved_step = self.plan.remove(first_index);
-            let resolved_percentage = self.percentage_steps.remove(first_index);
+    pub fn channel_step_range_updates(&mut self) -> Option<ChanneledStepUpdate> {
+        if let (Some(resolved_step), Some(resolved_percentage)) =
+            (self.plan.pop(), self.percentage_steps.pop())
+        {
+            if let (Some(next_step), Some(next_percentage)) =
+                (self.plan.last(), self.percentage_steps.last())
+            {
+                let next_step_percentage = Some(*next_percentage);
+                let channel_step_update = ChanneledStepUpdate {
+                    step: resolved_step.clone(),
+                    step_percentage: resolved_percentage,
+                    next_step_percentage,
+                    timeout_watcher_sender: self.timeout_watcher_sender.clone(),
+                };
 
-            if let Some(next_step) = next_step {
-                if let Some(next_index) = self.plan.iter().position(|x| x.eq(&next_step)) {
-                    let next_step_percentage = self.percentage_steps.get(next_index).copied();
-                    let channel_step_update = ChanneledStepUpdate {
-                        step: resolved_step.clone(),
-                        step_percentage: resolved_percentage,
-                        next_step_percentage,
-                        timeout_watcher_sender: self.timeout_watcher_sender.clone(),
-                    };
-
-                    return Some(channel_step_update);
-                }
+                return Some(channel_step_update);
             } else {
                 let channel_step_update = ChanneledStepUpdate {
                     step: resolved_step.clone(),
@@ -166,16 +148,22 @@ impl ProgressStepper {
         None
     }
 
-    pub fn skip_step(&mut self, step: ProgressPlans) {
-        if let Some(index) = self.plan.iter().position(|x| x.eq(&step)) {
-            let _removed_step = self.plan.remove(index);
-            let _removed_percentage = self.percentage_steps.remove(index);
-        } else {
-            warn!(
-                target: LOG_TARGET,
-                "Step: {} not found in plan, skipping",
-                step.get_title()
-            );
+    pub async fn skip_step(&mut self) {
+        if let (Some(resolved_step), Some(resolved_percentage)) =
+            (self.plan.pop(), self.percentage_steps.pop())
+        {
+            let payload = ProgressTrackerUpdatePayload {
+                phase_title: resolved_step.get_phase_title(),
+                title: resolved_step.get_title(),
+                progress: resolved_percentage,
+                title_params: None,
+                is_complete: self.plan.is_empty(),
+            };
+
+            let _unused = &self.timeout_watcher_sender.send(hash_value(&payload));
+
+            EventsEmitter::emit_progress_tracker_update(resolved_step.get_event_type(), payload)
+                .await;
         }
     }
 }
