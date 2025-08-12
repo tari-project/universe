@@ -28,7 +28,7 @@ interface Actions {
     deactivateTapplet: () => Promise<void>;
     setOngoingBridgeTx: (tx: BridgeTxDetails) => void;
     removeOngoingBridgeTx: () => void;
-    installRegisteredTapp: (tappletId: string) => Promise<void>;
+    installRegisteredTapp: (tappletId: number) => Promise<void>;
     fetchRegisteredTapps: () => Promise<void>;
     getInstalledTapps: () => Promise<void>;
     addDevTapp: (source: string) => Promise<void>;
@@ -167,7 +167,7 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
             setError(`Getting installed tapplets error: ${error}`);
         }
     },
-    installRegisteredTapp: async (tappletId: string) => {
+    installRegisteredTapp: async (tappletId: number) => {
         console.info('[STORE] fetch tapp');
         try {
             // TODO invoke to add tapplet

@@ -20,7 +20,7 @@ export default function TappletsRegistered() {
     const isInitialized = useTappletsStore((s) => s.isInitialized);
 
     const handleInstall = useCallback(
-        async (id: string) => {
+        async (id: number) => {
             try {
                 await installRegisteredTapp(id);
             } catch (e) {

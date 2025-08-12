@@ -161,7 +161,7 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'update_csp_policy', payload: { csp: string }): Promise<void>;
     function invoke(param: 'read_installed_tapp_db'): Promise<InstalledTappletWithAssets[]>;
     function invoke(param: 'read_tapp_registry_db'): Promise<RegisteredTapplet[]>;
-    function invoke(param: 'insert_installed_tapp_db', payload: { tappletId: string }): Promise<InstalledTapplet>;
+    function invoke(param: 'insert_installed_tapp_db', payload: { tappletId: number }): Promise<InstalledTapplet>;
     function invoke(
         param: 'update_tapp',
         payload: { tappletId: string; installedTappletId: string }
@@ -177,7 +177,7 @@ declare module '@tauri-apps/api/core' {
     ): Promise<InstalledTappletWithAssets[]>;
     function invoke(
         param: 'download_and_extract_tapp',
-        payload: { tappletId: string }
+        payload: { tappletId: number }
     ): Promise<RegisteredTappletWithAssets>;
     function invoke(param: 'launch_tapplet', payload: { installedTappletId: number }): Promise<ActiveTapplet>;
     function invoke(param: 'set_ootle_enabled', payload: { enabled: boolean }): Promise<void>;

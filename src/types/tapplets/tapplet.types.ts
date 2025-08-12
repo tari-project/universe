@@ -32,7 +32,7 @@ export interface BridgeTxDetails {
 }
 
 export interface RegisteredTapplet {
-    id: string;
+    id: number;
     tapp_registry_id: string;
     package_name: string;
     display_name: string;
@@ -52,8 +52,8 @@ export type RegisteredTappletWithAssets = RegisteredTapplet & {
 
 export interface InstalledTapplet {
     id: number;
-    tapplet_id: number; //TODO change to number because of rust i32
-    tapplet_version_id: string;
+    tapplet_id: number;
+    tapplet_version_id: number;
 }
 
 export interface InstalledTappletWithAssets {
@@ -83,8 +83,8 @@ export type DevTappletWithAssets = DevTapplet & {
 };
 
 export interface TappletVersion {
-    id: string;
-    tapplet_id: string;
+    id: number;
+    tapplet_id: number;
     version: string;
     integrity: string;
     registry_url: string;
@@ -92,14 +92,14 @@ export interface TappletVersion {
 }
 
 export interface RegisteredTappletWithVersion {
-    id: string;
+    id: number;
     registered_tapp: RegisteredTapplet;
     tapp_version: TappletVersion;
 }
 
 export interface TappletAudit {
-    id: string;
-    tapplet_id: string;
+    id: number;
+    tapplet_id: number;
     auditor: string;
     report_url: string;
 }
