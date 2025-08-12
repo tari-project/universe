@@ -360,20 +360,6 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn show_staged_security_modal() {
-        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
-        let event = Event {
-            event_type: EventType::ShowStageSecurityModal,
-            payload: (),
-        };
-        if let Err(e) = Self::get_app_handle()
-            .await
-            .emit(BACKEND_STATE_UPDATE, event)
-        {
-            error!(target: LOG_TARGET, "Failed to emit ShowStagedSecurityModal event: {e:?}");
-        }
-    }
-
     #[allow(dead_code)]
     pub async fn emit_gpu_devices_update(gpu_public_devices: Vec<PublicDeviceProperties>) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
@@ -855,6 +841,34 @@ impl EventsEmitter {
             .emit(BACKEND_STATE_UPDATE, event)
         {
             error!(target: LOG_TARGET, "Failed to emit UpdateDevicesSettings event: {e:?}");
+        }
+    }
+
+    pub async fn emit_pin_locked(payload: bool) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::PinLocked,
+            payload,
+        };
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
+            error!(target: LOG_TARGET, "Failed to emit PinLocked event: {e:?}");
+        }
+    }
+
+    pub async fn emit_seed_backed_up(payload: bool) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::SeedBackedUp,
+            payload,
+        };
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
+            error!(target: LOG_TARGET, "Failed to emit SeedBackedUp event: {e:?}");
         }
     }
 }

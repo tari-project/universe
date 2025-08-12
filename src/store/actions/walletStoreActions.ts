@@ -151,3 +151,17 @@ export const setExchangeETHAdress = (ethAddress: string, exchangeId: string) => 
         },
     }));
 };
+
+export const handlePinLocked = (is_pin_locked: boolean) => {
+    useWalletStore.setState((c) => ({
+        ...c,
+        is_pin_locked,
+    }));
+};
+
+export const handleSeedBackedUp = (is_seed_backed_up: boolean) => {
+    useWalletStore.setState((c) => ({
+        ...c,
+        is_seed_backed_up,
+    }));
+};

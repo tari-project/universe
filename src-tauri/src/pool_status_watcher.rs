@@ -21,11 +21,12 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use anyhow::Error;
+use log::warn;
 use serde::{Deserialize, Serialize};
 
 #[allow(dead_code)]
 const LOG_TARGET: &str = "tari::universe::pool_status_watcher";
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, Default)]
 pub(crate) struct PoolStatus {
     pub accepted_shares: u64,
     pub unpaid: u64,
@@ -95,33 +96,115 @@ impl PoolApiAdapter for SupportXmrPoolAdapter {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+pub enum LuckyPoolNumber {
+    String(String),
+    Number(u64),
+}
+
+impl Default for LuckyPoolNumber {
+    fn default() -> Self {
+        LuckyPoolNumber::Number(0)
+    }
+}
+
+impl std::fmt::Display for LuckyPoolNumber {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            LuckyPoolNumber::String(s) => write!(f, "{}", s),
+            LuckyPoolNumber::Number(n) => write!(f, "{}", n),
+        }
+    }
+}
+
+impl LuckyPoolNumber {
+    pub fn get_number(&self) -> u64 {
+        match self {
+            LuckyPoolNumber::String(s) => s.parse().unwrap_or(0),
+            LuckyPoolNumber::Number(n) => *n,
+        }
+    }
+}
+
+fn parse_lucky_pool_number<'de, D>(deserializer: D) -> Result<LuckyPoolNumber, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    use serde::de::{self, Visitor};
+    use std::fmt;
+
+    struct LuckyPoolNumberVisitor;
+
+    impl<'de> Visitor<'de> for LuckyPoolNumberVisitor {
+        type Value = LuckyPoolNumber;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            formatter.write_str("a string or integer")
+        }
+
+        fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            if let Ok(n) = value.parse::<u64>() {
+                Ok(LuckyPoolNumber::Number(n))
+            } else {
+                Ok(LuckyPoolNumber::String(value.to_string()))
+            }
+        }
+
+        fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            Ok(LuckyPoolNumber::Number(value))
+        }
+    }
+
+    deserializer.deserialize_any(LuckyPoolNumberVisitor)
+}
+
 #[derive(Serialize, Deserialize, Debug, Default)]
 #[serde(default)]
 pub struct LuckyPoolStats {
     pub wallet: String,
-    #[serde(rename = "rejectedShares")]
-    pub rejected_shares: Option<String>,
-    #[serde(rename = "acceptedShares")]
-    pub accepted_shares: Option<String>,
-    pub hashrate: u64,
+    #[serde(
+        rename = "rejectedShares",
+        deserialize_with = "parse_lucky_pool_number"
+    )]
+    pub rejected_shares: LuckyPoolNumber,
+    #[serde(
+        rename = "acceptedShares",
+        deserialize_with = "parse_lucky_pool_number"
+    )]
+    pub accepted_shares: LuckyPoolNumber,
+    #[serde(deserialize_with = "parse_lucky_pool_number")]
+    pub hashrate: LuckyPoolNumber,
     pub email: Option<String>,
-    pub paid: u64,
+    #[serde(deserialize_with = "parse_lucky_pool_number")]
+    pub paid: LuckyPoolNumber,
     #[serde(rename = "paymentEnabled")]
     pub payment_enabled: bool,
-    #[serde(rename = "paymentThreshold")]
-    pub payment_threshold: u64,
-    pub unlocked: u64,
-    pub locked: u64,
+    #[serde(
+        rename = "paymentThreshold",
+        deserialize_with = "parse_lucky_pool_number"
+    )]
+    pub payment_threshold: LuckyPoolNumber,
+    #[serde(deserialize_with = "parse_lucky_pool_number")]
+    pub unlocked: LuckyPoolNumber,
+    #[serde(deserialize_with = "parse_lucky_pool_number")]
+    pub locked: LuckyPoolNumber,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default)]
+
 pub struct HashrateAvg {
-    #[serde(rename = "1h")]
-    pub one_hour: u64,
-    #[serde(rename = "6h")]
-    pub six_hours: u64,
-    #[serde(rename = "24h")]
-    pub twenty_four_hours: u64,
+    #[serde(rename = "1h", deserialize_with = "parse_lucky_pool_number")]
+    pub one_hour: LuckyPoolNumber,
+    #[serde(rename = "6h", deserialize_with = "parse_lucky_pool_number")]
+    pub six_hours: LuckyPoolNumber,
+    #[serde(rename = "24h", deserialize_with = "parse_lucky_pool_number")]
+    pub twenty_four_hours: LuckyPoolNumber,
 }
 #[derive(Serialize, Deserialize, Debug, Default)]
 #[serde(default)]
@@ -137,9 +220,13 @@ pub struct LuckyPoolWorker {
     pub first_connect: String,
     #[serde(rename = "lastJobDiff")]
     pub last_job_diff: String,
-    #[serde(rename = "rejectedShares")]
-    pub rejected_shares: Option<String>,
-    pub hashrate: u64,
+    #[serde(
+        rename = "rejectedShares",
+        deserialize_with = "parse_lucky_pool_number"
+    )]
+    pub rejected_shares: LuckyPoolNumber,
+    #[serde(deserialize_with = "parse_lucky_pool_number")]
+    pub hashrate: LuckyPoolNumber,
     #[serde(rename = "hashrateAvg")]
     pub hashrate_avg: HashrateAvg,
 }
@@ -157,24 +244,29 @@ pub struct LuckyPoolReward {}
 #[derive(Serialize, Deserialize, Debug)]
 pub struct LuckyPoolRewardStats {
     pub period: String,
-    pub blocks: u64,
-    pub amount: u64,
-    #[serde(rename = "startTime")]
-    pub start_time: u64,
-    #[serde(rename = "endTime")]
-    pub end_time: u64,
+    #[serde(deserialize_with = "parse_lucky_pool_number")]
+    pub blocks: LuckyPoolNumber,
+    #[serde(deserialize_with = "parse_lucky_pool_number")]
+    pub amount: LuckyPoolNumber,
+    #[serde(rename = "startTime", deserialize_with = "parse_lucky_pool_number")]
+    pub start_time: LuckyPoolNumber,
+    #[serde(rename = "endTime", deserialize_with = "parse_lucky_pool_number")]
+    pub end_time: LuckyPoolNumber,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct LuckyPoolStatusResponseBody {
     pub stats: LuckyPoolStats,
-    pub workers: Vec<LuckyPoolWorker>,
+    #[serde(skip)]
+    pub _workers: Vec<LuckyPoolWorker>,
     #[serde(skip)]
     pub _charts: Option<LuckyPoolCharts>,
-    pub payments: Vec<LuckyPoolPayment>,
-    pub rewards: Vec<LuckyPoolReward>,
-    #[serde(rename = "rewardStats")]
-    pub reward_stats: Vec<LuckyPoolRewardStats>,
+    #[serde(skip)]
+    pub _payments: Vec<LuckyPoolPayment>,
+    #[serde(skip)]
+    pub _rewards: Vec<LuckyPoolReward>,
+    #[serde(rename = "rewardStats", skip)]
+    pub _reward_stats: Vec<LuckyPoolRewardStats>,
 }
 
 #[derive(Clone, Debug)]
@@ -182,17 +274,18 @@ pub struct LuckyPoolAdapter {}
 
 impl PoolApiAdapter for LuckyPoolAdapter {
     fn convert_api_data(&self, data: &str) -> Result<PoolStatus, Error> {
+        if data.contains("Address not found") {
+            warn!(target: LOG_TARGET, "Received 'Address not found' error from LuckyPool API");
+            return Ok(PoolStatus::default());
+        };
+
         let converted_data: LuckyPoolStatusResponseBody = serde_json::from_str(data)?;
         let pool_status = PoolStatus {
-            accepted_shares: converted_data
-                .stats
-                .accepted_shares
-                .unwrap_or_default()
-                .parse()
-                .unwrap_or(0),
-            unpaid: converted_data.stats.unlocked + converted_data.stats.locked,
-            balance: converted_data.stats.paid,
-            min_payout: converted_data.stats.payment_threshold,
+            accepted_shares: converted_data.stats.accepted_shares.get_number(),
+            unpaid: converted_data.stats.unlocked.get_number()
+                + converted_data.stats.locked.get_number(),
+            balance: converted_data.stats.paid.get_number(),
+            min_payout: converted_data.stats.payment_threshold.get_number(),
         };
         Ok(pool_status)
     }

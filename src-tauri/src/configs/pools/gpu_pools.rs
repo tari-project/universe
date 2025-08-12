@@ -59,7 +59,7 @@ pub struct LuckyPoolGpuConfig {
 impl Default for LuckyPoolGpuConfig {
     fn default() -> Self {
         Self {
-            pool_url: "pl-eu.luckypool.io:6118".to_string(),
+            pool_url: "tu.luckypool.io:5118".to_string(),
             stats_url: "https://api-tari.luckypool.io/stats_address?address=%TARI_ADDRESS%"
                 .to_string(),
             pool_name: "LuckyPool".to_string(),

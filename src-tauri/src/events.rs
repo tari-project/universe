@@ -78,7 +78,6 @@ pub enum EventType {
     BackgroundNodeSyncUpdate,
     InitWalletScanningProgress,
     ConnectionStatus,
-    ShowStageSecurityModal,
     ExchangeIdChanged,
     DisabledPhases,
     ShouldShowExchangeMinerModal,
@@ -88,6 +87,8 @@ pub enum EventType {
     CreatePin,
     EnterPin,
     UpdateGpuDevicesSettings,
+    PinLocked,
+    SeedBackedUp,
 }
 
 #[derive(Clone, Debug, Serialize)]

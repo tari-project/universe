@@ -184,10 +184,6 @@ export type BackendStateUpdateEvent =
           payload: ConnectionStatusPayload;
       }
     | {
-          event_type: 'ShowStageSecurityModal';
-          payload: undefined;
-      }
-    | {
           event_type: 'CpuPoolStatsUpdate';
           payload: PoolStats;
       }
@@ -230,4 +226,12 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'UpdateGpuDevicesSettings';
           payload: Record<number, GpuDeviceSettings>;
+      }
+    | {
+          event_type: 'PinLocked';
+          payload: boolean;
+      }
+    | {
+          event_type: 'SeedBackedUp';
+          payload: boolean;
       };

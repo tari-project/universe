@@ -24,7 +24,15 @@ import { getTxTitle, getTxTypeByStatus } from '@app/utils/getTxStatus.ts';
 import { TransactionDirection } from '@app/types/transactions.ts';
 import BridgeItemHover from './BridgeHoveredItem.tsx';
 
-const BaseItem = memo(function BaseItem({ title, time, value, direction, chip, onClick }: BaseItemProps) {
+const BaseItem = memo(function BaseItem({
+    title,
+    time,
+    value,
+    direction,
+    chip,
+    onClick,
+    hideWalletBalance,
+}: BaseItemProps) {
     // note re. isPositiveValue:
     // amounts in the tx response are always positive numbers but
     // if the transaction is Outbound, the value is negative
@@ -47,9 +55,11 @@ const BaseItem = memo(function BaseItem({ title, time, value, direction, chip, o
                 ) : null}
 
                 <ValueWrapper>
-                    <ValueChangeWrapper $isPositiveValue={isPositiveValue}>
-                        {isPositiveValue ? `+` : `-`}
-                    </ValueChangeWrapper>
+                    {!hideWalletBalance && (
+                        <ValueChangeWrapper $isPositiveValue={isPositiveValue}>
+                            {isPositiveValue ? `+` : `-`}
+                        </ValueChangeWrapper>
+                    )}
                     {value}
                     <CurrencyText>{`XTM`}</CurrencyText>
                 </ValueWrapper>
@@ -88,6 +98,7 @@ const HistoryListItem = memo(function ListItem({
             value={earningsFormatted}
             direction={item.walletTransactionDetails.direction}
             chip={itemIsNew ? t('new') : ''}
+            hideWalletBalance={hideWalletBalance}
         />
     );
 
