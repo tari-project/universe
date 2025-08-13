@@ -467,48 +467,6 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_core_phase_finished(status: bool) {
-        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
-        let event = Event {
-            event_type: EventType::CorePhaseFinished,
-            payload: status,
-        };
-        if let Err(e) = Self::get_app_handle()
-            .await
-            .emit(BACKEND_STATE_UPDATE, event)
-        {
-            error!(target: LOG_TARGET, "Failed to emit CorePhaseFinished event: {e:?}");
-        }
-    }
-
-    pub async fn emit_wallet_phase_finished(status: bool) {
-        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
-        let event = Event {
-            event_type: EventType::WalletPhaseFinished,
-            payload: status,
-        };
-        if let Err(e) = Self::get_app_handle()
-            .await
-            .emit(BACKEND_STATE_UPDATE, event)
-        {
-            error!(target: LOG_TARGET, "Failed to emit WalletPhaseFinished event: {e:?}");
-        }
-    }
-
-    pub async fn emit_node_phase_finished(status: bool) {
-        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
-        let event = Event {
-            event_type: EventType::NodePhaseFinished,
-            payload: status,
-        };
-        if let Err(e) = Self::get_app_handle()
-            .await
-            .emit(BACKEND_STATE_UPDATE, event)
-        {
-            error!(target: LOG_TARGET, "Failed to emit NodePhaseFinished event: {e:?}");
-        }
-    }
-
     pub async fn emit_initial_setup_finished() {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {

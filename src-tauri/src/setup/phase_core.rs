@@ -39,7 +39,6 @@ use crate::{
     setup::setup_manager::SetupPhase,
     tasks_tracker::TasksTrackers,
     utils::{network_status::NetworkStatus, platform_utils::PlatformUtils},
-    EventsEmitter, UniverseAppState,
 };
 
 use super::{
@@ -191,9 +190,6 @@ impl SetupPhaseImpl for CoreSetupPhase {
         self.status_sender.send(PhaseStatus::Success).ok();
 
         self.progress_stepper.lock().await.resolve_step().await;
-
-        EventsEmitter::emit_core_phase_finished(true).await;
-
         Ok(())
     }
 }

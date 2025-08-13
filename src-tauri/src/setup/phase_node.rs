@@ -271,8 +271,6 @@ impl SetupPhaseImpl for NodeSetupPhase {
         self.status_sender.send(PhaseStatus::Success).ok();
         self.progress_stepper.lock().await.resolve_step().await;
 
-        EventsEmitter::emit_node_phase_finished(true).await;
-
         let app_handle_clone: tauri::AppHandle = self.app_handle.clone();
         let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
 

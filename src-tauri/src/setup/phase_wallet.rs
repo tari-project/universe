@@ -216,8 +216,6 @@ impl SetupPhaseImpl for WalletSetupPhase {
         let is_seed_backed_up = *config_wallet.seed_backed_up();
         EventsEmitter::emit_seed_backed_up(is_seed_backed_up).await;
 
-        EventsEmitter::emit_wallet_phase_finished(true).await;
-
         Ok(())
     }
 }
