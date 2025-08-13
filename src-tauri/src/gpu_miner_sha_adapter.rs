@@ -32,6 +32,9 @@ use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
 use tokio::sync::watch::Sender;
 
+use crate::port_allocator::PortAllocator;
+#[cfg(target_os = "windows")]
+use crate::utils::windows_setup_utils::add_firewall_rule;
 use crate::{
     gpu_miner_sha_websocket::GpuMinerShaWebSocket,
     process_adapter::{
@@ -41,9 +44,6 @@ use crate::{
     setup::setup_manager::SetupManager,
     GpuMinerStatus,
 };
-use crate::port_allocator::PortAllocator;
-#[cfg(target_os = "windows")]
-use crate::utils::windows_setup_utils::add_firewall_rule;
 
 const LOG_TARGET: &str = "tari::universe::gpu_miner_sha_adapter";
 
