@@ -30,8 +30,7 @@ export function useHandleWsUserIdEvent() {
                 setLatestXSpaceEvent(event.data);
                 break;
             default:
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                console.warn('Unknown event', (event as any).name);
+                console.warn('Unknown event', event);
         }
     }, []);
 }
