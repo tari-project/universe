@@ -22,8 +22,8 @@ use crate::configs::config_mining::GpuDevicesSettings;
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 use crate::configs::config_ui::WalletUIMode;
 use crate::events::{
-    ConnectionStatusPayload, CriticalProblemPayload, DisabledPhasesPayload,
-    InitWalletScanningProgressPayload,
+    AllowTappletCspPayload, ConnectionStatusPayload, CriticalProblemPayload, DisabledPhasesPayload,
+    GrantTappletPermissionsPayload, InitWalletScanningProgressPayload,
 };
 #[cfg(target_os = "windows")]
 use crate::external_dependencies::RequiredExternalDependency;
@@ -869,6 +869,34 @@ impl EventsEmitter {
             .emit(BACKEND_STATE_UPDATE, event)
         {
             error!(target: LOG_TARGET, "Failed to emit UpdateDevicesSettings event: {e:?}");
+        }
+    }
+
+    pub async fn emit_allow_tapplet_csp(csp: String) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::AllowTappletCsp,
+            payload: AllowTappletCspPayload { csp },
+        };
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
+            error!(target: LOG_TARGET, "Failed to emit AllowTappletCsp event: {e:?}");
+        }
+    }
+
+    pub async fn emit_grant_tapplet_permissions(permissions: String) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::GrantTappletPermissions,
+            payload: GrantTappletPermissionsPayload { permissions },
+        };
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
+            error!(target: LOG_TARGET, "Failed to emit GrantTappletPermissions event: {e:?}");
         }
     }
 }

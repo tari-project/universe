@@ -48,8 +48,6 @@ use crate::ootle::ootle_wallet_adapter::OotleWalletState;
 use crate::p2pool::models::{Connections, P2poolStats};
 use crate::pin::PinManager;
 use crate::setup::setup_manager::{SetupManager, SetupPhase};
-use crate::tapplets::interface::ActiveTapplet;
-use crate::tapplets::tapplet_server::start_tapplet;
 use crate::tasks_tracker::TasksTrackers;
 use crate::tor_adapter::TorConfig;
 use crate::utils::address_utils::verify_send;
@@ -2176,38 +2174,6 @@ pub async fn set_seed_backed_up() -> Result<(), String> {
 pub async fn is_seed_backed_up() -> Result<bool, String> {
     let seed_backed_up = *ConfigWallet::content().await.seed_backed_up();
     Ok(seed_backed_up)
-}
-
-/*
- ********** TAPPLETS SECTION **********
-*/
-
-#[tauri::command]
-pub async fn launch_builtin_tapplet() -> Result<ActiveTapplet, String> {
-    let binaries_resolver = BinaryResolver::current();
-
-    let tapp_dest_dir = binaries_resolver
-        .resolve_path_to_binary_files(Binaries::BridgeTapplet)
-        .await
-        .map_err(|e| e.to_string())?;
-
-    let handle_start =
-        tauri::async_runtime::spawn(async move { start_tapplet(tapp_dest_dir).await });
-
-    let (addr, _cancel_token) = match handle_start.await {
-        Ok(result) => result.map_err(|e| e.to_string())?,
-        Err(e) => {
-            error!(target: LOG_TARGET, "❌ Error handling tapplet start: {e:?}");
-            return Err(e.to_string());
-        }
-    };
-
-    Ok(ActiveTapplet {
-        tapplet_id: 0,
-        display_name: "Bridge-wXTM".to_string(),
-        source: format!("http://{addr}"),
-        version: "1.0.0".to_string(),
-    })
 }
 
 #[tauri::command]

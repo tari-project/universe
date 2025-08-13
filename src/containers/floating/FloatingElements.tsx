@@ -25,6 +25,8 @@ import SeedPhrase from '@app/containers/floating/security/seedphrase/SeedPhrase.
 import SecurityReminder from '@app/components/security/reminder/SecurityReminder.tsx';
 import CreatePinDialog from '@app/containers/floating/security/pin/CreatePinDialog.tsx';
 import EnterPinDialog from '@app/containers/floating/security/pin/EnterPinDialog.tsx';
+import TappletCspDialog from './security/tapplet/TappletCspDialog.tsx';
+import TappletPermissionsDialog from './security/tapplet/TappletPermissionsDialog.tsx';
 
 const environment = import.meta.env.MODE;
 
@@ -55,6 +57,8 @@ const FloatingElements = () => {
             <SecurityReminder />
             <CreatePinDialog />
             <EnterPinDialog />
+            <TappletCspDialog />
+            <TappletPermissionsDialog />
         </FloatingTree>
     );
 };

@@ -88,6 +88,8 @@ pub enum EventType {
     CreatePin,
     EnterPin,
     UpdateGpuDevicesSettings,
+    AllowTappletCsp,
+    GrantTappletPermissions,
     OotleWalletPhaseFinished,
 }
 
@@ -203,3 +205,13 @@ pub struct TariAddressUpdatePayload {
 
 #[derive(Clone, Debug, Serialize)]
 pub struct ConfigPoolsContentLoadedPayload {}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct AllowTappletCspPayload {
+    pub csp: String,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct GrantTappletPermissionsPayload {
+    pub permissions: String,
+}

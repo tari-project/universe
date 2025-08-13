@@ -3,6 +3,7 @@ import { create } from './create.ts';
 import { setError } from './index.ts';
 import { TransactionEvent } from '@app/types/tapplets/transaction.ts';
 import { TappletSignerParams } from '@app/types/tapplets/tapplet.types.ts';
+import { MessageType } from '@app/hooks/swap/useIframeMessage.ts';
 
 interface State {
     isInitialized: boolean;
@@ -55,12 +56,12 @@ export const useTappletSignerStore = create<TappletSignerStoreState>()((set, get
         }
     },
     runTransaction: async (event: MessageEvent<TransactionEvent>) => {
-        const { methodName, args, id } = event.data;
+        const { methodName, args, id } = event.data.payload;
         try {
             const provider = get().tappletSigner;
             const result = await provider?.runOne(methodName, args);
             if (event.source) {
-                event.source.postMessage({ id, result, type: 'signer-call' }, { targetOrigin: event.origin });
+                event.source.postMessage({ id, result, type: MessageType.SIGNER_CALL }, { targetOrigin: event.origin });
             }
         } catch (error) {
             console.error(`Error running method "${String(methodName)}": ${error}`);
