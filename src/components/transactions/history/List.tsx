@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, RefObject } from 'react';
+import { useCallback, useEffect, useMemo, RefObject } from 'react';
 import { useInView } from 'react-intersection-observer';
 import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/core';
@@ -16,8 +16,6 @@ import { ListItemWrapper, ListWrapper } from './List.styles.ts';
 import { setDetailsItem } from '@app/store/actions/walletStoreActions.ts';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 
-import { TariAddressType } from '@app/types/events-payloads.ts';
-
 import { useFetchBridgeTxHistory } from '@app/hooks/wallet/useFetchBridgeTxHistory.ts';
 
 interface Props {
@@ -29,13 +27,9 @@ export function List({ setIsScrolled, targetRef }: Props) {
     const { t } = useTranslation('wallet');
     const walletScanning = useWalletStore((s) => s.wallet_scanning);
     const coldWalletAddress = useWalletStore((s) => s.cold_wallet_address);
-    const tariAddressType = useWalletStore((s) => s.tari_address_type);
+
     const { data, fetchNextPage, isFetchingNextPage, isFetching, hasNextPage } = useFetchTxHistory();
-    const latestTxId = data?.pages?.[0]?.[0]?.walletTransactionDetails?.txId;
-    const { data: bridgeTransactions, refetch: refetchBridgeTxs } = useFetchBridgeTxHistory({
-        latestWalletTxId: latestTxId,
-    });
-    const isFetchBridgeTransactionsFailed = useRef(false);
+    const { data: bridgeTransactions } = useFetchBridgeTxHistory();
 
     useEffect(() => {
         const el = targetRef?.current;
@@ -51,32 +45,6 @@ export function List({ setIsScrolled, targetRef }: Props) {
     });
 
     const baseTx = useMemo(() => data?.pages.flatMap((page) => page) || [], [data?.pages]);
-
-    useEffect(() => {
-        const isThereANewBridgeTransaction = baseTx.find(
-            (tx) =>
-                tx.destinationAddress === coldWalletAddress &&
-                !bridgeTransactions.some(
-                    (bridgeTx) => bridgeTx.paymentId === tx.paymentId && Number(bridgeTx.tokenAmount) === tx.tokenAmount
-                )
-        );
-
-        const isThereEmptyBridgeTransactionAndFoundInWallet = baseTx.find(
-            (tx) => tx.destinationAddress === coldWalletAddress && bridgeTransactions.length === 0
-        );
-
-        if (
-            tariAddressType === TariAddressType.Internal &&
-            !isFetchBridgeTransactionsFailed.current &&
-            (isThereANewBridgeTransaction || isThereEmptyBridgeTransactionAndFoundInWallet)
-        ) {
-            refetchBridgeTxs().catch(() => {
-                if (!isFetchBridgeTransactionsFailed.current) {
-                    isFetchBridgeTransactionsFailed.current = true;
-                }
-            });
-        }
-    }, [baseTx, bridgeTransactions, coldWalletAddress, refetchBridgeTxs, tariAddressType]);
 
     const adjustedTransactions: CombinedBridgeWalletTransaction[] = useMemo(() => {
         const extendedTransactions: CombinedBridgeWalletTransaction[] = [...baseTx];

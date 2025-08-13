@@ -34,6 +34,7 @@ const filterToBitflag = (filter: TxHistoryFilter): number => {
 export const fetchTransactionsHistory = async ({ offset = 0, limit, filter = 'all-activity' }: TxArgs) => {
     const bitflag = filterToBitflag(filter);
     try {
+        console.info(`Fetching transaction history with filter: ${filter}`);
         return await invoke('get_transactions', { offset, limit, statusBitflag: bitflag });
     } catch (error) {
         console.error(`Could not get transaction history for rewards: `, error);

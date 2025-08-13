@@ -1,26 +1,18 @@
 import { useQuery } from '@tanstack/react-query';
 
-import { BackendBridgeTransaction, useWalletStore } from '@app/store';
+import { BackendBridgeTransaction, useConfigBEInMemoryStore, useWalletStore } from '@app/store';
 import { fetchBridgeTransactionsHistory } from '@app/store/actions/bridgeApiActions.ts';
 
 export const KEY_BRIDGE_TX = `bridge_transactions`;
 
-interface FetchBridgeArgs {
-    latestWalletTxId?: number;
-}
-
-export function useFetchBridgeTxHistory({ latestWalletTxId }: FetchBridgeArgs) {
+export function useFetchBridgeTxHistory() {
     const walletAddress = useWalletStore((state) => state.tari_address_base58);
+    const baseUrl = useConfigBEInMemoryStore((s) => s.bridge_backend_api_url);
 
     return useQuery<BackendBridgeTransaction[]>({
-        queryKey: [KEY_BRIDGE_TX, `address: ${walletAddress}`, `latestWalletTxId: ${latestWalletTxId}`],
-        queryFn: async () => {
-            const res = await fetchBridgeTransactionsHistory(walletAddress);
-            console.debug(res);
-
-            return res;
-        },
-        placeholderData: [],
+        queryKey: [KEY_BRIDGE_TX, `address: ${walletAddress}`],
+        queryFn: async () => await fetchBridgeTransactionsHistory(walletAddress),
         initialData: [],
+        enabled: !!baseUrl?.length,
     });
 }
