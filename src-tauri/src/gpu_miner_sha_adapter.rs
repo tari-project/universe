@@ -32,6 +32,9 @@ use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
 use tokio::sync::watch::Sender;
 
+use crate::port_allocator::PortAllocator;
+#[cfg(target_os = "windows")]
+use crate::utils::windows_setup_utils::add_firewall_rule;
 use crate::{
     gpu_miner_sha_websocket::GpuMinerShaWebSocket,
     process_adapter::{
@@ -41,9 +44,6 @@ use crate::{
     setup::setup_manager::SetupManager,
     GpuMinerStatus,
 };
-
-#[cfg(target_os = "windows")]
-use crate::utils::windows_setup_utils::add_firewall_rule;
 
 const LOG_TARGET: &str = "tari::universe::gpu_miner_sha_adapter";
 
@@ -83,12 +83,14 @@ impl ProcessAdapter for GpuMinerShaAdapter {
         _is_first_start: bool,
     ) -> Result<(Self::ProcessInstance, Self::StatusMonitor), anyhow::Error> {
         let inner_shutdown = Shutdown::new();
+        let ws_port = PortAllocator::new().assign_port_with_fallback();
 
         let mut args: Vec<String> = vec![
             "--algo".to_string(),
             "sha3x".to_string(),
             // --web is needed for the web socket to be open
-            "--web".to_string(),
+            "--ws".to_string(),
+            ws_port.to_string(),
             "--gpu".to_string(),
         ];
 
@@ -142,7 +144,7 @@ impl ProcessAdapter for GpuMinerShaAdapter {
             },
             GpuMinerShaStatusMonitor {
                 gpu_status_sender: self.gpu_status_sender.clone(),
-                websocket_listener: GpuMinerShaWebSocket::new(),
+                websocket_listener: GpuMinerShaWebSocket::new(ws_port),
             },
         ))
     }
