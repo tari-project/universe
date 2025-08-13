@@ -8,6 +8,7 @@ import {
     DetectedDevicesPayload,
     NewBlockHeightPayload,
     NodeTypeUpdatePayload,
+    ProgressTrackerUpdatePayload,
     SetupPhase,
     ShowReleaseNotesPayload,
     TariAddressUpdatePayload,
@@ -27,6 +28,10 @@ import { DisabledPhasesPayload } from '@app/store/actions/setupStoreActions.ts';
 
 export const BACKEND_STATE_UPDATE = 'backend_state_update';
 export type BackendStateUpdateEvent =
+    | {
+          event_type: 'SetupProgressUpdate';
+          payload: ProgressTrackerUpdatePayload;
+      }
     | {
           event_type: 'BaseNodeUpdate';
           payload: BaseNodeStatus;

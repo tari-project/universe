@@ -12,10 +12,9 @@ import {
     useUIStore,
     useWalletStore,
 } from '@app/store';
-import { ProgressTrackerUpdatePayload } from '@app/hooks/app/useProgressEventsListener';
 
 import { TOWER_CANVAS_ID } from '../types/ui';
-import { SetupPhase } from '@app/types/events-payloads';
+import { ProgressTrackerUpdatePayload, SetupPhase } from '@app/types/events-payloads';
 import { fetchBridgeTransactionsHistory } from './bridgeApiActions';
 
 export interface DisabledPhasesPayload {
@@ -124,28 +123,57 @@ export const handleGpuMiningLocked = async () => {
     }
 };
 
+export const updateSetupProgress = (payload: ProgressTrackerUpdatePayload | undefined) => {
+    if (!payload) {
+        console.warn('No payload provided for setup progress update');
+        return;
+    }
+
+    switch (payload.setup_phase) {
+        case SetupPhase.Core:
+            useSetupStore.setState({ core_phase_setup_payload: payload });
+            break;
+        case SetupPhase.CpuMining:
+            useSetupStore.setState({ cpu_mining_phase_setup_payload: payload });
+            break;
+        case SetupPhase.GpuMining:
+            useSetupStore.setState({ gpu_mining_phase_setup_payload: payload });
+            break;
+        case SetupPhase.Node:
+            useSetupStore.setState({ node_phase_setup_payload: payload });
+            break;
+        case SetupPhase.Wallet:
+            useSetupStore.setState({ wallet_phase_setup_payload: payload });
+            break;
+        default:
+            console.warn(`Unknown setup phase: ${payload.title}`);
+    }
+};
+
+export const clearSetupProgress = (setupPhase: SetupPhase) => {
+    switch (setupPhase) {
+        case SetupPhase.Core:
+            useSetupStore.setState({ core_phase_setup_payload: undefined });
+            break;
+        case SetupPhase.CpuMining:
+            useSetupStore.setState({ cpu_mining_phase_setup_payload: undefined });
+            break;
+        case SetupPhase.GpuMining:
+            useSetupStore.setState({ gpu_mining_phase_setup_payload: undefined });
+            break;
+        case SetupPhase.Node:
+            useSetupStore.setState({ node_phase_setup_payload: undefined });
+            break;
+        case SetupPhase.Wallet:
+            useSetupStore.setState({ wallet_phase_setup_payload: undefined });
+            break;
+        default:
+            console.warn(`Unknown setup phase: ${setupPhase}`);
+    }
+};
+
 export const setInitialSetupFinished = (payload: boolean) => {
     useSetupStore.setState({ isInitialSetupFinished: payload });
-};
-
-export const updateCoreSetupPhaseInfo = (payload: ProgressTrackerUpdatePayload | undefined) => {
-    useSetupStore.setState({ core_phase_setup_payload: payload });
-};
-
-export const updateCpuMiningSetupPhaseInfo = (payload: ProgressTrackerUpdatePayload | undefined) => {
-    useSetupStore.setState({ cpu_mining_phase_setup_payload: payload });
-};
-
-export const updateGpuMiningSetupPhaseInfo = (payload: ProgressTrackerUpdatePayload | undefined) => {
-    useSetupStore.setState({ gpu_mining_phase_setup_payload: payload });
-};
-
-export const updateNodeSetupPhaseInfo = (payload: ProgressTrackerUpdatePayload | undefined) => {
-    useSetupStore.setState({ node_phase_setup_payload: payload });
-};
-
-export const updateWalletSetupPhaseInfo = (payload: ProgressTrackerUpdatePayload | undefined) => {
-    useSetupStore.setState({ wallet_phase_setup_payload: payload });
 };
 
 export const updateDisabledPhases = (payload: DisabledPhasesPayload) => {
