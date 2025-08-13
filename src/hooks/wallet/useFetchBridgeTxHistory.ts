@@ -5,20 +5,22 @@ import { fetchBridgeTransactionsHistory } from '@app/store/actions/bridgeApiActi
 
 export const KEY_BRIDGE_TX = `bridge_transactions`;
 
-export function useFetchBridgeTxHistory() {
+interface FetchBridgeArgs {
+    latestWalletTxId?: number;
+}
+
+export function useFetchBridgeTxHistory({ latestWalletTxId }: FetchBridgeArgs) {
     const walletAddress = useWalletStore((state) => state.tari_address_base58);
-    const isWalletScanning = useWalletStore((s) => s.wallet_scanning.is_scanning);
 
     return useQuery<BackendBridgeTransaction[]>({
-        queryKey: [KEY_BRIDGE_TX, `address: ${walletAddress}`],
+        queryKey: [KEY_BRIDGE_TX, `address: ${walletAddress}`, `latestWalletTxId: ${latestWalletTxId}`],
         queryFn: async () => {
-            let txs: BackendBridgeTransaction[] = [];
-            txs = await fetchBridgeTransactionsHistory(walletAddress);
+            const res = await fetchBridgeTransactionsHistory(walletAddress);
+            console.debug(res);
 
-            return txs;
+            return res;
         },
         placeholderData: [],
         initialData: [],
-        enabled: !isWalletScanning,
     });
 }

@@ -3,7 +3,7 @@ import { useInView } from 'react-intersection-observer';
 import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/core';
 
-import { CombinedBridgeWalletTransaction, useMiningMetricsStore, useWalletStore } from '@app/store';
+import { CombinedBridgeWalletTransaction, useWalletStore } from '@app/store';
 
 import { useFetchTxHistory } from '@app/hooks/wallet/useFetchTxHistory.ts';
 
@@ -15,9 +15,9 @@ import { PlaceholderItem } from './ListItem.styles.ts';
 import { ListItemWrapper, ListWrapper } from './List.styles.ts';
 import { setDetailsItem } from '@app/store/actions/walletStoreActions.ts';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
-import { convertWalletTransactionToCombinedTransaction } from './helpers.ts';
+
 import { TariAddressType } from '@app/types/events-payloads.ts';
-import { fetchBridgeTransactionsHistory } from '@app/store/actions/bridgeApiActions.ts';
+
 import { useFetchBridgeTxHistory } from '@app/hooks/wallet/useFetchBridgeTxHistory.ts';
 
 interface Props {
@@ -28,16 +28,14 @@ interface Props {
 export function List({ setIsScrolled, targetRef }: Props) {
     const { t } = useTranslation('wallet');
     const walletScanning = useWalletStore((s) => s.wallet_scanning);
-    const currentBlockHeight = useMiningMetricsStore((s) => s.base_node_status.block_height);
     const coldWalletAddress = useWalletStore((s) => s.cold_wallet_address);
-    const tariAddress = useWalletStore((s) => s.tari_address_base58);
-    const tx_history_filter = useWalletStore((s) => s.tx_history_filter);
     const tariAddressType = useWalletStore((s) => s.tari_address_type);
     const { data, fetchNextPage, isFetchingNextPage, isFetching, hasNextPage } = useFetchTxHistory();
-    const { data: bridgeTransactions, refetch: refetchBridgeTxs } = useFetchBridgeTxHistory();
+    const latestTxId = data?.pages?.[0]?.[0]?.walletTransactionDetails?.txId;
+    const { data: bridgeTransactions, refetch: refetchBridgeTxs } = useFetchBridgeTxHistory({
+        latestWalletTxId: latestTxId,
+    });
     const isFetchBridgeTransactionsFailed = useRef(false);
-    const convertedTransactions: RefObject<CombinedBridgeWalletTransaction[]> = useRef([]);
-    const lastTransactionFilter = useRef(tx_history_filter);
 
     useEffect(() => {
         const el = targetRef?.current;
@@ -52,30 +50,7 @@ export function List({ setIsScrolled, targetRef }: Props) {
         onChange: () => hasNextPage && fetchNextPage(),
     });
 
-    const latestTxId = data?.pages?.[0]?.[0]?.tx_id;
-    const baseTx = useMemo(() => {
-        const latestConvertedTxId = convertedTransactions.current[0]?.walletTransactionDetails.txId;
-        if (latestTxId && latestTxId != latestConvertedTxId) {
-            convertedTransactions.current = [];
-        }
-        // We are caching converted transactions to avoid re-converting all of them on every execution
-        // If someone have 200 transactions it is more efficient to convert only new ~20 then 200
-        const sanitizedData = data?.pages.flatMap((page) => page) || [];
-        const startingIndex =
-            lastTransactionFilter.current === tx_history_filter ? convertedTransactions.current.length : 0;
-        const newTransactions = sanitizedData.slice(startingIndex);
-        const converted = newTransactions.map((transaction) =>
-            convertWalletTransactionToCombinedTransaction(transaction)
-        );
-
-        if (lastTransactionFilter.current !== tx_history_filter) {
-            convertedTransactions.current = [];
-            lastTransactionFilter.current = tx_history_filter;
-        }
-
-        convertedTransactions.current = [...convertedTransactions.current, ...converted];
-        return convertedTransactions.current;
-    }, [latestTxId, data?.pages.length, tx_history_filter]); // Re-run only when the number of pages changes
+    const baseTx = useMemo(() => data?.pages.flatMap((page) => page) || [], [data?.pages]);
 
     useEffect(() => {
         const isThereANewBridgeTransaction = baseTx.find(
@@ -140,7 +115,7 @@ export function List({ setIsScrolled, targetRef }: Props) {
         });
 
         return extendedTransactions;
-    }, [baseTx, bridgeTransactions]);
+    }, [baseTx, bridgeTransactions, coldWalletAddress]);
 
     const handleDetailsChange = useCallback(async (transaction: CombinedBridgeWalletTransaction | null) => {
         if (!transaction || !transaction.walletTransactionDetails) {
