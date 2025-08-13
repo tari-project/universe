@@ -16,7 +16,6 @@ import { ProgressTrackerUpdatePayload } from '@app/hooks/app/useProgressEventsLi
 
 import { TOWER_CANVAS_ID } from '../types/ui';
 import { SetupPhase } from '@app/types/events-payloads';
-import { fetchBridgeTransactionsHistory } from './bridgeApiActions';
 
 export interface DisabledPhasesPayload {
     disabled_phases: SetupPhase[];
@@ -55,9 +54,6 @@ async function initializeAnimation() {
 
 export const handleAppUnlocked = async () => {
     useSetupStore.setState({ appUnlocked: true });
-    await fetchBridgeTransactionsHistory().catch((error) => {
-        console.error('Could not fetch bridge transactions history:', error);
-    });
     // todo move it to event
     await fetchApplicationsVersionsWithRetry();
     await initializeAnimation();

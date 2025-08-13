@@ -18,6 +18,7 @@ import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 import { convertWalletTransactionToCombinedTransaction } from './helpers.ts';
 import { TariAddressType } from '@app/types/events-payloads.ts';
 import { fetchBridgeTransactionsHistory } from '@app/store/actions/bridgeApiActions.ts';
+import { useFetchBridgeTxHistory } from '@app/hooks/wallet/useFetchBridgeTxHistory.ts';
 
 interface Props {
     setIsScrolled: (isScrolled: boolean) => void;
@@ -27,13 +28,13 @@ interface Props {
 export function List({ setIsScrolled, targetRef }: Props) {
     const { t } = useTranslation('wallet');
     const walletScanning = useWalletStore((s) => s.wallet_scanning);
-    const bridgeTransactions = useWalletStore((s) => s.bridge_transactions);
     const currentBlockHeight = useMiningMetricsStore((s) => s.base_node_status.block_height);
     const coldWalletAddress = useWalletStore((s) => s.cold_wallet_address);
     const tariAddress = useWalletStore((s) => s.tari_address_base58);
     const tx_history_filter = useWalletStore((s) => s.tx_history_filter);
     const tariAddressType = useWalletStore((s) => s.tari_address_type);
     const { data, fetchNextPage, isFetchingNextPage, isFetching, hasNextPage } = useFetchTxHistory();
+    const { data: bridgeTransactions, refetch: refetchBridgeTxs } = useFetchBridgeTxHistory();
     const isFetchBridgeTransactionsFailed = useRef(false);
     const convertedTransactions: RefObject<CombinedBridgeWalletTransaction[]> = useRef([]);
     const lastTransactionFilter = useRef(tx_history_filter);
@@ -94,13 +95,13 @@ export function List({ setIsScrolled, targetRef }: Props) {
             !isFetchBridgeTransactionsFailed.current &&
             (isThereANewBridgeTransaction || isThereEmptyBridgeTransactionAndFoundInWallet)
         ) {
-            fetchBridgeTransactionsHistory().catch(() => {
+            refetchBridgeTxs().catch(() => {
                 if (!isFetchBridgeTransactionsFailed.current) {
                     isFetchBridgeTransactionsFailed.current = true;
                 }
             });
         }
-    }, [baseTx, bridgeTransactions, coldWalletAddress, currentBlockHeight, tariAddress, tariAddressType]);
+    }, [baseTx, bridgeTransactions, coldWalletAddress, refetchBridgeTxs, tariAddressType]);
 
     const adjustedTransactions: CombinedBridgeWalletTransaction[] = useMemo(() => {
         const extendedTransactions: CombinedBridgeWalletTransaction[] = [...baseTx];
