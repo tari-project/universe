@@ -34,9 +34,9 @@ fn main() {
     println!("cargo::rerun-if-env-changed=TARI_TARGET_NETWORK");
 
     let network = option_env!("TARI_NETWORK").unwrap_or("esme");
-    let _ = dotenvy::from_path(format!("env.{}", network)).ok();
+    let _ = dotenvy::from_path(format!("env.{network}")).ok();
     for (key, value) in std::env::vars() {
-        println!("cargo::rustc-env={}={}", key, value);
+        println!("cargo::rustc-env={key}={value}");
     }
 
     if cfg!(target_os = "windows") {

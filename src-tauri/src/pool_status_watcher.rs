@@ -111,8 +111,8 @@ impl Default for LuckyPoolNumber {
 impl std::fmt::Display for LuckyPoolNumber {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            LuckyPoolNumber::String(s) => write!(f, "{}", s),
-            LuckyPoolNumber::Number(n) => write!(f, "{}", n),
+            LuckyPoolNumber::String(s) => write!(f, "{s}"),
+            LuckyPoolNumber::Number(n) => write!(f, "{n}"),
         }
     }
 }
