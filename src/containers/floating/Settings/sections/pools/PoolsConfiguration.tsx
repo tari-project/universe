@@ -102,7 +102,7 @@ export const PoolConfiguration = <T extends FieldValues = BasePoolData>({
                         name={fieldName as Path<T>}
                         control={control}
                         render={({ field }) => {
-                            const { ref: _ref, value: fieldValue, ...rest } = field;
+                            const { value: fieldValue, ...rest } = field;
                             return <ToggleSwitch checked={Boolean(fieldValue)} disabled={isReadOnly} {...rest} />;
                         }}
                     />
@@ -120,8 +120,16 @@ export const PoolConfiguration = <T extends FieldValues = BasePoolData>({
                             },
                         }}
                         render={({ field }) => {
-                            const { ref: _ref, ...rest } = field;
-                            return <Input type="number" hasError={hasError} disabled={isReadOnly} {...rest} />;
+                            const { value, ...rest } = field;
+                            return (
+                                <Input
+                                    type="number"
+                                    hasError={hasError}
+                                    disabled={isReadOnly}
+                                    value={value ?? 0}
+                                    {...rest}
+                                />
+                            );
                         }}
                     />
                 );
@@ -133,14 +141,16 @@ export const PoolConfiguration = <T extends FieldValues = BasePoolData>({
                         name={fieldName as Path<T>}
                         control={control}
                         render={({ field }) => {
-                            const { ref: _ref, ...rest } = field;
+                            const { value, ...rest } = field;
                             const label = formatFieldLabel(fieldName as string);
+
                             return (
                                 <Input
                                     type="text"
                                     placeholder={`${t('enter')} ${label.toLowerCase()}`}
                                     hasError={hasError}
                                     disabled={isReadOnly}
+                                    value={value ?? ''}
                                     {...rest}
                                 />
                             );

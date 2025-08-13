@@ -1,5 +1,5 @@
 import styled, { css } from 'styled-components';
-import { forwardRef, TextareaHTMLAttributes } from 'react';
+import { TextareaHTMLAttributes } from 'react';
 
 const Wrapper = styled.div<{ $minWidth?: string; $minHeight?: string }>`
     width: 100%;
@@ -36,14 +36,10 @@ interface TextAreaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
     minHeight?: string;
     variant?: 'primary' | 'secondary';
 }
-export const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
-    ({ minWidth, minHeight, variant = 'primary', ...props }, ref) => {
-        return (
-            <Wrapper $minWidth={minWidth} $minHeight={minHeight}>
-                <StyledTextArea ref={ref} $variant={variant} {...props} />
-            </Wrapper>
-        );
-    }
-);
-
-TextArea.displayName = 'TextArea';
+export const TextArea = ({ minWidth, minHeight, variant = 'primary', ...props }: TextAreaProps) => {
+    return (
+        <Wrapper $minWidth={minWidth} $minHeight={minHeight}>
+            <StyledTextArea $variant={variant} {...props} />
+        </Wrapper>
+    );
+};
