@@ -38,7 +38,6 @@ import {
     handleCpuMiningUnlocked,
     handleGpuMiningLocked,
     handleGpuMiningUnlocked,
-    handleHardwarePhaseFinished,
     handleUpdateDisabledPhases,
     handleWalletLocked,
     handleWalletUnlocked,
@@ -86,17 +85,6 @@ const useTauriEventsListener = () => {
                 async ({ payload: event }: { payload: BackendStateUpdateEvent }) => {
                     handleLogUpdate(event);
                     switch (event.event_type) {
-                        case 'CorePhaseFinished':
-                            break;
-                        case 'HardwarePhaseFinished':
-                            await handleHardwarePhaseFinished();
-                            break;
-                        case 'NodePhaseFinished':
-                            break;
-                        case 'MiningPhaseFinished':
-                            break;
-                        case 'WalletPhaseFinished':
-                            break;
                         case 'InitialSetupFinished':
                             setInitialSetupFinished(true);
                             break;

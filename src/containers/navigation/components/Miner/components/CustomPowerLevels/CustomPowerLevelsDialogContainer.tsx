@@ -8,7 +8,9 @@ import { useSetupStore } from '@app/store/useSetupStore';
 export const CustomPowerLevelsDialogContainer = () => {
     const customLevelsDialogOpen = useMiningStore((s) => s.customLevelsDialogOpen);
     const isChangingMode = useMiningStore((s) => s.isChangingMode);
-    const isHardwarePhaseFinished = useSetupStore((s) => s.hardwarePhaseFinished);
+    const isCpuMiningUnlocked = useSetupStore((s) => s.cpuMiningUnlocked);
+    const isGpuMiningUnlocked = useSetupStore((s) => s.gpuMiningUnlocked);
+    const isModeSelectionEnabled = isCpuMiningUnlocked || isGpuMiningUnlocked;
 
     const handleClose = () => {
         setCustomLevelsDialogOpen(false);
@@ -16,12 +18,12 @@ export const CustomPowerLevelsDialogContainer = () => {
 
     return (
         <Dialog
-            open={customLevelsDialogOpen && isHardwarePhaseFinished}
+            open={customLevelsDialogOpen && isModeSelectionEnabled}
             onOpenChange={setCustomLevelsDialogOpen}
             disableClose={isChangingMode}
         >
             <DialogContent>
-                {isHardwarePhaseFinished ? <CustomPowerLevelsDialog handleClose={handleClose} /> : <CircularProgress />}
+                {isModeSelectionEnabled ? <CustomPowerLevelsDialog handleClose={handleClose} /> : <CircularProgress />}
             </DialogContent>
         </Dialog>
     );

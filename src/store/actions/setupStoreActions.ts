@@ -124,10 +124,6 @@ export const handleGpuMiningLocked = async () => {
     }
 };
 
-export const handleHardwarePhaseFinished = async () => {
-    useSetupStore.setState({ hardwarePhaseFinished: true });
-};
-
 export const setInitialSetupFinished = (payload: boolean) => {
     useSetupStore.setState({ isInitialSetupFinished: payload });
 };
@@ -136,8 +132,12 @@ export const updateCoreSetupPhaseInfo = (payload: ProgressTrackerUpdatePayload |
     useSetupStore.setState({ core_phase_setup_payload: payload });
 };
 
-export const updateHardwareSetupPhaseInfo = (payload: ProgressTrackerUpdatePayload | undefined) => {
-    useSetupStore.setState({ hardware_phase_setup_payload: payload });
+export const updateCpuMiningSetupPhaseInfo = (payload: ProgressTrackerUpdatePayload | undefined) => {
+    useSetupStore.setState({ cpu_mining_phase_setup_payload: payload });
+};
+
+export const updateGpuMiningSetupPhaseInfo = (payload: ProgressTrackerUpdatePayload | undefined) => {
+    useSetupStore.setState({ gpu_mining_phase_setup_payload: payload });
 };
 
 export const updateNodeSetupPhaseInfo = (payload: ProgressTrackerUpdatePayload | undefined) => {
@@ -146,10 +146,6 @@ export const updateNodeSetupPhaseInfo = (payload: ProgressTrackerUpdatePayload |
 
 export const updateWalletSetupPhaseInfo = (payload: ProgressTrackerUpdatePayload | undefined) => {
     useSetupStore.setState({ wallet_phase_setup_payload: payload });
-};
-
-export const updateMiningSetupPhaseInfo = (payload: ProgressTrackerUpdatePayload | undefined) => {
-    useSetupStore.setState({ mining_phase_setup_payload: payload });
 };
 
 export const updateDisabledPhases = (payload: DisabledPhasesPayload) => {

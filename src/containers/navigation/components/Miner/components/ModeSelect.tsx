@@ -45,7 +45,9 @@ const ModeSelect = memo(function ModeSelect({ variant = 'primary', isSync }: Mod
     const miningModes = useConfigMiningStore((s) => s.mining_modes);
     const isCPUMining = useMiningMetricsStore((s) => s.cpu_mining_status.is_mining);
     const isGPUMining = useMiningMetricsStore((s) => s.gpu_mining_status.is_mining);
-    const isHardwarePhaseFinished = useSetupStore((s) => s.hardwarePhaseFinished);
+    const isCpuMiningUnlocked = useSetupStore((s) => s.cpuMiningUnlocked);
+    const isGpuMiningUnlocked = useSetupStore((s) => s.gpuMiningUnlocked);
+    const isModeSelectionEnabled = isCpuMiningUnlocked || isGpuMiningUnlocked;
 
     const isMiningControlsEnabled = useMiningStore((s) => s.miningControlsEnabled);
     const isChangingMode = useMiningStore((s) => s.isChangingMode);
@@ -82,11 +84,9 @@ const ModeSelect = memo(function ModeSelect({ variant = 'primary', isSync }: Mod
 
     const selectMarkup = (
         <Select
-            disabled={!isHardwarePhaseFinished}
+            disabled={!isModeSelectionEnabled}
             loading={
-                !isHardwarePhaseFinished ||
-                isChangingMode ||
-                (isMining && (isMiningLoading || !isMiningControlsEnabled))
+                !isModeSelectionEnabled || isChangingMode || (isMining && (isMiningLoading || !isMiningControlsEnabled))
             }
             onChange={handleChange}
             selectedValue={selectedMiningMode?.mode_name || 'Eco'}

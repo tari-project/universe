@@ -84,26 +84,6 @@ export type BackendStateUpdateEvent =
           payload: NetworkStatus;
       }
     | {
-          event_type: 'CorePhaseFinished';
-          payload: boolean;
-      }
-    | {
-          event_type: 'WalletPhaseFinished';
-          payload: boolean;
-      }
-    | {
-          event_type: 'HardwarePhaseFinished';
-          payload: boolean;
-      }
-    | {
-          event_type: 'NodePhaseFinished';
-          payload: boolean;
-      }
-    | {
-          event_type: 'MiningPhaseFinished';
-          payload: boolean;
-      }
-    | {
           event_type: 'InitialSetupFinished';
           payload: undefined;
       }
