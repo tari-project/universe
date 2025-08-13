@@ -33,8 +33,8 @@ use crate::{
     auto_launcher::AutoLauncher,
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
     progress_trackers::{
-        progress_plans::ProgressPlans, progress_stepper::ProgressStepperBuilder,
-        ProgressSetupCorePlan, ProgressStepper,
+        progress_plans::SetupStep,
+        progress_stepper::{ProgressStepper, ProgressStepperBuilder},
     },
     setup::setup_manager::SetupPhase,
     tasks_tracker::TasksTrackers,
@@ -120,12 +120,9 @@ impl SetupPhaseImpl for CoreSetupPhase {
         timeout_watcher_sender: Sender<u64>,
     ) -> ProgressStepper {
         ProgressStepperBuilder::new()
-            .add_step(ProgressPlans::Core(
-                ProgressSetupCorePlan::InitializeApplicationModules,
-            ))
-            .add_step(ProgressPlans::Core(ProgressSetupCorePlan::NetworkSpeedTest))
-            .add_step(ProgressPlans::Core(ProgressSetupCorePlan::Done))
-            .build(app_handle, timeout_watcher_sender)
+            .add_step(SetupStep::InitializeApplicationModules)
+            .add_step(SetupStep::NetworkSpeedTest)
+            .build(app_handle, timeout_watcher_sender, SetupPhase::Core)
     }
 
     async fn load_app_configuration() -> Result<Self::AppConfiguration, anyhow::Error> {
@@ -154,7 +151,9 @@ impl SetupPhaseImpl for CoreSetupPhase {
         let mut progress_stepper = self.progress_stepper.lock().await;
         let state = self.app_handle.state::<UniverseAppState>();
 
-        progress_stepper.resolve_step().await;
+        progress_stepper
+            .mark_step_as_completed(SetupStep::InitializeApplicationModules)
+            .await;
 
         state
             .updates_manager
@@ -180,7 +179,9 @@ impl SetupPhaseImpl for CoreSetupPhase {
             .await
             .set_app_handle(self.app_handle.clone());
 
-        progress_stepper.resolve_step().await;
+        progress_stepper
+            .mark_step_as_completed(SetupStep::NetworkSpeedTest)
+            .await;
 
         NetworkStatus::current().run_speed_test_with_timeout().await;
 
@@ -190,7 +191,6 @@ impl SetupPhaseImpl for CoreSetupPhase {
     async fn finalize_setup(&self) -> Result<(), anyhow::Error> {
         self.status_sender.send(PhaseStatus::Success).ok();
 
-        self.progress_stepper.lock().await.resolve_step().await;
         Ok(())
     }
 }

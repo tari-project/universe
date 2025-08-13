@@ -28,9 +28,8 @@ use crate::{
     internal_wallet::InternalWallet,
     mm_proxy_manager::StartConfig,
     progress_trackers::{
-        progress_plans::{ProgressPlans, ProgressSetupCpuMiningPlan},
-        progress_stepper::ProgressStepperBuilder,
-        ProgressStepper,
+        progress_plans::SetupStep,
+        progress_stepper::{ProgressStepper, ProgressStepperBuilder},
     },
     setup::{listeners::SetupFeature, setup_manager::SetupPhase},
     systemtray_manager::SystemTrayCpuData,
@@ -130,17 +129,14 @@ impl SetupPhaseImpl for CpuMiningSetupPhase {
         timeout_watcher_sender: Sender<u64>,
     ) -> ProgressStepper {
         ProgressStepperBuilder::new()
-            .add_step(ProgressPlans::CpuMining(
-                ProgressSetupCpuMiningPlan::BinariesCpuMiner,
-            ))
-            .add_step(ProgressPlans::CpuMining(
-                ProgressSetupCpuMiningPlan::BinariesMergeMiningProxy,
-            ))
-            .add_step(ProgressPlans::CpuMining(
-                ProgressSetupCpuMiningPlan::MMProxy,
-            ))
-            .add_step(ProgressPlans::CpuMining(ProgressSetupCpuMiningPlan::Done))
-            .build(app_handle.clone(), timeout_watcher_sender)
+            .add_step(SetupStep::BinariesCpuMiner)
+            .add_step(SetupStep::BinariesMergeMiningProxy)
+            .add_step(SetupStep::MMProxy)
+            .build(
+                app_handle.clone(),
+                timeout_watcher_sender,
+                SetupPhase::CpuMining,
+            )
     }
 
     async fn load_app_configuration() -> Result<Self::AppConfiguration, Error> {
@@ -164,7 +160,8 @@ impl SetupPhaseImpl for CpuMiningSetupPhase {
 
         let binary_resolver = BinaryResolver::current();
 
-        let cpu_miner_binary_progress_tracker = progress_stepper.channel_step_range_updates();
+        let cpu_miner_binary_progress_tracker =
+            progress_stepper.track_step_completion_over_time(SetupStep::BinariesCpuMiner);
 
         binary_resolver
             .initialize_binary(Binaries::Xmrig, cpu_miner_binary_progress_tracker)
@@ -174,7 +171,8 @@ impl SetupPhaseImpl for CpuMiningSetupPhase {
             .setup_features
             .is_feature_disabled(SetupFeature::CpuPool)
         {
-            let mmproxy_binary_progress_tracker = progress_stepper.channel_step_range_updates();
+            let mmproxy_binary_progress_tracker = progress_stepper
+                .track_step_completion_over_time(SetupStep::BinariesMergeMiningProxy);
             binary_resolver
                 .initialize_binary(Binaries::MergeMiningProxy, mmproxy_binary_progress_tracker)
                 .await?;
@@ -203,22 +201,27 @@ impl SetupPhaseImpl for CpuMiningSetupPhase {
                 .await?;
 
             state.mm_proxy_manager.wait_ready().await?;
-            progress_stepper.resolve_step().await;
+            progress_stepper
+                .mark_step_as_completed(SetupStep::MMProxy)
+                .await;
         } else {
             // Skip mmproxy download
-            progress_stepper.skip_step().await;
+            progress_stepper
+                .skip_step(SetupStep::BinariesMergeMiningProxy)
+                .await;
             // Skip mmproxy setup
-            progress_stepper.skip_step().await;
+            progress_stepper.skip_step(SetupStep::MMProxy).await;
         }
 
-        HardwareStatusMonitor::current().initialize().await?;
+        HardwareStatusMonitor::current()
+            .initialize_cpu_devices()
+            .await?;
 
         Ok(())
     }
 
     async fn finalize_setup(&self) -> Result<(), Error> {
         self.status_sender.send(PhaseStatus::Success).ok();
-        self.progress_stepper.lock().await.resolve_step().await;
 
         let app_handle_clone = self.app_handle.clone();
         TasksTrackers::current()

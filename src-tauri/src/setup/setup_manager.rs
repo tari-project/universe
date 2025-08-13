@@ -147,6 +147,15 @@ impl SetupPhase {
             Self::Wallet => "phase-wallet-critical-problem-description".to_string(),
         }
     }
+    pub fn get_i18n_title_key(&self) -> String {
+        match self {
+            Self::Core => "phase-title.setup-core".to_string(),
+            Self::CpuMining => "phase-title.setup-cpu-mining".to_string(),
+            Self::GpuMining => "phase-title.setup-gpu-mining".to_string(),
+            Self::Node => "phase-title.setup-node".to_string(),
+            Self::Wallet => "phase-title.setup-wallet".to_string(),
+        }
+    }
 }
 
 #[allow(dead_code)]

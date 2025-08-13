@@ -20,72 +20,91 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::{
-    collections::HashMap,
-    ops::{Add, Mul},
-};
+use std::{collections::HashMap, sync::Arc};
 
 use serde_json::json;
 use tauri::{AppHandle, Manager};
 
 use log::warn;
-use tokio::sync::watch::Sender;
+use tokio::sync::{watch::Sender, Mutex};
 
 use crate::{
-    events::ProgressTrackerUpdatePayload, events_emitter::EventsEmitter,
-    setup::utils::timeout_watcher::hash_value, UniverseAppState,
+    events::ProgressTrackerUpdatePayload,
+    events_emitter::EventsEmitter,
+    progress_trackers::progress_plans::SetupStep,
+    setup::{setup_manager::SetupPhase, utils::timeout_watcher::hash_value},
+    UniverseAppState,
 };
-
-use super::progress_plans::{ProgressEvent, ProgressPlans, ProgressStep};
 
 const LOG_TARGET: &str = "tari::universe::progress_tracker";
 
 #[derive(Clone)]
-pub struct ChanneledStepUpdate {
-    step: ProgressPlans,
-    step_percentage: f64,
-    next_step_percentage: f64,
+pub struct TrackStepComplitionOverTime {
+    tracked_step: SetupStep,
+    last_send_percentage: Arc<Mutex<f64>>,
     timeout_watcher_sender: Sender<u64>,
+    setup_phase: SetupPhase,
+    expected_progress: f64,
 }
 
-impl ChanneledStepUpdate {
-    pub async fn send_update(&self, params: HashMap<String, String>, current_step_percentage: f64) {
-        let resolved_percentage = self.step_percentage
-            + (self.next_step_percentage - self.step_percentage) * current_step_percentage;
+impl TrackStepComplitionOverTime {
+    /// Updates the progress tracker with the current step completion percentage.
+    /// This method should be called periodically to update the progress tracker.
+    /// ### Arguments
+    /// * `params` - extra data that will be displayed in the UI
+    /// * `current_step_complition` - value between 0.0 and 1.0 representing the current step completion percentage
+    pub async fn send_update(&self, params: HashMap<String, String>, current_step_complition: f64) {
+        let step_percentage = f64::from(self.tracked_step.get_progress_value());
+        let mut resolved_percentage = step_percentage * current_step_complition;
+        if (resolved_percentage - *self.last_send_percentage.lock().await).abs() < 0.01 {
+            // If the percentage hasn't changed significantly, skip sending an update
+            return;
+        }
+
+        if current_step_complition >= 1.0 {
+            resolved_percentage = step_percentage;
+        }
 
         let payload = ProgressTrackerUpdatePayload {
-            phase_title: self.step.get_phase_title(),
-            title: self.step.get_title(),
-            progress: resolved_percentage.round(),
+            phase_title: self.setup_phase.get_i18n_title_key(),
+            title: self.tracked_step.get_i18n_key(),
+            progress: resolved_percentage.clone(),
             title_params: Some(params.clone()),
-            is_complete: false,
+            setup_phase: self.setup_phase.clone(),
+            is_completed: resolved_percentage.ge(&self.expected_progress),
         };
 
         let _unused = &self.timeout_watcher_sender.send(hash_value(&payload));
 
-        EventsEmitter::emit_progress_tracker_update(self.step.get_event_type(), payload).await;
+        EventsEmitter::emit_progress_tracker_update(payload).await;
+        *self.last_send_percentage.lock().await = resolved_percentage;
     }
 }
 pub struct ProgressStepper {
-    plan: Vec<ProgressPlans>,
-    percentage_steps: Vec<f64>,
+    setup_steps: Vec<SetupStep>,
     app_handle: AppHandle,
     timeout_watcher_sender: Sender<u64>,
+    setup_phase: SetupPhase,
+    expected_progress: f64,
 }
 
 impl ProgressStepper {
-    pub async fn resolve_step(&mut self) {
-        if let (Some(resolved_step), Some(resolved_percentage)) =
-            (self.plan.pop(), self.percentage_steps.pop())
+    pub async fn mark_step_as_completed(&mut self, completed_step: SetupStep) {
+        if let Some(index) = self
+            .setup_steps
+            .iter()
+            .position(|step| step.eq(&completed_step))
         {
-            let event = resolved_step.resolve_to_event();
+            let resolved_step = self.setup_steps.remove(index);
+            let progress_value = f64::from(resolved_step.get_progress_value());
 
             let payload = ProgressTrackerUpdatePayload {
-                phase_title: resolved_step.get_phase_title(),
-                title: event.get_title(),
-                progress: resolved_percentage,
+                phase_title: self.setup_phase.get_i18n_title_key(),
+                title: resolved_step.get_i18n_key(),
+                progress: progress_value.clone(),
                 title_params: None,
-                is_complete: self.plan.is_empty(),
+                setup_phase: self.setup_phase.clone(),
+                is_completed: progress_value.ge(&self.expected_progress),
             };
 
             let _unused = &self
@@ -98,7 +117,7 @@ impl ProgressStepper {
                     );
                 });
 
-            EventsEmitter::emit_progress_tracker_update(event.get_event_type(), payload).await;
+            EventsEmitter::emit_progress_tracker_update(payload).await;
             let app_state = self.app_handle.state::<UniverseAppState>();
             let _unused = app_state
                 .telemetry_service
@@ -107,95 +126,85 @@ impl ProgressStepper {
                 .send(
                     "progress-stepper".to_string(),
                     json!({
-                        "phase": resolved_step.get_phase_title(),
-                        "step": event.get_title(),
-                        "percentage": resolved_percentage,
-                        "is_completed": self.plan.is_empty(),
+                        "step": resolved_step.get_i18n_key(),
+                        "percentage": resolved_step.get_progress_value(),
+                        "is_completed": self.setup_steps.is_empty(),
                     }),
                 )
                 .await;
         }
     }
 
-    pub fn channel_step_range_updates(&mut self) -> Option<ChanneledStepUpdate> {
-        if let (Some(resolved_step), Some(resolved_percentage)) =
-            (self.plan.pop(), self.percentage_steps.pop())
+    pub fn track_step_completion_over_time(
+        &mut self,
+        step_to_be_completed: SetupStep,
+    ) -> Option<TrackStepComplitionOverTime> {
+        if let Some(index) = self
+            .setup_steps
+            .iter()
+            .position(|step| step.eq(&step_to_be_completed))
         {
-            if let (Some(_next_step), Some(next_percentage)) =
-                (self.plan.last(), self.percentage_steps.last())
-            {
-                let channel_step_update = ChanneledStepUpdate {
-                    step: resolved_step.clone(),
-                    step_percentage: resolved_percentage,
-                    next_step_percentage: *next_percentage,
-                    timeout_watcher_sender: self.timeout_watcher_sender.clone(),
-                };
+            let resolved_step = self.setup_steps.remove(index);
 
-                return Some(channel_step_update);
-            }
-        };
+            let channel_step_update = TrackStepComplitionOverTime {
+                tracked_step: resolved_step.clone(),
+                last_send_percentage: Arc::new(Mutex::new(0.0)),
+                timeout_watcher_sender: self.timeout_watcher_sender.clone(),
+                setup_phase: self.setup_phase.clone(),
+                expected_progress: self.expected_progress,
+            };
+
+            return Some(channel_step_update);
+        }
 
         None
     }
 
-    pub async fn skip_step(&mut self) {
-        if let (Some(resolved_step), Some(resolved_percentage)) =
-            (self.plan.pop(), self.percentage_steps.pop())
+    pub async fn skip_step(&mut self, skipped_step: SetupStep) {
+        if let Some(index) = self
+            .setup_steps
+            .iter()
+            .position(|step| step.eq(&skipped_step))
         {
+            let resolved_step = self.setup_steps.remove(index);
+            let progress_value = f64::from(resolved_step.get_progress_value());
+
             let payload = ProgressTrackerUpdatePayload {
-                phase_title: resolved_step.get_phase_title(),
-                title: resolved_step.get_title(),
-                progress: resolved_percentage,
+                phase_title: self.setup_phase.get_i18n_title_key(),
+                title: resolved_step.get_i18n_key(),
+                progress: progress_value.clone(),
                 title_params: None,
-                is_complete: self.plan.is_empty(),
+                setup_phase: self.setup_phase.clone(),
+                is_completed: progress_value.ge(&self.expected_progress),
             };
 
             let _unused = &self.timeout_watcher_sender.send(hash_value(&payload));
 
-            EventsEmitter::emit_progress_tracker_update(resolved_step.get_event_type(), payload)
-                .await;
+            EventsEmitter::emit_progress_tracker_update(payload).await;
         }
     }
 }
 
 pub struct ProgressStepperBuilder {
-    plan: Vec<ProgressPlans>,
-    percentage_steps: Vec<f64>,
+    setup_steps: Vec<SetupStep>,
 }
 
 impl ProgressStepperBuilder {
     pub fn new() -> Self {
         ProgressStepperBuilder {
-            plan: Vec::new(),
-            percentage_steps: Vec::new(),
+            setup_steps: Vec::new(),
         }
     }
 
-    pub fn add_step(&mut self, element: ProgressPlans) -> &mut Self {
-        self.plan.push(element);
-        self
-    }
-
-    fn calculate_percentage_steps(&mut self) -> &mut Self {
-        let total_weight: u8 = self
-            .plan
+    pub fn get_expected_progress(&self) -> f64 {
+        self.setup_steps
             .iter()
-            .map(|step| step.get_progress_weight())
-            .sum();
-        let mut current_percentage = 0.0;
-        for step in &self.plan {
-            let percentage =
-                (f64::from(step.get_progress_weight()) / f64::from(total_weight)) * 100.0;
-            current_percentage += percentage;
-            self.percentage_steps.push(
-                current_percentage
-                    .min(100.0)
-                    .round()
-                    .mul(step.get_phase_percentage_multiplyer())
-                    .add(step.get_phase_base_percentage())
-                    .round(),
-            );
-        }
+            .map(|step| f64::from(step.get_progress_value()))
+            .sum()
+    }
+
+    pub fn add_step(&mut self, setup_step: SetupStep) -> &mut Self {
+        self.setup_steps.push(setup_step);
         self
     }
 
@@ -203,13 +212,14 @@ impl ProgressStepperBuilder {
         &mut self,
         app_handle: AppHandle,
         timeout_watcher_sender: Sender<u64>,
+        setup_phase: SetupPhase,
     ) -> ProgressStepper {
-        self.calculate_percentage_steps();
         ProgressStepper {
-            plan: self.plan.clone().into_iter().rev().collect(),
-            percentage_steps: self.percentage_steps.clone().into_iter().rev().collect(),
+            setup_steps: self.setup_steps.clone(),
             app_handle,
             timeout_watcher_sender,
+            setup_phase,
+            expected_progress: self.get_expected_progress(),
         }
     }
 }

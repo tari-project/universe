@@ -84,34 +84,26 @@ pub enum EventType {
     UpdateGpuDevicesSettings,
     PinLocked,
     SeedBackedUp,
+    SetupProgressUpdate,
 }
 
-#[derive(Clone, Debug, Serialize)]
-pub enum ProgressEvents {
-    Core,
-    Wallet,
-    Hardware,
-    Node,
-    Mining,
-}
 #[derive(Clone, Debug, Serialize)]
 pub struct ProgressTrackerUpdatePayload {
     pub phase_title: String,
     pub title: String,
     pub progress: f64,
     pub title_params: Option<HashMap<String, String>>,
-    pub is_complete: bool,
+    pub setup_phase: SetupPhase,
+    pub is_completed: bool,
 }
 
 impl Hash for ProgressTrackerUpdatePayload {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.phase_title.hash(state);
         self.title.hash(state);
         self.progress.to_bits().hash(state);
         if let Some(params) = &self.title_params {
             params.hasher();
         }
-        self.is_complete.hash(state);
     }
 }
 

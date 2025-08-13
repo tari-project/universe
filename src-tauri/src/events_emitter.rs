@@ -39,7 +39,7 @@ use crate::{
     },
     events::{
         DetectedAvailableGpuEnginesPayload, DetectedDevicesPayload, Event, EventType,
-        NetworkStatusPayload, NewBlockHeightPayload, NodeTypeUpdatePayload, ProgressEvents,
+        NetworkStatusPayload, NewBlockHeightPayload, NodeTypeUpdatePayload,
         ProgressTrackerUpdatePayload, ShowReleaseNotesPayload, TariAddressUpdatePayload,
     },
     hardware::hardware_status_monitor::PublicDeviceGpuProperties,
@@ -58,7 +58,6 @@ use crate::configs::config_pools::ConfigPoolsContent;
 
 const LOG_TARGET: &str = "tari::universe::events_emitter";
 const BACKEND_STATE_UPDATE: &str = "backend_state_update";
-const PROGRESS_TRACKER_UPDATE: &str = "progress_tracker_update";
 
 static INSTANCE: LazyLock<EventsEmitter> = LazyLock::new(EventsEmitter::new);
 pub(crate) struct EventsEmitter {
@@ -89,17 +88,14 @@ impl EventsEmitter {
             .expect("Cannot emit events due to missing AppHandle")
             .clone()
     }
-    pub async fn emit_progress_tracker_update(
-        event_type: ProgressEvents,
-        payload: ProgressTrackerUpdatePayload,
-    ) {
+    pub async fn emit_progress_tracker_update(payload: ProgressTrackerUpdatePayload) {
         let event = Event {
-            event_type,
+            event_type: EventType::SetupProgressUpdate,
             payload,
         };
         if let Err(e) = Self::get_app_handle()
             .await
-            .emit(PROGRESS_TRACKER_UPDATE, event)
+            .emit(BACKEND_STATE_UPDATE, event)
         {
             error!(target: LOG_TARGET, "Failed to emit ProgressTrackerUpdate event: {e:?}");
         }

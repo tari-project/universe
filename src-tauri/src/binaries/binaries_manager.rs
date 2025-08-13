@@ -30,7 +30,7 @@ use tokio::sync::watch::{channel, Sender};
 
 use crate::{
     download_utils::validate_checksum,
-    progress_trackers::progress_stepper::ChanneledStepUpdate,
+    progress_trackers::progress_stepper::TrackStepComplitionOverTime,
     requests::clients::http_file_client::HttpFileClient,
     tasks_tracker::TasksTrackers,
     utils::platform_utils::{CurrentOperatingSystem, PlatformUtils},
@@ -263,7 +263,7 @@ impl BinaryManager {
 
     async fn resolve_progress_channel(
         &self,
-        progress_channel: Option<ChanneledStepUpdate>,
+        progress_channel: Option<TrackStepComplitionOverTime>,
     ) -> Result<(Option<Sender<f64>>, Option<Shutdown>), Error> {
         if let Some(step_update_channel) = progress_channel {
             let (sender, mut receiver) = channel::<f64>(0.0);
@@ -318,7 +318,7 @@ impl BinaryManager {
 
     pub async fn download_version_with_retries(
         &self,
-        progress_channel: Option<ChanneledStepUpdate>,
+        progress_channel: Option<TrackStepComplitionOverTime>,
     ) -> Result<(), Error> {
         let mut last_error_message = String::new();
         for retry in 0..3 {
@@ -347,7 +347,7 @@ impl BinaryManager {
 
     pub async fn download_selected_version(
         &self,
-        progress_channel: Option<ChanneledStepUpdate>,
+        progress_channel: Option<TrackStepComplitionOverTime>,
     ) -> Result<(), Error> {
         let version = self.selected_version.clone();
 

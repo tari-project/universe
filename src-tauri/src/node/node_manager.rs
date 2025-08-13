@@ -47,7 +47,7 @@ use crate::process_adapter::ProcessAdapter;
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
 use crate::process_watcher::ProcessWatcherStats;
-use crate::progress_trackers::progress_stepper::ChanneledStepUpdate;
+use crate::progress_trackers::progress_stepper::TrackStepComplitionOverTime;
 use crate::setup::setup_manager::SetupManager;
 use crate::tasks_tracker::TasksTrackers;
 use crate::{BaseNodeStatus, LocalNodeAdapter, RemoteNodeAdapter};
@@ -147,7 +147,7 @@ impl NodeManager {
         use_tor: bool,
         tor_control_port: Option<u16>,
         remote_grpc_address: Option<String>,
-        migration_tracker: Option<ChanneledStepUpdate>,
+        migration_tracker: Option<TrackStepComplitionOverTime>,
     ) -> Result<(), NodeManagerError> {
         let shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
         let task_tracker = TasksTrackers::current().node_phase.get_task_tracker().await;
@@ -311,7 +311,7 @@ impl NodeManager {
 
     pub async fn wait_migration(
         &self,
-        migration_tracker: Option<ChanneledStepUpdate>,
+        migration_tracker: Option<TrackStepComplitionOverTime>,
     ) -> Result<(), NodeManagerError> {
         if self.is_local().await {
             let current_service = self.get_current_service().await;
