@@ -1,4 +1,4 @@
-import { AnimatePresence, Variants } from 'motion/react';
+import { AnimatePresence } from 'motion/react';
 
 import { AmtWrapper, EarningsContainer, EarningsWrapper, RecapText, WinText, WinWrapper } from './Earnings.styles.ts';
 
@@ -9,24 +9,21 @@ import i18n from 'i18next';
 import NumberFlow from '@number-flow/react';
 import { useEffect, useState } from 'react';
 
-const variants: Variants = {
-    visible: {
-        opacity: 1,
-        y: '-150%',
-        scale: 1.05,
-        transition: {
-            duration: 1,
-            ease: 'linear',
-            scale: {
-                duration: 0.8,
-            },
-        },
-    },
-    hidden: {
-        opacity: 0.2,
-        y: '-100%',
-        transition: { duration: 0.2, delay: 2.4, ease: 'linear' },
-    },
+const hideDelay = 5400;
+const numberFlowDelay = 300;
+
+const line1Animation = {
+    initial: { opacity: 0, y: 10 },
+    animate: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: 0 },
+    transition: { delay: 0 },
+};
+
+const line2Animation = {
+    initial: { opacity: 0, y: 10 },
+    animate: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: 0 },
+    transition: { delay: 0.2 },
 };
 
 export default function Earnings() {
@@ -39,40 +36,45 @@ export default function Earnings() {
     const [value, setValue] = useState(0);
     const [show, setShow] = useState(false);
 
-    useEffect(() => {
-        setShow(!!displayEarnings);
-    }, [displayEarnings]);
+    const handleHide = () => {
+        setShow(false);
+        setValue(0);
+        handleReplayComplete();
+    };
 
-    useEffect(() => {
-        if (displayEarnings && show) {
-            const minotariVal = removeXTMCryptoDecimals(displayEarnings);
-            let val = minotariVal;
-            if (minotariVal > 1000) {
-                val = Math.floor(minotariVal / 10) * 10; // to match sidebar value's formatting
-            }
-
-            setValue(val);
-        } else {
-            setValue(0);
+    const formatValue = (displayEarnings: number) => {
+        const minotariVal = removeXTMCryptoDecimals(displayEarnings);
+        let val = minotariVal;
+        if (minotariVal > 1000) {
+            val = Math.floor(minotariVal / 10) * 10; // to match sidebar value's formatting
         }
-    }, [displayEarnings, show]);
+        return val;
+    };
 
-    const recapText = recapData?.totalEarnings ? (
-        <RecapText>
-            <Trans
-                ns="mining-view"
-                i18nKey={'you-won-while-away'}
-                values={{
-                    blocks: `${recapData.count} block${recapData.count === 1 ? `` : 's'}`,
-                }}
-                components={{ span: <span /> }}
-            />
-        </RecapText>
-    ) : null;
+    useEffect(() => {
+        if (displayEarnings) {
+            setShow(true);
+
+            const spinTimeout = setTimeout(() => {
+                setValue(formatValue(displayEarnings));
+            }, numberFlowDelay);
+
+            const hideTimeout = setTimeout(() => {
+                handleHide();
+            }, hideDelay);
+
+            return () => {
+                clearTimeout(hideTimeout);
+                clearTimeout(spinTimeout);
+            };
+        } else {
+            handleHide();
+        }
+    }, [displayEarnings]);
 
     const replayText =
         replayItem?.tokenAmount && replayItem.mined_in_block_height ? (
-            <RecapText>
+            <RecapText {...line1Animation} key="replay-text">
                 <Trans
                     ns="mining-view"
                     i18nKey={'you-won-block'}
@@ -84,26 +86,27 @@ export default function Earnings() {
             </RecapText>
         ) : null;
 
+    const recapText = recapData?.totalEarnings ? (
+        <RecapText {...line1Animation} key="recap-text">
+            <Trans
+                ns="mining-view"
+                i18nKey={'you-won-while-away'}
+                values={{
+                    blocks: `${recapData.count} block${recapData.count === 1 ? `` : 's'}`,
+                }}
+                components={{ span: <span /> }}
+            />
+        </RecapText>
+    ) : null;
+
     return (
         <EarningsContainer>
-            <AnimatePresence
-                onExitComplete={() => {
-                    handleReplayComplete();
-                }}
-            >
+            <AnimatePresence>
                 {show && (
-                    <EarningsWrapper
-                        variants={variants}
-                        initial="hidden"
-                        animate="visible"
-                        exit="hidden"
-                        onAnimationComplete={() => {
-                            setShow(false);
-                        }}
-                    >
+                    <EarningsWrapper>
                         {replayText}
                         {recapText}
-                        <WinWrapper>
+                        <WinWrapper {...line2Animation} key="win-wrapper">
                             <WinText>{t('your-reward-is')}</WinText>
                             <AmtWrapper>
                                 <NumberFlow
@@ -115,6 +118,7 @@ export default function Earnings() {
                                         style: 'decimal',
                                     }}
                                     value={value}
+                                    isolate={true}
                                 />
                             </AmtWrapper>
                             <WinText>{`XTM`}</WinText>
