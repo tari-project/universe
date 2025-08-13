@@ -68,7 +68,7 @@ fn get_text_explore_url(network: Network) -> String {
 pub(crate) async fn get_best_block_from_block_scan(network: Network) -> Result<u64, anyhow::Error> {
     #[derive(Deserialize)]
     struct BlockScanResponse {
-        height: u64
+        height: u64,
     }
 
     let client = create_client()?;
@@ -88,7 +88,7 @@ pub(crate) async fn get_block_info_from_block_scan(
     #[derive(Deserialize)]
     struct BlockResponse {
         height: u64,
-        hash: String
+        hash: String,
     }
 
     let client = create_client()?;
