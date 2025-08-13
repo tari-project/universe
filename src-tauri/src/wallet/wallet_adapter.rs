@@ -40,7 +40,7 @@ use std::time::Duration;
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::{TariAddress, TariAddressError};
 use tari_core::transactions::tari_amount::MicroMinotari;
-use tari_core::transactions::transaction_components::payment_id::PaymentId;
+use tari_core::transactions::transaction_components::memo_field::MemoField;
 use tari_shutdown::Shutdown;
 use tokio::sync::watch;
 
@@ -150,7 +150,7 @@ impl WalletAdapter {
                     excess_sig: tx.excess_sig,
                     fee: tx.fee,
                     timestamp: tx.timestamp,
-                    payment_id: PaymentId::stringify_bytes(&tx.user_payment_id),
+                    payment_id: MemoField::stringify_bytes(&tx.user_payment_id),
                     mined_in_block_height: tx.mined_in_block_height,
                     payment_reference,
                 })
