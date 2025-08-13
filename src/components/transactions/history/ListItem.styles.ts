@@ -139,7 +139,7 @@ export const ReplayButton = styled.button`
     }
 `;
 
-export const ButtonWrapper = styled(m.div)`
+export const ButtonWrapper = styled.div`
     position: relative;
     align-items: center;
     display: flex;
