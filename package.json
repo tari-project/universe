@@ -16,10 +16,10 @@
     },
     "dependencies": {
         "@floating-ui/react": "^0.27.14",
-        "@lottiefiles/dotlottie-react": "^0.14.4",
+        "@lottiefiles/dotlottie-react": "^0.15.0",
         "@number-flow/react": "^0.5.9",
         "@tanstack/react-query": "^5.85.0",
-        "@tari-project/tari-tower": "^0.1.2",
+        "@tari-project/tari-tower": "^0.1.4",
         "@tari-project/wxtm-bridge-backend-api": "^0.1.38",
         "@tauri-apps/api": "^2.7.0",
         "@tauri-apps/plugin-clipboard-manager": "^2.3.0",
