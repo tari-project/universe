@@ -2,14 +2,14 @@ import CrewDivider from './CrewDivider/CrewDivider';
 import CrewEntry from './CrewEntry/CrewEntry';
 import { Inside, ListGroup, MessageButton, MessageText, MessageWrapper, OuterWrapper, Wrapper } from './styles';
 import { useTranslation } from 'react-i18next';
-import type { CrewMember, MinRequirements } from '@app/store/useAirdropStore';
+import type { CrewMember, MinRequirements, ReferrerProgressResponse } from '@app/store/useAirdropStore';
 import { transformCrewMemberToEntry } from '@app/containers/main/CrewRewards/crewTransformers';
 import CrewEntrySkeleton from './CrewEntrySkeleton/CrewEntrySkeleton';
 import PaginationControls from './PaginationControls/PaginationControls';
 
 interface Props {
     members: CrewMember[];
-    membersToNudge: CrewMember['user'][];
+    membersToNudge: ReferrerProgressResponse['membersToNudge'];
     minRequirements?: MinRequirements;
     isLoading: boolean;
     isFiltered?: boolean;
@@ -182,7 +182,7 @@ export default function CrewList({
                                 <ListGroup>
                                     {membersToNudge.map((item, index) => (
                                         <CrewEntry
-                                            key={item?.id || index}
+                                            key={`${item?.id || index}-${item?.name}`}
                                             entry={{
                                                 ...item,
                                                 id: item?.id || '',
@@ -190,7 +190,7 @@ export default function CrewList({
                                                 claimableRewardId: undefined,
                                                 handle: item?.name || '',
                                                 user: {
-                                                    avatar: item?.image || '',
+                                                    avatar: item?.imageUrl || '',
                                                     isOnline: false,
                                                 },
                                                 progress: 0,
