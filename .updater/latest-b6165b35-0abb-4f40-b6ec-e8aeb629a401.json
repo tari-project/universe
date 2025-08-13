@@ -1,0 +1,19 @@
+{
+  "version": "1.5.7",
+  "notes": "Tari Universe - See the assets to download this version and install",
+  "pub_date": "2025-08-12T10:39:07Z",
+  "platforms": {
+    "darwin-aarch64": {
+      "url": "https://cdn-universe.tari.com/tari-project/universe/exchanges/b6165b35-0abb-4f40-b6ec-e8aeb629a401/1.5.7/Tari Universe-CoinEx.app.tar.gz",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRbUtvKzlyYWhiOGJ3ek5CZm4xZmNKRGdhREJ2WDY2SFBERlI2OU5xRUczYzZMZzNlUHdSZVZTdVppT1FweVg4WExMUlRvTFAzTmZsSFd4UGQxQ1NuSkZWT250OWR0VkE0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzU0OTk0MDU5CWZpbGU6VGFyaSBVbml2ZXJzZS1Db2luRXguYXBwLnRhci5negpKWklncGFtT1o1MTMyL0JjN0tZa2FlaVJ3RTNtNlpHYVArazhmbk1GaEtCd1E0eFhLRjA3R2xob3ZLdm9DZFZ5UXo2ZHlUYS9pSEhrNUt6TUxyZUxDZz09Cg=="
+    },
+    "darwin-x86_64": {
+      "url": "https://cdn-universe.tari.com/tari-project/universe/exchanges/b6165b35-0abb-4f40-b6ec-e8aeb629a401/1.5.7/Tari Universe-CoinEx.app.tar.gz",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRbUtvKzlyYWhiOGJ3ek5CZm4xZmNKRGdhREJ2WDY2SFBERlI2OU5xRUczYzZMZzNlUHdSZVZTdVppT1FweVg4WExMUlRvTFAzTmZsSFd4UGQxQ1NuSkZWT250OWR0VkE0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzU0OTk0MDU5CWZpbGU6VGFyaSBVbml2ZXJzZS1Db2luRXguYXBwLnRhci5negpKWklncGFtT1o1MTMyL0JjN0tZa2FlaVJ3RTNtNlpHYVArazhmbk1GaEtCd1E0eFhLRjA3R2xob3ZLdm9DZFZ5UXo2ZHlUYS9pSEhrNUt6TUxyZUxDZz09Cg=="
+    },
+    "windows-x86_64": {
+      "url": "https://cdn-universe.tari.com/tari-project/universe/exchanges/b6165b35-0abb-4f40-b6ec-e8aeb629a401/1.5.7/Tari Universe-CoinEx_1.5.7_x64_en-US.msi",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRbUtvKzlyYWhiOFlwYXBULzZzU1RtVElyWENpMHhSalRpVmhTRVBZZ0RubGJHRWFWcDVqamtvUUNQWFY1ZVBEZ1RGL0pEemJBdHZOaS9JR2RtK1BZY0FSSmRSYXRYVWdZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzU0OTk0NTU3CWZpbGU6VGFyaSBVbml2ZXJzZS1Db2luRXhfMS41LjdfeDY0X2VuLVVTLm1zaQp4THJiU1pIS2NyZTNUa2ZOUTEvczRhcjRITXNvZkVOSU9YMXhJQWFZU0Z4ZlZHT1RsTnh0ektKNk43ZzVFQVQxQ3hrWEltSUpsNUFjQ3pQRDMxL3dCQT09Cg=="
+    }
+  }
+}

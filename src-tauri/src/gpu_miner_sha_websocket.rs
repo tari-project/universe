@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use log::{info, warn};
+use log::{debug, info, warn};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -139,7 +139,7 @@ impl GpuMinerShaWebSocket {
 
     pub async fn connect(self) {
         if self.socket_listener_thread.lock().await.is_some() {
-            warn!(target: LOG_TARGET, "WebSocket listener is already running");
+            debug!(target: LOG_TARGET, "WebSocket listener is already running");
             return;
         }
 
@@ -147,6 +147,9 @@ impl GpuMinerShaWebSocket {
             info!(target: LOG_TARGET, "Connected to WebSocket server: {response:?}" );
 
             let shutdown_signal = TasksTrackers::current().hardware_phase.get_signal().await;
+
+            let last_message = Arc::clone(&self.last_message);
+            let socket_listener_thread = Arc::clone(&self.socket_listener_thread);
 
             let thread = TasksTrackers::current()
                 .hardware_phase
@@ -170,21 +173,21 @@ impl GpuMinerShaWebSocket {
 
                                         match parsed_message {
                                             Ok(response) => {
-                                                *self.last_message.lock().await = Some(response.clone());
+                                                *last_message.lock().await = Some(response.clone());
 
                                             }
                                             Err(e) => {
-                                            if !self.last_message.lock().await.is_none() {
+                                            if !last_message.lock().await.is_none() {
                                                 info!(target: LOG_TARGET, "Received message: {text}");
                                             }
                                                 warn!(target: LOG_TARGET, "Failed to parse message: {e}");
-                                                *self.last_message.lock().await = None;
+                                                *last_message.lock().await = None;
                                             }
                                         }
                                     }
                                     Message::Close(_) => {
                                         println!("Connection closed by the server");
-                                        *self.last_message.lock().await = None;
+                                        *last_message.lock().await = None;
                                         break;
                                     }
                                     _ => {}
@@ -192,11 +195,13 @@ impl GpuMinerShaWebSocket {
                             }
                             Err(e) => {
                                 warn!(target: LOG_TARGET, "Error reading message: {e}");
-                                *self.last_message.lock().await = None;
+                                *last_message.lock().await = None;
                                 break;
                             }
                         }
                     }
+
+                    *socket_listener_thread.lock().await = None;
                 });
 
             *self.socket_listener_thread.lock().await = Some(thread);
