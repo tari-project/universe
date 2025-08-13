@@ -159,7 +159,7 @@ impl SystemTrayManager {
                 format_hashrate(data.cpu.cpu_hashrate),
                 format_hashrate(data.gpu.gpu_hashrate),
                 format_currency(
-                    (data.cpu.estimated_earning + data.gpu.estimated_earning) / 1_000_000,
+                    ((data.cpu.estimated_earning + data.gpu.estimated_earning) / 1_000_000) as f64,
                     "XTM/day"
                 )
             )),
@@ -219,12 +219,12 @@ impl SystemTrayManager {
 
     pub fn update_tray_with_gpu_data(&mut self, data: SystemTrayGpuData) {
         self.data.gpu = data;
-        update_tray(self, self.data.clone());
+        self.update_tray(self.data.clone());
     }
 
     pub fn update_tray_with_cpu_data(&mut self, data: SystemTrayCpuData) {
         self.data.cpu = data;
-        update_tray(self, self.data.clone());
+        self.update_tray(self.data.clone());
     }
 
     pub fn update_tray(&mut self, data: SystemTrayData) {
@@ -241,7 +241,7 @@ impl SystemTrayManager {
                 (SystrayItemId::GpuHashrate, data.gpu.gpu_hashrate),
                 (
                     SystrayItemId::EstimatedEarning,
-                    (data.cpu.estimated_earning + data.gpu.estimated_earning) / 1_000_000,
+                    ((data.cpu.estimated_earning + data.gpu.estimated_earning) / 1_000_000) as f64,
                 ),
             ] {
                 if let Some(item) = menu.get(id.to_str()) {

@@ -146,10 +146,10 @@ impl GpuMinerShaWebSocket {
         if let Ok((mut socket, response)) = connect("ws://localhost:8080/ws") {
             info!(target: LOG_TARGET, "Connected to WebSocket server: {response:?}" );
 
-            let shutdown_signal = TasksTrackers::current().hardware_phase.get_signal().await;
+            let shutdown_signal = TasksTrackers::current().gpu_mining_phase.get_signal().await;
 
             let thread = TasksTrackers::current()
-                .hardware_phase
+                .gpu_mining_phase
                 .get_task_tracker()
                 .await
                 .spawn(async move {

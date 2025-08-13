@@ -224,7 +224,7 @@ pub async fn select_exchange_miner(
     EventsEmitter::emit_exchange_id_changed(exchange_miner.id.clone()).await;
 
     SetupManager::get_instance()
-        .restart_phases(vec![SetupPhase::Wallet, SetupPhase::Mining])
+        .restart_phases(vec![SetupPhase::Wallet, SetupPhase::CpuMining])
         .await;
 
     Ok(())
@@ -512,17 +512,11 @@ pub async fn set_p2pool_stats_server_port(port: Option<u16>) -> Result<(), Invok
         }
     };
 
-    ConfigCore::update_field_requires_restart(
-        ConfigCoreContent::set_p2pool_stats_server_port,
-        port,
-        vec![SetupPhase::Mining],
-    )
-    .await
-    .map_err(InvokeError::from_anyhow)?;
+    // We are not restarting any phase here as p2pool is not used
+    ConfigCore::update_field(ConfigCoreContent::set_p2pool_stats_server_port, port)
+        .await
+        .map_err(InvokeError::from_anyhow)?;
 
-    SetupManager::get_instance()
-        .restart_phases_from_queue()
-        .await;
     Ok(())
 }
 
@@ -635,7 +629,7 @@ pub async fn set_external_tari_address(
     let timer = Instant::now();
 
     SetupManager::get_instance()
-        .shutdown_phases(vec![SetupPhase::Wallet, SetupPhase::Mining])
+        .shutdown_phases(vec![SetupPhase::Wallet, SetupPhase::CpuMining])
         .await;
 
     // Validate PIN if pin locked
@@ -786,7 +780,7 @@ pub async fn import_seed_words(
     let timer = Instant::now();
 
     SetupManager::get_instance()
-        .shutdown_phases(vec![SetupPhase::Wallet, SetupPhase::Mining])
+        .shutdown_phases(vec![SetupPhase::Wallet, SetupPhase::CpuMining])
         .await;
 
     match InternalWallet::import_tari_seed_words(seed_words, &app_handle).await {
@@ -817,7 +811,7 @@ pub async fn import_seed_words(
         .map_err(|e| e.to_string())?;
 
     SetupManager::get_instance()
-        .resume_phases(vec![SetupPhase::Wallet, SetupPhase::Mining])
+        .resume_phases(vec![SetupPhase::Wallet, SetupPhase::CpuMining])
         .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
@@ -834,7 +828,7 @@ pub async fn revert_to_internal_wallet(
     let timer = Instant::now();
 
     SetupManager::get_instance()
-        .shutdown_phases(vec![SetupPhase::Wallet, SetupPhase::Mining])
+        .shutdown_phases(vec![SetupPhase::Wallet, SetupPhase::CpuMining])
         .await;
 
     InternalWallet::initialize_with_seed(&app_handle)
@@ -849,7 +843,7 @@ pub async fn revert_to_internal_wallet(
     EventsEmitter::emit_exchange_id_changed(DEFAULT_EXCHANGE_ID.to_string()).await;
 
     SetupManager::get_instance()
-        .resume_phases(vec![SetupPhase::Wallet, SetupPhase::Mining])
+        .resume_phases(vec![SetupPhase::Wallet, SetupPhase::CpuMining])
         .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
@@ -1289,7 +1283,7 @@ pub async fn update_custom_mining_mode(
 pub async fn set_monero_address(monero_address: String) -> Result<(), InvokeError> {
     let timer = Instant::now();
     SetupManager::get_instance()
-        .add_phases_to_restart_queue(vec![SetupPhase::Mining])
+        .add_phases_to_restart_queue(vec![SetupPhase::CpuMining])
         .await;
 
     InternalWallet::set_external_monero_address(monero_address)
@@ -1315,7 +1309,7 @@ pub async fn set_monerod_config(
     ConfigCore::update_field_requires_restart(
         ConfigCoreContent::set_mmproxy_monero_nodes,
         monero_nodes.clone(),
-        vec![SetupPhase::Mining],
+        vec![SetupPhase::CpuMining],
     )
     .await
     .map_err(InvokeError::from_anyhow)?;
@@ -1323,7 +1317,7 @@ pub async fn set_monerod_config(
     ConfigCore::update_field_requires_restart(
         ConfigCoreContent::set_mmproxy_use_monero_failover,
         use_monero_fail,
-        vec![SetupPhase::Mining],
+        vec![SetupPhase::CpuMining],
     )
     .await
     .map_err(InvokeError::from_anyhow)?;
@@ -1345,7 +1339,7 @@ pub async fn set_p2pool_enabled(p2pool_enabled: bool) -> Result<(), InvokeError>
     ConfigCore::update_field_requires_restart(
         ConfigCoreContent::set_is_p2pool_enabled,
         p2pool_enabled,
-        vec![SetupPhase::Mining],
+        vec![SetupPhase::CpuMining],
     )
     .await
     .map_err(InvokeError::from_anyhow)?;
@@ -1420,11 +1414,7 @@ pub async fn set_tor_config(
         .map_err(|e| e.to_string())?;
 
     SetupManager::get_instance()
-        .restart_phases(vec![
-            SetupPhase::Node,
-            SetupPhase::Wallet,
-            SetupPhase::Mining,
-        ])
+        .restart_phases(vec![SetupPhase::Node, SetupPhase::Wallet])
         .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
@@ -1439,7 +1429,7 @@ pub async fn set_use_tor(use_tor: bool, app_handle: tauri::AppHandle) -> Result<
     ConfigCore::update_field_requires_restart(
         ConfigCoreContent::set_use_tor,
         use_tor,
-        vec![SetupPhase::Node, SetupPhase::Wallet, SetupPhase::Mining],
+        vec![SetupPhase::Node, SetupPhase::Wallet],
     )
     .await
     .map_err(InvokeError::from_anyhow)?;
@@ -1504,9 +1494,9 @@ pub async fn set_airdrop_tokens(airdrop_tokens: Option<AirdropTokens>) -> Result
 
     info!(target: LOG_TARGET, "New Airdrop tokens saved, user id changed:{user_id_changed:?}");
     if user_id_changed {
-        // If the user id changed, we need to restart the mining phases to ensure that the new telemetry_id ( unique_string value )is used
+        // If the user id changed, we need to restart the cpu mining phases to ensure that the new telemetry_id ( unique_string value )is used
         SetupManager::get_instance()
-            .restart_phases(vec![SetupPhase::Mining])
+            .restart_phases(vec![SetupPhase::CpuMining])
             .await;
     }
     Ok(())
@@ -1542,7 +1532,7 @@ pub async fn start_cpu_mining(
         let mut cpu_miner = state.cpu_miner.write().await;
         let res = cpu_miner
             .start(
-                TasksTrackers::current().hardware_phase.get_signal().await,
+                TasksTrackers::current().cpu_mining_phase.get_signal().await,
                 &cpu_miner_config,
                 mmproxy_manager,
                 app.path()
@@ -1753,7 +1743,7 @@ pub async fn toggle_cpu_pool_mining(enabled: bool) -> Result<(), String> {
         .map_err(|e| e.to_string())?;
 
     SetupManager::get_instance()
-        .restart_phases(vec![SetupPhase::Mining])
+        .restart_phases(vec![SetupPhase::CpuMining])
         .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
@@ -2113,7 +2103,7 @@ pub async fn set_node_type(
         ConfigCore::update_field_requires_restart(
             ConfigCoreContent::set_node_type,
             node_type.clone(),
-            vec![SetupPhase::Node, SetupPhase::Wallet, SetupPhase::Mining],
+            vec![SetupPhase::Node, SetupPhase::Wallet, SetupPhase::CpuMining],
         )
         .await
         .map_err(InvokeError::from_anyhow)?;

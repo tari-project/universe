@@ -168,16 +168,20 @@ impl UnlockStrategyTrait for DefaultStrategy {
     fn required_channels(&self) -> Vec<SetupPhase> {
         vec![
             SetupPhase::Core,
-            SetupPhase::Hardware,
+            SetupPhase::CpuMining,
+            SetupPhase::GpuMining,
             SetupPhase::Node,
             SetupPhase::Wallet,
-            SetupPhase::Mining,
         ]
     }
 }
 struct PoolStrategy;
 impl UnlockStrategyTrait for PoolStrategy {
     fn required_channels(&self) -> Vec<SetupPhase> {
-        vec![SetupPhase::Core, SetupPhase::Hardware]
+        vec![
+            SetupPhase::Core,
+            SetupPhase::CpuMining,
+            SetupPhase::GpuMining,
+        ]
     }
 }

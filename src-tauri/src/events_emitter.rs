@@ -495,20 +495,6 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_hardware_phase_finished(status: bool) {
-        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
-        let event = Event {
-            event_type: EventType::HardwarePhaseFinished,
-            payload: status,
-        };
-        if let Err(e) = Self::get_app_handle()
-            .await
-            .emit(BACKEND_STATE_UPDATE, event)
-        {
-            error!(target: LOG_TARGET, "Failed to emit HardwarePhaseFinished event: {e:?}");
-        }
-    }
-
     pub async fn emit_node_phase_finished(status: bool) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
@@ -520,20 +506,6 @@ impl EventsEmitter {
             .emit(BACKEND_STATE_UPDATE, event)
         {
             error!(target: LOG_TARGET, "Failed to emit NodePhaseFinished event: {e:?}");
-        }
-    }
-
-    pub async fn emit_mining_phase_finished(status: bool) {
-        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
-        let event = Event {
-            event_type: EventType::MiningPhaseFinished,
-            payload: status,
-        };
-        if let Err(e) = Self::get_app_handle()
-            .await
-            .emit(BACKEND_STATE_UPDATE, event)
-        {
-            error!(target: LOG_TARGET, "Failed to emit MiningPhaseFinished event: {e:?}");
         }
     }
 

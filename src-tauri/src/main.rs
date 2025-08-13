@@ -75,7 +75,7 @@ use crate::cpu_miner::CpuMiner;
 use crate::commands::CpuMinerConnection;
 use crate::feedback::Feedback;
 use crate::gpu_miner::GpuMiner;
-use crate::mm_proxy_manager::{MmProxyManager, StartConfig};
+use crate::mm_proxy_manager::MmProxyManager;
 use crate::node::node_manager::NodeManager;
 use crate::p2pool::models::P2poolStats;
 use crate::p2pool_manager::P2poolManager;

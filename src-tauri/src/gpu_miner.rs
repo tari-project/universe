@@ -121,9 +121,9 @@ impl GpuMiner {
         coinbase_extra: String,
         gpu_usage_percentage: u32,
     ) -> Result<(), anyhow::Error> {
-        let shutdown_signal = TasksTrackers::current().hardware_phase.get_signal().await;
+        let shutdown_signal = TasksTrackers::current().gpu_mining_phase.get_signal().await;
         let task_tracker = TasksTrackers::current()
-            .hardware_phase
+            .gpu_mining_phase
             .get_task_tracker()
             .await;
 

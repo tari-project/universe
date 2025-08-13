@@ -179,7 +179,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
                 .initialize_binary(Binaries::Tor, tor_binary_progress_tracker)
                 .await?;
         } else {
-            progress_stepper.skip_step();
+            progress_stepper.skip_step().await;
         };
 
         if node_type.is_local() {
@@ -189,7 +189,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
                 .await?;
         } else {
             info!(target: LOG_TARGET, "Skipping node binary installation for remote node");
-            progress_stepper.skip_step();
+            progress_stepper.skip_step().await;
         }
 
         let wallet_binary_progress_tracker = progress_stepper.channel_step_range_updates();
