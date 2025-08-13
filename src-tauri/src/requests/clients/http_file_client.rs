@@ -339,7 +339,7 @@ impl HttpFileClient {
             let current_size = file.metadata().await?.len();
 
             // If file is already complete, no need to download
-            if current_size >= expected_size {
+            if current_size >= expected_size && current_size > 0 {
                 info!(target: LOG_TARGET, "File already complete, skipping download");
                 return Ok(());
             }
