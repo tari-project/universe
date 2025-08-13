@@ -14,12 +14,12 @@ name: Release
   workflow_dispatch:
     inputs:
       network:
-        description: 'Target network (esme, nextnet, mainnet)'
+        description: 'Target network (esmeralda, nextnet, mainnet)'
         required: true
-        default: 'esme'
+        default: 'esmeralda'
         type: choice
         options:
-          - esme
+          - esmeralda
           - nextnet
           - mainnet
       asset_destination:
@@ -121,7 +121,7 @@ jobs:
         run: |
           #set -xueo pipefail
           echo "TARI_NETWORK=${{ github.event.inputs.network }}" >> $GITHUB_ENV
-          echo "TARI_TARGET_NETWORK=${{ github.event.inputs.network == 'esme' && 'testnet' || github.event.inputs.network }}" >> $GITHUB_ENV
+          echo "TARI_TARGET_NETWORK=${{ github.event.inputs.network == 'esmeralda' && 'testnet' || github.event.inputs.network }}" >> $GITHUB_ENV
           echo "AIRDROP_BASE_URL=${{ env.AIRDROP_BASE_URL }}" >> $GITHUB_ENV
           echo "AIRDROP_API_BASE_URL=${{ env.AIRDROP_API_BASE_URL }}" >> $GITHUB_ENV
           echo "TELEMETRY_API_URL=${{ env.TELEMETRY_API_URL }}" >> $GITHUB_ENV
