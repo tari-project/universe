@@ -7,6 +7,8 @@ import { TxHistoryFilter } from '@app/components/transactions/history/FilterSele
 import { TariAddressUpdatePayload } from '@app/types/events-payloads';
 import { addToast } from '@app/components/ToastStack/useToastStore';
 import { t } from 'i18next';
+import { startMining, stopMining } from './miningStoreActions';
+import { useMiningStore } from '../useMiningStore';
 
 // NOTE: Tx status differ for core and proto(grpc)
 export const COINBASE_BITFLAG = 6144;
@@ -68,7 +70,14 @@ export const importSeedWords = async (seedWords: string[]) => {
             progress: 0,
         },
     }));
+
+    const anyMiningInitiated =
+        useMiningStore.getState().isCpuMiningInitiated || useMiningStore.getState().isGpuMiningInitiated;
+
     try {
+        if (anyMiningInitiated) {
+            await stopMining();
+        }
         await invoke('import_seed_words', { seedWords });
         await refreshTransactions();
         useWalletStore.setState((c) => ({ ...c, is_wallet_importing: false }));
@@ -77,6 +86,9 @@ export const importSeedWords = async (seedWords: string[]) => {
             text: t('import-seed-success', { ns: 'settings' }),
             type: 'success',
         });
+        if (anyMiningInitiated) {
+            await startMining();
+        }
     } catch (error) {
         const errorMessage = error as unknown as string;
         if (!errorMessage.includes('User canceled the operation') && !errorMessage.includes('PIN entry cancelled')) {
