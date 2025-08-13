@@ -177,7 +177,7 @@ declare module '@tauri-apps/api/core' {
     function invoke(
         param: 'download_and_extract_tapp',
         payload: { tappletId: number }
-    ): Promise<RegisteredTappletWithAssets>;
+    ): Promise<InstalledTappletWithAssets>;
     function invoke(param: 'launch_tapplet', payload: { installedTappletId: number }): Promise<ActiveTapplet>;
     function invoke(param: 'set_ootle_enabled', payload: { enabled: boolean }): Promise<void>;
     function invoke(param: 'set_ootle_node_enabled', payload: { enabled: boolean }): Promise<void>;

@@ -45,8 +45,8 @@ export interface RegisteredTapplet {
     tapplet_permissions: string;
 }
 export interface Assets {
-    logoAddr: string;
-    backgroundAddr: string;
+    icon_url: string;
+    background_url: string;
 }
 
 export type RegisteredTappletWithAssets = RegisteredTapplet & Assets;
