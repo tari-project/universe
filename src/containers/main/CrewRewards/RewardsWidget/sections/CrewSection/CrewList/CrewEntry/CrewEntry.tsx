@@ -21,7 +21,7 @@ export default function CrewEntry({ entry, isClaimed }: Props) {
 
     const { invalidate } = useCrewMembers();
 
-    const canClaim = progress && progress >= 100 && status !== 'completed';
+    const canClaim = progress && progress >= 100;
 
     const isNudgeOnCooldown =
         memberId && nudgeCooldowns[memberId] ? Date.now() - nudgeCooldowns[memberId] < 5 * 60 * 1000 : false;
