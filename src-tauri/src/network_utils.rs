@@ -31,7 +31,7 @@ fn create_client() -> Result<reqwest::Client, anyhow::Error> {
     let mut headers = HeaderMap::new();
     headers.insert(
         HeaderName::from_static("x-requested-with"),
-        HeaderValue::from_str(&agent).unwrap(),
+        HeaderValue::from_str(&agent).unwrap_or(HeaderValue::from_static("tari-universe")),
     );
 
     let client = reqwest::Client::builder()
@@ -83,7 +83,7 @@ pub(crate) async fn get_best_block_from_block_scan(network: Network) -> Result<u
     }
 
     let client = create_client()?;
-    let response = client.get(&get_text_explore_url(network)).send().await?;
+    let response = client.get(get_text_explore_url(network)).send().await?;
     if response.status() == reqwest::StatusCode::NOT_FOUND {
         return Err(anyhow::anyhow!("Block scan API not found"));
     }
@@ -120,7 +120,7 @@ pub(crate) async fn get_block_info_from_block_scan(
 
     let client = create_client()?;
     let response = client
-        .get(&get_text_explore_blocks_url(network, *block_height))
+        .get(get_text_explore_blocks_url(network, *block_height))
         .send()
         .await?;
     if response.status() == reqwest::StatusCode::NOT_FOUND {
