@@ -28,9 +28,12 @@ use crate::database::models::{
     CreateTappletAudit, CreateTappletVersion, DevTapplet, InstalledTapplet, Tapplet,
     UpdateDevTapplet, UpdateInstalledTapplet,
 };
+use crate::database::schema::tapplet_asset::icon_url;
 use crate::database::store::{DatabaseConnection, SqliteStore, Store};
 use crate::tapplets::error::Error;
-use crate::tapplets::interface::{ActiveTapplet, AssetServer, InstalledTappletWithName};
+use crate::tapplets::interface::{
+    ActiveTapplet, AssetServer, InstalledTappletWithAssets, InstalledTappletWithName, TappletAssets,
+};
 use crate::tapplets::tapplet_installer::{
     check_files_and_validate_checksum, delete_tapplet, download_asset,
     fetch_tapp_registry_manifest, get_tapp_download_path,
@@ -311,7 +314,7 @@ pub async fn download_and_extract_tapp(
     db_connection: tauri::State<'_, DatabaseConnection>,
     app: tauri::AppHandle,
     tapplet_manager: tauri::State<'_, TappletManager>,
-) -> Result<Tapplet, String> {
+) -> Result<InstalledTappletWithAssets, String> {
     let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
     // let (tapp, tapp_version) = tapplet_store.get_registered_tapplet_with_version(tapplet_id);
     let (tapp, tapp_version) = match tapplet_store.get_registered_tapplet_with_version(tapplet_id) {
@@ -332,8 +335,8 @@ pub async fn download_and_extract_tapp(
     let download_url = tapp_version.registry_url.clone();
     let fallback_url = tapp_version.registry_url.clone(); //TODO change if fallback available
 
-    let tapplet_path = match tapplet_manager
-        .download_selected_version(download_url, fallback_url, dest_dir)
+    let archive_dest_path = match tapplet_manager
+        .download_selected_version(download_url, fallback_url, dest_dir.clone())
         .await
     {
         Ok(path) => path,
@@ -343,7 +346,7 @@ pub async fn download_and_extract_tapp(
     };
 
     //TODO should compare integrity field with the one stored in db or from github manifest?
-    match check_files_and_validate_checksum(tapp_version, tapplet_path.clone()) {
+    match check_files_and_validate_checksum(tapp_version, archive_dest_path, dest_dir.clone()) {
         Ok(is_valid) => {
             info!(target: LOG_TARGET,"✅ Checksum validation successfully with test result: {:?}", is_valid);
         }
@@ -352,7 +355,16 @@ pub async fn download_and_extract_tapp(
             return Err(e.to_string());
         }
     }
-    Ok(tapp)
+    let installed_tapplet =
+        insert_installed_tapp_db(tapplet_id, db_connection).map_err(|e| e.to_string())?;
+
+    Ok(InstalledTappletWithAssets {
+        installed_tapplet: installed_tapplet,
+        tapplet_assets: TappletAssets {
+            icon_url: tapp.logo_url,
+            background_url: tapp.background_url,
+        },
+    })
 }
 
 #[tauri::command]

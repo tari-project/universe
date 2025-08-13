@@ -124,6 +124,14 @@ pub struct TappletAssets {
     pub background_url: String,
 }
 
+#[derive(Serialize)]
+pub struct InstalledTappletWithAssets {
+    #[serde(flatten)]
+    pub installed_tapplet: InstalledTappletWithName,
+    #[serde(flatten)]
+    pub tapplet_assets: TappletAssets,
+}
+
 #[derive(Debug)]
 pub struct TappletSemver {
     pub tapplet_version: TappletVersion,

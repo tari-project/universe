@@ -195,7 +195,7 @@ impl TappletManager {
         let archive_destination_path: PathBuf;
 
         let main_file_download_result = HttpFileClient::builder()
-            .with_cloudflare_cache_check()
+            // .with_cloudflare_cache_check()
             .with_file_extract()
             .with_download_resume()
             .build(download_url, destination_dir.clone())?

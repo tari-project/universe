@@ -1,7 +1,6 @@
 use crate::{
     consts::{REGISTRY_URL, TAPPLETS_ASSETS_DIR, TAPPLETS_INSTALLED_DIR},
-    database::models::TappletVersion,
-    tapplets::interface::{RegisteredTapplets, TappletAssets, TappletConfig, TappletPermissions},
+    database::{models::TappletVersion, schema::tapplet},
     tapplets::{
         error::{
             Error::{self, IOError, JsonParsingError, RequestError},
@@ -9,6 +8,7 @@ use crate::{
             RequestError::*,
         },
         hash_calculator::calculate_checksum,
+        interface::{RegisteredTapplets, TappletAssets, TappletConfig, TappletPermissions},
     },
 };
 use log::{error, info, warn};
@@ -32,6 +32,8 @@ pub fn delete_tapplet(tapplet_path: PathBuf) -> Result<(), Error> {
 pub fn check_extracted_files(tapplet_path: PathBuf) -> Result<bool, Error> {
     // TODO define all needed files
     // universe.tari/tapplets_installed/<tapplet_name>/<version>/package
+    info!(target: LOG_TARGET, "Checking extracted files: {:?}", &tapplet_path);
+
     let tapp_dir: PathBuf = tapplet_path.join("package");
     let pkg_json_file = tapp_dir.join("package.json");
     // let manifest_file = tapp_dir.join("dist").join("tapplet.manifest.json");
@@ -187,23 +189,24 @@ pub async fn fetch_tapp_registry_manifest() -> Result<RegisteredTapplets, Error>
 
 pub fn check_files_and_validate_checksum(
     tapp: TappletVersion,
-    tapp_dir: PathBuf,
+    archieve_dir: PathBuf,
+    dest_dir: PathBuf,
 ) -> Result<bool, Error> {
-    let is_package_complete = check_extracted_files(tapp_dir.clone())?;
+    let is_package_complete = check_extracted_files(dest_dir.clone())?;
     if !is_package_complete {
         return Err(Error::TappletIncomplete {
             version: tapp.version.clone(),
         });
     }
-    // calculate `integrity` from downloaded tarball file
-    let integrity = calculate_checksum(tapp_dir)?;
-    let is_checksum_valid = tapp.integrity == integrity;
-    if !is_checksum_valid {
-        return Err(Error::InvalidChecksum {
+    info!(target: LOG_TARGET, "📋 Check  {:?}",&archieve_dir);
+    // calculate `integrity` from downloaded archieve file
+    let integrity = calculate_checksum(archieve_dir)?;
+    match tapp.integrity == integrity {
+        true => Ok(true),
+        false => Err(Error::InvalidChecksum {
             version: tapp.version.clone(),
-        });
+        }),
     }
-    Ok(is_checksum_valid)
 }
 
 pub fn _get_tapp_permissions(tapp_path: PathBuf) -> Result<TappletPermissions, Error> {

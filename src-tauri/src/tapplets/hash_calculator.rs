@@ -67,17 +67,16 @@ fn decode_hex(s: &str) -> Result<Vec<u8>, Error> {
         .collect()
 }
 
-pub fn calculate_checksum(tapplet_path: PathBuf) -> Result<String, Error> {
+pub fn calculate_checksum(tapplet_archieve_path: PathBuf) -> Result<String, Error> {
     // sha-512
     let sha: usize = 512;
-    let tarball_file = tapplet_path.join("tapplet.tar.gz");
 
     // calculate sha and convert
-    let shasum_output = read_data(&tarball_file, sha)?;
+    let shasum_output = read_data(&tapplet_archieve_path, sha)?;
     let decoded_shasum = decode_hex(&shasum_output)?;
     let converted_shasum = general_purpose::STANDARD.encode(decoded_shasum);
 
-    // format output to match `integrity` field from manifest.json
+    // format output to match `integrity` field from tapplet.manifest.json
     let calculated_integrity = format!("{}{}", "sha512-", converted_shasum.replace("\n", ""));
     Ok(calculated_integrity)
 }
