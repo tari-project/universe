@@ -23,7 +23,6 @@
 use crate::requests::utils::create_user_agent;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use serde::Deserialize;
-use std::fmt::Write as _;
 use tari_common::configuration::Network;
 
 fn create_client() -> Result<reqwest::Client, anyhow::Error> {
