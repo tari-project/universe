@@ -214,7 +214,7 @@ impl ProgressStep for ProgressSetupCpuMiningPlan {
     fn get_title(&self) -> String {
         match self {
             ProgressSetupCpuMiningPlan::BinariesCpuMiner => "binaries-cpu-miner".to_string(),
-            ProgressSetupNodePlan::BinariesMergeMiningProxy => {
+            ProgressSetupCpuMiningPlan::BinariesMergeMiningProxy => {
                 "binaries-merge-mining-proxy".to_string()
             }
             ProgressSetupCpuMiningPlan::MMProxy => "mm-proxy".to_string(),
@@ -232,8 +232,10 @@ impl ProgressStep for ProgressSetupCpuMiningPlan {
 
 #[derive(Clone, PartialEq, Debug)]
 pub enum ProgressSetupGpuMiningPlan {
-    BinariesGpuMiner,
-    DetectGPU,
+    BinariesGlytexMiner,
+    BinariesGraxilMiner,
+    GlytexDetectGPU,
+    GraxilDetectGPU,
     Done,
 }
 
@@ -246,16 +248,20 @@ impl ProgressStep for ProgressSetupGpuMiningPlan {
 
     fn get_progress_weight(&self) -> u8 {
         match self {
-            ProgressSetupGpuMiningPlan::BinariesGpuMiner => 2,
-            ProgressSetupGpuMiningPlan::DetectGPU => 1,
+            ProgressSetupGpuMiningPlan::BinariesGlytexMiner => 2,
+            ProgressSetupGpuMiningPlan::BinariesGraxilMiner => 1,
+            ProgressSetupGpuMiningPlan::GlytexDetectGPU => 1,
+            ProgressSetupGpuMiningPlan::GraxilDetectGPU => 1,
             ProgressSetupGpuMiningPlan::Done => 1,
         }
     }
 
     fn get_title(&self) -> String {
         match self {
-            ProgressSetupGpuMiningPlan::BinariesGpuMiner => "binaries-gpu-miner".to_string(),
-            ProgressSetupGpuMiningPlan::DetectGPU => "detect-gpu".to_string(),
+            ProgressSetupGpuMiningPlan::BinariesGlytexMiner => "binaries-glytex-miner".to_string(),
+            ProgressSetupGpuMiningPlan::BinariesGraxilMiner => "binaries-graxil-miner".to_string(),
+            ProgressSetupGpuMiningPlan::GlytexDetectGPU => "glytex-detect-gpu".to_string(),
+            ProgressSetupGpuMiningPlan::GraxilDetectGPU => "graxil-detect-gpu".to_string(),
             ProgressSetupGpuMiningPlan::Done => "done".to_string(),
         }
     }

@@ -110,7 +110,7 @@ impl ProgressStepper {
                         "phase": resolved_step.get_phase_title(),
                         "step": event.get_title(),
                         "percentage": resolved_percentage,
-                        "is_completed": is_completed,
+                        "is_completed": self.plan.is_empty(),
                     }),
                 )
                 .await;
@@ -121,23 +121,13 @@ impl ProgressStepper {
         if let (Some(resolved_step), Some(resolved_percentage)) =
             (self.plan.pop(), self.percentage_steps.pop())
         {
-            if let (Some(next_step), Some(next_percentage)) =
+            if let (Some(_next_step), Some(next_percentage)) =
                 (self.plan.last(), self.percentage_steps.last())
             {
-                let next_step_percentage = Some(*next_percentage);
                 let channel_step_update = ChanneledStepUpdate {
                     step: resolved_step.clone(),
                     step_percentage: resolved_percentage,
-                    next_step_percentage,
-                    timeout_watcher_sender: self.timeout_watcher_sender.clone(),
-                };
-
-                return Some(channel_step_update);
-            } else {
-                let channel_step_update = ChanneledStepUpdate {
-                    step: resolved_step.clone(),
-                    step_percentage: resolved_percentage,
-                    next_step_percentage: None,
+                    next_step_percentage: *next_percentage,
                     timeout_watcher_sender: self.timeout_watcher_sender.clone(),
                 };
 

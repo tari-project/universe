@@ -154,11 +154,7 @@ impl SetupPhaseImpl for CoreSetupPhase {
         let mut progress_stepper = self.progress_stepper.lock().await;
         let state = self.app_handle.state::<UniverseAppState>();
 
-        progress_stepper
-            .resolve_step(ProgressPlans::Core(
-                ProgressSetupCorePlan::InitializeApplicationModules,
-            ))
-            .await;
+        progress_stepper.resolve_step().await;
 
         state
             .updates_manager
@@ -184,9 +180,7 @@ impl SetupPhaseImpl for CoreSetupPhase {
             .await
             .set_app_handle(self.app_handle.clone());
 
-        progress_stepper
-            .resolve_step(ProgressPlans::Core(ProgressSetupCorePlan::NetworkSpeedTest))
-            .await;
+        progress_stepper.resolve_step().await;
 
         NetworkStatus::current().run_speed_test_with_timeout().await;
 
@@ -196,11 +190,7 @@ impl SetupPhaseImpl for CoreSetupPhase {
     async fn finalize_setup(&self) -> Result<(), anyhow::Error> {
         self.status_sender.send(PhaseStatus::Success).ok();
 
-        self.progress_stepper
-            .lock()
-            .await
-            .resolve_step(ProgressPlans::Core(ProgressSetupCorePlan::Done))
-            .await;
+        self.progress_stepper.lock().await.resolve_step().await;
 
         EventsEmitter::emit_core_phase_finished(true).await;
 

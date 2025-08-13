@@ -28,10 +28,7 @@ use super::listeners::listener_unlock_wallet::ListenerUnlockWallet;
 use super::listeners::trait_listener::UnlockConditionsListenerTrait;
 use super::listeners::{setup_listener, SetupFeature, SetupFeaturesList};
 use super::trait_setup_phase::SetupPhaseImpl;
-use super::{
-    phase_core::CoreSetupPhase, phase_hardware::HardwareSetupPhase, phase_mining::MiningSetupPhase,
-    phase_node::NodeSetupPhase, phase_wallet::WalletSetupPhase, utils::phase_builder::PhaseBuilder,
-};
+use super::utils::phase_builder::PhaseBuilder;
 use crate::app_in_memory_config::{MinerType, DEFAULT_EXCHANGE_ID};
 use crate::commands::{start_cpu_mining, start_gpu_mining};
 use crate::configs::config_core::ConfigCoreContent;
@@ -40,6 +37,11 @@ use crate::configs::config_ui::WalletUIMode;
 use crate::configs::config_wallet::ConfigWalletContent;
 use crate::events::CriticalProblemPayload;
 use crate::internal_wallet::InternalWallet;
+use crate::setup::{
+    phase_core::CoreSetupPhase, phase_cpu_mining::CpuMiningSetupPhase,
+    phase_gpu_mining::GpuMiningSetupPhase, phase_node::NodeSetupPhase,
+    phase_wallet::WalletSetupPhase,
+};
 use crate::{
     configs::{
         config_core::ConfigCore, config_mining::ConfigMining, config_ui::ConfigUI,
@@ -479,20 +481,35 @@ impl SetupManager {
         core_phase_setup.setup().await;
     }
 
-    // async fn setup_hardware_phase(&self) {
-    //     let app_handle = self.app_handle().await;
-    //     let setup_features = self.features.read().await.clone();
-    //     let hardware_phase_setup = PhaseBuilder::new()
-    //         .with_setup_timeout_duration(Duration::from_secs(60 * 10)) // 10 minutes
-    //         .with_listeners_for_required_phases_statuses(vec![self.core_phase_status.subscribe()])
-    //         .build::<HardwareSetupPhase>(
-    //             app_handle.clone(),
-    //             self.hardware_phase_status.clone(),
-    //             setup_features,
-    //         )
-    //         .await;
-    //     hardware_phase_setup.setup().await;
-    // }
+    async fn setup_cpu_mining_phase(&self) {
+        let app_handle = self.app_handle().await;
+        let setup_features = self.features.read().await.clone();
+        let cpu_mining_phase_setup = PhaseBuilder::new()
+            .with_setup_timeout_duration(Duration::from_secs(60 * 10)) // 10 minutes
+            .with_listeners_for_required_phases_statuses(vec![self.core_phase_status.subscribe()])
+            .build::<CpuMiningSetupPhase>(
+                app_handle.clone(),
+                self.cpu_mining_phase_status.clone(),
+                setup_features,
+            )
+            .await;
+        cpu_mining_phase_setup.setup().await;
+    }
+
+    async fn setup_gpu_mining_phase(&self) {
+        let app_handle = self.app_handle().await;
+        let setup_features = self.features.read().await.clone();
+        let gpu_mining_phase_setup = PhaseBuilder::new()
+            .with_setup_timeout_duration(Duration::from_secs(60 * 10)) // 10 minutes
+            .with_listeners_for_required_phases_statuses(vec![self.core_phase_status.subscribe()])
+            .build::<GpuMiningSetupPhase>(
+                app_handle.clone(),
+                self.gpu_mining_phase_status.clone(),
+                setup_features,
+            )
+            .await;
+        gpu_mining_phase_setup.setup().await;
+    }
 
     async fn setup_node_phase(&self) {
         let app_handle = self.app_handle().await;
@@ -525,24 +542,6 @@ impl SetupManager {
         wallet_phase_setup.setup().await;
     }
 
-    // async fn setup_mining_phase(&self) {
-    //     let app_handle = self.app_handle().await;
-    //     let setup_features = self.features.read().await.clone();
-    //     let mining_phase_setup = PhaseBuilder::new()
-    //         .with_setup_timeout_duration(Duration::from_secs(60 * 10)) // 10 minutes
-    //         .with_listeners_for_required_phases_statuses(vec![
-    //             self.node_phase_status.subscribe(),
-    //             self.hardware_phase_status.subscribe(),
-    //         ])
-    //         .build::<MiningSetupPhase>(
-    //             app_handle.clone(),
-    //             self.mining_phase_status.clone(),
-    //             setup_features,
-    //         )
-    //         .await;
-    //     mining_phase_setup.setup().await;
-    // }
-
     pub async fn mark_exchange_modal_as_completed(&self) -> Result<(), anyhow::Error> {
         self.exchange_modal_status
             .send(ExchangeModalStatus::Completed)?;
@@ -557,10 +556,15 @@ impl SetupManager {
                     TasksTrackers::current().core_phase.replace().await;
                     let _unused = self.core_phase_status.send_replace(PhaseStatus::None);
                 }
-                SetupPhase::Hardware => {
-                    TasksTrackers::current().hardware_phase.close().await;
-                    TasksTrackers::current().hardware_phase.replace().await;
-                    let _unused = self.hardware_phase_status.send_replace(PhaseStatus::None);
+                SetupPhase::CpuMining => {
+                    TasksTrackers::current().cpu_mining_phase.close().await;
+                    TasksTrackers::current().cpu_mining_phase.replace().await;
+                    let _unused = self.cpu_mining_phase_status.send_replace(PhaseStatus::None);
+                }
+                SetupPhase::GpuMining => {
+                    TasksTrackers::current().gpu_mining_phase.close().await;
+                    TasksTrackers::current().gpu_mining_phase.replace().await;
+                    let _unused = self.gpu_mining_phase_status.send_replace(PhaseStatus::None);
                 }
                 SetupPhase::Node => {
                     TasksTrackers::current().node_phase.close().await;
@@ -571,11 +575,6 @@ impl SetupManager {
                     TasksTrackers::current().wallet_phase.close().await;
                     TasksTrackers::current().wallet_phase.replace().await;
                     let _unused = self.wallet_phase_status.send_replace(PhaseStatus::None);
-                }
-                SetupPhase::Mining => {
-                    TasksTrackers::current().mining_phase.close().await;
-                    TasksTrackers::current().mining_phase.replace().await;
-                    let _unused = self.mining_phase_status.send_replace(PhaseStatus::None);
                 }
             }
         }
@@ -620,9 +619,13 @@ impl SetupManager {
                 SetupPhase::Core => {
                     self.setup_core_phase().await;
                 }
-                SetupPhase::Hardware => {
-                    self.setup_hardware_phase().await;
+                SetupPhase::CpuMining => {
+                    self.setup_cpu_mining_phase().await;
                 }
+                SetupPhase::GpuMining => {
+                    self.setup_gpu_mining_phase().await;
+                }
+
                 SetupPhase::Node => {
                     self.setup_node_phase().await;
                 }
@@ -632,9 +635,6 @@ impl SetupManager {
                         continue;
                     }
                     self.setup_wallet_phase().await;
-                }
-                SetupPhase::Mining => {
-                    self.setup_mining_phase().await;
                 }
             }
         }
@@ -690,17 +690,17 @@ impl SetupManager {
 
         let setup_features = self.features.read().await.clone();
         let core_phase_status = self.core_phase_status.subscribe();
-        let hardware_phase_status = self.hardware_phase_status.subscribe();
+        let cpu_mining_phase_status = self.cpu_mining_phase_status.subscribe();
+        let gpu_mining_phase_status = self.gpu_mining_phase_status.subscribe();
         let node_phase_status = self.node_phase_status.subscribe();
         let wallet_phase_status = self.wallet_phase_status.subscribe();
-        let mining_phase_status = self.mining_phase_status.subscribe();
 
         let mut phase_status_channels = HashMap::new();
         phase_status_channels.insert(SetupPhase::Core, core_phase_status.clone());
-        phase_status_channels.insert(SetupPhase::Hardware, hardware_phase_status.clone());
+        phase_status_channels.insert(SetupPhase::CpuMining, cpu_mining_phase_status.clone());
+        phase_status_channels.insert(SetupPhase::GpuMining, gpu_mining_phase_status.clone());
         phase_status_channels.insert(SetupPhase::Node, node_phase_status.clone());
         phase_status_channels.insert(SetupPhase::Wallet, wallet_phase_status.clone());
-        phase_status_channels.insert(SetupPhase::Mining, mining_phase_status.clone());
 
         ListenerUnlockApp::current()
             .load_app_handle(app_handle.clone())
@@ -741,10 +741,10 @@ impl SetupManager {
         .await;
 
         self.setup_core_phase().await;
-        self.setup_hardware_phase().await;
+        self.setup_cpu_mining_phase().await;
+        self.setup_gpu_mining_phase().await;
         self.setup_node_phase().await;
         self.setup_wallet_phase().await;
-        self.setup_mining_phase().await;
     }
 
     /// Used in handle_unhealthy for graxil miner
@@ -804,7 +804,7 @@ impl SetupManager {
         EventsEmitter::emit_pools_config_loaded(&ConfigPools::content().await).await;
 
         // Solo mining will require mmproxy to be running
-        self.restart_phases(vec![SetupPhase::Mining]).await;
+        self.restart_phases(vec![SetupPhase::CpuMining]).await;
 
         start_cpu_mining(app_state.clone(), app_handle.clone())
             .await
@@ -819,8 +819,7 @@ impl SetupManager {
             EventsManager::handle_node_type_update(&app_handle).await;
 
             info!(target: LOG_TARGET, "Restarting Phases");
-            self.restart_phases(vec![SetupPhase::Wallet, SetupPhase::Mining])
-                .await;
+            self.restart_phases(vec![SetupPhase::Wallet]).await;
         } else {
             error!(target: LOG_TARGET, "Failed to reset phases after switching to Local Node: app_handle not defined");
         }

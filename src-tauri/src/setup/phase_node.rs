@@ -174,45 +174,32 @@ impl SetupPhaseImpl for NodeSetupPhase {
         let mut progress_stepper = self.progress_stepper.lock().await;
 
         if self.app_configuration.use_tor && !cfg!(target_os = "macos") {
-            let tor_binary_progress_tracker = progress_stepper.channel_step_range_updates(
-                ProgressPlans::Node(ProgressSetupNodePlan::BinariesTor),
-                Some(ProgressPlans::Node(ProgressSetupNodePlan::BinariesNode)),
-            );
+            let tor_binary_progress_tracker = progress_stepper.channel_step_range_updates();
             binary_resolver
                 .initialize_binary(Binaries::Tor, tor_binary_progress_tracker)
                 .await?;
         } else {
-            progress_stepper.skip_step(ProgressPlans::Node(ProgressSetupNodePlan::BinariesTor));
+            progress_stepper.skip_step();
         };
 
         if node_type.is_local() {
-            let node_binary_progress_tracker = progress_stepper.channel_step_range_updates(
-                ProgressPlans::Node(ProgressSetupNodePlan::BinariesNode),
-                Some(ProgressPlans::Node(ProgressSetupNodePlan::BinariesWallet)),
-            );
+            let node_binary_progress_tracker = progress_stepper.channel_step_range_updates();
             binary_resolver
                 .initialize_binary(Binaries::MinotariNode, node_binary_progress_tracker)
                 .await?;
         } else {
             info!(target: LOG_TARGET, "Skipping node binary installation for remote node");
-            progress_stepper.skip_step(ProgressPlans::Node(ProgressSetupNodePlan::BinariesNode));
+            progress_stepper.skip_step();
         }
 
-        let wallet_binary_progress_tracker = progress_stepper.channel_step_range_updates(
-            ProgressPlans::Node(ProgressSetupNodePlan::BinariesWallet),
-            Some(ProgressPlans::Node(
-                ProgressSetupNodePlan::BinariesMergeMiningProxy,
-            )),
-        );
+        let wallet_binary_progress_tracker = progress_stepper.channel_step_range_updates();
 
         binary_resolver
             .initialize_binary(Binaries::Wallet, wallet_binary_progress_tracker)
             .await?;
 
         if self.app_configuration.use_tor && !cfg!(target_os = "macos") {
-            progress_stepper
-                .resolve_step(ProgressPlans::Node(ProgressSetupNodePlan::StartTor))
-                .await;
+            progress_stepper.resolve_step().await;
             state
                 .tor_manager
                 .ensure_started(data_dir.clone(), config_dir.clone(), log_dir.clone())
@@ -220,16 +207,9 @@ impl SetupPhaseImpl for NodeSetupPhase {
         }
 
         // Set up migration progress tracking
-        let migration_tracker = progress_stepper.channel_step_range_updates(
-            ProgressPlans::Node(ProgressSetupNodePlan::MigratingDatabase),
-            Some(ProgressPlans::Node(ProgressSetupNodePlan::StartingNode)),
-        );
+        let migration_tracker = progress_stepper.channel_step_range_updates();
 
-        progress_stepper
-            .resolve_step(ProgressPlans::Node(
-                ProgressSetupNodePlan::MigratingDatabase,
-            ))
-            .await;
+        progress_stepper.resolve_step().await;
 
         for _i in 0..2 {
             let tor_control_port = state.tor_manager.get_control_port().await?;
@@ -271,9 +251,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
             }
         }
 
-        progress_stepper
-            .resolve_step(ProgressPlans::Node(ProgressSetupNodePlan::StartingNode))
-            .await;
+        progress_stepper.resolve_step().await;
 
         if node_type.is_local() {
             self.wait_node_synced_with_progress(progress_stepper)
@@ -281,15 +259,9 @@ impl SetupPhaseImpl for NodeSetupPhase {
         } else {
             info!(target: LOG_TARGET, "Skipping syncing condition for remote node");
             // Assume remote node is already synced
-            progress_stepper.skip_step(ProgressPlans::Node(
-                ProgressSetupNodePlan::WaitingForInitialSync,
-            ));
-            progress_stepper.skip_step(ProgressPlans::Node(
-                ProgressSetupNodePlan::WaitingForHeaderSync,
-            ));
-            progress_stepper.skip_step(ProgressPlans::Node(
-                ProgressSetupNodePlan::WaitingForBlockSync,
-            ));
+            progress_stepper.skip_step().await;
+            progress_stepper.skip_step().await;
+            progress_stepper.skip_step().await;
         }
 
         Ok(())
@@ -297,11 +269,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
 
     async fn finalize_setup(&self) -> Result<(), Error> {
         self.status_sender.send(PhaseStatus::Success).ok();
-        self.progress_stepper
-            .lock()
-            .await
-            .resolve_step(ProgressPlans::Node(ProgressSetupNodePlan::Done))
-            .await;
+        self.progress_stepper.lock().await.resolve_step().await;
 
         EventsEmitter::emit_node_phase_finished(true).await;
 
@@ -415,22 +383,9 @@ impl NodeSetupPhase {
         let (progress_percentage_tx, progress_percentage_rx) = watch::channel(0f64);
         let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
 
-        let wait_for_initial_sync_tracker = progress_stepper.channel_step_range_updates(
-            ProgressPlans::Node(ProgressSetupNodePlan::WaitingForInitialSync),
-            Some(ProgressPlans::Node(
-                ProgressSetupNodePlan::WaitingForHeaderSync,
-            )),
-        );
-        let wait_for_header_sync_tracker = progress_stepper.channel_step_range_updates(
-            ProgressPlans::Node(ProgressSetupNodePlan::WaitingForHeaderSync),
-            Some(ProgressPlans::Node(
-                ProgressSetupNodePlan::WaitingForBlockSync,
-            )),
-        );
-        let wait_for_block_sync_tracker = progress_stepper.channel_step_range_updates(
-            ProgressPlans::Node(ProgressSetupNodePlan::WaitingForBlockSync),
-            Some(ProgressPlans::Node(ProgressSetupNodePlan::Done)),
-        );
+        let wait_for_initial_sync_tracker = progress_stepper.channel_step_range_updates();
+        let wait_for_header_sync_tracker = progress_stepper.channel_step_range_updates();
+        let wait_for_block_sync_tracker = progress_stepper.channel_step_range_updates();
 
         let progress_handle = TasksTrackers::current()
             .node_phase

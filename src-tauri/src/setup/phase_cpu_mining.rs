@@ -237,14 +237,14 @@ impl SetupPhaseImpl for CpuMiningSetupPhase {
                             let cpu_status = cpu_miner_status_watch_rx.borrow().clone();
                             EventsEmitter::emit_cpu_mining_update(cpu_status.clone()).await;
 
-                        let systray_data = SystemTrayCpuData {
+                        let cpu_systemtray_data = SystemTrayCpuData {
                             cpu_hashrate: cpu_status.hash_rate,
                             estimated_earning: cpu_status.estimated_earnings,
                         };
 
                         match try_write_with_retry(&app_state.systemtray_manager, 6).await {
                             Ok(mut sm) => {
-                                sm.update_tray_with_cpu_data(systray_data);
+                                sm.update_tray_with_cpu_data(cpu_systemtray_data);
                             },
                             Err(error) => {
                                 error!(target: LOG_TARGET, "Failed to acquire systemtray_manager write lock: {error}");

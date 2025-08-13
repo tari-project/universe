@@ -22,18 +22,18 @@
 
 use crate::{
     binaries::{Binaries, BinaryResolver},
-    configs::{config_core::ConfigCore, trait_config::ConfigImpl},
+    configs::{config_mining::ConfigMining, trait_config::ConfigImpl},
     events_emitter::EventsEmitter,
-    hardware::hardware_status_monitor::HardwareStatusMonitor,
-    internal_wallet::InternalWallet,
-    mm_proxy_manager::StartConfig,
+    gpu_devices::GpuDevices,
+    gpu_miner::EngineType,
+    gpu_miner_adapter::GpuMinerStatus,
     progress_trackers::{
-        progress_plans::{ProgressPlans, ProgressSetupCpuMiningPlan},
+        progress_plans::{ProgressPlans, ProgressSetupGpuMiningPlan},
         progress_stepper::ProgressStepperBuilder,
         ProgressStepper,
     },
-    setup::{listeners::SetupFeature, setup_manager::SetupPhase},
-    systemtray_manager::SystemTrayCpuData,
+    setup::setup_manager::SetupPhase,
+    systemtray_manager::SystemTrayGpuData,
     tasks_tracker::TasksTrackers,
     utils::locks_utils::try_write_with_retry,
     UniverseAppState,
@@ -61,7 +61,9 @@ use super::{
 static LOG_TARGET: &str = "tari::universe::phase_gpu_mining";
 
 #[derive(Clone, Default)]
-pub struct GpuMiningSetupPhaseAppConfiguration {}
+pub struct GpuMiningSetupPhaseAppConfiguration {
+    gpu_engine: EngineType,
+}
 
 pub struct GpuMiningSetupPhase {
     app_handle: AppHandle,
@@ -102,11 +104,11 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
         &self.app_handle
     }
     async fn get_shutdown_signal(&self) -> ShutdownSignal {
-        TasksTrackers::current().cpu_mining_phase.get_signal().await
+        TasksTrackers::current().gpu_mining_phase.get_signal().await
     }
     async fn get_task_tracker(&self) -> TaskTracker {
         TasksTrackers::current()
-            .cpu_mining_phase
+            .gpu_mining_phase
             .get_task_tracker()
             .await
     }
@@ -116,7 +118,7 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
             .clone()
     }
     fn get_phase_id(&self) -> SetupPhase {
-        SetupPhase::CpuMining
+        SetupPhase::GpuMining
     }
     fn get_timeout_watcher(&self) -> &TimeoutWatcher {
         &self.timeout_watcher
@@ -127,27 +129,26 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
         timeout_watcher_sender: Sender<u64>,
     ) -> ProgressStepper {
         ProgressStepperBuilder::new()
-            .add_step(ProgressPlans::CpuMining(
-                ProgressSetupCpuMiningPlan::BinariesCpuMiner,
+            .add_step(ProgressPlans::GpuMining(
+                ProgressSetupGpuMiningPlan::BinariesGlytexMiner,
             ))
-            .add_step(ProgressPlans::CpuMining(
-                ProgressSetupCpuMiningPlan::BinariesMergeMiningProxy,
+            .add_step(ProgressPlans::GpuMining(
+                ProgressSetupGpuMiningPlan::BinariesGraxilMiner,
             ))
-            .add_step(ProgressPlans::CpuMining(
-                ProgressSetupCpuMiningPlan::MMProxy,
+            .add_step(ProgressPlans::GpuMining(
+                ProgressSetupGpuMiningPlan::GlytexDetectGPU,
             ))
-            .add_step(ProgressPlans::CpuMining(ProgressSetupCpuMiningPlan::Done))
+            .add_step(ProgressPlans::GpuMining(
+                ProgressSetupGpuMiningPlan::GraxilDetectGPU,
+            ))
+            .add_step(ProgressPlans::GpuMining(ProgressSetupGpuMiningPlan::Done))
             .build(app_handle.clone(), timeout_watcher_sender)
     }
 
     async fn load_app_configuration() -> Result<Self::AppConfiguration, Error> {
-        let mmproxy_monero_nodes = ConfigCore::content().await.mmproxy_monero_nodes().clone();
-        let mmproxy_use_monero_fail = *ConfigCore::content().await.mmproxy_use_monero_failover();
+        let gpu_engine = ConfigMining::content().await.gpu_engine().clone();
 
-        Ok(CpuMiningSetupPhaseAppConfiguration {
-            mmproxy_monero_nodes,
-            mmproxy_use_monero_fail,
-        })
+        Ok(GpuMiningSetupPhaseAppConfiguration { gpu_engine })
     }
 
     async fn setup(self) {
@@ -156,59 +157,43 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
 
     async fn setup_inner(&self) -> Result<(), Error> {
         let mut progress_stepper = self.progress_stepper.lock().await;
-        let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
+        let (data_dir, config_dir, _log_dir) = self.get_app_dirs()?;
         let state = self.app_handle.state::<UniverseAppState>();
 
         let binary_resolver = BinaryResolver::current();
 
-        let cpu_miner_binary_progress_tracker = progress_stepper.channel_step_range_updates();
+        let glytex_binary_progress_tracker = progress_stepper.channel_step_range_updates();
 
         binary_resolver
-            .initialize_binary(Binaries::Xmrig, cpu_miner_binary_progress_tracker)
+            .initialize_binary(Binaries::GpuMinerSHA3X, glytex_binary_progress_tracker)
             .await?;
 
-        if self
-            .setup_features
-            .is_feature_disabled(SetupFeature::CpuPool)
-        {
-            let mmproxy_binary_progress_tracker = progress_stepper.channel_step_range_updates();
-            binary_resolver
-                .initialize_binary(Binaries::MergeMiningProxy, mmproxy_binary_progress_tracker)
-                .await?;
+        let graxil_binary_progress_tracker = progress_stepper.channel_step_range_updates();
 
-            let tari_address = InternalWallet::tari_address().await;
-            let telemetry_id = state
-                .telemetry_manager
-                .read()
-                .await
-                .get_unique_string()
-                .await;
-            let base_node_grpc_address = state.node_manager.get_grpc_address().await?;
+        binary_resolver
+            .initialize_binary(Binaries::GpuMiner, graxil_binary_progress_tracker)
+            .await?;
 
-            state
-                .mm_proxy_manager
-                .start(StartConfig {
-                    base_node_grpc_address,
-                    base_path: data_dir.clone(),
-                    config_path: config_dir.clone(),
-                    log_path: log_dir.clone(),
-                    tari_address: tari_address.clone(),
-                    coinbase_extra: telemetry_id,
-                    monero_nodes: self.app_configuration.mmproxy_monero_nodes.clone(),
-                    use_monero_fail: self.app_configuration.mmproxy_use_monero_fail,
-                })
-                .await?;
+        let _unused = state
+            .gpu_miner
+            .write()
+            .await
+            .detect(
+                config_dir.clone(),
+                self.app_configuration.gpu_engine.clone(),
+            )
+            .await
+            .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {e:?}"));
 
-            state.mm_proxy_manager.wait_ready().await?;
-            progress_stepper.resolve_step().await;
-        } else {
-            // Skip mmproxy download
-            progress_stepper.skip_step().await;
-            // Skip mmproxy setup
-            progress_stepper.skip_step().await;
-        }
+        progress_stepper.resolve_step().await;
 
-        HardwareStatusMonitor::current().initialize().await?;
+        GpuDevices::current()
+            .write()
+            .await
+            .detect(data_dir.clone())
+            .await?;
+
+        progress_stepper.resolve_step().await;
 
         Ok(())
     }
@@ -219,36 +204,36 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
 
         let app_handle_clone = self.app_handle.clone();
         TasksTrackers::current()
-            .cpu_mining_phase
+            .gpu_mining_phase
             .get_task_tracker()
             .await
             .spawn(async move {
                 let app_state = app_handle_clone.state::<UniverseAppState>().clone();
-                let mut cpu_miner_status_watch_rx = (*app_state.cpu_miner_status_watch_rx).clone();
+                let mut gpu_status_watch_rx = (*app_state.gpu_latest_status).clone();
                 let mut shutdown_signal =
-                    TasksTrackers::current().cpu_mining_phase.get_signal().await;
+                    TasksTrackers::current().gpu_mining_phase.get_signal().await;
 
                 loop {
                     select! {
-                        _ = cpu_miner_status_watch_rx.changed() => {
-                            let cpu_status = cpu_miner_status_watch_rx.borrow().clone();
-                            EventsEmitter::emit_cpu_mining_update(cpu_status.clone()).await;
+                        _ = gpu_status_watch_rx.changed() => {
+                            let gpu_status: GpuMinerStatus = gpu_status_watch_rx.borrow().clone();
+                            EventsEmitter::emit_gpu_mining_update(gpu_status.clone()).await;
+                            let gpu_systemtray_data = SystemTrayGpuData {
+                                gpu_hashrate: gpu_status.hash_rate,
+                                estimated_earning: gpu_status.estimated_earnings
+                            };
 
-                        let systray_data = SystemTrayCpuData {
-                            cpu_hashrate: cpu_status.hash_rate,
-                            estimated_earning: cpu_status.estimated_earnings,
-                        };
-
-                        match try_write_with_retry(&app_state.systemtray_manager, 6).await {
-                            Ok(mut sm) => {
-                                sm.update_tray_with_cpu_data(systray_data);
-                            },
-                            Err(error) => {
-                                error!(target: LOG_TARGET, "Failed to acquire systemtray_manager write lock: {error}");
+                            match try_write_with_retry(&app_state.systemtray_manager, 6).await {
+                                Ok(mut sm) => {
+                                    sm.update_tray_with_gpu_data(gpu_systemtray_data);
+                                },
+                                Err(e) => {
+                                    let err_msg = format!("Failed to acquire systemtray_manager write lock: {e}");
+                                    error!(target: LOG_TARGET, "{err_msg}");
+                                }
                             }
-                        }
 
-                        }
+                        },
                         _ = shutdown_signal.wait() => {
                             break;
                         },
