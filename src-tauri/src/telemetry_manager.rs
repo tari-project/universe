@@ -724,6 +724,7 @@ async fn get_telemetry_data_inner(
         exchange_id,
         tari_address,
     };
+
     Ok(data)
 }
 

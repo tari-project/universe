@@ -42,7 +42,7 @@ use crate::{
         NetworkStatusPayload, NewBlockHeightPayload, NodeTypeUpdatePayload, ProgressEvents,
         ProgressTrackerUpdatePayload, ShowReleaseNotesPayload, TariAddressUpdatePayload,
     },
-    hardware::hardware_status_monitor::PublicDeviceProperties,
+    hardware::hardware_status_monitor::PublicDeviceGpuProperties,
     setup::setup_manager::SetupPhase,
     utils::app_flow_utils::FrontendReadyChannel,
     BaseNodeStatus, GpuMinerStatus,
@@ -361,7 +361,7 @@ impl EventsEmitter {
     }
 
     #[allow(dead_code)]
-    pub async fn emit_gpu_devices_update(gpu_public_devices: Vec<PublicDeviceProperties>) {
+    pub async fn emit_gpu_devices_update(gpu_public_devices: Vec<PublicDeviceGpuProperties>) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::GpuDevicesUpdate,

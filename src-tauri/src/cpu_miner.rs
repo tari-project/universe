@@ -324,7 +324,7 @@ impl CpuMiner {
         let mut summary_watch_rx = self.summary_watch_rx.clone();
         let node_status_watch_rx = self.node_status_watch_rx.clone();
         let pool_status_watcher = self.pool_status_watcher.clone();
-        let mut pool_status_check = interval(Duration::from_secs(20));
+        let mut pool_status_check = interval(Duration::from_secs(60));
         pool_status_check.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
 
         let mut inner_shutdown_signal = self.pool_status_shutdown_signal.to_signal();
