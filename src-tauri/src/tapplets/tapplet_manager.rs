@@ -30,7 +30,7 @@ use crate::{
         error::Error,
         server_manager::ServerManager,
         tapplet_installer::check_files_and_validate_checksum,
-        tapplet_server::{get_tapplet_config, start_tapplet_server},
+        tapplet_server::{get_tapp_config, start_tapplet_server},
     },
 };
 use anyhow::anyhow;
@@ -86,8 +86,7 @@ impl TappletManager {
         tapplet: &DevTapplet,
         app_handle: tauri::AppHandle,
     ) -> Result<(bool, UpdateDevTapplet), anyhow::Error> {
-        let tapp_path = PathBuf::from(&tapplet.source);
-        let config = get_tapplet_config(&tapp_path).unwrap_or_default();
+        let config = get_tapp_config(&tapplet.source).await?;
         info!(target: LOG_TARGET, "💥 Dev tapplet csp: {}", &config.csp);
 
         let mut updated_dev_tapp = UpdateDevTapplet::from(tapplet);
