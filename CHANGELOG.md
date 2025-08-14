@@ -1,3 +1,13 @@
+🚀 TARI UNIVERSE v1.5.9: The Season of Light — Part 6½ Hotfix
+
+_August 14, 2025_
+
+Hey Tari OGs,
+
+Quick hotfix coming your way! We've identified and fixed a GPU miner disconnection issue that was interrupting mining. Your GPUs should now stay connected and keep earning consistently.
+
+---
+
 🚀 TARI UNIVERSE v1.5.7: The Season of Light — Part 6
 
 _August 12, 2025_

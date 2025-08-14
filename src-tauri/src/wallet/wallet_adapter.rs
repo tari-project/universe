@@ -35,12 +35,14 @@ use anyhow::Error;
 use log::{info, warn};
 use minotari_node_grpc_client::grpc::wallet_client::WalletClient;
 use minotari_node_grpc_client::grpc::{GetAllCompletedTransactionsRequest, GetBalanceRequest};
-use std::path::PathBuf;
+use serde::{Deserialize, Serialize};
+use std::fs;
+use std::path::{Path, PathBuf};
 use std::time::Duration;
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::{TariAddress, TariAddressError};
 use tari_core::transactions::tari_amount::MicroMinotari;
-use tari_core::transactions::transaction_components::payment_id::PaymentId;
+use tari_core::transactions::transaction_components::memo_field::MemoField;
 use tari_shutdown::Shutdown;
 use tokio::sync::watch;
 
@@ -48,6 +50,28 @@ use tokio::sync::watch;
 use crate::utils::windows_setup_utils::add_firewall_rule;
 
 const LOG_TARGET: &str = "tari::universe::wallet_adapter";
+
+#[derive(Serialize, Deserialize, Default)]
+struct MinotariWalletMigrationInfo {
+    version: u32,
+}
+
+impl MinotariWalletMigrationInfo {
+    pub fn save(&self, path: &Path) -> Result<(), anyhow::Error> {
+        let json_string = serde_json::to_string(self)?;
+        fs::write(path, json_string)?;
+        Ok(())
+    }
+
+    pub fn load_or_create(path: &Path) -> Result<Self, anyhow::Error> {
+        if !fs::exists(path)? {
+            return Ok(MinotariWalletMigrationInfo::default());
+        }
+        let contents = fs::read_to_string(path)?;
+
+        Ok(serde_json::from_str(contents.as_str())?)
+    }
+}
 
 pub struct WalletAdapter {
     use_tor: bool,
@@ -108,6 +132,8 @@ impl WalletAdapter {
         let mut client = WalletClient::connect(self.wallet_grpc_address())
             .await
             .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
+        // TODO: This needs to be upgraded to the streaming API https://github.com/tari-project/tari/pull/7366/
+        #[allow(deprecated)]
         let res = client
             .get_all_completed_transactions(GetAllCompletedTransactionsRequest {
                 offset: u64::from(offset.unwrap_or(0)),
@@ -150,7 +176,7 @@ impl WalletAdapter {
                     excess_sig: tx.excess_sig,
                     fee: tx.fee,
                     timestamp: tx.timestamp,
-                    payment_id: PaymentId::stringify_bytes(&tx.user_payment_id),
+                    payment_id: MemoField::stringify_bytes(&tx.user_payment_id),
                     mined_in_block_height: tx.mined_in_block_height,
                     payment_reference,
                 })
@@ -261,15 +287,34 @@ impl ProcessAdapter for WalletAdapter {
 
         // Setup working directory using shared utility
         let working_dir = setup_working_directory(&data_dir, "wallet")?;
+        let network_dir = working_dir.join(Network::get_current().to_string().to_lowercase());
+        let config_dir = network_dir.join("config");
+
+        fs::create_dir_all(&config_dir)?;
+        let migration_file = network_dir.join("migrations.json");
+        let mut migration_info = MinotariWalletMigrationInfo::load_or_create(&migration_file)?;
+
+        if migration_info.version < 1 {
+            if config_dir.exists() {
+                info!(target: LOG_TARGET, "Wallet migration v1: removing directory at {config_dir:?}");
+                let _unused = fs::remove_dir_all(config_dir).inspect_err(|e| {
+                    warn!(target: LOG_TARGET, "Wallet migration v1 Failed to remove directory: {e:?}");
+                });
+            }
+
+            info!(target: LOG_TARGET, "Wallet migration v1 complete");
+            migration_info.version = 1;
+        }
+        migration_info.save(&migration_file)?;
 
         let formatted_working_dir = convert_to_string(working_dir.clone())?;
-        let config_dir = log_dir
+        let log_cofig = log_dir
             .join("wallet")
             .join("configs")
             .join("log4rs_config_wallet.yml");
 
         setup_logging(
-            &config_dir.clone(),
+            &log_cofig.clone(),
             &log_dir,
             include_str!("../../log4rs/wallet_sample.yml"),
         )?;
@@ -280,7 +325,7 @@ impl ProcessAdapter for WalletAdapter {
             "--non-interactive-mode".to_string(),
             format!(
                 "--log-config={}",
-                config_dir.to_str().expect("Could not get config dir")
+                log_cofig.to_str().expect("Could not get config dir")
             )
             .to_string(),
             "--grpc-enabled".to_string(),
