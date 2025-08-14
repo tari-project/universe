@@ -16,7 +16,6 @@ export function useFetchTxHistory() {
         queryFn: async ({ pageParam }) => {
             const limit = 20;
             const offset = limit * (pageParam as number);
-
             const res = await fetchTransactionsHistory({ filter, offset, limit });
 
             return res.map(convertWalletTransactionToCombinedTransaction);
@@ -26,6 +25,7 @@ export function useFetchTxHistory() {
             return (_lastPageParam as number) + 1;
         },
         enabled: !isWalletScanning,
+        initialData: { pages: [], pageParams: [0] },
     });
 }
 

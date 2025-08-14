@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import { WalletBalance } from '@app/types/app-status.ts';
+import { TransactionInfo, WalletBalance } from '@app/types/app-status.ts';
 import { CombinedBridgeWalletTransaction, useWalletStore } from '../useWalletStore';
 import { setError } from './appStateStoreActions';
 import { TxHistoryFilter } from '@app/components/transactions/history/FilterSelect';
@@ -9,6 +9,7 @@ import { addToast } from '@app/components/ToastStack/useToastStore';
 import { t } from 'i18next';
 import { startMining, stopMining } from './miningStoreActions';
 import { useMiningStore } from '../useMiningStore';
+import { refreshTransactions } from '@app/hooks/wallet/useFetchTxHistory.ts';
 
 // NOTE: Tx status differ for core and proto(grpc)
 export const COINBASE_BITFLAG = 6144;
@@ -33,28 +34,26 @@ const filterToBitflag = (filter: TxHistoryFilter): number => {
 
 export const fetchTransactionsHistory = async ({ offset = 0, limit, filter = 'all-activity' }: TxArgs) => {
     const bitflag = filterToBitflag(filter);
+    let transactions: TransactionInfo[] = [];
     try {
-        console.info(`Fetching transaction history with filter: ${filter}`);
-        return await invoke('get_transactions', { offset, limit, statusBitflag: bitflag });
+        console.debug(`Fetching txs with filter: ${filter}`);
+        transactions = await invoke('get_transactions', { offset, limit, statusBitflag: bitflag });
+
+        if (filter === 'rewards') {
+            setCoinbaseTransactions({ newTxs: transactions, offset });
+        }
+
+        return transactions;
     } catch (error) {
         console.error(`Could not get transaction history for rewards: `, error);
-        return [];
+        return transactions;
     }
 };
 
-export const fetchCoinbaseTransactions = async ({ offset = 0, limit }: Omit<TxArgs, 'filter'>) => {
-    const bitflag = filterToBitflag('rewards');
-    try {
-        const currentTxs = useWalletStore.getState().coinbase_transactions;
-        const fetchedTxs = await invoke('get_transactions', { offset, limit, statusBitflag: bitflag });
-
-        const coinbase_transactions = offset > 0 ? [...currentTxs, ...fetchedTxs] : fetchedTxs;
-        useWalletStore.setState((c) => ({ ...c, coinbase_transactions: coinbase_transactions }));
-        return coinbase_transactions;
-    } catch (error) {
-        console.error(`Could not get transaction history for rewards: `, error);
-        return [];
-    }
+export const setCoinbaseTransactions = ({ newTxs, offset = 0 }: { newTxs: TransactionInfo[]; offset?: number }) => {
+    const currentTxs = useWalletStore.getState().coinbase_transactions;
+    const coinbase_transactions = offset > 0 ? [...currentTxs, ...newTxs] : newTxs;
+    useWalletStore.setState((c) => ({ ...c, coinbase_transactions: coinbase_transactions }));
 };
 
 export const importSeedWords = async (seedWords: string[]) => {
@@ -99,15 +98,6 @@ export const importSeedWords = async (seedWords: string[]) => {
     } finally {
         useWalletStore.setState((c) => ({ ...c, is_wallet_importing: false }));
     }
-};
-
-export const refreshTransactions = async () => {
-    const { tx_history, coinbase_transactions, tx_history_filter } = useWalletStore.getState();
-    await fetchTransactionsHistory({ offset: 0, limit: Math.max(tx_history.length, 20), filter: tx_history_filter });
-    await fetchCoinbaseTransactions({
-        offset: 0,
-        limit: Math.max(coinbase_transactions.length, 20),
-    });
 };
 
 export const setExternalTariAddress = async (newAddress: string) => {

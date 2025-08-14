@@ -4,7 +4,6 @@ import { useSetupStore } from '../useSetupStore';
 import { startCpuMining, startGpuMining, stopCpuMining, stopGpuMining } from './miningStoreActions';
 import {
     fetchApplicationsVersionsWithRetry,
-    fetchCoinbaseTransactions,
     fetchTransactionsHistory,
     useConfigMiningStore,
     useConfigUIStore,
@@ -53,24 +52,20 @@ async function initializeAnimation() {
 }
 
 export const handleAppUnlocked = async () => {
-    useSetupStore.setState({ appUnlocked: true });
+    useSetupStore.setState((c) => ({ ...c, appUnlocked: true }));
     // todo move it to event
     await fetchApplicationsVersionsWithRetry();
     await initializeAnimation();
 };
 export const handleWalletUnlocked = async () => {
-    useSetupStore.setState({ walletUnlocked: true });
+    useSetupStore.setState((c) => ({ ...c, walletUnlocked: true }));
     // Initial fetch of transactions
     const tx_history_filter = useWalletStore.getState().tx_history_filter;
     await fetchTransactionsHistory({ offset: 0, limit: 20, filter: tx_history_filter });
-    await fetchCoinbaseTransactions({
-        offset: 0,
-        limit: 20,
-    });
 };
 
 export const handleCpuMiningUnlocked = async () => {
-    useSetupStore.setState({ cpuMiningUnlocked: true });
+    useSetupStore.setState((c) => ({ ...c, cpuMiningUnlocked: true }));
 
     const mineOnAppStart = useConfigMiningStore.getState().mine_on_app_start;
     const cpuMiningEnabled = useConfigMiningStore.getState().cpu_mining_enabled;
@@ -84,7 +79,7 @@ export const handleCpuMiningUnlocked = async () => {
     }
 };
 export const handleGpuMiningUnlocked = async () => {
-    useSetupStore.setState({ gpuMiningUnlocked: true });
+    useSetupStore.setState((c) => ({ ...c, gpuMiningUnlocked: true }));
 
     const mineOnAppStart = useConfigMiningStore.getState().mine_on_app_start;
     const gpuMiningEnabled = useConfigMiningStore.getState().gpu_mining_enabled;
@@ -99,11 +94,11 @@ export const handleGpuMiningUnlocked = async () => {
 };
 
 export const handleWalletLocked = () => {
-    useSetupStore.setState({ walletUnlocked: false });
+    useSetupStore.setState((c) => ({ ...c, walletUnlocked: false }));
 };
 
 export const handleCpuMiningLocked = async () => {
-    useSetupStore.setState({ cpuMiningUnlocked: false });
+    useSetupStore.setState((c) => ({ ...c, cpuMiningUnlocked: false }));
     const isCpuMiningInitiated = useMiningStore.getState().isCpuMiningInitiated;
 
     if (isCpuMiningInitiated) {
@@ -112,7 +107,7 @@ export const handleCpuMiningLocked = async () => {
 };
 
 export const handleGpuMiningLocked = async () => {
-    useSetupStore.setState({ gpuMiningUnlocked: false });
+    useSetupStore.setState((c) => ({ ...c, gpuMiningUnlocked: false }));
     const isMiningInitiated = useMiningStore.getState().isGpuMiningInitiated;
 
     if (isMiningInitiated) {
@@ -121,35 +116,35 @@ export const handleGpuMiningLocked = async () => {
 };
 
 export const handleHardwarePhaseFinished = async () => {
-    useSetupStore.setState({ hardwarePhaseFinished: true });
+    useSetupStore.setState((c) => ({ ...c, hardwarePhaseFinished: true }));
 };
 
 export const setInitialSetupFinished = (payload: boolean) => {
-    useSetupStore.setState({ isInitialSetupFinished: payload });
+    useSetupStore.setState((c) => ({ ...c, isInitialSetupFinished: payload }));
 };
 
 export const updateCoreSetupPhaseInfo = (payload: ProgressTrackerUpdatePayload | undefined) => {
-    useSetupStore.setState({ core_phase_setup_payload: payload });
+    useSetupStore.setState((c) => ({ ...c, core_phase_setup_payload: payload }));
 };
 
 export const updateHardwareSetupPhaseInfo = (payload: ProgressTrackerUpdatePayload | undefined) => {
-    useSetupStore.setState({ hardware_phase_setup_payload: payload });
+    useSetupStore.setState((c) => ({ ...c, hardware_phase_setup_payload: payload }));
 };
 
 export const updateNodeSetupPhaseInfo = (payload: ProgressTrackerUpdatePayload | undefined) => {
-    useSetupStore.setState({ node_phase_setup_payload: payload });
+    useSetupStore.setState((c) => ({ ...c, node_phase_setup_payload: payload }));
 };
 
 export const updateWalletSetupPhaseInfo = (payload: ProgressTrackerUpdatePayload | undefined) => {
-    useSetupStore.setState({ wallet_phase_setup_payload: payload });
+    useSetupStore.setState((c) => ({ ...c, wallet_phase_setup_payload: payload }));
 };
 
 export const updateMiningSetupPhaseInfo = (payload: ProgressTrackerUpdatePayload | undefined) => {
-    useSetupStore.setState({ mining_phase_setup_payload: payload });
+    useSetupStore.setState((c) => ({ ...c, mining_phase_setup_payload: payload }));
 };
 
 export const updateDisabledPhases = (payload: DisabledPhasesPayload) => {
-    useSetupStore.setState({ disabled_phases: payload.disabled_phases });
+    useSetupStore.setState((c) => ({ ...c, disabled_phases: payload.disabled_phases }));
 };
 
 export const handleUpdateDisabledPhases = (payload: DisabledPhasesPayload) => {

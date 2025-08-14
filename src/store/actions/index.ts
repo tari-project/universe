@@ -54,13 +54,7 @@ export {
     setIsWebglNotSupported,
 } from './uiStoreActions.ts';
 
-export {
-    importSeedWords,
-    refreshTransactions,
-    fetchCoinbaseTransactions,
-    fetchTransactionsHistory,
-    setWalletBalance,
-} from './walletStoreActions';
+export { importSeedWords, fetchTransactionsHistory, setWalletBalance } from './walletStoreActions';
 export {
     setGpuDevices,
     setGpuMiningStatus,
