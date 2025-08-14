@@ -1,6 +1,6 @@
 use crate::{
-    consts::{REGISTRY_URL, TAPPLETS_ASSETS_DIR, TAPPLETS_INSTALLED_DIR},
-    database::{models::TappletVersion, schema::tapplet},
+    consts::{TAPPLETS_ASSETS_DIR, TAPPLETS_INSTALLED_DIR},
+    database::models::TappletVersion,
     tapplets::{
         error::{
             Error::{self, IOError, JsonParsingError, RequestError},
@@ -19,6 +19,7 @@ use std::{
 };
 use tauri::Manager;
 pub const LOG_TARGET: &str = "tari::universe";
+pub const REGISTRY_URL: &str = env!("TAPP_REGISTRY_URL");
 
 pub fn delete_tapplet(tapplet_path: PathBuf) -> Result<(), Error> {
     let path = tapplet_path

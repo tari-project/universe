@@ -29,6 +29,4 @@ pub const DEFAULT_MONERO_ADDRESS: &str =
 // Tari Ootle & Tapplets
 pub const TAPPLETS_INSTALLED_DIR: &'static str = "tapplets_installed";
 pub const TAPPLETS_ASSETS_DIR: &'static str = "assets";
-pub const DB_FILE_NAME: &'static str = "tari_universe.sqlite3";
-pub const REGISTRY_URL: &'static str =
-    "https://raw.githubusercontent.com/tari-project/tapp-registry/main";
+pub const DB_FILE_NAME: &'static str = "tapplets.sqlite3";
