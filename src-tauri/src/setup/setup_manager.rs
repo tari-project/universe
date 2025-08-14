@@ -587,40 +587,45 @@ impl SetupManager {
                 }
             }
         }
-        ListenerUnlockCpuMining::current().handle_restart().await;
-        ListenerUnlockGpuMining::current().handle_restart().await;
-        ListenerUnlockWallet::current().handle_restart().await;
     }
 
     pub async fn resume_phases(&self, phases: Vec<SetupPhase>) {
-        if !phases.is_empty() {
-            EventsEmitter::emit_restarting_phases(phases.clone()).await;
-            let _unused = self.resolve_setup_features().await;
-            self.features
-                .write()
-                .await
-                .add_feature(SetupFeature::Restarting);
+        if phases.is_empty() {
+            return;
         }
 
+        EventsEmitter::emit_restarting_phases(phases.clone()).await;
+        let _unused = self.resolve_setup_features().await;
+        self.features
+            .write()
+            .await
+            .add_feature(SetupFeature::Restarting);
+
         let setup_features = self.features.read().await.clone();
+
         ListenerSetupFinished::current()
             .load_setup_features(setup_features.clone())
             .await;
-        ListenerSetupFinished::current().start_listener().await;
 
         ListenerUnlockCpuMining::current()
             .load_setup_features(setup_features.clone())
             .await;
-        ListenerUnlockCpuMining::current().start_listener().await;
 
         ListenerUnlockGpuMining::current()
             .load_setup_features(setup_features.clone())
             .await;
-        ListenerUnlockGpuMining::current().start_listener().await;
 
         ListenerUnlockWallet::current()
             .load_setup_features(setup_features.clone())
             .await;
+
+        ListenerUnlockCpuMining::current().handle_restart().await;
+        ListenerUnlockGpuMining::current().handle_restart().await;
+        ListenerUnlockWallet::current().handle_restart().await;
+
+        ListenerSetupFinished::current().start_listener().await;
+        ListenerUnlockCpuMining::current().start_listener().await;
+        ListenerUnlockGpuMining::current().start_listener().await;
         ListenerUnlockWallet::current().start_listener().await;
 
         for phase in phases {
