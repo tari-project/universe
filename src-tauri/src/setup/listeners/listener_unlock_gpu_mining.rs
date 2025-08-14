@@ -119,7 +119,7 @@ impl UnlockConditionsListenerTrait for ListenerUnlockGpuMining {
         *self.listener.lock().await = Some(listener_task);
     }
     async fn conditions_met_callback(&self) {
-        info!(target: LOG_TARGET, "Unlocking Mining");
+        info!(target: LOG_TARGET, "Unlocking Gpu Mining");
         EventsEmitter::emit_unlock_gpu_mining().await;
     }
 
