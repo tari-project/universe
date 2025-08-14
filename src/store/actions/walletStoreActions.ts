@@ -112,6 +112,7 @@ export const setExternalTariAddress = async (newAddress: string) => {
 };
 
 export const setWalletBalance = async (balance: WalletBalance) => {
+    await refreshTransactions();
     const calculated_balance =
         balance.available_balance + balance.timelocked_balance + balance.pending_incoming_balance;
     useWalletStore.setState((c) => ({
