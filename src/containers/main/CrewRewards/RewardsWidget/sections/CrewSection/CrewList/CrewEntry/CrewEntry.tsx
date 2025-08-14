@@ -7,6 +7,7 @@ import CrewAvatar from './CrewAvatar/CrewAvatar';
 import CrewProgressBar from './CrewProgressBar/CrewProgressBar';
 import CrewProgressPill from './CrewProgressPill/CrewProgressPill';
 import CrewActionFeedback from './CrewActionFeedback/CrewActionFeedback';
+import { useReferrerProgress } from '@app/hooks/crew/useReferrerProgress';
 
 interface Props {
     entry: CrewEntry & { memberId?: string; claimableRewardId?: string };
@@ -19,7 +20,8 @@ export default function CrewEntry({ entry, isClaimed }: Props) {
     const [isSendingNudge, setIsSendingNudge] = useState(false);
     const [nudgeCooldowns, setNudgeCooldowns] = useState<Record<string, number>>({});
 
-    const { invalidate } = useCrewMembers();
+    const { invalidate: invalidateCrewMembers } = useCrewMembers();
+    const { invalidate: invalidateReferrerProgress } = useReferrerProgress();
 
     const canClaim = progress && progress >= 100;
 
@@ -43,7 +45,10 @@ export default function CrewEntry({ entry, isClaimed }: Props) {
                 console.info('Reward claimed successfully:', result.claimedReward);
                 setShowClaim(true);
                 // Refresh crew data to show updated state
-                invalidate();
+                setTimeout(() => {
+                    invalidateCrewMembers();
+                    invalidateReferrerProgress();
+                }, 1000);
             } else {
                 console.error('Failed to claim reward');
             }

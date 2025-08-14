@@ -9,6 +9,7 @@ interface Props {
     setShowNudge: (showNudge: boolean) => void;
     showClaim: boolean;
     setShowClaim: (showClaim: boolean) => void;
+    toggleViewTimeOut?: number;
 }
 
 const animation = {
@@ -24,18 +25,24 @@ const textAnimation = {
     exit: { scale: 1 },
 };
 
-export default function CrewActionFeedback({ showNudge, setShowNudge, showClaim, setShowClaim }: Props) {
+export default function CrewActionFeedback({
+    showNudge,
+    setShowNudge,
+    showClaim,
+    setShowClaim,
+    toggleViewTimeOut = 3000,
+}: Props) {
     const { t } = useTranslation('airdrop', { keyPrefix: 'crewRewards.feedback' });
 
     useEffect(() => {
         if (showNudge) {
             const timer = setTimeout(() => {
                 setShowNudge(false);
-            }, 3000);
+            }, toggleViewTimeOut);
 
             return () => clearTimeout(timer);
         }
-    }, [showNudge, setShowNudge]);
+    }, [showNudge, setShowNudge, toggleViewTimeOut]);
 
     useEffect(() => {
         if (showClaim) {
@@ -45,7 +52,7 @@ export default function CrewActionFeedback({ showNudge, setShowNudge, showClaim,
 
             return () => clearTimeout(timer);
         }
-    }, [showClaim, setShowClaim]);
+    }, [showClaim, setShowClaim, toggleViewTimeOut]);
 
     return (
         <AnimatePresence>
