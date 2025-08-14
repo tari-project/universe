@@ -118,7 +118,6 @@ export default function Earnings() {
                                         style: 'decimal',
                                     }}
                                     value={value}
-                                    isolate={true}
                                 />
                             </AmtWrapper>
                             <WinText>{`XTM`}</WinText>
