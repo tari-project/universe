@@ -254,6 +254,16 @@ const useTauriEventsListener = () => {
                         case 'SeedBackedUp':
                             handleSeedBackedUp(event.payload);
                             break;
+                        case 'AllowTappletCsp':
+                            useSecurityStore.setState({ tappletCsp: event.payload.csp });
+                            useSecurityStore.setState({ modal: 'tapplet_csp' });
+                            break;
+                        case 'GrantTappletPermissions':
+                            useSecurityStore.setState({ tappletPermissions: event.payload.permissions });
+                            useSecurityStore.setState({ modal: 'tapplet_permissions' });
+                            break;
+                        case 'OotleWalletPhaseFinished':
+                            break;
                         default:
                             console.warn('Unknown event', JSON.stringify(event));
                             break;

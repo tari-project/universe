@@ -650,6 +650,12 @@ async fn get_telemetry_data_inner(
         "wallet",
     );
 
+    add_process_stats(
+        &mut extra_data,
+        stats_collector.get_ootle_wallet_stats(),
+        "ootle_wallet",
+    );
+
     let (download_speed, upload_speed, latency) = *NetworkStatus::current()
         .get_network_speeds_receiver()
         .borrow();

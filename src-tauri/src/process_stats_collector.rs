@@ -41,6 +41,8 @@ pub(crate) struct ProcessStatsCollectorBuilder {
     tor_rx: Receiver<ProcessWatcherStats>,
     wallet_tx: Option<Sender<ProcessWatcherStats>>,
     wallet_rx: Receiver<ProcessWatcherStats>,
+    ootle_wallet_tx: Option<Sender<ProcessWatcherStats>>,
+    ootle_wallet_rx: Receiver<ProcessWatcherStats>,
 }
 
 impl ProcessStatsCollectorBuilder {
@@ -56,6 +58,10 @@ impl ProcessStatsCollectorBuilder {
         let (tor_tx, tor_rx) = tokio::sync::watch::channel(ProcessWatcherStats::default());
         let (wallet_tx, wallet_rx) = tokio::sync::watch::channel(ProcessWatcherStats::default());
         let (gpu_miner_sha_tx, gpu_miner_sha_rx) =
+            tokio::sync::watch::channel(ProcessWatcherStats::default());
+        let (ootle_wallet_tx, ootle_wallet_rx) =
+            tokio::sync::watch::channel(ProcessWatcherStats::default());
+        let (ootle_wallet_tx, ootle_wallet_rx) =
             tokio::sync::watch::channel(ProcessWatcherStats::default());
 
         Self {
@@ -75,6 +81,8 @@ impl ProcessStatsCollectorBuilder {
             wallet_rx,
             gpu_miner_sha_tx: Some(gpu_miner_sha_tx),
             gpu_miner_sha_rx,
+            ootle_wallet_tx: Some(ootle_wallet_tx),
+            ootle_wallet_rx,
         }
     }
 
@@ -124,6 +132,12 @@ impl ProcessStatsCollectorBuilder {
             .expect("Cannot take wallet more than once")
     }
 
+    pub fn take_ootle_wallet(&mut self) -> Sender<ProcessWatcherStats> {
+        self.ootle_wallet_tx
+            .take()
+            .expect("Cannot take Ootle wallet more than once")
+    }
+
     pub fn build(self) -> ProcessStatsCollector {
         ProcessStatsCollector {
             cpu_miner_rx: self.cpu_miner_rx,
@@ -134,6 +148,7 @@ impl ProcessStatsCollectorBuilder {
             p2pool_rx: self.p2pool_rx,
             tor_rx: self.tor_rx,
             wallet_rx: self.wallet_rx,
+            ootle_wallet_rx: self.ootle_wallet_rx,
         }
     }
 }
@@ -148,6 +163,7 @@ pub(crate) struct ProcessStatsCollector {
     p2pool_rx: Receiver<ProcessWatcherStats>,
     tor_rx: Receiver<ProcessWatcherStats>,
     wallet_rx: Receiver<ProcessWatcherStats>,
+    ootle_wallet_rx: Receiver<ProcessWatcherStats>,
 }
 
 impl ProcessStatsCollector {
@@ -181,5 +197,9 @@ impl ProcessStatsCollector {
 
     pub fn get_wallet_stats(&self) -> ProcessWatcherStats {
         self.wallet_rx.borrow().clone()
+    }
+
+    pub fn get_ootle_wallet_stats(&self) -> ProcessWatcherStats {
+        self.ootle_wallet_rx.borrow().clone()
     }
 }

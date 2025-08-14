@@ -156,9 +156,11 @@
     "experimental": "Deneysel",
     "general": "Genel",
     "mining": "Madencilik",
+    "ootleWallet": "Ootle Wallet",
     "p2p": "Havuz Madenciliği",
     "pools": "Mining Pools",
     "releaseNotes": "Sürüm Notları",
+    "tapplets": "Tapplets",
     "very_experimental": "Çok Deneysel",
     "wallet": "Cüzdan"
   },

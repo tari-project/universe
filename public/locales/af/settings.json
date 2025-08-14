@@ -156,9 +156,11 @@
     "experimental": "Eksperimenteel",
     "general": "Algemeen",
     "mining": "Mynbou",
+    "ootleWallet": "Ootle Wallet",
     "p2p": "Poel Mynbou",
     "pools": "Mining Pools",
     "releaseNotes": "Vrystellingsnotas",
+    "tapplets": "Tapplets",
     "very_experimental": "Baie Eksperimenteel",
     "wallet": "Beursie"
   },

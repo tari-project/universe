@@ -710,3 +710,7 @@ export const toggleDeviceExclusion = async (deviceIndex: number, excluded: boole
         setError(e as string);
     }
 };
+
+export const setShowTappletsSettings = async (showTappletsSettings: boolean) => {
+    useConfigUIStore.setState((c) => ({ ...c, show_tapplets_settings: showTappletsSettings }));
+};

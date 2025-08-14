@@ -89,6 +89,9 @@ pub enum EventType {
     UpdateGpuDevicesSettings,
     PinLocked,
     SeedBackedUp,
+    AllowTappletCsp,
+    GrantTappletPermissions,
+    OotleWalletPhaseFinished,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -98,6 +101,7 @@ pub enum ProgressEvents {
     Hardware,
     Node,
     Mining,
+    OotleWallet,
 }
 #[derive(Clone, Debug, Serialize)]
 pub struct ProgressTrackerUpdatePayload {
@@ -198,4 +202,14 @@ pub struct TariAddressUpdatePayload {
     pub tari_address_base58: String,
     pub tari_address_emoji: String,
     pub tari_address_type: TariAddressType,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct AllowTappletCspPayload {
+    pub csp: String,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct GrantTappletPermissionsPayload {
+    pub permissions: String,
 }

@@ -1,4 +1,5 @@
 import {
+    AllowTappletCspPayload,
     BackgroundNodeSyncUpdatePayload,
     ConfigPoolsPayload,
     ConnectedPeersUpdatePayload,
@@ -6,6 +7,7 @@ import {
     CriticalProblemPayload,
     DetectedAvailableGpuEngines,
     DetectedDevicesPayload,
+    GrantTappletPermissionsPayload,
     NewBlockHeightPayload,
     NodeTypeUpdatePayload,
     SetupPhase,
@@ -233,5 +235,17 @@ export type BackendStateUpdateEvent =
       }
     | {
           event_type: 'SeedBackedUp';
+          payload: boolean;
+      }
+    | {
+          event_type: 'AllowTappletCsp';
+          payload: AllowTappletCspPayload;
+      }
+    | {
+          event_type: 'GrantTappletPermissions';
+          payload: GrantTappletPermissionsPayload;
+      }
+    | {
+          event_type: 'OotleWalletPhaseFinished';
           payload: boolean;
       };
