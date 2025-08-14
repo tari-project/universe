@@ -132,6 +132,8 @@ impl WalletAdapter {
         let mut client = WalletClient::connect(self.wallet_grpc_address())
             .await
             .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
+        // TODO: This needs to be upgraded to the streaming API https://github.com/tari-project/tari/pull/7366/
+        #[allow(deprecated)]
         let res = client
             .get_all_completed_transactions(GetAllCompletedTransactionsRequest {
                 offset: u64::from(offset.unwrap_or(0)),
