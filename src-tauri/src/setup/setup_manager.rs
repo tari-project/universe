@@ -552,7 +552,8 @@ impl SetupManager {
         mining_phase_setup.setup().await;
     }
 
-    async fn setup_ootle_wallet_phase(&self, app_handle: AppHandle) {
+    async fn setup_ootle_wallet_phase(&self) {
+        let app_handle = self.app_handle().await;
         let setup_features = self.features.read().await.clone();
         let ootle_wallet_phase_setup = PhaseBuilder::new()
             .with_setup_timeout_duration(Duration::from_secs(60 * 10)) // 10 minutes
@@ -667,7 +668,7 @@ impl SetupManager {
                     self.setup_mining_phase().await;
                 }
                 SetupPhase::OotleWallet => {
-                    self.setup_ootle_wallet_phase(app_handle.clone()).await; //TODO
+                    self.setup_ootle_wallet_phase().await;
                 }
             }
         }
@@ -780,7 +781,7 @@ impl SetupManager {
         self.setup_node_phase().await;
         self.setup_wallet_phase().await;
         self.setup_mining_phase().await;
-        self.setup_ootle_wallet_phase(app_handle.clone()).await; //TODO
+        self.setup_ootle_wallet_phase().await;
     }
 
     /// Used in handle_unhealthy for graxil miner
