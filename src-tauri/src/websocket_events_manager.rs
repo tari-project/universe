@@ -116,9 +116,10 @@ impl WebsocketEventsManager {
                         .clone()
                         .map(|tokens| tokens.token);
                     let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
+                    let jwt = jwt_token.map_or(String::new(), |token| token.to_string());
+                    let app_version = app_version_option.map_or(String::from("unknown"), |version| version.to_string());
                     tokio::select! {
                       _= interval.tick() => {
-                            if let (Some(jwt), Some(app_version))= (jwt_token, app_version_option){
                             if let Some(message) = WebsocketEventsManager::assemble_mining_status(
                               cpu_miner_status_watch_rx.clone(),
                               gpu_latest_miner_stats.clone(),
@@ -130,7 +131,7 @@ impl WebsocketEventsManager {
                                 drop(websocket_tx_channel_clone.send(message).await.inspect_err(|e|{
                                   error!(target:LOG_TARGET, "could not send to websocket channel due to {e}");
                                 }));
-                            }}
+                            }
                       },
                       _= shutdown_signal.wait()=>{
                         info!(target:LOG_TARGET, "websocket events manager closed");
