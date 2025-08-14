@@ -28,7 +28,7 @@ use tauri::{AppHandle, Manager};
 use tokio::sync::watch::{Receiver, Sender};
 use tokio_util::task::TaskTracker;
 
-use crate::progress_trackers::ProgressStepper;
+use crate::progress_trackers::progress_stepper::ProgressStepper;
 
 use super::{
     listeners::SetupFeaturesList,

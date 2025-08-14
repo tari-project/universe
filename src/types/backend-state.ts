@@ -8,6 +8,7 @@ import {
     DetectedDevicesPayload,
     NewBlockHeightPayload,
     NodeTypeUpdatePayload,
+    ProgressTrackerUpdatePayload,
     SetupPhase,
     ShowReleaseNotesPayload,
     TariAddressUpdatePayload,
@@ -27,6 +28,10 @@ import { DisabledPhasesPayload } from '@app/store/actions/setupStoreActions.ts';
 
 export const BACKEND_STATE_UPDATE = 'backend_state_update';
 export type BackendStateUpdateEvent =
+    | {
+          event_type: 'SetupProgressUpdate';
+          payload: ProgressTrackerUpdatePayload;
+      }
     | {
           event_type: 'BaseNodeUpdate';
           payload: BaseNodeStatus;
@@ -82,26 +87,6 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'NetworkStatus';
           payload: NetworkStatus;
-      }
-    | {
-          event_type: 'CorePhaseFinished';
-          payload: boolean;
-      }
-    | {
-          event_type: 'WalletPhaseFinished';
-          payload: boolean;
-      }
-    | {
-          event_type: 'HardwarePhaseFinished';
-          payload: boolean;
-      }
-    | {
-          event_type: 'NodePhaseFinished';
-          payload: boolean;
-      }
-    | {
-          event_type: 'MiningPhaseFinished';
-          payload: boolean;
       }
     | {
           event_type: 'InitialSetupFinished';

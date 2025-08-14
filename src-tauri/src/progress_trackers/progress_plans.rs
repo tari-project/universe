@@ -20,349 +20,107 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::events::ProgressEvents;
-
-pub trait ProgressEvent {
-    fn get_event_type(&self) -> ProgressEvents;
-    fn get_title(&self) -> String;
-}
-
-pub trait ProgressStep {
-    type ChannelEvent: ProgressEvent;
-    fn resolve_to_event(&self) -> Self::ChannelEvent;
-    fn get_progress_weight(&self) -> u8;
-    fn get_event_type(&self) -> ProgressEvents;
-    fn get_title(&self) -> String;
-}
-
-pub struct ProgressPlanEventPayload {
-    event_type: ProgressEvents,
-    title: String,
-}
-
-impl ProgressEvent for ProgressPlanEventPayload {
-    fn get_event_type(&self) -> ProgressEvents {
-        self.event_type.clone()
-    }
-
-    fn get_title(&self) -> String {
-        self.title.clone()
-    }
-}
-#[derive(Clone, PartialEq, Debug)]
-pub enum ProgressSetupCorePlan {
+#[derive(Clone, Eq, PartialEq, Hash)]
+pub enum SetupStep {
+    // Core Phase
     InitializeApplicationModules,
     NetworkSpeedTest,
-    Done,
-}
 
-impl ProgressStep for ProgressSetupCorePlan {
-    type ChannelEvent = ProgressPlanEventPayload;
-
-    fn get_event_type(&self) -> ProgressEvents {
-        ProgressEvents::Core
-    }
-
-    fn get_progress_weight(&self) -> u8 {
-        match self {
-            ProgressSetupCorePlan::InitializeApplicationModules => 1,
-            ProgressSetupCorePlan::NetworkSpeedTest => 1,
-            ProgressSetupCorePlan::Done => 1,
-        }
-    }
-
-    fn get_title(&self) -> String {
-        match self {
-            ProgressSetupCorePlan::InitializeApplicationModules => {
-                "initialize-application-modules".to_string()
-            }
-            ProgressSetupCorePlan::NetworkSpeedTest => "network-speed-test".to_string(),
-
-            ProgressSetupCorePlan::Done => "done".to_string(),
-        }
-    }
-
-    fn resolve_to_event(&self) -> Self::ChannelEvent {
-        ProgressPlanEventPayload {
-            event_type: self.get_event_type(),
-            title: self.get_title(),
-        }
-    }
-}
-
-#[derive(Clone, PartialEq, Debug)]
-pub enum ProgressSetupNodePlan {
+    // Node Phase
     BinariesTor,
     BinariesNode,
     BinariesWallet,
-    BinariesMergeMiningProxy,
     StartTor,
     MigratingDatabase,
     StartingNode,
     WaitingForInitialSync,
     WaitingForHeaderSync,
     WaitingForBlockSync,
-    Done,
-}
 
-impl ProgressStep for ProgressSetupNodePlan {
-    type ChannelEvent = ProgressPlanEventPayload;
-
-    fn get_event_type(&self) -> ProgressEvents {
-        ProgressEvents::Node
-    }
-
-    fn get_progress_weight(&self) -> u8 {
-        match self {
-            ProgressSetupNodePlan::BinariesTor => 1,
-            ProgressSetupNodePlan::BinariesNode => 1,
-            ProgressSetupNodePlan::BinariesWallet => 1,
-            ProgressSetupNodePlan::BinariesMergeMiningProxy => 1,
-            ProgressSetupNodePlan::StartTor => 1,
-            ProgressSetupNodePlan::MigratingDatabase => 1,
-            ProgressSetupNodePlan::StartingNode => 1,
-            ProgressSetupNodePlan::WaitingForInitialSync => 2,
-            ProgressSetupNodePlan::WaitingForHeaderSync => 2,
-            ProgressSetupNodePlan::WaitingForBlockSync => 4,
-            ProgressSetupNodePlan::Done => 6,
-        }
-    }
-
-    fn get_title(&self) -> String {
-        match self {
-            ProgressSetupNodePlan::BinariesTor => "binaries-tor".to_string(),
-            ProgressSetupNodePlan::BinariesNode => "binaries-node".to_string(),
-            ProgressSetupNodePlan::BinariesWallet => "binaries-wallet".to_string(),
-            ProgressSetupNodePlan::BinariesMergeMiningProxy => {
-                "binaries-merge-mining-proxy".to_string()
-            }
-            ProgressSetupNodePlan::StartTor => "start-tor".to_string(),
-            ProgressSetupNodePlan::MigratingDatabase => "migrating-database".to_string(),
-            ProgressSetupNodePlan::StartingNode => "starting-node".to_string(),
-            ProgressSetupNodePlan::WaitingForInitialSync => "waiting-for-initial-sync".to_string(),
-            ProgressSetupNodePlan::WaitingForHeaderSync => "waiting-for-header-sync".to_string(),
-            ProgressSetupNodePlan::WaitingForBlockSync => "waiting-for-block-sync".to_string(),
-            ProgressSetupNodePlan::Done => "done".to_string(),
-        }
-    }
-
-    fn resolve_to_event(&self) -> Self::ChannelEvent {
-        ProgressPlanEventPayload {
-            event_type: self.get_event_type(),
-            title: self.get_title(),
-        }
-    }
-}
-
-#[derive(Clone, PartialEq, Debug)]
-pub enum ProgressSetupHardwarePlan {
+    // Cpu Mining Phase
     BinariesCpuMiner,
-    BinariesGpuMiner,
-    DetectGPU,
-    Done,
-}
+    BinariesMergeMiningProxy,
+    MMProxy,
 
-impl ProgressStep for ProgressSetupHardwarePlan {
-    type ChannelEvent = ProgressPlanEventPayload;
+    // Gpu Mining Phase
+    BinariesGlytexMiner,
+    BinariesGraxilMiner,
+    GlytexDetectGPU,
+    GraxilDetectGPU,
 
-    fn get_event_type(&self) -> ProgressEvents {
-        ProgressEvents::Hardware
-    }
-
-    fn get_progress_weight(&self) -> u8 {
-        match self {
-            ProgressSetupHardwarePlan::BinariesCpuMiner => 2,
-            ProgressSetupHardwarePlan::BinariesGpuMiner => 2,
-            ProgressSetupHardwarePlan::DetectGPU => 1,
-            ProgressSetupHardwarePlan::Done => 1,
-        }
-    }
-
-    fn get_title(&self) -> String {
-        match self {
-            ProgressSetupHardwarePlan::BinariesCpuMiner => "binaries-cpu-miner".to_string(),
-            ProgressSetupHardwarePlan::BinariesGpuMiner => "binaries-gpu-miner".to_string(),
-            ProgressSetupHardwarePlan::DetectGPU => "detect-gpu".to_string(),
-            ProgressSetupHardwarePlan::Done => "done".to_string(),
-        }
-    }
-
-    fn resolve_to_event(&self) -> Self::ChannelEvent {
-        ProgressPlanEventPayload {
-            event_type: self.get_event_type(),
-            title: self.get_title(),
-        }
-    }
-}
-
-#[derive(Clone, PartialEq, Debug)]
-pub enum ProgressSetupWalletPlan {
+    // Wallet Phase
     StartWallet,
     SetupBridge,
-    Done,
 }
 
-impl ProgressStep for ProgressSetupWalletPlan {
-    type ChannelEvent = ProgressPlanEventPayload;
-
-    fn get_event_type(&self) -> ProgressEvents {
-        ProgressEvents::Wallet
-    }
-
-    fn get_progress_weight(&self) -> u8 {
+impl SetupStep {
+    pub fn get_i18n_key(&self) -> String {
         match self {
-            ProgressSetupWalletPlan::StartWallet => 1,
-            ProgressSetupWalletPlan::SetupBridge => 1,
-            ProgressSetupWalletPlan::Done => 1,
+            // Core Phase
+            Self::InitializeApplicationModules => "initialize-application-modules".to_string(),
+            Self::NetworkSpeedTest => "network-speed-test".to_string(),
+
+            // Node Phase
+            Self::BinariesTor => "binaries-tor".to_string(),
+            Self::BinariesNode => "binaries-node".to_string(),
+            Self::BinariesWallet => "binaries-wallet".to_string(),
+            Self::StartTor => "start-tor".to_string(),
+            Self::MigratingDatabase => "migrating-database".to_string(),
+            Self::StartingNode => "starting-node".to_string(),
+            Self::WaitingForInitialSync => "waiting-for-initial-sync".to_string(),
+            Self::WaitingForHeaderSync => "waiting-for-header-sync".to_string(),
+            Self::WaitingForBlockSync => "waiting-for-block-sync".to_string(),
+
+            // Cpu Mining Phase
+            Self::BinariesCpuMiner => "binaries-cpu-miner".to_string(),
+            Self::BinariesMergeMiningProxy => "binaries-merge-mining-proxy".to_string(),
+            Self::MMProxy => "mm-proxy".to_string(),
+
+            // Gpu Mining Phase
+            Self::BinariesGlytexMiner => "binaries-glytex-miner".to_string(),
+            Self::BinariesGraxilMiner => "binaries-graxil-miner".to_string(),
+            Self::GlytexDetectGPU => "glytex-detect-gpu".to_string(),
+            Self::GraxilDetectGPU => "graxil-detect-gpu".to_string(),
+
+            // Wallet Phase
+            Self::StartWallet => "start-wallet".to_string(),
+            Self::SetupBridge => "setup-bridge".to_string(),
         }
     }
 
-    fn get_title(&self) -> String {
+    // What percentage of 100% this step represents in the whole setup process
+    // All steps should add up to 100%
+    pub fn get_progress_value(&self) -> u8 {
         match self {
-            ProgressSetupWalletPlan::StartWallet => "start-wallet".to_string(),
+            // Core Phase
+            Self::InitializeApplicationModules => 2,
+            Self::NetworkSpeedTest => 2,
 
-            ProgressSetupWalletPlan::SetupBridge => "setup-bridge".to_string(),
-            ProgressSetupWalletPlan::Done => "done".to_string(),
-        }
-    }
+            // Node Phase
+            Self::BinariesTor => 10,
+            Self::BinariesNode => 10,
+            Self::BinariesWallet => 10,
+            Self::StartTor => 2,
+            Self::MigratingDatabase => 4,
+            Self::StartingNode => 4,
+            Self::WaitingForInitialSync => 4,
+            Self::WaitingForHeaderSync => 4,
+            Self::WaitingForBlockSync => 4,
 
-    fn resolve_to_event(&self) -> Self::ChannelEvent {
-        ProgressPlanEventPayload {
-            event_type: self.get_event_type(),
-            title: self.get_title(),
-        }
-    }
-}
+            // Cpu Mining Phase
+            Self::BinariesCpuMiner => 8,
+            Self::BinariesMergeMiningProxy => 8,
+            Self::MMProxy => 2,
 
-#[derive(Clone, PartialEq, Debug)]
-pub enum ProgressSetupMiningPlan {
-    MMProxy,
-    Done,
-}
+            // Gpu Mining Phase
+            Self::BinariesGlytexMiner => 8,
+            Self::BinariesGraxilMiner => 8,
+            Self::GlytexDetectGPU => 2,
+            Self::GraxilDetectGPU => 2,
 
-impl ProgressStep for ProgressSetupMiningPlan {
-    type ChannelEvent = ProgressPlanEventPayload;
-
-    fn get_event_type(&self) -> ProgressEvents {
-        ProgressEvents::Mining
-    }
-
-    fn get_progress_weight(&self) -> u8 {
-        match self {
-            ProgressSetupMiningPlan::MMProxy => 1,
-            ProgressSetupMiningPlan::Done => 1,
-        }
-    }
-
-    fn get_title(&self) -> String {
-        match self {
-            ProgressSetupMiningPlan::MMProxy => "mm-proxy".to_string(),
-            ProgressSetupMiningPlan::Done => "done".to_string(),
-        }
-    }
-
-    fn resolve_to_event(&self) -> Self::ChannelEvent {
-        ProgressPlanEventPayload {
-            event_type: self.get_event_type(),
-            title: self.get_title(),
-        }
-    }
-}
-
-#[allow(dead_code)]
-#[derive(Clone, PartialEq, Debug)]
-pub enum ProgressPlans {
-    Core(ProgressSetupCorePlan),
-    Node(ProgressSetupNodePlan),
-    Hardware(ProgressSetupHardwarePlan),
-    Wallet(ProgressSetupWalletPlan),
-    Mining(ProgressSetupMiningPlan),
-}
-#[allow(dead_code)]
-impl ProgressPlans {
-    fn get_event_type(&self) -> ProgressEvents {
-        match self {
-            ProgressPlans::Core(plan) => plan.get_event_type(),
-            ProgressPlans::Node(plan) => plan.get_event_type(),
-            ProgressPlans::Hardware(plan) => plan.get_event_type(),
-            ProgressPlans::Wallet(plan) => plan.get_event_type(),
-            ProgressPlans::Mining(plan) => plan.get_event_type(),
-        }
-    }
-}
-
-impl ProgressStep for ProgressPlans {
-    type ChannelEvent = ProgressPlanEventPayload;
-
-    fn get_event_type(&self) -> ProgressEvents {
-        match self {
-            ProgressPlans::Core(plan) => plan.get_event_type(),
-            ProgressPlans::Node(plan) => plan.get_event_type(),
-            ProgressPlans::Hardware(plan) => plan.get_event_type(),
-            ProgressPlans::Wallet(plan) => plan.get_event_type(),
-            ProgressPlans::Mining(plan) => plan.get_event_type(),
-        }
-    }
-
-    fn get_title(&self) -> String {
-        match self {
-            ProgressPlans::Core(plan) => plan.get_title(),
-            ProgressPlans::Node(plan) => plan.get_title(),
-            ProgressPlans::Hardware(plan) => plan.get_title(),
-            ProgressPlans::Wallet(plan) => plan.get_title(),
-            ProgressPlans::Mining(plan) => plan.get_title(),
-        }
-    }
-
-    fn resolve_to_event(&self) -> Self::ChannelEvent {
-        match self {
-            ProgressPlans::Core(plan) => plan.resolve_to_event(),
-            ProgressPlans::Node(plan) => plan.resolve_to_event(),
-            ProgressPlans::Hardware(plan) => plan.resolve_to_event(),
-            ProgressPlans::Wallet(plan) => plan.resolve_to_event(),
-            ProgressPlans::Mining(plan) => plan.resolve_to_event(),
-        }
-    }
-
-    fn get_progress_weight(&self) -> u8 {
-        match self {
-            ProgressPlans::Core(plan) => plan.get_progress_weight(),
-            ProgressPlans::Node(plan) => plan.get_progress_weight(),
-            ProgressPlans::Hardware(plan) => plan.get_progress_weight(),
-            ProgressPlans::Wallet(plan) => plan.get_progress_weight(),
-            ProgressPlans::Mining(plan) => plan.get_progress_weight(),
-        }
-    }
-}
-
-impl ProgressPlans {
-    pub fn get_phase_title(&self) -> String {
-        match self {
-            ProgressPlans::Core(_) => "setup-core".to_string(),
-            ProgressPlans::Node(_) => "setup-local-node".to_string(),
-            ProgressPlans::Hardware(_) => "setup-hardware".to_string(),
-            ProgressPlans::Wallet(_) => "setup-wallet".to_string(),
-            ProgressPlans::Mining(_) => "setup-mining".to_string(),
-        }
-    }
-
-    pub fn get_phase_percentage_multiplyer(&self) -> f64 {
-        match self {
-            ProgressPlans::Core(_) => 0.2,
-            ProgressPlans::Node(_) => 0.4,
-            ProgressPlans::Hardware(_) => 0.1,
-            ProgressPlans::Wallet(_) => 0.1,
-            ProgressPlans::Mining(_) => 0.1,
-        }
-    }
-
-    pub fn get_phase_base_percentage(&self) -> f64 {
-        match self {
-            ProgressPlans::Core(_) => 0.0,
-            ProgressPlans::Node(_) => 20.0,
-            ProgressPlans::Hardware(_) => 60.0,
-            ProgressPlans::Wallet(_) => 80.0,
-            ProgressPlans::Mining(_) => 90.0,
+            // Wallet Phase
+            Self::StartWallet => 4,
+            Self::SetupBridge => 4,
         }
     }
 }

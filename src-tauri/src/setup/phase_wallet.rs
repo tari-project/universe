@@ -30,9 +30,8 @@ use crate::{
     internal_wallet::InternalWallet,
     pin::PinManager,
     progress_trackers::{
-        progress_plans::{ProgressPlans, ProgressSetupWalletPlan},
-        progress_stepper::ProgressStepperBuilder,
-        ProgressStepper,
+        progress_plans::SetupStep,
+        progress_stepper::{ProgressStepper, ProgressStepperBuilder},
     },
     setup::setup_manager::SetupPhase,
     tasks_tracker::TasksTrackers,
@@ -131,10 +130,10 @@ impl SetupPhaseImpl for WalletSetupPhase {
         timeout_watcher_sender: Sender<u64>,
     ) -> ProgressStepper {
         ProgressStepperBuilder::new()
-            .add_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::StartWallet))
-            .add_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::SetupBridge))
-            .add_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::Done))
-            .build(app_handle, timeout_watcher_sender)
+            .add_step(SetupStep::BinariesWallet)
+            .add_step(SetupStep::StartWallet)
+            .add_step(SetupStep::SetupBridge)
+            .build(app_handle, timeout_watcher_sender, SetupPhase::Wallet)
     }
 
     async fn load_app_configuration() -> Result<Self::AppConfiguration, Error> {
@@ -153,9 +152,12 @@ impl SetupPhaseImpl for WalletSetupPhase {
 
         let binary_resolver = BinaryResolver::current();
 
-        progress_stepper
-            .resolve_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::StartWallet))
-            .await;
+        let wallet_binary_progress_tracker =
+            progress_stepper.track_step_completion_over_time(SetupStep::BinariesWallet);
+
+        binary_resolver
+            .initialize_binary(Binaries::Wallet, wallet_binary_progress_tracker)
+            .await?;
 
         let latest_wallet_migration_nonce = *ConfigWallet::content().await.wallet_migration_nonce();
         if latest_wallet_migration_nonce < WALLET_MIGRATION_NONCE {
@@ -190,10 +192,12 @@ impl SetupPhaseImpl for WalletSetupPhase {
             )
             .await?;
 
-        let bridge_binary_progress_tracker = progress_stepper.channel_step_range_updates(
-            ProgressPlans::Wallet(ProgressSetupWalletPlan::SetupBridge),
-            Some(ProgressPlans::Wallet(ProgressSetupWalletPlan::Done)),
-        );
+        progress_stepper
+            .mark_step_as_completed(SetupStep::StartWallet)
+            .await;
+
+        let bridge_binary_progress_tracker =
+            progress_stepper.track_step_completion_over_time(SetupStep::SetupBridge);
 
         binary_resolver
             .initialize_binary(Binaries::BridgeTapplet, bridge_binary_progress_tracker)
@@ -213,19 +217,12 @@ impl SetupPhaseImpl for WalletSetupPhase {
         }
 
         self.status_sender.send(PhaseStatus::Success).ok();
-        self.progress_stepper
-            .lock()
-            .await
-            .resolve_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::Done))
-            .await;
 
         let config_wallet = ConfigWallet::content().await;
         let is_pin_locked = PinManager::pin_locked().await;
         EventsEmitter::emit_pin_locked(is_pin_locked).await;
         let is_seed_backed_up = *config_wallet.seed_backed_up();
         EventsEmitter::emit_seed_backed_up(is_seed_backed_up).await;
-
-        EventsEmitter::emit_wallet_phase_finished(true).await;
 
         Ok(())
     }

@@ -30,7 +30,7 @@ use tokio::sync::watch::{channel, Sender};
 
 use crate::{
     download_utils::validate_checksum,
-    progress_trackers::progress_stepper::ChanneledStepUpdate,
+    progress_trackers::progress_stepper::TrackStepComplitionOverTime,
     requests::clients::http_file_client::HttpFileClient,
     tasks_tracker::TasksTrackers,
     utils::platform_utils::{CurrentOperatingSystem, PlatformUtils},
@@ -263,20 +263,20 @@ impl BinaryManager {
 
     async fn resolve_progress_channel(
         &self,
-        progress_channel: Option<ChanneledStepUpdate>,
+        progress_channel: Option<TrackStepComplitionOverTime>,
     ) -> Result<(Option<Sender<f64>>, Option<Shutdown>), Error> {
         if let Some(step_update_channel) = progress_channel {
             let (sender, mut receiver) = channel::<f64>(0.0);
             let task_tacker = match Binaries::from_name(&self.binary_name) {
-                Binaries::GpuMiner => &TasksTrackers::current().hardware_phase,
-                Binaries::Xmrig => &TasksTrackers::current().hardware_phase,
+                Binaries::GpuMiner => &TasksTrackers::current().gpu_mining_phase,
+                Binaries::Xmrig => &TasksTrackers::current().cpu_mining_phase,
                 Binaries::Wallet => &TasksTrackers::current().wallet_phase,
                 Binaries::MinotariNode => &TasksTrackers::current().node_phase,
-                Binaries::Tor => &TasksTrackers::current().common,
-                Binaries::MergeMiningProxy => &TasksTrackers::current().mining_phase,
-                Binaries::ShaP2pool => &TasksTrackers::current().mining_phase,
+                Binaries::Tor => &TasksTrackers::current().node_phase,
+                Binaries::MergeMiningProxy => &TasksTrackers::current().cpu_mining_phase,
+                Binaries::ShaP2pool => &TasksTrackers::current().common,
                 Binaries::BridgeTapplet => &TasksTrackers::current().wallet_phase,
-                Binaries::GpuMinerSHA3X => &TasksTrackers::current().hardware_phase,
+                Binaries::GpuMinerSHA3X => &TasksTrackers::current().gpu_mining_phase,
             };
             let binary_name = self.binary_name.clone();
             let shutdown_signal = task_tacker.get_signal().await;
@@ -318,7 +318,7 @@ impl BinaryManager {
 
     pub async fn download_version_with_retries(
         &self,
-        progress_channel: Option<ChanneledStepUpdate>,
+        progress_channel: Option<TrackStepComplitionOverTime>,
     ) -> Result<(), Error> {
         let mut last_error_message = String::new();
         for retry in 0..3 {
@@ -347,7 +347,7 @@ impl BinaryManager {
 
     pub async fn download_selected_version(
         &self,
-        progress_channel: Option<ChanneledStepUpdate>,
+        progress_channel: Option<TrackStepComplitionOverTime>,
     ) -> Result<(), Error> {
         let version = self.selected_version.clone();
 

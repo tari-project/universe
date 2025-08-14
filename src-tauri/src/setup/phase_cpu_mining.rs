@@ -20,55 +20,64 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::{
+    binaries::{Binaries, BinaryResolver},
+    configs::{config_core::ConfigCore, trait_config::ConfigImpl},
+    events_emitter::EventsEmitter,
+    hardware::hardware_status_monitor::HardwareStatusMonitor,
+    internal_wallet::InternalWallet,
+    mm_proxy_manager::StartConfig,
+    progress_trackers::{
+        progress_plans::SetupStep,
+        progress_stepper::{ProgressStepper, ProgressStepperBuilder},
+    },
+    setup::{listeners::SetupFeature, setup_manager::SetupPhase},
+    systemtray_manager::SystemTrayCpuData,
+    tasks_tracker::TasksTrackers,
+    utils::locks_utils::try_write_with_retry,
+    UniverseAppState,
+};
+use anyhow::Error;
+use log::error;
+use tari_shutdown::ShutdownSignal;
+use tauri::{AppHandle, Manager};
+use tokio::{
+    select,
+    sync::{
+        watch::{Receiver, Sender},
+        Mutex,
+    },
+};
+use tokio_util::task::TaskTracker;
+
 use super::{
     listeners::SetupFeaturesList,
     setup_manager::PhaseStatus,
     trait_setup_phase::{SetupConfiguration, SetupPhaseImpl},
     utils::{setup_default_adapter::SetupDefaultAdapter, timeout_watcher::TimeoutWatcher},
 };
-use crate::{
-    configs::{config_core::ConfigCore, trait_config::ConfigImpl},
-    events_emitter::EventsEmitter,
-    internal_wallet::InternalWallet,
-    progress_trackers::{
-        progress_plans::{ProgressPlans, ProgressSetupMiningPlan},
-        progress_stepper::ProgressStepperBuilder,
-        ProgressStepper,
-    },
-    setup::{listeners::SetupFeature, setup_manager::SetupPhase},
-    tasks_tracker::TasksTrackers,
-    StartConfig, UniverseAppState,
-};
-use anyhow::Error;
-use log::info;
-use tari_shutdown::ShutdownSignal;
-use tauri::{AppHandle, Manager};
-use tokio::sync::{
-    watch::{Receiver, Sender},
-    Mutex,
-};
-use tokio_util::task::TaskTracker;
 
-static LOG_TARGET: &str = "tari::universe::phase_hardware";
+static LOG_TARGET: &str = "tari::universe::phase_cpu_mining";
 
 #[derive(Clone, Default)]
-pub struct MiningSetupPhaseAppConfiguration {
+pub struct CpuMiningSetupPhaseAppConfiguration {
     mmproxy_monero_nodes: Vec<String>,
     mmproxy_use_monero_fail: bool,
 }
 
-pub struct MiningSetupPhase {
+pub struct CpuMiningSetupPhase {
     app_handle: AppHandle,
     progress_stepper: Mutex<ProgressStepper>,
-    app_configuration: MiningSetupPhaseAppConfiguration,
+    app_configuration: CpuMiningSetupPhaseAppConfiguration,
     setup_configuration: SetupConfiguration,
     status_sender: Sender<PhaseStatus>,
+    #[allow(dead_code)]
     setup_features: SetupFeaturesList,
     timeout_watcher: TimeoutWatcher,
 }
 
-impl SetupPhaseImpl for MiningSetupPhase {
-    type AppConfiguration = MiningSetupPhaseAppConfiguration;
+impl SetupPhaseImpl for CpuMiningSetupPhase {
+    type AppConfiguration = CpuMiningSetupPhaseAppConfiguration;
 
     async fn new(
         app_handle: AppHandle,
@@ -94,13 +103,12 @@ impl SetupPhaseImpl for MiningSetupPhase {
     fn get_app_handle(&self) -> &AppHandle {
         &self.app_handle
     }
-
     async fn get_shutdown_signal(&self) -> ShutdownSignal {
-        TasksTrackers::current().mining_phase.get_signal().await
+        TasksTrackers::current().cpu_mining_phase.get_signal().await
     }
     async fn get_task_tracker(&self) -> TaskTracker {
         TasksTrackers::current()
-            .mining_phase
+            .cpu_mining_phase
             .get_task_tracker()
             .await
     }
@@ -110,7 +118,7 @@ impl SetupPhaseImpl for MiningSetupPhase {
             .clone()
     }
     fn get_phase_id(&self) -> SetupPhase {
-        SetupPhase::Mining
+        SetupPhase::CpuMining
     }
     fn get_timeout_watcher(&self) -> &TimeoutWatcher {
         &self.timeout_watcher
@@ -121,18 +129,23 @@ impl SetupPhaseImpl for MiningSetupPhase {
         timeout_watcher_sender: Sender<u64>,
     ) -> ProgressStepper {
         ProgressStepperBuilder::new()
-            .add_step(ProgressPlans::Mining(ProgressSetupMiningPlan::MMProxy))
-            .add_step(ProgressPlans::Mining(ProgressSetupMiningPlan::Done))
-            .build(app_handle.clone(), timeout_watcher_sender)
+            .add_step(SetupStep::BinariesCpuMiner)
+            .add_step(SetupStep::BinariesMergeMiningProxy)
+            .add_step(SetupStep::MMProxy)
+            .build(
+                app_handle.clone(),
+                timeout_watcher_sender,
+                SetupPhase::CpuMining,
+            )
     }
 
     async fn load_app_configuration() -> Result<Self::AppConfiguration, Error> {
         let mmproxy_monero_nodes = ConfigCore::content().await.mmproxy_monero_nodes().clone();
         let mmproxy_use_monero_fail = *ConfigCore::content().await.mmproxy_use_monero_failover();
 
-        Ok(MiningSetupPhaseAppConfiguration {
-            mmproxy_use_monero_fail,
+        Ok(CpuMiningSetupPhaseAppConfiguration {
             mmproxy_monero_nodes,
+            mmproxy_use_monero_fail,
         })
     }
 
@@ -140,20 +153,31 @@ impl SetupPhaseImpl for MiningSetupPhase {
         let _unused = SetupDefaultAdapter::setup(self).await;
     }
 
-    #[allow(clippy::too_many_lines)]
     async fn setup_inner(&self) -> Result<(), Error> {
-        info!(target: LOG_TARGET, "[ {} Phase ] Starting setup inner", SetupPhase::Mining);
         let mut progress_stepper = self.progress_stepper.lock().await;
+        let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
+        let state = self.app_handle.state::<UniverseAppState>();
+
+        let binary_resolver = BinaryResolver::current();
+
+        let cpu_miner_binary_progress_tracker =
+            progress_stepper.track_step_completion_over_time(SetupStep::BinariesCpuMiner);
+
+        binary_resolver
+            .initialize_binary(Binaries::Xmrig, cpu_miner_binary_progress_tracker)
+            .await?;
+
         if self
             .setup_features
             .is_feature_disabled(SetupFeature::CpuPool)
         {
-            progress_stepper
-                .resolve_step(ProgressPlans::Mining(ProgressSetupMiningPlan::MMProxy))
-                .await;
-            let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
+            let mmproxy_binary_progress_tracker = progress_stepper
+                .track_step_completion_over_time(SetupStep::BinariesMergeMiningProxy);
+            binary_resolver
+                .initialize_binary(Binaries::MergeMiningProxy, mmproxy_binary_progress_tracker)
+                .await?;
+
             let tari_address = InternalWallet::tari_address().await;
-            let state = self.app_handle.state::<UniverseAppState>();
             let telemetry_id = state
                 .telemetry_manager
                 .read()
@@ -177,22 +201,66 @@ impl SetupPhaseImpl for MiningSetupPhase {
                 .await?;
 
             state.mm_proxy_manager.wait_ready().await?;
+            progress_stepper
+                .mark_step_as_completed(SetupStep::MMProxy)
+                .await;
         } else {
-            progress_stepper.skip_step(ProgressPlans::Mining(ProgressSetupMiningPlan::MMProxy));
+            // Skip mmproxy download
+            progress_stepper
+                .skip_step(SetupStep::BinariesMergeMiningProxy)
+                .await;
+            // Skip mmproxy setup
+            progress_stepper.skip_step(SetupStep::MMProxy).await;
         }
+
+        HardwareStatusMonitor::current()
+            .initialize_cpu_devices()
+            .await?;
 
         Ok(())
     }
 
     async fn finalize_setup(&self) -> Result<(), Error> {
         self.status_sender.send(PhaseStatus::Success).ok();
-        self.progress_stepper
-            .lock()
-            .await
-            .resolve_step(ProgressPlans::Mining(ProgressSetupMiningPlan::Done))
-            .await;
 
-        EventsEmitter::emit_mining_phase_finished(true).await;
+        let app_handle_clone = self.app_handle.clone();
+        TasksTrackers::current()
+            .cpu_mining_phase
+            .get_task_tracker()
+            .await
+            .spawn(async move {
+                let app_state = app_handle_clone.state::<UniverseAppState>().clone();
+                let mut cpu_miner_status_watch_rx = (*app_state.cpu_miner_status_watch_rx).clone();
+                let mut shutdown_signal =
+                    TasksTrackers::current().cpu_mining_phase.get_signal().await;
+
+                loop {
+                    select! {
+                        _ = cpu_miner_status_watch_rx.changed() => {
+                            let cpu_status = cpu_miner_status_watch_rx.borrow().clone();
+                            EventsEmitter::emit_cpu_mining_update(cpu_status.clone()).await;
+
+                        let cpu_systemtray_data = SystemTrayCpuData {
+                            cpu_hashrate: cpu_status.hash_rate,
+                            estimated_earning: cpu_status.estimated_earnings,
+                        };
+
+                        match try_write_with_retry(&app_state.systemtray_manager, 6).await {
+                            Ok(mut sm) => {
+                                sm.update_tray_with_cpu_data(cpu_systemtray_data);
+                            },
+                            Err(error) => {
+                                error!(target: LOG_TARGET, "Failed to acquire systemtray_manager write lock: {error}");
+                            }
+                        }
+
+                        }
+                        _ = shutdown_signal.wait() => {
+                            break;
+                        },
+                    }
+                }
+            });
 
         Ok(())
     }

@@ -158,18 +158,13 @@ impl ListenerUnlockGpuMining {
 struct DefaultStrategy;
 impl UnlockStrategyTrait for DefaultStrategy {
     fn required_channels(&self) -> Vec<SetupPhase> {
-        vec![
-            SetupPhase::Core,
-            SetupPhase::Hardware,
-            SetupPhase::Node,
-            SetupPhase::Mining,
-        ]
+        vec![SetupPhase::Core, SetupPhase::GpuMining, SetupPhase::Node]
     }
 }
 
 struct GpuPoolStrategy;
 impl UnlockStrategyTrait for GpuPoolStrategy {
     fn required_channels(&self) -> Vec<SetupPhase> {
-        vec![SetupPhase::Core, SetupPhase::Hardware]
+        vec![SetupPhase::Core, SetupPhase::GpuMining]
     }
 }

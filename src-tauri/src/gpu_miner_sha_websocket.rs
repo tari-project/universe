@@ -148,13 +148,13 @@ impl GpuMinerShaWebSocket {
         if let Ok((mut socket, response)) = connect(format!("ws://localhost:{}/ws", self.port)) {
             info!(target: LOG_TARGET, "Connected to WebSocket server: {response:?}" );
 
-            let shutdown_signal = TasksTrackers::current().hardware_phase.get_signal().await;
+            let shutdown_signal = TasksTrackers::current().gpu_mining_phase.get_signal().await;
 
             let last_message = Arc::clone(&self.last_message);
             let socket_listener_thread = Arc::clone(&self.socket_listener_thread);
 
             let thread = TasksTrackers::current()
-                .hardware_phase
+                .gpu_mining_phase
                 .get_task_tracker()
                 .await
                 .spawn(async move {

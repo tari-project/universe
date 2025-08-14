@@ -139,10 +139,10 @@ impl UnlockStrategyTrait for DefaultStrategy {
     fn required_channels(&self) -> Vec<SetupPhase> {
         vec![
             SetupPhase::Core,
-            SetupPhase::Hardware,
+            SetupPhase::CpuMining,
+            SetupPhase::GpuMining,
             SetupPhase::Node,
             SetupPhase::Wallet,
-            SetupPhase::Mining,
         ]
     }
 }

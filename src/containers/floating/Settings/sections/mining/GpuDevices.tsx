@@ -23,13 +23,13 @@ const GpuDevices = memo(function GpuDevices() {
     const gpuDevices = useMiningMetricsStore((s) => s.gpu_devices);
     const gpuDevicesSettings = useConfigMiningStore((s) => s.gpu_devices_settings);
     const isGPUMining = useMiningMetricsStore((s) => s.gpu_mining_status.is_mining);
-    const isHardwarePhaseFinished = useSetupStore((s) => s.hardwarePhaseFinished);
+    const isGpuMiningUnlocked = useSetupStore((s) => s.gpuMiningUnlocked);
 
     const miningGpuInitiated = useMiningStore((s) => s.isGpuMiningInitiated);
     const isGpuMiningEnabled = useConfigMiningStore((s) => s.gpu_mining_enabled);
     const isExcludingGpuDevices = useMiningStore((s) => s.isExcludingGpuDevices);
     const isDisabled =
-        !isHardwarePhaseFinished || isExcludingGpuDevices || isGPUMining || miningGpuInitiated || !isGpuMiningEnabled;
+        !isGpuMiningUnlocked || isExcludingGpuDevices || isGPUMining || miningGpuInitiated || !isGpuMiningEnabled;
 
     const handleSetExcludedDevice = useCallback(
         async (device: GpuDevice) => {

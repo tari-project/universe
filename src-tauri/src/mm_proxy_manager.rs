@@ -96,9 +96,9 @@ impl MmProxyManager {
     }
 
     pub async fn start(&self, config: StartConfig) -> Result<(), anyhow::Error> {
-        let shutdown_signal = TasksTrackers::current().mining_phase.get_signal().await;
+        let shutdown_signal = TasksTrackers::current().cpu_mining_phase.get_signal().await;
         let task_tracker = TasksTrackers::current()
-            .mining_phase
+            .cpu_mining_phase
             .get_task_tracker()
             .await;
 

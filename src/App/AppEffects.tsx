@@ -8,7 +8,6 @@ import { getMiningNetwork } from '../store/actions/miningStoreActions';
 import useTauriEventsListener from '../hooks/app/useTauriEventsListener';
 import { useDisableRefresh } from '../hooks/app/useDisableRefresh';
 import { useDetectMode } from '../hooks/helpers/useDetectMode';
-import { useProgressEventsListener } from '@app/hooks/app/useProgressEventsListener';
 import { fetchBackendInMemoryConfig } from '@app/store/actions/appConfigStoreActions.ts';
 import { fetchBridgeColdWalletAddress } from '@app/store/actions/bridgeApiActions';
 
@@ -31,7 +30,6 @@ export default function AppEffects() {
     useDetectMode();
     useDisableRefresh();
     useTauriEventsListener();
-    useProgressEventsListener();
 
     return null;
 }

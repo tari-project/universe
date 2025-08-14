@@ -263,9 +263,9 @@ impl CpuMiner {
             lock.adapter.node_connection = Some(xmrig_node_connection);
             lock.adapter.cpu_threads = Some(cpu_cores_to_use);
 
-            let shutdown_signal = TasksTrackers::current().hardware_phase.get_signal().await;
+            let shutdown_signal = TasksTrackers::current().cpu_mining_phase.get_signal().await;
             let task_tracker = TasksTrackers::current()
-                .hardware_phase
+                .cpu_mining_phase
                 .get_task_tracker()
                 .await;
 

@@ -19,13 +19,13 @@
 // SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-use crate::progress_trackers::progress_stepper::ChanneledStepUpdate;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::LazyLock;
+
+use crate::progress_trackers::progress_stepper::TrackStepComplitionOverTime;
 
 use super::adapter_bridge::BridgeTappletAdapter;
 use super::adapter_github::GithubReleasesAdapter;
@@ -220,7 +220,7 @@ impl BinaryResolver {
     pub async fn initialize_binary(
         &self,
         binary: Binaries,
-        progress_channel: Option<ChanneledStepUpdate>,
+        progress_channel: Option<TrackStepComplitionOverTime>,
     ) -> Result<(), Error> {
         let manager = self
             .managers

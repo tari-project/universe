@@ -26,23 +26,22 @@ use crate::{
     events_emitter::EventsEmitter,
     gpu_devices::GpuDevices,
     gpu_miner::EngineType,
+    gpu_miner_adapter::GpuMinerStatus,
     hardware::hardware_status_monitor::HardwareStatusMonitor,
     progress_trackers::{
-        progress_plans::{ProgressPlans, ProgressSetupHardwarePlan},
-        progress_stepper::ProgressStepperBuilder,
-        ProgressStepper,
+        progress_plans::SetupStep,
+        progress_stepper::{ProgressStepper, ProgressStepperBuilder},
     },
     setup::setup_manager::SetupPhase,
-    systemtray_manager::SystemTrayData,
+    systemtray_manager::SystemTrayGpuData,
     tasks_tracker::TasksTrackers,
     utils::locks_utils::try_write_with_retry,
-    GpuMinerStatus, UniverseAppState,
+    UniverseAppState,
 };
 use anyhow::Error;
 use log::error;
 use tari_shutdown::ShutdownSignal;
 use tauri::{AppHandle, Manager};
-use tauri_plugin_sentry::sentry;
 use tokio::{
     select,
     sync::{
@@ -59,17 +58,17 @@ use super::{
     utils::{setup_default_adapter::SetupDefaultAdapter, timeout_watcher::TimeoutWatcher},
 };
 
-static LOG_TARGET: &str = "tari::universe::phase_hardware";
+static LOG_TARGET: &str = "tari::universe::phase_gpu_mining";
 
 #[derive(Clone, Default)]
-pub struct HardwareSetupPhaseAppConfiguration {
+pub struct GpuMiningSetupPhaseAppConfiguration {
     gpu_engine: EngineType,
 }
 
-pub struct HardwareSetupPhase {
+pub struct GpuMiningSetupPhase {
     app_handle: AppHandle,
     progress_stepper: Mutex<ProgressStepper>,
-    app_configuration: HardwareSetupPhaseAppConfiguration,
+    app_configuration: GpuMiningSetupPhaseAppConfiguration,
     setup_configuration: SetupConfiguration,
     status_sender: Sender<PhaseStatus>,
     #[allow(dead_code)]
@@ -77,8 +76,8 @@ pub struct HardwareSetupPhase {
     timeout_watcher: TimeoutWatcher,
 }
 
-impl SetupPhaseImpl for HardwareSetupPhase {
-    type AppConfiguration = HardwareSetupPhaseAppConfiguration;
+impl SetupPhaseImpl for GpuMiningSetupPhase {
+    type AppConfiguration = GpuMiningSetupPhaseAppConfiguration;
 
     async fn new(
         app_handle: AppHandle,
@@ -105,11 +104,11 @@ impl SetupPhaseImpl for HardwareSetupPhase {
         &self.app_handle
     }
     async fn get_shutdown_signal(&self) -> ShutdownSignal {
-        TasksTrackers::current().hardware_phase.get_signal().await
+        TasksTrackers::current().gpu_mining_phase.get_signal().await
     }
     async fn get_task_tracker(&self) -> TaskTracker {
         TasksTrackers::current()
-            .hardware_phase
+            .gpu_mining_phase
             .get_task_tracker()
             .await
     }
@@ -119,7 +118,7 @@ impl SetupPhaseImpl for HardwareSetupPhase {
             .clone()
     }
     fn get_phase_id(&self) -> SetupPhase {
-        SetupPhase::Hardware
+        SetupPhase::GpuMining
     }
     fn get_timeout_watcher(&self) -> &TimeoutWatcher {
         &self.timeout_watcher
@@ -130,23 +129,21 @@ impl SetupPhaseImpl for HardwareSetupPhase {
         timeout_watcher_sender: Sender<u64>,
     ) -> ProgressStepper {
         ProgressStepperBuilder::new()
-            .add_step(ProgressPlans::Hardware(
-                ProgressSetupHardwarePlan::BinariesGpuMiner,
-            ))
-            .add_step(ProgressPlans::Hardware(
-                ProgressSetupHardwarePlan::BinariesCpuMiner,
-            ))
-            .add_step(ProgressPlans::Hardware(
-                ProgressSetupHardwarePlan::DetectGPU,
-            ))
-            .add_step(ProgressPlans::Hardware(ProgressSetupHardwarePlan::Done))
-            .build(app_handle.clone(), timeout_watcher_sender)
+            .add_step(SetupStep::BinariesGlytexMiner)
+            .add_step(SetupStep::BinariesGraxilMiner)
+            .add_step(SetupStep::GlytexDetectGPU)
+            .add_step(SetupStep::GraxilDetectGPU)
+            .build(
+                app_handle.clone(),
+                timeout_watcher_sender,
+                SetupPhase::GpuMining,
+            )
     }
 
     async fn load_app_configuration() -> Result<Self::AppConfiguration, Error> {
         let gpu_engine = ConfigMining::content().await.gpu_engine().clone();
 
-        Ok(HardwareSetupPhaseAppConfiguration { gpu_engine })
+        Ok(GpuMiningSetupPhaseAppConfiguration { gpu_engine })
     }
 
     async fn setup(self) {
@@ -160,38 +157,19 @@ impl SetupPhaseImpl for HardwareSetupPhase {
 
         let binary_resolver = BinaryResolver::current();
 
-        let gpu_miner_binary_progress_tracker = progress_stepper.channel_step_range_updates(
-            ProgressPlans::Hardware(ProgressSetupHardwarePlan::BinariesGpuMiner),
-            Some(ProgressPlans::Hardware(
-                ProgressSetupHardwarePlan::BinariesCpuMiner,
-            )),
-        );
-
-        // TODO: REPLACE GpuMiner with GpuMinerSHA3X
-        binary_resolver
-            .initialize_binary(Binaries::GpuMinerSHA3X, None)
-            .await?;
+        let glytex_binary_progress_tracker =
+            progress_stepper.track_step_completion_over_time(SetupStep::BinariesGlytexMiner);
 
         binary_resolver
-            .initialize_binary(Binaries::GpuMiner, gpu_miner_binary_progress_tracker)
+            .initialize_binary(Binaries::GpuMinerSHA3X, glytex_binary_progress_tracker)
             .await?;
 
-        let cpu_miner_binary_progress_tracker = progress_stepper.channel_step_range_updates(
-            ProgressPlans::Hardware(ProgressSetupHardwarePlan::BinariesCpuMiner),
-            Some(ProgressPlans::Hardware(
-                ProgressSetupHardwarePlan::DetectGPU,
-            )),
-        );
+        let graxil_binary_progress_tracker =
+            progress_stepper.track_step_completion_over_time(SetupStep::BinariesGraxilMiner);
 
         binary_resolver
-            .initialize_binary(Binaries::Xmrig, cpu_miner_binary_progress_tracker)
+            .initialize_binary(Binaries::GpuMiner, graxil_binary_progress_tracker)
             .await?;
-
-        progress_stepper
-            .resolve_step(ProgressPlans::Hardware(
-                ProgressSetupHardwarePlan::DetectGPU,
-            ))
-            .await;
 
         let _unused = state
             .gpu_miner
@@ -204,70 +182,69 @@ impl SetupPhaseImpl for HardwareSetupPhase {
             .await
             .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {e:?}"));
 
+        progress_stepper
+            .mark_step_as_completed(SetupStep::GlytexDetectGPU)
+            .await;
+
         GpuDevices::current()
             .write()
             .await
             .detect(data_dir.clone())
             .await?;
 
-        HardwareStatusMonitor::current().initialize().await?;
+        progress_stepper
+            .mark_step_as_completed(SetupStep::GraxilDetectGPU)
+            .await;
+
+        HardwareStatusMonitor::current()
+            .initialize_gpu_devices()
+            .await?;
 
         Ok(())
     }
 
     async fn finalize_setup(&self) -> Result<(), Error> {
         self.status_sender.send(PhaseStatus::Success).ok();
-        self.progress_stepper
-            .lock()
-            .await
-            .resolve_step(ProgressPlans::Hardware(ProgressSetupHardwarePlan::Done))
-            .await;
 
         let app_handle_clone = self.app_handle.clone();
-        TasksTrackers::current().hardware_phase.get_task_tracker().await.spawn(async move {
-            let app_state = app_handle_clone.state::<UniverseAppState>().clone();
-            let mut gpu_status_watch_rx = (*app_state.gpu_latest_status).clone();
-            let mut cpu_miner_status_watch_rx = (*app_state.cpu_miner_status_watch_rx).clone();
-            let mut shutdown_signal = TasksTrackers::current().hardware_phase.get_signal().await;
+        TasksTrackers::current()
+            .gpu_mining_phase
+            .get_task_tracker()
+            .await
+            .spawn(async move {
+                let app_state = app_handle_clone.state::<UniverseAppState>().clone();
+                let mut gpu_status_watch_rx = (*app_state.gpu_latest_status).clone();
+                let mut shutdown_signal =
+                    TasksTrackers::current().gpu_mining_phase.get_signal().await;
 
-            loop {
-                select! {
-                    _ = gpu_status_watch_rx.changed() => {
-                        let gpu_status: GpuMinerStatus = gpu_status_watch_rx.borrow().clone();
-                        EventsEmitter::emit_gpu_mining_update(gpu_status).await;
-                    },
-                    _ = cpu_miner_status_watch_rx.changed() => {
-                        let cpu_status = cpu_miner_status_watch_rx.borrow().clone();
-                        EventsEmitter::emit_cpu_mining_update(cpu_status.clone()).await;
+                loop {
+                    select! {
+                        _ = gpu_status_watch_rx.changed() => {
+                            let gpu_status: GpuMinerStatus = gpu_status_watch_rx.borrow().clone();
+                            EventsEmitter::emit_gpu_mining_update(gpu_status.clone()).await;
+                            let gpu_systemtray_data = SystemTrayGpuData {
+                                gpu_hashrate: gpu_status.hash_rate,
+                                estimated_earning: gpu_status.estimated_earnings
+                            };
 
-                        // Update systemtray data
-                        let gpu_status: GpuMinerStatus = gpu_status_watch_rx.borrow().clone();
-                        let systray_data = SystemTrayData {
-                            cpu_hashrate: cpu_status.hash_rate,
-                            gpu_hashrate: gpu_status.hash_rate,
-                            estimated_earning: (cpu_status.estimated_earnings
-                                + gpu_status.estimated_earnings) as f64,
-                        };
-
-                        match try_write_with_retry(&app_state.systemtray_manager, 6).await {
-                            Ok(mut sm) => {
-                                sm.update_tray(systray_data);
-                            },
-                            Err(e) => {
-                                let err_msg = format!("Failed to acquire systemtray_manager write lock: {e}");
-                                error!(target: LOG_TARGET, "{err_msg}");
-                                sentry::capture_message(&err_msg, sentry::Level::Error);
+                            match try_write_with_retry(&app_state.systemtray_manager, 6).await {
+                                Ok(mut sm) => {
+                                    sm.update_tray_with_gpu_data(gpu_systemtray_data);
+                                },
+                                Err(e) => {
+                                    let err_msg = format!("Failed to acquire systemtray_manager write lock: {e}");
+                                    error!(target: LOG_TARGET, "{err_msg}");
+                                }
                             }
-                        }
-                    }
-                    _ = shutdown_signal.wait() => {
-                        break;
-                    },
-                }
-            }
-        });
 
-        EventsEmitter::emit_hardware_phase_finished(true).await;
+                        },
+                        _ = shutdown_signal.wait() => {
+                            break;
+                        },
+                    }
+                }
+            });
+
         Ok(())
     }
 }
