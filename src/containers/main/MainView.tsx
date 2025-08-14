@@ -2,7 +2,6 @@ import { Background, DashboardContainer, DashboardContent } from '@app/theme/sty
 import SidebarNavigation from '@app/containers/navigation/SidebarNavigation.tsx';
 import { Dashboard } from './Dashboard';
 import { useSetupStore } from '@app/store/useSetupStore.ts';
-import Sync from '@app/containers/main/Sync/Sync.tsx';
 import { useConfigUIStore } from '@app/store';
 
 export default function MainView() {
@@ -14,7 +13,7 @@ export default function MainView() {
             {!visualMode && !isSettingUp && <Background />}
             <DashboardContent>
                 <SidebarNavigation />
-                {isSettingUp ? <Sync /> : <Dashboard />}
+                <Dashboard />
             </DashboardContent>
         </DashboardContainer>
     );

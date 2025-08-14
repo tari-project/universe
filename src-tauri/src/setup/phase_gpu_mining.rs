@@ -27,6 +27,7 @@ use crate::{
     gpu_devices::GpuDevices,
     gpu_miner::EngineType,
     gpu_miner_adapter::GpuMinerStatus,
+    hardware::hardware_status_monitor::HardwareStatusMonitor,
     progress_trackers::{
         progress_plans::SetupStep,
         progress_stepper::{ProgressStepper, ProgressStepperBuilder},
@@ -194,6 +195,10 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
         progress_stepper
             .mark_step_as_completed(SetupStep::GraxilDetectGPU)
             .await;
+
+        HardwareStatusMonitor::current()
+            .initialize_gpu_devices()
+            .await?;
 
         Ok(())
     }

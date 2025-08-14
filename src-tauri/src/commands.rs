@@ -145,52 +145,6 @@ pub struct SignWsDataResponse {
 }
 
 #[tauri::command]
-pub async fn close_splashscreen(app: tauri::AppHandle) {
-    let close_max_retries: u32 = 10; // Maximum number of retries
-    let retry_delay_ms: u64 = 100; // Delay between retries in milliseconds
-
-    let mut retries = 0;
-
-    let (splashscreen_window, main_window) = loop {
-        let splashscreen_window = app.get_webview_window("splashscreen");
-        let main_window = app.get_webview_window("main");
-
-        if let (Some(splashscreen), Some(main)) = (splashscreen_window, main_window) {
-            break (splashscreen, main);
-        }
-
-        retries += 1;
-        if retries >= close_max_retries {
-            error!(target: "LOG_TARGET", "Failed to fetch both 'splashscreen' and 'main' windows after {close_max_retries} retries");
-            return;
-        }
-
-        info!(target: "LOG_TARGET", "Failed to fetch both 'splashscreen' and 'main' windows. Retrying in {retry_delay_ms}ms");
-        tokio::time::sleep(Duration::from_millis(retry_delay_ms)).await;
-    };
-
-    if let (Ok(window_position), Ok(window_size)) = (
-        splashscreen_window.outer_position(),
-        splashscreen_window.inner_size(),
-    ) {
-        splashscreen_window.close().expect("could not close");
-        main_window.show().expect("could not show");
-        if let Err(e) = main_window
-            .set_position(PhysicalPosition::new(window_position.x, window_position.y))
-            .and_then(|_| {
-                main_window.set_size(PhysicalSize::new(window_size.width, window_size.height))
-            })
-        {
-            error!(target: LOG_TARGET, "Could not set window position or size: {e:?}");
-        }
-    } else {
-        error!(target: LOG_TARGET, "Could not get window position or size");
-        splashscreen_window.close().expect("could not close");
-        main_window.show().expect("could not show");
-    }
-}
-
-#[tauri::command]
 pub async fn select_exchange_miner(
     app_handle: tauri::AppHandle,
     exchange_miner: ExchangeMiner,

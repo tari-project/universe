@@ -68,7 +68,7 @@ impl TrackStepComplitionOverTime {
         let payload = ProgressTrackerUpdatePayload {
             phase_title: self.setup_phase.get_i18n_title_key(),
             title: self.tracked_step.get_i18n_key(),
-            progress: resolved_percentage.clone(),
+            progress: resolved_percentage,
             title_params: Some(params.clone()),
             setup_phase: self.setup_phase.clone(),
             is_completed: resolved_percentage.ge(&self.expected_progress),
@@ -101,7 +101,7 @@ impl ProgressStepper {
             let payload = ProgressTrackerUpdatePayload {
                 phase_title: self.setup_phase.get_i18n_title_key(),
                 title: resolved_step.get_i18n_key(),
-                progress: progress_value.clone(),
+                progress: progress_value,
                 title_params: None,
                 setup_phase: self.setup_phase.clone(),
                 is_completed: progress_value.ge(&self.expected_progress),
@@ -172,7 +172,7 @@ impl ProgressStepper {
             let payload = ProgressTrackerUpdatePayload {
                 phase_title: self.setup_phase.get_i18n_title_key(),
                 title: resolved_step.get_i18n_key(),
-                progress: progress_value.clone(),
+                progress: progress_value,
                 title_params: None,
                 setup_phase: self.setup_phase.clone(),
                 is_completed: progress_value.ge(&self.expected_progress),
