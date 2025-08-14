@@ -123,13 +123,15 @@ pub struct WebSocketGpuMinerResponse {
 pub struct GpuMinerShaWebSocket {
     socket_listener_thread: Arc<Mutex<Option<tokio::task::JoinHandle<()>>>>,
     last_message: Arc<Mutex<Option<WebSocketGpuMinerResponse>>>,
+    port: u16,
 }
 
 impl GpuMinerShaWebSocket {
-    pub fn new() -> Self {
+    pub fn new(port: u16) -> Self {
         Self {
             socket_listener_thread: Arc::new(Mutex::new(None)),
             last_message: Arc::new(Mutex::new(None)),
+            port,
         }
     }
 
@@ -143,7 +145,7 @@ impl GpuMinerShaWebSocket {
             return;
         }
 
-        if let Ok((mut socket, response)) = connect("ws://localhost:8080/ws") {
+        if let Ok((mut socket, response)) = connect(format!("ws://localhost:{}/ws", self.port)) {
             info!(target: LOG_TARGET, "Connected to WebSocket server: {response:?}" );
 
             let shutdown_signal = TasksTrackers::current().hardware_phase.get_signal().await;
@@ -206,7 +208,7 @@ impl GpuMinerShaWebSocket {
 
             *self.socket_listener_thread.lock().await = Some(thread);
         } else {
-            warn!(target: LOG_TARGET, "Failed to connect to WebSocket server at ws://localhost:8080/ws");
+            warn!(target: LOG_TARGET, "Failed to connect to WebSocket server at ws://localhost:{}/ws", self.port);
         }
     }
 }
