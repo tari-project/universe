@@ -20,8 +20,6 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod listener_setup_finished;
-pub mod listener_unlock_app;
 pub mod listener_unlock_cpu_mining;
 pub mod listener_unlock_gpu_mining;
 pub mod listener_unlock_wallet;

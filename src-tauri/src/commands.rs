@@ -76,7 +76,7 @@ use tari_key_manager::mnemonic_wordlists::MNEMONIC_ENGLISH_WORDS;
 use tari_utilities::encoding::MBase58;
 use tari_utilities::SafePassword;
 use tauri::ipc::InvokeError;
-use tauri::{Manager, PhysicalPosition, PhysicalSize};
+use tauri::Manager;
 use tauri_plugin_sentry::sentry;
 use urlencoding::encode;
 

@@ -20,13 +20,22 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::collections::HashMap;
+use std::{collections::HashMap, future::Future, time::Duration};
 
-use crate::setup::setup_manager::{PhaseStatus, SetupPhase};
+use crate::{
+    setup::setup_manager::{PhaseStatus, SetupPhase},
+    tasks_tracker::TasksTrackers,
+};
 
 use super::SetupFeaturesList;
 use log::{debug, warn};
-use tokio::sync::watch::{error::RecvError, Receiver};
+use tokio::{
+    sync::{
+        watch::{error::RecvError, Receiver},
+        MutexGuard,
+    },
+    time::sleep,
+};
 
 static LOG_TARGET: &str = "tari::universe::unlock_conditions::listener_trait";
 
@@ -78,15 +87,62 @@ impl UnlockConditionsStatusChannels {
 }
 
 pub trait UnlockConditionsListenerTrait {
+    // Trait implemented methods
+    async fn stop_listener(&self) {
+        if let Some(listener_task) = self.get_listener().await.take() {
+            listener_task.abort();
+        }
+    }
+
+    async fn start_listener(&self)
+    where
+        Self: 'static,
+    {
+        self.stop_listener().await;
+        let shutdown_signal = TasksTrackers::current().common.get_signal().await;
+        let unlock_strategy = self.select_unlock_strategy().await;
+        let channels = self.get_status_channels().await.clone();
+
+        if !unlock_strategy.are_all_channels_loaded(&channels) {
+            return;
+        }
+        if !unlock_strategy.is_any_phase_restarting(channels.clone()) {
+            return;
+        }
+
+        let listener_task = TasksTrackers::current()
+            .common
+            .get_task_tracker()
+            .await
+            .spawn(async move {
+                loop {
+                    if shutdown_signal.is_triggered() {
+                        return;
+                    }
+                    if unlock_strategy.check_conditions(&channels).unwrap_or(false) {
+                        Self::current().conditions_met_callback().await;
+                        break;
+                    } else {
+                    }
+                    sleep(Duration::from_secs(5)).await;
+                }
+            });
+
+        *self.get_listener().await = Some(listener_task);
+    }
+
+    // Methods added by the struct implementing this trait
     fn new() -> Self;
     fn current() -> &'static Self;
     async fn load_setup_features(&self, features: SetupFeaturesList);
-    async fn start_listener(&self);
-    async fn stop_listener(&self);
-    async fn select_unlock_strategy(&self) -> Box<dyn UnlockStrategyTrait + Send + Sync>;
-    async fn conditions_met_callback(&self);
-    async fn handle_restart(&self);
     async fn add_status_channel(&self, key: SetupPhase, value: Receiver<PhaseStatus>);
+    async fn select_unlock_strategy(&self) -> Box<dyn UnlockStrategyTrait + Send + Sync>;
+    fn conditions_met_callback(&self) -> impl Future<Output = ()> + Send + Sync;
+    async fn handle_restart(&self) {}
+
+    // Getters
+    async fn get_listener(&self) -> MutexGuard<'_, Option<tokio::task::JoinHandle<()>>>;
+    async fn get_status_channels(&self) -> MutexGuard<'_, UnlockConditionsStatusChannels>;
 }
 
 pub trait UnlockStrategyTrait {

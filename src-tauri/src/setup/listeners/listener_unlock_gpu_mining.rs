@@ -69,55 +69,18 @@ impl UnlockConditionsListenerTrait for ListenerUnlockGpuMining {
         channels.insert(key, value);
     }
 
-    async fn stop_listener(&self) {
-        if let Some(listener_task) = self.listener.lock().await.take() {
-            info!(target: LOG_TARGET, "Stopping listener task");
-            listener_task.abort();
-        } else {
-            info!(target: LOG_TARGET, "No listener task to stop");
-        }
+    async fn get_listener(
+        &self,
+    ) -> tokio::sync::MutexGuard<'_, Option<tokio::task::JoinHandle<()>>> {
+        self.listener.lock().await
     }
 
-    async fn start_listener(&self) {
-        self.stop_listener().await;
-        let shutdown_signal = TasksTrackers::current().common.get_signal().await;
-        let unlock_strategy = self.select_unlock_strategy().await;
-        let channels = self.status_channels.lock().await.clone();
-
-        if !unlock_strategy.are_all_channels_loaded(&channels) {
-            info!(target: LOG_TARGET, "Not all listeners are ready, skipping listener start");
-            return;
-        }
-        if !unlock_strategy.is_any_phase_restarting(channels.clone()) {
-            info!(target: LOG_TARGET, "All phases are marked as completed, no need to start listener");
-            return;
-        }
-
-        let unlock_gpu_mining_listener = ListenerUnlockGpuMining::current();
-
-        let listener_task = TasksTrackers::current()
-            .common
-            .get_task_tracker()
-            .await
-            .spawn(async move {
-                loop {
-                    if shutdown_signal.is_triggered() {
-                        info!(target: LOG_TARGET, "Shutdown signal already triggered, stopping listener");
-                        return;
-                    }
-                    if unlock_strategy.check_conditions(&channels).unwrap_or(false) {
-                        debug!(target: LOG_TARGET, "Conditions met, proceeding with unlock");
-                        unlock_gpu_mining_listener.conditions_met_callback().await;
-                        break;
-                    } else {
-                        debug!(target: LOG_TARGET, "Conditions not met, waiting for next check");
-                    }
-                    sleep(Duration::from_secs(5)).await;
-                }
-            });
-
-        *self.listener.lock().await = Some(listener_task);
+    async fn get_status_channels(
+        &self,
+    ) -> tokio::sync::MutexGuard<'_, UnlockConditionsStatusChannels> {
+        self.status_channels.lock().await
     }
+
     async fn conditions_met_callback(&self) {
         info!(target: LOG_TARGET, "Unlocking Mining");
         EventsEmitter::emit_unlock_gpu_mining().await;
