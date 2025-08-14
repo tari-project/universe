@@ -120,7 +120,7 @@ impl UnlockConditionsListenerTrait for ListenerUnlockCpuMining {
     }
 
     async fn conditions_met_callback(&self) {
-        info!(target: LOG_TARGET, "Unlocking Mining");
+        info!(target: LOG_TARGET, "Unlocking Cpu Mining");
         EventsEmitter::emit_unlock_cpu_mining().await;
     }
 
