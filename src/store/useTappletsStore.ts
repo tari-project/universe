@@ -61,7 +61,7 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
     deactivateTapplet: async () => {
         set({ activeTapplet: null });
     },
-    setActiveTappById: async (tappletId, isBuiltIn = false) => {
+    setActiveTappById: async (tappletId, isBuiltIn = false, isDev = false) => {
         console.info('Set Active Tapplet: ', tappletId, isBuiltIn);
         if (tappletId == get().activeTapplet?.tapplet_id) return;
         const tappProviderState = useTappletSignerStore.getState();
@@ -81,35 +81,47 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
             return;
         }
 
-        const tapplet = get().devTapplets.find((tapp) => tapp.id === tappletId);
-        if (!tapplet) {
-            setError(`Tapplet with id: ${tappletId} not found`);
-            return;
-        }
+        if (isDev) {
+            const tapplet = get().devTapplets.find((tapp) => tapp.id === tappletId);
+            if (!tapplet) {
+                setError(`Tapplet with id: ${tappletId} not found`);
+                return;
+            }
 
-        //TODO add case if dev tapplet's already running and if not - run local server (start_tari_tapplet_binary)
-        console.info('is http?', isHttpOrLocalhost(tapplet.source));
-        if (isHttpOrLocalhost(tapplet.source)) {
+            //TODO add case if dev tapplet's already running and if not - run local server (start_tari_tapplet_binary)
+            console.info('is http?', isHttpOrLocalhost(tapplet.source));
+            if (isHttpOrLocalhost(tapplet.source)) {
+                try {
+                    console.info('🚗 RUN HTTP ', tapplet?.display_name);
+                    const activeTapplet = await fetchActiveTapplet(tapplet);
+                    if (!activeTapplet) return;
+                    set({ activeTapplet });
+                    tappProviderState.setTappletSigner(activeTapplet?.package_name); //TODO
+                } catch (error) {
+                    console.error(`Running dev tapplet localhost error: ${error}`);
+                    setError(`Running dev tapplet localhost error: ${error}`);
+                }
+                return;
+            }
+
+            // by default tapplets are supposed to work with the Ootle
+            // run the Ootle dev/registed tapplet below
+            console.info('🚗 RUN DEV', tappletId);
+
             try {
-                console.info('🚗 RUN HTTP ', tapplet?.display_name);
-                const activeTapplet = await fetchActiveTapplet(tapplet);
-                if (!activeTapplet) return;
+                const activeTapplet = await invoke('start_dev_tapplet', {
+                    devTappletId: tappletId,
+                });
                 set({ activeTapplet });
-                tappProviderState.setTappletSigner(activeTapplet?.package_name); //TODO
             } catch (error) {
-                console.error(`Running dev tapplet localhost error: ${error}`);
-                setError(`Running dev tapplet localhost error: ${error}`);
+                console.error(`Dev Tapplet startup error: ${error}`);
+                setError(`Dev Tapplet startup error: ${error}`);
             }
             return;
         }
-
-        // by default tapplets are supposed to work with the Ootle
-        // run the Ootle dev/registed tapplet below
-        console.info('🚗 RUN DEV', tappletId);
-
         try {
-            const activeTapplet = await invoke('start_dev_tapplet', {
-                devTappletId: tappletId,
+            const activeTapplet = await invoke('start_tapplet', {
+                tappletId: tappletId,
             });
             set({ activeTapplet });
         } catch (error) {

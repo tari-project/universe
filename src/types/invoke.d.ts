@@ -140,6 +140,7 @@ declare module '@tauri-apps/api/core' {
     ): Promise<void>;
     function invoke(param: 'start_tari_tapplet_binary', payload: { binaryName: string }): Promise<ActiveTapplet>;
     function invoke(param: 'start_dev_tapplet', payload: { devTappletId: number }): Promise<ActiveTapplet>;
+    function invoke(param: 'start_tapplet', payload: { tappletId: number }): Promise<ActiveTapplet>;
     function invoke(param: 'is_tapplet_server_running', payload: { tappletId: number }): Promise<boolean>;
     function invoke(param: 'stop_tapplet', payload: { tappletId: number }): Promise<string>;
     function invoke(param: 'restart_tapplet', payload: { tappletId: number }): Promise<string>;

@@ -11,8 +11,6 @@ CREATE TABLE tapplet (
   about_summary TEXT NOT NULL,
   about_description TEXT NOT NULL,
   category TEXT NOT NULL,
-  csp TEXT NOT NULL,
-  tari_permissions TEXT NOT NULL,
   UNIQUE(tapp_registry_id)
 );
 
@@ -39,7 +37,10 @@ CREATE TABLE installed_tapplet (
   id INTEGER PRIMARY KEY,
   tapplet_id INTEGER,
   tapplet_version_id INTEGER,
-  UNIQUE(tapplet_id, tapplet_version_id),
+  source TEXT NOT NULL,
+  csp TEXT NOT NULL,
+  tari_permissions TEXT NOT NULL,
+  UNIQUE(tapplet_id, tapplet_version_id, source),
   FOREIGN KEY (tapplet_id) REFERENCES tapplet(id),
   FOREIGN KEY (tapplet_version_id) REFERENCES tapplet_version(id)
 );

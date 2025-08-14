@@ -23,13 +23,12 @@
 use std::path::PathBuf;
 
 use crate::{
-    database::models::{DevTapplet, UpdateDevTapplet},
+    database::models::{DevTapplet, InstalledTapplet, UpdateDevTapplet, UpdateInstalledTapplet},
     events_emitter::EventsEmitter,
     requests::clients::http_file_client::HttpFileClient,
     tapplets::{
         error::Error,
         server_manager::ServerManager,
-        tapplet_installer::check_files_and_validate_checksum,
         tapplet_server::{get_tapp_config, start_tapplet_server},
     },
 };
@@ -39,6 +38,11 @@ use tauri::{AppHandle, Listener};
 use tokio::sync::oneshot;
 
 static LOG_TARGET: &str = "tari::universe::tapplet_manager";
+pub struct CheckPermissionsResult {
+    pub should_update: bool,
+    pub updated_csp: String,
+    pub updated_permissions: String,
+}
 
 pub(crate) struct TappletManager {
     server_manager: ServerManager,
@@ -82,24 +86,30 @@ impl TappletManager {
             Err(anyhow::anyhow!("Tapplet's permissions were not granted"))
         }
     }
+
+    // TODO debug why permission dialog doesnt show up
     pub async fn check_permissions_config(
-        tapplet: &DevTapplet,
+        source: &str,
+        current_csp: &str,
+        current_permissions: &str,
         app_handle: tauri::AppHandle,
-    ) -> Result<(bool, UpdateDevTapplet), anyhow::Error> {
-        let config = get_tapp_config(&tapplet.source).await?;
+    ) -> Result<CheckPermissionsResult, anyhow::Error> {
+        let config = get_tapp_config(source).await?;
         info!(target: LOG_TARGET, "💥 Dev tapplet csp: {}", &config.csp);
 
-        let mut updated_dev_tapp = UpdateDevTapplet::from(tapplet);
+        // let mut updated_dev_tapp = UpdateDevTapplet::from(tapplet);
+        let mut updated_csp = current_csp.to_string();
+        let mut updated_permissions = current_permissions.to_string();
 
-        let mut should_update_csp = config.csp.trim_matches('"') != tapplet.csp.trim_matches('"');
+        let mut should_update_csp = config.csp.trim_matches('"') != current_csp.trim_matches('"');
         info!(target: LOG_TARGET, "👀 SHOULD UPDATE CSP?{:?}", should_update_csp);
         if should_update_csp {
             let allowed_csp_result =
                 TappletManager::allow_tapplet_csp(config.csp, &app_handle).await;
             should_update_csp = match allowed_csp_result {
                 Ok(csp) => {
-                    updated_dev_tapp.csp = csp.clone();
                     info!(target: LOG_TARGET, "💥 allowed to update {}", &csp);
+                    updated_csp = csp;
                     true
                 }
                 Err(e) => {
@@ -109,11 +119,9 @@ impl TappletManager {
             }
         };
 
-        let mut should_update_permissions = config.permissions.all_permissions_to_string()
-            != tapplet.tari_permissions.trim_matches('"');
+        let mut should_update_permissions =
+            config.permissions.all_permissions_to_string() != current_permissions.trim_matches('"');
         info!(target: LOG_TARGET, "👀 SHOULD UPDATE PERMISSIONS?{:?}", should_update_permissions);
-        info!(target: LOG_TARGET, "👀 PERMISSIONS CONFIG {:?}", config.permissions.all_permissions_to_string());
-        info!(target: LOG_TARGET, "👀 PERMISSIONS TAPPLE {:?}",tapplet.tari_permissions.trim_matches('"'));
         if should_update_permissions {
             let granted_permissions = TappletManager::grant_tapplet_permissions(
                 config.permissions.all_permissions_to_string(),
@@ -125,7 +133,7 @@ impl TappletManager {
 
             should_update_permissions = match granted_permissions {
                 Ok(p) => {
-                    updated_dev_tapp.tari_permissions = p.clone();
+                    updated_permissions = p;
                     true
                 }
                 Err(e) => {
@@ -135,10 +143,11 @@ impl TappletManager {
             };
         }
 
-        return Ok((
-            should_update_csp || should_update_permissions,
-            updated_dev_tapp,
-        ));
+        Ok(CheckPermissionsResult {
+            should_update: should_update_csp || should_update_permissions,
+            updated_csp,
+            updated_permissions,
+        })
     }
 
     /// Wrapper to start the server and track it by tapplet_id

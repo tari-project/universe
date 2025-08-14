@@ -16,6 +16,9 @@ diesel::table! {
         id -> Nullable<Integer>,
         tapplet_id -> Nullable<Integer>,
         tapplet_version_id -> Nullable<Integer>,
+        source -> Text,
+        csp -> Text,
+        tari_permissions -> Text,
     }
 }
 
@@ -31,8 +34,6 @@ diesel::table! {
         about_summary -> Text,
         about_description -> Text,
         category -> Text,
-        csp -> Text,
-        tari_permissions -> Text,
     }
 }
 

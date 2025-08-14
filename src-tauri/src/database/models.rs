@@ -9,6 +9,9 @@ pub struct InstalledTapplet {
     pub id: Option<i32>,
     pub tapplet_id: Option<i32>,
     pub tapplet_version_id: Option<i32>,
+    pub source: String,
+    pub csp: String,
+    pub tari_permissions: String,
 }
 
 #[derive(Insertable, Debug, Deserialize)]
@@ -16,6 +19,9 @@ pub struct InstalledTapplet {
 pub struct CreateInstalledTapplet {
     pub tapplet_id: Option<i32>,
     pub tapplet_version_id: Option<i32>,
+    pub source: String,
+    pub csp: String,
+    pub tari_permissions: String,
 }
 
 impl From<&CreateInstalledTapplet> for UpdateInstalledTapplet {
@@ -23,6 +29,9 @@ impl From<&CreateInstalledTapplet> for UpdateInstalledTapplet {
         UpdateInstalledTapplet {
             tapplet_id: create_installed_tapplet.tapplet_id,
             tapplet_version_id: create_installed_tapplet.tapplet_version_id,
+            source: create_installed_tapplet.source.clone(),
+            csp: create_installed_tapplet.csp.clone(),
+            tari_permissions: create_installed_tapplet.tari_permissions.clone(),
         }
     }
 }
@@ -32,6 +41,21 @@ impl From<&CreateInstalledTapplet> for UpdateInstalledTapplet {
 pub struct UpdateInstalledTapplet {
     pub tapplet_id: Option<i32>,
     pub tapplet_version_id: Option<i32>,
+    pub source: String,
+    pub csp: String,
+    pub tari_permissions: String,
+}
+
+impl From<&InstalledTapplet> for UpdateInstalledTapplet {
+    fn from(installed_tapplet: &InstalledTapplet) -> Self {
+        UpdateInstalledTapplet {
+            tapplet_id: installed_tapplet.tapplet_id,
+            tapplet_version_id: installed_tapplet.tapplet_version_id,
+            source: installed_tapplet.source.clone(),
+            csp: installed_tapplet.csp.clone(),
+            tari_permissions: installed_tapplet.tari_permissions.clone(),
+        }
+    }
 }
 
 #[derive(Queryable, Selectable, Debug, Serialize)]
@@ -48,8 +72,6 @@ pub struct Tapplet {
     pub about_summary: String,
     pub about_description: String,
     pub category: String,
-    pub csp: String,
-    pub tari_permissions: String,
 }
 
 #[derive(Insertable, Debug, Deserialize)]
@@ -64,8 +86,6 @@ pub struct CreateTapplet<'a> {
     pub about_summary: &'a str,
     pub about_description: &'a str,
     pub category: &'a str,
-    pub csp: &'a str,
-    pub tari_permissions: &'a str,
 }
 
 impl<'a> From<&'a TappletRegistryManifest> for CreateTapplet<'a> {
@@ -80,8 +100,6 @@ impl<'a> From<&'a TappletRegistryManifest> for CreateTapplet<'a> {
             about_summary: &tapplet_manifest.metadata.about.summary,
             about_description: &tapplet_manifest.metadata.about.description,
             category: &tapplet_manifest.metadata.category,
-            csp: "default-src 'self'",
-            tari_permissions: "requiredPermissions:[],optionalPermissions:[]",
         }
     }
 }
@@ -98,8 +116,6 @@ impl<'a> From<&CreateTapplet<'a>> for UpdateTapplet {
             about_summary: create_tapplet.about_summary.to_string(),
             about_description: create_tapplet.about_description.to_string(),
             category: create_tapplet.category.to_string(),
-            csp: create_tapplet.csp.to_string(),
-            tari_permissions: create_tapplet.tari_permissions.to_string(),
         }
     }
 }
@@ -116,8 +132,6 @@ pub struct UpdateTapplet {
     pub about_summary: String,
     pub about_description: String,
     pub category: String,
-    pub csp: String,
-    pub tari_permissions: String,
 }
 
 #[derive(Queryable, Selectable, Debug, Serialize, Clone)]

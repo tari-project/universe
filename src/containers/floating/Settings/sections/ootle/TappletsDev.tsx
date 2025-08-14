@@ -51,7 +51,7 @@ export default function TappletsDev() {
         async (tappletId: number) => {
             try {
                 await restartTapp(tappletId);
-                setActiveTappById(tappletId, false);
+                setActiveTappById(tappletId, false, true);
                 setIsSettingsOpen(!isSettingsOpen);
                 setShowTapplet(true);
                 setSidebarOpen(false);
@@ -66,7 +66,7 @@ export default function TappletsDev() {
     const handleLaunch = useCallback(
         async (tappletId: number) => {
             try {
-                setActiveTappById(tappletId, false);
+                setActiveTappById(tappletId, false, true);
                 setIsSettingsOpen(!isSettingsOpen);
                 setShowTapplet(true);
                 setSidebarOpen(false);

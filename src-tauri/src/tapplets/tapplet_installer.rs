@@ -138,6 +138,7 @@ pub async fn download_asset(
     let icon_dest = tapp_asset_dir.join("logo.svg");
     let background_dest = tapp_asset_dir.join("background.svg");
 
+    // TODO fix downloading tapp assest
     download_file(&assets.icon_url, icon_dest.clone()).await?;
     download_file(&assets.background_url, background_dest.clone()).await?;
 
@@ -160,7 +161,7 @@ pub fn get_asset_urls(tapplet_name: String) -> Result<TappletAssets, Error> {
 }
 
 pub async fn fetch_tapp_registry_manifest() -> Result<RegisteredTapplets, Error> {
-    let manifest_endpoint = format!("{}/tapplets-registry.manifest.json", REGISTRY_URL);
+    let manifest_endpoint = format!("{}/dist/tapplets-registry.manifest.json", REGISTRY_URL);
 
     let response = reqwest::get(&manifest_endpoint).await.map_err(|_| {
         RequestError(FetchManifestError {
@@ -189,23 +190,24 @@ pub async fn fetch_tapp_registry_manifest() -> Result<RegisteredTapplets, Error>
 }
 
 pub fn check_files_and_validate_checksum(
-    tapp: TappletVersion,
+    tapplet_version: String,
+    expected_integrity: String,
     archieve_dir: PathBuf,
     dest_dir: PathBuf,
 ) -> Result<bool, Error> {
     let is_package_complete = check_extracted_files(dest_dir.clone())?;
     if !is_package_complete {
         return Err(Error::TappletIncomplete {
-            version: tapp.version.clone(),
+            version: tapplet_version.clone(),
         });
     }
     info!(target: LOG_TARGET, "📋 Check  {:?}",&archieve_dir);
     // calculate `integrity` from downloaded archieve file
     let integrity = calculate_checksum(archieve_dir)?;
-    match tapp.integrity == integrity {
+    match expected_integrity == integrity {
         true => Ok(true),
         false => Err(Error::InvalidChecksum {
-            version: tapp.version.clone(),
+            version: tapplet_version,
         }),
     }
 }
