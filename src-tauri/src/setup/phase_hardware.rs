@@ -204,11 +204,12 @@ impl SetupPhaseImpl for HardwareSetupPhase {
             .await
             .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {e:?}"));
 
-        GpuDevices::current()
+        let _unused = GpuDevices::current()
             .write()
             .await
             .detect(data_dir.clone())
-            .await?;
+            .await
+            .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu devices: {e:?}"));
 
         HardwareStatusMonitor::current().initialize().await?;
 
