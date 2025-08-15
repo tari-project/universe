@@ -41,24 +41,26 @@ export {
 } from './appStateStoreActions.ts';
 
 export {
+    handleBaseNodeStatusUpdate,
+    handleConnectedPeersUpdate,
+    setCpuMiningStatus,
+    setGpuDevices,
+    setGpuMiningStatus,
+} from './miningMetricsStoreActions.ts';
+
+export {
+    getMiningNetwork,
     setCustomLevelsDialogOpen,
     setMiningControlsEnabled,
-    getMiningNetwork,
     startMining,
     stopMining,
 } from './miningStoreActions.ts';
+
 export {
-    setShowExternalDependenciesDialog,
-    setUITheme,
     setDialogToShow,
     setIsWebglNotSupported,
+    setShowExternalDependenciesDialog,
+    setUITheme,
 } from './uiStoreActions.ts';
 
-export { importSeedWords, fetchTransactionsHistory, setWalletBalance } from './walletStoreActions';
-export {
-    setGpuDevices,
-    setGpuMiningStatus,
-    setCpuMiningStatus,
-    handleConnectedPeersUpdate,
-    handleBaseNodeStatusUpdate,
-} from './miningMetricsStoreActions.ts';
+export { fetchTransactionsHistory, importSeedWords, setWalletBalance } from './walletStoreActions';
