@@ -210,14 +210,16 @@ impl GpuMiner {
         let output = child.wait_with_output().await?;
         info!(target: LOG_TARGET, "Gpu detect exit code: {:?}", output.status.code().unwrap_or_default());
 
-        let gpu_status_file_name = format!("{}_gpu_status.json", self.curent_selected_engine);
-        let gpu_status_file_path =
-            get_gpu_engines_statuses_path(&config_dir).join(gpu_status_file_name);
-        let gpu_status_file = GpuStatusFile::load(&gpu_status_file_path)?;
-
-        self.gpu_devices = gpu_status_file.gpu_devices;
         match output.status.code() {
             Some(0) => {
+                let gpu_status_file_name =
+                    format!("{}_gpu_status.json", self.curent_selected_engine);
+                let gpu_status_file_path =
+                    get_gpu_engines_statuses_path(&config_dir).join(gpu_status_file_name);
+                let gpu_status_file = GpuStatusFile::load(&gpu_status_file_path)?;
+
+                self.gpu_devices = gpu_status_file.gpu_devices;
+
                 EventsEmitter::emit_detected_available_gpu_engines(
                     self.get_available_gpu_engines(config_dir)
                         .await?
