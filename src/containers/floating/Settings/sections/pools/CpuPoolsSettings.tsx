@@ -1,4 +1,4 @@
-import { useConfigPoolsStore } from '@app/store';
+import { useConfigPoolsStore, useMiningMetricsStore } from '@app/store';
 import { useTranslation } from 'react-i18next';
 import {
     SettingsGroup,
@@ -28,6 +28,7 @@ export const CpuPoolsSettings = () => {
     const { t } = useTranslation('settings');
 
     const isCpuPoolEnabled = useConfigPoolsStore((state) => state.cpu_pool_enabled);
+    const isMining = useMiningMetricsStore((s) => s.cpu_mining_status.is_mining);
     const pool_status = useMiningPoolsStore((s) => s.cpuPoolStats);
     const selectedCpuPoolData = useConfigPoolsStore(getSelectedCpuPool);
     const availableCpuPools = useConfigPoolsStore(useShallow(getAvailableCpuPools));
@@ -51,10 +52,10 @@ export const CpuPoolsSettings = () => {
         await changeCpuPoolConfiguration(updatedConfig);
     }, []);
 
-    const handleResetToDefaultPoolConfiguration = useCallback(async () => {
+    const handleResetToDefaultPoolConfiguration = async () => {
         if (!selectedCpuPoolData) return;
         await resetCpuPoolConfiguration(selectedCpuPoolData.pool_name);
-    }, []);
+    };
 
     return (
         <SettingsGroupWrapper style={{ gap: '16px' }}>
@@ -71,7 +72,7 @@ export const CpuPoolsSettings = () => {
                 </SettingsGroupAction>
             </SettingsGroup>
 
-            {selectedCpuPoolData && <PoolStats poolStatus={pool_status} />}
+            {selectedCpuPoolData && <PoolStats poolStatus={pool_status} isMining={isCpuPoolEnabled && isMining} />}
             <SettingsGroupWrapper $subGroup style={{ marginTop: '12px' }}>
                 <SettingsGroup>
                     <SettingsGroupTitle>

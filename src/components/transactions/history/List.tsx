@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef, RefObject } from 'react';
+import { useCallback, useEffect, RefObject } from 'react';
 import { useInView } from 'react-intersection-observer';
 import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/core';
 
-import { CombinedBridgeWalletTransaction, useMiningMetricsStore, useWalletStore } from '@app/store';
+import { CombinedBridgeWalletTransaction, useWalletStore } from '@app/store';
 
 import { useFetchTxHistory } from '@app/hooks/wallet/useFetchTxHistory.ts';
 
@@ -15,9 +15,8 @@ import { PlaceholderItem } from './ListItem.styles.ts';
 import { ListItemWrapper, ListWrapper } from './List.styles.ts';
 import { setDetailsItem } from '@app/store/actions/walletStoreActions.ts';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
-import { convertWalletTransactionToCombinedTransaction } from './helpers.ts';
-import { TariAddressType } from '@app/types/events-payloads.ts';
-import { fetchBridgeTransactionsHistory } from '@app/store/actions/bridgeApiActions.ts';
+
+import { useFetchBridgeTxHistory } from '@app/hooks/wallet/useFetchBridgeTxHistory.ts';
 
 interface Props {
     setIsScrolled: (isScrolled: boolean) => void;
@@ -27,16 +26,10 @@ interface Props {
 export function List({ setIsScrolled, targetRef }: Props) {
     const { t } = useTranslation('wallet');
     const walletScanning = useWalletStore((s) => s.wallet_scanning);
-    const bridgeTransactions = useWalletStore((s) => s.bridge_transactions);
-    const currentBlockHeight = useMiningMetricsStore((s) => s.base_node_status.block_height);
     const coldWalletAddress = useWalletStore((s) => s.cold_wallet_address);
-    const tariAddress = useWalletStore((s) => s.tari_address_base58);
-    const tx_history_filter = useWalletStore((s) => s.tx_history_filter);
-    const tariAddressType = useWalletStore((s) => s.tari_address_type);
+
     const { data, fetchNextPage, isFetchingNextPage, isFetching, hasNextPage } = useFetchTxHistory();
-    const isFetchBridgeTransactionsFailed = useRef(false);
-    const convertedTransactions: RefObject<CombinedBridgeWalletTransaction[]> = useRef([]);
-    const lastTransactionFilter = useRef(tx_history_filter);
+    const { data: bridgeTransactions } = useFetchBridgeTxHistory();
 
     useEffect(() => {
         const el = targetRef?.current;
@@ -48,98 +41,45 @@ export function List({ setIsScrolled, targetRef }: Props) {
 
     const { ref } = useInView({
         initialInView: false,
-        onChange: () => hasNextPage && fetchNextPage(),
+        onChange: () => hasNextPage && !isFetching && fetchNextPage({ cancelRefetch: false }),
     });
 
-    const latestTxId = data?.pages?.[0]?.[0]?.tx_id;
-    const baseTx = useMemo(() => {
-        const latestConvertedTxId = convertedTransactions.current[0]?.walletTransactionDetails.txId;
-        if (latestTxId && latestTxId != latestConvertedTxId) {
-            convertedTransactions.current = [];
-        }
-        // We are caching converted transactions to avoid re-converting all of them on every execution
-        // If someone have 200 transactions it is more efficient to convert only new ~20 then 200
-        const sanitizedData = data?.pages.flatMap((page) => page) || [];
-        const startingIndex =
-            lastTransactionFilter.current === tx_history_filter ? convertedTransactions.current.length : 0;
-        const newTransactions = sanitizedData.slice(startingIndex);
-        const converted = newTransactions.map((transaction) =>
-            convertWalletTransactionToCombinedTransaction(transaction)
-        );
+    const baseTx = data?.pages.flatMap((page) => page) || [];
 
-        if (lastTransactionFilter.current !== tx_history_filter) {
-            convertedTransactions.current = [];
-            lastTransactionFilter.current = tx_history_filter;
-        }
-
-        convertedTransactions.current = [...convertedTransactions.current, ...converted];
-        return convertedTransactions.current;
-    }, [latestTxId, data?.pages.length, tx_history_filter]); // Re-run only when the number of pages changes
-
-    useEffect(() => {
-        const isThereANewBridgeTransaction = baseTx.find(
+    const extendedTransactions: CombinedBridgeWalletTransaction[] = [...baseTx];
+    bridgeTransactions.forEach((bridgeTx) => {
+        // If the bridge transaction has no paymentId, we try to find it by tokenAmount and destinationAddress which should equal the cold wallet address
+        // This supports older transactions that might not have a paymentId
+        const depracatedWalletTransactionIndex = extendedTransactions.findIndex(
             (tx) =>
-                tx.destinationAddress === coldWalletAddress &&
-                !bridgeTransactions.some(
-                    (bridgeTx) => bridgeTx.paymentId === tx.paymentId && Number(bridgeTx.tokenAmount) === tx.tokenAmount
-                )
+                !bridgeTx.paymentId &&
+                tx.tokenAmount === Number(bridgeTx.tokenAmount) &&
+                tx.destinationAddress === coldWalletAddress
         );
 
-        const isThereEmptyBridgeTransactionAndFoundInWallet = baseTx.find(
-            (tx) => tx.destinationAddress === coldWalletAddress && bridgeTransactions.length === 0
+        // Currently we can find the bridge transaction by paymentId
+        const originalWalletBridgeTransactionIndex = extendedTransactions.findIndex(
+            (tx) => tx.paymentId === bridgeTx.paymentId
         );
 
-        if (
-            tariAddressType === TariAddressType.Internal &&
-            !isFetchBridgeTransactionsFailed.current &&
-            (isThereANewBridgeTransaction || isThereEmptyBridgeTransactionAndFoundInWallet)
-        ) {
-            fetchBridgeTransactionsHistory().catch(() => {
-                if (!isFetchBridgeTransactionsFailed.current) {
-                    isFetchBridgeTransactionsFailed.current = true;
-                }
-            });
-        }
-    }, [baseTx, bridgeTransactions, coldWalletAddress, currentBlockHeight, tariAddress, tariAddressType]);
+        // Index found by paymentId should be always preferred, but if it is not found we use the deprecated method if exists
+        const walletBridgeTransactionIndex =
+            originalWalletBridgeTransactionIndex >= 0
+                ? originalWalletBridgeTransactionIndex
+                : depracatedWalletTransactionIndex;
 
-    const adjustedTransactions: CombinedBridgeWalletTransaction[] = useMemo(() => {
-        const extendedTransactions: CombinedBridgeWalletTransaction[] = [...baseTx];
-        bridgeTransactions.forEach((bridgeTx) => {
-            // If the bridge transaction has no paymentId, we try to find it by tokenAmount and destinationAddress which should equal the cold wallet address
-            // This supports older transactions that might not have a paymentId
-            const depracatedWalletTransactionIndex = extendedTransactions.findIndex(
-                (tx) =>
-                    !bridgeTx.paymentId &&
-                    tx.tokenAmount === Number(bridgeTx.tokenAmount) &&
-                    tx.destinationAddress === coldWalletAddress
-            );
+        // Don't process if we can't find the transaction in the wallet transactions
+        if (walletBridgeTransactionIndex < 0) return;
 
-            // Currently we can find the bridge transaction by paymentId
-            const originalWalletBridgeTransactionIndex = extendedTransactions.findIndex(
-                (tx) => tx.paymentId === bridgeTx.paymentId
-            );
-
-            // Index found by paymentId should be always preferred, but if it is not found we use the deprecated method if exists
-            const walletBridgeTransactionIndex =
-                originalWalletBridgeTransactionIndex >= 0
-                    ? originalWalletBridgeTransactionIndex
-                    : depracatedWalletTransactionIndex;
-
-            // Don't process if we can't find the transaction in the wallet transactions
-            if (walletBridgeTransactionIndex < 0) return;
-
-            extendedTransactions[walletBridgeTransactionIndex] = {
-                ...extendedTransactions[walletBridgeTransactionIndex],
-                bridgeTransactionDetails: {
-                    status: bridgeTx.status,
-                    transactionHash: bridgeTx.transactionHash,
-                    amountAfterFee: bridgeTx.amountAfterFee,
-                },
-            };
-        });
-
-        return extendedTransactions;
-    }, [baseTx, bridgeTransactions]);
+        extendedTransactions[walletBridgeTransactionIndex] = {
+            ...extendedTransactions[walletBridgeTransactionIndex],
+            bridgeTransactionDetails: {
+                status: bridgeTx.status,
+                transactionHash: bridgeTx.transactionHash,
+                amountAfterFee: bridgeTx.amountAfterFee,
+            },
+        };
+    });
 
     const handleDetailsChange = useCallback(async (transaction: CombinedBridgeWalletTransaction | null) => {
         if (!transaction || !transaction.walletTransactionDetails) {
@@ -160,11 +100,11 @@ export function List({ setIsScrolled, targetRef }: Props) {
     }, []);
 
     // Calculate how many placeholder items we need to add
-    const transactionsCount = adjustedTransactions?.length || 0;
+    const transactionsCount = extendedTransactions?.length || 0;
     const placeholdersNeeded = Math.max(0, 5 - transactionsCount);
     const listMarkup = (
         <ListItemWrapper>
-            {adjustedTransactions?.map((tx, i) => {
+            {extendedTransactions?.map((tx, i) => {
                 return (
                     <HistoryListItem
                         key={`item-${i}-${tx.walletTransactionDetails.txId}`}
@@ -200,8 +140,8 @@ export function List({ setIsScrolled, targetRef }: Props) {
         listMarkup
     );
 
-    const isEmpty = !walletScanning.is_scanning && !adjustedTransactions?.length;
-    const isLoading = walletScanning.is_scanning || !adjustedTransactions?.length;
+    const isEmpty = !walletScanning.is_scanning && !extendedTransactions?.length;
+    const isLoading = walletScanning.is_scanning || !extendedTransactions?.length;
     const emptyMarkup = isEmpty ? <LoadingText>{t('empty-tx')}</LoadingText> : null;
     return (
         <>

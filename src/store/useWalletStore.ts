@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { TransactionInfo, WalletBalance } from '../types/app-status.ts';
-import { refreshTransactions } from './actions/walletStoreActions.ts';
+
 import { TxHistoryFilter } from '@app/components/transactions/history/FilterSelect.tsx';
 import { UserTransactionDTO } from '@tari-project/wxtm-bridge-backend-api';
 import { TariAddressType } from '@app/types/events-payloads.ts';
@@ -127,9 +127,6 @@ export const updateWalletScanningProgress = (payload: {
             ...payload,
         },
     }));
-    if (!is_scanning) {
-        refreshTransactions();
-    }
 };
 
 // New function to prune transaction arrays when they get too large

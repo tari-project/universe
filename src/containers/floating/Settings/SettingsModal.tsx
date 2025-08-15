@@ -34,7 +34,6 @@ const SettingsModal = memo(function SettingsModal() {
         general: <GeneralSettings />,
         mining: <MiningSettings />,
         connections: <ConnectionsSettings />,
-        // p2p: <PoolMiningSettings />,
         pools: <PoolsSettings />,
         wallet: <WalletSettings />,
         airdrop: <AirdropSettings />,

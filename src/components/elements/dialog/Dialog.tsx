@@ -1,7 +1,7 @@
 import {
+    Ref,
     createContext,
     Dispatch,
-    forwardRef,
     HTMLProps,
     ReactNode,
     SetStateAction,
@@ -84,6 +84,9 @@ function useDialog({ open: controlledOpen, onOpenChange: setControlledOpen, disa
     );
 }
 
+interface DialogContentType extends HTMLProps<HTMLDivElement>, ContentWrapperProps {
+    ref?: Ref<HTMLDivElement>;
+}
 type ContextType =
     | (ReturnType<typeof useDialog> & {
           setLabelId: Dispatch<SetStateAction<string | undefined>>;
@@ -113,39 +116,37 @@ export function Dialog({
     return <DialogContext.Provider value={dialog}>{children}</DialogContext.Provider>;
 }
 
-export const DialogContent = forwardRef<HTMLDivElement, HTMLProps<HTMLDivElement> & ContentWrapperProps>(
-    function DialogContent(props, propRef) {
-        const osType = type();
+export function DialogContent(props: DialogContentType) {
+    const osType = type();
 
-        const isNotLinux = osType !== 'linux';
-        const context = useDialogContext();
-        const ref = useMergeRefs([context.refs.setFloating, propRef]);
+    const isNotLinux = osType !== 'linux';
+    const context = useDialogContext();
+    const ref = useMergeRefs([context.refs.setFloating, props.ref]);
 
-        const transparentBg = props.$transparentBg && isNotLinux;
+    const transparentBg = props.$transparentBg && isNotLinux;
 
-        return (
-            <FloatingNode id={context.nodeId} key={context.nodeId}>
-                {context.open ? (
-                    <FloatingPortal>
-                        <Overlay lockScroll className="overlay" $zIndex={props.$zIndex}>
-                            <FloatingFocusManager context={context.context} modal={false}>
-                                <ContentWrapper
-                                    ref={ref}
-                                    {...context.getFloatingProps(props)}
-                                    aria-labelledby={context.labelId}
-                                    aria-describedby={context.descriptionId}
-                                    $unPadded={props.$unPadded}
-                                    $disableOverflow={props.$disableOverflow}
-                                    $borderRadius={props.$borderRadius}
-                                    $transparentBg={transparentBg}
-                                >
-                                    {props.children}
-                                </ContentWrapper>
-                            </FloatingFocusManager>
-                        </Overlay>
-                    </FloatingPortal>
-                ) : null}
-            </FloatingNode>
-        );
-    }
-);
+    return (
+        <FloatingNode id={context.nodeId} key={context.nodeId}>
+            {context.open ? (
+                <FloatingPortal>
+                    <Overlay lockScroll className="overlay" $zIndex={props.$zIndex}>
+                        <FloatingFocusManager context={context.context} modal={false}>
+                            <ContentWrapper
+                                ref={ref}
+                                {...context.getFloatingProps(props)}
+                                aria-labelledby={context.labelId}
+                                aria-describedby={context.descriptionId}
+                                $unPadded={props.$unPadded}
+                                $disableOverflow={props.$disableOverflow}
+                                $borderRadius={props.$borderRadius}
+                                $transparentBg={transparentBg}
+                            >
+                                {props.children}
+                            </ContentWrapper>
+                        </FloatingFocusManager>
+                    </Overlay>
+                </FloatingPortal>
+            ) : null}
+        </FloatingNode>
+    );
+}

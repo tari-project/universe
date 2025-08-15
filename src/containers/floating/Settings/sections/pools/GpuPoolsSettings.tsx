@@ -1,4 +1,4 @@
-import { useConfigPoolsStore } from '@app/store';
+import { useConfigPoolsStore, useMiningMetricsStore } from '@app/store';
 import { useTranslation } from 'react-i18next';
 import {
     SettingsGroup,
@@ -28,6 +28,7 @@ export const GpuPoolsSettings = () => {
     const { t } = useTranslation('settings');
     const isGpuPoolEnabled = useConfigPoolsStore((state) => state.gpu_pool_enabled);
     const pool_status = useMiningPoolsStore((s) => s.gpuPoolStats);
+    const isMining = useMiningMetricsStore((s) => s.gpu_mining_status.is_mining);
     const selectedGpuPoolData = useConfigPoolsStore(getSelectedGpuPool);
     const availableGpuPools = useConfigPoolsStore(useShallow(getAvailableGpuPools));
 
@@ -50,10 +51,10 @@ export const GpuPoolsSettings = () => {
         await changeGpuPoolConfiguration(updatedConfig);
     }, []);
 
-    const handleResetToDefaultPoolConfiguration = useCallback(async () => {
+    const handleResetToDefaultPoolConfiguration = async () => {
         if (!selectedGpuPoolData) return;
         await resetGpuPoolConfiguration(selectedGpuPoolData.pool_name);
-    }, []);
+    };
 
     return (
         <SettingsGroupWrapper style={{ gap: '16px' }}>
@@ -70,7 +71,7 @@ export const GpuPoolsSettings = () => {
                 </SettingsGroupAction>
             </SettingsGroup>
 
-            {selectedGpuPoolData && <PoolStats poolStatus={pool_status} />}
+            {selectedGpuPoolData && <PoolStats poolStatus={pool_status} isMining={isGpuPoolEnabled && isMining} />}
             <SettingsGroupWrapper $subGroup style={{ marginTop: '12px' }}>
                 <SettingsGroup>
                     <SettingsGroupTitle>
