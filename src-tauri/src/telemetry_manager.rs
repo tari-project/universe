@@ -187,6 +187,7 @@ pub struct TelemetryData {
     pub latency: f64,
     pub wallet_view_key_hashed: String,
     pub exchange_id: String,
+    pub tari_address: String,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -696,6 +697,8 @@ async fn get_telemetry_data_inner(
         );
     }
 
+    let tari_address = InternalWallet::tari_address().await.to_base58();
+
     let data = TelemetryData {
         app_id: config.anon_id().to_string(),
         block_height,
@@ -725,6 +728,7 @@ async fn get_telemetry_data_inner(
         latency,
         wallet_view_key_hashed,
         exchange_id,
+        tari_address,
     };
 
     Ok(data)
