@@ -47,6 +47,7 @@ export const InternalWalletOption = ({ isCurrent = false, isActive, onActiveClic
         await invoke('revert_to_internal_wallet')
             .then(() => {
                 setShowUniversalModal(false);
+                console.debug(`refresh called in handleRevertToInternalWallet`);
                 refreshTransactions();
                 restartMining();
             })

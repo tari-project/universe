@@ -79,6 +79,7 @@ export const importSeedWords = async (seedWords: string[]) => {
             await stopMining();
         }
         await invoke('import_seed_words', { seedWords });
+        console.debug(`refreshTransactions called after seed words`);
         await refreshTransactions();
         useWalletStore.setState((c) => ({ ...c, is_wallet_importing: false }));
         addToast({
@@ -112,6 +113,7 @@ export const setExternalTariAddress = async (newAddress: string) => {
 };
 
 export const setWalletBalance = async (balance: WalletBalance) => {
+    console.debug(`refreshTransactions called in setWalletBalance`);
     await refreshTransactions();
     const calculated_balance =
         balance.available_balance + balance.timelocked_balance + balance.pending_incoming_balance;

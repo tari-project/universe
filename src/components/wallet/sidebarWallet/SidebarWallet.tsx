@@ -57,6 +57,7 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
 
     function handleFilterChange(newFilter: TxHistoryFilter) {
         setTxHistoryFilter(newFilter);
+        console.debug(`called from handleFilterChange`);
         void fetchTransactionsHistory({ offset: 0, limit: 20, filter: newFilter });
     }
 
