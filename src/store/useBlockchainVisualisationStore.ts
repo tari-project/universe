@@ -71,13 +71,12 @@ const handleWin = async (coinbase_transaction: TransactionInfo, balance: WalletB
         }
         useBlockchainVisualisationStore.setState((c) => ({ ...c, earnings }));
         await refreshTransactions();
-        console.debug(`in handleWin`);
+        console.debug(`setWalletBalance called from handleWin can animate`);
         await setWalletBalance(balance);
         setMiningControlsEnabled(true);
         useBlockchainVisualisationStore.setState((c) => ({ ...c, earnings: undefined, latestBlockPayload: undefined }));
     } else {
         await refreshTransactions();
-        console.debug(`in handleWin else`);
 
         useBlockchainVisualisationStore.setState((curr) => ({
             recapIds: [...curr.recapIds, coinbase_transaction.tx_id],
@@ -93,7 +92,7 @@ const handleFail = async (balance: WalletBalance, canAnimate: boolean) => {
         setMiningControlsEnabled(false);
         setAnimationState('fail');
         await refreshTransactions();
-        console.debug(`in handleFail`);
+        console.debug(`setWalletBalance called from handleFail`);
         await setWalletBalance(balance);
         setMiningControlsEnabled(true);
     }
@@ -141,7 +140,6 @@ export async function processNewBlock(payload: {
         }
     } else {
         await refreshTransactions();
-        console.debug(`in processNewBlock`);
     }
 }
 

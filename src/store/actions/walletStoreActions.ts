@@ -10,6 +10,7 @@ import { t } from 'i18next';
 import { startMining, stopMining } from './miningStoreActions';
 import { useMiningStore } from '../useMiningStore';
 import { refreshTransactions } from '@app/hooks/wallet/useFetchTxHistory.ts';
+import { deepEqual } from '@app/utils/objectDeepEqual.ts';
 
 // NOTE: Tx status differ for core and proto(grpc)
 export const COINBASE_BITFLAG = 6144;
@@ -36,7 +37,6 @@ export const fetchTransactionsHistory = async ({ offset = 0, limit, filter = 'al
     const bitflag = filterToBitflag(filter);
     let transactions: TransactionInfo[] = [];
     try {
-        console.debug(`Fetching txs with filter: ${filter}`);
         transactions = await invoke('get_transactions', { offset, limit, statusBitflag: bitflag });
 
         if (filter === 'rewards') {
@@ -79,7 +79,6 @@ export const importSeedWords = async (seedWords: string[]) => {
             await stopMining();
         }
         await invoke('import_seed_words', { seedWords });
-        console.debug(`refreshTransactions called after seed words`);
         await refreshTransactions();
         useWalletStore.setState((c) => ({ ...c, is_wallet_importing: false }));
         addToast({
@@ -113,10 +112,12 @@ export const setExternalTariAddress = async (newAddress: string) => {
 };
 
 export const setWalletBalance = async (balance: WalletBalance) => {
-    console.debug(`refreshTransactions called in setWalletBalance`);
-    await refreshTransactions();
+    const currentBalance = useWalletStore.getState().balance;
+    const currentCalculatedBalance = useWalletStore.getState().calculated_balance;
     const calculated_balance =
         balance.available_balance + balance.timelocked_balance + balance.pending_incoming_balance;
+    const isEqual = calculated_balance === currentCalculatedBalance || deepEqual(balance, currentBalance);
+    if (isEqual) return;
     useWalletStore.setState((c) => ({
         ...c,
         balance: { ...balance },

@@ -61,7 +61,6 @@ export const handleWalletUnlocked = async () => {
     useSetupStore.setState((c) => ({ ...c, walletUnlocked: true }));
     // Initial fetch of transactions
     const tx_history_filter = useWalletStore.getState().tx_history_filter;
-    console.debug(`called from handleWalletUnlocked`);
     await fetchTransactionsHistory({ offset: 0, limit: 20, filter: tx_history_filter });
 };
 

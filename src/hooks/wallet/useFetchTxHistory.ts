@@ -16,7 +16,6 @@ export function useFetchTxHistory() {
         queryFn: async ({ pageParam }) => {
             const limit = 20;
             const offset = limit * (pageParam as number);
-            console.debug(`called from HOOK`);
             const res = await fetchTransactionsHistory({ filter, offset, limit });
 
             return res.map(convertWalletTransactionToCombinedTransaction);
@@ -31,6 +30,5 @@ export function useFetchTxHistory() {
 }
 
 export const refreshTransactions = async () => {
-    console.debug('REFRESH');
-    // await queryClient.invalidateQueries({ queryKey: [KEY_TX] });
+    await queryClient.invalidateQueries({ queryKey: [KEY_TX] });
 };
