@@ -27,7 +27,10 @@ use crate::{
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
     events_emitter::EventsEmitter,
     events_manager::EventsManager,
-    node::node_manager::{NodeManagerError, STOP_ON_ERROR_CODES},
+    node::{
+        self,
+        node_manager::{NodeManagerError, STOP_ON_ERROR_CODES},
+    },
     progress_trackers::{
         progress_plans::{ProgressPlans, ProgressSetupNodePlan},
         progress_stepper::ProgressStepperBuilder,
@@ -176,7 +179,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
         let binary_resolver = BinaryResolver::current();
         let mut progress_stepper = self.progress_stepper.lock().await;
 
-        if self.app_configuration.use_tor && !cfg!(target_os = "macos") {
+        if self.app_configuration.use_tor && node_type.is_local() && !cfg!(target_os = "macos") {
             let tor_binary_progress_tracker = progress_stepper.channel_step_range_updates(
                 ProgressPlans::Node(ProgressSetupNodePlan::BinariesTor),
                 Some(ProgressPlans::Node(ProgressSetupNodePlan::BinariesNode)),
@@ -221,7 +224,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
             .initialize_binary(Binaries::MergeMiningProxy, mmproxy_binary_progress_tracker)
             .await?;
 
-        if self.app_configuration.use_tor && !cfg!(target_os = "macos") {
+        if self.app_configuration.use_tor && node_type.is_local() && !cfg!(target_os = "macos") {
             progress_stepper
                 .resolve_step(ProgressPlans::Node(ProgressSetupNodePlan::StartTor))
                 .await;
