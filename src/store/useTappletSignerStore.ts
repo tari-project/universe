@@ -32,6 +32,7 @@ export const useTappletSignerStore = create<TappletSignerStoreState>()((set, get
 
             const params: TappletSignerParams = {
                 id: 'default',
+                permissions: { requiredPermissions: [], optionalPermissions: [] },
             };
             const provider: TappletSigner = TappletSigner.build(params);
 
@@ -46,6 +47,7 @@ export const useTappletSignerStore = create<TappletSignerStoreState>()((set, get
             if (get().tappletSigner?.id == id) return;
             const params: TappletSignerParams = {
                 id,
+                permissions: { requiredPermissions: [], optionalPermissions: [] },
             };
             const provider: TappletSigner = TappletSigner.build(params);
 
@@ -56,7 +58,9 @@ export const useTappletSignerStore = create<TappletSignerStoreState>()((set, get
         }
     },
     runTransaction: async (event: MessageEvent<TransactionEvent>) => {
+        console.warn(`Running L2 method :`, { event });
         const { methodName, args, id } = event.data.payload;
+
         try {
             const provider = get().tappletSigner;
             const result = await provider?.runOne(methodName, args);

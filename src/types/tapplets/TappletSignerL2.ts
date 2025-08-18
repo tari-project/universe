@@ -37,18 +37,7 @@ import {
 } from '@tari-project/typescript-bindings';
 import { TariSigner } from '@tari-project/tari-signer';
 import { invoke } from '@tauri-apps/api/core';
-
-export interface WindowSize {
-    width: number;
-    height: number;
-}
-
-export interface TappletSignerParams {
-    id: string;
-    permissions: TappletPermissions;
-    name?: string;
-    onConnection?: () => void;
-}
+import { TappletSignerParams } from './tapplet.types';
 
 export type TappletSignerMethod = Exclude<keyof TappletSignerL2, 'runOne'>;
 
@@ -60,7 +49,7 @@ interface OotleAccount extends AccountData {
     account_name: string;
 }
 
-class IPCRpcTransport implements transports.RpcTransport {
+export class IPCRpcTransport implements transports.RpcTransport {
     async sendRequest<T>(request: transports.RpcRequest, _: transports.RpcTransportOptions): Promise<T> {
         return await invoke('call_wallet', {
             method: request.method,
@@ -80,12 +69,7 @@ export class TappletSignerL2 implements TariSigner {
     client: WalletDaemonClient;
     isProviderConnected: boolean;
 
-    constructor(
-        params: TappletSignerParams,
-        connection: WalletDaemonClient,
-        public width = 0,
-        public height = 0
-    ) {
+    constructor(params: TappletSignerParams, connection: WalletDaemonClient) {
         this.params = params;
         this.client = connection;
         this.isProviderConnected = true;
@@ -95,20 +79,6 @@ export class TappletSignerL2 implements TariSigner {
     static build(params: TappletSignerParams): TappletSignerL2 {
         const client = WalletDaemonClient.new(new IPCRpcTransport());
         return new TappletSignerL2(params, client);
-    }
-    public setWindowSize(width: number, height: number): void {
-        this.width = width;
-        this.height = height;
-    }
-
-    public sendWindowSizeMessage(tappletWindow: Window | null, targetOrigin: string): void {
-        tappletWindow?.postMessage({ height: this.height, width: this.width, type: 'resize' }, targetOrigin);
-    }
-    /* eslint-disable @typescript-eslint/no-explicit-any */
-    async runOne(method: any, args: any[]): Promise<any> {
-        console.info('[TU][TappletSigner] runOne', method);
-        const res = (this[method] as (...args: any) => Promise<any>)(...args);
-        return res;
     }
 
     public isConnected(): boolean {
@@ -154,10 +124,6 @@ export class TappletSignerL2 implements TariSigner {
             public_key: res.public_key,
             vaults: [],
         };
-    }
-
-    public requestParentSize(): Promise<WindowSize> {
-        return Promise.resolve({ width: this.width, height: this.height });
     }
 
     public async getAccount(): Promise<OotleAccount> {

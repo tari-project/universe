@@ -1,4 +1,4 @@
-import { TariPermissions } from '@tari-project/tari-permissions';
+import { TappletPermissions, TariPermissions } from '@tari-project/tari-permissions';
 
 export type SupportedChain = 'MAINNET' | 'STAGENET' | 'NEXTNET' | '';
 
@@ -11,6 +11,7 @@ export interface TappletSignerParams {
     id: string;
     name?: string;
     onConnection?: () => void;
+    permissions?: TappletPermissions;
 }
 
 export interface AccountData {
