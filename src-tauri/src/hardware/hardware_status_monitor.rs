@@ -92,13 +92,20 @@ impl HardwareVendor {
 
 #[derive(Debug, Deserialize, Clone, Default)]
 struct GpuStatusFileContent {
-    gpu_devices: Vec<GpuStatusFileEntry>,
+    devices: Vec<GpuStatusFileEntry>,
 }
 
+#[allow(dead_code)] // These fields are used when passed to the front end.
 #[derive(Debug, Deserialize, Clone, Default)]
 struct GpuStatusFileEntry {
-    is_available: bool,
-    device_name: String,
+    name: String,
+    device_id: u32,
+    device_type: String,
+    platform_name: String,
+    vendor: String,
+    max_work_group_size: u32,
+    max_compute_units: u32,
+    global_mem_size: u64,
 }
 
 #[derive(Debug, Serialize, Clone, Default)]
@@ -114,11 +121,19 @@ pub struct DeviceStatus {
 }
 
 #[derive(Debug, Serialize, Clone, Default)]
-pub struct PublicDeviceProperties {
+pub struct PublicDeviceCpuProperties {
     pub vendor: HardwareVendor,
     pub name: String,
     pub status: DeviceStatus,
     pub parameters: Option<DeviceParameters>,
+}
+#[derive(Debug, Serialize, Clone, Default)]
+pub struct PublicDeviceGpuProperties {
+    pub vendor: HardwareVendor,
+    pub name: String,
+    pub status: DeviceStatus,
+    pub parameters: Option<DeviceParameters>,
+    pub device_type: String, // Dedicated or integrated
 }
 
 #[derive(Clone)]
@@ -132,12 +147,12 @@ pub struct PrivateGpuDeviceProperties {
 
 #[derive(Clone)]
 pub struct CpuDeviceProperties {
-    pub public_properties: PublicDeviceProperties,
+    pub public_properties: PublicDeviceCpuProperties,
     pub private_properties: PrivateCpuDeviceProperties,
 }
 #[derive(Clone)]
 pub struct GpuDeviceProperties {
-    pub public_properties: PublicDeviceProperties,
+    pub public_properties: PublicDeviceGpuProperties,
     pub private_properties: PrivateGpuDeviceProperties,
 }
 
@@ -158,7 +173,9 @@ impl HardwareStatusMonitor {
         &self,
         config_dir: PathBuf,
     ) -> Result<GpuStatusFileContent, Error> {
-        let file: PathBuf = config_dir.join("gpuminer").join("gpu_status.json");
+        let file: PathBuf = config_dir
+            .join("gpuminer")
+            .join("gpu_information_opencl.json");
         if file.exists() {
             debug!(target: LOG_TARGET, "Loading gpu status from file: {file:?}");
             let content = tokio::fs::read_to_string(file).await?;
@@ -193,22 +210,23 @@ impl HardwareStatusMonitor {
         let gpu_status_file_content = self.load_gpu_devices_from_status_file(config_dir).await?;
         let mut platform_devices = Vec::new();
 
-        for gpu_device in &gpu_status_file_content.gpu_devices {
-            debug!(target: LOG_TARGET, "GPU device name: {:?}", gpu_device.device_name);
-            let vendor = HardwareVendor::from_string(&gpu_device.device_name);
+        for gpu_device in &gpu_status_file_content.devices {
+            debug!(target: LOG_TARGET, "GPU device name: {:?}", gpu_device.name);
+            let vendor = HardwareVendor::from_string(&gpu_device.name);
             let device_reader = self.select_reader_for_gpu_device(vendor.clone()).await;
             let platform_device = GpuDeviceProperties {
                 private_properties: PrivateGpuDeviceProperties {
                     device_reader: device_reader.clone(),
                 },
-                public_properties: PublicDeviceProperties {
+                public_properties: PublicDeviceGpuProperties {
                     vendor: vendor.clone(),
-                    name: gpu_device.device_name.clone(),
+                    name: gpu_device.name.clone(),
                     status: DeviceStatus {
-                        is_available: gpu_device.is_available,
+                        is_available: true,
                         is_reader_implemented: device_reader.clone().get_is_reader_implemented(),
                     },
                     parameters: None,
+                    device_type: gpu_device.device_type.clone(),
                     // parameters: if device_reader.clone().get_is_reader_implemented() {
                     //     debug!(target: LOG_TARGET, "Getting device parameters for: {:?}", gpu_device.device_name);
                     //     device_reader.clone().get_device_parameters(None).await.ok()
@@ -256,7 +274,7 @@ impl HardwareStatusMonitor {
                 private_properties: PrivateCpuDeviceProperties {
                     device_reader: device_reader.clone(),
                 },
-                public_properties: PublicDeviceProperties {
+                public_properties: PublicDeviceCpuProperties {
                     vendor: vendor.clone(),
                     name: cpu_device.brand().to_string(),
                     status: DeviceStatus {
@@ -305,13 +323,14 @@ impl HardwareStatusMonitor {
         Ok(cpu_devices.clone())
     }
 
-    pub async fn get_gpu_public_properties(&self) -> Result<Vec<PublicDeviceProperties>, Error> {
+    pub async fn get_gpu_public_properties(&self) -> Result<Vec<PublicDeviceGpuProperties>, Error> {
         let gpu_devices = self.gpu_devices.read().await;
 
         let mut platform_devices = Vec::new();
 
         for device in gpu_devices.iter() {
-            platform_devices.push(PublicDeviceProperties {
+            platform_devices.push(PublicDeviceGpuProperties {
+                device_type: device.public_properties.device_type.clone(),
                 vendor: device.public_properties.vendor.clone(),
                 name: device.public_properties.name.clone(),
                 status: device.public_properties.status.clone(),
@@ -327,13 +346,13 @@ impl HardwareStatusMonitor {
         Ok(platform_devices)
     }
 
-    pub async fn get_cpu_public_properties(&self) -> Result<Vec<PublicDeviceProperties>, Error> {
+    pub async fn get_cpu_public_properties(&self) -> Result<Vec<PublicDeviceCpuProperties>, Error> {
         let cpu_devices = self.cpu_devices.read().await;
 
         let mut platform_devices = Vec::new();
 
         for device in cpu_devices.iter() {
-            platform_devices.push(PublicDeviceProperties {
+            platform_devices.push(PublicDeviceCpuProperties {
                 vendor: device.public_properties.vendor.clone(),
                 name: device.public_properties.name.clone(),
                 status: device.public_properties.status.clone(),

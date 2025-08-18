@@ -41,5 +41,9 @@
     "placeholder": "按正确顺序点击下面的单词",
     "text": "为了确保您正确记录了种子短语，请按正确的顺序选择单词。",
     "title": "验证您的种子短语"
+  },
+  "warning": {
+    "title": "Secure your wallet",
+    "steps": "Steps"
   }
 }

@@ -7,7 +7,7 @@ import { Column, MarkGroup, RulerMark, RulerMarkGroup, Wrapper } from './Ruler.s
 export function Ruler() {
     const theme = useTheme();
     const { data } = useFetchExplorerData();
-    const height = Number(data?.currentBlock.height);
+    const height = data?.currentBlock?.height ? Number(data?.currentBlock?.height) : 0;
     const windowWidth = useMotionValue(window.innerWidth);
 
     const columnRef = useRef<HTMLDivElement>(null);

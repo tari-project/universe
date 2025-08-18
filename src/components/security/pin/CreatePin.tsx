@@ -8,9 +8,11 @@ import { TextButton } from '@app/components/elements/buttons/TextButton.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { StepChip } from '@app/containers/floating/security/common.styles.ts';
+import { useExchangeStore } from '@app/store/useExchangeStore.ts';
 
 const pinArr = Array.from({ length: DEFAULT_PIN_LENGTH }, (_, i) => i);
 export default function CreatePin({ onClose, onSubmit }: { onClose?: () => void; onSubmit: (pin: string) => void }) {
+    const isExchangeMiner = useExchangeStore((s) => s.currentExchangeMinerId !== 'universal');
     const { t } = useTranslation('wallet');
 
     const [isConfirm, setIsConfirm] = useState(false);
@@ -60,7 +62,7 @@ export default function CreatePin({ onClose, onSubmit }: { onClose?: () => void;
 
     return (
         <FormProvider {...methods}>
-            <StepChip>{`Step 2 of 2 `}</StepChip>
+            {!isExchangeMiner && <StepChip>{`Step 2 of 2 `}</StepChip>}
             <Wrapper onSubmit={methods.handleSubmit(handleSubmit)}>
                 <TextWrapper>
                     <Typography variant="h5">{t('security.pin.creation-title', { context })}</Typography>

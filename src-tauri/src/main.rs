@@ -294,7 +294,7 @@ fn main() {
         pool_status_url: None,
     }));
 
-    let app_in_memory_config = Arc::new(RwLock::new(AppInMemoryConfig::init()));
+    let app_in_memory_config = Arc::new(RwLock::new(AppInMemoryConfig::default()));
     let cpu_miner: Arc<RwLock<CpuMiner>> = Arc::new(
         CpuMiner::new(
             &mut stats_collector,
@@ -626,13 +626,18 @@ fn main() {
             commands::get_base_node_status,
             commands::create_pin,
             commands::forgot_pin,
-            commands::is_pin_locked,
             commands::set_seed_backed_up,
-            commands::is_seed_backed_up,
             commands::select_mining_mode,
             commands::update_custom_mining_mode,
             commands::encode_payment_id_to_address,
-            commands::save_wxtm_address
+            commands::save_wxtm_address,
+            commands::set_security_warning_dismissed,
+            commands::change_cpu_pool,
+            commands::change_gpu_pool,
+            commands::update_selected_gpu_pool_config,
+            commands::update_selected_cpu_pool_config,
+            commands::reset_gpu_pool_config,
+            commands::reset_cpu_pool_config,
         ])
         .build(tauri::generate_context!())
         .inspect_err(|e| {
@@ -668,7 +673,7 @@ fn main() {
                     SetupManager::get_instance()
                         .start_setup(handle_clone.clone())
                         .await;
-                    SetupManager::spawn_sleep_mode_handler(handle_clone.clone()).await;
+                    SetupManager::spawn_sleep_mode_handler().await;
                 });
             }
             tauri::RunEvent::ExitRequested { api: _, code, .. } => {

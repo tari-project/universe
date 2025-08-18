@@ -13,7 +13,7 @@ import { Language } from '@app/i18initializer';
 import { PaperWalletDetails } from '@app/types/app-status.ts';
 import { displayMode } from '@app/store/types.ts';
 import { SignData } from '@app/types/ws.ts';
-import { ConfigBackendInMemory } from '@app/types/configs.ts';
+import { BasePoolData, ConfigBackendInMemory } from '@app/types/configs.ts';
 import { ExchangeMiner } from './exchange';
 import { ActiveTapplet } from '@app/types/tapplets/tapplet.types';
 
@@ -135,8 +135,6 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'get_base_node_status'): Promise<BaseNodeStatus>;
     function invoke(param: 'create_pin'): Promise<void>;
     function invoke(param: 'forgot_pin', payload: { seedWords: string[] }): Promise<void>;
-    function invoke(param: 'is_pin_locked'): Promise<boolean>;
-    function invoke(param: 'is_seed_backed_up'): Promise<boolean>;
     function invoke(param: 'toggle_cpu_pool_mining', payload: { enabled: boolean }): Promise<void>;
     function invoke(param: 'toggle_gpu_pool_mining', payload: { enabled: boolean }): Promise<void>;
     function invoke(
@@ -144,4 +142,16 @@ declare module '@tauri-apps/api/core' {
         payload: { paymentId: string; tariAddress: string }
     ): Promise<string>;
     function invoke(param: 'save_wxtm_address', payload: { address: string; exchangeId: string }): Promise<void>;
+    function invoke(param: 'change_cpu_pool', payload: { cpuPool: string }): Promise<void>;
+    function invoke(param: 'change_gpu_pool', payload: { gpuPool: string }): Promise<void>;
+    function invoke(
+        param: 'update_selected_cpu_pool',
+        payload: { cpuPool: Record<string, BasePoolData> }
+    ): Promise<void>;
+    function invoke(
+        param: 'update_selected_gpu_pool',
+        payload: { gpuPool: Record<string, BasePoolData> }
+    ): Promise<void>;
+    function invoke(param: 'reset_gpu_pool_config', payload: { gpuPoolName: string }): Promise<void>;
+    function invoke(param: 'reset_cpu_pool_config', payload: { cpuPoolName: string }): Promise<void>;
 }

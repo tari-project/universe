@@ -41,5 +41,9 @@
     "placeholder": "以下の単語を正しい順序でクリックしてください",
     "text": "シードフレーズを正しく書き留めたことを確認するため、正しい順序で単語を選択してください。",
     "title": "シードフレーズを確認"
+  },
+  "warning": {
+    "title": "Secure your wallet",
+    "steps": "Steps"
   }
 }

@@ -46,12 +46,12 @@ const ShareRewardModal = memo(function ShareRewardModal() {
         setItemData(null);
     };
 
-    const airdropUrl = useAirdropStore((state) => state.backendInMemoryConfig?.airdropUrl || '');
+    const airdropUrl = useAirdropStore((state) => state.backendInMemoryConfig?.airdrop_url || '');
     const userDetails = useAirdropStore((s) => s.userDetails);
     const referralCode = userDetails?.user?.referral_code || '';
     const gemsValue = GIFT_GEMS.toLocaleString();
     const block = item?.mined_in_block_height || 0;
-    const reward = item?.amount || 0;
+    const reward = item?.tokenAmount || 0;
     const earningsFormatted = useMemo(() => formatNumber(reward, FormatPreset.XTM_COMPACT).toLowerCase(), [reward]);
 
     const shareUrl = `${airdropUrl}/download/${referralCode}?bh=${block}`;

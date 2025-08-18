@@ -187,6 +187,7 @@ pub struct TelemetryData {
     pub latency: f64,
     pub wallet_view_key_hashed: String,
     pub exchange_id: String,
+    pub tari_address: String,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -629,6 +630,11 @@ async fn get_telemetry_data_inner(
     );
     add_process_stats(
         &mut extra_data,
+        stats_collector.get_gpu_miner_sha_stats(),
+        "gpu_miner_sha",
+    );
+    add_process_stats(
+        &mut extra_data,
         stats_collector.get_minotari_node_stats(),
         "node",
     );
@@ -685,6 +691,8 @@ async fn get_telemetry_data_inner(
         );
     }
 
+    let tari_address = InternalWallet::tari_address().await.to_base58();
+
     let data = TelemetryData {
         app_id: config.anon_id().to_string(),
         block_height,
@@ -714,7 +722,9 @@ async fn get_telemetry_data_inner(
         latency,
         wallet_view_key_hashed,
         exchange_id,
+        tari_address,
     };
+
     Ok(data)
 }
 

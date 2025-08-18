@@ -88,6 +88,11 @@ impl UnlockConditionsListenerTrait for ListenerUnlockCpuMining {
             info!(target: LOG_TARGET, "Not all listeners are ready, skipping listener start");
             return;
         }
+        if !unlock_strategy.is_any_phase_restarting(channels.clone()) {
+            info!(target: LOG_TARGET, "All phases are marked as completed, no need to start listener");
+            return;
+        }
+
         let unlock_cpu_mining_listener = ListenerUnlockCpuMining::current();
 
         let listener_task = TasksTrackers::current()
@@ -115,7 +120,7 @@ impl UnlockConditionsListenerTrait for ListenerUnlockCpuMining {
     }
 
     async fn conditions_met_callback(&self) {
-        info!(target: LOG_TARGET, "Unlocking Mining");
+        info!(target: LOG_TARGET, "Unlocking Cpu Mining");
         EventsEmitter::emit_unlock_cpu_mining().await;
     }
 

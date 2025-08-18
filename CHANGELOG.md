@@ -1,6 +1,61 @@
+🚀 TARI UNIVERSE v1.5.9: The Season of Light — Part 6½ Hotfix
+
+_August 14, 2025_
+
+Hey Tari OGs,
+
+Quick hotfix coming your way! We've identified and fixed a GPU miner disconnection issue that was interrupting mining. Your GPUs should now stay connected and keep earning consistently.
+
+---
+
+🚀 TARI UNIVERSE v1.5.7: The Season of Light — Part 6
+
+_August 12, 2025_
+
+Hey everyone,
+
+Introducing "Season of Light" Part 6 (we are getting to the end of this series.. we promise!). The goal for the Season of Light series is to make Tari Universe "just work" for as many users as possible. We've made a lot of progress with this release, thanks to all of the help and support of the Tari community. There's still more to do (we think Season of Light is Harry Potter film series in length…).
+
+✨ WHAT'S NEW
+
+- 🔄 **Improved pool mining** – RXT and SHA-3 mining now run on LuckyPool by default, with built-in support for multiple pools. You can choose your preferred pool via a new dropdown selector (all stratum pools are compatible; stats endpoints currently available for SupportXTM and LuckyPool).
+   - Note: Your previous Hatchling rewards above 1 XTM will be paid out this week. 
+- 💪 **Smarter error handling** – If a mining component runs into issues, the app will now automatically disable that component (local/GPU/CPU mining) and keep everything else running smoothly. Additional fallback systems are on the way.
+- 🔔 **Streamlined security prompts** – Security notifications now appear in a less intrusive way without all the popups, so your mining flow stays uninterrupted.
+- 🎬 **Animation improvements** – Win animations now handle block height changes without getting stuck.
+
+---
+
+🚀 TARI UNIVERSE v1.5.4: The Season of Light: Part 5
+
+_August 1, 2025_
+
+Hey everyone,
+
+Introducing "Season of Light" Part 5: a follow-up release to Wednesday's huge update. We've been listening to your feedback and squashing bugs FAST. That's not all! Season of Light Part 5 includes a NEW seamless Gate.io integration that automatically converts your XTM to wXTM right into your exchange account. 
+
+✨ WHAT'S NEW
+
+- 🏦 Mine directly to your Gate account – You can now enter your Gate ETH mining address and have your XTM automatically wrapped to ETH and deposited directly into your exchange account! Your XTM gets wrapped once you reach the 8 XTM threshold (The bridge will start processing these transactions on Monday, every 6 hours)
+- 🖥️ Improved GPU mining reliability – No more frustrating OpenCL library errors that prevented your GPU from mining! We've fixed compatibility issues and enhanced GPU detection, so your graphics card gets recognized.
+- 💰 Wallet balance accuracy after imports – Fixed an issue where your wallet balance would show incorrectly for up to 30 seconds after importing or refreshing. Your balance now updates every 5 seconds for the first 2 minutes, ensuring you always see accurate amounts immediately.
+- ↩️ Fixed send transaction workflow – No more getting stuck! We've fixed the issue where the "Review" button would become disabled if you went back to edit your send transaction details. You can now freely navigate between screens without losing your progress.
+- 🌉 Bridge screen improvements – Removed distracting banner notifications that were covering important content when bridging funds.
+- 💬 Enhanced transaction messages – You can now send transactions with empty messages without encountering errors. Sometimes you just want to send funds without adding a note.
+- 📱 Fixed phone sync dialog – Resolved an issue where the sync-to-phone feature would cover the PIN entry dialog, preventing you from completing the sync process.
+- ✨ Smoother wallet navigation – No more jarring blur effects when browsing your transaction history. 
+
+---
+
 🚀 TARI UNIVERSE v1.5.3: The Season of Light: Part 4
 
 _July 30, 2025_
+
+🔄 Rolling out via auto-update
+
+Hey everyone,
+
+Picture this: you download Tari Universe, and within a minute or two, you're earning XTM on both CPU AND GPU! No more waiting hours for sync, and no setup failures. Just pure, near-instant mining rewards!
 
 ✨ WHAT'S NEW
 

@@ -2,18 +2,17 @@ import { useAirdropStore } from '@app/store';
 import {
     fetchAllUserData,
     fetchCommunityMessages,
+    fetchFeatures,
     fetchLatestXSpaceEvent,
-    fetchOrphanChainUiFeatureFlag,
-    fetchPollingFeatureFlag,
-    fetchBlockBubblesFeatureFlag,
 } from '@app/store/actions/airdropStoreActions';
-import { listen, UnlistenFn } from '@tauri-apps/api/event';
+import { FEATURE_FLAGS } from '@app/store/consts';
+import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import { useCallback, useEffect, useRef } from 'react';
 
 const DEBOUNCE_DELAY = 1000; // 1 second delay
 
 export const useAirdropPolling = () => {
-    const pollingEnabled = useAirdropStore((s) => s.pollingEnabled);
+    const pollingEnabled = useAirdropStore((s) => s.features?.includes(FEATURE_FLAGS.FF_POLLING));
     const airdropTimeoutRef = useRef<NodeJS.Timeout>(undefined);
     const featureFlagTimeoutRef = useRef<NodeJS.Timeout>(undefined);
 
@@ -29,9 +28,7 @@ export const useAirdropPolling = () => {
     }, []);
 
     const fetchFeatureFlags = useCallback(async () => {
-        await fetchOrphanChainUiFeatureFlag();
-        await fetchPollingFeatureFlag();
-        await fetchBlockBubblesFeatureFlag();
+        await fetchFeatures();
     }, []);
 
     const fetchFeatureFlagDebounced = useCallback(() => {

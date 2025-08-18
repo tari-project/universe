@@ -109,7 +109,7 @@ jobs:
           fi
           echo "OS_BETA_STRING is ${OS_BETA_STRING}"
           echo "OS_BETA_STRING_BinName is ${OS_BETA_STRING_BinName}"
-          echo "TS_FEATURES=release-ci-beta, airdrop-env, telemetry-env" >> $GITHUB_ENV
+          echo "TS_FEATURES=release-ci-beta" >> $GITHUB_ENV
           # numeric-only and cannot be greater than 65535 for msi target
           export BETA_DATE=$(date +%m%d)
           echo "BETA_DATE=${BETA_DATE}" >> $GITHUB_ENV
@@ -245,7 +245,7 @@ jobs:
           echo '{}' > ./tauri.windows.conf.json
           yq eval ".bundle.windows.signCommand = env(WINDOWS_SIGN_COMMAND)" --output-format=json -i ./tauri.windows.conf.json
           cat ./tauri.windows.conf.json
-          cargo install trusted-signing-cli@0.5.0 --locked
+          cargo install trusted-signing-cli@0.8.0 --locked
 
       - name: Install Dependencies - Node
         run: |
