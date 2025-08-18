@@ -106,6 +106,7 @@ pub struct ApplicationsVersions {
     sha_p2pool: ApplicationsInformation,
     xtrgpuminer: ApplicationsInformation,
     bridge: ApplicationsInformation,
+    ootle_wallet: ApplicationsInformation,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -363,6 +364,9 @@ pub async fn get_applications_versions(
     let bridge_version = binary_resolver
         .get_binary_version(Binaries::BridgeTapplet)
         .await;
+    let ootle_wallet_version = binary_resolver
+        .get_binary_version(Binaries::OotleWallet)
+        .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET,
@@ -402,6 +406,10 @@ pub async fn get_applications_versions(
         },
         bridge: ApplicationsInformation {
             version: bridge_version,
+            port: None,
+        },
+        ootle_wallet: ApplicationsInformation {
+            version: ootle_wallet_version,
             port: None,
         },
     })
