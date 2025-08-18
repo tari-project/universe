@@ -224,16 +224,12 @@ impl ConfigImpl for ConfigWallet {
 
     fn _load_or_create() -> Self::Config {
         let config_path = <Self as ConfigImpl>::_get_config_path();
-        if !config_path.exists() {
-            log::debug!(target: LOG_TARGET, "[{}] [load_config] creating a new config content (file not found)", Self::_get_name());
-            let config_content = Self::Config::default();
-            let _unused = Self::_save_config(config_content.clone()).inspect_err(|error| {
-                log::warn!(target: LOG_TARGET, "[{}] [save_config] error: {:?}", Self::_get_name(), error);
-            });
-            config_content
-        } else {
+        if config_path.exists() {
             let config_content_serialized = fs::read_to_string(&config_path)
                 .expect("[ConfigWallet::_load_or_create] Failed to read config file");
+            // create backup before writing new content
+            fs::copy(&config_path, format!("{}.backup", config_path.display()))
+                .expect("Failed to create backup Config Wallet");
             // TariAddress type change in the core repo
             let config_content_migrated =
                 config_content_serialized.replace("payment_id_user_data", "memo_field_payment_id");
@@ -252,6 +248,13 @@ impl ConfigImpl for ConfigWallet {
                     panic!("Failed to load wallet config: {e:?}");
                 }
             }
+        } else {
+            log::debug!(target: LOG_TARGET, "[{}] [load_config] creating a new config content (file not found)", Self::_get_name());
+            let config_content = Self::Config::default();
+            let _unused = Self::_save_config(config_content.clone()).inspect_err(|error| {
+                log::warn!(target: LOG_TARGET, "[{}] [save_config] error: {:?}", Self::_get_name(), error);
+            });
+            config_content
         }
     }
 
