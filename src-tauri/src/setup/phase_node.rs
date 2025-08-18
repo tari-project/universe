@@ -27,10 +27,7 @@ use crate::{
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
     events_emitter::EventsEmitter,
     events_manager::EventsManager,
-    node::{
-        self,
-        node_manager::{NodeManagerError, STOP_ON_ERROR_CODES},
-    },
+    node::node_manager::{NodeManagerError, STOP_ON_ERROR_CODES},
     progress_trackers::{
         progress_plans::{ProgressPlans, ProgressSetupNodePlan},
         progress_stepper::ProgressStepperBuilder,
