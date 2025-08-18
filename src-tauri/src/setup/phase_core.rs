@@ -195,14 +195,14 @@ impl SetupPhaseImpl for CoreSetupPhase {
                     Ok(())
                 }
             })
-            .await;
+            .await?;
 
         progress_stepper
             .mark_step_as_completed(SetupStep::NetworkSpeedTest, || async {
                 NetworkStatus::current().run_speed_test_with_timeout().await;
                 Ok(())
             })
-            .await;
+            .await?;
 
         Ok(())
     }
@@ -211,10 +211,10 @@ impl SetupPhaseImpl for CoreSetupPhase {
         let progress_stepper = self.progress_stepper.lock().await;
         let setup_warnings = progress_stepper.get_setup_warnings();
         if !setup_warnings.is_empty() {
-            self.status_sender.send(PhaseStatus::Success);
+            self.status_sender.send(PhaseStatus::Success)?;
         } else {
             self.status_sender
-                .send(PhaseStatus::SuccessWithWarnings(setup_warnings.clone()));
+                .send(PhaseStatus::SuccessWithWarnings(setup_warnings.clone()))?;
         }
 
         Ok(())

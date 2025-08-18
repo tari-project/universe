@@ -63,7 +63,6 @@ impl SetupStep {
             // Node Phase
             Self::BinariesTor => "binaries-tor".to_string(),
             Self::BinariesNode => "binaries-node".to_string(),
-            Self::BinariesWallet => "binaries-wallet".to_string(),
             Self::StartTor => "start-tor".to_string(),
             Self::MigratingDatabase => "migrating-database".to_string(),
             Self::StartingNode => "starting-node".to_string(),
@@ -83,6 +82,7 @@ impl SetupStep {
             Self::InitializeGpuHardware => "initialize-gpu-hardware".to_string(),
 
             // Wallet Phase
+            Self::BinariesWallet => "binaries-wallet".to_string(),
             Self::StartWallet => "start-wallet".to_string(),
             Self::SetupBridge => "setup-bridge".to_string(),
         }

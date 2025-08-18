@@ -83,6 +83,7 @@ impl TrackStepComplitionOverTime {
         *self.last_send_percentage.lock().await = resolved_percentage;
     }
 }
+
 pub struct ProgressStepper {
     setup_steps: Vec<ProgressStep>,
     app_handle: AppHandle,
@@ -104,8 +105,8 @@ impl ProgressStepper {
         step_callback: F,
     ) -> Result<(), anyhow::Error>
     where
-        F: FnOnce() -> Fut + Send + 'static,
-        Fut: std::future::Future<Output = Result<(), anyhow::Error>> + Send + 'static,
+        F: FnOnce() -> Fut + Send,
+        Fut: std::future::Future<Output = Result<(), anyhow::Error>> + Send,
     {
         if let Some(index) = self
             .setup_steps
@@ -198,30 +199,6 @@ impl ProgressStepper {
         }
 
         None
-    }
-
-    pub async fn skip_step(&mut self, skipped_step: SetupStep) {
-        if let Some(index) = self
-            .setup_steps
-            .iter()
-            .position(|step| step.setup_step.eq(&skipped_step))
-        {
-            let resolved_step = self.setup_steps.remove(index);
-            let progress_value = f64::from(resolved_step.setup_step.get_progress_value());
-
-            let payload = ProgressTrackerUpdatePayload {
-                phase_title: self.setup_phase.get_i18n_title_key(),
-                title: resolved_step.setup_step.get_i18n_key(),
-                progress: progress_value,
-                title_params: None,
-                setup_phase: self.setup_phase.clone(),
-                is_completed: progress_value.ge(&self.expected_progress),
-            };
-
-            let _unused = &self.timeout_watcher_sender.send(hash_value(&payload));
-
-            EventsEmitter::emit_progress_tracker_update(payload).await;
-        }
     }
 }
 

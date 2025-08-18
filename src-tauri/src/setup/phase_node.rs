@@ -166,109 +166,126 @@ impl SetupPhaseImpl for NodeSetupPhase {
     #[allow(clippy::too_many_lines)]
     async fn setup_inner(&self) -> Result<(), Error> {
         let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
+
         let state = self.app_handle.state::<UniverseAppState>();
         let node_type = state.node_manager.get_node_type().await;
-        log::info!(target: LOG_TARGET, "Phase Node Setup for {node_type:?}");
+        let use_tor =
+            self.app_configuration.use_tor && node_type.is_local() && !cfg!(target_os = "macos");
 
         let binary_resolver = BinaryResolver::current();
         let mut progress_stepper = self.progress_stepper.lock().await;
 
-        if self.app_configuration.use_tor && !cfg!(target_os = "macos") {
-            let tor_binary_progress_tracker =
-                progress_stepper.track_step_completion_over_time(SetupStep::BinariesTor);
-            binary_resolver
-                .initialize_binary(Binaries::Tor, tor_binary_progress_tracker)
-                .await?;
-        } else {
-            progress_stepper.skip_step(SetupStep::BinariesTor).await;
-        };
+        let tor_binary_progress_tracker =
+            progress_stepper.track_step_completion_over_time(SetupStep::BinariesTor);
 
-        if node_type.is_local() {
-            let node_binary_progress_tracker =
-                progress_stepper.track_step_completion_over_time(SetupStep::BinariesNode);
-            binary_resolver
-                .initialize_binary(Binaries::MinotariNode, node_binary_progress_tracker)
-                .await?;
-        } else {
-            info!(target: LOG_TARGET, "Skipping node binary installation for remote node");
-            progress_stepper.skip_step(SetupStep::BinariesNode).await;
-        }
+        progress_stepper
+            .mark_step_as_completed(SetupStep::BinariesTor, async move || {
+                if !use_tor {
+                    return Ok(());
+                }
+                binary_resolver
+                    .initialize_binary(Binaries::Tor, tor_binary_progress_tracker)
+                    .await
+            })
+            .await?;
 
-        if self.app_configuration.use_tor && !cfg!(target_os = "macos") {
-            progress_stepper
-                .mark_step_as_completed(SetupStep::StartTor)
-                .await;
-            state
-                .tor_manager
-                .ensure_started(data_dir.clone(), config_dir.clone(), log_dir.clone())
-                .await?;
-        } else {
-            progress_stepper.skip_step(SetupStep::StartTor).await;
-        }
+        let node_binary_progress_tracker =
+            progress_stepper.track_step_completion_over_time(SetupStep::BinariesNode);
+
+        progress_stepper
+            .mark_step_as_completed(SetupStep::BinariesNode, async move || {
+                if node_type.is_remote() {
+                    return Ok(());
+                }
+                binary_resolver
+                    .initialize_binary(Binaries::MinotariNode, node_binary_progress_tracker)
+                    .await
+            })
+            .await?;
+
+        let state = self.app_handle.state::<UniverseAppState>();
+        progress_stepper
+            .mark_step_as_completed(SetupStep::StartTor, async move || {
+                if !use_tor {
+                    return Ok(());
+                }
+                state
+                    .tor_manager
+                    .ensure_started(data_dir.clone(), config_dir.clone(), log_dir.clone())
+                    .await
+            })
+            .await?;
+
+        let base_node_grpc_address = self.app_configuration.base_node_grpc_address.clone();
+        let app_handle_clone = self.app_handle.clone();
+        let state = self.app_handle.state::<UniverseAppState>().inner().clone();
+        let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
+
+        progress_stepper.mark_step_as_completed(SetupStep::StartingNode, async move || {
+            for _i in 0..2 {
+                let tor_control_port = state.tor_manager.get_control_port().await?;
+                match
+                    state.node_manager.ensure_started(
+                        data_dir.clone(),
+                        config_dir.clone(),
+                        log_dir.clone(),
+                        use_tor,
+                        tor_control_port,
+                        Some(base_node_grpc_address.clone())
+                    ).await
+                {
+                    Ok(_) => {
+                        EventsManager::handle_node_type_update(&app_handle_clone).await;
+                        break;
+                    }
+                    Err(e) => {
+                        if let NodeManagerError::ExitCode(code) = e {
+                            if STOP_ON_ERROR_CODES.contains(&code) {
+                                warn!(target: LOG_TARGET, "Database for node is corrupt or needs a restart, deleting and trying again.");
+                                state.node_manager.clean_data_folder(&data_dir).await?;
+                                state.wallet_manager.clean_data_folder(&data_dir).await?;
+                            }
+                            continue;
+                        }
+                        if let NodeManagerError::UnknownError(error) = e {
+                            warn!(target: LOG_TARGET, "NodeManagerError::UnknownError({error:?}) needs a restart.");
+                            continue;
+                        }
+                        error!(target: LOG_TARGET, "Could not start node manager after restart: {e:?} | Exitting the app");
+                        app_handle_clone.exit(-1);
+                        return Err(e.into());
+                    }
+                }
+            }
+            Ok(())
+        }).await?;
+        let state = self.app_handle.state::<UniverseAppState>();
 
         // Set up migration progress tracking
         let migration_tracker =
             progress_stepper.track_step_completion_over_time(SetupStep::MigratingDatabase);
 
-        for _i in 0..2 {
-            let tor_control_port = state.tor_manager.get_control_port().await?;
-            info!(target: LOG_TARGET, "Starting node manager, grpc address: {}", self.app_configuration.base_node_grpc_address);
-            match state
-                .node_manager
-                .ensure_started(
-                    data_dir.clone(),
-                    config_dir.clone(),
-                    log_dir.clone(),
-                    self.app_configuration.use_tor,
-                    tor_control_port,
-                    Some(self.app_configuration.base_node_grpc_address.clone()),
-                    migration_tracker.clone(),
-                )
-                .await
-            {
-                Ok(_) => {
-                    EventsManager::handle_node_type_update(&self.app_handle).await;
-                    break;
-                }
-                Err(e) => {
-                    if let NodeManagerError::ExitCode(code) = e {
-                        if STOP_ON_ERROR_CODES.contains(&code) {
-                            warn!(target: LOG_TARGET, "Database for node is corrupt or needs a restart, deleting and trying again.");
-                            state.node_manager.clean_data_folder(&data_dir).await?;
-                            state.wallet_manager.clean_data_folder(&data_dir).await?;
-                        }
-                        continue;
-                    }
-                    if let NodeManagerError::UnknownError(error) = e {
-                        warn!(target: LOG_TARGET, "NodeManagerError::UnknownError({error:?}) needs a restart.");
-                        continue;
-                    }
-                    error!(target: LOG_TARGET, "Could not start node manager after restart: {e:?} | Exitting the app");
-                    self.app_handle.exit(-1);
-                    return Err(e.into());
-                }
-            }
-        }
-
+        let node_type = state.node_manager.get_node_type().await;
         progress_stepper
-            .mark_step_as_completed(SetupStep::StartingNode)
-            .await;
+            .mark_step_as_completed(SetupStep::MigratingDatabase, async move || {
+                if !node_type.is_remote() {
+                    return Ok(());
+                }
 
+                state
+                    .node_manager
+                    .wait_migration(migration_tracker)
+                    .await
+                    .map_err(|e| anyhow::anyhow!("Failed to wait for node migration: {e}"))?;
+                Ok(())
+            })
+            .await?;
+
+        let state = self.app_handle.state::<UniverseAppState>();
+        let node_type = state.node_manager.get_node_type().await;
         if node_type.is_local() {
             self.wait_node_synced_with_progress(progress_stepper)
                 .await?;
-        } else {
-            info!(target: LOG_TARGET, "Skipping syncing condition for remote node");
-            // Assume remote node is already synced
-            progress_stepper
-                .skip_step(SetupStep::WaitingForInitialSync)
-                .await;
-            progress_stepper
-                .skip_step(SetupStep::WaitingForHeaderSync)
-                .await;
-            progress_stepper
-                .skip_step(SetupStep::WaitingForBlockSync)
-                .await;
         }
 
         Ok(())
@@ -278,27 +295,29 @@ impl SetupPhaseImpl for NodeSetupPhase {
         let progress_stepper = self.progress_stepper.lock().await;
         let setup_warnings = progress_stepper.get_setup_warnings();
         if !setup_warnings.is_empty() {
-            self.status_sender.send(PhaseStatus::Success);
+            self.status_sender.send(PhaseStatus::Success)?;
         } else {
             self.status_sender
-                .send(PhaseStatus::SuccessWithWarnings(setup_warnings.clone()));
+                .send(PhaseStatus::SuccessWithWarnings(setup_warnings.clone()))?;
         }
 
         let app_handle_clone: tauri::AppHandle = self.app_handle.clone();
         let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
 
-        TasksTrackers::current().common.get_task_tracker().await.spawn(async move {
-        let app_state = app_handle_clone.state::<UniverseAppState>().clone();
+        TasksTrackers::current()
+            .common.get_task_tracker().await
+            .spawn(async move {
+                let app_state = app_handle_clone.state::<UniverseAppState>().clone();
 
-        let mut node_status_watch_rx = (*app_state.node_status_watch_rx).clone();
-        let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
+                let mut node_status_watch_rx = (*app_state.node_status_watch_rx).clone();
+                let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
 
-        let init_node_status = *node_status_watch_rx.borrow();
-        EventsEmitter::emit_base_node_update(init_node_status).await;
+                let init_node_status = *node_status_watch_rx.borrow();
+                EventsEmitter::emit_base_node_update(init_node_status).await;
 
-        let mut latest_updated_block_height = init_node_status.block_height;
-        loop {
-            tokio::select! {
+                let mut latest_updated_block_height = init_node_status.block_height;
+                loop {
+                    tokio::select! {
                 _ = node_status_watch_rx.changed() => {
                     let node_status = *node_status_watch_rx.borrow();
                     let initial_sync_finished = app_state.wallet_manager.is_initial_scan_completed();
@@ -318,8 +337,8 @@ impl SetupPhaseImpl for NodeSetupPhase {
                     break;
                 },
             }
-        }
-    });
+                }
+            });
 
         let app_handle_clone: tauri::AppHandle = self.app_handle.clone();
         TasksTrackers::current()
@@ -355,13 +374,15 @@ impl SetupPhaseImpl for NodeSetupPhase {
             });
 
         let app_handle_clone: tauri::AppHandle = self.app_handle.clone();
-        TasksTrackers::current().node_phase.get_task_tracker().await.spawn(async move {
-        let app_state = app_handle_clone.state::<UniverseAppState>().clone();
-        let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
-        let mut interval = interval(Duration::from_secs(10));
+        TasksTrackers::current()
+            .node_phase.get_task_tracker().await
+            .spawn(async move {
+                let app_state = app_handle_clone.state::<UniverseAppState>().clone();
+                let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
+                let mut interval = interval(Duration::from_secs(10));
 
-        loop {
-            tokio::select! {
+                loop {
+                    tokio::select! {
                 _ = interval.tick() => {
                     if let Ok(connected_peers) = app_state
                         .node_manager
@@ -377,8 +398,8 @@ impl SetupPhaseImpl for NodeSetupPhase {
                     break;
                 },
             }
-        }
-    });
+                }
+            });
 
         Ok(())
     }

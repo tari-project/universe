@@ -172,70 +172,76 @@ impl SetupPhaseImpl for CpuMiningSetupPhase {
             progress_stepper.track_step_completion_over_time(SetupStep::BinariesCpuMiner);
 
         progress_stepper
-            .mark_step_as_completed(SetupStep::BinariesCpuMiner, move || {
+            .mark_step_as_completed(SetupStep::BinariesCpuMiner, async move || {
                 binary_resolver
                     .initialize_binary(Binaries::Xmrig, cpu_miner_binary_progress_tracker)
+                    .await
             })
             .await?;
 
-        if self
+        let is_cpu_pool_disabled = self
             .setup_features
-            .is_feature_disabled(SetupFeature::CpuPool)
-        {
-            let mmproxy_binary_progress_tracker = progress_stepper
-                .track_step_completion_over_time(SetupStep::BinariesMergeMiningProxy);
+            .is_feature_disabled(SetupFeature::CpuPool);
 
-            progress_stepper
-                .mark_step_as_completed(SetupStep::BinariesMergeMiningProxy, move || {
-                    binary_resolver.initialize_binary(
-                        Binaries::MergeMiningProxy,
-                        mmproxy_binary_progress_tracker,
-                    )
-                })
-                .await?;
+        let mmproxy_binary_progress_tracker =
+            progress_stepper.track_step_completion_over_time(SetupStep::BinariesMergeMiningProxy);
 
-            let mmproxy_monero_nodes = self.app_configuration.mmproxy_monero_nodes.clone();
-            let mmproxy_use_monero_fail = self.app_configuration.mmproxy_use_monero_fail.clone();
-            let state = state.inner().clone();
+        progress_stepper
+            .mark_step_as_completed(SetupStep::BinariesMergeMiningProxy, async move || {
+                if is_cpu_pool_disabled {
+                    return Ok(());
+                }
 
-            progress_stepper
-                .mark_step_as_completed(SetupStep::MMProxy, async move || {
-                    let tari_address = InternalWallet::tari_address().await;
-                    let telemetry_id = state
-                        .telemetry_manager
-                        .read()
-                        .await
-                        .get_unique_string()
-                        .await;
-                    let base_node_grpc_address = state.node_manager.get_grpc_address().await?;
+                binary_resolver
+                    .initialize_binary(Binaries::MergeMiningProxy, mmproxy_binary_progress_tracker)
+                    .await
+            })
+            .await?;
 
-                    state
-                        .mm_proxy_manager
-                        .start(StartConfig {
-                            base_node_grpc_address,
-                            base_path: data_dir.clone(),
-                            config_path: config_dir.clone(),
-                            log_path: log_dir.clone(),
-                            tari_address: tari_address.clone(),
-                            coinbase_extra: telemetry_id,
-                            monero_nodes: mmproxy_monero_nodes,
-                            use_monero_fail: mmproxy_use_monero_fail,
-                        })
-                        .await?;
+        let mmproxy_monero_nodes = self.app_configuration.mmproxy_monero_nodes.clone();
+        let mmproxy_use_monero_fail = self.app_configuration.mmproxy_use_monero_fail.clone();
+        let state = state.inner().clone();
 
-                    state.mm_proxy_manager.wait_ready().await?;
-                    Ok(())
-                })
-                .await?;
-        } else {
-            progress_stepper
-                .skip_step(SetupStep::BinariesMergeMiningProxy)
-                .await;
-            progress_stepper.skip_step(SetupStep::MMProxy).await;
-        }
+        progress_stepper
+            .mark_step_as_completed(SetupStep::MMProxy, async move || {
+                if is_cpu_pool_disabled {
+                    return Ok(());
+                }
 
-        HardwareStatusMonitor::current()
-            .initialize_cpu_devices()
+                let tari_address = InternalWallet::tari_address().await;
+                let telemetry_id = state
+                    .telemetry_manager
+                    .read()
+                    .await
+                    .get_unique_string()
+                    .await;
+                let base_node_grpc_address = state.node_manager.get_grpc_address().await?;
+
+                state
+                    .mm_proxy_manager
+                    .start(StartConfig {
+                        base_node_grpc_address,
+                        base_path: data_dir.clone(),
+                        config_path: config_dir.clone(),
+                        log_path: log_dir.clone(),
+                        tari_address: tari_address.clone(),
+                        coinbase_extra: telemetry_id,
+                        monero_nodes: mmproxy_monero_nodes,
+                        use_monero_fail: mmproxy_use_monero_fail,
+                    })
+                    .await?;
+
+                state.mm_proxy_manager.wait_ready().await?;
+                Ok(())
+            })
+            .await?;
+
+        progress_stepper
+            .mark_step_as_completed(SetupStep::InitializeCpuHardware, async move || {
+                HardwareStatusMonitor::current()
+                    .initialize_cpu_devices()
+                    .await
+            })
             .await?;
 
         Ok(())
@@ -245,10 +251,10 @@ impl SetupPhaseImpl for CpuMiningSetupPhase {
         let progress_stepper = self.progress_stepper.lock().await;
         let setup_warnings = progress_stepper.get_setup_warnings();
         if !setup_warnings.is_empty() {
-            self.status_sender.send(PhaseStatus::Success);
+            self.status_sender.send(PhaseStatus::Success)?;
         } else {
             self.status_sender
-                .send(PhaseStatus::SuccessWithWarnings(setup_warnings.clone()));
+                .send(PhaseStatus::SuccessWithWarnings(setup_warnings.clone()))?;
         }
 
         let app_handle_clone = self.app_handle.clone();

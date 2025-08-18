@@ -147,7 +147,6 @@ impl NodeManager {
         use_tor: bool,
         tor_control_port: Option<u16>,
         remote_grpc_address: Option<String>,
-        migration_tracker: Option<TrackStepComplitionOverTime>,
     ) -> Result<(), NodeManagerError> {
         let shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
         let task_tracker = TasksTrackers::current().node_phase.get_task_tracker().await;
@@ -170,7 +169,6 @@ impl NodeManager {
                 task_tracker.clone(),
             )
             .await?;
-            self.wait_migration(migration_tracker).await?;
         }
         if self.is_remote().await {
             self.configure_adapter(
