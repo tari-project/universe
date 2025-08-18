@@ -90,6 +90,7 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
             app_handle: app_handle.clone(),
             progress_stepper: Mutex::new(Self::create_progress_stepper(
                 app_handle.clone(),
+                status_sender.clone(),
                 timeout_watcher.get_sender(),
             )),
             app_configuration: Self::load_app_configuration().await.unwrap_or_default(),
@@ -103,6 +104,10 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
     fn get_app_handle(&self) -> &AppHandle {
         &self.app_handle
     }
+    fn get_status_sender(&self) -> &Sender<PhaseStatus> {
+        &self.status_sender
+    }
+
     async fn get_shutdown_signal(&self) -> ShutdownSignal {
         TasksTrackers::current().gpu_mining_phase.get_signal().await
     }
@@ -126,16 +131,17 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
 
     fn create_progress_stepper(
         app_handle: AppHandle,
+        status_sender: Sender<PhaseStatus>,
         timeout_watcher_sender: Sender<u64>,
     ) -> ProgressStepper {
         ProgressStepperBuilder::new()
-            .add_step(SetupStep::BinariesGlytexMiner)
-            .add_step(SetupStep::BinariesGraxilMiner)
-            .add_step(SetupStep::GlytexDetectGPU)
-            .add_step(SetupStep::GraxilDetectGPU)
+            .add_step(SetupStep::BinariesGpuMiner, true)
+            .add_step(SetupStep::DetectGpu, true)
+            .add_step(SetupStep::InitializeGpuHardware, false)
             .build(
                 app_handle.clone(),
                 timeout_watcher_sender,
+                status_sender,
                 SetupPhase::GpuMining,
             )
     }
@@ -153,48 +159,53 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
     async fn setup_inner(&self) -> Result<(), Error> {
         let mut progress_stepper = self.progress_stepper.lock().await;
         let (data_dir, config_dir, _log_dir) = self.get_app_dirs()?;
-        let state = self.app_handle.state::<UniverseAppState>();
 
         let binary_resolver = BinaryResolver::current();
 
-        let glytex_binary_progress_tracker =
-            progress_stepper.track_step_completion_over_time(SetupStep::BinariesGlytexMiner);
-
-        binary_resolver
-            .initialize_binary(Binaries::GpuMinerSHA3X, glytex_binary_progress_tracker)
-            .await?;
-
         let graxil_binary_progress_tracker =
-            progress_stepper.track_step_completion_over_time(SetupStep::BinariesGraxilMiner);
+            progress_stepper.track_step_completion_over_time(SetupStep::BinariesGpuMiner);
 
-        binary_resolver
-            .initialize_binary(Binaries::GpuMiner, graxil_binary_progress_tracker)
-            .await?;
+        progress_stepper.mark_step_as_completed(SetupStep::BinariesGpuMiner, async move || {
+            let graxil_initialization_result = binary_resolver
+                .initialize_binary(Binaries::GpuMinerSHA3X, graxil_binary_progress_tracker)
+                .await;
+            let glytex_initialization_result = binary_resolver
+                .initialize_binary(Binaries::GpuMiner, None)
+                .await;
 
-        let _unused = state
-            .gpu_miner
-            .write()
-            .await
-            .detect(
-                config_dir.clone(),
-                self.app_configuration.gpu_engine.clone(),
-            )
-            .await
-            .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {e:?}"));
+            if let (Err(graxil_err), Err(glytex_err)) =
+                (graxil_initialization_result, glytex_initialization_result)
+            {
+                return Err(anyhow::anyhow!(
+                    "Failed to initialize GPU miner binaries: Graxil: {graxil_err}, Glytex: {glytex_err}"
+                ));
+            }
+
+            Ok(())
+        }).await?;
+
+        let state = self.app_handle.state::<UniverseAppState>();
+        let gpu_miner_lock = state.gpu_miner.clone();
+
+        let gpu_engine = self.app_configuration.gpu_engine.clone();
 
         progress_stepper
-            .mark_step_as_completed(SetupStep::GlytexDetectGPU)
-            .await;
+            .mark_step_as_completed(SetupStep::DetectGpu, async move || {
+                gpu_miner_lock
+                    .write()
+                    .await
+                    .detect(config_dir.clone(), gpu_engine.clone())
+                    .await?;
 
-        GpuDevices::current()
-            .write()
-            .await
-            .detect(data_dir.clone())
+                GpuDevices::current()
+                    .write()
+                    .await
+                    .detect(data_dir.clone())
+                    .await?;
+
+                Ok(())
+            })
             .await?;
-
-        progress_stepper
-            .mark_step_as_completed(SetupStep::GraxilDetectGPU)
-            .await;
 
         HardwareStatusMonitor::current()
             .initialize_gpu_devices()
@@ -204,7 +215,14 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
     }
 
     async fn finalize_setup(&self) -> Result<(), Error> {
-        self.status_sender.send(PhaseStatus::Success).ok();
+        let progress_stepper = self.progress_stepper.lock().await;
+        let setup_warnings = progress_stepper.get_setup_warnings();
+        if !setup_warnings.is_empty() {
+            self.status_sender.send(PhaseStatus::Success);
+        } else {
+            self.status_sender
+                .send(PhaseStatus::SuccessWithWarnings(setup_warnings.clone()));
+        }
 
         let app_handle_clone = self.app_handle.clone();
         TasksTrackers::current()

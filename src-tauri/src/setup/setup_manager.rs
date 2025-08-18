@@ -20,8 +20,6 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use super::listeners::listener_setup_finished::ListenerSetupFinished;
-use super::listeners::listener_unlock_app::ListenerUnlockApp;
 use super::listeners::listener_unlock_cpu_mining::ListenerUnlockCpuMining;
 use super::listeners::listener_unlock_gpu_mining::ListenerUnlockGpuMining;
 use super::listeners::listener_unlock_wallet::ListenerUnlockWallet;
@@ -37,6 +35,7 @@ use crate::configs::config_ui::WalletUIMode;
 use crate::configs::config_wallet::ConfigWalletContent;
 use crate::events::CriticalProblemPayload;
 use crate::internal_wallet::InternalWallet;
+use crate::progress_trackers::progress_plans::SetupStep;
 use crate::setup::{
     phase_core::CoreSetupPhase, phase_cpu_mining::CpuMiningSetupPhase,
     phase_gpu_mining::GpuMiningSetupPhase, phase_node::NodeSetupPhase,
@@ -166,9 +165,10 @@ pub enum PhaseStatus {
     Initialized,
     AwaitingStart,
     InProgress,
-    Failed,
+    Cancelled,
+    Failed(String),
     Success,
-    SuccessWithWarnings,
+    SuccessWithWarnings(HashMap<SetupStep, String>),
 }
 
 impl Display for PhaseStatus {
@@ -177,10 +177,13 @@ impl Display for PhaseStatus {
             PhaseStatus::None => write!(f, "None"),
             PhaseStatus::Initialized => write!(f, "Initialized"),
             PhaseStatus::AwaitingStart => write!(f, "Awaiting Start"),
+            PhaseStatus::Cancelled => write!(f, "Cancelled"),
             PhaseStatus::InProgress => write!(f, "In Progress"),
-            PhaseStatus::Failed => write!(f, "Failed"),
             PhaseStatus::Success => write!(f, "Success"),
-            PhaseStatus::SuccessWithWarnings => write!(f, "Success With Warnings"),
+            PhaseStatus::SuccessWithWarnings(warnings) => {
+                write!(f, "Success With Warnings: {:?}", warnings)
+            }
+            PhaseStatus::Failed(reason) => write!(f, "Failed: {}", reason),
         }
     }
 }
@@ -189,7 +192,7 @@ impl PhaseStatus {
     pub fn is_success(&self) -> bool {
         matches!(
             self,
-            PhaseStatus::Success | PhaseStatus::SuccessWithWarnings
+            PhaseStatus::Success | PhaseStatus::SuccessWithWarnings(_)
         )
     }
     pub fn is_restarting(&self) -> bool {
@@ -603,10 +606,6 @@ impl SetupManager {
 
         let setup_features = self.features.read().await.clone();
 
-        ListenerSetupFinished::current()
-            .load_setup_features(setup_features.clone())
-            .await;
-
         ListenerUnlockCpuMining::current()
             .load_setup_features(setup_features.clone())
             .await;
@@ -623,7 +622,6 @@ impl SetupManager {
         ListenerUnlockGpuMining::current().handle_restart().await;
         ListenerUnlockWallet::current().handle_restart().await;
 
-        ListenerSetupFinished::current().start_listener().await;
         ListenerUnlockCpuMining::current().start_listener().await;
         ListenerUnlockGpuMining::current().start_listener().await;
         ListenerUnlockWallet::current().start_listener().await;
@@ -715,23 +713,6 @@ impl SetupManager {
         phase_status_channels.insert(SetupPhase::GpuMining, gpu_mining_phase_status.clone());
         phase_status_channels.insert(SetupPhase::Node, node_phase_status.clone());
         phase_status_channels.insert(SetupPhase::Wallet, wallet_phase_status.clone());
-
-        ListenerUnlockApp::current()
-            .load_app_handle(app_handle.clone())
-            .await;
-        setup_listener(
-            ListenerUnlockApp::current(),
-            &setup_features,
-            phase_status_channels.clone(),
-        )
-        .await;
-
-        setup_listener(
-            ListenerSetupFinished::current(),
-            &setup_features,
-            phase_status_channels.clone(),
-        )
-        .await;
 
         setup_listener(
             ListenerUnlockCpuMining::current(),

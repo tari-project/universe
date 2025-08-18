@@ -20,6 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+pub mod listener_critical_problem;
 pub mod listener_unlock_cpu_mining;
 pub mod listener_unlock_gpu_mining;
 pub mod listener_unlock_wallet;
@@ -108,7 +109,7 @@ pub async fn setup_listener<T>(
     setup_features: &SetupFeaturesList,
     phase_status_map: HashMap<SetupPhase, Receiver<PhaseStatus>>,
 ) where
-    T: UnlockConditionsListenerTrait,
+    T: UnlockConditionsListenerTrait + 'static,
 {
     listener.load_setup_features(setup_features.clone()).await;
 

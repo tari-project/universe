@@ -104,6 +104,10 @@ impl SetupPhaseImpl for WalletSetupPhase {
         &self.app_handle
     }
 
+    fn get_status_sender(&self) -> &Sender<PhaseStatus> {
+        &self.status_sender
+    }
+
     async fn get_shutdown_signal(&self) -> ShutdownSignal {
         TasksTrackers::current().wallet_phase.get_signal().await
     }
@@ -207,6 +211,15 @@ impl SetupPhaseImpl for WalletSetupPhase {
     }
 
     async fn finalize_setup(&self) -> Result<(), Error> {
+        let progress_stepper = self.progress_stepper.lock().await;
+        let setup_warnings = progress_stepper.get_setup_warnings();
+        if !setup_warnings.is_empty() {
+            self.status_sender.send(PhaseStatus::Success);
+        } else {
+            self.status_sender
+                .send(PhaseStatus::SuccessWithWarnings(setup_warnings.clone()));
+        }
+
         let app_state = self.get_app_handle().state::<UniverseAppState>().clone();
         let node_status_watch_rx = (*app_state.node_status_watch_rx).clone();
         if InternalWallet::is_internal().await {
@@ -215,8 +228,6 @@ impl SetupPhaseImpl for WalletSetupPhase {
                 .wait_for_initial_wallet_scan(node_status_watch_rx)
                 .await?;
         }
-
-        self.status_sender.send(PhaseStatus::Success).ok();
 
         let config_wallet = ConfigWallet::content().await;
         let is_pin_locked = PinManager::pin_locked().await;

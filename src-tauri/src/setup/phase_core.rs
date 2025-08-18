@@ -20,6 +20,8 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::collections::HashMap;
+
 use log::error;
 use tari_shutdown::ShutdownSignal;
 use tauri::{AppHandle, Manager};
@@ -81,6 +83,7 @@ impl SetupPhaseImpl for CoreSetupPhase {
             app_handle: app_handle.clone(),
             progress_stepper: Mutex::new(CoreSetupPhase::create_progress_stepper(
                 app_handle,
+                status_sender.clone(),
                 timeout_watcher.get_sender(),
             )),
             app_configuration: CoreSetupPhase::load_app_configuration()
@@ -95,6 +98,10 @@ impl SetupPhaseImpl for CoreSetupPhase {
 
     fn get_app_handle(&self) -> &AppHandle {
         &self.app_handle
+    }
+
+    fn get_status_sender(&self) -> &Sender<PhaseStatus> {
+        &self.status_sender
     }
 
     async fn get_shutdown_signal(&self) -> ShutdownSignal {
@@ -117,12 +124,18 @@ impl SetupPhaseImpl for CoreSetupPhase {
 
     fn create_progress_stepper(
         app_handle: AppHandle,
+        status_sender: Sender<PhaseStatus>,
         timeout_watcher_sender: Sender<u64>,
     ) -> ProgressStepper {
         ProgressStepperBuilder::new()
-            .add_step(SetupStep::InitializeApplicationModules)
-            .add_step(SetupStep::NetworkSpeedTest)
-            .build(app_handle, timeout_watcher_sender, SetupPhase::Core)
+            .add_step(SetupStep::InitializeApplicationModules, false)
+            .add_step(SetupStep::NetworkSpeedTest, false)
+            .build(
+                app_handle,
+                timeout_watcher_sender,
+                status_sender,
+                SetupPhase::Core,
+            )
     }
 
     async fn load_app_configuration() -> Result<Self::AppConfiguration, anyhow::Error> {
@@ -149,47 +162,60 @@ impl SetupPhaseImpl for CoreSetupPhase {
     #[allow(clippy::too_many_lines)]
     async fn setup_inner(&self) -> Result<(), anyhow::Error> {
         let mut progress_stepper = self.progress_stepper.lock().await;
-        let state = self.app_handle.state::<UniverseAppState>();
+        let app_handle = self.app_handle.clone();
+        let is_auto_launcher_enabled = self.app_configuration.is_auto_launcher_enabled;
 
         progress_stepper
-            .mark_step_as_completed(SetupStep::InitializeApplicationModules)
+            .mark_step_as_completed(SetupStep::InitializeApplicationModules, move || {
+                let app_handle = app_handle.clone();
+                async move {
+                    let state = app_handle.state::<UniverseAppState>();
+
+                    state
+                        .updates_manager
+                        .init_periodic_updates(app_handle.clone())
+                        .await?;
+
+                    state
+                        .systemtray_manager
+                        .write()
+                        .await
+                        .initialize_tray(app_handle.clone())?;
+
+                    AutoLauncher::current()
+                        .initialize_auto_launcher(is_auto_launcher_enabled)
+                        .await?;
+
+                    state
+                        .mining_status_manager
+                        .write()
+                        .await
+                        .set_app_handle(app_handle.clone());
+
+                    Ok(())
+                }
+            })
             .await;
-
-        state
-            .updates_manager
-            .init_periodic_updates(self.app_handle.clone())
-            .await?;
-
-        let _unused = state
-            .systemtray_manager
-            .write()
-            .await
-            .initialize_tray(self.app_handle.clone());
-
-        let _unused = AutoLauncher::current()
-            .initialize_auto_launcher(self.app_configuration.is_auto_launcher_enabled)
-            .await
-            .inspect_err(
-                |e| error!(target: LOG_TARGET, "Could not initialize auto launcher: {e:?}"),
-            );
-
-        state
-            .mining_status_manager
-            .write()
-            .await
-            .set_app_handle(self.app_handle.clone());
 
         progress_stepper
-            .mark_step_as_completed(SetupStep::NetworkSpeedTest)
+            .mark_step_as_completed(SetupStep::NetworkSpeedTest, || async {
+                NetworkStatus::current().run_speed_test_with_timeout().await;
+                Ok(())
+            })
             .await;
-
-        NetworkStatus::current().run_speed_test_with_timeout().await;
 
         Ok(())
     }
 
     async fn finalize_setup(&self) -> Result<(), anyhow::Error> {
-        self.status_sender.send(PhaseStatus::Success).ok();
+        let progress_stepper = self.progress_stepper.lock().await;
+        let setup_warnings = progress_stepper.get_setup_warnings();
+        if !setup_warnings.is_empty() {
+            self.status_sender.send(PhaseStatus::Success);
+        } else {
+            self.status_sender
+                .send(PhaseStatus::SuccessWithWarnings(setup_warnings.clone()));
+        }
 
         Ok(())
     }

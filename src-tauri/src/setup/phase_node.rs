@@ -89,6 +89,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
             app_handle: app_handle.clone(),
             progress_stepper: Mutex::new(Self::create_progress_stepper(
                 app_handle,
+                status_sender.clone(),
                 timeout_watcher.get_sender(),
             )),
             app_configuration: Self::load_app_configuration().await.unwrap_or_default(),
@@ -101,6 +102,10 @@ impl SetupPhaseImpl for NodeSetupPhase {
 
     fn get_app_handle(&self) -> &AppHandle {
         &self.app_handle
+    }
+
+    fn get_status_sender(&self) -> &Sender<PhaseStatus> {
+        &self.status_sender
     }
 
     async fn get_shutdown_signal(&self) -> ShutdownSignal {
@@ -123,18 +128,24 @@ impl SetupPhaseImpl for NodeSetupPhase {
 
     fn create_progress_stepper(
         app_handle: AppHandle,
+        status_sender: Sender<PhaseStatus>,
         timeout_watcher_sender: Sender<u64>,
     ) -> ProgressStepper {
         ProgressStepperBuilder::new()
-            .add_step(SetupStep::BinariesTor)
-            .add_step(SetupStep::BinariesNode)
-            .add_step(SetupStep::StartTor)
-            .add_step(SetupStep::MigratingDatabase)
-            .add_step(SetupStep::StartingNode)
-            .add_step(SetupStep::WaitingForInitialSync)
-            .add_step(SetupStep::WaitingForHeaderSync)
-            .add_step(SetupStep::WaitingForBlockSync)
-            .build(app_handle.clone(), timeout_watcher_sender, SetupPhase::Node)
+            .add_step(SetupStep::BinariesTor, true)
+            .add_step(SetupStep::BinariesNode, true)
+            .add_step(SetupStep::StartTor, true)
+            .add_step(SetupStep::MigratingDatabase, true)
+            .add_step(SetupStep::StartingNode, true)
+            .add_step(SetupStep::WaitingForInitialSync, true)
+            .add_step(SetupStep::WaitingForHeaderSync, true)
+            .add_step(SetupStep::WaitingForBlockSync, true)
+            .build(
+                app_handle.clone(),
+                timeout_watcher_sender,
+                status_sender,
+                SetupPhase::Node,
+            )
     }
 
     async fn load_app_configuration() -> Result<Self::AppConfiguration, Error> {
@@ -264,7 +275,14 @@ impl SetupPhaseImpl for NodeSetupPhase {
     }
 
     async fn finalize_setup(&self) -> Result<(), Error> {
-        self.status_sender.send(PhaseStatus::Success).ok();
+        let progress_stepper = self.progress_stepper.lock().await;
+        let setup_warnings = progress_stepper.get_setup_warnings();
+        if !setup_warnings.is_empty() {
+            self.status_sender.send(PhaseStatus::Success);
+        } else {
+            self.status_sender
+                .send(PhaseStatus::SuccessWithWarnings(setup_warnings.clone()));
+        }
 
         let app_handle_clone: tauri::AppHandle = self.app_handle.clone();
         let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;

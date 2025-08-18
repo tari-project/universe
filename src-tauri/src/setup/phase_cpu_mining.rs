@@ -90,6 +90,7 @@ impl SetupPhaseImpl for CpuMiningSetupPhase {
             app_handle: app_handle.clone(),
             progress_stepper: Mutex::new(Self::create_progress_stepper(
                 app_handle.clone(),
+                status_sender.clone(),
                 timeout_watcher.get_sender(),
             )),
             app_configuration: Self::load_app_configuration().await.unwrap_or_default(),
@@ -103,6 +104,10 @@ impl SetupPhaseImpl for CpuMiningSetupPhase {
     fn get_app_handle(&self) -> &AppHandle {
         &self.app_handle
     }
+    fn get_status_sender(&self) -> &Sender<PhaseStatus> {
+        &self.status_sender
+    }
+
     async fn get_shutdown_signal(&self) -> ShutdownSignal {
         TasksTrackers::current().cpu_mining_phase.get_signal().await
     }
@@ -126,15 +131,18 @@ impl SetupPhaseImpl for CpuMiningSetupPhase {
 
     fn create_progress_stepper(
         app_handle: AppHandle,
+        status_sender: Sender<PhaseStatus>,
         timeout_watcher_sender: Sender<u64>,
     ) -> ProgressStepper {
         ProgressStepperBuilder::new()
-            .add_step(SetupStep::BinariesCpuMiner)
-            .add_step(SetupStep::BinariesMergeMiningProxy)
-            .add_step(SetupStep::MMProxy)
+            .add_step(SetupStep::BinariesCpuMiner, true)
+            .add_step(SetupStep::BinariesMergeMiningProxy, true)
+            .add_step(SetupStep::MMProxy, true)
+            .add_step(SetupStep::InitializeCpuHardware, false)
             .build(
                 app_handle.clone(),
                 timeout_watcher_sender,
+                status_sender,
                 SetupPhase::CpuMining,
             )
     }
@@ -163,8 +171,11 @@ impl SetupPhaseImpl for CpuMiningSetupPhase {
         let cpu_miner_binary_progress_tracker =
             progress_stepper.track_step_completion_over_time(SetupStep::BinariesCpuMiner);
 
-        binary_resolver
-            .initialize_binary(Binaries::Xmrig, cpu_miner_binary_progress_tracker)
+        progress_stepper
+            .mark_step_as_completed(SetupStep::BinariesCpuMiner, move || {
+                binary_resolver
+                    .initialize_binary(Binaries::Xmrig, cpu_miner_binary_progress_tracker)
+            })
             .await?;
 
         if self
@@ -173,43 +184,53 @@ impl SetupPhaseImpl for CpuMiningSetupPhase {
         {
             let mmproxy_binary_progress_tracker = progress_stepper
                 .track_step_completion_over_time(SetupStep::BinariesMergeMiningProxy);
-            binary_resolver
-                .initialize_binary(Binaries::MergeMiningProxy, mmproxy_binary_progress_tracker)
-                .await?;
 
-            let tari_address = InternalWallet::tari_address().await;
-            let telemetry_id = state
-                .telemetry_manager
-                .read()
-                .await
-                .get_unique_string()
-                .await;
-            let base_node_grpc_address = state.node_manager.get_grpc_address().await?;
-
-            state
-                .mm_proxy_manager
-                .start(StartConfig {
-                    base_node_grpc_address,
-                    base_path: data_dir.clone(),
-                    config_path: config_dir.clone(),
-                    log_path: log_dir.clone(),
-                    tari_address: tari_address.clone(),
-                    coinbase_extra: telemetry_id,
-                    monero_nodes: self.app_configuration.mmproxy_monero_nodes.clone(),
-                    use_monero_fail: self.app_configuration.mmproxy_use_monero_fail,
+            progress_stepper
+                .mark_step_as_completed(SetupStep::BinariesMergeMiningProxy, move || {
+                    binary_resolver.initialize_binary(
+                        Binaries::MergeMiningProxy,
+                        mmproxy_binary_progress_tracker,
+                    )
                 })
                 .await?;
 
-            state.mm_proxy_manager.wait_ready().await?;
+            let mmproxy_monero_nodes = self.app_configuration.mmproxy_monero_nodes.clone();
+            let mmproxy_use_monero_fail = self.app_configuration.mmproxy_use_monero_fail.clone();
+            let state = state.inner().clone();
+
             progress_stepper
-                .mark_step_as_completed(SetupStep::MMProxy)
-                .await;
+                .mark_step_as_completed(SetupStep::MMProxy, async move || {
+                    let tari_address = InternalWallet::tari_address().await;
+                    let telemetry_id = state
+                        .telemetry_manager
+                        .read()
+                        .await
+                        .get_unique_string()
+                        .await;
+                    let base_node_grpc_address = state.node_manager.get_grpc_address().await?;
+
+                    state
+                        .mm_proxy_manager
+                        .start(StartConfig {
+                            base_node_grpc_address,
+                            base_path: data_dir.clone(),
+                            config_path: config_dir.clone(),
+                            log_path: log_dir.clone(),
+                            tari_address: tari_address.clone(),
+                            coinbase_extra: telemetry_id,
+                            monero_nodes: mmproxy_monero_nodes,
+                            use_monero_fail: mmproxy_use_monero_fail,
+                        })
+                        .await?;
+
+                    state.mm_proxy_manager.wait_ready().await?;
+                    Ok(())
+                })
+                .await?;
         } else {
-            // Skip mmproxy download
             progress_stepper
                 .skip_step(SetupStep::BinariesMergeMiningProxy)
                 .await;
-            // Skip mmproxy setup
             progress_stepper.skip_step(SetupStep::MMProxy).await;
         }
 
@@ -221,7 +242,14 @@ impl SetupPhaseImpl for CpuMiningSetupPhase {
     }
 
     async fn finalize_setup(&self) -> Result<(), Error> {
-        self.status_sender.send(PhaseStatus::Success).ok();
+        let progress_stepper = self.progress_stepper.lock().await;
+        let setup_warnings = progress_stepper.get_setup_warnings();
+        if !setup_warnings.is_empty() {
+            self.status_sender.send(PhaseStatus::Success);
+        } else {
+            self.status_sender
+                .send(PhaseStatus::SuccessWithWarnings(setup_warnings.clone()));
+        }
 
         let app_handle_clone = self.app_handle.clone();
         TasksTrackers::current()

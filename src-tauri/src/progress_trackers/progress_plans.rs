@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#[derive(Clone, Eq, PartialEq, Hash)]
+#[derive(Clone, Eq, PartialEq, Hash, Debug)]
 pub enum SetupStep {
     // Core Phase
     InitializeApplicationModules,
@@ -41,12 +41,12 @@ pub enum SetupStep {
     BinariesCpuMiner,
     BinariesMergeMiningProxy,
     MMProxy,
+    InitializeCpuHardware,
 
     // Gpu Mining Phase
-    BinariesGlytexMiner,
-    BinariesGraxilMiner,
-    GlytexDetectGPU,
-    GraxilDetectGPU,
+    BinariesGpuMiner,
+    DetectGpu,
+    InitializeGpuHardware,
 
     // Wallet Phase
     StartWallet,
@@ -75,12 +75,12 @@ impl SetupStep {
             Self::BinariesCpuMiner => "binaries-cpu-miner".to_string(),
             Self::BinariesMergeMiningProxy => "binaries-merge-mining-proxy".to_string(),
             Self::MMProxy => "mm-proxy".to_string(),
+            Self::InitializeCpuHardware => "initialize-cpu-hardware".to_string(),
 
             // Gpu Mining Phase
-            Self::BinariesGlytexMiner => "binaries-glytex-miner".to_string(),
-            Self::BinariesGraxilMiner => "binaries-graxil-miner".to_string(),
-            Self::GlytexDetectGPU => "glytex-detect-gpu".to_string(),
-            Self::GraxilDetectGPU => "graxil-detect-gpu".to_string(),
+            Self::BinariesGpuMiner => "binaries-gpu-miner".to_string(),
+            Self::DetectGpu => "detect-gpu".to_string(),
+            Self::InitializeGpuHardware => "initialize-gpu-hardware".to_string(),
 
             // Wallet Phase
             Self::StartWallet => "start-wallet".to_string(),
@@ -97,30 +97,30 @@ impl SetupStep {
             Self::NetworkSpeedTest => 2,
 
             // Node Phase
-            Self::BinariesTor => 10,
-            Self::BinariesNode => 10,
-            Self::BinariesWallet => 10,
+            Self::BinariesTor => 8,
+            Self::BinariesNode => 8,
+            Self::BinariesWallet => 8,
             Self::StartTor => 2,
-            Self::MigratingDatabase => 4,
-            Self::StartingNode => 4,
-            Self::WaitingForInitialSync => 4,
-            Self::WaitingForHeaderSync => 4,
-            Self::WaitingForBlockSync => 4,
+            Self::MigratingDatabase => 3,
+            Self::StartingNode => 3,
+            Self::WaitingForInitialSync => 3,
+            Self::WaitingForHeaderSync => 3,
+            Self::WaitingForBlockSync => 3,
 
             // Cpu Mining Phase
-            Self::BinariesCpuMiner => 8,
-            Self::BinariesMergeMiningProxy => 8,
+            Self::BinariesCpuMiner => 7,
+            Self::BinariesMergeMiningProxy => 7,
             Self::MMProxy => 2,
+            Self::InitializeCpuHardware => 2,
 
             // Gpu Mining Phase
-            Self::BinariesGlytexMiner => 8,
-            Self::BinariesGraxilMiner => 8,
-            Self::GlytexDetectGPU => 2,
-            Self::GraxilDetectGPU => 2,
+            Self::BinariesGpuMiner => 7,
+            Self::DetectGpu => 2,
+            Self::InitializeGpuHardware => 2,
 
             // Wallet Phase
-            Self::StartWallet => 4,
-            Self::SetupBridge => 4,
+            Self::StartWallet => 3,
+            Self::SetupBridge => 3,
         }
     }
 }
