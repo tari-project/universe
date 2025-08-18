@@ -1,31 +1,34 @@
 import * as m from 'motion/react-m';
 import styled from 'styled-components';
-import { Typography } from '@app/components/elements/Typography.tsx';
 
 export const Wrapper = styled(m.div)`
+    height: 100%;
     width: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: min(10px, 0.75vmin);
     box-sizing: border-box;
+
+    padding: 40px;
+
     & * {
         pointer-events: all;
     }
 `;
 
 export const Content = styled(m.div)`
-    height: 100%;
     will-change: width;
-    width: min(100%, 80vw);
-    display: grid;
-    grid-auto-columns: 100%;
-    grid-template-rows: min-content max-content auto;
-    overflow: hidden;
-    place-content: space-between;
-    gap: min(40px, 2vh);
-    @media (max-height: 955px) {
-        gap: min(20px, 1vh);
+    width: 100%;
+    max-width: 800px;
+
+    display: flex;
+    flex-direction: column;
+    gap: 47px;
+
+    transform: translateY(-20px);
+
+    @media (max-height: 768px) {
+        gap: 40px;
     }
 `;
 
@@ -34,21 +37,37 @@ export const HeaderContent = styled(m.div)`
     flex-direction: column;
     align-items: center;
     text-align: center;
+    gap: 10px;
 `;
 
-export const Heading = styled(Typography).attrs({ variant: 'h1' })`
-    font-size: min(max(26px, 3vw), 48px);
+export const Heading = styled(m.div)`
+    text-align: center;
+    font-family: Poppins, sans-serif;
+    font-size: 48px;
+    font-style: normal;
+    font-weight: 600;
+    line-height: 116%;
+
+    @media (max-height: 768px) {
+        font-size: 40px;
+    }
 `;
 
-export const SubHeading = styled(Typography).attrs({ variant: 'p' })`
-    white-space: pre;
+export const SubHeading = styled(m.div)`
     color: ${({ theme }) => theme.palette.text.secondary};
+
+    text-align: center;
+    font-family: Poppins, sans-serif;
+    font-size: 16px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: 137.5%;
 `;
 
 export const HeaderGraphic = styled.div`
-    width: min(220px, 24vh);
     user-select: none;
     max-width: 100%;
+    transform: translateY(10px);
 
     video {
         width: 169px;
@@ -64,6 +83,7 @@ export const ActionContent = styled(m.div)`
     width: 100%;
     height: 100%;
 `;
+
 export const FooterContent = styled(m.div)`
     display: flex;
     width: 100%;

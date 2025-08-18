@@ -7,14 +7,15 @@ import { SendForm } from './SendForm.tsx';
 import { SendReview } from './SendReview/SendReview.tsx';
 import { StyledForm, Wrapper } from './Send.styles.ts';
 import { invoke } from '@tauri-apps/api/core';
-import { addPendingTransaction, setError as setStoreError } from '@app/store';
+import { setError as setStoreError } from '@app/store';
+import { queryClient } from '@app/App/queryClient.ts';
 
 interface SendModalProps {
     section: string;
     setSection: (section: string) => void;
 }
 export type SendStatus = 'fields' | 'reviewing' | 'processing' | 'completed';
-const defaultValues = { message: '', address: '', amount: undefined };
+const defaultValues = { message: undefined, address: '', amount: undefined };
 
 export default function SendModal({ section, setSection }: SendModalProps) {
     const { t } = useTranslation('wallet');
@@ -26,12 +27,12 @@ export default function SendModal({ section, setSection }: SendModalProps) {
         mode: 'all',
     });
 
-    const { setError, reset } = methods;
+    const { reset } = methods;
 
     const resetForm = () => {
-        setStatus('fields');
-        setIsBack(false);
         reset();
+        setIsBack(false);
+        setStatus('fields');
     };
 
     function handleClose() {
@@ -43,6 +44,8 @@ export default function SendModal({ section, setSection }: SendModalProps) {
         setStatus('fields');
         setIsBack(true);
     }
+
+    const setError = methods.setError;
 
     const handleFormSubmit = useCallback(
         async (data: SendInputs) => {
@@ -72,7 +75,7 @@ export default function SendModal({ section, setSection }: SendModalProps) {
                     ...payload,
                     amount: payload.amount.toString(),
                 });
-                addPendingTransaction(payload);
+                await queryClient.invalidateQueries({ queryKey: ['transactions'] });
                 setStatus('completed');
             } catch (error) {
                 setStoreError(`Error sending transaction: ${error}`);
@@ -95,6 +98,22 @@ export default function SendModal({ section, setSection }: SendModalProps) {
         return `${t('tabs.send')} ${t('tari')}`;
     };
 
+    const formContentMarkup =
+        status === 'fields' ? (
+            <SendForm isBack={isBack} />
+        ) : (
+            <SendReview
+                status={status}
+                setStatus={setStatus}
+                amount={methods.getValues().amount}
+                address={methods.getValues().address}
+                message={methods.getValues().message}
+                networkFee={0.06}
+                feePercentage={0.02}
+                handleClose={handleClose}
+            />
+        );
+
     return (
         <TransactionModal
             show={section === 'send'}
@@ -104,22 +123,7 @@ export default function SendModal({ section, setSection }: SendModalProps) {
         >
             <FormProvider {...methods}>
                 <Wrapper $isLoading={methods.formState.isSubmitting}>
-                    <StyledForm onSubmit={methods.handleSubmit(handleFormSubmit)}>
-                        {status === 'fields' ? (
-                            <SendForm isBack={isBack} />
-                        ) : (
-                            <SendReview
-                                status={status}
-                                setStatus={setStatus}
-                                amount={methods.getValues().amount}
-                                address={methods.getValues().address}
-                                message={methods.getValues().message}
-                                networkFee={0.06}
-                                feePercentage={0.02}
-                                handleClose={handleClose}
-                            />
-                        )}
-                    </StyledForm>
+                    <StyledForm onSubmit={methods.handleSubmit(handleFormSubmit)}>{formContentMarkup}</StyledForm>
                 </Wrapper>
             </FormProvider>
         </TransactionModal>

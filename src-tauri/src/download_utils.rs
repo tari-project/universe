@@ -38,6 +38,9 @@ pub async fn extract(file_path: &Path, dest_dir: &Path) -> Result<(), anyhow::Er
             Some("gz") => {
                 extract_gz(file_path, dest_dir).await?;
             }
+            Some("tgz") => {
+                extract_gz(file_path, dest_dir).await?;
+            }
             Some("zip") => {
                 extract_zip(file_path, dest_dir).await?;
             }
@@ -54,10 +57,8 @@ pub async fn extract(file_path: &Path, dest_dir: &Path) -> Result<(), anyhow::Er
 
 pub async fn extract_gz(gz_path: &Path, dest_dir: &Path) -> std::io::Result<()> {
     let gz_file = std::fs::File::open(gz_path)?;
-    println!("Extracting file at {:?}", gz_path);
     let decoder = GzDecoder::new(std::io::BufReader::new(gz_file));
     let mut archive = Archive::new(decoder);
-    println!("Unpacking to {:?}", dest_dir);
     archive.unpack(dest_dir)?;
     Ok(())
 }
@@ -141,6 +142,15 @@ pub async fn set_permissions(file_path: &Path) -> Result<(), anyhow::Error> {
     let current_mode = perms.mode();
     perms.set_mode(current_mode | 0o111);
     fs::set_permissions(file_path, perms).await?;
+    let after_mode = fs::metadata(file_path).await?.permissions().mode();
+    if after_mode != (current_mode | 0o111) {
+        return Err(anyhow!(
+            "failed to set permissions for file: {}. Mode before: {:o}, after: {:o}",
+            file_path.display(),
+            current_mode,
+            after_mode
+        ));
+    }
     Ok(())
 }
 
@@ -160,7 +170,7 @@ pub async fn validate_checksum(
     let mut hasher = Sha256::new();
     hasher.update(&buffer);
     let hash = hasher.finalize();
-    let hash_hex = format!("{:x}", hash);
+    let hash_hex = format!("{hash:x}");
 
     Ok(hash_hex == expected_checksum)
 }

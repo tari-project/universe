@@ -17,7 +17,7 @@ export interface WebsocketEventType {
 
 function useSetupWebsocket() {
     const airdropTokens = useAirdropStore((s) => s.airdropTokens);
-    const airdropApiUrl = useAirdropStore((s) => s.backendInMemoryConfig?.airdropApiUrl);
+    const airdropApiUrl = useAirdropStore((s) => s.backendInMemoryConfig?.airdrop_api_url);
 
     return useCallback(() => {
         if (airdropApiUrl && airdropTokens) {
@@ -40,13 +40,17 @@ export default function useAirdropWebsocket() {
     }, [startWebsocket, setupComplete]);
 
     useEffect(() => {
-        listen('ws-status-change', (event) => {
-            console.info(`websocket status changed: ${event}`);
+        const unlistenPromise = listen('ws-status-change', (event) => {
+            console.info(`websocket status changed: `, event);
         });
+
+        return () => {
+            unlistenPromise.then((unlisten) => unlisten());
+        };
     }, []);
 
     useEffect(() => {
-        listen<unknown>('ws-rx', (event) => {
+        const unlistenPromise = listen<unknown>('ws-rx', (event) => {
             const payload: WebsocketEventType = event.payload as WebsocketEventType;
             const data = JSON.parse(payload?.data as string);
             switch (payload.event) {
@@ -64,5 +68,9 @@ export default function useAirdropWebsocket() {
                 }
             }
         });
+
+        return () => {
+            unlistenPromise.then((unlisten) => unlisten());
+        };
     }, [globalEventHandler, userEventHandler, userId]);
 }

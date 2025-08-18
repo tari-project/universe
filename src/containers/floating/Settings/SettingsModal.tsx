@@ -17,7 +17,6 @@ import {
     ExperimentalSettings,
     GeneralSettings,
     MiningSettings,
-    PoolMiningSettings,
     WalletSettings,
     ReleaseNotes,
 } from './sections';
@@ -25,17 +24,18 @@ import {
 import { Container, ContentContainer, EndContainer, HeaderContainer, SectionWrapper } from './SettingsModal.styles.ts';
 import { setIsSettingsOpen } from '@app/store';
 import VersionChip from '@app/containers/navigation/components/VersionChip/VersionChip.tsx';
+import { PoolsSettings } from './sections/pools/PoolsSettings.tsx';
 
 const SettingsModal = memo(function SettingsModal() {
     const { t } = useTranslation(['settings'], { useSuspense: false });
     const [activeSection, setActiveSection] = useState<SettingsType>(SETTINGS_TYPES[0]);
     const isSettingsOpen = useAppStateStore((s) => s.isSettingsOpen);
-
     const markups = {
         general: <GeneralSettings />,
         mining: <MiningSettings />,
         connections: <ConnectionsSettings />,
-        p2p: <PoolMiningSettings />,
+        // p2p: <PoolMiningSettings />,
+        pools: <PoolsSettings />,
         wallet: <WalletSettings />,
         airdrop: <AirdropSettings />,
         experimental: <ExperimentalSettings />,

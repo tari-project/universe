@@ -20,12 +20,13 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::{events_manager::EventsManager, gpu_miner::EngineType, UniverseAppState};
-use std::{sync::LazyLock, time::SystemTime};
+use crate::gpu_miner::EngineType;
+use std::{collections::HashMap, sync::LazyLock, time::SystemTime};
 
 use getset::{Getters, Setters};
+use log::warn;
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
 use tokio::sync::RwLock;
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
@@ -33,28 +34,42 @@ use super::trait_config::{ConfigContentImpl, ConfigImpl};
 static INSTANCE: LazyLock<RwLock<ConfigMining>> =
     LazyLock::new(|| RwLock::new(ConfigMining::new()));
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
-pub enum MiningMode {
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub enum MiningModeType {
     Eco,
     Ludicrous,
     Custom,
+    User,
+}
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MiningMode {
+    pub mode_type: MiningModeType,
+    pub mode_name: String,
+    pub cpu_usage_percentage: u32,
+    pub gpu_usage_percentage: u32,
 }
 
-impl MiningMode {
-    pub fn from_str(s: &str) -> Option<MiningMode> {
-        match s {
-            "Eco" => Some(MiningMode::Eco),
-            "Ludicrous" => Some(MiningMode::Ludicrous),
-            "Custom" => Some(MiningMode::Custom),
-            _ => None,
+#[derive(Serialize, Deserialize, Clone, Default)]
+pub struct GpuDeviceSettings {
+    device_id: u32,
+    is_excluded: bool,
+}
+#[derive(Serialize, Deserialize, Clone)]
+pub struct GpuDevicesSettings(HashMap<u32, GpuDeviceSettings>);
+
+impl GpuDevicesSettings {
+    pub fn new() -> Self {
+        Self(HashMap::new())
+    }
+
+    pub fn add(&mut self, device_id: u32) {
+        self.0.entry(device_id).or_default();
+    }
+    pub fn set_excluded(&mut self, device_id: u32, is_excluded: bool) {
+        if let Some(settings) = self.0.get_mut(&device_id) {
+            settings.is_excluded = is_excluded;
         }
     }
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct GpuThreads {
-    pub gpu_name: String,
-    pub max_gpu_threads: u32,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -66,18 +81,13 @@ pub struct GpuThreads {
 pub struct ConfigMiningContent {
     was_config_migrated: bool,
     created_at: SystemTime,
-    mode: MiningMode,
-    eco_mode_cpu_threads: Option<u32>,
+    selected_mining_mode: String,
+    mining_modes: HashMap<String, MiningMode>,
     mine_on_app_start: bool,
-    ludicrous_mode_cpu_threads: Option<u32>,
-    eco_mode_cpu_options: Vec<String>,
-    ludicrous_mode_cpu_options: Vec<String>,
-    custom_mode_cpu_options: Vec<String>,
-    custom_max_cpu_usage: Option<u32>,
-    custom_max_gpu_usage: Vec<GpuThreads>,
     gpu_mining_enabled: bool,
     cpu_mining_enabled: bool,
     gpu_engine: EngineType,
+    gpu_devices_settings: GpuDevicesSettings,
     squad_override: Option<String>,
 }
 
@@ -86,23 +96,101 @@ impl Default for ConfigMiningContent {
         Self {
             was_config_migrated: false,
             created_at: SystemTime::now(),
-            mode: MiningMode::Eco,
-            eco_mode_cpu_threads: None,
+            selected_mining_mode: "Eco".to_string(),
             mine_on_app_start: true,
-            ludicrous_mode_cpu_threads: None,
-            eco_mode_cpu_options: vec![],
-            ludicrous_mode_cpu_options: vec![],
-            custom_mode_cpu_options: vec![],
-            custom_max_cpu_usage: None,
-            custom_max_gpu_usage: vec![],
+            mining_modes: HashMap::from([
+                (
+                    "Eco".to_string(),
+                    MiningMode {
+                        mode_type: MiningModeType::Eco,
+                        mode_name: "Eco".to_string(),
+                        cpu_usage_percentage: 10,
+                        gpu_usage_percentage: 10,
+                    },
+                ),
+                (
+                    "Ludicrous".to_string(),
+                    MiningMode {
+                        mode_type: MiningModeType::Ludicrous,
+                        mode_name: "Ludicrous".to_string(),
+                        cpu_usage_percentage: 80,
+                        gpu_usage_percentage: 90,
+                    },
+                ),
+                (
+                    "Custom".to_string(),
+                    MiningMode {
+                        mode_type: MiningModeType::Custom,
+                        mode_name: "Custom".to_string(),
+                        cpu_usage_percentage: 75,
+                        gpu_usage_percentage: 75,
+                    },
+                ),
+            ]),
             gpu_mining_enabled: true,
             cpu_mining_enabled: true,
             gpu_engine: EngineType::OpenCL,
+            gpu_devices_settings: GpuDevicesSettings::new(),
             squad_override: None,
         }
     }
 }
 impl ConfigContentImpl for ConfigMiningContent {}
+impl ConfigMiningContent {
+    pub fn update_custom_mode_cpu_usage(&mut self, cpu_usage_percentage: u32) -> &mut Self {
+        if let Some(custom_mode) = self.mining_modes.get_mut("Custom") {
+            custom_mode.cpu_usage_percentage = cpu_usage_percentage;
+        }
+        self
+    }
+
+    pub fn update_custom_mode_gpu_usage(&mut self, gpu_usage_percentage: u32) -> &mut Self {
+        if let Some(custom_mode) = self.mining_modes.get_mut("Custom") {
+            custom_mode.gpu_usage_percentage = gpu_usage_percentage;
+        }
+        self
+    }
+
+    /// Populate the GPU devices settings with the given device IDs.
+    /// If a device ID already exists, it will not be added again.
+    pub fn populate_gpu_devices_settings(&mut self, device_ids: Vec<u32>) -> &mut Self {
+        for device_id in device_ids {
+            self.gpu_devices_settings.add(device_id);
+        }
+
+        self
+    }
+
+    pub fn enable_gpu_device_exclusion(&mut self, device_id: u32) -> &mut Self {
+        self.gpu_devices_settings.set_excluded(device_id, true);
+        self
+    }
+
+    pub fn disable_gpu_device_exclusion(&mut self, device_id: u32) -> &mut Self {
+        self.gpu_devices_settings.set_excluded(device_id, false);
+        self
+    }
+
+    pub fn get_selected_cpu_usage_percentage(&self) -> u32 {
+        match self.mining_modes.get(&self.selected_mining_mode) {
+            Some(mode) => mode.cpu_usage_percentage,
+            None => {
+                warn!("Mining mode '{}' not found", self.selected_mining_mode);
+                0
+            }
+        }
+    }
+
+    pub fn get_selected_gpu_usage_percentage(&self) -> u32 {
+        match self.mining_modes.get(&self.selected_mining_mode) {
+            Some(mode) => mode.gpu_usage_percentage,
+            None => {
+                warn!("Mining mode '{}' not found", self.selected_mining_mode);
+                0
+            }
+        }
+    }
+}
 
 pub struct ConfigMining {
     content: ConfigMiningContent,
@@ -111,16 +199,8 @@ pub struct ConfigMining {
 
 impl ConfigMining {
     pub async fn initialize(app_handle: AppHandle) {
-        let state = app_handle.state::<UniverseAppState>();
         let mut config = Self::current().write().await;
         config.load_app_handle(app_handle.clone()).await;
-        state
-            .cpu_miner_config
-            .write()
-            .await
-            .load_from_config_mining(config._get_content());
-
-        EventsManager::handle_config_mining_loaded(&app_handle, config.content.clone()).await;
     }
 }
 

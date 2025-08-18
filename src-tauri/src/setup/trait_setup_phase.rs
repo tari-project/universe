@@ -23,12 +23,18 @@
 use std::{path::PathBuf, time::Duration};
 
 use anyhow::Error;
+use tari_shutdown::ShutdownSignal;
 use tauri::{AppHandle, Manager};
 use tokio::sync::watch::{Receiver, Sender};
+use tokio_util::task::TaskTracker;
 
 use crate::progress_trackers::ProgressStepper;
 
-use super::setup_manager::PhaseStatus;
+use super::{
+    listeners::SetupFeaturesList,
+    setup_manager::{PhaseStatus, SetupPhase},
+    utils::timeout_watcher::TimeoutWatcher,
+};
 
 #[derive(Clone, Default)]
 pub struct SetupConfiguration {
@@ -43,13 +49,20 @@ pub trait SetupPhaseImpl {
         app_handle: AppHandle,
         status_sender: Sender<PhaseStatus>,
         configuration: SetupConfiguration,
+        setup_features: SetupFeaturesList,
     ) -> Self;
-    fn create_progress_stepper(app_handle: AppHandle) -> ProgressStepper;
+    fn create_progress_stepper(
+        app_handle: AppHandle,
+        timeout_watcher_sender: Sender<u64>,
+    ) -> ProgressStepper;
     async fn load_app_configuration() -> Result<Self::AppConfiguration, Error>;
     async fn setup(self);
-    async fn setup_inner(&self) -> Result<(), Error>;
-    async fn finalize_setup(&self) -> Result<(), Error>;
-    fn get_app_handle(&self) -> &AppHandle;
+    fn setup_inner(
+        &self,
+    ) -> impl std::future::Future<Output = Result<(), Error>> + std::marker::Send;
+    fn finalize_setup(
+        &self,
+    ) -> impl std::future::Future<Output = Result<(), Error>> + std::marker::Send;
     fn get_app_dirs(&self) -> Result<(PathBuf, PathBuf, PathBuf), Error> {
         let data_dir = self
             .get_app_handle()
@@ -69,4 +82,10 @@ pub trait SetupPhaseImpl {
 
         Ok((data_dir, config_dir, log_dir))
     }
+    async fn get_shutdown_signal(&self) -> ShutdownSignal;
+    async fn get_task_tracker(&self) -> TaskTracker;
+    fn get_app_handle(&self) -> &AppHandle;
+    fn get_phase_id(&self) -> SetupPhase;
+    fn get_phase_dependencies(&self) -> Vec<Receiver<PhaseStatus>>;
+    fn get_timeout_watcher(&self) -> &TimeoutWatcher;
 }

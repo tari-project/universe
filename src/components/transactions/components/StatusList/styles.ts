@@ -4,6 +4,7 @@ import { SendStatus } from '../../send/SendModal';
 export const Wrapper = styled('div')`
     display: flex;
     flex-direction: column;
+    width: 100%;
 `;
 
 export const Entry = styled.div`
@@ -58,6 +59,17 @@ export const Value = styled.div<{ $status?: SendStatus }>`
         css`
             color: #36c475;
         `}
+`;
+
+export const ValueLeft = styled.div`
+    display: flex;
+    align-items: baseline;
+    span {
+        line-height: 1;
+        font-size: 10px;
+        vertical-align: bottom;
+        display: flex;
+    }
 `;
 
 export const ValueRight = styled.div`

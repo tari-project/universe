@@ -1,9 +1,11 @@
 {
+  "all-activity": "All activity",
   "confirmation-message": "Votre transaction a été soumise !\nElle apparaîtra dans votre historique après le minage de quelques blocs.",
   "empty-tx": "Aucune transaction trouvée",
   "history": {
     "available-balance": "Disponible",
     "label-rewards": "Mes récompenses",
+    "my-balance": "My Balance",
     "sync-with-phone": "Synchroniser avec le téléphone",
     "transaction-details": "Détails de la transaction",
     "view-details": "Voir les détails"
@@ -18,11 +20,39 @@
     "tooltip-emoji-id-text2": "Support Yat bientôt disponible !",
     "tooltip-emoji-id-title": "ID Emoji"
   },
+  "rewards": "Rewards",
+  "security": {
+    "keychain": {
+      "enable": "Enable Keychain Access",
+      "warning": "Keychain access is required for this operation.\nPlease try again and select “allow”."
+    },
+    "pin": {
+      "create": "Create PIN",
+      "create-confirm": "Confirm PIN",
+      "creation-subtitle": "Set a secure PIN code to protect your wallet on this device.\nYour PIN stays private—it’s never stored or shared with Tari Universe.",
+      "creation-subtitle-confirm": "Enter your PIN again to confirm it is correct.",
+      "creation-title": "Create your Wallet PIN",
+      "creation-title-confirm": "Confirm your PIN",
+      "enter": "Enter your PIN",
+      "enter-new": "Enter a new PIN",
+      "enter-skip": "Skip for now",
+      "error-match": "That’s not quite right. Try again or create a new PIN.",
+      "explainer": "If you forget this PIN, the only way to regain access to your wallet is by restoring it from your seed phrase.",
+      "forgot": "Forgot PIN"
+    },
+    "reminder": {
+      "description": "You haven't secured your wallet yet. Backing up your seed phrase keeps your tokens safe and ensures only you can access them.\\nLet's do it now—it'll only take a moment",
+      "maybe-later": "Maybe later",
+      "start-now": "Start now",
+      "title": "Protect your Tari"
+    }
+  },
   "send": {
     "balance": "Solde",
+    "broadcast": "Diffusion",
     "completed": "Terminé",
     "completed-amount-sent": "a été envoyé à",
-    "completed-text": "Votre transfert est maintenant terminé.",
+    "completed-text": "Votre soumission de transfert est maintenant complète et sera diffusée.",
     "completed-title": "C\"est terminé !",
     "cta-confirm": "Confirmer",
     "cta-review": "Vérifier",
@@ -59,12 +89,88 @@
     "transaction-description": "Description de la transaction",
     "transaction-id": "ID de transaction"
   },
+  "swap": {
+    "accept": "Accepter",
+    "approve-and-buy": "Approuver & Acheter",
+    "approving-spend": "Approbation de la dépense",
+    "awaiting-approval": "En attente d'approbation",
+    "back-button": "Retour",
+    "balance": "Solde",
+    "block-hash": "Hash du bloc",
+    "buy-tari": "Acheter Tari",
+    "buy-tari-subtitle": "Buy Tari from any of these supported exchanges.",
+    "buy-tari-wxtm": "Acheter Tari (wXTM)",
+    "completed": "Terminé",
+    "connect-not-supported": "Connecteur WalletConnect non trouvé.",
+    "connect-wallet": "Connecter le portefeuille (ETH)",
+    "connect-wallet-text": "En attente de connexion",
+    "done": "Fait",
+    "enter-amount": "Entrer le montant",
+    "error": "Fermer",
+    "error-message": "Message d'erreur",
+    "ethereum-txn": "Transaction Ethereum",
+    "loading": "Chargement...",
+    "minimum-received": "Minimum reçu",
+    "network-cost": "Coût du réseau",
+    "network-fee": "Frais de réseau",
+    "new-output": "Nouvelle sortie",
+    "no-other-tokens-available": "Aucun autre jeton disponible.",
+    "please-confirm-approval-in-wallet": "Veuillez confirmer l'approbation dans votre portefeuille",
+    "price-impact": "Impact sur le prix",
+    "processing": "Traitement",
+    "processing-swap": "Échange en cours",
+    "rate": "Taux",
+    "receive-estimated": "Recevoir (estimé)",
+    "review-swap": "Vérifier l'échange",
+    "scan-qr-code": "Scannez le QR code pour connecter votre portefeuille sur votre téléphone",
+    "select-token": "Sélectionner un jeton",
+    "sell": "Vendre",
+    "sign-message": "Signez le message sur votre appareil mobile",
+    "sign-message-text": "Approuvez cette transaction avec Metamask sur votre appareil mobile. Une fois signée, votre transaction sera traitée.",
+    "slippage-tolerance": "Tolérance de glissement",
+    "status": "Statut",
+    "step": "Étape",
+    "swap-failed": "Échange échoué",
+    "swap-successful": "Échange réussi",
+    "total-fees": "Frais totaux",
+    "total-fees-approval": "Frais totaux (Approbation)",
+    "total-fees-paid": "Frais totaux payés",
+    "total-fees-swap": "Frais totaux (Échange)",
+    "transaction-could-not-be-completed": "La transaction n'a pas pu être complétée",
+    "transaction-id": "ID de transaction",
+    "waiting-for-response": "En attente de réponse",
+    "you-will-receive": "Vous recevrez {{symbol}} sur (adresse du portefeuille Tari)",
+    "your-purchase-is-processing": "Votre achat est en cours de traitement. Cela peut prendre quelques minutes.",
+    "your-tokens-have-been-swapped": "Vos jetons ont été échangés",
+    "your-transaction-is-being-processed": "Votre transaction est en cours de traitement",
+    "your-xtm-is-on-the-way": "Votre XTM est en route !"
+  },
+  "sync-message": {
+    "completed": "Any moment now",
+    "line1": "Sync in progress. ",
+    "line2": " remaining",
+    "line3": "until your wallet balance is displayed",
+    "tooltip-description": "This was your last synced balance, we'll update it once the wallet is ready.",
+    "tooltip-description-mining": "This was your last synced balance, we'll update it once the wallet is ready. But don’t worry, you’re actively mining and earning XTM.",
+    "tooltip-title": "Why the delay?",
+    "top-line": "You are now mining Tari XTM"
+  },
   "tabs": {
     "history": "Historique",
     "receive": "Recevoir",
     "send": "Envoyer"
   },
   "tari": "Tari",
-  "wallet-is-scanning": "Le portefeuille est en cours de scan...",
-  "wallet-scanning-with-progress": "Le portefeuille est en cours de scan : {{scanned}}/{{total}} ({{percent}}%)"
+  "transactions": "Transactions",
+  "wallet-connected": "Portefeuille connecté",
+  "wallet-is-scanning": "<strong>Wallet is loading...</strong>",
+  "wallet-scanning-with-progress": "<strong>Wallet is loading {{percentage}}%</strong> {{scanned}} / {{total}}",
+  "xc": {
+    "buy-tari": "Buy Tari from an exchange",
+    "buy-tari-subtitle": "Available on selected exchanges.",
+    "mine-directly-to": "Mine directly to an exchange",
+    "mine-directly-to-exchange": "{{exchangeName}}",
+    "mining-here": "Mining here",
+    "or": "or"
+  }
 }

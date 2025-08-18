@@ -1,38 +1,37 @@
-import { refreshTransactions, setWalletBalance } from '@app/store/actions';
+import { setWalletBalance } from '@app/store/actions';
 
-let winTimeout: NodeJS.Timeout | undefined;
-let failTimeout: NodeJS.Timeout | undefined;
 import { create } from './create';
 import { useMiningStore } from './useMiningStore.ts';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { BlockTimeData } from '@app/types/mining.ts';
+
 import { setAnimationState } from '@tari-project/tari-tower';
 import { TransactionInfo, WalletBalance } from '@app/types/app-status.ts';
 import { setMiningControlsEnabled } from './actions/miningStoreActions.ts';
-import { refreshPendingTransactions, updateWalletScanningProgress, useWalletStore } from './useWalletStore.ts';
+import { CombinedBridgeWalletTransaction, updateWalletScanningProgress, useWalletStore } from './useWalletStore.ts';
+import { useConfigUIStore } from '@app/store/useAppConfigStore.ts';
+import { refreshTransactions } from '@app/hooks/wallet/useFetchTxHistory.ts';
 
 const appWindow = getCurrentWindow();
-
+interface LatestBlockPayload {
+    block_height: number;
+    coinbase_transaction?: TransactionInfo;
+    balance: WalletBalance;
+}
 interface Recap {
     count: number;
     totalEarnings: number;
 }
 interface State {
-    displayBlockTime?: BlockTimeData;
-    debugBlockTime?: BlockTimeData;
-    displayBlockHeight?: number;
     earnings?: number;
     recapData?: Recap;
     recapCount?: number;
     rewardCount?: number;
-    recapIds: TransactionInfo['tx_id'][];
-    replayItem?: TransactionInfo;
+    recapIds: number[];
+    replayItem?: CombinedBridgeWalletTransaction;
+    latestBlockPayload?: LatestBlockPayload;
 }
 
 interface Actions {
-    setDisplayBlockHeight: (displayBlockHeight: number) => void;
-    setDisplayBlockTime: (displayBlockTime: BlockTimeData) => void;
-    setDebugBlockTime: (displayBlockTime: BlockTimeData) => void;
     setRecapCount: (recapCount?: number) => void;
     setRewardCount: (rewardCount?: number) => void;
 }
@@ -52,9 +51,6 @@ const getSuccessTier = (earnings: number) => {
 
 export const useBlockchainVisualisationStore = create<BlockchainVisualisationStoreState>()((set) => ({
     recapIds: [],
-    setDisplayBlockHeight: (displayBlockHeight) => set({ displayBlockHeight }),
-    setDisplayBlockTime: (displayBlockTime) => set({ displayBlockTime }),
-    setDebugBlockTime: (debugBlockTime) => set({ debugBlockTime }),
     setRecapCount: (recapCount) => set({ recapCount }),
     setRewardCount: (rewardCount) => set({ rewardCount }),
 }));
@@ -68,109 +64,84 @@ const handleWin = async (coinbase_transaction: TransactionInfo, balance: WalletB
     useBlockchainVisualisationStore.setState((curr) => ({ rewardCount: (curr.rewardCount || 0) + 1 }));
     if (canAnimate) {
         setMiningControlsEnabled(false);
-        const successTier = getSuccessTier(earnings);
-
-        setAnimationState(successTier);
-        useBlockchainVisualisationStore.setState({ earnings });
-        if (winTimeout) {
-            clearTimeout(winTimeout);
+        const visualModeEnabled = useConfigUIStore.getState().visual_mode;
+        if (visualModeEnabled) {
+            const successTier = getSuccessTier(earnings);
+            setAnimationState(successTier);
         }
-        winTimeout = setTimeout(async () => {
-            useBlockchainVisualisationStore.setState({ displayBlockHeight: blockHeight, earnings: undefined });
-            await refreshTransactions();
-            refreshPendingTransactions();
-            setWalletBalance(balance);
-            setMiningControlsEnabled(true);
-        }, 2000);
+        useBlockchainVisualisationStore.setState((c) => ({ ...c, earnings }));
+        await refreshTransactions();
+        await setWalletBalance(balance);
+        setMiningControlsEnabled(true);
+        useBlockchainVisualisationStore.setState((c) => ({ ...c, earnings: undefined, latestBlockPayload: undefined }));
     } else {
         await refreshTransactions();
-        refreshPendingTransactions();
         useBlockchainVisualisationStore.setState((curr) => ({
             recapIds: [...curr.recapIds, coinbase_transaction.tx_id],
             displayBlockHeight: blockHeight,
             earnings: undefined,
+            latestBlockPayload: undefined,
         }));
     }
 };
-const handleFail = async (blockHeight: number, balance: WalletBalance, canAnimate: boolean) => {
-    if (canAnimate) {
+const handleFail = async (balance: WalletBalance, canAnimate: boolean) => {
+    const visualModeEnabled = useConfigUIStore.getState().visual_mode;
+    if (canAnimate && visualModeEnabled) {
         setMiningControlsEnabled(false);
         setAnimationState('fail');
-        if (failTimeout) {
-            clearTimeout(failTimeout);
-        }
-        failTimeout = setTimeout(async () => {
-            useBlockchainVisualisationStore.setState({ displayBlockHeight: blockHeight });
-            setMiningControlsEnabled(true);
-            await refreshTransactions();
-            refreshPendingTransactions();
-            setWalletBalance(balance);
-        }, 1000);
-    } else {
-        useBlockchainVisualisationStore.setState({ displayBlockHeight: blockHeight });
+        await refreshTransactions();
+        await setWalletBalance(balance);
+        setMiningControlsEnabled(true);
     }
+    useBlockchainVisualisationStore.setState((c) => ({ ...c, latestBlockPayload: undefined }));
 };
 
 export const handleWinRecap = (recapData: Recap) => {
     setMiningControlsEnabled(false);
     const successTier = getSuccessTier(recapData.totalEarnings);
     setAnimationState(successTier);
-    useBlockchainVisualisationStore.setState({ recapData, recapCount: recapData.count });
-    setTimeout(() => {
-        setMiningControlsEnabled(true);
-        useBlockchainVisualisationStore.setState({ recapData: undefined, recapIds: [] });
-    }, 2000);
+    useBlockchainVisualisationStore.setState((c) => ({ ...c, recapData, recapCount: recapData.count }));
 };
-export const handleWinReplay = (txItem: TransactionInfo) => {
-    const earnings = txItem.amount;
+export const handleWinReplay = (txItem: CombinedBridgeWalletTransaction) => {
+    const earnings = txItem.tokenAmount;
     const successTier = getSuccessTier(earnings);
-    useBlockchainVisualisationStore.setState({ replayItem: txItem });
+    useBlockchainVisualisationStore.setState((c) => ({ ...c, replayItem: txItem }));
     setAnimationState(successTier, true);
-    setTimeout(() => {
-        useBlockchainVisualisationStore.setState({ replayItem: undefined });
-    }, 1500);
 };
 
-let newBlockDebounceTimeout: NodeJS.Timeout | undefined = undefined;
-const BLOCK_DEBOUNCE_DELAY = 200;
-let latestBlockPayload:
-    | {
-          block_height: number;
-          coinbase_transaction?: TransactionInfo;
-          balance: WalletBalance;
-      }
-    | undefined = undefined;
+export const handleReplayComplete = () => {
+    const wasRecap = !!useBlockchainVisualisationStore.getState().recapData;
+    useBlockchainVisualisationStore.setState((c) => ({
+        ...c,
+        replayItem: undefined,
+    }));
+    if (wasRecap) {
+        setMiningControlsEnabled(true);
+        useBlockchainVisualisationStore.setState((c) => ({ ...c, recapData: undefined, recapIds: [] }));
+    }
+};
 
-async function processNewBlock(payload: {
+export async function processNewBlock(payload: {
     block_height: number;
     coinbase_transaction?: TransactionInfo;
     balance: WalletBalance;
 }) {
-    if (useMiningStore.getState().miningInitiated) {
+    if (useMiningStore.getState().isCpuMiningInitiated || useMiningStore.getState().isGpuMiningInitiated) {
         const minimized = await appWindow?.isMinimized();
         const documentIsVisible = document?.visibilityState === 'visible' || false;
         const canAnimate = !minimized && documentIsVisible;
-
         if (payload.coinbase_transaction) {
             await handleWin(payload.coinbase_transaction, payload.balance, canAnimate);
         } else {
-            await handleFail(payload.block_height, payload.balance, canAnimate);
+            await handleFail(payload.balance, canAnimate);
         }
     } else {
-        useBlockchainVisualisationStore.setState({ displayBlockHeight: payload.block_height });
-        console.info('Mining not initiated. Block height updated.');
         await refreshTransactions();
-        refreshPendingTransactions();
     }
 }
 
-export const handleNewBlock = async (payload: {
-    block_height: number;
-    coinbase_transaction?: TransactionInfo;
-    balance: WalletBalance;
-}) => {
-    latestBlockPayload = payload;
-
+export const handleNewBlockPayload = async (payload: LatestBlockPayload) => {
+    useBlockchainVisualisationStore.setState((c) => ({ ...c, latestBlockPayload: payload }));
     const isWalletScanned = !useWalletStore.getState().wallet_scanning?.is_scanning;
     if (!isWalletScanned) {
         updateWalletScanningProgress({
@@ -179,15 +150,4 @@ export const handleNewBlock = async (payload: {
             total_height: payload.block_height,
         });
     }
-
-    if (newBlockDebounceTimeout) {
-        clearTimeout(newBlockDebounceTimeout);
-    }
-    newBlockDebounceTimeout = setTimeout(async () => {
-        if (latestBlockPayload) {
-            await processNewBlock(latestBlockPayload);
-            latestBlockPayload = undefined;
-        }
-        newBlockDebounceTimeout = undefined;
-    }, BLOCK_DEBOUNCE_DELAY);
 };

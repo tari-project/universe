@@ -23,7 +23,6 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use chrono::Utc;
 use futures::SinkExt;
 use futures::StreamExt;
 use log::trace;
@@ -93,12 +92,6 @@ pub enum WebsocketManagerStatusMessage {
     Stopped,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub struct WebsocketStoredMessage {
-    pub time: chrono::DateTime<Utc>,
-    pub data: serde_json::Value,
-}
-
 pub struct WebsocketManager {
     app_in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
     app: Option<AppHandle>,
@@ -140,7 +133,7 @@ impl WebsocketManager {
                 drop(main_window
                     .clone()
                     .emit("ws-status-change", new_state.clone()).inspect_err(|e|{
-                        error!(target:LOG_TARGET,"could not send ws-status-change event: {:?} error: {}",new_state, e.to_string());
+                        error!(target:LOG_TARGET,"could not send ws-status-change event: {new_state:?} error: {e}");
                     }));
             }
         });
@@ -153,7 +146,7 @@ impl WebsocketManager {
     async fn connect_to_url(
         in_memory_config: &Arc<RwLock<AppInMemoryConfig>>,
     ) -> Result<WebSocketStream<MaybeTlsStream<TcpStream>>, anyhow::Error> {
-        info!(target:LOG_TARGET,"connecting to websocket...");
+        info!(target:LOG_TARGET,"connecting to websocket... [{}:{}]", file!(), line!());
         let config_read = in_memory_config.read().await;
         let mut adjusted_ws_url = config_read.airdrop_api_url.clone();
         if adjusted_ws_url.contains("https") {
@@ -161,6 +154,7 @@ impl WebsocketManager {
         } else {
             adjusted_ws_url = config_read.airdrop_api_url.clone().replace("http", "ws");
         }
+        drop(config_read);
 
         let app_id = ConfigCore::content().await.anon_id().clone();
         adjusted_ws_url.push_str(&format!("/v2/ws?app_id={}", encode(&app_id)));
@@ -240,7 +234,7 @@ impl WebsocketManager {
                 tokio::select! {
                     _ = async {
                         let connection_res = WebsocketManager::connect_to_url(&config_cloned).await.inspect_err(|e|{
-                            error!(target:LOG_TARGET,"failed to connect to websocket due to {}",e.to_string())});
+                            error!(target:LOG_TARGET,"failed to connect to websocket due to {e}")});
 
                         if let Ok(connection) = connection_res {
                             WebsocketManager::listen(connection,app_cloned.clone(),
@@ -337,7 +331,7 @@ async fn sender_task(
                     .send(Message::Text(Utf8Bytes::from(message_as_json.clone())))
                     .await
                     .inspect_err(|e| {
-                        error!(target:LOG_TARGET,"Failed to send websocket message: {}", e);
+                        error!(target:LOG_TARGET,"Failed to send websocket message: {e}");
                     })?;
                  // info!(target:LOG_TARGET,"websocket event sent to airdrop {:?}", message_as_json);
             },
@@ -377,15 +371,15 @@ async fn receiver_task(
                     match msg_or_error {
                         Result::Ok(msg) => match msg {
                             Message::Text(text) => {
-                                info!(target:LOG_TARGET,"websocket message received {}", text);
+                                info!(target:LOG_TARGET,"websocket message received {text}");
                                 let message_as_str = text.as_str();
                                 let messsage_value = serde_json::from_str::<Value>(message_as_str).inspect_err(|e|{
-                                            error!(target:LOG_TARGET,"Received text websocket message that cannot be transformed to JSON: {}", e);
+                                            error!(target:LOG_TARGET,"Received text websocket message that cannot be transformed to JSON: {e}");
                                         }).ok();
 
                                 if let Some(message) = messsage_value {
                                     drop(app.emit("ws-rx", message).inspect_err(|e|{
-                                                error!(target:LOG_TARGET,"Received text websocket message cannot be sent to frontend: {}", e);
+                                                error!(target:LOG_TARGET,"Received text websocket message cannot be sent to frontend: {e}");
                                             }));
                                 }
                             }
@@ -398,7 +392,7 @@ async fn receiver_task(
                             }
                         },
                         Result::Err(e) => {
-                            error!(target: LOG_TARGET,"error at receiving websocket stream message {}",e);
+                            error!(target: LOG_TARGET,"error at receiving websocket stream message {e}");
                             return;
                         }
                     }

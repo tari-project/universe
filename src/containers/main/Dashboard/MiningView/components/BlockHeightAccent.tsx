@@ -1,15 +1,14 @@
 import { useEffect } from 'react';
 import { useMotionValue, useTransform, useMotionValueEvent } from 'motion/react';
 
-import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore';
 import { AccentText, AccentWrapper, SpacedNum } from './BlockHeightAccent.styles';
+import { useFetchExplorerData } from '@app/hooks/mining/useFetchExplorerData.ts';
 
 export function BlockHeightAccent() {
-    const height = useBlockchainVisualisationStore((s) => s.displayBlockHeight);
-    const heightString = height?.toString();
+    const { data } = useFetchExplorerData();
 
-    const heightStringArr = heightString?.split('') || [];
-
+    const heightString = data?.currentBlock?.height?.toString() || '0';
+    const heightStringArr = heightString?.length ? heightString?.split('') : [];
     const windowDimensions = useMotionValue({ height: window.innerHeight, width: window.innerWidth });
     const width = useMotionValue(170);
     const scale = useMotionValue(7.5);

@@ -1,12 +1,13 @@
-import { Column, MarkGroup, RulerMark, RulerMarkGroup, Wrapper } from './Ruler.styles.ts';
 import { useTheme } from 'styled-components';
 import { useLayoutEffect, useRef } from 'react';
-import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore.ts';
 import { useMotionValue } from 'motion/react';
+import { useFetchExplorerData } from '@app/hooks/mining/useFetchExplorerData.ts';
+import { Column, MarkGroup, RulerMark, RulerMarkGroup, Wrapper } from './Ruler.styles.ts';
 
 export function Ruler() {
     const theme = useTheme();
-    const height = useBlockchainVisualisationStore((s) => s.displayBlockHeight);
+    const { data } = useFetchExplorerData();
+    const height = data?.currentBlock?.height ? Number(data?.currentBlock?.height) : 0;
     const windowWidth = useMotionValue(window.innerWidth);
 
     const columnRef = useRef<HTMLDivElement>(null);

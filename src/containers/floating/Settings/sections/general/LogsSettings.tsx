@@ -8,7 +8,7 @@ import { SendLogsDialog } from '@app/components/dialogs/SendLogsDialog.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
-import { useCopyToClipboard } from '@app/hooks';
+import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard.ts';
 import { useAppStateStore } from '@app/store/appStateStore.ts';
 
 import {
@@ -36,37 +36,37 @@ export default function LogsSettings() {
     };
 
     return (
-        <SettingsGroupWrapper>
-            <SettingsGroup>
-                <SettingsGroupContent>
-                    <SettingsGroupTitle>
-                        <Typography variant="h6">{t('report-issue', { ns: 'settings' })}</Typography>
-                    </SettingsGroupTitle>
-                    {issueReference && (
-                        <Stack direction="row" alignItems="center" justifyContent="flex-start" gap={5}>
-                            {/* TODO: consider moving reference to dialog?*/}
-                            <Typography>
-                                <Trans
-                                    t={t}
-                                    i18nKey="your-reference"
-                                    ns="settings"
-                                    values={{ logRef: issueReference }}
-                                    components={{ bold: <strong />, br: <br /> }}
-                                />
-                            </Typography>
-                            <IconButton onClick={() => copyToClipboard(issueReference)} size="small">
-                                {!isCopied ? <IoCopyOutline /> : <IoCheckmarkOutline />}
-                            </IconButton>
-                        </Stack>
-                    )}
-                </SettingsGroupContent>
-
-                <SettingsGroupAction>
-                    <Button onClick={openLogsDirectory}>{t('open-logs-directory', { ns: 'settings' })}</Button>
-                    <Button onClick={() => setDialogToShow('logs')}>{t('send-logs', { ns: 'settings' })}</Button>
-                </SettingsGroupAction>
-                <SendLogsDialog onSetReference={(reference) => setIssueReference(reference)} />
-            </SettingsGroup>
-        </SettingsGroupWrapper>
+        <>
+            <SettingsGroupWrapper>
+                <SettingsGroup>
+                    <SettingsGroupContent>
+                        <SettingsGroupTitle>
+                            <Typography variant="h6">{t('report-issue', { ns: 'settings' })}</Typography>
+                        </SettingsGroupTitle>
+                        {issueReference && (
+                            <Stack direction="row" alignItems="flex-end" justifyContent="flex-start" gap={10}>
+                                <Typography variant="p">
+                                    <Trans
+                                        t={t}
+                                        i18nKey="your-reference"
+                                        ns="settings"
+                                        values={{ logRef: issueReference }}
+                                        components={{ bold: <strong /> }}
+                                    />
+                                </Typography>
+                                <IconButton onClick={() => copyToClipboard(issueReference)} size="small">
+                                    {!isCopied ? <IoCopyOutline /> : <IoCheckmarkOutline />}
+                                </IconButton>
+                            </Stack>
+                        )}
+                    </SettingsGroupContent>
+                    <SettingsGroupAction>
+                        <Button onClick={openLogsDirectory}>{t('open-logs-directory', { ns: 'settings' })}</Button>
+                        <Button onClick={() => setDialogToShow('logs')}>{t('send-logs', { ns: 'settings' })}</Button>
+                    </SettingsGroupAction>
+                </SettingsGroup>
+            </SettingsGroupWrapper>
+            <SendLogsDialog onSetReference={(reference) => setIssueReference(reference)} />
+        </>
     );
 }

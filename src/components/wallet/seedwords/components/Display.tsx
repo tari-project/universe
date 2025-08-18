@@ -1,4 +1,4 @@
-import { memo, useState } from 'react';
+import { memo } from 'react';
 import { AddSeedWordsWrapper, CTAWrapper, DisplayWrapper, HiddenWrapper, WordsWrapper } from './display.styles.ts';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
@@ -7,17 +7,14 @@ import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 
 interface DisplayProps {
     words: string[];
+    isVisible: boolean;
     isLoading?: boolean;
-    onToggleClick: () => void;
-    isGenerated?: boolean;
-    isMonero?: boolean;
+    onToggleClick?: (currentVisibilty?: boolean) => void;
+    isSeedlessUI?: boolean;
 }
-const Display = memo(function Display({ words, onToggleClick, isLoading, isGenerated, isMonero }: DisplayProps) {
-    const [isVisible, setIsVisible] = useState(false);
-
+const Display = memo(function Display({ isVisible, words, onToggleClick, isLoading, isSeedlessUI }: DisplayProps) {
     function handleToggleClick() {
-        onToggleClick();
-        setIsVisible((c) => !c);
+        onToggleClick?.(isVisible);
     }
 
     const wordAmount = words?.length || 0;
@@ -43,6 +40,12 @@ const Display = memo(function Display({ words, onToggleClick, isLoading, isGener
         </HiddenWrapper>
     );
 
+    const emptySeedWords = (
+        <AddSeedWordsWrapper>
+            <Typography variant="p">{`Add seedwords to restore another Tari Address`}</Typography>
+        </AddSeedWordsWrapper>
+    );
+
     const toggleIcon = isVisible ? <IoEyeOffOutline /> : <IoEyeOutline />;
 
     const toggleCTA = (
@@ -54,17 +57,11 @@ const Display = memo(function Display({ words, onToggleClick, isLoading, isGener
     );
 
     const generatedDisplay = isVisible && !isLoading ? wordMarkup : hiddenMarkup;
-    const notGeneratedDisplay = (
-        <AddSeedWordsWrapper>
-            <Typography variant="p">{`Add seedwords to restore another Tari Address`}</Typography>
-        </AddSeedWordsWrapper>
-    );
 
-    const markup = !isMonero && !isGenerated ? notGeneratedDisplay : generatedDisplay;
     return (
         <DisplayWrapper $rows={rowCount} $isHidden={!isVisible || isLoading}>
-            {(isMonero || isGenerated) && toggleCTA}
-            {markup}
+            {!isSeedlessUI && toggleCTA}
+            {isSeedlessUI ? emptySeedWords : generatedDisplay}
         </DisplayWrapper>
     );
 });

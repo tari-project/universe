@@ -1,9 +1,11 @@
 {
+  "all-activity": "All activity",
   "confirmation-message": "Transaksi Anda telah dikirim!\nIni akan muncul dalam riwayat Anda setelah menambang beberapa blok.",
   "empty-tx": "Tidak ada transaksi ditemukan",
   "history": {
     "available-balance": "Tersedia",
     "label-rewards": "Hadiah saya",
+    "my-balance": "My Balance",
     "sync-with-phone": "Sinkronkan dengan Ponsel",
     "transaction-details": "Detail Transaksi",
     "view-details": "Lihat detail"
@@ -18,11 +20,39 @@
     "tooltip-emoji-id-text2": "Dukungan Yat segera hadir!",
     "tooltip-emoji-id-title": "ID Emoji"
   },
+  "rewards": "Rewards",
+  "security": {
+    "keychain": {
+      "enable": "Enable Keychain Access",
+      "warning": "Keychain access is required for this operation.\nPlease try again and select “allow”."
+    },
+    "pin": {
+      "create": "Create PIN",
+      "create-confirm": "Confirm PIN",
+      "creation-subtitle": "Set a secure PIN code to protect your wallet on this device.\nYour PIN stays private—it’s never stored or shared with Tari Universe.",
+      "creation-subtitle-confirm": "Enter your PIN again to confirm it is correct.",
+      "creation-title": "Create your Wallet PIN",
+      "creation-title-confirm": "Confirm your PIN",
+      "enter": "Enter your PIN",
+      "enter-new": "Enter a new PIN",
+      "enter-skip": "Skip for now",
+      "error-match": "That’s not quite right. Try again or create a new PIN.",
+      "explainer": "If you forget this PIN, the only way to regain access to your wallet is by restoring it from your seed phrase.",
+      "forgot": "Forgot PIN"
+    },
+    "reminder": {
+      "description": "You haven't secured your wallet yet. Backing up your seed phrase keeps your tokens safe and ensures only you can access them.\\nLet's do it now—it'll only take a moment",
+      "maybe-later": "Maybe later",
+      "start-now": "Start now",
+      "title": "Protect your Tari"
+    }
+  },
   "send": {
     "balance": "Saldo",
+    "broadcast": "Menyebarkan",
     "completed": "Selesai",
     "completed-amount-sent": "telah dikirim ke",
-    "completed-text": "Transfer Anda sekarang selesai.",
+    "completed-text": "Pengiriman transfer Anda sekarang selesai dan akan disiarkan.",
     "completed-title": "Anda Selesai!",
     "cta-confirm": "Konfirmasi",
     "cta-review": "Tinjau",
@@ -59,12 +89,88 @@
     "transaction-description": "Deskripsi Transaksi",
     "transaction-id": "ID Transaksi"
   },
+  "swap": {
+    "accept": "Terima",
+    "approve-and-buy": "Setujui & Beli",
+    "approving-spend": "Menyetujui pengeluaran",
+    "awaiting-approval": "Menunggu Persetujuan",
+    "back-button": "Kembali",
+    "balance": "Saldo",
+    "block-hash": "Hash Blok",
+    "buy-tari": "Beli Tari",
+    "buy-tari-subtitle": "Buy Tari from any of these supported exchanges.",
+    "buy-tari-wxtm": "Beli Tari (wXTM)",
+    "completed": "Selesai",
+    "connect-not-supported": "Konektor WalletConnect tidak ditemukan.",
+    "connect-wallet": "Hubungkan Dompet (ETH)",
+    "connect-wallet-text": "Menunggu koneksi",
+    "done": "Selesai",
+    "enter-amount": "Masukkan jumlah",
+    "error": "Tutup",
+    "error-message": "Pesan Kesalahan",
+    "ethereum-txn": "Transaksi Ethereum",
+    "loading": "Memuat...",
+    "minimum-received": "Minimum Diterima",
+    "network-cost": "Biaya Jaringan",
+    "network-fee": "Biaya Jaringan",
+    "new-output": "Output Baru",
+    "no-other-tokens-available": "Tidak ada token lain yang tersedia.",
+    "please-confirm-approval-in-wallet": "Harap konfirmasi persetujuan di dompet Anda",
+    "price-impact": "Dampak Harga",
+    "processing": "Memproses",
+    "processing-swap": "Memproses swap",
+    "rate": "Kurs",
+    "receive-estimated": "Terima (Perkiraan)",
+    "review-swap": "Tinjau Swap",
+    "scan-qr-code": "Pindai kode QR untuk menghubungkan dompet Anda di ponsel",
+    "select-token": "Pilih token",
+    "sell": "Jual",
+    "sign-message": "Tandatangani pesan di perangkat seluler Anda",
+    "sign-message-text": "Setujui transaksi ini menggunakan Metamask di perangkat seluler Anda. Setelah ditandatangani, transaksi Anda akan diproses.",
+    "slippage-tolerance": "Toleransi Slippage",
+    "status": "Status",
+    "step": "Langkah",
+    "swap-failed": "Swap gagal",
+    "swap-successful": "Swap berhasil",
+    "total-fees": "Total Biaya",
+    "total-fees-approval": "Total Biaya (Persetujuan)",
+    "total-fees-paid": "Total Biaya Dibayar",
+    "total-fees-swap": "Total Biaya (Swap)",
+    "transaction-could-not-be-completed": "Transaksi tidak dapat diselesaikan",
+    "transaction-id": "ID Transaksi",
+    "waiting-for-response": "Menunggu respons",
+    "you-will-receive": "Anda akan menerima {{symbol}} di (alamat dompet Tari)",
+    "your-purchase-is-processing": "Pembelian Anda sedang diproses. Ini bisa memakan waktu beberapa menit.",
+    "your-tokens-have-been-swapped": "Token Anda telah ditukar",
+    "your-transaction-is-being-processed": "Transaksi Anda sedang diproses",
+    "your-xtm-is-on-the-way": "XTM Anda sedang dalam perjalanan!"
+  },
+  "sync-message": {
+    "completed": "Any moment now",
+    "line1": "Sync in progress. ",
+    "line2": " remaining",
+    "line3": "until your wallet balance is displayed",
+    "tooltip-description": "This was your last synced balance, we'll update it once the wallet is ready.",
+    "tooltip-description-mining": "This was your last synced balance, we'll update it once the wallet is ready. But don’t worry, you’re actively mining and earning XTM.",
+    "tooltip-title": "Why the delay?",
+    "top-line": "You are now mining Tari XTM"
+  },
   "tabs": {
     "history": "Riwayat",
     "receive": "Terima",
     "send": "Kirim"
   },
   "tari": "Tari",
-  "wallet-is-scanning": "Dompet sedang memindai...",
-  "wallet-scanning-with-progress": "Dompet sedang memindai: {{scanned}}/{{total}} ({{percent}}%)"
+  "transactions": "Transactions",
+  "wallet-connected": "Dompet Terhubung",
+  "wallet-is-scanning": "<strong>Wallet is loading...</strong>",
+  "wallet-scanning-with-progress": "<strong>Wallet is loading {{percentage}}%</strong> {{scanned}} / {{total}}",
+  "xc": {
+    "buy-tari": "Buy Tari from an exchange",
+    "buy-tari-subtitle": "Available on selected exchanges.",
+    "mine-directly-to": "Mine directly to an exchange",
+    "mine-directly-to-exchange": "{{exchangeName}}",
+    "mining-here": "Mining here",
+    "or": "or"
+  }
 }

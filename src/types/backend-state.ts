@@ -1,5 +1,6 @@
 import {
     BackgroundNodeSyncUpdatePayload,
+    ConfigPoolsPayload,
     ConnectedPeersUpdatePayload,
     ConnectionStatusPayload,
     CriticalProblemPayload,
@@ -7,8 +8,10 @@ import {
     DetectedDevicesPayload,
     NewBlockHeightPayload,
     NodeTypeUpdatePayload,
+    SetupPhase,
     ShowReleaseNotesPayload,
-    WalletAddressUpdatePayload,
+    TariAddressUpdatePayload,
+    WalletUIMode,
 } from './events-payloads.ts';
 import {
     BaseNodeStatus,
@@ -16,24 +19,14 @@ import {
     ExternalDependency,
     GpuMinerStatus,
     NetworkStatus,
+    PoolStats,
     WalletBalance,
 } from './app-status.ts';
-import { ConfigCore, ConfigMining, ConfigUI, ConfigWallet } from './configs.ts';
-
-export enum SetupPhase {
-    Core = 'Core',
-    Wallet = 'Wallet',
-    Hardware = 'Hardware',
-    Node = 'Node',
-    Unknown = 'Unknown',
-}
+import { ConfigCore, ConfigMining, ConfigUI, ConfigWallet, GpuDeviceSettings } from './configs.ts';
+import { DisabledPhasesPayload } from '@app/store/actions/setupStoreActions.ts';
 
 export const BACKEND_STATE_UPDATE = 'backend_state_update';
 export type BackendStateUpdateEvent =
-    | {
-          event_type: 'WalletAddressUpdate';
-          payload: WalletAddressUpdatePayload;
-      }
     | {
           event_type: 'BaseNodeUpdate';
           payload: BaseNodeStatus;
@@ -107,8 +100,12 @@ export type BackendStateUpdateEvent =
           payload: boolean;
       }
     | {
-          event_type: 'UnknownPhaseFinished';
+          event_type: 'MiningPhaseFinished';
           payload: boolean;
+      }
+    | {
+          event_type: 'InitialSetupFinished';
+          payload: undefined;
       }
     | {
           event_type: 'UnlockApp';
@@ -119,7 +116,11 @@ export type BackendStateUpdateEvent =
           payload: undefined;
       }
     | {
-          event_type: 'UnlockMining';
+          event_type: 'UnlockCpuMining';
+          payload: undefined;
+      }
+    | {
+          event_type: 'UnlockGpuMining';
           payload: undefined;
       }
     | {
@@ -127,7 +128,11 @@ export type BackendStateUpdateEvent =
           payload: undefined;
       }
     | {
-          event_type: 'LockMining';
+          event_type: 'LockGpuMining';
+          payload: undefined;
+      }
+    | {
+          event_type: 'LockCpuMining';
           payload: undefined;
       }
     | {
@@ -149,6 +154,10 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'ConfigMiningLoaded';
           payload: ConfigMining;
+      }
+    | {
+          event_type: 'ConfigPoolsLoaded';
+          payload: ConfigPoolsPayload;
       }
     | {
           event_type: 'RestartingPhases';
@@ -175,6 +184,54 @@ export type BackendStateUpdateEvent =
           payload: ConnectionStatusPayload;
       }
     | {
-          event_type: 'ShowStageSecurityModal';
+          event_type: 'CpuPoolStatsUpdate';
+          payload: PoolStats;
+      }
+    | {
+          event_type: 'GpuPoolStatsUpdate';
+          payload: PoolStats;
+      }
+    | {
+          event_type: 'ExchangeIdChanged';
+          payload: string;
+      }
+    | {
+          event_type: 'DisabledPhases';
+          payload: DisabledPhasesPayload;
+      }
+    | {
+          event_type: 'ShouldShowExchangeMinerModal';
           payload: undefined;
+      }
+    | {
+          event_type: 'SelectedTariAddressChanged';
+          payload: TariAddressUpdatePayload;
+      }
+    | {
+          event_type: 'WalletUIModeChanged';
+          payload: WalletUIMode;
+      }
+    | {
+          event_type: 'ShowKeyringDialog';
+          payload: undefined;
+      }
+    | {
+          event_type: 'CreatePin';
+          payload: undefined;
+      }
+    | {
+          event_type: 'EnterPin';
+          payload: undefined;
+      }
+    | {
+          event_type: 'UpdateGpuDevicesSettings';
+          payload: Record<number, GpuDeviceSettings>;
+      }
+    | {
+          event_type: 'PinLocked';
+          payload: boolean;
+      }
+    | {
+          event_type: 'SeedBackedUp';
+          payload: boolean;
       };

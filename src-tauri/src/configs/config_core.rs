@@ -28,11 +28,10 @@ use tari_common::configuration::Network;
 use tauri::AppHandle;
 use tokio::sync::RwLock;
 
+use crate::ab_test_selector::ABTestSelector;
+use crate::app_in_memory_config::{MinerType, DEFAULT_EXCHANGE_ID};
 use crate::node::node_manager::NodeType;
-use crate::{
-    ab_test_selector::ABTestSelector, events_manager::EventsManager,
-    internal_wallet::generate_password,
-};
+use crate::utils::rand_utils;
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
 
@@ -50,11 +49,13 @@ static INSTANCE: LazyLock<RwLock<ConfigCore>> = LazyLock::new(|| RwLock::new(Con
 #[derive(Getters, Setters)]
 #[getset(get = "pub", set = "pub")]
 pub struct ConfigCoreContent {
+    version: u32,
     was_config_migrated: bool,
     created_at: SystemTime,
     is_p2pool_enabled: bool,
     use_tor: bool,
     allow_telemetry: bool,
+    allow_notifications: bool,
     last_binaries_update_timestamp: SystemTime,
     anon_id: String,
     ab_group: ABTestSelector,
@@ -68,6 +69,7 @@ pub struct ConfigCoreContent {
     airdrop_tokens: Option<AirdropTokens>,
     remote_base_node_address: String,
     node_type: NodeType,
+    exchange_id: String,
 }
 
 fn default_monero_nodes() -> Vec<String> {
@@ -88,7 +90,7 @@ impl Default for ConfigCoreContent {
                 format!("https://grpc.{}.tari.com:443", network.as_key_str())
             }
         };
-        let anon_id = generate_password(20);
+        let anon_id = rand_utils::get_rand_string(20);
         let ab_test_selector = anon_id
             .chars()
             .nth(0)
@@ -102,11 +104,13 @@ impl Default for ConfigCoreContent {
             .unwrap_or(ABTestSelector::GroupA);
 
         Self {
+            version: 0,
             was_config_migrated: false,
             created_at: SystemTime::now(),
             is_p2pool_enabled: true,
             use_tor: true,
             allow_telemetry: true,
+            allow_notifications: false,
             last_binaries_update_timestamp: SystemTime::now(),
             anon_id,
             ab_group: ab_test_selector,
@@ -119,11 +123,17 @@ impl Default for ConfigCoreContent {
             last_changelog_version: Version::new(0, 0, 0),
             airdrop_tokens: None,
             remote_base_node_address,
-            node_type: NodeType::Local,
+            node_type: NodeType::default(),
+            exchange_id: DEFAULT_EXCHANGE_ID.to_string(),
         }
     }
 }
 impl ConfigContentImpl for ConfigCoreContent {}
+impl ConfigCoreContent {
+    pub fn is_on_exchange_specific_variant(&self) -> bool {
+        MinerType::from_str(&self.exchange_id).is_exchange_mode()
+    }
+}
 
 pub struct ConfigCore {
     content: ConfigCoreContent,
@@ -135,7 +145,11 @@ impl ConfigCore {
         let mut config = Self::current().write().await;
         config.load_app_handle(app_handle.clone()).await;
 
-        EventsManager::handle_config_core_loaded(&app_handle, config.content.clone()).await;
+        if config.content.version.eq(&0) && config.content.node_type.eq(&NodeType::Local) {
+            config.content.node_type = NodeType::RemoteUntilLocal;
+            config.content.version = 1;
+            let _unused = Self::_save_config(config._get_content().clone());
+        };
     }
 }
 

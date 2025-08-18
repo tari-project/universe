@@ -56,33 +56,27 @@ impl AutoLauncher {
     }
 
     fn build_auto_launcher(app_name: &str, app_path: &str) -> Result<AutoLaunch, anyhow::Error> {
-        info!(target: LOG_TARGET, "Building auto-launcher with app_name: {} and app_path: {}", app_name, app_path);
+        info!(target: LOG_TARGET, "Building auto-launcher with app_name: {app_name} and app_path: {app_path}");
 
         match PlatformUtils::detect_current_os() {
-            CurrentOperatingSystem::Windows => {
-                return AutoLaunchBuilder::new()
-                    .set_app_name(app_name)
-                    .set_app_path(app_path)
-                    .set_use_launch_agent(false)
-                    .build()
-                    .map_err(|e| e.into());
-            }
-            CurrentOperatingSystem::Linux => {
-                return AutoLaunchBuilder::new()
-                    .set_app_name(app_name)
-                    .set_app_path(app_path)
-                    .set_use_launch_agent(false)
-                    .build()
-                    .map_err(|e| e.into());
-            }
-            CurrentOperatingSystem::MacOS => {
-                return AutoLaunchBuilder::new()
-                    .set_app_name(app_name)
-                    .set_app_path(app_path)
-                    .set_use_launch_agent(true)
-                    .build()
-                    .map_err(|e| e.into());
-            }
+            CurrentOperatingSystem::Windows => AutoLaunchBuilder::new()
+                .set_app_name(app_name)
+                .set_app_path(app_path)
+                .set_use_launch_agent(false)
+                .build()
+                .map_err(|e| e.into()),
+            CurrentOperatingSystem::Linux => AutoLaunchBuilder::new()
+                .set_app_name(app_name)
+                .set_app_path(app_path)
+                .set_use_launch_agent(false)
+                .build()
+                .map_err(|e| e.into()),
+            CurrentOperatingSystem::MacOS => AutoLaunchBuilder::new()
+                .set_app_name(app_name)
+                .set_app_path(app_path)
+                .set_use_launch_agent(true)
+                .build()
+                .map_err(|e| e.into()),
         }
     }
 
@@ -93,7 +87,7 @@ impl AutoLauncher {
     ) -> Result<(), anyhow::Error> {
         info!(target: LOG_TARGET, "Toggling auto-launcher");
         let auto_launcher_is_enabled = auto_launcher.is_enabled()?;
-        info!(target: LOG_TARGET, "Auto-launcher is enabled: {}, config_is_auto_launcher_enabled: {}", auto_launcher_is_enabled, config_is_auto_launcher_enabled);
+        info!(target: LOG_TARGET, "Auto-launcher is enabled: {auto_launcher_is_enabled}, config_is_auto_launcher_enabled: {config_is_auto_launcher_enabled}");
 
         let should_toggle_to_enabled = config_is_auto_launcher_enabled && !auto_launcher_is_enabled;
         let should_ensure_to_enable_at_first_startup =
@@ -259,7 +253,7 @@ impl AutoLauncher {
             .ok_or(anyhow!("Failed to convert path to string"))?
             .to_string();
 
-        info!(target: LOG_TARGET, "Building auto-launcher with app_name: {} and app_path: {}", app_name, app_path);
+        info!(target: LOG_TARGET, "Building auto-launcher with app_name: {app_name} and app_path: {app_path}");
         let auto_launcher = AutoLauncher::build_auto_launcher(app_name, &app_path)?;
 
         info!(target: LOG_TARGET, "Auto-launcher built");

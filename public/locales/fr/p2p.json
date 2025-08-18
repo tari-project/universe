@@ -1,4 +1,5 @@
 {
+  "connected-since": "Connecté depuis",
   "connections": "connexions",
   "established": "Établi",
   "listener-addresses": "Adresses des auditeurs",
@@ -9,9 +10,17 @@
   "p2pool-connection-info": "Connexion",
   "p2pool-connection-info-more": "Détails de la connexion",
   "p2pool-peers": "Pairs P2pool",
-  "p2pool-stats": "Statistiques de minage en pool",
+  "p2pool-stats": "Statistiques P2pool",
   "pending": "En attente",
   "randomx-stats": "Statistiques RandomX",
   "sha3-stats": "Statistiques SHA3",
+  "stats": {
+    "earned": "You earned",
+    "tile-heading": "Récompenses en cours",
+    "tile-heading-zero": "Rewards start in ~30 mins",
+    "tile-loading": "Le pool se réchauffe",
+    "tooltip-copy": "“In Progress” until you earn a minimum of <strong>{{amount}}</strong>. There may be a delay between sending your payout and it displaying in your wallet txs and balance.",
+    "tooltip-tile-heading": "Seuil de récompenses"
+  },
   "tribe": "Tribu"
 }

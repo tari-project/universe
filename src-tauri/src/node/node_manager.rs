@@ -31,7 +31,6 @@ use serde::{Deserialize, Serialize};
 use tari_common::configuration::Network;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::ShutdownSignal;
-use tauri::AppHandle;
 use tokio::sync::watch::{self, Sender};
 use tokio::sync::RwLock;
 use tokio::time::sleep;
@@ -40,14 +39,15 @@ use tokio_util::task::TaskTracker;
 
 use crate::configs::config_core::ConfigCore;
 use crate::configs::trait_config::ConfigImpl;
-use crate::events_manager::EventsManager;
+use crate::events_emitter::EventsEmitter;
 use crate::node::node_adapter::{
-    NodeAdapter, NodeAdapterService, NodeIdentity, NodeStatusMonitorError,
+    NodeAdapter, NodeAdapterService, NodeIdentity, NodeStatusMonitorError, ReadinessStatus,
 };
 use crate::process_adapter::ProcessAdapter;
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
 use crate::process_watcher::ProcessWatcherStats;
+use crate::progress_trackers::progress_stepper::ChanneledStepUpdate;
 use crate::setup::setup_manager::SetupManager;
 use crate::tasks_tracker::TasksTrackers;
 use crate::{BaseNodeStatus, LocalNodeAdapter, RemoteNodeAdapter};
@@ -60,15 +60,14 @@ pub enum NodeManagerError {
     ExitCode(i32),
     #[error("Node failed with an unknown error: {0}")]
     UnknownError(#[from] anyhow::Error),
-    #[error("Maximum failed requests exceeded")]
-    MaxFailedRequestsExceeded,
 }
 
 pub const STOP_ON_ERROR_CODES: [i32; 2] = [114, 102];
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Default)]
 pub enum NodeType {
     Local,
+    #[default]
     Remote,
     RemoteUntilLocal,
     LocalAfterRemote,
@@ -148,15 +147,15 @@ impl NodeManager {
         use_tor: bool,
         tor_control_port: Option<u16>,
         remote_grpc_address: Option<String>,
-        app_handle: AppHandle,
+        migration_tracker: Option<ChanneledStepUpdate>,
     ) -> Result<(), NodeManagerError> {
         let shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
         let task_tracker = TasksTrackers::current().node_phase.get_task_tracker().await;
 
-        if self.is_local().await? {
+        if self.is_local().await {
             self.configure_adapter(
                 self.local_node_watcher.clone(),
-                self.is_local_current().await?,
+                self.is_local_current().await,
                 None, // always 127.0.0.1
                 use_tor,
                 tor_control_port,
@@ -171,11 +170,12 @@ impl NodeManager {
                 task_tracker.clone(),
             )
             .await?;
+            self.wait_migration(migration_tracker).await?;
         }
-        if self.is_remote().await? {
+        if self.is_remote().await {
             self.configure_adapter(
                 self.remote_node_watcher.clone(),
-                self.is_remote_current().await?,
+                self.is_remote_current().await,
                 remote_grpc_address,
                 use_tor,
                 None, // no control port needed
@@ -192,7 +192,7 @@ impl NodeManager {
             .await?;
         }
 
-        let node_type = self.get_node_type().await?;
+        let node_type = self.get_node_type().await;
         start_status_forwarding_thread(
             self.clone(),
             self.base_node_watch_tx.clone(),
@@ -203,8 +203,7 @@ impl NodeManager {
         .await?;
         self.wait_ready().await?;
         if matches!(node_type, NodeType::RemoteUntilLocal) {
-            self.switch_to_local_when_synced(shutdown_signal, app_handle)
-                .await?;
+            self.switch_to_local_when_synced(shutdown_signal).await?;
         }
 
         Ok(())
@@ -248,11 +247,9 @@ impl NodeManager {
     async fn switch_to_local_when_synced(
         &self,
         shutdown_signal: ShutdownSignal,
-        app_handle: AppHandle,
     ) -> Result<(), anyhow::Error> {
         let node_type = self.node_type.clone();
         let node_manager = self.clone();
-        let app_handle = app_handle.clone();
 
         // Spawn a task to monitor the local node's sync progress
         TasksTrackers::current()
@@ -269,7 +266,6 @@ impl NodeManager {
                     progress_params_rx,
                     progress_percentage_rx,
                     shutdown_signal_clone,
-                    app_handle.clone(),
                 )
                 .await;
 
@@ -292,8 +288,6 @@ impl NodeManager {
         progress_percentage_tx: &watch::Sender<f64>,
     ) -> Result<(), anyhow::Error> {
         let shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
-        let mut failed_request_counter = 0;
-        static MAX_FAILED_REQUESTS: u32 = 10;
         loop {
             let current_service = self.get_current_service().await?;
             match current_service
@@ -307,28 +301,83 @@ impl NodeManager {
                 Ok(_) => {
                     return Ok(());
                 }
-                Err(e) => match e {
-                    NodeStatusMonitorError::NodeNotStarted => {
-                        continue;
-                    }
-                    _ => {
-                        failed_request_counter += 1;
-                        if failed_request_counter >= MAX_FAILED_REQUESTS {
-                            return Err(NodeManagerError::MaxFailedRequestsExceeded.into());
-                        }
-                        sleep(Duration::from_millis(100)).await;
-                        continue;
-                    }
-                },
+                Err(_) => {
+                    sleep(Duration::from_secs(5)).await;
+                    continue;
+                }
             }
         }
     }
 
+    pub async fn wait_migration(
+        &self,
+        migration_tracker: Option<ChanneledStepUpdate>,
+    ) -> Result<(), NodeManagerError> {
+        if self.is_local().await {
+            let current_service = self.get_current_service().await;
+            let migration_handle = TasksTrackers::current()
+                        .node_phase
+                        .get_task_tracker()
+                        .await
+                        .spawn(async move {
+                            let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
+                            let mut migration_completed = false;
+
+                            while !migration_completed {
+                                tokio::select! {
+                                    _ = shutdown_signal.wait() => {
+                                        info!(target: LOG_TARGET, "Node migration interrupted");
+                                        break;
+                                    }
+                                    _ = tokio::time::sleep(Duration::from_millis(2000)) => {
+                                        // Try to get node status
+                                        if let Ok(ref current_service) = current_service {
+                                            if let Ok(status) = current_service.get_network_state().await {
+                                                match status.readiness_status {
+                                                    ReadinessStatus::Migration(progress) => {
+                                                        info!(target: LOG_TARGET, "Database migration in progress: {:.1}% ({}/{})",
+                                                            progress.progress_percentage, progress.current_block, progress.total_blocks);
+
+                                                        let mut params = HashMap::new();
+                                                        params.insert("current_block".to_string(), progress.current_block.to_string());
+                                                        params.insert("total_blocks".to_string(), progress.total_blocks.to_string());
+                                                        params.insert("current_db_version".to_string(), progress.current_db_version.to_string());
+                                                        params.insert("target_db_version".to_string(), progress.target_db_version.to_string());
+
+                                                        if let Some(tracker) = &migration_tracker {
+                                                            tracker.send_update(params, progress.progress_percentage / 100.0).await;
+                                                        }
+
+                                                        if progress.progress_percentage >= 100.0 {
+                                                            info!(target: LOG_TARGET, "Database migration completed");
+                                                            migration_completed = true;
+                                                        }
+                                                    }
+                                                    ReadinessStatus::State(state) => match state {
+                                                        100 => {
+                                                            info!(target: LOG_TARGET, "Node is ready, no migration needed");
+                                                            migration_completed = true;
+                                                        }
+                                                        _ => info!(target: LOG_TARGET, "Received other state: {state}")
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        });
+            let _unused = migration_handle.await;
+            info!(target: LOG_TARGET, "Migration monitoring completed");
+        }
+        Ok(())
+    }
+
     pub async fn wait_ready(&self) -> Result<(), NodeManagerError> {
-        if self.is_remote().await? {
+        if self.is_remote().await {
             ensure_node_identity_reachable(&self.remote_node_watcher, "Remote").await?;
         }
-        if self.is_local().await? {
+        if self.is_local().await {
             ensure_node_identity_reachable(&self.local_node_watcher, "Local").await?;
         }
 
@@ -347,9 +396,9 @@ impl NodeManager {
         Ok(())
     }
 
-    pub async fn get_node_type(&self) -> Result<NodeType, anyhow::Error> {
+    pub async fn get_node_type(&self) -> NodeType {
         let node_type = self.node_type.read().await;
-        Ok(node_type.clone())
+        node_type.clone()
     }
 
     pub async fn get_current_service(&self) -> Result<NodeAdapterService, anyhow::Error> {
@@ -362,7 +411,7 @@ impl NodeManager {
     pub async fn get_identity(&self) -> Result<NodeIdentity, anyhow::Error> {
         let current_service = self.get_current_service().await?;
         current_service.get_identity().await.inspect_err(|e| {
-            error!(target: LOG_TARGET, "Error getting node identity: {}", e);
+            error!(target: LOG_TARGET, "Error getting node identity: {e}");
         })
     }
 
@@ -379,12 +428,27 @@ impl NodeManager {
 
         if let Some((host, port)) = grpc_address {
             if host.starts_with("http") {
-                return Ok(format!("{}:{}", host, port));
+                return Ok(format!("{host}:{port}"));
             } else {
-                return Ok(format!("http://{}:{}", host, port));
+                return Ok(format!("http://{host}:{port}"));
             }
         }
         Err(anyhow::anyhow!("grpc_address not set"))
+    }
+
+    pub async fn get_grpc_port(&self) -> Result<u16, anyhow::Error> {
+        let current_adapter = self.current_adapter.read().await;
+        let grpc_address = current_adapter.get_grpc_address();
+
+        if let Some((_host, port)) = grpc_address {
+            return Ok(port);
+        }
+        Err(anyhow::anyhow!("grpc_address not set"))
+    }
+
+    pub async fn get_http_api_url(&self) -> String {
+        let current_adapter = self.current_adapter.read().await;
+        current_adapter.get_http_api_url()
     }
 
     pub async fn check_if_is_orphan_chain(&self) -> Result<bool, anyhow::Error> {
@@ -398,26 +462,23 @@ impl NodeManager {
     }
 
     // Self Checks
-    pub async fn is_local(&self) -> Result<bool, anyhow::Error> {
-        let node_type = self.get_node_type().await?;
-        Ok(node_type.is_local())
+    pub async fn is_local(&self) -> bool {
+        let node_type = self.get_node_type().await;
+        node_type.is_local()
     }
 
-    pub async fn is_local_current(&self) -> Result<bool, anyhow::Error> {
-        let node_type = self.get_node_type().await?;
-        Ok(matches!(
-            node_type,
-            NodeType::Local | NodeType::LocalAfterRemote
-        ))
+    pub async fn is_local_current(&self) -> bool {
+        let node_type = self.get_node_type().await;
+        matches!(node_type, NodeType::Local | NodeType::LocalAfterRemote)
     }
 
-    pub async fn is_remote_current(&self) -> Result<bool, anyhow::Error> {
+    pub async fn is_remote_current(&self) -> bool {
         self.is_remote().await
     }
 
-    pub async fn is_remote(&self) -> Result<bool, anyhow::Error> {
-        let node_type = self.get_node_type().await?;
-        Ok(node_type.is_remote())
+    pub async fn is_remote(&self) -> bool {
+        let node_type = self.get_node_type().await;
+        node_type.is_remote()
     }
 }
 
@@ -435,7 +496,8 @@ fn construct_process_watcher<T: NodeAdapter + ProcessAdapter + Send + Sync + 'st
         process_watcher.poll_time = Duration::from_secs(10);
         process_watcher.health_timeout = Duration::from_secs(9);
     }
-    process_watcher.expected_startup_time = Duration::from_secs(30);
+    // NODE: Temporary solution to process payrefs in TU v1.2.9
+    process_watcher.expected_startup_time = Duration::from_secs(540); // 9mins
 
     process_watcher
 }
@@ -530,8 +592,7 @@ pub async fn start_status_forwarding_thread(
                 }
                 // Local node status update received
                 Ok(()) = local_node_watch_rx.changed() => {
-                    let is_local_current = node_manager.is_local_current().await;
-                    if is_local_current.unwrap_or(false) {
+                    if node_manager.is_local_current().await {
                         let status = *local_node_watch_rx.borrow();
                         let should_log = match last_local_status {
                             Some(last) => {
@@ -545,15 +606,14 @@ pub async fn start_status_forwarding_thread(
                             error!(target: LOG_TARGET, "Failed to forward local BaseNodeStatus via base_node_watch_tx");
                         }
                         if should_log {
-                            info!(target: LOG_TARGET, "Forwarded Local BaseNodeStatus: {:?}", status);
+                            info!(target: LOG_TARGET, "Forwarded Local BaseNodeStatus: {status:?}");
                             last_local_status = Some(status);
                         }
                     }
                 }
                 // Remote node status update received
                 Ok(()) = remote_node_watch_rx.changed() => {
-                    let is_remote_current = node_manager.is_remote_current().await;
-                    if is_remote_current.unwrap_or(false) {
+                    if node_manager.is_remote_current().await {
                         let status = *remote_node_watch_rx.borrow();
                         let should_log = match last_remote_status {
                             Some(last) => {
@@ -567,7 +627,7 @@ pub async fn start_status_forwarding_thread(
                             error!(target: LOG_TARGET, "Failed to forward remote BaseNodeStatus via base_node_watch_tx");
                         }
                         if should_log {
-                            info!(target: LOG_TARGET, "Forwarded Remote BaseNodeStatus: {:?}", status);
+                            info!(target: LOG_TARGET, "Forwarded Remote BaseNodeStatus: {status:?}");
                             last_remote_status = Some(status);
                         }
                     }
@@ -603,20 +663,17 @@ where
                     return Ok(());
                 }
                 Err(err) => {
-                    if retries > 20 {
+                    // NODE: Temporary solution to process payrefs in TU v1.2.9
+                    if retries > 420 {
                         warn!(
                             target: LOG_TARGET,
-                            "Max retries exceeded for {} node identity readiness. Stopping watcher. Error: {}",
-                            node_type,
-                            err
+                            "Max retries exceeded for {node_type} node identity readiness. Stopping watcher. Error: {err}"
                         );
                         return stop_watcher_on_error(node_watcher, err).await;
                     }
                     warn!(
                         target: LOG_TARGET,
-                        "[ensure_node_identity_reachable] {} node did not return identity, retrying in 1 second... | {}",
-                        node_type,
-                        err
+                        "[ensure_node_identity_reachable] {node_type} node did not return identity, retrying in 1 second... | {err}"
                     );
                     retries += 1;
                 }
@@ -624,8 +681,7 @@ where
         } else {
             error!(
                 target: LOG_TARGET,
-                "{} node service is unavailable - ensure_node_identity_reachable skipped",
-                node_type
+                "{node_type} node service is unavailable - ensure_node_identity_reachable skipped"
             );
             break;
         }
@@ -640,7 +696,6 @@ async fn spawn_syncing_updater(
     mut progress_params_rx: watch::Receiver<HashMap<String, String>>,
     progress_percentage_rx: watch::Receiver<f64>,
     mut shutdown_signal: ShutdownSignal,
-    app_handle: AppHandle,
 ) {
     TasksTrackers::current()
         .node_phase
@@ -653,7 +708,7 @@ async fn spawn_syncing_updater(
                         let progress_params = progress_params_rx.borrow().clone();
                         let percentage = *progress_percentage_rx.borrow();
                         if let Some(step) = progress_params.get("step").cloned() {
-                            EventsManager::handle_background_node_sync_update(&app_handle, progress_params.clone()).await;
+                            EventsEmitter::emit_background_node_sync_update(progress_params.clone()).await;
                             if step == "Block" && percentage == 1.0 {
                                 break;
                             }
@@ -738,7 +793,7 @@ async fn switch_to_local(node_manager: NodeManager, node_type: Arc<RwLock<NodeTy
         let mut remote_node_watcher = node_manager.remote_node_watcher.write().await;
         if let Some(remote_node_watcher) = remote_node_watcher.as_mut() {
             if let Err(e) = remote_node_watcher.stop().await {
-                error!(target: LOG_TARGET, "Failed to stop remote node watcher: {}", e);
+                error!(target: LOG_TARGET, "Failed to stop remote node watcher: {e}");
             }
         }
     }

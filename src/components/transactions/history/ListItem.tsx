@@ -2,30 +2,43 @@ import { memo, useRef, useState } from 'react';
 import { AnimatePresence } from 'motion/react';
 import { formatNumber, FormatPreset, truncateMiddle } from '@app/utils';
 import { BaseItemProps, HistoryListItemProps } from '../types.ts';
-import { formatTimeStamp, getItemTitle, getItemType } from './helpers.ts';
+import { formatTimeStamp } from './helpers.ts';
 import ItemHover from './HoveredItem';
 import {
+    BlockInfoWrapper,
+    Chip,
+    Content,
     ContentWrapper,
+    CurrencyText,
     ItemWrapper,
     TimeWrapper,
     TitleWrapper,
     ValueChangeWrapper,
     ValueWrapper,
-    CurrencyText,
-    Chip,
-    BlockInfoWrapper,
-    Content,
 } from './ListItem.styles.ts';
 import { useUIStore } from '@app/store';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 
-const BaseItem = memo(function BaseItem({ title, time, value, type, chip, onClick }: BaseItemProps) {
+import { getTxTitle, getTxTypeByStatus } from '@app/utils/getTxStatus.ts';
+import { TransactionDirection } from '@app/types/transactions.ts';
+import BridgeItemHover from './BridgeHoveredItem.tsx';
+
+const BaseItem = memo(function BaseItem({
+    title,
+    time,
+    value,
+    direction,
+    chip,
+    onClick,
+    hideWalletBalance,
+}: BaseItemProps) {
     // note re. isPositiveValue:
     // amounts in the tx response are always positive numbers but
-    // if the transaction type is 'sent' it must be displayed as a negative amount, with a leading `-`
-    const isPositiveValue = type !== 'sent';
-    const displayTitle = title.length > 30 ? truncateMiddle(title, 8) : title;
+    // if the transaction is Outbound, the value is negative
+
+    const isPositiveValue = direction === TransactionDirection.Inbound;
+    const displayTitle = title.length > 26 ? truncateMiddle(title, 8) : title;
     return (
         <ContentWrapper onClick={onClick}>
             <Content>
@@ -42,9 +55,11 @@ const BaseItem = memo(function BaseItem({ title, time, value, type, chip, onClic
                 ) : null}
 
                 <ValueWrapper>
-                    <ValueChangeWrapper $isPositiveValue={isPositiveValue}>
-                        {isPositiveValue ? `+` : `-`}
-                    </ValueChangeWrapper>
+                    {!hideWalletBalance && (
+                        <ValueChangeWrapper $isPositiveValue={isPositiveValue}>
+                            {isPositiveValue ? `+` : `-`}
+                        </ValueChangeWrapper>
+                    )}
                     {value}
                     <CurrencyText>{`XTM`}</CurrencyText>
                 </ValueWrapper>
@@ -64,26 +79,26 @@ const HistoryListItem = memo(function ListItem({
 
     const ref = useRef<HTMLDivElement>(null);
 
-    const itemType = getItemType(item);
+    const itemType = getTxTypeByStatus(item);
 
     const isMined = itemType === 'mined';
 
     const [hovering, setHovering] = useState(false);
 
-    const itemTitle = getItemTitle({ itemType, blockHeight: item.mined_in_block_height, message: item.payment_id });
+    const itemTitle = getTxTitle(item);
     const earningsFormatted = hideWalletBalance
         ? `***`
-        : formatNumber(item.amount, FormatPreset.XTM_COMPACT).toLowerCase();
-    const itemTime = formatTimeStamp(item.timestamp);
+        : formatNumber(item.tokenAmount, FormatPreset.XTM_COMPACT).toLowerCase();
+    const itemTime = formatTimeStamp(item.createdAt);
 
     const baseItem = (
         <BaseItem
             title={itemTitle}
             time={itemTime}
             value={earningsFormatted}
-            type={itemType}
-            status={item?.status}
+            direction={item.walletTransactionDetails.direction}
             chip={itemIsNew ? t('new') : ''}
+            hideWalletBalance={hideWalletBalance}
         />
     );
 
@@ -108,7 +123,11 @@ const HistoryListItem = memo(function ListItem({
             onMouseEnter={() => setHovering(true)}
             onMouseLeave={() => setHovering(false)}
         >
-            <AnimatePresence>{hovering && <ItemHover item={item} button={detailsButton} />}</AnimatePresence>
+            {item.bridgeTransactionDetails ? (
+                <AnimatePresence>{hovering && <BridgeItemHover button={detailsButton} />}</AnimatePresence>
+            ) : (
+                <AnimatePresence>{hovering && <ItemHover item={item} button={detailsButton} />}</AnimatePresence>
+            )}
             {baseItem}
         </ItemWrapper>
     );

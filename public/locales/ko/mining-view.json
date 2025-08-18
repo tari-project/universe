@@ -1,4 +1,14 @@
 {
+  "bubbles": {
+    "active-miners": "active miners",
+    "ago": "ago",
+    "block": "block",
+    "got-rewarded": "got rewarded",
+    "miners": "miners",
+    "pool": "Pool",
+    "solved": "solved",
+    "solving": "is being solved"
+  },
   "connection-to-node-lost": "마이너와의 연결이 끊어졌습니다. 마이너가 다시 연결되거나 재시작될 때까지 기다려주세요.",
   "cpu-power": "CPU 전력",
   "current-block-time": "현재 블록 시간",
@@ -25,6 +35,12 @@
     "step_4": "Tor 브리지를 사용해 보세요 (설정에서)",
     "step_5": "Tor를 비활성화해 보세요 (설정에서)",
     "step_6": "앱을 재설정해 보세요 (설정에서)"
+  },
+  "pool": {
+    "accepted_shares": "수락된 공유",
+    "balance": "Total earnings",
+    "min_payout": "최소 지급액",
+    "unpaid": "미지급"
   },
   "you-earn-rewards-separately": "CPU와 GPU 채굴에 대해 각각 보상을 받습니다",
   "you-won-block": "당신은 <span>블록 #{{ blockHeight }}</span>의 승자였습니다",

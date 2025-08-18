@@ -1,9 +1,29 @@
 import { GpuDevice, TransactionInfo, WalletBalance } from './app-status';
+import { BasePoolData, ConfigPools, CpuPools, GpuPools } from './configs';
 
-export interface WalletAddressUpdatePayload {
+export enum SetupPhase {
+    Core = 'Core',
+    Wallet = 'Wallet',
+    Hardware = 'Hardware',
+    Node = 'Node',
+    Mining = 'Mining',
+}
+
+export enum TariAddressType {
+    Internal = 0,
+    External = 1,
+}
+
+export enum WalletUIMode {
+    Standard = 'Standard',
+    Seedless = 'Seedless',
+    ExchangeSpecificMiner = 'ExchangeSpecificMiner',
+}
+
+export interface TariAddressUpdatePayload {
     tari_address_base58: string;
     tari_address_emoji: string;
-    is_tari_address_generated: boolean;
+    tari_address_type: TariAddressType;
 }
 
 export interface NewBlockHeightPayload {
@@ -66,3 +86,8 @@ export type BackgroundNodeSyncUpdatePayload =
       };
 
 export type ConnectionStatusPayload = 'InProgress' | 'Succeed' | 'Failed';
+
+export interface ConfigPoolsPayload extends Omit<ConfigPools, 'available_gpu_pools' | 'available_cpu_pools'> {
+    available_gpu_pools?: [{ [GpuPools.LuckyPool]: BasePoolData }, { [GpuPools.SupportXTMPool]: BasePoolData }]; // Available GPU pools
+    available_cpu_pools?: [{ [CpuPools.LuckyPool]: BasePoolData }, { [CpuPools.SupportXTMPool]: BasePoolData }]; // Available CPU pools
+}

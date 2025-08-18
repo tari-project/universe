@@ -14,6 +14,8 @@ import { Select, SelectOption } from '@app/components/elements/inputs/Select.tsx
 import { NodeType } from '@app/store/useNodeStore.ts';
 import { useConfigCoreStore } from '@app/store/useAppConfigStore.ts';
 import { setNodeType } from '@app/store/actions/appConfigStoreActions.ts';
+import { Stack } from '@app/components/elements/Stack.tsx';
+import { offset } from '@floating-ui/react';
 
 export default function NodeTypeConfiguration() {
     const { t } = useTranslation(['settings'], { useSuspense: false });
@@ -42,7 +44,18 @@ export default function NodeTypeConfiguration() {
                     <Typography>{t('node-configuration-description')}</Typography>
                 </SettingsGroupContent>
                 <SettingsGroupAction>
-                    <Select onChange={handleChange} selectedValue={node_type} options={tabOptions} variant="minimal" />
+                    <Stack style={{ width: '100%', minWidth: 160 }}>
+                        <Select
+                            onChange={handleChange}
+                            forceHeight={36}
+                            selectedValue={node_type}
+                            options={tabOptions}
+                            floatingProps={{
+                                middleware: [offset({ crossAxis: -40, mainAxis: 10 })],
+                            }}
+                            variant="bordered"
+                        />
+                    </Stack>
                 </SettingsGroupAction>
             </SettingsGroup>
         </SettingsGroupWrapper>

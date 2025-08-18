@@ -30,30 +30,32 @@ export default function Node() {
                         <Typography variant="h6">{t('minotari-node')}</Typography>
                     </SettingsGroupTitle>
                     <SettingsGroupContent>
-                        <Stack direction="column" alignItems="flex-start">
-                            <Stack direction="row">
-                                <Typography>{t('node-type')}</Typography>
-                                <Typography>
-                                    <b>{getNodeType(node_type)}</b>
-                                </Typography>
-                            </Stack>
-                            <Stack direction="row">
-                                <Typography>{t('node-public-key')}</Typography>
-                                <Typography>
-                                    <b>{node_identity?.public_key || 'N/A'}</b>
-                                </Typography>
-                            </Stack>
-                            <Stack direction="row">
-                                <Typography>{t('node-public-address')}</Typography>
-                                <Typography>
-                                    <b>{node_identity?.public_addresses.join(', ') || 'N/A'}</b>
-                                </Typography>
-                            </Stack>
-                            <Stack direction="row">
-                                <Typography>{t('node-connection-address')}</Typography>
-                                <Typography>
-                                    <b>{node_connection_address || 'N/A'}</b>
-                                </Typography>
+                        <Stack direction="column" gap={20}>
+                            <Stack alignItems="flex-start">
+                                <Stack direction="row">
+                                    <Typography>{t('node-type')}</Typography>
+                                    <Typography>
+                                        <b>{getNodeType(node_type)}</b>
+                                    </Typography>
+                                </Stack>
+                                <Stack direction="row">
+                                    <Typography>{t('node-public-key')}</Typography>
+                                    <Typography>
+                                        <b>{node_identity?.public_key || 'N/A'}</b>
+                                    </Typography>
+                                </Stack>
+                                <Stack direction="row">
+                                    <Typography>{t('node-public-address')}</Typography>
+                                    <Typography>
+                                        <b>{node_identity?.public_addresses.join(', ') || 'N/A'}</b>
+                                    </Typography>
+                                </Stack>
+                                <Stack direction="row">
+                                    <Typography>{t('node-connection-address')}</Typography>
+                                    <Typography>
+                                        <b>{node_connection_address || 'N/A'}</b>
+                                    </Typography>
+                                </Stack>
                             </Stack>
                         </Stack>
                     </SettingsGroupContent>

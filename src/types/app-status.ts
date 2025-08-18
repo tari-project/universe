@@ -4,45 +4,6 @@ export interface TorConfig {
     bridges: string[];
 }
 
-// export interface AppConfig {
-//     allow_telemetry: boolean;
-//     anon_id: string;
-//     application_language: Language;
-//     auto_update: boolean;
-//     config_file?: string;
-//     config_version: number;
-//     cpu_mining_enabled: boolean;
-//     custom_max_cpu_usage: number;
-//     custom_max_gpu_usage: GpuThreads[];
-//     custom_power_levels_enabled: boolean;
-//     display_mode: displayMode;
-//     gpu_mining_enabled: boolean;
-//     has_system_language_been_proposed: boolean;
-//     last_binaries_update_timestamp: string;
-//     mine_on_app_start: boolean;
-//     mmproxy_monero_nodes: string[];
-//     mmproxy_use_monero_fail: boolean;
-//     mode: modeType;
-//     monero_address: string;
-//     p2pool_enabled: boolean;
-//     paper_wallet_enabled: boolean;
-//     sharing_enabled: boolean;
-//     should_always_use_system_language: boolean;
-//     should_auto_launch: boolean;
-//     use_tor: boolean;
-//     visual_mode: boolean;
-//     window_settings: WindowSettings;
-//     show_experimental_settings: boolean;
-//     monero_address_is_generated?: boolean;
-//     created_at: string;
-//     p2pool_stats_server_port: number | null;
-//     pre_release: boolean;
-//     airdrop_tokens?: {
-//         token: string;
-//         refreshToken: string;
-//     };
-// }
-
 export enum ExternalDependencyStatus {
     Installed = 'Installed',
     NotInstalled = 'NotInstalled',
@@ -64,12 +25,6 @@ export interface ExternalDependency {
     status: ExternalDependencyStatus;
 }
 
-export interface WalletAddress {
-    tari_address_base58: string;
-    tari_address_emoji: string;
-    is_tari_address_generated: boolean;
-}
-
 export interface TransactionInfo {
     tx_id: number;
     source_address: string;
@@ -84,6 +39,7 @@ export interface TransactionInfo {
     message: string;
     payment_id: string;
     mined_in_block_height?: number;
+    payment_reference?: string;
 }
 
 export interface P2poolStatsResult {
@@ -155,22 +111,28 @@ interface P2poolBlockStats {
     submitted: number;
 }
 
-interface GpuStatus {
-    recommended_grid_size: number;
-    recommended_block_size: number;
-    max_grid_size: number;
+export enum GpuVendor {
+    NVIDIA,
+    AMD,
+    Intel,
+    Unknown,
 }
 
-export interface GpuSettings {
-    is_excluded: boolean;
-    is_available: boolean;
+export enum GpuDeviceType {
+    Integrated,
+    Dedicated,
+    Unknown,
 }
 
 export interface GpuDevice {
-    device_name: string;
-    device_index: number;
-    status: GpuStatus;
-    settings: GpuSettings;
+    name: string;
+    device_id: number;
+    platform_name: string;
+    vendor: GpuVendor;
+    max_work_group_size: number;
+    max_compute_units: number;
+    global_mem_size: number;
+    device_type: GpuDeviceType;
 }
 
 export interface CpuMinerStatus {
@@ -178,6 +140,13 @@ export interface CpuMinerStatus {
     hash_rate: number;
     estimated_earnings: number;
     connection: CpuMinerConnectionStatus;
+}
+
+export interface PoolStats {
+    accepted_shares: number;
+    unpaid: number;
+    balance: number;
+    min_payout: number;
 }
 
 interface CpuMinerConnectionStatus {
@@ -192,11 +161,15 @@ export interface GpuMinerStatus {
 }
 
 export interface BaseNodeStatus {
+    sha_network_hashrate: number;
+    monero_randomx_network_hashrate: number;
+    tari_randomx_network_hashrate: number;
+    block_reward: number;
     block_height: number;
     block_time: number;
     is_synced: boolean;
-    sha_network_hashrate: number;
-    randomx_network_hashrate: number;
+    num_connections: number;
+    readiness_status: string;
 }
 
 export interface WalletBalance {
@@ -206,13 +179,19 @@ export interface WalletBalance {
     pending_outgoing_balance: number;
 }
 
+interface ApplicationsInformation {
+    version: string;
+    port?: number;
+}
+
 export interface ApplicationsVersions {
-    tari_universe: string;
-    xmrig: string;
-    minotari_node: string;
-    mm_proxy: string;
-    wallet: string;
-    sha_p2pool: string;
+    tari_universe: ApplicationsInformation;
+    xmrig: ApplicationsInformation;
+    minotari_node: ApplicationsInformation;
+    mm_proxy: ApplicationsInformation;
+    wallet: ApplicationsInformation;
+    sha_p2pool: ApplicationsInformation;
+    bridge: ApplicationsInformation;
 }
 
 export interface PaperWalletDetails {
@@ -220,18 +199,20 @@ export interface PaperWalletDetails {
     password: string;
 }
 
-export interface GpuThreads {
-    gpu_name: string;
-    max_gpu_threads: number;
-}
-export interface MaxConsumptionLevels {
-    max_cpu_threads: number;
-    max_gpus_threads: GpuThreads[];
-}
-
 export interface NetworkStatus {
     download_speed: number;
     upload_speed: number;
     latency: number;
     is_too_low: boolean;
+}
+
+export interface BridgeEnvs {
+    walletconnect_id: string;
+    backend_api: string;
+}
+
+export interface TariAddressVariants {
+    emoji_string: string;
+    base58: string;
+    hex: string;
 }

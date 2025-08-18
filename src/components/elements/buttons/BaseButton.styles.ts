@@ -91,6 +91,19 @@ export const StyledButton = styled.button<ButtonStyleProps>`
                     `;
                 }
             }
+            case 'black':
+                return css`
+                    font-weight: 600;
+                    background-color: ${({ theme }) => theme.palette.contrast};
+                    color: ${({ theme }) => theme.palette.text.contrast};
+                    transform: scale(0.99);
+                    &:hover:not(:disabled) {
+                        background-color: ${({ theme }) => theme.palette.contrast};
+                        color: ${({ theme }) => theme.palette.text.contrast};
+                        transform: scale(1);
+                        opacity: 0.9;
+                    }
+                `;
 
             case 'purple':
                 return css`

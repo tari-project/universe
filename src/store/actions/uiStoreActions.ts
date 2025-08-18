@@ -1,10 +1,4 @@
-import {
-    CONNECTION_STATUS,
-    DialogType,
-    sidebarTowerOffset,
-    TOWER_CANVAS_ID,
-    useUIStore,
-} from '@app/store/useUIStore.ts';
+import { useUIStore } from '@app/store/useUIStore.ts';
 import {
     loadTowerAnimation,
     removeTowerAnimation,
@@ -18,55 +12,65 @@ import { ConnectionStatusPayload } from '@app/types/events-payloads.ts';
 import { SB_WIDTH } from '@app/theme/styles.ts';
 import { useConfigUIStore } from '../useAppConfigStore.ts';
 import { useSetupStore } from '../useSetupStore.ts';
+import { CONNECTION_STATUS, DialogType, sidebarTowerOffset, TOWER_CANVAS_ID } from '../types/ui.ts';
 
 export const setShowExternalDependenciesDialog = (showExternalDependenciesDialog: boolean) =>
     useUIStore.setState({ showExternalDependenciesDialog });
 export const setUITheme = (theme: Theme | 'system') => {
     const initialPreferred = window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     const uiTheme: Theme = theme === 'system' ? initialPreferred : theme;
-
     setAnimationProperties(uiTheme === 'light' ? animationLightBg : animationDarkBg);
-
     useUIStore.setState({ theme: uiTheme });
 };
 export const setDialogToShow = (dialogToShow?: DialogType) => useUIStore.setState({ dialogToShow });
 export const setIsWebglNotSupported = (isWebglNotSupported: boolean) => {
-    setVisualMode(false);
-    useUIStore.setState({ isWebglNotSupported });
+    setVisualMode(false).then(() => useUIStore.setState({ isWebglNotSupported }));
 };
 
-export const enableTowerAnimation = (enabled: boolean) => {
-    const setupComplete = useSetupStore.getState().appUnlocked;
+async function loadAnimation() {
     const towerSidebarOffset = useUIStore.getState().towerSidebarOffset;
-    useConfigUIStore.setState({ visualModeToggleLoading: true });
-    setVisualMode(enabled);
-    if (enabled) {
-        loadTowerAnimation({ canvasId: TOWER_CANVAS_ID, offset: towerSidebarOffset })
-            .then(() => {
-                if (setupComplete) {
-                    setAnimationState('showVisual');
-                }
-            })
-            .catch((e) => {
-                console.error('Could not enable visual mode. Error at loadTowerAnimation:', e);
-            })
-            .finally(() => {
-                useConfigUIStore.setState({ visualModeToggleLoading: false });
-            });
-    } else {
-        removeTowerAnimation({ canvasId: TOWER_CANVAS_ID })
-            .then(() => {
-                // Force garbage collection to clean up WebGL context
-                if (window.gc) {
-                    window.gc();
-                }
-            })
-            .catch((e) => {
-                console.error('Could not disable visual mode. Error at removeTowerAnimation:', e);
-            })
-            .finally(() => {
-                useConfigUIStore.setState({ visualModeToggleLoading: false });
-            });
+    const isInitialSetupFinished = useSetupStore.getState().isInitialSetupFinished;
+    const appUnlocked = useSetupStore.getState().appUnlocked;
+    const setupComplete = isInitialSetupFinished && appUnlocked;
+
+    try {
+        await loadTowerAnimation({ canvasId: TOWER_CANVAS_ID, offset: towerSidebarOffset });
+        useUIStore.setState((c) => ({ ...c, towerInitalized: true }));
+        if (setupComplete) {
+            setAnimationState('showVisual');
+        }
+    } catch (e) {
+        console.error('Could not enable visual mode. Error at loadTowerAnimation:', e);
+        useUIStore.setState((c) => ({ ...c, towerInitalized: false }));
+    }
+}
+async function removeAnimation() {
+    try {
+        await removeTowerAnimation({ canvasId: TOWER_CANVAS_ID });
+        useUIStore.setState((c) => ({ ...c, towerInitalized: false }));
+        // Force garbage collection to clean up WebGL context
+        if (window.gc) {
+            window.gc();
+        }
+    } catch (e) {
+        console.error('Could not disable visual mode. Error at removeTowerAnimation:', e);
+    }
+}
+export const toggleVisualMode = async (enabled: boolean) => {
+    useConfigUIStore.setState((c) => ({ ...c, visualModeToggleLoading: true }));
+
+    try {
+        await setVisualMode(enabled);
+        if (enabled) {
+            console.info(`Enabling visual mode. Loading animation from UI Store`);
+            await loadAnimation();
+        } else {
+            await removeAnimation();
+        }
+    } catch (e) {
+        console.error('Could not toggle visual mode. Error at setVisualMode:', e);
+    } finally {
+        useConfigUIStore.setState((c) => ({ ...c, visualModeToggleLoading: false }));
     }
 };
 export const handleConnectionStatusChanged = (connectionStatus: ConnectionStatusPayload) => {
@@ -92,12 +96,15 @@ export const setSidebarOpen = (sidebarOpen: boolean) =>
         towerSidebarOffset: sidebarOpen ? sidebarTowerOffset + SB_WIDTH : sidebarTowerOffset,
     });
 
-export const setSeedlessUI = (seedlessUI: boolean) => useUIStore.setState({ seedlessUI });
+export const setSeedlessUI = (seedlessUI: boolean) => useUIStore.setState((c) => ({ ...c, seedlessUI }));
+export const setShouldShowExchangeSpecificModal = (shouldShowExchangeSpecificModal: boolean) =>
+    useUIStore.setState({ shouldShowExchangeSpecificModal });
 export const handleCloseSplashscreen = () => useUIStore.setState({ showSplashscreen: false });
 export const handleAskForRestart = () => {
     setDialogToShow('restart');
 };
 export const setShowResumeAppModal = (showResumeAppModal: boolean) => useUIStore.setState({ showResumeAppModal });
+export const setShowTapplet = (showTapplet: boolean) => useUIStore.setState({ showTapplet });
 export const animationLightBg = [
     { property: 'bgColor1', value: '#ffffff' },
     { property: 'bgColor2', value: '#d0d0d0' },
@@ -118,7 +125,7 @@ export const animationDarkBg = [
     { property: 'mainColor', value: '#813bf5' },
     { property: 'failColor', value: '#ff5610' },
     { property: 'particlesColor', value: '#813bf5' },
-    { property: 'goboIntensity', value: 0.75 },
+    { property: 'goboIntensity', value: 0.35 },
     { property: 'particlesOpacity', value: 0.95 },
     { property: 'particlesSize', value: 0.015 },
 ];

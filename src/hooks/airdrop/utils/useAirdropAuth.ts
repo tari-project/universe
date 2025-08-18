@@ -2,14 +2,14 @@ import { v4 as uuidv4 } from 'uuid';
 import { useCallback, useState } from 'react';
 import { open } from '@tauri-apps/plugin-shell';
 
-import { useCopyToClipboard } from '@app/hooks';
+import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard.ts';
 import { setAllowTelemetry, setAuthUuid, useAirdropStore, useConfigCoreStore } from '@app/store';
 import useFetchAirdropToken from '../stateHelpers/useFetchAirdropToken.ts';
 
 export function useAirdropAuth() {
     const { isCopied, copyToClipboard } = useCopyToClipboard();
     const allowTelemetry = useConfigCoreStore((s) => s.allow_telemetry);
-    const airdropUrl = useAirdropStore((s) => s.backendInMemoryConfig?.airdropUrl);
+    const airdropUrl = useAirdropStore((s) => s.backendInMemoryConfig?.airdrop_url);
 
     const [linkOpened, setLinkOpened] = useState(false);
 

@@ -6,13 +6,13 @@ import LinkIcon from '@app/assets/icons/LinkIcon.tsx';
 import gift from '@app/assets/images/gift.png';
 import { ActionImgWrapper, CopyButton } from './items.style';
 import { useAirdropStore } from '@app/store';
-import { useCopyToClipboard } from '@app/hooks';
+import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard.ts';
 import CheckSvg from '@app/components/svgs/CheckSvg.tsx';
 
 export default function Invite() {
     const { t } = useTranslation('airdrop');
     const { copyToClipboard, isCopied } = useCopyToClipboard();
-    const airdropUrl = useAirdropStore((state) => state.backendInMemoryConfig?.airdropUrl || '');
+    const airdropUrl = useAirdropStore((state) => state.backendInMemoryConfig?.airdrop_url || '');
     const referralCode = useAirdropStore((state) => state.userDetails?.user?.referral_code || '');
 
     function handleCopy() {

@@ -2,14 +2,13 @@ import { invoke } from '@tauri-apps/api/core';
 import { useAppStateStore } from '../appStateStore.ts';
 import { ExternalDependency, NetworkStatus } from '@app/types/app-status.ts';
 import { addToast } from '@app/components/ToastStack/useToastStore.tsx';
-import { CriticalProblemPayload, ShowReleaseNotesPayload } from '@app/types/events-payloads.ts';
-import { setDialogToShow, useUIStore } from '../index.ts';
-import { SetupPhase } from '@app/types/backend-state.ts';
+import { CriticalProblemPayload, SetupPhase, ShowReleaseNotesPayload } from '@app/types/events-payloads.ts';
+import { setDialogToShow, useMiningStore, useUIStore } from '../index.ts';
 import {
     updateCoreSetupPhaseInfo,
     updateHardwareSetupPhaseInfo,
     updateNodeSetupPhaseInfo,
-    updateUnknownSetupPhaseInfo,
+    updateMiningSetupPhaseInfo,
     updateWalletSetupPhaseInfo,
 } from './setupStoreActions.ts';
 import { setIsReconnecting, setShowResumeAppModal } from './uiStoreActions.ts';
@@ -79,15 +78,6 @@ export const setIsSettingsOpen = (value: boolean) => useAppStateStore.setState({
 export const setIssueReference = (issueReference: string) => useAppStateStore.setState({ issueReference });
 export const setReleaseNotes = (releaseNotes: string) => useAppStateStore.setState({ releaseNotes });
 
-export const updateApplicationsVersions = async () => {
-    try {
-        await invoke('update_applications');
-        await fetchApplicationsVersions();
-    } catch (error) {
-        console.error('Error updating applications versions', error);
-    }
-};
-
 export const setNetworkStatus = (networkStatus: NetworkStatus) => useAppStateStore.setState({ networkStatus });
 export const handleShowRelesaeNotes = (payload: ShowReleaseNotesPayload) => {
     setReleaseNotes(payload.release_notes || '');
@@ -105,8 +95,8 @@ export const handleRestartingPhases = async (phasesToRestart: SetupPhase[]) => {
     if (useSetupStore.getState().appUnlocked) {
         setDialogToShow(undefined);
         setShowResumeAppModal(true);
+        useMiningStore.setState({ wasMineOnAppStartExecuted: false });
     }
-    setIsSettingsOpen(false);
 
     for (const phase of phasesToRestart) {
         switch (phase) {
@@ -119,8 +109,8 @@ export const handleRestartingPhases = async (phasesToRestart: SetupPhase[]) => {
             case SetupPhase.Hardware:
                 updateHardwareSetupPhaseInfo(undefined);
                 break;
-            case SetupPhase.Unknown:
-                updateUnknownSetupPhaseInfo(undefined);
+            case SetupPhase.Mining:
+                updateMiningSetupPhaseInfo(undefined);
                 break;
             case SetupPhase.Wallet:
                 updateWalletSetupPhaseInfo(undefined);

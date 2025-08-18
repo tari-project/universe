@@ -31,6 +31,7 @@ const lightPalette: ThemePalette = {
         base: '#fff',
         contrast: '#000000',
         contrastAlpha: colorsAlpha.darkAlpha[5],
+        focusOutline: c.tariPurple[500],
         primary: {
             main: c.tariPurple[600],
             dark: c.tariPurple[700],
@@ -53,7 +54,7 @@ const lightPalette: ThemePalette = {
             main: c.tariPurple[600],
             primary: '#000000',
             secondary: '#797979',
-            accent: 'rgba(0,0,0,0.6)',
+            accent: 'rgba(0,0,0,0.5)',
             disabled: c.grey[400],
             contrast: '#FFFFFF',
             shadow: colorsAlpha.greyscaleAlpha[80],
@@ -65,6 +66,7 @@ const lightPalette: ThemePalette = {
             accent: c.grey[100],
             splash: '#e5e5e5',
             secondary: '#000000',
+            tooltip: '#fff',
         },
         success: {
             main: c.success[300],

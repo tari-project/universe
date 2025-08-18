@@ -4,16 +4,17 @@ import { setAnimationState, animationStatus, getTowerLogPrefix } from '@tari-pro
 import { useMiningStore } from '@app/store/useMiningStore';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 import { useSetupStore } from '@app/store/useSetupStore.ts';
-import { useConfigUIStore } from '@app/store';
+import { useConfigUIStore, useUIStore } from '@app/store';
 
 export const useUiMiningStateMachine = () => {
     const setupComplete = useSetupStore((s) => s.appUnlocked);
-    const isMiningInitiated = useMiningStore((s) => s.miningInitiated);
+    const isMiningInitiated = useMiningStore((s) => s.isCpuMiningInitiated || s.isGpuMiningInitiated);
     const isChangingMode = useMiningStore((s) => s.isChangingMode);
     const cpuIsMining = useMiningMetricsStore((s) => s.cpu_mining_status?.is_mining);
     const gpuIsMining = useMiningMetricsStore((s) => s.gpu_mining_status?.is_mining);
     const visualMode = useConfigUIStore((s) => s.visual_mode);
     const visualModeLoading = useConfigUIStore((s) => s.visualModeToggleLoading);
+    const towerInitalized = useUIStore((s) => s.towerInitalized);
 
     const stateTrigger = animationStatus;
     const isMining = cpuIsMining || gpuIsMining;
@@ -47,16 +48,12 @@ export const useUiMiningStateMachine = () => {
 
             if (retryCount >= maxRetries) {
                 console.info(
-                    getTowerLogPrefix('info'),
+                    getTowerLogPrefix('warn'),
                     `Animation Stop failed after ${maxRetries} retries: status=${animationStatus}`
                 );
                 return;
             }
 
-            console.info(
-                getTowerLogPrefix('info'),
-                `Animation Stop attempt ${retryCount + 1}/${maxRetries}: status=${animationStatus}`
-            );
             setAnimationState('stop');
             retryCount++;
 
@@ -75,13 +72,16 @@ export const useUiMiningStateMachine = () => {
     }, []);
 
     useEffect(() => {
-        if (noVisualMode) return;
-
+        if (noVisualMode || !towerInitalized) return;
         if (shouldStop) {
             forceAnimationStop();
-        } else if (shouldStart) {
-            setAnimationState('start');
-            clearStopTimeout();
+            return;
         }
-    }, [forceAnimationStop, noVisualMode, shouldStart, shouldStop]);
+        if (shouldStart) {
+            setAnimationState('start');
+        }
+        return () => {
+            clearStopTimeout();
+        };
+    }, [towerInitalized, forceAnimationStop, noVisualMode, shouldStart, shouldStop]);
 };

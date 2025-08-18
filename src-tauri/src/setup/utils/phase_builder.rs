@@ -26,6 +26,7 @@ use tauri::AppHandle;
 use tokio::sync::watch::{Receiver, Sender};
 
 use crate::setup::{
+    listeners::SetupFeaturesList,
     setup_manager::PhaseStatus,
     trait_setup_phase::{SetupConfiguration, SetupPhaseImpl},
 };
@@ -61,7 +62,14 @@ impl PhaseBuilder {
         &self,
         app_handle: AppHandle,
         status_sender: Sender<PhaseStatus>,
+        setup_features: SetupFeaturesList,
     ) -> T {
-        T::new(app_handle, status_sender, self.configuration.clone()).await
+        T::new(
+            app_handle,
+            status_sender,
+            self.configuration.clone(),
+            setup_features,
+        )
+        .await
     }
 }

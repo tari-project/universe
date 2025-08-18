@@ -1,17 +1,27 @@
-import { BlockHeightAccent } from './components/BlockHeightAccent';
-import { Ruler } from './components/Ruler';
-import Earnings from './components/Earnings';
-import BlockTime from './components/BlockTime';
-
+import { useConfigUIStore } from '@app/store';
+import { BlockHeightAccent } from './components/BlockHeightAccent.tsx';
+import { Ruler } from './components/Ruler.tsx';
+import Earnings from './components/Earnings.tsx';
+import BlockTime from './components/BlockTime.tsx';
+import BlockExplorerMini from '../components/BlockExplorerMini/BlockExplorerMini.tsx';
 import { MiningViewContainer } from './MiningView.styles.ts';
 
 export default function MiningView() {
-    return (
-        <MiningViewContainer>
+    const visualModeEnabled = useConfigUIStore((s) => s.visual_mode);
+    const bubblesMarkup = visualModeEnabled && <BlockExplorerMini />;
+    const rulerMarkup = !visualModeEnabled && (
+        <>
             <BlockHeightAccent />
             <Ruler />
-            <Earnings />
             <BlockTime />
+        </>
+    );
+
+    return (
+        <MiningViewContainer>
+            <Earnings />
+            {rulerMarkup}
+            {bubblesMarkup}
         </MiningViewContainer>
     );
 }

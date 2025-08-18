@@ -43,8 +43,7 @@ use crate::{
         trait_config::ConfigImpl,
     },
     events::ShowReleaseNotesPayload,
-    events_manager::EventsManager,
-    UniverseAppState, APPLICATION_FOLDER_ID,
+    EventsEmitter, UniverseAppState, APPLICATION_FOLDER_ID,
 };
 
 const LOG_TARGET: &str = "tari::universe::release_notes";
@@ -98,9 +97,9 @@ impl ReleaseNotes {
     fn read_release_notes_file() -> Result<ReleaseNotesFile, Error> {
         debug!(target: LOG_TARGET, "[read_release_notes_file]");
         let release_notes_path = ReleaseNotes::get_release_notes_path();
-        debug!(target: LOG_TARGET, "[read_release_notes_file] Reading release notes from {}", release_notes_path);
+        debug!(target: LOG_TARGET, "[read_release_notes_file] Reading release notes from {release_notes_path}");
         let content = std::fs::read_to_string(release_notes_path).map_err(|e| {
-            error!(target: LOG_TARGET, "Failed to read release notes file: {}", e);
+            error!(target: LOG_TARGET, "Failed to read release notes file: {e}");
             anyhow!("Failed to read release notes file")
         })?;
 
@@ -118,11 +117,11 @@ impl ReleaseNotes {
             e_tag,
             timestamp: SystemTime::now(),
         };
-        debug!(target: LOG_TARGET, "[save_release_notes_file] Saving release notes to {}", release_notes_path);
+        debug!(target: LOG_TARGET, "[save_release_notes_file] Saving release notes to {release_notes_path}");
         let content = serde_json::to_string(&content_to_save)?;
-        debug!(target: LOG_TARGET, "[save_release_notes_file] Content: {}", content);
+        debug!(target: LOG_TARGET, "[save_release_notes_file] Content: {content}");
         std::fs::write(release_notes_path, content).map_err(|e| {
-            error!(target: LOG_TARGET, "Failed to save release notes file: {}", e);
+            error!(target: LOG_TARGET, "Failed to save release notes file: {e}");
             anyhow!("Failed to save release notes file")
         })?;
 
@@ -145,7 +144,7 @@ impl ReleaseNotes {
             anyhow!("Failed to get ETag header")
         })?;
         let etag_str = etag.to_str().map_err(|e| {
-            warn!(target: LOG_TARGET, "Failed to convert ETag header to string: {}", e);
+            warn!(target: LOG_TARGET, "Failed to convert ETag header to string: {e}");
             anyhow!("Failed to convert ETag header to string")
         })?;
         Ok(etag_str.to_string())
@@ -155,7 +154,7 @@ impl ReleaseNotes {
         debug!(target: LOG_TARGET, "[fetch_release_notes_header]");
         let client = ReleaseNotes::build_retry_reqwest_client();
 
-        debug!(target: LOG_TARGET, "[fetch_release_notes_header] Fetching release notes header from {}", CHANGELOG_URL);
+        debug!(target: LOG_TARGET, "[fetch_release_notes_header] Fetching release notes header from {CHANGELOG_URL}");
         let response = client.head(CHANGELOG_URL).send().await?;
         if response.status().is_success() {
             debug!(target: LOG_TARGET, "[fetch_release_notes_header] Successfully fetched release notes header");
@@ -171,7 +170,7 @@ impl ReleaseNotes {
         debug!(target: LOG_TARGET, "[fetch_release_notes]");
         let client = ReleaseNotes::build_retry_reqwest_client();
 
-        debug!(target: LOG_TARGET, "[fetch_release_notes] Fetching release notes from {}", CHANGELOG_URL);
+        debug!(target: LOG_TARGET, "[fetch_release_notes] Fetching release notes from {CHANGELOG_URL}");
         let response = client.get(CHANGELOG_URL).send().await?;
         if response.status().is_success() {
             debug!(target: LOG_TARGET, "[fetch_release_notes] Successfully fetched release notes");
@@ -264,16 +263,16 @@ impl ReleaseNotes {
         let release_notes_version = Version::parse(&release_notes.version)?;
         let current_app_version = app.package_info().version.clone();
 
-        debug!(target: LOG_TARGET, "[handle_release_notes_event_emit] Release notes version: {}", release_notes_version);
-        debug!(target: LOG_TARGET, "[handle_release_notes_event_emit] Last release notes version shown: {}", last_release_notes_version_shown);
-        debug!(target: LOG_TARGET, "[handle_release_notes_event_emit] Current app version: {}", current_app_version);
+        debug!(target: LOG_TARGET, "[handle_release_notes_event_emit] Release notes version: {release_notes_version}");
+        debug!(target: LOG_TARGET, "[handle_release_notes_event_emit] Last release notes version shown: {last_release_notes_version_shown}");
+        debug!(target: LOG_TARGET, "[handle_release_notes_event_emit] Current app version: {current_app_version}");
 
         let was_release_notes_updated = release_notes_version.gt(&last_release_notes_version_shown);
         let is_app_on_latest_release_notes_version_or_higher =
             current_app_version.ge(&release_notes_version);
 
-        debug!(target: LOG_TARGET, "[handle_release_notes_event_emit] Was release notes updated: {}", was_release_notes_updated);
-        debug!(target: LOG_TARGET, "[handle_release_notes_event_emit] Is app on latest release notes version or higher: {}", is_app_on_latest_release_notes_version_or_higher);
+        debug!(target: LOG_TARGET, "[handle_release_notes_event_emit] Was release notes updated: {was_release_notes_updated}");
+        debug!(target: LOG_TARGET, "[handle_release_notes_event_emit] Is app on latest release notes version or higher: {is_app_on_latest_release_notes_version_or_higher}");
 
         let should_show_release_notes =
             was_release_notes_updated && is_app_on_latest_release_notes_version_or_higher;
@@ -285,16 +284,13 @@ impl ReleaseNotes {
             .map(|update| update.is_some())
             .unwrap_or(false);
 
-        debug!(target: LOG_TARGET, "[handle_release_notes_event_emit] Is app update available: {}", is_app_update_available);
+        debug!(target: LOG_TARGET, "[handle_release_notes_event_emit] Is app update available: {is_app_update_available}");
 
-        EventsManager::handle_show_release_notes(
-            &app,
-            ShowReleaseNotesPayload {
-                release_notes: release_notes.content,
-                is_app_update_available,
-                should_show_dialog: should_show_release_notes,
-            },
-        )
+        EventsEmitter::emit_show_release_notes(ShowReleaseNotesPayload {
+            release_notes: release_notes.content,
+            is_app_update_available,
+            should_show_dialog: should_show_release_notes,
+        })
         .await;
         debug!(target: LOG_TARGET, "[handle_release_notes_event_emit] Emitted release notes event");
 

@@ -1,4 +1,14 @@
 {
+  "bubbles": {
+    "active-miners": "active miners",
+    "ago": "ago",
+    "block": "block",
+    "got-rewarded": "got rewarded",
+    "miners": "miners",
+    "pool": "Pool",
+    "solved": "solved",
+    "solving": "is being solved"
+  },
   "connection-to-node-lost": "Verbindung zum Miner verloren. Bitte warte, bis der Miner sich wieder verbindet, oder starte den Miner neu.",
   "cpu-power": "CPU-Leistung",
   "current-block-time": "Aktuelle Blockzeit",
@@ -24,6 +34,12 @@
     "step_4": "Versuche, eine Tor-Bridge zu verwenden (in den Einstellungen)",
     "step_5": "Versuche, Tor zu deaktivieren (in den Einstellungen)",
     "step_6": "Versuche einen App-Reset (in den Einstellungen)"
+  },
+  "pool": {
+    "accepted_shares": "Akzeptierte Anteile",
+    "balance": "Total earnings",
+    "min_payout": "Mindestzahlung",
+    "unpaid": "Unbezahlt"
   },
   "you-earn-rewards-separately": "Sie verdienen Belohnungen für das Mining von CPU und GPU separat",
   "you-won-block": "Sie waren der Gewinner von <span>Block #{{ blockHeight }}</span>",

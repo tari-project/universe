@@ -1,4 +1,4 @@
-// Copyright 2024. The Tari Project
+// Copyright 2025. The Tari Project
 //
 // Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
 // following conditions are met:
@@ -20,8 +20,6 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::configs::config_mining::GpuThreads;
-use crate::configs::config_mining::MiningMode;
 use crate::gpu_miner::EngineType;
 use crate::gpu_status_file::GpuDevice;
 use crate::port_allocator::PortAllocator;
@@ -33,6 +31,7 @@ use async_trait::async_trait;
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::ops::Div;
 use std::path::PathBuf;
 use std::time::Duration;
 use tari_common::configuration::Network;
@@ -46,21 +45,20 @@ use crate::utils::windows_setup_utils::add_firewall_rule;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 
 const LOG_TARGET: &str = "tari::universe::gpu_miner_adapter";
-
+const DEFAULT_GPU_THREADS: u32 = 8196;
 pub enum GpuNodeSource {
     BaseNode { grpc_address: String },
-    P2Pool { grpc_address: String },
 }
 
 pub(crate) struct GpuMinerAdapter {
     pub(crate) tari_address: TariAddress,
-    // Value ranges 1 - 1000
-    pub(crate) gpu_grid_size: Vec<GpuThreads>,
     pub(crate) node_source: Option<GpuNodeSource>,
     pub(crate) coinbase_extra: String,
     pub(crate) gpu_devices: Vec<GpuDevice>,
+    pub(crate) gpu_usage_percentage: u32,
     pub(crate) gpu_raw_status_broadcast: watch::Sender<Option<GpuMinerStatus>>,
     pub(crate) curent_selected_engine: EngineType,
+    pub http_api_port: u16,
 }
 
 impl GpuMinerAdapter {
@@ -70,44 +68,13 @@ impl GpuMinerAdapter {
     ) -> Self {
         Self {
             tari_address: TariAddress::default(),
-            gpu_grid_size: gpu_devices
-                .iter()
-                .map(|gpu_device| GpuThreads {
-                    gpu_name: gpu_device.device_name.clone(),
-                    max_gpu_threads: gpu_device.status.max_grid_size,
-                })
-                .collect(),
             node_source: None,
             coinbase_extra: "tari-universe".to_string(),
             gpu_devices,
             gpu_raw_status_broadcast,
+            gpu_usage_percentage: 0,
             curent_selected_engine: EngineType::OpenCL,
-        }
-    }
-
-    pub fn set_mode(&mut self, mode: MiningMode, custom_max_gpus_grid_size: Vec<GpuThreads>) {
-        match mode {
-            MiningMode::Eco => {
-                self.gpu_grid_size = self
-                    .gpu_devices
-                    .iter()
-                    .map(|gpu_device| GpuThreads {
-                        gpu_name: gpu_device.device_name.clone(),
-                        max_gpu_threads: 2,
-                    })
-                    .collect()
-            }
-            MiningMode::Ludicrous => {
-                self.gpu_grid_size = self
-                    .gpu_devices
-                    .iter()
-                    .map(|gpu_device| GpuThreads {
-                        gpu_name: gpu_device.device_name.clone(),
-                        max_gpu_threads: 1024,
-                    })
-                    .collect()
-            }
-            MiningMode::Custom => self.gpu_grid_size = custom_max_gpus_grid_size,
+            http_api_port: PortAllocator::new().assign_port_with_fallback(),
         }
     }
 }
@@ -128,7 +95,7 @@ impl ProcessAdapter for GpuMinerAdapter {
         info!(target: LOG_TARGET, "Gpu miner spawn inner");
         let inner_shutdown = Shutdown::new();
 
-        let http_api_port = PortAllocator::new().assign_port_with_fallback();
+        let http_api_port = self.http_api_port;
         let working_dir = data_dir.join("gpuminer");
         std::fs::create_dir_all(&working_dir)?;
         std::fs::create_dir_all(config_dir.join("gpuminer"))?;
@@ -139,7 +106,6 @@ impl ProcessAdapter for GpuMinerAdapter {
 
         let tari_node_address = match self.node_source.as_ref() {
             Some(GpuNodeSource::BaseNode { grpc_address }) => grpc_address.clone(),
-            Some(GpuNodeSource::P2Pool { grpc_address }) => grpc_address.clone(),
             None => {
                 return Err(anyhow!("GpuMinerAdapter node_source is not set"));
             }
@@ -153,10 +119,16 @@ impl ProcessAdapter for GpuMinerAdapter {
             .to_string();
 
         let grid_size = self
-            .gpu_grid_size
+            .gpu_devices
+            .clone()
             .iter()
-            .map(|x| x.max_gpu_threads.clone().to_string())
-            .collect::<Vec<_>>()
+            .map(|_| {
+                DEFAULT_GPU_THREADS
+                    .saturating_mul(self.gpu_usage_percentage)
+                    .div(100)
+                    .to_string()
+            })
+            .collect::<Vec<String>>()
             .join(",");
 
         let mut args: Vec<String> = vec![
@@ -194,12 +166,12 @@ impl ProcessAdapter for GpuMinerAdapter {
         args.push("--coinbase-extra".to_string());
         args.push(self.coinbase_extra.clone());
 
-        if matches!(
-            self.node_source.as_ref(),
-            Some(GpuNodeSource::P2Pool { .. })
-        ) {
-            args.push("--p2pool-enabled".to_string());
-        }
+        // if matches!(
+        //     self.node_source.as_ref(),
+        //     Some(GpuNodeSource::P2Pool { .. })
+        // ) {
+        //     args.push("--p2pool-enabled".to_string());
+        // }
 
         info!(target: LOG_TARGET, "Run Gpu miner with args: {:?}", args.join(" "));
         let mut envs = std::collections::HashMap::new();
@@ -303,7 +275,7 @@ impl GpuMinerStatusMonitor {
         {
             Ok(response) => response,
             Err(e) => {
-                warn!(target: LOG_TARGET, "Error in getting response from XtrGpuMiner status: {}", e);
+                warn!(target: LOG_TARGET, "Error in getting response from XtrGpuMiner status: {e}");
                 if e.is_connect() {
                     return Ok(GpuMinerStatus {
                         is_mining: false,
@@ -322,7 +294,7 @@ impl GpuMinerStatusMonitor {
         let body: XtrGpuminerHttpApiStatus = match serde_json::from_str(&text) {
             Ok(body) => body,
             Err(e) => {
-                warn!(target: LOG_TARGET, "Error decoding body from  in XtrGpuMiner status: {}", e);
+                warn!(target: LOG_TARGET, "Error decoding body from  in XtrGpuMiner status: {e}");
                 return Ok(GpuMinerStatus {
                     is_mining: false,
                     hash_rate: 0.0,

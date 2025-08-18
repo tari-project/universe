@@ -11,7 +11,7 @@ const config: KnipConfig = {
         duplicates: 'error',
     },
     ignoreBinaries: ['commitlint'],
-    ignoreDependencies: ['babel-plugin-styled-components'], // needed by plugins
+    ignoreDependencies: ['babel-plugin-styled-components', 'babel-plugin-react-compiler', '@tauri-apps/cli'], // needed by plugins
     ignoreExportsUsedInFile: true,
 };
 

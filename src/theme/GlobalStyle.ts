@@ -1,4 +1,5 @@
 import { createGlobalStyle } from 'styled-components';
+import { TOWER_CANVAS_ID } from '@app/store/types/ui.ts';
 
 export const GlobalReset = createGlobalStyle`
     *:focus {
@@ -18,8 +19,9 @@ export const GlobalReset = createGlobalStyle`
         font: inherit;
 
         &:focus-visible {
-            outline: 3px solid #c9eb00;
+            outline: 2px solid ${({ theme }) => theme.palette.focusOutline};
             outline-offset: 2px;
+            transition: none;
         }
     }
 
@@ -42,8 +44,9 @@ export const GlobalReset = createGlobalStyle`
         }
 
         &:focus-visible {
-            outline: 3px solid #c9eb00;
+            outline: 2px solid ${({ theme }) => theme.palette.focusOutline};
             outline-offset: 2px;
+            transition: none;
         }
     }
 `;
@@ -98,8 +101,9 @@ export const GlobalStyle = createGlobalStyle<{ $hideCanvas?: boolean }>`
     html {
         background: ${({ theme }) => theme.palette.background.main};
     }
-    #tower-canvas {
+    #${TOWER_CANVAS_ID} {
         z-index: 0;
+        position: absolute;
         top: 0;
         left: 0;
         pointer-events: auto;

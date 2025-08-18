@@ -1,5 +1,14 @@
-import { ConfigBackendInMemory, ConfigCore, ConfigMining, ConfigUI, ConfigWallet } from '@app/types/configs';
-import { create } from './create';
+import { create } from 'zustand';
+import {
+    ConfigBackendInMemory,
+    ConfigCore,
+    ConfigMining,
+    ConfigMiningSelectors,
+    ConfigPools,
+    ConfigUI,
+    ConfigWallet,
+} from '@app/types/configs';
+import { WalletUIMode } from '@app/types/events-payloads';
 
 type UIConfigStoreState = Partial<ConfigUI> & {
     visualModeToggleLoading: boolean;
@@ -7,6 +16,7 @@ type UIConfigStoreState = Partial<ConfigUI> & {
 const configCoreInitialState: ConfigCore = {
     created_at: '',
     allow_telemetry: false,
+    allow_notifications: true,
     anon_id: '',
     auto_update: false,
     is_p2pool_enabled: false,
@@ -20,6 +30,7 @@ const configCoreInitialState: ConfigCore = {
     airdrop_tokens: undefined,
     last_binaries_update_timestamp: '',
     p2pool_stats_server_port: undefined,
+    exchange_id: undefined,
 };
 
 const configWalletInitialState: ConfigWallet = {
@@ -27,44 +38,51 @@ const configWalletInitialState: ConfigWallet = {
     keyring_accessed: false,
     monero_address: '',
     monero_address_is_generated: false,
+    wxtm_addresses: {},
 };
 
 const configMininigInitialState: ConfigMining = {
     created_at: '',
     cpu_mining_enabled: true,
-    custom_max_cpu_usage: 0,
-    custom_mode_cpu_options: [],
-    custom_max_gpu_usage: [],
-    eco_mode_cpu_threads: 0,
-    eco_mode_cpu_options: [],
     gpu_engine: '',
     gpu_mining_enabled: true,
-    ludicrous_mode_cpu_threads: 0,
-    ludicrous_mode_cpu_options: [],
     mine_on_app_start: false,
-    mode: 'Eco',
+    mining_modes: {},
+    selected_mining_mode: 'Eco',
+    gpu_devices_settings: {},
 };
 
 const configUIInitialState: UIConfigStoreState = {
     visualModeToggleLoading: false,
     created_at: '',
     application_language: 'en',
-    custom_power_levels_enabled: true,
     display_mode: 'Eco',
     has_system_language_been_proposed: false,
-    paper_wallet_enabled: true,
     sharing_enabled: true,
     show_experimental_settings: false,
     should_always_use_system_language: false,
     visual_mode: true,
-    warmup_seen: null,
+    wallet_ui_mode: WalletUIMode.Standard,
+    was_staged_security_modal_shown: false,
+};
+
+const configPoolsInitialState: ConfigPools = {
+    was_config_migrated: false,
+    created_at: '',
+    cpu_pool_enabled: false,
+    gpu_pool_enabled: false,
+    available_cpu_pools: undefined,
+    available_gpu_pools: undefined,
+    selected_cpu_pool: undefined,
+    selected_gpu_pool: undefined,
 };
 
 const configBEInMemoryInitialState: ConfigBackendInMemory = {
-    airdropUrl: '',
-    airdropApiUrl: '',
-    airdropTwitterAuthUrl: '',
-    exchangeId: undefined,
+    airdrop_url: '',
+    airdrop_api_url: '',
+    airdrop_twitter_auth_url: '',
+    exchange_id: '',
+    bridge_backend_api_url: '',
 };
 
 export const useConfigCoreStore = create<ConfigCore>()(() => ({
@@ -75,12 +93,17 @@ export const useConfigWalletStore = create<ConfigWallet>()(() => ({
     ...configWalletInitialState,
 }));
 
-export const useConfigMiningStore = create<ConfigMining>()(() => ({
+export const useConfigMiningStore = create<ConfigMining & ConfigMiningSelectors>()((_, get) => ({
     ...configMininigInitialState,
+    getSelectedMiningMode: () => get().mining_modes[get().selected_mining_mode] || undefined,
 }));
 
 export const useConfigUIStore = create<UIConfigStoreState>()(() => ({
     ...configUIInitialState,
+}));
+
+export const useConfigPoolsStore = create<ConfigPools>()(() => ({
+    ...configPoolsInitialState,
 }));
 
 export const useConfigBEInMemoryStore = create<ConfigBackendInMemory>()(() => ({

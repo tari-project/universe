@@ -41,6 +41,10 @@
     "text": "Tari Universe хочет использовать аналитику для улучшения Вашего опыта.",
     "title": "Сделайте Tari Universe лучше"
   },
+  "push-notifications": {
+    "text": "Tari Universe хотел бы иметь возможность отправлять Вам уведомления на Ваши подключенные устройства",
+    "title": "Разрешите Tari Universe отправлять уведомления  "
+  },
   "referral": "Пригласить друга",
   "rightClickToCopy": "Щелкните правой кнопкой мыши, чтобы скопировать ссылку",
   "success": "Успех",
@@ -51,5 +55,57 @@
   "username-error": "Имя пользователя должно содержать от 3 до 20 символов и включать только буквы, цифры, подчеркивания или дефисы",
   "username-update-success": "Имя пользователя успешно обновлено",
   "you-reached-your-giftinh-goal": "Вы достигли своей цели по подаркам!",
-  "your-friend-accepted-gift": "Один из Ваших друзей принял Ваш подарок!"
+  "your-friend-accepted-gift": "Один из Ваших друзей принял Ваш подарок!",
+  "crewRewards": {
+    "title": "Rewards",
+    "myCrew": "My Crew",
+    "earnDescription": "Earn <strong>{{userReward}} XTM</strong> for every <strong>{{daysRequired}} days</strong> your friend mines. Your friend will also earn <strong>{{friendReward}} XTM</strong>.",
+    "inviteFriends": "Invite Friends",
+    "copied": "Copied!",
+    "activeMinersStat": "Active Miners",
+    "bonusXTMEarned": "Bonus XTM Earned",
+    "of": "of",
+    "inviteFriendsMessage": "Invite friends and start earning <strong>bonus XTM!</strong>",
+    "errorLoadingData": "Error loading crew data. Please try again.",
+    "filters": {
+      "all": "All",
+      "complete": "Complete",
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "crewStatus": {
+      "completed": "Completed",
+      "inProgress": "In Progress",
+      "needsNudge": "Needs Nudge"
+    },
+    "actions": {
+      "claimed": "Claimed",
+      "claim": "Claim {{amount}} XTM",
+      "nudge": "Nudge"
+    },
+    "streak": {
+      "unlockBonusRewards": "Unlock your bonus rewards",
+      "mineConsecutiveDays": "Mine for at least <strong>{{streakDaysRequired}} consecutive days</strong> each week to earn your bonus XTM.",
+      "keepStreak": "Keep your streak to keep earning rewards!",
+      "dayStreak": "{{days}} Day Streak",
+      "day": "Day",
+      "loadingStreak": "Loading streak...",
+      "startYourStreak": "Start Your Streak!",
+      "oneDayStreak": "1 Day Streak",
+      "multiDayStreak": "{{days}} Day Streak",
+      "startMiningMessage": "Start mining to begin your streak and earn rewards!",
+      "minimumRequirementsMet": "You've met the minimum requirements. Keep going!",
+      "daysToMinimum": "{{days}} more days to meet minimum requirements!"
+    },
+    "login": {
+      "title": "Mine with friends. <strong>Earn together.</strong>",
+      "description": "You earn <strong>{{userReward}} bonus XTM/week</strong> AND your friend earns <strong>{{friendReward}} bonus XTM/week</strong> when you and your friend both mine",
+      "bonusText": "Earn bonus rewards up to {{maxWeeks}} weeks per invite",
+      "loginButton": "Log in & Start Earning!"
+    },
+    "feedback": {
+      "nudgeSent": "Nudge sent!",
+      "rewardClaimed": "Reward claimed!"
+    }
+  }
 }

@@ -1,38 +1,52 @@
 import { create } from 'zustand';
-import { ExchangeContent } from '@app/types/exchange.ts';
-import { useWalletStore } from '@app/store/useWalletStore.ts';
-import { useConfigBEInMemoryStore } from '@app/store/useAppConfigStore.ts';
+
+import { ExchangeBranding } from '@app/types/exchange.ts';
 
 interface ExchangeStoreState {
-    content?: ExchangeContent | null;
-    showModal: boolean | null;
+    showExchangeAddressModal: boolean | null;
+    currentExchangeMinerId: string;
+    showUniversalModal: boolean | null;
+    reward_end_date?: string;
+    reward_earn_cap_percentage?: number;
 }
 
+const UNIVERSE_LOGO_PATH = '/assets/img/tari_round.png';
+export const universalExchangeMinerOption: ExchangeBranding = {
+    id: 'universal',
+    slug: 'universal',
+    name: 'Tari Universe',
+    is_hidden: false,
+    exchange_id: 'universal',
+    logo_img_small_url: UNIVERSE_LOGO_PATH,
+    wxtm_mode: false,
+};
+
 const initialState = {
-    showModal: null,
+    showExchangeAddressModal: null,
+    showUniversalModal: null,
+    currentExchangeMinerId: universalExchangeMinerOption.exchange_id,
 };
 export const useExchangeStore = create<ExchangeStoreState>()(() => ({ ...initialState }));
 
-export const setShowExchangeModal = (showModal: boolean) => {
-    useExchangeStore.setState({ showModal });
+export const setShowExchangeModal = (showExchangeAddressModal: boolean) => {
+    useExchangeStore.setState({ showExchangeAddressModal });
 };
 
-export const setExchangeContent = (content?: ExchangeContent | null) => {
-    useExchangeStore.setState({ content });
+export const setShowUniversalModal = (showUniversalModal: boolean) => {
+    useExchangeStore.setState({ showUniversalModal: showUniversalModal });
 };
 
-export async function fetchExchangeContent(exchangeId: string) {
-    const apiUrl = useConfigBEInMemoryStore.getState().airdropApiUrl;
-    const endpoint = `${apiUrl}/miner/exchanges`;
-    try {
-        const content = await fetch(`${endpoint}/${exchangeId}`);
-        const xcContent = (await content.json()) as ExchangeContent;
-        const walletIsGenerated = useWalletStore.getState().is_tari_address_generated;
-        if (xcContent) {
-            setExchangeContent(xcContent);
-            setShowExchangeModal(!!walletIsGenerated);
-        }
-    } catch (e) {
-        console.error('Could not fetch exchange content', e);
-    }
-}
+export const setCurrentExchangeMinerId = (currentExchangeMinerId?: string) => {
+    if (!currentExchangeMinerId) return;
+    useExchangeStore.setState({ currentExchangeMinerId });
+};
+
+export const setRewardData = ({
+    reward_end_date,
+    reward_earn_cap_percentage,
+}: {
+    reward_end_date?: string;
+    reward_earn_cap_percentage?: number;
+}) => {
+    useExchangeStore.setState((c) => ({ ...c, reward_end_date, reward_earn_cap_percentage }));
+};

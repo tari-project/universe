@@ -1,5 +1,5 @@
 {
-    "version": "1.0.10",
+    "version": "1.5.9",
     "productName": "Tari Universe (Alpha)",
     "mainBinaryName": "Tari Universe (Alpha)",
     "identifier": "com.tari.universe.alpha",
@@ -49,13 +49,19 @@
                 "style-src"
             ],
             "csp": {
-                "default-src": "'self' tauri: https:",
+                "default-src": "'self' tauri: https: http://localhost:* http://127.0.0.1:*",
                 "style-src": "'self' 'unsafe-inline'",
                 "connect-src": [
                     "'self'",
                     "https:",
                     "wss://ut.tari.com",
+                    "wss://relay.walletconnect.org",
+                    "https://rpc.ankr.com/eth",
+                    "https://ethereum-sepolia-rpc.publicnode.com",
                     "tauri:",
+                    "tauri://localhost:*",
+                    "http://localhost:*",
+                    "http://127.0.0.1:*",
                     "ipc:",
                     "http://ipc.localhost",
                     "data:",
@@ -64,15 +70,16 @@
                     "base64"
                 ],
                 "script-src": "'self' 'unsafe-eval'",
+                "worker-src": "'self' blob: https://cdn.npmjs.com/@tari-project/tari-tower",
+                "img-src": "'self' data: blob: base64: https://*.twimg.com https://cdn.npmjs.com/@tari-project/tari-tower http://127.0.0.1 http://127.0.0.1/ http://127.0.0.1:* http://localhost http://localhost/ http://localhost:* https://static.tari.com https://static.tari.com/*",
                 "object-src": "'self' data: blob:",
-                "script-src-elem": "'self' 'unsafe-inline' 'unsafe-eval'",
-                "img-src": [
-                    "'self'",
-                    "data:",
-                    "blob:",
-                    "base64:",
-                    "https://*.twimg.com",
-                    "https://*.googleusercontent.com"
+                "media-src": "'self' data: blob: tauri: https:",
+                "script-src-elem": "'self' 'unsafe-inline' 'unsafe-eval'"
+            },
+            "assetProtocol": {
+                "enable": true,
+                "scope": [
+                    "**"
                 ]
             },
             "pattern": {

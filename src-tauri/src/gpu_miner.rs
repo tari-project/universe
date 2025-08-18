@@ -30,13 +30,11 @@ use std::{path::PathBuf, sync::Arc};
 use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::ShutdownSignal;
-use tauri::AppHandle;
 use tokio::select;
 use tokio::sync::{watch, RwLock};
 
 use crate::binaries::{Binaries, BinaryResolver};
-use crate::configs::config_mining::{GpuThreads, MiningMode};
-use crate::events_manager::EventsManager;
+use crate::events_emitter::EventsEmitter;
 use crate::gpu_miner_adapter::GpuNodeSource;
 use crate::gpu_status_file::{GpuDevice, GpuStatusFile};
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
@@ -81,10 +79,11 @@ impl EngineType {
 
 pub(crate) struct GpuMiner {
     watcher: Arc<RwLock<ProcessWatcher<GpuMinerAdapter>>>,
-    is_available: bool,
     gpu_devices: Vec<GpuDevice>,
     curent_selected_engine: EngineType,
+    #[allow(dead_code)]
     node_status_watch_rx: watch::Receiver<BaseNodeStatus>,
+    #[allow(dead_code)]
     gpu_raw_status_rx: watch::Receiver<Option<GpuMinerStatus>>,
     status_broadcast: watch::Sender<GpuMinerStatus>,
 }
@@ -103,7 +102,6 @@ impl GpuMiner {
 
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),
-            is_available: false,
             gpu_devices: Vec::new(),
             curent_selected_engine: EngineType::OpenCL,
             status_broadcast,
@@ -120,9 +118,8 @@ impl GpuMiner {
         base_path: PathBuf,
         config_path: PathBuf,
         log_path: PathBuf,
-        mining_mode: MiningMode,
         coinbase_extra: String,
-        custom_gpu_grid_size: Vec<GpuThreads>,
+        gpu_usage_percentage: u32,
     ) -> Result<(), anyhow::Error> {
         let shutdown_signal = TasksTrackers::current().hardware_phase.get_signal().await;
         let task_tracker = TasksTrackers::current()
@@ -130,14 +127,15 @@ impl GpuMiner {
             .get_task_tracker()
             .await;
 
-        let mut process_watcher = self.watcher.write().await;
+        let mut process_watcher: tokio::sync::RwLockWriteGuard<
+            '_,
+            ProcessWatcher<GpuMinerAdapter>,
+        > = self.watcher.write().await;
         process_watcher.adapter.tari_address = tari_address;
         process_watcher.adapter.gpu_devices = self.gpu_devices.clone();
-        process_watcher
-            .adapter
-            .set_mode(mining_mode, custom_gpu_grid_size);
         process_watcher.adapter.node_source = Some(node_source);
         process_watcher.adapter.coinbase_extra = coinbase_extra;
+        process_watcher.adapter.gpu_usage_percentage = gpu_usage_percentage;
         info!(target: LOG_TARGET, "Starting xtrgpuminer");
         process_watcher
             .start(
@@ -168,10 +166,6 @@ impl GpuMiner {
         Ok(())
     }
 
-    pub async fn is_running(&self) -> bool {
-        let process_watcher = self.watcher.read().await;
-        process_watcher.is_running()
-    }
     #[allow(dead_code)]
     pub async fn is_pid_file_exists(&self, base_path: PathBuf) -> bool {
         let lock = self.watcher.read().await;
@@ -180,7 +174,6 @@ impl GpuMiner {
 
     pub async fn detect(
         &mut self,
-        app: AppHandle,
         config_dir: PathBuf,
         engine: EngineType,
     ) -> Result<(), anyhow::Error> {
@@ -207,14 +200,13 @@ impl GpuMiner {
             self.curent_selected_engine.to_string(),
         ];
         let gpuminer_bin = BinaryResolver::current()
-            .read()
-            .await
             .resolve_path_to_binary_files(Binaries::GpuMiner)
             .await?;
 
         info!(target: LOG_TARGET, "Gpu miner binary file path {:?}", gpuminer_bin.clone());
         crate::download_utils::set_permissions(&gpuminer_bin).await?;
-        let child = process_utils::launch_child_process(&gpuminer_bin, &config_dir, None, &args)?;
+        let child =
+            process_utils::launch_child_process(&gpuminer_bin, &config_dir, None, &args, false)?;
         let output = child.wait_with_output().await?;
         info!(target: LOG_TARGET, "Gpu detect exit code: {:?}", output.status.code().unwrap_or_default());
 
@@ -226,9 +218,7 @@ impl GpuMiner {
         self.gpu_devices = gpu_status_file.gpu_devices;
         match output.status.code() {
             Some(0) => {
-                self.is_available = true;
-                EventsManager::handle_detected_available_gpu_engines(
-                    &app,
+                EventsEmitter::emit_detected_available_gpu_engines(
                     self.get_available_gpu_engines(config_dir)
                         .await?
                         .iter()
@@ -238,16 +228,14 @@ impl GpuMiner {
                 )
                 .await;
 
-                EventsManager::handle_detected_devices(&app, self.gpu_devices.clone()).await;
+                // Device detection now is handled in gpu_devices.rs
+                // EventsEmitter::emit_detected_devices(self.gpu_devices.clone()).await;
                 Ok(())
             }
-            _ => {
-                self.is_available = false;
-                Err(anyhow::anyhow!(
-                    "Non-zero exit code: {:?}",
-                    output.status.code()
-                ))
-            }
+            _ => Err(anyhow::anyhow!(
+                "Non-zero exit code: {:?}",
+                output.status.code()
+            )),
         }
     }
 
@@ -260,7 +248,7 @@ impl GpuMiner {
 
         for entry in read_dir(engine_statuses_directory)? {
             info!(target: LOG_TARGET, "Reading engine status file");
-            info!(target: LOG_TARGET, "Engine status file: {:?}", entry);
+            info!(target: LOG_TARGET, "Engine status file: {entry:?}");
             let entry = entry?;
             let path = entry.path();
             // let file_name = path.file_name().unwrap().to_str().unwrap();
@@ -273,15 +261,15 @@ impl GpuMiner {
             let sanitized_file_name = file_name.split("_").collect::<Vec<&str>>()[0];
             let engine_type = EngineType::from_string(sanitized_file_name);
 
-            info!(target: LOG_TARGET, "File name: {:?}", file_name);
-            info!(target: LOG_TARGET, "Sanitized file name: {:?}", sanitized_file_name);
+            info!(target: LOG_TARGET, "File name: {file_name:?}");
+            info!(target: LOG_TARGET, "Sanitized file name: {sanitized_file_name:?}");
 
             match engine_type {
                 Ok(engine) => {
                     available_engines.push(engine);
                 }
                 Err(_) => {
-                    info!(target: LOG_TARGET, "Invalid engine type: {:?}", sanitized_file_name);
+                    info!(target: LOG_TARGET, "Invalid engine type: {sanitized_file_name:?}");
                 }
             }
         }
@@ -330,42 +318,10 @@ impl GpuMiner {
         });
     }
 
-    pub fn is_gpu_mining_available(&self) -> bool {
-        self.is_available
-    }
-
-    pub async fn toggle_device_exclusion(
-        &mut self,
-        config_dir: PathBuf,
-        device_index: u32,
-        excluded: bool,
-    ) -> Result<(), anyhow::Error> {
-        let device = self
-            .gpu_devices
-            .iter_mut()
-            .find(|gpu_device| gpu_device.device_index == device_index);
-
-        if let Some(gpu_device) = device {
-            gpu_device.settings.is_excluded = excluded;
-        }
-
-        let path = get_gpu_engines_statuses_path(&config_dir)
-            .join(format!("{}_gpu_status.json", self.curent_selected_engine));
-        GpuStatusFile::save(
-            GpuStatusFile {
-                gpu_devices: self.gpu_devices.clone(),
-            },
-            &path,
-        )?;
-
-        Ok(())
-    }
-
     pub async fn set_selected_engine(
         &mut self,
         engine: EngineType,
         config_dir: PathBuf,
-        app: AppHandle,
     ) -> Result<(), anyhow::Error> {
         self.curent_selected_engine = engine.clone();
         let mut process_watcher = self.watcher.write().await;
@@ -378,13 +334,15 @@ impl GpuMiner {
 
         self.gpu_devices = gpu_settings.gpu_devices;
 
-        EventsManager::handle_detected_devices(&app, self.gpu_devices.clone()).await;
+        // Device detection now is handled in gpu_devices.rs
+        // EventsEmitter::emit_detected_devices(self.gpu_devices.clone()).await;
 
         Ok(())
     }
 
-    pub async fn get_gpu_devices(&self) -> Result<Vec<GpuDevice>, anyhow::Error> {
-        Ok(self.gpu_devices.clone())
+    pub async fn get_port(&self) -> u16 {
+        let lock = self.watcher.read().await;
+        lock.adapter.http_api_port
     }
 }
 

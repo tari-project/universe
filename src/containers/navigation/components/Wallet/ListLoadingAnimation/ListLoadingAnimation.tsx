@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ListItemsWrapper, LoadingText, Rectangle, Wrapper } from './styles';
+import { Trans } from 'react-i18next';
 
 interface Props {
     loadingText?: string;
@@ -13,8 +14,11 @@ export default function ListLoadingAnimation({ loadingText }: Props) {
     useEffect(() => {
         let animationTimeout: NodeJS.Timeout;
         let currentIndex = 0;
+        let isMounted = true;
 
         const animateIn = () => {
+            if (!isMounted) return;
+
             if (currentIndex < totalSquares) {
                 const newActiveSquares = Array.from({ length: currentIndex + 1 }).map((_, i) => i);
                 setActiveSquares(newActiveSquares);
@@ -23,6 +27,7 @@ export default function ListLoadingAnimation({ loadingText }: Props) {
                 animationTimeout = setTimeout(animateIn, staggerDelay * 1000);
             } else {
                 animationTimeout = setTimeout(() => {
+                    if (!isMounted) return;
                     setActiveSquares([]);
                     currentIndex = 0;
                     animationTimeout = setTimeout(animateIn, 500);
@@ -32,12 +37,19 @@ export default function ListLoadingAnimation({ loadingText }: Props) {
 
         animateIn();
 
-        return () => clearTimeout(animationTimeout);
+        return () => {
+            isMounted = false;
+            if (animationTimeout) {
+                clearTimeout(animationTimeout);
+            }
+        };
     }, []);
 
     return (
         <Wrapper>
-            <LoadingText>{loadingText}</LoadingText>
+            <LoadingText>
+                <Trans>{loadingText}</Trans>
+            </LoadingText>
             <ListItemsWrapper>
                 {Array.from({ length: totalSquares }).map((_, index) => (
                     <Rectangle

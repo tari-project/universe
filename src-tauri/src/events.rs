@@ -21,21 +21,26 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use serde::Serialize;
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    hash::{Hash, Hasher},
+};
 
 use crate::{
-    gpu_status_file::GpuDevice,
-    node::node_adapter::NodeIdentity,
-    node::node_manager::NodeType,
-    wallet_adapter::{TransactionInfo, WalletBalance},
+    gpu_devices::GpuDeviceInformation,
+    internal_wallet::TariAddressType,
+    node::{node_adapter::NodeIdentity, node_manager::NodeType},
+    setup::setup_manager::SetupPhase,
+    wallet::wallet_types::{TransactionInfo, WalletBalance},
 };
 
 #[derive(Clone, Debug, Serialize)]
 pub enum EventType {
-    WalletAddressUpdate,
     WalletBalanceUpdate,
     BaseNodeUpdate,
     GpuDevicesUpdate,
+    CpuPoolStatsUpdate,
+    GpuPoolStatsUpdate,
     CpuMiningUpdate,
     GpuMiningUpdate,
     ConnectedPeersUpdate,
@@ -55,21 +60,35 @@ pub enum EventType {
     WalletPhaseFinished,
     HardwarePhaseFinished,
     NodePhaseFinished,
-    UnknownPhaseFinished,
+    MiningPhaseFinished,
+    InitialSetupFinished,
     UnlockApp,
     UnlockWallet,
-    UnlockMining,
+    UnlockCpuMining,
+    UnlockGpuMining,
     LockWallet,
-    LockMining,
+    LockCpuMining,
+    LockGpuMining,
     NodeTypeUpdate,
     ConfigCoreLoaded,
     ConfigUILoaded,
     ConfigWalletLoaded,
     ConfigMiningLoaded,
+    ConfigPoolsLoaded,
     BackgroundNodeSyncUpdate,
     InitWalletScanningProgress,
     ConnectionStatus,
-    ShowStageSecurityModal,
+    ExchangeIdChanged,
+    DisabledPhases,
+    ShouldShowExchangeMinerModal,
+    SelectedTariAddressChanged,
+    WalletUIModeChanged,
+    ShowKeyringDialog,
+    CreatePin,
+    EnterPin,
+    UpdateGpuDevicesSettings,
+    PinLocked,
+    SeedBackedUp,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -78,7 +97,7 @@ pub enum ProgressEvents {
     Wallet,
     Hardware,
     Node,
-    Unknown,
+    Mining,
 }
 #[derive(Clone, Debug, Serialize)]
 pub struct ProgressTrackerUpdatePayload {
@@ -87,6 +106,18 @@ pub struct ProgressTrackerUpdatePayload {
     pub progress: f64,
     pub title_params: Option<HashMap<String, String>>,
     pub is_complete: bool,
+}
+
+impl Hash for ProgressTrackerUpdatePayload {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.phase_title.hash(state);
+        self.title.hash(state);
+        self.progress.to_bits().hash(state);
+        if let Some(params) = &self.title_params {
+            params.hasher();
+        }
+        self.is_complete.hash(state);
+    }
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -105,20 +136,13 @@ pub struct DetectedAvailableGpuEnginesPayload {
 
 #[derive(Clone, Debug, Serialize)]
 pub struct DetectedDevicesPayload {
-    pub devices: Vec<GpuDevice>,
+    pub devices: Vec<GpuDeviceInformation>,
 }
 
 #[derive(Clone, Debug, Serialize)]
 pub struct Event<T, E> {
     pub event_type: E,
     pub payload: T,
-}
-
-#[derive(Clone, Debug, Serialize)]
-pub struct WalletAddressUpdatePayload {
-    pub tari_address_base58: String,
-    pub tari_address_emoji: String,
-    pub is_tari_address_generated: bool,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -162,4 +186,16 @@ pub enum ConnectionStatusPayload {
     Succeed,
     #[allow(dead_code)]
     Failed,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct DisabledPhasesPayload {
+    pub disabled_phases: Vec<SetupPhase>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct TariAddressUpdatePayload {
+    pub tari_address_base58: String,
+    pub tari_address_emoji: String,
+    pub tari_address_type: TariAddressType,
 }

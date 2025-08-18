@@ -46,11 +46,12 @@ use crate::utils::windows_setup_utils::add_firewall_rule;
 
 const LOG_TARGET: &str = "tari::universe::p2pool_adapter";
 
+#[allow(dead_code)]
 pub struct P2poolAdapter {
     pub(crate) config: Option<P2poolConfig>,
     stats_broadcast: watch::Sender<Option<P2poolStats>>,
 }
-
+#[allow(dead_code)]
 impl P2poolAdapter {
     pub fn new(stats_broadcast: watch::Sender<Option<P2poolStats>>) -> Self {
         Self {
@@ -58,13 +59,11 @@ impl P2poolAdapter {
             stats_broadcast,
         }
     }
-
-    #[allow(dead_code)]
     pub fn config(&self) -> Option<&P2poolConfig> {
         self.config.as_ref()
     }
 }
-
+#[allow(dead_code)]
 impl ProcessAdapter for P2poolAdapter {
     type StatusMonitor = P2poolStatusMonitor;
     type ProcessInstance = ProcessInstance;
@@ -86,7 +85,7 @@ impl ProcessAdapter for P2poolAdapter {
             .join("sha-p2pool")
             .join(Network::get_current_or_user_setting_or_default().to_string());
         std::fs::create_dir_all(&working_dir).unwrap_or_else(|error| {
-            warn!(target: LOG_TARGET, "Could not create p2pool working directory - {}", error);
+            warn!(target: LOG_TARGET, "Could not create p2pool working directory - {error}");
         });
 
         if self.config.is_none() {
@@ -118,6 +117,10 @@ impl ProcessAdapter for P2poolAdapter {
         if let Some(squad_override) = config.squad_override.clone() {
             args.push("--squad-override".to_string());
             args.push(squad_override);
+        }
+
+        if config.randomx_disabled {
+            args.push("--randomx-disabled".to_string());
         }
 
         args.push("--squad-prefix".to_string());
@@ -180,12 +183,13 @@ impl ProcessAdapter for P2poolAdapter {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Clone)]
 pub struct P2poolStatusMonitor {
     stats_client: p2pool::stats_client::Client,
     latest_status_broadcast: watch::Sender<Option<P2poolStats>>,
 }
-
+#[allow(dead_code)]
 impl P2poolStatusMonitor {
     pub fn new(
         stats_server_addr: String,
@@ -197,7 +201,7 @@ impl P2poolStatusMonitor {
         }
     }
 }
-
+#[allow(dead_code)]
 #[async_trait]
 impl StatusMonitor for P2poolStatusMonitor {
     async fn check_health(&self, _uptime: Duration, timeout_duration: Duration) -> HealthStatus {
@@ -218,22 +222,21 @@ impl StatusMonitor for P2poolStatusMonitor {
                     HealthStatus::Healthy
                 }
                 Err(e) => {
-                    warn!(target: LOG_TARGET, "P2pool health check failed: {}", e);
+                    warn!(target: LOG_TARGET, "P2pool health check failed: {e}");
                     HealthStatus::Unhealthy
                 }
             },
             Err(_timeout_err) => {
                 warn!(
                     target: LOG_TARGET,
-                    "P2pool health check timed out after {:?}",
-                    timeout_duration
+                    "P2pool health check timed out after {timeout_duration:?}"
                 );
                 HealthStatus::Warning
             }
         }
     }
 }
-
+#[allow(dead_code)]
 impl P2poolStatusMonitor {
     pub async fn status(&self) -> Result<P2poolStats, Error> {
         self.stats_client.stats().await

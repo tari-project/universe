@@ -19,9 +19,12 @@ import { XSpaceEventType } from '@app/utils/XSpaceEventType';
 import { useTranslation } from 'react-i18next';
 import { formatDateForEvent } from './formatDate';
 import { AnimatePresence } from 'motion/react';
+import { useCrewRewardsStore } from '@app/store/useCrewRewardsStore';
+import { useUIStore } from '@app/store';
 
 const XSpaceEventBanner = () => {
     const latestXSpaceEvent = useAirdropStore((state) => state.latestXSpaceEvent);
+    const showTapplet = useUIStore((s) => s.showTapplet);
     const [isTextTooLong, setIsTextTooLong] = useState(false);
     const [transitionPixelWidth, setTransitionPixelWidth] = useState(0);
     const [isVisible, setIsVisible] = useState(false);
@@ -29,6 +32,8 @@ const XSpaceEventBanner = () => {
     const titleRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const { t } = useTranslation('common', { useSuspense: false });
+    const crewRewardsActive = useCrewRewardsStore((s) => s.showWidget);
+    const isLoggedIn = useAirdropStore((s) => !!s.airdropTokens);
 
     useEffect(() => {
         if (!latestXSpaceEvent) return;
@@ -70,11 +75,13 @@ const XSpaceEventBanner = () => {
 
     return (
         <AnimatePresence>
-            {latestXSpaceEvent && isVisible && (
+            {latestXSpaceEvent && isVisible && !showTapplet && (
                 <BannerContent
                     onClick={() => {
                         open(latestXSpaceEvent.link);
                     }}
+                    $crewRewardsActive={crewRewardsActive && !showTapplet}
+                    $isLoggedIn={isLoggedIn}
                 >
                     <FlexWrapper>
                         <IconContainer>

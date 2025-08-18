@@ -26,7 +26,6 @@ use std::time::Duration;
 
 use futures_util::future::FusedFuture;
 use log::{info, warn};
-use tari_common::configuration::Network;
 use tokio::sync::{watch, RwLock};
 use tokio::time::sleep;
 
@@ -39,20 +38,20 @@ use crate::tasks_tracker::TasksTrackers;
 
 const LOG_TARGET: &str = "tari::universe::p2pool_manager";
 // const P2POOL_STATS_UPDATE_INTERVAL: Duration = Duration::from_secs(10);
-
+#[allow(dead_code)]
 #[derive(Clone)]
 pub struct P2poolConfig {
     pub grpc_port: u16, // Local
     pub stats_server_port: u16,
     pub base_node_address: String,
-    pub cpu_benchmark_hashrate: Option<u64>,
     pub squad_override: Option<String>,
+    pub randomx_disabled: bool,
 }
-
+#[allow(dead_code)]
 pub struct P2poolConfigBuilder {
     config: P2poolConfig,
 }
-
+#[allow(dead_code)]
 impl P2poolConfigBuilder {
     pub fn new() -> Self {
         Self {
@@ -78,11 +77,8 @@ impl P2poolConfigBuilder {
         self
     }
 
-    pub fn with_cpu_benchmark_hashrate(
-        &mut self,
-        cpu_benchmark_hashrate: Option<u64>,
-    ) -> &mut Self {
-        self.config.cpu_benchmark_hashrate = cpu_benchmark_hashrate;
+    pub fn with_randomx_disabled(&mut self, randomx_disabled: bool) -> &mut Self {
+        self.config.randomx_disabled = randomx_disabled;
         self
     }
 
@@ -93,12 +89,12 @@ impl P2poolConfigBuilder {
             grpc_port,
             stats_server_port: self.config.stats_server_port,
             base_node_address: self.config.base_node_address.clone(),
-            cpu_benchmark_hashrate: self.config.cpu_benchmark_hashrate,
             squad_override: self.config.squad_override.clone(),
+            randomx_disabled: self.config.randomx_disabled,
         })
     }
 }
-
+#[allow(dead_code)]
 impl P2poolConfig {
     pub fn builder() -> P2poolConfigBuilder {
         P2poolConfigBuilder::new()
@@ -111,8 +107,8 @@ impl Default for P2poolConfig {
             grpc_port: 18145,
             stats_server_port: 19000,
             base_node_address: String::from("http://127.0.0.1:18142"),
-            cpu_benchmark_hashrate: None,
             squad_override: None,
+            randomx_disabled: false,
         }
     }
 }
@@ -124,11 +120,11 @@ impl Clone for P2poolManager {
         }
     }
 }
-
+#[allow(dead_code)]
 pub struct P2poolManager {
     watcher: Arc<RwLock<ProcessWatcher<P2poolAdapter>>>,
 }
-
+#[allow(dead_code)]
 impl P2poolManager {
     pub fn new(
         stats_broadcast: watch::Sender<Option<P2poolStats>>,
@@ -170,9 +166,9 @@ impl P2poolManager {
         log_path: PathBuf,
     ) -> Result<(), anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;
-        let shutdown_signal = TasksTrackers::current().unknown_phase.get_signal().await;
+        let shutdown_signal = TasksTrackers::current().mining_phase.get_signal().await;
         let task_tracker = TasksTrackers::current()
-            .unknown_phase
+            .mining_phase
             .get_task_tracker()
             .await;
 
@@ -194,7 +190,7 @@ impl P2poolManager {
             )
             .await?;
         process_watcher.wait_ready().await?;
-        let shutdown_signal = TasksTrackers::current().unknown_phase.get_signal().await;
+        let shutdown_signal = TasksTrackers::current().mining_phase.get_signal().await;
         if let Some(status_monitor) = &process_watcher.status_monitor {
             loop {
                 if shutdown_signal.is_terminated() || shutdown_signal.is_triggered() {
@@ -215,30 +211,30 @@ impl P2poolManager {
         let mut process_watcher = self.watcher.write().await;
         let exit_code = process_watcher.stop().await?;
         if exit_code != 0 {
-            warn!(target: LOG_TARGET, "P2pool process exited with code {}", exit_code);
+            warn!(target: LOG_TARGET, "P2pool process exited with code {exit_code}");
         }
         Ok(exit_code)
     }
 
-    pub async fn get_grpc_address(&self, use_local: bool) -> String {
-        if use_local {
-            let process_watcher = self.watcher.read().await;
-            let grpc_port = process_watcher
-                .adapter
-                .config
-                .as_ref()
-                .map(|c| c.grpc_port)
-                .unwrap_or_default();
-            format!("http://127.0.0.1:{}", grpc_port)
-        } else {
-            let network = Network::get_current_or_user_setting_or_default();
-            match network {
-                Network::MainNet => "https://grpc-p2pool.tari.com:443".to_string(),
-                _ => {
-                    format!("https://grpc-p2pool.{}.tari.com:443", network.as_key_str())
-                }
-            }
-        }
+    pub async fn get_grpc_address(&self) -> String {
+        let process_watcher = self.watcher.read().await;
+        let grpc_port = process_watcher
+            .adapter
+            .config
+            .as_ref()
+            .map(|c| c.grpc_port)
+            .unwrap_or_default();
+        format!("http://127.0.0.1:{grpc_port}")
+    }
+
+    pub async fn get_grpc_port(&self) -> u16 {
+        let process_watcher = self.watcher.read().await;
+        process_watcher
+            .adapter
+            .config
+            .as_ref()
+            .map(|c| c.grpc_port)
+            .unwrap_or_default()
     }
 
     pub async fn stats_server_port(&self) -> u16 {

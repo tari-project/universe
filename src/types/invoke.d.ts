@@ -4,15 +4,18 @@ import {
     P2poolStatsResult,
     TorConfig,
     TransactionInfo,
-    MaxConsumptionLevels,
-    GpuThreads,
     P2poolConnections,
+    BridgeEnvs,
+    TariAddressVariants,
+    BaseNodeStatus,
 } from './app-status';
 import { Language } from '@app/i18initializer';
 import { PaperWalletDetails } from '@app/types/app-status.ts';
-import { displayMode, modeType } from '@app/store/types.ts';
+import { displayMode } from '@app/store/types.ts';
 import { SignData } from '@app/types/ws.ts';
-import { ConfigBackendInMemory } from '@app/types/configs.ts';
+import { BasePoolData, ConfigBackendInMemory } from '@app/types/configs.ts';
+import { ExchangeMiner } from './exchange';
+import { ActiveTapplet } from '@app/types/tapplets/tapplet.types';
 
 declare module '@tauri-apps/api/core' {
     function invoke(
@@ -35,19 +38,24 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'get_paper_wallet_details', payload?: { authUuid?: string }): Promise<PaperWalletDetails>;
     function invoke(param: 'set_mine_on_app_start', payload: { mineOnAppStart: boolean }): Promise<void>;
     function invoke(param: 'open_log_dir'): Promise<void>;
-    function invoke(param: 'start_mining'): Promise<void>;
-    function invoke(param: 'stop_mining'): Promise<void>;
+    function invoke(param: 'start_cpu_mining'): Promise<void>;
+    function invoke(param: 'start_gpu_mining'): Promise<void>;
+    function invoke(param: 'stop_cpu_mining'): Promise<void>;
+    function invoke(param: 'stop_gpu_mining'): Promise<void>;
     function invoke(param: 'set_allow_telemetry', payload: { allow_telemetry: boolean }): Promise<void>;
     function invoke(param: 'send_data_telemetry_service', payload: { eventName: string; data: object }): Promise<void>;
     function invoke(param: 'set_user_inactivity_timeout', payload: { timeout: number }): Promise<void>;
-    function invoke(param: 'update_applications'): Promise<void>;
+    function invoke(param: 'select_mining_mode', payload: { mode: string }): Promise<void>;
     function invoke(
-        param: 'set_mode',
-        payload: { mode: modeType; customCpuUsage: number; customGpuUsage: GpuThreads[] }
+        param: 'update_custom_mining_mode',
+        payload: {
+            customCpuUsage: number;
+            customGpuUsage: number;
+        }
     ): Promise<void>;
-    function invoke(param: 'get_max_consumption_levels'): Promise<MaxConsumptionLevels>;
     function invoke(param: 'set_display_mode', payload: { displayMode: displayMode }): Promise<void>;
     function invoke(param: 'get_seed_words'): Promise<string[]>;
+    function invoke(param: 'revert_to_internal_wallet'): Promise<void>;
     function invoke(param: 'get_monero_seed_words'): Promise<string[]>;
     function invoke(param: 'get_applications_versions'): Promise<ApplicationsVersions>;
     function invoke(param: 'set_monero_address', payload: { moneroAddress: string }): Promise<void>;
@@ -63,12 +71,8 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'restart_application', payload: { shouldStopMiners: boolean }): Promise<string>;
     function invoke(param: 'set_use_tor', payload: { useTor: boolean }): Promise<void>;
     function invoke(
-        param: 'get_coinbase_transactions',
-        payload: { continuation: boolean; limit?: number }
-    ): Promise<TransactionInfo[]>;
-    function invoke(
-        param: 'get_transactions_history',
-        payload: { continuation: boolean; limit?: number }
+        param: 'get_transactions',
+        payload: { offset?: number; limit?: number; statusBitflag?: number }
     ): Promise<TransactionInfo[]>;
     function invoke(param: 'import_seed_words', payload: { seedWords: string[] }): Promise<void>;
     function invoke(param: 'get_tor_config'): Promise<TorConfig>;
@@ -117,8 +121,37 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'validate_minotari_amount', payload: { amount: string }): Promise<string>;
     function invoke(param: 'trigger_phases_restart'): Promise<void>;
     function invoke(param: 'set_node_type', payload: { nodeType: NodeType }): Promise<void>;
-    function invoke(param: 'set_warmup_seen', payload: { warmupSeen: boolean }): Promise<void>;
-    function invoke(param: 'set_tari_address', payload: { address: string }): Promise<void>;
+    function invoke(param: 'set_external_tari_address', payload: { address: string }): Promise<void>;
     function invoke(param: 'confirm_exchange_address', payload: { address: string }): Promise<void>;
     function invoke(param: 'get_app_in_memory_config'): Promise<ConfigBackendInMemory>;
+    function invoke(
+        param: 'select_exchange_miner',
+        payload: { exchange_miner: ExchangeMiner; mining_address: string }
+    ): Promise<void>;
+    function invoke(param: 'launch_builtin_tapplet'): Promise<ActiveTapplet>;
+    function invoke(param: 'get_bridge_envs'): Promise<BridgeEnvs>;
+    function invoke(param: 'parse_tari_address', payload: { address: string }): Promise<TariAddressVariants>;
+    function invoke(param: 'refresh_wallet_history'): Promise<void>;
+    function invoke(param: 'get_base_node_status'): Promise<BaseNodeStatus>;
+    function invoke(param: 'create_pin'): Promise<void>;
+    function invoke(param: 'forgot_pin', payload: { seedWords: string[] }): Promise<void>;
+    function invoke(param: 'toggle_cpu_pool_mining', payload: { enabled: boolean }): Promise<void>;
+    function invoke(param: 'toggle_gpu_pool_mining', payload: { enabled: boolean }): Promise<void>;
+    function invoke(
+        param: 'encode_payment_id_to_address',
+        payload: { paymentId: string; tariAddress: string }
+    ): Promise<string>;
+    function invoke(param: 'save_wxtm_address', payload: { address: string; exchangeId: string }): Promise<void>;
+    function invoke(param: 'change_cpu_pool', payload: { cpuPool: string }): Promise<void>;
+    function invoke(param: 'change_gpu_pool', payload: { gpuPool: string }): Promise<void>;
+    function invoke(
+        param: 'update_selected_cpu_pool',
+        payload: { cpuPool: Record<string, BasePoolData> }
+    ): Promise<void>;
+    function invoke(
+        param: 'update_selected_gpu_pool',
+        payload: { gpuPool: Record<string, BasePoolData> }
+    ): Promise<void>;
+    function invoke(param: 'reset_gpu_pool_config', payload: { gpuPoolName: string }): Promise<void>;
+    function invoke(param: 'reset_cpu_pool_config', payload: { cpuPoolName: string }): Promise<void>;
 }

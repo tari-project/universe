@@ -1,4 +1,5 @@
 {
+  "connected-since": "Bağlantı tarihi",
   "connections": "bağlantılar",
   "established": "Kuruldu",
   "listener-addresses": "Dinleyici adresleri",
@@ -9,9 +10,17 @@
   "p2pool-connection-info": "Bağlantı",
   "p2pool-connection-info-more": "Bağlantı detayları",
   "p2pool-peers": "P2pool eşleri",
-  "p2pool-stats": "Havuz madenciliği istatistikleri",
+  "p2pool-stats": "P2pool İstatistikleri",
   "pending": "Beklemede",
   "randomx-stats": "RandomX İstatistikleri",
   "sha3-stats": "SHA3 İstatistikleri",
+  "stats": {
+    "earned": "You earned",
+    "tile-heading": "Devam Eden Ödüller",
+    "tile-heading-zero": "Rewards start in ~30 mins",
+    "tile-loading": "Havuz ısınıyor",
+    "tooltip-copy": "“In Progress” until you earn a minimum of <strong>{{amount}}</strong>. There may be a delay between sending your payout and it displaying in your wallet txs and balance.",
+    "tooltip-tile-heading": "Ödül Eşiği"
+  },
   "tribe": "Kabile"
 }

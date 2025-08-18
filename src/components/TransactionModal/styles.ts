@@ -7,13 +7,15 @@ export const Wrapper = styled('div')`
     height: 100%;
     top: 0;
     left: 0;
-    z-index: 99999;
+    z-index: 999;
     display: flex;
     justify-content: center;
     align-items: center;
     pointer-events: all;
+
     overflow: hidden;
     overflow-y: auto;
+
     padding: 40px;
 
     @media (max-height: 800px) {
@@ -40,9 +42,7 @@ export const Cover = styled(m.div)<{ $noClose?: boolean }>`
 
 export const BoxWrapper = styled(m.div)`
     width: 100%;
-    max-height: 100%;
-    overflow-y: auto;
-    max-width: 481px;
+    max-width: 500px;
     display: flex;
     flex-direction: column;
     justify-content: flex-end;

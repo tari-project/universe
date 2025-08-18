@@ -1,0 +1,110 @@
+{
+  "bonus-gems-earned": "Số gem thưởng đã nhận",
+  "claimGems": "Nhận Gem",
+  "claimModalFieldLabel": "Không bắt buộc",
+  "claimModalFieldPlaceholder": "Nhập mã giới thiệu",
+  "claimModalFinePrint": "<strong>Lưu ý:</strong> nhận gem sẽ bật phân tích dữ liệu để chúng tôi cải thiện Universe",
+  "claimModalText": "Kiếm gem bằng cách đào và giới thiệu bạn bè. Bạn càng kiếm được nhiều gem, phần thưởng airdrop Tari của bạn càng lớn. Có mã giới thiệu? Nhập vào bên dưới để nhân đôi phần thưởng từ <strong>{{gems1}} gem</strong> thành <strong>{{gems2}} gem!</strong>",
+  "claimModalTitle": "NHẬN PHẦN THƯỞNG KHI ĐÀO TRÊN TESTNET",
+  "claimReferralCode": "Nhận mã giới thiệu của bạn <span>{{gems}}<image src='/assets/images/gem.png' alt=''/></span> gem.",
+  "claimReferralGifts": "Nhận mã giới thiệu và nhận {{gems}} gem. Khi bạn kết nối tài khoản, gem sẽ được cộng cho bạn.",
+  "copied": "Đã sao chép!",
+  "copyFailed": "Sao chép thất bại",
+  "copying": "Đang sao chép...",
+  "doLater": "Để sau",
+  "gems": "Gem",
+  "giftReferralCode": "Nhận {{gems}} gem cho mỗi người bạn mà bạn mời vào Tari Universe. Khi họ kết nối tài khoản, bạn sẽ nhận được gem.",
+  "giftReferralCodeHeader": "Nhận mã giới thiệu của bạn <span>{{gems}}<image src='/assets/images/gem.png' alt=''/></span> gem.",
+  "invite": "Mời",
+  "invite-friends-gems": "Mỗi người bạn sử dụng liên kết mời của bạn, bạn nhận được 5.000 gem.",
+  "inviteFriends": "Mời bạn bè",
+  "inviteFriendsText": "Sao chép liên kết và chia sẻ",
+  "invitedAmount": "Bạn đã mời <span>{{count}}</span> bạn bè",
+  "joinAirdrop": "Tham gia Airdrop",
+  "joinAirdropButtonAriaLabel": "Tham gia Airdrop và nhận gem. Nhấp chuột phải để sao chép liên kết",
+  "keep-mining-to-earn-rewards": "Tiếp tục đào để nhận thêm phần thưởng!",
+  "linkCopied": "Đã sao chép liên kết!",
+  "live": "trực tiếp",
+  "logged-in-as": "Đăng nhập với <strong>@{{twitter}}</strong>",
+  "loggedInTitle": "Phần thưởng Airdrop",
+  "loggedOutTitle": "Mời bạn bè để nhận Gems",
+  "loginButton": "Đăng nhập để nhận gem",
+  "logout": "Đăng xuất",
+  "nextTierBonus": "Mời <strong>{{count}} bạn</strong> & nhận {{bonusGems}} gem thưởng",
+  "permission": {
+    "setup": "Tari Universe muốn sử dụng phân tích dữ liệu để <strong>cải thiện trải nghiệm của bạn.</strong>",
+    "text": "Tari Universe muốn sử dụng phân tích dữ liệu để cải thiện trải nghiệm của bạn và thưởng gem khi bạn mời bạn bè.",
+    "title": "Nhận Gem & giúp Tari Universe tốt hơn"
+  },
+  "permissionNoGems": {
+    "text": "Tari Universe muốn sử dụng phân tích dữ liệu để cải thiện trải nghiệm của bạn.",
+    "title": "Giúp Tari Universe tốt hơn"
+  },
+  "push-notifications": {
+    "text": "Tari Universe muốn gửi thông báo đến các thiết bị đã kết nối của bạn",
+    "title": "Cho phép Tari Universe gửi thông báo"
+  },
+  "referral": "Mời bạn bè",
+  "rightClickToCopy": "Nhấp chuột phải để sao chép liên kết",
+  "success": "Thành công",
+  "topTooltipText": "Nhận Tari Airdrop bằng cách thu thập gems. Bạn càng có nhiều gems, phần thưởng càng lớn.",
+  "topTooltipTitle": "Đào & Mời bạn để nhận Gems",
+  "unclaimedGems": "Gems chưa nhận",
+  "update-username": "Cập nhật tên người dùng",
+  "username-error": "Tên người dùng phải từ 3-20 ký tự, chỉ gồm chữ, số, gạch dưới hoặc gạch ngang",
+  "username-update-success": "Cập nhật tên người dùng thành công",
+  "you-reached-your-giftinh-goal": "Bạn đã đạt mục tiêu tặng quà!",
+  "your-friend-accepted-gift": "Một người bạn của bạn đã nhận quà!",
+  "crewRewards": {
+    "title": "Rewards",
+    "myCrew": "My Crew",
+    "earnDescription": "Earn <strong>{{userReward}} XTM</strong> for every <strong>{{daysRequired}} days</strong> your friend mines. Your friend will also earn <strong>{{friendReward}} XTM</strong>.",
+    "inviteFriends": "Invite Friends",
+    "copied": "Copied!",
+    "activeMinersStat": "Active Miners",
+    "bonusXTMEarned": "Bonus XTM Earned",
+    "of": "of",
+    "inviteFriendsMessage": "Invite friends and start earning <strong>bonus XTM!</strong>",
+    "errorLoadingData": "Error loading crew data. Please try again.",
+    "filters": {
+      "all": "All",
+      "complete": "Complete",
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "crewStatus": {
+      "completed": "Completed",
+      "inProgress": "In Progress",
+      "needsNudge": "Needs Nudge"
+    },
+    "actions": {
+      "claimed": "Claimed",
+      "claim": "Claim {{amount}} XTM",
+      "nudge": "Nudge"
+    },
+    "streak": {
+      "unlockBonusRewards": "Unlock your bonus rewards",
+      "mineConsecutiveDays": "Mine for at least <strong>{{streakDaysRequired}} consecutive days</strong> each week to earn your bonus XTM.",
+      "keepStreak": "Keep your streak to keep earning rewards!",
+      "dayStreak": "{{days}} Day Streak",
+      "day": "Day",
+      "loadingStreak": "Loading streak...",
+      "startYourStreak": "Start Your Streak!",
+      "oneDayStreak": "1 Day Streak",
+      "multiDayStreak": "{{days}} Day Streak",
+      "startMiningMessage": "Start mining to begin your streak and earn rewards!",
+      "minimumRequirementsMet": "You've met the minimum requirements. Keep going!",
+      "daysToMinimum": "{{days}} more days to meet minimum requirements!"
+    },
+    "login": {
+      "title": "Mine with friends. <strong>Earn together.</strong>",
+      "description": "You earn <strong>{{userReward}} bonus XTM/week</strong> AND your friend earns <strong>{{friendReward}} bonus XTM/week</strong> when you and your friend both mine",
+      "bonusText": "Earn bonus rewards up to {{maxWeeks}} weeks per invite",
+      "loginButton": "Log in & Start Earning!"
+    },
+    "feedback": {
+      "nudgeSent": "Nudge sent!",
+      "rewardClaimed": "Reward claimed!"
+    }
+  }
+}

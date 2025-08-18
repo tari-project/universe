@@ -14,7 +14,7 @@ export const componentSettings = {
         fontWeight: 400,
         span: {
             lineHeight: 1.1,
-            letterSpacing: '-0.1px',
+            letterSpacing: '-0.05px',
             fontWeight: 'inherit',
         },
         p: {

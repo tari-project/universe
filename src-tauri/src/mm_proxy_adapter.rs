@@ -44,9 +44,7 @@ const LOG_TARGET: &str = "tari::universe::mm_proxy_adapter";
 #[derive(Clone, PartialEq, Default)]
 pub(crate) struct MergeMiningProxyConfig {
     pub port: u16,
-    pub p2pool_enabled: bool,
     pub base_node_grpc_address: String,
-    pub p2pool_node_grpc_address: String,
     pub coinbase_extra: String,
     pub tari_address: TariAddress,
     pub use_monero_fail: bool,
@@ -57,11 +55,6 @@ pub(crate) struct MergeMiningProxyConfig {
 impl MergeMiningProxyConfig {
     pub fn set_to_use_base_node(&mut self, grpc_address: String) {
         self.base_node_grpc_address = grpc_address;
-    }
-
-    pub fn set_to_use_p2pool(&mut self, grpc_address: String) {
-        self.p2pool_enabled = true;
-        self.p2pool_node_grpc_address = grpc_address;
     }
 }
 
@@ -160,16 +153,6 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
             shuffled_nodes.join(",")
         ));
 
-        if config.p2pool_enabled {
-            args.push("-p".to_string());
-            args.push("merge_mining_proxy.p2pool_enabled=true".to_string());
-            args.push("-p".to_string());
-            args.push(format!(
-                "merge_mining_proxy.p2pool_node_grpc_address={}",
-                config.p2pool_node_grpc_address
-            ));
-        }
-
         Ok((
             ProcessInstance {
                 shutdown: inner_shutdown,
@@ -212,7 +195,7 @@ impl StatusMonitor for MergeMiningProxyStatusMonitor {
                 Err(e) => {
                     warn!(
                         target: LOG_TARGET,
-                        "Failed to get version during health check: {}", e
+                        "Failed to get version during health check: {e}"
                     );
                     HealthStatus::Warning
                 }
@@ -220,7 +203,7 @@ impl StatusMonitor for MergeMiningProxyStatusMonitor {
             Err(_) => {
                 warn!(
                     target: LOG_TARGET,
-                    "Mmproxy Version check timed out after {:?}", timeout_duration
+                    "Mmproxy Version check timed out after {timeout_duration:?}"
                 );
                 HealthStatus::Warning
             }

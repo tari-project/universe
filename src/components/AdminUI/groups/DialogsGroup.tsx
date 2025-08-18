@@ -1,10 +1,9 @@
 /* eslint-disable i18next/no-literal-string */
-import { Button, ButtonGroup, CategoryLabel } from '../styles';
+import { AdminButton, ButtonGroup, CategoryLabel } from '../styles';
 
 import { useAppStateStore } from '@app/store/appStateStore';
 import { setCriticalProblem, setDialogToShow, setShowExternalDependenciesDialog } from '@app/store/actions';
 import { useUIStore } from '@app/store/useUIStore.ts';
-import { setShowExchangeModal } from '@app/store/useExchangeStore.ts';
 
 export function DialogsGroup() {
     const criticalProblem = useAppStateStore((s) => s.criticalProblem);
@@ -15,7 +14,7 @@ export function DialogsGroup() {
         <>
             <CategoryLabel>Dialogs</CategoryLabel>
             <ButtonGroup>
-                <Button
+                <AdminButton
                     onClick={() =>
                         setCriticalProblem(
                             criticalProblem
@@ -29,34 +28,43 @@ export function DialogsGroup() {
                     $isActive={!!criticalProblem}
                 >
                     Critical Problem
-                </Button>
-                <Button onClick={() => setShowExchangeModal(true)}>Test Exchange Modal</Button>
-                <Button
+                </AdminButton>
+                <AdminButton
                     onClick={() => setDialogToShow(dialogToShow === 'autoUpdate' ? undefined : 'autoUpdate')}
                     $isActive={dialogToShow === 'autoUpdate'}
                 >
                     Auto Update
-                </Button>
-                <Button
+                </AdminButton>
+                <AdminButton
                     onClick={() => setShowExternalDependenciesDialog(!showExternalDependenciesDialog)}
                     $isActive={showExternalDependenciesDialog}
                 >
                     External Deps
-                </Button>
-                <Button
-                    onClick={() => setDialogToShow(dialogToShow === 'releaseNotes' ? undefined : 'releaseNotes')}
-                    $isActive={dialogToShow === 'releaseNotes'}
+                </AdminButton>
+                <AdminButton
+                    onClick={() => setDialogToShow(dialogToShow === 'keychain' ? undefined : 'keychain')}
+                    $isActive={dialogToShow === 'keychain'}
                 >
-                    Release Notes
-                </Button>
-                <Button
-                    onClick={() =>
-                        setDialogToShow(dialogToShow === 'ludicrousConfirmation' ? undefined : 'ludicrousConfirmation')
-                    }
-                    $isActive={dialogToShow === 'ludicrousConfirmation'}
+                    Keychain Access
+                </AdminButton>
+                <AdminButton
+                    onClick={() => setDialogToShow(dialogToShow === 'createPin' ? undefined : 'createPin')}
+                    $isActive={dialogToShow === 'createPin'}
                 >
-                    Ludicrous
-                </Button>
+                    Create Pin
+                </AdminButton>
+                <AdminButton
+                    onClick={() => setDialogToShow(dialogToShow === 'enterPin' ? undefined : 'enterPin')}
+                    $isActive={dialogToShow === 'enterPin'}
+                >
+                    Enter Pin
+                </AdminButton>
+                <AdminButton
+                    onClick={() => setDialogToShow(dialogToShow === 'forgotPin' ? undefined : 'forgotPin')}
+                    $isActive={dialogToShow === 'forgotPin'}
+                >
+                    Forgot Pin
+                </AdminButton>
             </ButtonGroup>
         </>
     );

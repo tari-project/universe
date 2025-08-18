@@ -1,20 +1,21 @@
-import { TransactionInfo } from '@app/types/app-status.ts';
+import { CombinedBridgeWalletTransaction } from '@app/store';
+import { TransactionDirection } from '@app/types/transactions.ts';
 
 export type TransationType = 'mined' | 'sent' | 'received' | 'unknown';
 
 export interface HistoryListItemProps {
-    item: TransactionInfo;
+    item: CombinedBridgeWalletTransaction;
     index: number;
     itemIsNew?: boolean;
-    setDetailsItem?: (item: TransactionInfo | null) => void;
+    setDetailsItem?: (item: CombinedBridgeWalletTransaction | null) => void;
 }
 
 export interface BaseItemProps {
     title: string;
-    type: TransationType;
+    direction: TransactionDirection;
     time: string;
     value: string;
     chip?: string;
-    status?: number;
     onClick?: () => void;
+    hideWalletBalance?: boolean;
 }

@@ -1,4 +1,14 @@
 {
+  "bubbles": {
+    "active-miners": "active miners",
+    "ago": "ago",
+    "block": "block",
+    "got-rewarded": "got rewarded",
+    "miners": "miners",
+    "pool": "Pool",
+    "solved": "solved",
+    "solving": "is being solved"
+  },
   "connection-to-node-lost": "Połączenie z węzłem kopania zostało utracone. Poczekaj, aż wznowi połącznie lub uruchom go ponownie.",
   "cpu-power": "Moc CPU",
   "current-block-time": "Aktualny czas bloku",
@@ -25,6 +35,12 @@
     "step_4": "Spróbuj użyć mostu Tor (w Ustawieniach)",
     "step_5": "Spróbuj wyłączyć Tor (w Ustawieniach)",
     "step_6": "Spróbuj zresetować aplikację (w Ustawieniach)"
+  },
+  "pool": {
+    "accepted_shares": "Zaakceptowane udziały",
+    "balance": "Total earnings",
+    "min_payout": "Minimalna wypłata",
+    "unpaid": "Niezapłacone"
   },
   "you-earn-rewards-separately": "Zarabiasz nagrody za kopanie CPU i GPU osobno",
   "you-won-block": "Byłeś zwycięzcą <span>bloku #{{ blockHeight }}</span>",

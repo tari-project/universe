@@ -21,9 +21,15 @@ export const HoverWrapper = styled(m.div)`
     inset: 0;
     z-index: 4;
     transition: background-color 1s ease;
-    background-color: ${({ theme }) => convertHexToRGBA(theme.palette.background.main, 0.7)};
     height: 100%;
-    backdrop-filter: blur(1.5px);
+
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        transparent 32%,
+        ${({ theme }) => (theme.mode === 'dark' ? '#1B1B1B' : theme.palette.background.paper)} 38%,
+        ${({ theme }) => (theme.mode === 'dark' ? '#1B1B1B' : theme.palette.background.paper)} 100%
+    );
 `;
 
 export const ContentWrapper = styled.div`
@@ -143,6 +149,7 @@ export const ButtonWrapper = styled(m.div)`
     height: 100%;
     gap: 6px;
 `;
+
 export const FlexButton = styled.button`
     display: flex;
     height: 31px;
@@ -190,11 +197,11 @@ export const GemImage = styled.img`
     width: 11px;
 `;
 
-export const PlaceholderItem = styled.div`
+export const PlaceholderItem = styled.div<{ $isLast?: boolean }>`
     width: 100%;
-    height: 48px;
+    height: ${({ $isLast }) => ($isLast ? '35px' : '48px')};
     background: ${({ theme }) => (theme.mode === 'dark' ? '#222223' : '#F3F3F3')};
     border-radius: 10px;
     flex-shrink: 0;
-    opacity: 0.75;
+    opacity: ${({ $isLast }) => ($isLast ? 0 : 0.75)};
 `;

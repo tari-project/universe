@@ -20,6 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use tari_common::configuration::Network;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::Shutdown;
 use tokio::sync::watch;
@@ -111,6 +112,19 @@ impl NodeAdapter for RemoteNodeAdapter {
 
     fn get_service(&self) -> Option<NodeAdapterService> {
         self.get_service()
+    }
+
+    fn get_http_api_url(&self) -> String {
+        let network = Network::get_current_or_user_setting_or_default();
+        let http_api_url = match network {
+            Network::MainNet => "https://rpc.tari.com",
+            Network::StageNet => "https://rpc.stagenet.tari.com",
+            Network::NextNet => "https://rpc.nextnet.tari.com",
+            Network::LocalNet => "https://rpc.localnet.tari.com",
+            Network::Igor => "https://rpc.igor.tari.com",
+            Network::Esmeralda => "https://rpc.esmeralda.tari.com",
+        };
+        http_api_url.to_string()
     }
 
     fn use_tor(&mut self, use_tor: bool) {
@@ -213,6 +227,7 @@ impl ProcessInstanceTrait for NullProcessInstance {
     async fn start(&mut self, _task_trakcer: TaskTracker) -> Result<(), anyhow::Error> {
         Ok(())
     }
+
     async fn stop(&mut self) -> Result<i32, anyhow::Error> {
         self.shutdown.trigger();
         Ok(0)
@@ -224,5 +239,15 @@ impl ProcessInstanceTrait for NullProcessInstance {
 
     async fn wait(&mut self) -> Result<i32, Error> {
         Ok(0)
+    }
+
+    async fn start_and_wait_for_output(
+        &mut self,
+        _task_tracker: TaskTracker,
+    ) -> Result<(i32, Vec<String>, Vec<String>), anyhow::Error> {
+        self.start(_task_tracker).await?;
+        self.wait()
+            .await
+            .map(|exit_code| (exit_code, Vec::new(), Vec::new()))
     }
 }

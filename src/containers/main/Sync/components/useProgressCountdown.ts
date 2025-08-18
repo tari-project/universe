@@ -1,7 +1,8 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNodeStore } from '@app/store/useNodeStore';
 import { useTranslation } from 'react-i18next';
 import { useSetupStore } from '@app/store/useSetupStore';
+import { useExchangeStore } from '@app/store/useExchangeStore';
 
 const MIN_PER_BLOCK_SYNC = 0.002866666667;
 const REMOTE_DEFAULT_ESTIMATE = 120;
@@ -35,12 +36,21 @@ function hasValidEstimate(nodeSetupParams: Record<string, string> | undefined) {
     return false;
 }
 
-export const useProgressCountdown = () => {
+export const useProgressCountdown = (isCompact = false) => {
     const { t } = useTranslation('setup-progresses');
     const isNodePhaseCompleted = useSetupStore((state) => Boolean(state.node_phase_setup_payload?.is_complete));
     const nodeSetupParams = useSetupStore((state) => state.node_phase_setup_payload?.title_params);
     const nodeType = useNodeStore((s) => s.node_type);
     const [countdown, setCountdown] = useState(nodeType !== 'Local' ? REMOTE_DEFAULT_ESTIMATE : -1);
+    const showUniversalModal = useExchangeStore((s) => s.showUniversalModal);
+
+    useEffect(() => {
+        if (showUniversalModal) {
+            setCountdown(-1);
+        } else {
+            setCountdown(nodeType !== 'Local' ? REMOTE_DEFAULT_ESTIMATE : -1);
+        }
+    }, [showUniversalModal, nodeType]);
 
     useEffect(() => {
         if (countdown < 0 && hasValidEstimate(nodeSetupParams)) {
@@ -80,17 +90,26 @@ export const useProgressCountdown = () => {
         return () => clearInterval(interval);
     }, [nodeType, isNodePhaseCompleted]);
 
-    const formatTime = (seconds: number) => {
-        const hours = Math.floor(seconds / 3600);
-        const minutes = Math.floor(seconds / 60) % 60;
-        const remainingSeconds = seconds % 60;
+    const formatTime = useCallback(
+        (seconds: number) => {
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor(seconds / 60) % 60;
+            const remainingSeconds = seconds % 60;
 
-        if (hours > 0) {
-            return `${hours}:${minutes < 10 ? '0' : ''}${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
-        }
+            if (isCompact) {
+                if (hours > 0) {
+                    return `${hours}h ${minutes < 10 ? '0' : ''}${minutes}m ${remainingSeconds}s`;
+                }
+                return `${minutes}m ${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}s`;
+            }
 
-        return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
-    };
+            if (hours > 0) {
+                return `${hours}:${minutes < 10 ? '0' : ''}${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
+            }
+            return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
+        },
+        [isCompact]
+    );
 
     const countdownText = useMemo(() => {
         if (nodeType === 'Local' && !isNodePhaseCompleted) {
@@ -103,7 +122,7 @@ export const useProgressCountdown = () => {
                     nodeSetupParams?.tip_block_height != null);
 
             if (!hasValidEstimate) {
-                return t('calculating_time');
+                return t('calculating_time', { context: isCompact ? 'compact' : undefined });
             }
         }
 
@@ -116,8 +135,11 @@ export const useProgressCountdown = () => {
         if (countdown === 1) {
             return `${countdown} ${t('second_remaining')}`;
         }
+        if (showUniversalModal) {
+            return t('awaiting-exchange-selection');
+        }
         return t('any_moment_now');
-    }, [nodeType, countdown, isNodePhaseCompleted, nodeSetupParams, t]);
+    }, [nodeType, isNodePhaseCompleted, countdown, showUniversalModal, t, nodeSetupParams, isCompact, formatTime]);
 
     return {
         countdown,

@@ -78,12 +78,15 @@ pub(crate) struct LocalNodeAdapter {
     pub(crate) tor_control_port: Option<u16>,
     required_initial_peers: u32,
     pub(crate) ab_test_group: ABTestSelector,
+    pub(crate) http_api_port: u16,
 }
 
 impl LocalNodeAdapter {
     pub fn new(status_broadcast: watch::Sender<BaseNodeStatus>) -> Self {
         let grpc_port = PortAllocator::new().assign_port_with_fallback();
         let tcp_listener_port = PortAllocator::new().assign_port_with_fallback();
+        let http_api_port = PortAllocator::new().assign_port_with_fallback();
+
         Self {
             grpc_address: Some(("127.0.0.1".to_string(), grpc_port)),
             status_broadcast,
@@ -93,6 +96,7 @@ impl LocalNodeAdapter {
             use_tor: false,
             tor_control_port: None,
             ab_test_group: ABTestSelector::GroupA,
+            http_api_port,
         }
     }
 
@@ -140,6 +144,10 @@ impl NodeAdapter for LocalNodeAdapter {
         } else {
             Err(anyhow::anyhow!("Remote node service is not available"))
         }
+    }
+
+    fn get_http_api_url(&self) -> String {
+        format!("http://127.0.0.1:{}", self.http_api_port)
     }
 
     fn use_tor(&mut self, use_tor: bool) {
@@ -193,9 +201,9 @@ impl ProcessAdapter for LocalNodeAdapter {
 
             for dir in dirs {
                 if dir.exists() {
-                    info!(target: LOG_TARGET, "Node migration v2: removing directory at {:?}", dir);
+                    info!(target: LOG_TARGET, "Node migration v2: removing directory at {dir:?}");
                     let _unused = fs::remove_dir_all(dir).inspect_err(|e| {
-                        warn!(target: LOG_TARGET, "Failed to remove directory: {:?}", e);
+                        warn!(target: LOG_TARGET, "Failed to remove directory: {e:?}");
                     });
                 }
             }
@@ -208,9 +216,9 @@ impl ProcessAdapter for LocalNodeAdapter {
         // Remove peerdb on every restart as requested by Protocol team
         let peer_db_dir = network_dir.join("peer_db");
         if peer_db_dir.exists() {
-            info!(target: LOG_TARGET, "Removing peer db at {:?}", peer_db_dir);
+            info!(target: LOG_TARGET, "Removing peer db at {peer_db_dir:?}");
             let _unused = fs::remove_dir_all(peer_db_dir).inspect_err(|e| {
-                warn!(target: LOG_TARGET, "Failed to remove peer db: {:?}", e);
+                warn!(target: LOG_TARGET, "Failed to remove peer db: {e:?}");
             });
         }
 
@@ -256,6 +264,11 @@ impl ProcessAdapter for LocalNodeAdapter {
             "base_node.p2p.allow_test_addresses=true".to_string(),
             "-p".to_string(),
             "base_node.p2p.dht.network_discovery.min_desired_peers=12".to_string(),
+            "-p".to_string(),
+            format!(
+                "base_node.http_wallet_query_service.port={}",
+                self.http_api_port
+            ),
         ];
         if self.use_pruned_mode {
             args.push("-p".to_string());
@@ -290,8 +303,7 @@ impl ProcessAdapter for LocalNodeAdapter {
                 }
                 args.push("-p".to_string());
                 args.push(format!(
-                    "base_node.p2p.transport.tor.control_address=/ip4/127.0.0.1/tcp/{}",
-                    tor_control_port
+                    "base_node.p2p.transport.tor.control_address=/ip4/127.0.0.1/tcp/{tor_control_port}"
                 ));
             }
             let network = Network::get_current_or_user_setting_or_default();

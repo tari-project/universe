@@ -1,14 +1,15 @@
 import { useEffect, useCallback, useState } from 'react';
 import { useForm, Controller, RegisterOptions } from 'react-hook-form';
 import { IoCopyOutline, IoCheckmarkOutline, IoCloseOutline, IoPencil } from 'react-icons/io5';
-import { Input } from '@app/components/elements/inputs/Input';
 import styled from 'styled-components';
-import { useCopyToClipboard } from '@app/hooks';
+import { Input } from '@app/components/elements/inputs/Input';
+import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard.ts';
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 import { CTASArea, InputArea, WalletSettingsGrid } from '../styles';
 
 interface AddressEditorProps {
     initialAddress: string;
+    isWXTM?: boolean;
     onApply: (newAddress: string) => Promise<void>;
     rules:
         | Omit<
@@ -30,10 +31,10 @@ const StyledInput = styled(Input)`
 const StyledForm = styled.form`
     width: 100%;
     // Reserve space for error message
-    min-height: 60px;
+    min-height: 64px;
 `;
 
-const AddressEditor = ({ initialAddress, onApply, rules }: AddressEditorProps) => {
+const AddressEditor = ({ initialAddress, onApply, rules, isWXTM }: AddressEditorProps) => {
     const {
         control,
         watch,
@@ -80,6 +81,7 @@ const AddressEditor = ({ initialAddress, onApply, rules }: AddressEditorProps) =
         </IconButton>
     ) : null;
 
+    const hideValidationError = isWXTM && address === initialAddress;
     return (
         <StyledForm onSubmit={handleSubmit(handleApply)} onReset={handleReset}>
             <WalletSettingsGrid>
@@ -126,7 +128,9 @@ const AddressEditor = ({ initialAddress, onApply, rules }: AddressEditorProps) =
                 </CTASArea>
             </WalletSettingsGrid>
 
-            {errors.address && <span style={{ color: 'red', fontSize: '12px' }}>{errors.address.message}</span>}
+            {errors.address && !hideValidationError && (
+                <span style={{ color: 'red', fontSize: '12px' }}>{errors.address.message}</span>
+            )}
         </StyledForm>
     );
 };

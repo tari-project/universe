@@ -135,9 +135,9 @@ impl MiningStatusManager {
                             if let (Some(jwt), Some(app_version))= (jwt_token, app_version_option){
                                 if let Some(message) = MiningStatusManager::assemble_mining_status(cpu_miner_status_watch_rx.clone(),gpu_latest_miner_stats.clone(),node_latest_status.clone(),app_id.clone(),app_version.clone(),jwt.clone(),).await {
                                     let client = reqwest::Client::new();
-                                    let url = format!("{}/miner/mining-status",base_url);
-                                    if let Ok(response) = client.post(url).header(AUTHORIZATION, &format!("Bearer {}",jwt)).json(&message).send().await.inspect_err(|e|{
-                                        error!("error at sending mining status {}",e.to_string());
+                                    let url = format!("{base_url}/miner/mining-status");
+                                    if let Ok(response) = client.post(url).header(AUTHORIZATION, &format!("Bearer {jwt}")).json(&message).send().await.inspect_err(|e|{
+                                        error!("error at sending mining status {e}");
                                     }){
                                         let status = response.status();
                                         if !status.is_success(){
@@ -177,11 +177,7 @@ impl MiningStatusManager {
 
         let cpu_miner_status = cpu_miner_status_watch_rx.borrow().clone();
         let gpu_status = gpu_latest_miner_stats.borrow().clone();
-        let network = match Network::get_current_or_user_setting_or_default() {
-            Network::Esmeralda => "esmeralda".to_owned(),
-            Network::NextNet => "nextnet".to_owned(),
-            _ => "unknown".to_owned(),
-        };
+        let network = Network::get_current_or_user_setting_or_default().as_key_str();
         let is_mining_active = cpu_miner_status.hash_rate > 0.0 || gpu_status.hash_rate > 0.0;
 
         if let Some(claims) = decode_jwt_claims_without_exp(&jwt_token) {

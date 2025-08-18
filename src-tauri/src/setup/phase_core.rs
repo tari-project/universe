@@ -20,37 +20,36 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use log::{error, info, warn};
+use log::error;
+use tari_shutdown::ShutdownSignal;
 use tauri::{AppHandle, Manager};
-use tauri_plugin_sentry::sentry;
-use tokio::{
-    select,
-    sync::{watch::Sender, Mutex},
+use tokio::sync::{
+    watch::{Receiver, Sender},
+    Mutex,
 };
+use tokio_util::task::TaskTracker;
 
 use crate::{
     auto_launcher::AutoLauncher,
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
-    events_manager::EventsManager,
     progress_trackers::{
         progress_plans::ProgressPlans, progress_stepper::ProgressStepperBuilder,
         ProgressSetupCorePlan, ProgressStepper,
     },
-    setup::{setup_manager::SetupPhase, utils::conditional_sleeper},
+    setup::setup_manager::SetupPhase,
     tasks_tracker::TasksTrackers,
     utils::{network_status::NetworkStatus, platform_utils::PlatformUtils},
-    UniverseAppState,
+    EventsEmitter, UniverseAppState,
 };
 
 use super::{
+    listeners::SetupFeaturesList,
     setup_manager::PhaseStatus,
     trait_setup_phase::{SetupConfiguration, SetupPhaseImpl},
+    utils::{setup_default_adapter::SetupDefaultAdapter, timeout_watcher::TimeoutWatcher},
 };
 
 static LOG_TARGET: &str = "tari::universe::phase_core";
-
-#[derive(Clone, Default)]
-pub struct CoreSetupPhaseOutput {}
 
 #[derive(Clone, Default)]
 pub struct CoreSetupPhaseAppConfiguration {
@@ -63,6 +62,9 @@ pub struct CoreSetupPhase {
     app_configuration: CoreSetupPhaseAppConfiguration,
     setup_configuration: SetupConfiguration,
     status_sender: Sender<PhaseStatus>,
+    #[allow(dead_code)]
+    setup_features: SetupFeaturesList,
+    timeout_watcher: TimeoutWatcher,
 }
 
 impl SetupPhaseImpl for CoreSetupPhase {
@@ -72,15 +74,22 @@ impl SetupPhaseImpl for CoreSetupPhase {
         app_handle: AppHandle,
         status_sender: Sender<PhaseStatus>,
         configuration: SetupConfiguration,
+        setup_features: SetupFeaturesList,
     ) -> Self {
+        let timeout_watcher = TimeoutWatcher::new(configuration.setup_timeout_duration);
         Self {
             app_handle: app_handle.clone(),
-            progress_stepper: Mutex::new(CoreSetupPhase::create_progress_stepper(app_handle)),
+            progress_stepper: Mutex::new(CoreSetupPhase::create_progress_stepper(
+                app_handle,
+                timeout_watcher.get_sender(),
+            )),
             app_configuration: CoreSetupPhase::load_app_configuration()
                 .await
                 .unwrap_or_default(),
             setup_configuration: configuration,
             status_sender,
+            setup_features,
+            timeout_watcher,
         }
     }
 
@@ -88,17 +97,35 @@ impl SetupPhaseImpl for CoreSetupPhase {
         &self.app_handle
     }
 
-    fn create_progress_stepper(app_handle: AppHandle) -> ProgressStepper {
+    async fn get_shutdown_signal(&self) -> ShutdownSignal {
+        TasksTrackers::current().core_phase.get_signal().await
+    }
+    async fn get_task_tracker(&self) -> TaskTracker {
+        TasksTrackers::current().core_phase.get_task_tracker().await
+    }
+    fn get_phase_dependencies(&self) -> Vec<Receiver<PhaseStatus>> {
+        self.setup_configuration
+            .listeners_for_required_phases_statuses
+            .clone()
+    }
+    fn get_phase_id(&self) -> SetupPhase {
+        SetupPhase::Core
+    }
+    fn get_timeout_watcher(&self) -> &TimeoutWatcher {
+        &self.timeout_watcher
+    }
+
+    fn create_progress_stepper(
+        app_handle: AppHandle,
+        timeout_watcher_sender: Sender<u64>,
+    ) -> ProgressStepper {
         ProgressStepperBuilder::new()
-            .add_step(ProgressPlans::Core(
-                ProgressSetupCorePlan::PlatformPrequisites,
-            ))
             .add_step(ProgressPlans::Core(
                 ProgressSetupCorePlan::InitializeApplicationModules,
             ))
             .add_step(ProgressPlans::Core(ProgressSetupCorePlan::NetworkSpeedTest))
             .add_step(ProgressPlans::Core(ProgressSetupCorePlan::Done))
-            .build(app_handle)
+            .build(app_handle, timeout_watcher_sender)
     }
 
     async fn load_app_configuration() -> Result<Self::AppConfiguration, anyhow::Error> {
@@ -109,62 +136,23 @@ impl SetupPhaseImpl for CoreSetupPhase {
         })
     }
 
-    async fn setup(mut self) {
-        info!(target: LOG_TARGET, "[ {} Phase ] Starting setup", SetupPhase::Core);
-        TasksTrackers::current().core_phase.get_task_tracker().await.spawn(async move {
-            let mut shutdown_signal = TasksTrackers::current().core_phase.get_signal().await;
-            for subscriber in &mut self.setup_configuration.listeners_for_required_phases_statuses.iter_mut() {
-                select! {
-                    _ = subscriber.wait_for(|value| value.is_success()) => {}
-                    _ = shutdown_signal.wait() => {
-                        warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Core);
-                        return;
-                    }
-                }
-            };
-            tokio::select! {
-                result = conditional_sleeper(self.setup_configuration.setup_timeout_duration) => {
-                    if result.is_some() {
-                        error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Core);
-                        let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::Core);
-                        sentry::capture_message(&error_message, sentry::Level::Error);
-                        EventsManager::handle_critical_problem(&self.app_handle, Some(SetupPhase::Core.get_critical_problem_title()), Some(SetupPhase::Core.get_critical_problem_description()),Some(error_message))
-                        .await;
-                    }
-                }
-                result = self.setup_inner() => {
-                    match result {
-                        Ok(_) => {
-                            info!(target: LOG_TARGET, "[ {} Phase ] Setup completed successfully", SetupPhase::Core);
-                            let _unused = self.finalize_setup().await;
-                        }
-                        Err(error) => {
-                            error!(target: LOG_TARGET, "[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Core,error);
-                            let error_message = format!("[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Core,error);
-                            sentry::capture_message(&error_message, sentry::Level::Error);
-                            EventsManager::handle_critical_problem(&self.app_handle, Some(SetupPhase::Core.get_critical_problem_title()), Some(SetupPhase::Core.get_critical_problem_description()),Some(error_message))
-                                .await;
-                        }
-                    }
-                }
-                _ = shutdown_signal.wait() => {
-                    warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Core);
-                }
-            };
-        });
+    async fn setup(self) {
+        // Handle preqesities separetely with a dedicated dialog
+        match PlatformUtils::initialize_preqesities().await {
+            Ok(_) => {
+                // Proceed with setup when all prerequisites are met
+                let _unused = SetupDefaultAdapter::setup(self).await;
+            }
+            Err(err) => {
+                log::error!("Core Phase pre-setup failed: {err}");
+            }
+        }
     }
 
     #[allow(clippy::too_many_lines)]
     async fn setup_inner(&self) -> Result<(), anyhow::Error> {
         let mut progress_stepper = self.progress_stepper.lock().await;
         let state = self.app_handle.state::<UniverseAppState>();
-
-        progress_stepper
-            .resolve_step(ProgressPlans::Core(
-                ProgressSetupCorePlan::PlatformPrequisites,
-            ))
-            .await;
-        PlatformUtils::initialize_preqesities(self.app_handle.clone()).await?;
 
         progress_stepper
             .resolve_step(ProgressPlans::Core(
@@ -187,7 +175,7 @@ impl SetupPhaseImpl for CoreSetupPhase {
             .initialize_auto_launcher(self.app_configuration.is_auto_launcher_enabled)
             .await
             .inspect_err(
-                |e| error!(target: LOG_TARGET, "Could not initialize auto launcher: {:?}", e),
+                |e| error!(target: LOG_TARGET, "Could not initialize auto launcher: {e:?}"),
             );
 
         state
@@ -200,9 +188,7 @@ impl SetupPhaseImpl for CoreSetupPhase {
             .resolve_step(ProgressPlans::Core(ProgressSetupCorePlan::NetworkSpeedTest))
             .await;
 
-        NetworkStatus::current()
-            .run_speed_test_with_timeout(&self.app_handle)
-            .await;
+        NetworkStatus::current().run_speed_test_with_timeout().await;
 
         Ok(())
     }
@@ -216,7 +202,7 @@ impl SetupPhaseImpl for CoreSetupPhase {
             .resolve_step(ProgressPlans::Core(ProgressSetupCorePlan::Done))
             .await;
 
-        EventsManager::handle_core_phase_finished(&self.app_handle, true).await;
+        EventsEmitter::emit_core_phase_finished(true).await;
 
         Ok(())
     }

@@ -47,19 +47,16 @@ pub(crate) struct StartConfig {
     pub tari_address: TariAddress,
     pub base_node_grpc_address: String,
     pub coinbase_extra: String,
-    pub p2pool_enabled: bool,
-    pub p2pool_node_grpc_address: String,
     pub monero_nodes: Vec<String>,
     pub use_monero_fail: bool,
 }
 
 impl StartConfig {
+    #[allow(dead_code)]
     fn override_by(&self, override_by: MergeMiningProxyConfig) -> Self {
         let cloned = self.clone();
         Self {
-            p2pool_enabled: override_by.p2pool_enabled,
             base_node_grpc_address: override_by.base_node_grpc_address,
-            p2pool_node_grpc_address: override_by.p2pool_node_grpc_address,
             coinbase_extra: override_by.coinbase_extra,
             tari_address: override_by.tari_address,
             use_monero_fail: override_by.use_monero_fail,
@@ -98,39 +95,10 @@ impl MmProxyManager {
         }
     }
 
-    pub async fn config(&self) -> Option<MergeMiningProxyConfig> {
-        let lock = self.watcher.read().await;
-        lock.adapter.config.clone()
-    }
-
-    pub async fn change_config(&self, config: MergeMiningProxyConfig) -> Result<(), anyhow::Error> {
-        if self.watcher.read().await.is_running() {
-            let mut lock = self.watcher.write().await;
-            lock.stop().await?;
-            drop(lock);
-        }
-        let start_config_read = self.start_config.read().await;
-        match start_config_read.as_ref() {
-            Some(start_config) => {
-                let config_with_override = start_config.override_by(config);
-                drop(start_config_read);
-                self.start(config_with_override).await?;
-                self.wait_ready().await?;
-            }
-            None => {
-                return Err(anyhow!(
-                    "Missing start config! MM proxy manager must be started at least once!"
-                ));
-            }
-        }
-
-        Ok(())
-    }
-
     pub async fn start(&self, config: StartConfig) -> Result<(), anyhow::Error> {
-        let shutdown_signal = TasksTrackers::current().unknown_phase.get_signal().await;
+        let shutdown_signal = TasksTrackers::current().mining_phase.get_signal().await;
         let task_tracker = TasksTrackers::current()
-            .unknown_phase
+            .mining_phase
             .get_task_tracker()
             .await;
 
@@ -142,9 +110,7 @@ impl MmProxyManager {
             tari_address: config.tari_address.clone(),
             base_node_grpc_address: config.base_node_grpc_address.clone(),
             coinbase_extra: config.coinbase_extra.clone(),
-            p2pool_enabled: config.p2pool_enabled,
             port: PortAllocator::new().assign_port_with_fallback(),
-            p2pool_node_grpc_address: config.p2pool_node_grpc_address,
             monero_nodes: config.monero_nodes.clone(),
             use_monero_fail: config.use_monero_fail,
         };
@@ -189,6 +155,14 @@ impl MmProxyManager {
         Err(anyhow!("MM proxy did not start in 90sec"))
     }
 
+    pub async fn get_port(&self) -> u16 {
+        let lock = self.watcher.read().await;
+        lock.adapter
+            .config
+            .as_ref()
+            .map(|c| c.port)
+            .unwrap_or_default()
+    }
     pub async fn get_monero_port(&self) -> Result<u16, anyhow::Error> {
         let lock = self.watcher.read().await;
         match lock.adapter.config.clone() {

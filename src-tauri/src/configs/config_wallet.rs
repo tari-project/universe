@@ -20,67 +20,152 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::{sync::LazyLock, time::SystemTime};
+use std::{collections::HashMap, sync::LazyLock, time::SystemTime};
 
 use getset::{Getters, Setters};
-use log::error;
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Manager};
+use tari_common_types::tari_address::TariAddress;
+use tari_core::transactions::tari_amount::MicroMinotari;
+use tauri::AppHandle;
 use tokio::sync::RwLock;
 
 use crate::{
-    events_emitter::EventsEmitter, events_manager::EventsManager, internal_wallet::InternalWallet,
-    utils::wallet_utils::create_monereo_address, UniverseAppState,
+    configs::config_ui::{ConfigUI, ConfigUIContent},
+    internal_wallet::TariWalletDetails,
+    pin::PinLockerState,
 };
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
+
+static EXCHANGES_RECORD_NAME_FOR_EXTERNAL_ADDRESS_BOOK: &str = "Exchanges";
 
 static LOG_TARGET: &str = "tari::universe::config_wallet";
 
 static INSTANCE: LazyLock<RwLock<ConfigWallet>> =
     LazyLock::new(|| RwLock::new(ConfigWallet::new()));
 
-#[derive(Serialize, Deserialize, Clone)]
+pub const WALLET_VERSION: i32 = 2;
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct ExternalTariAddressBookRecord {
+    pub name: String,
+    pub address: TariAddress,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct WalletId(String);
+impl WalletId {
+    pub fn new(id: String) -> Self {
+        WalletId(id)
+    }
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "snake_case")]
 #[serde(default)]
 #[derive(Getters, Setters)]
+#[allow(clippy::struct_excessive_bools)]
 pub struct ConfigWalletContent {
     #[getset(get = "pub", set = "pub")]
-    was_config_migrated: bool,
-    created_at: SystemTime,
+    version: i32,
+    #[getset(get = "pub", set = "pub")]
+    tari_wallets: Vec<WalletId>,
     #[getset(get = "pub")]
     monero_address: String,
+    #[getset(get = "pub", set = "pub")]
+    wxtm_addresses: HashMap<String, String>, // This is the Ethereum address used for WXTm mode | Maps exchange ID to address
     #[getset(get = "pub")]
     monero_address_is_generated: bool,
     #[getset(get = "pub", set = "pub")]
-    keyring_accessed: bool,
+    keyring_accessed: bool, // backward compatibility
+    #[getset(get = "pub", set = "pub")]
+    wallet_migration_nonce: u64,
+    created_at: SystemTime,
+    #[getset(get = "pub", set = "pub")]
+    external_tari_addresses_book: HashMap<String, ExternalTariAddressBookRecord>,
+    #[getset(get = "pub", set = "pub")]
+    selected_external_tari_address: Option<TariAddress>,
+    #[getset(get = "pub", set = "pub")]
+    tari_wallet_details: Option<TariWalletDetails>,
+    #[getset(get = "pub", set = "pub")]
+    pin_locker_state: PinLockerState,
+    #[getset(get = "pub", set = "pub")]
+    seed_backed_up: bool,
+    #[getset(get = "pub", set = "pub")]
+    last_known_balance: MicroMinotari,
+    #[getset(get = "pub", set = "pub")]
+    security_warning_dismissed: bool,
 }
 
 impl Default for ConfigWalletContent {
     fn default() -> Self {
         Self {
-            was_config_migrated: false,
-            created_at: SystemTime::now(),
+            version: 0,
+            tari_wallets: Vec::new(), // Owned wallets` ids
             monero_address: "".to_string(),
             monero_address_is_generated: false,
             keyring_accessed: false,
+            wxtm_addresses: HashMap::new(), // Ethereum addresses used for WXTm mode
+            wallet_migration_nonce: 0,
+            created_at: SystemTime::now(),
+            selected_external_tari_address: None, // Takes precedence over an owned address
+            external_tari_addresses_book: HashMap::new(),
+            tari_wallet_details: None, // Owned tari address details
+            pin_locker_state: PinLockerState::default(),
+            seed_backed_up: false,
+            last_known_balance: MicroMinotari(0),
+            security_warning_dismissed: false,
         }
     }
 }
-
 impl ConfigContentImpl for ConfigWalletContent {}
 
 impl ConfigWalletContent {
+    pub fn add_wxtm_address(&mut self, payload: (String, String)) -> &mut Self {
+        let (exchange_id, address) = payload;
+        self.wxtm_addresses.insert(exchange_id, address);
+        self
+    }
+
     pub fn set_user_monero_address(&mut self, address: String) -> &mut Self {
         self.monero_address = address;
         self.monero_address_is_generated = false;
-
         self
     }
 
     pub fn set_generated_monero_address(&mut self, address: String) -> &mut Self {
         self.monero_address = address;
         self.monero_address_is_generated = true;
+
+        self
+    }
+
+    pub fn select_external_tari_address(&mut self, address: TariAddress) -> &mut Self {
+        self.selected_external_tari_address = Some(address.clone());
+        self.external_tari_addresses_book.insert(
+            EXCHANGES_RECORD_NAME_FOR_EXTERNAL_ADDRESS_BOOK.to_string(),
+            ExternalTariAddressBookRecord {
+                name: EXCHANGES_RECORD_NAME_FOR_EXTERNAL_ADDRESS_BOOK.to_string(),
+                address,
+            },
+        );
+        // Don't clear tari_wallet_details
+        self
+    }
+
+    // Auto select the first wallet
+    pub fn add_tari_wallet(&mut self, selected_wallet_details: TariWalletDetails) -> &mut Self {
+        // Deselect the external Tari address because a new address is now selected by default
+        self.selected_external_tari_address = None;
+        self.tari_wallets
+            .insert(0, selected_wallet_details.id.clone());
+        self.tari_wallet_details = Some(selected_wallet_details);
+
+        // Remove when we decide not to autoselect
+        self.seed_backed_up = false;
 
         self
     }
@@ -94,55 +179,34 @@ pub struct ConfigWallet {
 impl ConfigWallet {
     pub async fn initialize(app_handle: AppHandle) {
         let mut config = Self::current().write().await;
-        let state = app_handle.state::<UniverseAppState>();
-        let old_config_path = app_handle
-            .path()
-            .app_config_dir()
-            .expect("Could not get config dir");
-
         config.load_app_handle(app_handle.clone()).await;
         drop(config);
+    }
 
-        // Think about better place for this
-        // This must happend before InternalWallet::load_or_create !!!
-        if ConfigWallet::content().await.monero_address().is_empty() {
-            if let Ok(monero_address) = create_monereo_address().await {
-                let _unused = ConfigWallet::update_field(
-                    ConfigWalletContent::set_generated_monero_address,
-                    monero_address,
-                )
-                .await;
-            }
+    pub async fn migrate() -> Result<(), anyhow::Error> {
+        let config = ConfigWallet::content().await;
+        let current_version = *config.version();
+
+        if current_version < WALLET_VERSION {
+            log::info!("Wallet Config needs migration {current_version:?} => {WALLET_VERSION}");
+
+            ConfigWallet::update_field(ConfigWalletContent::set_version, WALLET_VERSION).await?;
+
+            return Ok(());
+        } else {
+            log::info!("Skipped migration for wallet config version {current_version:?}");
         }
 
-        match InternalWallet::load_or_create(old_config_path.clone()).await {
-            Ok(wallet) => {
-                state
-                    .wallet_manager
-                    .set_view_private_key_and_spend_key(
-                        wallet.get_view_key(),
-                        wallet.get_spend_key(),
-                    )
-                    .await;
-                let tari_address = wallet.get_tari_address();
-                *state.tari_address.write().await = tari_address.clone();
-                EventsEmitter::emit_wallet_address_update(
-                    &app_handle,
-                    tari_address,
-                    wallet.get_is_tari_address_generated(),
-                )
-                .await;
-            }
-            Err(e) => {
-                error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);
-            }
-        };
+        if *ConfigUI::content().await.was_staged_security_modal_shown() {
+            log::info!("Wallet Config needs 'set_was_staged_security_modal_shown' flag migration");
+            // Rename and move this flag here
+            ConfigWallet::update_field(ConfigWalletContent::set_seed_backed_up, true).await?;
+            // Clear this flag to prevent from re-migrating
+            ConfigUI::update_field(ConfigUIContent::set_was_staged_security_modal_shown, false)
+                .await?;
+        }
 
-        EventsManager::handle_config_wallet_loaded(
-            &app_handle,
-            Self::current().write().await.content.clone(),
-        )
-        .await;
+        Ok(())
     }
 }
 
@@ -157,6 +221,23 @@ impl ConfigImpl for ConfigWallet {
         Self {
             content: ConfigWallet::_load_or_create(),
             app_handle: RwLock::new(None),
+        }
+    }
+
+    fn _load_or_create() -> Self::Config {
+        match Self::_load_config() {
+            Ok(config_content) => {
+                log::info!(target: LOG_TARGET, "[{}] [load_config] loaded config content", Self::_get_name());
+                config_content
+            }
+            Err(_) => {
+                log::debug!(target: LOG_TARGET, "[{}] [load_config] creating new config content", Self::_get_name());
+                let config_content = Self::Config::default();
+                let _unused = Self::_save_config(config_content.clone()).inspect_err(|error| {
+                    log::warn!(target: LOG_TARGET, "[{}] [save_config] error: {:?}", Self::_get_name(), error);
+                });
+                config_content
+            }
         }
     }
 

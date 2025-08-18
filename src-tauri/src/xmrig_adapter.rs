@@ -22,16 +22,19 @@
 
 use anyhow::Error;
 use async_trait::async_trait;
-use log::warn;
+use log::{info, warn};
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 use tari_shutdown::Shutdown;
 use tokio::sync::watch;
 
 use crate::port_allocator::PortAllocator;
 use crate::process_adapter::{
-    HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
+    HandleUnhealthyResult, HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec,
+    StatusMonitor,
 };
+use crate::setup::setup_manager::SetupManager;
 use crate::xmrig;
 use crate::xmrig::http_api::models::Summary;
 use crate::xmrig::http_api::XmrigHttpApiClient;
@@ -39,14 +42,32 @@ use crate::xmrig::http_api::XmrigHttpApiClient;
 const LOG_TARGET: &str = "tari::universe::xmrig_adapter";
 
 pub enum XmrigNodeConnection {
-    LocalMmproxy { host_name: String, port: u16 },
-    Benchmark,
+    LocalMmproxy {
+        host_name: String,
+        port: u16,
+        monero_address: String,
+    },
+    Pool {
+        host_name: String,
+        port: u16,
+        tari_address: String,
+    },
+    MergeMinedPool {
+        host_name: String,
+        port: u16,
+        monero_address: String,
+        tari_address: String,
+    },
 }
 
 impl XmrigNodeConnection {
     pub fn generate_args(&self) -> Vec<String> {
         match self {
-            XmrigNodeConnection::LocalMmproxy { host_name, port } => {
+            XmrigNodeConnection::LocalMmproxy {
+                host_name,
+                port,
+                monero_address,
+            } => {
                 vec![
                     "--daemon".to_string(),
                     format!("--url={}:{}", host_name, port),
@@ -54,10 +75,36 @@ impl XmrigNodeConnection {
                     "--coin=monero".to_string(),
                     // We are using a local daemon, so retry as soon as possible
                     "--retry-pause=1".to_string(),
+                    "--user".to_string(),
+                    format!("{}", monero_address),
                 ]
             }
-            XmrigNodeConnection::Benchmark => {
-                vec!["--benchmark=1m".to_string()]
+            XmrigNodeConnection::Pool {
+                host_name,
+                port,
+                tari_address: monero_address,
+            } => {
+                vec![
+                    "--url".to_string(),
+                    format!("{}:{}", host_name, port),
+                    "--coin=monero".to_string(),
+                    "--user".to_string(),
+                    format!("{}", monero_address),
+                ]
+            }
+            XmrigNodeConnection::MergeMinedPool {
+                host_name,
+                port,
+                monero_address,
+                tari_address,
+            } => {
+                vec![
+                    "--url".to_string(),
+                    format!("{}:{}", host_name, port),
+                    "--coin=monero".to_string(),
+                    "--user".to_string(),
+                    format!("{}:{}", monero_address, tari_address),
+                ]
             }
         }
     }
@@ -65,10 +112,10 @@ impl XmrigNodeConnection {
 
 pub struct XmrigAdapter {
     pub node_connection: Option<XmrigNodeConnection>,
-    pub monero_address: Option<String>,
+    // pub monero_address: Option<String>,
     pub http_api_token: String,
     pub http_api_port: u16,
-    pub cpu_threads: Option<Option<u32>>,
+    pub cpu_threads: Option<u32>,
     pub extra_options: Vec<String>,
     pub summary_broadcast: watch::Sender<Option<Summary>>,
 }
@@ -79,7 +126,7 @@ impl XmrigAdapter {
         let http_api_token = "pass".to_string();
         Self {
             node_connection: None,
-            monero_address: None,
+            // monero_address: None,
             http_api_token: http_api_token.clone(),
             http_api_port,
             cpu_threads: None,
@@ -128,22 +175,17 @@ impl ProcessAdapter for XmrigAdapter {
             }
         };
 
-        std::fs::create_dir_all(xmrig_log_file_parent).unwrap_or_else(| error | {
-            warn!(target: LOG_TARGET, "Could not create xmrig log file parent directory - {}", error);
+        std::fs::create_dir_all(xmrig_log_file_parent).unwrap_or_else(|error| {
+            warn!(target: LOG_TARGET, "Could not create xmrig log file parent directory - {error}");
         });
 
         args.push(format!("--http-port={}", self.http_api_port));
         args.push(format!("--http-access-token={}", self.http_api_token));
         args.push("--donate-level=1".to_string());
-        args.push(format!(
-            "--user={}",
-            self.monero_address
-                .as_ref()
-                .ok_or(anyhow::anyhow!("Monero address not set"))?
-        ));
+
         // don't specify threads for ludicrous mode
-        if let Some(Some(cpu_threads)) = self.cpu_threads {
-            args.push(format!("--threads={}", cpu_threads));
+        if let Some(cpu_threads) = self.cpu_threads {
+            args.push(format!("--threads={cpu_threads}"));
         }
         args.push("--verbose".to_string());
         for extra_option in &self.extra_options {
@@ -182,6 +224,10 @@ impl ProcessAdapter for XmrigAdapter {
     }
 }
 
+// This is a flag to indicate if the fallback to solo mining has been triggered
+// We want to avoid triggering it multiple times per session
+static WAS_FALLBACK_TO_SOLO_MINING_TRIGGERED: AtomicBool = AtomicBool::new(false);
+
 #[derive(Clone)]
 pub struct XmrigStatusMonitor {
     client: XmrigHttpApiClient,
@@ -190,15 +236,49 @@ pub struct XmrigStatusMonitor {
 
 #[async_trait]
 impl StatusMonitor for XmrigStatusMonitor {
+    async fn handle_unhealthy(
+        &self,
+        duration_since_last_healthy_status: Duration,
+    ) -> Result<HandleUnhealthyResult, anyhow::Error> {
+        // Fallback to solo mining if the miner has been unhealthy for more than 30 minutes
+        info!(target: LOG_TARGET, "Handling unhealthy status for Xmrig | Duration since last healthy status: {:?}", duration_since_last_healthy_status.as_secs());
+        if duration_since_last_healthy_status.as_secs().gt(&(60 * 30))
+            && !WAS_FALLBACK_TO_SOLO_MINING_TRIGGERED.load(Ordering::SeqCst)
+        {
+            match SetupManager::get_instance()
+                .turn_off_cpu_pool_feature()
+                .await
+            {
+                Ok(_) => {
+                    info!(target: LOG_TARGET, "XmrigAdapter: CPU Pool feature turned off due to prolonged unhealthiness.");
+                    WAS_FALLBACK_TO_SOLO_MINING_TRIGGERED.store(true, Ordering::SeqCst);
+                    return Ok(HandleUnhealthyResult::Stop);
+                }
+                Err(error) => {
+                    warn!(target: LOG_TARGET, "XmrigAdapter: Failed to turn off CPU Pool feature: {error} | Continuing to monitor.");
+                    return Ok(HandleUnhealthyResult::Continue);
+                }
+            }
+        } else {
+            return Ok(HandleUnhealthyResult::Continue);
+        }
+    }
+
     async fn check_health(&self, _uptime: Duration, timeout_duration: Duration) -> HealthStatus {
         match tokio::time::timeout(timeout_duration, self.summary()).await {
             Ok(summary_result) => match summary_result {
-                Ok(s) => {
-                    let _result = self.summary_broadcast.send(Some(s));
+                Ok(summary) => {
+                    let _result = self.summary_broadcast.send(Some(summary.clone()));
+
+                    if summary.hashrate.total.iter().all(|x| x.eq(&Some(0.0))) {
+                        warn!(target: LOG_TARGET, "Xmrig has zero hashrate reported.");
+                        return HealthStatus::Unhealthy;
+                    }
+
                     HealthStatus::Healthy
                 }
                 Err(e) => {
-                    warn!(target: LOG_TARGET, "Failed to get xmrig summary: {}", e);
+                    warn!(target: LOG_TARGET, "Failed to get xmrig summary: {e}");
                     let _result = self.summary_broadcast.send(None);
                     HealthStatus::Unhealthy
                 }

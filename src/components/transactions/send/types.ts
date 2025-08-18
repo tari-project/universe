@@ -1,5 +1,5 @@
 export interface SendInputs {
-    message: string;
+    message?: string;
     address: string;
     amount?: number;
 }

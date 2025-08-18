@@ -1,39 +1,5 @@
-import { TransactionInfo } from '@app/types/app-status.ts';
-import { TransactionDirection as D, TransactionStatus as S } from '@app/types/transactions.ts';
-import { TransationType } from '@app/components/transactions/types.ts';
-import i18n from 'i18next';
-import { useConfigUIStore } from '@app/store';
-
-interface GetTitleArgs {
-    itemType: TransationType;
-    blockHeight?: number;
-    message?: string;
-}
-
-function getItemType(item: TransactionInfo): TransationType {
-    const mined = [S.MinedConfirmed, S.MinedConfirmed, S.CoinbaseConfirmed, S.CoinbaseUnconfirmed];
-    const oneSided = [S.OneSidedConfirmed, S.OneSidedUnconfirmed];
-
-    const isMined = item.direction === D.Inbound && mined.includes(item.status) && !oneSided.includes(item.status);
-
-    if (isMined) {
-        return 'mined';
-    }
-
-    return item.direction === D.Outbound ? 'sent' : 'received';
-}
-
-function getItemTitle({ itemType, blockHeight, message }: GetTitleArgs): string {
-    if (itemType === 'mined' && blockHeight) {
-        return `${i18n.t('sidebar:block')} #${blockHeight}`;
-    }
-
-    if (message && !message.includes('<No message>')) {
-        return message;
-    }
-
-    return i18n.t(`common:${itemType}`);
-}
+import { CombinedBridgeWalletTransaction, useConfigUIStore } from '@app/store';
+import { TransactionInfo } from '@app/types/app-status';
 
 function formatTimeStamp(timestamp: number): string {
     const appLanguage = useConfigUIStore.getState().application_language;
@@ -46,4 +12,27 @@ function formatTimeStamp(timestamp: number): string {
         minute: 'numeric',
     });
 }
-export { getItemType, getItemTitle, formatTimeStamp };
+
+function convertWalletTransactionToCombinedTransaction(transaction: TransactionInfo): CombinedBridgeWalletTransaction {
+    return {
+        sourceAddress: transaction.source_address,
+        destinationAddress: transaction.dest_address,
+        paymentId: transaction.payment_id,
+        feeAmount: transaction.fee,
+        createdAt: transaction.timestamp,
+        tokenAmount: transaction.amount,
+        mined_in_block_height: transaction.mined_in_block_height,
+        walletTransactionDetails: {
+            txId: transaction.tx_id,
+            direction: transaction.direction,
+            isCancelled: transaction.is_cancelled,
+            status: transaction.status,
+            excessSig: transaction.excess_sig,
+            message: transaction.message,
+            paymentReference: transaction.payment_reference,
+        },
+        bridgeTransactionDetails: undefined,
+    };
+}
+
+export { formatTimeStamp, convertWalletTransactionToCombinedTransaction };

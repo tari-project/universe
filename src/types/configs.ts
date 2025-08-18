@@ -1,12 +1,12 @@
-import { modeType } from '@app/store';
-import { GpuThreads } from './app-status';
 import { NodeType } from '@app/store/useNodeStore';
+import { WalletUIMode } from './events-payloads';
 
 export interface ConfigCore {
     created_at: string;
     is_p2pool_enabled: boolean;
     use_tor: boolean;
     allow_telemetry: boolean;
+    allow_notifications: boolean;
     last_binaries_update_timestamp?: string;
     anon_id: string;
     should_auto_launch: boolean;
@@ -22,12 +22,15 @@ export interface ConfigCore {
     };
     remote_base_node_address: string;
     node_type?: NodeType;
+    exchange_id?: string;
 }
 export interface ConfigWallet {
     created_at: string;
     monero_address: string;
     monero_address_is_generated: boolean;
+    wxtm_addresses: Record<string, string>; // Ethereum addresses used for WXTm mode
     keyring_accessed: boolean;
+    last_known_balance?: number;
 }
 export interface ConfigUI {
     created_at: string;
@@ -35,32 +38,83 @@ export interface ConfigUI {
     has_system_language_been_proposed: boolean;
     should_always_use_system_language: boolean;
     application_language: string;
-    paper_wallet_enabled: boolean;
-    custom_power_levels_enabled: boolean;
     sharing_enabled: boolean;
     visual_mode: boolean;
     show_experimental_settings: boolean;
-    warmup_seen: boolean | null;
+    wallet_ui_mode: WalletUIMode;
+    was_staged_security_modal_shown: boolean;
 }
+
 export interface ConfigMining {
     created_at: string;
-    mode: modeType;
-    eco_mode_cpu_threads: number;
     mine_on_app_start: boolean;
-    ludicrous_mode_cpu_threads: number;
-    eco_mode_cpu_options: string[];
-    ludicrous_mode_cpu_options: string[];
-    custom_mode_cpu_options: string[];
-    custom_max_cpu_usage: number;
-    custom_max_gpu_usage: GpuThreads[];
+    selected_mining_mode: string;
     gpu_mining_enabled: boolean;
+    mining_modes: Record<string, MiningMode>;
+    gpu_devices_settings: Record<number, GpuDeviceSettings>;
     cpu_mining_enabled: boolean;
     gpu_engine: string;
 }
 
+export interface ConfigMiningSelectors {
+    getSelectedMiningMode: () => MiningMode | undefined;
+}
+
+export interface GpuDeviceSettings {
+    device_id: number;
+    is_excluded: boolean;
+}
+
+export enum MiningModeType {
+    Eco = 'Eco',
+    Custom = 'Custom',
+    Ludicrous = 'Ludicrous',
+    User = 'User',
+}
+
+export interface MiningMode {
+    mode_type: MiningModeType;
+    mode_name: string;
+    cpu_usage_percentage: number;
+    gpu_usage_percentage: number;
+}
+
+export interface ConfigPools {
+    // ======= Config internals =======
+    was_config_migrated: boolean;
+    created_at: string;
+    // ======= Gpu Pool =======
+    // When false we are solo mining with glytex, if true we are pool mining with graxil
+    gpu_pool_enabled: boolean; // Whether GPU pool mining is enabled | defaults to true
+    selected_gpu_pool?: string; // Name of the selected GPU pool => defaults to LuckyPool
+    available_gpu_pools?: Record<GpuPools, BasePoolData>; // Available GPU pools
+    // ======= Cpu Pool =======
+    // When false we are solo mining with xmrig and mmproxy if true we are pool mining with xmrig
+    cpu_pool_enabled: boolean; // Whether CPU pool mining is enabled | defaults to true
+    selected_cpu_pool?: string; // Name of the selected CPU pool => defaults to LuckyPool
+    available_cpu_pools?: Record<CpuPools, BasePoolData>; // Available CPU pools
+}
+
+export enum GpuPools {
+    LuckyPool = 'LuckyPool',
+    SupportXTMPool = 'SupportXTMPool',
+}
+
+export enum CpuPools {
+    LuckyPool = 'LuckyPool',
+    SupportXTMPool = 'SupportXTMPool',
+}
+
+export interface BasePoolData {
+    pool_url: string;
+    stats_url: string;
+    pool_name: string;
+}
+
 export interface ConfigBackendInMemory {
-    airdropUrl: string;
-    airdropApiUrl: string;
-    airdropTwitterAuthUrl: string;
-    exchangeId?: string;
+    airdrop_url: string;
+    airdrop_api_url: string;
+    airdrop_twitter_auth_url: string;
+    exchange_id: string;
+    bridge_backend_api_url: string;
 }

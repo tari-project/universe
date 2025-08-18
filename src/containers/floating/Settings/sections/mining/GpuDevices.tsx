@@ -13,26 +13,30 @@ import {
 import { Stack } from '@app/components/elements/Stack';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 import { GpuDevice } from '@app/types/app-status.ts';
-import { toggleDeviceExclusion } from '@app/store/actions/miningStoreActions.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { useConfigMiningStore } from '@app/store/useAppConfigStore.ts';
 import { useSetupStore } from '@app/store/useSetupStore.ts';
+import { toggleDeviceExclusion } from '@app/store/actions/appConfigStoreActions.ts';
 
 const GpuDevices = memo(function GpuDevices() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
     const gpuDevices = useMiningMetricsStore((s) => s.gpu_devices);
+    const gpuDevicesSettings = useConfigMiningStore((s) => s.gpu_devices_settings);
     const isGPUMining = useMiningMetricsStore((s) => s.gpu_mining_status.is_mining);
     const isHardwarePhaseFinished = useSetupStore((s) => s.hardwarePhaseFinished);
 
-    const miningInitiated = useMiningStore((s) => s.miningInitiated);
+    const miningGpuInitiated = useMiningStore((s) => s.isGpuMiningInitiated);
     const isGpuMiningEnabled = useConfigMiningStore((s) => s.gpu_mining_enabled);
     const isExcludingGpuDevices = useMiningStore((s) => s.isExcludingGpuDevices);
     const isDisabled =
-        !isHardwarePhaseFinished || isExcludingGpuDevices || isGPUMining || miningInitiated || !isGpuMiningEnabled;
+        !isHardwarePhaseFinished || isExcludingGpuDevices || isGPUMining || miningGpuInitiated || !isGpuMiningEnabled;
 
-    const handleSetExcludedDevice = useCallback(async (device: GpuDevice) => {
-        await toggleDeviceExclusion(device.device_index, !device.settings.is_excluded);
-    }, []);
+    const handleSetExcludedDevice = useCallback(
+        async (device: GpuDevice) => {
+            await toggleDeviceExclusion(device.device_id, !gpuDevicesSettings[device.device_id]?.is_excluded);
+        },
+        [gpuDevicesSettings]
+    );
 
     return (
         <>
@@ -50,17 +54,17 @@ const GpuDevices = memo(function GpuDevices() {
                         {(gpuDevices || []).length > 0 ? (
                             gpuDevices.map((device, i) => (
                                 <Stack
-                                    key={device.device_index}
+                                    key={device.device_id}
                                     direction="row"
                                     alignItems="center"
                                     justifyContent="space-between"
                                 >
                                     <Typography variant="h6">
-                                        {i + 1}. {device.device_name}
+                                        {i + 1}. {device.name}
                                     </Typography>
                                     <ToggleSwitch
-                                        key={device.device_index}
-                                        checked={!device.settings.is_excluded}
+                                        key={device.device_id}
+                                        checked={!gpuDevicesSettings[device.device_id]?.is_excluded}
                                         disabled={isDisabled}
                                         onChange={() => handleSetExcludedDevice(device)}
                                     />

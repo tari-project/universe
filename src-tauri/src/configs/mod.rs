@@ -20,10 +20,10 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-mod trait_config_test;
-
 pub mod config_core;
 pub mod config_mining;
+pub mod config_pools;
 pub mod config_ui;
 pub mod config_wallet;
+pub mod pools;
 pub mod trait_config;

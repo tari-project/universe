@@ -16,10 +16,8 @@ export {
     setCustomStatsServerPort,
     setGpuMiningEnabled,
     setMineOnAppStart,
-    setMode,
     setMoneroAddress,
     setMonerodConfig,
-    setP2poolEnabled,
     setPreRelease,
     setShouldAlwaysUseSystemLanguage,
     setShouldAutoLaunch,
@@ -40,40 +38,35 @@ export {
     setIsSettingsOpen,
     setIssueReference,
     setReleaseNotes,
-    updateApplicationsVersions,
 } from './appStateStoreActions.ts';
 
 export {
-    changeMiningMode,
-    getMaxAvailableThreads,
-    pauseMining,
+    handleBaseNodeStatusUpdate,
+    handleConnectedPeersUpdate,
+    setCpuMiningStatus,
+    setGpuDevices,
+    setGpuMiningStatus,
+} from './miningMetricsStoreActions.ts';
+
+export {
+    getMiningNetwork,
     setCustomLevelsDialogOpen,
     setMiningControlsEnabled,
-    setMiningNetwork,
     startMining,
     stopMining,
-    toggleDeviceExclusion,
 } from './miningStoreActions.ts';
+
 export {
-    setShowExternalDependenciesDialog,
-    setUITheme,
     setDialogToShow,
     setIsWebglNotSupported,
+    setShowExternalDependenciesDialog,
+    setUITheme,
 } from './uiStoreActions.ts';
 
 export {
+    fetchCoinbaseTransactions,
     fetchTransactionsHistory,
     importSeedWords,
-    initialFetchTxs,
     refreshTransactions,
-    setWalletAddress,
     setWalletBalance,
 } from './walletStoreActions';
-export {
-    setGpuDevices,
-    setGpuMiningStatus,
-    setCpuMiningStatus,
-    handleConnectedPeersUpdate,
-    handleBaseNodeStatusUpdate,
-    handleMiningModeChange,
-} from './miningMetricsStoreActions.ts';

@@ -5,6 +5,7 @@ export enum FormatPreset {
     XTM_DECIMALS = 'xtm-decimals',
     XTM_COMPACT = 'xtm-compact',
     XTM_LONG = 'xtm-crypto',
+    XTM_LONG_DEC = 'xtm-long',
     DECIMAL_COMPACT = 'decimal-compact',
     COMPACT = 'compact',
 }
@@ -76,11 +77,22 @@ const formatXTMLong = (value: number) =>
         style: 'decimal',
     });
 
+const formatXTMLongDec = (value: number, maxFractionDigits = 4) =>
+    formatValue(removeXTMCryptoDecimals(value), {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: maxFractionDigits,
+        notation: 'standard',
+        style: 'decimal',
+    });
+
 const formatDecimalCompact = (value: number) => formatValue(value, { maximumFractionDigits: 2, style: 'decimal' });
 
 export function formatNumber(value: number, preset: FormatPreset): string {
     switch (preset) {
         case FormatPreset.COMPACT:
+            if (value < 10000) {
+                return formatDecimalCompact(value);
+            }
             return formatValue(roundCompactDecimals(value), {
                 maximumFractionDigits: 2,
                 notation: 'compact',
@@ -89,9 +101,15 @@ export function formatNumber(value: number, preset: FormatPreset): string {
         case FormatPreset.PERCENT:
             return formatPercent(value);
         case FormatPreset.XTM_COMPACT:
+            if (value / 1_000_000 < 0.01 && value > 0) {
+                return `< 0.01`;
+            }
             return formatXTMCompact(value);
         case FormatPreset.XTM_LONG:
             return formatXTMLong(value);
+        case FormatPreset.XTM_LONG_DEC: {
+            return formatXTMLongDec(value);
+        }
         case FormatPreset.XTM_DECIMALS:
             return formatXTMDecimals(value);
         case FormatPreset.DECIMAL_COMPACT:
@@ -102,20 +120,63 @@ export function formatNumber(value: number, preset: FormatPreset): string {
     }
 }
 
-export function formatHashrate(hashrate: number, joinUnit = true): string {
+interface Hashrate {
+    value: number;
+    unit: string;
+}
+
+export function formatHashrate(hashrate: number, joinUnit = true): Hashrate {
     if (hashrate < 1000) {
-        return joinUnit ? hashrate + ' H/s' : hashrate.toFixed(2);
-    } else if (hashrate < 1000000) {
-        return (hashrate / 1000).toFixed(2) + (joinUnit ? ' kH/s' : 'k');
-    } else if (hashrate < 1000000000) {
-        return (hashrate / 1000000).toFixed(2) + (joinUnit ? ' MH/s' : 'M');
-    } else if (hashrate < 1000000000000) {
-        return (hashrate / 1000000000).toFixed(2) + (joinUnit ? ' GH/s' : 'G');
-    } else if (hashrate < 1000000000000000) {
-        return (hashrate / 1000000000000).toFixed(2) + (joinUnit ? ' TH/s' : 'T');
+        return {
+            value: hashrate,
+            unit: 'H/s',
+        };
+    }
+    if (hashrate < 1000000) {
+        return {
+            value: Number((hashrate / 1000).toFixed(2)),
+            unit: joinUnit ? ' kH/s' : 'k',
+        };
+    }
+    if (hashrate < 1000000000) {
+        return {
+            value: Number((hashrate / 1000000).toFixed(2)),
+            unit: joinUnit ? ' MH/s' : 'M',
+        };
+    }
+    if (hashrate < 1000000000000) {
+        return {
+            value: Number((hashrate / 1000000000).toFixed(2)),
+            unit: joinUnit ? ' GH/s' : 'G',
+        };
+    }
+    if (hashrate < 1000000000000000) {
+        return {
+            value: Number((hashrate / 1000000000000).toFixed(2)),
+            unit: joinUnit ? ' TH/s' : 'T',
+        };
     } else {
-        return (hashrate / 1000000000000000).toFixed(2) + (joinUnit ? ' PH/s' : 'P');
+        return {
+            value: Number((hashrate / 1000000000000000).toFixed(2)),
+            unit: joinUnit ? ' PH/s' : 'P',
+        };
     }
 }
 
-export { formatDecimalCompact, roundToTwoDecimals, removeDecimals };
+export const formatCountdown = (targetDate: string): string => {
+    const now = new Date().getTime();
+    const target = new Date(targetDate).getTime();
+    const difference = target - now;
+
+    if (difference <= 0) {
+        return '0D 0H 0M';
+    }
+
+    const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+
+    return `${days}D ${hours}H ${minutes}M`;
+};
+
+export { formatDecimalCompact, roundToTwoDecimals, removeDecimals, removeXTMCryptoDecimals, formatValue };
