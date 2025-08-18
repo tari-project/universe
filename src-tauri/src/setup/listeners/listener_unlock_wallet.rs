@@ -120,7 +120,7 @@ impl ListenerUnlockWallet {
 struct DefaultStrategy;
 impl UnlockStrategyTrait for DefaultStrategy {
     fn required_channels(&self) -> Vec<SetupPhase> {
-        vec![SetupPhase::Core, SetupPhase::Node, SetupPhase::Wallet]
+        vec![SetupPhase::Node, SetupPhase::Wallet]
     }
 }
 struct ExternalWalletAddressStrategy;

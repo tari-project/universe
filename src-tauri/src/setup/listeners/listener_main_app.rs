@@ -20,11 +20,14 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::sync::LazyLock;
+use std::{collections::HashMap, sync::LazyLock};
 
 use tokio::sync::{watch::Receiver, Mutex};
 
-use crate::setup::setup_manager::{PhaseStatus, SetupPhase};
+use crate::setup::{
+    listeners::AppModuleStatus,
+    setup_manager::{PhaseStatus, SetupPhase},
+};
 
 use log::info;
 
@@ -35,16 +38,16 @@ use super::{
     SetupFeaturesList,
 };
 
-static LOG_TARGET: &str = "tari::universe::unlock_conditions::listener_critical_problem";
-static INSTANCE: LazyLock<ListenerCriticalProblem> = LazyLock::new(ListenerCriticalProblem::new);
+static LOG_TARGET: &str = "tari::universe::unlock_conditions::listener_main_app";
+static INSTANCE: LazyLock<ListenerMainApp> = LazyLock::new(ListenerMainApp::new);
 
-pub struct ListenerCriticalProblem {
+pub struct ListenerMainApp {
     listener: Mutex<Option<tokio::task::JoinHandle<()>>>,
     status_channels: Mutex<UnlockConditionsStatusChannels>,
     features_list: Mutex<SetupFeaturesList>,
 }
 
-impl UnlockConditionsListenerTrait for ListenerCriticalProblem {
+impl UnlockConditionsListenerTrait for ListenerMainApp {
     fn new() -> Self {
         Self {
             listener: Mutex::new(None),
@@ -75,7 +78,11 @@ impl UnlockConditionsListenerTrait for ListenerCriticalProblem {
     }
 
     async fn conditions_met_callback(&self) {
-        info!(target: LOG_TARGET, "Critical problem detected");
+        info!(target: LOG_TARGET, "App initializated");
+    }
+
+    async fn conditions_failed_callback(&self, failed_phases: HashMap<SetupPhase, String>) {
+        info!(target: LOG_TARGET, "App initialization failed for phases: {:?}", failed_phases);
     }
 
     async fn handle_restart(&self) {
@@ -96,16 +103,50 @@ impl UnlockConditionsListenerTrait for ListenerCriticalProblem {
     }
 }
 
-impl ListenerCriticalProblem {
+impl ListenerMainApp {
     async fn lock(&self) {
-        info!(target: LOG_TARGET, "Locking Mining");
-        // EventsEmitter::emit_lock_cpu_mining().await;
+        info!(target: LOG_TARGET, "Locking main app listener");
     }
 }
 
 struct DefaultStrategy;
 impl UnlockStrategyTrait for DefaultStrategy {
     fn required_channels(&self) -> Vec<SetupPhase> {
-        vec![SetupPhase::Core, SetupPhase::CpuMining, SetupPhase::Node]
+        vec![
+            SetupPhase::Wallet,
+            SetupPhase::CpuMining,
+            SetupPhase::GpuMining,
+        ]
+    }
+
+    fn check_conditions(
+        &self,
+        channels: &UnlockConditionsStatusChannels,
+    ) -> Result<super::AppModuleStatus, anyhow::Error> {
+        let mut failed_phases: HashMap<SetupPhase, String> = HashMap::new();
+
+        if self.required_channels().iter().any(|phase| {
+            channels
+                .get(phase)
+                .map_or(false, |channel| channel.borrow().is_success())
+        }) {
+            return Ok(AppModuleStatus::Initialized);
+        };
+
+        if self.required_channels().iter().all(|phase| {
+            let channel = channels.get(phase);
+            if let Ok(channel) = channel {
+                let (is_failed, reason) = channel.borrow().is_failed();
+                if let Some(reason) = reason {
+                    failed_phases.insert(phase.clone(), reason);
+                }
+                return is_failed;
+            }
+            false
+        }) {
+            return Ok(AppModuleStatus::Failed(failed_phases));
+        }
+
+        return Ok(AppModuleStatus::Initializing);
     }
 }

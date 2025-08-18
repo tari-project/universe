@@ -23,7 +23,10 @@
 use std::{collections::HashMap, future::Future, time::Duration};
 
 use crate::{
-    setup::setup_manager::{PhaseStatus, SetupPhase},
+    setup::{
+        listeners::AppModuleStatus,
+        setup_manager::{PhaseStatus, SetupPhase},
+    },
     tasks_tracker::TasksTrackers,
 };
 
@@ -119,10 +122,23 @@ pub trait UnlockConditionsListenerTrait {
                     if shutdown_signal.is_triggered() {
                         return;
                     }
-                    if unlock_strategy.check_conditions(&channels).unwrap_or(false) {
-                        Self::current().conditions_met_callback().await;
-                        break;
+                    if let Ok(status) = unlock_strategy.check_conditions(&channels) {
+                        debug!(target: LOG_TARGET, "Unlock conditions status: {:?}", status);
+                        match status {
+                            AppModuleStatus::Initialized => {
+                                Self::current().conditions_met_callback().await;
+                                break;
+                            }
+                            AppModuleStatus::Failed(failed_phases) => {
+                                Self::current()
+                                    .conditions_failed_callback(failed_phases)
+                                    .await;
+                                break;
+                            }
+                            _ => {}
+                        }
                     } else {
+                        warn!(target: LOG_TARGET, "Failed to check unlock conditions");
                     }
                     sleep(Duration::from_secs(5)).await;
                 }
@@ -138,6 +154,14 @@ pub trait UnlockConditionsListenerTrait {
     async fn add_status_channel(&self, key: SetupPhase, value: Receiver<PhaseStatus>);
     async fn select_unlock_strategy(&self) -> Box<dyn UnlockStrategyTrait + Send + Sync>;
     fn conditions_met_callback(&self) -> impl Future<Output = ()> + Send + Sync;
+    fn conditions_failed_callback(
+        &self,
+        failed_phases: HashMap<SetupPhase, String>,
+    ) -> impl Future<Output = ()> + Send + Sync {
+        async move {
+            warn!(target: LOG_TARGET, "Unlock conditions failed for phases: {:?}", failed_phases);
+        }
+    }
     async fn handle_restart(&self) {}
 
     // Getters
@@ -162,17 +186,34 @@ pub trait UnlockStrategyTrait {
     fn check_conditions(
         &self,
         channels: &UnlockConditionsStatusChannels,
-    ) -> Result<bool, anyhow::Error> {
-        for phase in &self.required_channels() {
-            let channel = channels.get(phase)?;
-            let status = channel.borrow();
-            if !status.is_success() {
-                debug!(target: LOG_TARGET, "Phase {phase:?} is not ready");
-                return Ok(false);
+    ) -> Result<AppModuleStatus, anyhow::Error> {
+        let mut failed_phases: HashMap<SetupPhase, String> = HashMap::new();
+
+        // Check for Initializated status
+        if self.required_channels().iter().all(|phase| {
+            channels
+                .get(phase)
+                .map_or(false, |channel| channel.borrow().is_success())
+        }) {
+            return Ok(AppModuleStatus::Initialized);
+        };
+
+        // Check for Failed status
+        if self.required_channels().iter().any(|phase| {
+            let channel = channels.get(phase);
+            if let Ok(channel) = channel {
+                let (is_failed, reason) = channel.borrow().is_failed();
+                if let Some(reason) = reason {
+                    failed_phases.insert(phase.clone(), reason);
+                }
+                return is_failed;
             }
+            false
+        }) {
+            return Ok(AppModuleStatus::Failed(failed_phases));
         }
 
-        Ok(true)
+        return Ok(AppModuleStatus::Initializing);
     }
 
     fn is_any_phase_restarting(&self, channels: UnlockConditionsStatusChannels) -> bool {

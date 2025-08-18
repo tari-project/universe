@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod listener_critical_problem;
+pub mod listener_main_app;
 pub mod listener_unlock_cpu_mining;
 pub mod listener_unlock_gpu_mining;
 pub mod listener_unlock_wallet;
@@ -47,14 +47,14 @@ pub enum AppModule {
 
 /// Status that is communicated between modules listeners and frontend UI
 /// This states representations is mainly used for frontend UI to display the current status of certain module
-#[derive(Clone, Default)]
+#[derive(Clone, Default, Debug)]
 #[allow(unused)]
 pub enum AppModuleStatus {
     #[default]
     NotInitialized, // Default initial state
-    Initializing,                       // Waiting for specified setup phases to complete
-    Initialized,                        // All required setup phases completed
-    Error(HashMap<SetupPhase, String>), // One of required setup phases failed, contains last error message for each phase that failed
+    Initializing, // Waiting for specified setup phases to complete
+    Initialized,  // All required setup phases completed
+    Failed(HashMap<SetupPhase, String>), // One of required setup phases failed, contains last error message for each phase that failed
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]

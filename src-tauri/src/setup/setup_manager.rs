@@ -36,6 +36,7 @@ use crate::configs::config_wallet::ConfigWalletContent;
 use crate::events::CriticalProblemPayload;
 use crate::internal_wallet::InternalWallet;
 use crate::progress_trackers::progress_plans::SetupStep;
+use crate::setup::listeners::listener_main_app::ListenerMainApp;
 use crate::setup::{
     phase_core::CoreSetupPhase, phase_cpu_mining::CpuMiningSetupPhase,
     phase_gpu_mining::GpuMiningSetupPhase, phase_node::NodeSetupPhase,
@@ -194,6 +195,12 @@ impl PhaseStatus {
             self,
             PhaseStatus::Success | PhaseStatus::SuccessWithWarnings(_)
         )
+    }
+    pub fn is_failed(&self) -> (bool, Option<String>) {
+        match self {
+            PhaseStatus::Failed(reason) => (true, Some(reason.clone())),
+            _ => (false, None),
+        }
     }
     pub fn is_restarting(&self) -> bool {
         matches!(self, PhaseStatus::None)
@@ -618,13 +625,19 @@ impl SetupManager {
             .load_setup_features(setup_features.clone())
             .await;
 
+        ListenerMainApp::current()
+            .load_setup_features(setup_features.clone())
+            .await;
+
         ListenerUnlockCpuMining::current().handle_restart().await;
         ListenerUnlockGpuMining::current().handle_restart().await;
         ListenerUnlockWallet::current().handle_restart().await;
+        ListenerMainApp::current().handle_restart().await;
 
         ListenerUnlockCpuMining::current().start_listener().await;
         ListenerUnlockGpuMining::current().start_listener().await;
         ListenerUnlockWallet::current().start_listener().await;
+        ListenerMainApp::current().start_listener().await;
 
         for phase in phases {
             match phase {
@@ -730,6 +743,13 @@ impl SetupManager {
 
         setup_listener(
             ListenerUnlockWallet::current(),
+            &setup_features,
+            phase_status_channels.clone(),
+        )
+        .await;
+
+        setup_listener(
+            ListenerMainApp::current(),
             &setup_features,
             phase_status_channels.clone(),
         )
