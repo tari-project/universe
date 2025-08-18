@@ -1,17 +1,17 @@
 import { useState } from 'react';
 import {
-    ootleListAccounts,
-    ootleCreateAccount,
-    ootleGetBalances,
-    ootleCreateDefaultAccount,
-} from '../../../../../store/actions/ootleActions';
-import {
     AccountsCreateFreeTestCoinsRequest,
     AccountsCreateRequest,
     AccountsGetBalancesRequest,
     AccountsListRequest,
 } from '@tari-project/typescript-bindings';
 import { Button } from '@app/components/elements/buttons/Button';
+import {
+    ootleListAccounts,
+    ootleCreateAccount,
+    ootleGetBalances,
+    ootleCreateDefaultAccount,
+} from '@app/store/actions/ootleActions';
 
 export const OotleWallet = () => {
     const title = 'Ootle Wallet';
