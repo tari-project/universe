@@ -34,12 +34,12 @@ export const useTappletSignerStore = create<TappletSignerStoreState>()((set, get
                 id: 'default',
                 permissions: { requiredPermissions: [], optionalPermissions: [] },
             };
-            const provider: TappletSigner = TappletSigner.build(params);
+            const signer: TappletSigner = TappletSigner.build(params);
 
-            set({ isInitialized: true, tappletSigner: provider });
+            set({ isInitialized: true, tappletSigner: signer });
         } catch (error) {
-            console.error('Error initializing tapplet provider: ', error);
-            setError(`Error initializing tapplet provider: ${error}`);
+            console.error('Error initializing tapplet signer: ', error);
+            setError(`Error initializing tapplet signer: ${error}`);
         }
     },
     setTappletSigner: async (id: string) => {
@@ -49,12 +49,12 @@ export const useTappletSignerStore = create<TappletSignerStoreState>()((set, get
                 id,
                 permissions: { requiredPermissions: [], optionalPermissions: [] },
             };
-            const provider: TappletSigner = TappletSigner.build(params);
+            const signer: TappletSigner = TappletSigner.build(params);
 
-            set({ isInitialized: true, tappletSigner: provider });
+            set({ isInitialized: true, tappletSigner: signer });
         } catch (error) {
-            console.error('Error setting tapplet provider: ', error);
-            setError(`Error setting tapplet provider: ${error}`);
+            console.error('Error setting tapplet signer: ', error);
+            setError(`Error setting tapplet signer: ${error}`);
         }
     },
     runTransaction: async (event: MessageEvent<TransactionEvent>) => {
@@ -62,8 +62,8 @@ export const useTappletSignerStore = create<TappletSignerStoreState>()((set, get
         const { methodName, args, id } = event.data.payload;
 
         try {
-            const provider = get().tappletSigner;
-            const result = await provider?.runOne(methodName, args);
+            const signer = get().tappletSigner;
+            const result = await signer?.runOne(methodName, args);
             if (event.source) {
                 event.source.postMessage({ id, result, type: MessageType.SIGNER_CALL }, { targetOrigin: event.origin });
             }
