@@ -298,10 +298,10 @@ impl BinaryManager {
                         last_percentage.clone().to_string(),
                     );
                     step_update_channel
-                        .send_update(params, (last_percentage / 100.0).round())
+                        .send_update(params, last_percentage / 100.0)
                         .await;
 
-                    tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+                    tokio::time::sleep(std::time::Duration::from_millis(500)).await;
 
                     if last_percentage.ge(&100.0)  {
                         info!(target: LOG_TARGET, "Progress channel completed for binary: {binary_name:?}");

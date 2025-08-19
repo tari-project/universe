@@ -61,22 +61,22 @@ export default function useSync() {
     ]);
 
     const currentPhaseToShow = useMemo(() => {
-        let phase = core_phase;
+        const phase = core_phase;
 
         if (!walletDisabled && gpu_mining_phase?.is_completed) {
-            phase = wallet_phase;
+            return wallet_phase;
         }
 
         if (!cpuMiningDisabled && gpu_mining_phase?.is_completed) {
-            phase = cpu_mining_phase;
+            return cpu_mining_phase;
         }
 
         if (!gpuMiningDisabled && node_phase?.is_completed) {
-            phase = gpu_mining_phase;
+            return gpu_mining_phase;
         }
 
         if (!nodeDisabled && core_phase?.is_completed) {
-            phase = node_phase;
+            return node_phase;
         }
         return phase;
     }, [
@@ -104,6 +104,15 @@ export default function useSync() {
         }
     }, [wallet_phase?.is_completed, disabledPhases]);
 
+    console.info('phases', {
+        core_phase,
+        cpu_mining_phase,
+        gpu_mining_phase,
+        node_phase,
+        wallet_phase,
+        disabledPhases,
+    });
+
     console.log('useSync', {
         setupPhaseTitle: currentPhaseToShow?.phase_title,
         setupTitle: currentPhaseToShow?.title,
@@ -112,6 +121,20 @@ export default function useSync() {
         isCompleted: currentPhaseToShow?.is_completed,
         currentPhaseToShow,
         showSync,
+    });
+
+    console.info('Sum of all progress values:', {
+        core: core_phase?.progress,
+        cpuMining: cpu_mining_phase?.progress,
+        gpuMining: gpu_mining_phase?.progress,
+        node: node_phase?.progress,
+        wallet: wallet_phase?.progress,
+        sum:
+            (core_phase?.progress || 0) +
+            (cpu_mining_phase?.progress || 0) +
+            (gpu_mining_phase?.progress || 0) +
+            (node_phase?.progress || 0) +
+            (wallet_phase?.progress || 0),
     });
 
     return {

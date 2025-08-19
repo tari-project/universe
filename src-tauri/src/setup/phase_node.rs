@@ -485,24 +485,25 @@ impl NodeSetupPhase {
             });
 
         let state = self.app_handle.state::<UniverseAppState>();
-        state
+        let wait_synced_error = state
             .node_manager
             .wait_synced(&progress_params_tx, &progress_percentage_tx)
-            .await?;
+            .await
+            .err();
         progress_handle.abort();
         let _unused = progress_handle.await;
 
         // Now properly finish each tracked step to mark them as completed
         progress_stepper
-            .finish_tracked_step(SetupStep::WaitingForInitialSync)
+            .finish_tracked_step(SetupStep::WaitingForInitialSync, wait_synced_error)
             .await?;
 
         progress_stepper
-            .finish_tracked_step(SetupStep::WaitingForHeaderSync)
+            .finish_tracked_step(SetupStep::WaitingForHeaderSync, wait_synced_error)
             .await?;
 
         progress_stepper
-            .finish_tracked_step(SetupStep::WaitingForBlockSync)
+            .finish_tracked_step(SetupStep::WaitingForBlockSync, wait_synced_error)
             .await?;
 
         Ok(())

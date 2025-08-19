@@ -54,6 +54,8 @@ pub enum SetupStep {
 }
 
 impl SetupStep {
+    /// Returns the i18n key for the step, used for localization. <br>
+    /// It should reference entry in on of the json's in `public/locales/`
     pub fn get_i18n_key(&self) -> String {
         match self {
             // Core Phase
@@ -88,39 +90,40 @@ impl SetupStep {
         }
     }
 
-    // What percentage of 100% this step represents in the whole setup process
-    // All steps should add up to 100%
+    /// Returns the progress value ( **percentage** ) for the step, used to calculate the overall progress of the setup process.
+    // This is used to determine how much progress has been made in the setup process.
+    // The values should be in range 0-100 and all steps should add up to 100.
     pub fn get_progress_value(&self) -> u8 {
         match self {
-            // Core Phase
-            Self::InitializeApplicationModules => 2,
-            Self::NetworkSpeedTest => 2,
+            // Core Phase 5
+            Self::InitializeApplicationModules => 1,
+            Self::NetworkSpeedTest => 4,
 
-            // Node Phase
-            Self::BinariesTor => 8,
-            Self::BinariesNode => 8,
-            Self::BinariesWallet => 8,
-            Self::StartTor => 2,
-            Self::MigratingDatabase => 3,
+            // Node Phase 40
+            Self::BinariesTor => 5,
+            Self::BinariesNode => 5,
+            Self::StartTor => 5,
+            Self::MigratingDatabase => 2,
             Self::StartingNode => 3,
-            Self::WaitingForInitialSync => 3,
-            Self::WaitingForHeaderSync => 3,
-            Self::WaitingForBlockSync => 3,
+            Self::WaitingForInitialSync => 4,
+            Self::WaitingForHeaderSync => 8,
+            Self::WaitingForBlockSync => 8,
 
-            // Cpu Mining Phase
-            Self::BinariesCpuMiner => 7,
-            Self::BinariesMergeMiningProxy => 7,
-            Self::MMProxy => 2,
+            // Cpu Mining Phase 20
+            Self::BinariesCpuMiner => 8,
+            Self::BinariesMergeMiningProxy => 5,
+            Self::MMProxy => 5,
             Self::InitializeCpuHardware => 2,
 
-            // Gpu Mining Phase
-            Self::BinariesGpuMiner => 7,
-            Self::DetectGpu => 2,
+            // Gpu Mining Phase 15
+            Self::BinariesGpuMiner => 10,
+            Self::DetectGpu => 3,
             Self::InitializeGpuHardware => 2,
 
-            // Wallet Phase
-            Self::StartWallet => 3,
-            Self::SetupBridge => 3,
+            // Wallet Phase 20
+            Self::BinariesWallet => 10,
+            Self::StartWallet => 5,
+            Self::SetupBridge => 5,
         }
     }
 }

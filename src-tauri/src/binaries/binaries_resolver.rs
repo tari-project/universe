@@ -227,11 +227,6 @@ impl BinaryResolver {
         binary: Binaries,
         progress_channel: Option<IncrementalProgressTracker>,
     ) -> Result<(), Error> {
-        info!(
-            target: "tari::universe::binaries_resolver",
-            "Initializing binary: {}",
-            binary.name()
-        );
         let manager = self
             .managers
             .get(&binary)

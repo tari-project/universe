@@ -26,7 +26,7 @@ use serde_json::json;
 use tauri::{AppHandle, Manager};
 
 use log::{info, warn};
-use tokio::sync::{watch::Sender, Mutex};
+use tokio::sync::{watch::Sender, RwLock};
 
 use crate::{
     events::ProgressTrackerUpdatePayload,
@@ -57,13 +57,11 @@ impl ProgressAccumulator {
         }
     }
 
-    fn add_step_progress(&mut self, step: &SetupStep, amount: f64) -> bool {
+    fn add_step_progress(&mut self, step: &SetupStep) {
         if !self.step_contributions.contains_key(step) {
-            self.total_progress += amount;
-            self.step_contributions.insert(step.clone(), amount);
-            true
-        } else {
-            false
+            let progress = f64::from(step.get_progress_value());
+            self.total_progress += progress;
+            self.step_contributions.insert(step.clone(), progress);
         }
     }
 
@@ -83,8 +81,8 @@ impl ProgressAccumulator {
 #[derive(Clone)]
 pub struct IncrementalProgressTracker {
     step: SetupStep,
-    last_reported_percentage: Arc<Mutex<f64>>,
-    accumulator: Arc<Mutex<ProgressAccumulator>>,
+    last_reported_percentage: Arc<RwLock<f64>>,
+    accumulator: Arc<RwLock<ProgressAccumulator>>,
     timeout_watcher_sender: Sender<u64>,
     setup_phase: SetupPhase,
 }
@@ -108,17 +106,12 @@ impl IncrementalProgressTracker {
         let step_progress_value = f64::from(self.step.get_progress_value());
         let resolved_percentage = step_progress_value * current_step_completion;
 
-        let last_percentage = *self.last_reported_percentage.lock().await;
-
-        if (resolved_percentage - last_percentage).abs() < 0.01 {
-            // If the percentage hasn't changed significantly, skip sending an update
-            return;
-        }
+        let last_percentage = *self.last_reported_percentage.read().await;
 
         // Calculate the delta (incremental progress)
         let delta = resolved_percentage - last_percentage;
 
-        let mut accumulator = self.accumulator.lock().await;
+        let mut accumulator = self.accumulator.write().await;
         accumulator.add_incremental_progress(delta);
         let total_progress = accumulator.get_total_progress();
         let is_completed = accumulator.is_completed();
@@ -136,7 +129,7 @@ impl IncrementalProgressTracker {
         let _unused = self.timeout_watcher_sender.send(hash_value(&payload));
         EventsEmitter::emit_progress_tracker_update(payload).await;
 
-        *self.last_reported_percentage.lock().await = resolved_percentage;
+        *self.last_reported_percentage.write().await = resolved_percentage;
     }
 }
 
@@ -167,13 +160,6 @@ impl StepTracker {
             StepTracker::Incremental { is_required, .. } => *is_required,
         }
     }
-
-    fn has_active_tracker(&self) -> bool {
-        match self {
-            StepTracker::Instant { .. } => false,
-            StepTracker::Incremental { tracker, .. } => tracker.is_some(),
-        }
-    }
 }
 
 pub struct ProgressStepper {
@@ -183,7 +169,7 @@ pub struct ProgressStepper {
     status_sender: Sender<PhaseStatus>,
     setup_phase: SetupPhase,
     setup_warnings: HashMap<SetupStep, String>,
-    accumulator: Arc<Mutex<ProgressAccumulator>>,
+    accumulator: Arc<RwLock<ProgressAccumulator>>,
 }
 
 impl ProgressStepper {
@@ -191,6 +177,13 @@ impl ProgressStepper {
         &self.setup_warnings
     }
 
+    /// After the action is completed it will handle all sideeffects related to step completion with ``self.emit_completion_update`` or ``self.handle_step_error``.
+    /// ### Arguments
+    /// * `step` - the step to complete e.g. `SetupStep::BinariesWallet`
+    /// * `action` - action that will be executed to complete the step, it should return a Result indicating success or failure
+    /// ### Returns
+    /// If step is required for phase to complete successfully, it will return an error if the action fails.
+    /// If step is not required, it will log the error and continue without failing the phase
     pub async fn complete_step<F, Fut>(
         &mut self,
         step: SetupStep,
@@ -202,18 +195,14 @@ impl ProgressStepper {
     {
         if let Some(index) = self.steps.iter().position(|s| s.get_step() == &step) {
             let step_tracker = self.steps.remove(index);
-            let progress_value = f64::from(step.get_progress_value());
-            let progress_before_action = self.accumulator.lock().await.total_progress;
+            let progress_before_action = self.accumulator.read().await.total_progress;
 
             match action().await {
                 Ok(_) => {
                     // For binaries downloads, when it does download files, tracker will count progress
                     // But if it is already downloaded, tracker won't be active so we need to add progress manually
-                    if progress_before_action.eq(&self.accumulator.lock().await.total_progress) {
-                        self.accumulator
-                            .lock()
-                            .await
-                            .add_step_progress(&step, progress_value);
+                    if progress_before_action.eq(&self.accumulator.read().await.total_progress) {
+                        self.accumulator.write().await.add_step_progress(&step);
                     }
                     self.emit_completion_update(&step).await;
                     Ok(())
@@ -225,6 +214,13 @@ impl ProgressStepper {
         }
     }
 
+    /// Tracks the step incrementally, allowing for progress updates to be sent during the step execution.
+    /// ### Arguments
+    /// * `step` - the step to track e.g. `SetupStep::BinariesWallet`
+    /// ### Returns
+    /// * `IncrementalProgressTracker` that can be used to send progress updates.
+    /// This method will create a new `IncrementalProgressTracker` for the step if it doesn't already exist.
+    /// If the step is already being tracked, it will return the existing tracker.
     pub fn track_step_incrementally(
         &mut self,
         step: SetupStep,
@@ -234,7 +230,7 @@ impl ProgressStepper {
                 if tracker.is_none() {
                     let incremental_tracker = IncrementalProgressTracker {
                         step: step.clone(),
-                        last_reported_percentage: Arc::new(Mutex::new(0.0)),
+                        last_reported_percentage: Arc::new(RwLock::new(0.0)),
                         accumulator: self.accumulator.clone(),
                         timeout_watcher_sender: self.timeout_watcher_sender.clone(),
                         setup_phase: self.setup_phase.clone(),
@@ -248,39 +244,58 @@ impl ProgressStepper {
         None
     }
 
-    pub async fn finish_tracked_step(&mut self, step: SetupStep) -> Result<(), anyhow::Error> {
+    /// Works similar to `complete_step`, but it doesn't require an action to be executed.
+    /// It simply marks the step as completed and updates the progress accumulator.
+    /// ### Arguments
+    /// * `step` - the step to complete e.g. `SetupStep::BinariesWallet`
+    /// * `error` - an optional error that occurred during the step execution
+    /// ### Returns
+    /// Result indicating success or failure of the step completion
+    /// This method will remove the step from the list of steps and update the progress accumulator.
+    pub async fn finish_tracked_step(
+        &mut self,
+        step: SetupStep,
+        error: Option<anyhow::Error>,
+    ) -> Result<(), anyhow::Error> {
         if let Some(index) = self.steps.iter().position(|s| s.get_step() == &step) {
-            let _step_tracker = self.steps.remove(index);
-
-            let progress_value = f64::from(step.get_progress_value());
-            self.accumulator
-                .lock()
-                .await
-                .add_step_progress(&step, progress_value);
-
-            self.emit_completion_update(&step).await;
+            let step_tracker = self.steps.remove(index);
+            if let Some(err) = error {
+                warn!(target: LOG_TARGET, "Failed to complete step: {err}");
+                self.handle_step_error(step_tracker, err).await?;
+            } else {
+                self.emit_completion_update(&step).await;
+            }
             Ok(())
         } else {
             Ok(()) // Step not found, possibly already completed
         }
     }
 
+    /// Resolves step as completed successfully and emits the completion update.
+    /// ### Arguments
+    /// * `step` - the step to skip e.g. `SetupStep::BinariesWallet`
     pub async fn skip_step(&mut self, step: SetupStep) -> Result<(), anyhow::Error> {
         if let Some(index) = self.steps.iter().position(|s| s.get_step() == &step) {
             let removed_step = self.steps.remove(index);
             let removed_step = removed_step.get_step();
             self.accumulator
-                .lock()
+                .write()
                 .await
-                .add_step_progress(&removed_step, f64::from(removed_step.get_progress_value()));
+                .add_step_progress(&removed_step);
 
             self.emit_completion_update(&removed_step).await;
         }
         Ok(())
     }
 
+    /// Handles side effects of successfully completing a step like: <br>
+    /// - Emitting progress tracker update event <br>
+    /// - Updating timeout watcher <br>
+    /// - Sending telemetry event <br>
+    /// ### Arguments
+    /// * `step` - the step to skip e.g. `SetupStep::BinariesWallet`
     async fn emit_completion_update(&self, step: &SetupStep) {
-        let accumulator = self.accumulator.lock().await;
+        let accumulator = self.accumulator.read().await;
         let total_progress = accumulator.get_total_progress();
         let is_completed = accumulator.is_completed();
         drop(accumulator);
@@ -293,13 +308,6 @@ impl ProgressStepper {
             setup_phase: self.setup_phase.clone(),
             is_completed,
         };
-
-        info!(
-            target: LOG_TARGET,
-            "Completed step: {} with total progress: {}",
-            step.get_i18n_key(),
-            total_progress
-        );
 
         let _unused = self
             .timeout_watcher_sender
@@ -329,6 +337,12 @@ impl ProgressStepper {
             .await;
     }
 
+    /// Handles errors that occur during step execution.
+    /// If the step is required, it will send a failure status to the status sender.
+    /// If the step is not required, it will log the error and continue without failing the phase.
+    /// ### Arguments
+    /// * `step_tracker` - the step tracker that contains the step and its required status
+    /// * `error` - the error that occurred during the step execution
     async fn handle_step_error(
         &mut self,
         step_tracker: StepTracker,
@@ -403,7 +417,7 @@ impl ProgressStepperBuilder {
             status_sender,
             setup_phase,
             setup_warnings: HashMap::new(),
-            accumulator: Arc::new(Mutex::new(ProgressAccumulator::new(expected_progress))),
+            accumulator: Arc::new(RwLock::new(ProgressAccumulator::new(expected_progress))),
         }
     }
 }
