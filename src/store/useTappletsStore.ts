@@ -220,6 +220,9 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
             const removedTappSize = await invoke('delete_dev_tapplet', { devTappletId });
             console.info('[STORE] delete dev tapp: id | db removedTappSize', devTappletId, removedTappSize);
             set((state) => ({ devTapplets: state.devTapplets.filter((tapp) => tapp.id !== devTappletId) }));
+            if (devTappletId == get().activeTapplet?.tapplet_id) {
+                set({ activeTapplet: null });
+            }
         } catch (error) {
             console.error(`Deleting tapplet error: ${error}`);
             setError(`Deleting tapplet error: ${error}`);
@@ -242,6 +245,9 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
             set((state) => ({
                 installedTapplets: state.installedTapplets.filter((tapp) => tapp.installed_tapplet.id !== tappletId),
             }));
+            if (tappletId == get().activeTapplet?.tapplet_id) {
+                set({ activeTapplet: null });
+            }
         } catch (error) {
             console.error(`Deleting dev tapplet error: ${error}`);
             setError(`Deleting dev tapplet error: ${error}`);
