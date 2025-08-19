@@ -52,6 +52,7 @@ export function useCrewMembers() {
         enabled: !!airdropToken && !!walletReceiveKey,
         refetchOnWindowFocus: true,
         staleTime: 30 * 1000,
+        refetchInterval: 60 * 1000,
         retry: 2,
     });
 
