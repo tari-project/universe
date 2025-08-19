@@ -1791,7 +1791,7 @@ pub async fn set_pre_release(
 
     state
         .updates_manager
-        .try_update(app.clone(), true, !pre_release)
+        .try_update(app.clone(), true, !pre_release, Duration::from_secs(30))
         .await
         .map_err(|e| e.to_string())?;
 
@@ -1832,7 +1832,12 @@ pub async fn try_update(
 
     state
         .updates_manager
-        .try_update(app.clone(), force.unwrap_or(false), false)
+        .try_update(
+            app.clone(),
+            force.unwrap_or(false),
+            false,
+            Duration::from_secs(30),
+        )
         .await
         .map_err(|e| e.to_string())?;
 
