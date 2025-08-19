@@ -25,7 +25,7 @@ use std::{collections::HashMap, sync::Arc};
 use serde_json::json;
 use tauri::{AppHandle, Manager};
 
-use log::warn;
+use log::{info, warn};
 use tokio::sync::{watch::Sender, Mutex};
 
 use crate::{
@@ -41,57 +41,149 @@ use crate::{
 
 const LOG_TARGET: &str = "tari::universe::progress_tracker";
 
-#[derive(Clone)]
-pub struct TrackStepComplitionOverTime {
-    tracked_step: SetupStep,
-    last_send_percentage: Arc<Mutex<f64>>,
-    timeout_watcher_sender: Sender<u64>,
-    setup_phase: SetupPhase,
-    expected_progress: f64,
+#[derive(Debug)]
+struct ProgressAccumulator {
+    total_progress: f64,
+    expected_total: f64,
+    step_contributions: HashMap<SetupStep, f64>,
 }
 
-impl TrackStepComplitionOverTime {
+impl ProgressAccumulator {
+    fn new(expected_total: f64) -> Self {
+        Self {
+            total_progress: 0.0,
+            expected_total,
+            step_contributions: HashMap::new(),
+        }
+    }
+
+    fn add_step_progress(&mut self, step: &SetupStep, amount: f64) -> bool {
+        if !self.step_contributions.contains_key(step) {
+            self.total_progress += amount;
+            self.step_contributions.insert(step.clone(), amount);
+            true
+        } else {
+            false
+        }
+    }
+
+    fn add_incremental_progress(&mut self, amount: f64) {
+        self.total_progress += amount;
+    }
+
+    fn get_total_progress(&self) -> f64 {
+        self.total_progress
+    }
+
+    fn is_completed(&self) -> bool {
+        self.total_progress >= self.expected_total
+    }
+}
+
+#[derive(Clone)]
+pub struct IncrementalProgressTracker {
+    step: SetupStep,
+    last_reported_percentage: Arc<Mutex<f64>>,
+    accumulator: Arc<Mutex<ProgressAccumulator>>,
+    timeout_watcher_sender: Sender<u64>,
+    setup_phase: SetupPhase,
+}
+
+impl std::fmt::Debug for IncrementalProgressTracker {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("IncrementalProgressTracker")
+            .field("step", &self.step)
+            .field("setup_phase", &self.setup_phase)
+            .finish()
+    }
+}
+
+impl IncrementalProgressTracker {
     /// Updates the progress tracker with the current step completion percentage.
     /// This method should be called periodically to update the progress tracker.
     /// ### Arguments
     /// * `params` - extra data that will be displayed in the UI
-    /// * `current_step_complition` - value between 0.0 and 1.0 representing the current step completion percentage
-    pub async fn send_update(&self, params: HashMap<String, String>, current_step_complition: f64) {
-        let step_percentage = f64::from(self.tracked_step.get_progress_value());
-        let mut resolved_percentage = step_percentage * current_step_complition;
-        if (resolved_percentage - *self.last_send_percentage.lock().await).abs() < 0.01 {
+    /// * `current_step_completion` - value between 0.0 and 1.0 representing the current step completion percentage
+    pub async fn send_update(&self, params: HashMap<String, String>, current_step_completion: f64) {
+        let step_progress_value = f64::from(self.step.get_progress_value());
+        let resolved_percentage = step_progress_value * current_step_completion;
+
+        let last_percentage = *self.last_reported_percentage.lock().await;
+
+        if (resolved_percentage - last_percentage).abs() < 0.01 {
             // If the percentage hasn't changed significantly, skip sending an update
             return;
         }
 
-        if current_step_complition >= 1.0 {
-            resolved_percentage = step_percentage;
-        }
+        // Calculate the delta (incremental progress)
+        let delta = resolved_percentage - last_percentage;
+
+        let mut accumulator = self.accumulator.lock().await;
+        accumulator.add_incremental_progress(delta);
+        let total_progress = accumulator.get_total_progress();
+        let is_completed = accumulator.is_completed();
+        drop(accumulator);
 
         let payload = ProgressTrackerUpdatePayload {
             phase_title: self.setup_phase.get_i18n_title_key(),
-            title: self.tracked_step.get_i18n_key(),
-            progress: resolved_percentage,
-            title_params: Some(params.clone()),
+            title: self.step.get_i18n_key(),
+            progress: total_progress,
+            title_params: Some(params),
             setup_phase: self.setup_phase.clone(),
-            is_completed: resolved_percentage.ge(&self.expected_progress),
+            is_completed,
         };
 
-        let _unused = &self.timeout_watcher_sender.send(hash_value(&payload));
-
+        let _unused = self.timeout_watcher_sender.send(hash_value(&payload));
         EventsEmitter::emit_progress_tracker_update(payload).await;
-        *self.last_send_percentage.lock().await = resolved_percentage;
+
+        *self.last_reported_percentage.lock().await = resolved_percentage;
+    }
+}
+
+#[derive(Clone, Debug)]
+enum StepTracker {
+    Instant {
+        step: SetupStep,
+        is_required: bool,
+    },
+    Incremental {
+        step: SetupStep,
+        is_required: bool,
+        tracker: Option<IncrementalProgressTracker>,
+    },
+}
+
+impl StepTracker {
+    fn get_step(&self) -> &SetupStep {
+        match self {
+            StepTracker::Instant { step, .. } => step,
+            StepTracker::Incremental { step, .. } => step,
+        }
+    }
+
+    fn is_required(&self) -> bool {
+        match self {
+            StepTracker::Instant { is_required, .. } => *is_required,
+            StepTracker::Incremental { is_required, .. } => *is_required,
+        }
+    }
+
+    fn has_active_tracker(&self) -> bool {
+        match self {
+            StepTracker::Instant { .. } => false,
+            StepTracker::Incremental { tracker, .. } => tracker.is_some(),
+        }
     }
 }
 
 pub struct ProgressStepper {
-    setup_steps: Vec<ProgressStep>,
+    steps: Vec<StepTracker>,
     app_handle: AppHandle,
     timeout_watcher_sender: Sender<u64>,
     status_sender: Sender<PhaseStatus>,
     setup_phase: SetupPhase,
     setup_warnings: HashMap<SetupStep, String>,
-    expected_progress: f64,
+    accumulator: Arc<Mutex<ProgressAccumulator>>,
 }
 
 impl ProgressStepper {
@@ -99,137 +191,183 @@ impl ProgressStepper {
         &self.setup_warnings
     }
 
-    pub async fn mark_step_as_completed<F, Fut>(
+    pub async fn complete_step<F, Fut>(
         &mut self,
-        completed_step: SetupStep,
-        step_callback: F,
+        step: SetupStep,
+        action: F,
     ) -> Result<(), anyhow::Error>
     where
         F: FnOnce() -> Fut + Send,
         Fut: std::future::Future<Output = Result<(), anyhow::Error>> + Send,
     {
-        if let Some(index) = self
-            .setup_steps
-            .iter()
-            .position(|step| step.setup_step.eq(&completed_step))
-        {
-            let resolved_step = self.setup_steps.remove(index);
-            let progress_value = f64::from(resolved_step.setup_step.get_progress_value());
+        if let Some(index) = self.steps.iter().position(|s| s.get_step() == &step) {
+            let step_tracker = self.steps.remove(index);
+            let progress_value = f64::from(step.get_progress_value());
 
-            match step_callback().await {
+            // Only add progress if this step doesn't have an active incremental tracker
+            if !step_tracker.has_active_tracker() {
+                self.accumulator
+                    .lock()
+                    .await
+                    .add_step_progress(&step, progress_value);
+            }
+
+            match action().await {
                 Ok(_) => {
-                    let payload = ProgressTrackerUpdatePayload {
-                        phase_title: self.setup_phase.get_i18n_title_key(),
-                        title: resolved_step.setup_step.get_i18n_key(),
-                        progress: progress_value,
-                        title_params: None,
+                    self.emit_completion_update(&step).await;
+                    Ok(())
+                }
+                Err(e) => self.handle_step_error(step_tracker, e).await,
+            }
+        } else {
+            Ok(()) // Step not found, possibly already completed
+        }
+    }
+
+    pub fn track_step_incrementally(
+        &mut self,
+        step: SetupStep,
+    ) -> Option<IncrementalProgressTracker> {
+        if let Some(step_tracker) = self.steps.iter_mut().find(|s| s.get_step() == &step) {
+            if let StepTracker::Incremental { tracker, .. } = step_tracker {
+                if tracker.is_none() {
+                    let incremental_tracker = IncrementalProgressTracker {
+                        step: step.clone(),
+                        last_reported_percentage: Arc::new(Mutex::new(0.0)),
+                        accumulator: self.accumulator.clone(),
+                        timeout_watcher_sender: self.timeout_watcher_sender.clone(),
                         setup_phase: self.setup_phase.clone(),
-                        is_completed: progress_value.ge(&self.expected_progress),
                     };
 
-                    let _unused = &self
-                        .timeout_watcher_sender
-                        .send(hash_value(&payload))
-                        .inspect_err(|e| {
-                            warn!(
-                                target: LOG_TARGET,
-                                "Failed to send timeout watcher signal: {e}"
-                            );
-                        });
-
-                    EventsEmitter::emit_progress_tracker_update(payload).await;
-                    let app_state = self.app_handle.state::<UniverseAppState>();
-                    let _unused = app_state
-                        .telemetry_service
-                        .read()
-                        .await
-                        .send(
-                            "progress-stepper".to_string(),
-                            json!({
-                                "step": resolved_step.setup_step.get_i18n_key(),
-                                "percentage": resolved_step.setup_step.get_progress_value(),
-                                "is_completed": self.setup_steps.is_empty(),
-                            }),
-                        )
-                        .await;
-
-                    return Ok(());
-                }
-                Err(e) => {
-                    warn!(target: LOG_TARGET, "Failed to complete step: {e}");
-                    if resolved_step.is_required {
-                        let error_message = format!(
-                            "Failed to complete step: {}. Error: {}",
-                            resolved_step.setup_step.get_i18n_key(),
-                            e.to_string()
-                        );
-                        self.status_sender
-                            .send(PhaseStatus::Failed(error_message.clone()))
-                            .ok();
-                        return Err(anyhow::anyhow!(error_message));
-                    } else {
-                        self.setup_warnings
-                            .insert(resolved_step.setup_step.clone(), e.to_string());
-                    }
+                    *tracker = Some(incremental_tracker.clone());
+                    return Some(incremental_tracker);
                 }
             }
         }
-
-        Ok(())
-    }
-
-    pub fn track_step_completion_over_time(
-        &mut self,
-        step_to_be_completed: SetupStep,
-    ) -> Option<TrackStepComplitionOverTime> {
-        if self
-            .setup_steps
-            .iter()
-            .any(|step| step.setup_step.eq(&step_to_be_completed))
-        {
-            let channel_step_update = TrackStepComplitionOverTime {
-                tracked_step: step_to_be_completed.clone(),
-                last_send_percentage: Arc::new(Mutex::new(0.0)),
-                timeout_watcher_sender: self.timeout_watcher_sender.clone(),
-                setup_phase: self.setup_phase.clone(),
-                expected_progress: self.expected_progress,
-            };
-
-            return Some(channel_step_update);
-        }
-
         None
     }
-}
 
-#[derive(Clone, Debug)]
-struct ProgressStep {
-    pub setup_step: SetupStep,
-    pub is_required: bool,
+    pub async fn finish_tracked_step(&mut self, step: SetupStep) -> Result<(), anyhow::Error> {
+        if let Some(index) = self.steps.iter().position(|s| s.get_step() == &step) {
+            let _step_tracker = self.steps.remove(index);
+
+            let progress_value = f64::from(step.get_progress_value());
+            self.accumulator
+                .lock()
+                .await
+                .add_step_progress(&step, progress_value);
+
+            self.emit_completion_update(&step).await;
+            Ok(())
+        } else {
+            Ok(()) // Step not found, possibly already completed
+        }
+    }
+
+    async fn emit_completion_update(&self, step: &SetupStep) {
+        let accumulator = self.accumulator.lock().await;
+        let total_progress = accumulator.get_total_progress();
+        let is_completed = accumulator.is_completed();
+        drop(accumulator);
+
+        let payload = ProgressTrackerUpdatePayload {
+            phase_title: self.setup_phase.get_i18n_title_key(),
+            title: step.get_i18n_key(),
+            progress: total_progress,
+            title_params: None,
+            setup_phase: self.setup_phase.clone(),
+            is_completed,
+        };
+
+        info!(
+            target: LOG_TARGET,
+            "Completed step: {} with total progress: {}",
+            step.get_i18n_key(),
+            total_progress
+        );
+
+        let _unused = self
+            .timeout_watcher_sender
+            .send(hash_value(&payload))
+            .inspect_err(|e| {
+                warn!(
+                    target: LOG_TARGET,
+                    "Failed to send timeout watcher signal: {e}"
+                );
+            });
+
+        EventsEmitter::emit_progress_tracker_update(payload).await;
+
+        let app_state = self.app_handle.state::<UniverseAppState>();
+        let _unused = app_state
+            .telemetry_service
+            .read()
+            .await
+            .send(
+                "progress-stepper".to_string(),
+                json!({
+                    "step": step.get_i18n_key(),
+                    "percentage": step.get_progress_value(),
+                    "is_completed": self.steps.is_empty(),
+                }),
+            )
+            .await;
+    }
+
+    async fn handle_step_error(
+        &mut self,
+        step_tracker: StepTracker,
+        error: anyhow::Error,
+    ) -> Result<(), anyhow::Error> {
+        warn!(target: LOG_TARGET, "Failed to complete step: {error}");
+
+        if step_tracker.is_required() {
+            let error_message = format!(
+                "Failed to complete step: {}. Error: {}",
+                step_tracker.get_step().get_i18n_key(),
+                error
+            );
+            self.status_sender
+                .send(PhaseStatus::Failed(error_message.clone()))
+                .ok();
+            Err(anyhow::anyhow!(error_message))
+        } else {
+            self.setup_warnings
+                .insert(step_tracker.get_step().clone(), error.to_string());
+            Ok(())
+        }
+    }
 }
 
 pub struct ProgressStepperBuilder {
-    setup_steps: Vec<ProgressStep>,
+    steps: Vec<StepTracker>,
 }
 
 impl ProgressStepperBuilder {
     pub fn new() -> Self {
-        ProgressStepperBuilder {
-            setup_steps: Vec::new(),
-        }
+        ProgressStepperBuilder { steps: Vec::new() }
     }
 
     pub fn get_expected_progress(&self) -> f64 {
-        self.setup_steps
+        self.steps
             .iter()
-            .map(|step| f64::from(step.setup_step.get_progress_value()))
+            .map(|step| f64::from(step.get_step().get_progress_value()))
             .sum()
     }
 
     pub fn add_step(&mut self, setup_step: SetupStep, is_required: bool) -> &mut Self {
-        self.setup_steps.push(ProgressStep {
-            setup_step,
+        self.steps.push(StepTracker::Instant {
+            step: setup_step,
             is_required,
+        });
+        self
+    }
+
+    pub fn add_incremental_step(&mut self, setup_step: SetupStep, is_required: bool) -> &mut Self {
+        self.steps.push(StepTracker::Incremental {
+            step: setup_step,
+            is_required,
+            tracker: None,
         });
         self
     }
@@ -241,14 +379,16 @@ impl ProgressStepperBuilder {
         status_sender: Sender<PhaseStatus>,
         setup_phase: SetupPhase,
     ) -> ProgressStepper {
+        let expected_progress = self.get_expected_progress();
+
         ProgressStepper {
-            setup_steps: self.setup_steps.clone(),
+            steps: self.steps.clone(),
             app_handle,
             timeout_watcher_sender,
             status_sender,
             setup_phase,
-            expected_progress: self.get_expected_progress(),
             setup_warnings: HashMap::new(),
+            accumulator: Arc::new(Mutex::new(ProgressAccumulator::new(expected_progress))),
         }
     }
 }

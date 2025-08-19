@@ -163,7 +163,7 @@ impl SetupPhaseImpl for CoreSetupPhase {
         let is_auto_launcher_enabled = self.app_configuration.is_auto_launcher_enabled;
 
         progress_stepper
-            .mark_step_as_completed(SetupStep::InitializeApplicationModules, move || {
+            .complete_step(SetupStep::InitializeApplicationModules, move || {
                 let app_handle = app_handle.clone();
                 async move {
                     let state = app_handle.state::<UniverseAppState>();
@@ -195,7 +195,7 @@ impl SetupPhaseImpl for CoreSetupPhase {
             .await?;
 
         progress_stepper
-            .mark_step_as_completed(SetupStep::NetworkSpeedTest, || async {
+            .complete_step(SetupStep::NetworkSpeedTest, || async {
                 NetworkStatus::current().run_speed_test_with_timeout().await;
                 Ok(())
             })

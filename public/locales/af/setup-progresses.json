@@ -50,6 +50,8 @@
     "detect-gpu": "Bespeur GPU\"s",
     "done": "Klaar",
     "initialize-application-modules": "Initialiseer Platform Voorvereistes",
+    "initialize-cpu-hardware": "Initialize CPU Hardware",
+    "initialize-gpu-hardware": "Initialize GPU Hardware",
     "initialize-spending-wallet": "Initialiseer Bestedingsbeursie",
     "migrating-database": "Migrating Database from version {{current_db_version}} to {{target_db_version}} progress: {{current_block}}/{{total_blocks}}",
     "mm-proxy": "Begin Saamsmelt Myn Proksie",

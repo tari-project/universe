@@ -132,14 +132,14 @@ impl SetupPhaseImpl for NodeSetupPhase {
         timeout_watcher_sender: Sender<u64>,
     ) -> ProgressStepper {
         ProgressStepperBuilder::new()
-            .add_step(SetupStep::BinariesTor, true)
-            .add_step(SetupStep::BinariesNode, true)
+            .add_incremental_step(SetupStep::BinariesTor, true)
+            .add_incremental_step(SetupStep::BinariesNode, true)
             .add_step(SetupStep::StartTor, true)
-            .add_step(SetupStep::MigratingDatabase, true)
+            .add_incremental_step(SetupStep::MigratingDatabase, true)
             .add_step(SetupStep::StartingNode, true)
-            .add_step(SetupStep::WaitingForInitialSync, true)
-            .add_step(SetupStep::WaitingForHeaderSync, true)
-            .add_step(SetupStep::WaitingForBlockSync, true)
+            .add_incremental_step(SetupStep::WaitingForInitialSync, true)
+            .add_incremental_step(SetupStep::WaitingForHeaderSync, true)
+            .add_incremental_step(SetupStep::WaitingForBlockSync, true)
             .build(
                 app_handle.clone(),
                 timeout_watcher_sender,
@@ -176,10 +176,10 @@ impl SetupPhaseImpl for NodeSetupPhase {
         let mut progress_stepper = self.progress_stepper.lock().await;
 
         let tor_binary_progress_tracker =
-            progress_stepper.track_step_completion_over_time(SetupStep::BinariesTor);
+            progress_stepper.track_step_incrementally(SetupStep::BinariesTor);
 
         progress_stepper
-            .mark_step_as_completed(SetupStep::BinariesTor, async move || {
+            .complete_step(SetupStep::BinariesTor, async move || {
                 if !use_tor {
                     return Ok(());
                 }
@@ -190,10 +190,10 @@ impl SetupPhaseImpl for NodeSetupPhase {
             .await?;
 
         let node_binary_progress_tracker =
-            progress_stepper.track_step_completion_over_time(SetupStep::BinariesNode);
+            progress_stepper.track_step_incrementally(SetupStep::BinariesNode);
 
         progress_stepper
-            .mark_step_as_completed(SetupStep::BinariesNode, async move || {
+            .complete_step(SetupStep::BinariesNode, async move || {
                 if node_type.is_remote() {
                     return Ok(());
                 }
@@ -205,7 +205,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
 
         let state = self.app_handle.state::<UniverseAppState>();
         progress_stepper
-            .mark_step_as_completed(SetupStep::StartTor, async move || {
+            .complete_step(SetupStep::StartTor, async move || {
                 if !use_tor {
                     return Ok(());
                 }
@@ -221,7 +221,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
         let state = self.app_handle.state::<UniverseAppState>().inner().clone();
         let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
 
-        progress_stepper.mark_step_as_completed(SetupStep::StartingNode, async move || {
+        progress_stepper.complete_step(SetupStep::StartingNode, async move || {
             for _i in 0..2 {
                 let tor_control_port = state.tor_manager.get_control_port().await?;
                 match
@@ -263,22 +263,22 @@ impl SetupPhaseImpl for NodeSetupPhase {
 
         // Set up migration progress tracking
         let migration_tracker =
-            progress_stepper.track_step_completion_over_time(SetupStep::MigratingDatabase);
+            progress_stepper.track_step_incrementally(SetupStep::MigratingDatabase);
 
         let node_type = state.node_manager.get_node_type().await;
-        progress_stepper
-            .mark_step_as_completed(SetupStep::MigratingDatabase, async move || {
-                if !node_type.is_remote() {
-                    return Ok(());
-                }
-
+        if node_type.is_remote() {
+            if let Some(tracker) = migration_tracker {
                 state
                     .node_manager
-                    .wait_migration(migration_tracker)
+                    .wait_migration(Some(tracker))
                     .await
                     .map_err(|e| anyhow::anyhow!("Failed to wait for node migration: {e}"))?;
-                Ok(())
-            })
+            }
+        }
+
+        // Finish the migration step
+        progress_stepper
+            .finish_tracked_step(SetupStep::MigratingDatabase)
             .await?;
 
         let state = self.app_handle.state::<UniverseAppState>();
@@ -429,11 +429,11 @@ impl NodeSetupPhase {
         let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
 
         let wait_for_initial_sync_tracker =
-            progress_stepper.track_step_completion_over_time(SetupStep::WaitingForInitialSync);
+            progress_stepper.track_step_incrementally(SetupStep::WaitingForInitialSync);
         let wait_for_header_sync_tracker =
-            progress_stepper.track_step_completion_over_time(SetupStep::WaitingForHeaderSync);
+            progress_stepper.track_step_incrementally(SetupStep::WaitingForHeaderSync);
         let wait_for_block_sync_tracker =
-            progress_stepper.track_step_completion_over_time(SetupStep::WaitingForBlockSync);
+            progress_stepper.track_step_incrementally(SetupStep::WaitingForBlockSync);
 
         let progress_handle = TasksTrackers::current()
             .node_phase
@@ -481,6 +481,19 @@ impl NodeSetupPhase {
             .await?;
         progress_handle.abort();
         let _unused = progress_handle.await;
+
+        // Now properly finish each tracked step to mark them as completed
+        progress_stepper
+            .finish_tracked_step(SetupStep::WaitingForInitialSync)
+            .await?;
+
+        progress_stepper
+            .finish_tracked_step(SetupStep::WaitingForHeaderSync)
+            .await?;
+
+        progress_stepper
+            .finish_tracked_step(SetupStep::WaitingForBlockSync)
+            .await?;
 
         Ok(())
     }

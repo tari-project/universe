@@ -47,7 +47,7 @@ use crate::process_adapter::ProcessAdapter;
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
 use crate::process_watcher::ProcessWatcherStats;
-use crate::progress_trackers::progress_stepper::TrackStepComplitionOverTime;
+use crate::progress_trackers::progress_stepper::IncrementalProgressTracker;
 use crate::setup::setup_manager::SetupManager;
 use crate::tasks_tracker::TasksTrackers;
 use crate::{BaseNodeStatus, LocalNodeAdapter, RemoteNodeAdapter};
@@ -309,7 +309,7 @@ impl NodeManager {
 
     pub async fn wait_migration(
         &self,
-        migration_tracker: Option<TrackStepComplitionOverTime>,
+        migration_tracker: Option<IncrementalProgressTracker>,
     ) -> Result<(), NodeManagerError> {
         if self.is_local().await {
             let current_service = self.get_current_service().await;

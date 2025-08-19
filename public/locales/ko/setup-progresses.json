@@ -50,6 +50,8 @@
     "detect-gpu": "GPU 감지 중",
     "done": "완료",
     "initialize-application-modules": "플랫폼 필수 조건 초기화 중",
+    "initialize-cpu-hardware": "Initialize CPU Hardware",
+    "initialize-gpu-hardware": "Initialize GPU Hardware",
     "initialize-spending-wallet": "지출 지갑 초기화 중",
     "migrating-database": "Migrating Database from version {{current_db_version}} to {{target_db_version}} progress: {{current_block}}/{{total_blocks}}",
     "mm-proxy": "병합 채굴 프록시 시작 중",

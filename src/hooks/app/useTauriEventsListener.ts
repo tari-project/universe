@@ -88,6 +88,7 @@ const useTauriEventsListener = () => {
                     handleLogUpdate(event);
                     switch (event.event_type) {
                         case 'SetupProgressUpdate':
+                            console.info('SetupProgressUpdate', event.payload);
                             updateSetupProgress(event.payload);
                             break;
                         case 'UpdateTorEntryGuards':

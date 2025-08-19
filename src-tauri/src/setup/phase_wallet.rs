@@ -136,9 +136,9 @@ impl SetupPhaseImpl for WalletSetupPhase {
         timeout_watcher_sender: Sender<u64>,
     ) -> ProgressStepper {
         ProgressStepperBuilder::new()
-            .add_step(SetupStep::BinariesWallet, true)
+            .add_incremental_step(SetupStep::BinariesWallet, true)
             .add_step(SetupStep::StartWallet, true)
-            .add_step(SetupStep::SetupBridge, false)
+            .add_incremental_step(SetupStep::SetupBridge, false)
             .build(
                 app_handle,
                 timeout_watcher_sender,
@@ -163,10 +163,10 @@ impl SetupPhaseImpl for WalletSetupPhase {
         let binary_resolver = BinaryResolver::current();
 
         let wallet_binary_progress_tracker =
-            progress_stepper.track_step_completion_over_time(SetupStep::BinariesWallet);
+            progress_stepper.track_step_incrementally(SetupStep::BinariesWallet);
 
         progress_stepper
-            .mark_step_as_completed(SetupStep::BinariesWallet, async move || {
+            .complete_step(SetupStep::BinariesWallet, async move || {
                 binary_resolver
                     .initialize_binary(Binaries::Wallet, wallet_binary_progress_tracker)
                     .await
@@ -178,7 +178,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
         let use_tor = self.app_configuration.use_tor && is_local_node && !cfg!(target_os = "macos");
         let wallet_manager = app_state.wallet_manager.clone();
 
-        progress_stepper.mark_step_as_completed(SetupStep::StartWallet, async move || {
+        progress_stepper.complete_step(SetupStep::StartWallet, async move || {
             let latest_wallet_migration_nonce = *ConfigWallet::content().await.wallet_migration_nonce();
             if latest_wallet_migration_nonce < WALLET_MIGRATION_NONCE {
                 log::info!(target: LOG_TARGET, "Wallet migration required(Nonce {latest_wallet_migration_nonce} => {WALLET_MIGRATION_NONCE})");
@@ -211,10 +211,10 @@ impl SetupPhaseImpl for WalletSetupPhase {
         }).await?;
 
         let bridge_binary_progress_tracker =
-            progress_stepper.track_step_completion_over_time(SetupStep::SetupBridge);
+            progress_stepper.track_step_incrementally(SetupStep::SetupBridge);
 
         progress_stepper
-            .mark_step_as_completed(SetupStep::SetupBridge, async move || {
+            .complete_step(SetupStep::SetupBridge, async move || {
                 binary_resolver
                     .initialize_binary(Binaries::BridgeTapplet, bridge_binary_progress_tracker)
                     .await

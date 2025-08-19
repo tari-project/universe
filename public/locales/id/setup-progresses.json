@@ -50,6 +50,8 @@
     "detect-gpu": "Mendeteksi GPU",
     "done": "Selesai",
     "initialize-application-modules": "Memulai Prasyarat Platform",
+    "initialize-cpu-hardware": "Initialize CPU Hardware",
+    "initialize-gpu-hardware": "Initialize GPU Hardware",
     "initialize-spending-wallet": "Memulai Dompet Pengeluaran",
     "migrating-database": "Migrating Database from version {{current_db_version}} to {{target_db_version}} progress: {{current_block}}/{{total_blocks}}",
     "mm-proxy": "Memulai Proxy Merge Mining",

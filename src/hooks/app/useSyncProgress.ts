@@ -104,6 +104,16 @@ export default function useSync() {
         }
     }, [wallet_phase?.is_completed, disabledPhases]);
 
+    console.log('useSync', {
+        setupPhaseTitle: currentPhaseToShow?.phase_title,
+        setupTitle: currentPhaseToShow?.title,
+        setupProgress: currentPhaseToShow?.progress,
+        setupParams: currentPhaseToShow?.title_params,
+        isCompleted: currentPhaseToShow?.is_completed,
+        currentPhaseToShow,
+        showSync,
+    });
+
     return {
         getProgress,
         setupPhaseTitle: currentPhaseToShow?.phase_title,

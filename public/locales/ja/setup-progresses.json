@@ -50,6 +50,8 @@
     "detect-gpu": "GPUを検出中",
     "done": "完了",
     "initialize-application-modules": "プラットフォームの前提条件を初期化中",
+    "initialize-cpu-hardware": "Initialize CPU Hardware",
+    "initialize-gpu-hardware": "Initialize GPU Hardware",
     "initialize-spending-wallet": "支出ウォレットを初期化中",
     "migrating-database": "Migrating Database from version {{current_db_version}} to {{target_db_version}} progress: {{current_block}}/{{total_blocks}}",
     "mm-proxy": "マージマイニングプロキシを開始",

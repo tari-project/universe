@@ -50,6 +50,8 @@
     "detect-gpu": "GPU\"lar Tespit Ediliyor",
     "done": "Tamamlandı",
     "initialize-application-modules": "Platform Ön Koşulları Başlatılıyor",
+    "initialize-cpu-hardware": "Initialize CPU Hardware",
+    "initialize-gpu-hardware": "Initialize GPU Hardware",
     "initialize-spending-wallet": "Harcama Cüzdanı Başlatılıyor",
     "migrating-database": "Migrating Database from version {{current_db_version}} to {{target_db_version}} progress: {{current_block}}/{{total_blocks}}",
     "mm-proxy": "Birleştirme Madenciliği Proxy\"si Başlatılıyor",

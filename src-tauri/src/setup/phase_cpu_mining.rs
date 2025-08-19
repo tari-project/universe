@@ -135,8 +135,8 @@ impl SetupPhaseImpl for CpuMiningSetupPhase {
         timeout_watcher_sender: Sender<u64>,
     ) -> ProgressStepper {
         ProgressStepperBuilder::new()
-            .add_step(SetupStep::BinariesCpuMiner, true)
-            .add_step(SetupStep::BinariesMergeMiningProxy, true)
+            .add_incremental_step(SetupStep::BinariesCpuMiner, true)
+            .add_incremental_step(SetupStep::BinariesMergeMiningProxy, true)
             .add_step(SetupStep::MMProxy, true)
             .add_step(SetupStep::InitializeCpuHardware, false)
             .build(
@@ -169,10 +169,10 @@ impl SetupPhaseImpl for CpuMiningSetupPhase {
         let binary_resolver = BinaryResolver::current();
 
         let cpu_miner_binary_progress_tracker =
-            progress_stepper.track_step_completion_over_time(SetupStep::BinariesCpuMiner);
+            progress_stepper.track_step_incrementally(SetupStep::BinariesCpuMiner);
 
         progress_stepper
-            .mark_step_as_completed(SetupStep::BinariesCpuMiner, async move || {
+            .complete_step(SetupStep::BinariesCpuMiner, async move || {
                 binary_resolver
                     .initialize_binary(Binaries::Xmrig, cpu_miner_binary_progress_tracker)
                     .await
@@ -184,10 +184,10 @@ impl SetupPhaseImpl for CpuMiningSetupPhase {
             .is_feature_enabled(SetupFeature::CpuPool);
 
         let mmproxy_binary_progress_tracker =
-            progress_stepper.track_step_completion_over_time(SetupStep::BinariesMergeMiningProxy);
+            progress_stepper.track_step_incrementally(SetupStep::BinariesMergeMiningProxy);
 
         progress_stepper
-            .mark_step_as_completed(SetupStep::BinariesMergeMiningProxy, async move || {
+            .complete_step(SetupStep::BinariesMergeMiningProxy, async move || {
                 if is_cpu_pool_enabled {
                     return Ok(());
                 }
@@ -203,7 +203,7 @@ impl SetupPhaseImpl for CpuMiningSetupPhase {
         let state = state.inner().clone();
 
         progress_stepper
-            .mark_step_as_completed(SetupStep::MMProxy, async move || {
+            .complete_step(SetupStep::MMProxy, async move || {
                 if is_cpu_pool_enabled {
                     return Ok(());
                 }
@@ -237,7 +237,7 @@ impl SetupPhaseImpl for CpuMiningSetupPhase {
             .await?;
 
         progress_stepper
-            .mark_step_as_completed(SetupStep::InitializeCpuHardware, async move || {
+            .complete_step(SetupStep::InitializeCpuHardware, async move || {
                 HardwareStatusMonitor::current()
                     .initialize_cpu_devices()
                     .await

@@ -149,11 +149,11 @@ impl SetupPhase {
     }
     pub fn get_i18n_title_key(&self) -> String {
         match self {
-            Self::Core => "phase-title.setup-core".to_string(),
-            Self::CpuMining => "phase-title.setup-cpu-mining".to_string(),
-            Self::GpuMining => "phase-title.setup-gpu-mining".to_string(),
-            Self::Node => "phase-title.setup-node".to_string(),
-            Self::Wallet => "phase-title.setup-wallet".to_string(),
+            Self::Core => "setup-core".to_string(),
+            Self::CpuMining => "setup-cpu-mining".to_string(),
+            Self::GpuMining => "setup-gpu-mining".to_string(),
+            Self::Node => "setup-node".to_string(),
+            Self::Wallet => "setup-wallet".to_string(),
         }
     }
 }

@@ -135,7 +135,7 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
         timeout_watcher_sender: Sender<u64>,
     ) -> ProgressStepper {
         ProgressStepperBuilder::new()
-            .add_step(SetupStep::BinariesGpuMiner, true)
+            .add_incremental_step(SetupStep::BinariesGpuMiner, true)
             .add_step(SetupStep::DetectGpu, true)
             .add_step(SetupStep::InitializeGpuHardware, false)
             .build(
@@ -163,9 +163,9 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
         let binary_resolver = BinaryResolver::current();
 
         let graxil_binary_progress_tracker =
-            progress_stepper.track_step_completion_over_time(SetupStep::BinariesGpuMiner);
+            progress_stepper.track_step_incrementally(SetupStep::BinariesGpuMiner);
 
-        progress_stepper.mark_step_as_completed(SetupStep::BinariesGpuMiner, async move || {
+        progress_stepper.complete_step(SetupStep::BinariesGpuMiner, async move || {
             let graxil_initialization_result = binary_resolver
                 .initialize_binary(Binaries::GpuMinerSHA3X, graxil_binary_progress_tracker)
                 .await;
@@ -190,7 +190,7 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
         let gpu_engine = self.app_configuration.gpu_engine.clone();
 
         progress_stepper
-            .mark_step_as_completed(SetupStep::DetectGpu, async move || {
+            .complete_step(SetupStep::DetectGpu, async move || {
                 gpu_miner_lock
                     .write()
                     .await
@@ -208,7 +208,7 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
             .await?;
 
         progress_stepper
-            .mark_step_as_completed(SetupStep::InitializeGpuHardware, async move || {
+            .complete_step(SetupStep::InitializeGpuHardware, async move || {
                 HardwareStatusMonitor::current()
                     .initialize_gpu_devices()
                     .await

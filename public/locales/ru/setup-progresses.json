@@ -50,6 +50,8 @@
     "detect-gpu": "Обнаружение GPU",
     "done": "Готово",
     "initialize-application-modules": "Инициализация предварительных условий платформы",
+    "initialize-cpu-hardware": "Initialize CPU Hardware",
+    "initialize-gpu-hardware": "Initialize GPU Hardware",
     "initialize-spending-wallet": "Инициализация кошелька для трат",
     "migrating-database": "Migrating Database from version {{current_db_version}} to {{target_db_version}} progress: {{current_block}}/{{total_blocks}}",
     "mm-proxy": "Запуск прокси для объединенного майнинга",

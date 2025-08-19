@@ -50,6 +50,8 @@
     "detect-gpu": "Détection des GPU",
     "done": "Terminé",
     "initialize-application-modules": "Initialisation des prérequis de la plateforme",
+    "initialize-cpu-hardware": "Initialize CPU Hardware",
+    "initialize-gpu-hardware": "Initialize GPU Hardware",
     "initialize-spending-wallet": "Initialisation du portefeuille de dépenses",
     "migrating-database": "Migrating Database from version {{current_db_version}} to {{target_db_version}} progress: {{current_block}}/{{total_blocks}}",
     "mm-proxy": "Démarrage du proxy de fusion minière",

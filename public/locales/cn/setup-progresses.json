@@ -50,6 +50,8 @@
     "detect-gpu": "检测 GPU",
     "done": "完成",
     "initialize-application-modules": "初始化平台先决条件",
+    "initialize-cpu-hardware": "Initialize CPU Hardware",
+    "initialize-gpu-hardware": "Initialize GPU Hardware",
     "initialize-spending-wallet": "初始化支出钱包",
     "migrating-database": "Migrating Database from version {{current_db_version}} to {{target_db_version}} progress: {{current_block}}/{{total_blocks}}",
     "mm-proxy": "启动合并挖矿代理",

@@ -50,6 +50,8 @@
     "detect-gpu": "जीपीयू का पता लगा रहे हैं",
     "done": "समाप्त",
     "initialize-application-modules": "प्लेटफ़ॉर्म पूर्वापेक्षाएँ प्रारंभ कर रहे हैं",
+    "initialize-cpu-hardware": "Initialize CPU Hardware",
+    "initialize-gpu-hardware": "Initialize GPU Hardware",
     "initialize-spending-wallet": "खर्च वॉलेट प्रारंभ कर रहे हैं",
     "migrating-database": "Migrating Database from version {{current_db_version}} to {{target_db_version}} progress: {{current_block}}/{{total_blocks}}",
     "mm-proxy": "मर्ज माइनिंग प्रॉक्सी शुरू कर रहे हैं",

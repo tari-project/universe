@@ -50,6 +50,8 @@
     "detect-gpu": "Wykrywanie GPU",
     "done": "Gotowe",
     "initialize-application-modules": "Inicjalizacja Wymagań Wstępnych Platformy",
+    "initialize-cpu-hardware": "Initialize CPU Hardware",
+    "initialize-gpu-hardware": "Initialize GPU Hardware",
     "initialize-spending-wallet": "Inicjalizacja Portfela Wydatków",
     "migrating-database": "Migrating Database from version {{current_db_version}} to {{target_db_version}} progress: {{current_block}}/{{total_blocks}}",
     "mm-proxy": "Uruchamianie Proxy Do Merge Mining",
