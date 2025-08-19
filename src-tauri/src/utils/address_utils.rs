@@ -51,7 +51,7 @@ pub fn extract_payment_id(address: &str) -> Result<Option<String>, String> {
     match tari_address {
         TariAddress::Dual(dual_addr) => {
             // Try to access payment ID through dual address properties
-            let payment_id_bytes = dual_addr.get_payment_id_user_data_bytes();
+            let payment_id_bytes = dual_addr.get_memo_field_payment_id_bytes();
             if !payment_id_bytes.is_empty() {
                 return Ok(Some(hex::encode(payment_id_bytes)));
             }

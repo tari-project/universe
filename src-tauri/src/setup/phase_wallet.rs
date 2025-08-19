@@ -175,7 +175,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
 
         let app_state = self.get_app_handle().state::<UniverseAppState>().clone();
         let is_local_node = app_state.node_manager.is_local_current().await;
-        let use_tor = self.app_configuration.use_tor && is_local_node;
+        let use_tor = self.app_configuration.use_tor && is_local_node && !cfg!(target_os = "macos");
         let wallet_manager = app_state.wallet_manager.clone();
 
         progress_stepper.mark_step_as_completed(SetupStep::StartWallet, async move || {
