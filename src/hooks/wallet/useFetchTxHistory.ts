@@ -12,7 +12,7 @@ export function useFetchTxHistory() {
     const filter = useWalletStore((s) => s.tx_history_filter);
 
     return useInfiniteQuery<CombinedBridgeWalletTransaction[]>({
-        queryKey: [KEY_TX, `address: ${walletAddress}`, `filter: ${filter}`],
+        queryKey: [KEY_TX, { filter }, { address: walletAddress }],
         queryFn: async ({ pageParam }) => {
             const limit = 20;
             const offset = limit * (pageParam as number);
@@ -25,7 +25,6 @@ export function useFetchTxHistory() {
             return (_lastPageParam as number) + 1;
         },
         enabled: !isWalletScanning,
-        initialData: { pages: [], pageParams: [0] },
     });
 }
 

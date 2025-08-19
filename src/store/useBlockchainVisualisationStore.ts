@@ -143,6 +143,7 @@ export async function processNewBlock(payload: {
 
 export const handleNewBlockPayload = async (payload: LatestBlockPayload) => {
     useBlockchainVisualisationStore.setState((c) => ({ ...c, latestBlockPayload: payload }));
+    await refreshTransactions();
     const isWalletScanned = !useWalletStore.getState().wallet_scanning?.is_scanning;
     if (!isWalletScanned) {
         updateWalletScanningProgress({
