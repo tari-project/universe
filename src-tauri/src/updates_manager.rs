@@ -255,15 +255,6 @@ impl UpdatesManager {
     }
 
     pub async fn proceed_with_update(&self, app: tauri::AppHandle) -> Result<(), anyhow::Error> {
-        // SetupManager::get_instance()
-        //     .shutdown_phases(vec![
-        //         SetupPhase::Core,
-        //         SetupPhase::Node,
-        //         SetupPhase::Hardware,
-        //         SetupPhase::Wallet,
-        //         SetupPhase::Mining,
-        //     ])
-        //     .await;
         let mut downloaded: u64 = 0;
         let update = self
             .update
