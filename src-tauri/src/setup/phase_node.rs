@@ -495,15 +495,24 @@ impl NodeSetupPhase {
 
         // Now properly finish each tracked step to mark them as completed
         progress_stepper
-            .finish_tracked_step(SetupStep::WaitingForInitialSync, wait_synced_error)
+            .finish_tracked_step(
+                SetupStep::WaitingForInitialSync,
+                wait_synced_error.as_ref().map(|e| anyhow::anyhow!("{e}")),
+            )
             .await?;
 
         progress_stepper
-            .finish_tracked_step(SetupStep::WaitingForHeaderSync, wait_synced_error)
+            .finish_tracked_step(
+                SetupStep::WaitingForHeaderSync,
+                wait_synced_error.as_ref().map(|e| anyhow::anyhow!("{e}")),
+            )
             .await?;
 
         progress_stepper
-            .finish_tracked_step(SetupStep::WaitingForBlockSync, wait_synced_error)
+            .finish_tracked_step(
+                SetupStep::WaitingForBlockSync,
+                wait_synced_error.as_ref().map(|e| anyhow::anyhow!("{e}")),
+            )
             .await?;
 
         Ok(())

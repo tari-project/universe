@@ -25,7 +25,7 @@ use std::{collections::HashMap, sync::Arc};
 use serde_json::json;
 use tauri::{AppHandle, Manager};
 
-use log::{info, warn};
+use log::warn;
 use tokio::sync::{watch::Sender, RwLock};
 
 use crate::{

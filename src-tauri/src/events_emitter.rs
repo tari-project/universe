@@ -23,7 +23,7 @@ use crate::configs::config_mining::GpuDevicesSettings;
 use crate::configs::config_ui::WalletUIMode;
 use crate::events::{
     ConnectionStatusPayload, CriticalProblemPayload, DisabledPhasesPayload,
-    InitWalletScanningProgressPayload,
+    InitWalletScanningProgressPayload, UpdateAppModuleStatusPayload,
 };
 #[cfg(target_os = "windows")]
 use crate::external_dependencies::RequiredExternalDependency;
@@ -477,85 +477,17 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_unlock_wallet() {
+    pub async fn emit_update_app_module_status(payload: UpdateAppModuleStatusPayload) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
-            event_type: EventType::UnlockWallet,
-            payload: (),
+            event_type: EventType::UpdateAppModuleStatus,
+            payload,
         };
         if let Err(e) = Self::get_app_handle()
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit UnlockWallet event: {e:?}");
-        }
-    }
-
-    pub async fn emit_unlock_cpu_mining() {
-        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
-        let event = Event {
-            event_type: EventType::UnlockCpuMining,
-            payload: (),
-        };
-        if let Err(e) = Self::get_app_handle()
-            .await
-            .emit(BACKEND_STATE_UPDATE, event)
-        {
-            error!(target: LOG_TARGET, "Failed to emit UnlockCpuMining event: {e:?}");
-        }
-    }
-    pub async fn emit_unlock_gpu_mining() {
-        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
-        let event = Event {
-            event_type: EventType::UnlockGpuMining,
-            payload: (),
-        };
-        if let Err(e) = Self::get_app_handle()
-            .await
-            .emit(BACKEND_STATE_UPDATE, event)
-        {
-            error!(target: LOG_TARGET, "Failed to emit UnlockGpuMining event: {e:?}");
-        }
-    }
-
-    pub async fn emit_lock_wallet() {
-        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
-        let event = Event {
-            event_type: EventType::LockWallet,
-            payload: (),
-        };
-        if let Err(e) = Self::get_app_handle()
-            .await
-            .emit(BACKEND_STATE_UPDATE, event)
-        {
-            error!(target: LOG_TARGET, "Failed to emit LockWallet event: {e:?}");
-        }
-    }
-
-    pub async fn emit_lock_cpu_mining() {
-        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
-        let event = Event {
-            event_type: EventType::LockCpuMining,
-            payload: (),
-        };
-        if let Err(e) = Self::get_app_handle()
-            .await
-            .emit(BACKEND_STATE_UPDATE, event)
-        {
-            error!(target: LOG_TARGET, "Failed to emit LockCpuMining event: {e:?}");
-        }
-    }
-    pub async fn emit_lock_gpu_mining() {
-        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
-        let event = Event {
-            event_type: EventType::LockGpuMining,
-            payload: (),
-        };
-        if let Err(e) = Self::get_app_handle()
-            .await
-            .emit(BACKEND_STATE_UPDATE, event)
-        {
-            error!(target: LOG_TARGET, "Failed to emit LockGpuMining event: {e:?}");
+            error!(target: LOG_TARGET, "Failed to emit UpdateAppModuleStatus event: {e:?}");
         }
     }
 

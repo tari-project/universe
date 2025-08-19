@@ -30,7 +30,10 @@ use crate::{
     gpu_devices::GpuDeviceInformation,
     internal_wallet::TariAddressType,
     node::{node_adapter::NodeIdentity, node_manager::NodeType},
-    setup::setup_manager::SetupPhase,
+    setup::{
+        listeners::{AppModule, AppModuleStatus},
+        setup_manager::SetupPhase,
+    },
     wallet::wallet_types::{TransactionInfo, WalletBalance},
 };
 
@@ -56,12 +59,6 @@ pub enum EventType {
     MissingApplications,
     StuckOnOrphanChain,
     NetworkStatus,
-    UnlockWallet,
-    UnlockCpuMining,
-    UnlockGpuMining,
-    LockWallet,
-    LockCpuMining,
-    LockGpuMining,
     NodeTypeUpdate,
     ConfigCoreLoaded,
     ConfigUILoaded,
@@ -84,6 +81,14 @@ pub enum EventType {
     SeedBackedUp,
     SetupProgressUpdate,
     UpdateTorEntryGuards,
+    UpdateAppModuleStatus,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct UpdateAppModuleStatusPayload {
+    pub module: AppModule,
+    pub status: AppModuleStatus,
+    pub error_messages: HashMap<String, String>,
 }
 
 #[derive(Clone, Debug, Serialize)]

@@ -13,12 +13,13 @@ import {
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 import { setGpuMiningEnabled, useConfigMiningStore } from '@app/store';
 import { useSetupStore } from '@app/store/useSetupStore.ts';
+import { isGpuMiningModuleInitialized } from '@app/store/selectors/setupStoreSelectors.ts';
 
 const GpuMiningMarkup = () => {
     const { t } = useTranslation(['settings'], { useSuspense: false });
     const isGpuMiningEnabled = useConfigMiningStore((s) => s.gpu_mining_enabled);
     const gpuDevicesHardware = useMiningMetricsStore((s) => s.gpu_devices);
-    const isGpuMiningUnlocked = useSetupStore((s) => s.gpuMiningUnlocked);
+    const gpuMiningModuleInitialized = useSetupStore(isGpuMiningModuleInitialized);
 
     const isGPUMiningAvailable = useMemo(() => {
         if (!gpuDevicesHardware) return false;
@@ -46,7 +47,7 @@ const GpuMiningMarkup = () => {
                 <SettingsGroupAction>
                     <ToggleSwitch
                         checked={isGpuMiningEnabled}
-                        disabled={!isGpuMiningUnlocked}
+                        disabled={!gpuMiningModuleInitialized}
                         onChange={handleGpuMiningEnabled}
                     />
                 </SettingsGroupAction>

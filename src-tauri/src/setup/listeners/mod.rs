@@ -31,12 +31,13 @@ use std::{
     fmt::{Display, Formatter},
 };
 
+use serde::Serialize;
 use tokio::sync::watch::Receiver;
 use trait_listener::UnlockConditionsListenerTrait;
 
 use super::setup_manager::{PhaseStatus, SetupPhase};
 
-#[derive(Clone)]
+#[derive(Clone, Debug, Serialize)]
 #[allow(unused)]
 pub enum AppModule {
     MainApp,   // Main application view after setup
@@ -47,7 +48,7 @@ pub enum AppModule {
 
 /// Status that is communicated between modules listeners and frontend UI
 /// This states representations is mainly used for frontend UI to display the current status of certain module
-#[derive(Clone, Default, Debug)]
+#[derive(Clone, Default, Debug, Serialize)]
 #[allow(unused)]
 pub enum AppModuleStatus {
     #[default]

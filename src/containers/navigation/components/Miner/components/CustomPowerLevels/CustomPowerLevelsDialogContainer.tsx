@@ -4,13 +4,14 @@ import { useMiningStore } from '@app/store/useMiningStore';
 import { setCustomLevelsDialogOpen } from '@app/store';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
 import { useSetupStore } from '@app/store/useSetupStore';
+import { isCpuMiningModuleInitialized, isGpuMiningModuleInitialized } from '@app/store/selectors/setupStoreSelectors';
 
 export const CustomPowerLevelsDialogContainer = () => {
     const customLevelsDialogOpen = useMiningStore((s) => s.customLevelsDialogOpen);
     const isChangingMode = useMiningStore((s) => s.isChangingMode);
-    const isCpuMiningUnlocked = useSetupStore((s) => s.cpuMiningUnlocked);
-    const isGpuMiningUnlocked = useSetupStore((s) => s.gpuMiningUnlocked);
-    const isModeSelectionEnabled = isCpuMiningUnlocked || isGpuMiningUnlocked;
+    const cpuMiningModuleInitialized = useSetupStore(isCpuMiningModuleInitialized);
+    const gpuMiningModuleInitialized = useSetupStore(isGpuMiningModuleInitialized);
+    const isModeSelectionEnabled = cpuMiningModuleInitialized || gpuMiningModuleInitialized;
 
     const handleClose = () => {
         setCustomLevelsDialogOpen(false);

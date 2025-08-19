@@ -1,9 +1,27 @@
 import { ProgressTrackerUpdatePayload, SetupPhase } from '@app/types/events-payloads';
 
+export enum AppModule {
+    MainApp = 'MainApp', // Main application view after setup
+    CpuMining = 'CpuMining', // CPU mining
+    GpuMining = 'GpuMining', // GPU mining
+    Wallet = 'Wallet', // Wallet
+}
+
+export enum AppModuleStatus {
+    NotInitialized = 'NotInitialized', // Default initial state
+    Initializing = 'Initializing', // Waiting for specified setup phases to complete
+    Initialized = 'Initialized', // All required setup phases completed
+    Failed = 'Failed', // One of required setup phases failed
+}
+
+export interface AppModuleState {
+    module: AppModule;
+    status: AppModuleStatus;
+    errorMessages: Record<string, string>; // Maps SetupPhase to error message
+}
+
 export interface SetupState {
-    cpuMiningUnlocked: boolean;
-    gpuMiningUnlocked: boolean;
-    walletUnlocked: boolean;
+    app_modules: Record<AppModule, AppModuleState>;
     isInitialSetupFinished: boolean;
     core_phase_setup_payload?: ProgressTrackerUpdatePayload;
     cpu_mining_phase_setup_payload?: ProgressTrackerUpdatePayload;

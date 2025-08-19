@@ -25,7 +25,7 @@ use std::{collections::HashMap, sync::LazyLock};
 use tokio::sync::{watch::Receiver, Mutex};
 
 use crate::setup::{
-    listeners::AppModuleStatus,
+    listeners::{AppModule, AppModuleStatus},
     setup_manager::{PhaseStatus, SetupPhase},
 };
 
@@ -60,6 +60,10 @@ impl UnlockConditionsListenerTrait for ListenerMainApp {
         &INSTANCE
     }
 
+    fn get_module_type(&self) -> super::AppModule {
+        AppModule::MainApp
+    }
+
     async fn add_status_channel(&self, key: SetupPhase, value: Receiver<PhaseStatus>) {
         let mut channels = self.status_channels.lock().await;
         channels.insert(key, value);
@@ -75,14 +79,6 @@ impl UnlockConditionsListenerTrait for ListenerMainApp {
         &self,
     ) -> tokio::sync::MutexGuard<'_, UnlockConditionsStatusChannels> {
         self.status_channels.lock().await
-    }
-
-    async fn conditions_met_callback(&self) {
-        info!(target: LOG_TARGET, "App initializated");
-    }
-
-    async fn conditions_failed_callback(&self, failed_phases: HashMap<SetupPhase, String>) {
-        info!(target: LOG_TARGET, "App initialization failed for phases: {:?}", failed_phases);
     }
 
     async fn handle_restart(&self) {

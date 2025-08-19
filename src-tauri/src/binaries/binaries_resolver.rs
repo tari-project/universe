@@ -22,7 +22,6 @@
 use crate::progress_trackers::progress_stepper::IncrementalProgressTracker;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
-use log::info;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::LazyLock;

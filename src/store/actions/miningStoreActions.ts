@@ -7,6 +7,7 @@ import { setError } from './appStateStoreActions.ts';
 import { useSetupStore } from '@app/store/useSetupStore.ts';
 import { useConfigMiningStore } from '../useAppConfigStore.ts';
 import { Network } from '@app/utils/network.ts';
+import { isCpuMiningModuleInitialized, isGpuMiningModuleInitialized } from '../selectors/setupStoreSelectors.ts';
 
 export const restartMining = async () => {
     const isMining =
@@ -67,11 +68,11 @@ export const getMiningNetwork = async () => {
 };
 
 export const startCpuMining = async () => {
-    const unlocked = useSetupStore.getState().cpuMiningUnlocked;
+    const cpuMiningModuleInitialized = isCpuMiningModuleInitialized(useSetupStore.getState());
     const enabled = useConfigMiningStore.getState().cpu_mining_enabled;
     const initiated = useMiningStore.getState().isCpuMiningInitiated;
 
-    if (!enabled || !unlocked || initiated) return;
+    if (!enabled || !cpuMiningModuleInitialized || initiated) return;
 
     useMiningStore.setState({ isCpuMiningInitiated: true });
     console.info('CPU Mining starting....');
@@ -85,7 +86,7 @@ export const startCpuMining = async () => {
     }
 };
 export const startGpuMining = async () => {
-    if (!useSetupStore.getState().gpuMiningUnlocked) return;
+    if (!isGpuMiningModuleInitialized(useSetupStore.getState())) return;
     if (!useConfigMiningStore.getState().gpu_mining_enabled) return;
     if (useMiningStore.getState().isGpuMiningInitiated) return;
 

@@ -20,12 +20,16 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::sync::LazyLock;
+use std::{collections::HashMap, sync::LazyLock};
 
 use tokio::sync::{watch::Receiver, Mutex};
 
 use crate::{
-    setup::setup_manager::{PhaseStatus, SetupPhase},
+    events::UpdateAppModuleStatusPayload,
+    setup::{
+        listeners::{AppModule, AppModuleStatus},
+        setup_manager::{PhaseStatus, SetupPhase},
+    },
     EventsEmitter,
 };
 
@@ -60,6 +64,10 @@ impl UnlockConditionsListenerTrait for ListenerUnlockGpuMining {
         &INSTANCE
     }
 
+    fn get_module_type(&self) -> super::AppModule {
+        AppModule::GpuMining
+    }
+
     async fn add_status_channel(&self, key: SetupPhase, value: Receiver<PhaseStatus>) {
         let mut channels = self.status_channels.lock().await;
         channels.insert(key, value);
@@ -75,11 +83,6 @@ impl UnlockConditionsListenerTrait for ListenerUnlockGpuMining {
         &self,
     ) -> tokio::sync::MutexGuard<'_, UnlockConditionsStatusChannels> {
         self.status_channels.lock().await
-    }
-
-    async fn conditions_met_callback(&self) {
-        info!(target: LOG_TARGET, "Unlocking Gpu Mining");
-        EventsEmitter::emit_unlock_gpu_mining().await;
     }
 
     async fn handle_restart(&self) {
@@ -109,8 +112,12 @@ impl UnlockConditionsListenerTrait for ListenerUnlockGpuMining {
 
 impl ListenerUnlockGpuMining {
     async fn lock(&self) {
-        info!(target: LOG_TARGET, "Locking Mining");
-        EventsEmitter::emit_lock_gpu_mining().await;
+        EventsEmitter::emit_update_app_module_status(UpdateAppModuleStatusPayload {
+            module: AppModule::GpuMining,
+            status: AppModuleStatus::NotInitialized,
+            error_messages: HashMap::new(),
+        })
+        .await;
     }
 }
 

@@ -23,8 +23,10 @@
 use std::{collections::HashMap, future::Future, time::Duration};
 
 use crate::{
+    events::UpdateAppModuleStatusPayload,
+    events_emitter::EventsEmitter,
     setup::{
-        listeners::AppModuleStatus,
+        listeners::{AppModule, AppModuleStatus},
         setup_manager::{PhaseStatus, SetupPhase},
     },
     tasks_tracker::TasksTrackers,
@@ -123,7 +125,6 @@ pub trait UnlockConditionsListenerTrait {
                         return;
                     }
                     if let Ok(status) = unlock_strategy.check_conditions(&channels) {
-                        debug!(target: LOG_TARGET, "Unlock conditions status: {:?}", status);
                         match status {
                             AppModuleStatus::Initialized => {
                                 Self::current().conditions_met_callback().await;
@@ -153,20 +154,29 @@ pub trait UnlockConditionsListenerTrait {
     async fn load_setup_features(&self, features: SetupFeaturesList);
     async fn add_status_channel(&self, key: SetupPhase, value: Receiver<PhaseStatus>);
     async fn select_unlock_strategy(&self) -> Box<dyn UnlockStrategyTrait + Send + Sync>;
-    fn conditions_met_callback(&self) -> impl Future<Output = ()> + Send + Sync;
+    fn conditions_met_callback(&self) -> impl Future<Output = ()> + Send + Sync {
+        EventsEmitter::emit_update_app_module_status(UpdateAppModuleStatusPayload {
+            module: self.get_module_type(),
+            status: AppModuleStatus::Initialized,
+            error_messages: HashMap::new(),
+        })
+    }
     fn conditions_failed_callback(
         &self,
         failed_phases: HashMap<SetupPhase, String>,
     ) -> impl Future<Output = ()> + Send + Sync {
-        async move {
-            warn!(target: LOG_TARGET, "Unlock conditions failed for phases: {:?}", failed_phases);
-        }
+        EventsEmitter::emit_update_app_module_status(UpdateAppModuleStatusPayload {
+            module: self.get_module_type(),
+            status: AppModuleStatus::Failed(failed_phases),
+            error_messages: HashMap::new(),
+        })
     }
     async fn handle_restart(&self) {}
 
     // Getters
     async fn get_listener(&self) -> MutexGuard<'_, Option<tokio::task::JoinHandle<()>>>;
     async fn get_status_channels(&self) -> MutexGuard<'_, UnlockConditionsStatusChannels>;
+    fn get_module_type(&self) -> AppModule;
 }
 
 pub trait UnlockStrategyTrait {

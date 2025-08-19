@@ -14,11 +14,12 @@ import {
 import { setCpuMiningEnabled } from '@app/store/actions/appConfigStoreActions.ts';
 import { useConfigMiningStore } from '@app/store/useAppConfigStore.ts';
 import { useSetupStore } from '@app/store/useSetupStore.ts';
+import { isCpuMiningModuleInitialized } from '@app/store/selectors/setupStoreSelectors.ts';
 
 export default function CpuMiningSettings() {
     const { t } = useTranslation(['settings'], { useSuspense: false });
     const isCpuMiningEnabled = useConfigMiningStore((s) => s.cpu_mining_enabled);
-    const isCpuMiningUnlocked = useSetupStore((s) => s.cpuMiningUnlocked);
+    const cpuMiningModuleInitialized = useSetupStore(isCpuMiningModuleInitialized);
 
     const handleCpuMiningEnabled = useCallback(async () => {
         await setCpuMiningEnabled(!isCpuMiningEnabled);
@@ -36,7 +37,7 @@ export default function CpuMiningSettings() {
                 <SettingsGroupAction>
                     <ToggleSwitch
                         checked={isCpuMiningEnabled}
-                        disabled={!isCpuMiningUnlocked}
+                        disabled={!cpuMiningModuleInitialized}
                         onChange={handleCpuMiningEnabled}
                     />
                 </SettingsGroupAction>

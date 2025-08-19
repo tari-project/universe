@@ -182,9 +182,9 @@ impl Display for PhaseStatus {
             PhaseStatus::InProgress => write!(f, "In Progress"),
             PhaseStatus::Success => write!(f, "Success"),
             PhaseStatus::SuccessWithWarnings(warnings) => {
-                write!(f, "Success With Warnings: {:?}", warnings)
+                write!(f, "Success With Warnings: {warnings:?}")
             }
-            PhaseStatus::Failed(reason) => write!(f, "Failed: {}", reason),
+            PhaseStatus::Failed(reason) => write!(f, "Failed: {reason}",),
         }
     }
 }
@@ -482,8 +482,6 @@ impl SetupManager {
         } else {
             EventsEmitter::emit_disabled_phases(vec![]).await;
         }
-
-        info!(target: LOG_TARGET, "Setup features resolved: {:?}", features);
 
         Ok(())
     }

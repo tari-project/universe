@@ -35,13 +35,8 @@ import { setWalletBalance, updateWalletScanningProgress, useSecurityStore } from
 import { deepEqual } from '@app/utils/objectDeepEqual.ts';
 import {
     handleAppLoaded,
-    handleCpuMiningLocked,
-    handleCpuMiningUnlocked,
-    handleGpuMiningLocked,
-    handleGpuMiningUnlocked,
+    handleAppModulesUpdate,
     handleUpdateDisabledPhases,
-    handleWalletLocked,
-    handleWalletUnlocked,
     setInitialSetupFinished,
     updateSetupProgress,
 } from '@app/store/actions/setupStoreActions';
@@ -87,8 +82,11 @@ const useTauriEventsListener = () => {
                 async ({ payload: event }: { payload: BackendStateUpdateEvent }) => {
                     handleLogUpdate(event);
                     switch (event.event_type) {
+                        case 'UpdateAppModuleStatus':
+                            console.log('UpdateAppModuleStatus', event.payload);
+                            handleAppModulesUpdate(event.payload);
+                            break;
                         case 'SetupProgressUpdate':
-                            console.info('SetupProgressUpdate', event.payload);
                             updateSetupProgress(event.payload);
                             break;
                         case 'UpdateTorEntryGuards':
@@ -96,24 +94,6 @@ const useTauriEventsListener = () => {
                             break;
                         case 'InitialSetupFinished':
                             setInitialSetupFinished(true);
-                            break;
-                        case 'UnlockWallet':
-                            await handleWalletUnlocked();
-                            break;
-                        case 'UnlockCpuMining':
-                            await handleCpuMiningUnlocked();
-                            break;
-                        case 'UnlockGpuMining':
-                            await handleGpuMiningUnlocked();
-                            break;
-                        case 'LockCpuMining':
-                            await handleCpuMiningLocked();
-                            break;
-                        case 'LockGpuMining':
-                            await handleGpuMiningLocked();
-                            break;
-                        case 'LockWallet':
-                            handleWalletLocked();
                             break;
                         case 'WalletBalanceUpdate':
                             await setWalletBalance(event.payload);
