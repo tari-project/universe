@@ -204,4 +204,5 @@ declare module '@tauri-apps/api/core' {
         param: 'ootle_get_balances',
         payload: AccountsGetBalancesRequest
     ): Promise<AccountsGetBalancesResponse>;
+    function invoke(param: 'ootle_make_json_rpc_request', payload: { method: string; params: string }): Promise<any>;
 }

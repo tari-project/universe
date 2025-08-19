@@ -58,7 +58,7 @@ export const useTappletSignerStore = create<TappletSignerStoreState>()((set, get
         }
     },
     runTransaction: async (event: MessageEvent<TransactionEvent>) => {
-        console.warn(`Running L2 method :`, { event });
+        console.warn(`🐼 Running L2 method :`, { event });
         const { methodName, args, id } = event.data.payload;
 
         try {

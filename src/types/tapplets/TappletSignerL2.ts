@@ -15,6 +15,7 @@ import {
     substateIdToString,
 } from '@tari-project/tarijs-types';
 import {
+    AccountGetDefaultRequest,
     AccountGetResponse,
     AccountSetDefaultResponse,
     AccountsGetBalancesResponse,
@@ -51,14 +52,13 @@ interface OotleAccount extends AccountData {
 
 export class IPCRpcTransport implements transports.RpcTransport {
     async sendRequest<T>(request: transports.RpcRequest, _: transports.RpcTransportOptions): Promise<T> {
-        return await invoke('call_wallet', {
+        console.warn('🕵🕵🕵 [SIGNER] sendRequest', request);
+        const res = await invoke('ootle_make_json_rpc_request', {
             method: request.method,
             params: JSON.stringify(request.params),
         });
-    }
-
-    async get_token(): Promise<string> {
-        return await invoke('get_permission_token', {});
+        console.warn('🕵🕵🕵 [SIGNER] sendRequest response', res);
+        return res;
     }
 }
 
@@ -127,6 +127,7 @@ export class TappletSignerL2 implements TariSigner {
     }
 
     public async getAccount(): Promise<OotleAccount> {
+        console.info('🔌 [TU][Provider] getAccountdefault');
         const { account, public_key } = await this.client.accountsGetDefault({});
         console.info('🔌 [TU][Provider] getAccount with accountsGetDefault', account, public_key);
 

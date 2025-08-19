@@ -675,6 +675,7 @@ fn main() {
             ootle_commands::ootle_create_account,
             ootle_commands::ootle_get_balances,
             ootle_commands::ootle_create_free_test_coins,
+            ootle_commands::ootle_make_json_rpc_request,
             tapplet_commands::start_tari_tapplet_binary,
             tapplet_commands::start_dev_tapplet,
             tapplet_commands::start_tapplet,
