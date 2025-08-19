@@ -21,7 +21,8 @@ export default function CrewEntry({ entry, isClaimed }: Props) {
     const [nudgeCooldowns, setNudgeCooldowns] = useState<Record<string, number>>({});
 
     const { invalidate: invalidateCrewMembers } = useCrewMembers();
-    const { invalidate: invalidateReferrerProgress } = useReferrerProgress();
+    const { invalidate: invalidateReferrerProgress, data: referrerProgress } = useReferrerProgress();
+    const meetsRequirements = referrerProgress?.referrerProgress.meetsMinimumDays;
 
     const canClaim = progress && progress >= 100;
 
@@ -100,7 +101,7 @@ export default function CrewEntry({ entry, isClaimed }: Props) {
                 <TopRow>
                     <Username>{handle}</Username>
                     <CrewProgressPill
-                        canClaim={Boolean(canClaim && !isClaimingReward)}
+                        canClaim={Boolean(canClaim && !isClaimingReward && meetsRequirements)}
                         canNudge={canNudge && !isSendingNudge}
                         isClaimed={isClaimed ?? false}
                         timeRemaining={timeRemaining ?? { current: 0, total: 0, unit: '' }}

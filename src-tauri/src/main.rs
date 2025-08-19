@@ -669,6 +669,10 @@ fn main() {
             tauri::RunEvent::Ready => {
                 info!(target: LOG_TARGET, "RunEvent Ready");
                 let handle_clone = app_handle.clone();
+                let state = handle_clone.state::<UniverseAppState>();
+
+                block_on(state.updates_manager.initial_try_update(&handle_clone));
+
                 tauri::async_runtime::spawn(async move {
                     SetupManager::get_instance()
                         .start_setup(handle_clone.clone())

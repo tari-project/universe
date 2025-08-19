@@ -31,3 +31,9 @@ export const RightSide = styled.div`
     align-items: center;
     gap: 6px;
 `;
+
+export const ActionButtons = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 2px;
+`;
