@@ -32,7 +32,7 @@ export default function User() {
     );
     return (
         <SidebarItem tooltipContent={tooltipContent}>
-            <Avatar image={profileimageurl} username={name} />
+            <Avatar username={name} />
         </SidebarItem>
     );
 }
