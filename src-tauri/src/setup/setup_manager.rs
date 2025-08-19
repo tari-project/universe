@@ -224,31 +224,6 @@ impl SetupManager {
         let state = app_handle.state::<UniverseAppState>();
         let in_memory_config = state.in_memory_config.clone();
 
-        let _unused = state
-            .telemetry_manager
-            .write()
-            .await
-            .initialize(app_handle.clone())
-            .await;
-
-        let mut telemetry_id = state
-            .telemetry_manager
-            .read()
-            .await
-            .get_unique_string()
-            .await;
-        if telemetry_id.is_empty() {
-            telemetry_id = "unknown_miner_tari_universe".to_string();
-        }
-
-        let app_version = app_handle.package_info().version.clone();
-        let _unused = state
-            .telemetry_service
-            .write()
-            .await
-            .init(app_version.to_string(), telemetry_id.clone())
-            .await;
-
         let mut websocket_events_manager_guard = state.websocket_event_manager.write().await;
         websocket_events_manager_guard.set_app_handle(app_handle.clone());
         drop(websocket_events_manager_guard);
@@ -402,6 +377,31 @@ impl SetupManager {
         // Trigger it here so we can update UI when new wallet is created
         // We should probably change events to be loaded from internal wallet directly
         EventsEmitter::emit_wallet_config_loaded(&ConfigWallet::content().await).await;
+
+        {
+            let _unused = state
+                .telemetry_manager
+                .write()
+                .await
+                .initialize(app_handle.clone())
+                .await;
+            let mut telemetry_id = state
+                .telemetry_manager
+                .read()
+                .await
+                .get_unique_string()
+                .await;
+            if telemetry_id.is_empty() {
+                telemetry_id = "unknown_miner_tari_universe".to_string();
+            }
+            let app_version = app_handle.package_info().version.clone();
+            let _unused = state
+                .telemetry_service
+                .write()
+                .await
+                .init(app_version.to_string(), telemetry_id.clone())
+                .await;
+        }
 
         // If we open different specific exchange miner build then previous one we always want to prompt user to provide tari address
         if is_on_exchange_miner_build && built_in_exchange_id.ne(&last_config_exchange_id) {
