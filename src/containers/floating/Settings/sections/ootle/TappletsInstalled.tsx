@@ -23,6 +23,7 @@ export default function TappletsInstalled() {
     const installedTapplets = useTappletsStore((s) => s.installedTapplets);
     const installedTappletsCount = installedTapplets?.length || 0;
 
+    // add check if newer version is available
     const _updateInstalledTappletHandler = useCallback(
         async (id: number, installedTappletId: number) => {
             try {

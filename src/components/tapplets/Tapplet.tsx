@@ -6,10 +6,11 @@ import { useConfigUIStore, useUIStore, setError as setStoreError } from '@app/st
 import { MessageType, useIframeMessage } from '@app/hooks/swap/useIframeMessage';
 
 interface TappletProps {
+    activeTappId: number;
     source: string;
 }
 
-export const Tapplet: React.FC<TappletProps> = ({ source }) => {
+export const Tapplet: React.FC<TappletProps> = ({ activeTappId, source }) => {
     const tappletRef = useRef<HTMLIFrameElement | null>(null);
     const tappSigner = useTappletSignerStore((s) => s.tappletSigner);
     const runTransaction = useTappletSignerStore((s) => s.runTransaction);
@@ -184,6 +185,7 @@ export const Tapplet: React.FC<TappletProps> = ({ source }) => {
                 </div>
             )} */}
             <iframe
+                key={activeTappId}
                 src={source}
                 width="100%"
                 height="100%"
