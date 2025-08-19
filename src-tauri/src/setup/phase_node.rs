@@ -160,7 +160,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
     }
 
     async fn setup(self) {
-        let _unused = SetupDefaultAdapter::setup(self).await;
+        SetupDefaultAdapter::setup(self).await;
     }
 
     #[allow(clippy::too_many_lines)]

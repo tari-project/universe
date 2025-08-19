@@ -148,7 +148,7 @@ impl SetupPhaseImpl for CoreSetupPhase {
         match PlatformUtils::initialize_preqesities().await {
             Ok(_) => {
                 // Proceed with setup when all prerequisites are met
-                let _unused = SetupDefaultAdapter::setup(self).await;
+                SetupDefaultAdapter::setup(self).await;
             }
             Err(err) => {
                 log::error!("Core Phase pre-setup failed: {err}");

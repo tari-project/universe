@@ -153,7 +153,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
     }
 
     async fn setup(self) {
-        let _unused = SetupDefaultAdapter::setup(self).await;
+        SetupDefaultAdapter::setup(self).await;
     }
 
     async fn setup_inner(&self) -> Result<(), Error> {

@@ -29,9 +29,7 @@ static LOG_TARGET: &str = "tari::universe::setup_default_adapter";
 pub struct SetupDefaultAdapter {}
 
 impl SetupDefaultAdapter {
-    pub async fn setup<T: SetupPhaseImpl + Send + Sync + 'static>(
-        phase: T,
-    ) -> Result<(), anyhow::Error> {
+    pub async fn setup<T: SetupPhaseImpl + Send + Sync + 'static>(phase: T) {
         info!(target: LOG_TARGET, "[ {} Phase ] Starting setup", phase.get_phase_id());
         let mut shutdown_signal = phase.get_shutdown_signal().await;
         phase.get_task_tracker().await.spawn(async move {
@@ -75,7 +73,5 @@ impl SetupDefaultAdapter {
             };
 
         });
-
-        Ok(())
     }
 }

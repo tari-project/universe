@@ -38,7 +38,7 @@ use crate::{
     UniverseAppState,
 };
 use anyhow::Error;
-use log::{error, info};
+use log::error;
 use tari_shutdown::ShutdownSignal;
 use tauri::{AppHandle, Manager};
 use tokio::{
@@ -158,7 +158,7 @@ impl SetupPhaseImpl for CpuMiningSetupPhase {
     }
 
     async fn setup(self) {
-        let _unused = SetupDefaultAdapter::setup(self).await;
+        SetupDefaultAdapter::setup(self).await;
     }
 
     async fn setup_inner(&self) -> Result<(), Error> {

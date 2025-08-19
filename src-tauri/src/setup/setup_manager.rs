@@ -505,9 +505,16 @@ impl SetupManager {
     async fn setup_cpu_mining_phase(&self) {
         let app_handle = self.app_handle().await;
         let setup_features = self.features.read().await.clone();
+        let mut listeners = vec![self.core_phase_status.subscribe()];
+
+        // If CPU Pool feature is disabled, we need to listen for Node phase status as mmproxy requires node
+        if setup_features.is_feature_disabled(SetupFeature::CpuPool) {
+            listeners.push(self.node_phase_status.subscribe());
+        }
+
         let cpu_mining_phase_setup = PhaseBuilder::new()
             .with_setup_timeout_duration(Duration::from_secs(60 * 10)) // 10 minutes
-            .with_listeners_for_required_phases_statuses(vec![self.core_phase_status.subscribe()])
+            .with_listeners_for_required_phases_statuses(listeners)
             .build::<CpuMiningSetupPhase>(
                 app_handle.clone(),
                 self.cpu_mining_phase_status.clone(),
