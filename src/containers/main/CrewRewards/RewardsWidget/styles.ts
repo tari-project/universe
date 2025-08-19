@@ -21,7 +21,8 @@ export const Holder = styled('div')`
 `;
 
 export const WidgetWrapper = styled('div')<{ $isOpen: boolean; $isLogin?: boolean }>`
-    pointer-events: all;
+    position: relative;
+    z-index: 1;
 
     border-radius: 13px;
     background: #323333;
@@ -41,10 +42,10 @@ export const WidgetWrapper = styled('div')<{ $isOpen: boolean; $isLogin?: boolea
     padding-bottom: 0px;
 
     max-height: ${({ $isLogin }) => ($isLogin ? '274px' : '115px')};
-    position: relative;
-    z-index: 1;
 
     transition: max-height 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+    pointer-events: all;
 
     * {
         pointer-events: all;
