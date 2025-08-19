@@ -1,8 +1,9 @@
-import { IconImage, RightSide, Title, Wrapper } from './styles';
+import { ActionButtons, IconImage, RightSide, Title, Wrapper } from './styles';
 import coinImage from '../../../../../images/coin_solo.png';
 import InviteFriendsButton from './InviteFriendsButton/InviteFriendsButton';
-import ToggleIcon from './ToggleIcon/ToggleIcon';
 import { useTranslation } from 'react-i18next';
+import ToggleButton from './ToggleButton/ToggleButton';
+import MinimizeButton from './MinimizeButton/MinimizeButton';
 
 export default function TopRow() {
     const { t } = useTranslation();
@@ -15,7 +16,10 @@ export default function TopRow() {
 
             <RightSide>
                 <InviteFriendsButton />
-                <ToggleIcon />
+                <ActionButtons>
+                    <MinimizeButton />
+                    <ToggleButton />
+                </ActionButtons>
             </RightSide>
         </Wrapper>
     );
