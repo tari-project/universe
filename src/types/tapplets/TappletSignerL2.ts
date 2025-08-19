@@ -1,5 +1,4 @@
 import { WalletDaemonClient, transports } from '@tari-project/wallet_jrpc_client';
-import { TappletPermissions } from '@tari-project/tari-permissions';
 import {
     AccountData,
     GetTransactionResultResponse,
@@ -13,15 +12,14 @@ import {
     createNftAddressFromResource,
     ListSubstatesRequest,
     substateIdToString,
+    ListAccountNftFromBalancesRequest,
 } from '@tari-project/tarijs-types';
 import {
-    AccountGetDefaultRequest,
     AccountGetResponse,
     AccountSetDefaultResponse,
     AccountsGetBalancesResponse,
     AccountsListRequest,
     AccountsListResponse,
-    BalanceEntry,
     ComponentAccessRules,
     ConfidentialViewVaultBalanceRequest,
     Instruction,
@@ -41,10 +39,6 @@ import { invoke } from '@tauri-apps/api/core';
 import { TappletSignerParams } from './tapplet.types';
 
 export type TappletSignerMethod = Exclude<keyof TappletSignerL2, 'runOne'>;
-
-export interface ListAccountNftFromBalancesRequest {
-    balances: BalanceEntry[];
-}
 
 interface OotleAccount extends AccountData {
     account_name: string;
@@ -151,6 +145,7 @@ export class TappletSignerL2 implements TariSigner {
             account_name: account.name ?? '',
             public_key,
 
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             vaults: balances.map((b: any) => ({
                 type: b.resource_type,
                 resource_address: b.resource_address,
@@ -232,7 +227,7 @@ export class TappletSignerL2 implements TariSigner {
         return {
             transaction_id: transactionId,
             status: convertStringToTransactionStatus(res.status),
-            result: res.result as any,
+            result: res.result,
         };
     }
 
