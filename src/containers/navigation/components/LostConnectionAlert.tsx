@@ -16,9 +16,8 @@ const LostConnectionAlert = () => {
     // const isBandwidthTooLow = useAppStateStore((s) => s.networkStatus?.is_too_low);
     // Hotfix for now
     const isConnectedToTari = true;
-    const isSettingUp = useSetupStore((s) => !s.appUnlocked);
 
-    return !isConnectedToTari && !isSettingUp ? (
+    return !isConnectedToTari ? (
         <Stack direction="row" justifyContent="space-between" alignItems="center" style={{ padding: '0 6px' }} gap={6}>
             <LostConnectionIcon size={18} />
             <Typography variant="p">{t('lost-connection')}</Typography>

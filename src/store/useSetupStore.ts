@@ -6,7 +6,6 @@ const initialState: SetupState = {
     gpuMiningUnlocked: false,
     walletUnlocked: false,
     isInitialSetupFinished: false,
-    appUnlocked: false,
     disabled_phases: [],
 };
 export const useSetupStore = create<SetupState>()(() => ({ ...initialState }));

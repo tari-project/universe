@@ -38,7 +38,7 @@ use crate::{
     UniverseAppState,
 };
 use anyhow::Error;
-use log::error;
+use log::{error, info};
 use tari_shutdown::ShutdownSignal;
 use tauri::{AppHandle, Manager};
 use tokio::{
@@ -179,16 +179,16 @@ impl SetupPhaseImpl for CpuMiningSetupPhase {
             })
             .await?;
 
-        let is_cpu_pool_disabled = self
+        let is_cpu_pool_enabled = self
             .setup_features
-            .is_feature_disabled(SetupFeature::CpuPool);
+            .is_feature_enabled(SetupFeature::CpuPool);
 
         let mmproxy_binary_progress_tracker =
             progress_stepper.track_step_completion_over_time(SetupStep::BinariesMergeMiningProxy);
 
         progress_stepper
             .mark_step_as_completed(SetupStep::BinariesMergeMiningProxy, async move || {
-                if is_cpu_pool_disabled {
+                if is_cpu_pool_enabled {
                     return Ok(());
                 }
 
@@ -204,7 +204,7 @@ impl SetupPhaseImpl for CpuMiningSetupPhase {
 
         progress_stepper
             .mark_step_as_completed(SetupStep::MMProxy, async move || {
-                if is_cpu_pool_disabled {
+                if is_cpu_pool_enabled {
                     return Ok(());
                 }
 
@@ -250,7 +250,7 @@ impl SetupPhaseImpl for CpuMiningSetupPhase {
     async fn finalize_setup(&self) -> Result<(), Error> {
         let progress_stepper = self.progress_stepper.lock().await;
         let setup_warnings = progress_stepper.get_setup_warnings();
-        if !setup_warnings.is_empty() {
+        if setup_warnings.is_empty() {
             self.status_sender.send(PhaseStatus::Success)?;
         } else {
             self.status_sender

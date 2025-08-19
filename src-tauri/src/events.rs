@@ -56,8 +56,6 @@ pub enum EventType {
     MissingApplications,
     StuckOnOrphanChain,
     NetworkStatus,
-    InitialSetupFinished,
-    UnlockApp,
     UnlockWallet,
     UnlockCpuMining,
     UnlockGpuMining,
@@ -85,6 +83,7 @@ pub enum EventType {
     PinLocked,
     SeedBackedUp,
     SetupProgressUpdate,
+    UpdateTorEntryGuards,
 }
 
 #[derive(Clone, Debug, Serialize)]

@@ -44,6 +44,7 @@ use crate::node::node_adapter::BaseNodeStatus;
 use crate::node::node_manager::NodeType;
 use crate::p2pool::models::{Connections, P2poolStats};
 use crate::pin::PinManager;
+use crate::release_notes::ReleaseNotes;
 use crate::setup::setup_manager::{SetupManager, SetupPhase};
 use crate::tapplets::interface::ActiveTapplet;
 use crate::tapplets::tapplet_server::start_tapplet;
@@ -185,16 +186,22 @@ pub async fn select_exchange_miner(
 }
 
 #[tauri::command]
-pub async fn frontend_ready(app: tauri::AppHandle) {
+pub async fn frontend_ready(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
     static FRONTEND_READY_CALLED: std::sync::atomic::AtomicBool =
         std::sync::atomic::AtomicBool::new(false);
     if FRONTEND_READY_CALLED.load(Ordering::SeqCst) {
-        return;
+        return Ok(());
     }
     FRONTEND_READY_CALLED.store(true, Ordering::SeqCst);
 
     EventsEmitter::load_app_handle(app.clone()).await;
     FrontendReadyChannel::current().set_ready();
+
+    let state_inner = state.inner().clone();
+
     TasksTrackers::current()
         .common
         .get_task_tracker()
@@ -203,7 +210,12 @@ pub async fn frontend_ready(app: tauri::AppHandle) {
             // Give the splash screen a few seconds to show before closing it
             sleep(Duration::from_secs(3));
             EventsEmitter::emit_close_splashscreen().await;
+            let _unused = ReleaseNotes::current()
+                .handle_release_notes_event_emit(state_inner, app)
+                .await;
         });
+
+    Ok(())
 }
 
 #[tauri::command]

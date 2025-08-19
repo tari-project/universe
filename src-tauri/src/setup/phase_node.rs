@@ -294,7 +294,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
     async fn finalize_setup(&self) -> Result<(), Error> {
         let progress_stepper = self.progress_stepper.lock().await;
         let setup_warnings = progress_stepper.get_setup_warnings();
-        if !setup_warnings.is_empty() {
+        if setup_warnings.is_empty() {
             self.status_sender.send(PhaseStatus::Success)?;
         } else {
             self.status_sender
@@ -303,6 +303,19 @@ impl SetupPhaseImpl for NodeSetupPhase {
 
         let app_handle_clone: tauri::AppHandle = self.app_handle.clone();
         let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
+
+        let state: tauri::State<'_, UniverseAppState> =
+            app_handle_clone.state::<UniverseAppState>();
+        let node_type = state.node_manager.clone().get_node_type().await;
+        let use_tor =
+            self.app_configuration.use_tor && node_type.is_local() && !cfg!(target_os = "macos");
+
+        if use_tor {
+            let tor_guards = state.tor_manager.get_entry_guards().await;
+            if let Ok(tor_guards) = tor_guards {
+                EventsEmitter::emit_tor_entry_guards(tor_guards).await;
+            }
+        }
 
         TasksTrackers::current()
             .common.get_task_tracker().await

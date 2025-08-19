@@ -87,11 +87,9 @@ export const handleRestartingPhases = async (phasesToRestart: SetupPhase[]) => {
         return;
     }
 
-    if (useSetupStore.getState().appUnlocked) {
-        setDialogToShow(undefined);
-        setShowResumeAppModal(true);
-        useMiningStore.setState({ wasMineOnAppStartExecuted: false });
-    }
+    setDialogToShow(undefined);
+    setShowResumeAppModal(true);
+    useMiningStore.setState({ wasMineOnAppStartExecuted: false });
 
     for (const phase of phasesToRestart) {
         clearSetupProgress(phase);

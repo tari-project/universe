@@ -29,16 +29,11 @@ export const setIsWebglNotSupported = (isWebglNotSupported: boolean) => {
 
 async function loadAnimation() {
     const towerSidebarOffset = useUIStore.getState().towerSidebarOffset;
-    const isInitialSetupFinished = useSetupStore.getState().isInitialSetupFinished;
-    const appUnlocked = useSetupStore.getState().appUnlocked;
-    const setupComplete = isInitialSetupFinished && appUnlocked;
 
     try {
         await loadTowerAnimation({ canvasId: TOWER_CANVAS_ID, offset: towerSidebarOffset });
         useUIStore.setState((c) => ({ ...c, towerInitalized: true }));
-        if (setupComplete) {
-            setAnimationState('showVisual');
-        }
+        setAnimationState('showVisual');
     } catch (e) {
         console.error('Could not enable visual mode. Error at loadTowerAnimation:', e);
         useUIStore.setState((c) => ({ ...c, towerInitalized: false }));

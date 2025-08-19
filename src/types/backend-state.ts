@@ -29,6 +29,10 @@ import { DisabledPhasesPayload } from '@app/store/actions/setupStoreActions.ts';
 export const BACKEND_STATE_UPDATE = 'backend_state_update';
 export type BackendStateUpdateEvent =
     | {
+          event_type: 'UpdateTorEntryGuards';
+          payload: string[];
+      }
+    | {
           event_type: 'SetupProgressUpdate';
           payload: ProgressTrackerUpdatePayload;
       }

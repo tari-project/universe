@@ -19,6 +19,7 @@ import {
     setDialogToShow,
     setShouldShowExchangeSpecificModal,
     setShowExternalDependenciesDialog,
+    setSidebarOpen,
 } from '@app/store/actions/uiStoreActions';
 import { setAvailableEngines } from '@app/store/actions/miningStoreActions';
 import {
@@ -33,7 +34,7 @@ import {
 import { setWalletBalance, updateWalletScanningProgress, useSecurityStore } from '@app/store';
 import { deepEqual } from '@app/utils/objectDeepEqual.ts';
 import {
-    handleAppUnlocked,
+    handleAppLoaded,
     handleCpuMiningLocked,
     handleCpuMiningUnlocked,
     handleGpuMiningLocked,
@@ -44,7 +45,7 @@ import {
     setInitialSetupFinished,
     updateSetupProgress,
 } from '@app/store/actions/setupStoreActions';
-import { setBackgroundNodeState, setNodeStoreState } from '@app/store/useNodeStore';
+import { setBackgroundNodeState, setNodeStoreState, setTorEntryGuards } from '@app/store/useNodeStore';
 import {
     handleExchangeIdChanged,
     handleConfigCoreLoaded,
@@ -89,11 +90,11 @@ const useTauriEventsListener = () => {
                         case 'SetupProgressUpdate':
                             updateSetupProgress(event.payload);
                             break;
+                        case 'UpdateTorEntryGuards':
+                            setTorEntryGuards(event.payload);
+                            break;
                         case 'InitialSetupFinished':
                             setInitialSetupFinished(true);
-                            break;
-                        case 'UnlockApp':
-                            await handleAppUnlocked();
                             break;
                         case 'UnlockWallet':
                             await handleWalletUnlocked();
@@ -159,6 +160,9 @@ const useTauriEventsListener = () => {
                             handleConfigPoolsLoaded(event.payload);
                             break;
                         case 'CloseSplashscreen':
+                            //TODO find better place for this
+                            handleAppLoaded();
+                            setSidebarOpen(true);
                             handleCloseSplashscreen();
                             break;
                         case 'DetectedDevices':

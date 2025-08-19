@@ -5,7 +5,6 @@ export interface SetupState {
     gpuMiningUnlocked: boolean;
     walletUnlocked: boolean;
     isInitialSetupFinished: boolean;
-    appUnlocked: boolean;
     core_phase_setup_payload?: ProgressTrackerUpdatePayload;
     cpu_mining_phase_setup_payload?: ProgressTrackerUpdatePayload;
     gpu_mining_phase_setup_payload?: ProgressTrackerUpdatePayload;

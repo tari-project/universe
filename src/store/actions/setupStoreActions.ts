@@ -52,8 +52,7 @@ async function initializeAnimation() {
     }
 }
 
-export const handleAppUnlocked = async () => {
-    useSetupStore.setState({ appUnlocked: true });
+export const handleAppLoaded = async () => {
     await fetchBridgeTransactionsHistory().catch((error) => {
         console.error('Could not fetch bridge transactions history:', error);
     });

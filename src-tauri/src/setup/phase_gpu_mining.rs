@@ -221,7 +221,7 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
     async fn finalize_setup(&self) -> Result<(), Error> {
         let progress_stepper = self.progress_stepper.lock().await;
         let setup_warnings = progress_stepper.get_setup_warnings();
-        if !setup_warnings.is_empty() {
+        if setup_warnings.is_empty() {
             self.status_sender.send(PhaseStatus::Success)?;
         } else {
             self.status_sender

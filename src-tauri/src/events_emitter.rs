@@ -257,6 +257,20 @@ impl EventsEmitter {
         }
     }
 
+    pub async fn emit_tor_entry_guards(guards: Vec<String>) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::UpdateTorEntryGuards,
+            payload: guards,
+        };
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
+            error!(target: LOG_TARGET, "Failed to emit UpdateTorEntryGuards event: {e:?}");
+        }
+    }
+
     pub async fn emit_core_config_loaded(payload: &ConfigCoreContent) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
@@ -460,34 +474,6 @@ impl EventsEmitter {
             .emit(BACKEND_STATE_UPDATE, event)
         {
             error!(target: LOG_TARGET, "Failed to emit NewBlockHeight event: {e:?}");
-        }
-    }
-
-    pub async fn emit_initial_setup_finished() {
-        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
-        let event = Event {
-            event_type: EventType::InitialSetupFinished,
-            payload: (),
-        };
-        if let Err(e) = Self::get_app_handle()
-            .await
-            .emit(BACKEND_STATE_UPDATE, event)
-        {
-            error!(target: LOG_TARGET, "Failed to emit SetupFinished event: {e:?}");
-        }
-    }
-
-    pub async fn emit_unlock_app() {
-        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
-        let event = Event {
-            event_type: EventType::UnlockApp,
-            payload: (),
-        };
-        if let Err(e) = Self::get_app_handle()
-            .await
-            .emit(BACKEND_STATE_UPDATE, event)
-        {
-            error!(target: LOG_TARGET, "Failed to emit UnlockApp event: {e:?}");
         }
     }
 

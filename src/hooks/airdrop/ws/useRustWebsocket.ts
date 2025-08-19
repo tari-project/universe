@@ -31,13 +31,10 @@ export default function useAirdropWebsocket() {
     const userEventHandler = useHandleWsUserIdEvent();
     const globalEventHandler = useHandleWsGlobalEvent();
     const startWebsocket = useSetupWebsocket();
-    const setupComplete = useSetupStore((s) => s.appUnlocked);
 
     useEffect(() => {
-        if (setupComplete) {
-            startWebsocket();
-        }
-    }, [startWebsocket, setupComplete]);
+        startWebsocket();
+    }, [startWebsocket]);
 
     useEffect(() => {
         const unlistenPromise = listen('ws-status-change', (event) => {

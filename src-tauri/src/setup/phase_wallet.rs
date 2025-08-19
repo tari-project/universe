@@ -175,7 +175,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
 
         let app_state = self.get_app_handle().state::<UniverseAppState>().clone();
         let is_local_node = app_state.node_manager.is_local_current().await;
-        let use_tor = self.app_configuration.use_tor.clone() && is_local_node;
+        let use_tor = self.app_configuration.use_tor && is_local_node;
         let wallet_manager = app_state.wallet_manager.clone();
 
         progress_stepper.mark_step_as_completed(SetupStep::StartWallet, async move || {
@@ -227,11 +227,11 @@ impl SetupPhaseImpl for WalletSetupPhase {
     async fn finalize_setup(&self) -> Result<(), Error> {
         let progress_stepper = self.progress_stepper.lock().await;
         let setup_warnings = progress_stepper.get_setup_warnings();
-        if !setup_warnings.is_empty() {
-            self.status_sender.send(PhaseStatus::Success);
+        if setup_warnings.is_empty() {
+            self.status_sender.send(PhaseStatus::Success)?;
         } else {
             self.status_sender
-                .send(PhaseStatus::SuccessWithWarnings(setup_warnings.clone()));
+                .send(PhaseStatus::SuccessWithWarnings(setup_warnings.clone()))?;
         }
 
         let app_state = self.get_app_handle().state::<UniverseAppState>().clone();

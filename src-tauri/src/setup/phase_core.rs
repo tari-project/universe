@@ -20,9 +20,6 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::collections::HashMap;
-
-use log::error;
 use tari_shutdown::ShutdownSignal;
 use tauri::{AppHandle, Manager};
 use tokio::sync::{
@@ -210,7 +207,7 @@ impl SetupPhaseImpl for CoreSetupPhase {
     async fn finalize_setup(&self) -> Result<(), anyhow::Error> {
         let progress_stepper = self.progress_stepper.lock().await;
         let setup_warnings = progress_stepper.get_setup_warnings();
-        if !setup_warnings.is_empty() {
+        if setup_warnings.is_empty() {
             self.status_sender.send(PhaseStatus::Success)?;
         } else {
             self.status_sender

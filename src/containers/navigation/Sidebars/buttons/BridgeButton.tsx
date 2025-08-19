@@ -11,9 +11,8 @@ const BridgeButton = memo(function BridgeButton() {
     const showTapplet = useUIStore((s) => s.showTapplet);
     const setActiveTappById = useTappletsStore((s) => s.setActiveTappById);
     const isWalletScanning = useWalletStore((s) => s.wallet_scanning?.is_scanning);
-    const isSettingUp = useSetupStore((s) => !s.appUnlocked);
 
-    const isDisabled = isSettingUp || isWalletScanning;
+    const isDisabled = isWalletScanning;
 
     function handleToggleOpen() {
         if (isDisabled) return;

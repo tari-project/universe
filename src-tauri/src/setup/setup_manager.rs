@@ -483,6 +483,8 @@ impl SetupManager {
             EventsEmitter::emit_disabled_phases(vec![]).await;
         }
 
+        info!(target: LOG_TARGET, "Setup features resolved: {:?}", features);
+
         Ok(())
     }
 
