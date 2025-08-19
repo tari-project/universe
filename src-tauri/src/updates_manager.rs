@@ -102,7 +102,7 @@ impl UpdatesManager {
             .get_task_tracker()
             .await
             .spawn(async move {
-                // Skip the first tick immediately(we check for updates manually before setup)
+                // Skip the first tick immediately (we check for updates manually before setup)
                 interval.tick().await;
 
                 loop {
