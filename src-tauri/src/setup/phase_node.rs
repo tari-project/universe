@@ -261,30 +261,40 @@ impl SetupPhaseImpl for NodeSetupPhase {
         }).await?;
         let state = self.app_handle.state::<UniverseAppState>();
 
-        // Set up migration progress tracking
         let migration_tracker =
             progress_stepper.track_step_incrementally(SetupStep::MigratingDatabase);
 
         let node_type = state.node_manager.get_node_type().await;
-        if node_type.is_remote() {
-            if let Some(tracker) = migration_tracker {
-                state
-                    .node_manager
-                    .wait_migration(Some(tracker))
-                    .await
-                    .map_err(|e| anyhow::anyhow!("Failed to wait for node migration: {e}"))?;
-            }
-        }
-
-        // Finish the migration step
         progress_stepper
-            .finish_tracked_step(SetupStep::MigratingDatabase)
+            .complete_step(SetupStep::MigratingDatabase, async move || {
+                if node_type.is_remote() {
+                    return Ok(());
+                }
+                if let Some(tracker) = migration_tracker {
+                    state
+                        .node_manager
+                        .wait_migration(Some(tracker))
+                        .await
+                        .map_err(|e| anyhow::anyhow!("Failed to wait for node migration: {e}"))?;
+                }
+                Ok(())
+            })
             .await?;
 
         let state = self.app_handle.state::<UniverseAppState>();
         let node_type = state.node_manager.get_node_type().await;
         if node_type.is_local() {
             self.wait_node_synced_with_progress(progress_stepper)
+                .await?;
+        } else {
+            progress_stepper
+                .skip_step(SetupStep::WaitingForInitialSync)
+                .await?;
+            progress_stepper
+                .skip_step(SetupStep::WaitingForHeaderSync)
+                .await?;
+            progress_stepper
+                .skip_step(SetupStep::WaitingForBlockSync)
                 .await?;
         }
 

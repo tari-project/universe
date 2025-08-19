@@ -203,17 +203,18 @@ impl ProgressStepper {
         if let Some(index) = self.steps.iter().position(|s| s.get_step() == &step) {
             let step_tracker = self.steps.remove(index);
             let progress_value = f64::from(step.get_progress_value());
-
-            // Only add progress if this step doesn't have an active incremental tracker
-            if !step_tracker.has_active_tracker() {
-                self.accumulator
-                    .lock()
-                    .await
-                    .add_step_progress(&step, progress_value);
-            }
+            let progress_before_action = self.accumulator.lock().await.total_progress;
 
             match action().await {
                 Ok(_) => {
+                    // For binaries downloads, when it does download files, tracker will count progress
+                    // But if it is already downloaded, tracker won't be active so we need to add progress manually
+                    if progress_before_action.eq(&self.accumulator.lock().await.total_progress) {
+                        self.accumulator
+                            .lock()
+                            .await
+                            .add_step_progress(&step, progress_value);
+                    }
                     self.emit_completion_update(&step).await;
                     Ok(())
                 }
@@ -262,6 +263,20 @@ impl ProgressStepper {
         } else {
             Ok(()) // Step not found, possibly already completed
         }
+    }
+
+    pub async fn skip_step(&mut self, step: SetupStep) -> Result<(), anyhow::Error> {
+        if let Some(index) = self.steps.iter().position(|s| s.get_step() == &step) {
+            let removed_step = self.steps.remove(index);
+            let removed_step = removed_step.get_step();
+            self.accumulator
+                .lock()
+                .await
+                .add_step_progress(&removed_step, f64::from(removed_step.get_progress_value()));
+
+            self.emit_completion_update(&removed_step).await;
+        }
+        Ok(())
     }
 
     async fn emit_completion_update(&self, step: &SetupStep) {
