@@ -11,6 +11,8 @@ import { startMining, stopMining } from './miningStoreActions';
 import { useMiningStore } from '../useMiningStore';
 import { refreshTransactions } from '@app/hooks/wallet/useFetchTxHistory.ts';
 import { deepEqual } from '@app/utils/objectDeepEqual.ts';
+import { queryClient } from '@app/App/queryClient.ts';
+import { KEY_EXPLORER } from '@app/hooks/mining/useFetchExplorerData.ts';
 
 // NOTE: Tx status differ for core and proto(grpc)
 export const COINBASE_BITFLAG = 6144;
@@ -118,6 +120,7 @@ export const setWalletBalance = async (balance: WalletBalance) => {
         balance.available_balance + balance.timelocked_balance + balance.pending_incoming_balance;
     const isEqual = calculated_balance === currentCalculatedBalance || deepEqual(balance, currentBalance);
     if (isEqual) return;
+    await queryClient.invalidateQueries({ queryKey: [KEY_EXPLORER] });
     useWalletStore.setState((c) => ({
         ...c,
         balance: { ...balance },

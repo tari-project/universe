@@ -1,6 +1,6 @@
+import { create } from 'zustand';
 import { setWalletBalance } from '@app/store/actions';
 
-import { create } from './create';
 import { useMiningStore } from './useMiningStore.ts';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 
