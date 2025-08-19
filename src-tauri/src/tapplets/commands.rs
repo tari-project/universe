@@ -29,7 +29,6 @@ use crate::database::models::{
     UpdateDevTapplet, UpdateInstalledTapplet,
 };
 
-use crate::database::schema::dev_tapplet;
 use crate::database::store::{DatabaseConnection, SqliteStore, Store};
 use crate::tapplets::error::Error;
 use crate::tapplets::interface::{
@@ -40,13 +39,13 @@ use crate::tapplets::tapplet_installer::{
     fetch_tapp_registry_manifest, get_tapp_download_path,
 };
 use crate::tapplets::tapplet_manager::TappletManager;
-use crate::tapplets::tapplet_server::{get_tapp_config, start_tapplet_server};
+use crate::tapplets::tapplet_server::get_tapp_config;
 use crate::UniverseAppState;
 use axum::http::HeaderValue;
 use log::{error, info, warn};
+use tauri::ipc::InvokeError;
 
-const LOG_TARGET: &str = "tari::universe::commands";
-const LOG_TARGET_WEB: &str = "tari::universe::web";
+const LOG_TARGET: &str = "tari::universe::tapplets";
 
 #[tauri::command]
 pub async fn update_csp_policy(
@@ -72,14 +71,14 @@ pub async fn update_csp_policy(
 pub async fn start_tari_tapplet_binary(
     binary_name: &str,
     tapplet_manager: tauri::State<'_, TappletManager>,
-) -> Result<ActiveTapplet, String> {
+) -> Result<ActiveTapplet, InvokeError> {
     let binaries_resolver = BinaryResolver::current();
 
     let binary = Binaries::from_name(binary_name);
     let tapp_path = binaries_resolver
         .resolve_path_to_binary_files(binary)
         .await
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| InvokeError::from_anyhow(e))?;
 
     info!(target: LOG_TARGET, "💥 Built-in tapplet start: {:?}", &tapp_path);
     let csp_bridge = String::from("default-src 'self' https:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'");
@@ -105,10 +104,7 @@ pub async fn start_tari_tapplet_binary(
     let addr = tapplet_manager
         .start_server(tapp_id, tapp_path, &csp_bridge)
         .await
-        .map_err(|e| {
-            error!(target: LOG_TARGET, "Failed to start tapplet with id {}: {}", tapp_id, &e);
-            e.to_string()
-        })?;
+        .map_err(|e| InvokeError::from_error(e))?;
 
     let is_running = tapplet_manager.is_server_running(tapp_id).await;
     info!(target: LOG_TARGET, "🎉🎉🎉 TAPP IS RUNNING: {:?} at address {:?}", is_running, addr);
@@ -127,27 +123,22 @@ pub async fn start_dev_tapplet(
     app_handle: tauri::AppHandle,
     db_connection: tauri::State<'_, DatabaseConnection>,
     tapplet_manager: tauri::State<'_, TappletManager>,
-) -> Result<ActiveTapplet, String> {
+) -> Result<ActiveTapplet, InvokeError> {
     let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
     info!(target: LOG_TARGET, "💥 Try to launch dev id: {:?}", &dev_tapplet_id);
 
     let mut dev_tapplet: DevTapplet = tapplet_store
         .get_by_id(dev_tapplet_id)
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| InvokeError::from_error(e))?;
 
-    let result = match TappletManager::check_permissions_config(
+    let result = TappletManager::check_permissions_config(
         &dev_tapplet.source,
         &dev_tapplet.csp,
         &dev_tapplet.tari_permissions,
         app_handle,
     )
     .await
-    {
-        Ok(updated) => updated,
-        Err(e) => {
-            return Err(e.to_string());
-        }
-    };
+    .map_err(|e| InvokeError::from_anyhow(e))?;
 
     if result.should_update {
         dev_tapplet.csp = result.updated_csp;
@@ -169,7 +160,7 @@ pub async fn start_dev_tapplet(
         .await
         .map_err(|e| {
             error!(target: LOG_TARGET, "Failed to start tapplet with id {}: {}", dev_tapplet_id, &e);
-            e.to_string()
+           InvokeError::from_error(e);
         })?;
 
     let is_running = tapplet_manager.is_server_running(dev_tapplet_id).await;
@@ -188,28 +179,23 @@ pub async fn start_tapplet(
     app_handle: tauri::AppHandle,
     db_connection: tauri::State<'_, DatabaseConnection>,
     tapplet_manager: tauri::State<'_, TappletManager>,
-) -> Result<ActiveTapplet, String> {
+) -> Result<ActiveTapplet, InvokeError> {
     let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
     info!(target: LOG_TARGET, "💥 Try to run tapplet id: {:?}", &tapplet_id);
 
     let mut installed_tapp: InstalledTapplet = tapplet_store
         .get_by_id(tapplet_id)
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| InvokeError::from_error(e))?;
     let tapplet_path = PathBuf::from(&installed_tapp.source);
 
-    let result = match TappletManager::check_permissions_config(
+    let result = TappletManager::check_permissions_config(
         &installed_tapp.source,
         &installed_tapp.csp,
         &installed_tapp.tari_permissions,
         app_handle,
     )
     .await
-    {
-        Ok(updated) => updated,
-        Err(e) => {
-            return Err(e.to_string());
-        }
-    };
+    .map_err(|e| InvokeError::from_anyhow(e))?;
 
     if result.should_update {
         installed_tapp.csp = result.updated_csp;
@@ -218,10 +204,10 @@ pub async fn start_tapplet(
 
         let _ = tapplet_store
             .update(installed_tapp, &updated_tapp)
-            .map_err(|e| e.to_string())?;
+            .map_err(|e| InvokeError::from_error(e))?;
         installed_tapp = tapplet_store
             .get_by_id(tapplet_id)
-            .map_err(|e| e.to_string())?;
+            .map_err(|e| InvokeError::from_error(e))?;
     }
 
     let addr = tapplet_manager
@@ -229,9 +215,8 @@ pub async fn start_tapplet(
         .await
         .map_err(|e| {
             error!(target: LOG_TARGET, "Failed to start tapplet with id {}: {}", tapplet_id, &e);
-            e.to_string()
+            InvokeError::from_error(e);
         })?;
-
     let is_running = tapplet_manager.is_server_running(tapplet_id).await;
     info!(target: LOG_TARGET, "🎉🎉🎉 IS RUNNING: {:?} at address {:?}", is_running, addr);
     Ok(ActiveTapplet {
@@ -246,12 +231,12 @@ pub async fn start_tapplet(
 pub async fn stop_tapplet(
     tapplet_id: i32,
     tapplet_manager: tauri::State<'_, TappletManager>,
-) -> Result<String, String> {
+) -> Result<String, InvokeError> {
     info!(target: LOG_TARGET, "👉👉👉 stop tapp id: {:?}", &tapplet_id);
 
     let address = tapplet_manager.stop_server(tapplet_id).await.map_err(|e| {
         error!(target: LOG_TARGET, "Failed to stop tapplet with id {}: {}", tapplet_id, &e);
-        e
+        InvokeError::from_error(e);
     })?;
     Ok(address)
 }
@@ -261,12 +246,12 @@ pub async fn restart_tapplet(
     tapplet_id: i32,
     db_connection: tauri::State<'_, DatabaseConnection>,
     tapplet_manager: tauri::State<'_, TappletManager>,
-) -> Result<String, String> {
+) -> Result<String, InvokeError> {
     info!(target: LOG_TARGET, "👉👉👉 restart tapp id: {:?}", &tapplet_id);
     let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
     let dev_tapplet: DevTapplet = tapplet_store
         .get_by_id(tapplet_id)
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| InvokeError::from_error(e))?;
     let tapplet_path = PathBuf::from(&dev_tapplet.source);
 
     let address = tapplet_manager
@@ -274,7 +259,7 @@ pub async fn restart_tapplet(
         .await
         .map_err(|e| {
             error!(target: LOG_TARGET, "Failed to restart tapplet with id {}: {}", tapplet_id, &e);
-            e
+            InvokeError::from_error(e);
         })?;
     Ok(address)
 }
@@ -283,7 +268,7 @@ pub async fn restart_tapplet(
 pub async fn is_tapplet_server_running(
     tapplet_id: i32,
     tapplet_manager: tauri::State<'_, TappletManager>,
-) -> Result<bool, String> {
+) -> Result<bool, InvokeError> {
     info!(target: LOG_TARGET, "👉👉👉 stop tapp id: {:?}", &tapplet_id);
 
     let is_running: bool = tapplet_manager.is_server_running(tapplet_id).await;
@@ -294,13 +279,10 @@ pub async fn is_tapplet_server_running(
 pub async fn fetch_registered_tapplets(
     app_handle: tauri::AppHandle,
     db_connection: tauri::State<'_, DatabaseConnection>,
-) -> Result<(), String> {
-    let tapplets = match fetch_tapp_registry_manifest().await {
-        Ok(tapp) => tapp,
-        Err(e) => {
-            return Err(e.to_string());
-        }
-    };
+) -> Result<(), InvokeError> {
+    let tapplets = fetch_tapp_registry_manifest().await.map_err(|e| {
+        InvokeError::from_error(e);
+    })?;
     let mut store = SqliteStore::new(db_connection.0.clone());
 
     for tapplet_manifest in tapplets.registered_tapplets.values() {
@@ -318,7 +300,7 @@ pub async fn fetch_registered_tapplets(
                         report_url: &audit_data.report_url,
                     }),
                 )
-                .map_err(|e| e.to_string());
+                .map_err(|e| InvokeError::from_error(e))?;
         }
 
         for (version, version_data) in tapplet_manifest.versions.iter() {
@@ -331,7 +313,7 @@ pub async fn fetch_registered_tapplets(
                         registry_url: &version_data.registry_url,
                     }),
                 )
-                .map_err(|e| e.to_string());
+                .map_err(|e| InvokeError::from_error(e))?;
         }
         match store.get_tapplet_assets_by_tapplet_id(inserted_tapplet.id.unwrap()) {
             Ok(Some(_)) => {}
@@ -354,7 +336,7 @@ pub async fn fetch_registered_tapplets(
                 }
             }
             Err(e) => {
-                return Err(e.to_string());
+                return Err(InvokeError::from_error(e));
             }
         }
     }
@@ -365,21 +347,25 @@ pub async fn fetch_registered_tapplets(
 pub fn insert_tapp_registry_db(
     tapplet: CreateTapplet,
     db_connection: tauri::State<'_, DatabaseConnection>,
-) -> Result<Tapplet, String> {
+) -> Result<Tapplet, InvokeError> {
     let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
-    tapplet_store.create(&tapplet).map_err(|e| e.to_string())
+    tapplet_store
+        .create(&tapplet)
+        .map_err(|e| InvokeError::from_error(e))
 }
 
 #[tauri::command]
 pub fn read_tapp_registry_db(
     db_connection: tauri::State<'_, DatabaseConnection>,
-) -> Result<Vec<Tapplet>, String> {
+) -> Result<Vec<Tapplet>, InvokeError> {
     let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
-    tapplet_store.get_all().map_err(|e| e.to_string())
+    tapplet_store
+        .get_all()
+        .map_err(|e| InvokeError::from_error(e))
 }
 
 #[tauri::command]
-pub fn get_assets_server_addr(state: tauri::State<'_, AssetServer>) -> Result<String, String> {
+pub fn get_assets_server_addr(state: tauri::State<'_, AssetServer>) -> Result<String, InvokeError> {
     Ok(format!("http://{}", state.addr))
 }
 
@@ -389,13 +375,13 @@ pub async fn download_and_extract_tapp(
     db_connection: tauri::State<'_, DatabaseConnection>,
     app: tauri::AppHandle,
     tapplet_manager: tauri::State<'_, TappletManager>,
-) -> Result<InstalledTappletWithAssets, String> {
+) -> Result<InstalledTappletWithAssets, InvokeError> {
     let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
     // let (tapp, tapp_version) = tapplet_store.get_registered_tapplet_with_version(tapplet_id);
     let (tapp, tapp_version) = match tapplet_store.get_registered_tapplet_with_version(tapplet_id) {
         Ok(tapp) => tapp,
         Err(e) => {
-            return Err(e.to_string());
+            return Err(InvokeError::from_error(e));
         }
     };
 
@@ -416,25 +402,23 @@ pub async fn download_and_extract_tapp(
     {
         Ok(path) => path,
         Err(e) => {
-            return Err(e.to_string());
+            return Err(InvokeError::from_anyhow(e));
         }
     };
 
     //TODO should compare integrity field with the one stored in db or from github manifest?
-    match check_files_and_validate_checksum(
+    let is_valid = check_files_and_validate_checksum(
         tapp_version.version.clone(),
         tapp_version.integrity.clone(),
         archive_dest_path,
         dest_dir.clone(),
-    ) {
-        Ok(is_valid) => {
-            info!(target: LOG_TARGET,"✅ Checksum validation successfully with test result: {:?}", is_valid);
-        }
-        Err(e) => {
-            error!(target: LOG_TARGET,"🚨 Error validating checksum: {:?}", e);
-            return Err(e.to_string());
-        }
-    }
+    )
+    .map_err(|e| {
+        error!(target: LOG_TARGET, "🚨 Error validating checksum: {:?}", e);
+        InvokeError::from_error(e)
+    })?;
+
+    info!(target: LOG_TARGET, "✅ Checksum validation successfully with test result: {:?}", is_valid);
 
     let tapp_config = get_tapp_config(&dest_dir.to_string_lossy())
         .await
@@ -574,48 +558,36 @@ pub async fn add_dev_tapplet(
 #[tauri::command]
 pub fn read_dev_tapplets_db(
     db_connection: tauri::State<'_, DatabaseConnection>,
-) -> Result<Vec<DevTapplet>, String> {
+) -> Result<Vec<DevTapplet>, InvokeError> {
     let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
-    match tapplet_store.get_all_dev_tapplets() {
-        Ok(dev_tapplets) => Ok(dev_tapplets),
-        Err(e) => Err(e.to_string()),
-    }
+    tapplet_store.get_all_dev_tapplets().map_err(|e| {
+        warn!(target: LOG_TARGET, "❌ Error while reading db: {:?}", e);
+        InvokeError::from_error(e)
+    })
 }
 
 #[tauri::command]
-pub fn delete_dev_tapplet(
+pub async fn delete_dev_tapplet(
     dev_tapplet_id: i32,
     db_connection: tauri::State<'_, DatabaseConnection>,
-) -> Result<usize, Error> {
+    tapplet_manager: tauri::State<'_, TappletManager>,
+) -> Result<usize, InvokeError> {
     let mut store = SqliteStore::new(db_connection.0.clone());
-    let dev_tapplet: DevTapplet = store.get_by_id(dev_tapplet_id)?;
-    // store.delete(dev_tapplet)
-    match store.delete(dev_tapplet) {
-        Ok(dev_tapplet) => {
-            info!(target: LOG_TARGET,"✅ Dev tapplet with id {:?} deleted from db successfully", dev_tapplet_id);
-            Ok(dev_tapplet)
-        }
-        Err(e) => {
+
+    let dev_tapplet: DevTapplet = store.get_by_id(dev_tapplet_id).map_err(|e| {
+        warn!(target: LOG_TARGET, "❌ Error fetching dev tapplet id {:?}: {:?}", dev_tapplet_id, e);
+        InvokeError::from_error(e)
+    })?;
+
+    let _ = stop_tapplet(dev_tapplet_id, tapplet_manager).await;
+
+    store.delete(dev_tapplet)
+        .map(|deleted_rows| {
+            info!(target: LOG_TARGET, "✅ Dev tapplet with id {:?} deleted from db successfully", dev_tapplet_id);
+            deleted_rows
+        })
+        .map_err(|e| {
             warn!(target: LOG_TARGET, "❌ Error while deleting dev tapplet id {:?} from db: {:?}", dev_tapplet_id, e);
-            return Err(e);
-        }
-    }
+            InvokeError::from_error(e)
+        })
 }
-
-// #[tauri::command]
-// pub fn update_dev_tapp_db(
-//     id: i32,
-//     tapplet: UpdateDevTapplet,
-//     db_connection: tauri::State<'_, DatabaseConnection>,
-// ) -> Result<DevTapplet, Error> {
-//     let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
-//     info!(target: LOG_TARGET, "🛠️ UPDATE DEV TAPPLET DB {:?}", &tapplet.csp);
-
-//     let dev_tapplet: DevTapplet = tapplet_store.get_by_id(id)?;
-//     info!(target: LOG_TARGET, "🛠️ BEFORE {:?}", dev_tapplet.csp);
-
-//     let _size = tapplet_store.update(dev_tapplet, &tapplet)?;
-//     let dev_updated: DevTapplet = tapplet_store.get_by_id(id)?;
-//     info!(target: LOG_TARGET, "🛠️ after {:?}", dev_updated.csp);
-//     return Ok(dev_updated);
-// }

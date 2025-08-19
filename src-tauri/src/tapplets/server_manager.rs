@@ -20,6 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use anyhow::Error;
 use log::info;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -77,7 +78,7 @@ impl ServerManager {
         id_map.get(&tapplet_id).cloned()
     }
 
-    pub async fn stop_server_by_id(&self, tapplet_id: i32) -> Result<String, String> {
+    pub async fn stop_server_by_id(&self, tapplet_id: i32) -> Result<String, Error> {
         let address_opt = self.get_address(tapplet_id).await;
         info!(target: LOG_TARGET, "👉👉👉 stop_server_by_id: {:?}", &tapplet_id);
 
@@ -96,10 +97,16 @@ impl ServerManager {
 
                     Ok(address)
                 } else {
-                    Err(format!("Server with address {} not found", address))
+                    Err(Error::msg(format!(
+                        "Server with address {} not found",
+                        address
+                    )))
                 }
             }
-            None => Err(format!("No server found for tapplet_id {}", tapplet_id)),
+            None => Err(Error::msg(format!(
+                "No server found for tapplet_id {}",
+                tapplet_id
+            ))),
         }
     }
 

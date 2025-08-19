@@ -44,10 +44,6 @@ pub enum Error {
     VersionParseError,
     #[error("failed-to-find-tapplet-version")]
     VersionNotFound,
-    #[error("failed-to-obtain-permission-token-lock")]
-    FailedToObtainPermissionTokenLock,
-    #[error("failed-to-obtain-auth-token-lock")]
-    FailedToObtainAuthTokenLock,
     #[error("failed-to-call-provider | method-{method} & params-{params}")]
     ProviderError { method: String, params: String },
     #[error("tapplet-invalid-checksum | version-{version}")]
@@ -79,6 +75,8 @@ pub enum TappletServerError {
     TokenInvalid,
     #[error("failed-to-bind-port | port-{port}")]
     BindPortError { port: String },
+    #[error("failed-to-stop-tapplet-server")]
+    FailedToStop,
 }
 
 #[derive(Debug, Error)]

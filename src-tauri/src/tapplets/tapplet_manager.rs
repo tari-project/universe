@@ -27,7 +27,10 @@ use crate::{
     events_emitter::EventsEmitter,
     requests::clients::http_file_client::HttpFileClient,
     tapplets::{
-        error::Error,
+        error::{
+            Error::{self, TappletServerError},
+            TappletServerError::*,
+        },
         server_manager::ServerManager,
         tapplet_server::{get_tapp_config, start_tapplet_server},
     },
@@ -167,9 +170,12 @@ impl TappletManager {
         Ok(address)
     }
 
-    pub async fn stop_server(&self, tapplet_id: i32) -> Result<String, String> {
+    pub async fn stop_server(&self, tapplet_id: i32) -> Result<String, Error> {
         if self.is_server_running(tapplet_id).await {
-            self.server_manager.stop_server_by_id(tapplet_id).await
+            self.server_manager
+                .stop_server_by_id(tapplet_id)
+                .await
+                .map_err(|_| TappletServerError(FailedToStop))
         } else {
             Ok(format!("Server with id {} was not running", tapplet_id))
         }
@@ -179,11 +185,9 @@ impl TappletManager {
         tapplet_id: i32,
         tapplet_path: PathBuf,
         csp: &String,
-    ) -> Result<String, String> {
+    ) -> Result<String, Error> {
         self.stop_server(tapplet_id).await?;
-        self.start_server(tapplet_id, tapplet_path, csp)
-            .await
-            .map_err(|e| e.to_string())
+        self.start_server(tapplet_id, tapplet_path, csp).await
     }
 
     pub async fn is_server_running(&self, tapplet_id: i32) -> bool {
