@@ -301,6 +301,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
         Ok(())
     }
 
+    #[allow(clippy::too_many_lines)]
     async fn finalize_setup(&self) -> Result<(), Error> {
         let progress_stepper = self.progress_stepper.lock().await;
         let setup_warnings = progress_stepper.get_setup_warnings();

@@ -30,10 +30,7 @@ use crate::{
     gpu_devices::GpuDeviceInformation,
     internal_wallet::TariAddressType,
     node::{node_adapter::NodeIdentity, node_manager::NodeType},
-    setup::{
-        listeners::{AppModule, AppModuleStatus},
-        setup_manager::SetupPhase,
-    },
+    setup::{listeners::AppModule, setup_manager::SetupPhase},
     wallet::wallet_types::{TransactionInfo, WalletBalance},
 };
 
@@ -171,6 +168,8 @@ pub struct InitWalletScanningProgressPayload {
     pub progress: f64,
 }
 
+// TODO: Bring back connection status callback, was removed with removing setup screen and related logic
+#[allow(dead_code)]
 #[derive(Serialize, Clone, Debug)]
 pub enum ConnectionStatusPayload {
     InProgress,

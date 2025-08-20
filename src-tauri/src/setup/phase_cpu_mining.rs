@@ -199,7 +199,7 @@ impl SetupPhaseImpl for CpuMiningSetupPhase {
             .await?;
 
         let mmproxy_monero_nodes = self.app_configuration.mmproxy_monero_nodes.clone();
-        let mmproxy_use_monero_fail = self.app_configuration.mmproxy_use_monero_fail.clone();
+        let mmproxy_use_monero_fail = self.app_configuration.mmproxy_use_monero_fail;
         let state = state.inner().clone();
 
         progress_stepper

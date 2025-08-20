@@ -127,25 +127,6 @@ impl SetupPhase {
             Self::Wallet,
         ]
     }
-    pub fn get_critical_problem_title(&self) -> String {
-        match self {
-            Self::Core => "phase-core-critical-problem-title".to_string(),
-            Self::CpuMining => "phase-cpu-mining-critical-problem-title".to_string(),
-            Self::GpuMining => "phase-gpu-mining-critical-problem-title".to_string(),
-            Self::Node => "phase-node-critical-problem-title".to_string(),
-            Self::Wallet => "phase-wallet-critical-problem-title".to_string(),
-        }
-    }
-
-    pub fn get_critical_problem_description(&self) -> String {
-        match self {
-            Self::Core => "phase-core-critical-problem-description".to_string(),
-            Self::CpuMining => "phase-cpu-mining-critical-problem-description".to_string(),
-            Self::GpuMining => "phase-gpu-mining-critical-problem-description".to_string(),
-            Self::Node => "phase-node-critical-problem-description".to_string(),
-            Self::Wallet => "phase-wallet-critical-problem-description".to_string(),
-        }
-    }
     pub fn get_i18n_title_key(&self) -> String {
         match self {
             Self::Core => "setup-core".to_string(),

@@ -214,31 +214,31 @@ impl ProgressStepper {
         }
     }
 
-    /// Tracks the step incrementally, allowing for progress updates to be sent during the step execution.
-    /// ### Arguments
+    ///   Tracks the step incrementally, allowing for progress updates to be sent during the step execution.
+    ///   ### Arguments
     /// * `step` - the step to track e.g. `SetupStep::BinariesWallet`
-    /// ### Returns
+    ///   ### Returns
     /// * `IncrementalProgressTracker` that can be used to send progress updates.
-    /// This method will create a new `IncrementalProgressTracker` for the step if it doesn't already exist.
-    /// If the step is already being tracked, it will return the existing tracker.
+    ///   This method will create a new `IncrementalProgressTracker` for the step if it doesn't already exist.
+    ///   If the step is already being tracked, it will return the existing tracker.
     pub fn track_step_incrementally(
         &mut self,
         step: SetupStep,
     ) -> Option<IncrementalProgressTracker> {
-        if let Some(step_tracker) = self.steps.iter_mut().find(|s| s.get_step() == &step) {
-            if let StepTracker::Incremental { tracker, .. } = step_tracker {
-                if tracker.is_none() {
-                    let incremental_tracker = IncrementalProgressTracker {
-                        step: step.clone(),
-                        last_reported_percentage: Arc::new(RwLock::new(0.0)),
-                        accumulator: self.accumulator.clone(),
-                        timeout_watcher_sender: self.timeout_watcher_sender.clone(),
-                        setup_phase: self.setup_phase.clone(),
-                    };
+        if let Some(StepTracker::Incremental { tracker, .. }) =
+            self.steps.iter_mut().find(|s| s.get_step() == &step)
+        {
+            if tracker.is_none() {
+                let incremental_tracker = IncrementalProgressTracker {
+                    step: step.clone(),
+                    last_reported_percentage: Arc::new(RwLock::new(0.0)),
+                    accumulator: self.accumulator.clone(),
+                    timeout_watcher_sender: self.timeout_watcher_sender.clone(),
+                    setup_phase: self.setup_phase.clone(),
+                };
 
-                    *tracker = Some(incremental_tracker.clone());
-                    return Some(incremental_tracker);
-                }
+                *tracker = Some(incremental_tracker.clone());
+                return Some(incremental_tracker);
             }
         }
         None
@@ -281,9 +281,9 @@ impl ProgressStepper {
             self.accumulator
                 .write()
                 .await
-                .add_step_progress(&removed_step);
+                .add_step_progress(removed_step);
 
-            self.emit_completion_update(&removed_step).await;
+            self.emit_completion_update(removed_step).await;
         }
         Ok(())
     }

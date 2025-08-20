@@ -48,6 +48,7 @@ use super::{
     utils::{setup_default_adapter::SetupDefaultAdapter, timeout_watcher::TimeoutWatcher},
 };
 
+#[allow(dead_code)]
 static LOG_TARGET: &str = "tari::universe::phase_core";
 
 #[derive(Clone, Default)]

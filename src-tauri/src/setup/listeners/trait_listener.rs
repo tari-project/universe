@@ -188,6 +188,7 @@ pub trait UnlockConditionsListenerTrait {
 
 pub trait UnlockStrategyTrait {
     fn required_channels(&self) -> Vec<SetupPhase>;
+    #[allow(dead_code)]
     fn is_disabled(&self) -> bool {
         self.required_channels().is_empty()
     }
@@ -210,7 +211,7 @@ pub trait UnlockStrategyTrait {
         if self.required_channels().iter().all(|phase| {
             channels
                 .get(phase)
-                .map_or(false, |channel| channel.borrow().is_success())
+                .is_ok_and(|channel| channel.borrow().is_success())
         }) {
             return Ok(AppModuleStatus::Initialized);
         };
@@ -230,7 +231,7 @@ pub trait UnlockStrategyTrait {
             return Ok(AppModuleStatus::Failed(failed_phases));
         }
 
-        return Ok(AppModuleStatus::Initializing);
+        Ok(AppModuleStatus::Initializing)
     }
 
     fn is_any_phase_restarting(&self, channels: UnlockConditionsStatusChannels) -> bool {

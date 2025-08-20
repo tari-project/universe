@@ -34,7 +34,6 @@ use tokio::sync::RwLock;
 use crate::{
     app_in_memory_config::{DEFAULT_EXCHANGE_ID, EXCHANGE_ID},
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
-    setup::setup_manager::{SetupManager, SetupPhase},
     tasks_tracker::TasksTrackers,
     utils::{app_flow_utils::FrontendReadyChannel, system_status::SystemStatus},
 };
