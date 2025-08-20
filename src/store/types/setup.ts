@@ -1,7 +1,6 @@
 import { ProgressTrackerUpdatePayload, SetupPhase } from '@app/types/events-payloads';
 
 export enum AppModule {
-    MainApp = 'MainApp', // Main application view after setup
     CpuMining = 'CpuMining', // CPU mining
     GpuMining = 'GpuMining', // GPU mining
     Wallet = 'Wallet', // Wallet

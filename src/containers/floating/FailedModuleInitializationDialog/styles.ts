@@ -57,26 +57,6 @@ export const GlobalActionsWrapper = styled.div`
     flex-shrink: 0;
 `;
 
-export const ActionButton = styled.button`
-    min-width: 120px;
-    padding: 8px 16px;
-    border-radius: 6px;
-    border: none;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 500;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-
-    transition: transform 0.2s ease-in-out;
-
-    &:hover {
-        transform: scale(1.025);
-    }
-`;
-
 // Module Status Display Components
 export const ModuleStatusWrapper = styled.div`
     padding: 16px;
@@ -158,30 +138,4 @@ export const ModuleActionsWrapper = styled.div`
     justify-content: flex-end;
     gap: 8px;
     margin-top: 8px;
-`;
-
-export const ModuleActionButton = styled.button`
-    min-width: 100px;
-    padding: 6px 12px;
-    border-radius: 4px;
-    border: none;
-    cursor: pointer;
-    font-size: 12px;
-    font-weight: 500;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-
-    transition: transform 0.2s ease-in-out;
-
-    &:hover {
-        transform: scale(1.025);
-    }
-
-    &:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-        transform: none;
-    }
 `;
