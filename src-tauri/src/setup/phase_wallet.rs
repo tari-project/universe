@@ -138,7 +138,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
         ProgressStepperBuilder::new()
             .add_incremental_step(SetupStep::BinariesWallet, true)
             .add_step(SetupStep::StartWallet, true)
-            .add_incremental_step(SetupStep::SetupBridge, false)
+            .add_incremental_step(SetupStep::SetupBridge, true)
             .build(
                 app_handle,
                 timeout_watcher_sender,

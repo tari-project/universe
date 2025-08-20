@@ -494,7 +494,6 @@ impl NodeSetupPhase {
         progress_handle.abort();
         let _unused = progress_handle.await;
 
-        // Now properly finish each tracked step to mark them as completed
         progress_stepper
             .finish_tracked_step(
                 SetupStep::WaitingForInitialSync,

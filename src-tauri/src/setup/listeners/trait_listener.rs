@@ -93,6 +93,24 @@ impl UnlockConditionsStatusChannels {
 
 pub trait UnlockConditionsListenerTrait {
     // Trait implemented methods
+    fn conditions_met_callback(&self) -> impl Future<Output = ()> + Send + Sync {
+        EventsEmitter::emit_update_app_module_status(UpdateAppModuleStatusPayload {
+            module: self.get_module_type(),
+            status: AppModuleStatus::Initialized.as_string(),
+            error_messages: HashMap::new(),
+        })
+    }
+    fn conditions_failed_callback(
+        &self,
+        failed_phases: HashMap<SetupPhase, String>,
+    ) -> impl Future<Output = ()> + Send + Sync {
+        EventsEmitter::emit_update_app_module_status(UpdateAppModuleStatusPayload {
+            module: self.get_module_type(),
+            status: AppModuleStatus::Failed(failed_phases.clone()).as_string(),
+            error_messages: failed_phases,
+        })
+    }
+
     async fn stop_listener(&self) {
         if let Some(listener_task) = self.get_listener().await.take() {
             listener_task.abort();
@@ -161,23 +179,6 @@ pub trait UnlockConditionsListenerTrait {
     async fn load_setup_features(&self, features: SetupFeaturesList);
     async fn add_status_channel(&self, key: SetupPhase, value: Receiver<PhaseStatus>);
     async fn select_unlock_strategy(&self) -> Box<dyn UnlockStrategyTrait + Send + Sync>;
-    fn conditions_met_callback(&self) -> impl Future<Output = ()> + Send + Sync {
-        EventsEmitter::emit_update_app_module_status(UpdateAppModuleStatusPayload {
-            module: self.get_module_type(),
-            status: AppModuleStatus::Initialized.as_string(),
-            error_messages: HashMap::new(),
-        })
-    }
-    fn conditions_failed_callback(
-        &self,
-        failed_phases: HashMap<SetupPhase, String>,
-    ) -> impl Future<Output = ()> + Send + Sync {
-        EventsEmitter::emit_update_app_module_status(UpdateAppModuleStatusPayload {
-            module: self.get_module_type(),
-            status: AppModuleStatus::Failed(failed_phases.clone()).as_string(),
-            error_messages: failed_phases,
-        })
-    }
     async fn handle_restart(&self) {}
 
     // Getters
