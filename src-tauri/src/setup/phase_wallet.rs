@@ -179,7 +179,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
             base_path: data_dir.clone(),
             config_path: config_dir.clone(),
             log_path: log_dir.clone(),
-            use_tor: self.app_configuration.use_tor,
+            use_tor: self.app_configuration.use_tor && is_local_node && !cfg!(target_os = "macos"),
             connect_with_local_node: is_local_node,
         };
         state

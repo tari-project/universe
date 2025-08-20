@@ -1791,7 +1791,7 @@ pub async fn set_pre_release(
 
     state
         .updates_manager
-        .try_update(app.clone(), true, !pre_release)
+        .try_update(app.clone(), true, !pre_release, Duration::from_secs(30))
         .await
         .map_err(|e| e.to_string())?;
 
@@ -1832,7 +1832,12 @@ pub async fn try_update(
 
     state
         .updates_manager
-        .try_update(app.clone(), force.unwrap_or(false), false)
+        .try_update(
+            app.clone(),
+            force.unwrap_or(false),
+            false,
+            Duration::from_secs(30),
+        )
         .await
         .map_err(|e| e.to_string())?;
 
@@ -2357,7 +2362,7 @@ pub async fn encode_payment_id_to_address(
             e.to_string()
         })?;
     address_with_memo_field
-        .add_payment_id_user_data(payment_id.as_bytes().to_vec())
+        .add_memo_field_payment_id(payment_id.as_bytes().to_vec())
         .map_err(|e| {
             error!(target: LOG_TARGET, "Failed to add payment ID to Tari address: {e}");
             e.to_string()

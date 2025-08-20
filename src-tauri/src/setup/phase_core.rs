@@ -144,7 +144,7 @@ impl SetupPhaseImpl for CoreSetupPhase {
                 let _unused = SetupDefaultAdapter::setup(self).await;
             }
             Err(err) => {
-                log::error!("Core Phase pre-setup failed: {}", err);
+                log::error!("Core Phase pre-setup failed: {err}");
             }
         }
     }
