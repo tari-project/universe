@@ -69,7 +69,7 @@ export function Select({
 }: Props) {
     const [isOpen, setIsOpen] = useState(false);
     const [activeIndex, setActiveIndex] = useState<number | null>(null);
-    const listRef = useRef<Array<HTMLElement | null>>([]);
+    const listRef = useRef<(HTMLElement | null)[]>([]);
     const isBordered = variant === 'bordered';
     const isMinimal = variant === 'minimal';
 

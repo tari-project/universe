@@ -68,7 +68,7 @@ export default function ModeDropdown({ disabled, loading }: Props) {
     const miningModes = useConfigMiningStore((s) => s.mining_modes);
     const [isOpen, setIsOpen] = useState(false);
     const [activeIndex, setActiveIndex] = useState<number | null>(null);
-    const listRef = useRef<Array<HTMLElement | null>>([]);
+    const listRef = useRef<(HTMLElement | null)[]>([]);
 
     const { refs, floatingStyles, context } = useFloating({
         open: isOpen,
