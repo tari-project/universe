@@ -99,12 +99,13 @@ impl UnlockConditionsListenerTrait for ListenerUnlockCpuMining {
         *self.features_list.lock().await = features;
     }
     async fn select_unlock_strategy(&self) -> Box<dyn UnlockStrategyTrait + Send + Sync> {
+        info!(target: LOG_TARGET, "Selecting strategy for CpuMining Module");
         let features = self.features_list.lock().await.clone();
         if features.is_feature_enabled(SetupFeature::CpuPool) {
-            info!(target: LOG_TARGET, "Using CpuPoolStrategy for unlocking");
+            info!(target: LOG_TARGET, "Using CpuPoolStrategy");
             Box::new(CpuPoolStrategy)
         } else {
-            info!(target: LOG_TARGET, "Using DefaultStrategy for unlocking");
+            info!(target: LOG_TARGET, "Using DefaultStrategy");
             Box::new(DefaultStrategy)
         }
     }

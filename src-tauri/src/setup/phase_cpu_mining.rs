@@ -172,14 +172,14 @@ impl SetupPhaseImpl for CpuMiningSetupPhase {
             progress_stepper.track_step_incrementally(SetupStep::BinariesCpuMiner);
 
         progress_stepper
-            .complete_step(SetupStep::BinariesCpuMiner, async move || {
+            .complete_step(SetupStep::BinariesCpuMiner, || async {
                 binary_resolver
                     .initialize_binary(Binaries::Xmrig, cpu_miner_binary_progress_tracker)
                     .await
             })
             .await?;
 
-        let is_cpu_pool_enabled = self
+        let is_cpu_pool_enabled: bool = self
             .setup_features
             .is_feature_enabled(SetupFeature::CpuPool);
 
@@ -187,7 +187,7 @@ impl SetupPhaseImpl for CpuMiningSetupPhase {
             progress_stepper.track_step_incrementally(SetupStep::BinariesMergeMiningProxy);
 
         progress_stepper
-            .complete_step(SetupStep::BinariesMergeMiningProxy, async move || {
+            .complete_step(SetupStep::BinariesMergeMiningProxy, || async {
                 if is_cpu_pool_enabled {
                     return Ok(());
                 }
@@ -198,12 +198,8 @@ impl SetupPhaseImpl for CpuMiningSetupPhase {
             })
             .await?;
 
-        let mmproxy_monero_nodes = self.app_configuration.mmproxy_monero_nodes.clone();
-        let mmproxy_use_monero_fail = self.app_configuration.mmproxy_use_monero_fail;
-        let state = state.inner().clone();
-
         progress_stepper
-            .complete_step(SetupStep::MMProxy, async move || {
+            .complete_step(SetupStep::MMProxy, || async {
                 if is_cpu_pool_enabled {
                     return Ok(());
                 }
@@ -226,8 +222,8 @@ impl SetupPhaseImpl for CpuMiningSetupPhase {
                         log_path: log_dir.clone(),
                         tari_address: tari_address.clone(),
                         coinbase_extra: telemetry_id,
-                        monero_nodes: mmproxy_monero_nodes,
-                        use_monero_fail: mmproxy_use_monero_fail,
+                        monero_nodes: self.app_configuration.mmproxy_monero_nodes.clone(),
+                        use_monero_fail: self.app_configuration.mmproxy_use_monero_fail,
                     })
                     .await?;
 
@@ -237,7 +233,7 @@ impl SetupPhaseImpl for CpuMiningSetupPhase {
             .await?;
 
         progress_stepper
-            .complete_step(SetupStep::InitializeCpuHardware, async move || {
+            .complete_step(SetupStep::InitializeCpuHardware, || async {
                 HardwareStatusMonitor::current()
                     .initialize_cpu_devices()
                     .await

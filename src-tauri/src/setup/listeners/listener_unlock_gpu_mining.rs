@@ -99,12 +99,13 @@ impl UnlockConditionsListenerTrait for ListenerUnlockGpuMining {
         *self.features_list.lock().await = features;
     }
     async fn select_unlock_strategy(&self) -> Box<dyn UnlockStrategyTrait + Send + Sync> {
+        info!(target: LOG_TARGET, "Selecting strategy for GpuMining Module");
         let features = self.features_list.lock().await.clone();
         if features.is_feature_enabled(SetupFeature::GpuPool) {
-            info!(target: LOG_TARGET, "Using GpuPoolStrategy for unlocking");
+            info!(target: LOG_TARGET, "Using GpuPoolStrategy");
             Box::new(GpuPoolStrategy)
         } else {
-            info!(target: LOG_TARGET, "Using DefaultStrategy for unlocking");
+            info!(target: LOG_TARGET, "Using DefaultStrategy");
             Box::new(DefaultStrategy)
         }
     }

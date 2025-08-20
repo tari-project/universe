@@ -157,6 +157,7 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
     }
 
     async fn setup_inner(&self) -> Result<(), Error> {
+        let state = self.app_handle.state::<UniverseAppState>();
         let mut progress_stepper = self.progress_stepper.lock().await;
         let (data_dir, config_dir, _log_dir) = self.get_app_dirs()?;
 
@@ -165,7 +166,7 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
         let graxil_binary_progress_tracker =
             progress_stepper.track_step_incrementally(SetupStep::BinariesGpuMiner);
 
-        progress_stepper.complete_step(SetupStep::BinariesGpuMiner, async move || {
+        progress_stepper.complete_step(SetupStep::BinariesGpuMiner,  || async {
             let graxil_initialization_result = binary_resolver
                 .initialize_binary(Binaries::GpuMinerSHA3X, graxil_binary_progress_tracker)
                 .await;
@@ -184,17 +185,16 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
             Ok(())
         }).await?;
 
-        let state = self.app_handle.state::<UniverseAppState>();
-        let gpu_miner_lock = state.gpu_miner.clone();
-
-        let gpu_engine = self.app_configuration.gpu_engine.clone();
-
         progress_stepper
-            .complete_step(SetupStep::DetectGpu, async move || {
-                gpu_miner_lock
+            .complete_step(SetupStep::DetectGpu, || async {
+                state
+                    .gpu_miner
                     .write()
                     .await
-                    .detect(config_dir.clone(), gpu_engine.clone())
+                    .detect(
+                        config_dir.clone(),
+                        self.app_configuration.gpu_engine.clone(),
+                    )
                     .await?;
 
                 GpuDevices::current()
@@ -208,7 +208,7 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
             .await?;
 
         progress_stepper
-            .complete_step(SetupStep::InitializeGpuHardware, async move || {
+            .complete_step(SetupStep::InitializeGpuHardware, || async {
                 HardwareStatusMonitor::current()
                     .initialize_gpu_devices()
                     .await

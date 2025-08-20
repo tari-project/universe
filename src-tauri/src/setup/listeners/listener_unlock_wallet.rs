@@ -99,12 +99,13 @@ impl UnlockConditionsListenerTrait for ListenerUnlockWallet {
         *self.features_list.lock().await = features;
     }
     async fn select_unlock_strategy(&self) -> Box<dyn UnlockStrategyTrait + Send + Sync> {
+        info!(target: LOG_TARGET, "Selecting strategy for Wallet Module");
         let features = self.features_list.lock().await.clone();
         if features.is_feature_enabled(SetupFeature::SeedlessWallet) {
-            info!(target: LOG_TARGET, "Using CentralizedPoolStrategy for unlocking");
+            info!(target: LOG_TARGET, "Using ExternalWalletAddressStrategy");
             Box::new(ExternalWalletAddressStrategy)
         } else {
-            info!(target: LOG_TARGET, "Using DefaultStrategy for unlocking");
+            info!(target: LOG_TARGET, "Using DefaultStrategy");
             Box::new(DefaultStrategy)
         }
     }
@@ -112,7 +113,7 @@ impl UnlockConditionsListenerTrait for ListenerUnlockWallet {
 
 impl ListenerUnlockWallet {
     async fn lock(&self) {
-        info!(target: LOG_TARGET, "Locking Wallet");
+        info!(target: LOG_TARGET, "Restarting Wallet Module");
         EventsEmitter::emit_update_app_module_status(UpdateAppModuleStatusPayload {
             module: AppModule::Wallet,
             status: AppModuleStatus::NotInitialized.as_string(),

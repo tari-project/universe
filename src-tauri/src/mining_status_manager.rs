@@ -82,8 +82,8 @@ impl MiningStatusManager {
         }
     }
 
-    pub fn set_app_handle(&mut self, app: AppHandle) {
-        self.app = Some(app);
+    pub fn set_app_handle(&mut self, app: &AppHandle) {
+        self.app = Some(app.clone());
     }
 
     pub async fn stop_polling(&self) {

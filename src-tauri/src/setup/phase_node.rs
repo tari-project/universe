@@ -179,7 +179,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
             progress_stepper.track_step_incrementally(SetupStep::BinariesTor);
 
         progress_stepper
-            .complete_step(SetupStep::BinariesTor, async move || {
+            .complete_step(SetupStep::BinariesTor, || async {
                 if !use_tor {
                     return Ok(());
                 }
@@ -193,7 +193,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
             progress_stepper.track_step_incrementally(SetupStep::BinariesNode);
 
         progress_stepper
-            .complete_step(SetupStep::BinariesNode, async move || {
+            .complete_step(SetupStep::BinariesNode, || async {
                 if node_type.is_remote() {
                     return Ok(());
                 }
@@ -203,9 +203,8 @@ impl SetupPhaseImpl for NodeSetupPhase {
             })
             .await?;
 
-        let state = self.app_handle.state::<UniverseAppState>();
         progress_stepper
-            .complete_step(SetupStep::StartTor, async move || {
+            .complete_step(SetupStep::StartTor, || async {
                 if !use_tor {
                     return Ok(());
                 }
@@ -216,12 +215,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
             })
             .await?;
 
-        let base_node_grpc_address = self.app_configuration.base_node_grpc_address.clone();
-        let app_handle_clone = self.app_handle.clone();
-        let state = self.app_handle.state::<UniverseAppState>().inner().clone();
-        let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
-
-        progress_stepper.complete_step(SetupStep::StartingNode, async move || {
+        progress_stepper.complete_step(SetupStep::StartingNode,  || async {
             for _i in 0..2 {
                 let tor_control_port = state.tor_manager.get_control_port().await?;
                 match
@@ -231,11 +225,11 @@ impl SetupPhaseImpl for NodeSetupPhase {
                         log_dir.clone(),
                         use_tor,
                         tor_control_port,
-                        Some(base_node_grpc_address.clone())
+                        Some(self.app_configuration.base_node_grpc_address.clone())
                     ).await
                 {
                     Ok(_) => {
-                        EventsManager::handle_node_type_update(&app_handle_clone).await;
+                        EventsManager::handle_node_type_update(&self.app_handle).await;
                         break;
                     }
                     Err(e) => {
@@ -252,21 +246,19 @@ impl SetupPhaseImpl for NodeSetupPhase {
                             continue;
                         }
                         error!(target: LOG_TARGET, "Could not start node manager after restart: {e:?} | Exitting the app");
-                        app_handle_clone.exit(-1);
+                        self.app_handle.exit(-1);
                         return Err(e.into());
                     }
                 }
             }
             Ok(())
         }).await?;
-        let state = self.app_handle.state::<UniverseAppState>();
 
         let migration_tracker =
             progress_stepper.track_step_incrementally(SetupStep::MigratingDatabase);
 
-        let node_type = state.node_manager.get_node_type().await;
         progress_stepper
-            .complete_step(SetupStep::MigratingDatabase, async move || {
+            .complete_step(SetupStep::MigratingDatabase, || async {
                 if node_type.is_remote() {
                     return Ok(());
                 }
@@ -281,8 +273,6 @@ impl SetupPhaseImpl for NodeSetupPhase {
             })
             .await?;
 
-        let state = self.app_handle.state::<UniverseAppState>();
-        let node_type = state.node_manager.get_node_type().await;
         if node_type.is_local() {
             self.wait_node_synced_with_progress(progress_stepper)
                 .await?;

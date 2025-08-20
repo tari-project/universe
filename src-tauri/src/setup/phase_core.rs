@@ -160,38 +160,33 @@ impl SetupPhaseImpl for CoreSetupPhase {
     #[allow(clippy::too_many_lines)]
     async fn setup_inner(&self) -> Result<(), anyhow::Error> {
         let mut progress_stepper = self.progress_stepper.lock().await;
-        let app_handle = self.app_handle.clone();
-        let is_auto_launcher_enabled = self.app_configuration.is_auto_launcher_enabled;
 
         progress_stepper
-            .complete_step(SetupStep::InitializeApplicationModules, move || {
-                let app_handle = app_handle.clone();
-                async move {
-                    let state = app_handle.state::<UniverseAppState>();
+            .complete_step(SetupStep::InitializeApplicationModules, || async {
+                let state = self.app_handle.state::<UniverseAppState>();
 
-                    state
-                        .updates_manager
-                        .init_periodic_updates(app_handle.clone())
-                        .await?;
+                state
+                    .updates_manager
+                    .init_periodic_updates(&self.app_handle)
+                    .await?;
 
-                    state
-                        .systemtray_manager
-                        .write()
-                        .await
-                        .initialize_tray(app_handle.clone())?;
+                state
+                    .systemtray_manager
+                    .write()
+                    .await
+                    .initialize_tray(&self.app_handle)?;
 
-                    AutoLauncher::current()
-                        .initialize_auto_launcher(is_auto_launcher_enabled)
-                        .await?;
+                AutoLauncher::current()
+                    .initialize_auto_launcher(self.app_configuration.is_auto_launcher_enabled)
+                    .await?;
 
-                    state
-                        .mining_status_manager
-                        .write()
-                        .await
-                        .set_app_handle(app_handle.clone());
+                state
+                    .mining_status_manager
+                    .write()
+                    .await
+                    .set_app_handle(&self.app_handle);
 
-                    Ok(())
-                }
+                Ok(())
             })
             .await?;
 

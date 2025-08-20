@@ -190,8 +190,8 @@ impl ProgressStepper {
         action: F,
     ) -> Result<(), anyhow::Error>
     where
-        F: FnOnce() -> Fut + Send,
-        Fut: std::future::Future<Output = Result<(), anyhow::Error>> + Send,
+        F: FnOnce() -> Fut,
+        Fut: std::future::Future<Output = Result<(), anyhow::Error>>,
     {
         if let Some(index) = self.steps.iter().position(|s| s.get_step() == &step) {
             let step_tracker = self.steps.remove(index);

@@ -166,7 +166,7 @@ impl SystemTrayManager {
         }
     }
 
-    pub fn initialize_tray(&mut self, app: AppHandle) -> Result<(), anyhow::Error> {
+    pub fn initialize_tray(&mut self, app: &AppHandle) -> Result<(), anyhow::Error> {
         let tray = app.tray_by_id("universe-tray-id").expect("tray not found");
         let menu = self.initialize_menu(app.clone())?;
         tray.set_menu(Some(menu.clone()))?;
