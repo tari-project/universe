@@ -57,7 +57,7 @@ impl SetupDefaultAdapter {
                     if result.is_ok() {
                         info!(target: LOG_TARGET, "[ {} Phase ] Setup completed successfully", phase.get_phase_id());
                         let _unused = phase.finalize_setup().await;
-                    } 
+                    }
                 }
                 _ = shutdown_signal.wait() => {
                     warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", phase.get_phase_id());
