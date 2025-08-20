@@ -221,7 +221,7 @@ pub async fn get_tapp_config(source: &str) -> Result<TappletConfig, Error> {
     } else {
         // source as a local path
         let tapp_path = PathBuf::from(source);
-        let tapp_config = tapp_path.join("package").join("tapplet.config.json");
+        let tapp_config = tapp_path.join("tapplet.config.json");
         info!(target: LOG_TARGET, "Reading tapplet config from {:?}", &tapp_config);
 
         if !tapp_config.exists() {

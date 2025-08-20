@@ -419,15 +419,14 @@ pub async fn download_and_extract_tapp(
     })?;
 
     info!(target: LOG_TARGET, "✅ Checksum validation successfully with test result: {:?}", is_valid);
+    let source = dest_dir.join("package").to_string_lossy().to_string();
 
-    let tapp_config = get_tapp_config(&dest_dir.to_string_lossy())
-        .await
-        .map_err(|e| e.to_string())?;
+    let tapp_config = get_tapp_config(&source).await.map_err(|e| e.to_string())?;
 
     let tapp_created = CreateInstalledTapplet {
         tapplet_id: tapp.id,
         tapplet_version_id: tapp_version.id,
-        source: dest_dir.to_string_lossy().to_string(),
+        source: source,
         csp: tapp_config.csp,
         tari_permissions: tapp_config.permissions.all_permissions_to_string(),
     };
