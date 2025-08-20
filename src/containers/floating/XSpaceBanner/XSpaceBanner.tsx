@@ -22,6 +22,10 @@ import { AnimatePresence } from 'motion/react';
 import { useCrewRewardsStore } from '@app/store/useCrewRewardsStore';
 import { useUIStore } from '@app/store';
 
+/*
+
+// testing data for xspace event banner
+
 const testingXSpaceEvent = {
     text: 'test',
     visibilityStart: '2025-08-20T12:00:00Z',
@@ -31,12 +35,14 @@ const testingXSpaceEvent = {
     type: XSpaceEventType.event,
 };
 
+*/
+
 const XSpaceEventBanner = () => {
-    const latestXSpaceEvent = testingXSpaceEvent; //useAirdropStore((state) => state.latestXSpaceEvent);
+    const latestXSpaceEvent = useAirdropStore((state) => state.latestXSpaceEvent);
     const showTapplet = useUIStore((s) => s.showTapplet);
     const [isTextTooLong, setIsTextTooLong] = useState(false);
     const [transitionPixelWidth, setTransitionPixelWidth] = useState(0);
-    const [isVisible, setIsVisible] = useState(true);
+    const [isVisible, setIsVisible] = useState(false);
     const [isLive, setIsLive] = useState(false);
     const titleRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
