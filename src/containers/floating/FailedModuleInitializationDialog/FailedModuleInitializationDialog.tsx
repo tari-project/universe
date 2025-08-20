@@ -6,6 +6,8 @@ import { Typography } from '@app/components/elements/Typography';
 import { useErrorDialogsButtonsLogic } from '@app/hooks/app/useErrorDialogsButtonsLogic';
 import { setupStoreSelectors } from '@app/store/selectors/setupStoreSelectors';
 import { useSetupStore } from '@app/store/useSetupStore';
+import { useUIStore } from '@app/store/useUIStore';
+import { setDialogToShow } from '@app/store/actions/uiStoreActions';
 import { AppModuleState, AppModuleStatus } from '@app/store/types/setup';
 
 import { memo, useCallback, useEffect, useState } from 'react';
@@ -26,11 +28,18 @@ const FailedModuleInitializationDialog = memo(function FailedModuleInitializatio
     const { t } = useTranslation(['setup-progresses', 'common'], { useSuspense: false });
     const [restartingModule, setRestartingModule] = useState(false);
 
+    // Check if dialog should be shown from UI store
+    const dialogToShow = useUIStore((s) => s.dialogToShow);
+    const isDialogTriggered = dialogToShow === 'failedModuleInitialization';
+
     // We want to show the dialog only if at least one module has failed and all modules have been resolved. So it will appear only once
     const isEveryAppModuleResolved = useSetupStore(setupStoreSelectors.isEveryModuleResolved);
     const isAnyModuleFailed = useSetupStore(setupStoreSelectors.isAnyModuleFailed);
     const [isDialogOpen, setIsDialogOpen] = useState(true);
-    const shouldShowDialog = isAnyModuleFailed && (isEveryAppModuleResolved || restartingModule) && isDialogOpen;
+
+    // Show dialog if triggered manually OR if conditions are met for automatic showing
+    const shouldShowDialog =
+        isDialogTriggered || (isAnyModuleFailed && (isEveryAppModuleResolved || restartingModule) && isDialogOpen);
 
     const cpuMiningModule = useSetupStore(setupStoreSelectors.selectCpuMiningModule);
     const gpuMiningModule = useSetupStore(setupStoreSelectors.selectGpuMiningModule);
@@ -67,12 +76,19 @@ const FailedModuleInitializationDialog = memo(function FailedModuleInitializatio
         handleSendFeedback('Failed initialization of all modules');
     }, [handleSendFeedback]);
 
+    const handleCloseDialog = useCallback(() => {
+        setIsDialogOpen(false);
+        if (isDialogTriggered) {
+            setDialogToShow(null);
+        }
+    }, [isDialogTriggered]);
+
     return (
-        <Dialog open={shouldShowDialog} onOpenChange={canClose ? () => setIsDialogOpen(false) : undefined}>
+        <Dialog open={shouldShowDialog} onOpenChange={canClose ? handleCloseDialog : undefined}>
             <DialogContent style={{ position: 'relative' }}>
                 {/* Close button - positioned absolutely in top right corner of dialog */}
                 {canClose && (
-                    <CloseButton onClick={() => setIsDialogOpen(false)}>
+                    <CloseButton onClick={handleCloseDialog}>
                         <IoCloseOutline size={16} />
                     </CloseButton>
                 )}

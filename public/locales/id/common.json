@@ -1,6 +1,7 @@
 {
   "back": "Kembali",
   "cancel": "Batal",
+  "click-to-view-details": "Click to view details",
   "close": "Tutup",
   "close-tari-universe": "Tutup Tari Universe",
   "complete": "Selesai",
@@ -19,6 +20,7 @@
   "max-temperature": "Suhu maksimum",
   "minimize": "Minimalkan",
   "mode": "Mode",
+  "module-initialization-failed": "Module initialization failed",
   "not-available": "Not available",
   "not-installed-in-applications-directory": "Ups! Tari Universe perlu berada di direktori Aplikasi. Apakah Anda keberatan menginstalnya di sana?",
   "pending": "Pending",
