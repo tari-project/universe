@@ -408,9 +408,7 @@ impl NodeManager {
 
     pub async fn get_identity(&self) -> Result<NodeIdentity, anyhow::Error> {
         let current_service = self.get_current_service().await?;
-        current_service.get_identity().await.inspect_err(|e| {
-            error!(target: LOG_TARGET, "Error getting node identity: {e}");
-        })
+        current_service.get_identity().await
     }
 
     pub async fn get_connection_details(

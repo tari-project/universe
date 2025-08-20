@@ -97,11 +97,15 @@ impl UpdatesManager {
 
         let mut interval = time::interval(Duration::from_secs(3600));
         let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
+
         TasksTrackers::current()
             .common
             .get_task_tracker()
             .await
             .spawn(async move {
+                // Skip the first tick immediately (we check for updates manually before setup)
+                interval.tick().await;
+
                 loop {
                         select! {
                             _ = shutdown_signal.wait() => {
@@ -110,7 +114,7 @@ impl UpdatesManager {
                             }
                             _ = interval.tick() => {
                                 info!(target: LOG_TARGET, "Periodic update check triggered.");
-                                 if let Err(e) = self_clone.try_update(app_clone.clone(), false, false).await {
+                                 if let Err(e) = self_clone.try_update(app_clone.clone(), false, false, Duration::from_secs(30)).await {
                                     error!(target: LOG_TARGET, "Error checking for updates: {e:?}");
                                 }
                             }
@@ -121,14 +125,28 @@ impl UpdatesManager {
         Ok(())
     }
 
+    pub async fn initial_try_update(&self, app: &tauri::AppHandle) {
+        let _unused = self
+            .try_update(app.clone(), false, false, Duration::from_secs(5))
+            .await
+            .inspect_err(|e| log::error!(target: LOG_TARGET, "Initial Update failure: {e:?}"));
+    }
+
     pub async fn try_update(
         &self,
         app: tauri::AppHandle,
         force: bool,
         enable_downgrade: bool,
+        timeout_duration: Duration,
     ) -> Result<(), anyhow::Error> {
-        match self.check_for_update(app.clone(), enable_downgrade).await? {
-            Some(update) => {
+        let res = tokio::time::timeout(
+            timeout_duration,
+            self.check_for_update(app.clone(), enable_downgrade),
+        )
+        .await?;
+
+        match res {
+            Ok(Some(update)) => {
                 let version = update.version.clone();
                 info!(target: LOG_TARGET, "try_update: Update available: {version:?}");
                 *self.update.write().await = Some(update);
@@ -148,19 +166,30 @@ impl UpdatesManager {
                     info!(target: LOG_TARGET, "try_update: Auto update is enabled. Proceeding with update");
                     self.proceed_with_update(app.clone()).await?;
                 } else {
-                    info!(target: LOG_TARGET, "try_update: Auto update is disabled. Prompting user to update");
-                    let payload = AskForUpdatePayload {
-                        event_type: "ask_for_update".to_string(),
-                        version,
-                    };
-                    drop(app.emit("updates_event", payload).inspect_err(|e| {
-                        warn!(target: LOG_TARGET, "Failed to emit 'updates-event' with UpdateAvailablePayload: {e}");
-                    }));
-                    // proceed_with_update will be trigger by the user
+                    TasksTrackers::current()
+                        .common
+                        .get_task_tracker()
+                        .await
+                        .spawn(async move {
+                            // Spawn a task to wait for the frontend to be listening for a new update
+                            let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+                            info!(target: LOG_TARGET, "try_update: Auto update is disabled. Prompting user to update");
+                            let payload = AskForUpdatePayload {
+                                event_type: "ask_for_update".to_string(),
+                                version,
+                            };
+                            drop(app.emit("updates_event", payload).inspect_err(|e| {
+                                warn!(target: LOG_TARGET, "Failed to emit 'updates-event' with UpdateAvailablePayload: {e}");
+                            }));
+                            // proceed_with_update will be triggered by the user
+                        });
                 }
             }
-            None => {
+            Ok(None) => {
                 info!(target: LOG_TARGET, "No updates available");
+            }
+            Err(e) => {
+                log::warn!(target: LOG_TARGET, "Error checking for updates: {e:?}");
             }
         }
 
