@@ -141,6 +141,7 @@ pub enum TariPermission {
     TariPermissionGetNft,
     TariPermissionSubstatesRead,
     TariPermissionTemplatesRead,
+    TariPermissionTransactionsGet,
 }
 
 #[derive(Debug, serde::Deserialize)]

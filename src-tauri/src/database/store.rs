@@ -285,19 +285,20 @@ impl Store<InstalledTapplet, CreateInstalledTapplet, UpdateInstalledTapplet> for
 
     fn create(&mut self, item: &CreateInstalledTapplet) -> Result<InstalledTapplet, Error> {
         use crate::database::schema::installed_tapplet;
-
+        println!("try to add item {:?}", &item);
         diesel::insert_into(installed_tapplet::table)
             .values(item)
             .on_conflict((
                 installed_tapplet::tapplet_id,
                 installed_tapplet::tapplet_version_id,
+                installed_tapplet::source,
             ))
             .do_update()
             .set(UpdateInstalledTapplet::from(item))
             .get_result(self.get_connection().deref_mut())
-            .map_err(|_| {
+            .map_err(|e| {
                 DatabaseError(FailedToCreate {
-                    entity_name: "Installed Tapplet".to_string(),
+                    entity_name: e.to_string(),
                 })
             })
     }

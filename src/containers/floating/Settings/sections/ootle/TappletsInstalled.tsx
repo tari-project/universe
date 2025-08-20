@@ -6,16 +6,15 @@ import { SettingsGroupContent, SettingsGroupTitle } from '../../components/Setti
 import { useCallback, useEffect } from 'react';
 import { TappletsGroup, TappletsGroupWrapper } from './TappletsSettings.styles.ts';
 import { useTappletsStore } from '@app/store/useTappletsStore.ts';
-import { useAppStateStore } from '@app/store/appStateStore.ts';
 import { Count } from './TappletsSettings.styles.ts';
 import { setIsSettingsOpen } from '@app/store/index.ts';
 import { ListItemWrapper } from '@app/components/transactions/history/List.styles.ts';
 import { ListWrapper } from './styles/List.styles.ts';
 import { TappletListItem } from './styles/TappletListItem.tsx';
+import { setShowTapplet, setSidebarOpen } from '@app/store/actions/uiStoreActions.ts';
 
 export default function TappletsInstalled() {
     const { t } = useTranslation('ootle', { useSuspense: false });
-    const { isSettingsOpen } = useAppStateStore();
     const setActiveTappById = useTappletsStore((s) => s.setActiveTappById);
     const deleteInstalledTapp = useTappletsStore((s) => s.deleteInstalledTapp);
     const updateInstalledTapp = useTappletsStore((s) => s.updateInstalledTapp);
@@ -47,16 +46,18 @@ export default function TappletsInstalled() {
         [deleteInstalledTapp]
     );
 
-    const handleLaunch = useCallback(
+    const handleStart = useCallback(
         async (id: number) => {
             try {
                 setActiveTappById(id);
-                setIsSettingsOpen(!isSettingsOpen);
+                setShowTapplet(true);
+                setSidebarOpen(false);
+                setIsSettingsOpen(false);
             } catch (e) {
                 console.error('Error closing application| handleClose in CriticalProblemDialog: ', e);
             }
         },
-        [isSettingsOpen, setActiveTappById]
+        [setActiveTappById]
     );
 
     useEffect(() => {
@@ -82,7 +83,7 @@ export default function TappletsInstalled() {
                                         <TappletListItem
                                             key={index}
                                             item={{ id: item.installed_tapplet.id, displayName: item.display_name }}
-                                            handleStart={() => handleLaunch(item.installed_tapplet.id)}
+                                            handleStart={() => handleStart(item.installed_tapplet.id)}
                                             handleDelete={() => handleDelete(item.installed_tapplet.id)}
                                         />
                                     ))}

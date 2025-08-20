@@ -176,23 +176,23 @@ pub fn is_http_or_localhost(s: &str) -> bool {
 //     Ok(tapp_config)
 // }
 
-pub fn _get_tapplet_manifest(tapp_path: PathBuf) -> Result<TappletManifest, Error> {
-    // for a dev tapplet the tapplet.manifest.json file is in root dir
-    let tapp_manifest = tapp_path.join("tapplet.manifest.json");
-    info!(target: LOG_TARGET, "💥 get_config {:?}", &tapp_manifest);
+// pub fn _get_tapplet_manifest(tapp_path: PathBuf) -> Result<TappletManifest, Error> {
+//     // for a dev tapplet the tapplet.manifest.json file is in root dir
+//     let tapp_manifest = tapp_path.join("tapplet.manifest.json");
+//     info!(target: LOG_TARGET, "💥 get_config {:?}", &tapp_manifest);
 
-    if !tapp_manifest.exists() {
-        warn!(target: LOG_TARGET, "❌ Failed to get Tapplet permissions. Config file not found.");
-        return Err(Error::TappletConfigNotFound);
-    }
+//     if !tapp_manifest.exists() {
+//         warn!(target: LOG_TARGET, "❌ Failed to get Tapplet permissions. Config file not found.");
+//         return Err(Error::TappletConfigNotFound);
+//     }
 
-    let config = fs::read_to_string(tapp_manifest.clone()).unwrap_or_default();
-    info!(target: LOG_TARGET, "💥 Dev tapplet config: {:?}", &config);
-    let manifest: TappletManifest =
-        serde_json::from_str(&config).map_err(|e| JsonParsingError(e))?;
-    info!(target: LOG_TARGET, "💥 Dev tapplet full config: {:?}", &manifest);
-    Ok(manifest)
-}
+//     let config = fs::read_to_string(tapp_manifest.clone()).unwrap_or_default();
+//     info!(target: LOG_TARGET, "💥 Dev tapplet config: {:?}", &config);
+//     let manifest: TappletManifest =
+//         serde_json::from_str(&config).map_err(|e| JsonParsingError(e))?;
+//     info!(target: LOG_TARGET, "💥 Dev tapplet full config: {:?}", &manifest);
+//     Ok(manifest)
+// }
 
 pub async fn get_tapp_config(source: &str) -> Result<TappletConfig, Error> {
     if is_http_or_localhost(source) {
@@ -221,7 +221,7 @@ pub async fn get_tapp_config(source: &str) -> Result<TappletConfig, Error> {
     } else {
         // source as a local path
         let tapp_path = PathBuf::from(source);
-        let tapp_config = tapp_path.join("tapplet.config.json");
+        let tapp_config = tapp_path.join("package").join("tapplet.config.json");
         info!(target: LOG_TARGET, "Reading tapplet config from {:?}", &tapp_config);
 
         if !tapp_config.exists() {

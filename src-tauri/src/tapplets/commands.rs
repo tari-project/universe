@@ -469,10 +469,11 @@ pub fn update_installed_tapp_db(
 }
 
 #[tauri::command]
-pub fn delete_installed_tapplet(
+pub async fn delete_installed_tapplet(
     tapplet_id: i32,
-    db_connection: tauri::State<'_, DatabaseConnection>,
     app_handle: tauri::AppHandle,
+    db_connection: tauri::State<'_, DatabaseConnection>,
+    tapplet_manager: tauri::State<'_, TappletManager>,
 ) -> Result<usize, Error> {
     let mut store = SqliteStore::new(db_connection.0.clone());
     let (_installed_tapp, registered_tapp, tapp_version) =
@@ -483,6 +484,7 @@ pub fn delete_installed_tapplet(
         app_handle,
     )
     .unwrap();
+    let _ = stop_tapplet(tapplet_id, tapplet_manager).await;
     delete_tapplet(tapplet_path)?;
 
     let installed_tapplet: InstalledTapplet = store.get_by_id(tapplet_id)?;
@@ -493,14 +495,17 @@ pub fn delete_installed_tapplet(
 pub async fn update_installed_tapplet(
     tapplet_id: i32,
     installed_tapplet_id: i32,
-    db_connection: tauri::State<'_, DatabaseConnection>,
     app_handle: tauri::AppHandle,
+    db_connection: tauri::State<'_, DatabaseConnection>,
+    tapplet_manager: tauri::State<'_, TappletManager>,
 ) -> Result<Vec<InstalledTappletWithName>, Error> {
     let _ = delete_installed_tapplet(
         installed_tapplet_id,
+        app_handle,
         db_connection.clone(),
-        app_handle.clone(),
+        tapplet_manager,
     )
+    .await
     .inspect_err(|e| {
         error!(
             "❌ Delete installed tapplet (id: {:?}) from db error: {:?}",
@@ -527,7 +532,6 @@ pub async fn add_dev_tapplet(
     source: String,
     db_connection: tauri::State<'_, DatabaseConnection>,
 ) -> Result<DevTapplet, Error> {
-    // let manifest_source = format!("{}/tapplet.manifest.json", source);
     let tapp_config = get_tapp_config(&source).await?;
 
     info!("🌟 Add dev tapplet config: {:?}", &tapp_config);
