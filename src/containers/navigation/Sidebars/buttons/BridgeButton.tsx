@@ -5,7 +5,6 @@ import { setSidebarOpen, setShowTapplet } from '@app/store/actions/uiStoreAction
 import { BRIDGE_TAPPLET_ID } from '@app/store/consts.ts';
 import { useTappletsStore } from '@app/store/useTappletsStore.ts';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
-import { useSetupStore } from '@app/store/useSetupStore.ts';
 
 const BridgeButton = memo(function BridgeButton() {
     const showTapplet = useUIStore((s) => s.showTapplet);

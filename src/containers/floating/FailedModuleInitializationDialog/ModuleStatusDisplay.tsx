@@ -2,7 +2,7 @@ import { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getModuleName, getStatusColor, getStatusIcon, getStatusText } from './helpers';
 import { SetupPhase } from '@app/types/events-payloads';
-import { AppModule, AppModuleState, AppModuleStatus } from '@app/store/types/setup';
+import { AppModule, AppModuleStatus } from '@app/store/types/setup';
 import { Typography } from '@app/components/elements/Typography';
 import { SquaredButton } from '@app/components/elements/buttons/SquaredButton';
 import { CircularProgress } from '@app/components/elements/CircularProgress';
@@ -66,7 +66,7 @@ export const ModuleStatusDisplay = memo(function ModuleStatusDisplay({
 
     const handleSendModuleLogs = useCallback(() => {
         handleSendFeedback(`Failed initialization of ${module}`);
-    }, [handleSendFeedback]);
+    }, [handleSendFeedback, module]);
 
     return (
         <ModuleStatusWrapper>

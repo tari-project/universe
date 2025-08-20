@@ -1,8 +1,5 @@
-import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { invoke } from '@tauri-apps/api/core';
 
-import { useSetupStore } from '@app/store/useSetupStore.ts';
 import { Typography } from '@app/components/elements/Typography';
 
 import {

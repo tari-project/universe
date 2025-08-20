@@ -6,7 +6,6 @@ import { CriticalProblemPayload, SetupPhase, ShowReleaseNotesPayload } from '@ap
 import { setDialogToShow, useMiningStore, useUIStore } from '../index.ts';
 
 import { setIsReconnecting, setShowResumeAppModal } from './uiStoreActions.ts';
-import { useSetupStore } from '../useSetupStore.ts';
 import { clearSetupProgress } from './setupStoreActions.ts';
 
 export const fetchApplicationsVersions = async () => {

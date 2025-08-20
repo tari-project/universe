@@ -34,23 +34,20 @@ export const useErrorDialogsButtonsLogic = () => {
         setIsExiting(false);
     }, []);
 
-    const handleSendFeedback = useCallback(
-        async (feedbackTitle: string) => {
-            try {
-                setIsSubmittingLogs(true);
-                await invoke('send_feedback', {
-                    feedback: feedbackTitle,
-                    includeLogs: true,
-                }).then((submissionId) => {
-                    setLogsSubmissionId(submissionId);
-                });
-            } catch (e) {
-                console.error('Error sending feedback| handleSendFeedback in CriticalProblemDialog: ', e);
-            }
-            setIsSubmittingLogs(false);
-        },
-        [t]
-    );
+    const handleSendFeedback = useCallback(async (feedbackTitle: string) => {
+        try {
+            setIsSubmittingLogs(true);
+            await invoke('send_feedback', {
+                feedback: feedbackTitle,
+                includeLogs: true,
+            }).then((submissionId) => {
+                setLogsSubmissionId(submissionId);
+            });
+        } catch (e) {
+            console.error('Error sending feedback| handleSendFeedback in CriticalProblemDialog: ', e);
+        }
+        setIsSubmittingLogs(false);
+    }, []);
 
     const handleCopyLogsSubmissionId = useCallback(() => {
         if (logsSubmissionId) {

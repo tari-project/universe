@@ -53,7 +53,7 @@ export const GpuPoolsSettings = () => {
     const handleResetToDefaultPoolConfiguration = useCallback(async () => {
         if (!selectedGpuPoolData) return;
         await resetGpuPoolConfiguration(selectedGpuPoolData.pool_name);
-    }, []);
+    }, [selectedGpuPoolData]);
 
     return (
         <SettingsGroupWrapper style={{ gap: '16px' }}>

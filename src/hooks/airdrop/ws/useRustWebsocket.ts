@@ -6,7 +6,6 @@ import { GLOBAL_EVENT_NAME, WebsocketGlobalEvent, WebsocketUserEvent } from '@ap
 import { useHandleWsGlobalEvent } from './useHandleWsGlobalEvent';
 import './useSendWsMessage'; // dummy import to bypass knip
 import { initialiseSocket } from '@app/utils/socket';
-import { useSetupStore } from '@app/store/useSetupStore';
 
 export interface WebsocketEventType {
     event: string;

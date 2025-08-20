@@ -4,8 +4,6 @@ import { Typography } from '@app/components/elements/Typography';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 
-import { useSetupStore } from '@app/store/useSetupStore.ts';
-
 const LostConnectionIcon = styled(IoAlertCircleSharp)(({ theme }) => ({
     color: theme.palette.warning.main,
 }));

@@ -104,39 +104,6 @@ export default function useSync() {
         }
     }, [wallet_phase?.is_completed, disabledPhases]);
 
-    console.info('phases', {
-        core_phase,
-        cpu_mining_phase,
-        gpu_mining_phase,
-        node_phase,
-        wallet_phase,
-        disabledPhases,
-    });
-
-    console.log('useSync', {
-        setupPhaseTitle: currentPhaseToShow?.phase_title,
-        setupTitle: currentPhaseToShow?.title,
-        setupProgress: currentPhaseToShow?.progress,
-        setupParams: currentPhaseToShow?.title_params,
-        isCompleted: currentPhaseToShow?.is_completed,
-        currentPhaseToShow,
-        showSync,
-    });
-
-    console.info('Sum of all progress values:', {
-        core: core_phase?.progress,
-        cpuMining: cpu_mining_phase?.progress,
-        gpuMining: gpu_mining_phase?.progress,
-        node: node_phase?.progress,
-        wallet: wallet_phase?.progress,
-        sum:
-            (core_phase?.progress || 0) +
-            (cpu_mining_phase?.progress || 0) +
-            (gpu_mining_phase?.progress || 0) +
-            (node_phase?.progress || 0) +
-            (wallet_phase?.progress || 0),
-    });
-
     return {
         getProgress,
         setupPhaseTitle: currentPhaseToShow?.phase_title,
