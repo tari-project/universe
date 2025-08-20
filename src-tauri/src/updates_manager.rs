@@ -21,7 +21,10 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::sync::Arc;
-use tokio::{select, time};
+use tokio::{
+    select,
+    time::{self, MissedTickBehavior},
+};
 
 use anyhow::anyhow;
 use log::{error, info, warn};
@@ -95,6 +98,7 @@ impl UpdatesManager {
         let self_clone = self.clone();
 
         let mut interval = time::interval(Duration::from_secs(3600));
+        interval.set_missed_tick_behavior(MissedTickBehavior::Skip);
         let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
 
         TasksTrackers::current()
