@@ -444,6 +444,7 @@ impl WalletManager {
         wallet_state_receiver: watch::Receiver<Option<WalletState>>,
     ) -> Result<(), WalletManagerError> {
         let mut interval = tokio::time::interval(Duration::from_secs(2));
+        interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
         let end_time = tokio::time::Instant::now() + Duration::from_secs(120);
         let mut shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
 
