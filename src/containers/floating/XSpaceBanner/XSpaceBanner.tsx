@@ -22,18 +22,29 @@ import { AnimatePresence } from 'motion/react';
 import { useCrewRewardsStore } from '@app/store/useCrewRewardsStore';
 import { useUIStore } from '@app/store';
 
+const testingXSpaceEvent = {
+    text: 'test',
+    visibilityStart: '2025-08-20T12:00:00Z',
+    visibilityEnd: '2025-08-20T12:00:00Z',
+    goingLive: '2025-08-20T12:00:00Z',
+    link: 'https://x.com/test',
+    type: XSpaceEventType.event,
+};
+
 const XSpaceEventBanner = () => {
-    const latestXSpaceEvent = useAirdropStore((state) => state.latestXSpaceEvent);
+    const latestXSpaceEvent = testingXSpaceEvent; //useAirdropStore((state) => state.latestXSpaceEvent);
     const showTapplet = useUIStore((s) => s.showTapplet);
     const [isTextTooLong, setIsTextTooLong] = useState(false);
     const [transitionPixelWidth, setTransitionPixelWidth] = useState(0);
-    const [isVisible, setIsVisible] = useState(false);
+    const [isVisible, setIsVisible] = useState(true);
     const [isLive, setIsLive] = useState(false);
     const titleRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const { t } = useTranslation('common', { useSuspense: false });
-    const crewRewardsActive = useCrewRewardsStore((s) => s.showWidget);
+
     const isLoggedIn = useAirdropStore((s) => !!s.airdropTokens);
+    const crewRewardsActive = useCrewRewardsStore((s) => s.showWidget);
+    const crewRewardsMinimized = useCrewRewardsStore((s) => s.isMinimized);
 
     useEffect(() => {
         if (!latestXSpaceEvent) return;
@@ -81,11 +92,12 @@ const XSpaceEventBanner = () => {
                         open(latestXSpaceEvent.link);
                     }}
                     $crewRewardsActive={crewRewardsActive && !showTapplet}
+                    $crewRewardsMinimized={crewRewardsMinimized && crewRewardsActive && !showTapplet}
                     $isLoggedIn={isLoggedIn}
                 >
                     <FlexWrapper>
                         <IconContainer>
-                            <XSpaceSvg></XSpaceSvg>
+                            <XSpaceSvg />
                         </IconContainer>
                         <ContentContainer
                             initial={{ width: 0, opacity: 0, marginLeft: 0 }}
