@@ -91,6 +91,7 @@ impl WebsocketEventsManager {
 
     pub async fn emit_interval_ws_events(&mut self) -> Result<(), anyhow::Error> {
         let mut interval = time::interval(INTERVAL_DURATION);
+        interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
         let cpu_miner_status_watch_rx = self.cpu_miner_status_watch_rx.clone();
         let gpu_latest_miner_stats = self.gpu_latest_miner_stats.clone();
         let node_latest_status = self.node_latest_status.clone();
