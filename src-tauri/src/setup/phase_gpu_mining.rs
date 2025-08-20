@@ -136,7 +136,7 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
     ) -> ProgressStepper {
         ProgressStepperBuilder::new()
             .add_incremental_step(SetupStep::BinariesGpuMiner, true)
-            .add_step(SetupStep::DetectGpu, true)
+            .add_step(SetupStep::DetectGpu, false)
             .add_step(SetupStep::InitializeGpuHardware, false)
             .build(
                 app_handle.clone(),
@@ -187,7 +187,7 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
 
         progress_stepper
             .complete_step(SetupStep::DetectGpu, || async {
-                state
+                let glytex_detection_result = state
                     .gpu_miner
                     .write()
                     .await
@@ -195,13 +195,21 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
                         config_dir.clone(),
                         self.app_configuration.gpu_engine.clone(),
                     )
-                    .await?;
+                    .await;
 
-                GpuDevices::current()
+                let graxil_detection_result = GpuDevices::current()
                     .write()
                     .await
                     .detect(data_dir.clone())
-                    .await?;
+                    .await;
+
+                if let (Err(graxil_err), Err(glytex_err)) =
+                    (graxil_detection_result, glytex_detection_result)
+                {
+                    return Err(anyhow::anyhow!(
+                        "Failed to detect GPU devices: Graxil: {graxil_err}, Glytex: {glytex_err}"
+                    ));
+                }
 
                 Ok(())
             })
