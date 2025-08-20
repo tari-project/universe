@@ -7,14 +7,6 @@
   "header-sync": "Синхронизация заголовков",
   "local-node-sync": "Tari Universe все еще синхронизируется. Это не повлияет на Ваш процесс майнинга.",
   "network-peers": "Подключение к сетевым пирам",
-  "phase-core-critical-problem-description": "Настройка ядра критически важна для приложения. Пожалуйста, попробуйте перезапустить приложение. Если проблема не исчезнет, обратитесь в службу поддержки.",
-  "phase-core-critical-problem-title": "Ошибка настройки ядра",
-  "phase-hardware-critical-problem-description": "Настройка оборудования критически важна для приложения. Пожалуйста, попробуйте перезапустить приложение. Если проблема не исчезнет, обратитесь в службу поддержки.",
-  "phase-hardware-critical-problem-title": "Ошибка настройки оборудования",
-  "phase-mining-critical-problem-description": "Настройка майнинга критически важна для приложения. Пожалуйста, попробуйте перезапустить приложение. Если проблема не исчезнет, обратитесь в службу поддержки.",
-  "phase-mining-critical-problem-title": "Ошибка настройки майнинга",
-  "phase-node-critical-problem-description": "Настройка узла критически важна для приложения. Пожалуйста, попробуйте перезапустить приложение. Если проблема не исчезнет, обратитесь в службу поддержки.",
-  "phase-node-critical-problem-title": "Ошибка настройки узла",
   "phase-title": {
     "setup-core": "Настройка приложения Tari",
     "setup-core-compact": "Syncing app",
@@ -27,8 +19,16 @@
     "setup-wallet": "Настройка кошелька",
     "setup-wallet-compact": "Syncing wallet"
   },
-  "phase-wallet-critical-problem-description": "Настройка кошелька критически важна для приложения. Пожалуйста, попробуйте перезапустить приложение. Если проблема не исчезнет, обратитесь в службу поддержки.",
-  "phase-wallet-critical-problem-title": "Ошибка настройки кошелька",
+  "critical-initialization-failure": "Critical initialization failure",
+  "failed-to-complete-step": "Failed to complete step",
+  "all-modules-failed-description": "All modules failed to initialize. App can't work in current state. Please restart the app or contact support.",
+  "module-initialization-issues": "Some Modules failed to initialize",
+  "some-modules-failed-description": "App can continue to work, but some features may not be available. Please restart failed modules, or contact support if the issue persists.",
+  "app-modules": {
+    "cpu-mining": "CPU Mining",
+    "gpu-mining": "GPU Mining",
+    "wallet": "Wallet"
+  },
   "remaining": "осталось",
   "second_remaining": "осталась секунда",
   "seconds_remaining": "осталось секунд",

@@ -7,14 +7,6 @@
   "header-sync": "हेडर सिंक कर रहा है",
   "local-node-sync": "तारी यूनिवर्स अभी भी सिंक कर रहा है। यह आपके खनन अनुभव को प्रभावित नहीं करेगा।",
   "network-peers": "नेटवर्क साथियों से कनेक्ट हो रहा है",
-  "phase-core-critical-problem-description": "कोर सेटअप एप्लिकेशन के लिए महत्वपूर्ण है। कृपया एप्लिकेशन को पुनः आरंभ करने का प्रयास करें। यदि समस्या बनी रहती है, तो कृपया समर्थन से संपर्क करें।",
-  "phase-core-critical-problem-title": "कोर सेटअप विफल",
-  "phase-hardware-critical-problem-description": "हार्डवेयर सेटअप एप्लिकेशन के लिए महत्वपूर्ण है। कृपया एप्लिकेशन को पुनः आरंभ करने का प्रयास करें। यदि समस्या बनी रहती है, तो कृपया समर्थन से संपर्क करें।",
-  "phase-hardware-critical-problem-title": "हार्डवेयर सेटअप विफल",
-  "phase-mining-critical-problem-description": "माइनिंग सेटअप एप्लिकेशन के लिए महत्वपूर्ण है। कृपया एप्लिकेशन को पुनः आरंभ करने का प्रयास करें। यदि समस्या बनी रहती है, तो कृपया समर्थन से संपर्क करें।",
-  "phase-mining-critical-problem-title": "माइनिंग सेटअप विफल",
-  "phase-node-critical-problem-description": "नोड सेटअप एप्लिकेशन के लिए महत्वपूर्ण है। कृपया एप्लिकेशन को पुनः आरंभ करने का प्रयास करें। यदि समस्या बनी रहती है, तो कृपया समर्थन से संपर्क करें।",
-  "phase-node-critical-problem-title": "नोड सेटअप विफल",
   "phase-title": {
     "setup-core": "तारी ऐप सेट कर रहे हैं",
     "setup-core-compact": "Syncing app",
@@ -27,8 +19,16 @@
     "setup-wallet": "वॉलेट सेट कर रहे हैं",
     "setup-wallet-compact": "Syncing wallet"
   },
-  "phase-wallet-critical-problem-description": "वॉलेट सेटअप एप्लिकेशन के लिए महत्वपूर्ण है। कृपया एप्लिकेशन को पुनः आरंभ करने का प्रयास करें। यदि समस्या बनी रहती है, तो कृपया समर्थन से संपर्क करें।",
-  "phase-wallet-critical-problem-title": "वॉलेट सेटअप विफल",
+  "critical-initialization-failure": "Critical initialization failure",
+  "failed-to-complete-step": "Failed to complete step",
+  "all-modules-failed-description": "All modules failed to initialize. App can't work in current state. Please restart the app or contact support.",
+  "module-initialization-issues": "Some Modules failed to initialize",
+  "some-modules-failed-description": "App can continue to work, but some features may not be available. Please restart failed modules, or contact support if the issue persists.",
+  "app-modules": {
+    "cpu-mining": "CPU Mining",
+    "gpu-mining": "GPU Mining",
+    "wallet": "Wallet"
+  },
   "remaining": "शेष",
   "second_remaining": "सेकंड शेष",
   "seconds_remaining": "सेकंड शेष",

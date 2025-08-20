@@ -7,14 +7,6 @@
   "header-sync": "ヘッダーを同期中",
   "local-node-sync": "Tari Universeはまだ同期中です。これはマイニング体験に影響しません。",
   "network-peers": "ネットワークピアに接続中",
-  "phase-core-critical-problem-description": "コアの設定はアプリケーションにとって重要です。アプリケーションを再起動してみてください。問題が続く場合は、サポートに連絡してください。",
-  "phase-core-critical-problem-title": "コア設定に失敗しました",
-  "phase-hardware-critical-problem-description": "ハードウェアの設定はアプリケーションにとって重要です。アプリケーションを再起動してみてください。問題が続く場合は、サポートに連絡してください。",
-  "phase-hardware-critical-problem-title": "ハードウェア設定に失敗しました",
-  "phase-mining-critical-problem-description": "マイニングの設定はアプリケーションにとって重要です。アプリケーションを再起動してみてください。問題が続く場合は、サポートに連絡してください。",
-  "phase-mining-critical-problem-title": "マイニング設定に失敗しました",
-  "phase-node-critical-problem-description": "ノードの設定はアプリケーションにとって重要です。アプリケーションを再起動してみてください。問題が続く場合は、サポートに連絡してください。",
-  "phase-node-critical-problem-title": "ノード設定に失敗しました",
   "phase-title": {
     "setup-core": "Tariアプリを設定中",
     "setup-core-compact": "Syncing app",
@@ -27,8 +19,16 @@
     "setup-wallet": "ウォレットを設定中",
     "setup-wallet-compact": "Syncing wallet"
   },
-  "phase-wallet-critical-problem-description": "ウォレットの設定はアプリケーションにとって重要です。アプリケーションを再起動してみてください。問題が続く場合は、サポートに連絡してください。",
-  "phase-wallet-critical-problem-title": "ウォレット設定に失敗しました",
+  "critical-initialization-failure": "Critical initialization failure",
+  "failed-to-complete-step": "Failed to complete step",
+  "all-modules-failed-description": "All modules failed to initialize. App can't work in current state. Please restart the app or contact support.",
+  "module-initialization-issues": "Some Modules failed to initialize",
+  "some-modules-failed-description": "App can continue to work, but some features may not be available. Please restart failed modules, or contact support if the issue persists.",
+  "app-modules": {
+    "cpu-mining": "CPU Mining",
+    "gpu-mining": "GPU Mining",
+    "wallet": "Wallet"
+  },
   "remaining": "残り",
   "second_remaining": "残り秒数",
   "seconds_remaining": "残り秒数",

@@ -7,14 +7,6 @@
   "header-sync": "Menyinkronkan header",
   "local-node-sync": "Tari Universe masih menyinkronkan. Ini tidak akan mempengaruhi pengalaman menambang Anda.",
   "network-peers": "Menghubungkan ke rekan jaringan",
-  "phase-core-critical-problem-description": "Pengaturan inti sangat penting untuk aplikasi ini. Silakan coba mulai ulang aplikasi. Jika masalah berlanjut, silakan hubungi dukungan.",
-  "phase-core-critical-problem-title": "Pengaturan Inti Gagal",
-  "phase-hardware-critical-problem-description": "Pengaturan perangkat keras sangat penting untuk aplikasi ini. Silakan coba mulai ulang aplikasi. Jika masalah berlanjut, silakan hubungi dukungan.",
-  "phase-hardware-critical-problem-title": "Pengaturan Perangkat Keras Gagal",
-  "phase-mining-critical-problem-description": "Pengaturan penambangan sangat penting untuk aplikasi ini. Silakan coba mulai ulang aplikasi. Jika masalah berlanjut, silakan hubungi dukungan.",
-  "phase-mining-critical-problem-title": "Pengaturan Penambangan Gagal",
-  "phase-node-critical-problem-description": "Pengaturan node sangat penting untuk aplikasi ini. Silakan coba mulai ulang aplikasi. Jika masalah berlanjut, silakan hubungi dukungan.",
-  "phase-node-critical-problem-title": "Pengaturan Node Gagal",
   "phase-title": {
     "setup-core": "Menyiapkan Aplikasi Tari",
     "setup-core-compact": "Syncing app",
@@ -27,8 +19,16 @@
     "setup-wallet": "Menyiapkan Dompet",
     "setup-wallet-compact": "Syncing wallet"
   },
-  "phase-wallet-critical-problem-description": "Pengaturan dompet sangat penting untuk aplikasi ini. Silakan coba mulai ulang aplikasi. Jika masalah berlanjut, silakan hubungi dukungan.",
-  "phase-wallet-critical-problem-title": "Pengaturan Dompet Gagal",
+  "critical-initialization-failure": "Critical initialization failure",
+  "failed-to-complete-step": "Failed to complete step",
+  "all-modules-failed-description": "All modules failed to initialize. App can't work in current state. Please restart the app or contact support.",
+  "module-initialization-issues": "Some Modules failed to initialize",
+  "some-modules-failed-description": "App can continue to work, but some features may not be available. Please restart failed modules, or contact support if the issue persists.",
+  "app-modules": {
+    "cpu-mining": "CPU Mining",
+    "gpu-mining": "GPU Mining",
+    "wallet": "Wallet"
+  },
   "remaining": "tersisa",
   "second_remaining": "detik tersisa",
   "seconds_remaining": "detik tersisa",

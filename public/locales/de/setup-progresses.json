@@ -7,14 +7,6 @@
   "header-sync": "Header synchronisieren",
   "local-node-sync": "Tari Universe synchronisiert noch. Dies wird Ihr Mining-Erlebnis nicht beeinträchtigen.",
   "network-peers": "Verbindung zu Netzwerk-Peers herstellen",
-  "phase-core-critical-problem-description": "Die Kerneinrichtung ist für die Anwendung entscheidend. Bitte versuchen Sie, die Anwendung neu zu starten. Wenn das Problem weiterhin besteht, wenden Sie sich bitte an den Support.",
-  "phase-core-critical-problem-title": "Kerneinrichtung fehlgeschlagen",
-  "phase-hardware-critical-problem-description": "Die Hardware-Einrichtung ist für die Anwendung entscheidend. Bitte versuchen Sie, die Anwendung neu zu starten. Wenn das Problem weiterhin besteht, wenden Sie sich bitte an den Support.",
-  "phase-hardware-critical-problem-title": "Hardware-Einrichtung fehlgeschlagen",
-  "phase-mining-critical-problem-description": "Die Mining-Einrichtung ist für die Anwendung entscheidend. Bitte versuchen Sie, die Anwendung neu zu starten. Wenn das Problem weiterhin besteht, wenden Sie sich bitte an den Support.",
-  "phase-mining-critical-problem-title": "Mining-Einrichtung fehlgeschlagen",
-  "phase-node-critical-problem-description": "Die Knoteneinrichtung ist für die Anwendung entscheidend. Bitte versuchen Sie, die Anwendung neu zu starten. Wenn das Problem weiterhin besteht, wenden Sie sich bitte an den Support.",
-  "phase-node-critical-problem-title": "Knoteneinrichtung fehlgeschlagen",
   "phase-title": {
     "setup-core": "Tari-App wird eingerichtet",
     "setup-core-compact": "Syncing app",
@@ -27,8 +19,16 @@
     "setup-wallet": "Wallet wird eingerichtet",
     "setup-wallet-compact": "Syncing wallet"
   },
-  "phase-wallet-critical-problem-description": "Die Wallet-Einrichtung ist für die Anwendung entscheidend. Bitte versuchen Sie, die Anwendung neu zu starten. Wenn das Problem weiterhin besteht, wenden Sie sich bitte an den Support.",
-  "phase-wallet-critical-problem-title": "Wallet-Einrichtung fehlgeschlagen",
+  "critical-initialization-failure": "Critical initialization failure",
+  "failed-to-complete-step": "Failed to complete step",
+  "all-modules-failed-description": "All modules failed to initialize. App can't work in current state. Please restart the app or contact support.",
+  "module-initialization-issues": "Some Modules failed to initialize",
+  "some-modules-failed-description": "App can continue to work, but some features may not be available. Please restart failed modules, or contact support if the issue persists.",
+  "app-modules": {
+    "cpu-mining": "CPU Mining",
+    "gpu-mining": "GPU Mining",
+    "wallet": "Wallet"
+  },
   "remaining": "verbleibend",
   "second_remaining": "verbleibende Sekunde",
   "seconds_remaining": "verbleibende Sekunden",
