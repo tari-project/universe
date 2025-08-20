@@ -177,6 +177,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
             .await?;
 
         progress_stepper.complete_step(SetupStep::StartWallet,  || async  {
+            return Err(anyhow::anyhow!("Failed to resolve wallet binaries"));
             let latest_wallet_migration_nonce = *ConfigWallet::content().await.wallet_migration_nonce();
             if latest_wallet_migration_nonce < WALLET_MIGRATION_NONCE {
                 log::info!(target: LOG_TARGET, "Wallet migration required(Nonce {latest_wallet_migration_nonce} => {WALLET_MIGRATION_NONCE})");
