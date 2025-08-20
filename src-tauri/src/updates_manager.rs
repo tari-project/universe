@@ -95,6 +95,7 @@ impl UpdatesManager {
         let self_clone = self.clone();
 
         let mut interval = time::interval(Duration::from_secs(3600));
+        interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
         let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
 
         TasksTrackers::current()
