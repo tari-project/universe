@@ -11,13 +11,13 @@ export enum AppModuleStatus {
     NotInitialized = 'NotInitialized', // Default initial state
     Initializing = 'Initializing', // Waiting for specified setup phases to complete
     Initialized = 'Initialized', // All required setup phases completed
-    Failed = 'Failed', // One of required setup phases failed
+    Failed = 'Failed', // Setup phase failed, with error messages
 }
 
 export interface AppModuleState {
     module: AppModule;
     status: AppModuleStatus;
-    errorMessages: Record<string, string>; // Maps SetupPhase to error message
+    error_messages: Record<SetupPhase, string>; // Maps SetupPhase to error message
 }
 
 export interface SetupState {

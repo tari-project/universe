@@ -33,7 +33,7 @@ use crate::{
 };
 
 use super::SetupFeaturesList;
-use log::{debug, warn};
+use log::warn;
 use tokio::{
     sync::{
         watch::{error::RecvError, Receiver},
@@ -115,6 +115,13 @@ pub trait UnlockConditionsListenerTrait {
             return;
         }
 
+        EventsEmitter::emit_update_app_module_status(UpdateAppModuleStatusPayload {
+            module: self.get_module_type(),
+            status: AppModuleStatus::Initializing.as_string(),
+            error_messages: HashMap::new(),
+        })
+        .await;
+
         let listener_task = TasksTrackers::current()
             .common
             .get_task_tracker()
@@ -157,7 +164,7 @@ pub trait UnlockConditionsListenerTrait {
     fn conditions_met_callback(&self) -> impl Future<Output = ()> + Send + Sync {
         EventsEmitter::emit_update_app_module_status(UpdateAppModuleStatusPayload {
             module: self.get_module_type(),
-            status: AppModuleStatus::Initialized,
+            status: AppModuleStatus::Initialized.as_string(),
             error_messages: HashMap::new(),
         })
     }
@@ -167,8 +174,8 @@ pub trait UnlockConditionsListenerTrait {
     ) -> impl Future<Output = ()> + Send + Sync {
         EventsEmitter::emit_update_app_module_status(UpdateAppModuleStatusPayload {
             module: self.get_module_type(),
-            status: AppModuleStatus::Failed(failed_phases),
-            error_messages: HashMap::new(),
+            status: AppModuleStatus::Failed(failed_phases.clone()).as_string(),
+            error_messages: failed_phases,
         })
     }
     async fn handle_restart(&self) {}

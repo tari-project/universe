@@ -352,7 +352,7 @@ impl ProgressStepper {
 
         if step_tracker.is_required() {
             let error_message = format!(
-                "Failed to complete step: {}. Error: {}",
+                "failed-to-complete-step: {}. Error: {}",
                 step_tracker.get_step().get_i18n_key(),
                 error
             );

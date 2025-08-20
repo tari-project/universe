@@ -87,8 +87,8 @@ pub enum EventType {
 #[derive(Clone, Debug, Serialize)]
 pub struct UpdateAppModuleStatusPayload {
     pub module: AppModule,
-    pub status: AppModuleStatus,
-    pub error_messages: HashMap<String, String>,
+    pub status: String,
+    pub error_messages: HashMap<SetupPhase, String>,
 }
 
 #[derive(Clone, Debug, Serialize)]

@@ -115,7 +115,7 @@ impl ListenerUnlockWallet {
         info!(target: LOG_TARGET, "Locking Wallet");
         EventsEmitter::emit_update_app_module_status(UpdateAppModuleStatusPayload {
             module: AppModule::Wallet,
-            status: AppModuleStatus::NotInitialized,
+            status: AppModuleStatus::NotInitialized.as_string(),
             error_messages: HashMap::new(),
         })
         .await;

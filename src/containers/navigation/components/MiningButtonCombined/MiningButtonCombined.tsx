@@ -11,14 +11,11 @@ import type { ReactElement } from 'react';
 import MiningButton from './MiningButton/MiningButton.tsx';
 import StopIcon from './icons/StopIcon.tsx';
 import PlayIcon from './icons/PlayIcon.tsx';
-import {
-    isCpuMiningModuleInitialized,
-    isGpuMiningModuleInitialized,
-} from '@app/store/selectors/setupStoreSelectors.ts';
+import { setupStoreSelectors } from '@app/store/selectors/setupStoreSelectors.ts';
 
 export default function MiningButtonCombined() {
-    const gpuMiningModuleInitialized = useSetupStore(isGpuMiningModuleInitialized);
-    const cpuMiningModuleInitialized = useSetupStore(isCpuMiningModuleInitialized);
+    const gpuMiningModuleInitialized = useSetupStore(setupStoreSelectors.isGpuMiningModuleInitialized);
+    const cpuMiningModuleInitialized = useSetupStore(setupStoreSelectors.isCpuMiningModuleInitialized);
     const isMiningControlsEnabled = useMiningStore((s) => s.miningControlsEnabled);
     const isMiningInitiated = useMiningStore((s) => s.isCpuMiningInitiated || s.isGpuMiningInitiated);
     const isCPUMining = useMiningMetricsStore((s) => s.cpu_mining_status.is_mining);

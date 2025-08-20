@@ -7,14 +7,6 @@
   "header-sync": "Syncing headers",
   "local-node-sync": "Tari Universe is still syncing. This won’t affect your mining experience.",
   "network-peers": "Connecting to network peers",
-  "phase-core-critical-problem-description": "Core setup is critical to the application. Please try restarting the application. If the problem persists, please contact support.",
-  "phase-core-critical-problem-title": "Core Setup Failed",
-  "phase-hardware-critical-problem-description": "Hardware setup is critical to the application. Please try restarting the application. If the problem persists, please contact support.",
-  "phase-hardware-critical-problem-title": "Hardware Setup Failed",
-  "phase-mining-critical-problem-description": "Mining setup is critical to the application. Please try restarting the application. If the problem persists, please contact support.",
-  "phase-mining-critical-problem-title": "Mining Setup Failed",
-  "phase-node-critical-problem-description": "Node setup is critical to the application. Please try restarting the application. If the problem persists, please contact support.",
-  "phase-node-critical-problem-title": "Node Setup Failed",
   "phase-title": {
     "setup-core": "Setting up the Tari App",
     "setup-core-compact": "Syncing app",
@@ -27,8 +19,16 @@
     "setup-wallet": "Setting up the Wallet",
     "setup-wallet-compact": "Syncing wallet"
   },
-  "phase-wallet-critical-problem-description": "Wallet setup is critical to the application. Please try restarting the application. If the problem persists, please contact support.",
-  "phase-wallet-critical-problem-title": "Wallet Setup Failed",
+  "critical-initialization-failure": "Critical initialization failure",
+  "failed-to-complete-step": "Failed to complete step",
+  "all-modules-failed-description": "All modules failed to initialize. App can't work in current state. Please restart the app or contact support.",
+  "module-initialization-issues": "Some Modules failed to initialize",
+  "some-modules-failed-description": "App can continue to work, but some features may not be available. Please restart failed modules, or contact support if the issue persists.",
+  "app-modules": {
+    "cpu-mining": "CPU Mining",
+    "gpu-mining": "GPU Mining",
+    "wallet": "Wallet"
+  },
   "remaining": "remaining",
   "second_remaining": "second remaining",
   "seconds_remaining": "seconds remaining",

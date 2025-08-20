@@ -20,7 +20,6 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod listener_main_app;
 pub mod listener_unlock_cpu_mining;
 pub mod listener_unlock_gpu_mining;
 pub mod listener_unlock_wallet;
@@ -40,10 +39,19 @@ use super::setup_manager::{PhaseStatus, SetupPhase};
 #[derive(Clone, Debug, Serialize)]
 #[allow(unused)]
 pub enum AppModule {
-    MainApp,   // Main application view after setup
     CpuMining, // CPU mining
     GpuMining, // GPU mining
     Wallet,    // Wallet
+}
+
+impl Display for AppModule {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            AppModule::CpuMining => write!(f, "CPU Mining"),
+            AppModule::GpuMining => write!(f, "GPU Mining"),
+            AppModule::Wallet => write!(f, "Wallet"),
+        }
+    }
 }
 
 /// Status that is communicated between modules listeners and frontend UI
@@ -56,6 +64,17 @@ pub enum AppModuleStatus {
     Initializing, // Waiting for specified setup phases to complete
     Initialized,  // All required setup phases completed
     Failed(HashMap<SetupPhase, String>), // One of required setup phases failed, contains last error message for each phase that failed
+}
+
+impl AppModuleStatus {
+    pub fn as_string(&self) -> String {
+        match self {
+            AppModuleStatus::NotInitialized => "NotInitialized".to_string(),
+            AppModuleStatus::Initializing => "Initializing".to_string(),
+            AppModuleStatus::Initialized => "Initialized".to_string(),
+            AppModuleStatus::Failed(_) => "Failed".to_string(),
+        }
+    }
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]

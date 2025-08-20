@@ -54,18 +54,10 @@ impl SetupDefaultAdapter {
 
                 }
                 result = phase.setup_inner() => {
-                    match result {
-                        Ok(_) => {
-                            info!(target: LOG_TARGET, "[ {} Phase ] Setup completed successfully", phase.get_phase_id());
-                            let _unused = phase.finalize_setup().await;
-                        }
-                        Err(error) => {
-                            let error_message = format!("[ {} Phase ] Setup failed with error: {:?}", phase.get_phase_id(),error);
-                            phase.get_status_sender().send(PhaseStatus::Failed(error_message.clone())).unwrap_or_else(|_| {
-                                warn!(target: LOG_TARGET, "[ {} Phase ] Failed to send status: {}", phase.get_phase_id(), PhaseStatus::Failed(error_message));
-                            });
-                        }
-                    }
+                    if let Ok(_) = result {
+                        info!(target: LOG_TARGET, "[ {} Phase ] Setup completed successfully", phase.get_phase_id());
+                        let _unused = phase.finalize_setup().await;
+                    } 
                 }
                 _ = shutdown_signal.wait() => {
                     warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", phase.get_phase_id());

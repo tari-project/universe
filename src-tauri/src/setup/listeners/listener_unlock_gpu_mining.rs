@@ -114,7 +114,7 @@ impl ListenerUnlockGpuMining {
     async fn lock(&self) {
         EventsEmitter::emit_update_app_module_status(UpdateAppModuleStatusPayload {
             module: AppModule::GpuMining,
-            status: AppModuleStatus::NotInitialized,
+            status: AppModuleStatus::NotInitialized.as_string(),
             error_messages: HashMap::new(),
         })
         .await;

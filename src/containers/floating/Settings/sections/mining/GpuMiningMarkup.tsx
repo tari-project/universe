@@ -13,13 +13,13 @@ import {
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 import { setGpuMiningEnabled, useConfigMiningStore } from '@app/store';
 import { useSetupStore } from '@app/store/useSetupStore.ts';
-import { isGpuMiningModuleInitialized } from '@app/store/selectors/setupStoreSelectors.ts';
+import { setupStoreSelectors } from '@app/store/selectors/setupStoreSelectors.ts';
 
 const GpuMiningMarkup = () => {
     const { t } = useTranslation(['settings'], { useSuspense: false });
     const isGpuMiningEnabled = useConfigMiningStore((s) => s.gpu_mining_enabled);
     const gpuDevicesHardware = useMiningMetricsStore((s) => s.gpu_devices);
-    const gpuMiningModuleInitialized = useSetupStore(isGpuMiningModuleInitialized);
+    const gpuMiningModuleInitialized = useSetupStore(setupStoreSelectors.isGpuMiningModuleInitialized);
 
     const isGPUMiningAvailable = useMemo(() => {
         if (!gpuDevicesHardware) return false;

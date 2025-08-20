@@ -130,7 +130,7 @@ export const updateAppModule = (state: AppModuleState) => {
             [state.module]: {
                 ...prevState.app_modules[state.module],
                 status: state.status,
-                errorMessages: state.errorMessages,
+                error_messages: state.error_messages,
             },
         },
     }));
@@ -216,26 +216,10 @@ const handleGpuMiningModuleUpdateSideEffects = async (state: AppModuleState) => 
     }
 };
 
-export const handleMainAppModuleUpdateSideEffects = async (state: AppModuleState) => {
-    switch (state.status) {
-        case AppModuleStatus.Initialized:
-            break;
-        case AppModuleStatus.Failed:
-            break;
-        case AppModuleStatus.NotInitialized:
-            break;
-        default:
-            break;
-    }
-};
-
 export const handleAppModulesUpdate = async (state: AppModuleState) => {
     updateAppModule(state);
 
     switch (state.module) {
-        case AppModule.MainApp:
-            await handleMainAppModuleUpdateSideEffects(state);
-            break;
         case AppModule.CpuMining:
             await handleCpuMiningModuleUpdateSideEffects(state);
             break;

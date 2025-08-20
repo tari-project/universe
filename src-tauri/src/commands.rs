@@ -2037,6 +2037,13 @@ pub async fn trigger_phases_restart() -> Result<(), InvokeError> {
 }
 
 #[tauri::command]
+pub async fn restart_phases(phases: Vec<SetupPhase>) -> Result<(), InvokeError> {
+    SetupManager::get_instance().restart_phases(phases).await;
+
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn set_node_type(
     mut node_type: NodeType,
     state: tauri::State<'_, UniverseAppState>,

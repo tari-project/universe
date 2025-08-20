@@ -21,7 +21,11 @@ const CriticalProblemDialog = memo(function CriticalProblemDialog() {
         handleSendFeedback,
         handleCopyLogsSubmissionId,
         handleLogsButtonText,
-    } = useErrorDialogsButtonsLogic(criticalProblem?.title || 'installation-problem');
+    } = useErrorDialogsButtonsLogic();
+
+    const handleFeedback = () => {
+        handleSendFeedback(criticalProblem?.title || 'installation-problem');
+    };
 
     return (
         <Dialog open={!!criticalProblem}>
@@ -46,7 +50,7 @@ const CriticalProblemDialog = memo(function CriticalProblemDialog() {
                                 <SquaredButton
                                     color="brightGreen"
                                     size="medium"
-                                    onClick={logsSubmissionId ? handleCopyLogsSubmissionId : handleSendFeedback}
+                                    onClick={logsSubmissionId ? handleCopyLogsSubmissionId : handleFeedback}
                                 >
                                     {handleLogsButtonText}
                                 </SquaredButton>

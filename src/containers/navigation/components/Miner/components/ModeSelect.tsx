@@ -17,7 +17,7 @@ import { useConfigMiningStore } from '@app/store';
 import { useSetupStore } from '@app/store/useSetupStore';
 import { selectMiningMode } from '@app/store/actions/appConfigStoreActions';
 import { MiningModeType } from '@app/types/configs';
-import { isCpuMiningModuleInitialized, isGpuMiningModuleInitialized } from '@app/store/selectors/setupStoreSelectors';
+import { setupStoreSelectors } from '@app/store/selectors/setupStoreSelectors';
 
 interface ModeSelectProps {
     variant?: 'primary' | 'minimal';
@@ -46,8 +46,8 @@ const ModeSelect = memo(function ModeSelect({ variant = 'primary', isSync }: Mod
     const miningModes = useConfigMiningStore((s) => s.mining_modes);
     const isCPUMining = useMiningMetricsStore((s) => s.cpu_mining_status.is_mining);
     const isGPUMining = useMiningMetricsStore((s) => s.gpu_mining_status.is_mining);
-    const cpuMiningModuleInitialized = useSetupStore(isCpuMiningModuleInitialized);
-    const gpuMiningModuleInitialized = useSetupStore(isGpuMiningModuleInitialized);
+    const cpuMiningModuleInitialized = useSetupStore(setupStoreSelectors.isCpuMiningModuleInitialized);
+    const gpuMiningModuleInitialized = useSetupStore(setupStoreSelectors.isGpuMiningModuleInitialized);
     const isModeSelectionEnabled = cpuMiningModuleInitialized || gpuMiningModuleInitialized;
 
     const isMiningControlsEnabled = useMiningStore((s) => s.miningControlsEnabled);

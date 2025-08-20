@@ -7,7 +7,7 @@ import { Typography } from '@app/components/elements/Typography';
 import { IoCheckmarkOutline, IoCopyOutline } from 'react-icons/io5';
 import { CircularProgress } from '@app/components/elements/CircularProgress';
 
-export const useErrorDialogsButtonsLogic = (feedbackI18nKey: string) => {
+export const useErrorDialogsButtonsLogic = () => {
     const { t } = useTranslation(['setup-progresses', 'common'], { useSuspense: false });
     const [isExiting, setIsExiting] = useState(false);
     const [isSubmittingLogs, setIsSubmittingLogs] = useState(false);
@@ -34,20 +34,23 @@ export const useErrorDialogsButtonsLogic = (feedbackI18nKey: string) => {
         setIsExiting(false);
     }, []);
 
-    const handleSendFeedback = useCallback(async () => {
-        try {
-            setIsSubmittingLogs(true);
-            await invoke('send_feedback', {
-                feedback: t(feedbackI18nKey, { lng: 'en' }),
-                includeLogs: true,
-            }).then((submissionId) => {
-                setLogsSubmissionId(submissionId);
-            });
-        } catch (e) {
-            console.error('Error sending feedback| handleSendFeedback in CriticalProblemDialog: ', e);
-        }
-        setIsSubmittingLogs(false);
-    }, [feedbackI18nKey, t]);
+    const handleSendFeedback = useCallback(
+        async (feedbackTitle: string) => {
+            try {
+                setIsSubmittingLogs(true);
+                await invoke('send_feedback', {
+                    feedback: feedbackTitle,
+                    includeLogs: true,
+                }).then((submissionId) => {
+                    setLogsSubmissionId(submissionId);
+                });
+            } catch (e) {
+                console.error('Error sending feedback| handleSendFeedback in CriticalProblemDialog: ', e);
+            }
+            setIsSubmittingLogs(false);
+        },
+        [t]
+    );
 
     const handleCopyLogsSubmissionId = useCallback(() => {
         if (logsSubmissionId) {
@@ -67,6 +70,24 @@ export const useErrorDialogsButtonsLogic = (feedbackI18nKey: string) => {
         return isSubmittingLogs ? <CircularProgress /> : <Trans t={t}>send-logs</Trans>;
     }, [logsSubmissionId, isSubmittingLogs, isCopied, t]);
 
+    const handleSeperateLogsButtonText = useMemo(() => {
+        return isSubmittingLogs ? <CircularProgress /> : <Trans t={t}>send-logs</Trans>;
+    }, [isSubmittingLogs, t]);
+
+    const handleLogsSubbmissionIdButtonText = useMemo(() => {
+        return isCopied ? (
+            <Stack direction="row" gap={4} alignItems="center">
+                <Typography variant="p"> {t('copied')} </Typography>
+                <IoCheckmarkOutline size={12} />
+            </Stack>
+        ) : (
+            <Stack direction="row" gap={4} alignItems="center">
+                <Typography variant="p"> {logsSubmissionId} </Typography>
+                <IoCopyOutline size={12} />
+            </Stack>
+        );
+    }, [logsSubmissionId, isCopied, t]);
+
     return {
         isExiting,
         isSubmittingLogs,
@@ -76,5 +97,7 @@ export const useErrorDialogsButtonsLogic = (feedbackI18nKey: string) => {
         handleSendFeedback,
         handleCopyLogsSubmissionId,
         handleLogsButtonText,
+        handleSeperateLogsButtonText,
+        handleLogsSubbmissionIdButtonText,
     };
 };

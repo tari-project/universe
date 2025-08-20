@@ -12,7 +12,7 @@ import {
 import { AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import { useSetupStore } from '@app/store/useSetupStore';
-import { isWalletModuleInitialized } from '@app/store/selectors/setupStoreSelectors';
+import { setupStoreSelectors } from '@app/store/selectors/setupStoreSelectors';
 
 interface Props {
     $isScrolled: boolean;
@@ -24,7 +24,7 @@ export default function SecureWalletWarning({ $isScrolled, isExchangeMiner }: Pr
     const setModal = useSecurityStore((s) => s.setModal);
     const pinLocked = useWalletStore((s) => s.is_pin_locked);
     const seedBackedUp = useWalletStore((s) => s.is_seed_backed_up);
-    const walletModuleInitialized = useSetupStore(isWalletModuleInitialized);
+    const walletModuleInitialized = useSetupStore(setupStoreSelectors.isWalletModuleInitialized);
 
     if (!walletModuleInitialized) {
         // Don't show anything until the wallet module is initialized

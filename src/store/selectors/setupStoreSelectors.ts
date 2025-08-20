@@ -1,20 +1,40 @@
 import { AppModule, AppModuleStatus, SetupState } from '../types/setup';
 
-export const selectCpuMiningModule = (state: SetupState) => state.app_modules[AppModule.CpuMining];
-export const selectGpuMiningModule = (state: SetupState) => state.app_modules[AppModule.GpuMining];
-export const selectWalletModule = (state: SetupState) => state.app_modules[AppModule.Wallet];
-export const selectMainAppModule = (state: SetupState) => state.app_modules[AppModule.MainApp];
+const selectCpuMiningModule = (state: SetupState) => state.app_modules[AppModule.CpuMining];
+const selectGpuMiningModule = (state: SetupState) => state.app_modules[AppModule.GpuMining];
+const selectWalletModule = (state: SetupState) => state.app_modules[AppModule.Wallet];
 
-export const selectCpuMiningModuleStatus = (state: SetupState) => selectCpuMiningModule(state).status;
-export const selectGpuMiningModuleStatus = (state: SetupState) => selectGpuMiningModule(state).status;
-export const selectWalletModuleStatus = (state: SetupState) => selectWalletModule(state).status;
-export const selectMainAppModuleStatus = (state: SetupState) => selectMainAppModule(state).status;
+const selectCpuMiningModuleStatus = (state: SetupState) => selectCpuMiningModule(state).status;
+const selectGpuMiningModuleStatus = (state: SetupState) => selectGpuMiningModule(state).status;
+const selectWalletModuleStatus = (state: SetupState) => selectWalletModule(state).status;
 
-export const isCpuMiningModuleInitialized = (state: SetupState) =>
+const isCpuMiningModuleInitialized = (state: SetupState) =>
     selectCpuMiningModuleStatus(state) === AppModuleStatus.Initialized;
-export const isGpuMiningModuleInitialized = (state: SetupState) =>
+const isGpuMiningModuleInitialized = (state: SetupState) =>
     selectGpuMiningModuleStatus(state) === AppModuleStatus.Initialized;
-export const isWalletModuleInitialized = (state: SetupState) =>
+const isWalletModuleInitialized = (state: SetupState) =>
     selectWalletModuleStatus(state) === AppModuleStatus.Initialized;
-export const isMainAppModuleInitialized = (state: SetupState) =>
-    selectMainAppModuleStatus(state) === AppModuleStatus.Initialized;
+
+const isAnyModuleFailed = (state: SetupState) =>
+    [selectCpuMiningModuleStatus, selectGpuMiningModuleStatus, selectWalletModuleStatus].some(
+        (statusSelector) => statusSelector(state) === AppModuleStatus.Failed
+    );
+const isEveryModuleResolved = (state: SetupState) =>
+    [selectCpuMiningModuleStatus, selectGpuMiningModuleStatus, selectWalletModuleStatus].every(
+        (statusSelector) =>
+            statusSelector(state) === AppModuleStatus.Initialized || statusSelector(state) === AppModuleStatus.Failed
+    );
+
+export const setupStoreSelectors = {
+    selectCpuMiningModule,
+    selectGpuMiningModule,
+    selectWalletModule,
+    selectCpuMiningModuleStatus,
+    selectGpuMiningModuleStatus,
+    selectWalletModuleStatus,
+    isCpuMiningModuleInitialized,
+    isGpuMiningModuleInitialized,
+    isWalletModuleInitialized,
+    isAnyModuleFailed,
+    isEveryModuleResolved,
+};

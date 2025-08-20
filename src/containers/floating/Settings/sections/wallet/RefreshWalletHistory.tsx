@@ -11,11 +11,11 @@ import {
 import { useCallback } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { useSetupStore } from '@app/store/useSetupStore.ts';
-import { isWalletModuleInitialized } from '@app/store/selectors/setupStoreSelectors.ts';
+import { setupStoreSelectors } from '@app/store/selectors/setupStoreSelectors.ts';
 
 export const RefreshWalletHistory = () => {
     const { t } = useTranslation('settings', { useSuspense: false });
-    const walletModuleInitialized = useSetupStore(isWalletModuleInitialized);
+    const walletModuleInitialized = useSetupStore(setupStoreSelectors.isWalletModuleInitialized);
 
     const resetWalletHistory = useCallback(async () => {
         try {
