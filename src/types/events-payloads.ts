@@ -99,3 +99,7 @@ export interface AllowTappletCspPayload {
 export interface GrantTappletPermissionsPayload {
     permissions: string;
 }
+
+export interface EmitTappletNoficationPayload {
+    notification: string;
+}

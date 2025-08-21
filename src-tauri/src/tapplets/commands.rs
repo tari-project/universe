@@ -70,7 +70,7 @@ pub async fn emit_tapplet_notification(
     receiver_tapp_id: i32,
     notification: String,
     app_handle: tauri::AppHandle,
-) -> Result<String, InvokeError> {
+) -> Result<bool, InvokeError> {
     info!(target: LOG_TARGET, "👉👉👉 nofitication {:?} for the tapp {}", &notification, receiver_tapp_id);
     let resp = TappletManager::emit_tapplet_notification(notification, &app_handle)
         .await

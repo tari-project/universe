@@ -81,6 +81,16 @@ export function DialogsGroup() {
                 >
                     Grant Tapplet Permissions
                 </AdminButton>
+                <AdminButton
+                    onClick={() =>
+                        setDialogToShow(
+                            dialogToShow === 'emitTappletNotification' ? undefined : 'emitTappletNotification'
+                        )
+                    }
+                    $isActive={dialogToShow === 'emitTappletNotification'}
+                >
+                    Emit Tapplet Notification
+                </AdminButton>
             </ButtonGroup>
         </>
     );

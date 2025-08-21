@@ -17,7 +17,7 @@ export enum MessageType {
     OPEN_EXTERNAL_LINK = 'OPEN_EXTERNAL_LINK',
     SET_THEME = 'SET_THEME',
     SET_LANGUAGE = 'SET_LANGUAGE',
-    SET_ALLOWED_DOMAINS = 'SET_ALLOWED_DOMAINS',
+    NOTIFICATION = 'NOTIFICATION',
 }
 
 interface SwapHeightChangeMessage {
@@ -129,10 +129,10 @@ interface SetThemeMessage {
     };
 }
 
-interface SetAllowedDomainsMessage {
-    type: MessageType.SET_ALLOWED_DOMAINS;
+interface EmitNotificationMessage {
+    type: MessageType.NOTIFICATION;
     payload: {
-        domains: string[];
+        notification: string;
     };
 }
 
@@ -152,7 +152,7 @@ export type IframeMessage =
     | SignerCallMessage
     | SetThemeMessage
     | SetLanguageMessage
-    | SetAllowedDomainsMessage;
+    | EmitNotificationMessage;
 
 // Hook to listen for messages from the parent window
 export function useIframeMessage(onMessage: (event: MessageEvent<IframeMessage>) => void) {

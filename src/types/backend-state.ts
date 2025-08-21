@@ -7,6 +7,7 @@ import {
     CriticalProblemPayload,
     DetectedAvailableGpuEngines,
     DetectedDevicesPayload,
+    EmitTappletNoficationPayload,
     GrantTappletPermissionsPayload,
     NewBlockHeightPayload,
     NodeTypeUpdatePayload,
@@ -244,6 +245,10 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'GrantTappletPermissions';
           payload: GrantTappletPermissionsPayload;
+      }
+    | {
+          event_type: 'EmitTappletNofication';
+          payload: EmitTappletNoficationPayload;
       }
     | {
           event_type: 'OotleWalletPhaseFinished';

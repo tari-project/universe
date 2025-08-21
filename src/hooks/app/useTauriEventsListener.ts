@@ -262,6 +262,10 @@ const useTauriEventsListener = () => {
                             useSecurityStore.setState({ tappletPermissions: event.payload.permissions });
                             useSecurityStore.setState({ modal: 'tapplet_permissions' });
                             break;
+                        case 'EmitTappletNofication':
+                            useSecurityStore.setState({ tappletNotification: event.payload.notification });
+                            useSecurityStore.setState({ modal: 'tapplet_notofication' });
+                            break;
                         case 'OotleWalletPhaseFinished':
                             break;
                         default:

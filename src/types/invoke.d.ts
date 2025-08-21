@@ -192,7 +192,7 @@ declare module '@tauri-apps/api/core' {
     function invoke(
         param: 'emit_tapplet_notification',
         payload: { receiverTappId: number; notification: string }
-    ): Promise<string>;
+    ): Promise<boolean>;
     function invoke(param: 'sign_ws_data', payload: { data: string }): Promise<SignData>;
     function invoke(param: 'ootle_list_accounts', payload: AccountsListRequest): Promise<AccountsListResponse>;
     function invoke(

@@ -5,6 +5,7 @@ import { open } from '@tauri-apps/plugin-shell';
 import { useConfigUIStore, useUIStore, setError as setStoreError } from '@app/store';
 import { MessageType, useIframeMessage } from '@app/hooks/swap/useIframeMessage';
 import { invoke } from '@tauri-apps/api/core';
+import { useTappletsStore } from '@app/store/useTappletsStore';
 
 interface TappletProps {
     activeTappId: number;
@@ -17,6 +18,7 @@ export const Tapplet: React.FC<TappletProps> = ({ activeTappId, source }) => {
     const runTransaction = useTappletSignerStore((s) => s.runTransaction);
     const language = useConfigUIStore((s) => s.application_language);
     const theme = useUIStore((s) => s.theme);
+    const setActiveTappById = useTappletsStore((s) => s.setActiveTappById);
     // const [allowedDomains, setAllowedDomains] = useState<string[]>([]);
     // const [pendingDomains, setPendingDomains] = useState<string[] | null>(null);
     // const [showDomainPopup, setShowDomainPopup] = useState(false);
@@ -68,8 +70,15 @@ export const Tapplet: React.FC<TappletProps> = ({ activeTappId, source }) => {
         }
     }, [theme]);
 
-    const emitNotification = useCallback(async (event: MessageEvent) => {
-        await invoke('emit_tapplet_notification', { receiverTappId: 2, notification: 'test notification' });
+    const emitNotification = useCallback(async (msg: string) => {
+        try {
+            const isAccepted = await invoke('emit_tapplet_notification', { receiverTappId: 2, notification: msg });
+            // TODO proceed with notification eg open abother tapp
+            // if (isAccepted) setActiveTappById(1, false, true);
+            console.info('[TAPPLET] notification accept?', isAccepted);
+        } catch (e) {
+            setStoreError(`Tapplet's notification error: ${e}`, true);
+        }
     }, []);
 
     useIframeMessage((event) => {
@@ -111,9 +120,9 @@ export const Tapplet: React.FC<TappletProps> = ({ activeTappId, source }) => {
                 }
                 break;
             }
-            case MessageType.SET_ALLOWED_DOMAINS: {
-                console.info('[TAPPLET] handle notification:', event.data.type);
-                emitNotification(event);
+            case MessageType.NOTIFICATION: {
+                console.info('[TAPPLET] handle notification:', event.data.payload.notification);
+                emitNotification(event.data.payload.notification);
                 break;
             }
             case MessageType.ERROR:

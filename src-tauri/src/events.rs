@@ -216,6 +216,6 @@ pub struct GrantTappletPermissionsPayload {
 }
 
 #[derive(Debug, Serialize, Clone)]
-pub struct EmitTappletNofication {
+pub struct EmitTappletNoficationPayload {
     pub notification: String,
 }

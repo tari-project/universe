@@ -23,7 +23,8 @@ use crate::configs::config_mining::GpuDevicesSettings;
 use crate::configs::config_ui::WalletUIMode;
 use crate::events::{
     AllowTappletCspPayload, ConnectionStatusPayload, CriticalProblemPayload, DisabledPhasesPayload,
-    EmitTappletNofication, GrantTappletPermissionsPayload, InitWalletScanningProgressPayload,
+    EmitTappletNoficationPayload, GrantTappletPermissionsPayload,
+    InitWalletScanningProgressPayload,
 };
 #[cfg(target_os = "windows")]
 use crate::external_dependencies::RequiredExternalDependency;
@@ -916,15 +917,16 @@ impl EventsEmitter {
 
     pub async fn emit_tapplet_notification(notification: String) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        error!(target: LOG_TARGET, "try emit EmitTappletNotification event");
         let event = Event {
-            event_type: EventType::GrantTappletPermissions,
-            payload: EmitTappletNofication { notification },
+            event_type: EventType::EmitTappletNofication,
+            payload: EmitTappletNoficationPayload { notification },
         };
         if let Err(e) = Self::get_app_handle()
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
-            error!(target: LOG_TARGET, "Failed to emit GrantTappletPermissions event: {e:?}");
+            error!(target: LOG_TARGET, "Failed to emit EmitTappletNotification event: {e:?}");
         }
     }
 }

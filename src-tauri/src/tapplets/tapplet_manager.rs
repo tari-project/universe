@@ -93,14 +93,15 @@ impl TappletManager {
     pub async fn emit_tapplet_notification(
         notification: String,
         app_handle: &AppHandle,
-    ) -> Result<String, anyhow::Error> {
+    ) -> Result<bool, anyhow::Error> {
+        info!(target: LOG_TARGET, "💭 Tapplet's notification emit: {:?}", &notification);
         let response = emit_notification_dialog(notification, app_handle).await?;
         if response.to_lowercase() != "null" {
             info!(target: LOG_TARGET, "💭 Tapplet's notification accepted: {:?}", &response);
-            Ok(response)
+            Ok(true)
         } else {
             warn!(target: LOG_TARGET, "Tapplet's notification rejected");
-            Err(anyhow::anyhow!("Tapplet's notification rejected"))
+            Ok(false)
         }
     }
 
