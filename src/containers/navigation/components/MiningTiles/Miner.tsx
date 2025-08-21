@@ -47,7 +47,7 @@ export default function MinerTile({
     unpaidFMT,
     minerModuleState,
 }: MinerTileProps) {
-    const { t } = useTranslation(['mining-view', 'p2p']);
+    const { t } = useTranslation(['mining-view', 'p2p'], { useSuspense: false });
 
     const hasMinerModuleCrashed = minerModuleState.status === AppModuleStatus.Failed;
 
