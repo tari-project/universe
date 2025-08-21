@@ -26,6 +26,9 @@ import SecurityReminder from '@app/components/security/reminder/SecurityReminder
 import CreatePinDialog from '@app/containers/floating/security/pin/CreatePinDialog.tsx';
 import EnterPinDialog from '@app/containers/floating/security/pin/EnterPinDialog.tsx';
 import CrewRewards from '../main/CrewRewards/CrewRewards.tsx';
+import TappletCspDialog from './security/tapplet/TappletCspDialog.tsx';
+import TappletPermissionsDialog from './security/tapplet/TappletPermissionsDialog.tsx';
+import TappletNotificationDialog from './security/tapplet/TappletNotificationDialog.tsx';
 
 const environment = import.meta.env.MODE;
 
@@ -57,6 +60,9 @@ const FloatingElements = () => {
             <CreatePinDialog />
             <EnterPinDialog />
             <CrewRewards />
+            <TappletCspDialog />
+            <TappletPermissionsDialog />
+            <TappletNotificationDialog />
         </FloatingTree>
     );
 };

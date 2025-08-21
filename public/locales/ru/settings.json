@@ -156,9 +156,11 @@
     "experimental": "Экспериментальные",
     "general": "Общие",
     "mining": "Майнинг",
+    "ootleWallet": "Ootle Wallet",
     "p2p": "Майнинг в пуле",
     "pools": "Mining Pools",
     "releaseNotes": "Примечания к выпуску",
+    "tapplets": "Tapplets",
     "very_experimental": "Очень экспериментальные",
     "wallet": "Кошелек"
   },

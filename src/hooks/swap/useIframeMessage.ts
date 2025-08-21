@@ -11,6 +11,13 @@ export enum MessageType {
     PROCESSING_STATUS = 'PROCESSING_STATUS',
     SWAP_HEIGHT_CHANGE = 'SWAP_HEIGHT_CHANGE',
     SET_FULLSCREEN = 'SET_FULLSCREEN',
+    GET_PARENT_SIZE = 'request-parent-size',
+    SIGNER_CALL = 'SIGNER_CALL',
+    GET_INIT_CONFIG = 'GET_INIT_CONFIG',
+    OPEN_EXTERNAL_LINK = 'OPEN_EXTERNAL_LINK',
+    SET_THEME = 'SET_THEME',
+    SET_LANGUAGE = 'SET_LANGUAGE',
+    NOTIFICATION = 'NOTIFICATION',
 }
 
 interface SwapHeightChangeMessage {
@@ -89,6 +96,46 @@ interface ProcessingMessage {
     };
 }
 
+interface OpenLinkMessage {
+    type: MessageType.OPEN_EXTERNAL_LINK;
+    payload: {
+        url: string;
+    };
+}
+
+interface GetParentSizeMessage {
+    type: MessageType.GET_PARENT_SIZE;
+}
+
+interface GetInitConfigMessage {
+    type: MessageType.GET_INIT_CONFIG;
+}
+
+interface SignerCallMessage {
+    type: MessageType.SIGNER_CALL;
+}
+
+interface SetLanguageMessage {
+    type: MessageType.SET_LANGUAGE;
+    payload: {
+        language: string;
+    };
+}
+
+interface SetThemeMessage {
+    type: MessageType.SET_THEME;
+    payload: {
+        theme: string;
+    };
+}
+
+interface EmitNotificationMessage {
+    type: MessageType.NOTIFICATION;
+    payload: {
+        notification: string;
+    };
+}
+
 export type IframeMessage =
     | ApproveMessage
     | ApproveSuccessMessage
@@ -98,7 +145,14 @@ export type IframeMessage =
     | WalletConnectMessage
     | SwapHeightChangeMessage
     | SetFullscreenMessage
-    | ProcessingMessage;
+    | ProcessingMessage
+    | OpenLinkMessage
+    | GetParentSizeMessage
+    | GetInitConfigMessage
+    | SignerCallMessage
+    | SetThemeMessage
+    | SetLanguageMessage
+    | EmitNotificationMessage;
 
 // Hook to listen for messages from the parent window
 export function useIframeMessage(onMessage: (event: MessageEvent<IframeMessage>) => void) {

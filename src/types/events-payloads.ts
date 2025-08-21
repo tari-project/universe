@@ -91,3 +91,15 @@ export interface ConfigPoolsPayload extends Omit<ConfigPools, 'available_gpu_poo
     available_gpu_pools?: [{ [GpuPools.LuckyPool]: BasePoolData }, { [GpuPools.SupportXTMPool]: BasePoolData }]; // Available GPU pools
     available_cpu_pools?: [{ [CpuPools.LuckyPool]: BasePoolData }, { [CpuPools.SupportXTMPool]: BasePoolData }]; // Available CPU pools
 }
+
+export interface AllowTappletCspPayload {
+    csp: string;
+}
+
+export interface GrantTappletPermissionsPayload {
+    permissions: string;
+}
+
+export interface EmitTappletNoficationPayload {
+    notification: string;
+}

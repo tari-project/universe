@@ -16,6 +16,16 @@ import { SignData } from '@app/types/ws.ts';
 import { BasePoolData, ConfigBackendInMemory } from '@app/types/configs.ts';
 import { ExchangeMiner } from './exchange';
 import { ActiveTapplet } from '@app/types/tapplets/tapplet.types';
+import {
+    AccountsListRequest,
+    AccountsListResponse,
+    AccountsCreateFreeTestCoinsRequest,
+    AccountsCreateFreeTestCoinsResponse,
+    AccountsCreateRequest,
+    AccountsCreateResponse,
+    AccountsGetBalancesRequest,
+    AccountsGetBalancesResponse,
+} from '@tari-project/typescript-bindings';
 
 declare module '@tauri-apps/api/core' {
     function invoke(
@@ -128,7 +138,12 @@ declare module '@tauri-apps/api/core' {
         param: 'select_exchange_miner',
         payload: { exchange_miner: ExchangeMiner; mining_address: string }
     ): Promise<void>;
-    function invoke(param: 'launch_builtin_tapplet'): Promise<ActiveTapplet>;
+    function invoke(param: 'start_tari_tapplet_binary', payload: { binaryName: string }): Promise<ActiveTapplet>;
+    function invoke(param: 'start_dev_tapplet', payload: { devTappletId: number }): Promise<ActiveTapplet>;
+    function invoke(param: 'start_tapplet', payload: { tappletId: number }): Promise<ActiveTapplet>;
+    function invoke(param: 'is_tapplet_server_running', payload: { tappletId: number }): Promise<boolean>;
+    function invoke(param: 'stop_tapplet', payload: { tappletId: number }): Promise<string>;
+    function invoke(param: 'restart_tapplet', payload: { tappletId: number }): Promise<string>;
     function invoke(param: 'get_bridge_envs'): Promise<BridgeEnvs>;
     function invoke(param: 'parse_tari_address', payload: { address: string }): Promise<TariAddressVariants>;
     function invoke(param: 'refresh_wallet_history'): Promise<void>;
@@ -154,4 +169,39 @@ declare module '@tauri-apps/api/core' {
     ): Promise<void>;
     function invoke(param: 'reset_gpu_pool_config', payload: { gpuPoolName: string }): Promise<void>;
     function invoke(param: 'reset_cpu_pool_config', payload: { cpuPoolName: string }): Promise<void>;
+    function invoke(param: 'read_installed_tapp_db'): Promise<InstalledTappletWithName[]>;
+    function invoke(param: 'read_tapp_registry_db'): Promise<RegisteredTapplet[]>;
+    function invoke(
+        param: 'insert_installed_tapp_db',
+        payload: { tappletId: number }
+    ): Promise<InstalledTappletWithName>;
+    function invoke(param: 'get_assets_server_addr'): Promise<string>;
+    function invoke(param: 'add_dev_tapplet', payload: { source: string }): Promise<DevTapplet>;
+    function invoke(param: 'read_dev_tapplets_db'): Promise<DevTapplet[]>;
+    function invoke(param: 'delete_dev_tapplet', payload: { devTappletId: number }): Promise<number>;
+    function invoke(param: 'delete_installed_tapplet', payload: { tappletId: number }): Promise<number>;
+    function invoke(
+        param: 'update_installed_tapplet',
+        payload: { tappletId: number; installedTappletId: number }
+    ): Promise<InstalledTappletWithAssets[]>;
+    function invoke(
+        param: 'download_and_extract_tapp',
+        payload: { tappletId: number }
+    ): Promise<InstalledTappletWithAssets>;
+    function invoke(
+        param: 'emit_tapplet_notification',
+        payload: { receiverTappId: number; notification: string }
+    ): Promise<boolean>;
+    function invoke(param: 'sign_ws_data', payload: { data: string }): Promise<SignData>;
+    function invoke(param: 'ootle_list_accounts', payload: AccountsListRequest): Promise<AccountsListResponse>;
+    function invoke(
+        param: 'ootle_create_free_test_coins',
+        payload: AccountsCreateFreeTestCoinsRequest
+    ): Promise<AccountsCreateFreeTestCoinsResponse>;
+    function invoke(param: 'ootle_create_account', payload: AccountsCreateRequest): Promise<AccountsCreateResponse>;
+    function invoke(
+        param: 'ootle_get_balances',
+        payload: AccountsGetBalancesRequest
+    ): Promise<AccountsGetBalancesResponse>;
+    function invoke(param: 'ootle_make_json_rpc_request', payload: { method: string; params: string }): Promise<any>;
 }

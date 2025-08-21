@@ -20,7 +20,11 @@ export default function Dashboard() {
     return (
         <DashboardContentContainer $tapplet={showTapplet}>
             {connectionStatus !== 'connected' && !orphanChainUiDisabled ? <DisconnectWrapper /> : null}
-            {showTapplet && activeTapplet ? <Tapplet source={activeTapplet.source} /> : <MiningView />}
+            {showTapplet && activeTapplet ? (
+                <Tapplet activeTappId={activeTapplet.tapplet_id} source={activeTapplet.source} />
+            ) : (
+                <MiningView />
+            )}
         </DashboardContentContainer>
     );
 }
