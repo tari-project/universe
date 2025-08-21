@@ -85,13 +85,6 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      # - name: Configure AWS Credentials
-      #   if: ${{ github.event.inputs.asset_destination == 's3' }}
-      #   uses: aws-actions/configure-aws-credentials@v4
-      #   with:
-      #     role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-      #     aws-region: ${{ secrets.AWS_REGION }}
-
       - name: Builds - Install dependencies (windows) [yq]
         if: ${{ startsWith(runner.os,'Windows') }}
         run: |
@@ -453,86 +446,72 @@ jobs:
           MSI_FILE=$( echo '${{ env.artifactPaths }}' | jq -r '[.[] | select(endswith(".msi"))] | join(" ")' )
           echo "MSI_FILE=$MSI_FILE" >> $GITHUB_ENV
 
-      # - name: Upload to S3
-      #   if: ${{ github.event.inputs.asset_destination == 's3' }}
-      #   env:
-      #     S3_BUCKET: ${{ secrets.S3_BUCKET }}
-      #   shell: bash
-      #   run: |
-      #     for artifact in ${{ join(fromJSON(steps.build.outputs.artifactPaths), ' ') }}; do
-      #       aws s3 cp "$artifact" "s3://${S3_BUCKET}/${{ github.event.inputs.network }}/$(basename "$artifact")" --acl private
-      #       echo "S3_URL_${artifact//[^a-zA-Z0-9]/_}=s3://${S3_BUCKET}/${{ github.event.inputs.network }}/$(basename "$artifact")" >> $GITHUB_ENV
-      #     done
-      #     if [ "${{ runner.os }}" == "Windows" ]; then
-      #       aws s3 cp "./tari-win-bundler/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}.exe" "s3://${S3_BUCKET}/${{ github.event.inputs.network }}/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}.exe" --acl private
-      #       echo "S3_URL_BUNDLER=s3://${S3_BUCKET}/${{ github.event.inputs.network }}/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}.exe" >> $GITHUB_ENV
-      #     fi
+      - name: Upload to Cloudflare R2
+        if: ${{ github.event.inputs.asset_destination == 's3' }}
+        env:
+          S3_ENDPOINT_URL: ${{ secrets.S3_ENDPOINT_URL }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.CLOUDFLARE_R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+        shell: bash
+        run: |
+          S3_BUCKET="cdn-universe-tari-com"
+          for artifact in ${{ join(fromJSON(steps.build.outputs.artifactPaths), ' ') }}; do
+            aws --endpoint-url "$S3_ENDPOINT_URL" s3 cp "$artifact" "s3://${S3_BUCKET}/${{ github.event.inputs.network }}/$(basename "$artifact")" --acl private
+            echo "S3_URL_${artifact//[^a-zA-Z0-9]/_}=s3://${S3_BUCKET}/${{ github.event.inputs.network }}/$(basename "$artifact")" >> $GITHUB_ENV
+          done
+          if [ "${{ runner.os }}" == "Windows" ]; then
+            aws --endpoint-url "$S3_ENDPOINT_URL" s3 cp "./tari-win-bundler/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}.exe" "s3://${S3_BUCKET}/${{ github.event.inputs.network }}/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}.exe" --acl private
+            echo "S3_URL_BUNDLER=s3://${S3_BUCKET}/${{ github.event.inputs.network }}/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}.exe" >> $GITHUB_ENV
+          fi
 
-      # - name: Create BetaBuild and BetaBuildAsset on RWA Service
-      #   if: ${{ github.event.inputs.asset_destination == 's3' }}
-      #   env:
-      #     RWA_API_URL: ${{ secrets.RWA_API_URL }}
-      #     RWA_AUTH_TOKEN: ${{ secrets.RWA_AUTH_TOKEN }}
-      #   shell: bash
-      #   run: |
-      #     BETA_BUILD_UUID=$(uuidgen)
-      #     echo "BETA_BUILD_UUID=${BETA_BUILD_UUID}" >> $GITHUB_ENV
-      #     curl -X POST "${RWA_API_URL}/beta-builds" \
-      #       -H "Authorization: Bearer ${RWA_AUTH_TOKEN}" \
-      #       -H "Content-Type: application/json" \
-      #       -d '{
-      #         "uuid": "${BETA_BUILD_UUID}",
-      #         "author": "${{ github.actor }}",
-      #         "commit_sha": "${{ github.sha }}",
-      #         "branch_name": "${{ github.ref_name }}",
-      #         "description": "${{ github.event.inputs.beta_description }}",
-      #         "published": false
-      #       }'
-      #     for artifact in ${{ join(fromJSON(steps.build.outputs.artifactPaths), ' ') }}; do
-      #       ASSET_UUID=$(uuidgen)
-      #       ASSET_NAME=$(basename "$artifact")
-      #       ASSET_S3_URL_VAR="S3_URL_${artifact//[^a-zA-Z0-9]/_}"
-      #       curl -X POST "${RWA_API_URL}/beta-build-assets" \
-      #         -H "Authorization: Bearer ${RWA_AUTH_TOKEN}" \
-      #         -H "Content-Type: application/json" \
-      #         -d '{
-      #           "uuid": "${ASSET_UUID}",
-      #           "name": "${ASSET_NAME}",
-      #           "platform": "${{ matrix.platform }}${{ matrix.extra }}",
-      #           "s3_url": "${{ env[ASSET_S3_URL_VAR] }}",
-      #           "beta_build_uuid": "${BETA_BUILD_UUID}"
-      #         }'
-      #     done
-      #     if [ "${{ runner.os }}" == "Windows" ]; then
-      #       ASSET_UUID=$(uuidgen)
-      #       curl -X POST "${RWA_API_URL}/beta-build-assets" \
-      #         -H "Authorization: Bearer ${RWA_AUTH_TOKEN}" \
-      #         -H "Content-Type: application/json" \
-      #         -d '{
-      #           "uuid": "${ASSET_UUID}",
-      #           "name": "${{ env.TARI_UNIVERSE_BUNDLER_NAME }}.exe",
-      #           "platform": "${{ matrix.platform }}${{ matrix.extra }}",
-      #           "s3_url": "${{ env.S3_URL_BUNDLER }}",
-      #           "beta_build_uuid": "${BETA_BUILD_UUID}"
-      #         }'
-      #     fi
-
-      # - name: Notify Mattermost
-      #   if: ${{ github.event.inputs.asset_destination == 's3' }}
-      #   env:
-      #     MATTERMOST_WEBHOOK_URL: ${{ secrets.MATTERMOST_WEBHOOK_URL }}
-      #   shell: bash
-      #   run: |
-      #     MESSAGE="New beta build created for ${{ github.event.inputs.network }} (not yet published)\n"
-      #     MESSAGE+="Branch: ${{ github.ref_name }}\n"
-      #     MESSAGE+="Commit: ${{ github.sha }}\n"
-      #     MESSAGE+="Author: ${{ github.actor }}\n"
-      #     MESSAGE+="Description: ${{ github.event.inputs.beta_description }}\n"
-      #     MESSAGE+="Build UUID: ${{ env.BETA_BUILD_UUID }}\n"
-      #     MESSAGE+="Manage: ${RWA_API_URL}/beta-builds/${BETA_BUILD_UUID}"
-      #     curl -X POST -H 'Content-Type: application/json' \
-      #       "${MATTERMOST_WEBHOOK_URL}" \
-      #       -d "{\"text\": \"$MESSAGE\"}"
+      - name: Create BetaBuild and BetaBuildAsset on RWA Service
+        env:
+          RWA_API_URL: https://rwa.y.at/admin/api/resources
+          RWA_AUTH_TOKEN: ${{ secrets.RWA_AUTH_TOKEN }}
+        shell: bash
+        run: |
+          BETA_BUILD_UUID=$(uuidgen)
+          echo "BETA_BUILD_UUID=${BETA_BUILD_UUID}" >> $GITHUB_ENV
+          curl -X POST "${RWA_API_URL}/BetaBuild/actions/new" \
+            -H "Authorization: Bearer ${RWA_AUTH_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "id": "${BETA_BUILD_UUID}",
+              "author": "${{ github.actor }}",
+              "commit_sha": "${{ github.sha }}",
+              "network": "${{ github.event.inputs.network }}",
+              "branch_name": "${{ github.ref_name }}",
+              "description": "${{ github.event.inputs.beta_description }}",
+              "published": false
+            }'
+          for artifact in ${{ join(fromJSON(steps.build.outputs.artifactPaths), ' ') }}; do
+            ASSET_UUID=$(uuidgen)
+            ASSET_NAME=$(basename "$artifact")
+            ASSET_S3_URL_VAR="S3_URL_${artifact//[^a-zA-Z0-9]/_}"
+            curl -X POST "${RWA_API_URL}/BetaBuildAsset/actions/new" \
+              -H "Authorization: Bearer ${RWA_AUTH_TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d '{
+                "id": "${ASSET_UUID}",
+                "name": "${ASSET_NAME}",
+                "platform": "${{ matrix.platform }}${{ matrix.extra }}",
+                "s3_url": "${{ env[ASSET_S3_URL_VAR] }}",
+                "beta_build_id": "${BETA_BUILD_UUID}"
+              }'
+          done
+          if [ "${{ runner.os }}" == "Windows" ]; then
+            ASSET_UUID=$(uuidgen)
+            curl -X POST "${RWA_API_URL}/BetaBuildAsset/actions/new" \
+              -H "Authorization: Bearer ${RWA_AUTH_TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d '{
+                "id": "${ASSET_UUID}",
+                "name": "${{ env.TARI_UNIVERSE_BUNDLER_NAME }}.exe",
+                "platform": "${{ matrix.platform }}${{ matrix.extra }}",
+                "s3_url": "${{ env.S3_URL_BUNDLER }}",
+                "beta_build_id": "${BETA_BUILD_UUID}"
+              }'
+          fi
 
       - name: BETA Builds - Upload assets
         if: ${{ github.event.inputs.asset_destination == 'github' && (github.event_name == 'schedule' || !startsWith(github.ref, 'refs/heads/release')) }}
