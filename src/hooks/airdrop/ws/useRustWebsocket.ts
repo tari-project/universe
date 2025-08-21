@@ -5,7 +5,7 @@ import { useHandleWsUserIdEvent } from './useHandleWsUserIdEvent';
 import { GLOBAL_EVENT_NAME, WebsocketGlobalEvent, WebsocketUserEvent } from '@app/types/ws';
 import { useHandleWsGlobalEvent } from './useHandleWsGlobalEvent';
 import './useSendWsMessage'; // dummy import to bypass knip
-import { initialiseSocket } from '@app/utils/socket';
+import { restartSocket } from '@app/utils/socket';
 import { useSetupStore } from '@app/store/useSetupStore';
 
 export interface WebsocketEventType {
@@ -21,7 +21,7 @@ function useSetupWebsocket() {
 
     return useCallback(() => {
         if (airdropApiUrl && airdropTokens) {
-            initialiseSocket();
+            restartSocket();
         }
     }, [airdropApiUrl, airdropTokens]);
 }
