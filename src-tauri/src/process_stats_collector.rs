@@ -61,8 +61,6 @@ impl ProcessStatsCollectorBuilder {
             tokio::sync::watch::channel(ProcessWatcherStats::default());
         let (ootle_wallet_tx, ootle_wallet_rx) =
             tokio::sync::watch::channel(ProcessWatcherStats::default());
-        let (ootle_wallet_tx, ootle_wallet_rx) =
-            tokio::sync::watch::channel(ProcessWatcherStats::default());
 
         Self {
             cpu_miner_tx: Some(cpu_miner_tx),
