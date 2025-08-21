@@ -28,7 +28,7 @@ use crate::{
             RequestError::{FetchConfigError, ManifestResponseError},
             TappletServerError::*,
         },
-        interface::{TappletConfig, TappletManifest},
+        interface::{TappletConfig},
     },
 };
 use axum::{

@@ -169,7 +169,6 @@ declare module '@tauri-apps/api/core' {
     ): Promise<void>;
     function invoke(param: 'reset_gpu_pool_config', payload: { gpuPoolName: string }): Promise<void>;
     function invoke(param: 'reset_cpu_pool_config', payload: { cpuPoolName: string }): Promise<void>;
-    function invoke(param: 'update_csp_policy', payload: { csp: string }): Promise<void>;
     function invoke(param: 'read_installed_tapp_db'): Promise<InstalledTappletWithName[]>;
     function invoke(param: 'read_tapp_registry_db'): Promise<RegisteredTapplet[]>;
     function invoke(

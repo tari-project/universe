@@ -23,7 +23,6 @@
 use std::path::PathBuf;
 
 use crate::{
-    database::models::{DevTapplet, InstalledTapplet, UpdateDevTapplet, UpdateInstalledTapplet},
     events_emitter::EventsEmitter,
     requests::clients::http_file_client::HttpFileClient,
     tapplets::{
@@ -105,7 +104,6 @@ impl TappletManager {
         }
     }
 
-    // TODO debug why permission dialog doesnt show up
     pub async fn check_permissions_config(
         source: &str,
         current_csp: &str,
@@ -115,7 +113,6 @@ impl TappletManager {
         let config = get_tapp_config(source).await?;
         info!(target: LOG_TARGET, "💥 Dev tapplet csp: {}", &config.csp);
 
-        // let mut updated_dev_tapp = UpdateDevTapplet::from(tapplet);
         let mut updated_csp = current_csp.to_string();
         let mut updated_permissions = current_permissions.to_string();
 

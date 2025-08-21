@@ -679,7 +679,6 @@ fn main() {
             tapplet_commands::start_tari_tapplet_binary,
             tapplet_commands::start_dev_tapplet,
             tapplet_commands::start_tapplet,
-            tapplet_commands::update_csp_policy,
             tapplet_commands::fetch_registered_tapplets,
             tapplet_commands::insert_tapp_registry_db,
             tapplet_commands::read_tapp_registry_db,

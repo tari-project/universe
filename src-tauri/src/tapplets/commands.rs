@@ -40,30 +40,10 @@ use crate::tapplets::tapplet_installer::{
 };
 use crate::tapplets::tapplet_manager::TappletManager;
 use crate::tapplets::tapplet_server::get_tapp_config;
-use crate::UniverseAppState;
-use axum::http::HeaderValue;
 use log::{error, info, warn};
 use tauri::ipc::InvokeError;
 
 const LOG_TARGET: &str = "tari::universe::tapplets";
-
-#[tauri::command]
-pub async fn update_csp_policy(
-    csp: String,
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<(), String> {
-    info!(target: LOG_TARGET, "👉👉👉 Update csp command {:?}", &csp);
-    match HeaderValue::from_str(&csp) {
-        Ok(header_value) => {
-            // let mut write_lock = state.tapplet_csp_header.write().await;
-            // *write_lock = header_value;
-            // TODO restart tapplet with the new csp
-            info!(target: LOG_TARGET, "👉👉👉 Updated success");
-            Ok(())
-        }
-        Err(e) => Err(format!("Invalid CSP header string: {:?}", e)),
-    }
-}
 
 #[tauri::command]
 pub async fn emit_tapplet_notification(

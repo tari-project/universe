@@ -1,6 +1,5 @@
 use crate::{
     consts::{TAPPLETS_ASSETS_DIR, TAPPLETS_INSTALLED_DIR},
-    database::models::TappletVersion,
     tapplets::{
         error::{
             Error::{self, IOError, JsonParsingError, RequestError},
