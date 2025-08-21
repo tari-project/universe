@@ -92,6 +92,7 @@ pub enum EventType {
     AllowTappletCsp,
     GrantTappletPermissions,
     OotleWalletPhaseFinished,
+    EmitTappletNofication,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -212,4 +213,9 @@ pub struct AllowTappletCspPayload {
 #[derive(Debug, Serialize, Clone)]
 pub struct GrantTappletPermissionsPayload {
     pub permissions: String,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct EmitTappletNofication {
+    pub notification: String,
 }

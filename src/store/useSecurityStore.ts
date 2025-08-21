@@ -8,6 +8,7 @@ const _DIALOGS = [
     'forgot_pin',
     'tapplet_csp',
     'tapplet_permissions',
+    'tapplet_notofication',
 ] as const;
 type DialogsTuple = typeof _DIALOGS;
 export type DialogsType = DialogsTuple[number] | null;
@@ -17,6 +18,7 @@ interface State {
     showReminderTip: boolean;
     tappletCsp: string;
     tappletPermissions: string;
+    tappletNotification: string;
 }
 
 interface Actions {
@@ -24,6 +26,7 @@ interface Actions {
     setShowReminderTip: (showReminderTip: boolean) => void;
     setTappletCsp: (csp: string) => void;
     setTappletPermissions: (tappletPermissions: string) => void;
+    setTappletNotification: (tappletNotification: string) => void;
 }
 
 const initialState: State = {
@@ -31,6 +34,7 @@ const initialState: State = {
     showReminderTip: false,
     tappletCsp: '',
     tappletPermissions: '',
+    tappletNotification: '',
 };
 
 export const useSecurityStore = create<State & Actions>()((set) => ({
@@ -39,4 +43,5 @@ export const useSecurityStore = create<State & Actions>()((set) => ({
     setShowReminderTip: (showReminderTip: boolean) => set({ showReminderTip }),
     setTappletCsp: (tappletCsp: string) => set({ tappletCsp }),
     setTappletPermissions: (tappletPermissions: string) => set({ tappletPermissions }),
+    setTappletNotification: (tappletNotification: string) => set({ tappletNotification }),
 }));

@@ -695,6 +695,7 @@ fn main() {
             tapplet_commands::stop_tapplet,
             tapplet_commands::restart_tapplet,
             tapplet_commands::is_tapplet_server_running,
+            tapplet_commands::emit_tapplet_notification,
         ])
         .build(tauri::generate_context!())
         .inspect_err(|e| {

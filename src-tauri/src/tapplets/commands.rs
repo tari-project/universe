@@ -65,6 +65,19 @@ pub async fn update_csp_policy(
     }
 }
 
+#[tauri::command]
+pub async fn emit_tapplet_notification(
+    receiver_tapp_id: i32,
+    notification: String,
+    app_handle: tauri::AppHandle,
+) -> Result<String, InvokeError> {
+    info!(target: LOG_TARGET, "👉👉👉 nofitication {:?} for the tapp {}", &notification, receiver_tapp_id);
+    let resp = TappletManager::emit_tapplet_notification(notification, &app_handle)
+        .await
+        .map_err(|e| InvokeError::from_anyhow(e))?;
+    Ok(resp)
+}
+
 // the tapplet is not a binary, it's a compressed dir, but the process of downloading
 // the appropriate version and checking the checksum is the same as for the binary
 #[tauri::command]
@@ -215,7 +228,7 @@ pub async fn start_tapplet(
         .await
         .map_err(|e| {
             error!(target: LOG_TARGET, "Failed to start tapplet with id {}: {}", tapplet_id, &e);
-            InvokeError::from_error(e);
+            InvokeError::from_error(e)
         })?;
     let is_running = tapplet_manager.is_server_running(tapplet_id).await;
     info!(target: LOG_TARGET, "🎉🎉🎉 IS RUNNING: {:?} at address {:?}", is_running, addr);
@@ -234,11 +247,10 @@ pub async fn stop_tapplet(
 ) -> Result<String, InvokeError> {
     info!(target: LOG_TARGET, "👉👉👉 stop tapp id: {:?}", &tapplet_id);
 
-    let address = tapplet_manager.stop_server(tapplet_id).await.map_err(|e| {
+    tapplet_manager.stop_server(tapplet_id).await.map_err(|e| {
         error!(target: LOG_TARGET, "Failed to stop tapplet with id {}: {}", tapplet_id, &e);
-        InvokeError::from_error(e);
-    })?;
-    Ok(address)
+        InvokeError::from_error(e)
+    })
 }
 
 #[tauri::command]
@@ -251,7 +263,8 @@ pub async fn restart_tapplet(
     let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
     let dev_tapplet: DevTapplet = tapplet_store
         .get_by_id(tapplet_id)
-        .map_err(|e| InvokeError::from_error(e))?;
+        .map_err(InvokeError::from_error)?;
+
     let tapplet_path = PathBuf::from(&dev_tapplet.source);
 
     let address = tapplet_manager
@@ -259,9 +272,10 @@ pub async fn restart_tapplet(
         .await
         .map_err(|e| {
             error!(target: LOG_TARGET, "Failed to restart tapplet with id {}: {}", tapplet_id, &e);
-            InvokeError::from_error(e);
+            InvokeError::from_error(e)
         })?;
-    Ok(address)
+
+    Ok(address) // Return Ok result wrapping the address string
 }
 
 #[tauri::command]
@@ -270,8 +284,7 @@ pub async fn is_tapplet_server_running(
     tapplet_manager: tauri::State<'_, TappletManager>,
 ) -> Result<bool, InvokeError> {
     info!(target: LOG_TARGET, "👉👉👉 stop tapp id: {:?}", &tapplet_id);
-
-    let is_running: bool = tapplet_manager.is_server_running(tapplet_id).await;
+    let is_running = tapplet_manager.is_server_running(tapplet_id).await;
     Ok(is_running)
 }
 
@@ -365,8 +378,8 @@ pub fn read_tapp_registry_db(
 }
 
 #[tauri::command]
-pub fn get_assets_server_addr(state: tauri::State<'_, AssetServer>) -> Result<String, InvokeError> {
-    Ok(format!("http://{}", state.addr))
+pub fn get_assets_server_addr(state: tauri::State<'_, AssetServer>) -> String {
+    format!("http://{}", state.addr)
 }
 
 #[tauri::command]
@@ -379,7 +392,7 @@ pub async fn download_and_extract_tapp(
     let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
     // let (tapp, tapp_version) = tapplet_store.get_registered_tapplet_with_version(tapplet_id);
     let (tapp, tapp_version) = match tapplet_store.get_registered_tapplet_with_version(tapplet_id) {
-        Ok(tapp) => tapp,
+        Ok((tapp, tapp_version)) => (tapp, tapp_version),
         Err(e) => {
             return Err(InvokeError::from_error(e));
         }

@@ -90,6 +90,20 @@ impl TappletManager {
         }
     }
 
+    pub async fn emit_tapplet_notification(
+        notification: String,
+        app_handle: &AppHandle,
+    ) -> Result<String, anyhow::Error> {
+        let response = emit_notification_dialog(notification, app_handle).await?;
+        if response.to_lowercase() != "null" {
+            info!(target: LOG_TARGET, "💭 Tapplet's notification accepted: {:?}", &response);
+            Ok(response)
+        } else {
+            warn!(target: LOG_TARGET, "Tapplet's notification rejected");
+            Err(anyhow::anyhow!("Tapplet's notification rejected"))
+        }
+    }
+
     // TODO debug why permission dialog doesnt show up
     pub async fn check_permissions_config(
         source: &str,
@@ -240,7 +254,7 @@ impl TappletManager {
 }
 
 // Utils
-async fn csp_dialog_with_emitter<F, Fut>(
+async fn dialog_with_emitter<F, Fut>(
     app_handle: &AppHandle,
     emit_fn: F,
 ) -> Result<String, anyhow::Error>
@@ -274,7 +288,7 @@ where
 }
 
 async fn allow_csp_dialog(csp: String, app_handle: &AppHandle) -> Result<String, anyhow::Error> {
-    csp_dialog_with_emitter(app_handle, || {
+    dialog_with_emitter(app_handle, || {
         EventsEmitter::emit_allow_tapplet_csp(csp.clone())
     })
     .await
@@ -284,8 +298,18 @@ async fn grant_permissions_dialog(
     permissions: String,
     app_handle: &AppHandle,
 ) -> Result<String, anyhow::Error> {
-    csp_dialog_with_emitter(app_handle, || {
+    dialog_with_emitter(app_handle, || {
         EventsEmitter::emit_grant_tapplet_permissions(permissions.clone())
+    })
+    .await
+}
+
+async fn emit_notification_dialog(
+    notification: String,
+    app_handle: &AppHandle,
+) -> Result<String, anyhow::Error> {
+    dialog_with_emitter(app_handle, || {
+        EventsEmitter::emit_tapplet_notification(notification.clone())
     })
     .await
 }

@@ -189,10 +189,10 @@ declare module '@tauri-apps/api/core' {
         param: 'download_and_extract_tapp',
         payload: { tappletId: number }
     ): Promise<InstalledTappletWithAssets>;
-    function invoke(param: 'launch_tapplet', payload: { installedTappletId: number }): Promise<ActiveTapplet>;
-    function invoke(param: 'set_ootle_enabled', payload: { enabled: boolean }): Promise<void>;
-    function invoke(param: 'set_ootle_node_enabled', payload: { enabled: boolean }): Promise<void>;
-    function invoke(param: 'upload_wasm_file', payload: { file: string }): Promise<void>;
+    function invoke(
+        param: 'emit_tapplet_notification',
+        payload: { receiverTappId: number; notification: string }
+    ): Promise<string>;
     function invoke(param: 'sign_ws_data', payload: { data: string }): Promise<SignData>;
     function invoke(param: 'ootle_list_accounts', payload: AccountsListRequest): Promise<AccountsListResponse>;
     function invoke(

@@ -4,6 +4,7 @@ import { TappletContainer } from '@app/containers/main/Dashboard/MiningView/Mini
 import { open } from '@tauri-apps/plugin-shell';
 import { useConfigUIStore, useUIStore, setError as setStoreError } from '@app/store';
 import { MessageType, useIframeMessage } from '@app/hooks/swap/useIframeMessage';
+import { invoke } from '@tauri-apps/api/core';
 
 interface TappletProps {
     activeTappId: number;
@@ -67,6 +68,10 @@ export const Tapplet: React.FC<TappletProps> = ({ activeTappId, source }) => {
         }
     }, [theme]);
 
+    const emitNotification = useCallback(async (event: MessageEvent) => {
+        await invoke('emit_tapplet_notification', { receiverTappId: 2, notification: 'test notification' });
+    }, []);
+
     useIframeMessage((event) => {
         switch (event.data.type) {
             case MessageType.GET_PARENT_SIZE:
@@ -106,12 +111,11 @@ export const Tapplet: React.FC<TappletProps> = ({ activeTappId, source }) => {
                 }
                 break;
             }
-            // case MessageType.SET_ALLOWED_DOMAINS: {
-            //     const domains = event.data.payload?.domains || [];
-            //     setPendingDomains(domains);
-            //     setShowDomainPopup(true);
-            //     break;
-            // }
+            case MessageType.SET_ALLOWED_DOMAINS: {
+                console.info('[TAPPLET] handle notification:', event.data.type);
+                emitNotification(event);
+                break;
+            }
             case MessageType.ERROR:
                 console.info('[TAPPLET] handle iframe msg type error:', event.data.type);
                 setStoreError(`${event.data.payload.message}`, true);
