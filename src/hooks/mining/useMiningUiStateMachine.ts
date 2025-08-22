@@ -3,11 +3,9 @@ import { setAnimationState, animationStatus, getTowerLogPrefix } from '@tari-pro
 
 import { useMiningStore } from '@app/store/useMiningStore';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
-import { useSetupStore } from '@app/store/useSetupStore.ts';
 import { useConfigUIStore, useUIStore } from '@app/store';
 
 export const useUiMiningStateMachine = () => {
-    const setupComplete = useSetupStore((s) => s.appUnlocked);
     const isMiningInitiated = useMiningStore((s) => s.isCpuMiningInitiated || s.isGpuMiningInitiated);
     const isChangingMode = useMiningStore((s) => s.isChangingMode);
     const cpuIsMining = useMiningMetricsStore((s) => s.cpu_mining_status?.is_mining);
@@ -20,7 +18,7 @@ export const useUiMiningStateMachine = () => {
     const isMining = cpuIsMining || gpuIsMining;
 
     const notStarted = stateTrigger === 'not-started';
-    const preventStop = !setupComplete || isMiningInitiated || isChangingMode;
+    const preventStop = isMiningInitiated || isChangingMode;
     const shouldStop = !isMining && !notStarted && !preventStop;
     const shouldStart = isMining && notStarted;
 

@@ -3,6 +3,8 @@ import { useConfigMiningStore, useConfigPoolsStore, useMiningMetricsStore, useMi
 import { useMiningPoolsStore } from '@app/store/useMiningPoolsStore.ts';
 import MinerTile from './Miner.tsx';
 import { useEffect, useRef } from 'react';
+import { useSetupStore } from '@app/store/useSetupStore.ts';
+import { setupStoreSelectors } from '@app/store/selectors/setupStoreSelectors.ts';
 
 export default function CPUTile() {
     const cpuPoolStats = useMiningPoolsStore((s) => s.cpuPoolStats);
@@ -20,6 +22,8 @@ export default function CPUTile() {
     useEffect(() => useMiningPoolsStore.subscribe((s) => (statsRef.current = s.cpuPoolStats)), []);
     useEffect(() => useMiningPoolsStore.subscribe((s) => (rewardsRef.current = s.cpuRewards)), []);
 
+    const cpuMiningModuleState = useSetupStore(setupStoreSelectors.selectCpuMiningModule);
+
     return (
         <MinerTile
             title="CPU"
@@ -34,6 +38,7 @@ export default function CPUTile() {
             showTooltip={true}
             progressDiff={rewardsRef.current?.rewardValue}
             unpaidFMT={rewardsRef.current?.unpaidFMT || '-'}
+            minerModuleState={cpuMiningModuleState}
         />
     );
 }

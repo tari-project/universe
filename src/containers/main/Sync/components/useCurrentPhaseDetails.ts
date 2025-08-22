@@ -3,22 +3,22 @@ import { useMemo } from 'react';
 
 export const useCurrentPhaseDetails = () => {
     const corePhaseInfoPayload = useSetupStore((state) => state.core_phase_setup_payload);
-    const hardwarePhaseInfoPayload = useSetupStore((state) => state.hardware_phase_setup_payload);
+    const cpuMiningInfoPayload = useSetupStore((state) => state.cpu_mining_phase_setup_payload);
+    const gpuMiningInfoPayload = useSetupStore((state) => state.gpu_mining_phase_setup_payload);
     const nodePhaseInfoPayload = useSetupStore((state) => state.node_phase_setup_payload);
-    const miningPhaseInfoPayload = useSetupStore((state) => state.mining_phase_setup_payload);
 
     const currentPhaseToShow = useMemo(() => {
-        if (hardwarePhaseInfoPayload?.is_complete && miningPhaseInfoPayload) {
-            return miningPhaseInfoPayload;
+        if (gpuMiningInfoPayload?.is_completed && cpuMiningInfoPayload) {
+            return cpuMiningInfoPayload;
         }
-        if (nodePhaseInfoPayload?.is_complete && hardwarePhaseInfoPayload) {
-            return hardwarePhaseInfoPayload;
+        if (nodePhaseInfoPayload?.is_completed && gpuMiningInfoPayload) {
+            return gpuMiningInfoPayload;
         }
-        if (corePhaseInfoPayload?.is_complete && nodePhaseInfoPayload) {
+        if (corePhaseInfoPayload?.is_completed && nodePhaseInfoPayload) {
             return nodePhaseInfoPayload;
         }
         return corePhaseInfoPayload;
-    }, [corePhaseInfoPayload, hardwarePhaseInfoPayload, nodePhaseInfoPayload, miningPhaseInfoPayload]);
+    }, [corePhaseInfoPayload, cpuMiningInfoPayload, gpuMiningInfoPayload, nodePhaseInfoPayload]);
 
     return {
         setupPhaseTitle: currentPhaseToShow?.phase_title,

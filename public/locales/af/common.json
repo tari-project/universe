@@ -1,6 +1,7 @@
 {
   "back": "Terug",
   "cancel": "Kanselleer",
+  "click-to-view-details": "Click to view details",
   "close": "Sluit",
   "close-tari-universe": "Sluit Tari Universe",
   "complete": "Voltooi",
@@ -19,6 +20,7 @@
   "max-temperature": "Maksimum temperatuur",
   "minimize": "Minimaliseer",
   "mode": "Modus",
+  "module-initialization-failed": "Module initialization failed",
   "not-available": "Not available",
   "not-installed-in-applications-directory": "Oeps! Tari Universe moet in die Toepassingsgids wees. Sal jy dit daar installeer?",
   "pending": "Pending",

@@ -6,7 +6,6 @@ import { GLOBAL_EVENT_NAME, WebsocketGlobalEvent, WebsocketUserEvent } from '@ap
 import { useHandleWsGlobalEvent } from './useHandleWsGlobalEvent';
 import './useSendWsMessage'; // dummy import to bypass knip
 import { initialiseSocket } from '@app/utils/socket';
-import { useSetupStore } from '@app/store/useSetupStore';
 
 export interface WebsocketEventType {
     event: string;
@@ -31,13 +30,10 @@ export default function useAirdropWebsocket() {
     const userEventHandler = useHandleWsUserIdEvent();
     const globalEventHandler = useHandleWsGlobalEvent();
     const startWebsocket = useSetupWebsocket();
-    const setupComplete = useSetupStore((s) => s.appUnlocked);
 
     useEffect(() => {
-        if (setupComplete) {
-            startWebsocket();
-        }
-    }, [startWebsocket, setupComplete]);
+        startWebsocket();
+    }, [startWebsocket]);
 
     useEffect(() => {
         const unlistenPromise = listen('ws-status-change', (event) => {

@@ -3,10 +3,10 @@ import { BasePoolData, ConfigPools, CpuPools, GpuPools } from './configs';
 
 export enum SetupPhase {
     Core = 'Core',
+    CpuMining = 'CpuMining',
+    GpuMining = 'GpuMining',
     Wallet = 'Wallet',
-    Hardware = 'Hardware',
     Node = 'Node',
-    Mining = 'Mining',
 }
 
 export enum TariAddressType {
@@ -90,4 +90,13 @@ export type ConnectionStatusPayload = 'InProgress' | 'Succeed' | 'Failed';
 export interface ConfigPoolsPayload extends Omit<ConfigPools, 'available_gpu_pools' | 'available_cpu_pools'> {
     available_gpu_pools?: [{ [GpuPools.LuckyPool]: BasePoolData }, { [GpuPools.SupportXTMPool]: BasePoolData }]; // Available GPU pools
     available_cpu_pools?: [{ [CpuPools.LuckyPool]: BasePoolData }, { [CpuPools.SupportXTMPool]: BasePoolData }]; // Available CPU pools
+}
+
+export interface ProgressTrackerUpdatePayload {
+    phase_title: string;
+    title: string;
+    progress: number;
+    title_params: Record<string, string>;
+    setup_phase: SetupPhase;
+    is_completed: boolean;
 }

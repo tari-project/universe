@@ -52,6 +52,7 @@ export function List({ setIsScrolled, targetRef }: Props) {
     });
 
     const latestTxId = data?.pages?.[0]?.[0]?.tx_id;
+
     const baseTx = useMemo(() => {
         const latestConvertedTxId = convertedTransactions.current[0]?.walletTransactionDetails.txId;
         if (latestTxId && latestTxId != latestConvertedTxId) {
@@ -139,7 +140,7 @@ export function List({ setIsScrolled, targetRef }: Props) {
         });
 
         return extendedTransactions;
-    }, [baseTx, bridgeTransactions]);
+    }, [baseTx, bridgeTransactions, coldWalletAddress]);
 
     const handleDetailsChange = useCallback(async (transaction: CombinedBridgeWalletTransaction | null) => {
         if (!transaction || !transaction.walletTransactionDetails) {
