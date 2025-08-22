@@ -7,7 +7,6 @@ import { useHandleWsGlobalEvent } from './useHandleWsGlobalEvent';
 import './useSendWsMessage'; // dummy import to bypass knip
 import { restartSocket } from '@app/utils/socket';
 
-
 export interface WebsocketEventType {
     event: string;
     data: unknown;
