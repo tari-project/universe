@@ -24,6 +24,10 @@ const generateColor = (seed: Seed): string => {
     return `rgb(${r}, ${g}, ${b})`;
 };
 
+const firstLetter = (username: string): string => {
+    return username.charAt(0).toUpperCase();
+};
+
 interface Props {
     username?: string;
     image?: string;
@@ -32,6 +36,7 @@ interface Props {
 export default function Avatar({ username, image }: Props) {
     const finalUsername = username ? `@${username}` : '';
     let finalImage = `url(${image})`;
+    let finalLetter = '';
 
     if (!image && username) {
         const seed = hashString(username);
@@ -41,7 +46,12 @@ export default function Avatar({ username, image }: Props) {
         const yPos = Math.floor(seededRandom(seed + 7) * 100);
 
         finalImage = `radial-gradient(circle at ${xPos}% ${yPos}%, ${color1}, ${color2})`;
+        finalLetter = firstLetter(username);
     }
 
-    return <AvatarWrapper $image={finalImage} aria-label={finalUsername} title={finalUsername} />;
+    return (
+        <AvatarWrapper $image={finalImage} aria-label={finalUsername} title={finalUsername}>
+            {finalLetter}
+        </AvatarWrapper>
+    );
 }
