@@ -9,19 +9,29 @@ import { FEATURE_FLAGS } from '@app/store/consts.ts';
 
 export default function Dashboard() {
     const activeTapplet = useTappletsStore((s) => s.activeTapplet);
+    const inUseTappIds = useTappletsStore((s) => s.inUseTappIds);
     const showTapplet = useUIStore((s) => s.showTapplet);
     const connectionStatus = useUIStore((s) => s.connectionStatus);
     const orphanChainUiDisabled = useAirdropStore((s) =>
         s.features?.includes(FEATURE_FLAGS.FF_UI_ORPHAN_CHAIN_DISABLED)
     );
-
+    console.info('DASHBOARD', activeTapplet?.tapplet_id, inUseTappIds);
     useMiningStatesSync();
 
     return (
         <DashboardContentContainer $tapplet={showTapplet}>
             {connectionStatus !== 'connected' && !orphanChainUiDisabled ? <DisconnectWrapper /> : null}
-            {showTapplet && activeTapplet ? (
-                <Tapplet activeTappId={activeTapplet.tapplet_id} source={activeTapplet.source} />
+            {showTapplet && inUseTappIds.length > 0 ? (
+                <>
+                    {inUseTappIds.map(({ tapplet_id, source }) => (
+                        <Tapplet
+                            key={tapplet_id}
+                            activeTappId={tapplet_id}
+                            source={source}
+                            disabled={tapplet_id !== activeTapplet?.tapplet_id}
+                        />
+                    ))}
+                </>
             ) : (
                 <MiningView />
             )}

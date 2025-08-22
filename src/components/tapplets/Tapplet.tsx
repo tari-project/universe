@@ -9,9 +9,10 @@ import { invoke } from '@tauri-apps/api/core';
 interface TappletProps {
     activeTappId: number;
     source: string;
+    disabled?: boolean;
 }
 
-export const Tapplet: React.FC<TappletProps> = ({ activeTappId, source }) => {
+export const Tapplet: React.FC<TappletProps> = ({ activeTappId, source, disabled }) => {
     const tappletRef = useRef<HTMLIFrameElement | null>(null);
     const tappSigner = useTappletSignerStore((s) => s.tappletSigner);
     const runTransaction = useTappletSignerStore((s) => s.runTransaction);
@@ -145,7 +146,7 @@ export const Tapplet: React.FC<TappletProps> = ({ activeTappId, source }) => {
                 width="100%"
                 height="100%"
                 onLoad={sendWindowSize}
-                style={{ border: 'none', pointerEvents: 'all' }}
+                style={{ border: 'none', pointerEvents: 'all', display: disabled ? 'none' : 'block' }}
                 sandbox="allow-same-origin allow-popups allow-scripts"
             />
         </TappletContainer>
