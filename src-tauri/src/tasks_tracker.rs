@@ -67,9 +67,9 @@ impl TaskTrackerUtil {
 
 pub struct TasksTrackers {
     pub wallet_phase: TaskTrackerUtil,
-    pub hardware_phase: TaskTrackerUtil,
-    pub mining_phase: TaskTrackerUtil,
     pub node_phase: TaskTrackerUtil,
+    pub cpu_mining_phase: TaskTrackerUtil,
+    pub gpu_mining_phase: TaskTrackerUtil,
     pub core_phase: TaskTrackerUtil,
     pub common: TaskTrackerUtil,
 }
@@ -78,9 +78,9 @@ impl TasksTrackers {
     fn new() -> Self {
         Self {
             wallet_phase: TaskTrackerUtil::new("Wallet phase"),
-            hardware_phase: TaskTrackerUtil::new("Hardware phase"),
-            mining_phase: TaskTrackerUtil::new("Mining phase"),
             node_phase: TaskTrackerUtil::new("Node phase"),
+            cpu_mining_phase: TaskTrackerUtil::new("CPU Mining phase"),
+            gpu_mining_phase: TaskTrackerUtil::new("GPU Mining phase"),
             core_phase: TaskTrackerUtil::new("Core phase"),
             common: TaskTrackerUtil::new("Common"),
         }
@@ -93,9 +93,9 @@ impl TasksTrackers {
     pub async fn stop_all_processes(&self) {
         self.common.close().await;
         self.core_phase.close().await;
+        self.cpu_mining_phase.close().await;
+        self.gpu_mining_phase.close().await;
         self.wallet_phase.close().await;
-        self.hardware_phase.close().await;
-        self.mining_phase.close().await;
         self.node_phase.close().await;
     }
 }

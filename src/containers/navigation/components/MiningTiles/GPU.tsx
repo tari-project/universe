@@ -2,6 +2,8 @@ import { useConfigMiningStore, useConfigPoolsStore, useMiningMetricsStore, useMi
 import MinerTile from './Miner';
 import { useMiningPoolsStore } from '@app/store/useMiningPoolsStore';
 import { useEffect, useRef } from 'react';
+import { setupStoreSelectors } from '@app/store/selectors/setupStoreSelectors';
+import { useSetupStore } from '@app/store/useSetupStore';
 
 export default function GPUTile() {
     const gpuPoolStats = useMiningPoolsStore((s) => s.gpuPoolStats);
@@ -20,6 +22,8 @@ export default function GPUTile() {
     useEffect(() => useMiningPoolsStore.subscribe((s) => (statsRef.current = s.gpuPoolStats)), []);
     useEffect(() => useMiningPoolsStore.subscribe((s) => (rewardsRef.current = s.gpuRewards)), []);
 
+    const gpuMiningModuleState = useSetupStore(setupStoreSelectors.selectGpuMiningModule);
+
     return (
         <MinerTile
             title="GPU"
@@ -34,6 +38,7 @@ export default function GPUTile() {
             showTooltip={true}
             progressDiff={rewardsRef.current?.rewardValue}
             unpaidFMT={rewardsRef.current?.unpaidFMT || '-'}
+            minerModuleState={gpuMiningModuleState}
         />
     );
 }

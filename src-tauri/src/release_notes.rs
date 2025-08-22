@@ -34,7 +34,7 @@ use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
 use semver::Version;
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, State};
+use tauri::AppHandle;
 use tokio::sync::RwLock;
 
 use crate::{
@@ -251,7 +251,7 @@ impl ReleaseNotes {
 
     pub async fn handle_release_notes_event_emit(
         &self,
-        state: State<'_, UniverseAppState>,
+        state: UniverseAppState,
         app: AppHandle,
     ) -> Result<(), Error> {
         debug!(target: LOG_TARGET, "[handle_release_notes_event_emit]");

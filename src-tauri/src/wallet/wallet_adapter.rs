@@ -206,7 +206,7 @@ impl WalletAdapter {
             Err(e) => {
                 let cancel_res = tx_service.cancel_transaction(tx_id).await;
                 if let Err(cancel_err) = cancel_res {
-                    log::error!(target: LOG_TARGET, "Failed to cancel transaction after failed to sign one sided tx: {}:{}", cancel_err, e);
+                    log::error!(target: LOG_TARGET, "Failed to cancel transaction after failed to sign one sided tx: {cancel_err}: {e}");
                 }
                 Err(e)
             }

@@ -9,36 +9,41 @@ export default function useSync() {
     const isInitialSetupFinished = useSetupStore((state) => state.isInitialSetupFinished);
     const shouldShowSync = useUIStore((state) => state.showResumeAppModal);
 
-    const core = useSetupStore((s) => s.core_phase_setup_payload);
-    const hardware = useSetupStore((s) => s.hardware_phase_setup_payload);
-    const node = useSetupStore((s) => s.node_phase_setup_payload);
-    const mining = useSetupStore((s) => s.mining_phase_setup_payload);
-    const wallet = useSetupStore((s) => s.wallet_phase_setup_payload);
-    const disabledPhases = useSetupStore((s) => s.disabled_phases);
+    const core_phase = useSetupStore((s) => s.core_phase_setup_payload);
+    const cpu_mining_phase = useSetupStore((s) => s.cpu_mining_phase_setup_payload);
+    const gpu_mining_phase = useSetupStore((s) => s.gpu_mining_phase_setup_payload);
+    const node_phase = useSetupStore((s) => s.node_phase_setup_payload);
+    const wallet_phase = useSetupStore((s) => s.wallet_phase_setup_payload);
 
-    const walletDisabled = disabledPhases.includes(SetupPhase.Wallet);
-    const miningDisabled = disabledPhases.includes(SetupPhase.Mining);
-    const hardwareDisabled = disabledPhases.includes(SetupPhase.Hardware);
+    const disabledPhases = useSetupStore((s) => s.disabled_phases);
     const nodeDisabled = disabledPhases.includes(SetupPhase.Node);
+    const walletDisabled = disabledPhases.includes(SetupPhase.Wallet);
+    const cpuMiningDisabled = disabledPhases.includes(SetupPhase.CpuMining);
+    const gpuMiningDisabled = disabledPhases.includes(SetupPhase.GpuMining);
 
     const getProgress = useCallback(() => {
         const total = 5;
         let progress = 0;
 
-        if (mining?.is_complete && (wallet?.is_complete || walletDisabled)) {
+        if (
+            gpu_mining_phase?.is_completed &&
+            cpu_mining_phase?.is_completed &&
+            node_phase?.is_completed &&
+            (wallet_phase?.is_completed || walletDisabled)
+        ) {
             progress = 5;
         }
 
-        if (wallet?.is_complete) {
+        if (gpu_mining_phase?.is_completed) {
             progress = 4;
         }
-        if (hardware?.is_complete) {
+        if (cpu_mining_phase?.is_completed) {
             progress = 3;
         }
-        if (node?.is_complete) {
+        if (node_phase?.is_completed) {
             progress = 2;
         }
-        if (core?.is_complete) {
+        if (core_phase?.is_completed) {
             progress = 1;
         }
 
@@ -47,44 +52,57 @@ export default function useSync() {
             total,
         };
     }, [
-        core?.is_complete,
-        hardware?.is_complete,
-        mining?.is_complete,
-        node?.is_complete,
-        wallet?.is_complete,
+        core_phase?.is_completed,
+        cpu_mining_phase?.is_completed,
+        gpu_mining_phase?.is_completed,
+        node_phase?.is_completed,
+        wallet_phase?.is_completed,
         walletDisabled,
     ]);
 
     const currentPhaseToShow = useMemo(() => {
-        let phase = core;
-        if (!miningDisabled && (wallet?.is_complete || walletDisabled)) {
-            phase = mining;
+        const phase = core_phase;
+
+        if (!walletDisabled && gpu_mining_phase?.is_completed) {
+            return wallet_phase;
         }
-        if (!walletDisabled && hardware?.is_complete) {
-            phase = wallet;
+
+        if (!cpuMiningDisabled && gpu_mining_phase?.is_completed) {
+            return cpu_mining_phase;
         }
-        if (!hardwareDisabled && node?.is_complete) {
-            phase = hardware;
+
+        if (!gpuMiningDisabled && node_phase?.is_completed) {
+            return gpu_mining_phase;
         }
-        if (!nodeDisabled && core?.is_complete) {
-            phase = node;
+
+        if (!nodeDisabled && core_phase?.is_completed) {
+            return node_phase;
         }
         return phase;
-    }, [core, miningDisabled, wallet, walletDisabled, hardware, hardwareDisabled, node, nodeDisabled, mining]);
+    }, [
+        core_phase,
+        wallet_phase,
+        walletDisabled,
+        node_phase,
+        nodeDisabled,
+        gpu_mining_phase,
+        cpu_mining_phase,
+        cpuMiningDisabled,
+        gpuMiningDisabled,
+    ]);
 
     useEffect(() => {
-        const isOpen = shouldShowSync || (!currentPhaseToShow?.is_complete && !isInitialSetupFinished);
+        const isOpen = shouldShowSync || (!currentPhaseToShow?.is_completed && !isInitialSetupFinished);
         setShowSync(isOpen);
     }, [currentPhaseToShow, isInitialSetupFinished, shouldShowSync]);
 
     useEffect(() => {
-        const hideResumeAppSync =
-            mining?.is_complete && (wallet?.is_complete || disabledPhases.includes(SetupPhase.Wallet));
+        const hideResumeAppSync = wallet_phase?.is_completed || disabledPhases.includes(SetupPhase.Wallet);
 
         if (hideResumeAppSync) {
             useUIStore.setState({ showResumeAppModal: false });
         }
-    }, [mining?.is_complete, wallet?.is_complete, disabledPhases]);
+    }, [wallet_phase?.is_completed, disabledPhases]);
 
     return {
         getProgress,
