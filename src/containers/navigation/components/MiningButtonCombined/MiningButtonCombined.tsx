@@ -11,10 +11,11 @@ import type { ReactElement } from 'react';
 import MiningButton from './MiningButton/MiningButton.tsx';
 import StopIcon from './icons/StopIcon.tsx';
 import PlayIcon from './icons/PlayIcon.tsx';
+import { setupStoreSelectors } from '@app/store/selectors/setupStoreSelectors.ts';
 
 export default function MiningButtonCombined() {
-    const isAppSettingUp = useSetupStore((s) => !s.appUnlocked);
-    const isMiningUnlocked = useSetupStore((s) => s.cpuMiningUnlocked || s.gpuMiningUnlocked);
+    const gpuMiningModuleInitialized = useSetupStore(setupStoreSelectors.isGpuMiningModuleInitialized);
+    const cpuMiningModuleInitialized = useSetupStore(setupStoreSelectors.isCpuMiningModuleInitialized);
     const isMiningControlsEnabled = useMiningStore((s) => s.miningControlsEnabled);
     const isMiningInitiated = useMiningStore((s) => s.isCpuMiningInitiated || s.isGpuMiningInitiated);
     const isCPUMining = useMiningMetricsStore((s) => s.cpu_mining_status.is_mining);
@@ -24,9 +25,9 @@ export default function MiningButtonCombined() {
     const isGpuMiningEnabled = useConfigMiningStore((s) => s.gpu_mining_enabled);
     const isMiningEnabled = isCpuMiningEnabled || isGpuMiningEnabled;
     const isMiningLoading = (isMining && !isMiningInitiated) || (isMiningInitiated && !isMining);
-    const isMiningButtonDisabled =
-        isAppSettingUp || isMiningLoading || !isMiningControlsEnabled || !isMiningEnabled || !isMiningUnlocked;
-    const isAppLoading = isAppSettingUp || isMiningLoading;
+    const isMiningUnlocked = gpuMiningModuleInitialized || cpuMiningModuleInitialized;
+    const isMiningButtonDisabled = isMiningLoading || !isMiningControlsEnabled || !isMiningEnabled || !isMiningUnlocked;
+    const isAppLoading = isMiningLoading;
 
     const handleStartMining = useCallback(async () => {
         await startMining();

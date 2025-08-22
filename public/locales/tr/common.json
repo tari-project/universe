@@ -1,6 +1,7 @@
 {
   "back": "Geri",
   "cancel": "İptal",
+  "click-to-view-details": "Click to view details",
   "close": "Kapat",
   "close-tari-universe": "Tari Evreni\"ni Kapat",
   "complete": "Tamamla",
@@ -19,6 +20,7 @@
   "max-temperature": "Maks. Sıcaklık",
   "minimize": "Küçült",
   "mode": "Mod",
+  "module-initialization-failed": "Module initialization failed",
   "not-available": "Not available",
   "not-installed-in-applications-directory": "Hata! Tari Universe, Uygulamalar dizininde bulunmalıdır. Oraya kurmayı düşünür müsünüz?",
   "pending": "Pending",
