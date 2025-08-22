@@ -5,12 +5,10 @@ import { Stack } from '@app/components/elements/Stack';
 import { Typography } from '@app/components/elements/Typography';
 import { useAppStateStore } from '@app/store/appStateStore';
 import { useUIStore } from '@app/store/useUIStore';
-import { ExternalDependencyStatus } from '@app/types/app-status';
 import { invoke } from '@tauri-apps/api/core';
 import { memo, useCallback, useState } from 'react';
 import { ExternalDependencyCard } from './ExternalDependencyCard';
 import { useTranslation } from 'react-i18next';
-import { setShowExternalDependenciesDialog } from '@app/store';
 
 const ExternalDependenciesDialog = memo(function ExternalDependenciesDialog() {
     const { t } = useTranslation('external-dependency-dialog', { useSuspense: false });
@@ -28,10 +26,6 @@ const ExternalDependenciesDialog = memo(function ExternalDependenciesDialog() {
         }
         setIsRestarting(false);
     }, []);
-
-    const shouldAllowContinue = Object.values(externalDependencies).every(
-        (missingDependency) => missingDependency.status === ExternalDependencyStatus.Installed
-    );
 
     return (
         <Dialog open={showExternalDependenciesDialog}>
@@ -55,15 +49,6 @@ const ExternalDependenciesDialog = memo(function ExternalDependenciesDialog() {
                         </Stack>
                     ))}
                     <Stack direction="row" justifyContent="flex-end" gap={8}>
-                        <SquaredButton
-                            color="grey"
-                            size="medium"
-                            onClick={() => setShowExternalDependenciesDialog(false)}
-                            disabled={isRestarting || !shouldAllowContinue}
-                            style={{ width: '100px' }}
-                        >
-                            {t('continue')}
-                        </SquaredButton>
                         <SquaredButton
                             color="error"
                             size="medium"

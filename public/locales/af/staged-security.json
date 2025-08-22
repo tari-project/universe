@@ -41,5 +41,9 @@
     "placeholder": "Klik die woorde hieronder in die korrekte volgorde",
     "text": "Om seker te maak jy het jou saadfrase korrek neergeskryf, kies asseblief die woorde in die korrekte volgorde.",
     "title": "Verifieer jou saadfrase"
+  },
+  "warning": {
+    "title": "Secure your wallet",
+    "steps": "Steps"
   }
 }

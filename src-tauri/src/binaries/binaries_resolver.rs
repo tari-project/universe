@@ -79,7 +79,7 @@ impl BinaryResolver {
                     repo: "wxtm-bridge-frontend".to_string(),
                     owner: "tari-project".to_string(),
                 }),
-                false,
+                true,
             ),
         );
 

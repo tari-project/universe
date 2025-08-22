@@ -24,7 +24,8 @@ use crate::configs::config_core::L2_NETWORK;
 use crate::ootle::ootle_wallet_json_rpc_client::{OotleWalletInfo, OotleWalletJsonRpcClient};
 use crate::port_allocator::PortAllocator;
 use crate::process_adapter::{
-    HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
+    HandleUnhealthyResult, HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec,
+    StatusMonitor,
 };
 use crate::process_adapter_utils::setup_working_directory;
 use crate::utils::file_utils::convert_to_string;
@@ -204,10 +205,13 @@ impl StatusMonitor for OotleWalletStatusMonitor {
         }
     }
 
-    async fn handle_unhealthy(&self) -> Result<(), Error> {
+    async fn handle_unhealthy(
+        &self,
+        _duration_since_last_healthy_status: Duration,
+    ) -> Result<HandleUnhealthyResult, anyhow::Error> {
         info!(target: LOG_TARGET, "OotleWalletStatusMonitor: Notifying unhealthy status.");
         self.unhealthy_notification.notify_one();
-        Ok(())
+        Ok(HandleUnhealthyResult::Continue)
     }
 }
 

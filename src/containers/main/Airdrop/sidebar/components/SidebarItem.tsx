@@ -1,5 +1,5 @@
 import { ReactNode, useState } from 'react';
-import { offset, safePolygon, useFloating, useHover, useInteractions } from '@floating-ui/react';
+import { offset, safePolygon, useFloating, useHover, useFocus, useInteractions } from '@floating-ui/react';
 import { ActionHoveredWrapper, ActionText, ActionWrapper, ContentWrapper, TooltipBox } from './item.style.ts';
 import { AnimatePresence } from 'motion/react';
 
@@ -25,10 +25,12 @@ export function SidebarItem({ children, text, hoverContent, tooltipContent }: Ac
         handleClose: safePolygon(),
     });
 
-    const { getReferenceProps, getFloatingProps } = useInteractions([hover]);
+    const focus = useFocus(context);
+
+    const { getReferenceProps, getFloatingProps } = useInteractions([hover, focus]);
 
     return (
-        <ActionWrapper ref={refs.setReference} {...getReferenceProps()}>
+        <ActionWrapper ref={refs.setReference} {...getReferenceProps()} tabIndex={0}>
             <ContentWrapper>{hovered && hoverContent ? hoverContent : children}</ContentWrapper>
             {text ? <ActionText>{text}</ActionText> : null}
             <AnimatePresence>

@@ -1,8 +1,34 @@
+🚀 TARI UNIVERSE v1.5.9: The Season of Light — Part 6½ Hotfix
+
+_August 14, 2025_
+
+Hey Tari OGs,
+
+Quick hotfix coming your way! We've identified and fixed a GPU miner disconnection issue that was interrupting mining. Your GPUs should now stay connected and keep earning consistently.
+
+---
+
+🚀 TARI UNIVERSE v1.5.7: The Season of Light — Part 6
+
+_August 12, 2025_
+
+Hey everyone,
+
+Introducing "Season of Light" Part 6 (we are getting to the end of this series.. we promise!). The goal for the Season of Light series is to make Tari Universe "just work" for as many users as possible. We've made a lot of progress with this release, thanks to all of the help and support of the Tari community. There's still more to do (we think Season of Light is Harry Potter film series in length…).
+
+✨ WHAT'S NEW
+
+- 🔄 **Improved pool mining** – RXT and SHA-3 mining now run on LuckyPool by default, with built-in support for multiple pools. You can choose your preferred pool via a new dropdown selector (all stratum pools are compatible; stats endpoints currently available for SupportXTM and LuckyPool).
+   - Note: Your previous Hatchling rewards above 1 XTM will be paid out this week. 
+- 💪 **Smarter error handling** – If a mining component runs into issues, the app will now automatically disable that component (local/GPU/CPU mining) and keep everything else running smoothly. Additional fallback systems are on the way.
+- 🔔 **Streamlined security prompts** – Security notifications now appear in a less intrusive way without all the popups, so your mining flow stays uninterrupted.
+- 🎬 **Animation improvements** – Win animations now handle block height changes without getting stuck.
+
+---
+
 🚀 TARI UNIVERSE v1.5.4: The Season of Light: Part 5
 
 _August 1, 2025_
-
-🔄 Rolling out via auto-update
 
 Hey everyone,
 

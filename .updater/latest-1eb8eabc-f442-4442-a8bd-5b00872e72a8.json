@@ -1,0 +1,19 @@
+{
+  "version": "1.5.7",
+  "notes": "Tari Universe - See the assets to download this version and install",
+  "pub_date": "2025-08-12T10:39:11Z",
+  "platforms": {
+    "darwin-aarch64": {
+      "url": "https://cdn-universe.tari.com/tari-project/universe/exchanges/1eb8eabc-f442-4442-a8bd-5b00872e72a8/1.5.7/Tari Universe-Gate.app.tar.gz",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRbUtvKzlyYWhiOFZ2UzkzaWdMTmJzOGFoVXZHZWxsN2pUbVV2MTZ6YWZpdEtmS1BncURFUUpFL2V5Z08vb1ByMzhpYnhMNVNoWHVIZzl0MHVGQkRqMG5hZ00zc256ckFVPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzU0OTk0MDY2CWZpbGU6VGFyaSBVbml2ZXJzZS1HYXRlLmFwcC50YXIuZ3oKZHgvRXpRMEd6RzZDQlUxeGV6UFNjVVZVQi84bnErUzJyM2RVNWEyWUxROG1IY0xLc1pwQU1kRFJsYlhtY2JTb0dVUit3OUdxNDFXem1SVm1DbmpIQ3c9PQo="
+    },
+    "darwin-x86_64": {
+      "url": "https://cdn-universe.tari.com/tari-project/universe/exchanges/1eb8eabc-f442-4442-a8bd-5b00872e72a8/1.5.7/Tari Universe-Gate.app.tar.gz",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRbUtvKzlyYWhiOFZ2UzkzaWdMTmJzOGFoVXZHZWxsN2pUbVV2MTZ6YWZpdEtmS1BncURFUUpFL2V5Z08vb1ByMzhpYnhMNVNoWHVIZzl0MHVGQkRqMG5hZ00zc256ckFVPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzU0OTk0MDY2CWZpbGU6VGFyaSBVbml2ZXJzZS1HYXRlLmFwcC50YXIuZ3oKZHgvRXpRMEd6RzZDQlUxeGV6UFNjVVZVQi84bnErUzJyM2RVNWEyWUxROG1IY0xLc1pwQU1kRFJsYlhtY2JTb0dVUit3OUdxNDFXem1SVm1DbmpIQ3c9PQo="
+    },
+    "windows-x86_64": {
+      "url": "https://cdn-universe.tari.com/tari-project/universe/exchanges/1eb8eabc-f442-4442-a8bd-5b00872e72a8/1.5.7/Tari Universe-Gate_1.5.7_x64_en-US.msi",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRbUtvKzlyYWhiOGUzRWpiNDdnM2h3TlZxUjF1cklTaytQVU1wVis0bUNHWklld2haejhVVElqSTc3WGJyVFhIc0dDU0lEbnUzWlNja1IwMUIveHdiRG44QncwV0p2NEFzPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzU0OTk0NjkzCWZpbGU6VGFyaSBVbml2ZXJzZS1HYXRlXzEuNS43X3g2NF9lbi1VUy5tc2kKTVlaQ2xoYUtZa2VQaGhXelVnTzZtWGo3azRZd3NXN0FGNW0rWXpteER2ZmhCZEo3cVk3ZzFaZkpFb1BiVTlLNzIrZG9xelJwdVJnSlQ0V0VwSzVPQWc9PQo="
+    }
+  }
+}

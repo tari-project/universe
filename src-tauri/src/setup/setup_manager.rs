@@ -33,8 +33,9 @@ use super::{
     phase_node::NodeSetupPhase, phase_wallet::WalletSetupPhase, utils::phase_builder::PhaseBuilder,
 };
 use crate::app_in_memory_config::{MinerType, DEFAULT_EXCHANGE_ID};
+use crate::commands::{start_cpu_mining, start_gpu_mining};
 use crate::configs::config_core::ConfigCoreContent;
-use crate::configs::config_pools::ConfigPools;
+use crate::configs::config_pools::{ConfigPools, ConfigPoolsContent};
 use crate::configs::config_ui::WalletUIMode;
 use crate::configs::config_wallet::ConfigWalletContent;
 use crate::events::CriticalProblemPayload;
@@ -218,36 +219,19 @@ impl SetupManager {
         &INSTANCE
     }
 
+    pub async fn app_handle(&self) -> AppHandle {
+        self.app_handle
+            .lock()
+            .await
+            .clone()
+            .expect("App handle is not initialized")
+    }
+
     #[allow(clippy::too_many_lines)]
     async fn pre_setup(&self, app_handle: AppHandle) {
         info!(target: LOG_TARGET, "Pre Setup");
         let state = app_handle.state::<UniverseAppState>();
         let in_memory_config = state.in_memory_config.clone();
-
-        let _unused = state
-            .telemetry_manager
-            .write()
-            .await
-            .initialize(app_handle.clone())
-            .await;
-
-        let mut telemetry_id = state
-            .telemetry_manager
-            .read()
-            .await
-            .get_unique_string()
-            .await;
-        if telemetry_id.is_empty() {
-            telemetry_id = "unknown_miner_tari_universe".to_string();
-        }
-
-        let app_version = app_handle.package_info().version.clone();
-        let _unused = state
-            .telemetry_service
-            .write()
-            .await
-            .init(app_version.to_string(), telemetry_id.clone())
-            .await;
 
         let mut websocket_events_manager_guard = state.websocket_event_manager.write().await;
         websocket_events_manager_guard.set_app_handle(app_handle.clone());
@@ -403,6 +387,31 @@ impl SetupManager {
         // We should probably change events to be loaded from internal wallet directly
         EventsEmitter::emit_wallet_config_loaded(&ConfigWallet::content().await).await;
 
+        {
+            let _unused = state
+                .telemetry_manager
+                .write()
+                .await
+                .initialize(app_handle.clone())
+                .await;
+            let mut telemetry_id = state
+                .telemetry_manager
+                .read()
+                .await
+                .get_unique_string()
+                .await;
+            if telemetry_id.is_empty() {
+                telemetry_id = "unknown_miner_tari_universe".to_string();
+            }
+            let app_version = app_handle.package_info().version.clone();
+            let _unused = state
+                .telemetry_service
+                .write()
+                .await
+                .init(app_version.to_string(), telemetry_id.clone())
+                .await;
+        }
+
         // If we open different specific exchange miner build then previous one we always want to prompt user to provide tari address
         if is_on_exchange_miner_build && built_in_exchange_id.ne(&last_config_exchange_id) {
             info!(target: LOG_TARGET, "Exchange ID changed from {last_config_exchange_id} to {built_in_exchange_id}");
@@ -465,7 +474,8 @@ impl SetupManager {
         Ok(())
     }
 
-    async fn setup_core_phase(&self, app_handle: AppHandle) {
+    async fn setup_core_phase(&self) {
+        let app_handle = self.app_handle().await;
         let setup_features = self.features.read().await.clone();
         let core_phase_setup = PhaseBuilder::new()
             .with_setup_timeout_duration(Duration::from_secs(60 * 10)) // 10 minutes
@@ -478,7 +488,8 @@ impl SetupManager {
         core_phase_setup.setup().await;
     }
 
-    async fn setup_hardware_phase(&self, app_handle: AppHandle) {
+    async fn setup_hardware_phase(&self) {
+        let app_handle = self.app_handle().await;
         let setup_features = self.features.read().await.clone();
         let hardware_phase_setup = PhaseBuilder::new()
             .with_setup_timeout_duration(Duration::from_secs(60 * 10)) // 10 minutes
@@ -492,7 +503,8 @@ impl SetupManager {
         hardware_phase_setup.setup().await;
     }
 
-    async fn setup_node_phase(&self, app_handle: AppHandle) {
+    async fn setup_node_phase(&self) {
+        let app_handle = self.app_handle().await;
         let setup_features = self.features.read().await.clone();
 
         let node_phase_setup = PhaseBuilder::new()
@@ -507,7 +519,8 @@ impl SetupManager {
         node_phase_setup.setup().await;
     }
 
-    async fn setup_wallet_phase(&self, app_handle: AppHandle) {
+    async fn setup_wallet_phase(&self) {
+        let app_handle = self.app_handle().await;
         let setup_features = self.features.read().await.clone();
         let wallet_phase_setup = PhaseBuilder::new()
             .with_setup_timeout_duration(Duration::from_secs(60 * 10)) // 10 minutes
@@ -521,7 +534,8 @@ impl SetupManager {
         wallet_phase_setup.setup().await;
     }
 
-    async fn setup_mining_phase(&self, app_handle: AppHandle) {
+    async fn setup_mining_phase(&self) {
+        let app_handle = self.app_handle().await;
         let setup_features = self.features.read().await.clone();
         let mining_phase_setup = PhaseBuilder::new()
             .with_setup_timeout_duration(Duration::from_secs(60 * 10)) // 10 minutes
@@ -538,7 +552,8 @@ impl SetupManager {
         mining_phase_setup.setup().await;
     }
 
-    async fn setup_ootle_wallet_phase(&self, app_handle: AppHandle) {
+    async fn setup_ootle_wallet_phase(&self) {
+        let app_handle = self.app_handle().await;
         let setup_features = self.features.read().await.clone();
         let ootle_wallet_phase_setup = PhaseBuilder::new()
             .with_setup_timeout_duration(Duration::from_secs(60 * 10)) // 10 minutes
@@ -595,79 +610,85 @@ impl SetupManager {
                 }
             }
         }
-        ListenerUnlockCpuMining::current().handle_restart().await;
-        ListenerUnlockGpuMining::current().handle_restart().await;
-        ListenerUnlockWallet::current().handle_restart().await;
     }
 
-    pub async fn resume_phases(&self, app_handle: AppHandle, phases: Vec<SetupPhase>) {
-        if !phases.is_empty() {
-            EventsEmitter::emit_restarting_phases(phases.clone()).await;
-            let _unused = self.resolve_setup_features().await;
-            self.features
-                .write()
-                .await
-                .add_feature(SetupFeature::Restarting);
+    pub async fn resume_phases(&self, phases: Vec<SetupPhase>) {
+        if phases.is_empty() {
+            return;
         }
 
+        EventsEmitter::emit_restarting_phases(phases.clone()).await;
+        let _unused = self.resolve_setup_features().await;
+        self.features
+            .write()
+            .await
+            .add_feature(SetupFeature::Restarting);
+
         let setup_features = self.features.read().await.clone();
+
         ListenerSetupFinished::current()
             .load_setup_features(setup_features.clone())
             .await;
-        ListenerSetupFinished::current().start_listener().await;
 
         ListenerUnlockCpuMining::current()
             .load_setup_features(setup_features.clone())
             .await;
-        ListenerUnlockCpuMining::current().start_listener().await;
 
         ListenerUnlockGpuMining::current()
             .load_setup_features(setup_features.clone())
             .await;
-        ListenerUnlockGpuMining::current().start_listener().await;
 
         ListenerUnlockWallet::current()
             .load_setup_features(setup_features.clone())
             .await;
+
+        ListenerUnlockCpuMining::current().handle_restart().await;
+        ListenerUnlockGpuMining::current().handle_restart().await;
+        ListenerUnlockWallet::current().handle_restart().await;
+
+        ListenerSetupFinished::current().start_listener().await;
+        ListenerUnlockCpuMining::current().start_listener().await;
+        ListenerUnlockGpuMining::current().start_listener().await;
         ListenerUnlockWallet::current().start_listener().await;
 
         for phase in phases {
             match phase {
                 SetupPhase::Core => {
-                    self.setup_core_phase(app_handle.clone()).await;
+                    self.setup_core_phase().await;
                 }
                 SetupPhase::Hardware => {
-                    self.setup_hardware_phase(app_handle.clone()).await;
+                    self.setup_hardware_phase().await;
                 }
                 SetupPhase::Node => {
-                    self.setup_node_phase(app_handle.clone()).await;
+                    self.setup_node_phase().await;
                 }
                 SetupPhase::Wallet => {
                     if setup_features.is_feature_enabled(SetupFeature::SeedlessWallet) {
                         info!(target: LOG_TARGET, "Skipping Wallet Phase as Seedless Wallet is enabled");
                         continue;
                     }
-                    self.setup_wallet_phase(app_handle.clone()).await;
+                    self.setup_wallet_phase().await;
                 }
                 SetupPhase::Mining => {
-                    self.setup_mining_phase(app_handle.clone()).await;
+                    self.setup_mining_phase().await;
                 }
                 SetupPhase::OotleWallet => {
-                    self.setup_ootle_wallet_phase(app_handle.clone()).await;
+                    self.setup_ootle_wallet_phase().await;
                 }
             }
         }
     }
 
-    pub async fn restart_phases(&self, app_handle: AppHandle, phases: Vec<SetupPhase>) {
+    pub async fn restart_phases(&self, phases: Vec<SetupPhase>) {
         info!(target: LOG_TARGET, "Restarting phases: {phases:?}");
         let _lock = self.restart_safe_lock.lock().await;
         self.shutdown_phases(phases.clone()).await;
-        self.resume_phases(app_handle, phases).await;
+        self.resume_phases(phases).await;
     }
 
     #[allow(clippy::too_many_lines)]
     pub async fn start_setup(&self, app_handle: AppHandle) {
+        *self.app_handle.lock().await = Some(app_handle.clone());
         self.pre_setup(app_handle.clone()).await;
 
         let shutdown_signal = TasksTrackers::current().common.get_signal().await;
@@ -705,7 +726,6 @@ impl SetupManager {
         let _unused = self.resolve_setup_features().await.inspect_err(
             |e| error!(target: LOG_TARGET, "Failed to set setup features during start_setup: {e}"),
         );
-        *self.app_handle.lock().await = Some(app_handle.clone());
 
         let setup_features = self.features.read().await.clone();
         let core_phase_status = self.core_phase_status.subscribe();
@@ -761,12 +781,78 @@ impl SetupManager {
         )
         .await;
 
-        self.setup_core_phase(app_handle.clone()).await;
-        self.setup_hardware_phase(app_handle.clone()).await;
-        self.setup_node_phase(app_handle.clone()).await;
-        self.setup_wallet_phase(app_handle.clone()).await;
-        self.setup_mining_phase(app_handle.clone()).await;
-        self.setup_ootle_wallet_phase(app_handle.clone()).await;
+        self.setup_core_phase().await;
+        self.setup_hardware_phase().await;
+        self.setup_node_phase().await;
+        self.setup_wallet_phase().await;
+        self.setup_mining_phase().await;
+        self.setup_ootle_wallet_phase().await;
+    }
+
+    /// Used in handle_unhealthy for graxil miner
+    /// Should be triggered after x amount of time passed of graxil being unhealthy
+    pub async fn turn_off_gpu_pool_feature(&self) -> Result<(), anyhow::Error> {
+        info!(target: LOG_TARGET, "Turning off GPU Pool feature");
+
+        let app_handle = self.app_handle().await;
+        let app_state = app_handle.state::<UniverseAppState>().clone();
+
+        // At the point of calling this method gpu miner will be stopped by do_health_check method
+        // It handles stopping the process of miner but is not stopping the status updates
+        // So we need to stop the status updates here as its more complicated to do it in stop method called by do_health_check
+
+        app_state
+            .gpu_miner_sha
+            .write()
+            .await
+            .stop_status_updates()
+            .await?;
+
+        // Updates the config to disable GPU Pool feature in next resolve_setup_features call
+        ConfigPools::update_field(ConfigPoolsContent::set_gpu_pool_enabled, false).await?;
+        // TODO Implement solution for telling frontend about one field updates in configs without emitting full config or adding event per field
+        EventsEmitter::emit_pools_config_loaded(&ConfigPools::content().await).await;
+
+        // Start mining will now pickup that GPU Pool is turn off and will start glytex instead
+        start_gpu_mining(app_state.clone(), app_handle.clone())
+            .await
+            .map_err(anyhow::Error::msg)?;
+
+        Ok(())
+    }
+
+    /// Used in handle_unhealthy for xmrig miner
+    /// Should be triggered after x amount of time passed of xmrig being unhealthy
+    /// It will make only difference in case of pool connection issues as we do not use other cpu miner
+    pub async fn turn_off_cpu_pool_feature(&self) -> Result<(), anyhow::Error> {
+        info!(target: LOG_TARGET, "Turning off CPU Pool feature");
+        let app_handle = self.app_handle().await;
+        let app_state = app_handle.state::<UniverseAppState>().clone();
+
+        // At the point of calling this method cpu miner will be stopped by do_health_check method
+        // It handles stopping the process of miner but is not stopping the status updates
+        // So we need to stop the status updates here as its more complicated to do it in stop method called by do_health_check
+
+        app_state
+            .cpu_miner
+            .write()
+            .await
+            .stop_status_updates()
+            .await?;
+
+        // Updates the config to disable CPU Pool feature in next resolve_setup_features call
+        ConfigPools::update_field(ConfigPoolsContent::set_cpu_pool_enabled, false).await?;
+        // TODO Implement solution for telling frontend about one field updates in configs without emitting full config or adding event per field
+        EventsEmitter::emit_pools_config_loaded(&ConfigPools::content().await).await;
+
+        // Solo mining will require mmproxy to be running
+        self.restart_phases(vec![SetupPhase::Mining]).await;
+
+        start_cpu_mining(app_state.clone(), app_handle.clone())
+            .await
+            .map_err(anyhow::Error::msg)?;
+
+        Ok(())
     }
 
     pub async fn handle_switch_to_local_node(&self) {
@@ -775,17 +861,14 @@ impl SetupManager {
             EventsManager::handle_node_type_update(&app_handle).await;
 
             info!(target: LOG_TARGET, "Restarting Phases");
-            self.restart_phases(
-                app_handle.clone(),
-                vec![SetupPhase::Wallet, SetupPhase::Mining],
-            )
-            .await;
+            self.restart_phases(vec![SetupPhase::Wallet, SetupPhase::Mining])
+                .await;
         } else {
             error!(target: LOG_TARGET, "Failed to reset phases after switching to Local Node: app_handle not defined");
         }
     }
 
-    pub async fn spawn_sleep_mode_handler(app_handle: AppHandle) {
+    pub async fn spawn_sleep_mode_handler() {
         info!(target: LOG_TARGET, "Spawning Sleep Mode Handler");
         let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
         if shutdown_signal.is_triggered() {
@@ -802,7 +885,7 @@ impl SetupManager {
                         let current_state = *receiver.borrow();
                         if last_state && !current_state {
                             info!(target: LOG_TARGET, "System is no longer in sleep mode");
-                            SetupManager::get_instance().resume_phases(app_handle.clone(), SetupPhase::all()).await;
+                            SetupManager::get_instance().resume_phases(SetupPhase::all()).await;
                         }
                         if !last_state && current_state {
                             info!(target: LOG_TARGET, "System entered sleep mode");
@@ -828,13 +911,13 @@ impl SetupManager {
         info!(target: LOG_TARGET, "Phases to restart queue: {queue:?}");
     }
 
-    pub async fn restart_phases_from_queue(&self, app_handle: AppHandle) {
+    pub async fn restart_phases_from_queue(&self) {
         let mut queue = self.phases_to_restart_queue.lock().await;
         if queue.is_empty() {
             return;
         }
         info!(target: LOG_TARGET, "Restarting phases from queue: {queue:?}");
-        self.restart_phases(app_handle.clone(), queue.clone()).await;
+        self.restart_phases(queue.clone()).await;
         queue.clear();
     }
 }

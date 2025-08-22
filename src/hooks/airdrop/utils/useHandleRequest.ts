@@ -1,6 +1,7 @@
 import { useAirdropStore } from '@app/store/useAirdropStore';
 import { handleRefreshAirdropTokens } from '@app/hooks/airdrop/stateHelpers/useAirdropTokensRefresh.ts';
 import { useConfigBEInMemoryStore } from '@app/store';
+import { defaultHeaders } from '@app/utils';
 
 interface RequestProps {
     path: string;
@@ -24,7 +25,7 @@ async function retryHandler(errorMessage: string) {
 
 export async function handleAirdropRequest<T>({ body, method, path, onError, headers, publicRequest }: RequestProps) {
     // use useConfigBEInMemoryStore now, not airdrop store for the URL
-    const baseUrl = useConfigBEInMemoryStore.getState().airdropApiUrl; // TODO rename url vars?
+    const baseUrl = useConfigBEInMemoryStore.getState().airdrop_api_url;
 
     const airdropToken = useAirdropStore.getState().airdropTokens?.token;
     const airdropTokenExpiration = useAirdropStore.getState().airdropTokens?.expiresAt;
@@ -60,6 +61,7 @@ export async function handleAirdropRequest<T>({ body, method, path, onError, hea
         const response = await fetch(fullUrl, {
             method: method,
             headers: {
+                ...defaultHeaders,
                 'Content-Type': 'application/json',
                 ...headersWithAuth,
                 ...headers,

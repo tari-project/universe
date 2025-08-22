@@ -58,7 +58,11 @@ import {
 import { invoke } from '@tauri-apps/api/core';
 import { refreshTransactions } from '@app/hooks/wallet/useFetchTxHistory.ts';
 import { setCpuPoolStats, setGpuPoolStats } from '@app/store/actions/miningPoolsStoreActions';
-import { handleSelectedTariAddressChange } from '@app/store/actions/walletStoreActions';
+import {
+    handlePinLocked,
+    handleSeedBackedUp,
+    handleSelectedTariAddressChange,
+} from '@app/store/actions/walletStoreActions';
 
 const LOG_EVENT_TYPES = ['WalletAddressUpdate', 'CriticalProblem', 'MissingApplications'];
 
@@ -217,9 +221,6 @@ const useTauriEventsListener = () => {
                         case 'ConnectionStatus':
                             handleConnectionStatusChanged(event.payload);
                             break;
-                        case 'ShowStageSecurityModal':
-                            useSecurityStore.setState({ modal: 'intro' });
-                            break;
                         case 'ExchangeIdChanged':
                             await handleExchangeIdChanged(event.payload);
                             break;
@@ -246,6 +247,26 @@ const useTauriEventsListener = () => {
                             break;
                         case 'UpdateGpuDevicesSettings':
                             handleGpuDevicesSettingsUpdated(event.payload);
+                            break;
+                        case 'PinLocked':
+                            handlePinLocked(event.payload);
+                            break;
+                        case 'SeedBackedUp':
+                            handleSeedBackedUp(event.payload);
+                            break;
+                        case 'AllowTappletCsp':
+                            useSecurityStore.setState({ tappletCsp: event.payload.csp });
+                            useSecurityStore.setState({ modal: 'tapplet_csp' });
+                            break;
+                        case 'GrantTappletPermissions':
+                            useSecurityStore.setState({ tappletPermissions: event.payload.permissions });
+                            useSecurityStore.setState({ modal: 'tapplet_permissions' });
+                            break;
+                        case 'EmitTappletNofication':
+                            useSecurityStore.setState({ tappletNotification: event.payload.notification });
+                            useSecurityStore.setState({ modal: 'tapplet_notofication' });
+                            break;
+                        case 'OotleWalletPhaseFinished':
                             break;
                         default:
                             console.warn('Unknown event', JSON.stringify(event));

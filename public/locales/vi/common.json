@@ -19,9 +19,12 @@
   "max-temperature": "Nhiệt độ tối đa",
   "minimize": "Thu nhỏ",
   "mode": "Chế độ",
+  "not-available": "Not available",
   "not-installed-in-applications-directory": "Oops! Tari Universe cần nằm trong thư mục Ứng dụng. Bạn có muốn cài đặt ở đó không?",
   "pending": "Đang chờ",
+  "please-enter-valid-number": "Please enter valid number",
   "please-try-again-later": "Vui lòng thử lại sau. Nếu vẫn gặp lỗi, hãy liên hệ với chúng tôi.",
+  "port": "Port",
   "received": "Đã nhận",
   "resources": "Tài nguyên",
   "restart": "Khởi động lại",
@@ -43,6 +46,7 @@
   "utilization": "Hiệu suất",
   "version": "Phiên bản",
   "versions": "Các phiên bản",
+  "waiting-for-confirmations": "Waiting for {{ total }} block confirmations ({{ confirmations }} of {{ total }} confirmed)",
   "webgl-not-supported": "WebGL không được hỗ trợ. Đã tắt chế độ hình ảnh.",
   "xtm": "XTM"
 }

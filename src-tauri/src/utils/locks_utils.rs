@@ -32,7 +32,7 @@ const LOCK_RETRY_DELAY: Duration = Duration::from_millis(500);
 pub async fn try_write_with_retry<T>(
     lock: &RwLock<T>,
     retries: u32,
-) -> Result<RwLockWriteGuard<T>, String> {
+) -> Result<RwLockWriteGuard<'_, T>, String> {
     for i in 0..retries {
         match lock.try_write() {
             Ok(guard) => return Ok(guard),

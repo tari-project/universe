@@ -36,6 +36,7 @@ use crate::{
     airdrop::decode_jwt_claims_without_exp,
     commands::{sign_ws_data, CpuMinerStatus, SignWsDataResponse},
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
+    internal_wallet::InternalWallet,
     tasks_tracker::TasksTrackers,
     websocket_manager::WebsocketMessage,
     BaseNodeStatus, GpuMinerStatus,
@@ -90,6 +91,7 @@ impl WebsocketEventsManager {
 
     pub async fn emit_interval_ws_events(&mut self) -> Result<(), anyhow::Error> {
         let mut interval = time::interval(INTERVAL_DURATION);
+        interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
         let cpu_miner_status_watch_rx = self.cpu_miner_status_watch_rx.clone();
         let gpu_latest_miner_stats = self.gpu_latest_miner_stats.clone();
         let node_latest_status = self.node_latest_status.clone();
@@ -115,9 +117,10 @@ impl WebsocketEventsManager {
                         .clone()
                         .map(|tokens| tokens.token);
                     let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
+                    let jwt = jwt_token.map_or(String::new(), |token| token.to_string());
+                    let app_version = app_version_option.map_or(String::from("unknown"), |version| version.to_string());
                     tokio::select! {
                       _= interval.tick() => {
-                            if let (Some(jwt), Some(app_version))= (jwt_token, app_version_option){
                             if let Some(message) = WebsocketEventsManager::assemble_mining_status(
                               cpu_miner_status_watch_rx.clone(),
                               gpu_latest_miner_stats.clone(),
@@ -129,7 +132,7 @@ impl WebsocketEventsManager {
                                 drop(websocket_tx_channel_clone.send(message).await.inspect_err(|e|{
                                   error!(target:LOG_TARGET, "could not send to websocket channel due to {e}");
                                 }));
-                            }}
+                            }
                       },
                       _= shutdown_signal.wait()=>{
                         info!(target:LOG_TARGET, "websocket events manager closed");
@@ -164,11 +167,18 @@ impl WebsocketEventsManager {
         let gpu_status = gpu_latest_miner_stats.borrow().clone();
         let network = Network::get_current_or_user_setting_or_default().as_key_str();
         let is_mining_active = cpu_miner_status.hash_rate > 0.0 || gpu_status.hash_rate > 0.0;
+        let tari_address = InternalWallet::tari_address().await;
 
         if let Some(claims) = decode_jwt_claims_without_exp(&jwt_token) {
             let signable_message = format!(
-                "{},{},{},{},{},{}",
-                app_version, network, app_id, claims.id, is_mining_active, block_height
+                "{},{},{},{},{},{},{}",
+                app_version,
+                network,
+                app_id,
+                claims.id,
+                is_mining_active,
+                block_height,
+                tari_address.to_base58()
             );
             if let Ok(SignWsDataResponse { signature, pub_key }) =
                 sign_ws_data(signable_message).await
@@ -179,7 +189,8 @@ impl WebsocketEventsManager {
                         "blockHeight":block_height,
                         "version":app_version,
                         "network":network,
-                        "userId":claims.id
+                        "userId":claims.id,
+                        "walletHash":tari_address.to_base58()
                 });
 
                 return Some(WebsocketMessage {

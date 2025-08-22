@@ -22,7 +22,7 @@
 
 use crate::ab_test_selector::ABTestSelector;
 use crate::node::node_manager::NodeType;
-use crate::process_adapter::{HealthStatus, StatusMonitor};
+use crate::process_adapter::{HandleUnhealthyResult, HealthStatus, StatusMonitor};
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use minotari_node_grpc_client::grpc::{
@@ -453,10 +453,13 @@ impl StatusMonitor for NodeStatusMonitor {
         }
     }
 
-    async fn handle_unhealthy(&self) -> Result<(), anyhow::Error> {
+    async fn handle_unhealthy(
+        &self,
+        _duration_since_last_healthy_status: Duration,
+    ) -> Result<HandleUnhealthyResult, anyhow::Error> {
         if self.node_type == NodeType::Remote {
             // Do not clear local node files for remote nodes
-            return Ok(());
+            return Ok(HandleUnhealthyResult::Continue);
         }
 
         if let Some(ref base_path) = self.base_path {
@@ -477,7 +480,7 @@ impl StatusMonitor for NodeStatusMonitor {
             let _unused = fs::remove_dir_all(base_path.join("tor-data")).await;
         }
 
-        Ok(())
+        Ok(HandleUnhealthyResult::Continue)
     }
 }
 

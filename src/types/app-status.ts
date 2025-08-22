@@ -192,6 +192,7 @@ export interface ApplicationsVersions {
     wallet: ApplicationsInformation;
     sha_p2pool: ApplicationsInformation;
     bridge: ApplicationsInformation;
+    ootle_wallet: ApplicationsInformation;
 }
 
 export interface PaperWalletDetails {

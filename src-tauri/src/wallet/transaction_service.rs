@@ -26,7 +26,7 @@ use crate::wallet::wallet_status_monitor::WalletStatusMonitorError;
 use minotari_node_grpc_client::grpc::payment_recipient::PaymentType;
 use minotari_node_grpc_client::grpc::wallet_client::WalletClient;
 use minotari_node_grpc_client::grpc::{
-    BroadcastSignedOneSidedTransactionRequest, PaymentRecipient,
+    BroadcastSignedOneSidedTransactionRequest, CancelTransactionRequest, PaymentRecipient,
     PrepareOneSidedTransactionForSigningRequest, UserPaymentId,
 };
 use std::fs;
@@ -123,6 +123,45 @@ impl<'a> TransactionService<'a> {
         fs::write(&unsigned_tx_file, &unsigned_tx_json)?;
 
         Ok((unsigned_tx_file, tx_id))
+    }
+
+    /// Cancel a transaction
+    /// Used as cleanup after failing to sign one sided transaction by spend wallet
+    ///
+    /// # Arguments
+    /// * `tx_id` - The ID of the transaction to cancel
+    ///
+    /// # Returns
+    /// * `Result<(), anyhow::Error>` - A result indicating success or failure
+    pub async fn cancel_transaction(&self, tx_id: String) -> Result<(), anyhow::Error> {
+        let wallet_txs_dir = get_transactions_directory(self.app_handle)?;
+        let unsigned_tx_file = wallet_txs_dir.join(format!("{tx_id}-unsigned.json"));
+        let signed_tx_file = wallet_txs_dir.join(format!("{tx_id}.json"));
+
+        let tx_id_u64 = tx_id
+            .parse::<u64>()
+            .map_err(|_| anyhow::anyhow!("Invalid transaction ID: {}", tx_id))?;
+
+        let mut client = WalletClient::connect(self.wallet_adapter.wallet_grpc_address())
+            .await
+            .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
+        let res = client
+            .cancel_transaction(CancelTransactionRequest { tx_id: tx_id_u64 })
+            .await?;
+
+        let cancel_tx_res = res.into_inner();
+        if !cancel_tx_res.is_success {
+            return Err(anyhow::anyhow!(
+                "One-sided transaction preparation failed: {}",
+                cancel_tx_res.failure_message
+            ));
+        };
+
+        // Remove unsigned and signed transaction files
+        fs::remove_file(&unsigned_tx_file)?;
+        fs::remove_file(&signed_tx_file)?;
+
+        Ok(())
     }
 
     /// Signs a prepared one-sided transaction using the SpendWallet

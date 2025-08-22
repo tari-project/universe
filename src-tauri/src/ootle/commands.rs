@@ -91,3 +91,16 @@ pub async fn ootle_get_balances(
         .await
         .map_err(InvokeError::from_anyhow)
 }
+
+#[tauri::command]
+pub async fn ootle_make_json_rpc_request(
+    method: &str,
+    params: String,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<serde_json::Value, InvokeError> {
+    let client = build_client(state).await?;
+    client
+        .make_json_rpc_request(method, params)
+        .await
+        .map_err(InvokeError::from_anyhow)
+}

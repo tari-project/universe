@@ -15,7 +15,7 @@ import { AnimatePresence } from 'motion/react';
 import PillCloseIcon from '@app/assets/icons/PillCloseIcon.tsx';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { invoke } from '@tauri-apps/api/core';
-import { useSecurityStore } from '@app/store';
+import { useSecurityStore, useWalletStore } from '@app/store';
 
 interface VerifySeedPhraseProps {
     words: string[];
@@ -66,7 +66,7 @@ export function VerifySeedPhrase({ words }: VerifySeedPhraseProps) {
         await invoke('set_seed_backed_up').then(() => {
             setModal(null);
         });
-        const isPinLocked = await invoke('is_pin_locked');
+        const isPinLocked = useWalletStore.getState().is_pin_locked;
         if (!isPinLocked) {
             await invoke('create_pin');
         }

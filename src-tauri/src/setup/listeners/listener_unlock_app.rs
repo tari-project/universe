@@ -92,6 +92,11 @@ impl UnlockConditionsListenerTrait for ListenerUnlockApp {
             info!(target: LOG_TARGET, "Not all listeners are ready, skipping listener start");
             return;
         }
+        if !unlock_strategy.is_any_phase_restarting(channels.clone()) {
+            info!(target: LOG_TARGET, "All phases are marked as completed, no need to start listener");
+            return;
+        }
+
         let unlock_app_listener = ListenerUnlockApp::current();
 
         let listener_task = TasksTrackers::current()

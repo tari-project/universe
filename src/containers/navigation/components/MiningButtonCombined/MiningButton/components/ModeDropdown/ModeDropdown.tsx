@@ -19,7 +19,7 @@ import SelectedIcon from './icons/SelectedIcon';
 import ecoIcon from './images/eco.png';
 import ludicIcon from './images/ludicrous.png';
 import customIcon from '@app/assets/icons/emoji/custom.png';
-import { offset, useClick, useDismiss, useFloating, useInteractions } from '@floating-ui/react';
+import { offset, useClick, useDismiss, useFloating, useInteractions, FloatingFocusManager } from '@floating-ui/react';
 import { useTranslation } from 'react-i18next';
 import { useConfigMiningStore } from '@app/store';
 import { setDialogToShow } from '@app/store/actions/uiStoreActions';
@@ -130,27 +130,38 @@ export default function ModeDropdown({ disabled, loading }: Props) {
             </Trigger>
             <AnimatePresence>
                 {isOpen && !disabled && !loading && (
-                    <FloatingWrapper ref={refs.setFloating} style={floatingStyles} {...getFloatingProps()}>
-                        <Menu
-                            initial={{ opacity: 0, y: -5 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -5 }}
-                        >
-                            {modes.map((mode) => (
-                                <Option
-                                    key={mode.name}
-                                    onClick={() => handleSelectMode(mode)}
-                                    $isSelected={mode.name === selectedMiningMode?.mode_name}
-                                >
-                                    <OptionIcon src={mode.icon} alt="" aria-hidden="true" className="option-icon" />
-                                    <OptionText>{mode.name}</OptionText>
-                                    {mode.name === selectedMiningMode?.mode_name && (
-                                        <SelectedIcon className="selected-icon" />
-                                    )}
-                                </Option>
-                            ))}
-                        </Menu>
-                    </FloatingWrapper>
+                    <FloatingFocusManager context={context} modal={true}>
+                        <FloatingWrapper ref={refs.setFloating} style={floatingStyles} {...getFloatingProps()}>
+                            <Menu
+                                initial={{ opacity: 0, y: -5 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -5 }}
+                            >
+                                {modes.map((mode) => (
+                                    <Option
+                                        key={mode.name}
+                                        onClick={() => handleSelectMode(mode)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' || e.key === ' ') {
+                                                e.preventDefault();
+                                                handleSelectMode(mode);
+                                            }
+                                        }}
+                                        tabIndex={0}
+                                        role="option"
+                                        aria-selected={mode.name === selectedMiningMode?.mode_name}
+                                        $isSelected={mode.name === selectedMiningMode?.mode_name}
+                                    >
+                                        <OptionIcon src={mode.icon} alt="" aria-hidden="true" className="option-icon" />
+                                        <OptionText>{mode.name}</OptionText>
+                                        {mode.name === selectedMiningMode?.mode_name && (
+                                            <SelectedIcon className="selected-icon" />
+                                        )}
+                                    </Option>
+                                ))}
+                            </Menu>
+                        </FloatingWrapper>
+                    </FloatingFocusManager>
                 )}
             </AnimatePresence>
         </Wrapper>

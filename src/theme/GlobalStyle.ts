@@ -19,8 +19,9 @@ export const GlobalReset = createGlobalStyle`
         font: inherit;
 
         &:focus-visible {
-            outline: 3px solid #c9eb00;
+            outline: 2px solid ${({ theme }) => theme.palette.focusOutline};
             outline-offset: 2px;
+            transition: none;
         }
     }
 
@@ -43,8 +44,9 @@ export const GlobalReset = createGlobalStyle`
         }
 
         &:focus-visible {
-            outline: 3px solid #c9eb00;
+            outline: 2px solid ${({ theme }) => theme.palette.focusOutline};
             outline-offset: 2px;
+            transition: none;
         }
     }
 `;

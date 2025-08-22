@@ -23,21 +23,27 @@
 use axum::async_trait;
 
 use log::{info, warn};
-use std::{path::PathBuf, time::Duration};
+use std::{
+    path::PathBuf,
+    sync::atomic::{AtomicBool, Ordering},
+    time::Duration,
+};
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
 use tokio::sync::watch::Sender;
 
+use crate::port_allocator::PortAllocator;
+#[cfg(target_os = "windows")]
+use crate::utils::windows_setup_utils::add_firewall_rule;
 use crate::{
     gpu_miner_sha_websocket::GpuMinerShaWebSocket,
     process_adapter::{
-        HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
+        HandleUnhealthyResult, HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec,
+        StatusMonitor,
     },
+    setup::setup_manager::SetupManager,
     GpuMinerStatus,
 };
-
-#[cfg(target_os = "windows")]
-use crate::utils::windows_setup_utils::add_firewall_rule;
 
 const LOG_TARGET: &str = "tari::universe::gpu_miner_sha_adapter";
 
@@ -77,14 +83,16 @@ impl ProcessAdapter for GpuMinerShaAdapter {
         _is_first_start: bool,
     ) -> Result<(Self::ProcessInstance, Self::StatusMonitor), anyhow::Error> {
         let inner_shutdown = Shutdown::new();
+        let ws_port = PortAllocator::new().assign_port_with_fallback();
 
-        let mut args: Vec<String> = vec![];
-
-        args.push("--algo".to_string());
-        args.push("sha3x".to_string());
-        // --web is needed for the web socket to be open
-        args.push("--web".to_string());
-        args.push("--gpu".to_string());
+        let mut args: Vec<String> = vec![
+            "--algo".to_string(),
+            "sha3x".to_string(),
+            // --web is needed for the web socket to be open
+            "--ws".to_string(),
+            ws_port.to_string(),
+            "--gpu".to_string(),
+        ];
 
         if let Some(pool_url) = &self.pool_url {
             args.push("--pool".to_string());
@@ -123,7 +131,7 @@ impl ProcessAdapter for GpuMinerShaAdapter {
 
         Ok((
             ProcessInstance {
-                shutdown: inner_shutdown,
+                shutdown: inner_shutdown.clone(),
                 startup_spec: ProcessStartupSpec {
                     file_path: binary_version_path,
                     envs: None,
@@ -136,7 +144,7 @@ impl ProcessAdapter for GpuMinerShaAdapter {
             },
             GpuMinerShaStatusMonitor {
                 gpu_status_sender: self.gpu_status_sender.clone(),
-                websocket_listener: GpuMinerShaWebSocket::new(),
+                websocket_listener: GpuMinerShaWebSocket::new(ws_port),
             },
         ))
     }
@@ -150,6 +158,10 @@ impl ProcessAdapter for GpuMinerShaAdapter {
     }
 }
 
+// This is a flag to indicate if the fallback to solo mining has been triggered
+// We want to avoid triggering it multiple times per session
+static WAS_FALLBACK_TO_SOLO_MINING_TRIGGERED: AtomicBool = AtomicBool::new(false);
+
 #[derive(Clone)]
 pub struct GpuMinerShaStatusMonitor {
     gpu_status_sender: Sender<GpuMinerStatus>,
@@ -158,6 +170,34 @@ pub struct GpuMinerShaStatusMonitor {
 
 #[async_trait]
 impl StatusMonitor for GpuMinerShaStatusMonitor {
+    async fn handle_unhealthy(
+        &self,
+        duration_since_last_healthy_status: Duration,
+    ) -> Result<HandleUnhealthyResult, anyhow::Error> {
+        // Fallback to solo mining if the miner has been unhealthy for more than 30 minutes
+        info!(target: LOG_TARGET, "Handling unhealthy status for GpuMinerShaAdapter | Duration since last healthy status: {:?}", duration_since_last_healthy_status.as_secs());
+        if duration_since_last_healthy_status.as_secs().gt(&(60 * 30))
+            && !WAS_FALLBACK_TO_SOLO_MINING_TRIGGERED.load(Ordering::SeqCst)
+        {
+            match SetupManager::get_instance()
+                .turn_off_gpu_pool_feature()
+                .await
+            {
+                Ok(_) => {
+                    info!(target: LOG_TARGET, "GpuMinerShaAdapter: GPU Pool feature turned off due to prolonged unhealthiness.");
+                    WAS_FALLBACK_TO_SOLO_MINING_TRIGGERED.store(true, Ordering::SeqCst);
+                    return Ok(HandleUnhealthyResult::Stop);
+                }
+                Err(error) => {
+                    warn!(target: LOG_TARGET, "GpuMinerShaAdapter: Failed to turn off GPU Pool feature: {error} | Continuing to monitor.");
+                    return Ok(HandleUnhealthyResult::Continue);
+                }
+            }
+        } else {
+            return Ok(HandleUnhealthyResult::Continue);
+        }
+    }
+
     async fn check_health(&self, uptime: Duration, timeout_duration: Duration) -> HealthStatus {
         info!(target: LOG_TARGET, "Checking health of ShaMiner");
         let status = match tokio::time::timeout(timeout_duration, self.status()).await {

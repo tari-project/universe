@@ -52,9 +52,6 @@ use super::{
 static LOG_TARGET: &str = "tari::universe::phase_core";
 
 #[derive(Clone, Default)]
-pub struct CoreSetupPhaseOutput {}
-
-#[derive(Clone, Default)]
 pub struct CoreSetupPhaseAppConfiguration {
     is_auto_launcher_enabled: bool,
 }
@@ -124,9 +121,6 @@ impl SetupPhaseImpl for CoreSetupPhase {
     ) -> ProgressStepper {
         ProgressStepperBuilder::new()
             .add_step(ProgressPlans::Core(
-                ProgressSetupCorePlan::PlatformPrequisites,
-            ))
-            .add_step(ProgressPlans::Core(
                 ProgressSetupCorePlan::InitializeApplicationModules,
             ))
             .add_step(ProgressPlans::Core(ProgressSetupCorePlan::NetworkSpeedTest))
@@ -143,20 +137,22 @@ impl SetupPhaseImpl for CoreSetupPhase {
     }
 
     async fn setup(self) {
-        let _unused = SetupDefaultAdapter::setup(self).await;
+        // Handle preqesities separetely with a dedicated dialog
+        match PlatformUtils::initialize_preqesities().await {
+            Ok(_) => {
+                // Proceed with setup when all prerequisites are met
+                let _unused = SetupDefaultAdapter::setup(self).await;
+            }
+            Err(err) => {
+                log::error!("Core Phase pre-setup failed: {err}");
+            }
+        }
     }
 
     #[allow(clippy::too_many_lines)]
     async fn setup_inner(&self) -> Result<(), anyhow::Error> {
         let mut progress_stepper = self.progress_stepper.lock().await;
         let state = self.app_handle.state::<UniverseAppState>();
-
-        progress_stepper
-            .resolve_step(ProgressPlans::Core(
-                ProgressSetupCorePlan::PlatformPrequisites,
-            ))
-            .await;
-        PlatformUtils::initialize_preqesities().await?;
 
         progress_stepper
             .resolve_step(ProgressPlans::Core(

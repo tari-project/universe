@@ -41,5 +41,9 @@
     "placeholder": "Click the words below in the correct order",
     "text": "To make sure you wrote down your seed phrase correctly, please select the words in the correct order.",
     "title": "Verify your seed phrase"
+  },
+  "warning": {
+    "title": "Secure your wallet",
+    "steps": "Steps"
   }
 }

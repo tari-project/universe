@@ -8,25 +8,19 @@ import {
     SettingsGroupTitle,
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles.ts';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { AlertChip } from '@app/components/security/alert-chip/AlertChip.tsx';
+import { useWalletStore } from '@app/store/useWalletStore.ts';
 
 export const PinMarkup = () => {
     const { t } = useTranslation(['settings', 'staged-security'], { useSuspense: false });
-    const [isPinLocked, setIsPinLocked] = useState(false);
-
-    useEffect(() => {
-        invoke('is_pin_locked').then((result) => {
-            setIsPinLocked(result);
-        });
-    }, []);
+    const isPinLocked = useWalletStore((s) => s.is_pin_locked);
 
     const setPin = useCallback(() => {
         invoke('create_pin')
             .then(() => {
                 console.info('Pin created successfully');
-                setIsPinLocked(true);
             })
             .catch((error) => {
                 console.error('Failed to create PIN:', error);

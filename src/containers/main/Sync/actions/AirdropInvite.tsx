@@ -10,7 +10,7 @@ import { ActionButton, ActionContentWrapper, ButtonIconWrapper } from './actions
 export default function AirdropInvite() {
     const { t } = useTranslation('airdrop');
     const { copyToClipboard, isCopied } = useCopyToClipboard();
-    const airdropUrl = useAirdropStore((state) => state.backendInMemoryConfig?.airdropUrl || '');
+    const airdropUrl = useAirdropStore((state) => state.backendInMemoryConfig?.airdrop_url || '');
     const referralCode = useAirdropStore((s) => s.userDetails?.user?.referral_code);
 
     function handleCopyClick() {

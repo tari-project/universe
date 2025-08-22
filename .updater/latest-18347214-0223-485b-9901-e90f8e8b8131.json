@@ -1,0 +1,19 @@
+{
+  "version": "1.5.7",
+  "notes": "Tari Universe - See the assets to download this version and install",
+  "pub_date": "2025-08-12T10:39:12Z",
+  "platforms": {
+    "darwin-aarch64": {
+      "url": "https://cdn-universe.tari.com/tari-project/universe/exchanges/18347214-0223-485b-9901-e90f8e8b8131/1.5.7/Tari Universe-XT.app.tar.gz",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRbUtvKzlyYWhiOFU3UmxOVWhJcFVWMzE4R3M2ZEI0dDJBeVRzdUdQa3RkNXZ6ZlF3Yk5GODNibmcyVjYwTk1tdjlkWFY4dXBYY3J4RmZVUGZHb2M4cUh4bEl1R3A2ZUFzPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzU0OTk0NDA0CWZpbGU6VGFyaSBVbml2ZXJzZS1YVC5hcHAudGFyLmd6ClNqaktlYmwyN3dpZE5uWmJJQklHZTRVcFBiMXZkWHhyUFFnckxnUXJiQ0loZUtodVNnNk9Ea3k5OEJISThkTHdOc2NDMUJnZGd1UU1yclh4d0NxeURBPT0K"
+    },
+    "darwin-x86_64": {
+      "url": "https://cdn-universe.tari.com/tari-project/universe/exchanges/18347214-0223-485b-9901-e90f8e8b8131/1.5.7/Tari Universe-XT.app.tar.gz",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRbUtvKzlyYWhiOFU3UmxOVWhJcFVWMzE4R3M2ZEI0dDJBeVRzdUdQa3RkNXZ6ZlF3Yk5GODNibmcyVjYwTk1tdjlkWFY4dXBYY3J4RmZVUGZHb2M4cUh4bEl1R3A2ZUFzPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzU0OTk0NDA0CWZpbGU6VGFyaSBVbml2ZXJzZS1YVC5hcHAudGFyLmd6ClNqaktlYmwyN3dpZE5uWmJJQklHZTRVcFBiMXZkWHhyUFFnckxnUXJiQ0loZUtodVNnNk9Ea3k5OEJISThkTHdOc2NDMUJnZGd1UU1yclh4d0NxeURBPT0K"
+    },
+    "windows-x86_64": {
+      "url": "https://cdn-universe.tari.com/tari-project/universe/exchanges/18347214-0223-485b-9901-e90f8e8b8131/1.5.7/Tari Universe-XT_1.5.7_x64_en-US.msi",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRbUtvKzlyYWhiOFNuandFVE1kRFVWaUtVTmc1U2VYcnNSb21JNEdXUmlmUE0vVjZIV2NDNFVzQmpyS2xmRUpIbTNVeGZkNVdxKzRLMEx1UjFpS25tRXVvUGFpWElyU0FzPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzU0OTk0NDcxCWZpbGU6VGFyaSBVbml2ZXJzZS1YVF8xLjUuN194NjRfZW4tVVMubXNpClExZ0gyTmIxaXEvMWNVQUZPUGdkTy9PVnAvT0IvTjVmS3lsMUtNMW02NEhpT0dzdzN5U2hMQlZuNy9TS1Q2cWFsNUVhcGVsREtvcmsyUTllYTFsbEFnPT0K"
+    }
+  }
+}

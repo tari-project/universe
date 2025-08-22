@@ -108,7 +108,7 @@ export const Menu = styled(m.div)`
     width: 197px;
     padding: 10px;
     gap: 4px;
-    background: ${({ theme }) => theme.palette.background.paper};
+    background: ${({ theme }) => theme.palette.background.tooltip};
 `;
 
 export const Option = styled.button<{ $isSelected: boolean }>`

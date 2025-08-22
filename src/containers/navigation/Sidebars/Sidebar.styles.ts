@@ -1,20 +1,9 @@
-import { Variants } from 'motion/react';
 import styled, { css } from 'styled-components';
 import * as m from 'motion/react-m';
 import { SB_WIDTH } from '@app/theme/styles.ts';
 import { convertHexToRGBA } from '@app/utils';
 
-const variants: Variants = {
-    open: { opacity: 1, left: 0, transition: { duration: 0.2, ease: 'linear' } },
-    closed: { opacity: 0, left: -50, transition: { duration: 0.05, ease: 'linear' } },
-};
-
-export const SidebarWrapper = styled(m.div).attrs({
-    variants,
-    initial: 'open',
-    animate: 'open',
-    exit: 'closed',
-})`
+export const SidebarWrapper = styled(m.div)`
     pointer-events: all;
     background: ${({ theme }) => theme.palette.background.default};
     box-shadow: 0 0 45px 0 rgba(0, 0, 0, 0.15);
@@ -22,7 +11,7 @@ export const SidebarWrapper = styled(m.div).attrs({
     border-radius: 20px;
     height: 100%;
     flex-shrink: 0;
-    padding: 15px 10px;
+    padding: 15px 10px 10px 10px;
     position: relative;
     width: ${SB_WIDTH}px;
 

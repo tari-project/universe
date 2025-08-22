@@ -5,7 +5,7 @@ import { Actions, DetailsLeft, LogoWrapper, Name, Wrapper } from './styles.ts';
 export default function WalletDetails() {
     const { data } = useFetchExchangeBranding();
     const name = data?.name;
-    const logoSrc = data?.logo_img_small_url ?? data?.logo_img_url;
+    const logoSrc = data?.logo_img_small_url || data?.logo_img_url;
 
     return (
         <Wrapper>

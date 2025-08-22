@@ -3,23 +3,28 @@ import { invoke } from '@tauri-apps/api/core';
 import { BaseNodeStatus, BridgeEnvs, WalletBalance } from '../app-status';
 import { AccountData, BridgeTxDetails, SendOneSidedRequest, TappletSignerParams, WindowSize } from './tapplet.types';
 import { useTappletsStore } from '@app/store/useTappletsStore';
+import { IPCRpcTransport, TappletSignerL2 } from './TappletSignerL2';
+import { WalletDaemonClient } from '@tari-project/wallet_jrpc_client';
 
-export class TappletSigner {
+export class TappletSigner extends TappletSignerL2 {
     public providerName = 'TappletSigner';
     id: string;
     params: TappletSignerParams;
 
     private constructor(
         params: TappletSignerParams,
+        connection: WalletDaemonClient,
         public width = 0,
         public height = 0
     ) {
+        super(params, connection);
         this.params = params;
         this.id = params.id;
     }
 
     static build(params: TappletSignerParams): TappletSigner {
-        return new TappletSigner(params);
+        const client = WalletDaemonClient.new(new IPCRpcTransport());
+        return new TappletSigner(params, client);
     }
     public setWindowSize(width: number, height: number): void {
         this.width = width;
@@ -47,16 +52,13 @@ export class TappletSigner {
         }
     }
 
-    public async getAccount(): Promise<AccountData> {
+    // TODO MAKE SURE BRIDGE USES RENAMED 'getTariAccount'!
+    public async getTariAccount(): Promise<AccountData> {
         return {
             account_id: 0, // default id - currently we don't support multi accounts
             // Use only base address that have seed words
             address: useWalletStore.getState().tari_address_base58,
         };
-    }
-
-    public async isConnected(): Promise<boolean> {
-        return true;
     }
 
     public async setOngoingBridgeTx(tx: BridgeTxDetails): Promise<void> {

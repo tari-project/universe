@@ -70,9 +70,11 @@ use app_in_memory_config::EXCHANGE_ID;
 
 use telemetry_manager::TelemetryManager;
 
+use crate::consts::DB_FILE_NAME;
 use crate::cpu_miner::CpuMiner;
 
 use crate::commands::CpuMinerConnection;
+use crate::database::store::DatabaseConnection;
 use crate::feedback::Feedback;
 use crate::gpu_miner::GpuMiner;
 use crate::mm_proxy_manager::{MmProxyManager, StartConfig};
@@ -82,6 +84,8 @@ use crate::ootle::ootle_wallet_adapter::OotleWalletState;
 use crate::ootle::ootle_wallet_manager::OotleWalletManager;
 use crate::p2pool::models::P2poolStats;
 use crate::p2pool_manager::P2poolManager;
+use crate::tapplets::commands as tapplet_commands;
+use crate::tapplets::tapplet_manager::TappletManager;
 use crate::tor_manager::TorManager;
 use crate::wallet::wallet_manager::WalletManager;
 use crate::wallet::wallet_types::WalletState;
@@ -96,6 +100,7 @@ mod configs;
 mod consts;
 mod cpu_miner;
 mod credential_manager;
+mod database;
 mod download_utils;
 mod events;
 mod events_emitter;
@@ -200,6 +205,7 @@ struct UniverseAppState {
     websocket_manager_status_rx: Arc<watch::Receiver<WebsocketManagerStatusMessage>>,
     websocket_manager: Arc<RwLock<WebsocketManager>>,
     websocket_event_manager: Arc<RwLock<WebsocketEventsManager>>,
+    tapplet_manager: TappletManager,
     ootle_wallet_state_watch_rx: Arc<watch::Receiver<Option<OotleWalletState>>>,
     ootle_wallet_manager: OotleWalletManager,
 }
@@ -300,7 +306,7 @@ fn main() {
         pool_status_url: None,
     }));
 
-    let app_in_memory_config = Arc::new(RwLock::new(AppInMemoryConfig::init()));
+    let app_in_memory_config = Arc::new(RwLock::new(AppInMemoryConfig::default()));
     let cpu_miner: Arc<RwLock<CpuMiner>> = Arc::new(
         CpuMiner::new(
             &mut stats_collector,
@@ -367,6 +373,7 @@ fn main() {
         base_node_watch_rx.clone(),
         app_in_memory_config.clone(),
     );
+    let tapplet_manager = TappletManager::new();
 
     let app_state = UniverseAppState {
         is_getting_p2pool_connections: Arc::new(AtomicBool::new(false)),
@@ -389,6 +396,7 @@ fn main() {
         feedback: Arc::new(RwLock::new(feedback)),
         tor_manager,
         updates_manager,
+        tapplet_manager: tapplet_manager.clone(),
         cached_p2pool_connections: Arc::new(RwLock::new(None)),
         systemtray_manager: Arc::new(RwLock::new(SystemTrayManager::new())),
         mining_status_manager: Arc::new(RwLock::new(mining_status_manager)),
@@ -436,6 +444,17 @@ fn main() {
                 .path()
                 .app_config_dir()
                 .expect("Could not get config dir");
+
+            // TODO move if needed to better place
+            let app_data_dir = app
+                .path()
+                .app_data_dir()
+                .expect("Could not get app data dir");
+            let db_path = app_data_dir.join(DB_FILE_NAME);
+            app.manage(DatabaseConnection(Arc::new(std::sync::Mutex::new(
+                database::establish_connection(db_path.to_str().unwrap_or_default()),
+            ))));
+            app.manage(tapplet_manager);
 
             // Remove this after it's been rolled out for a few versions
             let log_path = app.path().app_log_dir().map_err(|e| e.to_string())?;
@@ -633,25 +652,49 @@ fn main() {
             commands::trigger_phases_restart,
             commands::set_node_type,
             commands::set_allow_notifications,
-            commands::launch_builtin_tapplet,
             commands::get_bridge_envs,
             commands::parse_tari_address,
             commands::refresh_wallet_history,
             commands::get_base_node_status,
             commands::create_pin,
             commands::forgot_pin,
-            commands::is_pin_locked,
             commands::set_seed_backed_up,
-            commands::is_seed_backed_up,
             commands::select_mining_mode,
             commands::update_custom_mining_mode,
             commands::encode_payment_id_to_address,
             commands::save_wxtm_address,
+            commands::set_security_warning_dismissed,
+            commands::change_cpu_pool,
+            commands::change_gpu_pool,
+            commands::update_selected_gpu_pool_config,
+            commands::update_selected_cpu_pool_config,
+            commands::reset_gpu_pool_config,
+            commands::reset_cpu_pool_config,
             commands::get_ootle_wallet_state,
             ootle_commands::ootle_list_accounts,
             ootle_commands::ootle_create_account,
             ootle_commands::ootle_get_balances,
             ootle_commands::ootle_create_free_test_coins,
+            ootle_commands::ootle_make_json_rpc_request,
+            tapplet_commands::start_tari_tapplet_binary,
+            tapplet_commands::start_dev_tapplet,
+            tapplet_commands::start_tapplet,
+            tapplet_commands::fetch_registered_tapplets,
+            tapplet_commands::insert_tapp_registry_db,
+            tapplet_commands::read_tapp_registry_db,
+            tapplet_commands::get_assets_server_addr,
+            tapplet_commands::download_and_extract_tapp,
+            tapplet_commands::read_installed_tapp_db,
+            tapplet_commands::update_installed_tapp_db,
+            tapplet_commands::delete_installed_tapplet,
+            tapplet_commands::add_dev_tapplet,
+            tapplet_commands::read_dev_tapplets_db,
+            tapplet_commands::delete_dev_tapplet,
+            tapplet_commands::update_installed_tapplet,
+            tapplet_commands::stop_tapplet,
+            tapplet_commands::restart_tapplet,
+            tapplet_commands::is_tapplet_server_running,
+            tapplet_commands::emit_tapplet_notification,
         ])
         .build(tauri::generate_context!())
         .inspect_err(|e| {
@@ -683,11 +726,15 @@ fn main() {
             tauri::RunEvent::Ready => {
                 info!(target: LOG_TARGET, "RunEvent Ready");
                 let handle_clone = app_handle.clone();
+                let state = handle_clone.state::<UniverseAppState>();
+
+                block_on(state.updates_manager.initial_try_update(&handle_clone));
+
                 tauri::async_runtime::spawn(async move {
                     SetupManager::get_instance()
                         .start_setup(handle_clone.clone())
                         .await;
-                    SetupManager::spawn_sleep_mode_handler(handle_clone.clone()).await;
+                    SetupManager::spawn_sleep_mode_handler().await;
                 });
             }
             tauri::RunEvent::ExitRequested { api: _, code, .. } => {

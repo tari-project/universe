@@ -62,9 +62,6 @@ use super::{
 static LOG_TARGET: &str = "tari::universe::phase_hardware";
 
 #[derive(Clone, Default)]
-pub struct HardwareSetupPhaseOutput {}
-
-#[derive(Clone, Default)]
 pub struct HardwareSetupPhaseAppConfiguration {
     gpu_engine: EngineType,
 }
@@ -158,7 +155,7 @@ impl SetupPhaseImpl for HardwareSetupPhase {
 
     async fn setup_inner(&self) -> Result<(), Error> {
         let mut progress_stepper = self.progress_stepper.lock().await;
-        let (_data_dir, config_dir, _log_dir) = self.get_app_dirs()?;
+        let (data_dir, config_dir, _log_dir) = self.get_app_dirs()?;
         let state = self.app_handle.state::<UniverseAppState>();
 
         let binary_resolver = BinaryResolver::current();
@@ -207,11 +204,12 @@ impl SetupPhaseImpl for HardwareSetupPhase {
             .await
             .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {e:?}"));
 
-        GpuDevices::current()
+        let _unused = GpuDevices::current()
             .write()
             .await
-            .detect(config_dir.clone())
-            .await?;
+            .detect(data_dir.clone())
+            .await
+            .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu devices: {e:?}"));
 
         HardwareStatusMonitor::current().initialize().await?;
 

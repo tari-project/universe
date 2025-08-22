@@ -12,7 +12,7 @@ import CheckSvg from '@app/components/svgs/CheckSvg.tsx';
 export default function Invite() {
     const { t } = useTranslation('airdrop');
     const { copyToClipboard, isCopied } = useCopyToClipboard();
-    const airdropUrl = useAirdropStore((state) => state.backendInMemoryConfig?.airdropUrl || '');
+    const airdropUrl = useAirdropStore((state) => state.backendInMemoryConfig?.airdrop_url || '');
     const referralCode = useAirdropStore((state) => state.userDetails?.user?.referral_code || '');
 
     function handleCopy() {

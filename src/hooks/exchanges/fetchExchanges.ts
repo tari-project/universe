@@ -21,7 +21,7 @@ function handleRewardData(list: ExchangeBranding[]) {
 }
 
 export const queryFn = async () => {
-    const apiUrl = useConfigBEInMemoryStore.getState().airdropApiUrl;
+    const apiUrl = useConfigBEInMemoryStore.getState().airdrop_api_url;
     const path = `/miner/exchanges?include_wXTM=true`;
 
     if (!apiUrl.length) return [];

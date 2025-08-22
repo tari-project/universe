@@ -42,7 +42,7 @@ export const AddressTooltip = styled(m.div)`
     align-items: center;
     justify-content: center;
 
-    background: ${({ theme }) => theme.palette.background.paper};
+    background: ${({ theme }) => theme.palette.background.tooltip};
     z-index: 1;
 
     padding: 10px;

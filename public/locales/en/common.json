@@ -22,6 +22,7 @@
   "not-available": "Not available",
   "not-installed-in-applications-directory": "Oops! Tari Universe needs to live in the Applications directory. Mind installing it there?",
   "pending": "Pending",
+  "please-enter-valid-number": "Please enter valid number",
   "please-try-again-later": "Please try again later. If the problem persists, please contact us.",
   "port": "Port",
   "received": "Received",

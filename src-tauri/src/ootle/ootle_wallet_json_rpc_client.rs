@@ -145,4 +145,13 @@ impl OotleWalletJsonRpcClient {
         let value = serde_json::to_value(request)?;
         self.json_rpc_request("accounts.get_balances", value).await
     }
+
+    pub async fn make_json_rpc_request(
+        &self,
+        method: &str,
+        params: String,
+    ) -> Result<serde_json::Value, Error> {
+        let value = serde_json::from_str(&params)?;
+        self.json_rpc_request(method, value).await
+    }
 }

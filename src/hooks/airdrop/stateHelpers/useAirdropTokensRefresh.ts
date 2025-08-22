@@ -1,8 +1,9 @@
 import { AirdropTokens, useAirdropStore } from '@app/store/useAirdropStore';
 import { setAirdropTokens } from '@app/store';
+import { defaultHeaders } from '@app/utils';
 
 async function refreshAirdropTokens(airdropTokens: AirdropTokens) {
-    const airdropApiUrl = useAirdropStore.getState().backendInMemoryConfig?.airdropApiUrl;
+    const airdropApiUrl = useAirdropStore.getState().backendInMemoryConfig?.airdrop_api_url;
 
     if (!airdropApiUrl) {
         console.error('Error refreshing airdrop tokens. No API URL');
@@ -12,6 +13,7 @@ async function refreshAirdropTokens(airdropTokens: AirdropTokens) {
         const response = await fetch(`${airdropApiUrl}/auth/local/refresh`, {
             method: 'POST',
             headers: {
+                ...defaultHeaders,
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({

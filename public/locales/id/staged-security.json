@@ -41,5 +41,9 @@
     "placeholder": "Klik kata-kata di bawah ini dalam urutan yang benar",
     "text": "Untuk memastikan Anda menuliskan frasa pemulihan Anda dengan benar, silakan pilih kata-kata dalam urutan yang benar.",
     "title": "Verifikasi frasa pemulihan Anda"
+  },
+  "warning": {
+    "title": "Secure your wallet",
+    "steps": "Steps"
   }
 }

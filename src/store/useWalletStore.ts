@@ -3,13 +3,37 @@ import { TransactionInfo, WalletBalance } from '../types/app-status.ts';
 import { refreshTransactions } from './actions/walletStoreActions.ts';
 import { TxHistoryFilter } from '@app/components/transactions/history/FilterSelect.tsx';
 import { UserTransactionDTO } from '@tari-project/wxtm-bridge-backend-api';
-import { TransactionDetailsItem } from '@app/types/transactions.ts';
 import { TariAddressType } from '@app/types/events-payloads.ts';
 import { useExchangeStore } from './useExchangeStore.ts';
 
 export interface BackendBridgeTransaction extends UserTransactionDTO {
     sourceAddress?: string;
     mined_in_block_height?: number;
+}
+// combined type for transactions
+export interface CombinedBridgeWalletTransaction {
+    sourceAddress?: string;
+    destinationAddress: string;
+    paymentId: string;
+    feeAmount: number;
+    createdAt: number;
+    tokenAmount: number;
+    mined_in_block_height?: number;
+    walletTransactionDetails: {
+        txId: number;
+        direction: number;
+        isCancelled: boolean;
+        status: number;
+        excessSig?: string;
+        message?: string;
+        paymentReference?: string;
+        destAddressEmoji?: string;
+    };
+    bridgeTransactionDetails?: {
+        status: UserTransactionDTO.status;
+        transactionHash?: string;
+        amountAfterFee: string;
+    };
 }
 
 export interface WalletStoreState {
@@ -27,13 +51,15 @@ export interface WalletStoreState {
     cold_wallet_address?: string;
     is_wallet_importing: boolean;
     is_swapping?: boolean;
-    detailsItem?: TransactionDetailsItem | BackendBridgeTransaction | null;
+    detailsItem?: CombinedBridgeWalletTransaction | null;
     wallet_scanning: {
         is_scanning: boolean;
         scanned_height: number;
         total_height: number;
         progress: number;
     };
+    is_pin_locked: boolean;
+    is_seed_backed_up: boolean;
 }
 
 export interface WalletStoreSelectors {
@@ -57,6 +83,8 @@ export const initialState: WalletStoreState = {
         total_height: 0,
         progress: 0,
     },
+    is_pin_locked: false,
+    is_seed_backed_up: false,
 };
 
 // Configuration for memory management
