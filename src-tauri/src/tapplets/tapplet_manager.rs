@@ -93,10 +93,8 @@ impl TappletManager {
         notification: String,
         app_handle: &AppHandle,
     ) -> Result<bool, anyhow::Error> {
-        info!(target: LOG_TARGET, "💭 Tapplet's notification emit: {:?}", &notification);
         let response = emit_notification_dialog(notification, app_handle).await?;
         if response.to_lowercase() != "null" {
-            info!(target: LOG_TARGET, "💭 Tapplet's notification accepted: {:?}", &response);
             Ok(true)
         } else {
             warn!(target: LOG_TARGET, "Tapplet's notification rejected");

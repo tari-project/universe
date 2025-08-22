@@ -28,7 +28,7 @@ use crate::{
             RequestError::{FetchConfigError, ManifestResponseError},
             TappletServerError::*,
         },
-        interface::{TappletConfig},
+        interface::{TappletConfig, TappletManifest},
     },
 };
 use axum::{
@@ -131,68 +131,23 @@ pub fn is_http_or_localhost(s: &str) -> bool {
     s_lower.contains("localhost") || s_lower.contains("http") || s_lower.contains("https")
 }
 
-// pub fn get_tapp_config(tapp_path: &PathBuf) -> Result<TappletConfig, Error> {
-//     // for a dev tapplet the tapplet.config.json file is in root dir
-//     let tapp_config = tapp_path.join("tapplet.config.json");
-//     info!(target: LOG_TARGET, "💥 get_config {:?}", &tapp_config);
+pub fn _get_tapplet_manifest(tapp_path: PathBuf) -> Result<TappletManifest, Error> {
+    // for a dev tapplet the tapplet.manifest.json file is in root dir
+    let tapp_manifest = tapp_path.join("tapplet.manifest.json");
+    info!(target: LOG_TARGET, "💥 get_config {:?}", &tapp_manifest);
 
-//     if !tapp_config.exists() {
-//         warn!(target: LOG_TARGET, "❌ Failed to get Tapplet permissions. Config file not found.");
-//         return Err(Error::TappletConfigNotFound);
-//     }
+    if !tapp_manifest.exists() {
+        warn!(target: LOG_TARGET, "❌ Failed to get Tapplet permissions. Config file not found.");
+        return Err(Error::TappletConfigNotFound);
+    }
 
-//     let config = fs::read_to_string(tapp_config.clone()).unwrap_or_default();
-//     info!(target: LOG_TARGET, "💥 Dev tapplet config: {:?}", &config);
-//     let tapplet_config: TappletConfig =
-//         serde_json::from_str(&config).map_err(|e| JsonParsingError(e))?;
-//     info!(target: LOG_TARGET, "💥 Dev tapplet full config: {:?}", &tapplet_config);
-//     Ok(tapplet_config)
-// }
-
-// pub async fn get_tapp_config_2(source: &str) -> Result<TappletConfig, Error> {
-//     let config_source = format!("{}/tapplet.config.json", source);
-//     info!("❌ LOCALHOST source {:?}", &config_source);
-//     let tapp_config = reqwest::get(&config_source)
-//         .await
-//         .inspect_err(|err| {
-//             error!(
-//                 "❌ Fetching tapplet manifest source {:?} error: {:?}",
-//                 config_source, err
-//             )
-//         })
-//         .map_err(|_| {
-//             RequestError(FetchConfigError {
-//                 endpoint: source.to_string(),
-//             })
-//         })?
-//         .json::<TappletConfig>()
-//         .await
-//         .map_err(|err| {
-//             RequestError(ManifestResponseError {
-//                 endpoint: source.to_string(),
-//                 e: err.to_string(),
-//             })
-//         })?;
-//     Ok(tapp_config)
-// }
-
-// pub fn _get_tapplet_manifest(tapp_path: PathBuf) -> Result<TappletManifest, Error> {
-//     // for a dev tapplet the tapplet.manifest.json file is in root dir
-//     let tapp_manifest = tapp_path.join("tapplet.manifest.json");
-//     info!(target: LOG_TARGET, "💥 get_config {:?}", &tapp_manifest);
-
-//     if !tapp_manifest.exists() {
-//         warn!(target: LOG_TARGET, "❌ Failed to get Tapplet permissions. Config file not found.");
-//         return Err(Error::TappletConfigNotFound);
-//     }
-
-//     let config = fs::read_to_string(tapp_manifest.clone()).unwrap_or_default();
-//     info!(target: LOG_TARGET, "💥 Dev tapplet config: {:?}", &config);
-//     let manifest: TappletManifest =
-//         serde_json::from_str(&config).map_err(|e| JsonParsingError(e))?;
-//     info!(target: LOG_TARGET, "💥 Dev tapplet full config: {:?}", &manifest);
-//     Ok(manifest)
-// }
+    let config = fs::read_to_string(tapp_manifest.clone()).unwrap_or_default();
+    info!(target: LOG_TARGET, "💥 Dev tapplet config: {:?}", &config);
+    let manifest: TappletManifest =
+        serde_json::from_str(&config).map_err(|e| JsonParsingError(e))?;
+    info!(target: LOG_TARGET, "💥 Dev tapplet full config: {:?}", &manifest);
+    Ok(manifest)
+}
 
 pub async fn get_tapp_config(source: &str) -> Result<TappletConfig, Error> {
     if is_http_or_localhost(source) {

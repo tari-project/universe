@@ -200,7 +200,6 @@ pub fn check_files_and_validate_checksum(
             version: tapplet_version.clone(),
         });
     }
-    info!(target: LOG_TARGET, "📋 Check  {:?}",&archieve_dir);
     // calculate `integrity` from downloaded archieve file
     let integrity = calculate_checksum(archieve_dir)?;
     match expected_integrity == integrity {
