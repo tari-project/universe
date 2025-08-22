@@ -803,15 +803,12 @@ impl SetupManager {
     }
 
     pub async fn handle_switch_to_local_node(&self) {
-        if let Some(app_handle) = self.app_handle.lock().await.clone() {
-            info!(target: LOG_TARGET, "Handle Switching to Local Node in Setup Manager");
-            EventsManager::handle_node_type_update(&app_handle).await;
+        let app_handle = self.app_handle().await;
+        info!(target: LOG_TARGET, "Handle Switching to Local Node in Setup Manager");
+        EventsManager::handle_node_type_update(&app_handle).await;
 
-            info!(target: LOG_TARGET, "Restarting Phases");
-            self.restart_phases(vec![SetupPhase::Wallet]).await;
-        } else {
-            error!(target: LOG_TARGET, "Failed to reset phases after switching to Local Node: app_handle not defined");
-        }
+        info!(target: LOG_TARGET, "Restarting Phases");
+        self.restart_phases(vec![SetupPhase::Wallet]).await;
     }
 
     pub async fn spawn_sleep_mode_handler() {
