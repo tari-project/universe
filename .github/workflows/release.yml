@@ -495,7 +495,7 @@ jobs:
                 "id": "${ASSET_UUID}",
                 "name": "${ASSET_NAME}",
                 "platform": "${{ matrix.platform }}${{ matrix.extra }}",
-                "s3_url": "${{ env[ASSET_S3_URL_VAR] }}",
+                "s3_url": "${ASSET_S3_URL_VAR}",
                 "beta_build_id": "${BETA_BUILD_UUID}"
               }'
           done
