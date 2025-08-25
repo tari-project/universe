@@ -4,7 +4,7 @@ use anyhow::Error;
 
 #[cfg(target_os = "windows")]
 use crate::system_dependencies::windows::resolver::WindowsDependenciesResolver;
-use crate::system_dependencies::UniversalSystemDependency;
+use crate::{events_emitter::EventsEmitter, system_dependencies::UniversalSystemDependency};
 
 const LOG_TARGET: &str = "tari::universe::system_dependencies::manager";
 static INSTANCE: LazyLock<SystemDependenciesManager> =
@@ -34,6 +34,19 @@ impl SystemDependenciesManager {
             .await
     }
 
+    pub async fn get_universal_dependencies(
+        &self,
+    ) -> Result<Vec<UniversalSystemDependency>, Error> {
+        #[cfg(not(target_os = "windows"))]
+        {
+            return Ok(vec![]);
+        }
+
+        self.windows_dependencies_resolver
+            .get_universal_dependencies()
+            .await
+    }
+
     pub async fn is_some_dependency_invalid(&self) -> Result<bool, Error> {
         #[cfg(not(target_os = "windows"))]
         {
@@ -55,7 +68,10 @@ impl SystemDependenciesManager {
 
         self.windows_dependencies_resolver
             .download_and_install_missing_dependencies(id)
-            .await
+            .await?;
+
+        EventsEmitter::emit_system_dependencies_loaded(self.get_universal_dependencies().await?)
+            .await;
     }
 
     #[cfg(target_os = "windows")]

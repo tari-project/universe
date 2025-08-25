@@ -130,11 +130,11 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_system_dependencies_loaded(external_dependencies: UniversalSystemDependency) {
+    pub async fn emit_system_dependencies_loaded(payload: Vec<UniversalSystemDependency>) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::SystemDependenciesLoaded,
-            payload: external_dependencies,
+            payload,
         };
         if let Err(e) = Self::get_app_handle()
             .await

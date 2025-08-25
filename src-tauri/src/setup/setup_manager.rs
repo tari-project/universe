@@ -41,6 +41,7 @@ use crate::setup::{
     phase_gpu_mining::GpuMiningSetupPhase, phase_node::NodeSetupPhase,
     phase_wallet::WalletSetupPhase,
 };
+use crate::system_dependencies::system_dependencies_manager::SystemDependenciesManager;
 use crate::{
     configs::{
         config_core::ConfigCore, config_mining::ConfigMining, config_ui::ConfigUI,
@@ -53,6 +54,7 @@ use crate::{
     websocket_manager::WebsocketMessage,
     UniverseAppState,
 };
+use axum::response::sse::Event;
 use log::{error, info};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -281,6 +283,22 @@ impl SetupManager {
                 built_in_exchange_id.clone(),
             )
             .await;
+        }
+
+        let dependencies_validation_result = SystemDependenciesManager::get_instance()
+            .validate_dependencies()
+            .await;
+
+        if let Ok(dependencies) = dependencies_validation_result {
+            EventsEmitter::emit_system_dependencies_loaded(dependencies.clone()).await;
+            if dependencies
+                .iter()
+                .any(|d| d.status != UniversalDependencyStatus::Installed)
+            {
+                error!(target: LOG_TARGET, "Some system dependencies are missing or not installed properly");
+                error!(target: LOG_TARGET, "Stopping setup");
+                return;
+            }
         }
 
         EventsEmitter::emit_core_config_loaded(&ConfigCore::content().await).await;

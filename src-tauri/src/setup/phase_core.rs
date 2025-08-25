@@ -145,16 +145,7 @@ impl SetupPhaseImpl for CoreSetupPhase {
     }
 
     async fn setup(self) {
-        // Handle preqesities separetely with a dedicated dialog
-        match PlatformUtils::initialize_preqesities().await {
-            Ok(_) => {
-                // Proceed with setup when all prerequisites are met
-                SetupDefaultAdapter::setup(self).await;
-            }
-            Err(err) => {
-                log::error!("Core Phase pre-setup failed: {err}");
-            }
-        }
+        SetupDefaultAdapter::setup(self).await;
     }
 
     #[allow(clippy::too_many_lines)]
