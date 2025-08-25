@@ -81,8 +81,9 @@ export const importSeedWords = async (seedWords: string[]) => {
             await stopMining();
         }
         await invoke('import_seed_words', { seedWords });
-        await refreshTransactions();
+
         useWalletStore.setState((c) => ({ ...c, is_wallet_importing: false }));
+        await refreshTransactions();
         addToast({
             title: t('success', { ns: 'airdrop' }),
             text: t('import-seed-success', { ns: 'settings' }),

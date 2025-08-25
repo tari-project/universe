@@ -15,6 +15,7 @@ import {
 import { TOWER_CANVAS_ID } from '../types/ui';
 import { ProgressTrackerUpdatePayload, SetupPhase } from '@app/types/events-payloads';
 import { AppModule, AppModuleState, AppModuleStatus } from '../types/setup';
+import { fetchBridgeTransactionsHistory } from '@app/store/actions/bridgeApiActions.ts';
 
 export interface DisabledPhasesPayload {
     disabled_phases: SetupPhase[];
@@ -52,6 +53,8 @@ async function initializeAnimation() {
 }
 
 export const handleAppLoaded = async () => {
+    const tari_address_base58 = useWalletStore.getState().tari_address_base58;
+    await fetchBridgeTransactionsHistory(tari_address_base58);
     // todo move it to event
     await fetchApplicationsVersionsWithRetry();
     await initializeAnimation();

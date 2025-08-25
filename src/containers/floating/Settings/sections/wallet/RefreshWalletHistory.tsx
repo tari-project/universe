@@ -12,6 +12,7 @@ import { useCallback } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { useSetupStore } from '@app/store/useSetupStore.ts';
 import { setupStoreSelectors } from '@app/store/selectors/setupStoreSelectors.ts';
+import { refreshTransactions } from '@app/hooks/wallet/useFetchTxHistory.ts';
 
 export const RefreshWalletHistory = () => {
     const { t } = useTranslation('settings', { useSuspense: false });
@@ -21,6 +22,8 @@ export const RefreshWalletHistory = () => {
         try {
             await invoke('refresh_wallet_history');
             console.info('Wallet history reset successfully');
+
+            await refreshTransactions();
         } catch (error) {
             console.error('Failed to reset wallet history:', error);
         }
