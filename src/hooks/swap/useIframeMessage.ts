@@ -18,6 +18,7 @@ export enum MessageType {
     SET_THEME = 'SET_THEME',
     SET_LANGUAGE = 'SET_LANGUAGE',
     NOTIFICATION = 'NOTIFICATION',
+    INTER_TAPPLET = 'INTER_TAPPLET',
 }
 
 interface SwapHeightChangeMessage {
@@ -136,6 +137,14 @@ interface EmitNotificationMessage {
     };
 }
 
+interface InterTappletMessage {
+    type: MessageType.INTER_TAPPLET;
+    payload: {
+        targetTappletId: number;
+        msg: string;
+    };
+}
+
 export type IframeMessage =
     | ApproveMessage
     | ApproveSuccessMessage
@@ -152,7 +161,8 @@ export type IframeMessage =
     | SignerCallMessage
     | SetThemeMessage
     | SetLanguageMessage
-    | EmitNotificationMessage;
+    | EmitNotificationMessage
+    | InterTappletMessage;
 
 // Hook to listen for messages from the parent window
 export function useIframeMessage(onMessage: (event: MessageEvent<IframeMessage>) => void) {

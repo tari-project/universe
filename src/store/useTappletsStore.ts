@@ -77,7 +77,9 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
                 const activeTapplet = await invoke('start_tari_tapplet_binary', { binaryName: name });
                 set((state) => ({
                     activeTapplet,
-                    inUseTappIds: [...state.inUseTappIds, activeTapplet],
+                    inUseTappIds: state.inUseTappIds.some((item) => item.tapplet_id === activeTapplet.tapplet_id)
+                        ? state.inUseTappIds
+                        : [...state.inUseTappIds, activeTapplet],
                 }));
             } catch (error) {
                 console.error(`Tapplet (id: ${tappletId} name: ${name}) startup error: ${error}`);
@@ -102,8 +104,11 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
                     if (!activeTapplet) return;
                     set((state) => ({
                         activeTapplet,
-                        inUseTappIds: [...state.inUseTappIds, activeTapplet],
+                        inUseTappIds: state.inUseTappIds.some((item) => item.tapplet_id === activeTapplet.tapplet_id)
+                            ? state.inUseTappIds
+                            : [...state.inUseTappIds, activeTapplet],
                     }));
+
                     tappProviderState.setTappletSigner(activeTapplet?.package_name); //TODO
                 } catch (error) {
                     console.error(`Running dev tapplet localhost error: ${error}`);
@@ -123,7 +128,9 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
                 // TODO not push if already in array
                 set((state) => ({
                     activeTapplet,
-                    inUseTappIds: [...state.inUseTappIds, activeTapplet],
+                    inUseTappIds: state.inUseTappIds.some((item) => item.tapplet_id === activeTapplet.tapplet_id)
+                        ? state.inUseTappIds
+                        : [...state.inUseTappIds, activeTapplet],
                 }));
             } catch (error) {
                 console.error(`Dev Tapplet startup error: ${error}`);
