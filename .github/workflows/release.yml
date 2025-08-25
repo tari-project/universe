@@ -470,6 +470,20 @@ jobs:
           MSI_FILE=$( echo '${{ env.artifactPaths }}' | jq -r '[.[] | select(endswith(".msi"))] | join(" ")' )
           echo "MSI_FILE=$MSI_FILE" >> $GITHUB_ENV
 
+      - name: BETA Builds - Upload assets
+        if: ${{ github.event.inputs.asset_destination == 'github' && (github.event_name == 'schedule' || !startsWith(github.ref, 'refs/heads/release')) }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: tari-universe-beta_${{ steps.build.outputs.appVersion }}_${{ matrix.platform }}${{ matrix.extra }}
+          path: "${{ join(fromJSON(steps.build.outputs.artifactPaths), '\n') }}"
+
+      - name: BETA Builds bundled Windows installer upload
+        if: ${{ github.event.inputs.asset_destination == 'github' && startsWith(runner.os,'Windows') && !startsWith(github.ref, 'refs/heads/release') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: tari-universe-beta_${{ steps.build.outputs.appVersion }}_x64_en-US
+          path: ./tari-win-bundler/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}*.exe
+
       - name: Upload to Cloudflare R2
         if: ${{ ( github.event_name == 'schedule' || !startsWith(github.ref, 'refs/heads/release') ) && github.event.inputs.asset_destination == 's3' }}
         env:
@@ -488,7 +502,7 @@ jobs:
             echo "S3_URL_BUNDLER=s3://${S3_BUCKET}/${{ github.event.inputs.network }}/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}.exe" >> $GITHUB_ENV
           fi
 
-      - name: Create BetaBuild and BetaBuildAsset on RWA Service
+      - name: Create BetaBuildAssets on RWA Service
         if: ${{ ( github.event_name == 'schedule' ) || ( ! startsWith(github.ref, 'refs/heads/release') ) }}
         env:
           RWA_AUTH_TOKEN: ${{ secrets.RWA_AUTH_TOKEN }}
@@ -521,20 +535,6 @@ jobs:
                 "beta_build_id": "${BETA_BUILD_UUID}"
               }'
           fi
-
-      - name: BETA Builds - Upload assets
-        if: ${{ github.event.inputs.asset_destination == 'github' && (github.event_name == 'schedule' || !startsWith(github.ref, 'refs/heads/release')) }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: tari-universe-beta_${{ steps.build.outputs.appVersion }}_${{ matrix.platform }}${{ matrix.extra }}
-          path: "${{ join(fromJSON(steps.build.outputs.artifactPaths), '\n') }}"
-
-      - name: BETA Builds bundled Windows installer upload
-        if: ${{ github.event.inputs.asset_destination == 'github' && startsWith(runner.os,'Windows') && !startsWith(github.ref, 'refs/heads/release') }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: tari-universe-beta_${{ steps.build.outputs.appVersion }}_x64_en-US
-          path: ./tari-win-bundler/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}*.exe
 
       - name: Windows debug symbols - Upload asset
         if: startsWith(runner.os,'Windows')
