@@ -24,8 +24,8 @@ use anyhow::{anyhow, Error};
 use futures_util::StreamExt;
 use log::info;
 use serde::{Deserialize, Serialize};
-use std::env;
 use std::sync::LazyLock;
+use std::{env, os::windows::process::CommandExt};
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 use tokio::sync::RwLock;
@@ -34,17 +34,28 @@ use winreg::RegKey;
 
 use crate::{
     hardware::hardware_status_monitor::HardwareVendor,
-    system_dependencies::windows::dependencies::{
-        CollectedWindowsRegistryRecords, Manufacturer, WindowsDependencyManufacturerUIInfo,
-        WindowsDependencyStatus, WindowsDependencyUIInfo, WindowsRegistryCpuEntry,
-        WindowsRegistryGpuDriverEntry, WindowsRegistryGpuEntry, WindowsRegistryKhronosSoftware,
-        WindowsSystemDependency,
+    system_dependencies::{
+        windows::{
+            dependencies::{
+                CollectedWindowsRegistryRecords, DependencyStatus, Manufacturer,
+                WindowsDependencyManufacturerUIInfo, WindowsRegistryCpuEntry,
+                WindowsRegistryGpuDriverEntry, WindowsRegistryKhronosSoftware,
+                WindowsSystemDependency,
+            },
+            registry::{
+                entry_cpu_hardware::WindowsRegistryCpuResolver,
+                entry_gpu_drivers::WindowsRegistryGpuDriverResolver,
+                entry_gpu_hardware::{WindowsRegistryGpuEntry, WindowsRegistryGpuResolver},
+                entry_khronos_software::WindowsRegistryKhronosSoftwareResolver,
+                entry_uninstall_software::WindowsRegistryUninstallSoftwareResolver,
+                WindowsRegistryReader, WindowsRegistryRecordType,
+            },
+        },
+        UniversalSystemDependency,
     },
 };
 
-const LOG_TARGET: &str = "tari::universe::windows::resolver";
-static INSTANCE: LazyLock<WindowsDependenciesResolver> =
-    LazyLock::new(WindowsDependenciesResolver::new);
+const LOG_TARGET: &str = "tari::universe::system_dependencies::windows::resolver";
 
 pub struct WindowsDependenciesResolver {
     dependencies: RwLock<Vec<WindowsSystemDependency>>,
@@ -53,7 +64,7 @@ pub struct WindowsDependenciesResolver {
 }
 
 impl WindowsDependenciesResolver {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             dependencies: RwLock::new(vec![
                 WindowsSystemDependency::define_microsoft_minimum_runtime_dependency(),
@@ -64,40 +75,17 @@ impl WindowsDependenciesResolver {
         }
     }
 
-    pub fn current() -> &'static WindowsDependenciesResolver {
-        &INSTANCE
-    }
-
     fn load_registry_cpu_info(&self) -> Result<(), Error> {
-        let hklm_key =
-            RegKey::predef(CollectedWindowsRegistryRecords::CpuHardware(()).get_registry_root());
-        let cpu_path = hklm_key
-            .open_subkey(CollectedWindowsRegistryRecords::CpuHardware(()).get_registry_path())?;
-        let cpu_info: WindowsRegistryCpuEntry = WindowsRegistryCpuEntry {
-            processor_name_string: cpu_path.get_value("ProcessorNameString")?,
-            vendor_identifier: cpu_path.get_value("VendorIdentifier")?,
-        };
+        let cpu_info = WindowsRegistryCpuResolver::read_registry()?;
         let mut cpu_record = self.cpu_record.blocking_write();
         *cpu_record = Some(cpu_info);
         Ok(())
     }
 
     fn load_gpu_registry_info(&self) -> Result<(), Error> {
-        let hklm_key =
-            RegKey::predef(CollectedWindowsRegistryRecords::GpuHardware(()).get_registry_root());
-        let gpus_path = hklm_key
-            .open_subkey(CollectedWindowsRegistryRecords::GpuHardware(()).get_registry_path())?;
-        let mut gpu_records = self.gpu_records.blocking_write();
-        *gpu_records = Vec::new();
-        for subkey_name in gpus_path.enum_keys().map(|x| x.unwrap()) {
-            let gpu_path = gpus_path.open_subkey(subkey_name)?;
-            let gpu_info: WindowsRegistryGpuEntry = WindowsRegistryGpuEntry {
-                device_desc: gpu_path.get_value("DeviceDescription")?,
-                driver: gpu_path.get_value("Driver")?,
-                mfg: gpu_path.get_value("Mfg")?,
-            };
-            gpu_records.push(gpu_info);
-        }
+        let gpus_info = WindowsRegistryGpuResolver::read_registry()?;
+        let mut gpu_record = self.gpu_records.blocking_write();
+        *gpu_record = gpus_info;
         Ok(())
     }
 
@@ -144,27 +132,135 @@ impl WindowsDependenciesResolver {
         }
     }
 
-    pub async fn read_khronos_registry_info(
-        &self,
-    ) -> Result<WindowsRegistryKhronosSoftware, Error> {
-        todo!()
+    pub async fn get_universal_dependencies(&self) -> Vec<WindowsSystemDependency> {
+        let dependencies = self.dependencies.read().await;
+        dependencies
+            .iter()
+            .map(|d| d.clone().universal_data)
+            .collect()
     }
 
-    pub async fn read_gpu_drivers_registry_info(
-        &self,
-    ) -> Result<Vec<WindowsRegistryGpuEntry>, Error> {
-        todo!()
+    // It should iter over all dependencies and validate them using registry readers and requirement checkers
+    pub async fn validate_dependencies(&self) -> Result<Vec<UniversalSystemDependency>, Error> {
+        let dependencies = self.dependencies.write().await;
+        for dependency in dependencies.iter_mut() {
+            // Validate each dependency using the appropriate registry reader
+            match dependency.registry_entry_type {
+                WindowsRegistryRecordType::GpuDrivers => {
+                    let entries = WindowsRegistryGpuDriverResolver::read_registry()?;
+                    for entry in entries.iter() {
+                        for check_value in dependency.check_values.iter() {
+                            if entry.check_requirements(check_value) {
+                                dependency.status = DependencyStatus::Installed;
+                                break;
+                            }
+                        }
+                    }
+                }
+                WindowsRegistryRecordType::KhronosSoftware => {
+                    let entries = WindowsRegistryKhronosSoftwareResolver::read_registry()?;
+                    for entry in entries.iter() {
+                        for check_value in dependency.check_values.iter() {
+                            if entry.check_requirements(check_value) {
+                                dependency.status = DependencyStatus::Installed;
+                                break;
+                            }
+                        }
+                    }
+                }
+                WindowsRegistryRecordType::UninstallSoftware => {
+                    let entries: super::registry::entry_uninstall_software::WindowsRegistryUninstallSoftwareEntry = WindowsRegistryUninstallSoftwareResolver::read_registry()?;
+                    for entry in entries.iter() {
+                        for check_value in dependency.check_values.iter() {
+                            if entry.check_requirements(check_value) {
+                                dependency.status = DependencyStatus::Installed;
+                                break;
+                            }
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+        Ok(dependencies
+            .iter()
+            .map(|d| d.clone().universal_data)
+            .collect())
     }
 
-    pub async fn read_uninstalled_software_registry_info(
-        &self,
-    ) -> Result<Vec<WindowsRegistryGpuDriverEntry>, Error> {
-        todo!()
-    }
+    pub async fn download_and_install_missing_dependencies(&self, id: String) -> Result<(), Error> {
+        let dependencies = self.dependencies.read().await;
+        if let Some(dependency) = dependencies.iter().find(|d| d.universal_data.id == id) {
+            if dependency.status == DependencyStatus::Installed {
+                info!(
+                    target: LOG_TARGET,
+                    "Dependency '{}' is already installed.", dependency.ui_info.display_name
+                );
+                return Ok(());
+            }
 
-    pub async fn check_if_dependencies_are_installed_and_meets_requirements(
-        &self,
-    ) -> Result<(), Error> {
-        todo!()
+            let url = &dependency.ui_info.download_url;
+            if url.is_empty() {
+                return Err(anyhow!(
+                    "No download URL available for dependency '{}'.",
+                    dependency.ui_info.display_name
+                ));
+            }
+
+            info!(
+                target: LOG_TARGET,
+                "Downloading and installing dependency '{}' from {}",
+                dependency.ui_info.display_name,
+                url
+            );
+
+            let response = reqwest::get(url).await?;
+            if !response.status().is_success() {
+                return Err(anyhow!(
+                    "Failed to download dependency '{}'. HTTP Status: {}",
+                    dependency.ui_info.display_name,
+                    response.status()
+                ));
+            }
+
+            let temp_dir = env::temp_dir();
+            let file_name = url
+                .split('/')
+                .last()
+                .ok_or_else(|| anyhow!("Invalid download URL."))?;
+            let file_path = temp_dir.join(file_name);
+            let mut file = File::create(&file_path).await?;
+            let mut stream = response.bytes_stream();
+
+            while let Some(chunk) = stream.next().await {
+                let chunk = chunk?;
+                file.write_all(&chunk).await?;
+            }
+            file.flush().await?;
+
+            // Execute the installer
+            use crate::consts::PROCESS_CREATION_NO_WINDOW;
+            let status = std::process::Command::new(&file_path)
+                .creation_flags(PROCESS_CREATION_NO_WINDOW)
+                .arg("/quiet")
+                .arg("/norestart")
+                .status()?;
+
+            if !status.success() {
+                return Err(anyhow!(
+                    "Installation of dependency '{}' failed.",
+                    dependency.ui_info.display_name
+                ));
+            }
+
+            info!(
+                target: LOG_TARGET,
+                "Dependency '{}' installed successfully.",
+                dependency.ui_info.display_name
+            );
+        } else {
+            return Err(anyhow!("Dependency with ID '{}' not found.", id));
+        }
+        Ok(())
     }
 }

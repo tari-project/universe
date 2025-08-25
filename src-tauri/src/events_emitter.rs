@@ -30,6 +30,7 @@ use crate::external_dependencies::RequiredExternalDependency;
 use crate::gpu_devices::GpuDeviceInformation;
 use crate::internal_wallet::TariAddressType;
 use crate::pool_status_watcher::PoolStatus;
+use crate::system_dependencies::UniversalSystemDependency;
 use crate::wallet::wallet_types::{TransactionInfo, WalletBalance};
 use crate::{
     commands::CpuMinerStatus,
@@ -133,11 +134,10 @@ impl EventsEmitter {
         }
     }
 
-    #[cfg(target_os = "windows")]
-    pub async fn emit_missing_applications(external_dependencies: RequiredExternalDependency) {
+    pub async fn emit_system_dependencies_loaded(external_dependencies: UniversalSystemDependency) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
-            event_type: EventType::MissingApplications,
+            event_type: EventType::SystemDependenciesLoaded,
             payload: external_dependencies,
         };
         if let Err(e) = Self::get_app_handle()

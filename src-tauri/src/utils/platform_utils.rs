@@ -109,23 +109,6 @@ impl PlatformUtils {
 
     #[cfg(target_os = "windows")]
     async fn initialize_windows_preqesities() -> Result<(), anyhow::Error> {
-        if cfg!(target_os = "windows") && !cfg!(dev) {
-            ExternalDependencies::current()
-                .read_registry_installed_applications()
-                .await?;
-            let is_missing = ExternalDependencies::current()
-                .check_if_some_dependency_is_not_installed()
-                .await;
-            if is_missing {
-                EventsEmitter::emit_missing_applications(
-                    ExternalDependencies::current()
-                        .get_external_dependencies()
-                        .await,
-                )
-                .await;
-                return Err(anyhow!("Missing required dependencies"));
-            }
-        }
         Ok(())
     }
 
