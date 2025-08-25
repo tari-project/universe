@@ -4,7 +4,7 @@ export interface TorConfig {
     bridges: string[];
 }
 
-export enum ExternalDependencyStatus {
+export enum SystemDependencyStatus {
     Installed = 'Installed',
     NotInstalled = 'NotInstalled',
     Unknown = 'Unknown',
@@ -15,14 +15,24 @@ interface Manufacturer {
     logo: string;
     url: string;
 }
-export interface ExternalDependency {
-    required_version_names: string[];
+
+interface SystemDependencyUIInfo {
     display_name: string;
     display_description: string;
-    download_url: string;
-    version?: string;
     manufacturer: Manufacturer;
-    status: ExternalDependencyStatus;
+}
+
+export interface SystemDependency {
+    id: string;
+    status: SystemDependencyStatus;
+    download_url: string;
+    ui_info: SystemDependencyUIInfo;
+}
+
+export interface CriticalProblemPayload {
+    title: string;
+    message: string;
+    is_blocking: boolean;
 }
 
 export interface TransactionInfo {

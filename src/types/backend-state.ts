@@ -16,10 +16,10 @@ import {
 import {
     BaseNodeStatus,
     CpuMinerStatus,
-    ExternalDependency,
     GpuMinerStatus,
     NetworkStatus,
     PoolStats,
+    SystemDependency,
     WalletBalance,
 } from './app-status.ts';
 import { ConfigCore, ConfigMining, ConfigUI, ConfigWallet, GpuDeviceSettings } from './configs.ts';
@@ -68,8 +68,8 @@ export type BackendStateUpdateEvent =
           payload: CriticalProblemPayload;
       }
     | {
-          event_type: 'MissingApplications';
-          payload: ExternalDependency[];
+          event_type: 'SystemDependenciesLoaded';
+          payload: SystemDependency[];
       }
     | {
           event_type: 'StuckOnOrphanChain';

@@ -13,7 +13,7 @@ import { useTranslation } from 'react-i18next';
 const ExternalDependenciesDialog = memo(function ExternalDependenciesDialog() {
     const { t } = useTranslation('external-dependency-dialog', { useSuspense: false });
     const showExternalDependenciesDialog = useUIStore((s) => s.showExternalDependenciesDialog);
-    const externalDependencies = useAppStateStore((s) => s.externalDependencies);
+    const externalDependencies = useAppStateStore((s) => s.systemDependencies);
     const [isRestarting, setIsRestarting] = useState(false);
     const [installationSlot, setInstallationSlot] = useState<number | null>(null);
 

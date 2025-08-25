@@ -2,7 +2,7 @@ import { Chip } from '@app/components/elements/Chip';
 import { Stack } from '@app/components/elements/Stack';
 import { Typography } from '@app/components/elements/Typography';
 import { getChipStylingForStatus, mapStatusToText } from './ExternalDependenciesDialog.utils';
-import { ExternalDependency, ExternalDependencyStatus } from '@app/types/app-status';
+import { SystemDependency, SystemDependencyStatus } from '@app/types/app-status';
 import { IoArrowDownCircleOutline } from 'react-icons/io5';
 import { useCallback } from 'react';
 import { invoke } from '@tauri-apps/api/core';
@@ -19,7 +19,7 @@ export const ExternalDependencyCard = ({
     isInInstallationSlot,
     freeInstallationSlot,
 }: {
-    missingDependency: ExternalDependency;
+    missingDependency: SystemDependency;
     isInstallationSlotOccupied: boolean;
     isInInstallationSlot: boolean;
     occupyInstallationSlot: () => void;
@@ -27,7 +27,10 @@ export const ExternalDependencyCard = ({
 }) => {
     const { t } = useTranslation('external-dependency-dialog', { useSuspense: false });
 
-    const { display_description, display_name, manufacturer, status, version } = missingDependency;
+    const {
+        status,
+        ui_info: { display_description, display_name, manufacturer },
+    } = missingDependency;
 
     const handleDownload = useCallback(async () => {
         try {
@@ -65,11 +68,10 @@ export const ExternalDependencyCard = ({
 
                     <Stack direction="row" gap={4}>
                         <Typography variant="h5">{display_name}</Typography>
-                        <Typography variant="p">{version}</Typography>
                     </Stack>
                     <Typography variant="p">{display_description}</Typography>
                 </Stack>
-                {status === ExternalDependencyStatus.NotInstalled && (
+                {status === SystemDependencyStatus.NotInstalled && (
                     <Button
                         onClick={handleDownload}
                         color="secondary"

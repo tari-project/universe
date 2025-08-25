@@ -30,7 +30,7 @@ export {
     fetchApplicationsVersions,
     fetchApplicationsVersionsWithRetry,
     fetchExternalDependencies,
-    loadExternalDependencies,
+    loadSystemDependencies as loadExternalDependencies,
     setCriticalError,
     setCriticalProblem,
     setError,

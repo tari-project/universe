@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import { useAppStateStore } from '../appStateStore.ts';
-import { ExternalDependency, NetworkStatus } from '@app/types/app-status.ts';
+import { NetworkStatus, SystemDependency, SystemDependencyStatus } from '@app/types/app-status.ts';
 import { addToast } from '@app/components/ToastStack/useToastStore.tsx';
 import { CriticalProblemPayload, SetupPhase, ShowReleaseNotesPayload } from '@app/types/events-payloads.ts';
 import { setDialogToShow, useMiningStore, useUIStore } from '../index.ts';
@@ -11,7 +11,7 @@ import {
     updateMiningSetupPhaseInfo,
     updateWalletSetupPhaseInfo,
 } from './setupStoreActions.ts';
-import { setIsReconnecting, setShowResumeAppModal } from './uiStoreActions.ts';
+import { setIsReconnecting, setShowExternalDependenciesDialog, setShowResumeAppModal } from './uiStoreActions.ts';
 import { useSetupStore } from '../useSetupStore.ts';
 
 export const fetchApplicationsVersions = async () => {
@@ -39,18 +39,15 @@ export const fetchApplicationsVersionsWithRetry = async () => {
         }
     }
 };
-export const fetchExternalDependencies = async () => {
-    try {
-        const externalDependencies = await invoke('get_external_dependencies');
-        useAppStateStore.setState({ externalDependencies });
-    } catch (error) {
-        console.error('Error loading missing external dependencies', error);
-    }
-};
+
 export const setIsStuckOnOrphanChain = (isStuckOnOrphanChain: boolean) =>
     useAppStateStore.setState({ isStuckOnOrphanChain });
-export const loadExternalDependencies = (externalDependencies: ExternalDependency[]) =>
-    useAppStateStore.setState({ externalDependencies });
+export const loadSystemDependencies = (externalDependencies: SystemDependency[]) => {
+    if (externalDependencies.some((dep) => dep.status !== SystemDependencyStatus.Installed)) {
+        setShowExternalDependenciesDialog(true);
+    }
+    useAppStateStore.setState({ systemDependencies: externalDependencies });
+};
 
 export const setCriticalError = (payload?: CriticalProblemPayload) =>
     useAppStateStore.setState({ criticalError: payload });
