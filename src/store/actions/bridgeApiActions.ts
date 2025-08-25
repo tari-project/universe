@@ -12,7 +12,6 @@ import { setExchangeETHAdress } from '@app/store/actions/walletStoreActions.ts';
 export const fetchBridgeTransactionsHistory = async (
     tari_address_base58: string
 ): Promise<BackendBridgeTransaction[]> => {
-    console.info('Fetching bridge transactions history...');
     const baseUrl = useConfigBEInMemoryStore.getState().bridge_backend_api_url;
     if (baseUrl?.includes('env var not defined')) return [];
     OpenAPI.BASE = baseUrl;

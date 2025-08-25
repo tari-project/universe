@@ -122,6 +122,7 @@ export const setWalletBalance = async (balance: WalletBalance) => {
     const isEqual = calculated_balance === currentCalculatedBalance || deepEqual(balance, currentBalance);
     if (isEqual) return;
     await queryClient.invalidateQueries({ queryKey: [KEY_EXPLORER] });
+    await refreshTransactions();
     useWalletStore.setState((c) => ({
         ...c,
         balance: { ...balance },

@@ -25,10 +25,9 @@ export function List({ setIsScrolled, targetRef }: Props) {
     const { t } = useTranslation('wallet');
     const walletScanning = useWalletStore((s) => s.wallet_scanning);
     const walletImporting = useWalletStore((s) => s.is_wallet_importing);
+    const { data, fetchNextPage, isFetchingNextPage, isFetching, hasNextPage } = useFetchTxHistory();
 
-    const { data, fetchNextPage, isFetchingNextPage, isFetching, hasNextPage, isLoading } = useFetchTxHistory();
-
-    const walletLoading = walletImporting || walletScanning?.is_scanning || isLoading;
+    const walletLoading = walletImporting || walletScanning?.is_scanning;
 
     useEffect(() => {
         const el = targetRef?.current;
@@ -42,7 +41,6 @@ export function List({ setIsScrolled, targetRef }: Props) {
         initialInView: false,
         onChange: () => hasNextPage && !isFetching && fetchNextPage({ cancelRefetch: false }),
     });
-
     const baseTx = data?.pages.flatMap((page) => page) || [];
 
     const handleDetailsChange = useCallback(async (transaction: CombinedBridgeWalletTransaction | null) => {
@@ -103,9 +101,7 @@ export function List({ setIsScrolled, targetRef }: Props) {
     ) : (
         listMarkup
     );
-
     const isEmpty = !walletLoading && !baseTx?.length;
-
     const emptyMarkup = isEmpty ? <LoadingText>{t('empty-tx')}</LoadingText> : null;
     return (
         <>
@@ -113,7 +109,7 @@ export function List({ setIsScrolled, targetRef }: Props) {
                 {emptyMarkup}
                 {baseMarkup}
                 {/*added placeholder so the scroll can trigger fetch*/}
-                {!walletLoading ? <PlaceholderItem ref={ref} $isLast /> : null}
+                {!walletScanning?.is_scanning ? <PlaceholderItem ref={ref} $isLast /> : null}
             </ListWrapper>
         </>
     );
