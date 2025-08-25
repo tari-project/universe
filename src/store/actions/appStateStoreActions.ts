@@ -4,15 +4,9 @@ import { NetworkStatus, SystemDependency, SystemDependencyStatus } from '@app/ty
 import { addToast } from '@app/components/ToastStack/useToastStore.tsx';
 import { CriticalProblemPayload, SetupPhase, ShowReleaseNotesPayload } from '@app/types/events-payloads.ts';
 import { setDialogToShow, useMiningStore, useUIStore } from '../index.ts';
-import {
-    updateCoreSetupPhaseInfo,
-    updateHardwareSetupPhaseInfo,
-    updateNodeSetupPhaseInfo,
-    updateMiningSetupPhaseInfo,
-    updateWalletSetupPhaseInfo,
-} from './setupStoreActions.ts';
+
 import { setIsReconnecting, setShowExternalDependenciesDialog, setShowResumeAppModal } from './uiStoreActions.ts';
-import { useSetupStore } from '../useSetupStore.ts';
+import { clearSetupProgress } from './setupStoreActions.ts';
 
 export const fetchApplicationsVersions = async () => {
     try {
@@ -89,31 +83,11 @@ export const handleRestartingPhases = async (phasesToRestart: SetupPhase[]) => {
         return;
     }
 
-    if (useSetupStore.getState().appUnlocked) {
-        setDialogToShow(undefined);
-        setShowResumeAppModal(true);
-        useMiningStore.setState({ wasMineOnAppStartExecuted: false });
-    }
+    setDialogToShow(undefined);
+    setShowResumeAppModal(true);
+    useMiningStore.setState({ wasMineOnAppStartExecuted: false });
 
     for (const phase of phasesToRestart) {
-        switch (phase) {
-            case SetupPhase.Core:
-                updateCoreSetupPhaseInfo(undefined);
-                break;
-            case SetupPhase.Node:
-                updateNodeSetupPhaseInfo(undefined);
-                break;
-            case SetupPhase.Hardware:
-                updateHardwareSetupPhaseInfo(undefined);
-                break;
-            case SetupPhase.Mining:
-                updateMiningSetupPhaseInfo(undefined);
-                break;
-            case SetupPhase.Wallet:
-                updateWalletSetupPhaseInfo(undefined);
-                break;
-            default:
-                break;
-        }
+        clearSetupProgress(phase);
     }
 };

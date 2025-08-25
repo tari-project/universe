@@ -19,13 +19,13 @@
 // SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-use crate::progress_trackers::progress_stepper::ChanneledStepUpdate;
+use crate::progress_trackers::progress_stepper::IncrementalProgressTracker;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::LazyLock;
+use tokio::sync::Mutex as AsyncMutex;
 
 use super::adapter_bridge::BridgeTappletAdapter;
 use super::adapter_github::GithubReleasesAdapter;
@@ -35,6 +35,10 @@ use super::binaries_manager::BinaryManager;
 use super::Binaries;
 
 static INSTANCE: LazyLock<BinaryResolver> = LazyLock::new(BinaryResolver::new);
+
+// Lock to prevent concurrent downloads of tari suite binaries (MergeMiningProxy, MinotariNode, Wallet)
+// that all come from the same zip file and would conflict when downloading in parallel
+static TARI_SUITE_DOWNLOAD_LOCK: LazyLock<AsyncMutex<()>> = LazyLock::new(|| AsyncMutex::new(()));
 
 #[derive(Clone, Debug)]
 pub struct BinaryDownloadInfo {
@@ -220,7 +224,7 @@ impl BinaryResolver {
     pub async fn initialize_binary(
         &self,
         binary: Binaries,
-        progress_channel: Option<ChanneledStepUpdate>,
+        progress_channel: Option<IncrementalProgressTracker>,
     ) -> Result<(), Error> {
         let manager = self
             .managers
@@ -230,10 +234,28 @@ impl BinaryResolver {
         if manager.check_if_files_for_version_exist() {
             // If files already exist, we can skip the download
             return Ok(());
+        }
+
+        // These 3 binaries are downloaded as one zip so processing them in parallel would cause file conflicts
+        // To keep it safe, we lock the download for these binaries and then check again if files exist after acquiring the lock
+        let needs_tari_suite_lock = matches!(
+            binary,
+            Binaries::MergeMiningProxy | Binaries::MinotariNode | Binaries::Wallet
+        );
+
+        if needs_tari_suite_lock {
+            let _lock = TARI_SUITE_DOWNLOAD_LOCK.lock().await;
+
+            if manager.check_if_files_for_version_exist() {
+                return Ok(());
+            }
+            manager
+                .download_version_with_retries(progress_channel.clone())
+                .await?;
         } else {
             manager
                 .download_version_with_retries(progress_channel.clone())
-                .await?
+                .await?;
         }
 
         Ok(())

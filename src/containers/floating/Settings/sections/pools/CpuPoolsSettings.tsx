@@ -54,7 +54,7 @@ export const CpuPoolsSettings = () => {
     const handleResetToDefaultPoolConfiguration = useCallback(async () => {
         if (!selectedCpuPoolData) return;
         await resetCpuPoolConfiguration(selectedCpuPoolData.pool_name);
-    }, []);
+    }, [selectedCpuPoolData]);
 
     return (
         <SettingsGroupWrapper style={{ gap: '16px' }}>

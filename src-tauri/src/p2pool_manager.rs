@@ -166,11 +166,9 @@ impl P2poolManager {
         log_path: PathBuf,
     ) -> Result<(), anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;
-        let shutdown_signal = TasksTrackers::current().mining_phase.get_signal().await;
-        let task_tracker = TasksTrackers::current()
-            .mining_phase
-            .get_task_tracker()
-            .await;
+        // uses common as it currently does not belong to any specific phase
+        let shutdown_signal = TasksTrackers::current().common.get_signal().await;
+        let task_tracker = TasksTrackers::current().common.get_task_tracker().await;
 
         info!(target: LOG_TARGET, "Starting P2pool, is_shutdown triggered: {} | is terminated: {}", shutdown_signal.is_triggered(),shutdown_signal.is_terminated());
         info!(target: LOG_TARGET, "task tracker is closed: {}", task_tracker.is_closed());
@@ -190,7 +188,7 @@ impl P2poolManager {
             )
             .await?;
         process_watcher.wait_ready().await?;
-        let shutdown_signal = TasksTrackers::current().mining_phase.get_signal().await;
+        let shutdown_signal = TasksTrackers::current().common.get_signal().await;
         if let Some(status_monitor) = &process_watcher.status_monitor {
             loop {
                 if shutdown_signal.is_terminated() || shutdown_signal.is_triggered() {

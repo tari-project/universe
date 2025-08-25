@@ -82,9 +82,9 @@ impl GpuMinerSha {
         log_path: PathBuf,
     ) -> Result<(), anyhow::Error> {
         self.pool_status_shutdown_signal = Shutdown::new();
-        let shutdown_signal = TasksTrackers::current().hardware_phase.get_signal().await;
+        let shutdown_signal = TasksTrackers::current().gpu_mining_phase.get_signal().await;
         let task_tracker = TasksTrackers::current()
-            .hardware_phase
+            .gpu_mining_phase
             .get_task_tracker()
             .await;
 
@@ -168,11 +168,11 @@ impl GpuMinerSha {
         pool_status_check.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
         let mut pool_shutdown_signal = self.pool_status_shutdown_signal.to_signal();
 
-        let mut shutdown_signal = TasksTrackers::current().hardware_phase.get_signal().await;
+        let mut shutdown_signal = TasksTrackers::current().gpu_mining_phase.get_signal().await;
         let mut status_updates_signal = self.status_updates_shutdown.to_signal();
 
         let status_updates_thread = TasksTrackers::current()
-            .hardware_phase
+            .gpu_mining_phase
             .get_task_tracker()
             .await
             .spawn(async move {

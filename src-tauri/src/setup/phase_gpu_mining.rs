@@ -19,31 +19,35 @@
 // SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 use crate::{
     binaries::{Binaries, BinaryResolver},
-    configs::{
-        config_core::ConfigCore,
-        config_wallet::{ConfigWallet, ConfigWalletContent},
-        trait_config::ConfigImpl,
-    },
+    configs::{config_mining::ConfigMining, trait_config::ConfigImpl},
     events_emitter::EventsEmitter,
-    internal_wallet::InternalWallet,
-    pin::PinManager,
+    gpu_devices::GpuDevices,
+    gpu_miner::EngineType,
+    gpu_miner_adapter::GpuMinerStatus,
+    hardware::hardware_status_monitor::HardwareStatusMonitor,
     progress_trackers::{
         progress_plans::SetupStep,
         progress_stepper::{ProgressStepper, ProgressStepperBuilder},
     },
     setup::setup_manager::SetupPhase,
+    systemtray_manager::SystemTrayGpuData,
     tasks_tracker::TasksTrackers,
-    wallet::wallet_manager::WalletStartupConfig,
+    utils::locks_utils::try_write_with_retry,
     UniverseAppState,
 };
 use anyhow::Error;
+use log::error;
 use tari_shutdown::ShutdownSignal;
 use tauri::{AppHandle, Manager};
-use tokio::sync::{
-    watch::{Receiver, Sender},
-    Mutex,
+use tokio::{
+    select,
+    sync::{
+        watch::{Receiver, Sender},
+        Mutex,
+    },
 };
 use tokio_util::task::TaskTracker;
 
@@ -54,21 +58,17 @@ use super::{
     utils::{setup_default_adapter::SetupDefaultAdapter, timeout_watcher::TimeoutWatcher},
 };
 
-static LOG_TARGET: &str = "tari::universe::phase_wallet";
-
-// Bump to force wallet full scan
-const WALLET_MIGRATION_NONCE: u64 = 1;
+static LOG_TARGET: &str = "tari::universe::phase_gpu_mining";
 
 #[derive(Clone, Default)]
-pub struct WalletSetupPhaseAppConfiguration {
-    use_tor: bool,
+pub struct GpuMiningSetupPhaseAppConfiguration {
+    gpu_engine: EngineType,
 }
 
-pub struct WalletSetupPhase {
+pub struct GpuMiningSetupPhase {
     app_handle: AppHandle,
     progress_stepper: Mutex<ProgressStepper>,
-    #[allow(dead_code)]
-    app_configuration: WalletSetupPhaseAppConfiguration,
+    app_configuration: GpuMiningSetupPhaseAppConfiguration,
     setup_configuration: SetupConfiguration,
     status_sender: Sender<PhaseStatus>,
     #[allow(dead_code)]
@@ -76,8 +76,8 @@ pub struct WalletSetupPhase {
     timeout_watcher: TimeoutWatcher,
 }
 
-impl SetupPhaseImpl for WalletSetupPhase {
-    type AppConfiguration = WalletSetupPhaseAppConfiguration;
+impl SetupPhaseImpl for GpuMiningSetupPhase {
+    type AppConfiguration = GpuMiningSetupPhaseAppConfiguration;
 
     async fn new(
         app_handle: AppHandle,
@@ -104,17 +104,16 @@ impl SetupPhaseImpl for WalletSetupPhase {
     fn get_app_handle(&self) -> &AppHandle {
         &self.app_handle
     }
-
     fn get_status_sender(&self) -> &Sender<PhaseStatus> {
         &self.status_sender
     }
 
     async fn get_shutdown_signal(&self) -> ShutdownSignal {
-        TasksTrackers::current().wallet_phase.get_signal().await
+        TasksTrackers::current().gpu_mining_phase.get_signal().await
     }
     async fn get_task_tracker(&self) -> TaskTracker {
         TasksTrackers::current()
-            .wallet_phase
+            .gpu_mining_phase
             .get_task_tracker()
             .await
     }
@@ -124,7 +123,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
             .clone()
     }
     fn get_phase_id(&self) -> SetupPhase {
-        SetupPhase::Wallet
+        SetupPhase::GpuMining
     }
     fn get_timeout_watcher(&self) -> &TimeoutWatcher {
         &self.timeout_watcher
@@ -136,20 +135,21 @@ impl SetupPhaseImpl for WalletSetupPhase {
         timeout_watcher_sender: Sender<u64>,
     ) -> ProgressStepper {
         ProgressStepperBuilder::new()
-            .add_incremental_step(SetupStep::BinariesWallet, true)
-            .add_step(SetupStep::StartWallet, true)
-            .add_incremental_step(SetupStep::SetupBridge, true)
+            .add_incremental_step(SetupStep::BinariesGpuMiner, true)
+            .add_step(SetupStep::DetectGpu, false)
+            .add_step(SetupStep::InitializeGpuHardware, false)
             .build(
-                app_handle,
+                app_handle.clone(),
                 timeout_watcher_sender,
                 status_sender,
-                SetupPhase::Wallet,
+                SetupPhase::GpuMining,
             )
     }
 
     async fn load_app_configuration() -> Result<Self::AppConfiguration, Error> {
-        let use_tor = *ConfigCore::content().await.use_tor();
-        Ok(WalletSetupPhaseAppConfiguration { use_tor })
+        let gpu_engine = ConfigMining::content().await.gpu_engine().clone();
+
+        Ok(GpuMiningSetupPhaseAppConfiguration { gpu_engine })
     }
 
     async fn setup(self) {
@@ -157,64 +157,68 @@ impl SetupPhaseImpl for WalletSetupPhase {
     }
 
     async fn setup_inner(&self) -> Result<(), Error> {
-        let app_state = self.get_app_handle().state::<UniverseAppState>().clone();
+        let state = self.app_handle.state::<UniverseAppState>();
         let mut progress_stepper = self.progress_stepper.lock().await;
-        let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
-        let is_local_node = app_state.node_manager.is_local_current().await;
-        let use_tor = self.app_configuration.use_tor && is_local_node && !cfg!(target_os = "macos");
+        let (data_dir, config_dir, _log_dir) = self.get_app_dirs()?;
 
         let binary_resolver = BinaryResolver::current();
 
-        let wallet_binary_progress_tracker =
-            progress_stepper.track_step_incrementally(SetupStep::BinariesWallet);
+        let graxil_binary_progress_tracker =
+            progress_stepper.track_step_incrementally(SetupStep::BinariesGpuMiner);
 
-        progress_stepper
-            .complete_step(SetupStep::BinariesWallet, || async {
-                binary_resolver
-                    .initialize_binary(Binaries::Wallet, wallet_binary_progress_tracker)
-                    .await
-            })
-            .await?;
+        progress_stepper.complete_step(SetupStep::BinariesGpuMiner,  || async {
+            let graxil_initialization_result = binary_resolver
+                .initialize_binary(Binaries::GpuMinerSHA3X, graxil_binary_progress_tracker)
+                .await;
+            let glytex_initialization_result = binary_resolver
+                .initialize_binary(Binaries::GpuMiner, None)
+                .await;
 
-        progress_stepper.complete_step(SetupStep::StartWallet,  || async  {
-            let latest_wallet_migration_nonce = *ConfigWallet::content().await.wallet_migration_nonce();
-            if latest_wallet_migration_nonce < WALLET_MIGRATION_NONCE {
-                log::info!(target: LOG_TARGET, "Wallet migration required(Nonce {latest_wallet_migration_nonce} => {WALLET_MIGRATION_NONCE})");
-                if let Err(e) = app_state.wallet_manager.clean_data_folder(&data_dir).await {
-                    log::warn!(target: LOG_TARGET, "Failed to clean wallet data folder: {e}");
-                }
-                if
-                    let Err(e) = ConfigWallet::update_field(
-                        ConfigWalletContent::set_wallet_migration_nonce,
-                        WALLET_MIGRATION_NONCE
-                    ).await
-                {
-                    log::warn!(target: LOG_TARGET, "Failed to update wallet migration nonce: {e}");
-                }
+            if let (Err(graxil_err), Err(glytex_err)) =
+                (graxil_initialization_result, glytex_initialization_result)
+            {
+                return Err(anyhow::anyhow!(
+                    "Failed to initialize GPU miner binaries: Graxil: {graxil_err}, Glytex: {glytex_err}"
+                ));
             }
-
-            let wallet_config = WalletStartupConfig {
-                base_path: data_dir.clone(),
-                config_path: config_dir.clone(),
-                log_path: log_dir.clone(),
-                use_tor,
-                connect_with_local_node: is_local_node,
-            };
-            app_state.wallet_manager.ensure_started(
-                TasksTrackers::current().wallet_phase.get_signal().await,
-                wallet_config
-            ).await?;
 
             Ok(())
         }).await?;
 
-        let bridge_binary_progress_tracker =
-            progress_stepper.track_step_incrementally(SetupStep::SetupBridge);
+        progress_stepper
+            .complete_step(SetupStep::DetectGpu, || async {
+                let glytex_detection_result = state
+                    .gpu_miner
+                    .write()
+                    .await
+                    .detect(
+                        config_dir.clone(),
+                        self.app_configuration.gpu_engine.clone(),
+                    )
+                    .await;
+
+                let graxil_detection_result = GpuDevices::current()
+                    .write()
+                    .await
+                    .detect(data_dir.clone())
+                    .await;
+
+                if let (Err(graxil_err), Err(glytex_err)) =
+                    (graxil_detection_result, glytex_detection_result)
+                {
+                    return Err(anyhow::anyhow!(
+                        "Failed to detect GPU devices: Graxil: {graxil_err}, Glytex: {glytex_err}"
+                    ));
+                }
+
+                Ok(())
+            })
+            .await?;
 
         progress_stepper
-            .complete_step(SetupStep::SetupBridge, || async {
-                binary_resolver
-                    .initialize_binary(Binaries::BridgeTapplet, bridge_binary_progress_tracker)
+            .complete_step(SetupStep::InitializeGpuHardware, || async {
+                HardwareStatusMonitor::current()
+                    .initialize_gpu_devices()
                     .await
             })
             .await?;
@@ -232,20 +236,44 @@ impl SetupPhaseImpl for WalletSetupPhase {
                 .send(PhaseStatus::SuccessWithWarnings(setup_warnings.clone()))?;
         }
 
-        let app_state = self.get_app_handle().state::<UniverseAppState>().clone();
-        let node_status_watch_rx = (*app_state.node_status_watch_rx).clone();
-        if InternalWallet::is_internal().await {
-            app_state
-                .wallet_manager
-                .wait_for_initial_wallet_scan(node_status_watch_rx)
-                .await?;
-        }
+        let app_handle_clone = self.app_handle.clone();
+        TasksTrackers::current()
+            .gpu_mining_phase
+            .get_task_tracker()
+            .await
+            .spawn(async move {
+                let app_state = app_handle_clone.state::<UniverseAppState>().clone();
+                let mut gpu_status_watch_rx = (*app_state.gpu_latest_status).clone();
+                let mut shutdown_signal =
+                    TasksTrackers::current().gpu_mining_phase.get_signal().await;
 
-        let config_wallet = ConfigWallet::content().await;
-        let is_pin_locked = PinManager::pin_locked().await;
-        EventsEmitter::emit_pin_locked(is_pin_locked).await;
-        let is_seed_backed_up = *config_wallet.seed_backed_up();
-        EventsEmitter::emit_seed_backed_up(is_seed_backed_up).await;
+                loop {
+                    select! {
+                        _ = gpu_status_watch_rx.changed() => {
+                            let gpu_status: GpuMinerStatus = gpu_status_watch_rx.borrow().clone();
+                            EventsEmitter::emit_gpu_mining_update(gpu_status.clone()).await;
+                            let gpu_systemtray_data = SystemTrayGpuData {
+                                gpu_hashrate: gpu_status.hash_rate,
+                                estimated_earning: gpu_status.estimated_earnings
+                            };
+
+                            match try_write_with_retry(&app_state.systemtray_manager, 6).await {
+                                Ok(mut sm) => {
+                                    sm.update_tray_with_gpu_data(gpu_systemtray_data);
+                                },
+                                Err(e) => {
+                                    let err_msg = format!("Failed to acquire systemtray_manager write lock: {e}");
+                                    error!(target: LOG_TARGET, "{err_msg}");
+                                }
+                            }
+
+                        },
+                        _ = shutdown_signal.wait() => {
+                            break;
+                        },
+                    }
+                }
+            });
 
         Ok(())
     }

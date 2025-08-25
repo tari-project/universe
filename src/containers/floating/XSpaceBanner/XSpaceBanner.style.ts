@@ -1,7 +1,11 @@
 import * as m from 'motion/react-m';
 import styled, { css } from 'styled-components';
 
-export const BannerContent = styled(m.div)<{ $crewRewardsActive: boolean; $isLoggedIn: boolean }>`
+export const BannerContent = styled(m.div)<{
+    $crewRewardsActive: boolean;
+    $isLoggedIn: boolean;
+    $crewRewardsMinimized: boolean;
+}>`
     position: fixed;
     top: 16px;
     right: 20px;
@@ -35,6 +39,13 @@ export const BannerContent = styled(m.div)<{ $crewRewardsActive: boolean; $isLog
         $crewRewardsActive &&
         css`
             top: 296px;
+            right: 12px;
+        `}
+
+    ${({ $crewRewardsMinimized }) =>
+        $crewRewardsMinimized &&
+        css`
+            top: 64px;
             right: 12px;
         `}
 `;
