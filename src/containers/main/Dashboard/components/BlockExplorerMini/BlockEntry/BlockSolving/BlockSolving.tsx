@@ -49,14 +49,14 @@ export default function BlockSolving({ id, minersSolved, timeAgo, reward, isSolv
                                     {t('bubbles.solving')}
                                 </Title>
                                 <BottomWrapper>
-                                    {reward && (
+                                    {reward ? (
                                         <RewardPillBlack $isSolved={isSolved}>
                                             <span>
                                                 {formatReward(reward)}
                                                 {` XTM`}
                                             </span>
                                         </RewardPillBlack>
-                                    )}
+                                    ) : null}
                                     <BlockTimer />
                                 </BottomWrapper>
                             </ContentWrapper>

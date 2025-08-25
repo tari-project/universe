@@ -3,6 +3,7 @@ import { BlockTip } from '@app/types/mining/blocks.ts';
 import { getExplorerUrl } from '@app/utils/network.ts';
 import { defaultHeaders } from '@app/utils';
 import { processNewBlock, useBlockchainVisualisationStore } from '@app/store';
+import { KEY_EXPLORER } from '@app/hooks/mining/useFetchExplorerData.ts';
 
 async function getTipHeight(): Promise<BlockTip> {
     const explorerUrl = getExplorerUrl();
@@ -15,14 +16,12 @@ async function getTipHeight(): Promise<BlockTip> {
 export function useBlockTip() {
     const latestBlock = useBlockchainVisualisationStore((s) => s.latestBlockPayload);
     return useQuery<BlockTip>({
-        queryKey: ['block_tip', { version: 1 }],
+        queryKey: [KEY_EXPLORER, 'block_tip'],
         queryFn: async () => {
             const data = await getTipHeight();
-
-            if (latestBlock && data.height !== latestBlock?.block_height) {
+            if (latestBlock && data?.height !== latestBlock?.block_height) {
                 await processNewBlock(latestBlock);
             }
-
             return data;
         },
         refetchIntervalInBackground: true,

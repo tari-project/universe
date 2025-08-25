@@ -4,7 +4,8 @@ import { getExplorerUrl } from '@app/utils/network.ts';
 import { BlockStats, BlockBubbleData } from '@app/types/mining/blocks.ts';
 
 const LIMIT = 10;
-export const KEY_EXPLORER = 'block_stats';
+export const KEY_EXPLORER = 'block_explorer';
+export const KEY_STATS = 'block_stats';
 
 async function fetchExplorerData({ limit }: { limit?: number }): Promise<BlockStats[]> {
     const explorerUrl = getExplorerUrl();
@@ -30,14 +31,13 @@ function parseStats(block: BlockStats): BlockBubbleData {
 
 export function useFetchExplorerData() {
     return useQuery<BlockBubbleData[]>({
-        queryKey: [KEY_EXPLORER, LIMIT],
+        queryKey: [KEY_EXPLORER, KEY_STATS, LIMIT],
         queryFn: async () => {
             const data = await fetchExplorerData({ limit: LIMIT });
             if (!data) {
                 console.error('Explorer data is empty.');
                 return [] as BlockBubbleData[];
             }
-
             return data.map(parseStats);
         },
         refetchOnWindowFocus: true,
