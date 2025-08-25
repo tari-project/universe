@@ -21,6 +21,7 @@ interface State {
     installedTapplets: InstalledTappletWithAssets[];
     registeredTapplets: RegisteredTapplet[];
     runningTapplets: ActiveTapplet[];
+    allowedIframeMsgOrigins: Record<number, string[]>;
 }
 
 interface Actions {
@@ -39,6 +40,7 @@ interface Actions {
     getDevTapps: () => Promise<void>;
     stopTapp: (tappletId: number) => Promise<void>;
     restartTapp: (tappletId: number) => Promise<void>;
+    setAllowedIframeMsgOrigins: (tappletId: number, origin: string) => void;
 }
 
 type TappletsStoreState = State & Actions;
@@ -53,6 +55,7 @@ const initialState: State = {
     registeredTapplets: [],
     devTapplets: [],
     runningTapplets: [],
+    allowedIframeMsgOrigins: { 1: ['wxtm-bridge-frontend'] }, //TODO remove init - this is just test
 };
 
 export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
@@ -314,5 +317,16 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
             console.error(`Restarting tapplet error: ${error}`);
             setError(`Restarting tapplet error: ${error}`);
         }
+    },
+    setAllowedIframeMsgOrigins: (tappletId: number, origin: string) => {
+        set((state) => {
+            const currentOrigins = state.allowedIframeMsgOrigins[tappletId] || [];
+            return {
+                allowedIframeMsgOrigins: {
+                    ...state.allowedIframeMsgOrigins,
+                    [tappletId]: [...currentOrigins, origin],
+                },
+            };
+        });
     },
 }));

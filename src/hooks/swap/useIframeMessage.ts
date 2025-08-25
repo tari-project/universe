@@ -140,7 +140,8 @@ interface EmitNotificationMessage {
 interface InterTappletMessage {
     type: MessageType.INTER_TAPPLET;
     payload: {
-        targetTappletId: number;
+        sourceTappletRegistryId: string;
+        targetTappletRegistryId: string;
         msg: string;
     };
 }

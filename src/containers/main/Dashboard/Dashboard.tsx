@@ -1,7 +1,7 @@
 import { useMiningStatesSync } from '@app/hooks/mining/useMiningStatesSync.ts';
 import DisconnectWrapper from '../Reconnect/DisconnectWrapper.tsx';
 import { DashboardContentContainer } from './styles';
-import { useAirdropStore, useUIStore, setError as setStoreError } from '@app/store';
+import { useAirdropStore, useUIStore } from '@app/store';
 import { useTappletsStore } from '@app/store/useTappletsStore';
 import { Tapplet } from '@app/components/tapplets/Tapplet.tsx';
 import MiningView from './MiningView/MiningView.tsx';
@@ -28,10 +28,8 @@ export default function Dashboard() {
                     {runningTapplets.map(({ tapplet_id, source }) => (
                         <Tapplet
                             key={tapplet_id}
-                            activeTappId={activeTapplet?.tapplet_id ?? 0}
-                            source={source}
                             tappletId={tapplet_id}
-                            disabled={tapplet_id !== activeTapplet?.tapplet_id}
+                            source={source}
                             ref={(el) => {
                                 if (el) iframeRefs.current[tapplet_id] = el;
                                 else delete iframeRefs.current[tapplet_id];
