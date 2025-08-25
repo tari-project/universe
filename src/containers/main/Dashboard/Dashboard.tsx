@@ -11,21 +11,21 @@ import { useRef } from 'react';
 export default function Dashboard() {
     const iframeRefs = useRef<Record<number, HTMLIFrameElement | null>>({});
     const activeTapplet = useTappletsStore((s) => s.activeTapplet);
-    const inUseTappIds = useTappletsStore((s) => s.inUseTappIds);
+    const runningTapplets = useTappletsStore((s) => s.runningTapplets);
     const showTapplet = useUIStore((s) => s.showTapplet);
     const connectionStatus = useUIStore((s) => s.connectionStatus);
     const orphanChainUiDisabled = useAirdropStore((s) =>
         s.features?.includes(FEATURE_FLAGS.FF_UI_ORPHAN_CHAIN_DISABLED)
     );
-    console.info('DASHBOARD', activeTapplet?.tapplet_id, inUseTappIds);
+    console.info('DASHBOARD', activeTapplet?.tapplet_id, runningTapplets);
     useMiningStatesSync();
 
     return (
         <DashboardContentContainer $tapplet={showTapplet}>
             {connectionStatus !== 'connected' && !orphanChainUiDisabled ? <DisconnectWrapper /> : null}
-            {showTapplet && inUseTappIds.length > 0 ? (
+            {showTapplet && runningTapplets.length > 0 ? (
                 <>
-                    {inUseTappIds.map(({ tapplet_id, source }) => (
+                    {runningTapplets.map(({ tapplet_id, source }) => (
                         <Tapplet
                             key={tapplet_id}
                             activeTappId={activeTapplet?.tapplet_id ?? 0}

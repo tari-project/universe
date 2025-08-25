@@ -20,7 +20,7 @@ interface State {
     devTapplets: DevTapplet[];
     installedTapplets: InstalledTappletWithAssets[];
     registeredTapplets: RegisteredTapplet[];
-    inUseTappIds: ActiveTapplet[];
+    runningTapplets: ActiveTapplet[];
 }
 
 interface Actions {
@@ -52,7 +52,7 @@ const initialState: State = {
     installedTapplets: [],
     registeredTapplets: [],
     devTapplets: [],
-    inUseTappIds: [],
+    runningTapplets: [],
 };
 
 export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
@@ -77,9 +77,9 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
                 const activeTapplet = await invoke('start_tari_tapplet_binary', { binaryName: name });
                 set((state) => ({
                     activeTapplet,
-                    inUseTappIds: state.inUseTappIds.some((item) => item.tapplet_id === activeTapplet.tapplet_id)
-                        ? state.inUseTappIds
-                        : [...state.inUseTappIds, activeTapplet],
+                    runningTapplets: state.runningTapplets.some((item) => item.tapplet_id === activeTapplet.tapplet_id)
+                        ? state.runningTapplets
+                        : [...state.runningTapplets, activeTapplet],
                 }));
             } catch (error) {
                 console.error(`Tapplet (id: ${tappletId} name: ${name}) startup error: ${error}`);
@@ -104,9 +104,11 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
                     if (!activeTapplet) return;
                     set((state) => ({
                         activeTapplet,
-                        inUseTappIds: state.inUseTappIds.some((item) => item.tapplet_id === activeTapplet.tapplet_id)
-                            ? state.inUseTappIds
-                            : [...state.inUseTappIds, activeTapplet],
+                        runningTapplets: state.runningTapplets.some(
+                            (item) => item.tapplet_id === activeTapplet.tapplet_id
+                        )
+                            ? state.runningTapplets
+                            : [...state.runningTapplets, activeTapplet],
                     }));
 
                     tappProviderState.setTappletSigner(activeTapplet?.package_name); //TODO
@@ -128,9 +130,9 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
                 // TODO not push if already in array
                 set((state) => ({
                     activeTapplet,
-                    inUseTappIds: state.inUseTappIds.some((item) => item.tapplet_id === activeTapplet.tapplet_id)
-                        ? state.inUseTappIds
-                        : [...state.inUseTappIds, activeTapplet],
+                    runningTapplets: state.runningTapplets.some((item) => item.tapplet_id === activeTapplet.tapplet_id)
+                        ? state.runningTapplets
+                        : [...state.runningTapplets, activeTapplet],
                 }));
             } catch (error) {
                 console.error(`Dev Tapplet startup error: ${error}`);
@@ -144,7 +146,7 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
             });
             set((state) => ({
                 activeTapplet,
-                inUseTappIds: [...state.inUseTappIds, activeTapplet],
+                runningTapplets: [...state.runningTapplets, activeTapplet],
             }));
         } catch (error) {
             console.error(`Tapplet startup error: ${error}`);
@@ -247,7 +249,7 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
                 set({ activeTapplet: null });
             }
             set((state) => ({
-                inUseTappIds: state.inUseTappIds.filter((tapp) => tapp.tapplet_id !== devTappletId),
+                runningTapplets: state.runningTapplets.filter((tapp) => tapp.tapplet_id !== devTappletId),
             }));
         } catch (error) {
             console.error(`Deleting tapplet error: ${error}`);
@@ -275,7 +277,7 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
                 set({ activeTapplet: null });
             }
             set((state) => ({
-                inUseTappIds: state.inUseTappIds.filter((tapp) => tapp.tapplet_id !== tappletId),
+                runningTapplets: state.runningTapplets.filter((tapp) => tapp.tapplet_id !== tappletId),
             }));
         } catch (error) {
             console.error(`Deleting dev tapplet error: ${error}`);
@@ -297,7 +299,7 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
             const serverAddress = await invoke('stop_tapplet', { tappletId });
             console.info('[STORE] tapplet stopped', tappletId, serverAddress);
             set((state) => ({
-                inUseTappIds: state.inUseTappIds.filter((tapp) => tapp.tapplet_id !== tappletId),
+                runningTapplets: state.runningTapplets.filter((tapp) => tapp.tapplet_id !== tappletId),
             }));
         } catch (error) {
             console.error(`Stopping tapplet error: ${error}`);

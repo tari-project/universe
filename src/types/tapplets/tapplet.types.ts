@@ -119,4 +119,5 @@ export interface TappletConfig {
 export type ActiveTapplet = TappletConfig & {
     tapplet_id: number;
     source: string;
+    allowedMsgSendersTappId: number[];
 };
