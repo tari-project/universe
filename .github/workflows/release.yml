@@ -49,6 +49,30 @@ env:
   BETA_STRING: '(Beta)'
 
 jobs:
+  create-beta-build:
+    name: Create Beta Build Record
+    if: ${{ ( github.event_name == 'schedule' ) || ( ! startsWith(github.ref, 'refs/heads/release') ) }}
+    runs-on: ubuntu-latest
+    outputs:
+      beta_build_id: ${{ steps.create_beta.outputs.beta_build_id }}
+    steps:
+      - name: Create BetaBuild Record
+        id: create_beta
+        env:
+          RWA_API_KEY: ${{ secrets.RWA_API_KEY }}
+        run: |
+          BETA_BUILD_ID=$(curl -X POST "https://rwa.y.at/api/beta-builds" \
+            -H "X-API-Key: $RWA_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "author": "${{ github.actor }}",
+              "commit_sha": "${{ github.sha }}",
+              "network": "${{ github.event.inputs.network }}",
+              "branch_name": "${{ github.ref_name }}",
+              "description": "${{ github.event.inputs.beta_description }}",
+              "published": false
+            }' | jq -r '.id')
+          echo "beta_build_id=$BETA_BUILD_ID" >> $GITHUB_OUTPUT
   builds:
     name: Building ${{ matrix.platform }}${{ matrix.extra }}
     # best effort disabled by default
@@ -447,7 +471,7 @@ jobs:
           echo "MSI_FILE=$MSI_FILE" >> $GITHUB_ENV
 
       - name: Upload to Cloudflare R2
-        if: ${{ github.event.inputs.asset_destination == 's3' }}
+        if: ${{ ( github.event_name == 'schedule' || !startsWith(github.ref, 'refs/heads/release') ) && github.event.inputs.asset_destination == 's3' }}
         env:
           S3_ENDPOINT_URL: ${{ secrets.S3_ENDPOINT_URL }}
           AWS_ACCESS_KEY_ID: ${{ secrets.CLOUDFLARE_R2_ACCESS_KEY_ID }}
@@ -465,31 +489,17 @@ jobs:
           fi
 
       - name: Create BetaBuild and BetaBuildAsset on RWA Service
+        if: ${{ ( github.event_name == 'schedule' ) || ( ! startsWith(github.ref, 'refs/heads/release') ) }}
         env:
-          RWA_API_URL: https://rwa.y.at/admin/api/resources
           RWA_AUTH_TOKEN: ${{ secrets.RWA_AUTH_TOKEN }}
+          BETA_BUILD_ID: ${{ needs.create-beta-build.outputs.beta_build_id }}
         shell: bash
         run: |
-          BETA_BUILD_UUID=$(uuidgen)
-          echo "BETA_BUILD_UUID=${BETA_BUILD_UUID}" >> $GITHUB_ENV
-          curl -X POST "${RWA_API_URL}/BetaBuild/actions/new" \
-            -H "Authorization: Bearer ${RWA_AUTH_TOKEN}" \
-            -H "Content-Type: application/json" \
-            -d '{
-              "id": "${BETA_BUILD_UUID}",
-              "author": "${{ github.actor }}",
-              "commit_sha": "${{ github.sha }}",
-              "network": "${{ github.event.inputs.network }}",
-              "branch_name": "${{ github.ref_name }}",
-              "description": "${{ github.event.inputs.beta_description }}",
-              "published": false
-            }'
           for artifact in ${{ join(fromJSON(steps.build.outputs.artifactPaths), ' ') }}; do
-            ASSET_UUID=$(uuidgen)
             ASSET_NAME=$(basename "$artifact")
             ASSET_S3_URL_VAR="S3_URL_${artifact//[^a-zA-Z0-9]/_}"
-            curl -X POST "${RWA_API_URL}/BetaBuildAsset/actions/new" \
-              -H "Authorization: Bearer ${RWA_AUTH_TOKEN}" \
+            curl -X POST "https://rwa.y.at/api/beta-builds/${BETA_BUILD_ID}/assets" \
+              -H "X-API-Key: $RWA_API_KEY" \
               -H "Content-Type: application/json" \
               -d '{
                 "id": "${ASSET_UUID}",
@@ -500,9 +510,8 @@ jobs:
               }'
           done
           if [ "${{ runner.os }}" == "Windows" ]; then
-            ASSET_UUID=$(uuidgen)
-            curl -X POST "${RWA_API_URL}/BetaBuildAsset/actions/new" \
-              -H "Authorization: Bearer ${RWA_AUTH_TOKEN}" \
+            curl -X POST "https://rwa.y.at/api/beta-builds/${BETA_BUILD_ID}/assets" \
+              -H "X-API-Key: $RWA_API_KEY" \
               -H "Content-Type: application/json" \
               -d '{
                 "id": "${ASSET_UUID}",
