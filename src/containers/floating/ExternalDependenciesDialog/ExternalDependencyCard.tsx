@@ -10,7 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 
 import { SpinnerIcon } from '@app/components/elements/loaders/SpinnerIcon.tsx';
-import { fetchExternalDependencies, setError } from '@app/store';
+import { setError } from '@app/store';
 
 export const ExternalDependencyCard = ({
     missingDependency,
@@ -35,14 +35,10 @@ export const ExternalDependencyCard = ({
     const handleDownload = useCallback(async () => {
         try {
             occupyInstallationSlot();
-            await invoke('download_and_start_installer', { missingDependency })
-                .then(async () => {
-                    await fetchExternalDependencies();
-                })
-                .catch((e) => {
-                    console.error('External dependency | caught error in download', e);
-                    setError(`Failed to download and start installer: ${e} Please try again.`);
-                });
+            await invoke('download_and_start_installer', { missingDependency }).catch((e) => {
+                console.error('External dependency | caught error in download', e);
+                setError(`Failed to download and start installer: ${e} Please try again.`);
+            });
         } catch (e) {
             console.error('Error downloading installer: ', e);
         }

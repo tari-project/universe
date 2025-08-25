@@ -29,7 +29,6 @@ export {
 export {
     fetchApplicationsVersions,
     fetchApplicationsVersionsWithRetry,
-    fetchExternalDependencies,
     loadSystemDependencies as loadExternalDependencies,
     setCriticalError,
     setCriticalProblem,
