@@ -62,9 +62,6 @@ export function mergeTransactionLists({
 
         const baseTransactionDetails = mergedWalletTransactions[bridgeIndex];
 
-        // Don't process if it has already been processed
-        if (baseTransactionDetails?.bridgeTransactionDetails?.transactionHash) return;
-
         const bridgeTransactionDetails = {
             status: bridgeTx.status,
             transactionHash: bridgeTx.transactionHash,
