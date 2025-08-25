@@ -29,34 +29,11 @@ use std::sync::LazyLock;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 use tokio::sync::RwLock;
-#[cfg(target_os = "windows")]
 use winreg::enums::HKEY_LOCAL_MACHINE;
-#[cfg(target_os = "windows")]
 use winreg::RegKey;
 
-#[allow(dead_code)]
-const LOG_TARGET: &str = "tari::universe::external_dependencies";
+const LOG_TARGET: &str = "tari::universe::windows::resolver";
 static INSTANCE: LazyLock<ExternalDependencies> = LazyLock::new(ExternalDependencies::new);
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum ExternalDependencyStatus {
-    Installed,
-    NotInstalled,
-    Unknown,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Manufacturer {
-    pub name: String,
-    pub logo: String,
-    pub url: String,
-}
-
-impl Manufacturer {
-    pub fn new(name: String, url: String, logo: String) -> Self {
-        Self { name, url, logo }
-    }
-}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExternalDependency {
@@ -75,7 +52,6 @@ pub struct RequiredExternalDependency {
     pub minimum_runtime: ExternalDependency,
 }
 
-#[cfg(target_os = "windows")]
 #[derive(Debug, Clone)]
 pub struct RegistryEntry {
     display_name: String,
@@ -93,85 +69,44 @@ impl ExternalDependencies {
         }
     }
 
-    fn initialize_required_installed_applications() -> RequiredExternalDependency {
-        if cfg!(target_arch = "x86") {
-            RequiredExternalDependency {
-                additional_runtime: ExternalDependency {
-                    required_version_names: vec![
-                        "Microsoft Visual C++ 2022 x86 Additional Runtime".to_string(),
-                        "Microsoft Visual C++ 2019 x86 Additional Runtime".to_string(),
-                    ],
-                    display_name: "Microsoft Visual C++ 2022 x86 Additional Runtime".to_string(),
-                    display_description:
-                        "This is the additional runtime required to run Tari applications."
-                            .to_string(),
-                    download_url: "https://aka.ms/vs/17/release/vc_redist.x86.exe".to_string(),
-                    manufacturer: Manufacturer::new(
-                        "Microsoft".to_string(),
-                        "https://www.microsoft.com".to_string(),
-                        "https://www.microsoft.com/favicon.ico".to_string(),
-                    ),
-                    status: ExternalDependencyStatus::Unknown,
-                    version: None,
-                },
-                minimum_runtime: ExternalDependency {
-                    required_version_names: vec![
-                        "Microsoft Visual C++ 2022 x86 Minimum Runtime".to_string(),
-                        "Microsoft Visual C++ 2019 x86 Minimum Runtime".to_string(),
-                    ],
-                    display_name: "Microsoft Visual C++ 2022 x86 Minimum Runtime".to_string(),
-                    display_description:
-                        "This is the minimum runtime required to run Tari applications.".to_string(),
-                    download_url: "https://aka.ms/vs/17/release/vc_redist.x86.exe".to_string(),
-                    manufacturer: Manufacturer::new(
-                        "Microsoft".to_string(),
-                        "https://www.microsoft.com".to_string(),
-                        "https://www.microsoft.com/favicon.ico".to_string(),
-                    ),
-                    status: ExternalDependencyStatus::Unknown,
-                    version: None,
-                },
-            }
-        } else {
-            RequiredExternalDependency {
-                additional_runtime: ExternalDependency {
-                    required_version_names: vec![
-                        "Microsoft Visual C++ 2022 x64 Additional Runtime".to_string(),
-                        "Microsoft Visual C++ 2019 x64 Additional Runtime".to_string(),
-                    ],
-                    display_name: "Microsoft Visual C++ 2022 x64 Additional Runtime".to_string(),
-                    display_description:
-                        "This is the additional runtime required to run Tari applications."
-                            .to_string(),
-                    download_url: "https://aka.ms/vs/17/release/vc_redist.x64.exe".to_string(),
-                    manufacturer: Manufacturer::new(
-                        "Microsoft".to_string(),
-                        "https://www.microsoft.com".to_string(),
-                        "https://www.microsoft.com/favicon.ico".to_string(),
-                    ),
-                    status: ExternalDependencyStatus::Unknown,
-                    version: None,
-                },
-                minimum_runtime: ExternalDependency {
-                    required_version_names: vec![
-                        "Microsoft Visual C++ 2022 x64 Minimum Runtime".to_string(),
-                        "Microsoft Visual C++ 2019 x64 Minimum Runtime".to_string(),
-                    ],
-                    display_name: "Microsoft Visual C++ 2022 x64 Minimum Runtime".to_string(),
-                    display_description:
-                        "This is the minimum runtime required to run Tari applications.".to_string(),
-                    download_url: "https://aka.ms/vs/17/release/vc_redist.x64.exe".to_string(),
-                    manufacturer: Manufacturer::new(
-                        "Microsoft".to_string(),
-                        "https://www.microsoft.com".to_string(),
-                        "https://www.microsoft.com/favicon.ico".to_string(),
-                    ),
-                    status: ExternalDependencyStatus::Unknown,
-                    version: None,
-                },
-            }
-        }
-    }
+    // fn initialize_required_installed_applications() -> RequiredExternalDependency {
+    //     RequiredExternalDependency {
+    //         additional_runtime: ExternalDependency {
+    //             required_version_names: vec![
+    //                 "Microsoft Visual C++ 2022 x64 Additional Runtime".to_string(),
+    //                 "Microsoft Visual C++ 2019 x64 Additional Runtime".to_string(),
+    //             ],
+    //             display_name: "Microsoft Visual C++ 2022 x64 Additional Runtime".to_string(),
+    //             display_description:
+    //                 "This is the additional runtime required to run Tari applications.".to_string(),
+    //             download_url: "https://aka.ms/vs/17/release/vc_redist.x64.exe".to_string(),
+    //             manufacturer: Manufacturer::new(
+    //                 "Microsoft".to_string(),
+    //                 "https://www.microsoft.com".to_string(),
+    //                 "https://www.microsoft.com/favicon.ico".to_string(),
+    //             ),
+    //             status: ExternalDependencyStatus::Unknown,
+    //             version: None,
+    //         },
+    //         minimum_runtime: ExternalDependency {
+    //             required_version_names: vec![
+    //                 "Microsoft Visual C++ 2022 x64 Minimum Runtime".to_string(),
+    //                 "Microsoft Visual C++ 2019 x64 Minimum Runtime".to_string(),
+    //             ],
+    //             display_name: "Microsoft Visual C++ 2022 x64 Minimum Runtime".to_string(),
+    //             display_description:
+    //                 "This is the minimum runtime required to run Tari applications.".to_string(),
+    //             download_url: "https://aka.ms/vs/17/release/vc_redist.x64.exe".to_string(),
+    //             manufacturer: Manufacturer::new(
+    //                 "Microsoft".to_string(),
+    //                 "https://www.microsoft.com".to_string(),
+    //                 "https://www.microsoft.com/favicon.ico".to_string(),
+    //             ),
+    //             status: ExternalDependencyStatus::Unknown,
+    //             version: None,
+    //         },
+    //     }
+    // }
 
     #[cfg(target_os = "windows")]
     async fn check_status_of_external_dependency(&self, registry_entries: Vec<RegistryEntry>) {
