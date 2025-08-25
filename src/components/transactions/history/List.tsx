@@ -16,12 +16,12 @@ import { ListItemWrapper, ListWrapper } from './List.styles.ts';
 import { setDetailsItem } from '@app/store/actions/walletStoreActions.ts';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 
-interface Props {
+interface ListProps {
     setIsScrolled: (isScrolled: boolean) => void;
     targetRef: RefObject<HTMLDivElement> | null;
 }
 
-export function List({ setIsScrolled, targetRef }: Props) {
+export function List({ setIsScrolled, targetRef }: ListProps) {
     const { t } = useTranslation('wallet');
     const walletScanning = useWalletStore((s) => s.wallet_scanning);
     const walletImporting = useWalletStore((s) => s.is_wallet_importing);
@@ -41,7 +41,7 @@ export function List({ setIsScrolled, targetRef }: Props) {
         initialInView: false,
         onChange: () => hasNextPage && !isFetching && fetchNextPage({ cancelRefetch: false }),
     });
-    const baseTx = data?.pages.flatMap((page) => page) || [];
+    const transactions = data?.pages.flatMap((page) => page) || [];
 
     const handleDetailsChange = useCallback(async (transaction: CombinedBridgeWalletTransaction | null) => {
         if (!transaction || !transaction.walletTransactionDetails) {
@@ -62,14 +62,15 @@ export function List({ setIsScrolled, targetRef }: Props) {
     }, []);
 
     // Calculate how many placeholder items we need to add
-    const transactionsCount = baseTx?.length || 0;
+    const transactionsCount = transactions?.length || 0;
     const placeholdersNeeded = Math.max(0, 5 - transactionsCount);
     const listMarkup = (
         <ListItemWrapper>
-            {baseTx?.map((tx, i) => {
+            {transactions?.map((tx, i) => {
+                const itemKey = `ListItem_${tx.bridgeTransactionDetails?.transactionHash || tx.walletTransactionDetails?.txId}`;
                 return (
                     <HistoryListItem
-                        key={`item-${i}-${tx.walletTransactionDetails.txId}`}
+                        key={itemKey}
                         item={tx}
                         index={i}
                         itemIsNew={false}
@@ -101,7 +102,7 @@ export function List({ setIsScrolled, targetRef }: Props) {
     ) : (
         listMarkup
     );
-    const isEmpty = !walletLoading && !baseTx?.length;
+    const isEmpty = !walletLoading && !transactions?.length;
     const emptyMarkup = isEmpty ? <LoadingText>{t('empty-tx')}</LoadingText> : null;
     return (
         <>
