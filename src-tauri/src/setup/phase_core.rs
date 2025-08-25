@@ -20,7 +20,6 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use log::error;
 use tari_shutdown::ShutdownSignal;
 use tauri::{AppHandle, Manager};
 use tokio::sync::{
@@ -33,13 +32,13 @@ use crate::{
     auto_launcher::AutoLauncher,
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
     progress_trackers::{
-        progress_plans::ProgressPlans, progress_stepper::ProgressStepperBuilder,
-        ProgressSetupCorePlan, ProgressStepper,
+        progress_plans::SetupStep,
+        progress_stepper::{ProgressStepper, ProgressStepperBuilder},
     },
     setup::setup_manager::SetupPhase,
     tasks_tracker::TasksTrackers,
     utils::{network_status::NetworkStatus, platform_utils::PlatformUtils},
-    EventsEmitter, UniverseAppState,
+    UniverseAppState,
 };
 
 use super::{
@@ -49,6 +48,7 @@ use super::{
     utils::{setup_default_adapter::SetupDefaultAdapter, timeout_watcher::TimeoutWatcher},
 };
 
+#[allow(dead_code)]
 static LOG_TARGET: &str = "tari::universe::phase_core";
 
 #[derive(Clone, Default)]
@@ -81,6 +81,7 @@ impl SetupPhaseImpl for CoreSetupPhase {
             app_handle: app_handle.clone(),
             progress_stepper: Mutex::new(CoreSetupPhase::create_progress_stepper(
                 app_handle,
+                status_sender.clone(),
                 timeout_watcher.get_sender(),
             )),
             app_configuration: CoreSetupPhase::load_app_configuration()
@@ -95,6 +96,10 @@ impl SetupPhaseImpl for CoreSetupPhase {
 
     fn get_app_handle(&self) -> &AppHandle {
         &self.app_handle
+    }
+
+    fn get_status_sender(&self) -> &Sender<PhaseStatus> {
+        &self.status_sender
     }
 
     async fn get_shutdown_signal(&self) -> ShutdownSignal {
@@ -117,15 +122,18 @@ impl SetupPhaseImpl for CoreSetupPhase {
 
     fn create_progress_stepper(
         app_handle: AppHandle,
+        status_sender: Sender<PhaseStatus>,
         timeout_watcher_sender: Sender<u64>,
     ) -> ProgressStepper {
         ProgressStepperBuilder::new()
-            .add_step(ProgressPlans::Core(
-                ProgressSetupCorePlan::InitializeApplicationModules,
-            ))
-            .add_step(ProgressPlans::Core(ProgressSetupCorePlan::NetworkSpeedTest))
-            .add_step(ProgressPlans::Core(ProgressSetupCorePlan::Done))
-            .build(app_handle, timeout_watcher_sender)
+            .add_step(SetupStep::InitializeApplicationModules, false)
+            .add_step(SetupStep::NetworkSpeedTest, false)
+            .build(
+                app_handle,
+                timeout_watcher_sender,
+                status_sender,
+                SetupPhase::Core,
+            )
     }
 
     async fn load_app_configuration() -> Result<Self::AppConfiguration, anyhow::Error> {
@@ -141,7 +149,7 @@ impl SetupPhaseImpl for CoreSetupPhase {
         match PlatformUtils::initialize_preqesities().await {
             Ok(_) => {
                 // Proceed with setup when all prerequisites are met
-                let _unused = SetupDefaultAdapter::setup(self).await;
+                SetupDefaultAdapter::setup(self).await;
             }
             Err(err) => {
                 log::error!("Core Phase pre-setup failed: {err}");
@@ -152,57 +160,55 @@ impl SetupPhaseImpl for CoreSetupPhase {
     #[allow(clippy::too_many_lines)]
     async fn setup_inner(&self) -> Result<(), anyhow::Error> {
         let mut progress_stepper = self.progress_stepper.lock().await;
-        let state = self.app_handle.state::<UniverseAppState>();
 
         progress_stepper
-            .resolve_step(ProgressPlans::Core(
-                ProgressSetupCorePlan::InitializeApplicationModules,
-            ))
-            .await;
+            .complete_step(SetupStep::InitializeApplicationModules, || async {
+                let state = self.app_handle.state::<UniverseAppState>();
 
-        state
-            .updates_manager
-            .init_periodic_updates(self.app_handle.clone())
+                state
+                    .updates_manager
+                    .init_periodic_updates(&self.app_handle)
+                    .await?;
+
+                state
+                    .systemtray_manager
+                    .write()
+                    .await
+                    .initialize_tray(&self.app_handle)?;
+
+                AutoLauncher::current()
+                    .initialize_auto_launcher(self.app_configuration.is_auto_launcher_enabled)
+                    .await?;
+
+                state
+                    .mining_status_manager
+                    .write()
+                    .await
+                    .set_app_handle(&self.app_handle);
+
+                Ok(())
+            })
             .await?;
 
-        let _unused = state
-            .systemtray_manager
-            .write()
-            .await
-            .initialize_tray(self.app_handle.clone());
-
-        let _unused = AutoLauncher::current()
-            .initialize_auto_launcher(self.app_configuration.is_auto_launcher_enabled)
-            .await
-            .inspect_err(
-                |e| error!(target: LOG_TARGET, "Could not initialize auto launcher: {e:?}"),
-            );
-
-        state
-            .mining_status_manager
-            .write()
-            .await
-            .set_app_handle(self.app_handle.clone());
-
         progress_stepper
-            .resolve_step(ProgressPlans::Core(ProgressSetupCorePlan::NetworkSpeedTest))
-            .await;
-
-        NetworkStatus::current().run_speed_test_with_timeout().await;
+            .complete_step(SetupStep::NetworkSpeedTest, || async {
+                NetworkStatus::current().run_speed_test_with_timeout().await;
+                Ok(())
+            })
+            .await?;
 
         Ok(())
     }
 
     async fn finalize_setup(&self) -> Result<(), anyhow::Error> {
-        self.status_sender.send(PhaseStatus::Success).ok();
-
-        self.progress_stepper
-            .lock()
-            .await
-            .resolve_step(ProgressPlans::Core(ProgressSetupCorePlan::Done))
-            .await;
-
-        EventsEmitter::emit_core_phase_finished(true).await;
+        let progress_stepper = self.progress_stepper.lock().await;
+        let setup_warnings = progress_stepper.get_setup_warnings();
+        if setup_warnings.is_empty() {
+            self.status_sender.send(PhaseStatus::Success)?;
+        } else {
+            self.status_sender
+                .send(PhaseStatus::SuccessWithWarnings(setup_warnings.clone()))?;
+        }
 
         Ok(())
     }

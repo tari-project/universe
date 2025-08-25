@@ -15,6 +15,7 @@ import { Typography } from '@app/components/elements/Typography';
 import { offset, useFloating, useHover, useInteractions } from '@floating-ui/react';
 import { useState } from 'react';
 import { PoolType } from '@app/store/useMiningPoolsStore.ts';
+import { AppModuleState, AppModuleStatus } from '@app/store/types/setup.ts';
 export interface MinerTileProps {
     title: PoolType;
     mainLabelKey: string;
@@ -28,6 +29,7 @@ export interface MinerTileProps {
     showTooltip?: boolean;
     progressDiff?: number | null;
     unpaidFMT?: string;
+    minerModuleState: AppModuleState;
 }
 
 export default function MinerTile({
@@ -43,8 +45,11 @@ export default function MinerTile({
     showTooltip,
     progressDiff,
     unpaidFMT,
+    minerModuleState,
 }: MinerTileProps) {
-    const { t } = useTranslation(['mining-view', 'p2p']);
+    const { t } = useTranslation(['mining-view', 'p2p'], { useSuspense: false });
+
+    const hasMinerModuleCrashed = minerModuleState.status === AppModuleStatus.Failed;
 
     const hashrateLoading = enabled && isMining && hashRate <= 0;
     const isLoading = (isMiningInitiated && !isMining) || (isMining && !isMiningInitiated) || hashrateLoading;
@@ -97,9 +102,10 @@ export default function MinerTile({
                 isIdle={!isPoolEnabled}
                 isSoloMining={!isPoolEnabled}
                 {...(isPoolEnabled ? additionalTilePropsForPool : {})}
+                minerModuleState={minerModuleState}
             />
             <AnimatePresence>
-                {isOpen && showTooltip && (
+                {isOpen && showTooltip && !hasMinerModuleCrashed && (
                     <Tooltip ref={refs.setFloating} {...getFloatingProps()} style={floatingStyles}>
                         <ExpandedBox
                             initial={{ opacity: 0, y: 10 }}

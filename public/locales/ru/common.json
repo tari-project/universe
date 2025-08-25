@@ -1,6 +1,7 @@
 {
   "back": "Назад",
   "cancel": "Отмена",
+  "click-to-view-details": "Click to view details",
   "close": "Закрыть",
   "close-tari-universe": "Закрыть Tari Universe",
   "complete": "Завершено",
@@ -19,6 +20,7 @@
   "max-temperature": "Максимальная температура",
   "minimize": "Уменьшить",
   "mode": "Режим",
+  "module-initialization-failed": "Module initialization failed",
   "not-available": "Not available",
   "not-installed-in-applications-directory": "Упс! Tari Universe должен находиться в папке Applications. Не могли бы Вы установить его там?",
   "pending": "Pending",

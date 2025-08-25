@@ -29,9 +29,8 @@ use crate::{
     events_manager::EventsManager,
     node::node_manager::{NodeManagerError, STOP_ON_ERROR_CODES},
     progress_trackers::{
-        progress_plans::{ProgressPlans, ProgressSetupNodePlan},
-        progress_stepper::ProgressStepperBuilder,
-        ProgressStepper,
+        progress_plans::SetupStep,
+        progress_stepper::{ProgressStepper, ProgressStepperBuilder},
     },
     setup::setup_manager::SetupPhase,
     tasks_tracker::TasksTrackers,
@@ -90,6 +89,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
             app_handle: app_handle.clone(),
             progress_stepper: Mutex::new(Self::create_progress_stepper(
                 app_handle,
+                status_sender.clone(),
                 timeout_watcher.get_sender(),
             )),
             app_configuration: Self::load_app_configuration().await.unwrap_or_default(),
@@ -102,6 +102,10 @@ impl SetupPhaseImpl for NodeSetupPhase {
 
     fn get_app_handle(&self) -> &AppHandle {
         &self.app_handle
+    }
+
+    fn get_status_sender(&self) -> &Sender<PhaseStatus> {
+        &self.status_sender
     }
 
     async fn get_shutdown_signal(&self) -> ShutdownSignal {
@@ -124,31 +128,24 @@ impl SetupPhaseImpl for NodeSetupPhase {
 
     fn create_progress_stepper(
         app_handle: AppHandle,
+        status_sender: Sender<PhaseStatus>,
         timeout_watcher_sender: Sender<u64>,
     ) -> ProgressStepper {
         ProgressStepperBuilder::new()
-            .add_step(ProgressPlans::Node(ProgressSetupNodePlan::BinariesTor))
-            .add_step(ProgressPlans::Node(ProgressSetupNodePlan::BinariesNode))
-            .add_step(ProgressPlans::Node(ProgressSetupNodePlan::BinariesWallet))
-            .add_step(ProgressPlans::Node(
-                ProgressSetupNodePlan::BinariesMergeMiningProxy,
-            ))
-            .add_step(ProgressPlans::Node(ProgressSetupNodePlan::StartTor))
-            .add_step(ProgressPlans::Node(
-                ProgressSetupNodePlan::MigratingDatabase,
-            ))
-            .add_step(ProgressPlans::Node(ProgressSetupNodePlan::StartingNode))
-            .add_step(ProgressPlans::Node(
-                ProgressSetupNodePlan::WaitingForInitialSync,
-            ))
-            .add_step(ProgressPlans::Node(
-                ProgressSetupNodePlan::WaitingForHeaderSync,
-            ))
-            .add_step(ProgressPlans::Node(
-                ProgressSetupNodePlan::WaitingForBlockSync,
-            ))
-            .add_step(ProgressPlans::Node(ProgressSetupNodePlan::Done))
-            .build(app_handle.clone(), timeout_watcher_sender)
+            .add_incremental_step(SetupStep::BinariesTor, true)
+            .add_incremental_step(SetupStep::BinariesNode, true)
+            .add_step(SetupStep::StartTor, true)
+            .add_incremental_step(SetupStep::MigratingDatabase, true)
+            .add_step(SetupStep::StartingNode, true)
+            .add_incremental_step(SetupStep::WaitingForInitialSync, true)
+            .add_incremental_step(SetupStep::WaitingForHeaderSync, true)
+            .add_incremental_step(SetupStep::WaitingForBlockSync, true)
+            .build(
+                app_handle.clone(),
+                timeout_watcher_sender,
+                status_sender,
+                SetupPhase::Node,
+            )
     }
 
     async fn load_app_configuration() -> Result<Self::AppConfiguration, Error> {
@@ -163,175 +160,178 @@ impl SetupPhaseImpl for NodeSetupPhase {
     }
 
     async fn setup(self) {
-        let _unused = SetupDefaultAdapter::setup(self).await;
+        SetupDefaultAdapter::setup(self).await;
     }
 
     #[allow(clippy::too_many_lines)]
     async fn setup_inner(&self) -> Result<(), Error> {
         let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
+
         let state = self.app_handle.state::<UniverseAppState>();
         let node_type = state.node_manager.get_node_type().await;
-        log::info!(target: LOG_TARGET, "Phase Node Setup for {node_type:?}");
+        let use_tor =
+            self.app_configuration.use_tor && node_type.is_local() && !cfg!(target_os = "macos");
 
         let binary_resolver = BinaryResolver::current();
         let mut progress_stepper = self.progress_stepper.lock().await;
 
-        if self.app_configuration.use_tor && node_type.is_local() && !cfg!(target_os = "macos") {
-            let tor_binary_progress_tracker = progress_stepper.channel_step_range_updates(
-                ProgressPlans::Node(ProgressSetupNodePlan::BinariesTor),
-                Some(ProgressPlans::Node(ProgressSetupNodePlan::BinariesNode)),
-            );
-            binary_resolver
-                .initialize_binary(Binaries::Tor, tor_binary_progress_tracker)
-                .await?;
-        } else {
-            progress_stepper.skip_step(ProgressPlans::Node(ProgressSetupNodePlan::BinariesTor));
-        };
-
-        if node_type.is_local() {
-            let node_binary_progress_tracker = progress_stepper.channel_step_range_updates(
-                ProgressPlans::Node(ProgressSetupNodePlan::BinariesNode),
-                Some(ProgressPlans::Node(ProgressSetupNodePlan::BinariesWallet)),
-            );
-            binary_resolver
-                .initialize_binary(Binaries::MinotariNode, node_binary_progress_tracker)
-                .await?;
-        } else {
-            info!(target: LOG_TARGET, "Skipping node binary installation for remote node");
-            progress_stepper.skip_step(ProgressPlans::Node(ProgressSetupNodePlan::BinariesNode));
-        }
-
-        let wallet_binary_progress_tracker = progress_stepper.channel_step_range_updates(
-            ProgressPlans::Node(ProgressSetupNodePlan::BinariesWallet),
-            Some(ProgressPlans::Node(
-                ProgressSetupNodePlan::BinariesMergeMiningProxy,
-            )),
-        );
-
-        binary_resolver
-            .initialize_binary(Binaries::Wallet, wallet_binary_progress_tracker)
-            .await?;
-
-        let mmproxy_binary_progress_tracker = progress_stepper.channel_step_range_updates(
-            ProgressPlans::Node(ProgressSetupNodePlan::BinariesMergeMiningProxy),
-            Some(ProgressPlans::Node(ProgressSetupNodePlan::StartTor)),
-        );
-
-        binary_resolver
-            .initialize_binary(Binaries::MergeMiningProxy, mmproxy_binary_progress_tracker)
-            .await?;
-
-        if self.app_configuration.use_tor && node_type.is_local() && !cfg!(target_os = "macos") {
-            progress_stepper
-                .resolve_step(ProgressPlans::Node(ProgressSetupNodePlan::StartTor))
-                .await;
-            state
-                .tor_manager
-                .ensure_started(data_dir.clone(), config_dir.clone(), log_dir.clone())
-                .await?;
-        }
-
-        // Set up migration progress tracking
-        let migration_tracker = progress_stepper.channel_step_range_updates(
-            ProgressPlans::Node(ProgressSetupNodePlan::MigratingDatabase),
-            Some(ProgressPlans::Node(ProgressSetupNodePlan::StartingNode)),
-        );
+        let tor_binary_progress_tracker =
+            progress_stepper.track_step_incrementally(SetupStep::BinariesTor);
 
         progress_stepper
-            .resolve_step(ProgressPlans::Node(
-                ProgressSetupNodePlan::MigratingDatabase,
-            ))
-            .await;
-
-        for _i in 0..2 {
-            let tor_control_port = state.tor_manager.get_control_port().await?;
-            info!(target: LOG_TARGET, "Starting node manager, grpc address: {}", self.app_configuration.base_node_grpc_address);
-            match state
-                .node_manager
-                .ensure_started(
-                    data_dir.clone(),
-                    config_dir.clone(),
-                    log_dir.clone(),
-                    self.app_configuration.use_tor,
-                    tor_control_port,
-                    Some(self.app_configuration.base_node_grpc_address.clone()),
-                    migration_tracker.clone(),
-                )
-                .await
-            {
-                Ok(_) => {
-                    EventsManager::handle_node_type_update(&self.app_handle).await;
-                    break;
+            .complete_step(SetupStep::BinariesTor, || async {
+                if !use_tor {
+                    return Ok(());
                 }
-                Err(e) => {
-                    if let NodeManagerError::ExitCode(code) = e {
-                        if STOP_ON_ERROR_CODES.contains(&code) {
-                            warn!(target: LOG_TARGET, "Database for node is corrupt or needs a restart, deleting and trying again.");
-                            state.node_manager.clean_data_folder(&data_dir).await?;
-                            state.wallet_manager.clean_data_folder(&data_dir).await?;
+                binary_resolver
+                    .initialize_binary(Binaries::Tor, tor_binary_progress_tracker)
+                    .await
+            })
+            .await?;
+
+        let node_binary_progress_tracker =
+            progress_stepper.track_step_incrementally(SetupStep::BinariesNode);
+
+        progress_stepper
+            .complete_step(SetupStep::BinariesNode, || async {
+                if node_type.is_remote() {
+                    return Ok(());
+                }
+                binary_resolver
+                    .initialize_binary(Binaries::MinotariNode, node_binary_progress_tracker)
+                    .await
+            })
+            .await?;
+
+        progress_stepper
+            .complete_step(SetupStep::StartTor, || async {
+                if !use_tor {
+                    return Ok(());
+                }
+                state
+                    .tor_manager
+                    .ensure_started(data_dir.clone(), config_dir.clone(), log_dir.clone())
+                    .await
+            })
+            .await?;
+
+        progress_stepper.complete_step(SetupStep::StartingNode,  || async {
+            for _i in 0..2 {
+                let tor_control_port = state.tor_manager.get_control_port().await?;
+                match
+                    state.node_manager.ensure_started(
+                        data_dir.clone(),
+                        config_dir.clone(),
+                        log_dir.clone(),
+                        use_tor,
+                        tor_control_port,
+                        Some(self.app_configuration.base_node_grpc_address.clone())
+                    ).await
+                {
+                    Ok(_) => {
+                        EventsManager::handle_node_type_update(&self.app_handle).await;
+                        break;
+                    }
+                    Err(e) => {
+                        if let NodeManagerError::ExitCode(code) = e {
+                            if STOP_ON_ERROR_CODES.contains(&code) {
+                                warn!(target: LOG_TARGET, "Database for node is corrupt or needs a restart, deleting and trying again.");
+                                state.node_manager.clean_data_folder(&data_dir).await?;
+                                state.wallet_manager.clean_data_folder(&data_dir).await?;
+                            }
+                            continue;
                         }
-                        continue;
+                        if let NodeManagerError::UnknownError(error) = e {
+                            warn!(target: LOG_TARGET, "NodeManagerError::UnknownError({error:?}) needs a restart.");
+                            continue;
+                        }
+                        error!(target: LOG_TARGET, "Could not start node manager after restart: {e:?} | Exitting the app");
+                        self.app_handle.exit(-1);
+                        return Err(e.into());
                     }
-                    if let NodeManagerError::UnknownError(error) = e {
-                        warn!(target: LOG_TARGET, "NodeManagerError::UnknownError({error:?}) needs a restart.");
-                        continue;
-                    }
-                    error!(target: LOG_TARGET, "Could not start node manager after restart: {e:?} | Exitting the app");
-                    self.app_handle.exit(-1);
-                    return Err(e.into());
                 }
             }
-        }
+            Ok(())
+        }).await?;
+
+        let migration_tracker =
+            progress_stepper.track_step_incrementally(SetupStep::MigratingDatabase);
 
         progress_stepper
-            .resolve_step(ProgressPlans::Node(ProgressSetupNodePlan::StartingNode))
-            .await;
+            .complete_step(SetupStep::MigratingDatabase, || async {
+                if node_type.is_remote() {
+                    return Ok(());
+                }
+                if let Some(tracker) = migration_tracker {
+                    state
+                        .node_manager
+                        .wait_migration(Some(tracker))
+                        .await
+                        .map_err(|e| anyhow::anyhow!("Failed to wait for node migration: {e}"))?;
+                }
+                Ok(())
+            })
+            .await?;
 
         if node_type.is_local() {
             self.wait_node_synced_with_progress(progress_stepper)
                 .await?;
         } else {
-            info!(target: LOG_TARGET, "Skipping syncing condition for remote node");
-            // Assume remote node is already synced
-            progress_stepper.skip_step(ProgressPlans::Node(
-                ProgressSetupNodePlan::WaitingForInitialSync,
-            ));
-            progress_stepper.skip_step(ProgressPlans::Node(
-                ProgressSetupNodePlan::WaitingForHeaderSync,
-            ));
-            progress_stepper.skip_step(ProgressPlans::Node(
-                ProgressSetupNodePlan::WaitingForBlockSync,
-            ));
+            progress_stepper
+                .skip_step(SetupStep::WaitingForInitialSync)
+                .await?;
+            progress_stepper
+                .skip_step(SetupStep::WaitingForHeaderSync)
+                .await?;
+            progress_stepper
+                .skip_step(SetupStep::WaitingForBlockSync)
+                .await?;
         }
 
         Ok(())
     }
 
+    #[allow(clippy::too_many_lines)]
     async fn finalize_setup(&self) -> Result<(), Error> {
-        self.status_sender.send(PhaseStatus::Success).ok();
-        self.progress_stepper
-            .lock()
-            .await
-            .resolve_step(ProgressPlans::Node(ProgressSetupNodePlan::Done))
-            .await;
-
-        EventsEmitter::emit_node_phase_finished(true).await;
+        let progress_stepper = self.progress_stepper.lock().await;
+        let setup_warnings = progress_stepper.get_setup_warnings();
+        if setup_warnings.is_empty() {
+            self.status_sender.send(PhaseStatus::Success)?;
+        } else {
+            self.status_sender
+                .send(PhaseStatus::SuccessWithWarnings(setup_warnings.clone()))?;
+        }
 
         let app_handle_clone: tauri::AppHandle = self.app_handle.clone();
         let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
 
-        TasksTrackers::current().common.get_task_tracker().await.spawn(async move {
-        let app_state = app_handle_clone.state::<UniverseAppState>().clone();
+        let state: tauri::State<'_, UniverseAppState> =
+            app_handle_clone.state::<UniverseAppState>();
+        let node_type = state.node_manager.clone().get_node_type().await;
+        let use_tor =
+            self.app_configuration.use_tor && node_type.is_local() && !cfg!(target_os = "macos");
 
-        let mut node_status_watch_rx = (*app_state.node_status_watch_rx).clone();
-        let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
+        if use_tor {
+            let tor_guards = state.tor_manager.get_entry_guards().await;
+            if let Ok(tor_guards) = tor_guards {
+                EventsEmitter::emit_tor_entry_guards(tor_guards).await;
+            }
+        }
 
-        let init_node_status = *node_status_watch_rx.borrow();
-        EventsEmitter::emit_base_node_update(init_node_status).await;
+        TasksTrackers::current()
+            .common.get_task_tracker().await
+            .spawn(async move {
+                let app_state = app_handle_clone.state::<UniverseAppState>().clone();
 
-        let mut latest_updated_block_height = init_node_status.block_height;
-        loop {
-            tokio::select! {
+                let mut node_status_watch_rx = (*app_state.node_status_watch_rx).clone();
+                let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
+
+                let init_node_status = *node_status_watch_rx.borrow();
+                EventsEmitter::emit_base_node_update(init_node_status).await;
+
+                let mut latest_updated_block_height = init_node_status.block_height;
+                loop {
+                    tokio::select! {
                 _ = node_status_watch_rx.changed() => {
                     let node_status = *node_status_watch_rx.borrow();
                     let initial_sync_finished = app_state.wallet_manager.is_initial_scan_completed();
@@ -351,8 +351,8 @@ impl SetupPhaseImpl for NodeSetupPhase {
                     break;
                 },
             }
-        }
-    });
+                }
+            });
 
         let app_handle_clone: tauri::AppHandle = self.app_handle.clone();
         TasksTrackers::current()
@@ -361,6 +361,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
             .await
             .spawn(async move {
                 let mut interval: Interval = interval(Duration::from_secs(30));
+                interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
 
                 loop {
                     tokio::select! {
@@ -388,13 +389,16 @@ impl SetupPhaseImpl for NodeSetupPhase {
             });
 
         let app_handle_clone: tauri::AppHandle = self.app_handle.clone();
-        TasksTrackers::current().node_phase.get_task_tracker().await.spawn(async move {
-        let app_state = app_handle_clone.state::<UniverseAppState>().clone();
-        let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
-        let mut interval = interval(Duration::from_secs(10));
+        TasksTrackers::current()
+            .node_phase.get_task_tracker().await
+            .spawn(async move {
+                let app_state = app_handle_clone.state::<UniverseAppState>().clone();
+                let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
+                let mut interval = interval(Duration::from_secs(10));
+                interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
 
-        loop {
-            tokio::select! {
+                loop {
+                    tokio::select! {
                 _ = interval.tick() => {
                     if let Ok(connected_peers) = app_state
                         .node_manager
@@ -410,8 +414,8 @@ impl SetupPhaseImpl for NodeSetupPhase {
                     break;
                 },
             }
-        }
-    });
+                }
+            });
 
         Ok(())
     }
@@ -427,22 +431,12 @@ impl NodeSetupPhase {
         let (progress_percentage_tx, progress_percentage_rx) = watch::channel(0f64);
         let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
 
-        let wait_for_initial_sync_tracker = progress_stepper.channel_step_range_updates(
-            ProgressPlans::Node(ProgressSetupNodePlan::WaitingForInitialSync),
-            Some(ProgressPlans::Node(
-                ProgressSetupNodePlan::WaitingForHeaderSync,
-            )),
-        );
-        let wait_for_header_sync_tracker = progress_stepper.channel_step_range_updates(
-            ProgressPlans::Node(ProgressSetupNodePlan::WaitingForHeaderSync),
-            Some(ProgressPlans::Node(
-                ProgressSetupNodePlan::WaitingForBlockSync,
-            )),
-        );
-        let wait_for_block_sync_tracker = progress_stepper.channel_step_range_updates(
-            ProgressPlans::Node(ProgressSetupNodePlan::WaitingForBlockSync),
-            Some(ProgressPlans::Node(ProgressSetupNodePlan::Done)),
-        );
+        let wait_for_initial_sync_tracker =
+            progress_stepper.track_step_incrementally(SetupStep::WaitingForInitialSync);
+        let wait_for_header_sync_tracker =
+            progress_stepper.track_step_incrementally(SetupStep::WaitingForHeaderSync);
+        let wait_for_block_sync_tracker =
+            progress_stepper.track_step_incrementally(SetupStep::WaitingForBlockSync);
 
         let progress_handle = TasksTrackers::current()
             .node_phase
@@ -484,12 +478,34 @@ impl NodeSetupPhase {
             });
 
         let state = self.app_handle.state::<UniverseAppState>();
-        state
+        let wait_synced_error = state
             .node_manager
             .wait_synced(&progress_params_tx, &progress_percentage_tx)
-            .await?;
+            .await
+            .err();
         progress_handle.abort();
         let _unused = progress_handle.await;
+
+        progress_stepper
+            .finish_tracked_step(
+                SetupStep::WaitingForInitialSync,
+                wait_synced_error.as_ref().map(|e| anyhow::anyhow!("{e}")),
+            )
+            .await?;
+
+        progress_stepper
+            .finish_tracked_step(
+                SetupStep::WaitingForHeaderSync,
+                wait_synced_error.as_ref().map(|e| anyhow::anyhow!("{e}")),
+            )
+            .await?;
+
+        progress_stepper
+            .finish_tracked_step(
+                SetupStep::WaitingForBlockSync,
+                wait_synced_error.as_ref().map(|e| anyhow::anyhow!("{e}")),
+            )
+            .await?;
 
         Ok(())
     }
