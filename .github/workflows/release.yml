@@ -506,6 +506,7 @@ jobs:
         if: ${{ ( github.event_name == 'schedule' ) || ( ! startsWith(github.ref, 'refs/heads/release') ) }}
         env:
           BETA_BUILD_ID: ${{ needs.create-beta-build.outputs.beta_build_id }}
+          RWA_API_KEY: ${{ secrets.RWA_API_KEY }}
         shell: bash
         run: |
           for artifact in ${{ join(fromJSON(steps.build.outputs.artifactPaths), ' ') }}; do
