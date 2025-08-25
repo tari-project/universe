@@ -1,5 +1,5 @@
+import { create } from 'zustand';
 import { ApplicationsVersions, ExternalDependency, NetworkStatus } from '@app/types/app-status';
-import { create } from './create';
 import { CriticalProblemPayload } from '@app/types/events-payloads';
 
 interface AppState {

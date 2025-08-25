@@ -7,7 +7,7 @@ import { useConfigUIStore, useMiningMetricsStore, useUIStore } from '@app/store'
 import SuccessAnimation from '../SuccessAnimation/SuccessAnimation';
 import SyncData from '@app/containers/navigation/components/MiningTiles/components/SyncData/SyncData.tsx';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
-import { Typography } from '@app/components/elements/Typography.tsx';
+
 import {
     AnimatedGlow,
     AnimatedGlowPosition,
