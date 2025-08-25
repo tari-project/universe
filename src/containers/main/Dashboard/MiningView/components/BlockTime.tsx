@@ -1,13 +1,13 @@
 import { useTranslation } from 'react-i18next';
 
 import useBlockTime from '@app/hooks/mining/useBlockTime.ts';
-import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
+
 import { BlockTimeContainer, SpacedNum, TimerTypography, TitleTypography } from './BlockTime.styles';
 
 function BlockTime() {
     const { currentTimeParts } = useBlockTime();
     const { t } = useTranslation('mining-view', { useSuspense: false });
-    const isConnectedToTari = useMiningMetricsStore((s) => s.isNodeConnected);
+
     const { daysString, hoursString, minutes, seconds } = currentTimeParts || {};
 
     const renderHours = hoursString && parseInt(hoursString) > 0;
@@ -21,7 +21,7 @@ function BlockTime() {
         </>
     ) : null;
 
-    return isConnectedToTari ? (
+    return (
         <BlockTimeContainer>
             <TimerTypography>
                 {daysMarkup}
@@ -36,7 +36,7 @@ function BlockTime() {
             </TimerTypography>
             <TitleTypography>{t('current-block-time')}</TitleTypography>
         </BlockTimeContainer>
-    ) : null;
+    );
 }
 
 export default BlockTime;

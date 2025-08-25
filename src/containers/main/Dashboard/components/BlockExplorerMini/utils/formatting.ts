@@ -1,6 +1,6 @@
-export const timeAgo = (timestamp: string): string => {
+export const timeAgo = (timestamp: number): string => {
     const now = Date.now();
-    const timeInMilliseconds = new Date(timestamp + ' UTC').getTime();
+    const timeInMilliseconds = new Date(timestamp * 1000).getTime();
     const difference = now - timeInMilliseconds;
 
     const seconds = Math.floor(difference / 1000);

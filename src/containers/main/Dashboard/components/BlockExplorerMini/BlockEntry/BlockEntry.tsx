@@ -1,8 +1,8 @@
 import BlockSolved from './BlockSolved/BlockSolved';
 import BlockSolving from './BlockSolving/BlockSolving';
-import { BlockData } from '@app/types/mining/blocks.ts';
+import { BlockBubbleData } from '@app/types/mining/blocks.ts';
 
-interface Props extends BlockData {
+interface Props extends BlockBubbleData {
     isFirstEntry?: boolean;
 }
 

@@ -1,13 +1,12 @@
 import { useEffect } from 'react';
 import { useMotionValue, useTransform, useMotionValueEvent } from 'motion/react';
-
+import { useBlockTip } from '@app/hooks/mining/useBlockTip.ts';
 import { AccentText, AccentWrapper, SpacedNum } from './BlockHeightAccent.styles';
-import { useFetchExplorerData } from '@app/hooks/mining/useFetchExplorerData.ts';
 
 export function BlockHeightAccent() {
-    const { data } = useFetchExplorerData();
+    const { data } = useBlockTip();
 
-    const heightString = data?.currentBlock?.height?.toString() || '0';
+    const heightString = data?.height?.toString() || '0';
     const heightStringArr = heightString?.length ? heightString?.split('') : [];
     const windowDimensions = useMotionValue({ height: window.innerHeight, width: window.innerWidth });
     const width = useMotionValue(170);
