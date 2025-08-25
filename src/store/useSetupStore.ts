@@ -1,20 +1,34 @@
 import { create } from 'zustand';
-import { SetupState } from './types/setup.ts';
+import { AppModule, AppModuleStatus, SetupState } from './types/setup.ts';
+import { SetupPhase } from '@app/types/events-payloads.ts';
 
-export type PhaseTitle = 'setup-core' | 'setup-local-node' | 'setup-hardware' | 'setup-wallet' | 'setup-mining';
+const defultErrorMessages: Record<SetupPhase, string> = {
+    [SetupPhase.Core]: '',
+    [SetupPhase.CpuMining]: '',
+    [SetupPhase.GpuMining]: '',
+    [SetupPhase.Node]: '',
+    [SetupPhase.Wallet]: '',
+};
 
 const initialState: SetupState = {
-    cpuMiningUnlocked: false,
-    gpuMiningUnlocked: false,
-    walletUnlocked: false,
-    hardwarePhaseFinished: false,
+    app_modules: {
+        [AppModule.CpuMining]: {
+            module: AppModule.CpuMining,
+            status: AppModuleStatus.NotInitialized,
+            error_messages: defultErrorMessages,
+        },
+        [AppModule.GpuMining]: {
+            module: AppModule.GpuMining,
+            status: AppModuleStatus.NotInitialized,
+            error_messages: defultErrorMessages,
+        },
+        [AppModule.Wallet]: {
+            module: AppModule.Wallet,
+            status: AppModuleStatus.NotInitialized,
+            error_messages: defultErrorMessages,
+        },
+    },
     isInitialSetupFinished: false,
-    appUnlocked: false,
-    core_phase_setup_payload: undefined,
-    hardware_phase_setup_payload: undefined,
-    node_phase_setup_payload: undefined,
-    wallet_phase_setup_payload: undefined,
-    mining_phase_setup_payload: undefined,
     disabled_phases: [],
 };
 export const useSetupStore = create<SetupState>()(() => ({ ...initialState }));

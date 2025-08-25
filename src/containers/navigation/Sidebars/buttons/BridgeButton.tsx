@@ -5,15 +5,13 @@ import { setSidebarOpen, setShowTapplet } from '@app/store/actions/uiStoreAction
 import { BRIDGE_TAPPLET_ID } from '@app/store/consts.ts';
 import { useTappletsStore } from '@app/store/useTappletsStore.ts';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
-import { useSetupStore } from '@app/store/useSetupStore.ts';
 
 const BridgeButton = memo(function BridgeButton() {
     const showTapplet = useUIStore((s) => s.showTapplet);
     const setActiveTappById = useTappletsStore((s) => s.setActiveTappById);
     const isWalletScanning = useWalletStore((s) => s.wallet_scanning?.is_scanning);
-    const isSettingUp = useSetupStore((s) => !s.appUnlocked);
 
-    const isDisabled = isSettingUp || isWalletScanning;
+    const isDisabled = isWalletScanning;
 
     function handleToggleOpen() {
         if (isDisabled) return;

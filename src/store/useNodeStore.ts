@@ -13,6 +13,7 @@ interface NodeStoreState {
     node_identity?: NodeIdentity;
     node_connection_address?: string;
     backgroundNodeSyncLastUpdate?: BackgroundNodeSyncUpdatePayload;
+    tor_entry_guards: string[];
 }
 
 const initialState: NodeStoreState = {
@@ -22,6 +23,7 @@ const initialState: NodeStoreState = {
         public_addresses: [],
     },
     node_connection_address: '',
+    tor_entry_guards: [],
 };
 
 export const useNodeStore = create<NodeStoreState>()(() => ({
@@ -34,6 +36,12 @@ export const setNodeStoreState = (newState: Partial<NodeStoreState>) => {
 
 export const updateNodeType = (node_type: NodeType) => {
     setNodeStoreState({ ...initialState, node_type });
+};
+
+export const setTorEntryGuards = (tor_entry_guards: string[]) => {
+    setNodeStoreState({
+        tor_entry_guards: tor_entry_guards.filter((e) => e.split(' ')[1] === 'up').map((e) => e.split(' ')[0]),
+    });
 };
 
 export const setBackgroundNodeState = (backgroundNodeSyncLastUpdate: BackgroundNodeSyncUpdatePayload) => {

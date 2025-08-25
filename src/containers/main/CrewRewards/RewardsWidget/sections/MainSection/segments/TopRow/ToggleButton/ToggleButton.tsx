@@ -1,7 +1,7 @@
 import { useCrewRewardsStore } from '@app/store/useCrewRewardsStore';
 import { Wrapper } from './styles';
 
-export default function ToggleIcon() {
+export default function ToggleButton() {
     const { isOpen, setIsOpen } = useCrewRewardsStore();
 
     const handleClick = () => {

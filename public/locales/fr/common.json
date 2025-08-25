@@ -1,6 +1,7 @@
 {
   "back": "Retour",
   "cancel": "Annuler",
+  "click-to-view-details": "Click to view details",
   "close": "Fermer",
   "close-tari-universe": "Fermer le Tari Universe",
   "complete": "Complet",
@@ -19,6 +20,7 @@
   "max-temperature": "Température maximale",
   "minimize": "Minimiser",
   "mode": "Mode",
+  "module-initialization-failed": "Module initialization failed",
   "not-available": "Not available",
   "not-installed-in-applications-directory": "Oups ! Tari Universe doit être dans le répertoire Applications. Pourriez-vous l\"installer là-bas ?",
   "pending": "Pending",

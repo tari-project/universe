@@ -82,8 +82,8 @@ impl MiningStatusManager {
         }
     }
 
-    pub fn set_app_handle(&mut self, app: AppHandle) {
-        self.app = Some(app);
+    pub fn set_app_handle(&mut self, app: &AppHandle) {
+        self.app = Some(app.clone());
     }
 
     pub async fn stop_polling(&self) {
@@ -100,6 +100,7 @@ impl MiningStatusManager {
 
     pub async fn start_polling(&mut self) -> Result<(), anyhow::Error> {
         let mut interval = time::interval(INTERVAL_DURATION);
+        interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
 
         let cpu_miner_status_watch_rx = self.cpu_miner_status_watch_rx.clone();
         let gpu_latest_miner_stats = self.gpu_latest_miner_stats.clone();

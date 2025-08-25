@@ -11,4 +11,13 @@ export const AvatarWrapper = styled.div<{ $image: string }>`
     background-position: center;
     background-repeat: no-repeat;
     background-color: ${({ theme }) => theme.palette.contrastAlpha};
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 16px;
+    font-weight: 600;
+    color: #fff;
+    cursor: default;
 `;

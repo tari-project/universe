@@ -20,8 +20,6 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod listener_setup_finished;
-pub mod listener_unlock_app;
 pub mod listener_unlock_cpu_mining;
 pub mod listener_unlock_gpu_mining;
 pub mod listener_unlock_wallet;
@@ -32,10 +30,52 @@ use std::{
     fmt::{Display, Formatter},
 };
 
+use serde::Serialize;
 use tokio::sync::watch::Receiver;
 use trait_listener::UnlockConditionsListenerTrait;
 
 use super::setup_manager::{PhaseStatus, SetupPhase};
+
+#[derive(Clone, Debug, Serialize)]
+#[allow(unused)]
+pub enum AppModule {
+    CpuMining, // CPU mining
+    GpuMining, // GPU mining
+    Wallet,    // Wallet
+}
+
+impl Display for AppModule {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            AppModule::CpuMining => write!(f, "CPU Mining"),
+            AppModule::GpuMining => write!(f, "GPU Mining"),
+            AppModule::Wallet => write!(f, "Wallet"),
+        }
+    }
+}
+
+/// Status that is communicated between modules listeners and frontend UI
+/// This states representations is mainly used for frontend UI to display the current status of certain module
+#[derive(Clone, Default, Debug, Serialize)]
+#[allow(unused)]
+pub enum AppModuleStatus {
+    #[default]
+    NotInitialized, // Default initial state
+    Initializing, // Waiting for specified setup phases to complete
+    Initialized,  // All required setup phases completed
+    Failed(HashMap<SetupPhase, String>), // One of required setup phases failed, contains last error message for each phase that failed
+}
+
+impl AppModuleStatus {
+    pub fn as_string(&self) -> String {
+        match self {
+            AppModuleStatus::NotInitialized => "NotInitialized".to_string(),
+            AppModuleStatus::Initializing => "Initializing".to_string(),
+            AppModuleStatus::Initialized => "Initialized".to_string(),
+            AppModuleStatus::Failed(_) => "Failed".to_string(),
+        }
+    }
+}
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum SetupFeature {
@@ -89,7 +129,7 @@ pub async fn setup_listener<T>(
     setup_features: &SetupFeaturesList,
     phase_status_map: HashMap<SetupPhase, Receiver<PhaseStatus>>,
 ) where
-    T: UnlockConditionsListenerTrait,
+    T: UnlockConditionsListenerTrait + 'static,
 {
     listener.load_setup_features(setup_features.clone()).await;
 

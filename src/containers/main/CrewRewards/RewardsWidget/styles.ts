@@ -21,13 +21,14 @@ export const Holder = styled('div')`
 `;
 
 export const WidgetWrapper = styled('div')<{ $isOpen: boolean; $isLogin?: boolean }>`
-    pointer-events: all;
+    position: relative;
+    z-index: 1;
 
     border-radius: 13px;
     background: #323333;
-    box-shadow:
-        0px 4px 25px 0px rgba(0, 0, 0, 0.25),
-        0px 0px 3px 2px rgba(242, 216, 255, 0.2) inset;
+
+    box-shadow: 0px 4px 25px 0px rgba(0, 0, 0, 0.25)
+        ${({ theme }) => (theme.mode === 'dark' ? '' : ', 0px 0px 3px 2px rgba(242, 216, 255, 0.2) inset')};
 
     display: flex;
     flex-direction: column;
@@ -41,10 +42,10 @@ export const WidgetWrapper = styled('div')<{ $isOpen: boolean; $isLogin?: boolea
     padding-bottom: 0px;
 
     max-height: ${({ $isLogin }) => ($isLogin ? '274px' : '115px')};
-    position: relative;
-    z-index: 1;
 
     transition: max-height 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+    pointer-events: all;
 
     * {
         pointer-events: all;

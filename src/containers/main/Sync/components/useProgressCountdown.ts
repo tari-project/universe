@@ -38,7 +38,7 @@ function hasValidEstimate(nodeSetupParams: Record<string, string> | undefined) {
 
 export const useProgressCountdown = (isCompact = false) => {
     const { t } = useTranslation('setup-progresses');
-    const isNodePhaseCompleted = useSetupStore((state) => Boolean(state.node_phase_setup_payload?.is_complete));
+    const isNodePhaseCompleted = useSetupStore((state) => Boolean(state.node_phase_setup_payload?.is_completed));
     const nodeSetupParams = useSetupStore((state) => state.node_phase_setup_payload?.title_params);
     const nodeType = useNodeStore((s) => s.node_type);
     const [countdown, setCountdown] = useState(nodeType !== 'Local' ? REMOTE_DEFAULT_ESTIMATE : -1);
