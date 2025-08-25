@@ -44,14 +44,14 @@ export const WalletBalance = () => {
     const scanData = useWalletStore((s) => s.wallet_scanning);
 
     const isScanning = scanData.is_scanning;
-    const scanProgress = Math.round(scanData.progress * 10) / 10;
+    const scanProgress = Math.floor(scanData.progress * 10) / 10;
 
     const balance = removeXTMCryptoDecimals(roundToTwoDecimals((isScanning ? cached : total) || 0));
     const balanceMismatch = removeXTMCryptoDecimals(roundToTwoDecimals(available || 0)) != balance;
 
     const displayText = hideBalance ? '*******' : formatNumber(available || 0, FormatPreset.XTM_LONG);
-
     const isLoading = !isConnected || isScanning;
+
     const balanceText = balanceMismatch
         ? `${t('history.available-balance')}: ${displayText} XTM`
         : t('history.my-balance');
@@ -87,7 +87,10 @@ export const WalletBalance = () => {
 
     const progressMarkup = isLoading && (
         <ScanProgressWrapper>
-            <Progress percentage={scanProgress} isInfinite={!isConnected || scanProgress === 100} />
+            <Progress
+                percentage={scanProgress && scanProgress >= 95 ? scanProgress - 9 : scanProgress} // so you can actually still see the little gap
+                isInfinite={!isConnected || scanProgress === 100}
+            />
         </ScanProgressWrapper>
     );
 

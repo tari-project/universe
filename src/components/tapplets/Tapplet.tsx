@@ -8,7 +8,7 @@ interface TappletProps {
     source: string;
 }
 
-export const Tapplet: React.FC<TappletProps> = ({ source }) => {
+export const Tapplet = ({ source }: TappletProps) => {
     const tappletRef = useRef<HTMLIFrameElement | null>(null);
     const tappSigner = useTappletSignerStore((s) => s.tappletSigner);
     const runTransaction = useTappletSignerStore((s) => s.runTransaction);
@@ -64,13 +64,13 @@ export const Tapplet: React.FC<TappletProps> = ({ source }) => {
     }, [theme]);
 
     const handleMessage = useCallback(
-        (event: MessageEvent) => {
+        async (event: MessageEvent) => {
             if (event.data.type === 'request-parent-size') {
                 sendWindowSize();
             } else if (event.data.type === 'signer-call') {
-                runTappletTx(event);
+                await runTappletTx(event);
             } else if (event.data.type === 'open-external-link') {
-                openExternalLink(event);
+                await openExternalLink(event);
             } else if (event.data.type === 'GET_INIT_CONFIG') {
                 sendAppLanguage();
                 sendTheme();

@@ -1,4 +1,4 @@
-import { create } from './create.ts';
+import { create } from 'zustand';
 import { CombinedBridgeWalletTransaction } from './useWalletStore.ts';
 
 interface State {

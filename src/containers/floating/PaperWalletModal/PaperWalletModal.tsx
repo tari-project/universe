@@ -8,10 +8,8 @@ import { usePaperWalletStore } from '@app/store/usePaperWalletStore';
 export type PaperWalletModalSectionType = 'Connect' | 'QRCode';
 
 const PaperWalletModal = memo(function PaperWalletModal() {
-    const { showModal, setShowModal } = usePaperWalletStore((s) => ({
-        showModal: s.showModal,
-        setShowModal: s.setShowModal,
-    }));
+    const showModal = usePaperWalletStore((s) => s.showModal);
+    const setShowModal = usePaperWalletStore((s) => s.setShowModal);
 
     const [section, setSection] = useState<PaperWalletModalSectionType>('Connect');
     const [boxWidth, setBoxWidth] = useState(618);

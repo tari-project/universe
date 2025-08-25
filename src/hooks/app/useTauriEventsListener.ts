@@ -52,7 +52,7 @@ import {
     handleGpuDevicesSettingsUpdated,
 } from '@app/store/actions/appConfigStoreActions';
 import { invoke } from '@tauri-apps/api/core';
-import { refreshTransactions } from '@app/hooks/wallet/useFetchTxHistory.ts';
+
 import { setCpuPoolStats, setGpuPoolStats } from '@app/store/actions/miningPoolsStoreActions';
 import {
     handlePinLocked,
@@ -96,7 +96,6 @@ const useTauriEventsListener = () => {
                             break;
                         case 'WalletBalanceUpdate':
                             await setWalletBalance(event.payload);
-                            await refreshTransactions();
                             break;
                         case 'BaseNodeUpdate':
                             handleBaseNodeStatusUpdate(event.payload);
