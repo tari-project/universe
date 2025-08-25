@@ -15,8 +15,14 @@ export const CoinsBg = styled.img`
     position: absolute;
     top: 0px;
     left: 0px;
-    width: 100%;
-    border-radius: 13px 13px 0px 0px;
+
+    border-radius: 13px 0px 0px 0px;
+`;
+
+export const CoinsBg2 = styled.img`
+    position: absolute;
+    top: 40px;
+    right: 0px;
 `;
 
 export const Title = styled.div`
@@ -25,7 +31,6 @@ export const Title = styled.div`
     font-weight: 400;
     line-height: 103.6%;
     max-width: 200px;
-    margin-bottom: 6px;
 `;
 
 export const Text = styled.div`
@@ -82,4 +87,11 @@ export const LoginButton = styled.button`
             transform: scale(1.05);
         }
     }
+`;
+
+export const MinimizePosition = styled.div`
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 2;
 `;

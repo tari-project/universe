@@ -4,11 +4,14 @@ import { useMiningStore } from '@app/store/useMiningStore';
 import { setCustomLevelsDialogOpen } from '@app/store';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
 import { useSetupStore } from '@app/store/useSetupStore';
+import { setupStoreSelectors } from '@app/store/selectors/setupStoreSelectors';
 
 export const CustomPowerLevelsDialogContainer = () => {
     const customLevelsDialogOpen = useMiningStore((s) => s.customLevelsDialogOpen);
     const isChangingMode = useMiningStore((s) => s.isChangingMode);
-    const isHardwarePhaseFinished = useSetupStore((s) => s.hardwarePhaseFinished);
+    const cpuMiningModuleInitialized = useSetupStore(setupStoreSelectors.isCpuMiningModuleInitialized);
+    const gpuMiningModuleInitialized = useSetupStore(setupStoreSelectors.isGpuMiningModuleInitialized);
+    const isModeSelectionEnabled = cpuMiningModuleInitialized || gpuMiningModuleInitialized;
 
     const handleClose = () => {
         setCustomLevelsDialogOpen(false);
@@ -16,12 +19,12 @@ export const CustomPowerLevelsDialogContainer = () => {
 
     return (
         <Dialog
-            open={customLevelsDialogOpen && isHardwarePhaseFinished}
+            open={customLevelsDialogOpen && isModeSelectionEnabled}
             onOpenChange={setCustomLevelsDialogOpen}
             disableClose={isChangingMode}
         >
             <DialogContent>
-                {isHardwarePhaseFinished ? <CustomPowerLevelsDialog handleClose={handleClose} /> : <CircularProgress />}
+                {isModeSelectionEnabled ? <CustomPowerLevelsDialog handleClose={handleClose} /> : <CircularProgress />}
             </DialogContent>
         </Dialog>
     );

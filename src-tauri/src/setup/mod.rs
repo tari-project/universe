@@ -26,7 +26,7 @@ pub mod utils;
 
 pub mod listeners;
 mod phase_core;
-mod phase_hardware;
-mod phase_mining;
+mod phase_cpu_mining;
+mod phase_gpu_mining;
 mod phase_node;
 mod phase_wallet;

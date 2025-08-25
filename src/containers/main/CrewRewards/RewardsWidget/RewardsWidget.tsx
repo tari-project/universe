@@ -7,18 +7,32 @@ import { useCrewRewardsStore } from '../../../../store/useCrewRewardsStore';
 import { AnimatePresence } from 'motion/react';
 import { useAirdropStore } from '@app/store';
 import LoginSection from './sections/LoginSection/LoginSection';
+import MinimizedSection from './sections/MinimizedSection/MinimizedSection';
+
+const introAnimation = {
+    initial: { opacity: 0, x: 100 },
+    animate: { opacity: 1, x: 0 },
+    exit: { opacity: 0, x: 100 },
+};
 
 export default function RewardsWidget() {
     const { isOpen } = useCrewRewardsStore();
     const isLoggedIn = useAirdropStore((s) => !!s.airdropTokens);
+    const { isMinimized } = useCrewRewardsStore();
+
+    if (isMinimized) {
+        return (
+            <PositionWrapper {...introAnimation}>
+                <Holder>
+                    <MinimizedSection />
+                </Holder>
+            </PositionWrapper>
+        );
+    }
 
     if (!isLoggedIn) {
         return (
-            <PositionWrapper
-                initial={{ opacity: 0, x: 100 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 100 }}
-            >
+            <PositionWrapper {...introAnimation}>
                 <Holder>
                     <WidgetWrapper $isOpen={isOpen} $isLogin={true}>
                         <LoginSection />
@@ -29,7 +43,7 @@ export default function RewardsWidget() {
     }
 
     return (
-        <PositionWrapper initial={{ opacity: 0, x: 100 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 100 }}>
+        <PositionWrapper {...introAnimation}>
             <Holder>
                 <WidgetWrapper $isOpen={isOpen}>
                     <MainSection />

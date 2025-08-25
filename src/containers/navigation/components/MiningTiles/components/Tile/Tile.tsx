@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import i18n from 'i18next';
 import { Ref, useEffect, useMemo, useState } from 'react';
 import { AnimatePresence } from 'motion/react';
@@ -6,6 +7,7 @@ import { useConfigUIStore, useMiningMetricsStore, useUIStore } from '@app/store'
 import SuccessAnimation from '../SuccessAnimation/SuccessAnimation';
 import SyncData from '@app/containers/navigation/components/MiningTiles/components/SyncData/SyncData.tsx';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
+import { Typography } from '@app/components/elements/Typography.tsx';
 import {
     AnimatedGlow,
     AnimatedGlowPosition,
@@ -21,11 +23,14 @@ import {
     NumberLabel,
     LabelWrapper,
     NumberUnit,
+    ErrorMessage,
 } from './styles';
 import { UseInteractionsReturn } from '@floating-ui/react';
 import { setAnimationState, animationStatus } from '@tari-project/tari-tower';
 import { PoolType } from '@app/store/useMiningPoolsStore.ts';
 import { clearCurrentSuccessValue } from '@app/store/actions/miningPoolsStoreActions.ts';
+import { AppModuleState, AppModuleStatus } from '@app/store/types/setup';
+import { setDialogToShow } from '@app/store/actions/uiStoreActions';
 
 interface Props {
     title: PoolType;
@@ -42,6 +47,7 @@ interface Props {
     isSoloMining?: boolean;
     tooltipTriggerRef?: Ref<HTMLDivElement>;
     getReferenceProps?: UseInteractionsReturn['getReferenceProps'];
+    minerModuleState: AppModuleState;
 }
 
 export default function Tile({
@@ -59,7 +65,11 @@ export default function Tile({
     tooltipTriggerRef,
     getReferenceProps,
     isSoloMining,
+    minerModuleState,
 }: Props) {
+    const { t } = useTranslation(['common'], { useSuspense: false });
+    const isModuleFailed = minerModuleState?.status === AppModuleStatus.Failed;
+
     const animationState = animationStatus;
     const visualMode = useConfigUIStore((s) => s.visual_mode);
     const towerInitalized = useUIStore((s) => s.towerInitalized);
@@ -82,6 +92,12 @@ export default function Tile({
             clearTimeout(resetTimer);
         };
     }, [isLoading, successValue, title, visualMode]);
+
+    const handleClick = () => {
+        if (isModuleFailed) {
+            setDialogToShow('failedModuleInitialization');
+        }
+    };
 
     useEffect(() => {
         if (!canAnimateTower) return;
@@ -135,18 +151,50 @@ export default function Tile({
     );
 
     return (
-        <Wrapper key={title} ref={tooltipTriggerRef} {...getReferenceProps?.()}>
-            <Inside $isSyncing={syncing || isLoading}>
-                <HeadingRow>
-                    <LabelWrapper>
-                        <StatusDot $isMining={isMining} $isEnabled={isEnabled} $isSyncing={syncing || isLoading} />
-                        <LabelText>{title}</LabelText>
-                    </LabelWrapper>
+        <Wrapper
+            key={title}
+            ref={tooltipTriggerRef}
+            {...getReferenceProps?.()}
+            onClick={handleClick}
+            $isModuleFailed={isModuleFailed}
+        >
+            <Inside $isSyncing={syncing || isLoading} $isModuleFailed={isModuleFailed}>
+                {isModuleFailed ? (
+                    <>
+                        <HeadingRow>
+                            <LabelWrapper>
+                                <StatusDot
+                                    $isMining={false}
+                                    $isEnabled={false}
+                                    $isSyncing={false}
+                                    $isModuleFailed={isModuleFailed}
+                                />
+                                <LabelText $isModuleFailed={isModuleFailed}>{title}</LabelText>
+                            </LabelWrapper>
+                        </HeadingRow>
+                        <NumberGroup>
+                            <ErrorMessage>{t('module-initialization-failed')}</ErrorMessage>
+                            <NumberLabel>{t('click-to-view-details')}</NumberLabel>
+                        </NumberGroup>
+                    </>
+                ) : (
+                    <>
+                        <HeadingRow>
+                            <LabelWrapper>
+                                <StatusDot
+                                    $isMining={isMining}
+                                    $isEnabled={isEnabled}
+                                    $isSyncing={syncing || isLoading}
+                                />
+                                <LabelText>{title}</LabelText>
+                            </LabelWrapper>
 
-                    {pillMarkup}
-                </HeadingRow>
-                {syncMarkup}
-                {mainMarkup}
+                            {pillMarkup}
+                        </HeadingRow>
+                        {syncMarkup}
+                        {mainMarkup}
+                    </>
+                )}
             </Inside>
 
             <AnimatePresence>
