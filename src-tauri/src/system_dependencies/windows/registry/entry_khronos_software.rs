@@ -28,7 +28,7 @@ impl WindowsRegistryReader for WindowsRegistryKhronosSoftwareResolver {
         "SOFTWARE\\Khronos".to_string()
     }
     fn get_registry_root() -> HKEY {
-        HKEY::HKEY_LOCAL_MACHINE
+        HKEY_LOCAL_MACHINE
     }
 }
 

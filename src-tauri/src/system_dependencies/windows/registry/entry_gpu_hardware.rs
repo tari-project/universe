@@ -101,7 +101,7 @@ impl WindowsRegistryReader for WindowsRegistryGpuResolver {
         "SYSTEM\\CurrentControlSet\\Enum\\PCI".to_string()
     }
     fn get_registry_root() -> HKEY {
-        HKEY::HKEY_LOCAL_MACHINE
+        HKEY_LOCAL_MACHINE
     }
 }
 

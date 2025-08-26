@@ -26,7 +26,7 @@ pub struct WindowsRegistryGpuDriverResolver {}
 impl WindowsRegistryReader for WindowsRegistryGpuDriverResolver {
     type Entry = WindowsRegistryGpuDriverEntry;
 
-    fn read_registry() -> Result<Vec<Self::Entry>, anyhow::Error> {
+    fn read_registry() -> Result<Self::Entry, anyhow::Error> {
         let hklm_key = RegKey::predef(Self::get_registry_root());
         let gpu_drivers_path = hklm_key.open_subkey(Self::get_registry_path())?;
         let mut gpu_driver_entries = Vec::new();

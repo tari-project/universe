@@ -115,22 +115,23 @@ impl WindowsDependenciesResolver {
                 }) {
                     dependencies.push(dependency);
                 }
-                Ok(())
-            } else {
-                return Err(anyhow!(
-                    "CPU information not available to determine vendor."
-                ));
             }
+        } else {
+            return Err(anyhow!(
+                "CPU information not available to determine vendor."
+            ));
         }
         Ok(())
     }
 
-    pub async fn get_universal_dependencies(&self) -> Vec<UniversalSystemDependency> {
+    pub async fn get_universal_dependencies(
+        &self,
+    ) -> Result<Vec<UniversalSystemDependency>, Error> {
         let dependencies = self.dependencies.read().await;
-        dependencies
+        Ok(dependencies
             .iter()
             .map(|d| d.clone().universal_data)
-            .collect()
+            .collect())
     }
 
     // It should iter over all dependencies and validate them using registry readers and requirement checkers
@@ -144,7 +145,8 @@ impl WindowsDependenciesResolver {
                     for entry in entries.iter() {
                         for check_value in dependency.check_values.iter() {
                             if entry.check_requirements(check_value) {
-                                dependency.status = UniversalDependencyStatus::Installed;
+                                dependency.universal_data.status =
+                                    UniversalDependencyStatus::Installed;
                                 break;
                             }
                         }
@@ -155,7 +157,8 @@ impl WindowsDependenciesResolver {
                     for entry in entries.iter() {
                         for check_value in dependency.check_values.iter() {
                             if entry.check_requirements(check_value) {
-                                dependency.status = UniversalDependencyStatus::Installed;
+                                dependency.universal_data.status =
+                                    UniversalDependencyStatus::Installed;
                                 break;
                             }
                         }
@@ -166,7 +169,8 @@ impl WindowsDependenciesResolver {
                     for entry in entries.iter() {
                         for check_value in dependency.check_values.iter() {
                             if entry.check_requirements(check_value) {
-                                dependency.status = UniversalDependencyStatus::Installed;
+                                dependency.universal_data.status =
+                                    UniversalDependencyStatus::Installed;
                                 break;
                             }
                         }

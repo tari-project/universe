@@ -1,4 +1,4 @@
-use winreg::{RegKey, HKEY};
+use winreg::{enums::HKEY_LOCAL_MACHINE, RegKey, HKEY};
 
 use crate::system_dependencies::windows::registry::{
     WindowsRegistryReader, WindowsRegistryRequirementChecker,
@@ -40,7 +40,7 @@ impl WindowsRegistryReader for WindowsRegistryUninstallSoftwareResolver {
     }
 
     fn get_registry_root() -> HKEY {
-        HKEY::HKEY_LOCAL_MACHINE
+        HKEY_LOCAL_MACHINE
     }
 }
 

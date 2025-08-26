@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use winreg::HKEY;
 
 use crate::{
     hardware::hardware_status_monitor::HardwareVendor,
