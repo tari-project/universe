@@ -64,9 +64,9 @@ impl SystemDependenciesManager {
                 .await?;
 
             EventsEmitter::emit_system_dependencies_loaded(dependencies.clone()).await;
-            Ok(dependencies
+            return Ok(dependencies
                 .iter()
-                .any(|d| d.status != UniversalDependencyStatus::Installed))
+                .any(|d| d.status != UniversalDependencyStatus::Installed));
         }
 
         Ok(true)
