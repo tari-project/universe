@@ -20,18 +20,16 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use anyhow::{anyhow, Error};
-use futures_util::StreamExt;
+use anyhow::Error;
 use log::info;
-use std::{env, os::windows::process::CommandExt};
-use tokio::fs::File;
-use tokio::io::AsyncWriteExt;
+use std::env::temp_dir;
+use std::os::windows::process::CommandExt;
 use tokio::sync::RwLock;
 
 use crate::requests::clients::http_file_client::HttpFileClient;
 use crate::system_dependencies::windows::dependencies::WindowsSystemDependency;
 use crate::system_dependencies::windows::registry::entry_cpu_hardware::WindowsRegistryCpuEntry;
-use crate::system_dependencies::windows::registry::entry_uninstall_software::WindowsRegistryUninstallSoftwareEntry;
+use crate::system_dependencies::windows::registry::WindowsRegistryRequirementChecker;
 use crate::system_dependencies::UniversalDependencyStatus;
 use crate::{
     hardware::hardware_status_monitor::HardwareVendor,
@@ -202,9 +200,9 @@ impl WindowsDependenciesResolver {
                 .split('/')
                 .last()
                 .ok_or_else(|| anyhow!("Invalid download URL."))?;
-            let destination = temp_dir.join(file_name);
+            let destination = temp_dir().join(file_name);
             HttpFileClient::builder()
-                .build(url, destination)?
+                .build(url.clone(), destination)?
                 .execute()
                 .await?;
 

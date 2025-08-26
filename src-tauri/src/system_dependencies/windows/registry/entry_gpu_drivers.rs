@@ -1,3 +1,25 @@
+// Copyright 2024. The Tari Project
+//
+// Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
+// following conditions are met:
+//
+// 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+// disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
+// following disclaimer in the documentation and/or other materials provided with the distribution.
+//
+// 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
+// products derived from this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+// INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+// USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 use winreg::{enums::HKEY_LOCAL_MACHINE, RegKey, HKEY};
 
 use crate::{
@@ -17,7 +39,7 @@ pub struct WindowsRegistryGpuDriverEntry {
 
 impl WindowsRegistryGpuDriverEntry {
     pub fn get_vendor(&self) -> HardwareVendor {
-        HardwareVendor::from_string(self.provider_name.clone())
+        HardwareVendor::from_string(&self.provider_name)
     }
 }
 
@@ -32,20 +54,24 @@ impl WindowsRegistryReader for WindowsRegistryGpuDriverResolver {
         let mut gpu_driver_entries = Vec::new();
 
         for subkey_name in gpu_drivers_path.enum_keys() {
-            let subkey = gpu_drivers_path.open_subkey(subkey_name?)?;
-            let driver_desc: String = subkey.get_value("DriverDesc").unwrap_or_default();
-            if !driver_desc.is_empty() {
-                let driver_version: String = subkey.get_value("DriverVersion").unwrap_or_default();
-                let provider_name: String = subkey.get_value("ProviderName").unwrap_or_default();
-                gpu_driver_entries.push(WindowsRegistryGpuDriverEntry {
-                    driver_desc,
-                    driver_version,
-                    provider_name,
-                    driver_identifier: format!(
-                        "{{4D36E968-E325-11CE-BFC1-08002BE10318}}\\{}",
-                        subkey_name?
-                    ),
-                });
+            if let Ok(subkey_name) = &subkey_name {
+                let subkey = gpu_drivers_path.open_subkey(subkey_name)?;
+                let driver_desc: String = subkey.get_value("DriverDesc").unwrap_or_default();
+                if !driver_desc.is_empty() {
+                    let driver_version: String =
+                        subkey.get_value("DriverVersion").unwrap_or_default();
+                    let provider_name: String =
+                        subkey.get_value("ProviderName").unwrap_or_default();
+                    gpu_driver_entries.push(WindowsRegistryGpuDriverEntry {
+                        driver_desc,
+                        driver_version,
+                        provider_name,
+                        driver_identifier: format!(
+                            "{{4D36E968-E325-11CE-BFC1-08002BE10318}}\\{}",
+                            subkey_name?
+                        ),
+                    });
+                }
             }
         }
 
