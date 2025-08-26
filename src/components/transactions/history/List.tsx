@@ -3,7 +3,7 @@ import { useInView } from 'react-intersection-observer';
 import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/core';
 
-import { CombinedBridgeWalletTransaction, useMiningMetricsStore, useWalletStore } from '@app/store';
+import { CombinedBridgeWalletTransaction, useNodeStore, useWalletStore } from '@app/store';
 
 import { useFetchTxHistory } from '@app/hooks/wallet/useFetchTxHistory.ts';
 
@@ -28,7 +28,7 @@ export function List({ setIsScrolled, targetRef }: Props) {
     const { t } = useTranslation('wallet');
     const walletScanning = useWalletStore((s) => s.wallet_scanning);
     const bridgeTransactions = useWalletStore((s) => s.bridge_transactions);
-    const currentBlockHeight = useMiningMetricsStore((s) => s.base_node_status.block_height);
+    const currentBlockHeight = useNodeStore((s) => s.base_node_status.block_height);
     const coldWalletAddress = useWalletStore((s) => s.cold_wallet_address);
     const tariAddress = useWalletStore((s) => s.tari_address_base58);
     const tx_history_filter = useWalletStore((s) => s.tx_history_filter);

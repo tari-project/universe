@@ -95,6 +95,7 @@ pub struct NodeManager {
     local_node_watch_rx: watch::Receiver<BaseNodeStatus>,
     remote_node_watch_rx: watch::Receiver<BaseNodeStatus>,
     local_node_db_cleared: Arc<AtomicBool>,
+    orphan_chain_detected: Arc<AtomicBool>,
 }
 
 impl NodeManager {
@@ -135,6 +136,7 @@ impl NodeManager {
             local_node_watch_rx,
             remote_node_watch_rx,
             local_node_db_cleared: Arc::new(AtomicBool::new(false)),
+            orphan_chain_detected: Arc::new(AtomicBool::new(false)),
         }
     }
 
@@ -448,6 +450,13 @@ impl NodeManager {
     }
 
     pub async fn check_if_is_orphan_chain(&self) -> Result<bool, anyhow::Error> {
+        let base_node_status_rx = self.base_node_watch_tx.subscribe();
+        let base_node_status = base_node_status_rx.borrow().clone();
+        if !base_node_status.is_synced {
+            info!(target: LOG_TARGET, "Node is not synced, skipping orphan chain check");
+            return Ok(false);
+        }
+
         let current_service = self.get_current_service().await?;
         current_service.check_if_is_orphan_chain().await
     }
@@ -489,8 +498,8 @@ fn construct_process_watcher<T: NodeAdapter + ProcessAdapter + Send + Sync + 'st
         process_watcher.poll_time = Duration::from_secs(5);
         process_watcher.health_timeout = Duration::from_secs(4);
     } else {
-        process_watcher.poll_time = Duration::from_secs(10);
-        process_watcher.health_timeout = Duration::from_secs(9);
+        process_watcher.poll_time = Duration::from_secs(45);
+        process_watcher.health_timeout = Duration::from_secs(44);
     }
     // NODE: Temporary solution to process payrefs in TU v1.2.9
     process_watcher.expected_startup_time = Duration::from_secs(540); // 9mins
