@@ -20,7 +20,7 @@ export default function SettingsNavigation({ activeSection, onChangeActiveSectio
         <Container>
             <ButtonContainer>
                 {SETTINGS_TYPES.map((type: SettingsType) => {
-                    if (process.env.NODE_ENV !== 'development' && activeSection === 'ootleDemo') {
+                    if (process.env.NODE_ENV !== 'development' && activeSection === 'ootleWallet') {
                         return undefined;
                     }
                     const isActiveSection = activeSection === type;

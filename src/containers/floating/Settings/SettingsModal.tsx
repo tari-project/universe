@@ -19,13 +19,14 @@ import {
     MiningSettings,
     WalletSettings,
     ReleaseNotes,
-    OotleDemo,
+    OotleWallet,
 } from './sections';
 
 import { Container, ContentContainer, EndContainer, HeaderContainer, SectionWrapper } from './SettingsModal.styles.ts';
 import { setIsSettingsOpen } from '@app/store';
 import VersionChip from '@app/containers/navigation/components/VersionChip/VersionChip.tsx';
 import { PoolsSettings } from './sections/pools/PoolsSettings.tsx';
+import { TappletsSettings } from './sections/ootle/TappletsSettings.tsx';
 
 const SettingsModal = memo(function SettingsModal() {
     const { t } = useTranslation(['settings'], { useSuspense: false });
@@ -41,7 +42,8 @@ const SettingsModal = memo(function SettingsModal() {
         airdrop: <AirdropSettings />,
         experimental: <ExperimentalSettings />,
         releaseNotes: <ReleaseNotes />,
-        ootleDemo: <OotleDemo />,
+        ootleWallet: <OotleWallet />,
+        tapplets: <TappletsSettings />,
     };
 
     const sectionMarkup = markups[activeSection];

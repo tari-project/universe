@@ -20,8 +20,14 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use anyhow::anyhow;
+use der::asn1::{BitString, ObjectIdentifier};
+use der::Encode;
 use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
 use log::{error, info, warn};
+use ring::signature::{Ed25519KeyPair, KeyPair};
+use ring_compat::pkcs8::spki::AlgorithmIdentifier;
+use ring_compat::pkcs8::SubjectPublicKeyInfo;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use tauri::{AppHandle, Manager};
@@ -33,6 +39,8 @@ use crate::{
 };
 
 const LOG_TARGET: &str = "tari::universe::airdrop";
+
+const AIRDROP_WEBSOCKET_CRYPTO_KEY: &str = env!("AIRDROP_WEBSOCKET_CRYPTO_KEY");
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct AirdropAccessToken {
@@ -144,4 +152,32 @@ pub async fn send_new_block_mined(app: AppHandle, block_height: u64) {
             }
         }
     });
+}
+
+pub fn get_websocket_key() -> anyhow::Result<Ed25519KeyPair> {
+    let decoded_str = hex::decode(AIRDROP_WEBSOCKET_CRYPTO_KEY)?;
+    match Ed25519KeyPair::from_pkcs8_maybe_unchecked(&decoded_str) {
+        Ok(key) => Ok(key),
+        Err(e) => Err(anyhow!(e.to_string())),
+    }
+}
+
+pub fn get_der_encode_pub_key(key_pair: &Ed25519KeyPair) -> anyhow::Result<String> {
+    let pub_key_bytes = key_pair.public_key().as_ref();
+
+    let algorithm_identifier: AlgorithmIdentifier<()> = AlgorithmIdentifier {
+        oid: ObjectIdentifier::new("1.3.101.112").map_err(|e| anyhow::anyhow!(e.to_string()))?,
+        parameters: None, // No parameters for Ed25519
+    };
+
+    let subject_public_key =
+        BitString::from_bytes(pub_key_bytes).map_err(|e| anyhow::anyhow!(e.to_string()))?;
+
+    let spki = SubjectPublicKeyInfo {
+        algorithm: algorithm_identifier,
+        subject_public_key,
+    };
+
+    let der_encoded = spki.to_der().map_err(|e| anyhow::anyhow!(e.to_string()))?;
+    Ok(hex::encode(der_encoded))
 }

@@ -27,18 +27,29 @@ export const TriggerWrapper = styled.div<StyleProps>`
     align-items: center;
     justify-content: space-between;
     cursor: pointer;
+    border-radius: 10px;
+
     img {
         width: 12px;
         display: flex;
     }
 
+    &:focus-visible {
+        outline: 2px solid ${({ theme }) => theme.palette.focusOutline};
+        outline-offset: 2px;
+    }
+
     ${({ $isBordered, theme }) =>
         $isBordered &&
         css`
-            border-radius: 10px;
             border: 1px solid ${theme.palette.divider};
             background: rgba(0, 0, 0, 0.01);
             padding: 0 15px;
+
+            &:focus-visible {
+                outline: 2px solid ${({ theme }) => theme.palette.focusOutline};
+                outline-offset: 2px;
+            }
         `}
 
     ${({ $isSync }) =>
@@ -66,7 +77,7 @@ export const Options = styled.div<StyleProps>`
     display: flex;
     flex-direction: column;
     box-shadow: 0 20px 40px 0 rgba(0, 0, 0, 0.3);
-    background: ${({ theme }) => theme.palette.background.paper};
+    background: ${({ theme }) => theme.palette.background.tooltip};
     border-radius: ${({ theme }) => theme.shape.borderRadius.app};
     height: auto;
     transition: all 0.1s ease-in;
@@ -83,6 +94,7 @@ export const Options = styled.div<StyleProps>`
     z-index: 10;
     max-height: 200px;
     overflow-y: auto;
+    overscroll-behavior: contain;
 `;
 
 export const SelectedOption = styled.div<StyleProps>`
@@ -123,7 +135,6 @@ export const StyledOption = styled.div<StyleProps>`
     line-height: 1;
     cursor: ${({ $loading }) => ($loading ? 'wait' : 'pointer')};
     border-radius: 10px;
-    transition: all 0.2s ease-in-out;
 
     height: 38px;
     padding: 0 12px;
@@ -135,6 +146,11 @@ export const StyledOption = styled.div<StyleProps>`
 
     &:hover {
         background: ${({ theme }) => theme.palette.action.hover.default};
+    }
+
+    &:focus-visible {
+        outline: 2px solid ${({ theme }) => theme.palette.focusOutline};
+        outline-offset: -2px;
     }
 
     ${({ $isBordered }) =>

@@ -78,7 +78,6 @@ pub enum EventType {
     BackgroundNodeSyncUpdate,
     InitWalletScanningProgress,
     ConnectionStatus,
-    ShowStageSecurityModal,
     ExchangeIdChanged,
     DisabledPhases,
     ShouldShowExchangeMinerModal,
@@ -88,7 +87,12 @@ pub enum EventType {
     CreatePin,
     EnterPin,
     UpdateGpuDevicesSettings,
+    PinLocked,
+    SeedBackedUp,
+    AllowTappletCsp,
+    GrantTappletPermissions,
     OotleWalletPhaseFinished,
+    EmitTappletNofication,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -201,5 +205,17 @@ pub struct TariAddressUpdatePayload {
     pub tari_address_type: TariAddressType,
 }
 
-#[derive(Clone, Debug, Serialize)]
-pub struct ConfigPoolsContentLoadedPayload {}
+#[derive(Debug, Serialize, Clone)]
+pub struct AllowTappletCspPayload {
+    pub csp: String,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct GrantTappletPermissionsPayload {
+    pub permissions: String,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct EmitTappletNoficationPayload {
+    pub notification: String,
+}

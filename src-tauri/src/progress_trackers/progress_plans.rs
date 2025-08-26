@@ -51,7 +51,6 @@ impl ProgressEvent for ProgressPlanEventPayload {
 }
 #[derive(Clone, PartialEq, Debug)]
 pub enum ProgressSetupCorePlan {
-    PlatformPrequisites,
     InitializeApplicationModules,
     NetworkSpeedTest,
     Done,
@@ -66,7 +65,6 @@ impl ProgressStep for ProgressSetupCorePlan {
 
     fn get_progress_weight(&self) -> u8 {
         match self {
-            ProgressSetupCorePlan::PlatformPrequisites => 1,
             ProgressSetupCorePlan::InitializeApplicationModules => 1,
             ProgressSetupCorePlan::NetworkSpeedTest => 1,
             ProgressSetupCorePlan::Done => 1,
@@ -75,7 +73,6 @@ impl ProgressStep for ProgressSetupCorePlan {
 
     fn get_title(&self) -> String {
         match self {
-            ProgressSetupCorePlan::PlatformPrequisites => "platform-prequisites".to_string(),
             ProgressSetupCorePlan::InitializeApplicationModules => {
                 "initialize-application-modules".to_string()
             }

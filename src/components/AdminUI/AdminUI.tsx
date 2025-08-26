@@ -1,4 +1,3 @@
-/* eslint-disable i18next/no-literal-string */
 import { MenuWrapper, MenuContent, ToggleButton } from './styles';
 import {
     useFloating,
@@ -37,7 +36,7 @@ const AdminUI = memo(function AdminUI() {
     return (
         <>
             <ToggleButton ref={refs.setReference} {...getReferenceProps()} $isOpen={isOpen}>
-                Admin UI
+                {`Admin UI`}
             </ToggleButton>
             <AnimatePresence>
                 <FloatingNode id={nodeId}>

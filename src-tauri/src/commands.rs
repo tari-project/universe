@@ -20,10 +20,8 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::app_in_memory_config::{
-    get_der_encode_pub_key, get_websocket_key, AirdropInMemoryConfig, ExchangeMiner,
-    DEFAULT_EXCHANGE_ID,
-};
+use crate::airdrop::{get_der_encode_pub_key, get_websocket_key};
+use crate::app_in_memory_config::{AppInMemoryConfig, ExchangeMiner, DEFAULT_EXCHANGE_ID};
 use crate::auto_launcher::AutoLauncher;
 use crate::binaries::{Binaries, BinaryResolver};
 use crate::configs::config_core::{AirdropTokens, ConfigCore, ConfigCoreContent};
@@ -31,6 +29,7 @@ use crate::configs::config_mining::{ConfigMining, ConfigMiningContent};
 use crate::configs::config_pools::{ConfigPools, ConfigPoolsContent};
 use crate::configs::config_ui::{ConfigUI, ConfigUIContent, DisplayMode};
 use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent, WalletId};
+use crate::configs::pools::{cpu_pools::CpuPool, gpu_pools::GpuPool};
 use crate::configs::trait_config::ConfigImpl;
 use crate::events::ConnectionStatusPayload;
 use crate::events_emitter::EventsEmitter;
@@ -39,8 +38,7 @@ use crate::external_dependencies::{
     ExternalDependencies, ExternalDependency, RequiredExternalDependency,
 };
 use crate::gpu_miner::EngineType;
-use crate::gpu_miner_adapter::{GpuMinerStatus, GpuNodeSource};
-use crate::gpu_status_file::GpuStatus;
+use crate::gpu_miner_adapter::GpuNodeSource;
 use crate::internal_wallet::{mnemonic_to_tari_cipher_seed, InternalWallet, PaperWalletConfig};
 use crate::node::node_adapter::BaseNodeStatus;
 use crate::node::node_manager::NodeType;
@@ -48,8 +46,6 @@ use crate::ootle::ootle_wallet_adapter::OotleWalletState;
 use crate::p2pool::models::{Connections, P2poolStats};
 use crate::pin::PinManager;
 use crate::setup::setup_manager::{SetupManager, SetupPhase};
-use crate::tapplets::interface::ActiveTapplet;
-use crate::tapplets::tapplet_server::start_tapplet;
 use crate::tasks_tracker::TasksTrackers;
 use crate::tor_adapter::TorConfig;
 use crate::utils::address_utils::verify_send;
@@ -110,12 +106,7 @@ pub struct ApplicationsVersions {
     sha_p2pool: ApplicationsInformation,
     xtrgpuminer: ApplicationsInformation,
     bridge: ApplicationsInformation,
-}
-
-#[derive(Debug, Serialize, Clone)]
-pub struct GpuMinerMetrics {
-    hardware: Vec<GpuStatus>,
-    mining: GpuMinerStatus,
+    ootle_wallet: ApplicationsInformation,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -233,7 +224,7 @@ pub async fn select_exchange_miner(
     EventsEmitter::emit_exchange_id_changed(exchange_miner.id.clone()).await;
 
     SetupManager::get_instance()
-        .restart_phases(app_handle, vec![SetupPhase::Wallet, SetupPhase::Mining])
+        .restart_phases(vec![SetupPhase::Wallet, SetupPhase::Mining])
         .await;
 
     Ok(())
@@ -322,9 +313,9 @@ pub async fn get_app_in_memory_config(
     _window: tauri::Window,
     state: tauri::State<'_, UniverseAppState>,
     _app: tauri::AppHandle,
-) -> Result<AirdropInMemoryConfig, ()> {
+) -> Result<AppInMemoryConfig, ()> {
     let timer = Instant::now();
-    let res = state.in_memory_config.read().await.clone().into();
+    let res = state.in_memory_config.read().await.clone();
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET,
             "get_app_in_memory_config took too long: {:?}",
@@ -373,6 +364,9 @@ pub async fn get_applications_versions(
     let bridge_version = binary_resolver
         .get_binary_version(Binaries::BridgeTapplet)
         .await;
+    let ootle_wallet_version = binary_resolver
+        .get_binary_version(Binaries::OotleWallet)
+        .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET,
@@ -412,6 +406,10 @@ pub async fn get_applications_versions(
         },
         bridge: ApplicationsInformation {
             version: bridge_version,
+            port: None,
+        },
+        ootle_wallet: ApplicationsInformation {
+            version: ootle_wallet_version,
             port: None,
         },
     })
@@ -514,10 +512,7 @@ pub async fn get_p2pool_connections(
 }
 
 #[tauri::command]
-pub async fn set_p2pool_stats_server_port(
-    port: Option<u16>,
-    app_handle: tauri::AppHandle,
-) -> Result<(), InvokeError> {
+pub async fn set_p2pool_stats_server_port(port: Option<u16>) -> Result<(), InvokeError> {
     if let Some(port) = port {
         if port.le(&1024) || port.gt(&65535) {
             return Err(InvokeError::from("Port must be between 1024 and 65535"));
@@ -533,7 +528,7 @@ pub async fn set_p2pool_stats_server_port(
     .map_err(InvokeError::from_anyhow)?;
 
     SetupManager::get_instance()
-        .restart_phases_from_queue(app_handle)
+        .restart_phases_from_queue()
         .await;
     Ok(())
 }
@@ -829,7 +824,7 @@ pub async fn import_seed_words(
         .map_err(|e| e.to_string())?;
 
     SetupManager::get_instance()
-        .resume_phases(app_handle, vec![SetupPhase::Wallet, SetupPhase::Mining])
+        .resume_phases(vec![SetupPhase::Wallet, SetupPhase::Mining])
         .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
@@ -861,7 +856,7 @@ pub async fn revert_to_internal_wallet(
     EventsEmitter::emit_exchange_id_changed(DEFAULT_EXCHANGE_ID.to_string()).await;
 
     SetupManager::get_instance()
-        .resume_phases(app_handle, vec![SetupPhase::Wallet, SetupPhase::Mining])
+        .resume_phases(vec![SetupPhase::Wallet, SetupPhase::Mining])
         .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
@@ -1298,10 +1293,7 @@ pub async fn update_custom_mining_mode(
 }
 
 #[tauri::command]
-pub async fn set_monero_address(
-    monero_address: String,
-    app_handle: tauri::AppHandle,
-) -> Result<(), InvokeError> {
+pub async fn set_monero_address(monero_address: String) -> Result<(), InvokeError> {
     let timer = Instant::now();
     SetupManager::get_instance()
         .add_phases_to_restart_queue(vec![SetupPhase::Mining])
@@ -1312,7 +1304,7 @@ pub async fn set_monero_address(
         .map_err(InvokeError::from_anyhow)?;
 
     SetupManager::get_instance()
-        .restart_phases_from_queue(app_handle)
+        .restart_phases_from_queue()
         .await;
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "set_monero_address took too long: {:?}", timer.elapsed());
@@ -1324,7 +1316,6 @@ pub async fn set_monero_address(
 pub async fn set_monerod_config(
     use_monero_fail: bool,
     monero_nodes: Vec<String>,
-    app_handle: tauri::AppHandle,
 ) -> Result<(), InvokeError> {
     let timer = Instant::now();
     info!(target: LOG_TARGET, "[set_monerod_config] called with use_monero_fail: {use_monero_fail:?}, monero_nodes: {monero_nodes:?}");
@@ -1345,7 +1336,7 @@ pub async fn set_monerod_config(
     .map_err(InvokeError::from_anyhow)?;
 
     SetupManager::get_instance()
-        .restart_phases_from_queue(app_handle)
+        .restart_phases_from_queue()
         .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
@@ -1356,10 +1347,7 @@ pub async fn set_monerod_config(
 }
 
 #[tauri::command]
-pub async fn set_p2pool_enabled(
-    p2pool_enabled: bool,
-    app_handle: tauri::AppHandle,
-) -> Result<(), InvokeError> {
+pub async fn set_p2pool_enabled(p2pool_enabled: bool) -> Result<(), InvokeError> {
     let timer = Instant::now();
     ConfigCore::update_field_requires_restart(
         ConfigCoreContent::set_is_p2pool_enabled,
@@ -1370,7 +1358,7 @@ pub async fn set_p2pool_enabled(
     .map_err(InvokeError::from_anyhow)?;
 
     SetupManager::get_instance()
-        .restart_phases_from_queue(app_handle)
+        .restart_phases_from_queue()
         .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
@@ -1429,7 +1417,6 @@ pub async fn set_tor_config(
     config: TorConfig,
     _window: tauri::Window,
     state: tauri::State<'_, UniverseAppState>,
-    app_handle: tauri::AppHandle,
 ) -> Result<TorConfig, String> {
     let timer = Instant::now();
     info!(target: LOG_TARGET, "[set_tor_config] called with config: {config:?}");
@@ -1440,10 +1427,11 @@ pub async fn set_tor_config(
         .map_err(|e| e.to_string())?;
 
     SetupManager::get_instance()
-        .restart_phases(
-            app_handle,
-            vec![SetupPhase::Node, SetupPhase::Wallet, SetupPhase::Mining],
-        )
+        .restart_phases(vec![
+            SetupPhase::Node,
+            SetupPhase::Wallet,
+            SetupPhase::Mining,
+        ])
         .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
@@ -1464,7 +1452,7 @@ pub async fn set_use_tor(use_tor: bool, app_handle: tauri::AppHandle) -> Result<
     .map_err(InvokeError::from_anyhow)?;
 
     SetupManager::get_instance()
-        .restart_phases_from_queue(app_handle.clone())
+        .restart_phases_from_queue()
         .await;
 
     let config_dir = app_handle
@@ -1503,10 +1491,7 @@ pub async fn set_visual_mode(enabled: bool) -> Result<(), InvokeError> {
 
 #[allow(clippy::too_many_lines)]
 #[tauri::command]
-pub async fn set_airdrop_tokens(
-    airdrop_tokens: Option<AirdropTokens>,
-    app_handle: tauri::AppHandle,
-) -> Result<(), InvokeError> {
+pub async fn set_airdrop_tokens(airdrop_tokens: Option<AirdropTokens>) -> Result<(), InvokeError> {
     let old_id = ConfigCore::content()
         .await
         .airdrop_tokens()
@@ -1528,7 +1513,7 @@ pub async fn set_airdrop_tokens(
     if user_id_changed {
         // If the user id changed, we need to restart the mining phases to ensure that the new telemetry_id ( unique_string value )is used
         SetupManager::get_instance()
-            .restart_phases(app_handle.clone(), vec![SetupPhase::Mining])
+            .restart_phases(vec![SetupPhase::Mining])
             .await;
     }
     Ok(())
@@ -1767,7 +1752,7 @@ pub async fn stop_gpu_mining(state: tauri::State<'_, UniverseAppState>) -> Resul
 }
 
 #[tauri::command]
-pub async fn toggle_cpu_pool_mining(enabled: bool, app: tauri::AppHandle) -> Result<(), String> {
+pub async fn toggle_cpu_pool_mining(enabled: bool) -> Result<(), String> {
     let timer = Instant::now();
 
     ConfigPools::update_field(ConfigPoolsContent::set_cpu_pool_enabled, enabled)
@@ -1775,7 +1760,7 @@ pub async fn toggle_cpu_pool_mining(enabled: bool, app: tauri::AppHandle) -> Res
         .map_err(|e| e.to_string())?;
 
     SetupManager::get_instance()
-        .restart_phases(app.clone(), vec![SetupPhase::Mining])
+        .restart_phases(vec![SetupPhase::Mining])
         .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
@@ -1813,7 +1798,7 @@ pub async fn set_pre_release(
 
     state
         .updates_manager
-        .try_update(app.clone(), true, !pre_release)
+        .try_update(app.clone(), true, !pre_release, Duration::from_secs(30))
         .await
         .map_err(|e| e.to_string())?;
 
@@ -1854,7 +1839,12 @@ pub async fn try_update(
 
     state
         .updates_manager
-        .try_update(app.clone(), force.unwrap_or(false), false)
+        .try_update(
+            app.clone(),
+            force.unwrap_or(false),
+            false,
+            Duration::from_secs(30),
+        )
         .await
         .map_err(|e| e.to_string())?;
 
@@ -1993,12 +1983,10 @@ pub async fn websocket_connect(
 }
 
 #[tauri::command]
-pub async fn reconnect(app_handle: tauri::AppHandle) -> Result<(), String> {
+pub async fn reconnect() -> Result<(), String> {
     EventsEmitter::emit_connection_status_changed(ConnectionStatusPayload::InProgress).await;
     let setup_manager = SetupManager::get_instance();
-    setup_manager
-        .restart_phases(app_handle, SetupPhase::all())
-        .await;
+    setup_manager.restart_phases(SetupPhase::all()).await;
     Ok(())
 }
 
@@ -2096,9 +2084,9 @@ pub fn validate_minotari_amount(
 }
 
 #[tauri::command]
-pub async fn trigger_phases_restart(app_handle: tauri::AppHandle) -> Result<(), InvokeError> {
+pub async fn trigger_phases_restart() -> Result<(), InvokeError> {
     SetupManager::get_instance()
-        .restart_phases_from_queue(app_handle)
+        .restart_phases_from_queue()
         .await;
 
     Ok(())
@@ -2107,8 +2095,8 @@ pub async fn trigger_phases_restart(app_handle: tauri::AppHandle) -> Result<(), 
 #[tauri::command]
 pub async fn set_node_type(
     mut node_type: NodeType,
-    app_handle: tauri::AppHandle,
     state: tauri::State<'_, UniverseAppState>,
+    app_handle: tauri::AppHandle,
 ) -> Result<(), InvokeError> {
     // map LocalAfterRemote or unknown value to Local
     if node_type != NodeType::Local
@@ -2147,9 +2135,113 @@ pub async fn set_node_type(
     EventsManager::handle_node_type_update(&app_handle).await;
 
     SetupManager::get_instance()
-        .restart_phases_from_queue(app_handle)
+        .restart_phases_from_queue()
         .await;
 
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn change_cpu_pool(cpu_pool: String) -> Result<(), InvokeError> {
+    let timer = Instant::now();
+    info!(target: LOG_TARGET, "[change_cpu_pool] called with cpu_pool: {cpu_pool:?}");
+
+    ConfigPools::update_field(ConfigPoolsContent::set_selected_cpu_pool, cpu_pool)
+        .await
+        .map_err(InvokeError::from_anyhow)?;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "change_cpu_pool took too long: {:?}", timer.elapsed());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn change_gpu_pool(gpu_pool: String) -> Result<(), InvokeError> {
+    let timer = Instant::now();
+    info!(target: LOG_TARGET, "[change_gpu_pool] called with gpu_pool: {gpu_pool:?}");
+
+    ConfigPools::update_field(ConfigPoolsContent::set_selected_gpu_pool, gpu_pool)
+        .await
+        .map_err(InvokeError::from_anyhow)?;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "change_gpu_pool took too long: {:?}", timer.elapsed());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn update_selected_gpu_pool_config(updated_config: GpuPool) -> Result<(), InvokeError> {
+    let timer = Instant::now();
+    info!(target: LOG_TARGET, "[update_selected_gpu_pool_config] called with updated_config: {updated_config:?}");
+
+    ConfigPools::update_field(
+        ConfigPoolsContent::update_selected_gpu_config,
+        updated_config,
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "update_selected_gpu_pool_config took too long: {:?}", timer.elapsed());
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn update_selected_cpu_pool_config(updated_config: CpuPool) -> Result<(), InvokeError> {
+    let timer = Instant::now();
+    info!(target: LOG_TARGET, "[update_selected_cpu_pool_config] called with updated_config: {updated_config:?}");
+
+    ConfigPools::update_field(
+        ConfigPoolsContent::update_selected_cpu_config,
+        updated_config,
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "update_selected_cpu_pool_config took too long: {:?}", timer.elapsed());
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn reset_gpu_pool_config(gpu_pool_name: String) -> Result<(), InvokeError> {
+    let timer = Instant::now();
+    info!(target: LOG_TARGET, "[reset_pool_gpu_pool_config] called with gpu_pool_name: {gpu_pool_name:?}");
+
+    let gpu_pool = GpuPool::default_from_name(&gpu_pool_name).map_err(InvokeError::from_anyhow)?;
+
+    ConfigPools::update_field(ConfigPoolsContent::update_selected_gpu_config, gpu_pool)
+        .await
+        .map_err(InvokeError::from_anyhow)?;
+    EventsEmitter::emit_pools_config_loaded(&ConfigPools::content().await.clone()).await;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "reset_pool_gpu_pool_config took too long: {:?}", timer.elapsed());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn reset_cpu_pool_config(cpu_pool_name: String) -> Result<(), InvokeError> {
+    let timer = Instant::now();
+    info!(target: LOG_TARGET, "[reset_pool_cpu_pool_config] called with cpu_pool_name: {cpu_pool_name:?}");
+
+    let cpu_pool = CpuPool::default_from_name(&cpu_pool_name).map_err(InvokeError::from_anyhow)?;
+
+    ConfigPools::update_field(ConfigPoolsContent::update_selected_cpu_config, cpu_pool)
+        .await
+        .map_err(InvokeError::from_anyhow)?;
+    EventsEmitter::emit_pools_config_loaded(&ConfigPools::content().await.clone()).await;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "reset_pool_cpu_pool_config took too long: {:?}", timer.elapsed());
+    }
     Ok(())
 }
 
@@ -2160,6 +2252,8 @@ pub async fn create_pin(app_handle: tauri::AppHandle) -> Result<(), String> {
         .map_err(|e| e.to_string())?;
     info!(target: LOG_TARGET, "PIN created successfully");
 
+    EventsEmitter::emit_pin_locked(true).await;
+
     Ok(())
 }
 
@@ -2169,45 +2263,9 @@ pub async fn set_seed_backed_up() -> Result<(), String> {
         .await
         .map_err(|e| e.to_string())?;
 
+    EventsEmitter::emit_seed_backed_up(true).await;
+
     Ok(())
-}
-
-#[tauri::command]
-pub async fn is_seed_backed_up() -> Result<bool, String> {
-    let seed_backed_up = *ConfigWallet::content().await.seed_backed_up();
-    Ok(seed_backed_up)
-}
-
-/*
- ********** TAPPLETS SECTION **********
-*/
-
-#[tauri::command]
-pub async fn launch_builtin_tapplet() -> Result<ActiveTapplet, String> {
-    let binaries_resolver = BinaryResolver::current();
-
-    let tapp_dest_dir = binaries_resolver
-        .resolve_path_to_binary_files(Binaries::BridgeTapplet)
-        .await
-        .map_err(|e| e.to_string())?;
-
-    let handle_start =
-        tauri::async_runtime::spawn(async move { start_tapplet(tapp_dest_dir).await });
-
-    let (addr, _cancel_token) = match handle_start.await {
-        Ok(result) => result.map_err(|e| e.to_string())?,
-        Err(e) => {
-            error!(target: LOG_TARGET, "❌ Error handling tapplet start: {e:?}");
-            return Err(e.to_string());
-        }
-    };
-
-    Ok(ActiveTapplet {
-        tapplet_id: 0,
-        display_name: "Bridge-wXTM".to_string(),
-        source: format!("http://{addr}"),
-        version: "1.0.0".to_string(),
-    })
 }
 
 #[tauri::command]
@@ -2258,7 +2316,7 @@ pub async fn refresh_wallet_history(
     EventsEmitter::emit_init_wallet_scanning_progress(0, node_status.block_height, 0.0).await;
 
     SetupManager::get_instance()
-        .resume_phases(app_handle, vec![SetupPhase::Wallet])
+        .resume_phases(vec![SetupPhase::Wallet])
         .await;
 
     Ok(())
@@ -2279,7 +2337,7 @@ pub async fn encode_payment_id_to_address(
             e.to_string()
         })?;
     address_with_memo_field
-        .add_payment_id_user_data(payment_id.as_bytes().to_vec())
+        .add_memo_field_payment_id(payment_id.as_bytes().to_vec())
         .map_err(|e| {
             error!(target: LOG_TARGET, "Failed to add payment ID to Tari address: {e}");
             e.to_string()
@@ -2310,9 +2368,12 @@ pub async fn get_base_node_status(
 }
 
 #[tauri::command]
-pub async fn is_pin_locked() -> Result<bool, String> {
-    let is_pin_locked = PinManager::pin_locked().await;
-    Ok(is_pin_locked)
+pub async fn set_security_warning_dismissed() -> Result<(), String> {
+    ConfigWallet::update_field(ConfigWalletContent::set_security_warning_dismissed, true)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
 }
 
 #[tauri::command]

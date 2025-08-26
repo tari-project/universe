@@ -29,13 +29,6 @@ export const GemImgLarge = styled.img`
     transform: scaleX(-1);
 `;
 
-export const Avatar = styled.div`
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    flex-shrink: 0;
-`;
-
 export const CopyButton = styled.button`
     width: 26px;
     height: 26px;

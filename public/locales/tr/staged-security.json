@@ -41,5 +41,9 @@
     "placeholder": "Aşağıdaki kelimelere doğru sırayla tıklayın",
     "text": "Seed kelimelerinizi doğru yazdığınızdan emin olmak için lütfen kelimeleri doğru sırayla seçin.",
     "title": "Seed kelimelerinizi doğrulayın"
+  },
+  "warning": {
+    "title": "Secure your wallet",
+    "steps": "Steps"
   }
 }

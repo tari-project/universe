@@ -1,26 +1,27 @@
-import { invoke } from '@tauri-apps/api/core';
 import { handleRefreshAirdropTokens } from '@app/hooks/airdrop/stateHelpers/useAirdropTokensRefresh.ts';
+import { handleAirdropRequest } from '@app/hooks/airdrop/utils/useHandleRequest.ts';
 import {
-    AirdropConfigBackendInMemory,
-    AirdropStoreState,
-    AirdropTokens,
-    AnimationType,
-    BonusTier,
-    CommunityMessage,
+    type AirdropConfigBackendInMemory,
+    type AirdropStoreState,
+    type AirdropTokens,
+    type AnimationType,
+    type BonusTier,
+    type CommunityMessage,
+    type Reward,
     setAirdropTokensInConfig,
+    type UserDetails,
+    type UserEntryPoints,
+    type UserPoints,
     useAirdropStore,
     useConfigBEInMemoryStore,
     useConfigCoreStore,
-    UserDetails,
-    UserEntryPoints,
-    UserPoints,
     useUIStore,
+    useWalletStore,
 } from '@app/store';
-import { handleAirdropRequest } from '@app/hooks/airdrop/utils/useHandleRequest.ts';
-import { initialiseSocket, removeSocket } from '@app/utils/socket.ts';
-import { XSpaceEvent } from '@app/types/ws.ts';
 import { handleCloseSplashscreen } from '@app/store/actions/uiStoreActions.ts';
-import { FEATURES } from '@app/store/consts.ts';
+import type { XSpaceEvent } from '@app/types/ws.ts';
+import { initialiseSocket, removeSocket } from '@app/utils/socket.ts';
+import { invoke } from '@tauri-apps/api/core';
 
 interface TokenResponse {
     exp: number;
@@ -38,9 +39,7 @@ function parseJwt(token: string): TokenResponse {
         window
             .atob(base64)
             .split('')
-            .map(function (c) {
-                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-            })
+            .map((c) => `%${`00${c.charCodeAt(0).toString(16)}`.slice(-2)}`)
             .join('')
     );
 
@@ -56,6 +55,11 @@ const clearState: AirdropStoreState = {
     bonusTiers: undefined,
     flareAnimationType: undefined,
     uiSendRecvEnabled: true,
+    crewQueryParams: {
+        status: 'all',
+        page: 1,
+        limit: 20,
+    },
 };
 
 const getAirdropInMemoryConfig = async () => {
@@ -88,7 +92,7 @@ const getAirdropInMemoryConfig = async () => {
         throw `get_airdrop_tokens error: ${e}`;
     }
 
-    if (!airdropInMemoryConfig?.airdropUrl?.length) {
+    if (!airdropInMemoryConfig?.airdrop_url?.length) {
         console.error('Error getting BE in memory config');
     }
     return airdropInMemoryConfig;
@@ -127,7 +131,7 @@ export const airdropSetup = async () => {
         if (beConfig) {
             console.info('Getting existing tokens');
             await getExistingTokens();
-            if (beConfig.airdropUrl) {
+            if (beConfig.airdrop_url) {
                 console.info('Refreshing airdrop tokens');
                 await handleRefreshAirdropTokens();
                 await fetchAllUserData();
@@ -169,7 +173,7 @@ export const setAirdropTokens = async (airdropTokens?: AirdropTokens) => {
             }
         );
 
-        const airdropApiUrl = useAirdropStore.getState().backendInMemoryConfig?.airdropApiUrl;
+        const airdropApiUrl = useAirdropStore.getState().backendInMemoryConfig?.airdrop_api_url;
         const authToken = airdropTokens?.token;
     } else {
         // User not connected
@@ -223,10 +227,14 @@ export const handleUsernameChange = async (username: string, onError?: (e: unkno
     });
 };
 
-export async function fetchFeatureFlag(route: string) {
-    return await handleAirdropRequest<{ access: boolean } | null>({
+export async function fetchFeatureFlag(featureName?: string) {
+    const path = featureName ? `/features/${featureName}` : '/features';
+    return await handleAirdropRequest<{
+        features?: string[];
+        access?: boolean;
+    } | null>({
         publicRequest: true,
-        path: `/features/${route}`,
+        path,
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
@@ -234,28 +242,11 @@ export async function fetchFeatureFlag(route: string) {
     });
 }
 
-export async function fetchPollingFeatureFlag() {
-    const response = await fetchFeatureFlag(FEATURES.FF_POLLING);
-    if (response) {
-        useAirdropStore.setState({ pollingEnabled: response.access });
-        // Let the BE know we're using the polling feature for mining proofs
-        // invoke('set_airdrop_polling', { pollingEnabled: response.access });
-    }
-    return response;
-}
-
-export async function fetchOrphanChainUiFeatureFlag() {
-    const response = await fetchFeatureFlag(FEATURES.FF_UI_ORPHAN_CHAIN_DISABLED);
-    if (response) {
-        useAirdropStore.setState({ orphanChainUiDisabled: response.access });
-    }
-    return response;
-}
-
-export async function fetchBlockBubblesFeatureFlag() {
-    const response = await fetchFeatureFlag(FEATURES.FF_UI_BLOCK_BUBBLES);
-    if (response) {
-        useUIStore.setState({ blockBubblesEnabled: response.access });
+export async function fetchFeatures() {
+    const response = await fetchFeatureFlag();
+    if (response?.features) {
+        const enabledFeatures = response.features;
+        useAirdropStore.setState({ features: enabledFeatures });
     }
     return response;
 }
@@ -293,6 +284,54 @@ export async function fetchLatestXSpaceEvent() {
 
     return response;
 }
+
+export async function sendCrewNudge(message: string, userId: string) {
+    return await handleAirdropRequest<{ success: boolean } | null>({
+        path: '/crew/nudge',
+        method: 'POST',
+        body: {
+            message,
+            userId,
+        },
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+}
+
+export async function claimCrewRewards(rewardId: string, memberId: string) {
+    const walletAddress = useWalletStore.getState().tari_address_base58;
+    if (!walletAddress) {
+        throw new Error('No wallet address found');
+    }
+    return await handleAirdropRequest<{
+        success: boolean;
+        claimedReward: Reward;
+    } | null>({
+        path: `/crew/rewards/${rewardId}/claim`,
+        method: 'POST',
+        body: {
+            rewardId,
+            memberId,
+            targetWalletAddress: walletAddress,
+        },
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+}
+
+export const setCrewQueryParams = (
+    params: Partial<{
+        status: 'all' | 'completed' | 'active' | 'inactive';
+        page: number;
+        limit: number;
+    }>
+) => {
+    useAirdropStore.setState((state) => ({
+        crewQueryParams: { ...state.crewQueryParams, ...params },
+    }));
+};
 
 export const fetchAllUserData = async () => {
     const fetchUserDetails = async () => {

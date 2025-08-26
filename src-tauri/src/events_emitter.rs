@@ -22,7 +22,8 @@ use crate::configs::config_mining::GpuDevicesSettings;
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 use crate::configs::config_ui::WalletUIMode;
 use crate::events::{
-    ConnectionStatusPayload, CriticalProblemPayload, DisabledPhasesPayload,
+    AllowTappletCspPayload, ConnectionStatusPayload, CriticalProblemPayload, DisabledPhasesPayload,
+    EmitTappletNoficationPayload, GrantTappletPermissionsPayload,
     InitWalletScanningProgressPayload,
 };
 #[cfg(target_os = "windows")]
@@ -42,7 +43,7 @@ use crate::{
         NetworkStatusPayload, NewBlockHeightPayload, NodeTypeUpdatePayload, ProgressEvents,
         ProgressTrackerUpdatePayload, ShowReleaseNotesPayload, TariAddressUpdatePayload,
     },
-    hardware::hardware_status_monitor::PublicDeviceProperties,
+    hardware::hardware_status_monitor::PublicDeviceGpuProperties,
     setup::setup_manager::SetupPhase,
     utils::app_flow_utils::FrontendReadyChannel,
     BaseNodeStatus, GpuMinerStatus,
@@ -360,22 +361,8 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn show_staged_security_modal() {
-        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
-        let event = Event {
-            event_type: EventType::ShowStageSecurityModal,
-            payload: (),
-        };
-        if let Err(e) = Self::get_app_handle()
-            .await
-            .emit(BACKEND_STATE_UPDATE, event)
-        {
-            error!(target: LOG_TARGET, "Failed to emit ShowStagedSecurityModal event: {e:?}");
-        }
-    }
-
     #[allow(dead_code)]
-    pub async fn emit_gpu_devices_update(gpu_public_devices: Vec<PublicDeviceProperties>) {
+    pub async fn emit_gpu_devices_update(gpu_public_devices: Vec<PublicDeviceGpuProperties>) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::GpuDevicesUpdate,
@@ -869,6 +856,77 @@ impl EventsEmitter {
             .emit(BACKEND_STATE_UPDATE, event)
         {
             error!(target: LOG_TARGET, "Failed to emit UpdateDevicesSettings event: {e:?}");
+        }
+    }
+
+    pub async fn emit_pin_locked(payload: bool) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::PinLocked,
+            payload,
+        };
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
+            error!(target: LOG_TARGET, "Failed to emit PinLocked event: {e:?}");
+        }
+    }
+
+    pub async fn emit_seed_backed_up(payload: bool) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::SeedBackedUp,
+            payload,
+        };
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
+            error!(target: LOG_TARGET, "Failed to emit SeedBackedUp event: {e:?}");
+        }
+    }
+
+    pub async fn emit_allow_tapplet_csp(csp: String) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::AllowTappletCsp,
+            payload: AllowTappletCspPayload { csp },
+        };
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
+            error!(target: LOG_TARGET, "Failed to emit AllowTappletCsp event: {e:?}");
+        }
+    }
+
+    pub async fn emit_grant_tapplet_permissions(permissions: String) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::GrantTappletPermissions,
+            payload: GrantTappletPermissionsPayload { permissions },
+        };
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
+            error!(target: LOG_TARGET, "Failed to emit GrantTappletPermissions event: {e:?}");
+        }
+    }
+
+    pub async fn emit_tapplet_notification(notification: String) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        error!(target: LOG_TARGET, "try emit EmitTappletNotification event");
+        let event = Event {
+            event_type: EventType::EmitTappletNofication,
+            payload: EmitTappletNoficationPayload { notification },
+        };
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
+            error!(target: LOG_TARGET, "Failed to emit EmitTappletNotification event: {e:?}");
         }
     }
 }

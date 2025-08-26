@@ -60,9 +60,6 @@ use super::{
 static LOG_TARGET: &str = "tari::universe::phase_hardware";
 
 #[derive(Clone, Default)]
-pub struct NodeSetupPhaseOutput {}
-
-#[derive(Clone, Default)]
 pub struct NodeSetupPhaseAppConfiguration {
     use_tor: bool,
     base_node_grpc_address: String,
@@ -179,7 +176,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
         let binary_resolver = BinaryResolver::current();
         let mut progress_stepper = self.progress_stepper.lock().await;
 
-        if self.app_configuration.use_tor && !cfg!(target_os = "macos") {
+        if self.app_configuration.use_tor && node_type.is_local() && !cfg!(target_os = "macos") {
             let tor_binary_progress_tracker = progress_stepper.channel_step_range_updates(
                 ProgressPlans::Node(ProgressSetupNodePlan::BinariesTor),
                 Some(ProgressPlans::Node(ProgressSetupNodePlan::BinariesNode)),
@@ -224,7 +221,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
             .initialize_binary(Binaries::MergeMiningProxy, mmproxy_binary_progress_tracker)
             .await?;
 
-        if self.app_configuration.use_tor && !cfg!(target_os = "macos") {
+        if self.app_configuration.use_tor && node_type.is_local() && !cfg!(target_os = "macos") {
             progress_stepper
                 .resolve_step(ProgressPlans::Node(ProgressSetupNodePlan::StartTor))
                 .await;
@@ -364,6 +361,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
             .await
             .spawn(async move {
                 let mut interval: Interval = interval(Duration::from_secs(30));
+                interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
 
                 loop {
                     tokio::select! {
@@ -395,6 +393,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
         let app_state = app_handle_clone.state::<UniverseAppState>().clone();
         let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
         let mut interval = interval(Duration::from_secs(10));
+        interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
 
         loop {
             tokio::select! {

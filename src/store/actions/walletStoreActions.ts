@@ -1,13 +1,14 @@
 import { invoke } from '@tauri-apps/api/core';
 import { WalletBalance } from '@app/types/app-status.ts';
-import { BackendBridgeTransaction, useWalletStore } from '../useWalletStore';
+import { CombinedBridgeWalletTransaction, useWalletStore } from '../useWalletStore';
 import { setError } from './appStateStoreActions';
 import { TxHistoryFilter } from '@app/components/transactions/history/FilterSelect';
 
 import { TariAddressUpdatePayload } from '@app/types/events-payloads';
-import { TransactionDetailsItem } from '@app/types/transactions';
 import { addToast } from '@app/components/ToastStack/useToastStore';
 import { t } from 'i18next';
+import { startMining, stopMining } from './miningStoreActions';
+import { useMiningStore } from '../useMiningStore';
 
 // NOTE: Tx status differ for core and proto(grpc)
 export const COINBASE_BITFLAG = 6144;
@@ -69,7 +70,14 @@ export const importSeedWords = async (seedWords: string[]) => {
             progress: 0,
         },
     }));
+
+    const anyMiningInitiated =
+        useMiningStore.getState().isCpuMiningInitiated || useMiningStore.getState().isGpuMiningInitiated;
+
     try {
+        if (anyMiningInitiated) {
+            await stopMining();
+        }
         await invoke('import_seed_words', { seedWords });
         await refreshTransactions();
         useWalletStore.setState((c) => ({ ...c, is_wallet_importing: false }));
@@ -78,6 +86,9 @@ export const importSeedWords = async (seedWords: string[]) => {
             text: t('import-seed-success', { ns: 'settings' }),
             type: 'success',
         });
+        if (anyMiningInitiated) {
+            await startMining();
+        }
     } catch (error) {
         const errorMessage = error as unknown as string;
         if (!errorMessage.includes('User canceled the operation') && !errorMessage.includes('PIN entry cancelled')) {
@@ -127,7 +138,7 @@ export const setTxHistoryFilter = (filter: TxHistoryFilter) => {
     useWalletStore.setState((c) => ({ ...c, tx_history_filter: filter }));
 };
 
-export const setDetailsItem = (detailsItem: TransactionDetailsItem | BackendBridgeTransaction | null) =>
+export const setDetailsItem = (detailsItem: CombinedBridgeWalletTransaction | null) =>
     useWalletStore.setState((c) => ({ ...c, detailsItem }));
 
 export const handleSelectedTariAddressChange = (payload: TariAddressUpdatePayload) => {
@@ -150,5 +161,19 @@ export const setExchangeETHAdress = (ethAddress: string, exchangeId: string) => 
             ...c.exchange_wxtm_addresses,
             ...newEntry,
         },
+    }));
+};
+
+export const handlePinLocked = (is_pin_locked: boolean) => {
+    useWalletStore.setState((c) => ({
+        ...c,
+        is_pin_locked,
+    }));
+};
+
+export const handleSeedBackedUp = (is_seed_backed_up: boolean) => {
+    useWalletStore.setState((c) => ({
+        ...c,
+        is_seed_backed_up,
     }));
 };

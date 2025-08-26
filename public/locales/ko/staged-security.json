@@ -41,5 +41,9 @@
     "placeholder": "아래 단어를 올바른 순서로 클릭하세요",
     "text": "시드 구문을 올바르게 기록했는지 확인하려면, 단어를 올바른 순서로 선택하세요.",
     "title": "시드 구문 확인"
+  },
+  "warning": {
+    "title": "Secure your wallet",
+    "steps": "Steps"
   }
 }

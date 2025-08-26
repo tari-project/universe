@@ -17,7 +17,7 @@ export interface WebsocketEventType {
 
 function useSetupWebsocket() {
     const airdropTokens = useAirdropStore((s) => s.airdropTokens);
-    const airdropApiUrl = useAirdropStore((s) => s.backendInMemoryConfig?.airdropApiUrl);
+    const airdropApiUrl = useAirdropStore((s) => s.backendInMemoryConfig?.airdrop_api_url);
 
     return useCallback(() => {
         if (airdropApiUrl && airdropTokens) {

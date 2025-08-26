@@ -23,7 +23,6 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use chrono::Utc;
 use futures::SinkExt;
 use futures::StreamExt;
 use log::trace;
@@ -91,12 +90,6 @@ pub enum WebsocketManagerStatusMessage {
     Connected,
     Reconnecting,
     Stopped,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub struct WebsocketStoredMessage {
-    pub time: chrono::DateTime<Utc>,
-    pub data: serde_json::Value,
 }
 
 pub struct WebsocketManager {
