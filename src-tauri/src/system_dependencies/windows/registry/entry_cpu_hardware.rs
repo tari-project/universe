@@ -1,7 +1,10 @@
 use winreg::{RegKey, HKEY};
 
-use crate::system_dependencies::windows::registry::{
-    WindowsRegistryReader, WindowsRegistryRequirementChecker,
+use crate::{
+    hardware::hardware_status_monitor::HardwareVendor,
+    system_dependencies::windows::registry::{
+        WindowsRegistryReader, WindowsRegistryRequirementChecker,
+    },
 };
 
 #[derive(Clone)]

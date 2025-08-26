@@ -31,8 +31,6 @@ use crate::tasks_tracker::TasksTrackers;
 
 #[cfg(target_os = "windows")]
 use crate::events_emitter::EventsEmitter;
-#[cfg(target_os = "windows")]
-use crate::external_dependencies::ExternalDependencies;
 #[cfg(not(target_os = "linux"))]
 use anyhow::anyhow;
 use std::fmt::Display;

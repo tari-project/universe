@@ -1,5 +1,12 @@
 use winreg::{RegKey, HKEY};
 
+use crate::{
+    hardware::hardware_status_monitor::HardwareVendor,
+    system_dependencies::windows::registry::{
+        WindowsRegistryReader, WindowsRegistryRequirementChecker,
+    },
+};
+
 #[derive(Clone)]
 pub struct WindowsRegistryGpuEntry {
     pub device_desc: String,
@@ -63,7 +70,7 @@ impl WindowsRegistryReader for WindowsRegistryGpuResolver {
         let hklm_key = RegKey::predef(Self::get_registry_root());
         let gpu_path = hklm_key.open_subkey(Self::get_registry_path())?;
 
-        let mut gpu_entries: Vec<Self::Entry> = Vec::new();
+        let mut gpu_entries: Vec<WindowsRegistryGpuEntry> = Vec::new();
         for subkey_name in gpu_path.enum_keys() {
             let entry_as_gpu = HardwareVendorIdentifier::from_string(subkey_name?);
             match entry_as_gpu {
@@ -74,7 +81,7 @@ impl WindowsRegistryReader for WindowsRegistryGpuResolver {
                     let device_desc: String = subkey.get_value("DeviceDesc").unwrap_or_default();
                     let driver: String = subkey.get_value("Driver").unwrap_or_default();
                     let mfg: String = subkey.get_value("Mfg").unwrap_or_default();
-                    gpu_entries.push(Self::Entry {
+                    gpu_entries.push(WindowsRegistryGpuEntry {
                         device_desc,
                         driver,
                         mfg,

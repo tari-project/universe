@@ -29,6 +29,7 @@ use tokio::io::AsyncWriteExt;
 use tokio::sync::RwLock;
 
 use crate::system_dependencies::windows::dependencies::WindowsSystemDependency;
+use crate::system_dependencies::windows::registry::entry_cpu_hardware::WindowsRegistryCpuEntry;
 use crate::system_dependencies::windows::registry::entry_uninstall_software::WindowsRegistryUninstallSoftwareEntry;
 use crate::system_dependencies::UniversalDependencyStatus;
 use crate::{

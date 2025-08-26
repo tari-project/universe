@@ -1,7 +1,10 @@
 use winreg::{RegKey, HKEY};
 
-use crate::system_dependencies::windows::registry::{
-    WindowsRegistryReader, WindowsRegistryRequirementChecker,
+use crate::{
+    hardware::hardware_status_monitor::HardwareVendor,
+    system_dependencies::windows::registry::{
+        WindowsRegistryReader, WindowsRegistryRequirementChecker,
+    },
 };
 
 #[derive(Clone)]
@@ -39,7 +42,7 @@ impl WindowsRegistryReader for WindowsRegistryGpuDriverResolver {
                     driver_version,
                     provider_name,
                     driver_identifier: format!(
-                        "{4D36E968-E325-11CE-BFC1-08002BE10318}\\{}",
+                        "{{4D36E968-E325-11CE-BFC1-08002BE10318}}\\{}",
                         subkey_name?
                     ),
                 });

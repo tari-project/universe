@@ -1,3 +1,5 @@
+use winreg::HKEY;
+
 use crate::system_dependencies::windows::registry::entry_cpu_hardware::WindowsRegistryCpuResolver;
 use crate::system_dependencies::windows::registry::entry_gpu_drivers::WindowsRegistryGpuDriverResolver;
 use crate::system_dependencies::windows::registry::entry_gpu_hardware::WindowsRegistryGpuResolver;

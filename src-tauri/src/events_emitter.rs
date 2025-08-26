@@ -25,8 +25,6 @@ use crate::events::{
     ConnectionStatusPayload, CriticalProblemPayload, DisabledPhasesPayload,
     InitWalletScanningProgressPayload, UpdateAppModuleStatusPayload,
 };
-#[cfg(target_os = "windows")]
-use crate::external_dependencies::RequiredExternalDependency;
 use crate::gpu_devices::GpuDeviceInformation;
 use crate::internal_wallet::TariAddressType;
 use crate::pool_status_watcher::PoolStatus;
