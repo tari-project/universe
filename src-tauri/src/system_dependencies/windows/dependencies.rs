@@ -157,6 +157,7 @@ impl WindowsSystemDependency {
     pub fn define_gpu_driver_dependency(
         vendor: HardwareVendor,
         device_desc: String,
+        driver: String,
     ) -> WindowsSystemDependency {
         let manufacturer = Manufacturer::from_hardware_vendor(vendor.clone());
         let display_name = format!("{} GPU Driver", manufacturer.get_name());
@@ -189,8 +190,8 @@ impl WindowsSystemDependency {
                 status: UniversalDependencyStatus::Unknown,
                 download_url,
             },
-            registry_entry_type: WindowsRegistryRecordType::GpuHardware,
-            check_values: vec![device_desc],
+            registry_entry_type: WindowsRegistryRecordType::GpuDrivers,
+            check_values: vec![driver],
         }
     }
 }

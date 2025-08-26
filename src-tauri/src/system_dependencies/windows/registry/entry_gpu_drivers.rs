@@ -55,22 +55,26 @@ impl WindowsRegistryReader for WindowsRegistryGpuDriverResolver {
 
         for subkey_name in gpu_drivers_path.enum_keys() {
             if let Ok(subkey_name) = &subkey_name {
-                let subkey = gpu_drivers_path.open_subkey(subkey_name)?;
-                let driver_desc: String = subkey.get_value("DriverDesc").unwrap_or_default();
-                if !driver_desc.is_empty() {
-                    let driver_version: String =
-                        subkey.get_value("DriverVersion").unwrap_or_default();
-                    let provider_name: String =
-                        subkey.get_value("ProviderName").unwrap_or_default();
-                    gpu_driver_entries.push(WindowsRegistryGpuDriverEntry {
-                        driver_desc,
-                        driver_version,
-                        provider_name,
-                        driver_identifier: format!(
-                            "{{4D36E968-E325-11CE-BFC1-08002BE10318}}\\{}",
-                            subkey_name
-                        ),
-                    });
+                if let Ok(subkey) = gpu_drivers_path.open_subkey(subkey_name) {
+                    let driver_desc: Result<String, std::io::Error> =
+                        subkey.get_value("DriverDesc");
+                    let driver_version: Result<String, std::io::Error> =
+                        subkey.get_value("DriverVersion");
+                    let provider_name: Result<String, std::io::Error> =
+                        subkey.get_value("ProviderName");
+                    if let Ok((driver_desc, driver_version, provider_name)) =
+                        (driver_desc, driver_version, provider_name)
+                    {
+                        gpu_driver_entries.push(WindowsRegistryGpuDriverEntry {
+                            driver_desc,
+                            driver_version,
+                            provider_name,
+                            driver_identifier: format!(
+                                "{{4D36E968-E325-11CE-BFC1-08002BE10318}}\\{}",
+                                subkey_name
+                            ),
+                        });
+                    }
                 }
             }
         }
@@ -91,10 +95,11 @@ impl WindowsRegistryReader for WindowsRegistryGpuDriverResolver {
 }
 
 impl WindowsRegistryRequirementChecker for WindowsRegistryGpuDriverEntry {
-    type Requirement = String;
+    type Requirement = Vec<String>;
     fn check_requirements(&self, entry: &Self::Requirement) -> bool {
-        let sanitized_entry = entry.to_lowercase().trim().to_string();
         let sanitized_driver_identifier = self.driver_identifier.to_lowercase().trim().to_string();
-        sanitized_driver_identifier == sanitized_entry
+        entry
+            .iter()
+            .any(|e| e.to_lowercase().trim().to_string() == sanitized_driver_identifier)
     }
 }

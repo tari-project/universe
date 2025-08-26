@@ -225,6 +225,11 @@ pub async fn download_and_start_installer(id: String) -> Result<(), String> {
         .await
         .map_err(|e| e.to_string())?;
 
+    SystemDependenciesManager::get_instance()
+        .validate_dependencies(false)
+        .await
+        .map_err(|e| e.to_string())?;
+
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET,
             "download_and_start_installer took too long: {:?}",

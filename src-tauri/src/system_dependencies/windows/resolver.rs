@@ -66,41 +66,37 @@ impl WindowsDependenciesResolver {
         }
     }
 
-    fn load_registry_cpu_info(&self) -> Result<(), Error> {
+    async fn load_registry_cpu_info(&self) -> Result<(), Error> {
         let cpu_info = WindowsRegistryCpuResolver::read_registry()?;
-        let mut cpu_record = self.cpu_record.blocking_write();
+        let mut cpu_record = self.cpu_record.write().await;
         *cpu_record = Some(cpu_info);
         Ok(())
     }
 
-    fn load_gpu_registry_info(&self) -> Result<(), Error> {
+    async fn load_gpu_registry_info(&self) -> Result<(), Error> {
         let gpus_info = WindowsRegistryGpuResolver::read_registry()?;
-        let mut gpu_record = self.gpu_records.blocking_write();
+        let mut gpu_record = self.gpu_records.write().await;
         *gpu_record = gpus_info;
         Ok(())
     }
 
     pub async fn add_gpu_drivers_as_dependencies(&self) -> Result<(), Error> {
-        self.load_gpu_registry_info()?;
+        self.load_gpu_registry_info().await?;
         let gpu_records = self.gpu_records.read().await;
         let mut dependencies = self.dependencies.write().await;
         for gpu in gpu_records.iter() {
             let dependency = WindowsSystemDependency::define_gpu_driver_dependency(
                 gpu.get_vendor(),
                 gpu.device_desc.clone(),
+                gpu.driver.clone(),
             );
-            if !dependencies.iter().any(|d| {
-                d.universal_data.ui_info.display_name
-                    == dependency.universal_data.ui_info.display_name
-            }) {
-                dependencies.push(dependency);
-            }
+            dependencies.push(dependency);
         }
         Ok(())
     }
 
     pub async fn add_khronos_opencl_as_dependency(&self) -> Result<(), Error> {
-        self.load_registry_cpu_info()?;
+        self.load_registry_cpu_info().await?;
         let cpu_record = self.cpu_record.read().await.clone();
         if let Some(cpu) = cpu_record {
             let vendor = cpu.get_vendor();
@@ -108,12 +104,7 @@ impl WindowsDependenciesResolver {
             if vendor == HardwareVendor::Intel {
                 let dependency = WindowsSystemDependency::define_khronos_opencl_dependency();
                 let mut dependencies = self.dependencies.write().await;
-                if !dependencies.iter().any(|d| {
-                    d.universal_data.ui_info.display_name
-                        == dependency.universal_data.ui_info.display_name
-                }) {
-                    dependencies.push(dependency);
-                }
+                dependencies.push(dependency);
             }
         } else {
             return Err(anyhow!(
@@ -129,7 +120,7 @@ impl WindowsDependenciesResolver {
         let dependencies = self.dependencies.read().await;
         Ok(dependencies
             .iter()
-            .map(|d| d.clone().universal_data.clone())
+            .map(|d| d.universal_data.clone())
             .collect())
     }
 
@@ -140,34 +131,62 @@ impl WindowsDependenciesResolver {
             // Validate each dependency using the appropriate registry reader
             match dependency.registry_entry_type {
                 WindowsRegistryRecordType::GpuDrivers => {
-                    let entries = WindowsRegistryGpuDriverResolver::read_registry()?;
-                    for entry in entries.iter() {
-                        for check_value in dependency.check_values.iter() {
-                            if entry.check_requirements(check_value) {
-                                dependency.universal_data.status =
-                                    UniversalDependencyStatus::Installed;
-                                break;
+                    match WindowsRegistryGpuDriverResolver::read_registry() {
+                        Ok(entries) => {
+                            for entry in entries.iter() {
+                                if entry.check_requirements(&dependency.check_values) {
+                                    dependency.universal_data.status =
+                                        UniversalDependencyStatus::Installed;
+                                    break;
+                                } else {
+                                    dependency.universal_data.status =
+                                        UniversalDependencyStatus::NotInstalled;
+                                }
                             }
+                        }
+                        Err(_) => {
+                            dependency.universal_data.status =
+                                UniversalDependencyStatus::NotInstalled;
                         }
                     }
                 }
                 WindowsRegistryRecordType::KhronosSoftware => {
-                    let entries = WindowsRegistryKhronosSoftwareResolver::read_registry()?;
-                    for entry in entries.iter() {
-                        for _check_value in dependency.check_values.iter() {
-                            if entry.check_requirements(&()) {
-                                dependency.universal_data.status =
-                                    UniversalDependencyStatus::Installed;
-                                break;
+                    match WindowsRegistryKhronosSoftwareResolver::read_registry() {
+                        Ok(entries) => {
+                            for entry in entries.iter() {
+                                if entry.check_requirements(&()) {
+                                    dependency.universal_data.status =
+                                        UniversalDependencyStatus::Installed;
+                                    break;
+                                } else {
+                                    dependency.universal_data.status =
+                                        UniversalDependencyStatus::NotInstalled;
+                                }
                             }
+                        }
+                        Err(_) => {
+                            dependency.universal_data.status =
+                                UniversalDependencyStatus::NotInstalled;
                         }
                     }
                 }
                 WindowsRegistryRecordType::UninstallSoftware => {
-                    let entries = WindowsRegistryUninstallSoftwareResolver::read_registry()?;
-                    for entry in entries.iter() {
-                        if entry.check_requirements(&dependency.check_values) {
-                            dependency.universal_data.status = UniversalDependencyStatus::Installed;
+                    match WindowsRegistryUninstallSoftwareResolver::read_registry() {
+                        Ok(entries) => {
+                            for entry in entries.iter() {
+                                if entry.check_requirements(&dependency.check_values) {
+                                    dependency.universal_data.status =
+                                        UniversalDependencyStatus::Installed;
+                                    break;
+                                } else {
+                                    dependency.universal_data.status =
+                                        UniversalDependencyStatus::NotInstalled;
+                                }
+                            }
+                        }
+                        Err(_) => {
+                            dependency.universal_data.status =
+                                UniversalDependencyStatus::NotInstalled;
                         }
                     }
                 }
@@ -192,22 +211,16 @@ impl WindowsDependenciesResolver {
             }
 
             let url = &dependency.universal_data.download_url;
-            let file_name = url
-                .split('/')
-                .last()
-                .ok_or_else(|| anyhow!("Invalid download URL."))?;
-            let destination = temp_dir().join(file_name);
-            HttpFileClient::builder()
+            let destination = temp_dir().join("executables".to_string());
+            let file_path = HttpFileClient::builder()
                 .build(url.clone(), destination.clone())?
                 .execute()
                 .await?;
 
             // Execute the installer
             use crate::consts::PROCESS_CREATION_NO_WINDOW;
-            let status = std::process::Command::new(&destination)
+            let status = std::process::Command::new(&file_path)
                 .creation_flags(PROCESS_CREATION_NO_WINDOW)
-                .arg("/quiet")
-                .arg("/norestart")
                 .status()?;
 
             if !status.success() {

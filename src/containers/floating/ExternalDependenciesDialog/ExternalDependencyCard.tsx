@@ -28,6 +28,7 @@ export const ExternalDependencyCard = ({
     const { t } = useTranslation('external-dependency-dialog', { useSuspense: false });
 
     const {
+        id,
         status,
         ui_info: { display_description, display_name, manufacturer },
     } = missingDependency;
@@ -35,7 +36,7 @@ export const ExternalDependencyCard = ({
     const handleDownload = useCallback(async () => {
         try {
             occupyInstallationSlot();
-            await invoke('download_and_start_installer', { missingDependency }).catch((e) => {
+            await invoke('download_and_start_installer', { id }).catch((e) => {
                 console.error('External dependency | caught error in download', e);
                 setError(`Failed to download and start installer: ${e} Please try again.`);
             });

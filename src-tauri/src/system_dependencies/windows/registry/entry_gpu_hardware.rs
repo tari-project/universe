@@ -93,23 +93,33 @@ impl WindowsRegistryReader for WindowsRegistryGpuResolver {
         let gpu_path = hklm_key.open_subkey(Self::get_registry_path())?;
 
         let mut gpu_entries: Vec<WindowsRegistryGpuEntry> = Vec::new();
-        for subkey_name in gpu_path.enum_keys() {
-            if let Ok(subkey_name) = &subkey_name {
-                let entry_as_gpu = HardwareVendorIdentifier::from_string(subkey_name.clone());
+        // Will return list of records like:
+        // VEN_10DE&DEV_1E07&SUBSYS_8536104B&REV_A1
+        // We will identify the vendor from the VEN_XXXX part
+        // Then we will need to open nested key and then ready values like DeviceDesc, Driver, Mfg
+        for vendor_record in gpu_path.enum_keys() {
+            if let Ok(vendor_record) = &vendor_record {
+                let entry_as_gpu = HardwareVendorIdentifier::from_string(vendor_record.clone());
                 match entry_as_gpu {
                     HardwareVendorIdentifier::Nvidia
                     | HardwareVendorIdentifier::Amd
                     | HardwareVendorIdentifier::Intel => {
-                        let subkey = gpu_path.open_subkey(subkey_name)?;
-                        let device_desc: String =
-                            subkey.get_value("DeviceDesc").unwrap_or_default();
-                        let driver: String = subkey.get_value("Driver").unwrap_or_default();
-                        let mfg: String = subkey.get_value("Mfg").unwrap_or_default();
-                        gpu_entries.push(WindowsRegistryGpuEntry {
-                            device_desc,
-                            driver,
-                            mfg,
-                        });
+                        for gpu_record in gpu_path.open_subkey(vendor_record)?.enum_keys() {
+                            let gpu_record_data = gpu_path.open_subkey(gpu_record)?;
+                            let device_desc: Result<String, std::io::Error> =
+                                gpu_record_data.get_value("DeviceDesc");
+                            let driver: Result<String, std::io::Error> =
+                                gpu_record_data.get_value("Driver");
+                            let mfg: Result<String, std::io::Error> =
+                                gpu_record_data.get_value("Mfg");
+                            if let Ok((device_desc, driver, mfg)) = (device_desc, driver, mfg) {
+                                gpu_entries.push(WindowsRegistryGpuEntry {
+                                    device_desc,
+                                    driver,
+                                    mfg,
+                                });
+                            }
+                        }
                     }
                     HardwareVendorIdentifier::Unknown => {}
                 }
