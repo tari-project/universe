@@ -451,14 +451,22 @@ impl NodeManager {
 
     pub async fn check_if_is_orphan_chain(&self) -> Result<bool, anyhow::Error> {
         let base_node_status_rx = self.base_node_watch_tx.subscribe();
-        let base_node_status = base_node_status_rx.borrow().clone();
+        let base_node_status = *base_node_status_rx.borrow();
         if !base_node_status.is_synced {
             info!(target: LOG_TARGET, "Node is not synced, skipping orphan chain check");
             return Ok(false);
         }
 
         let current_service = self.get_current_service().await?;
-        current_service.check_if_is_orphan_chain().await
+        let orphan_chain_detected = current_service.check_if_is_orphan_chain().await?;
+        self.orphan_chain_detected
+            .store(orphan_chain_detected, std::sync::atomic::Ordering::SeqCst);
+        Ok(orphan_chain_detected)
+    }
+
+    pub fn is_on_orphan_chain(&self) -> bool {
+        self.orphan_chain_detected
+            .load(std::sync::atomic::Ordering::SeqCst)
     }
 
     pub async fn list_connected_peers(&self) -> Result<Vec<String>, anyhow::Error> {
