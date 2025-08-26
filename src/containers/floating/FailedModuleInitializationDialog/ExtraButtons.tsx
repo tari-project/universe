@@ -11,7 +11,7 @@ export const GpuMiningModuleMissingPackagesButton = () => {
     const isGpuMiningMissingDependencies = externalDependencies.some(
         (dependency) =>
             dependency.required_by_app_modules.includes(AppModule.GpuMining) &&
-            dependency.status !== SystemDependencyStatus.NotInstalled
+            dependency.status === SystemDependencyStatus.NotInstalled
     );
     const handleOpenExternalDependenciesDialog = useCallback(() => {
         setShowExternalDependenciesDialog(true);
