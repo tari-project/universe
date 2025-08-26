@@ -33,7 +33,7 @@ use super::trait_config::{ConfigContentImpl, ConfigImpl};
 static INSTANCE: LazyLock<RwLock<ConfigMining>> =
     LazyLock::new(|| RwLock::new(ConfigMining::new()));
 
-pub const MINING_CONFIG_VERSION: i32 = 1;
+pub const MINING_CONFIG_VERSION: i32 = 3;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum MiningModeType {
@@ -224,6 +224,12 @@ impl ConfigMining {
         }
 
         let mut mining_modes = Self::content().await.mining_modes;
+
+        mining_modes
+            .entry("Eco".to_string())
+            .and_modify(|m| m.cpu_usage_percentage = 1)
+            .and_modify(|m| m.gpu_usage_percentage = 1);
+
         let turbo_exists = mining_modes.contains_key("Turbo");
 
         if !turbo_exists {
