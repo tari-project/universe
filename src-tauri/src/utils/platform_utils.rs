@@ -29,7 +29,7 @@ use crate::events_emitter::EventsEmitter;
 #[cfg(target_os = "macos")]
 use crate::tasks_tracker::TasksTrackers;
 
-#[cfg(not(target_os = "linux"))]
+#[allow(unused_imports)]
 use anyhow::anyhow;
 use std::fmt::Display;
 

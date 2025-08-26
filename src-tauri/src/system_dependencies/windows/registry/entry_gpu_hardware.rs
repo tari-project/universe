@@ -64,19 +64,19 @@ impl HardwareVendorIdentifier {
     pub fn from_string(s: String) -> Self {
         for identifier in HardwareVendorIdentifier::Nvidia.identifiers() {
             let extended_identifier = format!("VEN_{}", identifier);
-            if s.contains(extended_identifier) {
+            if s.contains(&extended_identifier) {
                 return HardwareVendorIdentifier::Nvidia;
             }
         }
         for identifier in HardwareVendorIdentifier::Amd.identifiers() {
             let extended_identifier = format!("VEN_{}", identifier);
-            if s.contains(extended_identifier) {
+            if s.contains(&extended_identifier) {
                 return HardwareVendorIdentifier::Amd;
             }
         }
         for identifier in HardwareVendorIdentifier::Intel.identifiers() {
             let extended_identifier = format!("VEN_{}", identifier);
-            if s.contains(extended_identifier) {
+            if s.contains(&extended_identifier) {
                 return HardwareVendorIdentifier::Intel;
             }
         }
@@ -95,7 +95,7 @@ impl WindowsRegistryReader for WindowsRegistryGpuResolver {
         let mut gpu_entries: Vec<WindowsRegistryGpuEntry> = Vec::new();
         for subkey_name in gpu_path.enum_keys() {
             if let Ok(subkey_name) = &subkey_name {
-                let entry_as_gpu = HardwareVendorIdentifier::from_string(subkey_name);
+                let entry_as_gpu = HardwareVendorIdentifier::from_string(subkey_name.clone());
                 match entry_as_gpu {
                     HardwareVendorIdentifier::Nvidia
                     | HardwareVendorIdentifier::Amd
@@ -132,7 +132,7 @@ impl WindowsRegistryReader for WindowsRegistryGpuResolver {
 
 impl WindowsRegistryRequirementChecker for WindowsRegistryGpuEntry {
     type Requirement = ();
-    fn check_requirements(&self, entry: &Self::Requirement) -> bool {
+    fn check_requirements(&self, _entry: &Self::Requirement) -> bool {
         true
     }
 }

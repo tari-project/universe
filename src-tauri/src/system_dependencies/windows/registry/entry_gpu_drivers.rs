@@ -68,7 +68,7 @@ impl WindowsRegistryReader for WindowsRegistryGpuDriverResolver {
                         provider_name,
                         driver_identifier: format!(
                             "{{4D36E968-E325-11CE-BFC1-08002BE10318}}\\{}",
-                            subkey_name?
+                            subkey_name
                         ),
                     });
                 }

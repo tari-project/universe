@@ -63,7 +63,7 @@ impl WindowsRegistryReader for WindowsRegistryCpuResolver {
 
 impl WindowsRegistryRequirementChecker for WindowsRegistryCpuEntry {
     type Requirement = ();
-    fn check_requirements(&self, entry: &Self::Requirement) -> bool {
+    fn check_requirements(&self, _entry: &Self::Requirement) -> bool {
         true
     }
 }

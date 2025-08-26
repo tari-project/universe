@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use anyhow::Error;
+use anyhow::{anyhow, Error};
 use log::info;
 use std::env::temp_dir;
 use std::os::windows::process::CommandExt;
@@ -155,7 +155,7 @@ impl WindowsDependenciesResolver {
                     let entries = WindowsRegistryKhronosSoftwareResolver::read_registry()?;
                     for entry in entries.iter() {
                         for check_value in dependency.check_values.iter() {
-                            if entry.check_requirements(check_value) {
+                            if entry.check_requirements(()) {
                                 dependency.universal_data.status =
                                     UniversalDependencyStatus::Installed;
                                 break;
@@ -166,12 +166,8 @@ impl WindowsDependenciesResolver {
                 WindowsRegistryRecordType::UninstallSoftware => {
                     let entries = WindowsRegistryUninstallSoftwareResolver::read_registry()?;
                     for entry in entries.iter() {
-                        for check_value in dependency.check_values.iter() {
-                            if entry.check_requirements(check_value) {
-                                dependency.universal_data.status =
-                                    UniversalDependencyStatus::Installed;
-                                break;
-                            }
+                        if entry.check_requirements(dependency.check_values) {
+                            dependency.universal_data.status = UniversalDependencyStatus::Installed;
                         }
                     }
                 }
