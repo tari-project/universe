@@ -1,3 +1,18 @@
+🚀 TARI UNIVERSE v1.5.12: The Season of Light — Part 7
+
+_August 25, 2025_
+
+✨ WHAT'S NEW
+
+- 🚀 **Auto-update Fix** – We've completely redesigned how auto-updates work to eliminate the race condition that was causing the app to freeze right before restarting.
+- ⚡ **Missing GPU crashes** – GPU miner files now only load when GPU detection is successful, preventing errors and improving startup reliability for all users. The app now gracefully handles systems without GPUs instead of crashing during startup.
+- 💳 **Failed tx signing fix** – Fixed an issue where failed transaction signing on spend wallets would lock funds on view wallets. Now if signing fails, the transaction gets properly cancelled to prevent locked UTXOs.
+- 🔧 **Wallet seed word fixes** – Seamless migration for wallet configurations when core address types change. Your existing wallet settings will automatically update to the new format without any action needed.
+- 🌐 **Tor crashes** – Prevented unnecessary Tor startup on remote nodes, improving connection speed and reliability for users on remote configurations.
+- ⬆️ **Core system upgrades** – Updated to Tari Core v5.0.0-pre.3 with improved stability and performance across all components.
+
+---
+
 🚀 TARI UNIVERSE v1.5.9: The Season of Light — Part 6½ Hotfix
 
 _August 14, 2025_
