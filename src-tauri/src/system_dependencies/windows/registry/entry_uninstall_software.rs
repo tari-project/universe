@@ -13,11 +13,12 @@ pub struct WindowsRegistryUninstallSoftwareEntry {
 pub struct WindowsRegistryUninstallSoftwareResolver {}
 
 impl WindowsRegistryReader for WindowsRegistryUninstallSoftwareResolver {
-    type Entry = WindowsRegistryUninstallSoftwareEntry;
+    type Entry = Vec<WindowsRegistryUninstallSoftwareEntry>;
 
     fn read_registry() -> Result<Self::Entry, anyhow::Error> {
         let hklm_key = RegKey::predef(Self::get_registry_root());
         let uninstall_path = hklm_key.open_subkey(Self::get_registry_path())?;
+        let mut uninstall_entries = Vec::new();
 
         for subkey_name in uninstall_path.enum_keys() {
             let subkey = uninstall_path.open_subkey(subkey_name?)?;
@@ -25,14 +26,18 @@ impl WindowsRegistryReader for WindowsRegistryUninstallSoftwareResolver {
             if !display_name.is_empty() {
                 let display_version: String =
                     subkey.get_value("DisplayVersion").unwrap_or_default();
-                return Ok(Self::Entry {
+                uninstall_entries.push(WindowsRegistryUninstallSoftwareEntry {
                     display_name,
                     display_version,
                 });
             }
         }
 
-        Err(anyhow::anyhow!("No uninstall software entries found"))
+        if uninstall_entries.is_empty() {
+            Err(anyhow::anyhow!("No uninstall software entries found"))
+        } else {
+            Ok(uninstall_entries)
+        }
     }
 
     fn get_registry_path() -> String {

@@ -1,4 +1,4 @@
-use winreg::{RegKey, HKEY};
+use winreg::{enums::HKEY_LOCAL_MACHINE, RegKey, HKEY};
 
 use crate::{
     hardware::hardware_status_monitor::HardwareVendor,

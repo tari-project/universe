@@ -28,6 +28,7 @@ use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 use tokio::sync::RwLock;
 
+use crate::requests::clients::http_file_client::HttpFileClient;
 use crate::system_dependencies::windows::dependencies::WindowsSystemDependency;
 use crate::system_dependencies::windows::registry::entry_cpu_hardware::WindowsRegistryCpuEntry;
 use crate::system_dependencies::windows::registry::entry_uninstall_software::WindowsRegistryUninstallSoftwareEntry;
@@ -130,7 +131,7 @@ impl WindowsDependenciesResolver {
         let dependencies = self.dependencies.read().await;
         Ok(dependencies
             .iter()
-            .map(|d| d.clone().universal_data)
+            .map(|d| d.clone().universal_data.clone())
             .collect())
     }
 
@@ -196,48 +197,20 @@ impl WindowsDependenciesResolver {
                 return Ok(());
             }
 
-            let url = &dependency.universal_data.ui_info.download_url;
-            if url.is_empty() {
-                return Err(anyhow!(
-                    "No download URL available for dependency '{}'.",
-                    dependency.universal_data.ui_info.display_name
-                ));
-            }
-
-            info!(
-                target: LOG_TARGET,
-                "Downloading and installing dependency '{}' from {}",
-                dependency.universal_data.ui_info.display_name,
-                url
-            );
-
-            let response = reqwest::get(url).await?;
-            if !response.status().is_success() {
-                return Err(anyhow!(
-                    "Failed to download dependency '{}'. HTTP Status: {}",
-                    dependency.universal_data.ui_info.display_name,
-                    response.status()
-                ));
-            }
-
-            let temp_dir = env::temp_dir();
+            let url = &dependency.universal_data.download_url;
             let file_name = url
                 .split('/')
                 .last()
                 .ok_or_else(|| anyhow!("Invalid download URL."))?;
-            let file_path = temp_dir.join(file_name);
-            let mut file = File::create(&file_path).await?;
-            let mut stream = response.bytes_stream();
-
-            while let Some(chunk) = stream.next().await {
-                let chunk = chunk?;
-                file.write_all(&chunk).await?;
-            }
-            file.flush().await?;
+            let destination = temp_dir.join(file_name);
+            HttpFileClient::builder()
+                .build(url, destination)?
+                .execute()
+                .await?;
 
             // Execute the installer
             use crate::consts::PROCESS_CREATION_NO_WINDOW;
-            let status = std::process::Command::new(&file_path)
+            let status = std::process::Command::new(&destination)
                 .creation_flags(PROCESS_CREATION_NO_WINDOW)
                 .arg("/quiet")
                 .arg("/norestart")

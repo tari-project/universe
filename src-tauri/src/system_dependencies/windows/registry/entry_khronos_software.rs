@@ -1,4 +1,4 @@
-use winreg::{RegKey, HKEY};
+use winreg::{enums::HKEY_LOCAL_MACHINE, RegKey, HKEY};
 
 use crate::system_dependencies::windows::registry::{
     WindowsRegistryReader, WindowsRegistryRequirementChecker,
@@ -9,19 +9,24 @@ pub struct WindowsRegistryKhronosSoftwareEntry {}
 pub struct WindowsRegistryKhronosSoftwareResolver {}
 
 impl WindowsRegistryReader for WindowsRegistryKhronosSoftwareResolver {
-    type Entry = WindowsRegistryKhronosSoftwareEntry;
+    type Entry = Vec<WindowsRegistryKhronosSoftwareEntry>;
 
     fn read_registry() -> Result<Self::Entry, anyhow::Error> {
         let hklm_key = RegKey::predef(Self::get_registry_root());
         let khronos_path = hklm_key.open_subkey(Self::get_registry_path())?;
+        let mut khronos_entries = Vec::new();
 
         for subkey_name in khronos_path.enum_keys() {
             if subkey_name?.to_lowercase().contains("opencl") {
-                return Ok(Self::Entry {});
+                khronos_entries.push(WindowsRegistryKhronosSoftwareEntry {});
             }
         }
 
-        Err(anyhow::anyhow!("No Khronos OpenCL software found"))
+        if khronos_entries.is_empty() {
+            Err(anyhow::anyhow!("No Khronos OpenCL software found"))
+        } else {
+            Ok(khronos_entries)
+        }
     }
 
     fn get_registry_path() -> String {

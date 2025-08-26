@@ -1,4 +1,4 @@
-use winreg::{RegKey, HKEY};
+use winreg::{enums::HKEY_LOCAL_MACHINE, RegKey, HKEY};
 
 use crate::{
     hardware::hardware_status_monitor::HardwareVendor,
@@ -24,7 +24,7 @@ impl WindowsRegistryGpuDriverEntry {
 pub struct WindowsRegistryGpuDriverResolver {}
 
 impl WindowsRegistryReader for WindowsRegistryGpuDriverResolver {
-    type Entry = WindowsRegistryGpuDriverEntry;
+    type Entry = Vec<WindowsRegistryGpuDriverEntry>;
 
     fn read_registry() -> Result<Self::Entry, anyhow::Error> {
         let hklm_key = RegKey::predef(Self::get_registry_root());
@@ -37,7 +37,7 @@ impl WindowsRegistryReader for WindowsRegistryGpuDriverResolver {
             if !driver_desc.is_empty() {
                 let driver_version: String = subkey.get_value("DriverVersion").unwrap_or_default();
                 let provider_name: String = subkey.get_value("ProviderName").unwrap_or_default();
-                gpu_driver_entries.push(Self::Entry {
+                gpu_driver_entries.push(WindowsRegistryGpuDriverEntry {
                     driver_desc,
                     driver_version,
                     provider_name,
@@ -60,7 +60,7 @@ impl WindowsRegistryReader for WindowsRegistryGpuDriverResolver {
             .to_string()
     }
     fn get_registry_root() -> HKEY {
-        HKEY::HKEY_LOCAL_MACHINE
+        HKEY_LOCAL_MACHINE
     }
 }
 
