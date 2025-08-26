@@ -107,22 +107,20 @@ impl WindowsRegistryReader for WindowsRegistryGpuResolver {
                         for gpu_record in gpu_path.open_subkey(vendor_record)?.enum_keys() {
                             if let Ok(gpu_record) = &gpu_record {
                                 let gpu_record_data = gpu_path.open_subkey(gpu_record)?;
-                                if let Ok(gpu_record_data) = gpu_record_data {
-                                    let device_desc: Result<String, std::io::Error> =
-                                        gpu_record_data.get_value("DeviceDesc");
-                                    let driver: Result<String, std::io::Error> =
-                                        gpu_record_data.get_value("Driver");
-                                    let mfg: Result<String, std::io::Error> =
-                                        gpu_record_data.get_value("Mfg");
-                                    if let (Ok(device_desc), Ok(driver), Ok(mfg)) =
-                                        (device_desc, driver, mfg)
-                                    {
-                                        gpu_entries.push(WindowsRegistryGpuEntry {
-                                            device_desc,
-                                            driver,
-                                            mfg,
-                                        });
-                                    }
+                                let device_desc: Result<String, std::io::Error> =
+                                    gpu_record_data.get_value("DeviceDesc");
+                                let driver: Result<String, std::io::Error> =
+                                    gpu_record_data.get_value("Driver");
+                                let mfg: Result<String, std::io::Error> =
+                                    gpu_record_data.get_value("Mfg");
+                                if let (Ok(device_desc), Ok(driver), Ok(mfg)) =
+                                    (device_desc, driver, mfg)
+                                {
+                                    gpu_entries.push(WindowsRegistryGpuEntry {
+                                        device_desc,
+                                        driver,
+                                        mfg,
+                                    });
                                 }
                             }
                         }
