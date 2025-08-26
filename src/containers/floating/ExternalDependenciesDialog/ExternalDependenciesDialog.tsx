@@ -11,6 +11,8 @@ import { ExternalDependencyCard } from './ExternalDependencyCard';
 import { useTranslation } from 'react-i18next';
 import { SystemDependencyStatus } from '@app/types/app-status';
 import { setShowExternalDependenciesDialog } from '@app/store';
+import CloseButton from '@app/components/elements/buttons/CloseButton';
+import { IoCloseOutline } from 'react-icons/io5';
 
 const ExternalDependenciesDialog = memo(function ExternalDependenciesDialog() {
     const { t } = useTranslation('external-dependency-dialog', { useSuspense: false });
@@ -49,6 +51,11 @@ const ExternalDependenciesDialog = memo(function ExternalDependenciesDialog() {
     return (
         <Dialog open={showExternalDependenciesDialog} onOpenChange={handleClose}>
             <DialogContent>
+                {isClosable && (
+                    <CloseButton onClick={handleClose}>
+                        <IoCloseOutline size={16} />
+                    </CloseButton>
+                )}
                 <Stack gap={16}>
                     <Stack gap={4}>
                         <Typography variant="h4">{t('title')}</Typography>
