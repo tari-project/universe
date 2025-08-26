@@ -67,7 +67,11 @@ export function List({ setIsScrolled, targetRef }: ListProps) {
     const listMarkup = (
         <ListItemWrapper>
             {transactions?.map((tx, i) => {
-                const itemKey = `ListItem_${tx.bridgeTransactionDetails?.transactionHash || tx.walletTransactionDetails?.txId}`;
+                const txId = tx.walletTransactionDetails?.txId || tx.paymentId;
+                const hash = tx.bridgeTransactionDetails?.transactionHash;
+                const hasNoId = !txId && !hash?.length;
+
+                const itemKey = `ListItem_${txId}-${hash}-${hasNoId ? i : ''}`;
                 return (
                     <HistoryListItem
                         key={itemKey}
