@@ -104,22 +104,30 @@ impl WindowsRegistryReader for WindowsRegistryGpuResolver {
                     HardwareVendorIdentifier::Nvidia
                     | HardwareVendorIdentifier::Amd
                     | HardwareVendorIdentifier::Intel => {
-                        for gpu_record in gpu_path.open_subkey(vendor_record)?.enum_keys() {
+                        let vendor_record_key = gpu_path.open_subkey(vendor_record)?;
+                        for gpu_record in vendor_record_key.enum_keys() {
                             if let Ok(gpu_record) = &gpu_record {
                                 // Some keys may not open, so we just skip them
-                                let gpu_record_data = match gpu_path.open_subkey(gpu_record) {
-                                    Err(_) => continue,
-                                    Ok(gpu_record_data) => gpu_record_data,
-                                };
+                                let gpu_record_data =
+                                    match vendor_record_key.open_subkey(gpu_record) {
+                                        Err(_) => continue,
+                                        Ok(gpu_record_data) => gpu_record_data,
+                                    };
                                 let device_desc: Result<String, std::io::Error> =
                                     gpu_record_data.get_value("DeviceDesc");
                                 let driver: Result<String, std::io::Error> =
                                     gpu_record_data.get_value("Driver");
                                 let mfg: Result<String, std::io::Error> =
                                     gpu_record_data.get_value("Mfg");
-                                if let (Ok(device_desc), Ok(driver), Ok(mfg)) =
-                                    (device_desc, driver, mfg)
+                                let class_guid: Result<String, std::io::Error> =
+                                    gpu_record_data.get_value("ClassGUID");
+                                if let (Ok(device_desc), Ok(driver), Ok(mfg), Ok(class_guid)) =
+                                    (device_desc, driver, mfg, class_guid)
                                 {
+                                    // We are only interested in display adapters
+                                    if class_guid != "{4d36e968-e325-11ce-bfc1-08002be10318}" {
+                                        continue;
+                                    }
                                     gpu_entries.push(WindowsRegistryGpuEntry {
                                         device_desc,
                                         driver,
