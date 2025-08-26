@@ -1,4 +1,3 @@
-'use client';
 import { useCallback, useMemo, useState } from 'react';
 import ArrowDown from './icons/ArrowDown';
 import {
@@ -18,6 +17,7 @@ import { AnimatePresence } from 'motion/react';
 import SelectedIcon from './icons/SelectedIcon';
 import ecoIcon from './images/eco.png';
 import ludicIcon from './images/ludicrous.png';
+import turboIcon from '@app/assets/icons/emoji/tornado.png';
 import customIcon from '@app/assets/icons/emoji/custom.png';
 import { offset, useClick, useDismiss, useFloating, useInteractions, FloatingFocusManager } from '@floating-ui/react';
 import { useTranslation } from 'react-i18next';
@@ -26,7 +26,6 @@ import { setDialogToShow } from '@app/store/actions/uiStoreActions';
 import { setCustomLevelsDialogOpen } from '@app/store/actions/miningStoreActions';
 import { MiningModeType } from '@app/types/configs';
 import { selectMiningMode } from '@app/store/actions/appConfigStoreActions';
-
 interface Props {
     disabled?: boolean;
     loading?: boolean;
@@ -42,6 +41,8 @@ const getModeIcon = (mode: MiningModeType) => {
     switch (mode) {
         case MiningModeType.Eco:
             return ecoIcon;
+        case MiningModeType.Turbo:
+            return turboIcon;
         case MiningModeType.Ludicrous:
             return ludicIcon;
         case MiningModeType.Custom:
@@ -57,6 +58,7 @@ export default function ModeDropdown({ disabled, loading }: Props) {
     const { t } = useTranslation('mining-view');
     const selectedMiningMode = useConfigMiningStore((s) => s.getSelectedMiningMode());
     const miningModes = useConfigMiningStore((s) => s.mining_modes);
+    console.debug(`miningModes= `, miningModes);
     const [isOpen, setIsOpen] = useState(false);
 
     const { refs, floatingStyles, context } = useFloating({

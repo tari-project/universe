@@ -21,11 +21,10 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::gpu_miner::EngineType;
-use std::{collections::HashMap, sync::LazyLock, time::SystemTime};
-
 use getset::{Getters, Setters};
-use log::warn;
+use log::{info, warn};
 use serde::{Deserialize, Serialize};
+use std::{collections::HashMap, sync::LazyLock, time::SystemTime};
 use tauri::AppHandle;
 use tokio::sync::RwLock;
 
@@ -34,9 +33,12 @@ use super::trait_config::{ConfigContentImpl, ConfigImpl};
 static INSTANCE: LazyLock<RwLock<ConfigMining>> =
     LazyLock::new(|| RwLock::new(ConfigMining::new()));
 
+pub const MINING_CONFIG_VERSION: i32 = 1;
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum MiningModeType {
     Eco,
+    Turbo,
     Ludicrous,
     Custom,
     User,
@@ -89,11 +91,13 @@ pub struct ConfigMiningContent {
     gpu_engine: EngineType,
     gpu_devices_settings: GpuDevicesSettings,
     squad_override: Option<String>,
+    version: i32,
 }
 
 impl Default for ConfigMiningContent {
     fn default() -> Self {
         Self {
+            version: 0,
             was_config_migrated: false,
             created_at: SystemTime::now(),
             selected_mining_mode: "Eco".to_string(),
@@ -104,6 +108,15 @@ impl Default for ConfigMiningContent {
                     MiningMode {
                         mode_type: MiningModeType::Eco,
                         mode_name: "Eco".to_string(),
+                        cpu_usage_percentage: 1,
+                        gpu_usage_percentage: 1,
+                    },
+                ),
+                (
+                    "Turbo".to_string(),
+                    MiningMode {
+                        mode_type: MiningModeType::Turbo,
+                        mode_name: "Turbo".to_string(),
                         cpu_usage_percentage: 10,
                         gpu_usage_percentage: 10,
                     },
@@ -113,8 +126,8 @@ impl Default for ConfigMiningContent {
                     MiningMode {
                         mode_type: MiningModeType::Ludicrous,
                         mode_name: "Ludicrous".to_string(),
-                        cpu_usage_percentage: 80,
-                        gpu_usage_percentage: 90,
+                        cpu_usage_percentage: 85,
+                        gpu_usage_percentage: 95,
                     },
                 ),
                 (
@@ -191,7 +204,6 @@ impl ConfigMiningContent {
         }
     }
 }
-
 pub struct ConfigMining {
     content: ConfigMiningContent,
     app_handle: RwLock<Option<AppHandle>>,
@@ -202,14 +214,39 @@ impl ConfigMining {
         let mut config = Self::current().write().await;
         config.load_app_handle(app_handle.clone()).await;
     }
+
+    pub async fn migrate() -> Result<(), anyhow::Error> {
+        let current_version = Self::content().await.version;
+
+        if current_version < MINING_CONFIG_VERSION {
+            info!("Mining config needs migration v{current_version:?} => v{MINING_CONFIG_VERSION}");
+            Self::update_field(ConfigMiningContent::set_version, MINING_CONFIG_VERSION).await?;
+        }
+
+        let mut mining_modes = Self::content().await.mining_modes;
+        let turbo_exists = mining_modes.contains_key("Turbo");
+
+        if !turbo_exists {
+            info!("Mining mode 'Turbo' not found");
+
+            let turbo = MiningMode {
+                mode_type: MiningModeType::Turbo,
+                mode_name: "Turbo".to_string(),
+                cpu_usage_percentage: 10,
+                gpu_usage_percentage: 10,
+            };
+
+            mining_modes.insert("Turbo".to_string(), turbo.clone());
+
+            Self::update_field(ConfigMiningContent::set_mining_modes, mining_modes).await?
+        }
+
+        Ok(())
+    }
 }
 
 impl ConfigImpl for ConfigMining {
     type Config = ConfigMiningContent;
-
-    fn current() -> &'static RwLock<Self> {
-        &INSTANCE
-    }
 
     fn new() -> Self {
         Self {
@@ -218,12 +255,12 @@ impl ConfigImpl for ConfigMining {
         }
     }
 
-    async fn _get_app_handle(&self) -> Option<AppHandle> {
-        self.app_handle.read().await.clone()
+    fn current() -> &'static RwLock<Self> {
+        &INSTANCE
     }
 
-    async fn load_app_handle(&mut self, app_handle: AppHandle) {
-        *self.app_handle.write().await = Some(app_handle);
+    async fn _get_app_handle(&self) -> Option<AppHandle> {
+        self.app_handle.read().await.clone()
     }
 
     fn _get_name() -> String {
@@ -236,5 +273,9 @@ impl ConfigImpl for ConfigMining {
 
     fn _get_content_mut(&mut self) -> &mut Self::Config {
         &mut self.content
+    }
+
+    async fn load_app_handle(&mut self, app_handle: AppHandle) {
+        *self.app_handle.write().await = Some(app_handle);
     }
 }

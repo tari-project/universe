@@ -264,6 +264,9 @@ impl SetupManager {
         ConfigMining::initialize(app_handle.clone()).await;
         ConfigUI::initialize(app_handle.clone()).await;
         ConfigPools::initialize(app_handle.clone()).await;
+        ConfigMining::migrate()
+            .await
+            .expect("Mining config migration failed");
 
         let node_type = ConfigCore::content().await.node_type().clone();
         info!(target: LOG_TARGET, "Retrieved initial node type: {node_type:?}");

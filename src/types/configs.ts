@@ -67,8 +67,9 @@ export interface GpuDeviceSettings {
 
 export enum MiningModeType {
     Eco = 'Eco',
-    Custom = 'Custom',
+    Turbo = 'Turbo',
     Ludicrous = 'Ludicrous',
+    Custom = 'Custom',
     User = 'User',
 }
 
