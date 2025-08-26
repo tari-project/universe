@@ -30,7 +30,7 @@ const ExternalDependenciesDialog = memo(function ExternalDependenciesDialog() {
     return (
         <Dialog open={showExternalDependenciesDialog}>
             <DialogContent>
-                <Stack gap={16}>
+                <Stack gap={16} style={{ padding: 10 }}>
                     <Stack gap={4}>
                         <Typography variant="h4">{t('title')}</Typography>
                         <Typography variant="p">{t('description')}</Typography>
