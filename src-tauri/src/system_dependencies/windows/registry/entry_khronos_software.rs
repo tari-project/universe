@@ -1,3 +1,5 @@
+use winreg::{RegKey, HKEY};
+
 use crate::system_dependencies::windows::registry::{
     WindowsRegistryReader, WindowsRegistryRequirementChecker,
 };

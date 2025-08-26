@@ -1,4 +1,4 @@
-use winreg::RegKey;
+use winreg::{RegKey, HKEY};
 
 #[derive(Clone)]
 pub struct WindowsRegistryGpuEntry {

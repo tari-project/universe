@@ -23,33 +23,24 @@
 use anyhow::{anyhow, Error};
 use futures_util::StreamExt;
 use log::info;
-use serde::{Deserialize, Serialize};
-use std::sync::LazyLock;
 use std::{env, os::windows::process::CommandExt};
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 use tokio::sync::RwLock;
-use winreg::enums::HKEY_LOCAL_MACHINE;
-use winreg::RegKey;
 
+use crate::system_dependencies::windows::dependencies::WindowsSystemDependency;
+use crate::system_dependencies::windows::registry::entry_uninstall_software::WindowsRegistryUninstallSoftwareEntry;
+use crate::system_dependencies::UniversalDependencyStatus;
 use crate::{
     hardware::hardware_status_monitor::HardwareVendor,
     system_dependencies::{
-        windows::{
-            dependencies::{
-                CollectedWindowsRegistryRecords, DependencyStatus, Manufacturer,
-                WindowsDependencyManufacturerUIInfo, WindowsRegistryCpuEntry,
-                WindowsRegistryGpuDriverEntry, WindowsRegistryKhronosSoftware,
-                WindowsSystemDependency,
-            },
-            registry::{
-                entry_cpu_hardware::WindowsRegistryCpuResolver,
-                entry_gpu_drivers::WindowsRegistryGpuDriverResolver,
-                entry_gpu_hardware::{WindowsRegistryGpuEntry, WindowsRegistryGpuResolver},
-                entry_khronos_software::WindowsRegistryKhronosSoftwareResolver,
-                entry_uninstall_software::WindowsRegistryUninstallSoftwareResolver,
-                WindowsRegistryReader, WindowsRegistryRecordType,
-            },
+        windows::registry::{
+            entry_cpu_hardware::WindowsRegistryCpuResolver,
+            entry_gpu_drivers::WindowsRegistryGpuDriverResolver,
+            entry_gpu_hardware::{WindowsRegistryGpuEntry, WindowsRegistryGpuResolver},
+            entry_khronos_software::WindowsRegistryKhronosSoftwareResolver,
+            entry_uninstall_software::WindowsRegistryUninstallSoftwareResolver,
+            WindowsRegistryReader, WindowsRegistryRecordType,
         },
         UniversalSystemDependency,
     },
@@ -98,10 +89,10 @@ impl WindowsDependenciesResolver {
                 gpu.get_vendor(),
                 gpu.device_desc.clone(),
             );
-            if !dependencies
-                .iter()
-                .any(|d| d.ui_info.display_name == dependency.ui_info.display_name)
-            {
+            if !dependencies.iter().any(|d| {
+                d.universal_data.ui_info.display_name
+                    == dependency.universal_data.ui_info.display_name
+            }) {
                 dependencies.push(dependency);
             }
         }
@@ -117,10 +108,10 @@ impl WindowsDependenciesResolver {
             if vendor == HardwareVendor::Intel {
                 let dependency = WindowsSystemDependency::define_khronos_opencl_dependency();
                 let mut dependencies = self.dependencies.write().await;
-                if !dependencies
-                    .iter()
-                    .any(|d| d.ui_info.display_name == dependency.ui_info.display_name)
-                {
+                if !dependencies.iter().any(|d| {
+                    d.universal_data.ui_info.display_name
+                        == dependency.universal_data.ui_info.display_name
+                }) {
                     dependencies.push(dependency);
                 }
                 Ok(())
@@ -130,9 +121,10 @@ impl WindowsDependenciesResolver {
                 ));
             }
         }
+        Ok(())
     }
 
-    pub async fn get_universal_dependencies(&self) -> Vec<WindowsSystemDependency> {
+    pub async fn get_universal_dependencies(&self) -> Vec<UniversalSystemDependency> {
         let dependencies = self.dependencies.read().await;
         dependencies
             .iter()
@@ -151,7 +143,7 @@ impl WindowsDependenciesResolver {
                     for entry in entries.iter() {
                         for check_value in dependency.check_values.iter() {
                             if entry.check_requirements(check_value) {
-                                dependency.status = DependencyStatus::Installed;
+                                dependency.status = UniversalDependencyStatus::Installed;
                                 break;
                             }
                         }
@@ -162,18 +154,18 @@ impl WindowsDependenciesResolver {
                     for entry in entries.iter() {
                         for check_value in dependency.check_values.iter() {
                             if entry.check_requirements(check_value) {
-                                dependency.status = DependencyStatus::Installed;
+                                dependency.status = UniversalDependencyStatus::Installed;
                                 break;
                             }
                         }
                     }
                 }
                 WindowsRegistryRecordType::UninstallSoftware => {
-                    let entries: super::registry::entry_uninstall_software::WindowsRegistryUninstallSoftwareEntry = WindowsRegistryUninstallSoftwareResolver::read_registry()?;
+                    let entries = WindowsRegistryUninstallSoftwareResolver::read_registry()?;
                     for entry in entries.iter() {
                         for check_value in dependency.check_values.iter() {
                             if entry.check_requirements(check_value) {
-                                dependency.status = DependencyStatus::Installed;
+                                dependency.status = UniversalDependencyStatus::Installed;
                                 break;
                             }
                         }
@@ -191,26 +183,26 @@ impl WindowsDependenciesResolver {
     pub async fn download_and_install_missing_dependencies(&self, id: String) -> Result<(), Error> {
         let dependencies = self.dependencies.read().await;
         if let Some(dependency) = dependencies.iter().find(|d| d.universal_data.id == id) {
-            if dependency.status == DependencyStatus::Installed {
+            if dependency.universal_data.status == UniversalDependencyStatus::Installed {
                 info!(
                     target: LOG_TARGET,
-                    "Dependency '{}' is already installed.", dependency.ui_info.display_name
+                    "Dependency '{}' is already installed.", dependency.universal_data.ui_info.display_name
                 );
                 return Ok(());
             }
 
-            let url = &dependency.ui_info.download_url;
+            let url = &dependency.universal_data.ui_info.download_url;
             if url.is_empty() {
                 return Err(anyhow!(
                     "No download URL available for dependency '{}'.",
-                    dependency.ui_info.display_name
+                    dependency.universal_data.ui_info.display_name
                 ));
             }
 
             info!(
                 target: LOG_TARGET,
                 "Downloading and installing dependency '{}' from {}",
-                dependency.ui_info.display_name,
+                dependency.universal_data.ui_info.display_name,
                 url
             );
 
@@ -218,7 +210,7 @@ impl WindowsDependenciesResolver {
             if !response.status().is_success() {
                 return Err(anyhow!(
                     "Failed to download dependency '{}'. HTTP Status: {}",
-                    dependency.ui_info.display_name,
+                    dependency.universal_data.ui_info.display_name,
                     response.status()
                 ));
             }
@@ -249,14 +241,14 @@ impl WindowsDependenciesResolver {
             if !status.success() {
                 return Err(anyhow!(
                     "Installation of dependency '{}' failed.",
-                    dependency.ui_info.display_name
+                    dependency.universal_data.ui_info.display_name
                 ));
             }
 
             info!(
                 target: LOG_TARGET,
                 "Dependency '{}' installed successfully.",
-                dependency.ui_info.display_name
+                dependency.universal_data.ui_info.display_name
             );
         } else {
             return Err(anyhow!("Dependency with ID '{}' not found.", id));
