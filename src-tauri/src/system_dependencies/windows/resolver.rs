@@ -195,7 +195,7 @@ impl WindowsDependenciesResolver {
         }
         Ok(dependencies
             .iter()
-            .map(|d| d.clone().universal_data.clone())
+            .map(|d| d.universal_data.clone())
             .collect())
     }
 
