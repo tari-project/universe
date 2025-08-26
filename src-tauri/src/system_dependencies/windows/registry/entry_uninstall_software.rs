@@ -74,6 +74,13 @@ impl WindowsRegistryReader for WindowsRegistryUninstallSoftwareResolver {
 impl WindowsRegistryRequirementChecker for WindowsRegistryUninstallSoftwareEntry {
     type Requirement = Vec<String>;
     fn check_requirements(&self, entry: &Self::Requirement) -> bool {
-        entry.iter().any(|name| self.display_name.contains(name))
+        let sanitized_entry: Vec<String> = entry
+            .iter()
+            .map(|name| name.to_lowercase().trim().to_string())
+            .collect();
+        let sanitized_display_name = self.display_name.to_lowercase().trim().to_string();
+        sanitized_entry
+            .iter()
+            .any(|name| sanitized_display_name.contains(name))
     }
 }

@@ -93,6 +93,8 @@ impl WindowsRegistryReader for WindowsRegistryGpuDriverResolver {
 impl WindowsRegistryRequirementChecker for WindowsRegistryGpuDriverEntry {
     type Requirement = String;
     fn check_requirements(&self, entry: &Self::Requirement) -> bool {
-        self.driver_identifier == *entry
+        let sanitized_entry = entry.to_lowercase().trim().to_string();
+        let sanitized_driver_identifier = self.driver_identifier.to_lowercase().trim().to_string();
+        sanitized_driver_identifier == sanitized_entry
     }
 }
