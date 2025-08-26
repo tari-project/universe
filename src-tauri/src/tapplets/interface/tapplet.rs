@@ -24,6 +24,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct ActiveTapplet {
     pub tapplet_id: i32,
+    pub package_name: String,
     pub display_name: String,
     pub source: String,
     pub version: String,

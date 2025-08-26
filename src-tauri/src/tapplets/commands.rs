@@ -29,10 +29,12 @@ use crate::database::models::{
     UpdateDevTapplet, UpdateInstalledTapplet,
 };
 
+use crate::database::schema::dev_tapplet;
 use crate::database::store::{DatabaseConnection, SqliteStore, Store};
 use crate::tapplets::error::Error;
 use crate::tapplets::interface::{
-    ActiveTapplet, AssetServer, InstalledTappletWithAssets, InstalledTappletWithName, TappletAssets,
+    ActiveTapplet, AssetServer, InstalledTappletWithAssets, InstalledTappletWithName,
+    RegisteredTapplets, TappletAssets,
 };
 use crate::tapplets::tapplet_installer::{
     check_files_and_validate_checksum, delete_tapplet, download_asset,
@@ -102,6 +104,7 @@ pub async fn start_tari_tapplet_binary(
     // TODO
     Ok(ActiveTapplet {
         tapplet_id: 1000,
+        package_name: binary_name.to_string(), //TODO,
         display_name: binary_name.to_string(),
         source: format!("http://{addr}"),
         version: "0.1.0".to_string(), //TODO
@@ -157,6 +160,7 @@ pub async fn start_dev_tapplet(
     info!(target: LOG_TARGET, "🎉🎉🎉 IS RUNNING: {:?} at address {:?}", is_running, addr);
     Ok(ActiveTapplet {
         tapplet_id: dev_tapplet_id,
+        package_name: dev_tapplet.package_name,
         display_name: dev_tapplet.display_name,
         source: format!("http://{addr}"),
         version: "0.1.0".to_string(), //TODO
@@ -176,6 +180,17 @@ pub async fn start_tapplet(
         .get_by_id(tapplet_id)
         .map_err(|e| InvokeError::from_error(e))?;
     let tapplet_path = PathBuf::from(&installed_tapp.source);
+
+    let (tapp, tapp_version) = match tapplet_store.get_registered_tapplet_with_version(
+        installed_tapp
+            .tapplet_id
+            .expect("tapplet_id should not be empty"),
+    ) {
+        Ok((tapp, tapp_version)) => (tapp, tapp_version),
+        Err(e) => {
+            return Err(InvokeError::from_error(e));
+        }
+    };
 
     let result = TappletManager::check_permissions_config(
         &installed_tapp.source,
@@ -210,9 +225,10 @@ pub async fn start_tapplet(
     info!(target: LOG_TARGET, "🎉🎉🎉 IS RUNNING: {:?} at address {:?}", is_running, addr);
     Ok(ActiveTapplet {
         tapplet_id: tapplet_id,
-        display_name: "display_name".to_string(), //TODO,
+        package_name: tapp.tapp_registry_id,
+        display_name: tapp.display_name,
         source: format!("http://{addr}"),
-        version: "0.1.0".to_string(), //TODO
+        version: tapp_version.version,
     })
 }
 

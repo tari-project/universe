@@ -3,7 +3,7 @@ import { useTappletSignerStore } from '@app/store/useTappletSignerStore';
 import { TappletContainer } from '@app/containers/main/Dashboard/MiningView/MiningView.styles';
 import { open } from '@tauri-apps/plugin-shell';
 import { useConfigUIStore, useUIStore, setError as setStoreError } from '@app/store';
-import { MessageType, useIframeMessage } from '@app/hooks/swap/useIframeMessage';
+import { IframeMessage, MessageType, useIframeMessage } from '@app/hooks/swap/useIframeMessage';
 import { invoke } from '@tauri-apps/api/core';
 import React from 'react';
 import { useTappletsStore } from '@app/store/useTappletsStore';
@@ -11,63 +11,33 @@ import { RunningTapplet } from '@app/types/tapplets/tapplet.types';
 
 interface TappletProps {
     tapplet: RunningTapplet;
+    iframeRefs: React.RefObject<Record<number, HTMLIFrameElement | null>>;
 }
 
-export const Tapplet = forwardRef<HTMLIFrameElement, TappletProps>(({ tapplet }, ref) => {
+export const Tapplet = forwardRef<HTMLIFrameElement, TappletProps>(({ tapplet, iframeRefs }, forwardedRef) => {
     const tappletRef = useRef<HTMLIFrameElement | null>(null);
-    const iframeRef = (ref as React.RefObject<HTMLIFrameElement | null>) || tappletRef;
+    // const iframeRef = (ref as React.RefObject<HTMLIFrameElement | null>) || tappletRef;
+    // Use a callback ref to assign both forwardedRef and local tappletRef
+    const setRefs = useCallback(
+        (node: HTMLIFrameElement | null) => {
+            tappletRef.current = node;
+
+            if (typeof forwardedRef === 'function') {
+                forwardedRef(node);
+            } else if (forwardedRef) {
+                forwardedRef.current = node;
+            }
+        },
+        [forwardedRef]
+    );
+
+    console.warn('REFS', tapplet.display_name, tappletRef);
     const tappSigner = useTappletSignerStore((s) => s.tappletSigner);
     const runTransaction = useTappletSignerStore((s) => s.runTransaction);
     const language = useConfigUIStore((s) => s.application_language);
     const theme = useUIStore((s) => s.theme);
     const activeTapplet = useTappletsStore((s) => s.activeTapplet);
     const disabled = tapplet.tapplet_id !== activeTapplet?.tapplet_id;
-
-    // const trustedOrigin = (() => {
-    //     try {
-    //         const originSource = new URL(tapplet.source).origin;
-    //         console.info('🗫🗫🗫 SOURCE ORIGIN', originSource);
-    //         return originSource;
-    //     } catch {
-    //         return '';
-    //     }
-    // })();
-
-    // Listen for messages from the parent relay targeted to this tapplet
-    // useEffect(() => {
-    //     function onMessage(event: MessageEvent) {
-    //         // Check origin matches trustedOrigin (sender is parent window)
-    //         if (event.origin !== trustedOrigin) return;
-
-    //         const { fromTappletId, payload } = event.data || {};
-
-    //         // Check that message is from a known tapplet id (eg. 1 if this is 3)
-    //         if (typeof fromTappletId !== 'number') return;
-
-    //         // Only accept messages from allowed tapplet origins (implement your logic here)
-    //         // For example, allow only from tappletId = 1 if this is 3
-    //         // const allowedOrigins: Record<number, string> = {
-    //         //     1: 'http://localhost:3001', // A's known origin
-    //         //     3: 'http://localhost:3003', // B's origin - adjust accordingly
-    //         // };
-
-    //         // if (!(fromTappletId in allowedOrigins)) {
-    //         //     console.error('origin not allowed: unknown fromTappletId', fromTappletId);
-    //         //     return;
-    //         // }
-
-    //         // if (trustedOrigin !== allowedOrigins[fromTappletId]) {
-    //         //     console.error('origin not allowed: mismatched origin for fromTappletId', fromTappletId);
-    //         //     return;
-    //         // }
-
-    //         // Log the message received from allowed origin
-    //         console.info(`[Tapplet ${tapplet.tapplet_id}] message from tapplet ${fromTappletId}:`, payload);
-    //     }
-
-    //     window.addEventListener('message', onMessage);
-    //     return () => window.removeEventListener('message', onMessage);
-    // }, [trustedOrigin, tapplet]);
 
     const sendWindowSize = useCallback(() => {
         if (tappletRef.current) {
@@ -115,6 +85,39 @@ export const Tapplet = forwardRef<HTMLIFrameElement, TappletProps>(({ tapplet },
             tappletRef.current.contentWindow?.postMessage({ type: MessageType.SET_THEME, payload: { theme } }, '*');
         }
     }, [theme]);
+
+    const sendInterTappResponse = useCallback(
+        (event: MessageEvent<IframeMessage>, targetTappletId: string) => {
+            const targetIframe = Object.values(iframeRefs.current || {}).find(
+                (iframe) => iframe?.getAttribute('src') === event.origin
+            );
+
+            if (!targetIframe?.contentWindow) {
+                return;
+            }
+
+            try {
+                const message = {
+                    type: MessageType.INTER_TAPPLET,
+                    payload: {
+                        sourceTappletRegistryId: tapplet.package_name,
+                        targetTappletRegistryId: targetTappletId,
+                        msg: 'RESPONSE MESSAGE', // TODO Forward the original message
+                    },
+                };
+
+                targetIframe.contentWindow.postMessage(message, targetIframe.src);
+                console.info('📝 [TAPPLET] Message sent:', {
+                    from: tapplet.package_name,
+                    to: targetTappletId,
+                    message,
+                });
+            } catch (error) {
+                console.error('📝 [TAPPLET] Failed to send message:', error);
+            }
+        },
+        [tapplet.package_name, iframeRefs]
+    );
 
     const emitNotification = useCallback(async (msg: string) => {
         try {
@@ -166,12 +169,22 @@ export const Tapplet = forwardRef<HTMLIFrameElement, TappletProps>(({ tapplet },
                 setStoreError(`${event.data.payload.message}`, true);
                 break;
             case MessageType.INTER_TAPPLET: {
-                console.info('[TAPPLET] handle iframe msg INTER TAPP:', event.data.type);
+                console.info(
+                    '🗫[TAPPLET] handle iframe msg INTER TAPP with msg:',
+                    event.data.type,
+                    event.data.payload.msg
+                );
                 const { targetTappletRegistryId, sourceTappletRegistryId } = event.data.payload;
-                console.info('[TAPPLET] id', tapplet.tapplet_id, targetTappletRegistryId);
+                console.info(
+                    '🗫 [TAPPLET] id (this, source, target)',
+                    tapplet.tapplet_id,
+                    sourceTappletRegistryId,
+                    targetTappletRegistryId
+                );
 
                 // Process only messages targeted to this tapplet
                 //TODO get currect tapplet registry
+                console.info('[TAPPLET] ', tapplet);
                 if (targetTappletRegistryId !== tapplet.package_name) return;
                 //TODO TEMP CHECK
                 if (tapplet.allowReceiveFrom && !tapplet.allowReceiveFrom.includes(sourceTappletRegistryId)) {
@@ -182,7 +195,13 @@ export const Tapplet = forwardRef<HTMLIFrameElement, TappletProps>(({ tapplet },
                 }
                 console.info('🏝️🏝️🏝️ [TAPPLET] tapplet current', tapplet.package_name);
                 console.info('🏝️🏝️🏝️ [TAPPLET] iframeRef', tappletRef.current);
-                console.info('🏝️🏝️🏝️ [TAPPLET] handle INTER_TAPPLET:', event.data.payload.msg);
+                if (tapplet.allowSendTo && !tapplet.allowSendTo.includes(sourceTappletRegistryId)) {
+                    console.error(
+                        `[Tapplet ${tapplet.display_name}] Disallowed receiver tapplet ${sourceTappletRegistryId}`
+                    );
+                    return;
+                }
+                sendInterTappResponse(event, sourceTappletRegistryId);
                 break;
             }
             default:
@@ -207,17 +226,40 @@ export const Tapplet = forwardRef<HTMLIFrameElement, TappletProps>(({ tapplet },
             window.removeEventListener('resize', sendWindowSize);
         };
     }, [sendWindowSize]);
+    useEffect(() => {
+        const messageHandler = (event: MessageEvent) => {
+            if (event.data.type !== undefined) {
+                console.warn('🗫[tapp listener] Message received:', event.data);
+            }
+        };
+
+        window.addEventListener('message', messageHandler);
+
+        return () => {
+            window.removeEventListener('message', messageHandler);
+        };
+    }, []);
+
+    useEffect(() => {
+        console.info('🔍 [TAPPLET] Mounted:', {
+            packageName: tapplet.package_name,
+            iframeRefs: iframeRefs.current,
+        });
+    }, [iframeRefs, tapplet.package_name]);
 
     return (
         <TappletContainer>
             <iframe
-                ref={iframeRef}
+                ref={setRefs}
                 src={tapplet.source}
                 width="100%"
                 height="100%"
-                onLoad={sendWindowSize}
+                onLoad={() => {
+                    if (tappletRef.current) {
+                        sendWindowSize();
+                    }
+                }}
                 style={{ border: 'none', pointerEvents: 'all', display: disabled ? 'none' : 'block' }}
-                sandbox="allow-same-origin allow-popups allow-scripts"
             />
         </TappletContainer>
     );

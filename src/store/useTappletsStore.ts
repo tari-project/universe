@@ -92,9 +92,7 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
                 setError(`Tapplet (id: ${tappletId} name: ${name}) startup error: ${error}`);
             }
             if (!stateUpdateNeeded) return;
-        }
-
-        if (isDev) {
+        } else if (isDev) {
             const tapplet = get().devTapplets.find((tapp) => tapp.id === tappletId);
             if (!tapplet) {
                 setError(`Tapplet with id: ${tappletId} not found`);
@@ -106,10 +104,11 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
                 try {
                     console.info('🚗 RUN HTTP ', tapplet?.display_name);
                     activeTapplet = await fetchActiveTapplet(tapplet);
+                    console.info('🚗 RUN DEV ', activeTapplet?.package_name);
                     if (!activeTapplet) return;
                     runningTapplet = {
                         ...activeTapplet,
-                        allowReceiveFrom: [],
+                        allowReceiveFrom: ['wxtm-bridge-frontend'], //TODO TESTS
                         allowSendTo: [],
                     };
                     tappProviderState.setTappletSigner(activeTapplet?.package_name); //TODO
@@ -124,10 +123,18 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
                     activeTapplet = await invoke('start_dev_tapplet', {
                         devTappletId: tappletId,
                     });
+                    // TODO TEST ONLY
+                    const origin =
+                        activeTapplet != null && activeTapplet.tapplet_id === 1
+                            ? ['wxtm-bridge-frontend']
+                            : activeTapplet.tapplet_id === 3
+                              ? ['hello-ootle']
+                              : [];
+                    console.info('🚗 RUN DEV not localhost', activeTapplet, origin);
                     runningTapplet = {
                         ...activeTapplet,
-                        allowReceiveFrom: [],
-                        allowSendTo: [],
+                        allowReceiveFrom: origin,
+                        allowSendTo: origin,
                     };
                     stateUpdateNeeded = true;
                 } catch (error) {
@@ -136,9 +143,7 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
                 }
             }
             if (!stateUpdateNeeded) return;
-        }
-
-        if (!isBuiltIn && !isDev) {
+        } else {
             try {
                 activeTapplet = await invoke('start_tapplet', {
                     tappletId: tappletId,

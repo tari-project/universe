@@ -28,6 +28,7 @@ export default function Dashboard() {
                     {runningTapplets.map((t) => (
                         <Tapplet
                             key={t.tapplet_id}
+                            iframeRefs={iframeRefs}
                             tapplet={t}
                             ref={(el) => {
                                 if (el) iframeRefs.current[t.tapplet_id] = el;

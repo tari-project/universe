@@ -171,6 +171,7 @@ export function useIframeMessage(onMessage: (event: MessageEvent<IframeMessage>)
         function handleMessage(event: MessageEvent<IframeMessage>) {
             // Optionally, add origin checks here for security
             onMessage(event);
+            if (event?.data.type !== undefined) console.warn('EVENT LISTENER', event.data.type);
         }
         window.addEventListener('message', handleMessage);
         return () => {
