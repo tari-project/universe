@@ -30,6 +30,7 @@ interface Props {
 }
 
 interface ModeDropdownMiningMode {
+    sortingIndex?: string;
     name: string;
     mode_type: MiningModeType;
     icon: string;

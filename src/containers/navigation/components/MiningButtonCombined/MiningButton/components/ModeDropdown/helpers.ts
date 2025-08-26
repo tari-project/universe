@@ -21,11 +21,31 @@ const getModeIcon = (mode: MiningModeType) => {
     }
 };
 
+const getSortingIndex = (mode: MiningModeType) => {
+    switch (mode) {
+        case MiningModeType.Eco:
+            return 'a';
+        case MiningModeType.Turbo:
+            return 'b';
+        case MiningModeType.Ludicrous:
+            return 'c';
+        case MiningModeType.Custom:
+            return 'd';
+        case MiningModeType.User:
+            return 'e';
+        default:
+            return 'f';
+    }
+};
+
 export const getModeList = (modes: MiningModes) =>
-    Object.values(modes).map((mode) => {
-        return {
-            name: mode.mode_name,
-            mode_type: mode.mode_type,
-            icon: getModeIcon(mode.mode_type),
-        };
-    });
+    Object.values(modes)
+        .map((mode) => {
+            return {
+                sortingIndex: getSortingIndex(mode.mode_type),
+                name: mode.mode_name,
+                mode_type: mode.mode_type,
+                icon: getModeIcon(mode.mode_type),
+            };
+        })
+        .sort((a, b) => a.sortingIndex.localeCompare(b.sortingIndex));
