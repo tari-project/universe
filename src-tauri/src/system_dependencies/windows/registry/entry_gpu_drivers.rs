@@ -62,7 +62,7 @@ impl WindowsRegistryReader for WindowsRegistryGpuDriverResolver {
                         subkey.get_value("DriverVersion");
                     let provider_name: Result<String, std::io::Error> =
                         subkey.get_value("ProviderName");
-                    if let Ok((driver_desc, driver_version, provider_name)) =
+                    if let (Ok(driver_desc), Ok(driver_version), Ok(provider_name)) =
                         (driver_desc, driver_version, provider_name)
                     {
                         gpu_driver_entries.push(WindowsRegistryGpuDriverEntry {

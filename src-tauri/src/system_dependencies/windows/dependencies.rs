@@ -185,7 +185,7 @@ impl WindowsSystemDependency {
         };
         WindowsSystemDependency {
             universal_data: UniversalSystemDependency {
-                id: format!("gpu_driver_{}", manufacturer.get_name().to_lowercase()),
+                id: format!("gpu_driver_{}", device_desc),
                 ui_info,
                 status: UniversalDependencyStatus::Unknown,
                 download_url,

@@ -112,7 +112,9 @@ impl WindowsRegistryReader for WindowsRegistryGpuResolver {
                                 gpu_record_data.get_value("Driver");
                             let mfg: Result<String, std::io::Error> =
                                 gpu_record_data.get_value("Mfg");
-                            if let Ok((device_desc, driver, mfg)) = (device_desc, driver, mfg) {
+                            if let (Ok(device_desc), Ok(driver), Ok(mfg)) =
+                                (device_desc, driver, mfg)
+                            {
                                 gpu_entries.push(WindowsRegistryGpuEntry {
                                     device_desc,
                                     driver,
