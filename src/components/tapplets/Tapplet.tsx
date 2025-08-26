@@ -7,13 +7,13 @@ import { MessageType, useIframeMessage } from '@app/hooks/swap/useIframeMessage'
 import { invoke } from '@tauri-apps/api/core';
 import React from 'react';
 import { useTappletsStore } from '@app/store/useTappletsStore';
+import { RunningTapplet } from '@app/types/tapplets/tapplet.types';
 
 interface TappletProps {
-    tappletId: number;
-    source: string;
+    tapplet: RunningTapplet;
 }
 
-export const Tapplet = forwardRef<HTMLIFrameElement, TappletProps>(({ tappletId, source }, ref) => {
+export const Tapplet = forwardRef<HTMLIFrameElement, TappletProps>(({ tapplet }, ref) => {
     const tappletRef = useRef<HTMLIFrameElement | null>(null);
     const iframeRef = (ref as React.RefObject<HTMLIFrameElement | null>) || tappletRef;
     const tappSigner = useTappletSignerStore((s) => s.tappletSigner);
@@ -21,67 +21,53 @@ export const Tapplet = forwardRef<HTMLIFrameElement, TappletProps>(({ tappletId,
     const language = useConfigUIStore((s) => s.application_language);
     const theme = useUIStore((s) => s.theme);
     const activeTapplet = useTappletsStore((s) => s.activeTapplet);
-    const allowedIframeMsgOrigins = useTappletsStore((s) => s.allowedIframeMsgOrigins);
-    const setAllowedIframeMsgOrigins = useTappletsStore((s) => s.setAllowedIframeMsgOrigins);
-    const disabled = tappletId !== activeTapplet?.tapplet_id;
+    const disabled = tapplet.tapplet_id !== activeTapplet?.tapplet_id;
 
-    // // Compute allowedOrigins map from dynamic store data
-    // const allowedOrigins: Record<number, string> = {};
-    // inUseTapp.forEach((tapplet) => {
+    // const trustedOrigin = (() => {
     //     try {
-    //         const origin = new URL(tapplet.source).origin;
-    //         allowedOrigins[tapplet.tapplet_id] = origin;
+    //         const originSource = new URL(tapplet.source).origin;
+    //         console.info('🗫🗫🗫 SOURCE ORIGIN', originSource);
+    //         return originSource;
     //     } catch {
-    //         // ignore invalid URLs
+    //         return '';
     //     }
-    // });
-
-    // Extract trusted origin from source URL
-    const trustedOrigin = (() => {
-        try {
-            const originSource = new URL(source).origin;
-            console.info('🗫🗫🗫 SOURCE ORIGIN', originSource);
-            return originSource;
-        } catch {
-            return '';
-        }
-    })();
+    // })();
 
     // Listen for messages from the parent relay targeted to this tapplet
-    useEffect(() => {
-        function onMessage(event: MessageEvent) {
-            // Check origin matches trustedOrigin (sender is parent window)
-            if (event.origin !== trustedOrigin) return;
+    // useEffect(() => {
+    //     function onMessage(event: MessageEvent) {
+    //         // Check origin matches trustedOrigin (sender is parent window)
+    //         if (event.origin !== trustedOrigin) return;
 
-            const { fromTappletId, payload } = event.data || {};
+    //         const { fromTappletId, payload } = event.data || {};
 
-            // Check that message is from a known tapplet id (eg. 1 if this is 3)
-            if (typeof fromTappletId !== 'number') return;
+    //         // Check that message is from a known tapplet id (eg. 1 if this is 3)
+    //         if (typeof fromTappletId !== 'number') return;
 
-            // Only accept messages from allowed tapplet origins (implement your logic here)
-            // For example, allow only from tappletId = 1 if this is 3
-            // const allowedOrigins: Record<number, string> = {
-            //     1: 'http://localhost:3001', // A's known origin
-            //     3: 'http://localhost:3003', // B's origin - adjust accordingly
-            // };
+    //         // Only accept messages from allowed tapplet origins (implement your logic here)
+    //         // For example, allow only from tappletId = 1 if this is 3
+    //         // const allowedOrigins: Record<number, string> = {
+    //         //     1: 'http://localhost:3001', // A's known origin
+    //         //     3: 'http://localhost:3003', // B's origin - adjust accordingly
+    //         // };
 
-            // if (!(fromTappletId in allowedOrigins)) {
-            //     console.error('origin not allowed: unknown fromTappletId', fromTappletId);
-            //     return;
-            // }
+    //         // if (!(fromTappletId in allowedOrigins)) {
+    //         //     console.error('origin not allowed: unknown fromTappletId', fromTappletId);
+    //         //     return;
+    //         // }
 
-            // if (trustedOrigin !== allowedOrigins[fromTappletId]) {
-            //     console.error('origin not allowed: mismatched origin for fromTappletId', fromTappletId);
-            //     return;
-            // }
+    //         // if (trustedOrigin !== allowedOrigins[fromTappletId]) {
+    //         //     console.error('origin not allowed: mismatched origin for fromTappletId', fromTappletId);
+    //         //     return;
+    //         // }
 
-            // Log the message received from allowed origin
-            console.info(`[Tapplet ${tappletId}] message from tapplet ${fromTappletId}:`, payload);
-        }
+    //         // Log the message received from allowed origin
+    //         console.info(`[Tapplet ${tapplet.tapplet_id}] message from tapplet ${fromTappletId}:`, payload);
+    //     }
 
-        window.addEventListener('message', onMessage);
-        return () => window.removeEventListener('message', onMessage);
-    }, [trustedOrigin, tappletId]);
+    //     window.addEventListener('message', onMessage);
+    //     return () => window.removeEventListener('message', onMessage);
+    // }, [trustedOrigin, tapplet]);
 
     const sendWindowSize = useCallback(() => {
         if (tappletRef.current) {
@@ -142,31 +128,6 @@ export const Tapplet = forwardRef<HTMLIFrameElement, TappletProps>(({ tappletId,
     }, []);
 
     useIframeMessage((event) => {
-        // const data = event.data as any;
-
-        // // Basic validity check: data must exist and be an object
-        // if (!data || typeof data !== 'object' || event.data.type === undefined) return;
-
-        // // Now safely extract fields with optional chaining and typeof checks
-        // const toTappletId = typeof data.toTappletId === 'number' ? data.toTappletId : undefined;
-        // const fromTappletId = typeof data.fromTappletId === 'number' ? data.fromTappletId : undefined;
-        // const payload = data.payload;
-        // const type = data.type;
-        // console.info('[TAPPLET] handle iframe msg', event.data.type);
-        // // Only process messages explicitly targeted to this tapplet
-        // if (toTappletId !== tappletId) return;
-
-        // // Map allowed senders for current tapplet, example:
-        // const allowedSenders: Record<number, number[]> = {
-        //     1: [3], // tapplet 1 only accepts from tapplet 3
-        //     3: [1], // tapplet 3 only accepts from tapplet 1
-        // };
-
-        // // Validate sender is allowed
-        // if (!fromTappletId || !allowedSenders[tappletId]?.includes(fromTappletId)) {
-        //     console.error(`[Tapplet ${tappletId}] Disallowed sender: ${fromTappletId}`);
-        //     return;
-        // }
         switch (event.data.type) {
             case MessageType.GET_PARENT_SIZE:
                 console.info('[TAPPLET] handle iframe msg type parent size:', event.data.type);
@@ -207,20 +168,19 @@ export const Tapplet = forwardRef<HTMLIFrameElement, TappletProps>(({ tappletId,
             case MessageType.INTER_TAPPLET: {
                 console.info('[TAPPLET] handle iframe msg INTER TAPP:', event.data.type);
                 const { targetTappletRegistryId, sourceTappletRegistryId } = event.data.payload;
-                console.info('[TAPPLET] id', tappletId, targetTappletRegistryId);
+                console.info('[TAPPLET] id', tapplet.tapplet_id, targetTappletRegistryId);
 
                 // Process only messages targeted to this tapplet
                 //TODO get currect tapplet registry
-                if (targetTappletRegistryId !== 'hello-ootle') return;
+                if (targetTappletRegistryId !== tapplet.package_name) return;
                 //TODO TEMP CHECK
-                if (
-                    allowedIframeMsgOrigins[tappletId] &&
-                    !allowedIframeMsgOrigins[tappletId].includes(sourceTappletRegistryId)
-                ) {
-                    console.error(`[Tapplet ${tappletId}] Disallowed sender tapplet ${3}`);
+                if (tapplet.allowReceiveFrom && !tapplet.allowReceiveFrom.includes(sourceTappletRegistryId)) {
+                    console.error(
+                        `[Tapplet ${tapplet.display_name}] Disallowed sender tapplet ${sourceTappletRegistryId}`
+                    );
                     return;
                 }
-                // console.info('🏝️🏝️🏝️ [TAPPLET] tappletRef', event.source);
+                console.info('🏝️🏝️🏝️ [TAPPLET] tapplet current', tapplet.package_name);
                 console.info('🏝️🏝️🏝️ [TAPPLET] iframeRef', tappletRef.current);
                 console.info('🏝️🏝️🏝️ [TAPPLET] handle INTER_TAPPLET:', event.data.payload.msg);
                 break;
@@ -252,7 +212,7 @@ export const Tapplet = forwardRef<HTMLIFrameElement, TappletProps>(({ tappletId,
         <TappletContainer>
             <iframe
                 ref={iframeRef}
-                src={source}
+                src={tapplet.source}
                 width="100%"
                 height="100%"
                 onLoad={sendWindowSize}

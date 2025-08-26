@@ -25,14 +25,13 @@ export default function Dashboard() {
             {connectionStatus !== 'connected' && !orphanChainUiDisabled ? <DisconnectWrapper /> : null}
             {showTapplet && runningTapplets.length > 0 ? (
                 <>
-                    {runningTapplets.map(({ tapplet_id, source }) => (
+                    {runningTapplets.map((t) => (
                         <Tapplet
-                            key={tapplet_id}
-                            tappletId={tapplet_id}
-                            source={source}
+                            key={t.tapplet_id}
+                            tapplet={t}
                             ref={(el) => {
-                                if (el) iframeRefs.current[tapplet_id] = el;
-                                else delete iframeRefs.current[tapplet_id];
+                                if (el) iframeRefs.current[t.tapplet_id] = el;
+                                else delete iframeRefs.current[t.tapplet_id];
                             }}
                         />
                     ))}

@@ -120,3 +120,10 @@ export type ActiveTapplet = TappletConfig & {
     tapplet_id: number;
     source: string;
 };
+
+export interface AllowedIframeMsgOrigins {
+    allowSendTo: string[];
+    allowReceiveFrom: string[];
+}
+
+export type RunningTapplet = ActiveTapplet & AllowedIframeMsgOrigins;

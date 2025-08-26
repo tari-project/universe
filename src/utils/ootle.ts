@@ -13,7 +13,7 @@ export function isHttpOrLocalhost(s: string): boolean {
     return false;
 }
 
-export async function fetchActiveTapplet(tapplet: DevTapplet): Promise<ActiveTapplet | undefined> {
+export async function fetchActiveTapplet(tapplet: DevTapplet): Promise<ActiveTapplet | null> {
     const url = `${tapplet.source}/${TAPPLET_CONFIG_FILE}`;
     console.info('Dev Tapplet fetch url: ', url);
 
@@ -21,12 +21,12 @@ export async function fetchActiveTapplet(tapplet: DevTapplet): Promise<ActiveTap
         const resp = await fetch(url, { method: 'GET' });
         console.info('Dev Tapplet fetch resp: ', resp);
 
-        if (!resp.ok) return;
+        if (!resp.ok) return null;
 
         const config: TappletConfig = await resp.json();
         console.info('Dev Tapplet config', config);
 
-        if (!config) return;
+        if (!config) return null;
 
         const activeTapplet: ActiveTapplet = {
             tapplet_id: tapplet.id,
@@ -43,6 +43,6 @@ export async function fetchActiveTapplet(tapplet: DevTapplet): Promise<ActiveTap
         return activeTapplet;
     } catch (error) {
         console.error('Failed to fetch tapplet config:', error);
-        return;
+        return null;
     }
 }
