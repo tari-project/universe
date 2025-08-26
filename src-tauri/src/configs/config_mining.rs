@@ -33,7 +33,7 @@ use super::trait_config::{ConfigContentImpl, ConfigImpl};
 static INSTANCE: LazyLock<RwLock<ConfigMining>> =
     LazyLock::new(|| RwLock::new(ConfigMining::new()));
 
-pub const MINING_CONFIG_VERSION: i32 = 3;
+pub const MINING_CONFIG_VERSION: i32 = 1;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum MiningModeType {
@@ -213,40 +213,55 @@ impl ConfigMining {
     pub async fn initialize(app_handle: AppHandle) {
         let mut config = Self::current().write().await;
         config.load_app_handle(app_handle.clone()).await;
+        drop(config);
+
+        Self::_check_for_migration()
+            .await
+            .expect("Could not check for migration");
     }
 
-    pub async fn migrate() -> Result<(), anyhow::Error> {
-        let current_version = Self::content().await.version;
-
-        if current_version < MINING_CONFIG_VERSION {
-            info!("Mining config needs migration v{current_version:?} => v{MINING_CONFIG_VERSION}");
-            Self::update_field(ConfigMiningContent::set_version, MINING_CONFIG_VERSION).await?;
-        }
-
+    async fn _migrate() -> Result<(), anyhow::Error> {
         let mut mining_modes = Self::content().await.mining_modes;
+        let should_update_selected = !mining_modes.contains_key("Turbo")
+            && Self::content().await.selected_mining_mode == "Eco";
 
         mining_modes
             .entry("Eco".to_string())
             .and_modify(|m| m.cpu_usage_percentage = 1)
             .and_modify(|m| m.gpu_usage_percentage = 1);
 
-        let turbo_exists = mining_modes.contains_key("Turbo");
+        let turbo = MiningMode {
+            mode_type: MiningModeType::Turbo,
+            mode_name: "Turbo".to_string(),
+            cpu_usage_percentage: 10,
+            gpu_usage_percentage: 10,
+        };
 
-        if !turbo_exists {
-            info!("Mining mode 'Turbo' not found");
+        mining_modes
+            .entry("Turbo".to_string())
+            .or_insert_with(|| turbo);
 
-            let turbo = MiningMode {
-                mode_type: MiningModeType::Turbo,
-                mode_name: "Turbo".to_string(),
-                cpu_usage_percentage: 10,
-                gpu_usage_percentage: 10,
-            };
+        Self::update_field(ConfigMiningContent::set_mining_modes, mining_modes).await?;
 
-            mining_modes.insert("Turbo".to_string(), turbo.clone());
-
-            Self::update_field(ConfigMiningContent::set_mining_modes, mining_modes).await?
+        if should_update_selected {
+            Self::update_field(
+                ConfigMiningContent::set_selected_mining_mode,
+                "Turbo".to_string(),
+            )
+            .await?;
+            return Ok(());
         }
+        Ok(())
+    }
 
+    async fn _check_for_migration() -> Result<(), anyhow::Error> {
+        let current_version = Self::content().await.version;
+        if current_version < MINING_CONFIG_VERSION {
+            info!("Mining config needs migration v{current_version:?} => v{MINING_CONFIG_VERSION}");
+            Self::_migrate().await?;
+            Self::update_field(ConfigMiningContent::set_version, MINING_CONFIG_VERSION).await?;
+            return Ok(());
+        }
         Ok(())
     }
 }
