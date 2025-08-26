@@ -45,12 +45,14 @@ export interface ConfigUI {
     was_staged_security_modal_shown: boolean;
 }
 
+export type MiningModes = Record<MiningModeType, MiningMode>;
+
 export interface ConfigMining {
     created_at: string;
     mine_on_app_start: boolean;
     selected_mining_mode: string;
     gpu_mining_enabled: boolean;
-    mining_modes: Record<string, MiningMode>;
+    mining_modes: MiningModes | Record<string, MiningMode>;
     gpu_devices_settings: Record<number, GpuDeviceSettings>;
     cpu_mining_enabled: boolean;
     gpu_engine: string;

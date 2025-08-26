@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import ArrowDown from './icons/ArrowDown';
 import {
     Eyebrow,
@@ -15,17 +15,15 @@ import {
 } from './styles';
 import { AnimatePresence } from 'motion/react';
 import SelectedIcon from './icons/SelectedIcon';
-import ecoIcon from './images/eco.png';
-import ludicIcon from './images/ludicrous.png';
-import turboIcon from '@app/assets/icons/emoji/tornado.png';
-import customIcon from '@app/assets/icons/emoji/custom.png';
 import { offset, useClick, useDismiss, useFloating, useInteractions, FloatingFocusManager } from '@floating-ui/react';
 import { useTranslation } from 'react-i18next';
 import { useConfigMiningStore } from '@app/store';
 import { setDialogToShow } from '@app/store/actions/uiStoreActions';
 import { setCustomLevelsDialogOpen } from '@app/store/actions/miningStoreActions';
-import { MiningModeType } from '@app/types/configs';
+import { MiningModes, MiningModeType } from '@app/types/configs';
 import { selectMiningMode } from '@app/store/actions/appConfigStoreActions';
+
+import { getModeList } from './helpers.ts';
 interface Props {
     disabled?: boolean;
     loading?: boolean;
@@ -37,28 +35,11 @@ interface ModeDropdownMiningMode {
     icon: string;
 }
 
-const getModeIcon = (mode: MiningModeType) => {
-    switch (mode) {
-        case MiningModeType.Eco:
-            return ecoIcon;
-        case MiningModeType.Turbo:
-            return turboIcon;
-        case MiningModeType.Ludicrous:
-            return ludicIcon;
-        case MiningModeType.Custom:
-            return customIcon;
-        case MiningModeType.User:
-            return customIcon;
-        default:
-            return customIcon;
-    }
-};
-
 export default function ModeDropdown({ disabled, loading }: Props) {
     const { t } = useTranslation('mining-view');
     const selectedMiningMode = useConfigMiningStore((s) => s.getSelectedMiningMode());
     const miningModes = useConfigMiningStore((s) => s.mining_modes);
-    console.debug(`miningModes= `, miningModes);
+
     const [isOpen, setIsOpen] = useState(false);
 
     const { refs, floatingStyles, context } = useFloating({
@@ -71,17 +52,7 @@ export default function ModeDropdown({ disabled, loading }: Props) {
     const dismiss = useDismiss(context);
     const { getReferenceProps, getFloatingProps } = useInteractions([click, dismiss]);
 
-    const modes: ModeDropdownMiningMode[] = useMemo(() => {
-        return Object.values(miningModes)
-            .map((mode) => {
-                return {
-                    name: mode.mode_name,
-                    mode_type: mode.mode_type,
-                    icon: getModeIcon(mode.mode_type),
-                };
-            })
-            .sort((a, b) => a.name.localeCompare(b.name));
-    }, [miningModes]);
+    const modes: ModeDropdownMiningMode[] = miningModes ? getModeList(miningModes as MiningModes) : [];
 
     const handleSelectMode = useCallback(
         async (mode: ModeDropdownMiningMode) => {
