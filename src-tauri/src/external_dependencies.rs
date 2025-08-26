@@ -109,7 +109,7 @@ impl ExternalDependencies {
                     manufacturer: Manufacturer::new(
                         "Microsoft".to_string(),
                         "https://www.microsoft.com".to_string(),
-                        "https://www.microsoft.com/favicon.ico".to_string(),
+                        "microsoft_favicon.ico".to_string(),
                     ),
                     status: ExternalDependencyStatus::Unknown,
                     version: None,
@@ -126,7 +126,7 @@ impl ExternalDependencies {
                     manufacturer: Manufacturer::new(
                         "Microsoft".to_string(),
                         "https://www.microsoft.com".to_string(),
-                        "https://www.microsoft.com/favicon.ico".to_string(),
+                        "microsoft_favicon.ico".to_string(),
                     ),
                     status: ExternalDependencyStatus::Unknown,
                     version: None,
@@ -147,7 +147,7 @@ impl ExternalDependencies {
                     manufacturer: Manufacturer::new(
                         "Microsoft".to_string(),
                         "https://www.microsoft.com".to_string(),
-                        "https://www.microsoft.com/favicon.ico".to_string(),
+                        "microsoft_favicon.ico".to_string(),
                     ),
                     status: ExternalDependencyStatus::Unknown,
                     version: None,
@@ -164,7 +164,7 @@ impl ExternalDependencies {
                     manufacturer: Manufacturer::new(
                         "Microsoft".to_string(),
                         "https://www.microsoft.com".to_string(),
-                        "https://www.microsoft.com/favicon.ico".to_string(),
+                        "microsoft_favicon.ico".to_string(),
                     ),
                     status: ExternalDependencyStatus::Unknown,
                     version: None,

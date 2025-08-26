@@ -1,4 +1,3 @@
-import { SquaredButton } from '@app/components/elements/buttons/SquaredButton';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog';
 import { Divider } from '@app/components/elements/Divider';
 import { Stack } from '@app/components/elements/Stack';
@@ -6,11 +5,14 @@ import { Typography } from '@app/components/elements/Typography';
 import { useAppStateStore } from '@app/store/appStateStore';
 import { useUIStore } from '@app/store/useUIStore';
 import { invoke } from '@tauri-apps/api/core';
-import { memo, useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { ExternalDependencyCard } from './ExternalDependencyCard';
 import { useTranslation } from 'react-i18next';
 
-const ExternalDependenciesDialog = memo(function ExternalDependenciesDialog() {
+import { Button } from '@app/components/elements/buttons/Button.tsx';
+import { CTAWrapper, Wrapper } from './styles.ts';
+
+export default function ExternalDependenciesDialog() {
     const { t } = useTranslation('external-dependency-dialog', { useSuspense: false });
     const showExternalDependenciesDialog = useUIStore((s) => s.showExternalDependenciesDialog);
     const externalDependencies = useAppStateStore((s) => s.externalDependencies);
@@ -30,9 +32,9 @@ const ExternalDependenciesDialog = memo(function ExternalDependenciesDialog() {
     return (
         <Dialog open={showExternalDependenciesDialog}>
             <DialogContent>
-                <Stack gap={16} style={{ padding: 10 }}>
+                <Wrapper>
                     <Stack gap={4}>
-                        <Typography variant="h4">{t('title')}</Typography>
+                        <Typography variant="h3">{t('title')}</Typography>
                         <Typography variant="p">{t('description')}</Typography>
                     </Stack>
 
@@ -45,23 +47,17 @@ const ExternalDependenciesDialog = memo(function ExternalDependenciesDialog() {
                                 isInstallationSlotOccupied={installationSlot !== null}
                                 occupyInstallationSlot={() => setInstallationSlot(index)}
                             />
+
                             {index === array.length - 1 ? null : <Divider />}
                         </Stack>
                     ))}
-                    <Stack direction="row" justifyContent="flex-end" gap={8}>
-                        <SquaredButton
-                            color="error"
-                            size="medium"
-                            onClick={handleRestart}
-                            disabled={isRestarting}
-                            style={{ width: '100px' }}
-                        >
-                            {t('restart')}
-                        </SquaredButton>
-                    </Stack>
-                </Stack>
+                </Wrapper>
+                <CTAWrapper>
+                    <Button onClick={handleRestart} disabled={isRestarting} size="medium" variant="outlined">
+                        {t('restart')}
+                    </Button>
+                </CTAWrapper>
             </DialogContent>
         </Dialog>
     );
-});
-export default ExternalDependenciesDialog;
+}
