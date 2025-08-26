@@ -64,9 +64,10 @@ impl SystemDependenciesManager {
                 .await?;
 
             EventsEmitter::emit_system_dependencies_loaded(dependencies.clone()).await;
-            return Ok(dependencies
+            let is_valid = !dependencies
                 .iter()
-                .any(|d| d.status != UniversalDependencyStatus::Installed));
+                .any(|d| d.status != UniversalDependencyStatus::Installed);
+            return Ok(is_valid);
         }
 
         Ok(true)

@@ -149,7 +149,6 @@ impl WindowsSystemDependency {
                         url: Manufacturer::Intel.get_url(),
                         logo_url: Manufacturer::Intel.get_logo_url(),
                     },
-                    
                 },
                 status: UniversalDependencyStatus::Unknown,
                 download_url: "https://registrationcenter-download.intel.com/akdlm/IRC_NAS/a8589e7b-70f8-4ef2-bdc3-7306dfb93e92/w_opencl_runtime_p_2025.2.0.768.exe".to_string(),

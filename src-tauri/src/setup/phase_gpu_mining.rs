@@ -136,7 +136,7 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
     ) -> ProgressStepper {
         ProgressStepperBuilder::new()
             .add_incremental_step(SetupStep::BinariesGpuMiner, true)
-            .add_step(SetupStep::DetectGpu, false)
+            .add_step(SetupStep::DetectGpu, true)
             .add_step(SetupStep::InitializeGpuHardware, false)
             .build(
                 app_handle.clone(),

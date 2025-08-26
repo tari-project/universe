@@ -113,7 +113,7 @@ impl PlatformUtils {
                 .validate_dependencies()
                 .await?
             {
-                break;
+                return Ok(());
             }
             tokio::time::sleep(std::time::Duration::from_secs(10)).await;
         }
