@@ -155,7 +155,7 @@ impl WindowsDependenciesResolver {
                     let entries = WindowsRegistryKhronosSoftwareResolver::read_registry()?;
                     for entry in entries.iter() {
                         for check_value in dependency.check_values.iter() {
-                            if entry.check_requirements(()) {
+                            if entry.check_requirements(&()) {
                                 dependency.universal_data.status =
                                     UniversalDependencyStatus::Installed;
                                 break;
@@ -166,7 +166,7 @@ impl WindowsDependenciesResolver {
                 WindowsRegistryRecordType::UninstallSoftware => {
                     let entries = WindowsRegistryUninstallSoftwareResolver::read_registry()?;
                     for entry in entries.iter() {
-                        if entry.check_requirements(dependency.check_values) {
+                        if entry.check_requirements(&dependency.check_values) {
                             dependency.universal_data.status = UniversalDependencyStatus::Installed;
                         }
                     }
@@ -198,7 +198,7 @@ impl WindowsDependenciesResolver {
                 .ok_or_else(|| anyhow!("Invalid download URL."))?;
             let destination = temp_dir().join(file_name);
             HttpFileClient::builder()
-                .build(url.clone(), destination)?
+                .build(url.clone(), destination.clone())?
                 .execute()
                 .await?;
 
