@@ -107,9 +107,16 @@ impl PlatformUtils {
     async fn initialize_windows_preqesities() -> Result<(), anyhow::Error> {
         use crate::system_dependencies::system_dependencies_manager::SystemDependenciesManager;
 
-        SystemDependenciesManager::get_instance()
-            .validate_dependencies(true)
-            .await?;
+        // This loop prevents app from continuing until all initial dependencies are installed
+        loop {
+            if SystemDependenciesManager::get_instance()
+                .validate_dependencies()
+                .await?
+            {
+                break;
+            }
+            tokio::time::sleep(std::time::Duration::from_secs(10)).await;
+        }
 
         Ok(())
     }

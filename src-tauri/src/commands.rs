@@ -226,7 +226,7 @@ pub async fn download_and_start_installer(id: String) -> Result<(), String> {
         .map_err(|e| e.to_string())?;
 
     SystemDependenciesManager::get_instance()
-        .validate_dependencies(false)
+        .validate_dependencies()
         .await
         .map_err(|e| e.to_string())?;
 

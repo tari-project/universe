@@ -37,7 +37,13 @@ export const fetchApplicationsVersionsWithRetry = async () => {
 export const setIsStuckOnOrphanChain = (isStuckOnOrphanChain: boolean) =>
     useAppStateStore.setState({ isStuckOnOrphanChain });
 export const loadSystemDependencies = (externalDependencies: SystemDependency[]) => {
-    if (externalDependencies.some((dep) => dep.status !== SystemDependencyStatus.Installed)) {
+    // Show always dialog right away when there is vcredist dependency missing
+    // as it's required for the app to work properly
+    if (
+        externalDependencies.some(
+            (dep) => dep.status !== SystemDependencyStatus.Installed && dep.ui_info.display_name.includes('Visual C++')
+        )
+    ) {
         setShowExternalDependenciesDialog(true);
     }
     useAppStateStore.setState({ systemDependencies: externalDependencies });

@@ -24,6 +24,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     hardware::hardware_status_monitor::HardwareVendor,
+    setup::listeners::AppModule,
     system_dependencies::{
         windows::registry::WindowsRegistryRecordType, UniversalDependencyManufacturerUIInfo,
         UniversalDependencyStatus, UniversalDependencyUIInfo, UniversalSystemDependency,
@@ -100,6 +101,7 @@ impl WindowsSystemDependency {
                 },
                 status: UniversalDependencyStatus::Unknown,
                 download_url: "https://aka.ms/vs/17/release/vc_redist.x64.exe".to_string(),
+                required_by_app_modules: vec![],
             },
             registry_entry_type: WindowsRegistryRecordType::UninstallSoftware,
             check_values: vec![
@@ -125,6 +127,7 @@ impl WindowsSystemDependency {
                 },
                 status: UniversalDependencyStatus::Unknown,
                 download_url: "https://aka.ms/vs/17/release/vc_redist.x64.exe".to_string(),
+                required_by_app_modules: vec![],
             },
             registry_entry_type: WindowsRegistryRecordType::UninstallSoftware,
             check_values: vec![
@@ -146,9 +149,11 @@ impl WindowsSystemDependency {
                         url: Manufacturer::Intel.get_url(),
                         logo_url: Manufacturer::Intel.get_logo_url(),
                     },
+                    
                 },
                 status: UniversalDependencyStatus::Unknown,
                 download_url: "https://registrationcenter-download.intel.com/akdlm/IRC_NAS/a8589e7b-70f8-4ef2-bdc3-7306dfb93e92/w_opencl_runtime_p_2025.2.0.768.exe".to_string(),
+                required_by_app_modules: vec![AppModule::GpuMining],
             },
             registry_entry_type: WindowsRegistryRecordType::KhronosSoftware,
             check_values: vec!["Intel(R) CPU Runtime for OpenCL(TM)".to_string()],
@@ -189,6 +194,7 @@ impl WindowsSystemDependency {
                 ui_info,
                 status: UniversalDependencyStatus::Unknown,
                 download_url,
+                required_by_app_modules: vec![AppModule::GpuMining],
             },
             registry_entry_type: WindowsRegistryRecordType::GpuDrivers,
             check_values: vec![driver],

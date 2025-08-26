@@ -55,7 +55,7 @@ impl SystemDependenciesManager {
     }
 
     #[allow(dead_code)]
-    pub async fn validate_dependencies(&self, with_shutdown: bool) -> Result<(), Error> {
+    pub async fn validate_dependencies(&self) -> Result<bool, Error> {
         #[cfg(target_os = "windows")]
         {
             let dependencies = self
@@ -64,24 +64,12 @@ impl SystemDependenciesManager {
                 .await?;
 
             EventsEmitter::emit_system_dependencies_loaded(dependencies.clone()).await;
-            if dependencies
+            Ok(dependencies
                 .iter()
-                .any(|d| d.status != UniversalDependencyStatus::Installed)
-            {
-                if with_shutdown {
-                    TasksTrackers::current().stop_all_processes().await;
-                }
-
-                return Err(anyhow!("Some system dependencies are missing"));
-            }
-        }
-        #[cfg(not(target_os = "windows"))]
-        {
-            let _unused = with_shutdown;
-            // No validation needed on non-Windows platforms
+                .any(|d| d.status != UniversalDependencyStatus::Installed))
         }
 
-        Ok(())
+        Ok(true)
     }
 
     #[allow(dead_code)]

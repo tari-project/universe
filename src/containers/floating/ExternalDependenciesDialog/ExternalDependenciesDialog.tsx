@@ -6,9 +6,11 @@ import { Typography } from '@app/components/elements/Typography';
 import { useAppStateStore } from '@app/store/appStateStore';
 import { useUIStore } from '@app/store/useUIStore';
 import { invoke } from '@tauri-apps/api/core';
-import { memo, useCallback, useState } from 'react';
+import { memo, useCallback, useEffect, useState } from 'react';
 import { ExternalDependencyCard } from './ExternalDependencyCard';
 import { useTranslation } from 'react-i18next';
+import { SystemDependencyStatus } from '@app/types/app-status';
+import { setShowExternalDependenciesDialog } from '@app/store';
 
 const ExternalDependenciesDialog = memo(function ExternalDependenciesDialog() {
     const { t } = useTranslation('external-dependency-dialog', { useSuspense: false });
@@ -16,6 +18,23 @@ const ExternalDependenciesDialog = memo(function ExternalDependenciesDialog() {
     const externalDependencies = useAppStateStore((s) => s.systemDependencies);
     const [isRestarting, setIsRestarting] = useState(false);
     const [installationSlot, setInstallationSlot] = useState<number | null>(null);
+
+    const isClosable = Object.values(externalDependencies).every(
+        (dep) => dep.status === SystemDependencyStatus.Installed
+    );
+
+    const handleClose = useCallback(() => {
+        if (isClosable) {
+            setShowExternalDependenciesDialog(false);
+        }
+    }, [isClosable]);
+
+    // Close dialog automatically when all dependencies are installed
+    useEffect(() => {
+        if (isClosable) {
+            handleClose();
+        }
+    }, [externalDependencies, handleClose, isClosable]);
 
     const handleRestart = useCallback(async () => {
         try {

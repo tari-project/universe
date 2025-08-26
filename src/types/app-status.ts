@@ -1,3 +1,5 @@
+import { AppModule } from '@app/store/types/setup';
+
 export interface TorConfig {
     control_port: number;
     use_bridges: boolean;
@@ -27,6 +29,7 @@ export interface SystemDependency {
     status: SystemDependencyStatus;
     download_url: string;
     ui_info: SystemDependencyUIInfo;
+    required_by_app_modules: AppModule[];
 }
 
 export interface CriticalProblemPayload {

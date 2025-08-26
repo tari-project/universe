@@ -22,6 +22,8 @@
 
 use serde::{Deserialize, Serialize};
 
+use crate::setup::listeners::AppModule;
+
 pub mod system_dependencies_manager;
 
 #[cfg(target_os = "windows")]
@@ -55,4 +57,5 @@ pub struct UniversalSystemDependency {
     pub status: UniversalDependencyStatus,
     pub download_url: String,
     pub ui_info: UniversalDependencyUIInfo,
+    pub required_by_app_modules: Vec<AppModule>,
 }

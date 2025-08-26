@@ -201,7 +201,7 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
                         }
 
                         if let Err(e) = SystemDependenciesManager::get_instance()
-                            .validate_dependencies(false)
+                            .validate_dependencies()
                             .await
                         {
                             error!(target: LOG_TARGET, "Failed to validate dependencies after adding GPU drivers: {e}");
@@ -221,7 +221,7 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
                             }
 
                             if let Err(e) = SystemDependenciesManager::get_instance()
-                                .validate_dependencies(false)
+                                .validate_dependencies()
                                 .await
                             {
                                 error!(target: LOG_TARGET, "Failed to validate dependencies after adding Khronos OpenCL: {e}");
