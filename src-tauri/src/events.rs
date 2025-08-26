@@ -52,6 +52,7 @@ pub enum EventType {
     AskForRestart,
     ShowReleaseNotes,
     CriticalProblem,
+    #[cfg(target_os = "windows")]
     SystemDependenciesLoaded,
     StuckOnOrphanChain,
     NetworkStatus,

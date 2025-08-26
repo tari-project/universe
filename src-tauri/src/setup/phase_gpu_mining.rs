@@ -157,9 +157,7 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
     }
 
     async fn setup_inner(&self) -> Result<(), Error> {
-        let state = self.app_handle.state::<UniverseAppState>();
         let mut progress_stepper = self.progress_stepper.lock().await;
-        let (data_dir, config_dir, _log_dir) = self.get_app_dirs()?;
 
         let binary_resolver = BinaryResolver::current();
 
@@ -187,30 +185,59 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
 
         progress_stepper
             .complete_step(SetupStep::DetectGpu, || async {
-                let glytex_detection_result = state
-                    .gpu_miner
-                    .write()
-                    .await
-                    .detect(
-                        config_dir.clone(),
-                        self.app_configuration.gpu_engine.clone(),
-                    )
-                    .await;
+                if let Err(original_error) = self.resolve_detect_gpu_step().await {
+                    #[cfg(target_os = "windows")]
+                    {
+                        use crate::system_dependencies::system_dependencies_manager::SystemDependenciesManager;
 
-                let graxil_detection_result = GpuDevices::current()
-                    .write()
-                    .await
-                    .detect(data_dir.clone())
-                    .await;
+                        // Try to add GPU drivers as dependencies and retry
+                        if let Err(e) = SystemDependenciesManager::get_instance()
+                            .get_windows_dependencies_resolver()
+                            .add_gpu_drivers_as_dependencies()
+                            .await
+                        {
+                            error!(target: LOG_TARGET, "Failed to add GPU drivers as dependencies: {e}");
+                            return Err(original_error);
+                        }
 
-                if let (Err(graxil_err), Err(glytex_err)) =
-                    (graxil_detection_result, glytex_detection_result)
-                {
-                    return Err(anyhow::anyhow!(
-                        "Failed to detect GPU devices: Graxil: {graxil_err}, Glytex: {glytex_err}"
-                    ));
+                        if let Err(e) = SystemDependenciesManager::get_instance()
+                            .validate_dependencies(false)
+                            .await
+                        {
+                            error!(target: LOG_TARGET, "Failed to validate dependencies after adding GPU drivers: {e}");
+                            return Err(original_error);
+                        }
+
+                        // Retry GPU detection after adding GPU drivers
+                        if let Err(first_retry_error) = self.resolve_detect_gpu_step().await {
+                            // Try adding Khronos OpenCL as a fallback
+                            if let Err(e) = SystemDependenciesManager::get_instance()
+                                .get_windows_dependencies_resolver()
+                                .add_khronos_opencl_as_dependency()
+                                .await
+                            {
+                                error!(target: LOG_TARGET, "Failed to add Khronos OpenCL as dependency: {e}");
+                                return Err(first_retry_error);
+                            }
+
+                            if let Err(e) = SystemDependenciesManager::get_instance()
+                                .validate_dependencies(false)
+                                .await
+                            {
+                                error!(target: LOG_TARGET, "Failed to validate dependencies after adding Khronos OpenCL: {e}");
+                                return Err(first_retry_error);
+                            }
+
+                            // Final retry after adding all dependencies
+                            self.resolve_detect_gpu_step().await?;
+                        }
+                    }
+                    #[cfg(not(target_os = "windows"))]
+                    {
+                        error!(target: LOG_TARGET, "Failed to detect GPU devices: {original_error}");
+                        return Err(original_error);
+                    }
                 }
-
                 Ok(())
             })
             .await?;
@@ -274,6 +301,38 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
                     }
                 }
             });
+
+        Ok(())
+    }
+}
+
+impl GpuMiningSetupPhase {
+    async fn resolve_detect_gpu_step(&self) -> Result<(), Error> {
+        let state = self.app_handle.state::<UniverseAppState>();
+        let (data_dir, config_dir, _log_dir) = self.get_app_dirs()?;
+        let glytex_detection_result = state
+            .gpu_miner
+            .write()
+            .await
+            .detect(
+                config_dir.clone(),
+                self.app_configuration.gpu_engine.clone(),
+            )
+            .await;
+
+        let graxil_detection_result = GpuDevices::current()
+            .write()
+            .await
+            .detect(data_dir.clone())
+            .await;
+
+        if let (Err(graxil_err), Err(glytex_err)) =
+            (graxil_detection_result, glytex_detection_result)
+        {
+            return Err(anyhow::anyhow!(
+                "Failed to detect GPU devices: Graxil: {graxil_err}, Glytex: {glytex_err}"
+            ));
+        }
 
         Ok(())
     }

@@ -30,6 +30,7 @@ use crate::external_dependencies::RequiredExternalDependency;
 use crate::gpu_devices::GpuDeviceInformation;
 use crate::internal_wallet::TariAddressType;
 use crate::pool_status_watcher::PoolStatus;
+#[cfg(target_os = "windows")]
 use crate::system_dependencies::UniversalSystemDependency;
 use crate::wallet::wallet_types::{TransactionInfo, WalletBalance};
 use crate::{
@@ -129,7 +130,7 @@ impl EventsEmitter {
             error!(target: LOG_TARGET, "Failed to emit ShowReleaseNotesPayload event: {e:?}");
         }
     }
-
+    #[cfg(target_os = "windows")]
     pub async fn emit_system_dependencies_loaded(payload: Vec<UniversalSystemDependency>) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {

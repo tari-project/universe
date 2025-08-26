@@ -109,6 +109,12 @@ impl PlatformUtils {
 
     #[cfg(target_os = "windows")]
     async fn initialize_windows_preqesities() -> Result<(), anyhow::Error> {
+        use crate::system_dependencies::system_dependencies_manager::SystemDependenciesManager;
+
+        SystemDependenciesManager::get_instance()
+            .validate_dependencies(true)
+            .await?;
+
         Ok(())
     }
 

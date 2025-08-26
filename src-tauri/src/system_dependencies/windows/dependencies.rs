@@ -154,10 +154,10 @@ impl WindowsSystemDependency {
             manufacturer: manufacturer_ui_info,
         };
         let download_url = match vendor {
-            HardwareVendor::Nvidia => "https://www.nvidia.com/Download/index.aspx".to_string(),
-            HardwareVendor::Amd => "https://www.amd.com/en/support".to_string(),
+            HardwareVendor::Nvidia => "https://us.download.nvidia.com/nvapp/client/11.0.4.526/NVIDIA_app_v11.0.4.526.exe".to_string(),
+            HardwareVendor::Amd => "https://drivers.amd.com/drivers/installer/25.10/whql/amd-software-adrenalin-edition-25.8.1-minimalsetup-250801_web.exe".to_string(),
             HardwareVendor::Intel => {
-                "https://downloadcenter.intel.com/product/80939/Graphics".to_string()
+                "https://dsadata.intel.com/installer".to_string()
             }
             _ => "".to_string(),
         };
