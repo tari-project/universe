@@ -135,7 +135,7 @@ impl WindowsDependenciesResolver {
 
     // It should iter over all dependencies and validate them using registry readers and requirement checkers
     pub async fn validate_dependencies(&self) -> Result<Vec<UniversalSystemDependency>, Error> {
-        let dependencies = self.dependencies.write().await;
+        let mut dependencies = self.dependencies.write().await;
         for dependency in dependencies.iter_mut() {
             // Validate each dependency using the appropriate registry reader
             match dependency.registry_entry_type {
@@ -154,7 +154,7 @@ impl WindowsDependenciesResolver {
                 WindowsRegistryRecordType::KhronosSoftware => {
                     let entries = WindowsRegistryKhronosSoftwareResolver::read_registry()?;
                     for entry in entries.iter() {
-                        for check_value in dependency.check_values.iter() {
+                        for _check_value in dependency.check_values.iter() {
                             if entry.check_requirements(&()) {
                                 dependency.universal_data.status =
                                     UniversalDependencyStatus::Installed;
@@ -176,7 +176,7 @@ impl WindowsDependenciesResolver {
         }
         Ok(dependencies
             .iter()
-            .map(|d| d.clone().universal_data)
+            .map(|d| d.clone().universal_data.clone())
             .collect())
     }
 
