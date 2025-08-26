@@ -47,7 +47,7 @@ const ExternalDependenciesDialog = memo(function ExternalDependenciesDialog() {
     }, []);
 
     return (
-        <Dialog open={showExternalDependenciesDialog}>
+        <Dialog open={showExternalDependenciesDialog} onOpenChange={handleClose}>
             <DialogContent>
                 <Stack gap={16}>
                     <Stack gap={4}>
