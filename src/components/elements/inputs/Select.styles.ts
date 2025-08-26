@@ -11,6 +11,7 @@ interface StyleProps {
     $selected?: boolean;
     $loading?: boolean;
     $isSync?: boolean;
+    $isActive?: boolean;
 }
 
 export const Wrapper = styled.div`
@@ -148,10 +149,22 @@ export const StyledOption = styled.div<StyleProps>`
         background: ${({ theme }) => theme.palette.action.hover.default};
     }
 
+    &:focus {
+        background: ${({ theme }) => theme.palette.action.hover.default};
+        outline: 2px solid ${({ theme }) => theme.palette.focusOutline};
+        outline-offset: -2px;
+    }
+
     &:focus-visible {
         outline: 2px solid ${({ theme }) => theme.palette.focusOutline};
         outline-offset: -2px;
     }
+
+    ${({ $isActive, theme }) =>
+        $isActive &&
+        css`
+            background: ${theme.palette.action.hover.default};
+        `}
 
     ${({ $isBordered }) =>
         $isBordered &&
