@@ -33,6 +33,9 @@ use crate::{
     },
     UniverseAppState,
 };
+use log::warn;
+
+const LOG_TARGET: &str = "tari::universe::ootle";
 
 async fn build_client(
     state: tauri::State<'_, UniverseAppState>,
@@ -53,6 +56,9 @@ pub async fn ootle_list_accounts(
     client
         .list_accounts(request)
         .await
+        .inspect_err(|err| {
+            warn!(target: LOG_TARGET, "Failed to list accounts: {}", err);
+        })
         .map_err(InvokeError::from_anyhow)
 }
 
@@ -65,6 +71,9 @@ pub async fn ootle_create_account(
     client
         .create_account(request)
         .await
+        .inspect_err(|err| {
+            warn!(target: LOG_TARGET, "Failed to create account: {}", err);
+        })
         .map_err(InvokeError::from_anyhow)
 }
 
@@ -77,6 +86,9 @@ pub async fn ootle_create_free_test_coins(
     client
         .create_free_test_coins(request)
         .await
+        .inspect_err(|err| {
+            warn!(target: LOG_TARGET, "Failed to create free test coins: {}", err);
+        })
         .map_err(InvokeError::from_anyhow)
 }
 
@@ -89,6 +101,9 @@ pub async fn ootle_get_balances(
     client
         .get_balances(request)
         .await
+        .inspect_err(|err| {
+            warn!(target: LOG_TARGET, "Failed to get balances: {}", err);
+        })
         .map_err(InvokeError::from_anyhow)
 }
 
@@ -102,5 +117,8 @@ pub async fn ootle_make_json_rpc_request(
     client
         .make_json_rpc_request(method, params)
         .await
+        .inspect_err(|err| {
+            warn!(target: LOG_TARGET, "Failed to make JSON-RPC request: {}", err);
+        })
         .map_err(InvokeError::from_anyhow)
 }

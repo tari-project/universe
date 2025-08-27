@@ -69,7 +69,7 @@ pub struct AccountsCreateResponse {
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct AccountsCreateFreeTestCoinsRequest {
     pub account: Option<serde_json::Value>,
-    pub amount: String,
+    pub amount: u64,
     pub max_fee: Option<u64>,
     pub key_id: Option<u64>,
 }
