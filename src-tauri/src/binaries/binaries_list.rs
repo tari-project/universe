@@ -22,6 +22,8 @@
 
 use std::path::PathBuf;
 
+use crate::utils::platform_utils::{CurrentOperatingSystem, PlatformUtils};
+
 pub enum BinaryPlatformAssets {
     LinuxX64,
     WindowsX64,
@@ -71,6 +73,16 @@ impl Binaries {
         }
     }
 
+    fn append_exe_if_windows(path: &mut PathBuf) -> PathBuf {
+        if matches!(
+            PlatformUtils::detect_current_os(),
+            CurrentOperatingSystem::Windows
+        ) {
+            path.set_extension("exe");
+        }
+        path.clone()
+    }
+
     pub fn binary_file_name(self, version: String) -> PathBuf {
         let base_path = match self {
             Binaries::Xmrig => {
@@ -79,27 +91,27 @@ impl Binaries {
             }
             Binaries::MergeMiningProxy => {
                 let file_name = "minotari_merge_mining_proxy";
-                PathBuf::from(file_name)
+                Self::append_exe_if_windows(&mut PathBuf::from(file_name))
             }
             Binaries::MinotariNode => {
                 let file_name = "minotari_node";
-                PathBuf::from(file_name)
+                Self::append_exe_if_windows(&mut PathBuf::from(file_name))
             }
             Binaries::Wallet => {
                 let file_name = "minotari_console_wallet";
-                PathBuf::from(file_name)
+                Self::append_exe_if_windows(&mut PathBuf::from(file_name))
             }
             Binaries::ShaP2pool => {
                 let file_name = "sha_p2pool";
-                PathBuf::from(file_name)
+                Self::append_exe_if_windows(&mut PathBuf::from(file_name))
             }
             Binaries::GpuMiner => {
                 let file_name = "glytex";
-                PathBuf::from(file_name)
+                Self::append_exe_if_windows(&mut PathBuf::from(file_name))
             }
             Binaries::Tor => {
                 let file_name = "tor";
-                PathBuf::from(file_name)
+                Self::append_exe_if_windows(&mut PathBuf::from(file_name))
             }
             Binaries::BridgeTapplet => {
                 let file_name = format!("bridge-{version}");
@@ -107,7 +119,7 @@ impl Binaries {
             }
             Binaries::GpuMinerSHA3X => {
                 let file_name = "graxil";
-                PathBuf::from(file_name)
+                Self::append_exe_if_windows(&mut PathBuf::from(file_name))
             }
         };
 
