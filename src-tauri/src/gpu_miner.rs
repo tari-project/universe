@@ -200,7 +200,7 @@ impl GpuMiner {
             self.curent_selected_engine.to_string(),
         ];
         let gpuminer_bin = BinaryResolver::current()
-            .resolve_path_to_binary_files(Binaries::GpuMiner)
+            .get_binary_path(Binaries::GpuMiner)
             .await?;
 
         info!(target: LOG_TARGET, "Gpu miner binary file path {:?}", gpuminer_bin.clone());
