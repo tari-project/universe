@@ -739,26 +739,7 @@ impl SetupManager {
         phase_status_channels.insert(SetupPhase::GpuMining, gpu_mining_phase_status.clone());
         phase_status_channels.insert(SetupPhase::Node, node_phase_status.clone());
         phase_status_channels.insert(SetupPhase::Wallet, wallet_phase_status.clone());
-        phase_status_channels.insert(SetupPhase::Mining, mining_phase_status.clone());
         phase_status_channels.insert(SetupPhase::OotleWallet, ootle_wallet_phase_status.clone());
-
-
-        ListenerUnlockApp::current()
-            .load_app_handle(app_handle.clone())
-            .await;
-        setup_listener(
-            ListenerUnlockApp::current(),
-            &setup_features,
-            phase_status_channels.clone(),
-        )
-        .await;
-
-        setup_listener(
-            ListenerSetupFinished::current(),
-            &setup_features,
-            phase_status_channels.clone(),
-        )
-        .await;
 
         setup_listener(
             ListenerUnlockCpuMining::current(),

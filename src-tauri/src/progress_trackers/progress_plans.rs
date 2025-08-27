@@ -52,7 +52,9 @@ pub enum SetupStep {
     StartWallet,
     SetupBridge,
 
-    // TODO OOTLE - add wallet ootle phase
+    // Ootle Wallet Phase
+    BinariesOotleWallet,
+    StartOotleWallet,
 }
 
 impl SetupStep {
@@ -89,6 +91,10 @@ impl SetupStep {
             Self::BinariesWallet => "binaries-wallet".to_string(),
             Self::StartWallet => "start-wallet".to_string(),
             Self::SetupBridge => "setup-bridge".to_string(),
+
+            // Ootle Wallet Phase
+            Self::BinariesOotleWallet => "binaries-ootle-wallet".to_string(),
+            Self::StartOotleWallet => "start-ootle-wallet".to_string(),
         }
     }
 
@@ -111,10 +117,10 @@ impl SetupStep {
             Self::WaitingForHeaderSync => 8,
             Self::WaitingForBlockSync => 8,
 
-            // Cpu Mining Phase 20
-            Self::BinariesCpuMiner => 8,
+            // Cpu Mining Phase 20 -> 15
+            Self::BinariesCpuMiner => 5,
             Self::BinariesMergeMiningProxy => 5,
-            Self::MMProxy => 5,
+            Self::MMProxy => 3,
             Self::InitializeCpuHardware => 2,
 
             // Gpu Mining Phase 15
@@ -122,10 +128,14 @@ impl SetupStep {
             Self::DetectGpu => 3,
             Self::InitializeGpuHardware => 2,
 
-            // Wallet Phase 20
-            Self::BinariesWallet => 10,
+            // Wallet Phase 15
+            Self::BinariesWallet => 5,
             Self::StartWallet => 5,
             Self::SetupBridge => 5,
+
+            // Ootle Wallet 10
+            Self::BinariesOotleWallet => 5,
+            Self::StartOotleWallet => 5,
         }
     }
 }

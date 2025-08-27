@@ -27,9 +27,8 @@ use crate::{
     ootle::ootle_wallet_manager::OotleWalletStartupConfig,
     pin::PinManager,
     progress_trackers::{
-        progress_plans::{ProgressPlans, ProgressSetupOotleWalletPlan},
-        progress_stepper::ProgressStepperBuilder,
-        ProgressStepper,
+        progress_plans::SetupStep,
+        progress_stepper::{ProgressStepper, ProgressStepperBuilder},
     },
     setup::setup_manager::SetupPhase,
     tasks_tracker::TasksTrackers,
@@ -71,7 +70,8 @@ pub struct OotleWalletSetupPhase {
     app_configuration: OotleWalletSetupPhaseAppConfiguration,
     setup_configuration: SetupConfiguration,
     status_sender: Sender<PhaseStatus>,
-    _setup_features: SetupFeaturesList,
+    #[allow(dead_code)]
+    setup_features: SetupFeaturesList,
     timeout_watcher: TimeoutWatcher,
 }
 
@@ -105,18 +105,22 @@ impl SetupPhaseImpl for OotleWalletSetupPhase {
             app_handle: app_handle.clone(),
             progress_stepper: Mutex::new(Self::create_progress_stepper(
                 app_handle.clone(),
+                status_sender.clone(),
                 timeout_watcher.get_sender(),
             )),
             app_configuration: Self::load_app_configuration().await.unwrap_or_default(),
             setup_configuration: configuration,
             status_sender,
-            _setup_features: setup_features,
+            setup_features,
             timeout_watcher,
         }
     }
 
     fn get_app_handle(&self) -> &AppHandle {
         &self.app_handle
+    }
+    fn get_status_sender(&self) -> &Sender<PhaseStatus> {
+        &self.status_sender
     }
 
     async fn get_shutdown_signal(&self) -> ShutdownSignal {
@@ -149,20 +153,18 @@ impl SetupPhaseImpl for OotleWalletSetupPhase {
 
     fn create_progress_stepper(
         app_handle: AppHandle,
+        status_sender: Sender<PhaseStatus>,
         timeout_watcher_sender: Sender<u64>,
     ) -> ProgressStepper {
         ProgressStepperBuilder::new()
-            .add_step(ProgressPlans::Ootle(
-                ProgressSetupOotleWalletPlan::BinariesWallet,
-            ))
-            .add_step(ProgressPlans::Ootle(
-                ProgressSetupOotleWalletPlan::StartWallet,
-            ))
-            .add_step(ProgressPlans::Ootle(
-                ProgressSetupOotleWalletPlan::Initialize,
-            ))
-            .add_step(ProgressPlans::Ootle(ProgressSetupOotleWalletPlan::Done))
-            .build(app_handle, timeout_watcher_sender)
+            .add_incremental_step(SetupStep::BinariesOotleWallet, true)
+            .add_step(SetupStep::StartOotleWallet, true)
+            .build(
+                app_handle,
+                timeout_watcher_sender,
+                status_sender,
+                SetupPhase::OotleWallet,
+            )
     }
 
     async fn load_app_configuration() -> Result<Self::AppConfiguration, Error> {
@@ -176,67 +178,61 @@ impl SetupPhaseImpl for OotleWalletSetupPhase {
     }
 
     async fn setup_inner(&self) -> Result<(), Error> {
+        let app_state = self.get_app_handle().state::<UniverseAppState>().clone();
         let mut progress_stepper = self.progress_stepper.lock().await;
         let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
-        let state = self.app_handle.state::<UniverseAppState>();
 
         let binary_resolver = BinaryResolver::current();
 
-        let wallet_binary_progress_tracker = progress_stepper.channel_step_range_updates(
-            ProgressPlans::Ootle(ProgressSetupOotleWalletPlan::BinariesWallet),
-            Some(ProgressPlans::Ootle(
-                ProgressSetupOotleWalletPlan::StartWallet,
-            )),
-        );
+        let ootle_wallet_binary_progress_tracker =
+            progress_stepper.track_step_incrementally(SetupStep::BinariesOotleWallet);
 
-        binary_resolver
-            .initialize_binary(Binaries::OotleWallet, wallet_binary_progress_tracker)
+        progress_stepper
+            .complete_step(SetupStep::BinariesOotleWallet, || async {
+                binary_resolver
+                    .initialize_binary(Binaries::OotleWallet, ootle_wallet_binary_progress_tracker)
+                    .await
+            })
             .await?;
 
         progress_stepper
-            .resolve_step(ProgressPlans::Ootle(
-                ProgressSetupOotleWalletPlan::StartWallet,
-            ))
-            .await;
+            .complete_step(SetupStep::StartOotleWallet, || async {
+                info!(target: LOG_TARGET, "Starting Ootle wallet");
+                let seed_words = self.get_seed_words(&self.app_handle).await?;
+                let ootle_wallet_config = OotleWalletStartupConfig {
+                    base_path: data_dir.clone(),
+                    config_path: config_dir.clone(),
+                    log_path: log_dir.clone(),
+                    indexer_urls: self.app_configuration.indexer_urls.clone(),
+                    seed_words: Hidden::hide(seed_words),
+                };
+                app_state
+                    .ootle_wallet_manager
+                    .ensure_started(
+                        TasksTrackers::current()
+                            .ootle_wallet_phase
+                            .get_signal()
+                            .await,
+                        ootle_wallet_config,
+                    )
+                    .await?;
 
-        info!(target: LOG_TARGET, "Starting Ootle wallet");
-        let seed_words = self.get_seed_words(&self.app_handle).await?;
-        let ootle_wallet_config = OotleWalletStartupConfig {
-            base_path: data_dir.clone(),
-            config_path: config_dir.clone(),
-            log_path: log_dir.clone(),
-            indexer_urls: self.app_configuration.indexer_urls.clone(),
-            seed_words: Hidden::hide(seed_words),
-        };
-        state
-            .ootle_wallet_manager
-            .ensure_started(
-                TasksTrackers::current()
-                    .ootle_wallet_phase
-                    .get_signal()
-                    .await,
-                ootle_wallet_config,
-            )
+                Ok(())
+            })
             .await?;
-
-        progress_stepper
-            .resolve_step(ProgressPlans::Ootle(
-                ProgressSetupOotleWalletPlan::Initialize,
-            ))
-            .await;
 
         Ok(())
     }
 
-    async fn finalize_setup(&self) -> Result<(), Error> {
-        self.status_sender.send(PhaseStatus::Success).ok();
-        self.progress_stepper
-            .lock()
-            .await
-            .resolve_step(ProgressPlans::Ootle(ProgressSetupOotleWalletPlan::Done))
-            .await;
-
-        EventsEmitter::emit_ootle_wallet_phase_finished(true).await;
+    async fn finalize_setup(&self) -> Result<(), anyhow::Error> {
+        let progress_stepper = self.progress_stepper.lock().await;
+        let setup_warnings = progress_stepper.get_setup_warnings();
+        if setup_warnings.is_empty() {
+            self.status_sender.send(PhaseStatus::Success)?;
+        } else {
+            self.status_sender
+                .send(PhaseStatus::SuccessWithWarnings(setup_warnings.clone()))?;
+        }
 
         Ok(())
     }
