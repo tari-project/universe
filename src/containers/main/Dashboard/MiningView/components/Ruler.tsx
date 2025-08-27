@@ -1,13 +1,13 @@
 import { useTheme } from 'styled-components';
 import { useLayoutEffect, useRef } from 'react';
 import { useMotionValue } from 'motion/react';
-import { useFetchExplorerData } from '@app/hooks/mining/useFetchExplorerData.ts';
+import { useBlockTip } from '@app/hooks/mining/useBlockTip.ts';
 import { Column, MarkGroup, RulerMark, RulerMarkGroup, Wrapper } from './Ruler.styles.ts';
 
 export function Ruler() {
     const theme = useTheme();
-    const { data } = useFetchExplorerData();
-    const height = data?.currentBlock?.height ? Number(data?.currentBlock?.height) : 0;
+    const { data, isLoading } = useBlockTip();
+    const height = data?.height ? Number(data?.height) : 0;
     const windowWidth = useMotionValue(window.innerWidth);
 
     const columnRef = useRef<HTMLDivElement>(null);
@@ -68,6 +68,8 @@ export function Ruler() {
             window.removeEventListener('resize', handleResize);
         };
     }, [windowWidth]);
+
+    if (isLoading) return null;
 
     return (
         <Wrapper>
