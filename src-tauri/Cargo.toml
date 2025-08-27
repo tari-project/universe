@@ -78,7 +78,7 @@ sysinfo = "0.31.2"
 tar = "0.4.26"
 tari_common = { git = "https://github.com/tari-project/tari.git", tag = "v5.0.0-pre.7" }
 tari_common_types = { git = "https://github.com/tari-project/tari.git", tag = "v5.0.0-pre.7" }
-tari_transaction_components = { git = "https://github.com/tari-project/tari.git", tag = "v5.0.0-pre.7"}
+tari_transaction_components = { git = "https://github.com/tari-project/tari.git", tag = "v5.0.0-pre.7" }
 tari_crypto = "0.22.1"
 tari_shutdown = { git = "https://github.com/tari-project/tari.git", tag = "v5.0.0-pre.7" }
 tari_utilities = "0.8.0"
