@@ -1,4 +1,4 @@
-import { ApplicationsVersions, ExternalDependency, NetworkStatus } from '@app/types/app-status';
+import { ApplicationsVersions, NetworkStatus, SystemDependency } from '@app/types/app-status';
 import { create } from './create';
 import { CriticalProblemPayload } from '@app/types/events-payloads';
 
@@ -7,8 +7,7 @@ interface AppState {
     criticalProblem?: Partial<CriticalProblemPayload>;
     isSettingsOpen: boolean;
     criticalError?: Partial<CriticalProblemPayload>;
-    externalDependencies: ExternalDependency[];
-    missingExternalDependencies?: ExternalDependency[];
+    systemDependencies: SystemDependency[];
     issueReference?: string;
     applications_versions?: ApplicationsVersions;
     releaseNotes: string;
@@ -19,8 +18,7 @@ interface AppState {
 
 const initialstate: AppState = {
     isSettingsOpen: false,
-    externalDependencies: [],
-    missingExternalDependencies: [],
+    systemDependencies: [],
     releaseNotes: '',
     isAppUpdateAvailable: false,
     isStuckOnOrphanChain: false,
