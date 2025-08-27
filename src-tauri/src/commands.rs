@@ -42,12 +42,11 @@ use crate::gpu_miner_adapter::GpuNodeSource;
 use crate::internal_wallet::{mnemonic_to_tari_cipher_seed, InternalWallet, PaperWalletConfig};
 use crate::node::node_adapter::BaseNodeStatus;
 use crate::node::node_manager::NodeType;
+use crate::ootle::ootle_wallet_adapter::OotleWalletState;
 use crate::p2pool::models::{Connections, P2poolStats};
 use crate::pin::PinManager;
 use crate::release_notes::ReleaseNotes;
 use crate::setup::setup_manager::{SetupManager, SetupPhase};
-use crate::tapplets::interface::ActiveTapplet;
-use crate::tapplets::tapplet_server::start_tapplet;
 use crate::tasks_tracker::TasksTrackers;
 use crate::tor_adapter::TorConfig;
 use crate::utils::address_utils::verify_send;
@@ -108,6 +107,7 @@ pub struct ApplicationsVersions {
     sha_p2pool: ApplicationsInformation,
     xtrgpuminer: ApplicationsInformation,
     bridge: ApplicationsInformation,
+    ootle_wallet: ApplicationsInformation,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -330,6 +330,9 @@ pub async fn get_applications_versions(
     let bridge_version = binary_resolver
         .get_binary_version(Binaries::BridgeTapplet)
         .await;
+    let ootle_wallet_version = binary_resolver
+        .get_binary_version(Binaries::OotleWallet)
+        .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET,
@@ -369,6 +372,10 @@ pub async fn get_applications_versions(
         },
         bridge: ApplicationsInformation {
             version: bridge_version,
+            port: None,
+        },
+        ootle_wallet: ApplicationsInformation {
+            version: ootle_wallet_version,
             port: None,
         },
     })
@@ -2224,38 +2231,6 @@ pub async fn set_seed_backed_up() -> Result<(), String> {
     Ok(())
 }
 
-/*
- ********** TAPPLETS SECTION **********
-*/
-
-#[tauri::command]
-pub async fn launch_builtin_tapplet() -> Result<ActiveTapplet, String> {
-    let binaries_resolver = BinaryResolver::current();
-
-    let tapp_dest_dir = binaries_resolver
-        .resolve_path_to_binary_files(Binaries::BridgeTapplet)
-        .await
-        .map_err(|e| e.to_string())?;
-
-    let handle_start =
-        tauri::async_runtime::spawn(async move { start_tapplet(tapp_dest_dir).await });
-
-    let (addr, _cancel_token) = match handle_start.await {
-        Ok(result) => result.map_err(|e| e.to_string())?,
-        Err(e) => {
-            error!(target: LOG_TARGET, "❌ Error handling tapplet start: {e:?}");
-            return Err(e.to_string());
-        }
-    };
-
-    Ok(ActiveTapplet {
-        tapplet_id: 0,
-        display_name: "Bridge-wXTM".to_string(),
-        source: format!("http://{addr}"),
-        version: "1.0.0".to_string(),
-    })
-}
-
 #[tauri::command]
 pub async fn get_bridge_envs() -> Result<(String, String), String> {
     let walletconnect_id = option_env!("BRIDGE_WALLET_CONNECT_PROJECT_ID")
@@ -2362,4 +2337,12 @@ pub async fn set_security_warning_dismissed() -> Result<(), String> {
         .map_err(|e| e.to_string())?;
 
     Ok(())
+}
+
+#[tauri::command]
+pub fn get_ootle_wallet_state(
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<Option<OotleWalletState>, InvokeError> {
+    let state = state.ootle_wallet_state_watch_rx.borrow().clone();
+    Ok(state)
 }

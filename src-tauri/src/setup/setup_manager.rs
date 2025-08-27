@@ -36,6 +36,7 @@ use crate::configs::config_wallet::ConfigWalletContent;
 use crate::events::CriticalProblemPayload;
 use crate::internal_wallet::InternalWallet;
 use crate::progress_trackers::progress_plans::SetupStep;
+use crate::setup::phase_ootle_wallet::OotleWalletSetupPhase;
 use crate::setup::{
     phase_core::CoreSetupPhase, phase_cpu_mining::CpuMiningSetupPhase,
     phase_gpu_mining::GpuMiningSetupPhase, phase_node::NodeSetupPhase,
@@ -103,6 +104,7 @@ pub enum SetupPhase {
     GpuMining,
     Wallet,
     Node,
+    OotleWallet,
 }
 
 impl Display for SetupPhase {
@@ -113,6 +115,7 @@ impl Display for SetupPhase {
             Self::GpuMining => write!(f, "GPU Mining"),
             Self::Wallet => write!(f, "Wallet"),
             Self::Node => write!(f, "Node"),
+            Self::OotleWallet => write!(f, "OotleWallet"),
         }
     }
 }
@@ -125,6 +128,7 @@ impl SetupPhase {
             Self::GpuMining,
             Self::Node,
             Self::Wallet,
+            Self::OotleWallet,
         ]
     }
     pub fn get_i18n_title_key(&self) -> String {
@@ -134,6 +138,7 @@ impl SetupPhase {
             Self::GpuMining => "setup-gpu-mining".to_string(),
             Self::Node => "setup-node".to_string(),
             Self::Wallet => "setup-wallet".to_string(),
+            Self::OotleWallet => "ootle-wallet".to_string(),
         }
     }
 }
@@ -196,6 +201,7 @@ pub struct SetupManager {
     node_phase_status: Sender<PhaseStatus>,
     wallet_phase_status: Sender<PhaseStatus>,
     exchange_modal_status: Sender<ExchangeModalStatus>,
+    ootle_wallet_phase_status: Sender<PhaseStatus>,
     phases_to_restart_queue: Mutex<Vec<SetupPhase>>,
     app_handle: Mutex<Option<AppHandle>>,
     // Temporary to prevent multiple restarts within few seconds
@@ -548,6 +554,21 @@ impl SetupManager {
         wallet_phase_setup.setup().await;
     }
 
+    async fn setup_ootle_wallet_phase(&self) {
+        let app_handle = self.app_handle().await;
+        let setup_features = self.features.read().await.clone();
+        let ootle_wallet_phase_setup = PhaseBuilder::new()
+            .with_setup_timeout_duration(Duration::from_secs(60 * 10)) // 10 minutes
+            .with_listeners_for_required_phases_statuses(vec![self.wallet_phase_status.subscribe()])
+            .build::<OotleWalletSetupPhase>(
+                app_handle.clone(),
+                self.ootle_wallet_phase_status.clone(),
+                setup_features,
+            )
+            .await;
+        ootle_wallet_phase_setup.setup().await;
+    }
+
     pub async fn mark_exchange_modal_as_completed(&self) -> Result<(), anyhow::Error> {
         self.exchange_modal_status
             .send(ExchangeModalStatus::Completed)?;
@@ -581,6 +602,13 @@ impl SetupManager {
                     TasksTrackers::current().wallet_phase.close().await;
                     TasksTrackers::current().wallet_phase.replace().await;
                     let _unused = self.wallet_phase_status.send_replace(PhaseStatus::None);
+                }
+                SetupPhase::OotleWallet => {
+                    TasksTrackers::current().ootle_wallet_phase.close().await;
+                    TasksTrackers::current().ootle_wallet_phase.replace().await;
+                    let _unused = self
+                        .ootle_wallet_phase_status
+                        .send_replace(PhaseStatus::None);
                 }
             }
         }
@@ -642,6 +670,9 @@ impl SetupManager {
                     }
                     self.setup_wallet_phase().await;
                 }
+                SetupPhase::OotleWallet => {
+                    self.setup_ootle_wallet_phase().await;
+                }
             }
         }
     }
@@ -700,6 +731,7 @@ impl SetupManager {
         let gpu_mining_phase_status = self.gpu_mining_phase_status.subscribe();
         let node_phase_status = self.node_phase_status.subscribe();
         let wallet_phase_status = self.wallet_phase_status.subscribe();
+        let ootle_wallet_phase_status = self.ootle_wallet_phase_status.subscribe();
 
         let mut phase_status_channels = HashMap::new();
         phase_status_channels.insert(SetupPhase::Core, core_phase_status.clone());
@@ -707,6 +739,26 @@ impl SetupManager {
         phase_status_channels.insert(SetupPhase::GpuMining, gpu_mining_phase_status.clone());
         phase_status_channels.insert(SetupPhase::Node, node_phase_status.clone());
         phase_status_channels.insert(SetupPhase::Wallet, wallet_phase_status.clone());
+        phase_status_channels.insert(SetupPhase::Mining, mining_phase_status.clone());
+        phase_status_channels.insert(SetupPhase::OotleWallet, ootle_wallet_phase_status.clone());
+
+
+        ListenerUnlockApp::current()
+            .load_app_handle(app_handle.clone())
+            .await;
+        setup_listener(
+            ListenerUnlockApp::current(),
+            &setup_features,
+            phase_status_channels.clone(),
+        )
+        .await;
+
+        setup_listener(
+            ListenerSetupFinished::current(),
+            &setup_features,
+            phase_status_channels.clone(),
+        )
+        .await;
 
         setup_listener(
             ListenerUnlockCpuMining::current(),
@@ -734,6 +786,7 @@ impl SetupManager {
         self.setup_gpu_mining_phase().await;
         self.setup_node_phase().await;
         self.setup_wallet_phase().await;
+        self.setup_ootle_wallet_phase().await;
     }
 
     /// Used in handle_unhealthy for graxil miner

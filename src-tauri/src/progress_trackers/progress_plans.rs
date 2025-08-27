@@ -51,6 +51,8 @@ pub enum SetupStep {
     // Wallet Phase
     StartWallet,
     SetupBridge,
+
+    // TODO OOTLE - add wallet ootle phase
 }
 
 impl SetupStep {

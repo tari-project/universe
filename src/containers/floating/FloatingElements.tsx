@@ -27,6 +27,9 @@ import CreatePinDialog from '@app/containers/floating/security/pin/CreatePinDial
 import EnterPinDialog from '@app/containers/floating/security/pin/EnterPinDialog.tsx';
 import CrewRewards from '../main/CrewRewards/CrewRewards.tsx';
 import FailedModuleInitializationDialog from './FailedModuleInitializationDialog/FailedModuleInitializationDialog.tsx';
+import TappletCspDialog from './security/tapplet/TappletCspDialog.tsx';
+import TappletPermissionsDialog from './security/tapplet/TappletPermissionsDialog.tsx';
+import TappletNotificationDialog from './security/tapplet/TappletNotificationDialog.tsx';
 
 const environment = import.meta.env.MODE;
 
@@ -59,6 +62,9 @@ const FloatingElements = () => {
             <EnterPinDialog />
             <CrewRewards />
             <FailedModuleInitializationDialog />
+            <TappletCspDialog />
+            <TappletPermissionsDialog />
+            <TappletNotificationDialog />
         </FloatingTree>
     );
 };

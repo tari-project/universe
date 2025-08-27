@@ -277,6 +277,7 @@ impl BinaryManager {
                 Binaries::ShaP2pool => &TasksTrackers::current().common,
                 Binaries::BridgeTapplet => &TasksTrackers::current().wallet_phase,
                 Binaries::GpuMinerSHA3X => &TasksTrackers::current().gpu_mining_phase,
+                Binaries::OotleWallet => &TasksTrackers::current().ootle_wallet_phase,
             };
             let binary_name = self.binary_name.clone();
             let shutdown_signal = task_tacker.get_signal().await;
