@@ -69,10 +69,10 @@ impl Manufacturer {
     }
     pub fn get_logo_url(&self) -> String {
         match self {
-            Manufacturer::Microsoft => self.get_url() + "/favicon.ico",
-            Manufacturer::Nvidia => self.get_url() + "/favicon.ico",
-            Manufacturer::AMD => self.get_url() + "/favicon.ico",
-            Manufacturer::Intel => self.get_url() + "/favicon.ico",
+            Manufacturer::Microsoft => self.get_name() + "_favicon.ico",
+            Manufacturer::Nvidia => self.get_name() + "_favicon.ico",
+            Manufacturer::AMD => self.get_name() + "_logo.jpg",
+            Manufacturer::Intel => self.get_name() + "_favicon.ico",
             Manufacturer::Unknown => "".to_string(),
         }
     }
