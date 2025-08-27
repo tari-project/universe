@@ -32,12 +32,6 @@ export interface SystemDependency {
     required_by_app_modules: AppModule[];
 }
 
-export interface CriticalProblemPayload {
-    title: string;
-    message: string;
-    is_blocking: boolean;
-}
-
 export interface TransactionInfo {
     tx_id: number;
     source_address: string;

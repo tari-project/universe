@@ -11,7 +11,10 @@ import { Button } from '@app/components/elements/buttons/Button.tsx';
 
 import { SpinnerIcon } from '@app/components/elements/loaders/SpinnerIcon.tsx';
 import { setError } from '@app/store';
-import { ManufacturerWrapper } from '@app/containers/floating/ExternalDependenciesDialog/styles.ts';
+import {
+    ManufacturerLogoWrapper,
+    ManufacturerWrapper,
+} from '@app/containers/floating/ExternalDependenciesDialog/styles.ts';
 
 export const ExternalDependencyCard = ({
     missingDependency,
@@ -46,15 +49,15 @@ export const ExternalDependencyCard = ({
         }
 
         freeInstallationSlot();
-    }, [freeInstallationSlot, missingDependency, occupyInstallationSlot]);
+    }, [freeInstallationSlot, id, occupyInstallationSlot]);
 
     return (
         <Stack direction="row" alignItems="flex-start" gap={14} style={{ width: '100%', padding: 4 }}>
-            {manufacturer.logo ? (
-                <Stack gap={12} alignItems="center">
-                    <img src={`/assets/img/${manufacturer.logo}`} alt={manufacturer.name} width={40} height={40} />
-                </Stack>
-            ) : null}
+            <ManufacturerLogoWrapper>
+                {manufacturer.logo_url?.length ? (
+                    <img src={`/assets/img/${manufacturer.logo_url}`} alt={manufacturer.name} />
+                ) : null}
+            </ManufacturerLogoWrapper>
             <Stack style={{ width: '100%' }} gap={12} alignItems="flex-start">
                 <ManufacturerWrapper>
                     <Stack direction="row" gap={6}>

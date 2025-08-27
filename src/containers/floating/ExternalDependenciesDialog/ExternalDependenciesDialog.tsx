@@ -69,7 +69,7 @@ export default function ExternalDependenciesDialog() {
                     </Stack>
 
                     {Object.values(externalDependencies).map((missingDependency, index, array) => (
-                        <Stack key={`dependency:${index}:${missingDependency.display_name}`}>
+                        <Stack key={`dependency:${index}:${missingDependency.ui_info.display_name}`}>
                             <ExternalDependencyCard
                                 missingDependency={missingDependency}
                                 freeInstallationSlot={() => setInstallationSlot(null)}

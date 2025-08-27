@@ -25,3 +25,16 @@ export const ManufacturerWrapper = styled.div`
         font-weight: 500;
     }
 `;
+
+export const ManufacturerLogoWrapper = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    img {
+        display: flex;
+        flex-shrink: 0;
+        max-width: 100%;
+    }
+`;

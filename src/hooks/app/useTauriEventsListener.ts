@@ -12,7 +12,6 @@ import {
     setConnectionStatus,
     setDialogToShow,
     setShouldShowExchangeSpecificModal,
-    setShowExternalDependenciesDialog,
     setSidebarOpen,
 } from '@app/store/actions/uiStoreActions';
 import { setAvailableEngines } from '@app/store/actions/miningStoreActions';
