@@ -168,7 +168,11 @@ impl WebsocketEventsManager {
         let network = Network::get_current_or_user_setting_or_default().as_key_str();
         let is_mining_active = cpu_miner_status.hash_rate > 0.0 || gpu_status.hash_rate > 0.0;
         let tari_address = InternalWallet::tari_address().await;
-        let claims_id = decode_jwt_claims_without_exp(&jwt_token).map_or(String::new(), |c| c.id);
+        let claims_id = if !jwt_token.is_empty() {
+            decode_jwt_claims_without_exp(&jwt_token).map_or(String::new(), |c| c.id)
+        } else {
+            String::new()
+        };
 
         let signable_message = format!(
             "{},{},{},{},{},{},{}",
