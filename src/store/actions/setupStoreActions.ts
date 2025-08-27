@@ -1,4 +1,4 @@
-import { loadTowerAnimation, setAnimationState } from '@tari-project/tari-tower';
+import { loadTowerAnimation, setAnimationProperties, setAnimationState } from '@tari-project/tari-tower';
 
 import { useSetupStore } from '../useSetupStore';
 import { startCpuMining, startGpuMining, stopCpuMining, stopGpuMining } from './miningStoreActions';
@@ -15,6 +15,7 @@ import {
 import { TOWER_CANVAS_ID } from '../types/ui';
 import { ProgressTrackerUpdatePayload, SetupPhase } from '@app/types/events-payloads';
 import { AppModule, AppModuleState, AppModuleStatus } from '../types/setup';
+import { animationDarkBg, animationLightBg } from '@app/store/actions/uiStoreActions.ts';
 import { fetchBridgeTransactionsHistory } from '@app/store/actions/bridgeApiActions.ts';
 
 export interface DisabledPhasesPayload {
@@ -26,14 +27,18 @@ async function initializeAnimation() {
     const towerInitalized = useUIStore.getState().towerInitalized;
     if (!visual_mode || towerInitalized) return;
 
+    const uiTheme = useUIStore.getState().theme as string;
+    const preferredTheme = uiTheme === 'system' ? useUIStore.getState().preferredTheme : uiTheme;
+    const animationStyle = preferredTheme === 'dark' ? animationDarkBg : animationLightBg;
+
     const offset = useUIStore.getState().towerSidebarOffset;
     try {
         console.info('Loading tower animation from Setup Store');
         let loaded = false;
         try {
             await loadTowerAnimation({ canvasId: TOWER_CANVAS_ID, offset: offset });
+            setAnimationProperties(animationStyle);
             useUIStore.setState((c) => ({ ...c, towerInitalized: true }));
-
             loaded = true;
         } catch (error) {
             console.error('Failed to set animation state:', error);

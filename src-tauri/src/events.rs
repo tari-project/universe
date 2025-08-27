@@ -52,7 +52,7 @@ pub enum EventType {
     ShowReleaseNotes,
     CriticalProblem,
     #[cfg(target_os = "windows")]
-    MissingApplications,
+    SystemDependenciesLoaded,
     StuckOnOrphanChain,
     NetworkStatus,
     NodeTypeUpdate,
