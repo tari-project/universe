@@ -21,7 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use anyhow::{anyhow, Error};
-use log::{debug, info, warn};
+use log::{info, warn};
 use std::path::PathBuf;
 use std::process::Command;
 
@@ -115,7 +115,7 @@ impl WindowsDefenderExclusions {
                 stdout.trim() == "True"
             }
             Err(e) => {
-                debug!(target: LOG_TARGET, "Failed to check Windows Defender status: {e}");
+                info!(target: LOG_TARGET, "Failed to check Windows Defender status: {e}");
                 false
             }
         }
@@ -126,13 +126,13 @@ impl WindowsDefenderExclusions {
             PlatformUtils::detect_current_os(),
             CurrentOperatingSystem::Windows
         ) {
-            debug!(target: LOG_TARGET, "Skipping Windows Defender exclusions on non-Windows platform");
+            info!(target: LOG_TARGET, "Skipping Windows Defender exclusions on non-Windows platform");
             return Ok(());
         }
 
         // Check if Windows Defender is available
         if !Self::is_windows_defender_available() {
-            debug!(target: LOG_TARGET, "Windows Defender is not available or disabled");
+            info!(target: LOG_TARGET, "Windows Defender is not available or disabled");
             return Ok(());
         }
 
