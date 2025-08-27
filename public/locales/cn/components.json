@@ -29,7 +29,6 @@
     "resuming-all-processes": "恢复所有进程...",
     "resuming-mm-proxy": "恢复 MM 代理...",
     "resuming-node": "恢复节点...",
-    "resuming-p2pool": "恢复 P2Pool...",
     "resuming-tor": "恢复 Tor...",
     "resuming-wallet": "恢复钱包...",
     "syncing-node": "同步节点...",

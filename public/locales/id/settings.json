@@ -89,11 +89,6 @@
   "node-type": "Jenis",
   "not-connected-to-tari": "Tidak terhubung ke Jaringan Tari",
   "open-logs-directory": "Buka direktori log",
-  "p2pool-chain-tip": "Ujung rantai",
-  "p2pool-hash-rate": "Tingkat hash Squad",
-  "p2pool-stats": "Statistik Squad",
-  "p2pool-total-earnings": "Total pendapatan Squad",
-  "p2pool-user-total-earnings": "Total pendapatan",
   "paper-wallet": {
     "connect-wallet-to-phone": "Hubungkan dompet Tari Universe Anda ke ponsel Anda",
     "do-not-share-this-code": "Jangan bagikan kode ini kepada siapa pun",
@@ -176,7 +171,6 @@
     "title": "Perbarui Tari Universe secara otomatis"
   },
   "use-dynamic-fail-data": "Gunakan data gagal dinamis",
-  "use-p2p": "Gunakan P2pool",
   "use-random-control-port": "Gunakan port kontrol acak",
   "use-random-port": "Gunakan port acak",
   "use-tor": "Gunakan Tor",

@@ -166,13 +166,6 @@ impl ProcessAdapter for GpuMinerAdapter {
         args.push("--coinbase-extra".to_string());
         args.push(self.coinbase_extra.clone());
 
-        // if matches!(
-        //     self.node_source.as_ref(),
-        //     Some(GpuNodeSource::P2Pool { .. })
-        // ) {
-        //     args.push("--p2pool-enabled".to_string());
-        // }
-
         info!(target: LOG_TARGET, "Run Gpu miner with args: {:?}", args.join(" "));
         let mut envs = std::collections::HashMap::new();
         match Network::get_current_or_user_setting_or_default() {

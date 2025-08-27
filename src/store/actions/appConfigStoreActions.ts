@@ -177,14 +177,6 @@ export const setCpuMiningEnabled = async (enabled: boolean) => {
         }
     }
 };
-export const setCustomStatsServerPort = async (port?: number) => {
-    useConfigCoreStore.setState((c) => ({ ...c, p2pool_stats_server_port: port }));
-    invoke('set_p2pool_stats_server_port', { port }).catch((e) => {
-        console.error('Could not set p2pool stats server port', e);
-        setError('Could not change p2pool stats server port');
-        useConfigCoreStore.setState((c) => ({ ...c, p2pool_stats_server_port: port }));
-    });
-};
 export const setGpuMiningEnabled = async (enabled: boolean) => {
     useConfigMiningStore.setState((c) => ({ ...c, gpu_mining_enabled: enabled }));
     const anyMiningInitiated =

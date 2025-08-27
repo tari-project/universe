@@ -162,19 +162,6 @@ impl BinaryResolver {
         );
 
         binary_manager.insert(
-            Binaries::ShaP2pool,
-            BinaryManager::new(
-                Binaries::ShaP2pool.name().to_string(),
-                None,
-                Box::new(GithubReleasesAdapter {
-                    repo: "sha-p2pool".to_string(),
-                    owner: "tari-project".to_string(),
-                }),
-                true,
-            ),
-        );
-
-        binary_manager.insert(
             Binaries::Tor,
             BinaryManager::new(
                 Binaries::Tor.name().to_string(),

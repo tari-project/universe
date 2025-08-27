@@ -35,7 +35,6 @@ pub enum Binaries {
     MergeMiningProxy,
     MinotariNode,
     Wallet,
-    ShaP2pool,
     GpuMiner,
     Tor,
     BridgeTapplet,
@@ -48,7 +47,6 @@ impl Binaries {
             Binaries::MergeMiningProxy => "mmproxy",
             Binaries::MinotariNode => "minotari_node",
             Binaries::Wallet => "wallet",
-            Binaries::ShaP2pool => "sha-p2pool",
             Binaries::GpuMiner => "glytex",
             Binaries::Tor => "tor",
             Binaries::BridgeTapplet => "bridge",
@@ -62,7 +60,6 @@ impl Binaries {
             "mmproxy" => Binaries::MergeMiningProxy,
             "minotari_node" => Binaries::MinotariNode,
             "wallet" => Binaries::Wallet,
-            "sha-p2pool" => Binaries::ShaP2pool,
             "glytex" => Binaries::GpuMiner,
             "tor" => Binaries::Tor,
             "bridge" => Binaries::BridgeTapplet,
@@ -87,10 +84,6 @@ impl Binaries {
             }
             Binaries::Wallet => {
                 let file_name = "minotari_console_wallet";
-                PathBuf::from(file_name)
-            }
-            Binaries::ShaP2pool => {
-                let file_name = "sha_p2pool";
                 PathBuf::from(file_name)
             }
             Binaries::GpuMiner => {
@@ -134,20 +127,6 @@ impl Binaries {
                 }
                 BinaryPlatformAssets::MacOSArm64 => {
                     format!("glytex-combined-macos-arm64-{network}-{version}-{hash}.zip")
-                }
-            },
-            Binaries::ShaP2pool => match platform {
-                BinaryPlatformAssets::LinuxX64 => {
-                    format!("sha_p2pool-{version}-{hash}-linux-x86_64.zip")
-                }
-                BinaryPlatformAssets::WindowsX64 => {
-                    format!("sha_p2pool-{version}-{hash}-windows-x64.exe.zip")
-                }
-                BinaryPlatformAssets::MacOSX64 => {
-                    format!("sha_p2pool-{version}-{hash}-macos-x86_64.zip")
-                }
-                BinaryPlatformAssets::MacOSArm64 => {
-                    format!("sha_p2pool-{version}-{hash}-macos-arm64.zip")
                 }
             },
             Binaries::Xmrig => match platform {
