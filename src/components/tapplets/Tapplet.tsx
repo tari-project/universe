@@ -3,7 +3,7 @@ import { useTappletSignerStore } from '@app/store/useTappletSignerStore';
 import { TappletContainer } from '@app/containers/main/Dashboard/MiningView/MiningView.styles';
 import { open } from '@tauri-apps/plugin-shell';
 import { useConfigUIStore, useUIStore, setError as setStoreError } from '@app/store';
-import { IframeMessage, MessageType, useIframeMessage } from '@app/hooks/swap/useIframeMessage';
+import { IframeMessage, isInterTappletMessage, MessageType, useIframeMessage } from '@app/hooks/swap/useIframeMessage';
 import { invoke } from '@tauri-apps/api/core';
 import React from 'react';
 import { useTappletsStore } from '@app/store/useTappletsStore';
@@ -88,35 +88,28 @@ export const Tapplet = forwardRef<HTMLIFrameElement, TappletProps>(({ tapplet, i
 
     const sendInterTappResponse = useCallback(
         (event: MessageEvent<IframeMessage>, targetTappletId: string) => {
+            if (!isInterTappletMessage(event.data)) return;
             const targetIframe = Object.values(iframeRefs.current || {}).find(
-                (iframe) => iframe?.getAttribute('src') === event.origin
+                (iframe) => iframe?.getAttribute('title') === targetTappletId
             );
 
             if (!targetIframe?.contentWindow) {
+                console.error('Target iframe not found');
                 return;
             }
+            console.info('📝 [TAPPLET] Target iframe found:', targetIframe.title, { targetIframe });
 
             try {
-                const message = {
-                    type: MessageType.INTER_TAPPLET,
-                    payload: {
-                        sourceTappletRegistryId: tapplet.package_name,
-                        targetTappletRegistryId: targetTappletId,
-                        msg: 'RESPONSE MESSAGE', // TODO Forward the original message
-                    },
-                };
-
-                targetIframe.contentWindow.postMessage(message, targetIframe.src);
+                targetIframe.contentWindow.postMessage(event.data, '*');
                 console.info('📝 [TAPPLET] Message sent:', {
-                    from: tapplet.package_name,
-                    to: targetTappletId,
-                    message,
+                    from: event.data.payload.sourceTappletRegistryId,
+                    to: event.data.payload.targetTappletRegistryId,
                 });
             } catch (error) {
                 console.error('📝 [TAPPLET] Failed to send message:', error);
             }
         },
-        [tapplet.package_name, iframeRefs]
+        [iframeRefs]
     );
 
     const emitNotification = useCallback(async (msg: string) => {
@@ -201,7 +194,7 @@ export const Tapplet = forwardRef<HTMLIFrameElement, TappletProps>(({ tapplet, i
                     );
                     return;
                 }
-                sendInterTappResponse(event, sourceTappletRegistryId);
+                sendInterTappResponse(event, targetTappletRegistryId);
                 break;
             }
             default:
@@ -251,6 +244,7 @@ export const Tapplet = forwardRef<HTMLIFrameElement, TappletProps>(({ tapplet, i
         <TappletContainer>
             <iframe
                 ref={setRefs}
+                title={tapplet.package_name}
                 src={tapplet.source}
                 width="100%"
                 height="100%"

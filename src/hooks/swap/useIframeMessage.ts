@@ -179,3 +179,7 @@ export function useIframeMessage(onMessage: (event: MessageEvent<IframeMessage>)
         };
     }, [onMessage]);
 }
+
+export function isInterTappletMessage(msg: IframeMessage): msg is InterTappletMessage {
+    return msg.type === MessageType.INTER_TAPPLET;
+}
