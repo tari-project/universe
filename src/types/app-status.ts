@@ -14,7 +14,7 @@ export enum SystemDependencyStatus {
 
 interface Manufacturer {
     name: string;
-    logo: string;
+    logo_url: string;
     url: string;
 }
 

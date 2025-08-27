@@ -50,7 +50,9 @@ export const ExternalDependencyCard = ({
     return (
         <Stack direction="row" alignItems="flex-start" gap={16} style={{ width: '100%' }}>
             <Stack gap={12} alignItems="center">
-                {manufacturer.logo && <img src={manufacturer.logo} alt={manufacturer.name} width={40} height={40} />}
+                {manufacturer.logo_url && (
+                    <img src={manufacturer.logo_url} alt={manufacturer.name} width={40} height={40} />
+                )}
             </Stack>
             <Stack style={{ width: '100%' }} gap={12} alignItems="flex-start">
                 <Stack gap={8} style={{ width: '100%' }} alignItems="flex-start">
