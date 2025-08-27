@@ -53,8 +53,6 @@ export interface ShowReleaseNotesPayload {
     should_show_dialog: boolean;
 }
 
-export type ConnectedPeersUpdatePayload = string[];
-
 export interface NodeTypeUpdatePayload {
     node_type?: 'Local' | 'Remote' | 'RemoteUntilLocal' | 'LocalAfterRemote';
     node_identity?: {
