@@ -194,9 +194,6 @@ impl SetupPhaseImpl for NodeSetupPhase {
 
         progress_stepper
             .complete_step(SetupStep::BinariesNode, || async {
-                if node_type.is_remote() {
-                    return Ok(());
-                }
                 binary_resolver
                     .initialize_binary(Binaries::MinotariNode, node_binary_progress_tracker)
                     .await
