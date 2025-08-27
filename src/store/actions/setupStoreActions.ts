@@ -4,7 +4,6 @@ import { useSetupStore } from '../useSetupStore';
 import { startCpuMining, startGpuMining, stopCpuMining, stopGpuMining } from './miningStoreActions';
 import {
     fetchApplicationsVersionsWithRetry,
-    fetchCoinbaseTransactions,
     fetchTransactionsHistory,
     useConfigMiningStore,
     useConfigUIStore,
@@ -15,9 +14,9 @@ import {
 
 import { TOWER_CANVAS_ID } from '../types/ui';
 import { ProgressTrackerUpdatePayload, SetupPhase } from '@app/types/events-payloads';
-import { fetchBridgeTransactionsHistory } from './bridgeApiActions';
 import { AppModule, AppModuleState, AppModuleStatus } from '../types/setup';
 import { animationDarkBg, animationLightBg } from '@app/store/actions/uiStoreActions.ts';
+import { fetchBridgeTransactionsHistory } from '@app/store/actions/bridgeApiActions.ts';
 
 export interface DisabledPhasesPayload {
     disabled_phases: SetupPhase[];
@@ -38,13 +37,12 @@ async function initializeAnimation() {
         let loaded = false;
         try {
             await loadTowerAnimation({ canvasId: TOWER_CANVAS_ID, offset: offset });
-
             setAnimationProperties(animationStyle);
-            useUIStore.setState({ towerInitalized: true });
+            useUIStore.setState((c) => ({ ...c, towerInitalized: true }));
             loaded = true;
         } catch (error) {
             console.error('Failed to set animation state:', error);
-            useUIStore.setState({ towerInitalized: false });
+            useUIStore.setState((c) => ({ ...c, towerInitalized: false }));
 
             loaded = false;
         } finally {
@@ -55,14 +53,13 @@ async function initializeAnimation() {
     } catch (e) {
         console.error('Error at loadTowerAnimation:', e);
         useConfigUIStore.setState((c) => ({ ...c, visual_mode: false }));
-        useUIStore.setState({ towerInitalized: false });
+        useUIStore.setState((c) => ({ ...c, towerInitalized: false }));
     }
 }
 
 export const handleAppLoaded = async () => {
-    await fetchBridgeTransactionsHistory().catch((error) => {
-        console.error('Could not fetch bridge transactions history:', error);
-    });
+    const tari_address_base58 = useWalletStore.getState().tari_address_base58;
+    await fetchBridgeTransactionsHistory(tari_address_base58);
     // todo move it to event
     await fetchApplicationsVersionsWithRetry();
     await initializeAnimation();
@@ -76,19 +73,19 @@ export const updateSetupProgress = (payload: ProgressTrackerUpdatePayload | unde
 
     switch (payload.setup_phase) {
         case SetupPhase.Core:
-            useSetupStore.setState({ core_phase_setup_payload: payload });
+            useSetupStore.setState((c) => ({ ...c, core_phase_setup_payload: payload }));
             break;
         case SetupPhase.CpuMining:
-            useSetupStore.setState({ cpu_mining_phase_setup_payload: payload });
+            useSetupStore.setState((c) => ({ ...c, cpu_mining_phase_setup_payload: payload }));
             break;
         case SetupPhase.GpuMining:
-            useSetupStore.setState({ gpu_mining_phase_setup_payload: payload });
+            useSetupStore.setState((c) => ({ ...c, gpu_mining_phase_setup_payload: payload }));
             break;
         case SetupPhase.Node:
-            useSetupStore.setState({ node_phase_setup_payload: payload });
+            useSetupStore.setState((c) => ({ ...c, node_phase_setup_payload: payload }));
             break;
         case SetupPhase.Wallet:
-            useSetupStore.setState({ wallet_phase_setup_payload: payload });
+            useSetupStore.setState((c) => ({ ...c, wallet_phase_setup_payload: payload }));
             break;
         default:
             console.warn(`Unknown setup phase: ${payload.title}`);
@@ -98,19 +95,19 @@ export const updateSetupProgress = (payload: ProgressTrackerUpdatePayload | unde
 export const clearSetupProgress = (setupPhase: SetupPhase) => {
     switch (setupPhase) {
         case SetupPhase.Core:
-            useSetupStore.setState({ core_phase_setup_payload: undefined });
+            useSetupStore.setState((c) => ({ ...c, core_phase_setup_payload: undefined }));
             break;
         case SetupPhase.CpuMining:
-            useSetupStore.setState({ cpu_mining_phase_setup_payload: undefined });
+            useSetupStore.setState((c) => ({ ...c, cpu_mining_phase_setup_payload: undefined }));
             break;
         case SetupPhase.GpuMining:
-            useSetupStore.setState({ gpu_mining_phase_setup_payload: undefined });
+            useSetupStore.setState((c) => ({ ...c, gpu_mining_phase_setup_payload: undefined }));
             break;
         case SetupPhase.Node:
-            useSetupStore.setState({ node_phase_setup_payload: undefined });
+            useSetupStore.setState((c) => ({ ...c, node_phase_setup_payload: undefined }));
             break;
         case SetupPhase.Wallet:
-            useSetupStore.setState({ wallet_phase_setup_payload: undefined });
+            useSetupStore.setState((c) => ({ ...c, wallet_phase_setup_payload: undefined }));
             break;
         default:
             console.warn(`Unknown setup phase: ${setupPhase}`);
@@ -118,11 +115,11 @@ export const clearSetupProgress = (setupPhase: SetupPhase) => {
 };
 
 export const setInitialSetupFinished = (payload: boolean) => {
-    useSetupStore.setState({ isInitialSetupFinished: payload });
+    useSetupStore.setState((c) => ({ ...c, isInitialSetupFinished: payload }));
 };
 
 export const updateDisabledPhases = (payload: DisabledPhasesPayload) => {
-    useSetupStore.setState({ disabled_phases: payload.disabled_phases });
+    useSetupStore.setState((c) => ({ ...c, disabled_phases: payload.disabled_phases }));
 };
 
 export const handleUpdateDisabledPhases = (payload: DisabledPhasesPayload) => {
@@ -147,10 +144,6 @@ export const handleWalletModuleUpdateSideEffects = async (state: AppModuleState)
         case AppModuleStatus.Initialized: {
             const tx_history_filter = useWalletStore.getState().tx_history_filter;
             await fetchTransactionsHistory({ offset: 0, limit: 20, filter: tx_history_filter });
-            await fetchCoinbaseTransactions({
-                offset: 0,
-                limit: 20,
-            });
             break;
         }
         case AppModuleStatus.Failed:
@@ -171,7 +164,7 @@ const handleCpuMiningModuleUpdateSideEffects = async (state: AppModuleState) => 
             const wasMineOnAppStartExecuted = useMiningStore.getState().wasMineOnAppStartExecuted;
             if (mineOnAppStart && cpuMiningEnabled && !wasMineOnAppStartExecuted) {
                 await startCpuMining();
-                useMiningStore.setState({ wasMineOnAppStartExecuted: true });
+                useMiningStore.setState((c) => ({ ...c, wasMineOnAppStartExecuted: true }));
             } else if (gpuMiningInitiated && cpuMiningEnabled) {
                 await startCpuMining();
             }
@@ -201,7 +194,7 @@ const handleGpuMiningModuleUpdateSideEffects = async (state: AppModuleState) => 
             const wasMineOnAppStartExecuted = useMiningStore.getState().wasMineOnAppStartExecuted;
             if (mineOnAppStart && gpuMiningEnabled && !wasMineOnAppStartExecuted) {
                 await startGpuMining();
-                useMiningStore.setState({ wasMineOnAppStartExecuted: true });
+                useMiningStore.setState((c) => ({ ...c, wasMineOnAppStartExecuted: true }));
             } else if (cpuMiningInitiated && gpuMiningEnabled) {
                 await startGpuMining();
             }

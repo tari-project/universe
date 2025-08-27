@@ -5,21 +5,20 @@ import {
     MineToExchangeConfigDTO,
 } from '@tari-project/wxtm-bridge-backend-api';
 import { useConfigBEInMemoryStore } from '../useAppConfigStore';
-import { useWalletStore } from '../useWalletStore';
+import { BackendBridgeTransaction, useWalletStore } from '../useWalletStore';
 import { invoke } from '@tauri-apps/api/core';
 import { setExchangeETHAdress } from '@app/store/actions/walletStoreActions.ts';
 
-export const fetchBridgeTransactionsHistory = async () => {
-    console.info('Fetching bridge transactions history...');
+export const fetchBridgeTransactionsHistory = async (
+    tari_address_base58: string
+): Promise<BackendBridgeTransaction[]> => {
     const baseUrl = useConfigBEInMemoryStore.getState().bridge_backend_api_url;
-    if (baseUrl?.includes('env var not defined')) return;
+    if (baseUrl?.includes('env var not defined')) return [];
     OpenAPI.BASE = baseUrl;
-    await WrapTokenService.getUserTransactions(useWalletStore.getState().tari_address_base58)
+    return await WrapTokenService.getUserTransactions(tari_address_base58)
         .then((response) => {
-            console.info('Bridge transactions fetched successfully:', response);
-            useWalletStore.setState({
-                bridge_transactions: response.transactions,
-            });
+            console.info('Bridge transactions fetched successfully');
+            return response.transactions;
         })
         .catch((error) => {
             console.error('Could not fetch bridge transactions history: ', error);

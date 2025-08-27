@@ -1,4 +1,4 @@
-import { create } from './create';
+import { create } from 'zustand';
 import { CpuMinerStatus, GpuMinerStatus, GpuDevice } from '@app/types/app-status';
 
 interface MiningMetricsStoreState {

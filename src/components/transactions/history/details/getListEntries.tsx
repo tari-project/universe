@@ -222,9 +222,7 @@ const unifiedValueHandlers: Record<
 };
 
 function shouldShowField(key: string, showHidden: boolean): boolean {
-    if (!showHidden && HIDDEN_KEYS.includes(key)) return false;
-
-    return true;
+    return !(!showHidden && HIDDEN_KEYS.includes(key));
 }
 
 function parseUnifiedTransactionValue(
