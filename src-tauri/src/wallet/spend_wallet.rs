@@ -269,7 +269,7 @@ impl SpendWallet {
 
     pub async fn get_binary_path(&self) -> Result<PathBuf, Error> {
         BinaryResolver::current()
-            .resolve_path_to_binary_files(Binaries::Wallet)
+            .get_binary_path(Binaries::Wallet)
             .await
             .context("Failed to resolve wallet binary path")
     }
