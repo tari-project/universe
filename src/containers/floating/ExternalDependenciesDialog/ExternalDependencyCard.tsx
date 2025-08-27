@@ -11,6 +11,10 @@ import { Button } from '@app/components/elements/buttons/Button.tsx';
 
 import { SpinnerIcon } from '@app/components/elements/loaders/SpinnerIcon.tsx';
 import { setError } from '@app/store';
+import {
+    ManufacturerLogoWrapper,
+    ManufacturerWrapper,
+} from '@app/containers/floating/ExternalDependenciesDialog/styles.ts';
 
 export const ExternalDependencyCard = ({
     missingDependency,
@@ -48,18 +52,16 @@ export const ExternalDependencyCard = ({
     }, [freeInstallationSlot, id, occupyInstallationSlot]);
 
     return (
-        <Stack direction="row" alignItems="flex-start" gap={16} style={{ width: '100%' }}>
-            <Stack gap={12} alignItems="center">
-                {manufacturer.logo_url && (
-                    <img src={manufacturer.logo_url} alt={manufacturer.name} width={40} height={40} />
-                )}
-            </Stack>
+        <Stack direction="row" alignItems="flex-start" gap={14} style={{ width: '100%', padding: 4 }}>
+            <ManufacturerLogoWrapper>
+                {manufacturer.logo_url?.length ? (
+                    <img src={`/assets/img/${manufacturer.logo_url}`} alt={manufacturer.name} />
+                ) : null}
+            </ManufacturerLogoWrapper>
             <Stack style={{ width: '100%' }} gap={12} alignItems="flex-start">
-                <Stack gap={8} style={{ width: '100%' }} alignItems="flex-start">
+                <ManufacturerWrapper>
                     <Stack direction="row" gap={6}>
-                        <Typography variant="span" style={{ fontSize: '12px', color: 'CaptionText' }}>
-                            {manufacturer.name}
-                        </Typography>
+                        <Typography variant="p">{manufacturer.name}</Typography>
                         <Chip size="small" {...getChipStylingForStatus(status)}>
                             {mapStatusToText(status)}
                         </Chip>
@@ -69,12 +71,12 @@ export const ExternalDependencyCard = ({
                         <Typography variant="h5">{display_name}</Typography>
                     </Stack>
                     <Typography variant="p">{display_description}</Typography>
-                </Stack>
+                </ManufacturerWrapper>
                 {status === SystemDependencyStatus.NotInstalled && (
                     <Button
                         onClick={handleDownload}
                         color="secondary"
-                        size="small"
+                        size="smaller"
                         icon={isInInstallationSlot ? <SpinnerIcon /> : <IoArrowDownCircleOutline size={16} />}
                         iconPosition="start"
                         disabled={isInstallationSlotOccupied}
