@@ -19,6 +19,8 @@
         "process:default",
         "clipboard-manager:allow-write-text",
         "clipboard-manager:allow-read-text",
+        "dialog:allow-open",
+        "dialog:allow-confirm",
         {
             "identifier": "http:default",
             "allow": [

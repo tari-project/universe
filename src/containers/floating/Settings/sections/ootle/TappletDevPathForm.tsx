@@ -1,15 +1,16 @@
 import { useEffect, useCallback, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
-import { IoCopyOutline, IoCheckmarkOutline, IoCloseOutline, IoPencil } from 'react-icons/io5';
+import { IoCopyOutline, IoCheckmarkOutline, IoCloseOutline, IoPencil, IoFolderOpen } from 'react-icons/io5';
 import styled from 'styled-components';
 import { Input } from '@app/components/elements/inputs/Input';
 import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard.ts';
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
-import { CTASArea, InputArea, WalletSettingsGrid } from '../wallet/styles.ts';
+import { CTASArea, InputArea, WalletSettingsGrid } from './styles/styles.ts';
 import { SettingsGroup, SettingsGroupContent } from '../../components/SettingsGroup.styles.ts';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { useTranslation } from 'react-i18next';
 import { useTappletsStore } from '@app/store/useTappletsStore.ts';
+import { open } from '@tauri-apps/plugin-dialog';
 
 const DEFAULT_DEV_TAPP_PATH = '';
 // eslint-disable-next-line no-useless-escape
@@ -43,8 +44,36 @@ const TappletDevPathForm = () => {
     const [editing, setEditing] = useState(false);
     const { copyToClipboard, isCopied } = useCopyToClipboard();
     const address = watch('tappPath');
+    const [selectedDirPath, setSelectedDirPath] = useState<string>('');
 
     const addDevTapp = useTappletsStore((s) => s.addDevTapp);
+
+    // const handleDirSelect = useCallback(async () => {
+    //     console.info('handle directory select');
+    //     const dirPath = await open({
+    //         multiple: false,
+    //         directory: true,
+    //     });
+    //     if (dirPath) {
+    //         setSelectedDirPath(dirPath);
+    //     }
+    //     console.info('handle select dir path', dirPath);
+    // }, []);
+
+    const handleDirSelect = useCallback(async () => {
+        console.info('handle directory select');
+        const dirPath = await open({
+            multiple: false,
+            directory: true,
+        });
+        if (dirPath) {
+            setSelectedDirPath(dirPath);
+            setValue('tappPath', dirPath, { shouldDirty: true }); // <-- update the form value
+            // setEditing(true); // Optionally, set editing mode
+            addDevTapp(dirPath);
+        }
+        console.info('handle select dir path', dirPath);
+    }, [addDevTapp, setValue]);
 
     function handleEditClick() {
         setFocus('tappPath', { shouldSelect: true });
@@ -113,21 +142,27 @@ const TappletDevPathForm = () => {
                                     <IconButton type="submit" size="small" disabled={!isDirty || !!errors.tappPath}>
                                         <IoCheckmarkOutline />
                                     </IconButton>
+
                                     <IconButton type="reset" size="small">
                                         <IoCloseOutline />
                                     </IconButton>
                                 </>
                             ) : (
-                                <IconButton
-                                    size="small"
-                                    type="button"
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        copyToClipboard(address);
-                                    }}
-                                >
-                                    {!isCopied ? <IoCopyOutline /> : <IoCheckmarkOutline />}
-                                </IconButton>
+                                <>
+                                    <IconButton type="submit" size="small" onClick={handleDirSelect}>
+                                        <IoFolderOpen />
+                                    </IconButton>
+                                    <IconButton
+                                        size="small"
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            copyToClipboard(address);
+                                        }}
+                                    >
+                                        {!isCopied ? <IoCopyOutline /> : <IoCheckmarkOutline />}
+                                    </IconButton>
+                                </>
                             )}
                         </CTASArea>
                     </WalletSettingsGrid>
