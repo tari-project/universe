@@ -2213,7 +2213,7 @@ pub async fn launch_builtin_tapplet() -> Result<ActiveTapplet, String> {
     let binaries_resolver = BinaryResolver::current();
 
     let tapp_dest_dir = binaries_resolver
-        .resolve_path_to_binary_files(Binaries::BridgeTapplet)
+        .get_binary_path(Binaries::BridgeTapplet)
         .await
         .map_err(|e| e.to_string())?;
 
