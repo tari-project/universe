@@ -4,13 +4,7 @@ import { listen } from '@tauri-apps/api/event';
 import { BACKEND_STATE_UPDATE, BackendStateUpdateEvent } from '@app/types/backend-state.ts';
 
 import { handleNewBlockPayload, useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore';
-import {
-    handleBaseNodeStatusUpdate,
-    handleConnectedPeersUpdate,
-    setCpuMiningStatus,
-    setGpuDevices,
-    setGpuMiningStatus,
-} from '@app/store/actions/miningMetricsStoreActions';
+import { setCpuMiningStatus, setGpuDevices, setGpuMiningStatus } from '@app/store/actions/miningMetricsStoreActions';
 import {
     handleAskForRestart,
     handleCloseSplashscreen,
@@ -31,7 +25,12 @@ import {
     setIsStuckOnOrphanChain,
     setNetworkStatus,
 } from '@app/store/actions/appStateStoreActions';
-import { setWalletBalance, updateWalletScanningProgress, useSecurityStore } from '@app/store';
+import {
+    handleBaseNodeStatusUpdate,
+    setWalletBalance,
+    updateWalletScanningProgress,
+    useSecurityStore,
+} from '@app/store';
 import { deepEqual } from '@app/utils/objectDeepEqual.ts';
 import {
     handleAppLoaded,
@@ -111,9 +110,6 @@ const useTauriEventsListener = () => {
                             break;
                         case 'GpuPoolStatsUpdate':
                             setGpuPoolStats(event.payload);
-                            break;
-                        case 'ConnectedPeersUpdate':
-                            handleConnectedPeersUpdate(event.payload);
                             break;
                         case 'NewBlockHeight': {
                             const current = useBlockchainVisualisationStore.getState().latestBlockPayload?.block_height;

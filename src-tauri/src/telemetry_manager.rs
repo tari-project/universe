@@ -493,10 +493,7 @@ async fn get_telemetry_data_inner(
 
     let p2pool_enabled = *config.is_p2pool_enabled() && p2pool_stats.is_some();
     let mut extra_data = HashMap::new();
-    let is_orphan = node_manager
-        .check_if_is_orphan_chain()
-        .await
-        .unwrap_or(false);
+    let is_orphan = node_manager.is_on_orphan_chain();
     extra_data.insert("is_orphan".to_string(), is_orphan.to_string());
     extra_data.insert(
         "config_cpu_enabled".to_string(),
