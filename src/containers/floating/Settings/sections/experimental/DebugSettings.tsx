@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import useBlockTime from '@app/hooks/mining/useBlockTime.ts';
-import { useMiningMetricsStore } from '@app/store';
+import { useNodeStore } from '@app/store';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import {
@@ -14,7 +14,7 @@ import {
 export default function DebugSettings() {
     const { t } = useTranslation('settings');
 
-    const isConnectedToTariNetwork = useMiningMetricsStore((s) => s.isNodeConnected);
+    const isConnectedToTariNetwork = useNodeStore((s) => s.isNodeConnected);
 
     const { currentTimeParts } = useBlockTime();
 
