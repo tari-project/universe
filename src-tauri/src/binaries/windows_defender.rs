@@ -32,6 +32,8 @@ pub const LOG_TARGET: &str = "tari::universe::windows_defender";
 pub struct WindowsDefenderExclusions {}
 
 impl WindowsDefenderExclusions {
+    /// Adds a specific binary file to Windows Defender exclusions. If the file is already excluded, it logs this and
+    /// returns Ok(()). If the command fails for other reasons, it returns an error.
     fn add_binary_to_exclusions(binary_path: &PathBuf) -> Result<(), Error> {
         let path_str = binary_path
             .to_str()
@@ -67,6 +69,8 @@ impl WindowsDefenderExclusions {
         }
     }
 
+    /// Adds a directory to Windows Defender exclusions. If the directory is already excluded, it logs this and returns Ok(()).
+    /// If the command fails for other reasons, it returns an error.
     fn add_directory_to_exclusions(dir_path: &PathBuf) -> Result<(), Error> {
         let path_str = dir_path
             .to_str()
@@ -101,6 +105,7 @@ impl WindowsDefenderExclusions {
         }
     }
 
+    /// Checks if Windows Defender is available by running a PowerShell command.
     fn is_windows_defender_available() -> bool {
         let output = Command::new("powershell")
             .args([
@@ -121,6 +126,8 @@ impl WindowsDefenderExclusions {
         }
     }
 
+    /// Windows Only: Adds comprehensive exclusions for the specified binary and its parent directory to Windows Defender.
+    /// If Windows Defender is not available or the OS is not Windows, the function will log this and return Ok(()).
     pub fn add_comprehensive_exclusions(binary_path: &PathBuf) -> Result<(), Error> {
         if !matches!(
             PlatformUtils::detect_current_os(),
