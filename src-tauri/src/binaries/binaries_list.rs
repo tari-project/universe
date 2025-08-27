@@ -87,7 +87,7 @@ impl Binaries {
         let base_path = match self {
             Binaries::Xmrig => {
                 let file_name = format!("xmrig-{version}");
-                PathBuf::from(file_name).join("xmrig")
+                Self::append_exe_if_windows(&mut PathBuf::from(file_name).join("xmrig"))
             }
             Binaries::MergeMiningProxy => {
                 let file_name = "minotari_merge_mining_proxy";
