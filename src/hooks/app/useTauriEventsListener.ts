@@ -19,7 +19,7 @@ import { setAvailableEngines } from '@app/store/actions/miningStoreActions';
 import {
     handleRestartingPhases,
     handleShowRelesaeNotes,
-    loadExternalDependencies,
+    loadSystemDependencies,
     handleCriticalProblemEvent,
     setCriticalError,
     setIsStuckOnOrphanChain,
@@ -159,9 +159,8 @@ const useTauriEventsListener = () => {
                             }
                             break;
                         }
-                        case 'MissingApplications':
-                            loadExternalDependencies(event.payload);
-                            setShowExternalDependenciesDialog(true);
+                        case 'SystemDependenciesLoaded':
+                            loadSystemDependencies(event.payload);
                             break;
                         case 'StuckOnOrphanChain':
                             setIsStuckOnOrphanChain(event.payload);

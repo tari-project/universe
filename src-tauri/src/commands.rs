@@ -34,9 +34,6 @@ use crate::configs::trait_config::ConfigImpl;
 use crate::events::ConnectionStatusPayload;
 use crate::events_emitter::EventsEmitter;
 use crate::events_manager::EventsManager;
-use crate::external_dependencies::{
-    ExternalDependencies, ExternalDependency, RequiredExternalDependency,
-};
 use crate::gpu_miner::EngineType;
 use crate::gpu_miner_adapter::GpuNodeSource;
 use crate::internal_wallet::{mnemonic_to_tari_cipher_seed, InternalWallet, PaperWalletConfig};
@@ -46,6 +43,7 @@ use crate::p2pool::models::{Connections, P2poolStats};
 use crate::pin::PinManager;
 use crate::release_notes::ReleaseNotes;
 use crate::setup::setup_manager::{SetupManager, SetupPhase};
+use crate::system_dependencies::system_dependencies_manager::SystemDependenciesManager;
 use crate::tapplets::interface::ActiveTapplet;
 use crate::tapplets::tapplet_server::start_tapplet;
 use crate::tasks_tracker::TasksTrackers;
@@ -219,21 +217,18 @@ pub async fn frontend_ready(
 }
 
 #[tauri::command]
-pub async fn download_and_start_installer(
-    _missing_dependency: ExternalDependency,
-) -> Result<(), String> {
+pub async fn download_and_start_installer(id: String) -> Result<(), String> {
     let timer = Instant::now();
 
-    #[cfg(target_os = "windows")]
-    if cfg!(target_os = "windows") {
-        ExternalDependencies::current()
-            .install_missing_dependencies(_missing_dependency)
-            .await
-            .map_err(|e| {
-                error!(target: LOG_TARGET, "Could not install missing dependency: {:?}", e);
-                e.to_string()
-            })?;
-    }
+    SystemDependenciesManager::get_instance()
+        .download_and_install_missing_dependencies(id)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    SystemDependenciesManager::get_instance()
+        .validate_dependencies()
+        .await
+        .map_err(|e| e.to_string())?;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET,
@@ -372,21 +367,6 @@ pub async fn get_applications_versions(
             port: None,
         },
     })
-}
-
-#[tauri::command]
-pub async fn get_external_dependencies() -> Result<RequiredExternalDependency, String> {
-    let timer = Instant::now();
-    let external_dependencies = ExternalDependencies::current()
-        .get_external_dependencies()
-        .await;
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET,
-            "get_external_dependencies took too long: {:?}",
-            timer.elapsed()
-        );
-    }
-    Ok(external_dependencies)
 }
 
 #[tauri::command]
