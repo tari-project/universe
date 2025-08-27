@@ -2280,6 +2280,17 @@ pub async fn parse_tari_address(address: String) -> Result<TariAddressVariants, 
 }
 
 #[tauri::command]
+pub async fn list_connected_peers(
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<Vec<String>, String> {
+    state
+        .node_manager
+        .list_connected_peers()
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 pub async fn refresh_wallet_history(
     state: tauri::State<'_, UniverseAppState>,
     app_handle: tauri::AppHandle,
