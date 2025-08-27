@@ -108,7 +108,7 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
                     if (!activeTapplet) return;
                     runningTapplet = {
                         ...activeTapplet,
-                        allowReceiveFrom: ['wxtm-bridge-frontend'], //TODO TESTS
+                        allowReceiveFrom: [],
                         allowSendTo: [],
                     };
                     tappProviderState.setTappletSigner(activeTapplet?.package_name); //TODO
@@ -123,18 +123,10 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
                     activeTapplet = await invoke('start_dev_tapplet', {
                         devTappletId: tappletId,
                     });
-                    // TODO TEST ONLY
-                    const origin =
-                        activeTapplet != null && activeTapplet.tapplet_id === 1
-                            ? ['wxtm-bridge-frontend']
-                            : activeTapplet.tapplet_id === 3
-                              ? ['hello-ootle']
-                              : [];
-                    console.info('🚗 RUN DEV not localhost', activeTapplet, origin);
                     runningTapplet = {
                         ...activeTapplet,
-                        allowReceiveFrom: origin,
-                        allowSendTo: origin,
+                        allowReceiveFrom: [],
+                        allowSendTo: [],
                     };
                     stateUpdateNeeded = true;
                 } catch (error) {
@@ -187,13 +179,10 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
 
     // add
     fetchRegisteredTapps: async () => {
-        console.info('[STORE TAPP] fetch registered tapp');
         set({ isFetching: true });
         try {
             await invoke('fetch_registered_tapplets');
-            console.info('[STORE TAPP] fetch tapp done');
             const registeredTapplets = await invoke('read_tapp_registry_db');
-            console.info('[STORE TAPP] read db tapp done', registeredTapplets);
 
             // TODO fix fetching assets
             // const assetsServerAddr = await invoke('get_assets_server_addr');
@@ -210,7 +199,6 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
         }
     },
     getInstalledTapps: async () => {
-        console.info('[STORE TAPP] fetch registered tapp');
         set({ isFetching: true });
         try {
             const installedTapplets = await invoke('read_installed_tapp_db');
