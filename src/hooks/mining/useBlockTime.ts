@@ -1,24 +1,24 @@
 // the sauce of truth for all block time fmts
 
 import { useEffect, useState } from 'react';
-import { useFetchExplorerData } from '@app/hooks/mining/useFetchExplorerData.ts';
 import calculateTimeSince, { TimeSince } from '@app/utils/calculateTimeSince.ts';
+import { useBlockTip } from '@app/hooks/mining/useBlockTip.ts';
 
 export default function useBlockTime() {
-    const { data } = useFetchExplorerData();
-    const currentBlock = data?.currentBlock;
+    const { data } = useBlockTip();
+
     const [currentTimeShort, setCurrentTimeShort] = useState('00:00');
     const [currentTimeParts, setCurrentTimeParts] = useState<TimeSince>();
     const [seconds, setSeconds] = useState(0);
 
     useEffect(() => {
-        if (currentBlock && currentBlock.parsedTimestamp) {
-            const startTime = new Date(currentBlock.parsedTimestamp + ' UTC').getTime();
+        if (data && data.timestamp) {
+            const startTime = new Date(data.timestamp * 1000).getTime();
             const now = Date.now();
             const elapsedSeconds = Math.floor((now - startTime) / 1000);
             setSeconds(elapsedSeconds);
         }
-    }, [currentBlock]);
+    }, [data]);
 
     useEffect(() => {
         const timer = setInterval(() => {
@@ -36,9 +36,10 @@ export default function useBlockTime() {
     }, [seconds]);
 
     useEffect(() => {
+        if (!data?.timestamp) return;
         const now = new Date().getTime();
-        setCurrentTimeParts(calculateTimeSince(Number(currentBlock?.timestamp), now));
-    }, [currentBlock?.timestamp, seconds]);
+        setCurrentTimeParts(calculateTimeSince(Number(data?.timestamp), now));
+    }, [data?.timestamp, seconds]);
 
     return { currentTimeParts, currentTimeShort };
 }
