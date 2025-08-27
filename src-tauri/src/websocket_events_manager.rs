@@ -168,38 +168,36 @@ impl WebsocketEventsManager {
         let network = Network::get_current_or_user_setting_or_default().as_key_str();
         let is_mining_active = cpu_miner_status.hash_rate > 0.0 || gpu_status.hash_rate > 0.0;
         let tari_address = InternalWallet::tari_address().await;
+        let claims_id = decode_jwt_claims_without_exp(&jwt_token).map_or(String::new(), |c| c.id);
 
-        if let Some(claims) = decode_jwt_claims_without_exp(&jwt_token) {
-            let signable_message = format!(
-                "{},{},{},{},{},{},{}",
-                app_version,
-                network,
-                app_id,
-                claims.id,
-                is_mining_active,
-                block_height,
-                tari_address.to_base58()
-            );
-            if let Ok(SignWsDataResponse { signature, pub_key }) =
-                sign_ws_data(signable_message).await
-            {
-                let payload = serde_json::json!({
-                        "isMining":is_mining_active,
-                        "appId":app_id,
-                        "blockHeight":block_height,
-                        "version":app_version,
-                        "network":network,
-                        "userId":claims.id,
-                        "walletHash":tari_address.to_base58()
-                });
+        let signable_message = format!(
+            "{},{},{},{},{},{},{}",
+            app_version,
+            network,
+            app_id,
+            claims_id,
+            is_mining_active,
+            block_height,
+            tari_address.to_base58()
+        );
+        if let Ok(SignWsDataResponse { signature, pub_key }) = sign_ws_data(signable_message).await
+        {
+            let payload = serde_json::json!({
+                    "isMining":is_mining_active,
+                    "appId":app_id,
+                    "blockHeight":block_height,
+                    "version":app_version,
+                    "network":network,
+                    "userId":claims_id,
+                    "walletHash":tari_address.to_base58()
+            });
 
-                return Some(WebsocketMessage {
-                    event: "mining-status".into(),
-                    data: Some(payload),
-                    signature: Some(signature),
-                    pub_key: Some(pub_key),
-                });
-            }
+            return Some(WebsocketMessage {
+                event: "mining-status".into(),
+                data: Some(payload),
+                signature: Some(signature),
+                pub_key: Some(pub_key),
+            });
         }
         None
     }
