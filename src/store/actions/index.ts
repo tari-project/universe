@@ -40,13 +40,7 @@ export {
     setReleaseNotes,
 } from './appStateStoreActions.ts';
 
-export {
-    handleBaseNodeStatusUpdate,
-    handleConnectedPeersUpdate,
-    setCpuMiningStatus,
-    setGpuDevices,
-    setGpuMiningStatus,
-} from './miningMetricsStoreActions.ts';
+export { setCpuMiningStatus, setGpuDevices, setGpuMiningStatus } from './miningMetricsStoreActions.ts';
 
 export {
     getMiningNetwork,
@@ -70,3 +64,5 @@ export {
     refreshTransactions,
     setWalletBalance,
 } from './walletStoreActions';
+
+export { handleBaseNodeStatusUpdate } from './nodeStoreActions.ts';

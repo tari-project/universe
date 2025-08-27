@@ -43,7 +43,6 @@ pub enum EventType {
     GpuPoolStatsUpdate,
     CpuMiningUpdate,
     GpuMiningUpdate,
-    ConnectedPeersUpdate,
     NewBlockHeight,
     CloseSplashscreen,
     DetectedDevices,
