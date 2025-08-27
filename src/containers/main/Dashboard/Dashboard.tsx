@@ -10,14 +10,12 @@ import { useRef } from 'react';
 
 export default function Dashboard() {
     const iframeRefs = useRef<Record<number, HTMLIFrameElement | null>>({});
-    const activeTapplet = useTappletsStore((s) => s.activeTapplet);
     const runningTapplets = useTappletsStore((s) => s.runningTapplets);
     const showTapplet = useUIStore((s) => s.showTapplet);
     const connectionStatus = useUIStore((s) => s.connectionStatus);
     const orphanChainUiDisabled = useAirdropStore((s) =>
         s.features?.includes(FEATURE_FLAGS.FF_UI_ORPHAN_CHAIN_DISABLED)
     );
-    console.info('DASHBOARD', activeTapplet?.tapplet_id, runningTapplets);
     useMiningStatesSync();
 
     return (

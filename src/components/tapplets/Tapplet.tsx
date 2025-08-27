@@ -16,8 +16,13 @@ interface TappletProps {
 
 export const Tapplet = forwardRef<HTMLIFrameElement, TappletProps>(({ tapplet, iframeRefs }, forwardedRef) => {
     const tappletRef = useRef<HTMLIFrameElement | null>(null);
-    // const iframeRef = (ref as React.RefObject<HTMLIFrameElement | null>) || tappletRef;
-    // Use a callback ref to assign both forwardedRef and local tappletRef
+    const tappSigner = useTappletSignerStore((s) => s.tappletSigner);
+    const runTransaction = useTappletSignerStore((s) => s.runTransaction);
+    const language = useConfigUIStore((s) => s.application_language);
+    const theme = useUIStore((s) => s.theme);
+    const activeTapplet = useTappletsStore((s) => s.activeTapplet);
+    const disabled = tapplet.tapplet_id !== activeTapplet?.tapplet_id;
+
     const setRefs = useCallback(
         (node: HTMLIFrameElement | null) => {
             tappletRef.current = node;
@@ -30,14 +35,6 @@ export const Tapplet = forwardRef<HTMLIFrameElement, TappletProps>(({ tapplet, i
         },
         [forwardedRef]
     );
-
-    console.warn('REFS', tapplet.display_name, tappletRef);
-    const tappSigner = useTappletSignerStore((s) => s.tappletSigner);
-    const runTransaction = useTappletSignerStore((s) => s.runTransaction);
-    const language = useConfigUIStore((s) => s.application_language);
-    const theme = useUIStore((s) => s.theme);
-    const activeTapplet = useTappletsStore((s) => s.activeTapplet);
-    const disabled = tapplet.tapplet_id !== activeTapplet?.tapplet_id;
 
     const sendWindowSize = useCallback(() => {
         if (tappletRef.current) {
@@ -54,7 +51,7 @@ export const Tapplet = forwardRef<HTMLIFrameElement, TappletProps>(({ tapplet, i
 
     const openExternalLink = useCallback(async (url: string) => {
         if (!url || typeof url !== 'string') {
-            console.error('Invalid external tapplet URL');
+            console.error('[Tapplet] Provided external URL is invalid or missing:', url);
         }
         console.info('Opening external tapplet URL:', url);
         try {
@@ -87,29 +84,42 @@ export const Tapplet = forwardRef<HTMLIFrameElement, TappletProps>(({ tapplet, i
     }, [theme]);
 
     const sendInterTappResponse = useCallback(
-        (event: MessageEvent<IframeMessage>, targetTappletId: string) => {
+        (event: MessageEvent<IframeMessage>) => {
             if (!isInterTappletMessage(event.data)) return;
+            const { targetTappletRegistryId, sourceTappletRegistryId } = event.data.payload;
+            // check if the message is for this tapplet; if not just skip
+            if (targetTappletRegistryId !== tapplet.package_name) return;
+
+            if (tapplet.allowReceiveFrom && !tapplet.allowReceiveFrom.includes(sourceTappletRegistryId)) {
+                console.error(
+                    `[Tapplet ${tapplet.display_name}] Message rejected: sender tapplet "${sourceTappletRegistryId}" is not allowed in allowReceiveFrom.`
+                );
+                return;
+            }
+            if (tapplet.allowSendTo && !tapplet.allowSendTo.includes(sourceTappletRegistryId)) {
+                console.error(
+                    `[Tapplet ${tapplet.display_name}] Message rejected: receiver tapplet "${sourceTappletRegistryId}" is not allowed in allowSendTo.`
+                );
+                return;
+            }
             const targetIframe = Object.values(iframeRefs.current || {}).find(
-                (iframe) => iframe?.getAttribute('title') === targetTappletId
+                (iframe) => iframe?.getAttribute('title') === targetTappletRegistryId
             );
 
             if (!targetIframe?.contentWindow) {
-                console.error('Target iframe not found');
+                console.error(
+                    `[Tapplet] Unable to send inter-tapplet message: target iframe with title "${targetTappletRegistryId}" not found or has no contentWindow.`
+                );
                 return;
             }
-            console.info('📝 [TAPPLET] Target iframe found:', targetIframe.title, { targetIframe });
 
             try {
                 targetIframe.contentWindow.postMessage(event.data, '*');
-                console.info('📝 [TAPPLET] Message sent:', {
-                    from: event.data.payload.sourceTappletRegistryId,
-                    to: event.data.payload.targetTappletRegistryId,
-                });
             } catch (error) {
-                console.error('📝 [TAPPLET] Failed to send message:', error);
+                console.error('[Tapplet] Failed to post inter-tapplet message:', error);
             }
         },
-        [iframeRefs]
+        [iframeRefs, tapplet]
     );
 
     const emitNotification = useCallback(async (msg: string) => {
@@ -162,39 +172,8 @@ export const Tapplet = forwardRef<HTMLIFrameElement, TappletProps>(({ tapplet, i
                 setStoreError(`${event.data.payload.message}`, true);
                 break;
             case MessageType.INTER_TAPPLET: {
-                console.info(
-                    '🗫[TAPPLET] handle iframe msg INTER TAPP with msg:',
-                    event.data.type,
-                    event.data.payload.msg
-                );
-                const { targetTappletRegistryId, sourceTappletRegistryId } = event.data.payload;
-                console.info(
-                    '🗫 [TAPPLET] id (this, source, target)',
-                    tapplet.tapplet_id,
-                    sourceTappletRegistryId,
-                    targetTappletRegistryId
-                );
-
-                // Process only messages targeted to this tapplet
-                //TODO get currect tapplet registry
-                console.info('[TAPPLET] ', tapplet);
-                if (targetTappletRegistryId !== tapplet.package_name) return;
-                //TODO TEMP CHECK
-                if (tapplet.allowReceiveFrom && !tapplet.allowReceiveFrom.includes(sourceTappletRegistryId)) {
-                    console.error(
-                        `[Tapplet ${tapplet.display_name}] Disallowed sender tapplet ${sourceTappletRegistryId}`
-                    );
-                    return;
-                }
-                console.info('🏝️🏝️🏝️ [TAPPLET] tapplet current', tapplet.package_name);
-                console.info('🏝️🏝️🏝️ [TAPPLET] iframeRef', tappletRef.current);
-                if (tapplet.allowSendTo && !tapplet.allowSendTo.includes(sourceTappletRegistryId)) {
-                    console.error(
-                        `[Tapplet ${tapplet.display_name}] Disallowed receiver tapplet ${sourceTappletRegistryId}`
-                    );
-                    return;
-                }
-                sendInterTappResponse(event, targetTappletRegistryId);
+                console.info('[TAPPLET] handle inter-tapplet message:', event.data.type);
+                sendInterTappResponse(event);
                 break;
             }
             default:
@@ -232,13 +211,6 @@ export const Tapplet = forwardRef<HTMLIFrameElement, TappletProps>(({ tapplet, i
             window.removeEventListener('message', messageHandler);
         };
     }, []);
-
-    useEffect(() => {
-        console.info('🔍 [TAPPLET] Mounted:', {
-            packageName: tapplet.package_name,
-            iframeRefs: iframeRefs.current,
-        });
-    }, [iframeRefs, tapplet.package_name]);
 
     return (
         <TappletContainer>
