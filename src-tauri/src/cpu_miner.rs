@@ -253,7 +253,8 @@ impl CpuMiner {
 
         let cpu_cores_to_use = max_cpu_available
             .saturating_mul(cpu_usage_percentage)
-            .saturating_div(100);
+            .saturating_div(100)
+            .clamp(1, max_cpu_available);
 
         info!(target: LOG_TARGET, "Using {cpu_cores_to_use} CPU cores for mining");
 

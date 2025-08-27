@@ -311,12 +311,6 @@ impl NodeAdapterService {
     }
 
     pub async fn check_if_is_orphan_chain(&self) -> Result<bool, anyhow::Error> {
-        let BaseNodeStatus { is_synced, .. } = self.get_network_state().await?;
-        if !is_synced {
-            info!(target: LOG_TARGET, "Node is not synced, skipping orphan chain check");
-            return Ok(false);
-        }
-
         let network = Network::get_current_or_user_setting_or_default();
         let block_scan_tip = get_best_block_from_block_scan(network).await?;
         let heights: Vec<u64> = vec![

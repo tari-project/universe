@@ -636,7 +636,8 @@ fn main() {
             commands::update_selected_cpu_pool_config,
             commands::reset_gpu_pool_config,
             commands::reset_cpu_pool_config,
-            commands::restart_phases
+            commands::restart_phases,
+            commands::list_connected_peers
         ])
         .build(tauri::generate_context!())
         .inspect_err(|e| {

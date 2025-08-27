@@ -17,7 +17,7 @@ export const ButtonWrapper = styled(m.div)<{ $selectedMode: string; $disabled: b
     justify-content: space-between;
 
     background-color: #4c614a;
-    box-shadow: 0px 0px 10px 0px rgba(104, 153, 55, 0.35);
+    box-shadow: 0 0 10px 0 rgba(104, 153, 55, 0.35);
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -33,22 +33,33 @@ export const ButtonWrapper = styled(m.div)<{ $selectedMode: string; $disabled: b
             case 'Eco':
                 return css`
                     background-color: #4c614a;
-                    box-shadow: 0px 0px 10px 0px rgba(104, 153, 55, 0.35);
+                    box-shadow: 0 0 10px 0 rgba(104, 153, 55, 0.35);
                     background-image: url(${ecoBackground});
                 `;
 
             case 'Ludicrous':
                 return css`
                     background-color: #dc6e49;
-                    box-shadow: 0px 0px 10px 0px rgba(153, 89, 55, 0.35);
+                    box-shadow: 0 0 10px 0 rgba(153, 89, 55, 0.35);
                     background-image: url(${ludicrousBackground});
                 `;
 
             case 'Custom':
                 return css`
                     background-color: #397fb9;
-                    box-shadow: 0px 0px 10px 0px rgba(55, 107, 153, 0.35);
+                    box-shadow: 0 0 10px 0 rgba(55, 107, 153, 0.35);
                     background-image: url(${customBackground});
+                `;
+            case 'Turbo':
+                return css`
+                    background-color: rgba(65, 199, 174, 0.35);
+                    background-image: url(${ecoBackground});
+                    background-blend-mode: soft-light;
+                    box-shadow: 0 0 10px 0 rgba(65, 118, 199, 0.35);
+                `;
+            default:
+                return css`
+                    background-blend-mode: unset;
                 `;
         }
     }}

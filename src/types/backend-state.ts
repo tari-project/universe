@@ -1,7 +1,6 @@
 import {
     BackgroundNodeSyncUpdatePayload,
     ConfigPoolsPayload,
-    ConnectedPeersUpdatePayload,
     ConnectionStatusPayload,
     CriticalProblemPayload,
     DetectedAvailableGpuEngines,
@@ -56,10 +55,6 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'GpuMiningUpdate';
           payload: GpuMinerStatus;
-      }
-    | {
-          event_type: 'ConnectedPeersUpdate';
-          payload: ConnectedPeersUpdatePayload;
       }
     | {
           event_type: 'NewBlockHeight';

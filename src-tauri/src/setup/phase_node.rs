@@ -360,7 +360,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
             .get_task_tracker()
             .await
             .spawn(async move {
-                let mut interval: Interval = interval(Duration::from_secs(30));
+                let mut interval: Interval = interval(Duration::from_secs(60));
                 interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
 
                 loop {
@@ -385,35 +385,6 @@ impl SetupPhaseImpl for NodeSetupPhase {
                             break;
                         }
                     }
-                }
-            });
-
-        let app_handle_clone: tauri::AppHandle = self.app_handle.clone();
-        TasksTrackers::current()
-            .node_phase.get_task_tracker().await
-            .spawn(async move {
-                let app_state = app_handle_clone.state::<UniverseAppState>().clone();
-                let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
-                let mut interval = interval(Duration::from_secs(10));
-                interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
-
-                loop {
-                    tokio::select! {
-                _ = interval.tick() => {
-                    if let Ok(connected_peers) = app_state
-                        .node_manager
-                        .list_connected_peers()
-                        .await {
-                            EventsEmitter::emit_connected_peers_update(connected_peers.clone()).await;
-                        } else {
-                            let err_msg = "Error getting connected peers";
-                            error!(target: LOG_TARGET, "{err_msg}");
-                        }
-                },
-                _ = shutdown_signal.wait() => {
-                    break;
-                },
-            }
                 }
             });
 

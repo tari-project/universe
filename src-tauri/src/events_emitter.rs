@@ -440,20 +440,6 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_connected_peers_update(connected_peers: Vec<String>) {
-        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
-        let event = Event {
-            event_type: EventType::ConnectedPeersUpdate,
-            payload: connected_peers,
-        };
-        if let Err(e) = Self::get_app_handle()
-            .await
-            .emit(BACKEND_STATE_UPDATE, event)
-        {
-            error!(target: LOG_TARGET, "Failed to emit ConnectedPeersUpdate event: {e:?}");
-        }
-    }
-
     pub async fn emit_new_block_mined(
         block_height: u64,
         coinbase_transaction: Option<TransactionInfo>,
