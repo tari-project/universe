@@ -41,7 +41,7 @@ use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 use tari_common_types::tari_address::TariAddress;
-use tari_core::transactions::tari_amount::MicroMinotari;
+use tari_transaction_components::tari_amount::MicroMinotari;
 use tari_shutdown::{Shutdown, ShutdownSignal};
 use tokio::sync::{watch, RwLock};
 use tokio::time::interval;

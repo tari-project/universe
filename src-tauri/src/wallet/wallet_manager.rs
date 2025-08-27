@@ -40,7 +40,7 @@ use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use std::time::Duration;
 use tari_common::configuration::Network;
-use tari_core::transactions::tari_amount::{MicroMinotari, Minotari};
+use tari_transaction_components::tari_amount::{MicroMinotari, Minotari};
 use tari_shutdown::ShutdownSignal;
 use tokio::fs;
 use tokio::sync::watch;
