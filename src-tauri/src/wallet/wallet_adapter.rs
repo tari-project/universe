@@ -41,9 +41,9 @@ use std::path::{Path, PathBuf};
 use std::time::Duration;
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::{TariAddress, TariAddressError};
+use tari_shutdown::Shutdown;
 use tari_transaction_components::tari_amount::MicroMinotari;
 use tari_transaction_components::transaction_components::memo_field::MemoField;
-use tari_shutdown::Shutdown;
 use tokio::sync::watch;
 
 #[cfg(target_os = "windows")]
