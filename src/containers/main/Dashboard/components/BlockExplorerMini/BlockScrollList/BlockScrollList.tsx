@@ -1,10 +1,10 @@
-import { BlockData } from '@app/types/mining/blocks.ts';
+import { BlockBubbleData } from '@app/types/mining/blocks.ts';
 import { DragContainer, ScrollMask } from './styles';
 import { Suspense } from 'react';
 import BlockEntry from '../BlockEntry/BlockEntry';
 
 interface Props {
-    data?: BlockData[];
+    data?: BlockBubbleData[];
 }
 
 export default function BlockScrollList({ data }: Props) {

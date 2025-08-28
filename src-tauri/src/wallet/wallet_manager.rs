@@ -401,7 +401,6 @@ impl WalletManager {
 
                                     ConfigWallet::update_field(ConfigWalletContent::set_last_known_balance, balance.available_balance).await?;
 
-
                                     EventsEmitter::emit_wallet_balance_update(balance).await;
                                     EventsEmitter::emit_init_wallet_scanning_progress(
                                         current_target_height,

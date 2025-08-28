@@ -8,7 +8,7 @@ import { setupStoreSelectors } from '@app/store/selectors/setupStoreSelectors';
 import { useSetupStore } from '@app/store/useSetupStore';
 import { useUIStore } from '@app/store/useUIStore';
 import { setDialogToShow } from '@app/store/actions/uiStoreActions';
-import { AppModuleState, AppModuleStatus } from '@app/store/types/setup';
+import { AppModule, AppModuleState, AppModuleStatus } from '@app/store/types/setup';
 
 import { memo, useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -23,6 +23,7 @@ import {
     ModuleListWrapper,
     GlobalActionsWrapper,
 } from './styles';
+import { GpuMiningModuleMissingPackagesButton } from './ExtraButtons';
 
 const FailedModuleInitializationDialog = memo(function FailedModuleInitializationDialog() {
     const { t } = useTranslation(['setup-progresses', 'common'], { useSuspense: false });
@@ -129,6 +130,13 @@ const FailedModuleInitializationDialog = memo(function FailedModuleInitializatio
                                         module.status === AppModuleStatus.NotInitialized
                                     }
                                     allModulesFailed={allModulesFailed}
+                                    extraActionButtons={
+                                        module.module === AppModule.GpuMining
+                                            ? [
+                                                  <GpuMiningModuleMissingPackagesButton key="gpu-mining-missing-packages" />,
+                                              ]
+                                            : undefined
+                                    }
                                 />
                             ))}
                         </Stack>

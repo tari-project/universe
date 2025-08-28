@@ -27,7 +27,7 @@ use log::{error, info};
 use psp::monitor::{PowerMonitor, PowerState};
 use tokio::sync::watch;
 
-const LOG_TARGET: &str = "tari::universe::external_dependencies";
+const LOG_TARGET: &str = "tari::universe::system_status";
 
 static INSTANCE: LazyLock<SystemStatus> = LazyLock::new(SystemStatus::new);
 

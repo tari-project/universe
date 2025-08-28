@@ -5,10 +5,10 @@ import BlockVideo from './BlockVideo/BlockVideo';
 import { MetaData, TimeAgo, BottomWrapper, RewardPillBlack } from '../BlockSolved/styles';
 import { AnimatePresence } from 'motion/react';
 import { formatReward, formatBlockNumber } from '../../utils/formatting';
-import { BlockData } from '@app/types/mining/blocks.ts';
+import { BlockBubbleData } from '@app/types/mining/blocks.ts';
 import { useTranslation } from 'react-i18next';
 
-export default function BlockSolving({ id, minersSolved, timeAgo, reward, isSolved }: BlockData) {
+export default function BlockSolving({ id, minersSolved, timeAgo, reward, isSolved }: BlockBubbleData) {
     const { t } = useTranslation('mining-view');
     const title = minersSolved > 100 ? `${minersSolved} ${t('bubbles.miners')}` : t('bubbles.pool');
     const titleMarkup = (
@@ -49,14 +49,14 @@ export default function BlockSolving({ id, minersSolved, timeAgo, reward, isSolv
                                     {t('bubbles.solving')}
                                 </Title>
                                 <BottomWrapper>
-                                    {reward && (
+                                    {reward ? (
                                         <RewardPillBlack $isSolved={isSolved}>
                                             <span>
                                                 {formatReward(reward)}
                                                 {` XTM`}
                                             </span>
                                         </RewardPillBlack>
-                                    )}
+                                    ) : null}
                                     <BlockTimer />
                                 </BottomWrapper>
                             </ContentWrapper>

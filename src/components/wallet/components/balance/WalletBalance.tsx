@@ -2,7 +2,7 @@ import i18n from 'i18next';
 import NumberFlow, { type Format } from '@number-flow/react';
 import { Trans, useTranslation } from 'react-i18next';
 import { IoEyeOffOutline, IoEyeOutline } from 'react-icons/io5';
-import { useConfigWalletStore, useMiningMetricsStore, useUIStore, useWalletStore } from '@app/store';
+import { useConfigWalletStore, useNodeStore, useUIStore, useWalletStore } from '@app/store';
 
 import { roundToTwoDecimals, removeXTMCryptoDecimals, formatNumber, FormatPreset, formatValue } from '@app/utils';
 import { Typography } from '@app/components/elements/Typography.tsx';
@@ -37,21 +37,21 @@ export const WalletBalance = () => {
     const [hovering, setHovering] = useState(false);
 
     const hideBalance = useUIStore((s) => s.hideWalletBalance);
-    const isConnected = useMiningMetricsStore((s) => s.isNodeConnected);
+    const isConnected = useNodeStore((s) => s.isNodeConnected);
     const cached = useConfigWalletStore((s) => s.last_known_balance);
     const available = useWalletStore((s) => s.balance?.available_balance);
     const total = useWalletStore((s) => s.calculated_balance);
     const scanData = useWalletStore((s) => s.wallet_scanning);
 
     const isScanning = scanData.is_scanning;
-    const scanProgress = Math.round(scanData.progress * 10) / 10;
+    const scanProgress = Math.floor(scanData.progress * 10) / 10;
 
     const balance = removeXTMCryptoDecimals(roundToTwoDecimals((isScanning ? cached : total) || 0));
     const balanceMismatch = removeXTMCryptoDecimals(roundToTwoDecimals(available || 0)) != balance;
 
     const displayText = hideBalance ? '*******' : formatNumber(available || 0, FormatPreset.XTM_LONG);
-
     const isLoading = !isConnected || isScanning;
+
     const balanceText = balanceMismatch
         ? `${t('history.available-balance')}: ${displayText} XTM`
         : t('history.my-balance');
@@ -87,7 +87,10 @@ export const WalletBalance = () => {
 
     const progressMarkup = isLoading && (
         <ScanProgressWrapper>
-            <Progress percentage={scanProgress} isInfinite={!isConnected || scanProgress === 100} />
+            <Progress
+                percentage={scanProgress && scanProgress >= 95 ? scanProgress - 9 : scanProgress} // so you can actually still see the little gap
+                isInfinite={!isConnected || scanProgress === 100}
+            />
         </ScanProgressWrapper>
     );
 

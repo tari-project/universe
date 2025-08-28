@@ -15,11 +15,11 @@ import {
     RewardPillHoverBg,
 } from './styles';
 import { AnimatePresence } from 'motion/react';
-import { BlockData } from '@app/types/mining/blocks.ts';
+import { BlockBubbleData } from '@app/types/mining/blocks.ts';
 import { formatBlockNumber, formatReward } from '../../utils/formatting';
 import { useTranslation } from 'react-i18next';
 
-export default function BlockSolved({ id, minersSolved, reward, timeAgo, blocks }: BlockData) {
+export default function BlockSolved({ id, minersSolved, reward, timeAgo, blocks }: BlockBubbleData) {
     const { t } = useTranslation(['mining-view', 'sidebar']);
     const [isHovering, setIsHovering] = useState(false);
     const title = minersSolved > 100 ? `${minersSolved} ${t('bubbles.miners')}` : t('bubbles.pool');

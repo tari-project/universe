@@ -13,6 +13,7 @@
   "disconnect": "Disconnect",
   "failed": "Failed",
   "hashrate": "Hashrate",
+  "install_missing_packages": "Install missing packages",
   "installation-problem": "Installation problem",
   "join_the_space": "Join the Space",
   "learn-more": "Learn more",
