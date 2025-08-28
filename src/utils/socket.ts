@@ -51,7 +51,9 @@ function removeSocket() {
 
 function restartSocket() {
     removeSocket();
-    initialiseSocket();
+    setTimeout(() => {
+        initialiseSocket();
+    }, 3000);
 }
 
 export { socketInitialised, initialiseSocket, removeSocket, restartSocket };
