@@ -6,7 +6,7 @@ import { DialogContent, Dialog } from '@app/components/elements/dialog/Dialog';
 import { Typography } from '@app/components/elements/Typography';
 
 import { UpdatedStatus } from './UpdatedStatus';
-import { ButtonsWrapper } from './AutoUpdateDialog.styles';
+import { ButtonSectionWrapper, ButtonsWrapper } from './AutoUpdateDialog.styles';
 import { memo, useCallback, useEffect, useState } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { invoke } from '@tauri-apps/api/core';
@@ -101,28 +101,28 @@ const AutoUpdateDialog = memo(function AutoUpdateDialog() {
                 <Typography variant="p">{t(subtitle, { version })}</Typography>
                 {isDownloading && <UpdatedStatus contentLength={contentLength} downloaded={downloaded} />}
                 {isDownloaded && <Typography variant="p">{`Update downloaded: Restarting Tari Universe`}</Typography>}
-                <ButtonsWrapper>
+                <ButtonSectionWrapper>
                     {!isDownloading && !couldNotUpdate && (
-                        <>
-                            <Button onClick={handleClose} backgroundColor="warning">
+                        <ButtonsWrapper>
+                            <Button fluid size="small" onClick={handleClose} backgroundColor="warning">
                                 {t('no')}
                             </Button>
-                            <Button onClick={handleUpdate} backgroundColor="green">
+                            <Button fluid size="small" onClick={handleUpdate} backgroundColor="green">
                                 {t('yes')}
                             </Button>
-                        </>
+                        </ButtonsWrapper>
                     )}
                     {couldNotUpdate && (
-                        <>
-                            <Button onClick={handleUpdate} backgroundColor="green">
+                        <ButtonsWrapper>
+                            <Button fluid size="small" onClick={handleUpdate} backgroundColor="green">
                                 {t('update')}
                             </Button>
-                            <Button onClick={handleClose} backgroundColor="warning">
+                            <Button fluid size="small" onClick={handleClose} backgroundColor="warning">
                                 {t('close')}
                             </Button>
-                        </>
+                        </ButtonsWrapper>
                     )}
-                </ButtonsWrapper>
+                </ButtonSectionWrapper>
             </DialogContent>
         </Dialog>
     );

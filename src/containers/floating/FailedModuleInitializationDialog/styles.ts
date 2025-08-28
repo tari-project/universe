@@ -2,8 +2,8 @@ import styled from 'styled-components';
 
 export const CloseButton = styled.button`
     position: absolute;
-    top: 12px;
-    right: 12px;
+    top: 20px;
+    right: 20px;
     padding: 4px;
     min-width: 32px;
     min-height: 32px;
@@ -53,16 +53,16 @@ export const ModuleListWrapper = styled.div`
 
 export const GlobalActionsWrapper = styled.div`
     padding-top: 16px;
-    border-top: 1px solid #2a2a2a;
+    border-top: 1px solid ${({ theme }) => theme.palette.divider};
     flex-shrink: 0;
 `;
 
 // Module Status Display Components
 export const ModuleStatusWrapper = styled.div`
     padding: 16px;
-    border: 1px solid #2a2a2a;
+    border: 1px solid ${({ theme }) => theme.palette.divider};
     border-radius: 8px;
-    background-color: #1a1a1a;
+    background-color: ${({ theme }) => theme.palette.background.default};
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -99,27 +99,27 @@ export const ErrorMessageWrapper = styled.div`
     border: 1px solid #d85240;
     border-radius: 6px;
     padding: 24px 12px 12px 12px;
-    background-color: #1f1416;
+    background-color: ${({ theme }) => theme.colorsAlpha.errorDarkAlpha[10]};
 `;
 
 export const PhaseLabel = styled.div`
     position: absolute;
     top: -8px;
     left: 12px;
-    background-color: #1a1a1a;
-    color: #e89b91;
+    background-color: ${({ theme }) => theme.colors.red[950]};
+    color: ${({ theme }) => theme.colors.red[300]};
     font-size: 10px;
     font-weight: 500;
     font-family: inherit;
     padding: 2px 6px;
     border-radius: 2px;
     text-transform: capitalize;
-    letter-spacing: 0.2px;
+    letter-spacing: 0.05rem;
     border: 1px solid #4a3a3a;
 `;
 
 export const ErrorMessage = styled.div`
-    color: #e89b91;
+    color: ${({ theme }) => theme.palette.error.main};
     font-size: 13px;
     font-family: monospace;
     line-height: 1.4;
