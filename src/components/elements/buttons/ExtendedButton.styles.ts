@@ -54,6 +54,10 @@ export const StyledTextButton = styled.button<ExtendedButtonStyleProps>`
             &:hover {
                 opacity: 0.7;
             }
+            &:focus-visible {
+                outline: none;
+                border-bottom: 2px solid ${({ theme }) => theme.palette.focusOutline};
+            }
         `;
     }}}
 }`;

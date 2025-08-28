@@ -1,7 +1,7 @@
 import { FloatingFocusManager, FloatingNode, FloatingPortal, useMergeRefs } from '@floating-ui/react';
 import { DialogContext, useDialog, useDialogContext } from './helpers.ts';
 import { DialogContentType, DialogProps } from './types.ts';
-import { ContentScrollWrapper, ContentWrapper, Overlay } from './Dialog.styles.ts';
+import { ContentScrollContainer, ContentWrapper, Overlay } from './Dialog.styles.ts';
 
 export function Dialog({ children, ...options }: DialogProps) {
     const dialog = useDialog(options);
@@ -18,16 +18,17 @@ export function DialogContent({ variant = 'primary', ...props }: DialogContentTy
                 <FloatingPortal>
                     <Overlay lockScroll className="overlay">
                         <FloatingFocusManager context={context.context} modal={false}>
-                            <ContentWrapper
-                                ref={ref}
-                                {...props}
-                                {...context.getFloatingProps(props)}
-                                aria-labelledby={context.nodeId}
-                                aria-describedby={`Dialog_${context.nodeId}`}
-                                $variant={variant}
-                            >
-                                <ContentScrollWrapper>{props.children}</ContentScrollWrapper>
-                            </ContentWrapper>
+                            <ContentScrollContainer $variant={variant} $unPadded={props.$unPadded}>
+                                <ContentWrapper
+                                    ref={ref}
+                                    {...props}
+                                    {...context.getFloatingProps(props)}
+                                    aria-labelledby={context.nodeId}
+                                    aria-describedby={`Dialog_${context.nodeId}`}
+                                >
+                                    {props.children}
+                                </ContentWrapper>
+                            </ContentScrollContainer>
                         </FloatingFocusManager>
                     </Overlay>
                 </FloatingPortal>

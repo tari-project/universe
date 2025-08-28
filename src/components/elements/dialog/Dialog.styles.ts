@@ -19,22 +19,15 @@ export const Overlay = styled(FloatingOverlay)`
         z-index: -1;
     }
 `;
-export const ContentScrollWrapper = styled.div`
-    display: flex;
-    width: 100%;
-    height: 100%;
-    overflow-y: auto;
-`;
-export const ContentWrapper = styled.div<ContentWrapperStyleProps>`
-    border-radius: clamp(20px, 3.5vh, 35px);
-    padding: ${({ $unPadded }) => ($unPadded ? 0 : '20px')};
+export const ContentScrollContainer = styled.div<ContentWrapperStyleProps>`
     box-shadow: 0 4px 45px 0 rgba(0, 0, 0, 0.08);
-    flex-direction: column;
+    border-radius: clamp(20px, 3.5vh, 35px);
     position: relative;
     overflow: hidden;
-    max-height: 90%;
+    align-items: center;
+    justify-content: center;
     display: flex;
-    gap: 6px;
+    max-height: 90%;
 
     ${({ theme, $variant, $unPadded }) => {
         switch ($variant) {
@@ -65,4 +58,13 @@ export const ContentWrapper = styled.div<ContentWrapperStyleProps>`
                 `;
         }
     }}
+`;
+export const ContentWrapper = styled.div<ContentWrapperStyleProps>`
+    padding: ${({ $unPadded }) => ($unPadded ? 0 : '20px')};
+    position: relative;
+    flex-direction: column;
+    overflow-y: auto;
+    display: flex;
+    width: 100%;
+    height: 100%;
 `;

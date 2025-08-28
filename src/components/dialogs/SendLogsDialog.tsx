@@ -4,13 +4,9 @@ import { invoke } from '@tauri-apps/api/core';
 
 import { useUIStore } from '@app/store/useUIStore.ts';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
-
 import { Typography } from '@app/components/elements/Typography.tsx';
-
 import { Stack } from '@app/components/elements/Stack.tsx';
-
 import { TextArea } from '@app/components/elements/inputs/TextArea.tsx';
-
 import { setDialogToShow } from '@app/store';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
@@ -54,7 +50,13 @@ export function SendLogsDialog({ onSetReference }: { onSetReference?: (reference
     return (
         <Dialog open={showLogsDialog} onOpenChange={setShowLogsDialog}>
             <DialogContent>
-                <Stack direction="column" alignItems="center" justifyContent="space-between" gap={20}>
+                <Stack
+                    direction="column"
+                    alignItems="center"
+                    justifyContent="space-between"
+                    gap={20}
+                    style={{ padding: 10 }}
+                >
                     <Typography variant="h3">{t('send-logs', { ns: 'settings' })}</Typography>
                     <TextArea
                         onChange={(e) => setFeedback(e.target.value)}
