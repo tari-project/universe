@@ -35,7 +35,7 @@ use tokio::{
 use crate::{
     airdrop::decode_jwt_claims_without_exp,
     commands::{sign_ws_data, CpuMinerStatus, SignWsDataResponse},
-    configs::{config_core::ConfigCore, trait_config::ConfigImpl},
+    configs::{config_core::ConfigCore, config_pools::ConfigPools, trait_config::ConfigImpl},
     internal_wallet::InternalWallet,
     tasks_tracker::TasksTrackers,
     websocket_manager::WebsocketMessage,
@@ -169,17 +169,23 @@ impl WebsocketEventsManager {
         let is_mining_active = cpu_miner_status.hash_rate > 0.0 || gpu_status.hash_rate > 0.0;
         let tari_address = InternalWallet::tari_address().await;
         let claims_id = decode_jwt_claims_without_exp(&jwt_token).map_or(String::new(), |c| c.id);
+        let pools_config = ConfigPools::content().await;
+        let gpu_pool_name = pools_config.selected_gpu_pool().name();
+        let cpu_pool_name = pools_config.selected_cpu_pool().name();
 
         let signable_message = format!(
-            "{},{},{},{},{},{},{}",
+            "{},{},{},{},{},{},{},{},{}",
             app_version,
             network,
             app_id,
             claims_id,
             is_mining_active,
             block_height,
-            tari_address.to_base58()
+            tari_address.to_base58(),
+            gpu_pool_name,
+            cpu_pool_name,
         );
+
         if let Ok(SignWsDataResponse { signature, pub_key }) = sign_ws_data(signable_message).await
         {
             let payload = serde_json::json!({
@@ -189,7 +195,9 @@ impl WebsocketEventsManager {
                     "version":app_version,
                     "network":network,
                     "userId":claims_id,
-                    "walletHash":tari_address.to_base58()
+                    "walletHash":tari_address.to_base58(),
+                    "gpuPoolName":gpu_pool_name,
+                    "cpuPoolName":cpu_pool_name,
             });
 
             return Some(WebsocketMessage {
