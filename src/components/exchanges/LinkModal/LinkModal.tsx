@@ -51,7 +51,7 @@ export default function XCLinkModal() {
     });
     return (
         <Dialog open={isOpen} onOpenChange={handleClose}>
-            <DialogContent variant="transparent">
+            <DialogContent variant="transparent" $unPadded>
                 <Wrapper>
                     <CloseWrapper>
                         <CloseButton onClick={handleClose}>

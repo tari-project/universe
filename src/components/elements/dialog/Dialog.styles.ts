@@ -23,7 +23,7 @@ export const ContentWrapper = styled.div<ContentWrapperStyleProps>`
     flex-direction: column;
     gap: 6px;
     max-height: 90%;
-    padding: 20px;
+    padding: ${({ $unPadded }) => ($unPadded ? 0 : '20px')};
     position: relative;
 
     ${({ theme, $transparentBg }) =>

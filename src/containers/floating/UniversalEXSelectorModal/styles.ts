@@ -6,6 +6,7 @@ export const Wrapper = styled.div`
     flex-direction: column;
     justify-content: space-between;
     width: min(480px, 40vw);
+    padding: 20px;
     overflow: hidden;
     height: 100%;
     min-height: 60vh;
