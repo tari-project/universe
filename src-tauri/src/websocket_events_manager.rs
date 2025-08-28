@@ -117,8 +117,13 @@ impl WebsocketEventsManager {
                         .clone()
                         .map(|tokens| tokens.token);
                     let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
-                    let jwt = jwt_token.map_or(String::new(), |token| token.to_string());
+                    let user_id = jwt_token.map_or(String::new(), |token| {
+                        // If token is set decode it
+                        decode_jwt_claims_without_exp(&token.to_string())
+                            .map_or(String::new(), |c| c.id)
+                    });
                     let app_version = app_version_option.map_or(String::from("unknown"), |version| version.to_string());
+
                     tokio::select! {
                       _= interval.tick() => {
                             if let Some(message) = WebsocketEventsManager::assemble_mining_status(
@@ -127,7 +132,7 @@ impl WebsocketEventsManager {
                               node_latest_status.clone(),
                               app_id.clone(),
                               app_version.clone(),
-                              jwt,
+                              user_id,
                             ).await{
                                 drop(websocket_tx_channel_clone.send(message).await.inspect_err(|e|{
                                   error!(target:LOG_TARGET, "could not send to websocket channel due to {e}");
@@ -159,7 +164,7 @@ impl WebsocketEventsManager {
         node_latest_status: watch::Receiver<BaseNodeStatus>,
         app_id: String,
         app_version: String,
-        jwt_token: String,
+        claims_id: String,
     ) -> Option<WebsocketMessage> {
         let BaseNodeStatus { block_height, .. } = *node_latest_status.borrow();
 
@@ -168,7 +173,6 @@ impl WebsocketEventsManager {
         let network = Network::get_current_or_user_setting_or_default().as_key_str();
         let is_mining_active = cpu_miner_status.hash_rate > 0.0 || gpu_status.hash_rate > 0.0;
         let tari_address = InternalWallet::tari_address().await;
-        let claims_id = decode_jwt_claims_without_exp(&jwt_token).map_or(String::new(), |c| c.id);
 
         let signable_message = format!(
             "{},{},{},{},{},{},{}",
