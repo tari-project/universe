@@ -1,7 +1,6 @@
 import { FloatingFocusManager, FloatingNode, FloatingPortal, useMergeRefs } from '@floating-ui/react';
-
-import { DialogContentType, DialogProps } from './types.ts';
 import { DialogContext, useDialog, useDialogContext } from './helpers.ts';
+import { DialogContentType, DialogProps } from './types.ts';
 import { ContentWrapper, Overlay } from './Dialog.styles.ts';
 
 export function Dialog({ children, ...options }: DialogProps) {
@@ -17,7 +16,7 @@ export function DialogContent({ variant = 'primary', ...props }: DialogContentTy
         <FloatingNode id={context.nodeId} key={context.nodeId}>
             {context.open ? (
                 <FloatingPortal>
-                    <Overlay lockScroll className="overlay" $zIndex={props.$zIndex}>
+                    <Overlay lockScroll className="overlay">
                         <FloatingFocusManager context={context.context} modal={false}>
                             <ContentWrapper
                                 ref={ref}

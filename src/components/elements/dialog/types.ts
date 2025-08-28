@@ -12,11 +12,7 @@ export interface ContentWrapperProps {
 }
 export interface ContentWrapperStyleProps {
     $variant?: DialogVariant;
-    $transparentBg?: boolean;
     $unPadded?: boolean;
-    $disableOverflow?: boolean;
-    $borderRadius?: string;
-    $zIndex?: number;
 }
 
 export interface DialogContentType extends HTMLProps<HTMLDivElement>, ContentWrapperProps, ContentWrapperStyleProps {
