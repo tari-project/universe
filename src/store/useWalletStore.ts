@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { TransactionInfo, WalletBalance } from '../types/app-status.ts';
-import { refreshTransactions } from './actions/walletStoreActions.ts';
+
 import { TxHistoryFilter } from '@app/components/transactions/history/FilterSelect.tsx';
 import { UserTransactionDTO } from '@tari-project/wxtm-bridge-backend-api';
 import { TariAddressType } from '@app/types/events-payloads.ts';
@@ -10,30 +10,33 @@ export interface BackendBridgeTransaction extends UserTransactionDTO {
     sourceAddress?: string;
     mined_in_block_height?: number;
 }
+
+export interface BridgeTransactionDetails {
+    status: UserTransactionDTO.status;
+    transactionHash?: string;
+    amountAfterFee: string;
+}
+export interface WalletTransactionDetails extends Partial<TransactionInfo> {
+    txId: number;
+    direction: number;
+    isCancelled: boolean;
+    status: number;
+    excessSig?: string;
+    message?: string;
+    paymentReference?: string;
+    destAddressEmoji?: string;
+}
 // combined type for transactions
 export interface CombinedBridgeWalletTransaction {
-    sourceAddress?: string;
     destinationAddress: string;
     paymentId: string;
     feeAmount: number;
     createdAt: number;
     tokenAmount: number;
     mined_in_block_height?: number;
-    walletTransactionDetails: {
-        txId: number;
-        direction: number;
-        isCancelled: boolean;
-        status: number;
-        excessSig?: string;
-        message?: string;
-        paymentReference?: string;
-        destAddressEmoji?: string;
-    };
-    bridgeTransactionDetails?: {
-        status: UserTransactionDTO.status;
-        transactionHash?: string;
-        amountAfterFee: string;
-    };
+    sourceAddress?: string;
+    walletTransactionDetails: WalletTransactionDetails;
+    bridgeTransactionDetails?: BridgeTransactionDetails;
 }
 
 export interface WalletStoreState {
@@ -127,9 +130,6 @@ export const updateWalletScanningProgress = (payload: {
             ...payload,
         },
     }));
-    if (!is_scanning) {
-        refreshTransactions();
-    }
 };
 
 // New function to prune transaction arrays when they get too large

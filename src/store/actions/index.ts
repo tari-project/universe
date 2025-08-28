@@ -56,12 +56,6 @@ export {
     setUITheme,
 } from './uiStoreActions.ts';
 
-export {
-    fetchCoinbaseTransactions,
-    fetchTransactionsHistory,
-    importSeedWords,
-    refreshTransactions,
-    setWalletBalance,
-} from './walletStoreActions';
+export { fetchTransactionsHistory, importSeedWords, setWalletBalance } from './walletStoreActions';
 
 export { handleBaseNodeStatusUpdate } from './nodeStoreActions.ts';
