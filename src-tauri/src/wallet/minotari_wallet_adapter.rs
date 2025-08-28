@@ -29,7 +29,7 @@ use crate::utils::logging_utils::setup_logging;
 use crate::wallet::transaction_service::TransactionService;
 use crate::wallet::wallet_status_monitor::{WalletStatusMonitor, WalletStatusMonitorError};
 use crate::wallet::wallet_types::{
-    ConnectivityStatus, TransactionInfo, TransactionStatus, WalletBalance, WalletState,
+    ConnectivityStatus, Currency, TransactionInfo, TransactionStatus, WalletBalance, WalletState,
 };
 use anyhow::Error;
 use log::{info, warn};
@@ -73,7 +73,7 @@ impl MinotariWalletMigrationInfo {
     }
 }
 
-pub struct WalletAdapter {
+pub struct MinotariWalletAdapter {
     use_tor: bool,
     connect_with_local_node: bool,
     pub(crate) view_private_key: String,
@@ -85,7 +85,7 @@ pub struct WalletAdapter {
     pub(crate) http_client_url: Option<String>,
 }
 
-impl WalletAdapter {
+impl MinotariWalletAdapter {
     pub fn new(state_broadcast: watch::Sender<Option<WalletState>>) -> Self {
         let tcp_listener_port = PortAllocator::new().assign_port_with_fallback();
         let grpc_port = PortAllocator::new().assign_port_with_fallback();
@@ -170,7 +170,8 @@ impl WalletAdapter {
                     source_address: TariAddress::from_bytes(&tx.source_address)?.to_base58(),
                     dest_address: TariAddress::from_bytes(&tx.dest_address)?.to_base58(),
                     status: TransactionStatus::from(tx.status),
-                    amount: MicroMinotari(tx.amount),
+                    amount: tx.amount,
+                    currency: Currency::Xtm,
                     is_cancelled: tx.is_cancelled,
                     direction: tx.direction,
                     excess_sig: tx.excess_sig,
@@ -178,6 +179,8 @@ impl WalletAdapter {
                     timestamp: tx.timestamp,
                     payment_id: MemoField::stringify_bytes(&tx.user_payment_id),
                     mined_in_block_height: tx.mined_in_block_height,
+                    mined_in_chain_id: "Minotari".parse().expect("Can't fail"),
+                    wallet_id: 1,
                     payment_reference,
                 })
             })
@@ -277,7 +280,7 @@ impl WalletAdapter {
     }
 }
 
-impl ProcessAdapter for WalletAdapter {
+impl ProcessAdapter for MinotariWalletAdapter {
     type StatusMonitor = WalletStatusMonitor;
     type ProcessInstance = ProcessInstance;
 

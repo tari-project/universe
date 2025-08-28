@@ -20,6 +20,8 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::str::FromStr;
+
 use minotari_node_grpc_client::grpc::{GetBalanceResponse, NetworkStatusResponse};
 use serde::{Serialize, Serializer};
 use tari_core::transactions::tari_amount::MicroMinotari;
@@ -28,7 +30,7 @@ use tari_core::transactions::tari_amount::MicroMinotari;
 #[derive(Debug, Clone, Default)]
 pub struct WalletState {
     pub scanned_height: u64,
-    pub balance: Option<WalletBalance>,
+    pub balance: Option<Balances>,
     pub network: Option<NetworkStatus>,
 }
 
@@ -74,20 +76,27 @@ pub enum ConnectivityStatus {
 }
 
 #[derive(Debug, Clone, Serialize)]
+pub struct Balances {
+    pub balances: HashMap<Currency, WalletBalance>,
+}
+
+#[derive(Debug, Clone, Serialize)]
 pub struct WalletBalance {
-    pub available_balance: MicroMinotari,
-    pub timelocked_balance: MicroMinotari,
-    pub pending_incoming_balance: MicroMinotari,
-    pub pending_outgoing_balance: MicroMinotari,
+    pub currency: Currency,
+    pub available_balance: u64,
+    pub timelocked_balance: u64,
+    // pub pending_incoming_balance: MicroMinotari,
+    // pub pending_outgoing_balance: MicroMinotari,
 }
 
 impl WalletBalance {
     pub fn from_response(res: GetBalanceResponse) -> Self {
         Self {
+            currency: Currency::Xtm,
             available_balance: MicroMinotari(res.available_balance),
             timelocked_balance: MicroMinotari(res.timelocked_balance),
-            pending_incoming_balance: MicroMinotari(res.pending_incoming_balance),
-            pending_outgoing_balance: MicroMinotari(res.pending_outgoing_balance),
+            // pending_incoming_balance: MicroMinotari(res.pending_incoming_balance),
+            // pending_outgoing_balance: MicroMinotari(res.pending_outgoing_balance),
         }
     }
 
@@ -97,12 +106,32 @@ impl WalletBalance {
 }
 
 #[derive(Debug, Serialize, Clone)]
+pub enum Currency {
+    Xtm,
+    Xtr,
+    Usdx,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct ChainId(String);
+
+impl FromStr for ChainId {
+    type Err = std::string::ParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(ChainId(s.to_string()))
+    }
+}
+
+#[derive(Debug, Serialize, Clone)]
 pub struct TransactionInfo {
     pub tx_id: String,
     pub source_address: String,
     pub dest_address: String,
     pub status: TransactionStatus,
-    pub amount: MicroMinotari,
+    pub amount: u64,
+    pub currency: Currency,
+    pub wallet_id: u32,
     pub is_cancelled: bool,
     pub direction: i32,
     pub excess_sig: Vec<u8>,
@@ -110,6 +139,7 @@ pub struct TransactionInfo {
     pub timestamp: u64,
     pub payment_id: String,
     pub mined_in_block_height: u64,
+    pub mined_in_chain_id: ChainId,
     pub payment_reference: Option<String>,
 }
 

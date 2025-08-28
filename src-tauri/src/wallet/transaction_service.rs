@@ -20,8 +20,8 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::wallet::minotari_wallet_adapter::MinotariWalletAdapter;
 use crate::wallet::spend_wallet::SpendWallet;
-use crate::wallet::wallet_adapter::WalletAdapter;
 use crate::wallet::wallet_status_monitor::WalletStatusMonitorError;
 use minotari_node_grpc_client::grpc::payment_recipient::PaymentType;
 use minotari_node_grpc_client::grpc::wallet_client::WalletClient;
@@ -38,12 +38,15 @@ const LOG_TARGET: &str = "tari::universe::transaction_service";
 
 /// This struct encapsulates all functionality related to transactions
 pub struct TransactionService<'a> {
-    wallet_adapter: &'a WalletAdapter,
+    wallet_adapter: &'a MinotariWalletAdapter,
     app_handle: &'a tauri::AppHandle,
 }
 
 impl<'a> TransactionService<'a> {
-    pub fn new(wallet_adapter: &'a WalletAdapter, app_handle: &'a tauri::AppHandle) -> Self {
+    pub fn new(
+        wallet_adapter: &'a MinotariWalletAdapter,
+        app_handle: &'a tauri::AppHandle,
+    ) -> Self {
         Self {
             wallet_adapter,
             app_handle,

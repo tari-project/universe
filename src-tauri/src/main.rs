@@ -169,7 +169,6 @@ const APPLICATION_FOLDER_ID: &str = "com.tari.universe.beta";
 #[derive(Clone)]
 struct UniverseAppState {
     node_status_watch_rx: Arc<watch::Receiver<BaseNodeStatus>>,
-    #[allow(dead_code)]
     wallet_state_watch_rx: Arc<watch::Receiver<Option<WalletState>>>,
     cpu_miner_status_watch_rx: Arc<watch::Receiver<CpuMinerStatus>>,
     gpu_latest_status: Arc<watch::Receiver<GpuMinerStatus>>,

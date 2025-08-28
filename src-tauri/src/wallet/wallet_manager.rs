@@ -28,7 +28,7 @@ use crate::node::node_manager::{NodeManager, NodeManagerError};
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
 use crate::tasks_tracker::TasksTrackers;
-use crate::wallet::wallet_adapter::WalletAdapter;
+use crate::wallet::minotari_wallet_adapter::MinotariWalletAdapter;
 use crate::wallet::wallet_status_monitor::WalletStatusMonitorError;
 use crate::wallet::wallet_types::{TransactionInfo, TransactionStatus, WalletBalance, WalletState};
 use crate::BaseNodeStatus;
@@ -68,7 +68,7 @@ pub enum WalletManagerError {
 }
 
 pub struct WalletManager {
-    watcher: Arc<RwLock<ProcessWatcher<WalletAdapter>>>,
+    minotari_watcher: Arc<RwLock<ProcessWatcher<MinotariWalletAdapter>>>,
     node_manager: NodeManager,
     initial_scan_completed: Arc<AtomicBool>,
     base_node_watch_rx: watch::Receiver<BaseNodeStatus>,
@@ -77,7 +77,7 @@ pub struct WalletManager {
 impl Clone for WalletManager {
     fn clone(&self) -> Self {
         Self {
-            watcher: self.watcher.clone(),
+            minotari_watcher: self.minotari_watcher.clone(),
             node_manager: self.node_manager.clone(),
             initial_scan_completed: self.initial_scan_completed.clone(),
             base_node_watch_rx: self.base_node_watch_rx.clone(),
@@ -92,11 +92,11 @@ impl WalletManager {
         stats_collector: &mut ProcessStatsCollectorBuilder,
         base_node_watch_rx: watch::Receiver<BaseNodeStatus>,
     ) -> Self {
-        let adapter = WalletAdapter::new(wallet_state_watch_tx);
+        let adapter = MinotariWalletAdapter::new(wallet_state_watch_tx);
         let process_watcher = ProcessWatcher::new(adapter, stats_collector.take_wallet());
 
         Self {
-            watcher: Arc::new(RwLock::new(process_watcher)),
+            minotari_watcher: Arc::new(RwLock::new(process_watcher)),
             node_manager,
             initial_scan_completed: Arc::new(AtomicBool::new(false)),
             base_node_watch_rx,
@@ -116,7 +116,7 @@ impl WalletManager {
 
         self.node_manager.wait_ready().await?;
 
-        let mut process_watcher = self.watcher.write().await;
+        let mut process_watcher = self.minotari_watcher.write().await;
         if process_watcher.is_running()
             || app_shutdown.is_terminated()
             || app_shutdown.is_triggered()
@@ -155,17 +155,22 @@ impl WalletManager {
         view_private_key: String,
         spend_key: String,
     ) {
-        let mut process_watcher = self.watcher.write().await;
+        let mut process_watcher = self.minotari_watcher.write().await;
         process_watcher.adapter.view_private_key = view_private_key;
         process_watcher.adapter.spend_key = spend_key;
     }
 
     pub async fn get_view_private_key(&self) -> String {
-        self.watcher.read().await.adapter.view_private_key.clone()
+        self.minotari_watcher
+            .read()
+            .await
+            .adapter
+            .view_private_key
+            .clone()
     }
 
     pub async fn get_port(&self) -> u16 {
-        self.watcher.read().await.adapter.grpc_port
+        self.minotari_watcher.read().await.adapter.grpc_port
     }
 
     pub fn is_initial_scan_completed(&self) -> bool {
@@ -190,7 +195,7 @@ impl WalletManager {
     }
 
     pub async fn get_balance(&self) -> Result<WalletBalance, anyhow::Error> {
-        let process_watcher = self.watcher.read().await;
+        let process_watcher = self.minotari_watcher.read().await;
         process_watcher.adapter.get_balance().await
     }
 
@@ -202,7 +207,7 @@ impl WalletManager {
     ) -> Result<Vec<TransactionInfo>, WalletManagerError> {
         let node_status = *self.base_node_watch_rx.borrow();
         let current_block_height = node_status.block_height;
-        let process_watcher = self.watcher.read().await;
+        let process_watcher = self.minotari_watcher.read().await;
         process_watcher
             .adapter
             .get_transactions(offset, limit, status_bitflag, current_block_height)
@@ -218,7 +223,7 @@ impl WalletManager {
         block_height: u64,
         timeout: Option<Duration>,
     ) -> Result<WalletState, WalletManagerError> {
-        let process_watcher = self.watcher.read().await;
+        let process_watcher = self.minotari_watcher.read().await;
 
         if !process_watcher.is_running() {
             return Err(WalletManagerError::WalletNotStarted);
@@ -241,7 +246,7 @@ impl WalletManager {
         payment_id: Option<String>,
         app_handle: &tauri::AppHandle,
     ) -> Result<(), WalletManagerError> {
-        let process_watcher = self.watcher.read().await;
+        let process_watcher = self.minotari_watcher.read().await;
         if !process_watcher.is_running() {
             return Err(WalletManagerError::WalletNotStarted);
         }
@@ -298,7 +303,7 @@ impl WalletManager {
             return Ok(());
         }
 
-        let process_watcher = self.watcher.read().await;
+        let process_watcher = self.minotari_watcher.read().await;
         if !process_watcher.is_running() {
             return Err(WalletManagerError::WalletNotStarted);
         }
@@ -479,7 +484,7 @@ impl WalletManager {
         self.initial_scan_completed
             .store(false, std::sync::atomic::Ordering::Relaxed);
 
-        let mut process_watcher = self.watcher.write().await;
+        let mut process_watcher = self.minotari_watcher.write().await;
         process_watcher
             .stop()
             .await
@@ -487,12 +492,12 @@ impl WalletManager {
     }
     #[allow(dead_code)]
     pub async fn is_running(&self) -> bool {
-        let process_watcher = self.watcher.read().await;
+        let process_watcher = self.minotari_watcher.read().await;
         process_watcher.is_running()
     }
     #[allow(dead_code)]
     pub async fn is_pid_file_exists(&self, base_path: PathBuf) -> bool {
-        let lock = self.watcher.read().await;
+        let lock = self.minotari_watcher.read().await;
         lock.is_pid_file_exists(base_path)
     }
 }

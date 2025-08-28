@@ -53,7 +53,7 @@ use crate::tor_adapter::TorConfig;
 use crate::utils::address_utils::verify_send;
 use crate::utils::app_flow_utils::FrontendReadyChannel;
 use crate::wallet::wallet_manager::WalletManagerError;
-use crate::wallet::wallet_types::{TariAddressVariants, TransactionInfo};
+use crate::wallet::wallet_types::{Currency, TariAddressVariants, TransactionInfo};
 use crate::websocket_manager::WebsocketManagerStatusMessage;
 use crate::{airdrop, PoolStatus, UniverseAppState};
 
@@ -534,9 +534,11 @@ pub async fn get_paper_wallet_details(
     );
     // Add wallet_balance as a query parameter if it exists
     if let Some(balance) = &wallet_balance {
-        let available_balance = balance.available_balance
-            + balance.timelocked_balance
-            + balance.pending_incoming_balance;
+        let available_balance = balance
+            .balances
+            .get(&Currency::Xtm)
+            .map(|b| b.available_balance)
+            .unwrap_or(0);
 
         link.push_str(&format!(
             "&balance={}",
@@ -2025,8 +2027,18 @@ pub fn validate_minotari_amount(
         .clone()
         .and_then(|state| state.balance);
 
-    let available_balance = balance.expect("Could not get balance").available_balance;
-    match m_amount.cmp(&available_balance) {
+    if balance.is_none() {
+        return Err(InvokeError::from("Could not get balance".to_string()));
+    }
+    let balance = balance.unwrap();
+
+    let minotari_balance = balance
+        .balances
+        .get(&Currency::Xtm)
+        .map(|b| b.available_balance)
+        .unwrap_or(0);
+
+    match m_amount.cmp(&minotari_balance) {
         std::cmp::Ordering::Less => Ok(()),
         _ => Err(InvokeError::from("Insufficient balance".to_string())),
     }
