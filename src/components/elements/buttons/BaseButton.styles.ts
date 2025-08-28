@@ -177,25 +177,35 @@ export const StyledButton = styled.button<ButtonStyleProps>`
 `;
 
 const PADDING = '1rem';
-export const ChildrenWrapper = styled.div<{ $iconPosition?: IconPosition }>`
+export const ChildrenWrapper = styled.div<{ $iconPosition?: IconPosition; $isLoading?: boolean }>`
     display: flex;
     position: relative;
     margin: 0 ${({ $iconPosition }) => ($iconPosition ? '1.5rem' : 0)};
+
+    ${({ $isLoading }) =>
+        $isLoading &&
+        css`
+            margin: 0 15px 0 0;
+        `}
 `;
-export const IconWrapper = styled.div<{ $position?: IconPosition; $isLoader?: boolean }>`
+export const IconWrapper = styled.div<{
+    $position?: IconPosition;
+    $isLoader?: boolean;
+    $size?: ButtonStyleProps['$size'];
+}>`
     display: flex;
     align-items: center;
     justify-content: center;
     position: absolute;
 
-    ${({ $isLoader }) =>
+    ${({ $isLoader, $size }) =>
         $isLoader &&
         css`
-            height: 30px;
-            width: 30px;
+            height: ${$size === 'smaller' ? '15px' : '30px'};
+            width: ${$size === 'smaller' ? '15px' : '30px'};
         `}
 
-    ${({ $position }) => {
+    ${({ $position, $size }) => {
         switch ($position) {
             case 'start': {
                 return css`
@@ -210,7 +220,7 @@ export const IconWrapper = styled.div<{ $position?: IconPosition; $isLoader?: bo
             case 'end':
             default: {
                 return css`
-                    right: ${PADDING};
+                    right: ${$size === 'smaller' ? '10px' : PADDING};
                 `;
             }
         }

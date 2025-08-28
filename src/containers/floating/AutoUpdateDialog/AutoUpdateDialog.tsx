@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import { useUIStore } from '@app/store/useUIStore';
 
 import { DialogContent, Dialog } from '@app/components/elements/dialog/Dialog';
-import { SquaredButton } from '@app/components/elements/buttons/SquaredButton';
 import { Typography } from '@app/components/elements/Typography';
 
 import { UpdatedStatus } from './UpdatedStatus';
@@ -12,6 +11,7 @@ import { memo, useCallback, useEffect, useState } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { invoke } from '@tauri-apps/api/core';
 import { setDialogToShow } from '@app/store';
+import { Button } from '@app/components/elements/buttons/Button.tsx';
 
 interface DownloadProgressPayload {
     event_type: 'download_progress';
@@ -104,22 +104,22 @@ const AutoUpdateDialog = memo(function AutoUpdateDialog() {
                 <ButtonsWrapper>
                     {!isDownloading && !couldNotUpdate && (
                         <>
-                            <SquaredButton onClick={handleClose} color="warning">
+                            <Button onClick={handleClose} backgroundColor="warning">
                                 {t('no')}
-                            </SquaredButton>
-                            <SquaredButton onClick={handleUpdate} color="green">
+                            </Button>
+                            <Button onClick={handleUpdate} backgroundColor="green">
                                 {t('yes')}
-                            </SquaredButton>
+                            </Button>
                         </>
                     )}
                     {couldNotUpdate && (
                         <>
-                            <SquaredButton onClick={handleUpdate} color="green">
+                            <Button onClick={handleUpdate} backgroundColor="green">
                                 {t('update')}
-                            </SquaredButton>
-                            <SquaredButton onClick={handleClose} color="warning">
+                            </Button>
+                            <Button onClick={handleClose} backgroundColor="warning">
                                 {t('close')}
-                            </SquaredButton>
+                            </Button>
                         </>
                     )}
                 </ButtonsWrapper>

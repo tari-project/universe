@@ -7,7 +7,7 @@ export const Overlay = styled(FloatingOverlay)`
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: ${({ theme }) => theme.colorsAlpha.darkAlpha[40]};
+    background-color: rgba(0, 0, 0, 0.45);
     z-index: 10;
     &::before {
         content: '';

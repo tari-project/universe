@@ -30,10 +30,12 @@ const Button = memo(function Button({
             $fluid={fluid}
             {...buttonProps}
         >
-            <ChildrenWrapper $iconPosition={iconPosition}>{children}</ChildrenWrapper>
+            <ChildrenWrapper $iconPosition={iconPosition} $isLoading={isLoading && !!loader}>
+                {children}
+            </ChildrenWrapper>
             {icon ? <IconWrapper $position={iconPosition}>{icon}</IconWrapper> : null}
             {loader && isLoading && !icon ? (
-                <IconWrapper $position="end" $isLoader>
+                <IconWrapper $position="end" $isLoader $size={size}>
                     {loader}
                 </IconWrapper>
             ) : null}
