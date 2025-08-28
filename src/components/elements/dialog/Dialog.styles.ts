@@ -17,13 +17,13 @@ export const Overlay = styled(FloatingOverlay)<OverlayProps>`
 `;
 
 export const ContentWrapper = styled.div<ContentWrapperStyleProps>`
-    border-radius: ${({ theme, $borderRadius }) => $borderRadius || theme.shape.borderRadius.dialog};
+    border-radius: ${({ theme }) => theme.shape.borderRadius.dialog};
     box-shadow: 0 4px 45px 0 rgba(0, 0, 0, 0.08);
     display: flex;
     flex-direction: column;
     gap: 6px;
     max-height: 90%;
-    padding: ${({ $unPadded }) => ($unPadded ? '0' : '20px')};
+    padding: 20px;
     position: relative;
 
     ${({ theme, $transparentBg }) =>

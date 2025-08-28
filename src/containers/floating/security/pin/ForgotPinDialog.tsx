@@ -45,7 +45,7 @@ export default function ForgotPinDialog() {
 
     return (
         <Dialog open={isOpen} onOpenChange={handleClose}>
-            <DialogContent $transparentBg $unPadded>
+            <DialogContent variant="transparent">
                 <Wrapper>
                     <Header>
                         <Heading>{t('security.pin.forgot')}</Heading> <CloseButton onClick={handleClose} />

@@ -51,7 +51,7 @@ export default function SecurityPromptDialog() {
 
     return (
         <Dialog open={isOpen} onOpenChange={handleClose}>
-            <DialogContent $transparentBg $unPadded>
+            <DialogContent variant="transparent">
                 <Wrapper>
                     <Header>
                         <CloseButton onClick={handleClose} />

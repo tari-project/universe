@@ -86,7 +86,7 @@ const FailedModuleInitializationDialog = memo(function FailedModuleInitializatio
 
     return (
         <Dialog open={shouldShowDialog} onOpenChange={canClose ? handleCloseDialog : undefined}>
-            <DialogContent style={{ position: 'relative' }}>
+            <DialogContent>
                 {/* Close button - positioned absolutely in top right corner of dialog */}
                 {canClose && (
                     <CloseButton onClick={handleCloseDialog}>

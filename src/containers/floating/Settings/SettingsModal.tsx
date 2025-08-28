@@ -55,7 +55,7 @@ const SettingsModal = memo(function SettingsModal() {
 
     return (
         <Dialog open={isSettingsOpen} onOpenChange={onOpenChange}>
-            <DialogContent $unPadded>
+            <DialogContent>
                 <Container>
                     <SettingsNavigation activeSection={activeSection} onChangeActiveSection={setActiveSection} />
                     <ContentContainer>

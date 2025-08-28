@@ -22,7 +22,6 @@ export interface ContentWrapperStyleProps {
 export interface DialogContentType extends HTMLProps<HTMLDivElement>, ContentWrapperProps, ContentWrapperStyleProps {
     ref?: Ref<HTMLDivElement>;
 }
-
 export interface DialogProps extends DialogOptions {
     children: ReactNode;
 }

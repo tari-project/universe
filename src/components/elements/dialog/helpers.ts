@@ -2,53 +2,34 @@ import { createContext, useContext, useMemo } from 'react';
 import { useClick, useDismiss, useFloating, useFloatingNodeId, useInteractions, useRole } from '@floating-ui/react';
 import { DialogOptions } from './types.ts';
 
-export function useDialog({
-    open: controlledOpen,
-    onOpenChange: setControlledOpen,
-    disableClose = false,
-}: DialogOptions) {
+export function useDialog({ open, onOpenChange, disableClose = false }: DialogOptions) {
     const nodeId = useFloatingNodeId();
-
-    const dismissEnabled = !disableClose;
-
-    const open = controlledOpen;
-    const setOpen = setControlledOpen;
-
-    const data = useFloating({
-        nodeId,
-        open,
-        onOpenChange: setOpen,
-    });
-
-    const context = data.context;
-
-    const click = useClick(context, {
-        enabled: controlledOpen == null,
-    });
-    const dismiss = useDismiss(context, {
+    const data = useFloating({ nodeId, open, onOpenChange });
+    const role = useRole(data.context);
+    const click = useClick(data.context, { enabled: open == null });
+    const dismiss = useDismiss(data.context, {
         outsidePressEvent: 'mousedown',
         outsidePress: (e: MouseEvent) => {
             const target = e.target as HTMLElement;
             return target.classList.contains('overlay');
         },
-        enabled: dismissEnabled,
+        enabled: !disableClose,
         bubbles: {
-            escapeKey: false,
             outsidePress: true,
         },
     });
-    const role = useRole(context);
+
     const interactions = useInteractions([click, dismiss, role]);
 
     return useMemo(
         () => ({
             open,
-            setOpen,
+            onOpenChange,
             nodeId,
             ...interactions,
             ...data,
         }),
-        [open, setOpen, interactions, data, nodeId]
+        [open, onOpenChange, interactions, data, nodeId]
     );
 }
 
