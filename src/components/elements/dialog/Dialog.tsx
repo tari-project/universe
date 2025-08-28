@@ -1,7 +1,7 @@
 import { FloatingFocusManager, FloatingNode, FloatingPortal, useMergeRefs } from '@floating-ui/react';
 import { DialogContext, useDialog, useDialogContext } from './helpers.ts';
 import { DialogContentType, DialogProps } from './types.ts';
-import { ContentWrapper, Overlay } from './Dialog.styles.ts';
+import { ContentScrollWrapper, ContentWrapper, Overlay } from './Dialog.styles.ts';
 
 export function Dialog({ children, ...options }: DialogProps) {
     const dialog = useDialog(options);
@@ -26,7 +26,7 @@ export function DialogContent({ variant = 'primary', ...props }: DialogContentTy
                                 aria-describedby={`Dialog_${context.nodeId}`}
                                 $variant={variant}
                             >
-                                {props.children}
+                                <ContentScrollWrapper>{props.children}</ContentScrollWrapper>
                             </ContentWrapper>
                         </FloatingFocusManager>
                     </Overlay>

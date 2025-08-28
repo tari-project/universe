@@ -19,19 +19,24 @@ export const Overlay = styled(FloatingOverlay)`
         z-index: -1;
     }
 `;
-
+export const ContentScrollWrapper = styled.div`
+    display: flex;
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+`;
 export const ContentWrapper = styled.div<ContentWrapperStyleProps>`
-    border-radius: ${({ theme }) => theme.shape.borderRadius.dialog};
+    border-radius: clamp(20px, 3.5vh, 35px);
     padding: ${({ $unPadded }) => ($unPadded ? 0 : '20px')};
     box-shadow: 0 4px 45px 0 rgba(0, 0, 0, 0.08);
     flex-direction: column;
     position: relative;
-    overflow-y: auto;
+    overflow: hidden;
     max-height: 90%;
     display: flex;
     gap: 6px;
 
-    ${({ theme, $variant }) => {
+    ${({ theme, $variant, $unPadded }) => {
         switch ($variant) {
             case 'transparent': {
                 return css`
@@ -39,16 +44,16 @@ export const ContentWrapper = styled.div<ContentWrapperStyleProps>`
                         theme.palette.background.paper,
                         theme.mode == 'dark' ? 0.75 : 0.65
                     )};
-
                     &::before {
                         content: '';
                         position: absolute;
-                        width: 100%;
-                        height: 100%;
+                        min-width: 100%;
+                        min-height: 100%;
                         top: 0;
                         left: 0;
                         -webkit-backdrop-filter: blur(20px);
                         backdrop-filter: blur(20px);
+                        padding: ${$unPadded ? 0 : '20px'};
                         z-index: -1;
                     }
                 `;
