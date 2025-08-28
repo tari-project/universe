@@ -2,15 +2,21 @@ import styled, { css } from 'styled-components';
 import { FloatingOverlay } from '@floating-ui/react';
 import { colorsAll } from '@app/theme/palettes/colors.ts';
 import { convertHexToRGBA } from '@app/utils';
+import { ContentWrapperStyleProps } from '@app/components/elements/dialog/types.ts';
 
-export interface ContentWrapperProps {
-    $unPadded?: boolean;
-    $disableOverflow?: boolean;
-    $borderRadius?: string;
-    $transparentBg?: boolean;
+interface OverlayProps {
     $zIndex?: number;
 }
-export const ContentWrapper = styled.div<ContentWrapperProps>`
+
+export const Overlay = styled(FloatingOverlay)<OverlayProps>`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: ${colorsAll.darkAlpha[50]};
+    z-index: ${({ $zIndex }) => $zIndex || 100};
+`;
+
+export const ContentWrapper = styled.div<ContentWrapperStyleProps>`
     border-radius: ${({ theme, $borderRadius }) => $borderRadius || theme.shape.borderRadius.dialog};
     box-shadow: 0 4px 45px 0 rgba(0, 0, 0, 0.08);
     display: flex;
@@ -46,16 +52,4 @@ export const ContentWrapper = styled.div<ContentWrapperProps>`
         css`
             overflow-y: auto;
         `}
-`;
-
-interface OverlayProps {
-    $zIndex?: number;
-}
-
-export const Overlay = styled(FloatingOverlay)<OverlayProps>`
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: ${colorsAll.darkAlpha[50]};
-    z-index: ${({ $zIndex }) => $zIndex || 100};
 `;
