@@ -1,110 +1,9 @@
-import {
-    Ref,
-    createContext,
-    Dispatch,
-    HTMLProps,
-    ReactNode,
-    SetStateAction,
-    useContext,
-    useMemo,
-    useState,
-} from 'react';
-import {
-    FloatingFocusManager,
-    FloatingNode,
-    FloatingPortal,
-    useClick,
-    useDismiss,
-    useFloating,
-    useFloatingNodeId,
-    useInteractions,
-    useMergeRefs,
-    useRole,
-} from '@floating-ui/react';
+import { ReactNode } from 'react';
+import { FloatingFocusManager, FloatingNode, FloatingPortal, useMergeRefs } from '@floating-ui/react';
 import { type } from '@tauri-apps/plugin-os';
-import { useAppStateStore } from '@app/store/appStateStore.ts';
-import { ContentWrapper, ContentWrapperProps, Overlay } from './Dialog.styles.ts';
-
-interface DialogOptions {
-    open: boolean;
-    onOpenChange?: (open: boolean) => void;
-    disableClose?: boolean;
-}
-
-function useDialog({ open: controlledOpen, onOpenChange: setControlledOpen, disableClose = false }: DialogOptions) {
-    const [labelId, setLabelId] = useState<string | undefined>();
-    const [descriptionId, setDescriptionId] = useState<string | undefined>();
-    const nodeId = useFloatingNodeId();
-    const hasError = useAppStateStore((s) => !!s.error);
-
-    const dismissEnabled = !hasError && !disableClose;
-
-    const open = controlledOpen;
-    const setOpen = setControlledOpen;
-
-    const data = useFloating({
-        nodeId,
-        open,
-        onOpenChange: setOpen,
-    });
-
-    const context = data.context;
-
-    const click = useClick(context, {
-        enabled: controlledOpen == null,
-    });
-    const dismiss = useDismiss(context, {
-        outsidePressEvent: 'mousedown',
-        outsidePress: (e: MouseEvent) => {
-            const target = e.target as HTMLElement;
-            return target.classList.contains('overlay');
-        },
-        enabled: dismissEnabled,
-        bubbles: {
-            escapeKey: false,
-            outsidePress: true,
-        },
-    });
-    const role = useRole(context);
-    const interactions = useInteractions([click, dismiss, role]);
-
-    return useMemo(
-        () => ({
-            open,
-            setOpen,
-            ...interactions,
-            ...data,
-            labelId,
-            descriptionId,
-            setLabelId,
-            nodeId,
-            setDescriptionId,
-        }),
-        [open, setOpen, interactions, data, labelId, descriptionId, nodeId]
-    );
-}
-
-interface DialogContentType extends HTMLProps<HTMLDivElement>, ContentWrapperProps {
-    ref?: Ref<HTMLDivElement>;
-}
-type ContextType =
-    | (ReturnType<typeof useDialog> & {
-          setLabelId: Dispatch<SetStateAction<string | undefined>>;
-          setDescriptionId: Dispatch<SetStateAction<string | undefined>>;
-      })
-    | null;
-
-const DialogContext = createContext<ContextType>(null);
-
-const useDialogContext = () => {
-    const context = useContext(DialogContext);
-
-    if (context == null) {
-        throw new Error('Dialog components must be wrapped in <Dialog />');
-    }
-
-    return context;
-};
+import { ContentWrapper, Overlay } from './Dialog.styles.ts';
+import { DialogContext, useDialog, useDialogContext } from './helpers.ts';
+import { DialogContentType, DialogOptions } from './types.ts';
 
 export function Dialog({
     children,
@@ -134,8 +33,8 @@ export function DialogContent(props: DialogContentType) {
                             <ContentWrapper
                                 ref={ref}
                                 {...context.getFloatingProps(props)}
-                                aria-labelledby={context.labelId}
-                                aria-describedby={context.descriptionId}
+                                aria-labelledby={context.nodeId}
+                                aria-describedby={`Dialog_${context.nodeId}`}
                                 $unPadded={props.$unPadded}
                                 $disableOverflow={props.$disableOverflow}
                                 $borderRadius={props.$borderRadius}
