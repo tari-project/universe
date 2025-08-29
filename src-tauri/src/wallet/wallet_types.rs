@@ -22,7 +22,7 @@
 
 use minotari_node_grpc_client::grpc::{GetBalanceResponse, NetworkStatusResponse};
 use serde::{Serialize, Serializer};
-use tari_core::transactions::tari_amount::MicroMinotari;
+use tari_transaction_components::tari_amount::MicroMinotari;
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Default)]

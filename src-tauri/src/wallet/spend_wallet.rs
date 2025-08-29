@@ -28,7 +28,7 @@ use anyhow::{Context, Error, Result};
 use axum::async_trait;
 use log::{debug, info};
 use tari_common::configuration::Network;
-use tari_key_manager::mnemonic::{Mnemonic, MnemonicLanguage};
+use tari_common_types::seeds::mnemonic::{Mnemonic, MnemonicLanguage};
 use tari_shutdown::Shutdown;
 use tauri::{AppHandle, Manager};
 
