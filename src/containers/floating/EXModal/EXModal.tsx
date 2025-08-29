@@ -13,7 +13,7 @@ export default function EXModal() {
 
     return (
         <Dialog open={!!showModal} disableClose onOpenChange={setShowExchangeModal}>
-            <DialogContent>
+            <DialogContent $allowOverflow>
                 {isPending && <LoadingDots />}
                 {data && (
                     <Wrapper>

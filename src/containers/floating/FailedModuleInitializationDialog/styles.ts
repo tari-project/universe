@@ -12,8 +12,8 @@ export const CloseButton = styled.button`
     border-radius: 50%;
     z-index: 10;
     background: transparent;
-    border: 1px solid ${({ theme }) => theme.palette.contrast};
-    color: ${({ theme }) => theme.palette.text.primary};
+    border: 1px solid ${({ theme }) => theme.palette.divider};
+    color: ${({ theme }) => theme.palette.text.secondary};
     cursor: pointer;
     display: flex;
     align-items: center;

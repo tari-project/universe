@@ -34,14 +34,20 @@ export function DialogContent({ variant = 'primary', ...props }: DialogContentTy
                                 <MotionWrapper
                                     aria-labelledby={context.nodeId}
                                     aria-describedby={`Dialog_${context.nodeId}`}
-                                    $variant={variant}
-                                    $unPadded={props.$unPadded}
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, scale: 0.9 }}
+                                    $variant={variant}
+                                    $unPadded={props.$unPadded}
+                                    $allowOverflow={props.$allowOverflow}
                                 >
-                                    <ContentScrollContainer>
-                                        <Content ref={ref} {...props} {...context.getFloatingProps(props)}>
+                                    <ContentScrollContainer $allowOverflow={props.$allowOverflow}>
+                                        <Content
+                                            ref={ref}
+                                            {...props}
+                                            {...context.getFloatingProps(props)}
+                                            $allowOverflow={props.$allowOverflow}
+                                        >
                                             {props.children}
                                         </Content>
                                     </ContentScrollContainer>
