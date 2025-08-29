@@ -29,6 +29,7 @@ use tokio::sync::RwLock;
 use crate::configs::pools::{
     cpu_pools::{CpuPool, LuckyPoolCpuConfig, SupportXTMCpuPoolConfig},
     gpu_pools::{GpuPool, LuckyPoolGpuConfig, SupportXTMGpuPoolConfig},
+    PoolConfig,
 };
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};

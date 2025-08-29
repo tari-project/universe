@@ -1,28 +1,63 @@
 use std::{
-    collections::HashMap,
-    sync::{atomic::AtomicBool, Arc, LazyLock},
-    time::Instant,
+    collections::HashMap, sync::{atomic::{AtomicBool, Ordering}, Arc}, time::Instant
 };
 
 use anyhow::anyhow;
 use log::{debug, info, warn};
 use tari_common_types::tari_address::TariAddress;
 use tokio::{
-    sync::RwLock,
+    sync::{mpsc, RwLock},
     time::{interval, Duration},
 };
 
 use crate::{
-    configs::pools::{cpu_pools::CpuPool, gpu_pools::GpuPool, PoolConfig},
+    configs::pools::PoolConfig,
     mining::pools::{
         adapters::{PoolApiAdapter, PoolApiAdapters},
         PoolStatus,
     },
     requests::clients::http_client::HttpClient,
-    tasks_tracker::{TaskTrackerUtil, TasksTrackers},
+    tasks_tracker::{TaskTrackerUtil},
 };
 
 static LOG_TARGET: &str = "tari::mining::pools::pools_manager";
+
+#[derive(Debug, Clone)]
+struct TaskState {
+    pub pool_adapter: PoolApiAdapters,
+    pub cached_mining_address: TariAddress,
+    pub tracking_duration: Duration,
+    pub pool_statuses: Arc<RwLock<HashMap<String, PoolStatus>>>,
+    pub is_mining_active: bool,
+}
+
+impl TaskState {
+    pub fn new(
+        pool_adapter: PoolApiAdapters,
+        cached_mining_address: TariAddress,
+        pool_statuses: Arc<RwLock<HashMap<String, PoolStatus>>>,
+        is_mining_active: bool,
+    ) -> Self {
+        Self {
+            pool_adapter,
+            cached_mining_address,
+            tracking_duration: Duration::ZERO,
+            pool_statuses,
+            is_mining_active,
+        }
+    }
+}
+
+
+#[derive(Debug)]
+pub enum PoolManagerThreadCommands {
+    UpdateMiningAddress(TariAddress),
+    UpdateMiningStatus(bool),
+    UpdatePoolAdapter(PoolApiAdapters),
+    Stop,
+    Shutdown,
+}
+
 
 /// GpuPoolManager provides centralized management of GPU mining pool status monitoring.
 ///
@@ -34,84 +69,86 @@ static LOG_TARGET: &str = "tari::mining::pools::pools_manager";
 /// - Automatic restart when pool or mining address configuration changes
 /// - Integration with TasksTrackers for proper shutdown handling
 
-pub struct PoolManager<T: PoolConfig> {
-    pool: T,
+pub struct PoolManager{
     pool_adapter: PoolApiAdapters,
     cached_mining_address: Option<TariAddress>,
-    last_pool_statuses: HashMap<String, PoolStatus>,
+    pool_statuses: Arc<RwLock<HashMap<String, PoolStatus>>>,
     // Task tracking for periodic status updates
     is_task_running: bool,
-    last_mining_check: Option<Instant>,
-    was_mining_previously: AtomicBool,
-    is_mining_active: AtomicBool,
+    is_mining_active: bool,
+    task_tracker: TaskTrackerUtil,
+    // Communication channels
+    task_sender: Option<mpsc::UnboundedSender<PoolManagerThreadCommands>>,
 }
 
-impl<T: PoolConfig> PoolManager<T> {
-    pub fn new() -> Self {
+impl PoolManager {
+    pub fn new(pool_adapter: PoolApiAdapters, pool_statuses: Arc<RwLock<HashMap<String, PoolStatus>>>, task_tracker: TaskTrackerUtil) -> Self {
         Self {
-            pool: T::default(),
-            pool_adapter: PoolApiAdapters::default(),
+            pool_adapter,
             cached_mining_address: None,
-            last_pool_statuses: HashMap::new(),
+            pool_statuses,
             is_task_running: false,
-            last_mining_check: None,
-            was_mining_previously: AtomicBool::new(false),
-            is_mining_active: AtomicBool::new(false),
+            is_mining_active: true,
+            task_sender: None,
+            task_tracker,
         }
     }
 
-    pub fn get_last_pool_status(&self, pool_name: String) -> Option<PoolStatus> {
-        self.last_pool_statuses.get(&pool_name).cloned()
-    }
-
-    pub fn get_all_last_pool_statuses(&self) -> HashMap<String, PoolStatus> {
-        self.last_pool_statuses.clone()
-    }
-
     pub async fn fetch_and_update_pool_status(&mut self) -> Result<PoolStatus, anyhow::Error> {
-        // Fetch the latest pool status
-        let pool_status = self.send_pool_status_request().await?;
-
-        self.last_pool_statuses
-            .insert(self.pool.name(), pool_status.clone());
-        info!(target: LOG_TARGET, "Updated pool status for {}: {:?}", self.pool.name(), pool_status);
-
-        Ok(pool_status)
+        if let Some (address) = &self.cached_mining_address {
+            let pool_status = self.pool_adapter.request_pool_status(address.clone()).await?;
+            Ok(pool_status)
+        } else {
+            return Err(anyhow!("No mining address set"));
+        }
     }
 
-    pub fn handle_pool_change(&mut self, pool: T, adapter: PoolApiAdapters) {
-        self.pool = pool;
-        self.pool_adapter = adapter;
-        info!(target: LOG_TARGET, "Updated pool configuration to: {}", self.pool.name());
-
-        // Restart the periodic task to apply new configuration
+    pub fn handle_pool_change(&mut self, adapter: PoolApiAdapters) {
+        info!(target: LOG_TARGET, "Updated pool configuration to: {:?}", adapter);
+        self.pool_adapter = adapter.clone();
+        // Send to task if running
+        if let Some(sender) = &self.task_sender {
+            if let Err(e) = sender.send(PoolManagerThreadCommands::UpdatePoolAdapter(adapter)) {
+                warn!(target: LOG_TARGET, "Failed to send pool update to task: {}", e);
+            }
+        }
     }
 
     // Handle the case when user changes the mining address in the settings
     // Should be triggered in InternalWallet side effects handler to keep up to date with the latest mining address
     pub fn handle_new_mining_address(&mut self, mining_address: &TariAddress) {
-        self.cached_mining_address = Some(mining_address.clone());
         info!(target: LOG_TARGET, "Updated mining address to: {}", mining_address);
+        self.cached_mining_address = Some(mining_address.clone());
 
-        // Restart the periodic task to apply new configuration
+        // Send to task if running
+        if let Some(sender) = &self.task_sender {
+            if let Err(e) = sender.send(PoolManagerThreadCommands::UpdateMiningAddress(mining_address.clone())) {
+                warn!(target: LOG_TARGET, "Failed to send mining address update to task: {}", e);
+            }
+        }
     }
 
     pub async fn toggle_mining_active(&mut self, is_active: bool) {
-        self.is_mining_active
-            .store(is_active, std::sync::atomic::Ordering::Relaxed);
+        // Update local state
+        info!(target: LOG_TARGET, "Mining active status changed to: {}", is_active);
+        self.is_mining_active = is_active;
+        // Send to task if running
+        if let Some(sender) = &self.task_sender {
+            if let Err(e) = sender.send(PoolManagerThreadCommands::UpdateMiningStatus(is_active)) {
+                warn!(target: LOG_TARGET, "Failed to send mining status update to task: {}", e);
+            }
+        }
     }
 
-    /// Send a request to the mining pool to get the current status for the configured mining address
-    /// Uses retires policy for the HTTP client
-    async fn send_pool_status_request(&self) -> Result<PoolStatus, anyhow::Error> {
-        let url = match &self.cached_mining_address {
-            Some(address) => self.pool.get_stats_url(&address.to_string()),
-            None => return Err(anyhow!("Mining address not set")),
-        };
-        let pool_status_response = HttpClient::with_retries(3).send_get_request(&url).await?;
-        let response_text = pool_status_response.text().await?;
-        let pool_status = self.pool_adapter.convert_api_data(response_text.as_str())?;
-        Ok(pool_status)
+    /// Send a stop command to the background task
+    pub fn stop_background_task(&mut self) {
+        if let Some(sender) = &self.task_sender {
+            if let Err(e) = sender.send(PoolManagerThreadCommands::Stop) {
+                warn!(target: LOG_TARGET, "Failed to send stop command to task: {}", e);
+            }
+        }
+        self.task_sender = None;
+        self.is_task_running = false;
     }
 
     pub async fn spawn_periodic_pool_status_update_task(&mut self) {
@@ -124,14 +161,27 @@ impl<T: PoolConfig> PoolManager<T> {
 
         info!(target: LOG_TARGET, "Starting periodic pool status update task");
 
-        let shutdown_signal = TasksTrackers::current().common.get_signal().await;
-        let task_tracker = TasksTrackers::current().common.get_task_tracker().await;
+        if let Some(tari_address) = &self.cached_mining_address {
+        // Create channels for communication
+        let (task_sender, mut task_receiver) = mpsc::unbounded_channel::<PoolManagerThreadCommands>();
+
+        // Store senders/receivers in the struct
+        self.task_sender = Some(task_sender);
+
+        // Create the task state with current values
+        let mut task_state = TaskState::new(
+            self.pool_adapter.clone(),
+            tari_address.clone(),
+            self.pool_statuses.clone(),
+            self.is_mining_active,
+        );
+        
+        let mut shutdown_signal = self.task_tracker.get_signal().await;
+        let task_tracker = self.task_tracker.get_task_tracker().await;
 
         task_tracker.spawn(async move {
-            let mut shutdown_signal = shutdown_signal;
             let mut mining_interval = interval(Duration::from_secs(60)); // Active mining: 60 seconds
             let mut non_mining_interval = interval(Duration::from_secs(300)); // Not mining: 300 seconds
-            let mut use_mining_interval = false;
             let mut stop_task_at = None::<Instant>;
 
             loop {
@@ -140,16 +190,52 @@ impl<T: PoolConfig> PoolManager<T> {
                         info!(target: LOG_TARGET, "Periodic pool status update task received shutdown signal");
                         break;
                     }
-                    _ = mining_interval.tick(), if use_mining_interval => {
-                        if self.periodic_update_logic(&mut use_mining_interval, &mut stop_task_at).await {
-                            break;
+                    
+                    // Handle incoming commands
+                    Some(command) = task_receiver.recv() => {
+                        debug!(target: LOG_TARGET, "Task received command: {:?}", command);
+                        match command {
+                            PoolManagerThreadCommands::UpdateMiningAddress(addr) => {
+                                task_state.cached_mining_address = addr;
+                                info!(target: LOG_TARGET, "Task: Updated mining address");
+                            }
+                            PoolManagerThreadCommands::UpdateMiningStatus(status) => {
+                                info!(target: LOG_TARGET, "Task: Mining status updated to: {:?}", status);
+                                task_state.is_mining_active = status;
+                                if status {
+                                    stop_task_at = None; // Reset grace period since we're mining again
+                                }else {
+                                    // If not mining, set the stop time if not already set
+                                    if stop_task_at.is_none() {
+                                        stop_task_at = Some(Instant::now() + Duration::from_secs(3600)); // 1 hour
+                                    }
+                                }
+                            }
+                            PoolManagerThreadCommands::UpdatePoolAdapter(adapter) => {
+                                task_state.pool_adapter = adapter;
+                                info!(target: LOG_TARGET, "Task: Updated pool configuration");
+                            }
+                            PoolManagerThreadCommands::Stop | PoolManagerThreadCommands::Shutdown => {
+                                info!(target: LOG_TARGET, "Task: Received stop command");
+                                break;
+                            }
                         }
                     }
-                    _ = non_mining_interval.tick(), if !use_mining_interval => {
-                        if self.periodic_update_logic(&mut use_mining_interval, &mut stop_task_at).await {
-                            break;
+
+                    _ = mining_interval.tick() => {
+                        if task_state.is_mining_active {
+                            // Active mining: 60 seconds
+                            Self::periodic_update_logic_static(&mut task_state).await;
                         }
                     }
+                    non_mining_interval_duaration = non_mining_interval.tick() => {
+                        if !task_state.is_mining_active {
+                            // Not mining: 300 seconds
+                            task_state.tracking_duration += Duration::from_secs(non_mining_interval_duaration.as_secs());
+                            Self::periodic_update_logic_static(&mut task_state).await;
+                        }
+                    }
+
                 }
 
                 // Check if we should stop the task (1 hour after mining stopped)
@@ -161,89 +247,55 @@ impl<T: PoolConfig> PoolManager<T> {
                 }
             }
 
-            // Clean up: mark task as not running
-            self.is_task_running = false;
             info!(target: LOG_TARGET, "Periodic pool status update task finished");
         });
+        } 
+
     }
 
-    async fn periodic_update_logic(
-        &mut self,
-        use_mining_interval: &mut bool,
-        stop_task_at: &mut Option<Instant>,
-    ) -> bool {
-        // Check current mining status (simplified check - you might need to get this from the actual miners)
+    // Static version of periodic_update_logic for use in background task
+    async fn periodic_update_logic_static(
+        task_state: &mut TaskState,
+    ) -> Result<(), anyhow::Error> {
 
-        // Update mining status tracking
-        {
-            let now = Instant::now();
-
-            if self
-                .is_mining_active
-                .load(std::sync::atomic::Ordering::Relaxed)
-            {
-                *use_mining_interval = true;
-                *stop_task_at = None; // Reset grace period since we're mining again
-                if !self
-                    .was_mining_previously
-                    .load(std::sync::atomic::Ordering::Relaxed)
-                {
-                    info!(target: LOG_TARGET, "Mining started - switching to active polling (60s)");
-                }
-                self.was_mining_previously
-                    .store(true, std::sync::atomic::Ordering::Relaxed);
-            } else {
-                *use_mining_interval = false;
-                if self
-                    .was_mining_previously
-                    .load(std::sync::atomic::Ordering::Relaxed)
-                {
-                    // Mining just stopped, set 1 hour grace period
-                    *stop_task_at = Some(now + Duration::from_secs(3600)); // 1 hour
-                    info!(target: LOG_TARGET, "Mining stopped - switching to slow polling (300s) with 1h grace period");
-                }
-                self.was_mining_previously
-                    .store(false, std::sync::atomic::Ordering::Relaxed);
-            }
-
-            self.last_mining_check = Some(now);
+        if task_state.is_mining_active {
+            task_state.tracking_duration = Duration::ZERO; // Reset tracking duration when mining is active
+        } else {
+            task_state.tracking_duration += Duration::from_secs(
         }
 
+
         // Fetch pool status if we have a mining address
-        if self.cached_mining_address.is_some() {
-            match self.fetch_and_update_pool_status().await {
-                Ok(status) => {
-                    debug!(target: LOG_TARGET, "Successfully updated pool status: {:?}", status);
+        if let Some(mining_address) = &task_state.cached_mining_address {
+            let url = task_state.pool.get_stats_url(&mining_address.to_string());
+            match HttpClient::with_retries(3).send_get_request(&url).await {
+                Ok(response) => {
+                    match response.text().await {
+                        Ok(response_text) => {
+                            match task_state.pool_adapter.convert_api_data(response_text.as_str()) {
+                                Ok(pool_status) => {
+                                    task_state.last_pool_statuses.insert(task_state.pool.name(), pool_status.clone());
+                                    debug!(target: LOG_TARGET, "Task: Successfully updated pool status: {:?}", pool_status);
+                                }
+                                Err(e) => {
+                                    warn!(target: LOG_TARGET, "Task: Failed to convert pool data: {}", e);
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            warn!(target: LOG_TARGET, "Task: Failed to read response text: {}", e);
+                        }
+                    }
                 }
                 Err(e) => {
-                    warn!(target: LOG_TARGET, "Failed to fetch pool status: {}", e);
+                    warn!(target: LOG_TARGET, "Task: Failed to send pool status request: {}", e);
                 }
             }
         } else {
-            debug!(target: LOG_TARGET, "No mining address set, skipping pool status update");
+            debug!(target: LOG_TARGET, "Task: No mining address set, skipping pool status update");
         }
 
         // Return false to continue the task
         false
-    }
-
-    /// Stop the periodic pool status update task
-    pub async fn stop_periodic_task(&mut self) {
-        info!(target: LOG_TARGET, "Stopping periodic pool status update task");
-        TasksTrackers::current().common.close().await;
-        TasksTrackers::current().common.replace().await;
-
-        // Mark task as not running
-        self.is_task_running = false;
-
-        info!(target: LOG_TARGET, "Periodic pool status update task stopped");
-    }
-
-    /// Restart the periodic pool status update task
-    /// This is useful when configuration changes (pool or mining address)
-    pub async fn restart_periodic_task(&mut self) {
-        info!(target: LOG_TARGET, "Restarting periodic pool status update task due to configuration change");
-        self.stop_periodic_task().await;
-        self.spawn_periodic_pool_status_update_task().await;
     }
 }

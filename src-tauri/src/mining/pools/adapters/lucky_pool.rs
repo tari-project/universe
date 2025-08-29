@@ -1,5 +1,9 @@
-use crate::mining::pools::{adapters::PoolApiAdapter, PoolStatus};
+use crate::{
+    mining::pools::{adapters::PoolApiAdapter, PoolStatus},
+    requests::clients::http_client::HttpClient,
+};
 use serde::{Deserialize, Serialize};
+use tari_common_types::tari_address::TariAddress;
 
 // LuckyPool API can sometimes return field values as either strings or numbers.
 // This enum helps to handle both cases during deserialization and retriveve the value as a u64.
@@ -103,7 +107,16 @@ pub struct LuckyPoolStatusResponseBody {
 }
 
 #[derive(Clone, Debug)]
-pub struct LuckyPoolAdapter {}
+pub struct LuckyPoolAdapter {
+    name: String,
+    stats_url: String,
+}
+
+impl LuckyPoolAdapter {
+    pub fn new(name: String, stats_url: String) -> Self {
+        Self { stats_url, name }
+    }
+}
 
 impl PoolApiAdapter for LuckyPoolAdapter {
     fn convert_api_data(&self, data: &str) -> Result<PoolStatus, anyhow::Error> {
@@ -121,6 +134,15 @@ impl PoolApiAdapter for LuckyPoolAdapter {
             balance: converted_data.stats.paid.get_number(),
             min_payout: converted_data.stats.payment_threshold.get_number(),
         };
+        Ok(pool_status)
+    }
+    async fn request_pool_status(&self, address: TariAddress) -> Result<PoolStatus, anyhow::Error> {
+        let url = self
+            .stats_url
+            .replace("%TARI_ADDRESS%", &address.to_string());
+        let pool_status_response = HttpClient::with_retries(3).send_get_request(&url).await?;
+        let response_text = pool_status_response.text().await?;
+        let pool_status = self.convert_api_data(response_text.as_str())?;
         Ok(pool_status)
     }
 }

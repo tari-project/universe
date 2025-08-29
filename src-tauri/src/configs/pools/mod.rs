@@ -23,7 +23,7 @@
 pub mod cpu_pools;
 pub mod gpu_pools;
 
-pub trait PoolConfig: Default {
+pub trait PoolConfig: Default + Clone + std::fmt::Debug + Send + Sync + 'static {
     fn name(&self) -> String;
     fn default_from_name(name: &str) -> Result<Self, anyhow::Error>
     where

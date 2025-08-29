@@ -64,6 +64,9 @@ impl Default for SupportXTMCpuPoolConfig {
 }
 
 impl SupportXTMCpuPoolConfig {
+    pub fn get_raw_stats_url(&self) -> String {
+        self.stats_url.clone()
+    }
     pub fn get_stats_url(&self, tari_address: &str) -> String {
         self.stats_url.replace("%TARI_ADDRESS%", tari_address)
     }
@@ -94,6 +97,10 @@ impl Default for LuckyPoolCpuConfig {
 }
 
 impl LuckyPoolCpuConfig {
+    pub fn get_raw_stats_url(&self) -> String {
+        self.stats_url.clone()
+    }
+
     pub fn get_stats_url(&self, tari_address: &str) -> String {
         self.stats_url.replace("%TARI_ADDRESS%", tari_address)
     }
@@ -117,37 +124,43 @@ impl Default for CpuPool {
     }
 }
 
-impl PoolConfig for CpuPool {
-    fn name(&self) -> String {
+impl CpuPool {
+    pub fn name(&self) -> String {
         match self {
             CpuPool::SupportXTMPool(config) => config.pool_name.clone(),
             CpuPool::LuckyPool(config) => config.pool_name.clone(),
         }
     }
 
-    fn default_from_name(name: &str) -> Result<Self, anyhow::Error> {
+    pub fn default_from_name(name: &str) -> Result<Self, anyhow::Error> {
         match name {
             "LuckyPool" => Ok(CpuPool::LuckyPool(LuckyPoolCpuConfig::default())),
             "SupportXTMPool" => Ok(CpuPool::SupportXTMPool(SupportXTMCpuPoolConfig::default())),
             _ => Err(anyhow::anyhow!("Unknown CPU pool name: {}", name)),
         }
     }
-    fn get_stats_url(&self, tari_address: &str) -> String {
+    pub fn get_stats_url(&self, tari_address: &str) -> String {
         match self {
             CpuPool::SupportXTMPool(config) => config.get_stats_url(tari_address),
             CpuPool::LuckyPool(config) => config.get_stats_url(tari_address),
         }
     }
-    fn get_pool_url(&self) -> String {
+    pub fn get_pool_url(&self) -> String {
         match self {
             CpuPool::SupportXTMPool(config) => config.get_pool_url(),
             CpuPool::LuckyPool(config) => config.get_pool_url(),
         }
     }
-    fn get_available_algorithms(&self) -> Vec<crate::mining::MiningAlgorithm> {
+    pub fn get_available_algorithms(&self) -> Vec<crate::mining::MiningAlgorithm> {
         match self {
             CpuPool::SupportXTMPool(config) => config.get_available_algorithms(),
             CpuPool::LuckyPool(config) => config.get_available_algorithms(),
+        }
+    }
+    pub fn get_raw_stats_url(&self) -> String {
+        match self {
+            CpuPool::SupportXTMPool(config) => config.get_raw_stats_url(),
+            CpuPool::LuckyPool(config) => config.get_raw_stats_url(),
         }
     }
 }
