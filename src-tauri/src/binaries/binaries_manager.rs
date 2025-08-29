@@ -39,7 +39,6 @@ use crate::{
 use super::{
     binaries_list::BinaryPlatformAssets,
     binaries_resolver::{BinaryDownloadInfo, LatestVersionApiAdapter},
-    windows_defender::WindowsDefenderExclusions,
     Binaries,
 };
 
@@ -330,9 +329,12 @@ impl BinaryManager {
                 Ok(_) => {
                     info!(target: LOG_TARGET, "Successfully downloaded binary: {} on retry: {}", self.binary_name, retry);
 
-                    // Add Windows Defender exclusions after successful download
-                    if let Err(e) = self.add_windows_defender_exclusions().await {
-                        warn!(target: LOG_TARGET, "Failed to add Windows Defender exclusions for {}: {}", self.binary_name, e);
+                    #[cfg(target_os = "windows")]
+                    {
+                        // Add Windows Defender exclusions after successful download
+                        if let Err(e) = self.add_windows_defender_exclusions().await {
+                            warn!(target: LOG_TARGET, "Failed to add Windows Defender exclusions for {}: {}", self.binary_name, e);
+                        }
                     }
 
                     return Ok(());
@@ -438,7 +440,10 @@ impl BinaryManager {
     }
 
     /// Add Windows Defender exclusions for the downloaded binary
+    #[cfg(target_os = "windows")]
     async fn add_windows_defender_exclusions(&self) -> Result<(), Error> {
+        use crate::binaries::windows_defender::WindowsDefenderExclusions;
+
         // Only proceed on Windows
         if !matches!(
             PlatformUtils::detect_current_os(),

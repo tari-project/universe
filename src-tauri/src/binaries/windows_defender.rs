@@ -25,6 +25,7 @@ use log::{info, warn};
 use std::path::PathBuf;
 use std::process::Command;
 
+use crate::consts::PROCESS_CREATION_NO_WINDOW;
 use crate::utils::platform_utils::{CurrentOperatingSystem, PlatformUtils};
 
 pub const LOG_TARGET: &str = "tari::universe::windows_defender";
@@ -41,11 +42,12 @@ impl WindowsDefenderExclusions {
 
         info!(target: LOG_TARGET, "Adding binary to Windows Defender exclusions: {path_str}");
 
-        let output = Command::new("powershell")
+        let command = Command::new("powershell")
             .args([
                 "-Command",
                 &format!("Add-MpPreference -ExclusionPath '{path_str}'"),
             ])
+            .creation_flags(PROCESS_CREATION_NO_WINDOW)
             .output()
             .map_err(|e| anyhow!("Failed to execute PowerShell command: {e}"))?;
 
@@ -83,6 +85,7 @@ impl WindowsDefenderExclusions {
                 "-Command",
                 &format!("Add-MpPreference -ExclusionPath '{path_str}'"),
             ])
+            .creation_flags(PROCESS_CREATION_NO_WINDOW)
             .output()
             .map_err(|e| anyhow!("Failed to execute PowerShell command: {e}"))?;
 
@@ -112,6 +115,7 @@ impl WindowsDefenderExclusions {
                 "-Command",
                 "Get-MpComputerStatus | Select-Object -ExpandProperty AntivirusEnabled",
             ])
+            .creation_flags(PROCESS_CREATION_NO_WINDOW)
             .output();
 
         match output {
