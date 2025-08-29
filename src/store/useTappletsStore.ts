@@ -1,4 +1,4 @@
-import { create } from './create.ts';
+import { create } from 'zustand';
 import { ActiveTapplet, BridgeTxDetails } from '@app/types/tapplets/tapplet.types.ts';
 import { useTappletSignerStore } from './useTappletSignerStore.ts';
 import { invoke } from '@tauri-apps/api/core';

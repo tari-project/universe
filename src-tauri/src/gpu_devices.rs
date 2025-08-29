@@ -137,7 +137,7 @@ impl GpuDevices {
             gpu_information_file_directory.to_string_lossy().to_string(),
         ];
         let gpuminer_bin = BinaryResolver::current()
-            .resolve_path_to_binary_files(Binaries::GpuMinerSHA3X)
+            .get_binary_path(Binaries::GpuMinerSHA3X)
             .await?;
 
         info!(target: LOG_TARGET, "Gpu miner binary file path {:?}", gpuminer_bin.clone());

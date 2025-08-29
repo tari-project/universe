@@ -1,5 +1,5 @@
 import { AnimatePresence } from 'motion/react';
-import { useMiningMetricsStore, useConfigUIStore, useWalletStore } from '@app/store';
+import { useNodeStore, useConfigUIStore, useWalletStore } from '@app/store';
 import { useSetupStore } from '@app/store/useSetupStore';
 import { swapTransition } from '@app/components/transactions/wallet/transitions.ts';
 import { Swap } from '@app/components/transactions/wallet/Swap/Swap.tsx';
@@ -62,7 +62,7 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
     const walletModule = useSetupStore(setupStoreSelectors.selectWalletModule);
     const isWalletModuleFailed = walletModule?.status === AppModuleStatus.Failed;
 
-    const isConnectedToTariNetwork = useMiningMetricsStore((s) => s.isNodeConnected);
+    const isConnectedToTariNetwork = useNodeStore((s) => s.isNodeConnected);
     const isWalletScanning = useWalletStore((s) => s.wallet_scanning?.is_scanning);
 
     const targetRef = useRef<HTMLDivElement>(null) as RefObject<HTMLDivElement>;

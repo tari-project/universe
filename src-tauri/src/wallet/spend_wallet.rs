@@ -28,7 +28,7 @@ use anyhow::{Context, Error, Result};
 use axum::async_trait;
 use log::{debug, info};
 use tari_common::configuration::Network;
-use tari_key_manager::mnemonic::{Mnemonic, MnemonicLanguage};
+use tari_common_types::seeds::mnemonic::{Mnemonic, MnemonicLanguage};
 use tari_shutdown::Shutdown;
 use tauri::{AppHandle, Manager};
 
@@ -269,7 +269,7 @@ impl SpendWallet {
 
     pub async fn get_binary_path(&self) -> Result<PathBuf, Error> {
         BinaryResolver::current()
-            .resolve_path_to_binary_files(Binaries::Wallet)
+            .get_binary_path(Binaries::Wallet)
             .await
             .context("Failed to resolve wallet binary path")
     }

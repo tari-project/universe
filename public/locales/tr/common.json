@@ -13,6 +13,7 @@
   "disconnect": "Bağlantıyı Kes",
   "failed": "Başarısız",
   "hashrate": "Hashrate",
+  "install_missing_packages": "Install missing packages",
   "installation-problem": "Kurulum sorunu",
   "join_the_space": "Space'e Katıl",
   "learn-more": "Daha fazla bilgi",

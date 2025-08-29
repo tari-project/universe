@@ -13,6 +13,7 @@
   "disconnect": "切断",
   "failed": "失敗",
   "hashrate": "ハッシュレート",
+  "install_missing_packages": "Install missing packages",
   "installation-problem": "インストールの問題",
   "join_the_space": "スペースに参加",
   "learn-more": "詳細を学ぶ",

@@ -20,10 +20,8 @@ function handleRewardData(list: ExchangeBranding[]) {
     setRewardData({ reward_earn_cap_percentage: highestAmt, reward_end_date: latestDate });
 }
 
-export const queryFn = async () => {
-    const apiUrl = useConfigBEInMemoryStore.getState().airdrop_api_url;
+const queryFn = async (apiUrl: string) => {
     const path = `/miner/exchanges?include_wXTM=true`;
-
     if (!apiUrl.length) return [];
     try {
         const res = await handleAirdropRequest<{ exchanges: ExchangeBranding[] }>({
@@ -49,16 +47,16 @@ export const queryFn = async () => {
 
 export function useFetchExchangeList() {
     const isWalletUIExchangeSpecific = useConfigUIStore((s) => s.wallet_ui_mode === WalletUIMode.ExchangeSpecificMiner);
-
+    const apiUrl = useConfigBEInMemoryStore((s) => s.airdrop_api_url);
     return useQuery({
         queryKey: [KEY_XC_LIST],
-        enabled: !isWalletUIExchangeSpecific,
-        queryFn: () => queryFn(),
+        enabled: Boolean(apiUrl.length && !isWalletUIExchangeSpecific),
+        queryFn: async () => await queryFn(apiUrl),
         refetchOnWindowFocus: true,
         refetchInterval: 60 * 1000 * 60 * 3, // every three hours
     });
 }
 
 export async function fetchExchangeList() {
-    return await queryClient.fetchQuery({ queryKey: [KEY_XC_LIST], queryFn: () => queryFn() });
+    return await queryClient.fetchQuery({ queryKey: [KEY_XC_LIST] });
 }

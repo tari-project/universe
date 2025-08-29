@@ -1,5 +1,5 @@
+import { create } from 'zustand';
 import { CrewMember } from '@app/types/ws.ts';
-import { create } from './create.ts';
 
 const SOS_GAME_ENDING_DATE = new Date('2025-01-30');
 

@@ -328,6 +328,15 @@ impl BinaryManager {
             {
                 Ok(_) => {
                     info!(target: LOG_TARGET, "Successfully downloaded binary: {} on retry: {}", self.binary_name, retry);
+
+                    #[cfg(target_os = "windows")]
+                    {
+                        // Add Windows Defender exclusions after successful download
+                        if let Err(e) = self.add_windows_defender_exclusions().await {
+                            warn!(target: LOG_TARGET, "Failed to add Windows Defender exclusions for {}: {}", self.binary_name, e);
+                        }
+                    }
+
                     return Ok(());
                 }
                 Err(error) => {
@@ -428,5 +437,35 @@ impl BinaryManager {
         let selected_version = self.selected_version.clone();
         let binary_folder_path = self.adapter.get_binary_folder()?;
         Ok(binary_folder_path.join(selected_version))
+    }
+
+    /// Add Windows Defender exclusions for the downloaded binary
+    #[cfg(target_os = "windows")]
+    async fn add_windows_defender_exclusions(&self) -> Result<(), Error> {
+        use crate::binaries::windows_defender::WindowsDefenderExclusions;
+
+        // Only proceed on Windows
+        if !matches!(
+            PlatformUtils::detect_current_os(),
+            CurrentOperatingSystem::Windows
+        ) {
+            return Ok(());
+        }
+
+        let binary_from_name = Binaries::from_name(&self.binary_name);
+        let base_dir = self.get_base_dir()?;
+        let binary_path = if let Some(sub_folder) = self.binary_subfolder() {
+            base_dir
+                .join(sub_folder)
+                .join(binary_from_name.binary_file_name(self.selected_version.clone()))
+        } else {
+            base_dir.join(binary_from_name.binary_file_name(self.selected_version.clone()))
+        };
+
+        // Add comprehensive exclusions (both file and directory)
+        WindowsDefenderExclusions::add_comprehensive_exclusions(&binary_path)?;
+
+        info!(target: LOG_TARGET, "Added Windows Defender exclusions for binary: {} at path: {}", self.binary_name, binary_path.display());
+        Ok(())
     }
 }

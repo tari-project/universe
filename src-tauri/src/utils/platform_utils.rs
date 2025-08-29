@@ -29,11 +29,7 @@ use crate::events_emitter::EventsEmitter;
 #[cfg(target_os = "macos")]
 use crate::tasks_tracker::TasksTrackers;
 
-#[cfg(target_os = "windows")]
-use crate::events_emitter::EventsEmitter;
-#[cfg(target_os = "windows")]
-use crate::external_dependencies::ExternalDependencies;
-#[cfg(not(target_os = "linux"))]
+#[allow(unused_imports)]
 use anyhow::anyhow;
 use std::fmt::Display;
 
@@ -109,23 +105,19 @@ impl PlatformUtils {
 
     #[cfg(target_os = "windows")]
     async fn initialize_windows_preqesities() -> Result<(), anyhow::Error> {
-        if cfg!(target_os = "windows") && !cfg!(dev) {
-            ExternalDependencies::current()
-                .read_registry_installed_applications()
-                .await?;
-            let is_missing = ExternalDependencies::current()
-                .check_if_some_dependency_is_not_installed()
-                .await;
-            if is_missing {
-                EventsEmitter::emit_missing_applications(
-                    ExternalDependencies::current()
-                        .get_external_dependencies()
-                        .await,
-                )
-                .await;
-                return Err(anyhow!("Missing required dependencies"));
+        use crate::system_dependencies::system_dependencies_manager::SystemDependenciesManager;
+
+        // This loop prevents app from continuing until all initial dependencies are installed
+        loop {
+            if SystemDependenciesManager::get_instance()
+                .validate_dependencies()
+                .await?
+            {
+                return Ok(());
             }
+            tokio::time::sleep(std::time::Duration::from_secs(10)).await;
         }
+
         Ok(())
     }
 

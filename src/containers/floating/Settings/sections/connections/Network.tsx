@@ -12,11 +12,11 @@ import {
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles.ts';
 import { formatHashrate } from '@app/utils/formatters.ts';
-import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
+import { useNodeStore } from '@app/store/useNodeStore.ts';
 
 export default function Network() {
     const { t } = useTranslation('settings');
-    const baseNodeStatus = useMiningMetricsStore((state) => state?.base_node_status);
+    const baseNodeStatus = useNodeStore((state) => state?.base_node_status);
 
     const sha_network_hashrate = baseNodeStatus?.sha_network_hashrate || 0;
     const tari_randomx_network_hashrate = baseNodeStatus?.tari_randomx_network_hashrate || 0;

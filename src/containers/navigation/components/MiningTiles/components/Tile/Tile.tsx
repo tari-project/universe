@@ -3,11 +3,11 @@ import i18n from 'i18next';
 import { Ref, useEffect, useMemo, useState } from 'react';
 import { AnimatePresence } from 'motion/react';
 import NumberFlow from '@number-flow/react';
-import { useConfigUIStore, useMiningMetricsStore, useUIStore } from '@app/store';
+import { useConfigUIStore, useNodeStore, useUIStore } from '@app/store';
 import SuccessAnimation from '../SuccessAnimation/SuccessAnimation';
 import SyncData from '@app/containers/navigation/components/MiningTiles/components/SyncData/SyncData.tsx';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
-import { Typography } from '@app/components/elements/Typography.tsx';
+
 import {
     AnimatedGlow,
     AnimatedGlowPosition,
@@ -73,7 +73,7 @@ export default function Tile({
     const animationState = animationStatus;
     const visualMode = useConfigUIStore((s) => s.visual_mode);
     const towerInitalized = useUIStore((s) => s.towerInitalized);
-    const isConnectedToTariNetwork = useMiningMetricsStore((s) => s.isNodeConnected);
+    const isConnectedToTariNetwork = useNodeStore((s) => s.isNodeConnected);
     const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
 
     const canAnimateTower = useMemo(

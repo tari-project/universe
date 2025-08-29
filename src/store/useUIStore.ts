@@ -1,4 +1,4 @@
-import { create } from './create';
+import { create } from 'zustand';
 import { Theme } from '@app/theme/types.ts';
 import { AdminShow, CONNECTION_STATUS, DialogType, sidebarTowerOffset, SidebarType } from '@app/store/types/ui.ts';
 

@@ -40,8 +40,8 @@ use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use std::time::Duration;
 use tari_common::configuration::Network;
-use tari_core::transactions::tari_amount::{MicroMinotari, Minotari};
 use tari_shutdown::ShutdownSignal;
+use tari_transaction_components::tari_amount::{MicroMinotari, Minotari};
 use tokio::fs;
 use tokio::sync::watch;
 use tokio::sync::RwLock;
@@ -395,7 +395,6 @@ impl WalletManager {
                                     );
 
                                     ConfigWallet::update_field(ConfigWalletContent::set_last_known_balance, balance.available_balance).await?;
-
 
                                     EventsEmitter::emit_wallet_balance_update(balance).await;
                                     EventsEmitter::emit_init_wallet_scanning_progress(

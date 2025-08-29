@@ -41,6 +41,7 @@ use crate::setup::{
     phase_gpu_mining::GpuMiningSetupPhase, phase_node::NodeSetupPhase,
     phase_wallet::WalletSetupPhase,
 };
+use crate::utils::platform_utils::PlatformUtils;
 use crate::{
     configs::{
         config_core::ConfigCore, config_mining::ConfigMining, config_ui::ConfigUI,
@@ -403,6 +404,8 @@ impl SetupManager {
                 .init(app_version.to_string(), telemetry_id.clone())
                 .await;
         }
+
+        let _unused = PlatformUtils::initialize_preqesities().await;
 
         // If we open different specific exchange miner build then previous one we always want to prompt user to provide tari address
         if is_on_exchange_miner_build && built_in_exchange_id.ne(&last_config_exchange_id) {

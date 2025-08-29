@@ -1,3 +1,4 @@
+import { ReactNode } from 'react';
 import { DropdownWrapper, HitBox, ButtonWrapper, Text, IconWrapper, Shadow } from './styles';
 import ModeDropdown from './components/ModeDropdown/ModeDropdown';
 import AnimatedBackground from './components/AnimatedBackground/AnimatedBackground';
@@ -9,7 +10,7 @@ interface Props {
     onClick: () => void;
     disabled?: boolean;
     buttonText: string;
-    icon: React.ReactNode;
+    icon: ReactNode;
     isMining: boolean;
 }
 

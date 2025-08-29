@@ -13,6 +13,7 @@
   "disconnect": "Déconnecter",
   "failed": "Échoué",
   "hashrate": "Taux de hachage",
+  "install_missing_packages": "Install missing packages",
   "installation-problem": "Problème d\"installation",
   "join_the_space": "Rejoindre l'espace",
   "learn-more": "En savoir plus",

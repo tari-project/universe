@@ -84,6 +84,7 @@ export const GlobalStyle = createGlobalStyle<{ $hideCanvas?: boolean }>`
         font-weight: 400;
 
         color: ${({ theme }) => theme.palette.text.primary};
+        background-color: ${({ theme }) => theme.palette.background.main};
         
         * {
             box-sizing: border-box;
@@ -99,7 +100,7 @@ export const GlobalStyle = createGlobalStyle<{ $hideCanvas?: boolean }>`
 
     
     html {
-        background: ${({ theme }) => theme.palette.background.main};
+        background-color: ${({ theme }) => theme.palette.background.main};
     }
     #${TOWER_CANVAS_ID} {
         z-index: 0;

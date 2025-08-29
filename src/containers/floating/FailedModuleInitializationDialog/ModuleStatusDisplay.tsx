@@ -29,6 +29,7 @@ interface ModuleStatusDisplayProps {
     onSendLogs?: () => void;
     isRestartLoading?: boolean;
     allModulesFailed?: boolean;
+    extraActionButtons?: React.ReactNode[];
 }
 
 export const ModuleStatusDisplay = memo(function ModuleStatusDisplay({
@@ -38,6 +39,7 @@ export const ModuleStatusDisplay = memo(function ModuleStatusDisplay({
     onRestart,
     isRestartLoading = false,
     allModulesFailed = false,
+    extraActionButtons,
 }: ModuleStatusDisplayProps) {
     const { t } = useTranslation(['setup-progresses', 'common'], { useSuspense: false });
 
@@ -109,6 +111,7 @@ export const ModuleStatusDisplay = memo(function ModuleStatusDisplay({
 
             {status === AppModuleStatus.Failed && !allModulesFailed && (
                 <ModuleActionsWrapper>
+                    {extraActionButtons}
                     <SquaredButton
                         color="warning"
                         size="small"

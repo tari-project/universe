@@ -25,7 +25,7 @@ use std::{collections::HashMap, fs, sync::LazyLock, time::SystemTime};
 use getset::{Getters, Setters};
 use serde::{Deserialize, Serialize};
 use tari_common_types::tari_address::TariAddress;
-use tari_core::transactions::tari_amount::MicroMinotari;
+use tari_transaction_components::tari_amount::MicroMinotari;
 use tauri::AppHandle;
 use tokio::sync::RwLock;
 

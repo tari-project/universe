@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { BlockData } from '@app/types/mining/blocks.ts';
 import { useFetchExplorerData } from '@app/hooks/mining/useFetchExplorerData.ts';
+import { BlockBubbleData } from '@app/types/mining/blocks.ts';
 import BlockEntry from './BlockEntry/BlockEntry';
 import BlockScrollList from './BlockScrollList/BlockScrollList';
 import { timeAgo } from './utils/formatting';
@@ -8,10 +8,9 @@ import MinerCount from '@app/containers/main/Dashboard/components/BlockExplorerM
 import { Wrapper, StickyEntryWrapper, LoadingPlaceholder, InsideHolder } from './styles';
 
 export default function BlockExplorerMini() {
-    const { data, isLoading, isError } = useFetchExplorerData();
-    const blockBubblesData = data?.blockBubblesData;
-    const [stickyEntry, setStickyEntry] = useState<BlockData | null>(null);
-    const [scrollList, setScrollList] = useState<BlockData[]>([]);
+    const { data: blockBubblesData, isLoading, isError } = useFetchExplorerData();
+    const [stickyEntry, setStickyEntry] = useState<BlockBubbleData | null>(null);
+    const [scrollList, setScrollList] = useState<BlockBubbleData[]>([]);
 
     const isFirstRender = useRef(true);
 
@@ -22,7 +21,7 @@ export default function BlockExplorerMini() {
             return {
                 ...blockBubblesData[0],
                 id: (parseInt(blockBubblesData[0].id) + 1).toString(),
-                timeAgo: timeAgo(blockBubblesData[0].timeAgo),
+                timeAgo: timeAgo(blockBubblesData[0]?.timestamp || 0),
                 isSolved,
             };
         };
@@ -31,7 +30,7 @@ export default function BlockExplorerMini() {
             if (!blockBubblesData || blockBubblesData.length === 0) return [];
             return blockBubblesData.map((block) => ({
                 ...block,
-                timeAgo: timeAgo(block.timeAgo),
+                timeAgo: timeAgo(block.timestamp || 0),
             }));
         };
 

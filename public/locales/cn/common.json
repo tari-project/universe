@@ -13,6 +13,7 @@
   "disconnect": "断开连接",
   "failed": "失败",
   "hashrate": "哈希率",
+  "install_missing_packages": "Install missing packages",
   "installation-problem": "安装问题",
   "join_the_space": "加入空间",
   "learn-more": "了解更多",

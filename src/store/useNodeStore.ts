@@ -1,6 +1,7 @@
+import { create } from 'zustand';
 import { BackgroundNodeSyncUpdatePayload } from '@app/types/events-payloads';
-import { create } from './create';
 import { deepEqual } from '@app/utils/objectDeepEqual.ts';
+import { BaseNodeStatus } from '@app/types/app-status';
 
 export type NodeType = 'Local' | 'Remote' | 'RemoteUntilLocal' | 'LocalAfterRemote';
 export interface NodeIdentity {
@@ -14,6 +15,8 @@ interface NodeStoreState {
     node_connection_address?: string;
     backgroundNodeSyncLastUpdate?: BackgroundNodeSyncUpdatePayload;
     tor_entry_guards: string[];
+    isNodeConnected: boolean;
+    base_node_status: BaseNodeStatus;
 }
 
 const initialState: NodeStoreState = {
@@ -24,6 +27,18 @@ const initialState: NodeStoreState = {
     },
     node_connection_address: '',
     tor_entry_guards: [],
+    isNodeConnected: false,
+    base_node_status: {
+        sha_network_hashrate: 0,
+        monero_randomx_network_hashrate: 0,
+        tari_randomx_network_hashrate: 0,
+        block_reward: 0,
+        block_height: 0,
+        block_time: 0,
+        is_synced: false,
+        num_connections: 0,
+        readiness_status: '',
+    },
 };
 
 export const useNodeStore = create<NodeStoreState>()(() => ({
