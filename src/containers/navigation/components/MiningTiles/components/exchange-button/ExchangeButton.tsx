@@ -7,7 +7,6 @@ import { Button, LogosWrapper } from './styles.ts';
 export default function ExchangeButton() {
     const { t } = useTranslation('wallet');
     const { data: exchanges } = useFetchExchangeList();
-
     function handleClick() {
         setShowUniversalModal(true);
     }
