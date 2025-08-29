@@ -2,12 +2,12 @@ import { AnimatePresence } from 'motion/react';
 import { FloatingFocusManager, FloatingNode, FloatingPortal, useMergeRefs } from '@floating-ui/react';
 import { DialogContext, useDialog, useDialogContext } from './helpers.ts';
 import { DialogContentType, DialogProps } from './types.ts';
-import { ContentScrollContainer, ContentWrapper, Overlay } from './Dialog.styles.ts';
+import { Content, ContentScrollContainer, ContentWrapper, Overlay } from './Dialog.styles.ts';
 
 import { create as motionCreate } from 'motion/react-m';
 
 const MotionOverlay = motionCreate(Overlay);
-const MotionWrapper = motionCreate(ContentScrollContainer);
+const MotionWrapper = motionCreate(ContentWrapper);
 
 export function Dialog({ children, ...options }: DialogProps) {
     const dialog = useDialog(options);
@@ -40,9 +40,11 @@ export function DialogContent({ variant = 'primary', ...props }: DialogContentTy
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, scale: 0.9 }}
                                 >
-                                    <ContentWrapper ref={ref} {...props} {...context.getFloatingProps(props)}>
-                                        {props.children}
-                                    </ContentWrapper>
+                                    <ContentScrollContainer>
+                                        <Content ref={ref} {...props} {...context.getFloatingProps(props)}>
+                                            {props.children}
+                                        </Content>
+                                    </ContentScrollContainer>
                                 </MotionWrapper>
                             </MotionOverlay>
                         </FloatingFocusManager>

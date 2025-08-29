@@ -9,14 +9,13 @@ export const Overlay = styled(FloatingOverlay)`
     justify-content: center;
     z-index: 10;
 `;
-export const ContentScrollContainer = styled.div<ContentWrapperStyleProps>`
+
+export const ContentWrapper = styled.div<ContentWrapperStyleProps>`
     box-shadow: 0 4px 45px 0 rgba(0, 0, 0, 0.08);
     border-radius: clamp(20px, 3.5vh, 35px);
     overflow: hidden;
-    align-items: center;
-    justify-content: center;
-    display: flex;
     max-height: 90%;
+    display: flex;
 
     ${({ theme, $variant }) => {
         switch ($variant) {
@@ -36,13 +35,19 @@ export const ContentScrollContainer = styled.div<ContentWrapperStyleProps>`
                     background-color: ${theme.palette.background.paper};
                 `;
         }
-    }}
+    }};
 `;
-export const ContentWrapper = styled.div<ContentWrapperStyleProps>`
+export const ContentScrollContainer = styled.div`
+    overflow: hidden;
+    position: relative;
+    display: flex;
+`;
+export const Content = styled.div<ContentWrapperStyleProps>`
     padding: ${({ $unPadded }) => ($unPadded ? 0 : '20px')};
     flex-direction: column;
     overflow-y: auto;
     display: flex;
     width: 100%;
     height: 100%;
+    position: relative;
 `;
