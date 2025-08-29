@@ -6,16 +6,14 @@ export const BoxWrapper = styled.div`
     max-width: 500px;
     display: flex;
     flex-direction: column;
-    justify-content: flex-end;
-    flex-shrink: 0;
-    gap: 20px;
-    padding: 10px;
+    gap: 8px;
+    padding: 0 10px 10px 10px;
     position: relative;
+    overflow-y: auto;
 `;
 
-export const TopButton = styled('button')`
+export const TopButton = styled.button`
     cursor: pointer;
-
     transition: transform 0.2s ease;
     height: 31px;
 
@@ -24,19 +22,18 @@ export const TopButton = styled('button')`
     }
 `;
 
-export const TopWrapper = styled('div')`
+export const TopWrapper = styled.div`
     display: flex;
     justify-content: space-between;
     align-items: center;
     width: 100%;
 
-    ${({ theme }) => (theme.mode === 'dark' ? `#fff` : `#000`)};
+    ${({ theme }) => theme.palette.base};
 `;
 
-export const Title = styled('div')`
+export const Title = styled.div`
     font-family: Poppins, sans-serif;
     font-size: 18px;
-    font-style: normal;
     font-weight: 600;
-    line-height: 31px;
+    line-height: 1.2;
 `;

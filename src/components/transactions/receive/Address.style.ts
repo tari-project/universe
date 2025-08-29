@@ -37,8 +37,11 @@ export const QRSizer = styled.div`
         border-radius: 20px;
     }
 
-    @media (max-height: 761px) {
+    @media (max-height: 790px) {
         height: 350px;
+    }
+    @media (max-height: 632px) {
+        height: 315px;
     }
 `;
 
@@ -86,7 +89,7 @@ export const AddressWrapper = styled.div`
     font-style: normal;
     font-weight: 500;
     line-height: normal;
-    letter-spacing: -1.76px;
+    letter-spacing: -1px;
 `;
 
 export const ToggleWrapper = styled.div`
