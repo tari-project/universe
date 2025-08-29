@@ -23,6 +23,7 @@
 pub mod minotari_wallet_adapter;
 pub mod spend_wallet;
 pub mod transaction_service;
+pub(crate) mod wallet_db;
 pub mod wallet_manager;
 pub mod wallet_status_monitor;
 pub mod wallet_types;

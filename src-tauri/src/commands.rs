@@ -2018,7 +2018,7 @@ pub fn validate_minotari_amount(
         .map(|b| b.available_balance)
         .unwrap_or(0);
 
-    match m_amount.cmp(&minotari_balance) {
+    match m_amount.0.cmp(&minotari_balance) {
         std::cmp::Ordering::Less => Ok(()),
         _ => Err(InvokeError::from("Insufficient balance".to_string())),
     }

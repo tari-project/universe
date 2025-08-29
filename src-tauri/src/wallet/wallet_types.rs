@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::str::FromStr;
+use std::{collections::HashMap, str::FromStr};
 
 use minotari_node_grpc_client::grpc::{GetBalanceResponse, NetworkStatusResponse};
 use serde::{Serialize, Serializer};
@@ -93,8 +93,8 @@ impl WalletBalance {
     pub fn from_response(res: GetBalanceResponse) -> Self {
         Self {
             currency: Currency::Xtm,
-            available_balance: MicroMinotari(res.available_balance),
-            timelocked_balance: MicroMinotari(res.timelocked_balance),
+            available_balance: res.available_balance,
+            timelocked_balance: res.timelocked_balance,
             // pending_incoming_balance: MicroMinotari(res.pending_incoming_balance),
             // pending_outgoing_balance: MicroMinotari(res.pending_outgoing_balance),
         }
@@ -105,7 +105,7 @@ impl WalletBalance {
     }
 }
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Serialize, Clone, Eq, PartialEq, Hash)]
 pub enum Currency {
     Xtm,
     Xtr,

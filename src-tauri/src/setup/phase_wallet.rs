@@ -234,12 +234,13 @@ impl SetupPhaseImpl for WalletSetupPhase {
 
         let app_state = self.get_app_handle().state::<UniverseAppState>().clone();
         let node_status_watch_rx = (*app_state.node_status_watch_rx).clone();
-        if InternalWallet::is_internal().await {
-            app_state
-                .wallet_manager
-                .wait_for_initial_wallet_scan(node_status_watch_rx)
-                .await?;
-        }
+        // TODO: Rather post the scanning progress
+        // if InternalWallet::is_internal().await {
+        //     app_state
+        //         .wallet_manager
+        //         .wait_for_initial_wallet_scan(node_status_watch_rx)
+        //         .await?;
+        // }
 
         let config_wallet = ConfigWallet::content().await;
         let is_pin_locked = PinManager::pin_locked().await;

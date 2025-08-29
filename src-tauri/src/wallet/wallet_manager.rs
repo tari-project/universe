@@ -29,6 +29,7 @@ use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
 use crate::tasks_tracker::TasksTrackers;
 use crate::wallet::minotari_wallet_adapter::MinotariWalletAdapter;
+use crate::wallet::wallet_db::WalletDb;
 use crate::wallet::wallet_status_monitor::WalletStatusMonitorError;
 use crate::wallet::wallet_types::{TransactionInfo, TransactionStatus, WalletBalance, WalletState};
 use crate::BaseNodeStatus;
@@ -72,6 +73,7 @@ pub struct WalletManager {
     node_manager: NodeManager,
     initial_scan_completed: Arc<AtomicBool>,
     base_node_watch_rx: watch::Receiver<BaseNodeStatus>,
+    wallet_db: WalletDb,
 }
 
 impl Clone for WalletManager {
@@ -81,6 +83,7 @@ impl Clone for WalletManager {
             node_manager: self.node_manager.clone(),
             initial_scan_completed: self.initial_scan_completed.clone(),
             base_node_watch_rx: self.base_node_watch_rx.clone(),
+            wallet_db: self.wallet_db.clone(),
         }
     }
 }
@@ -91,6 +94,7 @@ impl WalletManager {
         wallet_state_watch_tx: watch::Sender<Option<WalletState>>,
         stats_collector: &mut ProcessStatsCollectorBuilder,
         base_node_watch_rx: watch::Receiver<BaseNodeStatus>,
+        base_path: &Path,
     ) -> Self {
         let adapter = MinotariWalletAdapter::new(wallet_state_watch_tx);
         let process_watcher = ProcessWatcher::new(adapter, stats_collector.take_wallet());
@@ -100,6 +104,7 @@ impl WalletManager {
             node_manager,
             initial_scan_completed: Arc::new(AtomicBool::new(false)),
             base_node_watch_rx,
+            wallet_db: WalletDb::new(base_path.join("wallet_db.sqlite")),
         }
     }
 
@@ -205,17 +210,18 @@ impl WalletManager {
         limit: Option<u32>,
         status_bitflag: Option<u32>,
     ) -> Result<Vec<TransactionInfo>, WalletManagerError> {
-        let node_status = *self.base_node_watch_rx.borrow();
-        let current_block_height = node_status.block_height;
-        let process_watcher = self.minotari_watcher.read().await;
-        process_watcher
-            .adapter
-            .get_transactions(offset, limit, status_bitflag, current_block_height)
-            .await
-            .map_err(|e| match e {
-                WalletStatusMonitorError::WalletNotStarted => WalletManagerError::WalletNotStarted,
-                _ => WalletManagerError::UnknownError(e.into()),
-            })
+        self.wallet_db.get_transactions().await
+        // let node_status = *self.base_node_watch_rx.borrow();
+        // let current_block_height = node_status.block_height;
+        // let process_watcher = self.minotari_watcher.read().await;
+        // process_watcher
+        // .adapter
+        // .get_transactions(offset, limit, status_bitflag, current_block_height)
+        // .await
+        // .map_err(|e| match e {
+        // WalletStatusMonitorError::WalletNotStarted => WalletManagerError::WalletNotStarted,
+        // _ => WalletManagerError::UnknownError(e.into()),
+        // })
     }
 
     pub async fn wait_for_scan_to_height(
@@ -293,189 +299,189 @@ impl WalletManager {
         Ok(matching_tx)
     }
 
-    #[allow(clippy::too_many_lines)]
-    pub async fn wait_for_initial_wallet_scan(
-        &self,
-        node_status_watch_rx: watch::Receiver<BaseNodeStatus>,
-    ) -> Result<(), WalletManagerError> {
-        if self.is_initial_scan_completed() {
-            log::info!(target: LOG_TARGET, "Initial wallet scan already completed, skipping");
-            return Ok(());
-        }
+    // #[allow(clippy::too_many_lines)]
+    // pub async fn wait_for_initial_wallet_scan(
+    //     &self,
+    //     node_status_watch_rx: watch::Receiver<BaseNodeStatus>,
+    // ) -> Result<(), WalletManagerError> {
+    //     if self.is_initial_scan_completed() {
+    //         log::info!(target: LOG_TARGET, "Initial wallet scan already completed, skipping");
+    //         return Ok(());
+    //     }
 
-        let process_watcher = self.minotari_watcher.read().await;
-        if !process_watcher.is_running() {
-            return Err(WalletManagerError::WalletNotStarted);
-        }
-        let wallet_state_receiver = process_watcher.adapter.state_broadcast.subscribe();
-        let wallet_state_receiver_clone = wallet_state_receiver.clone();
-        drop(process_watcher);
+    //     let process_watcher = self.minotari_watcher.read().await;
+    //     if !process_watcher.is_running() {
+    //         return Err(WalletManagerError::WalletNotStarted);
+    //     }
+    //     let wallet_state_receiver = process_watcher.adapter.state_broadcast.subscribe();
+    //     let wallet_state_receiver_clone = wallet_state_receiver.clone();
+    //     drop(process_watcher);
 
-        let node_status_watch_rx_progress = node_status_watch_rx.clone();
-        let initial_scan_completed = self.initial_scan_completed.clone();
-        // Start a background task to monitor the wallet state and emit scan progress updates
-        TasksTrackers::current().wallet_phase.get_task_tracker().await.spawn(async move {
-            let mut wallet_state_rx = wallet_state_receiver_clone;
-            let mut shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
+    //     let node_status_watch_rx_progress = node_status_watch_rx.clone();
+    //     let initial_scan_completed = self.initial_scan_completed.clone();
+    //     // Start a background task to monitor the wallet state and emit scan progress updates
+    //     TasksTrackers::current().wallet_phase.get_task_tracker().await.spawn(async move {
+    //         let mut wallet_state_rx = wallet_state_receiver_clone;
+    //         let mut shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
 
-            loop {
-                tokio::select! {
-                    _ = shutdown_signal.wait() => {
-                        log::info!(target: LOG_TARGET, "Shutdown signal received, stopping status forwarding thread");
-                        break;
-                    }
-                    _ = wallet_state_rx.changed() => {
-                        let current_target_height = node_status_watch_rx_progress.borrow().block_height;
-                        let (scanned_height, progress) = {
-                            if let Some(wallet_state) = &*wallet_state_rx.borrow() {
-                                let progress = if current_target_height > 0 {
-                                    (wallet_state.scanned_height as f64 / current_target_height as f64 * 100.0).min(100.0)
-                                } else {
-                                    0.0
-                                };
-                                (wallet_state.scanned_height, progress)
-                            } else {
-                                continue;
-                            }
-                        };
-                        if initial_scan_completed.load(std::sync::atomic::Ordering::Relaxed) {
-                            break;
-                        }
+    //         loop {
+    //             tokio::select! {
+    //                 _ = shutdown_signal.wait() => {
+    //                     log::info!(target: LOG_TARGET, "Shutdown signal received, stopping status forwarding thread");
+    //                     break;
+    //                 }
+    //                 _ = wallet_state_rx.changed() => {
+    //                     let current_target_height = node_status_watch_rx_progress.borrow().block_height;
+    //                     let (scanned_height, progress) = {
+    //                         if let Some(wallet_state) = &*wallet_state_rx.borrow() {
+    //                             let progress = if current_target_height > 0 {
+    //                                 (wallet_state.scanned_height as f64 / current_target_height as f64 * 100.0).min(100.0)
+    //                             } else {
+    //                                 0.0
+    //                             };
+    //                             (wallet_state.scanned_height, progress)
+    //                         } else {
+    //                             continue;
+    //                         }
+    //                     };
+    //                     if initial_scan_completed.load(std::sync::atomic::Ordering::Relaxed) {
+    //                         break;
+    //                     }
 
-                        if scanned_height > 0 && progress < 100.0 {
-                            log::info!(target: LOG_TARGET, "Initial wallet scanning: {progress}% ({scanned_height}/{current_target_height})");
-                            EventsEmitter::emit_init_wallet_scanning_progress(
-                                scanned_height,
-                                current_target_height,
-                                progress,
-                            ).await;
-                        }
-                    }
-                }
-            }
-        });
+    //                     if scanned_height > 0 && progress < 100.0 {
+    //                         log::info!(target: LOG_TARGET, "Initial wallet scanning: {progress}% ({scanned_height}/{current_target_height})");
+    //                         EventsEmitter::emit_init_wallet_scanning_progress(
+    //                             scanned_height,
+    //                             current_target_height,
+    //                             progress,
+    //                         ).await;
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //     });
 
-        let wallet_manager = self.clone();
-        let mut node_status_watch_rx_scan = node_status_watch_rx.clone();
+    //     let wallet_manager = self.clone();
+    //     let mut node_status_watch_rx_scan = node_status_watch_rx.clone();
 
-        TasksTrackers::current().wallet_phase.get_task_tracker().await.spawn(async move {
-            let mut shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
+    //     TasksTrackers::current().wallet_phase.get_task_tracker().await.spawn(async move {
+    //         let mut shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
 
-            loop {
-                let mut retries = 0;
-                let current_target_height = loop {
-                    let current_height = node_status_watch_rx_scan.borrow().block_height;
-                    if current_height > 0 {
-                        break current_height;
-                    }
-                    retries += 1;
-                    if retries >= 10 {
-                        log::warn!(target: LOG_TARGET, "Max retries(10) reached while waiting for node status update");
-                        break 1;
-                    }
-                    let _unused = node_status_watch_rx_scan.changed().await;
-                };
-                tokio::select! {
-                    _ = shutdown_signal.wait() => {
-                        log::info!(target: LOG_TARGET, "Shutdown signal received, stopping wallet initial scan task");
-                        return Ok(());
-                    }
-                    result = wallet_manager.wait_for_scan_to_height(current_target_height, None) => {
-                        match result {
-                            Ok(scanned_wallet_state) => {
-                                let latest_height = node_status_watch_rx_scan.borrow().block_height;
-                                if latest_height > current_target_height {
-                                    log::info!(target: LOG_TARGET,
-                                        "Node height increased from {current_target_height} to {latest_height} while initial scanning, continuing..");
-                                    continue;
-                                }
+    //         loop {
+    //             let mut retries = 0;
+    //             let current_target_height = loop {
+    //                 let current_height = node_status_watch_rx_scan.borrow().block_height;
+    //                 if current_height > 0 {
+    //                     break current_height;
+    //                 }
+    //                 retries += 1;
+    //                 if retries >= 10 {
+    //                     log::warn!(target: LOG_TARGET, "Max retries(10) reached while waiting for node status update");
+    //                     break 1;
+    //                 }
+    //                 let _unused = node_status_watch_rx_scan.changed().await;
+    //             };
+    //             tokio::select! {
+    //                 _ = shutdown_signal.wait() => {
+    //                     log::info!(target: LOG_TARGET, "Shutdown signal received, stopping wallet initial scan task");
+    //                     return Ok(());
+    //                 }
+    //                 result = wallet_manager.wait_for_scan_to_height(current_target_height, None) => {
+    //                     match result {
+    //                         Ok(scanned_wallet_state) => {
+    //                             let latest_height = node_status_watch_rx_scan.borrow().block_height;
+    //                             if latest_height > current_target_height {
+    //                                 log::info!(target: LOG_TARGET,
+    //                                     "Node height increased from {current_target_height} to {latest_height} while initial scanning, continuing..");
+    //                                 continue;
+    //                             }
 
-                                // Scan completed to current target height
-                                if let Some(balance) = scanned_wallet_state.balance {
-                                    log::info!(
-                                        target: LOG_TARGET,
-                                        "Initial wallet scan complete up to {} block height. Available balance: {}",
-                                        latest_height,
-                                        balance.available_balance
-                                    );
+    //                             // Scan completed to current target height
+    //                             if let Some(balance) = scanned_wallet_state.balance {
+    //                                 log::info!(
+    //                                     target: LOG_TARGET,
+    //                                     "Initial wallet scan complete up to {} block height. Available balance: {}",
+    //                                     latest_height,
+    //                                     balance.available_balance
+    //                                 );
 
-                                    ConfigWallet::update_field(ConfigWalletContent::set_last_known_balance, balance.available_balance).await?;
+    //                                 ConfigWallet::update_field(ConfigWalletContent::set_last_known_balance, balance.available_balance).await?;
 
-                                    EventsEmitter::emit_wallet_balance_update(balance).await;
-                                    EventsEmitter::emit_init_wallet_scanning_progress(
-                                        current_target_height,
-                                        current_target_height,
-                                        100.0,
-                                    ).await;
+    //                                 EventsEmitter::emit_wallet_balance_update(balance).await;
+    //                                 EventsEmitter::emit_init_wallet_scanning_progress(
+    //                                     current_target_height,
+    //                                     current_target_height,
+    //                                     100.0,
+    //                                 ).await;
 
-                                    wallet_manager.initial_scan_completed
-                                        .store(true, std::sync::atomic::Ordering::Relaxed);
-                                } else {
-                                    log::warn!(target: LOG_TARGET, "Wallet Balance is None after initial scanning");
-                                }
-                                break;
-                            }
-                            Err(e) => {
-                                log::error!(target: LOG_TARGET, "Error during initial wallet scan: {e}");
-                                return Err(e);
-                            }
-                        }
-                    }
-                }
-            }
+    //                                 wallet_manager.initial_scan_completed
+    //                                     .store(true, std::sync::atomic::Ordering::Relaxed);
+    //                             } else {
+    //                                 log::warn!(target: LOG_TARGET, "Wallet Balance is None after initial scanning");
+    //                             }
+    //                             break;
+    //                         }
+    //                         Err(e) => {
+    //                             log::error!(target: LOG_TARGET, "Error during initial wallet scan: {e}");
+    //                             return Err(e);
+    //                         }
+    //                     }
+    //                 }
+    //             }
+    //         }
 
-            Ok(())
-        });
+    //         Ok(())
+    //     });
 
-        // Balance might be invalid right after initial scanning but it should be revalidated shortly after
-        let wallet_state_receiver_clone = wallet_state_receiver.clone();
-        TasksTrackers::current()
-            .wallet_phase
-            .get_task_tracker()
-            .await
-            .spawn(async move {
-                WalletManager::validate_balance_after_scan(wallet_state_receiver_clone)
-                    .await
-                    .inspect_err(|e| {
-                        log::error!(target: LOG_TARGET, "Balance validation failed: {e}");
-                    })
-            });
+    //     // Balance might be invalid right after initial scanning but it should be revalidated shortly after
+    //     let wallet_state_receiver_clone = wallet_state_receiver.clone();
+    //     TasksTrackers::current()
+    //         .wallet_phase
+    //         .get_task_tracker()
+    //         .await
+    //         .spawn(async move {
+    //             WalletManager::validate_balance_after_scan(wallet_state_receiver_clone)
+    //                 .await
+    //                 .inspect_err(|e| {
+    //                     log::error!(target: LOG_TARGET, "Balance validation failed: {e}");
+    //                 })
+    //         });
 
-        Ok(())
-    }
+    //     Ok(())
+    // }
 
-    async fn validate_balance_after_scan(
-        wallet_state_receiver: watch::Receiver<Option<WalletState>>,
-    ) -> Result<(), WalletManagerError> {
-        let mut interval = tokio::time::interval(Duration::from_secs(2));
-        interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
-        let end_time = tokio::time::Instant::now() + Duration::from_secs(120);
-        let mut shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
+    // async fn validate_balance_after_scan(
+    //     wallet_state_receiver: watch::Receiver<Option<WalletState>>,
+    // ) -> Result<(), WalletManagerError> {
+    //     let mut interval = tokio::time::interval(Duration::from_secs(2));
+    //     interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+    //     let end_time = tokio::time::Instant::now() + Duration::from_secs(120);
+    //     let mut shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
 
-        loop {
-            tokio::select! {
-                _ = shutdown_signal.wait() => {
-                    info!(target: LOG_TARGET, "Shutdown signal received, stopping balance validation");
-                    break;
-                }
-                _ = interval.tick() => {
-                    if tokio::time::Instant::now() >= end_time {
-                        break;
-                    }
+    //     loop {
+    //         tokio::select! {
+    //             _ = shutdown_signal.wait() => {
+    //                 info!(target: LOG_TARGET, "Shutdown signal received, stopping balance validation");
+    //                 break;
+    //             }
+    //             _ = interval.tick() => {
+    //                 if tokio::time::Instant::now() >= end_time {
+    //                     break;
+    //                 }
 
-                    let wallet_status = wallet_state_receiver.borrow().clone();
-                    if let Some(wallet_state) = wallet_status {
-                        if let Some(balance) = wallet_state.balance {
-                            ConfigWallet::update_field(ConfigWalletContent::set_last_known_balance, balance.available_balance).await?;
-                            EventsEmitter::emit_wallet_balance_update(balance).await;
-                        }
-                    }
-                }
-            }
-        }
+    //                 let wallet_status = wallet_state_receiver.borrow().clone();
+    //                 if let Some(wallet_state) = wallet_status {
+    //                     if let Some(balance) = wallet_state.balance {
+    //                         ConfigWallet::update_field(ConfigWalletContent::set_last_known_balance, balance.available_balance).await?;
+    //                         EventsEmitter::emit_wallet_balance_update(balance).await;
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //     }
 
-        Ok(())
-    }
+    //     Ok(())
+    // }
 
     #[allow(dead_code)]
     pub async fn stop(&self) -> Result<i32, WalletManagerError> {
