@@ -20,7 +20,6 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::collections::VecDeque;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -336,12 +335,12 @@ impl WebsocketManager {
     }
 
     async fn wait_for_stopped_status(&self) {
+        let mut status_update_channel_rx = self.status_update_channel_rx.clone();
         let current_status = self.status_update_channel_rx.borrow().clone();
         if current_status == WebsocketManagerStatusMessage::Stopped {
             return;
         }
 
-        let mut status_update_channel_rx = self.status_update_channel_rx.clone();
         loop {
             if status_update_channel_rx.changed().await.is_ok() {
                 let value = status_update_channel_rx.borrow().clone();
