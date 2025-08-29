@@ -3,7 +3,6 @@ import { FloatingTree } from '@floating-ui/react';
 import AdminUI from '../../components/AdminUI/AdminUI.tsx';
 import ToastStack from '../../components/ToastStack/ToastStack.tsx';
 import XCLinkModal from '../../components/exchanges/LinkModal/LinkModal.tsx';
-import SecurityReminder from '../../components/security/reminder/SecurityReminder.tsx';
 import { CustomPowerLevelsDialogContainer } from '../navigation/components/Miner/components/CustomPowerLevels/CustomPowerLevelsDialogContainer.tsx';
 import ShellOfSecrets from '../main/ShellOfSecrets/ShellOfSecrets.tsx';
 import CrewRewards from '../main/CrewRewards/CrewRewards.tsx';
@@ -54,7 +53,6 @@ const FloatingElements = () => {
             <ForgotPinDialog />
             <SecurityPromptDialog />
             <SeedPhrase />
-            <SecurityReminder />
             <CreatePinDialog />
             <EnterPinDialog />
             <CrewRewards />
