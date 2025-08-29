@@ -13,6 +13,7 @@
   "disconnect": "Отключить",
   "failed": "Не удалось",
   "hashrate": "Хэшрейт",
+  "install_missing_packages": "Install missing packages",
   "installation-problem": "Проблема при установке",
   "join_the_space": "Присоединиться к Space",
   "learn-more": "Узнать больше",

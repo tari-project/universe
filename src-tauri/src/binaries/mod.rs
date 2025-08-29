@@ -25,6 +25,7 @@ mod adapter_github;
 mod adapter_tor;
 mod adapter_xmrig;
 mod binaries_manager;
+mod windows_defender;
 
 pub mod binaries_list;
 pub mod binaries_resolver;

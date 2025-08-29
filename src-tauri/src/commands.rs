@@ -34,9 +34,6 @@ use crate::configs::trait_config::ConfigImpl;
 use crate::events::ConnectionStatusPayload;
 use crate::events_emitter::EventsEmitter;
 use crate::events_manager::EventsManager;
-use crate::external_dependencies::{
-    ExternalDependencies, ExternalDependency, RequiredExternalDependency,
-};
 use crate::gpu_miner::EngineType;
 use crate::gpu_miner_adapter::GpuNodeSource;
 use crate::internal_wallet::{mnemonic_to_tari_cipher_seed, InternalWallet, PaperWalletConfig};
@@ -46,6 +43,7 @@ use crate::p2pool::models::{Connections, P2poolStats};
 use crate::pin::PinManager;
 use crate::release_notes::ReleaseNotes;
 use crate::setup::setup_manager::{SetupManager, SetupPhase};
+use crate::system_dependencies::system_dependencies_manager::SystemDependenciesManager;
 use crate::tapplets::interface::ActiveTapplet;
 use crate::tapplets::tapplet_server::start_tapplet;
 use crate::tasks_tracker::TasksTrackers;
@@ -69,11 +67,11 @@ use std::sync::atomic::Ordering;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 use tari_common::configuration::Network;
+use tari_common_types::seeds::mnemonic::{Mnemonic, MnemonicLanguage};
+use tari_common_types::seeds::mnemonic_wordlists::MNEMONIC_ENGLISH_WORDS;
 use tari_common_types::tari_address::dual_address::DualAddress;
 use tari_common_types::tari_address::{TariAddress, TariAddressFeatures};
-use tari_core::transactions::tari_amount::{MicroMinotari, Minotari};
-use tari_key_manager::mnemonic::{Mnemonic, MnemonicLanguage};
-use tari_key_manager::mnemonic_wordlists::MNEMONIC_ENGLISH_WORDS;
+use tari_transaction_components::tari_amount::{MicroMinotari, Minotari};
 use tari_utilities::encoding::MBase58;
 use tari_utilities::SafePassword;
 use tauri::ipc::InvokeError;
@@ -212,21 +210,18 @@ pub async fn frontend_ready(
 }
 
 #[tauri::command]
-pub async fn download_and_start_installer(
-    _missing_dependency: ExternalDependency,
-) -> Result<(), String> {
+pub async fn download_and_start_installer(id: String) -> Result<(), String> {
     let timer = Instant::now();
 
-    #[cfg(target_os = "windows")]
-    if cfg!(target_os = "windows") {
-        ExternalDependencies::current()
-            .install_missing_dependencies(_missing_dependency)
-            .await
-            .map_err(|e| {
-                error!(target: LOG_TARGET, "Could not install missing dependency: {:?}", e);
-                e.to_string()
-            })?;
-    }
+    SystemDependenciesManager::get_instance()
+        .download_and_install_missing_dependencies(id)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    SystemDependenciesManager::get_instance()
+        .validate_dependencies()
+        .await
+        .map_err(|e| e.to_string())?;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET,
@@ -365,21 +360,6 @@ pub async fn get_applications_versions(
             port: None,
         },
     })
-}
-
-#[tauri::command]
-pub async fn get_external_dependencies() -> Result<RequiredExternalDependency, String> {
-    let timer = Instant::now();
-    let external_dependencies = ExternalDependencies::current()
-        .get_external_dependencies()
-        .await;
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET,
-            "get_external_dependencies took too long: {:?}",
-            timer.elapsed()
-        );
-    }
-    Ok(external_dependencies)
 }
 
 #[tauri::command]
@@ -2226,7 +2206,7 @@ pub async fn launch_builtin_tapplet() -> Result<ActiveTapplet, String> {
     let binaries_resolver = BinaryResolver::current();
 
     let tapp_dest_dir = binaries_resolver
-        .resolve_path_to_binary_files(Binaries::BridgeTapplet)
+        .get_binary_path(Binaries::BridgeTapplet)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -2270,6 +2250,17 @@ pub async fn parse_tari_address(address: String) -> Result<TariAddressVariants, 
         base58: tari_address.to_base58(),
         hex: tari_address.to_hex(),
     })
+}
+
+#[tauri::command]
+pub async fn list_connected_peers(
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<Vec<String>, String> {
+    state
+        .node_manager
+        .list_connected_peers()
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]

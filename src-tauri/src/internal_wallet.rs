@@ -28,14 +28,17 @@ use std::fs::OpenOptions;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use tari_common::configuration::Network;
+use tari_common_types::seeds::cipher_seed::CipherSeed;
+use tari_common_types::seeds::mnemonic::Mnemonic;
+use tari_common_types::seeds::seed_words::SeedWords;
 use tari_common_types::tari_address::{TariAddress, TariAddressFeatures};
 use tari_common_types::types::CompressedPublicKey;
-use tari_crypto::ristretto::RistrettoPublicKey;
-use tari_key_manager::cipher_seed::CipherSeed;
-use tari_key_manager::key_manager::KeyManager;
-use tari_key_manager::key_manager_service::KeyDigest;
-use tari_key_manager::mnemonic::Mnemonic;
-use tari_key_manager::SeedWords;
+use tari_transaction_components::key_manager::tari_key_manager::TariKeyManager;
+use tari_transaction_components::key_manager::{
+    KeyDigest, KeyManagerBranch, SecretTransactionKeyManagerInterface,
+    TransactionKeyManagerInterface,
+};
+use tari_transaction_key_manager::create_memory_db_key_manager_from_seed;
 use tari_utilities::encoding::MBase58;
 use tari_utilities::message_format::MessageFormat;
 use tari_utilities::{Hidden, SafePassword};
@@ -43,10 +46,6 @@ use tauri::{AppHandle, Manager};
 use tokio::fs;
 use tokio::sync::{OnceCell, RwLock};
 
-use tari_core::transactions::transaction_key_manager::{
-    create_memory_db_key_manager_from_seed, SecretTransactionKeyManagerInterface,
-    TransactionKeyManagerInterface,
-};
 use tari_utilities::hex::Hex;
 
 use crate::configs::config_ui::ConfigUI;
@@ -62,7 +61,6 @@ use crate::pin::PinManager;
 use crate::utils::{cryptography, rand_utils};
 use crate::UniverseAppState;
 
-const KEY_MANAGER_COMMS_SECRET_KEY_BRANCH_KEY: &str = "comms";
 const LOG_TARGET: &str = "tari::universe::internal_wallet";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -757,17 +755,18 @@ impl InternalWallet {
     ) -> Result<TariWalletDetails, anyhow::Error> {
         let wallet_birthday = tari_cipher_seed.birthday();
 
-        let comms_key_manager = KeyManager::<RistrettoPublicKey, KeyDigest>::from(
+        let comms_key_manager = TariKeyManager::<KeyDigest>::from(
             tari_cipher_seed.clone(),
-            KEY_MANAGER_COMMS_SECRET_KEY_BRANCH_KEY.to_string(),
+            KeyManagerBranch::Comms.get_branch_key(),
             0,
         );
         let comms_key = comms_key_manager
             .derive_key(0)
             .map_err(|e| anyhow!(e.to_string()))?
             .key;
+
         let comms_pub_key = CompressedPublicKey::from_secret_key(&comms_key);
-        let tx_key_manager = create_memory_db_key_manager_from_seed(tari_cipher_seed, 64)?;
+        let tx_key_manager = create_memory_db_key_manager_from_seed(tari_cipher_seed, 64).await?;
         let view_key = tx_key_manager.get_view_key().await?;
         let view_key_private = tx_key_manager.get_private_key(&view_key.key_id).await?;
         let view_key_public = view_key.pub_key;
