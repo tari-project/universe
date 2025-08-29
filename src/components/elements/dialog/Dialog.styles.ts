@@ -7,29 +7,18 @@ export const Overlay = styled(FloatingOverlay)`
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: rgba(0, 0, 0, 0.45);
     z-index: 10;
-    &::before {
-        content: '';
-        position: absolute;
-        width: 100%;
-        height: 100%;
-        -webkit-filter: blur(0.04em);
-        filter: blur(0.04em);
-        z-index: -1;
-    }
 `;
 export const ContentScrollContainer = styled.div<ContentWrapperStyleProps>`
     box-shadow: 0 4px 45px 0 rgba(0, 0, 0, 0.08);
     border-radius: clamp(20px, 3.5vh, 35px);
-    position: relative;
     overflow: hidden;
     align-items: center;
     justify-content: center;
     display: flex;
     max-height: 90%;
 
-    ${({ theme, $variant, $unPadded }) => {
+    ${({ theme, $variant }) => {
         switch ($variant) {
             case 'transparent': {
                 return css`
@@ -37,18 +26,8 @@ export const ContentScrollContainer = styled.div<ContentWrapperStyleProps>`
                         theme.palette.background.paper,
                         theme.mode == 'dark' ? 0.75 : 0.65
                     )};
-                    &::before {
-                        content: '';
-                        position: absolute;
-                        min-width: 100%;
-                        min-height: 100%;
-                        top: 0;
-                        left: 0;
-                        -webkit-backdrop-filter: blur(20px);
-                        backdrop-filter: blur(20px);
-                        padding: ${$unPadded ? 0 : '20px'};
-                        z-index: -1;
-                    }
+                    -webkit-backdrop-filter: blur(20px);
+                    backdrop-filter: blur(20px);
                 `;
             }
             case 'primary':
@@ -61,7 +40,6 @@ export const ContentScrollContainer = styled.div<ContentWrapperStyleProps>`
 `;
 export const ContentWrapper = styled.div<ContentWrapperStyleProps>`
     padding: ${({ $unPadded }) => ($unPadded ? 0 : '20px')};
-    position: relative;
     flex-direction: column;
     overflow-y: auto;
     display: flex;
