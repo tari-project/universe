@@ -47,13 +47,12 @@ function removeSocket() {
         unlistenWsStatusChange = null;
         console.info('WebSocket status listener unlistened.');
     }
+    socketInitialised = false;
 }
 
 function restartSocket() {
     removeSocket();
-    setTimeout(() => {
-        initialiseSocket();
-    }, 3000);
+    initialiseSocket();
 }
 
 export { socketInitialised, initialiseSocket, removeSocket, restartSocket };
