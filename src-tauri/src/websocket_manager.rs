@@ -178,8 +178,7 @@ impl WebsocketManager {
     }
 
     pub async fn close_connection(&self) {
-        if self.status_update_channel_rx.borrow().clone()
-            == WebsocketManagerStatusMessage::Stopped
+        if self.status_update_channel_rx.borrow().clone() == WebsocketManagerStatusMessage::Stopped
         {
             info!(target:LOG_TARGET,"websocket already stopped");
             return;
@@ -187,7 +186,6 @@ impl WebsocketManager {
 
         info!(target:LOG_TARGET,"websocket start to close...");
         let status_update_channel_tx = self.status_update_channel_tx.clone();
-
 
         if let Err(e) = status_update_channel_tx.send(WebsocketManagerStatusMessage::Stopping) {
             info!(target: LOG_TARGET, "Could not send stopping channel message: {e}");
