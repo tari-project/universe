@@ -1,64 +1,19 @@
-import * as m from 'motion/react-m';
-import styled, { css } from 'styled-components';
+import styled from 'styled-components';
 
-export const Wrapper = styled('div')`
-    position: fixed;
+export const BoxWrapper = styled.div`
     width: 100%;
     height: 100%;
-    top: 0;
-    left: 0;
-    z-index: 999;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    pointer-events: all;
-
-    overflow: hidden;
-    overflow-y: auto;
-
-    padding: 40px;
-
-    @media (max-height: 800px) {
-        align-items: flex-start;
-    }
-`;
-
-export const Cover = styled(m.div)<{ $noClose?: boolean }>`
-    position: fixed;
-    width: 100%;
-    height: 100%;
-    top: 0;
-    left: 0;
-    background: ${({ theme }) => theme.colorsAlpha.darkAlpha[50]};
-    z-index: 0;
-    cursor: pointer;
-
-    ${({ $noClose }) =>
-        $noClose &&
-        css`
-            cursor: default;
-        `}
-`;
-
-export const BoxWrapper = styled(m.div)`
-    width: 100%;
     max-width: 500px;
     display: flex;
     flex-direction: column;
-    justify-content: flex-end;
-    flex-shrink: 0;
-    gap: 20px;
-    padding: 30px;
-    border-radius: 20px;
-    box-shadow: 0 4px 74px 0 rgba(0, 0, 0, 0.15);
+    gap: 8px;
+    padding: 0 10px 10px 10px;
     position: relative;
-    z-index: 1;
-    background-color: ${({ theme }) => theme.palette.background.splash};
+    overflow-y: auto;
 `;
 
-export const TopButton = styled('button')`
+export const TopButton = styled.button`
     cursor: pointer;
-
     transition: transform 0.2s ease;
     height: 31px;
 
@@ -67,19 +22,18 @@ export const TopButton = styled('button')`
     }
 `;
 
-export const TopWrapper = styled('div')`
+export const TopWrapper = styled.div`
     display: flex;
     justify-content: space-between;
     align-items: center;
     width: 100%;
 
-    ${({ theme }) => (theme.mode === 'dark' ? `#fff` : `#000`)};
+    ${({ theme }) => theme.palette.base};
 `;
 
-export const Title = styled('div')`
+export const Title = styled.div`
     font-family: Poppins, sans-serif;
     font-size: 18px;
-    font-style: normal;
     font-weight: 600;
-    line-height: 31px;
+    line-height: 1.2;
 `;

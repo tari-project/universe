@@ -1,9 +1,9 @@
 import { ReactNode } from 'react';
-import { AnimatePresence } from 'motion/react';
 import { IoArrowBack } from 'react-icons/io5';
 import CloseIcon from './icons/CloseIcon';
 
-import { BoxWrapper, TopButton, Cover, Title, TopWrapper, Wrapper } from './styles';
+import { BoxWrapper, TopButton, Title, TopWrapper } from './styles';
+import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 
 interface Props {
     show: boolean;
@@ -29,34 +29,20 @@ export default function TransactionModal({ show, title, children, handleBack, ha
     ) : null;
 
     return (
-        <AnimatePresence>
-            {show && (
-                <Wrapper>
-                    <BoxWrapper
-                        initial={{ opacity: 0, y: '100px' }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.8 }}
-                    >
-                        {noHeader ? null : (
-                            <TopWrapper>
-                                {title ? <Title>{title}</Title> : <div />}
-                                {backIcon}
-                                {closeIcon}
-                            </TopWrapper>
-                        )}
+        <Dialog open={show} onOpenChange={handleClose} disableClose={noClose}>
+            <DialogContent variant="transparent">
+                <BoxWrapper>
+                    {noHeader ? null : (
+                        <TopWrapper>
+                            {title ? <Title>{title}</Title> : <div />}
+                            {backIcon}
+                            {closeIcon}
+                        </TopWrapper>
+                    )}
 
-                        {children}
-                    </BoxWrapper>
-
-                    <Cover
-                        onClick={!noClose ? handleClose : undefined}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        $noClose={noClose}
-                    />
-                </Wrapper>
-            )}
-        </AnimatePresence>
+                    {children}
+                </BoxWrapper>
+            </DialogContent>
+        </Dialog>
     );
 }

@@ -46,15 +46,6 @@ export function SendReview({
             label: t('send.transaction-description'),
             value: message,
         },
-        // {
-        //     label: t('send.network-fee'),
-        //     value: networkFee,
-        //     valueRight: `${feePercentage}%`,
-        // },
-        // {
-        //     label: t('send.estimated-completion-time'),
-        //     value: '8 mins',
-        // },
     ];
 
     const statusEntries: StatusListEntry[] = [
@@ -63,10 +54,6 @@ export function SendReview({
             value: status === 'processing' ? t('send.processing') : t('send.broadcast'),
             status,
         },
-        // {
-        //     label: t('send.total-fees'),
-        //     value: `${feePercentage}%`,
-        // },
         {
             label: t('send.destination-address'),
             value: address,
@@ -75,15 +62,6 @@ export function SendReview({
             label: t('send.transaction-description'),
             value: message,
         },
-        // {
-        //     label: t('send.transaction-id'),
-        //     value: status === 'processing' ? <LoadingDots /> : latestTx?.tx_id,
-        // },
-        // {
-        //     label: t('send.tari-txn'),
-        //     value: status === 'processing' ? <LoadingDots /> : `0x12345..12789`,
-        //     externalLink: status === 'processing' ? undefined : `#`,
-        // },
     ];
 
     return (

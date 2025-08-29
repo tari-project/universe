@@ -1,4 +1,3 @@
-import { SquaredButton } from '@app/components/elements/buttons/SquaredButton';
 import { CircularProgress } from '@app/components/elements/CircularProgress';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog';
 import { Stack } from '@app/components/elements/Stack';
@@ -6,12 +5,16 @@ import { Typography } from '@app/components/elements/Typography';
 import { useErrorDialogsButtonsLogic } from '@app/hooks/app/useErrorDialogsButtonsLogic';
 import { useAppStateStore } from '@app/store/appStateStore';
 
-import { memo } from 'react';
+import { memo, useTransition } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Button } from '@app/components/elements/buttons/Button.tsx';
+import { ErrorText, TextWrapper, Wrapper } from './styles.ts';
+import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 
 const CriticalProblemDialog = memo(function CriticalProblemDialog() {
     const { t } = useTranslation(['setup-progresses', 'common'], { useSuspense: false });
     const criticalProblem = useAppStateStore((s) => s.criticalProblem);
+    const [isPending, startTransition] = useTransition();
 
     const {
         isExiting,
@@ -24,48 +27,50 @@ const CriticalProblemDialog = memo(function CriticalProblemDialog() {
     } = useErrorDialogsButtonsLogic();
 
     const handleFeedback = () => {
-        handleSendFeedback(criticalProblem?.title || 'installation-problem');
+        startTransition(async () => {
+            await handleSendFeedback(criticalProblem?.title || 'installation-problem');
+        });
     };
 
     return (
         <Dialog open={!!criticalProblem}>
             <DialogContent>
-                <Stack gap={16}>
-                    <Stack gap={4} style={{ maxWidth: '480px' }}>
-                        <Typography variant="h4">
+                <Wrapper>
+                    <TextWrapper>
+                        <Typography variant="h3">
                             {t(criticalProblem?.title || 'common:installation-problem')}
                         </Typography>
-                        <Typography variant="p" style={{ color: '#e0344e' }}>
-                            {criticalProblem?.error_message}
-                        </Typography>
+                        <ErrorText>{criticalProblem?.error_message}</ErrorText>
                         <Typography variant="p">
                             {t(criticalProblem?.description || 'common:installation-problem')}
                         </Typography>
-                    </Stack>
+                    </TextWrapper>
                     <Stack direction="row" justifyContent="center" gap={8}>
                         {isExiting ? (
                             <CircularProgress />
                         ) : (
                             <Stack direction="row" gap={8} justifyContent="space-between" style={{ width: '100%' }}>
-                                <SquaredButton
-                                    color="brightGreen"
-                                    size="medium"
+                                <Button
+                                    backgroundColor="green"
+                                    size="smaller"
                                     onClick={logsSubmissionId ? handleCopyLogsSubmissionId : handleFeedback}
+                                    isLoading={isPending}
+                                    loader={<LoadingDots />}
                                 >
                                     {handleLogsButtonText}
-                                </SquaredButton>
+                                </Button>
                                 <Stack direction="row" gap={8} justifyContent="space-around">
-                                    <SquaredButton color="error" size="medium" onClick={handleClose}>
+                                    <Button backgroundColor="error" size="smaller" onClick={handleClose}>
                                         {t('close-tari-universe')}
-                                    </SquaredButton>
-                                    <SquaredButton color="warning" size="medium" onClick={handleRestart}>
+                                    </Button>
+                                    <Button backgroundColor="warning" size="smaller" onClick={handleRestart}>
                                         {t('restart')}
-                                    </SquaredButton>
+                                    </Button>
                                 </Stack>
                             </Stack>
                         )}
                     </Stack>
-                </Stack>
+                </Wrapper>
             </DialogContent>
         </Dialog>
     );

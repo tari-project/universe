@@ -59,7 +59,7 @@ export default function ExternalDependenciesDialog() {
             <DialogContent>
                 {isClosable && (
                     <CloseButton onClick={handleClose}>
-                        <IoCloseOutline size={16} />
+                        <IoCloseOutline size={14} />
                     </CloseButton>
                 )}
                 <Wrapper>

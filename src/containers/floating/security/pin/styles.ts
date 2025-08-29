@@ -3,7 +3,7 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 
 export const Wrapper = styled.div`
     display: flex;
-    padding: 30px;
+    padding: 10px;
     width: clamp(600px, 45vw, 710px);
     flex-direction: column;
     gap: 20px;

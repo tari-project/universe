@@ -28,13 +28,14 @@ const CriticalErrorDialog = memo(function CriticalErrorDialog() {
     return (
         <Dialog open={!!criticalError}>
             <DialogContent>
-                <Stack gap={18} alignItems="center" style={{ maxWidth: 500, padding: 10 }}>
+                <Stack gap={18} alignItems="center" style={{ maxWidth: 500 }}>
                     <Typography variant="h2">{t(criticalError?.title || 'common:installation-problem')}</Typography>
                     <Stack style={{ width: '90%', textAlign: 'center' }} alignItems="center" gap={14}>
                         <Typography>{t(criticalError?.description || 'common:installation-problem')}</Typography>
 
                         <Button
                             fluid
+                            size="small"
                             backgroundColor="error"
                             onClick={handleExit}
                             isLoading={isExiting}

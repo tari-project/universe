@@ -24,7 +24,7 @@ export default function LogIn() {
     );
 
     return (
-        <button onClick={() => handleAuth()}>
+        <button onClick={() => handleAuth()} style={{ borderRadius: 10 }}>
             <SidebarItem text={t('joinAirdrop')} tooltipContent={tooltipContent}>
                 <ActionImgWrapper style={{ marginBottom: '-4px' }}>
                     <GemImgLarge src={gem} alt="gem ico" />

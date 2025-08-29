@@ -54,6 +54,7 @@ export const TopRightContainer = styled.div`
 `;
 
 export const CurrentModeDetails = styled.div`
+    padding: 10px 0 0;
     p {
         color: ${({ theme }) => theme.palette.text.accent};
         span {

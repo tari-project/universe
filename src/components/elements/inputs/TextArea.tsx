@@ -1,5 +1,6 @@
 import styled, { css } from 'styled-components';
 import { TextareaHTMLAttributes } from 'react';
+import { convertHexToRGBA } from '@app/utils';
 
 const Wrapper = styled.div<{ $minWidth?: string; $minHeight?: string }>`
     width: 100%;
@@ -14,11 +15,8 @@ const StyledTextArea = styled.textarea<{ $variant?: 'primary' | 'secondary' }>`
     line-height: 1.2;
     resize: none;
     transition: box-shadow 0.2s ease-in-out;
-    box-shadow: 0 0 1px 3px ${({ theme }) => theme.palette.primary.wisp};
+    box-shadow: 0 0 1px 3px ${({ theme }) => convertHexToRGBA(theme.palette.focusOutline, 0.1)};
     color: ${({ theme }) => theme.palette.text.accent};
-    &:focus {
-        box-shadow: 0 0 2px 4px ${({ theme }) => theme.palette.primary.shadow};
-    }
 
     &::placeholder {
         color: ${({ theme }) => theme.palette.text.secondary};

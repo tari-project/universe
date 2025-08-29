@@ -38,10 +38,10 @@ const AdminUI = memo(function AdminUI() {
             <ToggleButton ref={refs.setReference} {...getReferenceProps()} $isOpen={isOpen}>
                 {`Admin UI`}
             </ToggleButton>
-            <AnimatePresence>
-                <FloatingNode id={nodeId}>
-                    <FloatingPortal>
-                        {isOpen && (
+            <FloatingNode id={nodeId}>
+                <AnimatePresence>
+                    {isOpen ? (
+                        <FloatingPortal>
                             <MenuWrapper ref={refs.setFloating} style={floatingStyles} {...getFloatingProps()}>
                                 <MenuContent
                                     initial={{ opacity: 0, y: 10 }}
@@ -54,10 +54,10 @@ const AdminUI = memo(function AdminUI() {
                                     <OtherUIGroup />
                                 </MenuContent>
                             </MenuWrapper>
-                        )}
-                    </FloatingPortal>
-                </FloatingNode>
-            </AnimatePresence>
+                        </FloatingPortal>
+                    ) : null}
+                </AnimatePresence>
+            </FloatingNode>
         </>
     );
 });

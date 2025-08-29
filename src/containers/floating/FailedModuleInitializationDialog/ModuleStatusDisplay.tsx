@@ -4,8 +4,6 @@ import { getModuleName, getStatusColor, getStatusIcon, getStatusText } from './h
 import { SetupPhase } from '@app/types/events-payloads';
 import { AppModule, AppModuleStatus } from '@app/store/types/setup';
 import { Typography } from '@app/components/elements/Typography';
-import { SquaredButton } from '@app/components/elements/buttons/SquaredButton';
-import { CircularProgress } from '@app/components/elements/CircularProgress';
 import { IoRefreshOutline } from 'react-icons/io5';
 import {
     ModuleStatusWrapper,
@@ -20,6 +18,8 @@ import {
     ModuleActionsWrapper,
 } from './styles';
 import { useErrorDialogsButtonsLogic } from '@app/hooks/app/useErrorDialogsButtonsLogic';
+import { Button } from '@app/components/elements/buttons/Button.tsx';
+import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 
 interface ModuleStatusDisplayProps {
     module: AppModule;
@@ -112,30 +112,25 @@ export const ModuleStatusDisplay = memo(function ModuleStatusDisplay({
             {status === AppModuleStatus.Failed && !allModulesFailed && (
                 <ModuleActionsWrapper>
                     {extraActionButtons}
-                    <SquaredButton
-                        color="warning"
-                        size="small"
+                    <Button
+                        backgroundColor="warning"
+                        size="smaller"
                         onClick={logsSubmissionId ? handleCopyLogsSubmissionId : handleSendModuleLogs}
-                        style={{ minWidth: '100px' }}
                     >
                         {handleLogsButtonText}
-                    </SquaredButton>
-                    <SquaredButton
-                        color="brightGreen"
-                        size="small"
+                    </Button>
+                    <Button
+                        backgroundColor="green"
+                        size="smaller"
                         onClick={onRestart}
                         disabled={isRestartLoading}
-                        style={{ minWidth: '100px' }}
+                        icon={!isRestartLoading ? <IoRefreshOutline size={12} /> : null}
+                        iconPosition={isRestartLoading ? 'end' : 'hug-start'}
+                        isLoading={isRestartLoading}
+                        loader={<LoadingDots />}
                     >
-                        {isRestartLoading ? (
-                            <CircularProgress />
-                        ) : (
-                            <>
-                                <IoRefreshOutline size={16} />
-                                {t('common:restart')}
-                            </>
-                        )}
-                    </SquaredButton>
+                        {t('common:restart')}
+                    </Button>
                 </ModuleActionsWrapper>
             )}
         </ModuleStatusWrapper>

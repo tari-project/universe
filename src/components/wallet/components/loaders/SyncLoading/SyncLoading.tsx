@@ -16,7 +16,7 @@ export default function SyncLoading({ children }: { children: ReactNode }) {
     const { refs, context, floatingStyles } = useFloating({
         open,
         onOpenChange: setOpen,
-        middleware: [offset(32), shift()],
+        middleware: [offset({ mainAxis: 32, crossAxis: 32 }), shift()],
         placement: 'right-end',
     });
     const hover = useHover(context);

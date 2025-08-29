@@ -6,7 +6,6 @@ export const Wrapper = styled.div`
     display: flex;
     flex-direction: column;
     min-width: 480px;
-    padding: 20px;
 `;
 export const LinkButton = styled.button`
     transition: transform 0.2s ease;

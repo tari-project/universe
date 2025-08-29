@@ -1,9 +1,9 @@
-import { SquaredButton } from '@app/components/elements/buttons/SquaredButton';
 import { setShowExternalDependenciesDialog, useAppStateStore } from '@app/store';
 import { AppModule } from '@app/store/types/setup';
 import { SystemDependencyStatus } from '@app/types/app-status';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Button } from '@app/components/elements/buttons/Button.tsx';
 
 export const GpuMiningModuleMissingPackagesButton = () => {
     const { t } = useTranslation('common', { useSuspense: false });
@@ -16,12 +16,10 @@ export const GpuMiningModuleMissingPackagesButton = () => {
     const handleOpenExternalDependenciesDialog = useCallback(() => {
         setShowExternalDependenciesDialog(true);
     }, []);
-    if (!isGpuMiningMissingDependencies) {
-        return null;
-    }
-    return (
-        <SquaredButton color="blue" size="small" onClick={handleOpenExternalDependenciesDialog}>
+
+    return !isGpuMiningMissingDependencies ? null : (
+        <Button backgroundColor="blue" size="smaller" onClick={handleOpenExternalDependenciesDialog}>
             {t('install_missing_packages')}
-        </SquaredButton>
+        </Button>
     );
 };

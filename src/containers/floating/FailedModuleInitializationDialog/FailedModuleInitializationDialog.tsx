@@ -1,4 +1,4 @@
-import { SquaredButton } from '@app/components/elements/buttons/SquaredButton';
+import { Button } from '@app/components/elements/buttons/Button';
 import { CircularProgress } from '@app/components/elements/CircularProgress';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog';
 import { Stack } from '@app/components/elements/Stack';
@@ -86,7 +86,7 @@ const FailedModuleInitializationDialog = memo(function FailedModuleInitializatio
 
     return (
         <Dialog open={shouldShowDialog} onOpenChange={canClose ? handleCloseDialog : undefined}>
-            <DialogContent style={{ position: 'relative' }}>
+            <DialogContent>
                 {/* Close button - positioned absolutely in top right corner of dialog */}
                 {canClose && (
                     <CloseButton onClick={handleCloseDialog}>
@@ -145,50 +145,46 @@ const FailedModuleInitializationDialog = memo(function FailedModuleInitializatio
                     {/* Global Actions */}
                     {allModulesFailed && (
                         <GlobalActionsWrapper>
-                            <Stack>
+                            <Stack gap={12}>
                                 <Stack direction="row" justifyContent="center" gap={12}>
                                     {isExiting ? (
                                         <CircularProgress />
                                     ) : (
                                         <>
-                                            <SquaredButton
-                                                color="error"
-                                                size="medium"
-                                                onClick={handleClose}
-                                                style={{ minWidth: '120px' }}
-                                            >
+                                            <Button fluid backgroundColor="error" size="small" onClick={handleClose}>
                                                 {t('common:close-tari-universe')}
-                                            </SquaredButton>
-                                            <SquaredButton
-                                                color="brightGreen"
-                                                size="medium"
+                                            </Button>
+                                            <Button
+                                                fluid
+                                                backgroundColor="green"
+                                                size="small"
                                                 onClick={handleRestart}
-                                                style={{ minWidth: '120px' }}
+                                                icon={<IoRefreshOutline size={12} />}
+                                                iconPosition="hug-start"
                                             >
-                                                <IoRefreshOutline size={16} />
                                                 {t('common:restart')}
-                                            </SquaredButton>
-                                            <SquaredButton
-                                                color="warning"
-                                                size="medium"
+                                            </Button>
+                                            <Button
+                                                fluid
+                                                backgroundColor="warning"
+                                                size="small"
                                                 onClick={handleFeedbackForAllModules}
-                                                style={{ minWidth: '120px' }}
                                             >
                                                 {handleSeperateLogsButtonText}
-                                            </SquaredButton>
+                                            </Button>
                                         </>
                                     )}
                                 </Stack>
                                 {logsSubmissionId && (
-                                    <Stack direction="row" justifyContent="center" gap={8} style={{ marginTop: '8px' }}>
-                                        <SquaredButton
-                                            color="gothic"
-                                            size="medium"
+                                    <Stack direction="row" justifyContent="center" gap={8}>
+                                        <Button
+                                            fluid
+                                            backgroundColor="gothic"
+                                            size="small"
                                             onClick={handleCopyLogsSubmissionId}
-                                            style={{ width: 'auto' }}
                                         >
                                             {handleLogsSubbmissionIdButtonText}
-                                        </SquaredButton>
+                                        </Button>
                                     </Stack>
                                 )}
                             </Stack>
