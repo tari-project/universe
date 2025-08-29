@@ -21,12 +21,13 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::binaries::Binaries;
-use crate::commands::{CpuMinerConnection, CpuMinerConnectionStatus, CpuMinerStatus};
+use crate::commands::{CpuMinerConnectionStatus, CpuMinerStatus};
 use crate::configs::config_pools::{ConfigPools, ConfigPoolsContent};
 use crate::configs::config_wallet::ConfigWalletContent;
 use crate::configs::pools::cpu_pools::CpuPool;
 use crate::configs::trait_config::ConfigImpl;
 use crate::events_emitter::EventsEmitter;
+use crate::mining::cpu::CpuMinerConnection;
 use crate::pool_status_watcher::{LuckyPoolAdapter, PoolApiAdapters, SupportXmrPoolAdapter};
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
@@ -116,7 +117,7 @@ impl CpuMinerConfig {
             self.pool_status_url = None;
             self.pool_host_name = None;
             self.pool_port = None;
-            self.node_connection = CpuMinerConnection::BuiltInProxy;
+            self.node_connection = CpuMinerConnection::Local;
         }
     }
 
@@ -169,7 +170,7 @@ impl CpuMiner {
         self.pool_status_shutdown_signal = Shutdown::new();
 
         let (xmrig_node_connection, pool_watcher) = match cpu_miner_config.node_connection {
-            CpuMinerConnection::BuiltInProxy => (
+            CpuMinerConnection::Local => (
                 XmrigNodeConnection::LocalMmproxy {
                     host_name: "127.0.0.1".to_string(),
                     port: mm_proxy_manager.get_monero_port().await?,
@@ -207,34 +208,6 @@ impl CpuMiner {
                         tari_address: tari_address.to_base58(),
                     },
                     pool_status_watcher,
-                )
-            }
-            CpuMinerConnection::MergeMinedPool => {
-                let (pool_address, port) =
-                    match (&cpu_miner_config.pool_host_name, cpu_miner_config.pool_port) {
-                        (Some(ref host_name), Some(port)) => (host_name.clone(), port),
-                        _ => {
-                            return Err(anyhow::anyhow!(
-                            "Pool host name and port must be provided for MergeMinedPool connection"
-                        ));
-                        }
-                    };
-                let status_watch = cpu_miner_config.pool_status_url.as_ref().map(|url| {
-                    PoolStatusWatcher::new(
-                        url.replace("%MONERO_ADDRESS%", &cpu_miner_config.monero_address)
-                            .replace("%TARI_ADDRESS%", &tari_address.to_base58()),
-                        PoolApiAdapters::SupportXmrPool(SupportXmrPoolAdapter {}),
-                    )
-                });
-
-                (
-                    XmrigNodeConnection::MergeMinedPool {
-                        host_name: pool_address,
-                        port,
-                        monero_address: cpu_miner_config.monero_address.clone(),
-                        tari_address: tari_address.to_base58(),
-                    },
-                    status_watch,
                 )
             }
         };

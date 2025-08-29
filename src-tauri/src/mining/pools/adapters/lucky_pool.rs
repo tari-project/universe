@@ -1,0 +1,126 @@
+use crate::mining::pools::{adapters::PoolApiAdapter, PoolStatus};
+use serde::{Deserialize, Serialize};
+
+// LuckyPool API can sometimes return field values as either strings or numbers.
+// This enum helps to handle both cases during deserialization and retriveve the value as a u64.
+#[derive(Serialize, Deserialize, Debug)]
+pub enum LuckyPoolNumber {
+    String(String),
+    Number(u64),
+}
+
+impl Default for LuckyPoolNumber {
+    fn default() -> Self {
+        LuckyPoolNumber::Number(0)
+    }
+}
+
+impl std::fmt::Display for LuckyPoolNumber {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            LuckyPoolNumber::String(s) => write!(f, "{s}"),
+            LuckyPoolNumber::Number(n) => write!(f, "{n}"),
+        }
+    }
+}
+
+impl LuckyPoolNumber {
+    pub fn get_number(&self) -> u64 {
+        match self {
+            LuckyPoolNumber::String(s) => s.parse().unwrap_or(0),
+            LuckyPoolNumber::Number(n) => *n,
+        }
+    }
+}
+
+fn parse_lucky_pool_number<'de, D>(deserializer: D) -> Result<LuckyPoolNumber, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    use serde::de::{self, Visitor};
+    use std::fmt;
+
+    struct LuckyPoolNumberVisitor;
+
+    impl<'de> Visitor<'de> for LuckyPoolNumberVisitor {
+        type Value = LuckyPoolNumber;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            formatter.write_str("a string or integer")
+        }
+
+        fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            if let Ok(n) = value.parse::<u64>() {
+                Ok(LuckyPoolNumber::Number(n))
+            } else {
+                Ok(LuckyPoolNumber::String(value.to_string()))
+            }
+        }
+
+        fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            Ok(LuckyPoolNumber::Number(value))
+        }
+    }
+
+    deserializer.deserialize_any(LuckyPoolNumberVisitor)
+}
+
+#[derive(Serialize, Deserialize, Debug, Default)]
+#[serde(default)]
+pub struct LuckyPoolStats {
+    #[serde(
+        rename = "rejectedShares",
+        deserialize_with = "parse_lucky_pool_number"
+    )]
+    pub rejected_shares: LuckyPoolNumber,
+    #[serde(
+        rename = "acceptedShares",
+        deserialize_with = "parse_lucky_pool_number"
+    )]
+    pub accepted_shares: LuckyPoolNumber,
+    #[serde(deserialize_with = "parse_lucky_pool_number")]
+    pub paid: LuckyPoolNumber,
+    #[serde(
+        rename = "paymentThreshold",
+        deserialize_with = "parse_lucky_pool_number"
+    )]
+    pub payment_threshold: LuckyPoolNumber,
+    #[serde(deserialize_with = "parse_lucky_pool_number")]
+    pub unlocked: LuckyPoolNumber,
+    #[serde(deserialize_with = "parse_lucky_pool_number")]
+    pub locked: LuckyPoolNumber,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct LuckyPoolStatusResponseBody {
+    pub stats: LuckyPoolStats,
+}
+
+#[derive(Clone, Debug)]
+pub struct LuckyPoolAdapter {}
+
+impl PoolApiAdapter for LuckyPoolAdapter {
+    fn convert_api_data(&self, data: &str) -> Result<PoolStatus, anyhow::Error> {
+        // For first time users, LuckyPool may return "Address not found" if the address has no mining history.
+        // In this case, we return a default PoolStatus with all fields set to zero.
+        if data.contains("Address not found") {
+            return Ok(PoolStatus::default());
+        };
+
+        let converted_data: LuckyPoolStatusResponseBody = serde_json::from_str(data)?;
+        let pool_status = PoolStatus {
+            accepted_shares: converted_data.stats.accepted_shares.get_number(),
+            unpaid: converted_data.stats.unlocked.get_number()
+                + converted_data.stats.locked.get_number(),
+            balance: converted_data.stats.paid.get_number(),
+            min_payout: converted_data.stats.payment_threshold.get_number(),
+        };
+        Ok(pool_status)
+    }
+}

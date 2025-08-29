@@ -85,13 +85,6 @@ const MAX_ACCEPTABLE_COMMAND_TIME: Duration = Duration::from_secs(1);
 const LOG_TARGET: &str = "tari::universe::commands";
 const LOG_TARGET_WEB: &str = "tari::universe::web";
 
-pub enum CpuMinerConnection {
-    BuiltInProxy,
-    Pool,
-    #[allow(dead_code)]
-    MergeMinedPool,
-}
-
 #[derive(Debug, Serialize)]
 pub struct ApplicationsInformation {
     version: String,

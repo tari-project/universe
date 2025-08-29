@@ -22,6 +22,8 @@
 
 use serde::{Deserialize, Serialize};
 
+use crate::{configs::pools::PoolConfig, mining::MiningAlgorithm};
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SupportXTMGpuPoolConfig {
     pool_url: String,
@@ -46,6 +48,9 @@ impl SupportXTMGpuPoolConfig {
     }
     pub fn get_pool_url(&self) -> String {
         self.pool_url.clone()
+    }
+    pub fn get_available_algorithms(&self) -> Vec<MiningAlgorithm> {
+        vec![MiningAlgorithm::Sha256]
     }
 }
 
@@ -74,6 +79,9 @@ impl LuckyPoolGpuConfig {
     pub fn get_pool_url(&self) -> String {
         self.pool_url.clone()
     }
+    pub fn get_available_algorithms(&self) -> Vec<MiningAlgorithm> {
+        vec![MiningAlgorithm::Sha256]
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -88,18 +96,36 @@ impl Default for GpuPool {
     }
 }
 
-impl GpuPool {
-    pub fn name(&self) -> String {
+impl PoolConfig for GpuPool {
+    fn name(&self) -> String {
         match self {
             GpuPool::LuckyPool(config) => config.pool_name.clone(),
             GpuPool::SupportXTMPool(config) => config.pool_name.clone(),
         }
     }
-    pub fn default_from_name(name: &str) -> Result<Self, anyhow::Error> {
+    fn default_from_name(name: &str) -> Result<Self, anyhow::Error> {
         match name {
             "LuckyPool" => Ok(GpuPool::LuckyPool(LuckyPoolGpuConfig::default())),
             "SupportXTMPool" => Ok(GpuPool::SupportXTMPool(SupportXTMGpuPoolConfig::default())),
             _ => Err(anyhow::anyhow!("Unknown GPU pool name: {}", name)),
+        }
+    }
+    fn get_stats_url(&self, tari_address: &str) -> String {
+        match self {
+            GpuPool::LuckyPool(config) => config.get_stats_url(tari_address),
+            GpuPool::SupportXTMPool(config) => config.get_stats_url(tari_address),
+        }
+    }
+    fn get_pool_url(&self) -> String {
+        match self {
+            GpuPool::LuckyPool(config) => config.get_pool_url(),
+            GpuPool::SupportXTMPool(config) => config.get_pool_url(),
+        }
+    }
+    fn get_available_algorithms(&self) -> Vec<MiningAlgorithm> {
+        match self {
+            GpuPool::LuckyPool(config) => config.get_available_algorithms(),
+            GpuPool::SupportXTMPool(config) => config.get_available_algorithms(),
         }
     }
 }
