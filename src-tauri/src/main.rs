@@ -193,7 +193,6 @@ struct UniverseAppState {
     systemtray_manager: Arc<RwLock<SystemTrayManager>>,
     mining_status_manager: Arc<RwLock<MiningStatusManager>>,
     websocket_message_tx: Arc<tokio::sync::mpsc::Sender<WebsocketMessage>>,
-    #[allow(dead_code)]
     websocket_manager_status_rx: Arc<watch::Receiver<WebsocketManagerStatusMessage>>,
     websocket_manager: Arc<RwLock<WebsocketManager>>,
     websocket_event_manager: Arc<RwLock<WebsocketEventsManager>>,
@@ -610,6 +609,7 @@ fn main() {
             commands::start_mining_status,
             commands::stop_mining_status,
             commands::websocket_connect,
+            commands::websocket_get_status,
             commands::websocket_close,
             commands::reconnect,
             commands::send_one_sided_to_stealth_address,

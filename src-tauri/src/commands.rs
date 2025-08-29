@@ -1938,6 +1938,15 @@ pub async fn websocket_connect(
 }
 
 #[tauri::command]
+pub async fn websocket_get_status(
+    _: tauri::AppHandle,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<String, String> {
+    let status = state.websocket_manager_status_rx.borrow().clone();
+    Ok(format!("{:?}", status))
+}
+
+#[tauri::command]
 pub async fn reconnect() -> Result<(), String> {
     EventsEmitter::emit_connection_status_changed(ConnectionStatusPayload::InProgress).await;
     let setup_manager = SetupManager::get_instance();
