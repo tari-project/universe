@@ -142,23 +142,23 @@ export const CopyAddressButton = styled.button<{ $isCopied: boolean }>`
         `}
 `;
 
+export const TooltipWrapper = styled.div`
+    z-index: 10; // same as dialog
+`;
+
 export const Tooltip = styled(m.div)`
     border-radius: 10px;
     background: #fff;
-    box-shadow: 0px 4px 34px 0px rgba(0, 0, 0, 0.15);
-
-    position: absolute;
-    right: 100%;
-    top: 50%;
-    transform: translateY(-50%);
-
+    box-shadow: 0 4px 34px 0 rgba(0, 0, 0, 0.15);
     padding: 15px;
     width: 270px;
-    margin-right: 12px;
+    position: relative;
 
     &::after {
         content: '';
         position: absolute;
+        z-index: 11;
+
         right: -8px;
         top: 50%;
         transform: translateY(-50%);

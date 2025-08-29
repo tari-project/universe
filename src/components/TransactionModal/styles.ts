@@ -1,20 +1,16 @@
-import * as m from 'motion/react-m';
 import styled from 'styled-components';
 
-export const BoxWrapper = styled(m.div)`
+export const BoxWrapper = styled.div`
     width: 100%;
+    height: 100%;
     max-width: 500px;
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
     flex-shrink: 0;
     gap: 20px;
-    //padding: 30px;
-    //border-radius: 20px;
-    //box-shadow: 0 4px 74px 0 rgba(0, 0, 0, 0.15);
+    padding: 10px;
     position: relative;
-    //z-index: 1;
-    //background-color: ${({ theme }) => theme.palette.background.splash};
 `;
 
 export const TopButton = styled('button')`
