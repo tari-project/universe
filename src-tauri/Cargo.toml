@@ -83,7 +83,6 @@ tari_core = { git = "https://github.com/stringhandler/tari.git", branch = "st-up
   "transactions",
 ] }
 tari_crypto = "0.22.1"
-tari_key_manager = { git = "https://github.com/stringhandler/tari.git", branch = "st-update-libsqlite" }
 tari_shutdown = { git = "https://github.com/stringhandler/tari.git", branch = "st-update-libsqlite" }
 tari_utilities = "0.8.0"
 tauri = { version = "2", features = [
@@ -115,6 +114,7 @@ tungstenite = "0.26.2"
 urlencoding = "2.1.3"
 xz2 = { version = "0.1.7", features = ["static"] } # static bind lzma
 zip = "2.2.0"
+tari_transaction_key_manager = { git = "https://github.com/tari-project/tari", tag = "v5.0.0-pre.8" }
 
 [target.'cfg(windows)'.dependencies]
 planif = "1.0.0"
