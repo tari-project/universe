@@ -571,7 +571,10 @@ jobs:
           # Determine platform
           PLATFORM=$([ "$(uname)" = "Darwin" ] && echo "macos-latest" || echo "windows-latest")
           echo -e "Artifact paths: \n${{ join(fromJSON( env.artifactPaths ), '\n') }}"
-          mapfile -t ARTIFACTS < <(echo "$artifactPaths" | jq -r '.[]')
+          ARTIFACTS=()
+          while IFS= read -r line; do
+            ARTIFACTS+=("$line")
+          done < <(echo "$artifactPaths" | jq -r '.[]')
           if [ "${{ github.event.inputs.asset_destination }}" = "s3" ]; then
             URL_PREFIX="S3_URL_"
           else
