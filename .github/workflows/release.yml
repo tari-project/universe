@@ -493,14 +493,14 @@ jobs:
         shell: bash
         run: |
           S3_BUCKET="cdn-universe-tari-com"
-          for artifact in ${{ join(fromJSON(steps.build.outputs.artifactPaths), ' ') }}; do
-            aws --endpoint-url "$S3_ENDPOINT_URL" s3 cp "$artifact" "s3://${S3_BUCKET}/${{ github.event.inputs.network }}/$(basename "$artifact")" --acl private
-            echo "S3_URL_${artifact//[^a-zA-Z0-9]/_}=s3://${S3_BUCKET}/${{ github.event.inputs.network }}/$(basename "$artifact")" >> $GITHUB_ENV
-          done
-          if [ "${{ runner.os }}" == "Windows" ]; then
-            aws --endpoint-url "$S3_ENDPOINT_URL" s3 cp "./tari-win-bundler/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}.exe" "s3://${S3_BUCKET}/${{ github.event.inputs.network }}/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}.exe" --acl private
-            echo "S3_URL_BUNDLER=s3://${S3_BUCKET}/${{ github.event.inputs.network }}/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}.exe" >> $GITHUB_ENV
-          fi
+          while IFS= read -r artifact; do
+            if [ -f "$artifact" ]; then
+              aws --endpoint-url "$S3_ENDPOINT_URL" s3 cp "$artifact" "s3://${S3_BUCKET}/${TARI_NETWORK}/$(basename "$artifact")" --acl private
+              # Create safe variable name by replacing non-alphanumeric chars with underscore
+              safe_name=$(basename "$artifact" | tr -c '[:alnum:]' '_')
+              echo "S3_URL_${safe_name}=s3://${S3_BUCKET}/${TARI_NETWORK}/$(basename "$artifact")" >> "$GITHUB_ENV"
+            fi
+          done <<< "$(printf '%s\n' "${artifactPaths[@]}")"
 
       - name: Create BetaBuildAssets on RWA Service
         if: ${{ ( github.event_name == 'schedule' ) || ( ! startsWith(github.ref, 'refs/heads/release') ) }}
