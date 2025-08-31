@@ -509,31 +509,32 @@ jobs:
           RWA_API_KEY: ${{ secrets.RWA_API_KEY }}
         shell: bash
         run: |
-          for artifact in ${{ join(fromJSON(steps.build.outputs.artifactPaths), ' ') }}; do
+          for artifact in ${artifactPaths[@]}; do
             ASSET_NAME=$(basename "$artifact")
             ASSET_S3_URL_VAR="S3_URL_${artifact//[^a-zA-Z0-9]/_}"
             curl -X POST "https://rwa.y.at/api/beta-builds/${BETA_BUILD_ID}/assets" \
               -H "X-API-Key: $RWA_API_KEY" \
               -H "Content-Type: application/json" \
-              -d '{
-                "id": "${ASSET_UUID}",
-                "name": "${ASSET_NAME}",
-                "platform": "${{ matrix.platform }}${{ matrix.extra }}",
-                "s3_url": "${ASSET_S3_URL_VAR}",
-                "beta_build_id": "${BETA_BUILD_UUID}"
-              }'
+              -d "{
+                \"id\": \"${ASSET_UUID}\",
+                \"name\": \"${ASSET_NAME}\",
+                \"platform\": \"macos-latest\",
+                \"s3_url\": \"${!ASSET_S3_URL_VAR}\",
+                \"beta_build_id\": \"${BETA_BUILD_UUID}\"
+              }"
           done
-          if [ "${{ runner.os }}" == "Windows" ]; then
+
+          if [ "macOS" == "Windows" ]; then
             curl -X POST "https://rwa.y.at/api/beta-builds/${BETA_BUILD_ID}/assets" \
               -H "X-API-Key: $RWA_API_KEY" \
               -H "Content-Type: application/json" \
-              -d '{
-                "id": "${ASSET_UUID}",
-                "name": "${{ env.TARI_UNIVERSE_BUNDLER_NAME }}.exe",
-                "platform": "${{ matrix.platform }}${{ matrix.extra }}",
-                "s3_url": "${{ env.S3_URL_BUNDLER }}",
-                "beta_build_id": "${BETA_BUILD_UUID}"
-              }'
+              -d "{
+                \"id\": \"${ASSET_UUID}\",
+                \"name\": \".exe\",
+                \"platform\": \"macos-latest\",
+                \"s3_url\": \"\",
+                \"beta_build_id\": \"${BETA_BUILD_UUID}\"
+              }"
           fi
 
       - name: Windows debug symbols - Upload asset
