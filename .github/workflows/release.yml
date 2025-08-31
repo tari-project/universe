@@ -72,8 +72,9 @@ jobs:
               "description": "${{ github.event.inputs.beta_description }}",
               "published": false
             }' | jq -r '.id')
-          echo "Beta build created with ID: $BETA_BUILD_ID"
           echo "beta_build_id=$BETA_BUILD_ID" >> $GITHUB_OUTPUT
+          echo "Beta build created with ID: $BETA_BUILD_ID"
+
   builds:
     name: Building ${{ matrix.platform }}${{ matrix.extra }}
     # best effort disabled by default
@@ -559,7 +560,7 @@ jobs:
       - name: Create BetaBuildAssets on RWA Service
         if: ${{ ( github.event_name == 'schedule' ) || ( ! startsWith(github.ref, 'refs/heads/release') ) }}
         env:
-          BETA_BUILD_ID: ${{ needs.create-beta-build.outputs.beta_build_id }}
+          BETA_BUILD_ID: ${{ steps.build.outputs.beta_build_id }}
           RWA_API_KEY: ${{ secrets.RWA_API_KEY }}
           artifactPaths: ${{ steps.build.outputs.artifactPaths }}
           appVersion: ${{ steps.build.outputs.appVersion }}
