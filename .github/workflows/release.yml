@@ -509,7 +509,13 @@ jobs:
           RWA_API_KEY: ${{ secrets.RWA_API_KEY }}
         shell: bash
         run: |
-          for artifact in ${artifactPaths[@]}; do
+          # Determine platform
+          PLATFORM=$([ "$(uname)" = "Darwin" ] && echo "macos-latest" || echo "windows-latest")
+          echo -e "Artifact paths: \n${artifactPaths}"
+          readarray -t ARTIFACTS < <(echo "${artifactPaths}" | grep -v '^$')
+          # Process regular artifacts
+          for artifact in "${ARTIFACTS[@]}"; do
+            [ -f "$artifact" ] || continue
             ASSET_NAME=$(basename "$artifact")
             ASSET_S3_URL_VAR="S3_URL_${artifact//[^a-zA-Z0-9]/_}"
             curl -X POST "https://rwa.y.at/api/beta-builds/${BETA_BUILD_ID}/assets" \
@@ -518,21 +524,22 @@ jobs:
               -d "{
                 \"id\": \"${ASSET_UUID}\",
                 \"name\": \"${ASSET_NAME}\",
-                \"platform\": \"macos-latest\",
+                \"platform\": \"$PLATFORM\",
                 \"s3_url\": \"${!ASSET_S3_URL_VAR}\",
                 \"beta_build_id\": \"${BETA_BUILD_UUID}\"
               }"
           done
-
-          if [ "macOS" == "Windows" ]; then
+          # Process Windows bundler if available
+          if [ -n "$MSI_FILE" ]; then
+            ASSET_NAME=$(basename "$MSI_FILE")
             curl -X POST "https://rwa.y.at/api/beta-builds/${BETA_BUILD_ID}/assets" \
               -H "X-API-Key: $RWA_API_KEY" \
               -H "Content-Type: application/json" \
               -d "{
                 \"id\": \"${ASSET_UUID}\",
-                \"name\": \".exe\",
-                \"platform\": \"macos-latest\",
-                \"s3_url\": \"\",
+                \"name\": \"${ASSET_NAME}\",
+                \"platform\": \"$PLATFORM\",
+                \"s3_url\": \"${S3_URL_BUNDLER}\",
                 \"beta_build_id\": \"${BETA_BUILD_UUID}\"
               }"
           fi
