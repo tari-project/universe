@@ -469,6 +469,10 @@ jobs:
           echo -e "Artifact paths: \n${{ join(fromJSON( env.artifactPaths ), '\n') }}"
           MSI_FILE=$( echo '${{ env.artifactPaths }}' | jq -r '[.[] | select(endswith(".msi"))] | join(" ")' )
           echo "MSI_FILE=$MSI_FILE" >> $GITHUB_ENV
+          if [ "${{ startsWith(runner.os, 'Windows') }}" = "true" ]; then
+            EXE_FILE=$(find ./tari-win-bundler -name "${{ env.TARI_UNIVERSE_BUNDLER_NAME }}*.exe" | tr '\n' ' ')
+            echo "EXE_FILE=$EXE_FILE" >> $GITHUB_ENV
+          fi
 
       - name: BETA Builds - Upload assets
         if: ${{ github.event.inputs.asset_destination == 'github' && (github.event_name == 'schedule' || !startsWith(github.ref, 'refs/heads/release')) }}
@@ -493,62 +497,47 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.CLOUDFLARE_R2_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
           artifactPaths: ${{ steps.build.outputs.artifactPaths }}
+          RUNNER_OS: ${{ runner.os }}
+          TARI_UNIVERSE_BUNDLER_NAME: ${{ env.TARI_UNIVERSE_BUNDLER_NAME }}
         shell: bash
         run: |
           S3_BUCKET="cdn-universe-tari-com"
           while IFS= read -r artifact; do
             if [ -f "$artifact" ]; then
-              aws --endpoint-url "$S3_ENDPOINT_URL" s3 cp "$artifact" "s3://${S3_BUCKET}/${TARI_NETWORK}/$(basename "$artifact")" --acl private
-              # Create safe variable name by replacing non-alphanumeric chars with underscore
-              safe_name=$(basename "$artifact" | tr -c '[:alnum:]' '_')
-              echo "S3_URL_${safe_name}=s3://${S3_BUCKET}/${TARI_NETWORK}/$(basename "$artifact")" >> "$GITHUB_ENV"
+              basename=$(basename "$artifact")
+              aws --endpoint-url "$S3_ENDPOINT_URL" s3 cp "$artifact" "s3://${S3_BUCKET}/${TARI_NETWORK}/$basename" --acl private
+              presigned_url=$(aws --endpoint-url "$S3_ENDPOINT_URL" s3 presign "s3://${S3_BUCKET}/${TARI_NETWORK}/$basename" --expires-in 2592000)
+              safe_name=$(echo "$basename" | tr -c '[:alnum:]' '_')
+              echo "S3_URL_${safe_name}=$presigned_url" >> "$GITHUB_ENV"
             fi
-          done <<< "$(printf '%s\n' "${env.artifactPaths[@]}")"
+          done < <(echo "$artifactPaths" | jq -r '.[]')
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            bundler_path="./tari-win-bundler/${TARI_UNIVERSE_BUNDLER_NAME}*.exe"
+            for bundler in $bundler_path; do
+              if [ -f "$bundler" ]; then
+                basename=$(basename "$bundler")
+                aws --endpoint-url "$S3_ENDPOINT_URL" s3 cp "$bundler" "s3://${S3_BUCKET}/${TARI_NETWORK}/$basename" --acl private
+                presigned_url=$(aws --endpoint-url "$S3_ENDPOINT_URL" s3 presign "s3://${S3_BUCKET}/${TARI_NETWORK}/$basename" --expires-in 2592000)
+                safe_name=$(echo "$basename" | tr -c '[:alnum:]' '_')
+                echo "S3_URL_${safe_name}=$presigned_url" >> "$GITHUB_ENV"
+                echo "S3_URL_BUNDLER=$presigned_url" >> "$GITHUB_ENV"
+              fi
+            done
+          fi
 
-      - name: Create BetaBuildAssets on RWA Service
-        if: ${{ ( github.event_name == 'schedule' ) || ( ! startsWith(github.ref, 'refs/heads/release') ) }}
+      - name: Set GitHub artifact URLs
+        if: ${{ github.event.inputs.asset_destination == 'github' && (github.event_name == 'schedule' || !startsWith(github.ref, 'refs/heads/release')) }}
         env:
-          BETA_BUILD_ID: ${{ needs.create-beta-build.outputs.beta_build_id }}
-          RWA_API_KEY: ${{ secrets.RWA_API_KEY }}
+          appVersion: ${{ steps.build.outputs.appVersion }}
+          platform: ${{ matrix.platform }}
+          extra: ${{ matrix.extra }}
         shell: bash
         run: |
-          # Determine platform
-          PLATFORM=$([ "$(uname)" = "Darwin" ] && echo "macos-latest" || echo "windows-latest")
-          echo -e "Artifact paths: \n${env.artifactPaths}"
-          ARTIFACTS=()
-          while IFS= read -r line; do
-            [ -n "$line" ] && ARTIFACTS+=("$line")
-          done < <(echo "${env.artifactPaths}" | grep -v '^$')
-          # Process regular artifacts
-          for artifact in "${ARTIFACTS[@]}"; do
-            [ -f "$artifact" ] || continue
-            ASSET_NAME=$(basename "$artifact")
-            ASSET_S3_URL_VAR="S3_URL_${artifact//[^a-zA-Z0-9]/_}"
-            curl -X POST "https://rwa.y.at/api/beta-builds/${BETA_BUILD_ID}/assets" \
-              -H "X-API-Key: $RWA_API_KEY" \
-              -H "Content-Type: application/json" \
-              -d "{
-                \"id\": \"${ASSET_UUID}\",
-                \"name\": \"${ASSET_NAME}\",
-                \"platform\": \"$PLATFORM\",
-                \"s3_url\": \"${!ASSET_S3_URL_VAR}\",
-                \"beta_build_id\": \"${BETA_BUILD_UUID}\"
-              }"
-          done
-          # Process Windows bundler if available
-          if [ -n "$MSI_FILE" ]; then
-            ASSET_NAME=$(basename "$MSI_FILE")
-            curl -X POST "https://rwa.y.at/api/beta-builds/${BETA_BUILD_ID}/assets" \
-              -H "X-API-Key: $RWA_API_KEY" \
-              -H "Content-Type: application/json" \
-              -d "{
-                \"id\": \"${ASSET_UUID}\",
-                \"name\": \"${ASSET_NAME}\",
-                \"platform\": \"$PLATFORM\",
-                \"s3_url\": \"${S3_URL_BUNDLER}\",
-                \"beta_build_id\": \"${BETA_BUILD_UUID}\"
-              }"
-          fi
+          MAIN_ARTIFACT_NAME="tari-universe-beta_${appVersion}_${platform}${extra}"
+          artifacts=$(curl -s -H "Accept: application/vnd.github+json" \
+            -H "Authorization: token ${{ github.token }}" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts")
+          main_id=$(echo "$artifacts" | jq -r ".artifacts[] | select(.name == \"${MAIN_ARTIFACT_NAME
 
       - name: Windows debug symbols - Upload asset
         if: startsWith(runner.os,'Windows')
