@@ -473,6 +473,8 @@ jobs:
       - name: BETA Builds - Upload assets
         if: ${{ github.event.inputs.asset_destination == 'github' && (github.event_name == 'schedule' || !startsWith(github.ref, 'refs/heads/release')) }}
         uses: actions/upload-artifact@v4
+        env:
+          artifactPaths: ${{ steps.build.outputs.artifactPaths }}
         with:
           name: tari-universe-beta_${{ steps.build.outputs.appVersion }}_${{ matrix.platform }}${{ matrix.extra }}
           path: "${{ join(fromJSON(steps.build.outputs.artifactPaths), '\n') }}"
@@ -490,6 +492,7 @@ jobs:
           S3_ENDPOINT_URL: ${{ secrets.S3_ENDPOINT_URL }}
           AWS_ACCESS_KEY_ID: ${{ secrets.CLOUDFLARE_R2_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+          artifactPaths: ${{ steps.build.outputs.artifactPaths }}
         shell: bash
         run: |
           S3_BUCKET="cdn-universe-tari-com"
