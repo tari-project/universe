@@ -329,13 +329,15 @@ impl BinaryManager {
                 Ok(_) => {
                     info!(target: LOG_TARGET, "Successfully downloaded binary: {} on retry: {}", self.binary_name, retry);
 
-                    #[cfg(target_os = "windows")]
-                    {
-                        // Add Windows Defender exclusions after successful download
-                        if let Err(e) = self.add_windows_defender_exclusions().await {
-                            warn!(target: LOG_TARGET, "Failed to add Windows Defender exclusions for {}: {}", self.binary_name, e);
-                        }
-                    }
+
+                    // TODO: UNCOMMENT
+                    // #[cfg(target_os = "windows")]
+                    // {
+                    //     // Add Windows Defender exclusions after successful download
+                    //     if let Err(e) = self.add_windows_defender_exclusions().await {
+                    //         warn!(target: LOG_TARGET, "Failed to add Windows Defender exclusions for {}: {}", self.binary_name, e);
+                    //     }
+                    // }
 
                     return Ok(());
                 }
