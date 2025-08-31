@@ -512,7 +512,10 @@ jobs:
           # Determine platform
           PLATFORM=$([ "$(uname)" = "Darwin" ] && echo "macos-latest" || echo "windows-latest")
           echo -e "Artifact paths: \n${artifactPaths}"
-          readarray -t ARTIFACTS < <(echo "${artifactPaths}" | grep -v '^$')
+          ARTIFACTS=()
+          while IFS= read -r line; do
+            [ -n "$line" ] && ARTIFACTS+=("$line")
+          done < <(echo "${artifactPaths}" | grep -v '^$')
           # Process regular artifacts
           for artifact in "${ARTIFACTS[@]}"; do
             [ -f "$artifact" ] || continue
