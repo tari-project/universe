@@ -537,7 +537,88 @@ jobs:
           artifacts=$(curl -s -H "Accept: application/vnd.github+json" \
             -H "Authorization: token ${{ github.token }}" \
             "https://api.github.com/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts")
-          main_id=$(echo "$artifacts" | jq -r ".artifacts[] | select(.name == \"${MAIN_ARTIFACT_NAME
+          main_id=$(echo "$artifacts" | jq -r ".artifacts[] | select(.name == \"${MAIN_ARTIFACT_NAME}\") | .id")
+          if [ -n "$main_id" ]; then
+            main_url="https://api.github.com/repos/${{ github.repository }}/actions/artifacts/${main_id}/zip"
+            main_safe=$(echo "$MAIN_ARTIFACT_NAME" | tr -c '[:alnum:]' '_')
+            echo "GH_URL_${main_safe}=$main_url" >> "$GITHUB_ENV"
+            echo "GH_MAIN_URL=$main_url" >> "$GITHUB_ENV"
+          fi
+          if [ "${{ startsWith(runner.os, 'Windows') }}" = "true" ]; then
+            BUNDLER_ARTIFACT_NAME="tari-universe-beta_${appVersion}_x64_en-US"
+            bundler_id=$(echo "$artifacts" | jq -r ".artifacts[] | select(.name == \"${BUNDLER_ARTIFACT_NAME}\") | .id")
+            if [ -n "$bundler_id" ]; then
+              bundler_url="https://api.github.com/repos/${{ github.repository }}/actions/artifacts/${bundler_id}/zip"
+              bundler_safe=$(echo "$BUNDLER_ARTIFACT_NAME" | tr -c '[:alnum:]' '_')
+              echo "GH_URL_${bundler_safe}=$bundler_url" >> "$GITHUB_ENV"
+              echo "GH_URL_BUNDLER=$bundler_url" >> "$GITHUB_ENV"
+            fi
+          fi
+
+      - name: Create BetaBuildAssets on RWA Service
+        if: ${{ ( github.event_name == 'schedule' ) || ( ! startsWith(github.ref, 'refs/heads/release') ) }}
+        env:
+          BETA_BUILD_ID: ${{ needs.create-beta-build.outputs.beta_build_id }}
+          RWA_API_KEY: ${{ secrets.RWA_API_KEY }}
+          artifactPaths: ${{ steps.build.outputs.artifactPaths }}
+          appVersion: ${{ steps.build.outputs.appVersion }}
+          platform: ${{ matrix.platform }}
+          extra: ${{ matrix.extra }}
+        shell: bash
+        run: |
+          # Determine platform
+          PLATFORM=$([ "$(uname)" = "Darwin" ] && echo "macos-latest" || echo "windows-latest")
+          echo -e "Artifact paths: \n${{ join(fromJSON( env.artifactPaths ), '\n') }}"
+          mapfile -t ARTIFACTS < <(echo "$artifactPaths" | jq -r '.[]')
+          if [ "${{ github.event.inputs.asset_destination }}" = "s3" ]; then
+            URL_PREFIX="S3_URL_"
+          else
+            MAIN_ARTIFACT_NAME="tari-universe-beta_${appVersion}_${platform}${extra}"
+            MAIN_SAFE_NAME=$(echo "$MAIN_ARTIFACT_NAME" | tr -c '[:alnum:]' '_')
+            MAIN_URL="${GH_URL_${MAIN_SAFE_NAME}}"
+            BUNDLER_ARTIFACT_NAME="tari-universe-beta_${appVersion}_x64_en-US"
+            BUNDLER_SAFE_NAME=$(echo "$BUNDLER_ARTIFACT_NAME" | tr -c '[:alnum:]' '_')
+            BUNDLER_URL="${GH_URL_${BUNDLER_SAFE_NAME}}"
+          fi
+          # Process regular artifacts
+          for artifact in "${ARTIFACTS[@]}"; do
+            [ -f "$artifact" ] || continue
+            ASSET_NAME=$(basename "$artifact")
+            if [ "${{ github.event.inputs.asset_destination }}" = "s3" ]; then
+              SAFE_NAME=$(echo "$ASSET_NAME" | tr -c '[:alnum:]' '_')
+              ASSET_S3_URL_VAR="${URL_PREFIX}${SAFE_NAME}"
+              S3_URL="${!ASSET_S3_URL_VAR}"
+            else
+              S3_URL="$MAIN_URL"
+            fi
+            curl -X POST "https://rwa.y.at/api/beta-builds/${BETA_BUILD_ID}/assets" \
+              -H "X-API-Key: $RWA_API_KEY" \
+              -H "Content-Type: application/json" \
+              -d "{
+                \"name\": \"${ASSET_NAME}\",
+                \"platform\": \"$PLATFORM\",
+                \"s3_url\": \"${S3_URL}\",
+                \"beta_build_id\": \"${BETA_BUILD_ID}\"
+              }"
+          done
+          # Process Windows bundler if available
+          if [ -n "$EXE_FILE" ]; then
+            ASSET_NAME=$(basename "$EXE_FILE")
+            if [ "${{ github.event.inputs.asset_destination }}" = "s3" ]; then
+              S3_URL="${S3_URL_BUNDLER}"
+            else
+              S3_URL="$BUNDLER_URL"
+            fi
+            curl -X POST "https://rwa.y.at/api/beta-builds/${BETA_BUILD_ID}/assets" \
+              -H "X-API-Key: $RWA_API_KEY" \
+              -H "Content-Type: application/json" \
+              -d "{
+                \"name\": \"${ASSET_NAME}\",
+                \"platform\": \"$PLATFORM\",
+                \"s3_url\": \"${S3_URL}\",
+                \"beta_build_id\": \"${BETA_BUILD_ID}\"
+              }"
+          fi
 
       - name: Windows debug symbols - Upload asset
         if: startsWith(runner.os,'Windows')
