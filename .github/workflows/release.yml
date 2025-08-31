@@ -477,7 +477,7 @@ jobs:
           artifactPaths: ${{ steps.build.outputs.artifactPaths }}
         with:
           name: tari-universe-beta_${{ steps.build.outputs.appVersion }}_${{ matrix.platform }}${{ matrix.extra }}
-          path: "${{ join(fromJSON(steps.build.outputs.artifactPaths), '\n') }}"
+          path: "${{ join(fromJSON( env.artifactPaths ), '\n') }}"
 
       - name: BETA Builds bundled Windows installer upload
         if: ${{ github.event.inputs.asset_destination == 'github' && startsWith(runner.os,'Windows') && !startsWith(github.ref, 'refs/heads/release') }}
@@ -503,7 +503,7 @@ jobs:
               safe_name=$(basename "$artifact" | tr -c '[:alnum:]' '_')
               echo "S3_URL_${safe_name}=s3://${S3_BUCKET}/${TARI_NETWORK}/$(basename "$artifact")" >> "$GITHUB_ENV"
             fi
-          done <<< "$(printf '%s\n' "${artifactPaths[@]}")"
+          done <<< "$(printf '%s\n' "${env.artifactPaths[@]}")"
 
       - name: Create BetaBuildAssets on RWA Service
         if: ${{ ( github.event_name == 'schedule' ) || ( ! startsWith(github.ref, 'refs/heads/release') ) }}
@@ -514,11 +514,11 @@ jobs:
         run: |
           # Determine platform
           PLATFORM=$([ "$(uname)" = "Darwin" ] && echo "macos-latest" || echo "windows-latest")
-          echo -e "Artifact paths: \n${artifactPaths}"
+          echo -e "Artifact paths: \n${env.artifactPaths}"
           ARTIFACTS=()
           while IFS= read -r line; do
             [ -n "$line" ] && ARTIFACTS+=("$line")
-          done < <(echo "${artifactPaths}" | grep -v '^$')
+          done < <(echo "${env.artifactPaths}" | grep -v '^$')
           # Process regular artifacts
           for artifact in "${ARTIFACTS[@]}"; do
             [ -f "$artifact" ] || continue
