@@ -61,7 +61,7 @@ jobs:
         env:
           RWA_API_KEY: ${{ secrets.RWA_API_KEY }}
         run: |
-          BETA_BUILD_ID="$(curl -X POST "https://rwa.y.at/api/beta-builds" \
+          RESPONSE=$(curl -X POST "https://rwa.y.at/api/beta-builds" \
             -H "X-API-Key: $RWA_API_KEY" \
             -H "Content-Type: application/json" \
             -d '{
@@ -71,7 +71,11 @@ jobs:
               "branch_name": "${{ github.ref_name }}",
               "description": "${{ github.event.inputs.beta_description }}",
               "published": false
-            }' | jq -r '.id')"
+            }')
+          echo "Full API response:"
+          echo "$RESPONSE"
+          BETA_BUILD_ID=$(echo "$RESPONSE" | jq -r '.id')
+          echo "Extracted beta_build_id: $BETA_BUILD_ID"
           echo "beta_build_id=$BETA_BUILD_ID" >> $GITHUB_OUTPUT
 
   builds:
