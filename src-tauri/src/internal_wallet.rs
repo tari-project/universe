@@ -59,6 +59,7 @@ use crate::events::CriticalProblemPayload;
 use crate::events_emitter::EventsEmitter;
 use crate::mining::pools::cpu_pool_manager::CpuPoolManager;
 use crate::mining::pools::gpu_pool_manager::GpuPoolManager;
+use crate::mining::pools::PoolManagerInterfaceTrait;
 use crate::pin::PinManager;
 use crate::utils::{cryptography, rand_utils};
 use crate::UniverseAppState;

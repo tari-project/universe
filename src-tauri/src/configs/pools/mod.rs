@@ -22,3 +22,11 @@
 
 pub mod cpu_pools;
 pub mod gpu_pools;
+
+pub trait PoolConfig: Default + Clone {
+    fn name(&self) -> String;
+    fn default_from_name(name: &str) -> Result<Self, anyhow::Error>
+    where
+        Self: Sized;
+    fn get_raw_stats_url(&self) -> String;
+}

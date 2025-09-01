@@ -29,7 +29,7 @@ use crate::{
     binaries::Binaries,
     configs::{config_pools::ConfigPools, pools::gpu_pools::GpuPool, trait_config::ConfigImpl},
     gpu_miner_sha_adapter::GpuMinerShaAdapter,
-    mining::pools::gpu_pool_manager::GpuPoolManager,
+    mining::pools::{gpu_pool_manager::GpuPoolManager, PoolManagerInterfaceTrait},
     process_watcher::ProcessWatcher,
     tasks_tracker::TasksTrackers,
     GpuMinerStatus, ProcessStatsCollectorBuilder,
@@ -118,6 +118,8 @@ impl GpuMinerSha {
             process_watcher.stop().await?;
             let _res = self.status_sender.send(GpuMinerStatus::default());
         }
+        // Mark mining as stopped in pool manager
+        // It will handle stopping the stats watcher after 1 hour of grace period
         GpuPoolManager::handle_mining_status_change(false).await;
         info!(target: LOG_TARGET, "graxil stopped");
         Ok(())

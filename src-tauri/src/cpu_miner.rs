@@ -27,6 +27,7 @@ use crate::configs::config_wallet::ConfigWalletContent;
 use crate::configs::pools::cpu_pools::CpuPool;
 use crate::mining::cpu::CpuMinerConnection;
 use crate::mining::pools::cpu_pool_manager::CpuPoolManager;
+use crate::mining::pools::PoolManagerInterfaceTrait;
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
 use crate::tasks_tracker::TasksTrackers;
@@ -253,6 +254,8 @@ impl CpuMiner {
             .cpu_miner_status_watch_tx
             .send_replace(CpuMinerStatus::default());
         self.stop_status_updates().await?;
+        // Mark mining as stopped in pool manager
+        // It will handle stopping the stats watcher after 1 hour of grace period
         CpuPoolManager::handle_mining_status_change(false).await;
         Ok(())
     }

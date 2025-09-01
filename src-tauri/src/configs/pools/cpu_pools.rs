@@ -23,6 +23,8 @@
 use serde::{Deserialize, Serialize};
 use tari_common::configuration::Network;
 
+use crate::configs::pools::PoolConfig;
+
 fn global_tari_cpu_mining_pool_url() -> String {
     match Network::get_current_or_user_setting_or_default() {
         Network::MainNet => "pool-global.tari.snipanet.com:3333".to_string(),
@@ -116,22 +118,22 @@ impl Default for CpuPool {
     }
 }
 
-impl CpuPool {
-    pub fn name(&self) -> String {
+impl PoolConfig for CpuPool {
+    fn name(&self) -> String {
         match self {
             CpuPool::SupportXTMPool(config) => config.pool_name.clone(),
             CpuPool::LuckyPool(config) => config.pool_name.clone(),
         }
     }
 
-    pub fn default_from_name(name: &str) -> Result<Self, anyhow::Error> {
+    fn default_from_name(name: &str) -> Result<Self, anyhow::Error> {
         match name {
             "LuckyPool" => Ok(CpuPool::LuckyPool(LuckyPoolCpuConfig::default())),
             "SupportXTMPool" => Ok(CpuPool::SupportXTMPool(SupportXTMCpuPoolConfig::default())),
             _ => Err(anyhow::anyhow!("Unknown CPU pool name: {}", name)),
         }
     }
-    pub fn get_raw_stats_url(&self) -> String {
+    fn get_raw_stats_url(&self) -> String {
         match self {
             CpuPool::SupportXTMPool(config) => config.get_raw_stats_url(),
             CpuPool::LuckyPool(config) => config.get_raw_stats_url(),

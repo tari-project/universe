@@ -53,13 +53,9 @@ export const clearCurrentSuccessValue = (type: PoolType) => {
     }
 };
 export const setCpuPoolStats = (cpuPoolStats: Record<string, PoolStats>) => {
-    console.info('setCpuPoolStats', cpuPoolStats);
     const currentSelectedPool = useConfigPoolsStore.getState().selected_cpu_pool;
     if (!currentSelectedPool) return;
-    console.info('Current selected CPU pool', currentSelectedPool);
     if (!cpuPoolStats[currentSelectedPool]) return;
-
-    console.info('Current CPU pool stats', cpuPoolStats[currentSelectedPool]);
 
     useMiningPoolsStore.setState((c) => {
         const parsed = parseValues(cpuPoolStats[currentSelectedPool], c.cpuPoolStats, c.cpuRewards);

@@ -22,6 +22,8 @@
 
 use serde::{Deserialize, Serialize};
 
+use crate::configs::pools::PoolConfig;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SupportXTMGpuPoolConfig {
     pool_url: String,
@@ -89,14 +91,14 @@ impl Default for GpuPool {
     }
 }
 
-impl GpuPool {
-    pub fn name(&self) -> String {
+impl PoolConfig for GpuPool {
+    fn name(&self) -> String {
         match self {
             GpuPool::LuckyPool(config) => config.pool_name.clone(),
             GpuPool::SupportXTMPool(config) => config.pool_name.clone(),
         }
     }
-    pub fn default_from_name(name: &str) -> Result<Self, anyhow::Error> {
+    fn default_from_name(name: &str) -> Result<Self, anyhow::Error> {
         match name {
             "LuckyPool" => Ok(GpuPool::LuckyPool(LuckyPoolGpuConfig::default())),
             "SupportXTMPool" => Ok(GpuPool::SupportXTMPool(SupportXTMGpuPoolConfig::default())),
@@ -104,7 +106,7 @@ impl GpuPool {
         }
     }
 
-    pub fn get_raw_stats_url(&self) -> String {
+    fn get_raw_stats_url(&self) -> String {
         match self {
             GpuPool::LuckyPool(config) => config.get_raw_stats_url(),
             GpuPool::SupportXTMPool(config) => config.get_raw_stats_url(),

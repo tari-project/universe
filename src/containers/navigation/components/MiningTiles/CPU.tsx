@@ -24,8 +24,6 @@ export default function CPUTile() {
 
     const cpuMiningModuleState = useSetupStore(setupStoreSelectors.selectCpuMiningModule);
 
-    console.info('CPU pool stats', statsRef.current, rewardsRef.current);
-
     return (
         <MinerTile
             title="CPU"

@@ -22,13 +22,15 @@
 
 use std::{collections::HashMap, sync::LazyLock};
 
-use tari_common_types::tari_address::TariAddress;
 use tokio::{spawn, sync::RwLock};
 
 use crate::{
-    configs::pools::gpu_pools::GpuPool,
+    configs::pools::{gpu_pools::GpuPool, PoolConfig},
     events_emitter::EventsEmitter,
-    mining::pools::{adapters::PoolApiAdapters, pools_manager::PoolManager, PoolStatus},
+    mining::pools::{
+        adapters::PoolApiAdapters, pools_manager::PoolManager, PoolManagerInterfaceTrait,
+        PoolStatus,
+    },
     tasks_tracker::TasksTrackers,
 };
 
@@ -53,6 +55,14 @@ impl GpuPoolManager {
         Self {
             pool_status_manager: RwLock::new(pool_manager),
         }
+    }
+}
+
+impl PoolManagerInterfaceTrait for GpuPoolManager {
+    type PoolConfigType = GpuPool;
+
+    async fn get_write_manager() -> tokio::sync::RwLockWriteGuard<'static, PoolManager> {
+        INSTANCE.pool_status_manager.write().await
     }
 
     fn construct_callback_for_pool_status_update(
@@ -79,63 +89,5 @@ impl GpuPoolManager {
                 ),
             ),
         }
-    }
-
-    // Handle the case when user changes the selected pool in the settings
-    // Should be triggered during config load and when user changes the selected pool
-    /// Update pool and pool adapter based on the selected pool configuration
-    /// This should be called whenever the selected pool configuration changes
-    /// ### Arguments
-    /// * `pool` - The new selected GPU pool configuration
-    pub async fn handle_new_selected_pool(pool: GpuPool) {
-        let new_pool_adapter = Self::resolve_pool_adapter(&pool);
-
-        INSTANCE
-            .pool_status_manager
-            .write()
-            .await
-            .handle_pool_change(new_pool_adapter)
-            .await;
-    }
-
-    pub async fn handle_wallet_address_change(address: &TariAddress) {
-        INSTANCE
-            .pool_status_manager
-            .write()
-            .await
-            .handle_new_mining_address(address)
-            .await;
-    }
-
-    pub async fn handle_mining_status_change(is_mining: bool) {
-        INSTANCE
-            .pool_status_manager
-            .write()
-            .await
-            .toggle_mining_active(is_mining)
-            .await;
-    }
-    pub async fn start_stats_watcher() {
-        INSTANCE
-            .pool_status_manager
-            .write()
-            .await
-            .spawn_periodic_pool_status_update_task()
-            .await;
-    }
-    pub async fn stop_stats_watcher() {
-        INSTANCE
-            .pool_status_manager
-            .write()
-            .await
-            .stop_background_task();
-    }
-    pub async fn update_current_pool_status() {
-        INSTANCE
-            .pool_status_manager
-            .write()
-            .await
-            .update_current_pool_status()
-            .await;
     }
 }

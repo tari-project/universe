@@ -82,7 +82,7 @@ pub enum PoolManagerThreadCommands {
 /// - 60-second intervals when mining is active
 /// - 300-second intervals when mining is inactive  
 /// - 1-hour grace period after mining stops before task shuts down
-/// - Automatic restart when pool or mining address configuration changes
+/// - Automatic updates when pool or mining address configuration changes
 /// - Integration with TasksTrackers for proper shutdown handling
 pub struct PoolManager {
     pool_adapter: PoolApiAdapters,

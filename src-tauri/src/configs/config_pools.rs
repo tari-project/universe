@@ -30,8 +30,12 @@ use crate::{
     configs::pools::{
         cpu_pools::{CpuPool, LuckyPoolCpuConfig, SupportXTMCpuPoolConfig},
         gpu_pools::{GpuPool, LuckyPoolGpuConfig, SupportXTMGpuPoolConfig},
+        PoolConfig,
     },
-    mining::pools::{cpu_pool_manager::CpuPoolManager, gpu_pool_manager::GpuPoolManager},
+    mining::pools::{
+        cpu_pool_manager::CpuPoolManager, gpu_pool_manager::GpuPoolManager,
+        PoolManagerInterfaceTrait,
+    },
 };
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
@@ -140,6 +144,7 @@ impl ConfigPools {
         let mut config = Self::current().write().await;
         config.load_app_handle(app_handle.clone()).await;
 
+        // Loads the selected pools into the pool managers as they are set with lucky pool by default
         CpuPoolManager::handle_new_selected_pool(config.content.selected_cpu_pool()).await;
         GpuPoolManager::handle_new_selected_pool(config.content.selected_gpu_pool()).await;
     }
