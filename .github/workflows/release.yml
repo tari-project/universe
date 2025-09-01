@@ -25,7 +25,7 @@ name: Release
       asset_destination:
         description: 'Asset destination (github, s3)'
         required: true
-        default: 'github'
+        default: github
         type: choice
         options:
           - github
@@ -107,10 +107,10 @@ jobs:
           #   args: '--bundles rpm'
           #   extra: '-rpm'
           #   best_effort: true
-          - platform: 'windows-latest'
-            args: '--bundles msi'
-          - platform: 'macos-latest'
-            args: '--target universal-apple-darwin'
+          - platform: windows-latest
+            args: --bundles msi
+          - platform: macos-latest
+            args: --target universal-apple-darwin
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v5
@@ -596,9 +596,9 @@ jobs:
             if [ "${{ github.event.inputs.asset_destination }}" = "s3" ]; then
               SAFE_NAME=$(echo "$ASSET_NAME" | tr -c '[:alnum:]' '_')
               ASSET_S3_URL_VAR="${URL_PREFIX}${SAFE_NAME}"
-              S3_URL="${!ASSET_S3_URL_VAR}"
+              ASSET_URL="${!ASSET_S3_URL_VAR}"
             else
-              S3_URL="$MAIN_URL"
+              ASSET_URL="$MAIN_URL"
             fi
             curl -X POST "https://rwa.y.at/api/beta-builds/${BETA_BUILD_ID}/assets" \
               -H "X-API-Key: $RWA_API_KEY" \
@@ -606,7 +606,7 @@ jobs:
               -d "{
                 \"name\": \"${ASSET_NAME}\",
                 \"platform\": \"$PLATFORM\",
-                \"s3_url\": \"${S3_URL}\",
+                $( [ "${{ github.event.inputs.asset_destination }}" = "github" ] && echo \"github_url\": \"${ASSET_URL}\", || echo \"s3_url\": \"${ASSET_URL}\", )
                 \"beta_build_id\": \"${BETA_BUILD_ID}\"
               }"
           done
@@ -614,9 +614,9 @@ jobs:
           if [ -n "$EXE_FILE" ]; then
             ASSET_NAME=$(basename "$EXE_FILE")
             if [ "${{ github.event.inputs.asset_destination }}" = "s3" ]; then
-              S3_URL="${S3_URL_BUNDLER}"
+              ASSET_URL="${S3_URL_BUNDLER}"
             else
-              S3_URL="$BUNDLER_URL"
+              ASSET_URL="$BUNDLER_URL"
             fi
             curl -X POST "https://rwa.y.at/api/beta-builds/${BETA_BUILD_ID}/assets" \
               -H "X-API-Key: $RWA_API_KEY" \
@@ -624,7 +624,7 @@ jobs:
               -d "{
                 \"name\": \"${ASSET_NAME}\",
                 \"platform\": \"$PLATFORM\",
-                \"s3_url\": \"${S3_URL}\",
+                $( [ "${{ github.event.inputs.asset_destination }}" = "github" ] && echo \"github_url\": \"${ASSET_URL}\", || echo \"s3_url\": \"${ASSET_URL}\", )
                 \"beta_build_id\": \"${BETA_BUILD_ID}\"
               }"
           fi
