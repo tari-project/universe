@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import CrewSection from './sections/CrewSection/CrewSection';
 import MainSection from './sections/MainSection/MainSection';
@@ -24,6 +25,7 @@ const buttonAnimation = {
 };
 
 export default function RewardsWidget() {
+    const { t } = useTranslation();
     const { isOpen, setIsOpen, isMinimized } = useCrewRewardsStore();
     const isLoggedIn = useAirdropStore((s) => !!s.airdropTokens);
     const [isHovering, setIsHovering] = useState(false);
@@ -64,7 +66,7 @@ export default function RewardsWidget() {
                     <AnimatePresence>
                         {isHovering && !isOpen && (
                             <ExpandButton onClick={() => setIsOpen(true)} {...buttonAnimation}>
-                                Manage your crew
+                                {t('airdrop:crewRewards.manageYourCrew')}
                             </ExpandButton>
                         )}
                     </AnimatePresence>
