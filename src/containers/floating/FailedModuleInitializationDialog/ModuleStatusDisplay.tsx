@@ -1,10 +1,10 @@
-import { memo, useCallback, useMemo } from 'react';
+import { ReactNode, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { getModuleName, getStatusColor, getStatusIcon, getStatusText } from './helpers';
+import { IoRefreshOutline } from 'react-icons/io5';
 import { SetupPhase } from '@app/types/events-payloads';
 import { AppModule, AppModuleStatus } from '@app/store/types/setup';
 import { Typography } from '@app/components/elements/Typography';
-import { IoRefreshOutline } from 'react-icons/io5';
+import { getModuleName, getStatusColor, getStatusIcon, getStatusText } from './helpers';
 import {
     ModuleStatusWrapper,
     ModuleHeaderWrapper,
@@ -29,10 +29,10 @@ interface ModuleStatusDisplayProps {
     onSendLogs?: () => void;
     isRestartLoading?: boolean;
     allModulesFailed?: boolean;
-    extraActionButtons?: React.ReactNode[];
+    extraActionButtons?: ReactNode[];
 }
 
-export const ModuleStatusDisplay = memo(function ModuleStatusDisplay({
+export function ModuleStatusDisplay({
     module,
     status,
     errorMessages,
@@ -66,8 +66,8 @@ export const ModuleStatusDisplay = memo(function ModuleStatusDisplay({
     const { logsSubmissionId, handleSendFeedback, handleCopyLogsSubmissionId, handleLogsButtonText } =
         useErrorDialogsButtonsLogic();
 
-    const handleSendModuleLogs = useCallback(() => {
-        handleSendFeedback(`Failed initialization of ${module}`);
+    const handleSendModuleLogs = useCallback(async () => {
+        await handleSendFeedback(`Failed initialization of ${module}`);
     }, [handleSendFeedback, module]);
 
     return (
@@ -75,28 +75,26 @@ export const ModuleStatusDisplay = memo(function ModuleStatusDisplay({
             <ModuleHeaderWrapper>
                 <ModuleInfo>
                     {StatusIcon}
-                    <Typography variant="h6">{t(moduleName)}</Typography>
+                    <Typography>{t(moduleName)}</Typography>
                 </ModuleInfo>
                 <StatusText $statusColor={statusColor}>
-                    <Typography variant="p">{t(statusName)}</Typography>
+                    <Typography>{t(statusName)}</Typography>
                 </StatusText>
             </ModuleHeaderWrapper>
 
             {status === AppModuleStatus.Failed && (errorMessagesList.length > 0 || !errorMessages) && (
                 <ErrorContainer>
                     {errorMessagesList.length > 0 ? (
-                        errorMessagesList.map((error, index) => (
-                            <ErrorMessageWrapper key={index}>
+                        errorMessagesList.map((error) => (
+                            <ErrorMessageWrapper key={error.phase}>
                                 {/* Phase label positioned on the top border */}
                                 <PhaseLabel>
-                                    <Typography variant="p">
+                                    <Typography>
                                         {t('common:phase')}: {error.phase}
                                     </Typography>
                                 </PhaseLabel>
                                 {/* Error message */}
-                                <ErrorMessage>
-                                    <Typography variant="p">{parseErrorMessage(error.message)}</Typography>
-                                </ErrorMessage>
+                                <ErrorMessage>{parseErrorMessage(error.message)}</ErrorMessage>
                             </ErrorMessageWrapper>
                         ))
                     ) : (
@@ -114,6 +112,7 @@ export const ModuleStatusDisplay = memo(function ModuleStatusDisplay({
                     {extraActionButtons}
                     <Button
                         backgroundColor="warning"
+                        variant="outlined"
                         size="smaller"
                         onClick={logsSubmissionId ? handleCopyLogsSubmissionId : handleSendModuleLogs}
                     >
@@ -122,6 +121,7 @@ export const ModuleStatusDisplay = memo(function ModuleStatusDisplay({
                     <Button
                         backgroundColor="green"
                         size="smaller"
+                        variant="outlined"
                         onClick={onRestart}
                         disabled={isRestartLoading}
                         icon={!isRestartLoading ? <IoRefreshOutline size={12} /> : null}
@@ -135,4 +135,4 @@ export const ModuleStatusDisplay = memo(function ModuleStatusDisplay({
             )}
         </ModuleStatusWrapper>
     );
-});
+}
