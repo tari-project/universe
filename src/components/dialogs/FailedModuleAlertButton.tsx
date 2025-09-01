@@ -1,6 +1,7 @@
 import styled from 'styled-components';
 import alertEmoji from '/assets/img/icons/emoji/alert_emoji.png';
 import { setDialogToShow } from '@app/store';
+import { useTranslation } from 'react-i18next';
 
 const StyledCTA = styled.button`
     padding: 3px;
@@ -17,8 +18,13 @@ const StyledCTA = styled.button`
 `;
 
 export default function FailedModuleAlertButton() {
+    const { t } = useTranslation('common');
     return (
-        <StyledCTA onClick={() => setDialogToShow('failedModuleInitialization')}>
+        <StyledCTA
+            onClick={() => setDialogToShow('failedModuleInitialization')}
+            aria-label="FailedModuleAlertButton"
+            title={t('click-to-view-details')}
+        >
             <img src={alertEmoji} alt="Alert icon" />
         </StyledCTA>
     );
