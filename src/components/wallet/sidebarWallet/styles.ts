@@ -53,7 +53,7 @@ export const Wrapper = styled.div<{ $swapsPanel?: boolean; $seedlessUI?: boolean
         `};
 `;
 
-export const DetailsCard = styled(m.div)<{ $isScrolled: boolean; $isWalletFailed?: boolean }>`
+export const DetailsCard = styled(m.div)<{ $isScrolled: boolean }>`
     display: flex;
     border-radius: 20px;
     padding: 14px;
@@ -62,25 +62,10 @@ export const DetailsCard = styled(m.div)<{ $isScrolled: boolean; $isWalletFailed
     box-shadow: 10px 10px 40px 0 rgba(0, 0, 0, 0.06);
     position: relative;
     overflow: hidden;
-    cursor: ${({ $isWalletFailed }) => ($isWalletFailed ? 'pointer' : 'default')};
 
     transition: height 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     will-change: height;
     height: 170px;
-
-    ${({ $isWalletFailed, theme }) =>
-        $isWalletFailed &&
-        css`
-            border: 2px solid ${theme.palette.error.main || '#e03244'};
-            background: ${theme.palette.error.main || '#e03244'}0A;
-            box-shadow: 0 0 20px ${theme.palette.error.main || '#e03244'}33;
-
-            &:hover {
-                box-shadow: 0 0 30px ${theme.palette.error.main || '#e03244'}66;
-                border-color: ${theme.palette.error.main || '#e03244'};
-                transition: all 0.2s ease;
-            }
-        `}
 
     @media (max-height: 700px) {
         height: 140px;
@@ -167,28 +152,10 @@ export const BuyTariButton = styled.button`
     }
 `;
 
-export const WalletErrorMessage = styled.div`
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    align-items: flex-start;
-`;
-
-export const WalletErrorTitle = styled.div`
-    color: ${({ theme }) => theme.palette.error.main || '#e03244'};
-    font-family: Poppins, sans-serif;
-    font-size: 16px;
-    font-weight: 600;
-    line-height: 1.2;
-`;
-
-export const WalletErrorSubtitle = styled.div`
-    color: ${({ theme }) => theme.palette.error.main || '#e03244'};
-    font-family: Poppins, sans-serif;
-    font-size: 12px;
-    font-weight: 400;
-    opacity: 0.8;
-    line-height: 1.2;
+export const WalletErrorWrapper = styled.div`
+    position: absolute;
+    right: 14px;
+    bottom: 14px;
 `;
 
 export const TabsWrapper = styled.div`

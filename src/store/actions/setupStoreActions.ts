@@ -215,7 +215,18 @@ const handleGpuMiningModuleUpdateSideEffects = async (state: AppModuleState) => 
     }
 };
 
-export const handleAppModulesUpdate = async (state: AppModuleState) => {
+export const handleAppModulesUpdate = async (state1: AppModuleState) => {
+    const state = {
+        ...state1,
+        status: AppModuleStatus.Failed,
+        error_messages: {
+            Core: 'Core error messagee',
+            CpuMining: 'CpuMining error messagee',
+            GpuMining: 'GpuMining error messagee',
+            Wallet: 'Wallet error messagee',
+            Node: 'Node error messagee',
+        },
+    };
     updateAppModule(state);
 
     switch (state.module) {

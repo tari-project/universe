@@ -1,16 +1,22 @@
 import { Alert, Button, DecorationWrapper, Wrapper } from './styles.ts';
-import { useUIStore } from '@app/store/useUIStore.ts';
+import { useSetupStore } from '@app/store/useSetupStore.ts';
+import { setupStoreSelectors } from '@app/store/selectors/setupStoreSelectors.ts';
+import { setDialogToShow } from '@app/store';
 
 export default function FailedModuleButton() {
-    const dialogToShow = useUIStore((s) => s.dialogToShow);
-    const isVisible = dialogToShow === 'failedModuleInitialization';
-    return isVisible ? (
+    const isAnyModuleFailed = useSetupStore(setupStoreSelectors.isAnyModuleFailed);
+    return isAnyModuleFailed ? (
         <Wrapper>
             <DecorationWrapper $side="right">
                 <Alert />
             </DecorationWrapper>
 
-            <Button type="button" $isActive={true} $isToggle={true}>
+            <Button
+                type="button"
+                $isActive={true}
+                $isToggle={true}
+                onClick={() => setDialogToShow('failedModuleInitialization')}
+            >
                 <svg width="33" height="36" viewBox="0 0 33 36" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <g clipPath="url(#clip0_14581_13559)">
                         <path
