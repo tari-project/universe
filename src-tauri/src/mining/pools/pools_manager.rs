@@ -20,9 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::{
-    collections::HashMap, sync::{ Arc}, time::Instant
-};
+use std::{collections::HashMap, sync::Arc, time::Instant};
 
 use log::{debug, info, warn};
 use tari_common_types::tari_address::TariAddress;
@@ -36,7 +34,7 @@ use crate::{
         adapters::{PoolApiAdapter, PoolApiAdapters},
         PoolStatus,
     },
-    tasks_tracker::{TaskTrackerUtil},
+    tasks_tracker::TaskTrackerUtil,
 };
 
 static LOG_TARGET: &str = "tari::mining::pools::pools_manager";
@@ -70,7 +68,6 @@ impl TaskState {
     }
 }
 
-
 #[derive(Debug)]
 pub enum PoolManagerThreadCommands {
     UpdateMiningAddress(String),
@@ -78,7 +75,6 @@ pub enum PoolManagerThreadCommands {
     UpdatePoolAdapter(PoolApiAdapters),
     Stop,
 }
-
 
 /// GpuPoolManager provides centralized management of GPU mining pool status monitoring. <br/>
 /// Key features:
@@ -88,8 +84,7 @@ pub enum PoolManagerThreadCommands {
 /// - 1-hour grace period after mining stops before task shuts down
 /// - Automatic restart when pool or mining address configuration changes
 /// - Integration with TasksTrackers for proper shutdown handling
-
-pub struct PoolManager{
+pub struct PoolManager {
     pool_adapter: PoolApiAdapters,
     cached_mining_address: Option<String>,
     pool_stats: Arc<RwLock<HashMap<String, PoolStatus>>>,
@@ -103,7 +98,11 @@ pub struct PoolManager{
 }
 
 impl PoolManager {
-    pub fn new(pool_adapter: PoolApiAdapters, task_tracker: Arc<TaskTrackerUtil>, callback: impl Fn(HashMap<String, PoolStatus>) + Send + Sync + 'static) -> Self {
+    pub fn new(
+        pool_adapter: PoolApiAdapters,
+        task_tracker: Arc<TaskTrackerUtil>,
+        callback: impl Fn(HashMap<String, PoolStatus>) + Send + Sync + 'static,
+    ) -> Self {
         Self {
             pool_adapter,
             cached_mining_address: None,
@@ -116,7 +115,7 @@ impl PoolManager {
         }
     }
 
-    pub async fn update_current_pool_status(&self){
+    pub async fn update_current_pool_status(&self) {
         if let Some(address) = &self.cached_mining_address {
             let pool_status = self.pool_adapter.request_pool_status(address.clone()).await;
             match pool_status {
@@ -149,7 +148,6 @@ impl PoolManager {
             self.update_current_pool_status().await; // Update once immediately to reflect the new address
         }
 
-
         // Send to task if running
         if let Some(sender) = &self.task_sender {
             if let Err(e) = sender.send(PoolManagerThreadCommands::UpdatePoolAdapter(adapter)) {
@@ -177,10 +175,11 @@ impl PoolManager {
             self.update_current_pool_status().await; // Update once immediately to reflect the new address
         }
 
-
         // Send to task if running
         if let Some(sender) = &self.task_sender {
-            if let Err(e) = sender.send(PoolManagerThreadCommands::UpdateMiningAddress(mining_address.clone())) {
+            if let Err(e) = sender.send(PoolManagerThreadCommands::UpdateMiningAddress(
+                mining_address.clone(),
+            )) {
                 warn!(target: LOG_TARGET, "Failed to send mining address update to task: {e}");
             }
             (self.pool_stats_event_callback)(self.pool_stats.read().await.clone());
@@ -223,25 +222,26 @@ impl PoolManager {
         info!(target: LOG_TARGET, "Starting periodic pool status update task");
 
         if let Some(tari_address) = &self.cached_mining_address {
-        // Create channels for communication
-        let (task_sender, mut task_receiver) = mpsc::unbounded_channel::<PoolManagerThreadCommands>();
+            // Create channels for communication
+            let (task_sender, mut task_receiver) =
+                mpsc::unbounded_channel::<PoolManagerThreadCommands>();
 
-        // Store senders/receivers in the struct
-        self.task_sender = Some(task_sender);
+            // Store senders/receivers in the struct
+            self.task_sender = Some(task_sender);
 
-        // Create the task state with current values
-        let mut task_state = TaskState::new(
-            self.pool_adapter.clone(),
-            tari_address.clone(),
-            self.pool_stats.clone(),
-            self.is_mining_active,
-            self.pool_stats_event_callback.clone(),
-        );
-        
-        let mut shutdown_signal = self.task_tracker.get_signal().await;
-        let task_tracker = self.task_tracker.get_task_tracker().await;
+            // Create the task state with current values
+            let mut task_state = TaskState::new(
+                self.pool_adapter.clone(),
+                tari_address.clone(),
+                self.pool_stats.clone(),
+                self.is_mining_active,
+                self.pool_stats_event_callback.clone(),
+            );
 
-        task_tracker.spawn(async move {
+            let mut shutdown_signal = self.task_tracker.get_signal().await;
+            let task_tracker = self.task_tracker.get_task_tracker().await;
+
+            task_tracker.spawn(async move {
             let mut mining_interval = interval(Duration::from_secs(60)); // Active mining: 60 seconds
             mining_interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
             let mut non_mining_interval = interval(Duration::from_secs(300)); // Not mining: 300 seconds
@@ -254,7 +254,6 @@ impl PoolManager {
                         info!(target: LOG_TARGET, "Periodic pool status update task received shutdown signal");
                         break;
                     }
-                    
                     // Handle incoming commands
                     Some(command) = task_receiver.recv() => {
                         debug!(target: LOG_TARGET, "Task received command: {command:?}" );
@@ -316,15 +315,15 @@ impl PoolManager {
 
             info!(target: LOG_TARGET, "Periodic pool status update task finished");
         });
-        } 
-
+        }
     }
 
     // Static version of periodic_update_logic for use in background task
-    async fn periodic_update_logic_static(
-        task_state: &mut TaskState,
-    ) {
-        let pool_status = task_state.pool_adapter.request_pool_status(task_state.cached_mining_address.clone()).await;
+    async fn periodic_update_logic_static(task_state: &mut TaskState) {
+        let pool_status = task_state
+            .pool_adapter
+            .request_pool_status(task_state.cached_mining_address.clone())
+            .await;
         match pool_status {
             Ok(status) => {
                 {
