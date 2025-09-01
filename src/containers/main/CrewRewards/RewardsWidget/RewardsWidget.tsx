@@ -64,7 +64,7 @@ export default function RewardsWidget() {
                     <AnimatePresence>
                         {isHovering && !isOpen && (
                             <ExpandButton onClick={() => setIsOpen(true)} {...buttonAnimation}>
-                                View your crew
+                                Manage your crew
                             </ExpandButton>
                         )}
                     </AnimatePresence>
