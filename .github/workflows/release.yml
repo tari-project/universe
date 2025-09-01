@@ -80,6 +80,7 @@ jobs:
 
   builds:
     name: Building ${{ matrix.platform }}${{ matrix.extra }}
+    needs: create-beta-build
     # best effort disabled by default
     continue-on-error: ${{ matrix.best_effort || false }}
     permissions:
