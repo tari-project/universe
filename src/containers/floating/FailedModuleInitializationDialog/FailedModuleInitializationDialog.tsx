@@ -1,8 +1,13 @@
+import { useCallback, useEffect, useState } from 'react';
+import { invoke } from '@tauri-apps/api/core';
+import { useTranslation } from 'react-i18next';
+import { IoRefreshOutline, IoCloseOutline } from 'react-icons/io5';
+
 import { Button } from '@app/components/elements/buttons/Button';
+import { Typography } from '@app/components/elements/Typography';
 import { CircularProgress } from '@app/components/elements/CircularProgress';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog';
 import { Stack } from '@app/components/elements/Stack';
-import { Typography } from '@app/components/elements/Typography';
 import { useErrorDialogsButtonsLogic } from '@app/hooks/app/useErrorDialogsButtonsLogic';
 import { setupStoreSelectors } from '@app/store/selectors/setupStoreSelectors';
 import { useSetupStore } from '@app/store/useSetupStore';
@@ -10,10 +15,6 @@ import { useUIStore } from '@app/store/useUIStore';
 import { setDialogToShow } from '@app/store/actions/uiStoreActions';
 import { AppModule, AppModuleState, AppModuleStatus } from '@app/store/types/setup';
 
-import { memo, useCallback, useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { IoRefreshOutline, IoCloseOutline } from 'react-icons/io5';
-import { invoke } from '@tauri-apps/api/core';
 import { ModuleStatusDisplay } from './ModuleStatusDisplay';
 import {
     CloseButton,
@@ -25,7 +26,7 @@ import {
 } from './styles';
 import { GpuMiningModuleMissingPackagesButton } from './ExtraButtons';
 
-const FailedModuleInitializationDialog = memo(function FailedModuleInitializationDialog() {
+export default function FailedModuleInitializationDialog() {
     const { t } = useTranslation(['setup-progresses', 'common'], { useSuspense: false });
     const [restartingModule, setRestartingModule] = useState(false);
 
@@ -73,8 +74,8 @@ const FailedModuleInitializationDialog = memo(function FailedModuleInitializatio
         await invoke('restart_phases', { phases: Object.keys(appModuleState.error_messages) });
     }, []);
 
-    const handleFeedbackForAllModules = useCallback(() => {
-        handleSendFeedback('Failed initialization of all modules');
+    const handleFeedbackForAllModules = useCallback(async () => {
+        await handleSendFeedback('Failed initialization of all modules');
     }, [handleSendFeedback]);
 
     const handleCloseDialog = useCallback(() => {
@@ -87,7 +88,6 @@ const FailedModuleInitializationDialog = memo(function FailedModuleInitializatio
     return (
         <Dialog open={shouldShowDialog} onOpenChange={canClose ? handleCloseDialog : undefined}>
             <DialogContent>
-                {/* Close button - positioned absolutely in top right corner of dialog */}
                 {canClose && (
                     <CloseButton onClick={handleCloseDialog}>
                         <IoCloseOutline size={16} />
@@ -95,18 +95,14 @@ const FailedModuleInitializationDialog = memo(function FailedModuleInitializatio
                 )}
 
                 <DialogWrapper>
-                    {/* Header */}
                     <HeaderWrapper>
-                        <Stack direction="row" justifyContent="flex-start" alignItems="center">
-                            <Typography variant="h3">
-                                {allModulesFailed
-                                    ? t('setup-progresses:critical-initialization-failure')
-                                    : t('setup-progresses:module-initialization-issues')}
-                            </Typography>
-                        </Stack>
+                        <Typography variant="h3">
+                            {allModulesFailed
+                                ? t('setup-progresses:critical-initialization-failure')
+                                : t('setup-progresses:module-initialization-issues')}
+                        </Typography>
                     </HeaderWrapper>
 
-                    {/* Description */}
                     <DescriptionText $allModulesFailed={allModulesFailed}>
                         <Typography variant="p">
                             {allModulesFailed
@@ -117,83 +113,82 @@ const FailedModuleInitializationDialog = memo(function FailedModuleInitializatio
 
                     {/* Module Status List - Scrollable */}
                     <ModuleListWrapper>
-                        <Stack gap={12}>
-                            {modules.map((module) => (
-                                <ModuleStatusDisplay
-                                    key={module.module}
-                                    module={module.module}
-                                    status={module.status}
-                                    errorMessages={module.error_messages}
-                                    onRestart={() => handleRestartModule(module)}
-                                    isRestartLoading={
-                                        module.status === AppModuleStatus.Initializing ||
-                                        module.status === AppModuleStatus.NotInitialized
-                                    }
-                                    allModulesFailed={allModulesFailed}
-                                    extraActionButtons={
-                                        module.module === AppModule.GpuMining
-                                            ? [
-                                                  <GpuMiningModuleMissingPackagesButton key="gpu-mining-missing-packages" />,
-                                              ]
-                                            : undefined
-                                    }
-                                />
-                            ))}
-                        </Stack>
+                        {modules.map((module) => (
+                            <ModuleStatusDisplay
+                                key={module.module}
+                                module={module.module}
+                                status={module.status}
+                                errorMessages={module.error_messages}
+                                onRestart={() => handleRestartModule(module)}
+                                isRestartLoading={
+                                    module.status === AppModuleStatus.Initializing ||
+                                    module.status === AppModuleStatus.NotInitialized
+                                }
+                                allModulesFailed={allModulesFailed}
+                                extraActionButtons={
+                                    module.module === AppModule.GpuMining
+                                        ? [<GpuMiningModuleMissingPackagesButton key="gpu-mining-missing-packages" />]
+                                        : undefined
+                                }
+                            />
+                        ))}
                     </ModuleListWrapper>
 
                     {/* Global Actions */}
                     {allModulesFailed && (
                         <GlobalActionsWrapper>
-                            <Stack gap={12}>
-                                <Stack direction="row" justifyContent="center" gap={12}>
-                                    {isExiting ? (
-                                        <CircularProgress />
-                                    ) : (
-                                        <>
-                                            <Button fluid backgroundColor="error" size="small" onClick={handleClose}>
-                                                {t('common:close-tari-universe')}
-                                            </Button>
-                                            <Button
-                                                fluid
-                                                backgroundColor="green"
-                                                size="small"
-                                                onClick={handleRestart}
-                                                icon={<IoRefreshOutline size={12} />}
-                                                iconPosition="hug-start"
-                                            >
-                                                {t('common:restart')}
-                                            </Button>
-                                            <Button
-                                                fluid
-                                                backgroundColor="warning"
-                                                size="small"
-                                                onClick={handleFeedbackForAllModules}
-                                            >
-                                                {handleSeperateLogsButtonText}
-                                            </Button>
-                                        </>
-                                    )}
+                            {isExiting ? (
+                                <CircularProgress />
+                            ) : (
+                                <>
+                                    <Button
+                                        variant="outlined"
+                                        fluid
+                                        backgroundColor="error"
+                                        size="small"
+                                        onClick={handleClose}
+                                    >
+                                        {t('common:close-tari-universe')}
+                                    </Button>
+                                    <Button
+                                        variant="outlined"
+                                        fluid
+                                        backgroundColor="green"
+                                        size="small"
+                                        onClick={handleRestart}
+                                        icon={<IoRefreshOutline size={12} />}
+                                        iconPosition="hug-start"
+                                    >
+                                        {t('common:restart')}
+                                    </Button>
+                                    <Button
+                                        variant="outlined"
+                                        fluidw
+                                        backgroundColor="warning"
+                                        size="small"
+                                        onClick={handleFeedbackForAllModules}
+                                    >
+                                        {handleSeperateLogsButtonText}
+                                    </Button>
+                                </>
+                            )}
+                            {logsSubmissionId && (
+                                <Stack direction="row" justifyContent="center" gap={8}>
+                                    <Button
+                                        variant="outlined"
+                                        fluid
+                                        backgroundColor="gothic"
+                                        size="small"
+                                        onClick={handleCopyLogsSubmissionId}
+                                    >
+                                        {handleLogsSubbmissionIdButtonText}
+                                    </Button>
                                 </Stack>
-                                {logsSubmissionId && (
-                                    <Stack direction="row" justifyContent="center" gap={8}>
-                                        <Button
-                                            fluid
-                                            backgroundColor="gothic"
-                                            size="small"
-                                            onClick={handleCopyLogsSubmissionId}
-                                        >
-                                            {handleLogsSubbmissionIdButtonText}
-                                        </Button>
-                                    </Stack>
-                                )}
-                            </Stack>
+                            )}
                         </GlobalActionsWrapper>
                     )}
                 </DialogWrapper>
             </DialogContent>
         </Dialog>
     );
-});
-
-export default FailedModuleInitializationDialog;
+}

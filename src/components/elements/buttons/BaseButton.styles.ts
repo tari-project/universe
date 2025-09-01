@@ -37,8 +37,13 @@ export const StyledButton = styled.button<ButtonStyleProps>`
             case 'outlined':
                 return css`
                     color: ${theme.palette.text.primary};
-                    background-color: ${theme.palette.action.background};
-                    border: 1px solid ${theme.colorsAlpha.greyscaleAlpha[20]};
+                    background-color: ${$backgroundColor
+                        ? convertHexToRGBA(theme?.colors[$backgroundColor ?? 'grey']?.[500], 0.04)
+                        : theme.palette.action.background};
+                    border: 1px solid
+                        ${$backgroundColor
+                            ? theme?.colors[$backgroundColor ?? 'grey']?.[500]
+                            : theme.colorsAlpha.greyscaleAlpha[20]};
                 `;
             case 'gradient':
                 return css`

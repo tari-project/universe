@@ -220,11 +220,13 @@ export const handleAppModulesUpdate = async (state1: AppModuleState) => {
         ...state1,
         status: AppModuleStatus.Failed,
         error_messages: {
-            Core: 'Core error messagee',
-            CpuMining: 'CpuMining error messagee',
-            GpuMining: 'GpuMining error messagee',
-            Wallet: 'Wallet error messagee',
-            Node: 'Node error messagee',
+            Core: 'Failed to complete step: Core error message. \nThis is a new line of the error. ',
+            CpuMining:
+                'Failed to complete step: CpuMining error message. \nThis is a new line of the error. This is a mining error so it will be a lot longer. More words. \nAnother line break!',
+            GpuMining:
+                'Failed to complete step: GpuMining error message. \nThis is a new line of the error. This is a mining error so it will be a lot longer. More words. \nAnother line break!',
+            Wallet: 'Failed to complete step: Wallet error message. \nThis is a new line of the error. ',
+            Node: 'Failed to complete step: Node error message. \nThis is a new line of the error. ',
         },
     };
     updateAppModule(state);
