@@ -55,9 +55,9 @@ pub trait PoolManagerInterfaceTrait {
 
     /// Callback to be called when pool status is updated
     /// This should emit an event to the frontend with the updated pool statuses
+    /// This function is called in a separate task, so it should be non-blocking
     /// ### Arguments
     /// * `pool_statuses` - A map of pool names to their respective statuses
-    /// This function is called in a separate task, so it should be non-blocking
     fn construct_callback_for_pool_status_update(
     ) -> impl Fn(HashMap<String, PoolStatus>) + Send + Sync + 'static;
 
