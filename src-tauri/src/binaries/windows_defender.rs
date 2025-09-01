@@ -22,6 +22,7 @@
 
 use anyhow::{anyhow, Error};
 use log::{info, warn};
+use std::os::windows::process::CommandExt;
 use std::path::PathBuf;
 use std::process::Command;
 
@@ -42,7 +43,7 @@ impl WindowsDefenderExclusions {
 
         info!(target: LOG_TARGET, "Adding binary to Windows Defender exclusions: {path_str}");
 
-        let command = Command::new("powershell")
+        let output = Command::new("powershell")
             .args([
                 "-Command",
                 &format!("Add-MpPreference -ExclusionPath '{path_str}'"),
