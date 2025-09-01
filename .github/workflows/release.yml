@@ -505,6 +505,7 @@ jobs:
           artifactPaths: ${{ steps.build.outputs.artifactPaths }}
           RUNNER_OS: ${{ runner.os }}
           TARI_UNIVERSE_BUNDLER_NAME: ${{ env.TARI_UNIVERSE_BUNDLER_NAME }}
+          PUBLIC_BASE_URL: "https://cdn-universe.tari.com/tari/releases"
         shell: bash
         run: |
           S3_BUCKET="cdn-universe-tari-com"
@@ -512,9 +513,11 @@ jobs:
             if [ -f "$artifact" ]; then
               basename=$(basename "$artifact")
               aws --endpoint-url "$S3_ENDPOINT_URL" s3 cp "$artifact" "s3://${S3_BUCKET}/${TARI_NETWORK}/$basename" --acl private
-              presigned_url=$(aws --endpoint-url "$S3_ENDPOINT_URL" s3 presign "s3://${S3_BUCKET}/${TARI_NETWORK}/$basename" --expires-in 2592000)
+              presigned_url=$(aws --endpoint-url "$S3_ENDPOINT_URL" s3 presign "s3://${S3_BUCKET}/${TARI_NETWORK}/$basename" --expires-in 604000)
+              public_url="${PUBLIC_BASE_URL}/${TARI_NETWORK}/${basename}"
               safe_name=$(echo "$basename" | tr -c '[:alnum:]' '_')
               echo "S3_URL_${safe_name}=$presigned_url" >> "$GITHUB_ENV"
+              echo "S3_PUBLIC_URL_${safe_name}=$public_url" >> "$GITHUB_ENV"
             fi
           done < <(echo "$artifactPaths" | jq -r '.[]')
           if [ "$RUNNER_OS" = "Windows" ]; then
@@ -523,10 +526,13 @@ jobs:
               if [ -f "$bundler" ]; then
                 basename=$(basename "$bundler")
                 aws --endpoint-url "$S3_ENDPOINT_URL" s3 cp "$bundler" "s3://${S3_BUCKET}/${TARI_NETWORK}/$basename" --acl private
-                presigned_url=$(aws --endpoint-url "$S3_ENDPOINT_URL" s3 presign "s3://${S3_BUCKET}/${TARI_NETWORK}/$basename" --expires-in 2592000)
+                presigned_url=$(aws --endpoint-url "$S3_ENDPOINT_URL" s3 presign "s3://${S3_BUCKET}/${TARI_NETWORK}/$basename" --expires-in 604000)
+                public_url="${PUBLIC_BASE_URL}/${TARI_NETWORK}/${basename}"
                 safe_name=$(echo "$basename" | tr -c '[:alnum:]' '_')
                 echo "S3_URL_${safe_name}=$presigned_url" >> "$GITHUB_ENV"
+                echo "S3_PUBLIC_URL_${safe_name}=$public_url" >> "$GITHUB_ENV"
                 echo "S3_URL_BUNDLER=$presigned_url" >> "$GITHUB_ENV"
+                echo "S3_PUBLIC_URL_BUNDLER=$public_url" >> "$GITHUB_ENV"
               fi
             done
           fi
