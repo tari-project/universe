@@ -20,6 +20,7 @@ export const StyledButton = styled.button<ButtonStyleProps>`
     font-size: inherit;
     transition: all 0.25s ease-in-out;
     user-select: none;
+    width: ${({ $fluid }) => ($fluid ? '100%' : 'min-content')};
 
     &:active {
         opacity: 0.8;
@@ -36,8 +37,13 @@ export const StyledButton = styled.button<ButtonStyleProps>`
             case 'outlined':
                 return css`
                     color: ${theme.palette.text.primary};
-                    background-color: ${theme.palette.action.background};
-                    border: 1px solid ${theme.colorsAlpha.greyscaleAlpha[20]};
+                    background-color: ${$backgroundColor
+                        ? convertHexToRGBA(theme?.colors[$backgroundColor ?? 'grey']?.[500], 0.02)
+                        : theme.palette.action.background};
+                    border: 1px solid
+                        ${$backgroundColor
+                            ? theme?.colors[$backgroundColor ?? 'grey']?.[500]
+                            : theme.colorsAlpha.greyscaleAlpha[20]};
                 `;
             case 'gradient':
                 return css`
@@ -177,31 +183,50 @@ export const StyledButton = styled.button<ButtonStyleProps>`
 `;
 
 const PADDING = '1rem';
-export const ChildrenWrapper = styled.div<{ $iconPosition?: IconPosition }>`
+export const ChildrenWrapper = styled.div<{ $iconPosition?: IconPosition; $isLoading?: boolean }>`
     display: flex;
     position: relative;
-    margin: 0 ${({ $iconPosition }) => ($iconPosition ? '1.5rem' : 0)};
+
+    ${({ $isLoading }) =>
+        $isLoading &&
+        css`
+            margin: 0 15px 0 0;
+        `}
+
+    ${({ $iconPosition }) =>
+        $iconPosition === 'hug-start' || $iconPosition === 'hug'
+            ? css`
+                  margin: 0 4px;
+              `
+            : css`
+                  margin: 0 ${$iconPosition ? '1.5rem' : 0};
+              `}
 `;
-export const IconWrapper = styled.div<{ $position?: IconPosition; $isLoader?: boolean }>`
+export const IconWrapper = styled.div<{
+    $position?: IconPosition;
+    $isLoader?: boolean;
+    $size?: ButtonStyleProps['$size'];
+}>`
     display: flex;
     align-items: center;
     justify-content: center;
     position: absolute;
 
-    ${({ $isLoader }) =>
+    ${({ $isLoader, $size }) =>
         $isLoader &&
         css`
-            height: 30px;
-            width: 30px;
+            height: ${$size === 'smaller' ? '15px' : '30px'};
+            width: ${$size === 'smaller' ? '15px' : '30px'};
         `}
 
-    ${({ $position }) => {
+    ${({ $position, $size }) => {
         switch ($position) {
             case 'start': {
                 return css`
                     left: 0.5rem;
                 `;
             }
+            case 'hug-start':
             case 'hug': {
                 return css`
                     position: relative;
@@ -210,7 +235,7 @@ export const IconWrapper = styled.div<{ $position?: IconPosition; $isLoader?: bo
             case 'end':
             default: {
                 return css`
-                    right: ${PADDING};
+                    right: ${$size === 'smaller' ? '10px' : PADDING};
                 `;
             }
         }

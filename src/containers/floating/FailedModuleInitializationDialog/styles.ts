@@ -1,9 +1,10 @@
 import styled from 'styled-components';
+import { convertHexToRGBA } from '@app/utils';
 
 export const CloseButton = styled.button`
     position: absolute;
-    top: 12px;
-    right: 12px;
+    top: 20px;
+    right: 20px;
     padding: 4px;
     min-width: 32px;
     min-height: 32px;
@@ -12,8 +13,8 @@ export const CloseButton = styled.button`
     border-radius: 50%;
     z-index: 10;
     background: transparent;
-    border: 1px solid ${({ theme }) => theme.palette.contrast};
-    color: ${({ theme }) => theme.palette.text.primary};
+    border: 1px solid ${({ theme }) => theme.palette.divider};
+    color: ${({ theme }) => theme.palette.text.secondary};
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -27,103 +28,114 @@ export const CloseButton = styled.button`
 `;
 
 export const DialogWrapper = styled.div`
-    max-width: 600px;
-    padding: 24px;
-    max-height: 80vh;
+    width: clamp(540px, 55vw, 700px);
+    padding: 16px;
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 14px;
+    height: 100%;
 `;
 
 export const HeaderWrapper = styled.div`
     flex-shrink: 0;
+    padding: 4px 0;
 `;
 
 export const DescriptionText = styled.div<{ $allModulesFailed?: boolean }>`
-    color: ${({ $allModulesFailed }) => ($allModulesFailed ? '#d85240' : '#b0b0b0')};
+    color: ${({ $allModulesFailed, theme }) => ($allModulesFailed ? theme.colors.warning[600] : '#b0b0b0')};
     flex-shrink: 0;
+    font-size: 14px;
+    line-height: 1.2;
 `;
 
 export const ModuleListWrapper = styled.div`
     flex: 1;
     overflow: auto;
-    padding-right: 12px;
-    margin-right: -8px;
+    gap: 8px;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
 `;
 
 export const GlobalActionsWrapper = styled.div`
     padding-top: 16px;
-    border-top: 1px solid #2a2a2a;
+    border-top: 1px solid ${({ theme }) => theme.palette.divider};
     flex-shrink: 0;
+    gap: 12px;
+    display: flex;
+    width: 100%;
 `;
 
 // Module Status Display Components
 export const ModuleStatusWrapper = styled.div`
-    padding: 16px;
-    border: 1px solid #2a2a2a;
-    border-radius: 8px;
-    background-color: #1a1a1a;
     display: flex;
+    padding: 16px;
+    border: 1px solid ${({ theme }) => theme.palette.divider};
+    background-color: ${({ theme }) => convertHexToRGBA(theme.palette.background.default, 0.35)};
+    border-radius: 10px;
     flex-direction: column;
-    gap: 12px;
+    gap: 8px;
 `;
 
 export const ModuleHeaderWrapper = styled.div`
     display: flex;
     align-items: center;
+    font-weight: 600;
+    font-size: 14px;
     justify-content: space-between;
 `;
 
 export const ModuleInfo = styled.div`
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 6px;
 `;
 
 export const StatusText = styled.div<{ $statusColor: string }>`
     color: ${({ $statusColor }) => $statusColor};
-    font-weight: 500;
-    font-size: 14px;
+    padding: 0 8px 0;
 `;
 
 export const ErrorContainer = styled.div`
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    padding: 16px 0 0;
+    gap: 14px;
 `;
 
 export const ErrorMessageWrapper = styled.div`
-    position: relative;
-    margin-left: 16px;
-    margin-top: 12px;
-    border: 1px solid #d85240;
     border-radius: 6px;
-    padding: 24px 12px 12px 12px;
-    background-color: #1f1416;
+    position: relative;
+    display: flex;
+    padding: 6px 10px;
+    border: 1px solid ${({ theme }) => theme.colorsAlpha.errorDarkAlpha[10]};
+    background-color: ${({ theme }) => theme.palette.background.paper};
 `;
 
 export const PhaseLabel = styled.div`
     position: absolute;
+    display: flex;
     top: -8px;
-    left: 12px;
-    background-color: #1a1a1a;
-    color: #e89b91;
+    right: 8px;
+    background-color: ${({ theme }) => theme.palette.background.paper};
+    color: ${({ theme }) => (theme.mode == 'dark' ? theme.colors.orange[200] : theme.palette.warning.main)};
     font-size: 10px;
     font-weight: 500;
     font-family: inherit;
-    padding: 2px 6px;
-    border-radius: 2px;
+    padding: 2px 4px;
+    border-radius: 6px;
     text-transform: capitalize;
-    letter-spacing: 0.2px;
-    border: 1px solid #4a3a3a;
+    letter-spacing: 0.06rem;
+    border: 1px solid ${({ theme }) => theme.colorsAlpha.warningDarkAlpha[20]};
 `;
 
-export const ErrorMessage = styled.div`
-    color: #e89b91;
-    font-size: 13px;
-    font-family: monospace;
-    line-height: 1.4;
-    display: block;
+export const ErrorMessage = styled.code`
+    color: ${({ theme }) => theme.palette.text.accent};
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.325;
+    display: flex;
+    white-space: pre-wrap;
 `;
 
 export const NoErrorMessage = styled.div`

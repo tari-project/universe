@@ -15,19 +15,9 @@ export const Wrapper = styled.div<{ $isModuleFailed?: boolean }>`
     overflow: hidden;
     z-index: 1;
     cursor: ${({ $isModuleFailed }) => ($isModuleFailed ? 'pointer' : 'default')};
-
-    ${({ $isModuleFailed }) =>
-        $isModuleFailed &&
-        css`
-            border: 1px solid #b14a54ff;
-            &:hover {
-                background: transparent;
-                transition: background 0.2s ease;
-            }
-        `}
 `;
 
-export const Inside = styled.div<{ $isSyncing?: boolean; $isModuleFailed?: boolean }>`
+export const Inside = styled.div<{ $isSyncing?: boolean }>`
     position: relative;
     z-index: 1;
     width: 100%;
@@ -46,12 +36,6 @@ export const Inside = styled.div<{ $isSyncing?: boolean; $isModuleFailed?: boole
         $isSyncing &&
         css`
             background: ${({ theme }) => theme.palette.background.accent};
-        `}
-
-    ${({ $isModuleFailed, theme }) =>
-        $isModuleFailed &&
-        css`
-            background: ${convertHexToRGBA(theme.palette.error.main || '#e03244', 0.1)};
         `}
 `;
 
@@ -101,39 +85,36 @@ export const LabelWrapper = styled.div`
     display: flex;
     align-items: center;
     gap: 5px;
+    img {
+        width: 14px;
+    }
 `;
 
 export const StatusDot = styled.div<{
     $isMining: boolean;
     $isEnabled: boolean;
     $isSyncing?: boolean;
-    $isModuleFailed?: boolean;
 }>`
     width: 6px;
     height: 6px;
     border-radius: 50%;
 
-    ${({ $isEnabled, $isMining, $isSyncing, $isModuleFailed, theme }) =>
-        $isModuleFailed
+    ${({ $isEnabled, $isMining, $isSyncing, theme }) =>
+        $isEnabled
             ? css`
-                  background: ${theme.palette.error.main || '#e03244'};
+                  background: ${$isSyncing
+                      ? '#D29807'
+                      : $isMining
+                        ? '#33CD7E'
+                        : convertHexToRGBA(theme.palette.contrast, 0.5)};
               `
-            : $isEnabled
-              ? css`
-                    background: ${$isSyncing
-                        ? '#D29807'
-                        : $isMining
-                          ? '#33CD7E'
-                          : convertHexToRGBA(theme.palette.contrast, 0.5)};
-                `
-              : css`
-                    background: ${theme.palette.divider};
-                `}
+            : css`
+                  background: ${theme.palette.divider};
+              `}
 `;
 
-export const LabelText = styled.span<{ $isModuleFailed?: boolean }>`
-    color: ${({ theme, $isModuleFailed }) =>
-        $isModuleFailed ? theme.palette.error.main || '#e03244' : theme.palette.text.secondary};
+export const LabelText = styled.span`
+    color: ${({ theme }) => theme.palette.text.secondary};
     font-family: Poppins, sans-serif;
     font-size: 12px;
     font-style: normal;
@@ -201,14 +182,4 @@ export const NumberLabel = styled.div`
     font-style: normal;
     font-weight: 400;
     line-height: normal;
-`;
-
-export const ErrorMessage = styled.div`
-    color: ${({ theme }) => theme.palette.error.main || '#e03244'};
-    font-family: Poppins, sans-serif;
-    font-size: 14px;
-    font-style: normal;
-    font-weight: 600;
-    line-height: 95%;
-    letter-spacing: -0.2px;
 `;
