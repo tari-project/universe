@@ -609,6 +609,7 @@ fn main() {
             commands::start_mining_status,
             commands::stop_mining_status,
             commands::websocket_connect,
+            commands::websocket_get_status,
             commands::websocket_close,
             commands::reconnect,
             commands::send_one_sided_to_stealth_address,
