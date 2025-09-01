@@ -5,7 +5,7 @@ export const Wrapper = styled.div`
     display: flex;
     width: clamp(610px, 46vw, 710px);
     flex-direction: column;
-    padding: 26px;
+    padding: 6px;
 
     @media (max-height: 730px) {
         padding: 18px;

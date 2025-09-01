@@ -20,8 +20,11 @@ export function DialogsGroup() {
                             criticalProblem
                                 ? undefined
                                 : {
-                                      title: 'This is a critical problem description',
-                                      description: 'This is a critical problem description',
+                                      title: 'Critical Problem - [Node phase]',
+                                      description:
+                                          "All modules failed to initialize. App can't work in current state. Please restart the app or contact support.",
+                                      error_message:
+                                          'This is a critical problem error message: Some Modules failed to initialize.\n [Beep boop] You have a super duper problem 🤖.\n\n Stack trace: "/admin/ui/test/error.rs"\n            "/admin/ui/test/error.rs"\n            "/admin/ui/long_stack_test/error.rs"\n            "/admin/ui/test/error.rs"\n            "/admin/test/error.rs"',
                                   }
                         )
                     }

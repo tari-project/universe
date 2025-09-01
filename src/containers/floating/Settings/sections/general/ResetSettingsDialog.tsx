@@ -23,10 +23,10 @@ const ExplainerContainer = styled.div`
     font-size: 0.8rem;
     flex-direction: column;
     align-items: center;
-    padding: 0 12px;
+    padding: 4px 10px;
     text-align: justify;
     span {
-        line-height: 1.2;
+        line-height: 1.1;
         strong {
             font-weight: 600;
         }
@@ -70,10 +70,9 @@ export default function ResetSettingsDialog({ isOpen, onOpenChange }: ResetSetti
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange} disableClose={isPending}>
             <DialogContent>
-                <Stack alignItems="center" justifyContent="space-between" gap={8} style={{ width: 560 }}>
+                <Stack alignItems="center" justifyContent="space-between" gap={8} style={{ width: 570, padding: 8 }}>
                     <Typography variant="h3">{t('reset-settings')}</Typography>
                     <Typography variant="p">{t('reset-restart')}</Typography>
-
                     <OptionContainer>
                         {options.map(({ id, label }) => {
                             return (
@@ -104,7 +103,12 @@ export default function ResetSettingsDialog({ isOpen, onOpenChange }: ResetSetti
                         </Typography>
                     </ExplainerContainer>
 
-                    <Stack direction="row" justifyContent="space-between" alignItems="center" style={{ width: '70%' }}>
+                    <Stack
+                        direction="row"
+                        justifyContent="space-between"
+                        alignItems="center"
+                        style={{ width: '70%', gap: 8 }}
+                    >
                         <Button size="medium" disabled={isPending} onClick={handleClose} fluid>
                             {t('cancel')}
                         </Button>
