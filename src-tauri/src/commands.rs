@@ -37,6 +37,8 @@ use crate::events_manager::EventsManager;
 use crate::gpu_miner::EngineType;
 use crate::gpu_miner_adapter::GpuNodeSource;
 use crate::internal_wallet::{mnemonic_to_tari_cipher_seed, InternalWallet, PaperWalletConfig};
+use crate::mining::pools::cpu_pool_manager::CpuPoolManager;
+use crate::mining::pools::gpu_pool_manager::GpuPoolManager;
 use crate::node::node_adapter::BaseNodeStatus;
 use crate::node::node_manager::NodeType;
 use crate::p2pool::models::{Connections, P2poolStats};
@@ -53,7 +55,7 @@ use crate::utils::app_flow_utils::FrontendReadyChannel;
 use crate::wallet::wallet_manager::WalletManagerError;
 use crate::wallet::wallet_types::{TariAddressVariants, TransactionInfo};
 use crate::websocket_manager::WebsocketManagerStatusMessage;
-use crate::{airdrop, PoolStatus, UniverseAppState};
+use crate::{airdrop, UniverseAppState};
 
 use base64::prelude::*;
 use log::{debug, error, info, warn};
@@ -107,7 +109,6 @@ pub struct CpuMinerStatus {
     pub hash_rate: f64,
     pub estimated_earnings: u64,
     pub connection: CpuMinerConnectionStatus,
-    pub pool_status: Option<PoolStatus>,
 }
 
 impl Default for CpuMinerStatus {
@@ -119,7 +120,6 @@ impl Default for CpuMinerStatus {
             connection: CpuMinerConnectionStatus {
                 is_connected: false,
             },
-            pool_status: None,
         }
     }
 }
@@ -2079,6 +2079,9 @@ pub async fn change_cpu_pool(cpu_pool: String) -> Result<(), InvokeError> {
         .await
         .map_err(InvokeError::from_anyhow)?;
 
+    CpuPoolManager::handle_new_selected_pool(ConfigPools::content().await.selected_cpu_pool())
+        .await;
+
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "change_cpu_pool took too long: {:?}", timer.elapsed());
     }
@@ -2093,6 +2096,9 @@ pub async fn change_gpu_pool(gpu_pool: String) -> Result<(), InvokeError> {
     ConfigPools::update_field(ConfigPoolsContent::set_selected_gpu_pool, gpu_pool)
         .await
         .map_err(InvokeError::from_anyhow)?;
+
+    GpuPoolManager::handle_new_selected_pool(ConfigPools::content().await.selected_gpu_pool())
+        .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "change_gpu_pool took too long: {:?}", timer.elapsed());

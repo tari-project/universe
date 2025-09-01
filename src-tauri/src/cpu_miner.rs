@@ -22,30 +22,26 @@
 
 use crate::binaries::Binaries;
 use crate::commands::{CpuMinerConnectionStatus, CpuMinerStatus};
-use crate::configs::config_pools::{ConfigPools, ConfigPoolsContent};
+use crate::configs::config_pools::ConfigPoolsContent;
 use crate::configs::config_wallet::ConfigWalletContent;
 use crate::configs::pools::cpu_pools::CpuPool;
-use crate::configs::trait_config::ConfigImpl;
-use crate::events_emitter::EventsEmitter;
 use crate::mining::cpu::CpuMinerConnection;
-use crate::pool_status_watcher::{LuckyPoolAdapter, PoolApiAdapters, SupportXmrPoolAdapter};
+use crate::mining::pools::cpu_pool_manager::CpuPoolManager;
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
 use crate::tasks_tracker::TasksTrackers;
 use crate::utils::math_utils::estimate_earning;
 use crate::xmrig::http_api::models::Summary;
 use crate::xmrig_adapter::{XmrigAdapter, XmrigNodeConnection};
-use crate::{mm_proxy_manager, BaseNodeStatus, PoolStatusWatcher};
+use crate::{mm_proxy_manager, BaseNodeStatus};
 use log::{debug, error, info, warn};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::thread;
-use std::time::Duration;
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::{Shutdown, ShutdownSignal};
 use tari_transaction_components::tari_amount::MicroMinotari;
 use tokio::sync::{watch, RwLock};
-use tokio::time::interval;
 use tokio::{select, spawn};
 
 const LOG_TARGET: &str = "tari::universe::cpu_miner";
@@ -131,7 +127,6 @@ pub(crate) struct CpuMiner {
     cpu_miner_status_watch_tx: watch::Sender<CpuMinerStatus>,
     summary_watch_rx: watch::Receiver<Option<Summary>>,
     node_status_watch_rx: watch::Receiver<BaseNodeStatus>,
-    pool_status_watcher: Option<PoolStatusWatcher<PoolApiAdapters>>,
     pub pool_status_shutdown_signal: Shutdown,
 }
 
@@ -149,7 +144,6 @@ impl CpuMiner {
             cpu_miner_status_watch_tx,
             summary_watch_rx,
             node_status_watch_rx,
-            pool_status_watcher: None,
             pool_status_shutdown_signal: Shutdown::new(),
         }
     }
@@ -169,15 +163,13 @@ impl CpuMiner {
     ) -> Result<(), anyhow::Error> {
         self.pool_status_shutdown_signal = Shutdown::new();
 
-        let (xmrig_node_connection, pool_watcher) = match cpu_miner_config.node_connection {
-            CpuMinerConnection::Local => (
-                XmrigNodeConnection::LocalMmproxy {
-                    host_name: "127.0.0.1".to_string(),
-                    port: mm_proxy_manager.get_monero_port().await?,
-                    monero_address: cpu_miner_config.monero_address.clone(),
-                },
-                None,
-            ),
+        let xmrig_node_connection = match cpu_miner_config.node_connection {
+            CpuMinerConnection::Local => XmrigNodeConnection::LocalMmproxy {
+                host_name: "127.0.0.1".to_string(),
+                port: mm_proxy_manager.get_monero_port().await?,
+                monero_address: cpu_miner_config.monero_address.clone(),
+            },
+
             CpuMinerConnection::Pool => {
                 let (pool_address, port) =
                     match (&cpu_miner_config.pool_host_name, cpu_miner_config.pool_port) {
@@ -189,29 +181,13 @@ impl CpuMiner {
                         }
                     };
 
-                let pool_status_watcher: Option<PoolStatusWatcher<PoolApiAdapters>> =
-                    match ConfigPools::content().await.selected_cpu_pool() {
-                        CpuPool::SupportXTMPool(global_tari_pool) => Some(PoolStatusWatcher::new(
-                            global_tari_pool.get_stats_url(tari_address.to_base58().as_str()),
-                            PoolApiAdapters::SupportXmrPool(SupportXmrPoolAdapter {}),
-                        )),
-                        CpuPool::LuckyPool(lucky_pool) => Some(PoolStatusWatcher::new(
-                            lucky_pool.get_stats_url(tari_address.to_base58().as_str()),
-                            PoolApiAdapters::LuckyPool(LuckyPoolAdapter {}),
-                        )),
-                    };
-
-                (
-                    XmrigNodeConnection::Pool {
-                        host_name: pool_address,
-                        port,
-                        tari_address: tari_address.to_base58(),
-                    },
-                    pool_status_watcher,
-                )
+                XmrigNodeConnection::Pool {
+                    host_name: pool_address,
+                    port,
+                    tari_address: tari_address.to_base58(),
+                }
             }
         };
-        self.pool_status_watcher = pool_watcher;
         let max_cpu_available = thread::available_parallelism();
         let max_cpu_available = match max_cpu_available {
             Ok(available_cpus) => {
@@ -256,6 +232,14 @@ impl CpuMiner {
 
         self.initialize_status_updates(app_shutdown).await;
 
+        // Start pool status watcher if mining to pool
+        if cpu_miner_config
+            .node_connection
+            .eq(&CpuMinerConnection::Pool)
+        {
+            CpuPoolManager::start_stats_watcher().await;
+        }
+
         Ok(())
     }
 
@@ -269,6 +253,7 @@ impl CpuMiner {
             .cpu_miner_status_watch_tx
             .send_replace(CpuMinerStatus::default());
         self.stop_status_updates().await?;
+        CpuPoolManager::handle_mining_status_change(false).await;
         Ok(())
     }
 
@@ -297,33 +282,11 @@ impl CpuMiner {
         let cpu_miner_status_watch_tx = self.cpu_miner_status_watch_tx.clone();
         let mut summary_watch_rx = self.summary_watch_rx.clone();
         let node_status_watch_rx = self.node_status_watch_rx.clone();
-        let pool_status_watcher = self.pool_status_watcher.clone();
-        let mut pool_status_check = interval(Duration::from_secs(60));
-        pool_status_check.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
-
         let mut inner_shutdown_signal = self.pool_status_shutdown_signal.to_signal();
 
         spawn(async move {
-            let mut last_pool_status = None;
             loop {
                 select! {
-                    _ = pool_status_check.tick() => {
-                        last_pool_status = match pool_status_watcher {
-                            Some(ref watcher) => {
-                                match watcher.get_pool_status().await {
-                                    Ok(status) => Some(status),
-                                    Err(e) => {
-                                        error!(target: LOG_TARGET, "Error fetching pool status: {e}");
-                                        None
-                                    }
-                                }
-                            },
-                            None => None,
-                        };
-
-                        EventsEmitter::emit_cpu_pool_status_update(last_pool_status.clone()).await;
-
-                    }
                     _ = summary_watch_rx.changed() => {
                         let node_status = *node_status_watch_rx.borrow();
                         let xmrig_summary = summary_watch_rx.borrow().clone();
@@ -349,7 +312,6 @@ impl CpuMiner {
                                     hash_rate,
                                     estimated_earnings: MicroMinotari(estimated_earnings).as_u64(),
                                     connection: CpuMinerConnectionStatus { is_connected },
-                                    pool_status: last_pool_status.clone(),
                                 }
                             }
                             None => {

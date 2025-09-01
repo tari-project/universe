@@ -2,8 +2,10 @@ use crate::{
     mining::pools::{adapters::PoolApiAdapter, PoolStatus},
     requests::clients::http_client::HttpClient,
 };
+use log::info;
 use serde::{Deserialize, Serialize};
-use tari_common_types::tari_address::TariAddress;
+
+static LOG_TARGET: &str = "universe::mining::pools::adapters::lucky_pool";
 
 // LuckyPool API can sometimes return field values as either strings or numbers.
 // This enum helps to handle both cases during deserialization and retriveve the value as a u64.
@@ -119,6 +121,10 @@ impl LuckyPoolAdapter {
 }
 
 impl PoolApiAdapter for LuckyPoolAdapter {
+    fn name(&self) -> &str {
+        &self.name
+    }
+
     fn convert_api_data(&self, data: &str) -> Result<PoolStatus, anyhow::Error> {
         // For first time users, LuckyPool may return "Address not found" if the address has no mining history.
         // In this case, we return a default PoolStatus with all fields set to zero.
@@ -136,10 +142,11 @@ impl PoolApiAdapter for LuckyPoolAdapter {
         };
         Ok(pool_status)
     }
-    async fn request_pool_status(&self, address: TariAddress) -> Result<PoolStatus, anyhow::Error> {
+    async fn request_pool_status(&self, address: String) -> Result<PoolStatus, anyhow::Error> {
         let url = self
             .stats_url
             .replace("%TARI_ADDRESS%", &address.to_string());
+        info!(target: LOG_TARGET, "Requesting lucky pool status from: {url}");
         let pool_status_response = HttpClient::with_retries(3).send_get_request(&url).await?;
         let response_text = pool_status_response.text().await?;
         let pool_status = self.convert_api_data(response_text.as_str())?;

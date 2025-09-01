@@ -22,8 +22,6 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::{configs::pools::PoolConfig, mining::MiningAlgorithm};
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SupportXTMGpuPoolConfig {
     pool_url: String,
@@ -47,14 +45,8 @@ impl SupportXTMGpuPoolConfig {
         self.stats_url.clone()
     }
 
-    pub fn get_stats_url(&self, tari_address: &str) -> String {
-        self.stats_url.replace("%TARI_ADDRESS%", tari_address)
-    }
     pub fn get_pool_url(&self) -> String {
         self.pool_url.clone()
-    }
-    pub fn get_available_algorithms(&self) -> Vec<MiningAlgorithm> {
-        vec![MiningAlgorithm::Sha256]
     }
 }
 
@@ -80,15 +72,8 @@ impl LuckyPoolGpuConfig {
     pub fn get_raw_stats_url(&self) -> String {
         self.stats_url.clone()
     }
-
-    pub fn get_stats_url(&self, tari_address: &str) -> String {
-        self.stats_url.replace("%TARI_ADDRESS%", tari_address)
-    }
     pub fn get_pool_url(&self) -> String {
         self.pool_url.clone()
-    }
-    pub fn get_available_algorithms(&self) -> Vec<MiningAlgorithm> {
-        vec![MiningAlgorithm::Sha256]
     }
 }
 
@@ -116,24 +101,6 @@ impl GpuPool {
             "LuckyPool" => Ok(GpuPool::LuckyPool(LuckyPoolGpuConfig::default())),
             "SupportXTMPool" => Ok(GpuPool::SupportXTMPool(SupportXTMGpuPoolConfig::default())),
             _ => Err(anyhow::anyhow!("Unknown GPU pool name: {}", name)),
-        }
-    }
-    pub fn get_stats_url(&self, tari_address: &str) -> String {
-        match self {
-            GpuPool::LuckyPool(config) => config.get_stats_url(tari_address),
-            GpuPool::SupportXTMPool(config) => config.get_stats_url(tari_address),
-        }
-    }
-    pub fn get_pool_url(&self) -> String {
-        match self {
-            GpuPool::LuckyPool(config) => config.get_pool_url(),
-            GpuPool::SupportXTMPool(config) => config.get_pool_url(),
-        }
-    }
-    pub fn get_available_algorithms(&self) -> Vec<MiningAlgorithm> {
-        match self {
-            GpuPool::LuckyPool(config) => config.get_available_algorithms(),
-            GpuPool::SupportXTMPool(config) => config.get_available_algorithms(),
         }
     }
 

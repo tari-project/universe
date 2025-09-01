@@ -35,7 +35,6 @@ use node::local_node_adapter::LocalNodeAdapter;
 use node::node_adapter::BaseNodeStatus;
 use node::node_manager::NodeType;
 use p2pool::models::Connections;
-use pool_status_watcher::{PoolStatus, PoolStatusWatcher};
 use process_stats_collector::ProcessStatsCollectorBuilder;
 
 use node::remote_node_adapter::RemoteNodeAdapter;
@@ -117,7 +116,6 @@ mod p2pool;
 mod p2pool_adapter;
 mod p2pool_manager;
 mod pin;
-mod pool_status_watcher;
 mod port_allocator;
 mod process_adapter;
 mod process_adapter_utils;

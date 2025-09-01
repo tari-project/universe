@@ -1,17 +1,20 @@
-use std::{collections::HashMap, sync::{Arc, LazyLock}};
+use std::{collections::HashMap, sync::LazyLock};
 
-use tokio::sync::RwLock;
+use tari_common_types::tari_address::TariAddress;
+use tokio::{spawn, sync::RwLock};
 
 use crate::{
     configs::pools::cpu_pools::CpuPool,
+    events_emitter::EventsEmitter,
     mining::pools::{adapters::PoolApiAdapters, pools_manager::PoolManager, PoolStatus},
+    tasks_tracker::TasksTrackers,
 };
 
+#[allow(dead_code)]
 static LOG_TARGET: &str = "tari::mining::pools::cpu_pool_manager";
 static INSTANCE: LazyLock<CpuPoolManager> = LazyLock::new(CpuPoolManager::new);
 
 pub struct CpuPoolManager {
-    pool_statuses: Arc<RwLock<HashMap<String, PoolStatus>>>>,
     pool_status_manager: RwLock<PoolManager>,
 }
 
@@ -19,12 +22,23 @@ impl CpuPoolManager {
     pub fn new() -> Self {
         let cpu_pool = CpuPool::default();
 
-        let pool_statuses: Arc<RwLock<HashMap<String, PoolStatus>>> = Arc::new(RwLock::new(HashMap::new()));
         let pool_adapter = Self::resolve_pool_adapter(&cpu_pool);
-        let pool_manager = PoolManager::new(pool_adapter,pool_statuses.clone());
+        let pool_manager = PoolManager::new(
+            pool_adapter,
+            TasksTrackers::current().cpu_mining_phase.clone(),
+            Self::construct_callback_for_pool_status_update(),
+        );
         Self {
-            pool_statuses: pool_statuses.clone(),
             pool_status_manager: RwLock::new(pool_manager),
+        }
+    }
+
+    fn construct_callback_for_pool_status_update(
+    ) -> impl Fn(HashMap<String, PoolStatus>) + Send + Sync + 'static {
+        move |pool_statuses: HashMap<String, PoolStatus>| {
+            spawn(async move {
+                EventsEmitter::emit_cpu_pools_status_update(pool_statuses).await;
+            });
         }
     }
 
@@ -51,12 +65,56 @@ impl CpuPoolManager {
     /// This should be called whenever the selected pool configuration changes
     /// ### Arguments
     /// * `pool` - The new selected CPU pool configuration
-    pub async fn handle_new_selected_pool(&self, pool: CpuPool) {
+    pub async fn handle_new_selected_pool(pool: CpuPool) {
         let new_pool_adapter = Self::resolve_pool_adapter(&pool);
 
-        self.pool_status_manager
+        INSTANCE
+            .pool_status_manager
             .write()
             .await
-            .handle_pool_change(new_pool_adapter);
+            .handle_pool_change(new_pool_adapter)
+            .await;
+    }
+
+    pub async fn handle_wallet_address_change(address: &TariAddress) {
+        INSTANCE
+            .pool_status_manager
+            .write()
+            .await
+            .handle_new_mining_address(address)
+            .await;
+    }
+
+    pub async fn handle_mining_status_change(is_mining: bool) {
+        INSTANCE
+            .pool_status_manager
+            .write()
+            .await
+            .toggle_mining_active(is_mining)
+            .await;
+    }
+    pub async fn start_stats_watcher() {
+        INSTANCE
+            .pool_status_manager
+            .write()
+            .await
+            .spawn_periodic_pool_status_update_task()
+            .await;
+    }
+    pub async fn stop_stats_watcher() {
+        INSTANCE
+            .pool_status_manager
+            .write()
+            .await
+            .stop_background_task();
+    }
+
+    pub async fn update_current_pool_status() {
+        INSTANCE
+            .pool_status_manager
+            .write()
+            .await
+            .update_current_pool_status()
+            .await;
     }
 }

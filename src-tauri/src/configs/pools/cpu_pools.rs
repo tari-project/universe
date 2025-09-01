@@ -23,8 +23,6 @@
 use serde::{Deserialize, Serialize};
 use tari_common::configuration::Network;
 
-use crate::{configs::pools::PoolConfig, mining::MiningAlgorithm};
-
 fn global_tari_cpu_mining_pool_url() -> String {
     match Network::get_current_or_user_setting_or_default() {
         Network::MainNet => "pool-global.tari.snipanet.com:3333".to_string(),
@@ -73,9 +71,6 @@ impl SupportXTMCpuPoolConfig {
     pub fn get_pool_url(&self) -> String {
         self.pool_url.clone()
     }
-    pub fn get_available_algorithms(&self) -> Vec<MiningAlgorithm> {
-        vec![MiningAlgorithm::RandomX]
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -107,9 +102,6 @@ impl LuckyPoolCpuConfig {
     pub fn get_pool_url(&self) -> String {
         self.pool_url.clone()
     }
-    pub fn get_available_algorithms(&self) -> Vec<MiningAlgorithm> {
-        vec![MiningAlgorithm::RandomX]
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -137,24 +129,6 @@ impl CpuPool {
             "LuckyPool" => Ok(CpuPool::LuckyPool(LuckyPoolCpuConfig::default())),
             "SupportXTMPool" => Ok(CpuPool::SupportXTMPool(SupportXTMCpuPoolConfig::default())),
             _ => Err(anyhow::anyhow!("Unknown CPU pool name: {}", name)),
-        }
-    }
-    pub fn get_stats_url(&self, tari_address: &str) -> String {
-        match self {
-            CpuPool::SupportXTMPool(config) => config.get_stats_url(tari_address),
-            CpuPool::LuckyPool(config) => config.get_stats_url(tari_address),
-        }
-    }
-    pub fn get_pool_url(&self) -> String {
-        match self {
-            CpuPool::SupportXTMPool(config) => config.get_pool_url(),
-            CpuPool::LuckyPool(config) => config.get_pool_url(),
-        }
-    }
-    pub fn get_available_algorithms(&self) -> Vec<crate::mining::MiningAlgorithm> {
-        match self {
-            CpuPool::SupportXTMPool(config) => config.get_available_algorithms(),
-            CpuPool::LuckyPool(config) => config.get_available_algorithms(),
         }
     }
     pub fn get_raw_stats_url(&self) -> String {

@@ -3,7 +3,6 @@ use serde::Serialize;
 mod adapters;
 pub mod cpu_pool_manager;
 pub mod gpu_pool_manager;
-pub mod pool_manager_trait;
 pub mod pools_manager;
 
 #[derive(Clone, Debug, Serialize, Default)]

@@ -104,10 +104,10 @@ const useTauriEventsListener = () => {
                         case 'CpuMiningUpdate':
                             setCpuMiningStatus(event.payload);
                             break;
-                        case 'CpuPoolStatsUpdate':
+                        case 'CpuPoolsStatsUpdate':
                             setCpuPoolStats(event.payload);
                             break;
-                        case 'GpuPoolStatsUpdate':
+                        case 'GpuPoolsStatsUpdate':
                             setGpuPoolStats(event.payload);
                             break;
                         case 'NewBlockHeight': {

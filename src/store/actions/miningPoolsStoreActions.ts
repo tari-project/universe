@@ -3,6 +3,7 @@ import { PoolType, RewardValues, useMiningPoolsStore } from '../useMiningPoolsSt
 import { deepEqual } from '@app/utils/objectDeepEqual.ts';
 import i18n from 'i18next';
 import { removeXTMCryptoDecimals } from '@app/utils';
+import { useConfigPoolsStore } from '../useAppConfigStore';
 
 const fmtMatch = (value: number, max = 4) =>
     Intl.NumberFormat(i18n.language, {
@@ -51,9 +52,17 @@ export const clearCurrentSuccessValue = (type: PoolType) => {
         useMiningPoolsStore.setState((c) => ({ ...c, cpuRewards: { ...c.cpuRewards, rewardValue: 0 } }));
     }
 };
-export const setCpuPoolStats = (cpuPoolStats: PoolStats) =>
+export const setCpuPoolStats = (cpuPoolStats: Record<string, PoolStats>) => {
+    console.info('setCpuPoolStats', cpuPoolStats);
+    const currentSelectedPool = useConfigPoolsStore.getState().selected_cpu_pool;
+    if (!currentSelectedPool) return;
+    console.info('Current selected CPU pool', currentSelectedPool);
+    if (!cpuPoolStats[currentSelectedPool]) return;
+
+    console.info('Current CPU pool stats', cpuPoolStats[currentSelectedPool]);
+
     useMiningPoolsStore.setState((c) => {
-        const parsed = parseValues(cpuPoolStats, c.cpuPoolStats, c.cpuRewards);
+        const parsed = parseValues(cpuPoolStats[currentSelectedPool], c.cpuPoolStats, c.cpuRewards);
         return {
             ...c,
             cpuPoolStats: parsed.stats,
@@ -64,10 +73,15 @@ export const setCpuPoolStats = (cpuPoolStats: PoolStats) =>
             },
         };
     });
+};
 
-export const setGpuPoolStats = (gpuPoolStats: PoolStats) =>
+export const setGpuPoolStats = (gpuPoolStats: Record<string, PoolStats>) => {
+    const currentSelectedPool = useConfigPoolsStore.getState().selected_gpu_pool;
+    if (!currentSelectedPool) return;
+    if (!gpuPoolStats[currentSelectedPool]) return;
+
     useMiningPoolsStore.setState((c) => {
-        const parsed = parseValues(gpuPoolStats, c.gpuPoolStats, c.gpuRewards);
+        const parsed = parseValues(gpuPoolStats[currentSelectedPool], c.gpuPoolStats, c.gpuRewards);
         return {
             ...c,
             gpuPoolStats: parsed.stats,
@@ -78,3 +92,4 @@ export const setGpuPoolStats = (gpuPoolStats: PoolStats) =>
             },
         };
     });
+};

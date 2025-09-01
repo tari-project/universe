@@ -27,7 +27,7 @@ use crate::events::{
 };
 use crate::gpu_devices::GpuDeviceInformation;
 use crate::internal_wallet::TariAddressType;
-use crate::pool_status_watcher::PoolStatus;
+use crate::mining::pools::PoolStatus;
 #[cfg(target_os = "windows")]
 use crate::system_dependencies::UniversalSystemDependency;
 use crate::wallet::wallet_types::{TransactionInfo, WalletBalance};
@@ -384,10 +384,10 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_cpu_pool_status_update(pool_status: Option<PoolStatus>) {
+    pub async fn emit_cpu_pools_status_update(pool_status: HashMap<String, PoolStatus>) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
-            event_type: EventType::CpuPoolStatsUpdate,
+            event_type: EventType::CpuPoolsStatsUpdate,
             payload: pool_status,
         };
         if let Err(e) = Self::get_app_handle()
@@ -398,10 +398,10 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_gpu_pool_status_update(pool_status: Option<PoolStatus>) {
+    pub async fn emit_gpu_pools_status_update(pool_status: HashMap<String, PoolStatus>) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
-            event_type: EventType::GpuPoolStatsUpdate,
+            event_type: EventType::GpuPoolsStatsUpdate,
             payload: pool_status,
         };
         if let Err(e) = Self::get_app_handle()

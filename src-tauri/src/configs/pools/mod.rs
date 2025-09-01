@@ -22,13 +22,3 @@
 
 pub mod cpu_pools;
 pub mod gpu_pools;
-
-pub trait PoolConfig: Default + Clone + std::fmt::Debug + Send + Sync + 'static {
-    fn name(&self) -> String;
-    fn default_from_name(name: &str) -> Result<Self, anyhow::Error>
-    where
-        Self: Sized;
-    fn get_stats_url(&self, tari_address: &str) -> String;
-    fn get_pool_url(&self) -> String;
-    fn get_available_algorithms(&self) -> Vec<crate::mining::MiningAlgorithm>;
-}

@@ -20,24 +20,19 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use log::{error, info, warn};
+use log::info;
 use std::{path::PathBuf, sync::Arc, time::Duration};
 use tari_common_types::tari_address::TariAddress;
-use tari_shutdown::Shutdown;
-use tokio::{
-    select,
-    sync::{watch::Sender, RwLock},
-    time::interval,
-};
+use tokio::sync::{watch::Sender, RwLock};
 
 use crate::{
     binaries::Binaries,
     configs::{config_pools::ConfigPools, pools::gpu_pools::GpuPool, trait_config::ConfigImpl},
     gpu_miner_sha_adapter::GpuMinerShaAdapter,
-    pool_status_watcher::{LuckyPoolAdapter, PoolApiAdapters, SupportXmrPoolAdapter},
+    mining::pools::gpu_pool_manager::GpuPoolManager,
     process_watcher::ProcessWatcher,
     tasks_tracker::TasksTrackers,
-    EventsEmitter, GpuMinerStatus, PoolStatusWatcher, ProcessStatsCollectorBuilder,
+    GpuMinerStatus, ProcessStatsCollectorBuilder,
 };
 
 const LOG_TARGET: &str = "tari::universe::gpu_miner_sha";
@@ -45,10 +40,6 @@ const LOG_TARGET: &str = "tari::universe::gpu_miner_sha";
 pub struct GpuMinerSha {
     watcher: Arc<RwLock<ProcessWatcher<GpuMinerShaAdapter>>>,
     status_sender: Sender<GpuMinerStatus>,
-    status_updates_thread: RwLock<Option<tokio::task::JoinHandle<()>>>,
-    status_updates_shutdown: Shutdown,
-    pool_status_watcher: Option<PoolStatusWatcher<PoolApiAdapters>>,
-    pub pool_status_shutdown_signal: Shutdown,
 }
 
 impl GpuMinerSha {
@@ -65,10 +56,6 @@ impl GpuMinerSha {
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),
             status_sender,
-            status_updates_thread: RwLock::new(None),
-            status_updates_shutdown: Shutdown::new(),
-            pool_status_watcher: None,
-            pool_status_shutdown_signal: Shutdown::new(),
         }
     }
 
@@ -81,7 +68,6 @@ impl GpuMinerSha {
         config_path: PathBuf,
         log_path: PathBuf,
     ) -> Result<(), anyhow::Error> {
-        self.pool_status_shutdown_signal = Shutdown::new();
         let shutdown_signal = TasksTrackers::current().gpu_mining_phase.get_signal().await;
         let task_tracker = TasksTrackers::current()
             .gpu_mining_phase
@@ -95,17 +81,9 @@ impl GpuMinerSha {
             match pools_config.selected_gpu_pool() {
                 GpuPool::LuckyPool(lucky_pool_config) => {
                     process_watcher.adapter.pool_url = Some(lucky_pool_config.get_pool_url());
-                    self.pool_status_watcher = Some(PoolStatusWatcher::new(
-                        lucky_pool_config.get_stats_url(tari_address.to_base58().as_str()),
-                        PoolApiAdapters::LuckyPool(LuckyPoolAdapter {}),
-                    ));
                 }
                 GpuPool::SupportXTMPool(support_xtm_pool_config) => {
                     process_watcher.adapter.pool_url = Some(support_xtm_pool_config.get_pool_url());
-                    self.pool_status_watcher = Some(PoolStatusWatcher::new(
-                        support_xtm_pool_config.get_stats_url(tari_address.to_base58().as_str()),
-                        PoolApiAdapters::SupportXmrPool(SupportXmrPoolAdapter {}),
-                    ));
                 }
             }
         }
@@ -127,7 +105,7 @@ impl GpuMinerSha {
             .await?;
         info!(target: LOG_TARGET, "sha miner started");
 
-        self.initialize_status_updates().await?;
+        GpuPoolManager::start_stats_watcher().await;
 
         Ok(())
     }
@@ -140,78 +118,8 @@ impl GpuMinerSha {
             process_watcher.stop().await?;
             let _res = self.status_sender.send(GpuMinerStatus::default());
         }
-        self.stop_status_updates().await?;
+        GpuPoolManager::handle_mining_status_change(false).await;
         info!(target: LOG_TARGET, "graxil stopped");
-        Ok(())
-    }
-
-    pub async fn stop_status_updates(&mut self) -> Result<(), anyhow::Error> {
-        info!(target: LOG_TARGET, "Stopping status updates");
-        let mut status_updates_thread_guard = self.status_updates_thread.write().await;
-        if let Some(status_updates_thread) = status_updates_thread_guard.take() {
-            info!(target: LOG_TARGET, "Aborting status updates thread");
-            status_updates_thread.abort();
-            self.status_updates_shutdown.trigger();
-        }
-        Ok(())
-    }
-
-    pub async fn initialize_status_updates(&self) -> Result<(), anyhow::Error> {
-        let mut status_updates_thread_guard = self.status_updates_thread.write().await;
-        if status_updates_thread_guard.is_some() {
-            warn!(target: LOG_TARGET, "Status updates thread is already running");
-            return Ok(());
-        }
-
-        let pool_status_watcher = self.pool_status_watcher.clone();
-        let mut pool_status_check = interval(Duration::from_secs(60));
-        pool_status_check.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
-        let mut pool_shutdown_signal = self.pool_status_shutdown_signal.to_signal();
-
-        let mut shutdown_signal = TasksTrackers::current().gpu_mining_phase.get_signal().await;
-        let mut status_updates_signal = self.status_updates_shutdown.to_signal();
-
-        let status_updates_thread = TasksTrackers::current()
-            .gpu_mining_phase
-            .get_task_tracker()
-            .await
-            .spawn(async move {
-                loop {
-                    info!(target: LOG_TARGET, "Checking pool status");
-                    select! {
-                        _ = pool_status_check.tick() => {
-                            let last_pool_status = match pool_status_watcher {
-                                Some(ref watcher) => {
-                                    match watcher.get_pool_status().await {
-                                        Ok(status) => Some(status),
-                                        Err(e) => {
-                                            error!(target: LOG_TARGET, "Error fetching pool status: {e}" );
-                                            None
-                                        }
-                                    }
-                                },
-                                None => None,
-                            };
-                            info!(target: LOG_TARGET, "Pool status update: {last_pool_status:?}");
-                            EventsEmitter::emit_gpu_pool_status_update(last_pool_status.clone()).await;
-                        }
-                        _ = status_updates_signal.wait() => {
-                            info!(target: LOG_TARGET, "Status updates shutdown signal received, stopping updates");
-                            break;
-                        },
-                        _ = shutdown_signal.wait() => {
-                            break;
-                        },
-                        _ = pool_shutdown_signal.wait() => {
-                            info!(target: LOG_TARGET, "Pool status watcher shutdown signal received, stopping updates");
-                            break;
-                        }
-                    }
-                }
-            });
-
-        *status_updates_thread_guard = Some(status_updates_thread);
-
         Ok(())
     }
 }

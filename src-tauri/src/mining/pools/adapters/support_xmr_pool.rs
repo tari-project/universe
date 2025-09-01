@@ -1,10 +1,11 @@
-use serde::{Deserialize, Serialize};
-use tari_common_types::tari_address::TariAddress;
-
 use crate::{
     mining::pools::{adapters::PoolApiAdapter, PoolStatus},
     requests::clients::http_client::HttpClient,
 };
+use log::info;
+use serde::{Deserialize, Serialize};
+
+static LOG_TARGET: &str = "universe::mining::pools::adapters::support_xmr_pool";
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SupportXmrPoolStatusResponseBody {
@@ -40,6 +41,10 @@ impl SupportXmrPoolAdapter {
 }
 
 impl PoolApiAdapter for SupportXmrPoolAdapter {
+    fn name(&self) -> &str {
+        &self.name
+    }
+
     fn convert_api_data(&self, data: &str) -> Result<PoolStatus, anyhow::Error> {
         let response: SupportXmrPoolStatusResponseBody = serde_json::from_str(data)?;
         let pool_status = PoolStatus {
@@ -50,10 +55,11 @@ impl PoolApiAdapter for SupportXmrPoolAdapter {
         };
         Ok(pool_status)
     }
-    async fn request_pool_status(&self, address: TariAddress) -> Result<PoolStatus, anyhow::Error> {
+    async fn request_pool_status(&self, address: String) -> Result<PoolStatus, anyhow::Error> {
         let url = self
             .stats_url
             .replace("%TARI_ADDRESS%", &address.to_string());
+        info!(target: LOG_TARGET, "Requesting SupportXMR pool status from: {url}");
         let pool_status_response = HttpClient::with_retries(3).send_get_request(&url).await?;
         let response_text = pool_status_response.text().await?;
         let pool_status = self.convert_api_data(response_text.as_str())?;
