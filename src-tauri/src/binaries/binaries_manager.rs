@@ -439,6 +439,7 @@ impl BinaryManager {
         Ok(binary_folder_path.join(selected_version))
     }
 
+    /// Add Windows Defender exclusions for the downloaded binary
     #[cfg(target_os = "windows")]
     async fn add_windows_defender_exclusions(&self) -> Result<(), Error> {
         use crate::binaries::windows_defender::WindowsDefenderExclusions;
