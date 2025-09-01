@@ -603,12 +603,12 @@ jobs:
             curl -X POST "https://rwa.y.at/api/beta-builds/${BETA_BUILD_ID}/assets" \
               -H "X-API-Key: $RWA_API_KEY" \
               -H "Content-Type: application/json" \
-              -d "{
+              -d "[{
                 \"name\": \"${ASSET_NAME}\",
                 \"platform\": \"$PLATFORM\",
                 $( [ "${{ github.event.inputs.asset_destination }}" = "github" ] && echo \"github_url\": \"${ASSET_URL}\", || echo \"s3_url\": \"${ASSET_URL}\", )
                 \"beta_build_id\": \"${BETA_BUILD_ID}\"
-              }"
+              }]"
           done
           # Process Windows bundler if available
           if [ -n "$EXE_FILE" ]; then
@@ -621,12 +621,12 @@ jobs:
             curl -X POST "https://rwa.y.at/api/beta-builds/${BETA_BUILD_ID}/assets" \
               -H "X-API-Key: $RWA_API_KEY" \
               -H "Content-Type: application/json" \
-              -d "{
+              -d "[{
                 \"name\": \"${ASSET_NAME}\",
                 \"platform\": \"$PLATFORM\",
                 $( [ "${{ github.event.inputs.asset_destination }}" = "github" ] && echo \"github_url\": \"${ASSET_URL}\", || echo \"s3_url\": \"${ASSET_URL}\", )
                 \"beta_build_id\": \"${BETA_BUILD_ID}\"
-              }"
+              }]"
           fi
 
       - name: Windows debug symbols - Upload asset
