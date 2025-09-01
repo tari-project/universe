@@ -505,6 +505,7 @@ jobs:
           artifactPaths: ${{ steps.build.outputs.artifactPaths }}
           RUNNER_OS: ${{ runner.os }}
           TARI_UNIVERSE_BUNDLER_NAME: ${{ env.TARI_UNIVERSE_BUNDLER_NAME }}
+          PUBLIC_BASE_URL: https://cdn-universe.tari.com/tari/releases
         shell: bash
         run: |
           S3_BUCKET="cdn-universe-tari-com"
@@ -512,21 +513,24 @@ jobs:
             if [ -f "$artifact" ]; then
               basename=$(basename "$artifact")
               aws --endpoint-url "$S3_ENDPOINT_URL" s3 cp "$artifact" "s3://${S3_BUCKET}/${TARI_NETWORK}/$basename" --acl private
-              presigned_url=$(aws --endpoint-url "$S3_ENDPOINT_URL" s3 presign "s3://${S3_BUCKET}/${TARI_NETWORK}/$basename" --expires-in 604000)
+              presigned_url=$(aws --endpoint-url "$S3_ENDPOINT_URL" s3 presign "s3://${S3_BUCKET}/${TARI_NETWORK}/$basename" --expires-in 69420)
               safe_name=$(echo "$basename" | tr -c '[:alnum:]' '_')
               echo "S3_URL_${safe_name}=$presigned_url" >> "$GITHUB_ENV"
             fi
           done < <(echo "$artifactPaths" | jq -r '.[]')
           if [ "$RUNNER_OS" = "Windows" ]; then
-            bundler_path="./tari-win-bundler/${TARI_UNIVERSE_BUNDLER_NAME}*.exe"
-            for bundler in $bundler_path; do
+            bundler_path="./tari-win-bundler/${TARI_UNIVERSE_BUNDLER_NAME}.exe"
+            for bundler in "$bundler_path"; do
               if [ -f "$bundler" ]; then
                 basename=$(basename "$bundler")
                 aws --endpoint-url "$S3_ENDPOINT_URL" s3 cp "$bundler" "s3://${S3_BUCKET}/${TARI_NETWORK}/$basename" --acl private
-                presigned_url=$(aws --endpoint-url "$S3_ENDPOINT_URL" s3 presign "s3://${S3_BUCKET}/${TARI_NETWORK}/$basename" --expires-in 604000)
-                safe_name=$(echo "$basename" | tr -c '[:alnum:]' '_')
-                echo "S3_URL_${safe_name}=$presigned_url" >> "$GITHUB_ENV"
+                presigned_url=$(aws --endpoint-url "$S3_ENDPOINT_URL" s3 presign "s3://${S3_BUCKET}/${TARI_NETWORK}/$basename" --expires-in 69420)
+                public_url="${PUBLIC_BASE_URL}/${TARI_NETWORK}/${basename}"
+                safe_name=$(echo "$basename" | tr -c '[:alnum:]' '')
+                echo "S3_URL${safe_name}=$presigned_url" >> "$GITHUB_ENV"
+                echo "S3_PUBLIC_URL_${safe_name}=$public_url" >> "$GITHUB_ENV"
                 echo "S3_URL_BUNDLER=$presigned_url" >> "$GITHUB_ENV"
+                echo "S3_PUBLIC_URL_BUNDLER=$public_url" >> "$GITHUB_ENV"
               fi
             done
           fi
@@ -611,22 +615,25 @@ jobs:
               }]"
           done
           # Process Windows bundler if available
-          if [ -n "$EXE_FILE" ]; then
-            ASSET_NAME=$(basename "$EXE_FILE")
-            if [ "${{ github.event.inputs.asset_destination }}" = "s3" ]; then
-              ASSET_URL="${S3_URL_BUNDLER}"
-            else
-              ASSET_URL="$BUNDLER_URL"
-            fi
-            curl -X POST "https://rwa.y.at/api/beta-builds/${BETA_BUILD_ID}/assets" \
-              -H "X-API-Key: $RWA_API_KEY" \
-              -H "Content-Type: application/json" \
+          if [ "$PLATFORM" = "windows-latest" ]; then
+            EXE_FILE="./tari-win-bundler/${TARI_UNIVERSE_BUNDLER_NAME}.exe"
+            if [ -f "$EXE_FILE" ]; then
+              ASSET_NAME=$(basename "$EXE_FILE")
+              if [ "${{ github.event.inputs.asset_destination }}" = "s3" ]; then
+                ASSET_URL="${S3_PUBLIC_URL_BUNDLER}"  # Use public URL to avoid expiration
+              else
+                ASSET_URL="$BUNDLER_URL"
+              fi
+              curl -X POST "https://rwa.y.at/api/beta-builds/${BETA_BUILD_ID}/assets"
+                -H "X-API-Key: $RWA_API_KEY"
+                -H "Content-Type: application/json"
               -d "[{
                 \"name\": \"${ASSET_NAME}\",
                 \"platform\": \"$PLATFORM\",
                 $( [ "${{ github.event.inputs.asset_destination }}" = "github" ] && echo \"github_url\": \"${ASSET_URL}\", || echo \"s3_url\": \"${ASSET_URL}\", )
                 \"beta_build_id\": \"${BETA_BUILD_ID}\"
               }]"
+            fi
           fi
 
       - name: Windows debug symbols - Upload asset
