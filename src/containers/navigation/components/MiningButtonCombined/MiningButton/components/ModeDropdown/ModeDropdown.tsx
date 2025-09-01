@@ -1,4 +1,4 @@
-import { useCallback, useState, useRef, useEffect } from 'react';
+import { useCallback, useState, useRef, useEffect, useMemo } from 'react';
 import ArrowDown from './icons/ArrowDown';
 import {
     Eyebrow,
@@ -63,7 +63,10 @@ export default function ModeDropdown({ disabled, loading }: Props) {
         middleware: [offset(8)],
     });
 
-    const modes: ModeDropdownMiningMode[] = miningModes ? getModeList(miningModes as MiningModes) : [];
+    const modes: ModeDropdownMiningMode[] = useMemo(
+        () => (miningModes ? getModeList(miningModes as MiningModes) : []),
+        [miningModes]
+    );
 
     const click = useClick(context);
     const dismiss = useDismiss(context);
