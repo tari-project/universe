@@ -1,5 +1,5 @@
 import { memo, useEffect } from 'react';
-import { Button, ConnectionWrapper, Wrapper } from './styles.ts';
+import { Button, DecorationWrapper, Wrapper } from './styles.ts';
 import { useUIStore } from '@app/store/useUIStore.ts';
 import { setSidebarOpen, setShowTapplet } from '@app/store/actions/uiStoreActions';
 import { setAnimationProperties } from '@tari-project/tari-tower';
@@ -31,9 +31,9 @@ const MineButton = memo(function MineButton() {
 
     return (
         <Wrapper>
-            <ConnectionWrapper>
+            <DecorationWrapper>
                 <ConnectedPulse size={8} />
-            </ConnectionWrapper>
+            </DecorationWrapper>
 
             <Button type="button" onClick={handleClick} $isActive={sidebarOpen} $isToggle={true}>
                 <svg width="28" height="30" viewBox="0 0 28 30" fill="none">
