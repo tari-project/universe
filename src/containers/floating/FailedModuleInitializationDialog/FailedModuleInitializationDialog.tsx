@@ -104,7 +104,7 @@ export default function FailedModuleInitializationDialog() {
                     </HeaderWrapper>
 
                     <DescriptionText $allModulesFailed={allModulesFailed}>
-                        <Typography variant="p">
+                        <Typography>
                             {allModulesFailed
                                 ? t('setup-progresses:all-modules-failed-description')
                                 : t('setup-progresses:some-modules-failed-description')}

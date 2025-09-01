@@ -28,21 +28,24 @@ export const CloseButton = styled.button`
 `;
 
 export const DialogWrapper = styled.div`
-    width: clamp(540px, 60vw, 700px);
+    width: clamp(540px, 55vw, 700px);
     padding: 16px;
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 14px;
     height: 100%;
 `;
 
 export const HeaderWrapper = styled.div`
     flex-shrink: 0;
+    padding: 4px 0;
 `;
 
 export const DescriptionText = styled.div<{ $allModulesFailed?: boolean }>`
-    color: ${({ $allModulesFailed, theme }) => ($allModulesFailed ? theme.palette.warning.main : '#b0b0b0')};
+    color: ${({ $allModulesFailed, theme }) => ($allModulesFailed ? theme.colors.warning[600] : '#b0b0b0')};
     flex-shrink: 0;
+    font-size: 14px;
+    line-height: 1.2;
 `;
 
 export const ModuleListWrapper = styled.div`

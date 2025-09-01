@@ -218,7 +218,7 @@ const handleGpuMiningModuleUpdateSideEffects = async (state: AppModuleState) => 
 export const handleAppModulesUpdate = async (state1: AppModuleState) => {
     const state = {
         ...state1,
-        status: AppModuleStatus.Failed,
+        status: state1.module === AppModule.GpuMining ? AppModuleStatus.Failed : state1.status,
         error_messages: {
             Core: 'Failed to complete step: Core error message. \nThis is a new line of the error. ',
             CpuMining:

@@ -38,7 +38,7 @@ export const StyledButton = styled.button<ButtonStyleProps>`
                 return css`
                     color: ${theme.palette.text.primary};
                     background-color: ${$backgroundColor
-                        ? convertHexToRGBA(theme?.colors[$backgroundColor ?? 'grey']?.[500], 0.04)
+                        ? convertHexToRGBA(theme?.colors[$backgroundColor ?? 'grey']?.[500], 0.02)
                         : theme.palette.action.background};
                     border: 1px solid
                         ${$backgroundColor

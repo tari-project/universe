@@ -18,7 +18,7 @@ export const GpuMiningModuleMissingPackagesButton = () => {
     }, []);
 
     return !isGpuMiningMissingDependencies ? null : (
-        <Button backgroundColor="blue" size="smaller" onClick={handleOpenExternalDependenciesDialog}>
+        <Button backgroundColor="blue" variant="outlined" size="smaller" onClick={handleOpenExternalDependenciesDialog}>
             {t('install_missing_packages')}
         </Button>
     );

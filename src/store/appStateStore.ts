@@ -1,6 +1,7 @@
 import { create } from 'zustand';
-import { ApplicationsVersions, NetworkStatus, SystemDependency } from '@app/types/app-status';
+import { ApplicationsVersions, NetworkStatus, SystemDependency, SystemDependencyStatus } from '@app/types/app-status';
 import { CriticalProblemPayload } from '@app/types/events-payloads';
+import { AppModule } from '@app/store/types/setup.ts';
 
 interface AppState {
     error?: string;
@@ -18,7 +19,23 @@ interface AppState {
 
 const initialstate: AppState = {
     isSettingsOpen: false,
-    systemDependencies: [],
+    systemDependencies: [
+        {
+            id: 'fake',
+            required_by_app_modules: [AppModule.GpuMining],
+            ui_info: {
+                display_name: 'Missing',
+                display_description: 'Missing app module',
+                manufacturer: {
+                    name: 'Missing',
+                    url: '',
+                    logo_url: '',
+                },
+            },
+            download_url: '',
+            status: SystemDependencyStatus.NotInstalled,
+        },
+    ],
     releaseNotes: '',
     isAppUpdateAvailable: false,
     isStuckOnOrphanChain: false,
