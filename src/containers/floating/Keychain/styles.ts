@@ -7,6 +7,7 @@ export const Wrapper = styled.div`
     align-items: center;
     flex-direction: column;
     gap: 10px;
+    padding-top: 10px;
     position: relative;
 `;
 
@@ -32,6 +33,6 @@ export const CopyWrapper = styled.div`
 
 export const CloseButton = styled(IconButton)`
     position: absolute;
-    right: 5px;
-    top: 5px;
+    right: 10px;
+    top: 10px;
 `;

@@ -7,7 +7,7 @@ type ButtonBackgroundColor = 'transparent' | ThemeColourGroup;
 export type ButtonVariant = 'primary' | 'secondary' | 'outlined' | 'gradient' | 'green' | 'purple' | 'yellow' | 'black';
 export type ButtonSize = 'xs' | 'smaller' | 'small' | 'medium' | 'large' | 'xlarge';
 
-export type IconPosition = 'end' | 'start' | 'hug';
+export type IconPosition = 'end' | 'start' | 'hug' | 'hug-start';
 
 export interface CommonButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
     variant?: ButtonVariant;
