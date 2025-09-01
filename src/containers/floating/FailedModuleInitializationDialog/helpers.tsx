@@ -19,7 +19,7 @@ export const getStatusIcon = (status: AppModuleStatus) => {
         case AppModuleStatus.Initialized:
             return <IoCheckmarkCircleOutline size={20} style={{ color: '#06C983' }} />;
         case AppModuleStatus.Failed:
-            return <IoCloseCircleOutline size={20} style={{ color: '#D35923' }} />;
+            return <IoCloseCircleOutline size={20} style={{ color: '#BF7D11' }} />;
         case AppModuleStatus.Initializing:
             return <IoTimeOutline size={20} style={{ color: '#4D6FE8' }} />;
         default:
@@ -32,7 +32,7 @@ export const getStatusColor = (status: AppModuleStatus) => {
         case AppModuleStatus.Initialized:
             return '#06C983';
         case AppModuleStatus.Failed:
-            return '#D35923';
+            return '#BF7D11';
         case AppModuleStatus.Initializing:
             return '#4D6FE8';
         default:

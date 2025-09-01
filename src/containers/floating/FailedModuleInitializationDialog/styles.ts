@@ -1,4 +1,5 @@
 import styled from 'styled-components';
+import { convertHexToRGBA } from '@app/utils';
 
 export const CloseButton = styled.button`
     position: absolute;
@@ -67,7 +68,7 @@ export const ModuleStatusWrapper = styled.div`
     display: flex;
     padding: 16px;
     border: 1px solid ${({ theme }) => theme.palette.divider};
-    background-color: ${({ theme }) => theme.palette.background.accent};
+    background-color: ${({ theme }) => convertHexToRGBA(theme.palette.background.default, 0.35)};
     border-radius: 10px;
     flex-direction: column;
     gap: 8px;

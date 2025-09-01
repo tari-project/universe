@@ -163,7 +163,7 @@ export default function FailedModuleInitializationDialog() {
                                     </Button>
                                     <Button
                                         variant="outlined"
-                                        fluidw
+                                        fluid
                                         backgroundColor="warning"
                                         size="small"
                                         onClick={handleFeedbackForAllModules}
@@ -173,17 +173,15 @@ export default function FailedModuleInitializationDialog() {
                                 </>
                             )}
                             {logsSubmissionId && (
-                                <Stack direction="row" justifyContent="center" gap={8}>
-                                    <Button
-                                        variant="outlined"
-                                        fluid
-                                        backgroundColor="gothic"
-                                        size="small"
-                                        onClick={handleCopyLogsSubmissionId}
-                                    >
-                                        {handleLogsSubbmissionIdButtonText}
-                                    </Button>
-                                </Stack>
+                                <Button
+                                    backgroundColor="gothic"
+                                    variant="outlined"
+                                    fluid
+                                    size="small"
+                                    onClick={handleCopyLogsSubmissionId}
+                                >
+                                    {handleLogsSubbmissionIdButtonText}
+                                </Button>
                             )}
                         </GlobalActionsWrapper>
                     )}
