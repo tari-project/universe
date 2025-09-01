@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { resetAllStores } from '@app/store/create.ts';
 import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 const appWindow = getCurrentWindow();
@@ -22,7 +21,6 @@ export function useShuttingDown() {
     useEffect(() => {
         if (isShuttingDown) {
             const shutDownTimout = setTimeout(async () => {
-                resetAllStores();
                 await invoke('exit_application');
             }, 250);
             return () => clearTimeout(shutDownTimout);

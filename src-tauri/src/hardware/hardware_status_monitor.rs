@@ -47,7 +47,7 @@ const LOG_TARGET: &str = "tari::universe::auto_launcher";
 
 static INSTANCE: LazyLock<HardwareStatusMonitor> = LazyLock::new(HardwareStatusMonitor::new);
 
-#[derive(Debug, Serialize, Clone, Default)]
+#[derive(Debug, Serialize, Clone, Default, PartialEq)]
 pub enum HardwareVendor {
     Nvidia,
     Amd,
