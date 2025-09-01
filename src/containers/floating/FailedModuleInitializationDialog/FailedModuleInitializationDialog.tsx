@@ -7,7 +7,7 @@ import { Button } from '@app/components/elements/buttons/Button';
 import { Typography } from '@app/components/elements/Typography';
 import { CircularProgress } from '@app/components/elements/CircularProgress';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog';
-import { Stack } from '@app/components/elements/Stack';
+
 import { useErrorDialogsButtonsLogic } from '@app/hooks/app/useErrorDialogsButtonsLogic';
 import { setupStoreSelectors } from '@app/store/selectors/setupStoreSelectors';
 import { useSetupStore } from '@app/store/useSetupStore';

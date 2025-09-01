@@ -183,13 +183,3 @@ export const NumberLabel = styled.div`
     font-weight: 400;
     line-height: normal;
 `;
-
-export const ErrorMessage = styled.div`
-    color: ${({ theme }) => theme.palette.error.main || '#e03244'};
-    font-family: Poppins, sans-serif;
-    font-size: 14px;
-    font-style: normal;
-    font-weight: 600;
-    line-height: 95%;
-    letter-spacing: -0.2px;
-`;

@@ -215,20 +215,7 @@ const handleGpuMiningModuleUpdateSideEffects = async (state: AppModuleState) => 
     }
 };
 
-export const handleAppModulesUpdate = async (state1: AppModuleState) => {
-    const state = {
-        ...state1,
-        status: state1.module === AppModule.GpuMining ? AppModuleStatus.Failed : state1.status,
-        error_messages: {
-            Core: 'Failed to complete step: Core error message. \nThis is a new line of the error. ',
-            CpuMining:
-                'Failed to complete step: CpuMining error message. \nThis is a new line of the error. This is a mining error so it will be a lot longer. More words. \nAnother line break!',
-            GpuMining:
-                'Failed to complete step: GpuMining error message. \nThis is a new line of the error. This is a mining error so it will be a lot longer. More words. \nAnother line break!',
-            Wallet: 'Failed to complete step: Wallet error message. \nThis is a new line of the error. ',
-            Node: 'Failed to complete step: Node error message. \nThis is a new line of the error. ',
-        },
-    };
+export const handleAppModulesUpdate = async (state: AppModuleState) => {
     updateAppModule(state);
 
     switch (state.module) {

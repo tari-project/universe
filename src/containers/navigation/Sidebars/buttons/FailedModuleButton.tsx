@@ -1,4 +1,4 @@
-import { Alert, Button, DecorationWrapper, GearWrapper, Wrapper } from './styles.ts';
+import { Alert, Button, DecorationWrapper, Wrapper } from './styles.ts';
 import { useSetupStore } from '@app/store/useSetupStore.ts';
 import { setupStoreSelectors } from '@app/store/selectors/setupStoreSelectors.ts';
 import { setDialogToShow, useUIStore } from '@app/store';

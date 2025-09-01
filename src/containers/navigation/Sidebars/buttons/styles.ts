@@ -105,4 +105,3 @@ export const Alert = styled.div`
     height: 17px;
     border-radius: 50%;
 `;
-
