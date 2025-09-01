@@ -23,6 +23,9 @@ import { ActionButton } from '@app/components/wallet/components/details/actions/
 import { AnimatePresence } from 'motion/react';
 import { Progress } from '@app/components/elements/loaders/CircularProgress/Progress.tsx';
 import SyncCountdown from '@app/components/wallet/components/loaders/SyncLoading/SyncCountdown.tsx';
+import { AppModuleStatus } from '@app/store/types/setup.ts';
+import { useSetupStore } from '@app/store/useSetupStore.ts';
+import { setupStoreSelectors } from '@app/store/selectors/setupStoreSelectors.ts';
 
 const formatOptions: Format = {
     maximumFractionDigits: 2,
@@ -35,6 +38,9 @@ export const WalletBalance = () => {
     const [isStarted, setIsStarted] = useState(false);
     const { t } = useTranslation('wallet');
     const [hovering, setHovering] = useState(false);
+
+    const walletModule = useSetupStore(setupStoreSelectors.selectWalletModule);
+    const walletModuleFailed = walletModule?.status === AppModuleStatus.Failed;
 
     const hideBalance = useUIStore((s) => s.hideWalletBalance);
     const isConnected = useNodeStore((s) => s.isNodeConnected);
@@ -85,7 +91,7 @@ export const WalletBalance = () => {
 
     const bottomMarkup = !isLoading ? <Typography>{balanceText}</Typography> : loadingMarkup;
 
-    const progressMarkup = isLoading && (
+    const progressMarkup = isLoading && !walletModuleFailed && (
         <ScanProgressWrapper>
             <Progress
                 percentage={scanProgress && scanProgress >= 95 ? scanProgress - 9 : scanProgress} // so you can actually still see the little gap

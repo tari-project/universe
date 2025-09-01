@@ -88,8 +88,9 @@ pub struct WebsocketMessage {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub enum WebsocketManagerStatusMessage {
     Connected,
-    Reconnecting,
     Stopped,
+    Stopping,
+    Starting,
 }
 
 pub struct WebsocketManager {
@@ -177,7 +178,18 @@ impl WebsocketManager {
     }
 
     pub async fn close_connection(&self) {
+        if self.status_update_channel_rx.borrow().clone() == WebsocketManagerStatusMessage::Stopped
+        {
+            info!(target:LOG_TARGET,"websocket already stopped");
+            return;
+        }
+
         info!(target:LOG_TARGET,"websocket start to close...");
+        let status_update_channel_tx = self.status_update_channel_tx.clone();
+
+        if let Err(e) = status_update_channel_tx.send(WebsocketManagerStatusMessage::Stopping) {
+            info!(target: LOG_TARGET, "Could not send stopping channel message: {e}");
+        }
 
         match self.close_channel_tx.send(true) {
             Ok(_) => loop {
@@ -206,15 +218,25 @@ impl WebsocketManager {
     }
 
     pub async fn connect(&mut self) -> Result<(), anyhow::Error> {
-        if self.status_update_channel_rx.borrow().clone() != WebsocketManagerStatusMessage::Stopped
+        if self.status_update_channel_rx.borrow().clone()
+            == WebsocketManagerStatusMessage::Connected
         {
             info!(target:LOG_TARGET,"websocket already connected");
             return Ok(());
         }
+
+        // Wait for the websocket to be stopped
+        self.wait_for_stopped_status().await;
+
         if self.app.is_none() {
             return Err(anyhow::anyhow!(
                 " Cannot connect to websocket as app is not set yet"
             ));
+        }
+
+        let status_update_channel_tx = self.status_update_channel_tx.clone();
+        if let Err(e) = status_update_channel_tx.send(WebsocketManagerStatusMessage::Starting) {
+            info!(target: LOG_TARGET, "Could not send start channel message: {e}");
         }
 
         let in_memory_config = &self.app_in_memory_config;
@@ -222,7 +244,6 @@ impl WebsocketManager {
         let app_cloned = self.app.clone().ok_or(WebsocketError::MissingAppHandle)?;
         let receiver_channel = self.message_receiver_channel.clone();
         let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
-        let status_update_channel_tx = self.status_update_channel_tx.clone();
         let mut status_update_channel_rx: watch::Receiver<WebsocketManagerStatusMessage> =
             self.status_update_channel_rx.clone();
         let close_channel_tx = self.close_channel_tx.clone();
@@ -242,8 +263,6 @@ impl WebsocketManager {
                                 status_update_channel_tx.clone(),
                                 close_channel_tx.clone()).await
                         }
-                        let _ = status_update_channel_tx
-                        .send(WebsocketManagerStatusMessage::Reconnecting);
                         sleep(Duration::from_millis(5000)).await;
                         Ok::<(),anyhow::Error>(())
                     } => {},
@@ -292,7 +311,9 @@ impl WebsocketManager {
         let close_channel_tx_sender = close_channel_tx.clone();
         let close_channel_tx_receiver = close_channel_tx.clone();
 
-        let _ = status_update_channel_tx.send(WebsocketManagerStatusMessage::Connected);
+        if let Err(e) = status_update_channel_tx.send(WebsocketManagerStatusMessage::Connected) {
+            info!(target: LOG_TARGET, "Could not send connected channel message: {e}");
+        }
 
         tokio::select! {
             _= tauri::async_runtime::spawn(async move {
@@ -309,6 +330,25 @@ impl WebsocketManager {
             }
         }
         info!(target:LOG_TARGET, "websocket task closed");
+    }
+
+    async fn wait_for_stopped_status(&self) {
+        let mut status_update_channel_rx = self.status_update_channel_rx.clone();
+        let current_status = self.status_update_channel_rx.borrow().clone();
+        if current_status == WebsocketManagerStatusMessage::Stopped {
+            return;
+        }
+
+        loop {
+            if status_update_channel_rx.changed().await.is_ok() {
+                let value = status_update_channel_rx.borrow().clone();
+                if value == WebsocketManagerStatusMessage::Stopped {
+                    return;
+                }
+            } else {
+                return;
+            }
+        }
     }
 }
 

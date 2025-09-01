@@ -54,10 +54,10 @@ export const Value = styled.div<{ $status?: SendStatus }>`
             color: #ff7700;
         `}
 
-    ${({ $status }) =>
+    ${({ theme, $status }) =>
         $status === 'completed' &&
         css`
-            color: #36c475;
+            color: ${theme.mode === 'dark' ? '#17cb9b' : '#168552'};
         `}
 `;
 

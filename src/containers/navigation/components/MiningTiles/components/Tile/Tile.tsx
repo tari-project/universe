@@ -1,4 +1,3 @@
-import { useTranslation } from 'react-i18next';
 import i18n from 'i18next';
 import { Ref, useEffect, useMemo, useState } from 'react';
 import { AnimatePresence } from 'motion/react';
@@ -23,7 +22,6 @@ import {
     NumberLabel,
     LabelWrapper,
     NumberUnit,
-    ErrorMessage,
 } from './styles';
 import { UseInteractionsReturn } from '@floating-ui/react';
 import { setAnimationState, animationStatus } from '@tari-project/tari-tower';
@@ -31,6 +29,7 @@ import { PoolType } from '@app/store/useMiningPoolsStore.ts';
 import { clearCurrentSuccessValue } from '@app/store/actions/miningPoolsStoreActions.ts';
 import { AppModuleState, AppModuleStatus } from '@app/store/types/setup';
 import { setDialogToShow } from '@app/store/actions/uiStoreActions';
+import alertEmoji from '/assets/img/icons/emoji/alert_emoji.png';
 
 interface Props {
     title: PoolType;
@@ -67,9 +66,7 @@ export default function Tile({
     isSoloMining,
     minerModuleState,
 }: Props) {
-    const { t } = useTranslation(['common'], { useSuspense: false });
     const isModuleFailed = minerModuleState?.status === AppModuleStatus.Failed;
-
     const animationState = animationStatus;
     const visualMode = useConfigUIStore((s) => s.visual_mode);
     const towerInitalized = useUIStore((s) => s.towerInitalized);
@@ -145,7 +142,7 @@ export default function Tile({
     );
     const mainMarkup = !syncing && (
         <NumberGroup>
-            {isLoading ? <LoadingDots /> : numberMarkup}
+            {isLoading || isModuleFailed ? <LoadingDots /> : numberMarkup}
             <NumberLabel>{mainLabel}</NumberLabel>
         </NumberGroup>
     );
@@ -158,43 +155,20 @@ export default function Tile({
             onClick={handleClick}
             $isModuleFailed={isModuleFailed}
         >
-            <Inside $isSyncing={syncing || isLoading} $isModuleFailed={isModuleFailed}>
-                {isModuleFailed ? (
-                    <>
-                        <HeadingRow>
-                            <LabelWrapper>
-                                <StatusDot
-                                    $isMining={false}
-                                    $isEnabled={false}
-                                    $isSyncing={false}
-                                    $isModuleFailed={isModuleFailed}
-                                />
-                                <LabelText $isModuleFailed={isModuleFailed}>{title}</LabelText>
-                            </LabelWrapper>
-                        </HeadingRow>
-                        <NumberGroup>
-                            <ErrorMessage>{t('module-initialization-failed')}</ErrorMessage>
-                            <NumberLabel>{t('click-to-view-details')}</NumberLabel>
-                        </NumberGroup>
-                    </>
-                ) : (
-                    <>
-                        <HeadingRow>
-                            <LabelWrapper>
-                                <StatusDot
-                                    $isMining={isMining}
-                                    $isEnabled={isEnabled}
-                                    $isSyncing={syncing || isLoading}
-                                />
-                                <LabelText>{title}</LabelText>
-                            </LabelWrapper>
-
-                            {pillMarkup}
-                        </HeadingRow>
-                        {syncMarkup}
-                        {mainMarkup}
-                    </>
-                )}
+            <Inside $isSyncing={syncing || isLoading}>
+                <HeadingRow>
+                    <LabelWrapper>
+                        {isModuleFailed ? (
+                            <img src={alertEmoji} alt="Alert icon" />
+                        ) : (
+                            <StatusDot $isMining={isMining} $isEnabled={isEnabled} $isSyncing={syncing || isLoading} />
+                        )}
+                        <LabelText>{title}</LabelText>
+                    </LabelWrapper>
+                    {pillMarkup}
+                </HeadingRow>
+                {syncMarkup}
+                {mainMarkup}
             </Inside>
 
             <AnimatePresence>
