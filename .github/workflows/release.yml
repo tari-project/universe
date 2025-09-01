@@ -564,7 +564,7 @@ jobs:
       - name: Create BetaBuildAssets on RWA Service
         if: ${{ ( github.event_name == 'schedule' ) || ( ! startsWith(github.ref, 'refs/heads/release') ) }}
         env:
-          BETA_BUILD_ID: ${{ needs.create-beta-build.outputs.beta_build_id }}
+          BETA_BUILD_ID: ${{ steps.create-beta-build.outputs.beta_build_id }}
           RWA_API_KEY: ${{ secrets.RWA_API_KEY }}
           artifactPaths: ${{ steps.build.outputs.artifactPaths }}
           appVersion: ${{ steps.build.outputs.appVersion }}
