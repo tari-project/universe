@@ -25,7 +25,7 @@ name: Release
       asset_destination:
         description: 'Asset destination (github, s3)'
         required: true
-        default: github
+        default: 'github'
         type: choice
         options:
           - github
@@ -107,10 +107,10 @@ jobs:
           #   args: '--bundles rpm'
           #   extra: '-rpm'
           #   best_effort: true
-          - platform: windows-latest
-            args: --bundles msi
-          - platform: macos-latest
-            args: --target universal-apple-darwin
+          - platform: 'windows-latest'
+            args: '--bundles msi'
+          - platform: 'macos-latest'
+            args: '--target universal-apple-darwin'
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v5
