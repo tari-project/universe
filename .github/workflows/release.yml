@@ -508,32 +508,57 @@ jobs:
           PUBLIC_BASE_URL: https://cdn-universe.tari.com/tari/releases
         shell: bash
         run: |
-          S3_BUCKET="cdn-universe-tari-com"
           while IFS= read -r artifact; do
+            echo "Processing artifact: $artifact"
             if [ -f "$artifact" ]; then
               basename=$(basename "$artifact")
+              echo "Uploading $artifact as $basename to s3://${S3_BUCKET}/${TARI_NETWORK}/"
               aws --endpoint-url "$S3_ENDPOINT_URL" s3 cp "$artifact" "s3://${S3_BUCKET}/${TARI_NETWORK}/$basename" --acl private
+              if [ $? -ne 0 ]; then
+                echo "Error: Failed to upload $artifact"
+              else
+                echo "Upload successful."
+              fi
               presigned_url=$(aws --endpoint-url "$S3_ENDPOINT_URL" s3 presign "s3://${S3_BUCKET}/${TARI_NETWORK}/$basename" --expires-in 69420)
+              echo "Generated presigned URL: $presigned_url"
               safe_name=$(echo "$basename" | tr -cd '[:alnum:]')
+              echo "Safe name for env var: $safe_name"
               echo "S3_URL_${safe_name}=$presigned_url" >> "$GITHUB_ENV"
+            else
+              echo "Warning: Artifact file does not exist: $artifact"
             fi
           done < <(echo "$artifactPaths" | jq -r '.[]')
+
           if [ "$RUNNER_OS" = "Windows" ]; then
             bundler_path="./tari-win-bundler/${TARI_UNIVERSE_BUNDLER_NAME}.exe"
+            echo "Detected Windows runner. Bundler path: $bundler_path"
             for bundler in "$bundler_path"; do
+              echo "Processing bundler: $bundler"
               if [ -f "$bundler" ]; then
                 basename=$(basename "$bundler")
+                echo "Uploading bundler $bundler as $basename to s3://${S3_BUCKET}/${TARI_NETWORK}/"
                 aws --endpoint-url "$S3_ENDPOINT_URL" s3 cp "$bundler" "s3://${S3_BUCKET}/${TARI_NETWORK}/$basename" --acl private
+                if [ $? -ne 0 ]; then
+                  echo "Error: Failed to upload bundler $bundler"
+                else
+                  echo "Bundler upload successful."
+                fi
                 presigned_url=$(aws --endpoint-url "$S3_ENDPOINT_URL" s3 presign "s3://${S3_BUCKET}/${TARI_NETWORK}/$basename" --expires-in 69420)
                 public_url="${PUBLIC_BASE_URL}/${TARI_NETWORK}/${basename}"
+                echo "Generated presigned URL for bundler: $presigned_url"
+                echo "Public URL for bundler: $public_url"
                 safe_name=$(echo "$basename" | tr -cd '[:alnum:]')
+                echo "Safe name for bundler env var: $safe_name"
                 echo "S3_URL_${safe_name}=$presigned_url" >> "$GITHUB_ENV"
                 echo "S3_PUBLIC_URL_${safe_name}=$public_url" >> "$GITHUB_ENV"
                 echo "S3_URL_BUNDLER=$presigned_url" >> "$GITHUB_ENV"
                 echo "S3_PUBLIC_URL_BUNDLER=$public_url" >> "$GITHUB_ENV"
+              else
+                echo "Warning: Bundler file does not exist: $bundler"
               fi
             done
           fi
+          echo "Upload process completed."
 
       - name: Set GitHub artifact URLs
         if: ${{ github.event.inputs.asset_destination == 'github' && (github.event_name == 'schedule' || !startsWith(github.ref, 'refs/heads/release')) }}
