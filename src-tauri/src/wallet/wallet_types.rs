@@ -113,7 +113,7 @@ pub enum Currency {
 }
 
 #[derive(Debug, Serialize, Clone)]
-pub struct ChainId(String);
+pub struct ChainId(pub String);
 
 impl FromStr for ChainId {
     type Err = std::string::ParseError;
@@ -125,7 +125,7 @@ impl FromStr for ChainId {
 
 #[derive(Debug, Serialize, Clone)]
 pub struct TransactionInfo {
-    pub tx_id: String,
+    pub id: u32,
     pub source_address: String,
     pub dest_address: String,
     pub status: TransactionStatus,

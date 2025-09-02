@@ -165,24 +165,25 @@ impl MinotariWalletAdapter {
                     None
                 };
 
-                Ok(TransactionInfo {
-                    tx_id: tx.tx_id.to_string(),
-                    source_address: TariAddress::from_bytes(&tx.source_address)?.to_base58(),
-                    dest_address: TariAddress::from_bytes(&tx.dest_address)?.to_base58(),
-                    status: TransactionStatus::from(tx.status),
-                    amount: tx.amount,
-                    currency: Currency::Xtm,
-                    is_cancelled: tx.is_cancelled,
-                    direction: tx.direction,
-                    excess_sig: tx.excess_sig,
-                    fee: tx.fee,
-                    timestamp: tx.timestamp,
-                    payment_id: MemoField::stringify_bytes(&tx.user_payment_id),
-                    mined_in_block_height: tx.mined_in_block_height,
-                    mined_in_chain_id: "Minotari".parse().expect("Can't fail"),
-                    wallet_id: 1,
-                    payment_reference,
-                })
+                todo!("Probably will delete this file")
+                //     Ok(TransactionInfo {
+                //         id: tx.tx_id.to_string(),
+                //         source_address: TariAddress::from_bytes(&tx.source_address)?.to_base58(),
+                //         dest_address: TariAddress::from_bytes(&tx.dest_address)?.to_base58(),
+                //         status: TransactionStatus::from(tx.status),
+                //         amount: tx.amount,
+                //         currency: Currency::Xtm,
+                //         is_cancelled: tx.is_cancelled,
+                //         direction: tx.direction,
+                //         excess_sig: tx.excess_sig,
+                //         fee: tx.fee,
+                //         timestamp: tx.timestamp,
+                //         payment_id: MemoField::stringify_bytes(&tx.user_payment_id),
+                //         mined_in_block_height: tx.mined_in_block_height,
+                //         mined_in_chain_id: "Minotari".parse().expect("Can't fail"),
+                //         wallet_id: 1,
+                //         payment_reference,
+                //     })
             })
             .collect::<Result<Vec<_>, TariAddressError>>()?;
 

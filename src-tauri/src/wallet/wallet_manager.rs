@@ -29,18 +29,24 @@ use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
 use crate::tasks_tracker::TasksTrackers;
 use crate::wallet::minotari_wallet_adapter::MinotariWalletAdapter;
+use crate::wallet::minotari_wallet_scanner::MinotariWalletScanner;
+use crate::wallet::ootle_wallet_scanner::{self, OotleWalletAdapter, OotleWalletScanner};
 use crate::wallet::wallet_db::WalletDb;
+use crate::wallet::wallet_scanner::WalletScanner;
 use crate::wallet::wallet_status_monitor::WalletStatusMonitorError;
 use crate::wallet::wallet_types::{TransactionInfo, TransactionStatus, WalletBalance, WalletState};
 use crate::BaseNodeStatus;
 use futures_util::future::FusedFuture;
 use log::info;
+use sha2::digest::typenum::Min;
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use std::time::Duration;
 use tari_common::configuration::Network;
+use tari_crypto::ristretto::RistrettoSecretKey;
 use tari_shutdown::ShutdownSignal;
 use tari_transaction_components::tari_amount::{MicroMinotari, Minotari};
 use tokio::fs;
@@ -69,21 +75,25 @@ pub enum WalletManagerError {
 }
 
 pub struct WalletManager {
-    minotari_watcher: Arc<RwLock<ProcessWatcher<MinotariWalletAdapter>>>,
+    minotari_scanner: Arc<RwLock<MinotariWalletScanner>>,
+    ootle_scanner: Arc<RwLock<OotleWalletScanner>>,
     node_manager: NodeManager,
     initial_scan_completed: Arc<AtomicBool>,
     base_node_watch_rx: watch::Receiver<BaseNodeStatus>,
-    wallet_db: WalletDb,
+    wallet_db: Arc<RwLock<Option<WalletDb>>>,
+    view_keys: HashMap<String, (RistrettoSecretKey, RistrettoPublicKey)>,
 }
 
 impl Clone for WalletManager {
     fn clone(&self) -> Self {
         Self {
-            minotari_watcher: self.minotari_watcher.clone(),
+            minotari_scanner: self.minotari_scanner.clone(),
+            ootle_scanner: self.ootle_scanner.clone(),
             node_manager: self.node_manager.clone(),
             initial_scan_completed: self.initial_scan_completed.clone(),
             base_node_watch_rx: self.base_node_watch_rx.clone(),
             wallet_db: self.wallet_db.clone(),
+            view_keys: self.view_keys.clone(),
         }
     }
 }
@@ -94,18 +104,118 @@ impl WalletManager {
         wallet_state_watch_tx: watch::Sender<Option<WalletState>>,
         stats_collector: &mut ProcessStatsCollectorBuilder,
         base_node_watch_rx: watch::Receiver<BaseNodeStatus>,
-        base_path: &Path,
     ) -> Self {
-        let adapter = MinotariWalletAdapter::new(wallet_state_watch_tx);
-        let process_watcher = ProcessWatcher::new(adapter, stats_collector.take_wallet());
+        // let adapter = MinotariWalletAdapter::new(wallet_state_watch_tx);
+        // let process_watcher = ProcessWatcher::new(adapter, stats_collector.take_wallet());
 
         Self {
-            minotari_watcher: Arc::new(RwLock::new(process_watcher)),
+            minotari_scanner: Arc::new(RwLock::new(MinotariWalletScanner {})),
+            ootle_scanner: Arc::new(RwLock::new(OotleWalletScanner {})),
             node_manager,
             initial_scan_completed: Arc::new(AtomicBool::new(false)),
             base_node_watch_rx,
-            wallet_db: WalletDb::new(base_path.join("wallet_db.sqlite")),
+            wallet_db: Arc::new(RwLock::new(None)),
+            view_keys: HashMap::new(),
         }
+    }
+
+    async fn start_wallet_events_sync(&self) -> Result<(), WalletManagerError> {
+        let wallet_db = self.wallet_db.clone();
+        let minotari_scanner = self.minotari_scanner.clone();
+        let ootle_wallet_scanner = self.ootle_scanner.clone();
+        let scanners = HashMap::from([
+            (
+                "minotari",
+                minotari_scanner as Arc<RwLock<dyn WalletScanner + Send + Sync>>,
+            ),
+            (
+                "ootle",
+                self.ootle_scanner.clone() as Arc<RwLock<dyn WalletScanner + Send + Sync>>,
+            ),
+        ]);
+        let mut shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
+
+        // get wallets from db.
+        let db_lock = wallet_db.read().await;
+        let wallet_db = db_lock
+            .as_ref()
+            .ok_or(WalletManagerError::WalletNotStarted)?
+            .clone();
+        let wallets_to_scan = wallet_db.get_all_wallets().await?;
+        let viewkeys = self.view_keys.clone();
+
+        TasksTrackers::current()
+            .wallet_phase
+            .get_task_tracker()
+            .await
+            .spawn(async move {
+                let mut interval = tokio::time::interval(Duration::from_secs(30));
+                interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+
+                loop {
+                    tokio::select! {
+                        _ = shutdown_signal.wait() => {
+                            log::info!(target: LOG_TARGET, "Shutdown signal received, stopping wallet events sync");
+                            break;
+                        }
+                        _ = interval.tick() => {
+
+                            for wallet in wallets_to_scan {
+                                let scanner = scanners.get(wallet.chain_id.as_str());
+                                if let Some(scanner) = scanner {
+                                let lock = scanner.write().await;
+                                if let Some((view_key_secret, spend_key_public)) = viewkeys.get(wallet.view_key_reference.as_str()) {
+                                    // Use the view keys as needed
+                                    let (events, last_sync_height, last_sync_block) = lock.sync_events(view_key_secret, spend_key_public, cmp::max(wallet.last_scanned_height, wallet.chain_birthday_height), wallet.last_scanned_hash).await;
+                                    if events.is_empty() {
+                                        log::warn!(target: LOG_TARGET, "No events found for wallet {}", wallet.name);
+                                    }
+                                    for event in events {
+                                        log::info!(target: LOG_TARGET, "Received wallet {}  event: {:?}", wallet.name, event);
+                                        wallet_db.apply_event(wallet.id, event).await;
+                                    }
+                                    wallet_db.update_last_sync_info(wallet.id, last_sync_height, last_sync_block).await;
+
+                                }else {
+                                    log::warn!(target: LOG_TARGET, "No view key found for wallet {}", wallet.name);
+                                }
+                            } else {
+                                log::warn!(target: LOG_TARGET, "No scanner found for wallet {}", wallet.name);
+                            }
+                            }
+
+
+                            // for (name, scanner) in &scanners {
+                            //     let lock = scanner.write().await;
+                            //     let events = lock.sync_events().await;
+                            //     for event in events {
+                            //         log::info!(target: LOG_TARGET, "Received wallet {}  event: {:?}", name, event);
+                            //         wallet_db.apply_wallet_event(name, event).await;
+                            //     }
+                            // }
+
+                            // match process_watcher.adapter.get_recent_events().await {
+                                // Ok(events) => {
+                                    // if let Some(db) = &*wallet_db.read().await {
+                                        // for event in events {
+                                            // if let Err(e) = db.apply_wallet_event(event).await {
+                                                // log::error!(target: LOG_TARGET, "Failed to apply wallet event: {}", e);
+                                            // }
+                                        // }
+                                    // }
+                                // }
+                                // Err(e) => {
+                                    // log::error!(target: LOG_TARGET, "Failed to fetch wallet events: {}", e);
+                                // }
+                            // }
+                        }
+                    }
+                }
+
+                Ok::<(), WalletManagerError>(())
+            });
+
+        Ok(())
     }
 
     pub async fn ensure_started(
@@ -120,38 +230,51 @@ impl WalletManager {
             .await;
 
         self.node_manager.wait_ready().await?;
-
-        let mut process_watcher = self.minotari_watcher.write().await;
-        if process_watcher.is_running()
-            || app_shutdown.is_terminated()
-            || app_shutdown.is_triggered()
-        {
+        let lock = self.wallet_db.read().await;
+        if lock.is_some() {
+            // Already started
             return Ok(());
         }
 
-        process_watcher.adapter.http_client_url = Some(self.node_manager.get_http_api_url().await);
-        process_watcher.poll_time = Duration::from_secs(5);
-        process_watcher.adapter.use_tor(config.use_tor);
-        info!(target: LOG_TARGET, "Using Tor: {}", config.use_tor);
-        process_watcher
-            .adapter
-            .connect_with_local_node(config.connect_with_local_node);
+        let db = WalletDb::new(&config.base_path.join("wallet.sqlite"));
+        drop(lock);
+        let mut lock = self.wallet_db.write().await;
+        *lock = Some(db);
 
-        let tari_wallet_details = InternalWallet::tari_wallet_details().await;
-        process_watcher.adapter.wallet_birthday = tari_wallet_details.map(|d| d.wallet_birthday);
+        self.start_wallet_events_sync().await?;
+        // Start Minotari Watcher.
 
-        process_watcher
-            .start(
-                config.base_path,
-                config.config_path,
-                config.log_path,
-                crate::binaries::Binaries::Wallet,
-                shutdown_signal,
-                task_tracker,
-            )
-            .await?;
-        info!(target: LOG_TARGET, "Wallet process started successfully");
-        process_watcher.wait_ready().await?;
+        // let mut process_watcher = self.minotari_watcher.write().await;
+        // if process_watcher.is_running()
+        //     || app_shutdown.is_terminated()
+        //     || app_shutdown.is_triggered()
+        // {
+        //     return Ok(());
+        // }
+
+        // process_watcher.adapter.http_client_url = Some(self.node_manager.get_http_api_url().await);
+        // process_watcher.poll_time = Duration::from_secs(5);
+        // process_watcher.adapter.use_tor(config.use_tor);
+        // info!(target: LOG_TARGET, "Using Tor: {}", config.use_tor);
+        // process_watcher
+        // .adapter
+        // .connect_with_local_node(config.connect_with_local_node);
+
+        // let tari_wallet_details = InternalWallet::tari_wallet_details().await;
+        // process_watcher.adapter.wallet_birthday = tari_wallet_details.map(|d| d.wallet_birthday);
+
+        // process_watcher
+        //     .start(
+        //         config.base_path,
+        //         config.config_path,
+        //         config.log_path,
+        //         crate::binaries::Binaries::Wallet,
+        //         shutdown_signal,
+        //         task_tracker,
+        //     )
+        //     .await?;
+        // info!(target: LOG_TARGET, "Wallet process started successfully");
+        // process_watcher.wait_ready().await?;
         Ok(())
     }
 
@@ -210,7 +333,11 @@ impl WalletManager {
         limit: Option<u32>,
         status_bitflag: Option<u32>,
     ) -> Result<Vec<TransactionInfo>, WalletManagerError> {
-        self.wallet_db.get_transactions().await
+        let lock = self.wallet_db.read().await;
+        match &*lock {
+            Some(db) => Ok(db.get_transactions(offset, limit, status_bitflag).await?),
+            None => Err(WalletManagerError::WalletNotStarted),
+        }
         // let node_status = *self.base_node_watch_rx.borrow();
         // let current_block_height = node_status.block_height;
         // let process_watcher = self.minotari_watcher.read().await;
