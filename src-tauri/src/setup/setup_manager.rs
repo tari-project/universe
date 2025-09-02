@@ -227,11 +227,9 @@ impl SetupManager {
         let in_memory_config = state.in_memory_config.clone();
 
         let mut websocket_events_manager_guard = state.websocket_event_manager.write().await;
-        websocket_events_manager_guard.set_app_handle(
-            app_handle.clone(),
-            state.websocket_manager_status_rx.clone(),
-            state.websocket_manager.clone(),
-        ).await;
+        websocket_events_manager_guard
+            .set_app_handle(app_handle.clone(), state.websocket_manager.clone())
+            .await;
         drop(websocket_events_manager_guard);
 
         let mut websocket_manager_write = state.websocket_manager.write().await;

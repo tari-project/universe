@@ -80,15 +80,10 @@ impl WebsocketEventsManager {
     pub async fn set_app_handle(
         &mut self,
         app: AppHandle,
-        websocket_manager_status_rx: Arc<
-            tokio::sync::watch::Receiver<WebsocketManagerStatusMessage>,
-        >,
         websocket_manager: Arc<RwLock<WebsocketManager>>,
     ) {
         self.app = Some(app);
-        let _ = self
-            .websocket_connect(websocket_manager_status_rx, websocket_manager)
-            .await;
+        let _ = self.websocket_connect(websocket_manager).await;
     }
 
     pub async fn stop_emitting_message(&self) {
@@ -231,9 +226,6 @@ impl WebsocketEventsManager {
     }
     async fn websocket_connect(
         &mut self,
-        websocket_manager_status_rx: Arc<
-            tokio::sync::watch::Receiver<WebsocketManagerStatusMessage>,
-        >,
         websocket_manager: Arc<RwLock<WebsocketManager>>,
     ) -> Result<(), String> {
         info!(target: LOG_TARGET, "websocket_connect command started");
