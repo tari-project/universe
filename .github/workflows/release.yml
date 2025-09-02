@@ -626,15 +626,15 @@ jobs:
               else
                 ASSET_URL="$BUNDLER_URL"
               fi
-              curl -X POST "https://rwa.y.at/api/beta-builds/${BETA_BUILD_ID}/assets"
-                -H "X-API-Key: $RWA_API_KEY"
-                -H "Content-Type: application/json"
-              -d "[{
-                \"name\": \"${ASSET_NAME}\",
-                \"platform\": \"$PLATFORM\",
-                $( [ "${{ github.event.inputs.asset_destination }}" = "github" ] && echo \"github_url\": \"${ASSET_URL}\", || echo \"s3_url\": \"${ASSET_URL}\", )
-                \"beta_build_id\": \"${BETA_BUILD_ID}\"
-              }]"
+              curl -X POST "https://rwa.y.at/api/beta-builds/${BETA_BUILD_ID}/assets" \
+                -H "X-API-Key: $RWA_API_KEY" \
+                -H "Content-Type: application/json" \
+                -d "[{
+                  \"name\": \"${ASSET_NAME}\",
+                  \"platform\": \"$PLATFORM\",
+                  $( [ "${{ github.event.inputs.asset_destination }}" = "github" ] && echo \"github_url\": \"${ASSET_URL}\", || echo \"s3_url\": \"${ASSET_URL}\", )
+                  \"beta_build_id\": \"${BETA_BUILD_ID}\"
+                }]"
             fi
           fi
 
