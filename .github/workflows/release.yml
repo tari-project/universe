@@ -526,8 +526,8 @@ jobs:
                 aws --endpoint-url "$S3_ENDPOINT_URL" s3 cp "$bundler" "s3://${S3_BUCKET}/${TARI_NETWORK}/$basename" --acl private
                 presigned_url=$(aws --endpoint-url "$S3_ENDPOINT_URL" s3 presign "s3://${S3_BUCKET}/${TARI_NETWORK}/$basename" --expires-in 69420)
                 public_url="${PUBLIC_BASE_URL}/${TARI_NETWORK}/${basename}"
-                safe_name=$(echo "$basename" | tr -c '[:alnum:]' '')
-                echo "S3_URL${safe_name}=$presigned_url" >> "$GITHUB_ENV"
+                safe_name=$(echo "$basename" | tr -c '[:alnum:]' '_')
+                echo "S3_URL_${safe_name}=$presigned_url" >> "$GITHUB_ENV"
                 echo "S3_PUBLIC_URL_${safe_name}=$public_url" >> "$GITHUB_ENV"
                 echo "S3_URL_BUNDLER=$presigned_url" >> "$GITHUB_ENV"
                 echo "S3_PUBLIC_URL_BUNDLER=$public_url" >> "$GITHUB_ENV"
@@ -544,118 +544,4 @@ jobs:
         shell: bash
         run: |
           MAIN_ARTIFACT_NAME="tari-universe-beta_${appVersion}_${platform}${extra}"
-          artifacts=$(curl -s -H "Accept: application/vnd.github+json" \
-            -H "Authorization: token ${{ github.token }}" \
-            "https://api.github.com/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts")
-          main_id=$(echo "$artifacts" | jq -r ".artifacts[] | select(.name == \"${MAIN_ARTIFACT_NAME}\") | .id")
-          if [ -n "$main_id" ]; then
-            main_url="https://api.github.com/repos/${{ github.repository }}/actions/artifacts/${main_id}/zip"
-            main_safe=$(echo "$MAIN_ARTIFACT_NAME" | tr -c '[:alnum:]' '_')
-            echo "GH_URL_${main_safe}=$main_url" >> "$GITHUB_ENV"
-            echo "GH_MAIN_URL=$main_url" >> "$GITHUB_ENV"
-          fi
-          if [ "${{ startsWith(runner.os, 'Windows') }}" = "true" ]; then
-            BUNDLER_ARTIFACT_NAME="tari-universe-beta_${appVersion}_x64_en-US"
-            bundler_id=$(echo "$artifacts" | jq -r ".artifacts[] | select(.name == \"${BUNDLER_ARTIFACT_NAME}\") | .id")
-            if [ -n "$bundler_id" ]; then
-              bundler_url="https://api.github.com/repos/${{ github.repository }}/actions/artifacts/${bundler_id}/zip"
-              bundler_safe=$(echo "$BUNDLER_ARTIFACT_NAME" | tr -c '[:alnum:]' '_')
-              echo "GH_URL_${bundler_safe}=$bundler_url" >> "$GITHUB_ENV"
-              echo "GH_URL_BUNDLER=$bundler_url" >> "$GITHUB_ENV"
-            fi
-          fi
-
-      - name: Create BetaBuildAssets on RWA Service
-        if: ${{ ( github.event_name == 'schedule' ) || ( ! startsWith(github.ref, 'refs/heads/release') ) }}
-        env:
-          BETA_BUILD_ID: ${{ needs.create-beta-build.outputs.beta_build_id }}
-          RWA_API_KEY: ${{ secrets.RWA_API_KEY }}
-          artifactPaths: ${{ steps.build.outputs.artifactPaths }}
-          appVersion: ${{ steps.build.outputs.appVersion }}
-          platform: ${{ matrix.platform }}
-          extra: ${{ matrix.extra }}
-        shell: bash
-        run: |
-          # Determine platform
-          PLATFORM=$([ "$(uname)" = "Darwin" ] && echo "macos-latest" || echo "windows-latest")
-          echo -e "Artifact paths: \n${{ join(fromJSON( env.artifactPaths ), '\n') }}"
-          ARTIFACTS=()
-          while IFS= read -r line; do
-            ARTIFACTS+=("$line")
-          done < <(echo "$artifactPaths" | jq -r '.[]')
-          if [ "${{ github.event.inputs.asset_destination }}" = "s3" ]; then
-            URL_PREFIX="S3_URL_"
-          else
-            MAIN_ARTIFACT_NAME="tari-universe-beta_${appVersion}_${platform}${extra}"
-            MAIN_SAFE_NAME=$(echo "$MAIN_ARTIFACT_NAME" | tr -c '[:alnum:]' '_')
-            MAIN_URL="${GH_URL_${MAIN_SAFE_NAME}}"
-            BUNDLER_ARTIFACT_NAME="tari-universe-beta_${appVersion}_x64_en-US"
-            BUNDLER_SAFE_NAME=$(echo "$BUNDLER_ARTIFACT_NAME" | tr -c '[:alnum:]' '_')
-            BUNDLER_URL="${GH_URL_${BUNDLER_SAFE_NAME}}"
-          fi
-          # Process regular artifacts
-          for artifact in "${ARTIFACTS[@]}"; do
-            [ -f "$artifact" ] || continue
-            ASSET_NAME=$(basename "$artifact")
-            if [ "${{ github.event.inputs.asset_destination }}" = "s3" ]; then
-              SAFE_NAME=$(echo "$ASSET_NAME" | tr -c '[:alnum:]' '_')
-              ASSET_S3_URL_VAR="${URL_PREFIX}${SAFE_NAME}"
-              ASSET_URL="${!ASSET_S3_URL_VAR}"
-            else
-              ASSET_URL="$MAIN_URL"
-            fi
-            curl -X POST "https://rwa.y.at/api/beta-builds/${BETA_BUILD_ID}/assets" \
-              -H "X-API-Key: $RWA_API_KEY" \
-              -H "Content-Type: application/json" \
-              -d "[{
-                \"name\": \"${ASSET_NAME}\",
-                \"platform\": \"$PLATFORM\",
-                $( [ "${{ github.event.inputs.asset_destination }}" = "github" ] && echo \"github_url\": \"${ASSET_URL}\", || echo \"s3_url\": \"${ASSET_URL}\", )
-                \"beta_build_id\": \"${BETA_BUILD_ID}\"
-              }]"
-          done
-          # Process Windows bundler if available
-          if [ "$PLATFORM" = "windows-latest" ]; then
-            EXE_FILE="./tari-win-bundler/${TARI_UNIVERSE_BUNDLER_NAME}.exe"
-            if [ -f "$EXE_FILE" ]; then
-              ASSET_NAME=$(basename "$EXE_FILE")
-              if [ "${{ github.event.inputs.asset_destination }}" = "s3" ]; then
-                ASSET_URL="${S3_PUBLIC_URL_BUNDLER}"  # Use public URL to avoid expiration
-              else
-                ASSET_URL="$BUNDLER_URL"
-              fi
-              curl -X POST "https://rwa.y.at/api/beta-builds/${BETA_BUILD_ID}/assets"
-                -H "X-API-Key: $RWA_API_KEY"
-                -H "Content-Type: application/json"
-              -d "[{
-                \"name\": \"${ASSET_NAME}\",
-                \"platform\": \"$PLATFORM\",
-                $( [ "${{ github.event.inputs.asset_destination }}" = "github" ] && echo \"github_url\": \"${ASSET_URL}\", || echo \"s3_url\": \"${ASSET_URL}\", )
-                \"beta_build_id\": \"${BETA_BUILD_ID}\"
-              }]"
-            fi
-          fi
-
-      - name: Windows debug symbols - Upload asset
-        if: startsWith(runner.os,'Windows')
-        uses: actions/upload-artifact@v4
-        with:
-          name: tari_universe.pdb
-          path: '${{ github.workspace }}/src-tauri/target/release/tari_universe.pdb'
-
-      - name: Windows install Sentry CLI
-        if: ${{ ( startsWith(runner.os,'Windows') ) && ( env.SENTRY_AUTH_TOKEN != '' ) }}
-        env:
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_SYMBOLS_AUTH_TOKEN }}
-        shell: bash
-        run: npm install @sentry/cli@2.42.2 -g
-
-      - name: Windows debug symbols - Upload to Sentry
-        if: ${{ ( startsWith(runner.os,'Windows') ) && ( env.SENTRY_AUTH_TOKEN != '' ) }}
-        continue-on-error: true
-        env:
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_SYMBOLS_AUTH_TOKEN }}
-        shell: bash
-        run: |
-          sentry-cli debug-files check ./src-tauri/target/release/tari_universe.pdb
-          sentry-cli debug-files upload --org tari-labs --project tari-universe ./src-tauri/target/release/tari_universe.pdb
+          artifacts
