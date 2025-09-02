@@ -588,10 +588,12 @@ jobs:
           else
             MAIN_ARTIFACT_NAME="tari-universe-beta_${appVersion}_${platform}${extra}"
             MAIN_SAFE_NAME=$(echo "$MAIN_ARTIFACT_NAME" | tr -c '[:alnum:]' '_')
-            MAIN_URL="${GH_URL_${MAIN_SAFE_NAME}}"
+            var_main_url="GH_URL_${MAIN_SAFE_NAME}"
+            MAIN_URL="${!var_main_url}"
             BUNDLER_ARTIFACT_NAME="tari-universe-beta_${appVersion}_x64_en-US"
             BUNDLER_SAFE_NAME=$(echo "$BUNDLER_ARTIFACT_NAME" | tr -c '[:alnum:]' '_')
-            BUNDLER_URL="${GH_URL_${BUNDLER_SAFE_NAME}}"
+            var_bundler_url="GH_URL_${BUNDLER_SAFE_NAME}"
+            BUNDLER_URL="${!var_bundler_url}"
           fi
           # Process regular artifacts
           for artifact in "${ARTIFACTS[@]}"; do
