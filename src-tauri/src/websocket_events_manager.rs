@@ -22,16 +22,18 @@
 
 use std::sync::Arc;
 use std::time::Duration;
+use std::time::Instant;
 
 use futures::lock::Mutex;
-use log::{error, info};
+use log::{error, info, warn};
 use tari_common::configuration::Network;
 use tauri::AppHandle;
 use tokio::{
-    sync::{broadcast, watch},
+    sync::{broadcast, watch, RwLock},
     time,
 };
 
+use crate::websocket_manager::{WebsocketManager, WebsocketManagerStatusMessage};
 use crate::{
     airdrop::decode_jwt_claims_without_exp,
     commands::{sign_ws_data, CpuMinerStatus, SignWsDataResponse},
@@ -43,6 +45,7 @@ use crate::{
 };
 const LOG_TARGET: &str = "tari::universe::websocket_events_manager";
 static INTERVAL_DURATION: std::time::Duration = Duration::from_secs(15);
+static MAX_ACCEPTABLE_COMMAND_TIME: std::time::Duration = Duration::from_secs(1);
 
 pub struct WebsocketEventsManager {
     app: Option<AppHandle>,
@@ -73,8 +76,14 @@ impl WebsocketEventsManager {
         }
     }
 
-    pub fn set_app_handle(&mut self, app: AppHandle) {
+    pub async fn set_app_handle(
+        &mut self,
+        app: AppHandle,
+        websocket_manager_status_rx: Arc<tokio::sync::watch::Receiver<WebsocketManagerStatusMessage>>,
+        websocket_manager: Arc<RwLock<WebsocketManager>>,
+    ) {
         self.app = Some(app);
+        let _ = self.websocket_connect(websocket_manager_status_rx, websocket_manager).await;
     }
 
     pub async fn stop_emitting_message(&self) {
@@ -111,17 +120,7 @@ impl WebsocketEventsManager {
             TasksTrackers::current().common.get_task_tracker().await.spawn(async move {
                 loop {
                     let app_version_option = app_cloned.clone().map(|handle| handle.package_info().version.clone().to_string());
-                    let jwt_token = ConfigCore::content()
-                        .await
-                        .airdrop_tokens()
-                        .clone()
-                        .map(|tokens| tokens.token);
                     let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
-                    let user_id = jwt_token.map_or(String::new(), |token| {
-                        // If token is set decode it
-                        decode_jwt_claims_without_exp(&token.to_string())
-                            .map_or(String::new(), |c| c.id)
-                    });
                     let app_version = app_version_option.map_or(String::from("unknown"), |version| version.to_string());
 
                     tokio::select! {
@@ -132,7 +131,6 @@ impl WebsocketEventsManager {
                               node_latest_status.clone(),
                               app_id.clone(),
                               app_version.clone(),
-                              user_id,
                             ).await{
                                 drop(websocket_tx_channel_clone.send(message).await.inspect_err(|e|{
                                   error!(target:LOG_TARGET, "could not send to websocket channel due to {e}");
@@ -164,9 +162,18 @@ impl WebsocketEventsManager {
         node_latest_status: watch::Receiver<BaseNodeStatus>,
         app_id: String,
         app_version: String,
-        claims_id: String,
     ) -> Option<WebsocketMessage> {
         let BaseNodeStatus { block_height, .. } = *node_latest_status.borrow();
+        let jwt_token = ConfigCore::content()
+            .await
+            .airdrop_tokens()
+            .clone()
+            .map(|tokens| tokens.token);
+        let user_id = jwt_token.map_or(String::new(), |token| {
+            // If token is set decode it
+            decode_jwt_claims_without_exp(&token.to_string())
+                .map_or(String::new(), |c| c.id)
+        });
 
         let cpu_miner_status = cpu_miner_status_watch_rx.borrow().clone();
         let gpu_status = gpu_latest_miner_stats.borrow().clone();
@@ -177,12 +184,17 @@ impl WebsocketEventsManager {
         let gpu_pool_name = pools_config.selected_gpu_pool().name();
         let cpu_pool_name = pools_config.selected_cpu_pool().name();
 
+        // If the miner is not active, we don't need to send any messages
+        if !is_mining_active {
+            return None;
+        }
+
         let signable_message = format!(
             "{},{},{},{},{},{},{},{},{}",
             app_version,
             network,
             app_id,
-            claims_id,
+            user_id,
             is_mining_active,
             block_height,
             tari_address.to_base58(),
@@ -198,7 +210,7 @@ impl WebsocketEventsManager {
                     "blockHeight":block_height,
                     "version":app_version,
                     "network":network,
-                    "userId":claims_id,
+                    "userId":user_id,
                     "walletHash":tari_address.to_base58(),
                     "gpuPoolName":gpu_pool_name,
                     "cpuPoolName":cpu_pool_name,
@@ -212,6 +224,44 @@ impl WebsocketEventsManager {
             });
         }
         None
+    }
+    async fn websocket_connect(
+        &mut self,
+        websocket_manager_status_rx: Arc<tokio::sync::watch::Receiver<WebsocketManagerStatusMessage>>,
+        websocket_manager: Arc<RwLock<WebsocketManager>>,
+    ) -> Result<(), String> {
+        let timer = Instant::now();
+        let last_state = websocket_manager_status_rx.borrow().clone();
+        info!(target: LOG_TARGET, "websocket_connect command accepted");
+
+        if matches!(
+            last_state,
+            WebsocketManagerStatusMessage::Connected | WebsocketManagerStatusMessage::Starting
+        ) {
+            return Ok(());
+        }
+
+        let mut websocket_manger_guard = websocket_manager.write().await;
+
+        if !websocket_manger_guard.is_websocket_manager_ready() {
+            warn!(target: LOG_TARGET, "websocket_connect cannot be done as websocket_manager is not ready yet");
+            return Err("websocket manager is not ready".into());
+        }
+
+        websocket_manger_guard
+            .connect()
+            .await
+            .map_err(|e| e.to_string())?;
+
+        self.emit_interval_ws_events()
+            .await
+            .map_err(|e| e.to_string())?;
+
+        if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+            warn!(target: LOG_TARGET, "websocket_connect took too long: {:?}", timer.elapsed());
+        }
+        info!(target: LOG_TARGET, "websocket_connect command finished");
+        Ok(())
     }
 }
 

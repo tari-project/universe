@@ -1868,6 +1868,7 @@ pub async fn set_selected_engine(
 }
 
 #[tauri::command]
+<<<<<<< Updated upstream
 pub async fn websocket_connect(
     _: tauri::AppHandle,
     state: tauri::State<'_, UniverseAppState>,
@@ -1982,6 +1983,7 @@ pub async fn send_one_sided_to_stealth_address(
 }
 
 #[tauri::command]
+<<<<<<< Updated upstream
 pub async fn websocket_close(
     _: tauri::AppHandle,
     state: tauri::State<'_, UniverseAppState>,
