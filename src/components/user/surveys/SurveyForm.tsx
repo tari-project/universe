@@ -1,7 +1,10 @@
 import { SurveyQuestion } from '@app/types/user/surveys.ts';
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { Checkbox } from '@app/components/elements/inputs/Checkbox.tsx';
-import { CheckboxWrapper, Form, TextboxWrapper } from './styles.ts';
+import { CTAWrapper, Form, FormContent, ItemWrapper, TextItem, TextItemLabel } from './styles.ts';
+import { Button } from '@app/components/elements/buttons/Button.tsx';
+import { TextButton } from '@app/components/elements/buttons/TextButton.tsx';
+import { Typography } from '@app/components/elements/Typography.tsx';
 
 interface SurveyFormProps {
     questions: SurveyQuestion[];
@@ -31,9 +34,9 @@ export default function SurveyForm({ questions }: SurveyFormProps) {
                     name={`questionField.${i}.checked`}
                     render={({ field }) => {
                         return (
-                            <CheckboxWrapper>
+                            <ItemWrapper>
                                 <Checkbox {...field} labelText={q.questionText} checked={field.value} />
-                            </CheckboxWrapper>
+                            </ItemWrapper>
                         );
                     }}
                 />
@@ -46,17 +49,33 @@ export default function SurveyForm({ questions }: SurveyFormProps) {
                 key={q.id}
                 name={`questionField.${i}.value`}
                 render={({ field }) => {
-                    console.debug(field);
                     return (
-                        <TextboxWrapper>
-                            <label htmlFor={field.name}>{q.questionText}</label>
-                            <input {...field} />
-                        </TextboxWrapper>
+                        <>
+                            <TextItemLabel htmlFor={field.name}>
+                                {q.questionText} <span>{`(optional)`}</span>
+                            </TextItemLabel>
+                            <TextItem
+                                {...field}
+                                placeholder={`Add any other details here`}
+                                variant="secondary"
+                                rows={1}
+                            />
+                        </>
                     );
                 }}
             />
         );
     });
 
-    return <Form>{fieldMarkup}</Form>;
+    return (
+        <Form>
+            <FormContent>{fieldMarkup}</FormContent>
+            <CTAWrapper>
+                <Button fluid size="xlarge" variant="black">{`Send Feedback`}</Button>
+                <TextButton size="large">
+                    <Typography>{`Skip for now`}</Typography>
+                </TextButton>
+            </CTAWrapper>
+        </Form>
+    );
 }

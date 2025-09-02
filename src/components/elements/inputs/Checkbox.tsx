@@ -1,6 +1,7 @@
 import styled, { css } from 'styled-components';
 import { InputHTMLAttributes } from 'react';
 import CheckIcon from '@app/assets/icons/CheckIcon.tsx';
+import { Typography } from '@app/components/elements/Typography.tsx';
 
 interface CheckboxInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'value'> {
     labelText?: string;
@@ -9,8 +10,17 @@ interface CheckboxInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>,
 const Wrapper = styled.label`
     display: flex;
     gap: 10px;
+    align-items: center;
+    cursor: pointer;
+    span {
+        font-size: 16px;
+        font-weight: 600;
+        line-height: 1.22;
+    }
 `;
-const Input = styled.input.attrs({ type: 'checkbox' })``;
+const Input = styled.input.attrs({ type: 'checkbox' })`
+    display: flex;
+`;
 
 const Box = styled.div<{ $checked: boolean }>`
     width: 25px;
@@ -22,7 +32,7 @@ const Box = styled.div<{ $checked: boolean }>`
     justify-content: center;
     align-items: center;
     color: #fff;
-    transition: background-color 0.4s;
+    transition: background-color 0.3s;
     ${({ $checked }) =>
         $checked &&
         css`
@@ -36,7 +46,7 @@ export const Checkbox = (props: CheckboxInputProps) => {
         <Wrapper>
             <Box $checked={props.checked ?? false}>{props.checked && <CheckIcon />}</Box>
             <Input {...props} />
-            <span>{props.labelText}</span>
+            <Typography>{props.labelText}</Typography>
         </Wrapper>
     );
 };
