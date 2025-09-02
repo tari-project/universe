@@ -81,7 +81,6 @@ const useTauriEventsListener = () => {
                     handleLogUpdate(event);
                     switch (event.event_type) {
                         case 'UpdateAppModuleStatus':
-                            console.debug(`UpdateAppModuleStatus `, event.payload);
                             handleAppModulesUpdate(event.payload);
                             break;
                         case 'SetupProgressUpdate':
