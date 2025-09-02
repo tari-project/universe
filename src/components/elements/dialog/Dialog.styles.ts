@@ -44,7 +44,7 @@ export const ContentScrollContainer = styled.div<ContentWrapperStyleProps>`
 `;
 
 export const Content = styled.div<ContentWrapperStyleProps>`
-    padding: ${({ $unPadded }) => ($unPadded ? 0 : '20px')};
+    padding: max(20px, 5%);
     flex-direction: column;
     overflow-y: ${({ $allowOverflow }) => ($allowOverflow ? 'unset' : 'auto')};
     overflow-x: ${({ $allowOverflow }) => ($allowOverflow ? 'unset' : 'hidden')};
@@ -52,4 +52,16 @@ export const Content = styled.div<ContentWrapperStyleProps>`
     width: 100%;
     height: 100%;
     position: relative;
+
+    ${({ $unPadded }) =>
+        $unPadded &&
+        css`
+            padding: 0;
+        `};
+`;
+
+export const CloseButtonContainer = styled.div`
+    display: flex;
+    justify-content: flex-end;
+    width: 100%;
 `;

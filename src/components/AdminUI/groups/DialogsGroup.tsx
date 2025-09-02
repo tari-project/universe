@@ -5,11 +5,13 @@ import { useAppStateStore } from '@app/store/appStateStore';
 import { setCriticalProblem, setDialogToShow, setShowExternalDependenciesDialog } from '@app/store/actions';
 import { useUIStore } from '@app/store/useUIStore.ts';
 import { DialogType } from '@app/store/types/ui.ts';
+import { useUserFeedbackStore } from '@app/store/stores/userFeedbackStore.ts';
 
 export function DialogsGroup() {
     const dialogToShow = useUIStore((s) => s.dialogToShow);
     const criticalProblem = useAppStateStore((s) => s.criticalProblem);
     const showExternalDependenciesDialog = useUIStore((s) => s.showExternalDependenciesDialog);
+    const toggleCloseDialog = useUserFeedbackStore((s) => s.toggleCloseDialog);
 
     function handleToggle(dialog: DialogType) {
         setDialogToShow(dialogToShow === dialog ? undefined : dialog);
@@ -19,6 +21,9 @@ export function DialogsGroup() {
         <>
             <CategoryLabel>Dialogs</CategoryLabel>
             <ButtonGroup>
+                <AdminButton onClick={toggleCloseDialog} $isActive>
+                    Close Survey
+                </AdminButton>
                 <AdminButton
                     onClick={() =>
                         setCriticalProblem(

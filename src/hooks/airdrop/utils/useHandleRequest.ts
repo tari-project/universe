@@ -23,6 +23,10 @@ async function retryHandler(errorMessage: string) {
     return await new Promise((resolve) => setTimeout(resolve, delay));
 }
 
+//  TODO -
+//   'un-airdrop" - use RWA language & move request handler
+//   added by @shanimal08
+
 export async function handleAirdropRequest<T>({ body, method, path, onError, headers, publicRequest }: RequestProps) {
     // use useConfigBEInMemoryStore now, not airdrop store for the URL
     const baseUrl = useConfigBEInMemoryStore.getState().airdrop_api_url;
