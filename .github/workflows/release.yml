@@ -546,10 +546,10 @@ jobs:
           MAIN_ARTIFACT_NAME="tari-universe-beta_${appVersion}_${platform}${extra}"
           artifacts=$(curl -s -H "Accept: application/vnd.github+json" \
             -H "Authorization: token ${{ github.token }}" \
-            "https://api.github.com/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts")
+            "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts")
           main_id=$(echo "$artifacts" | jq -r ".artifacts[] | select(.name == \"${MAIN_ARTIFACT_NAME}\") | .id")
           if [ -n "$main_id" ]; then
-            main_url="https://api.github.com/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${main_id}"
+            main_url="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${main_id}"
             main_safe=$(echo "$MAIN_ARTIFACT_NAME" | tr -c '[:alnum:]' '_')
             echo "GH_URL_${main_safe}=$main_url" >> "$GITHUB_ENV"
             echo "GH_MAIN_URL=$main_url" >> "$GITHUB_ENV"
@@ -558,7 +558,7 @@ jobs:
             BUNDLER_ARTIFACT_NAME="tari-universe-beta_${appVersion}_x64_en-US"
             bundler_id=$(echo "$artifacts" | jq -r ".artifacts[] | select(.name == \"${BUNDLER_ARTIFACT_NAME}\") | .id")
             if [ -n "$bundler_id" ]; then
-              bundler_url="https://api.github.com/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${bundler_id}"
+              bundler_url="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${bundler_id}"
               bundler_safe=$(echo "$BUNDLER_ARTIFACT_NAME" | tr -c '[:alnum:]' '_')
               echo "GH_URL_${bundler_safe}=$bundler_url" >> "$GITHUB_ENV"
               echo "GH_URL_BUNDLER=$bundler_url" >> "$GITHUB_ENV"
