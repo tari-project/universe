@@ -17,6 +17,13 @@ export const Form = styled.form`
 
 export const CheckboxWrapper = styled.div`
     display: flex;
+    width: 100%;
+    padding: 20px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.4);
+`;
 
-    border: 1px solid deeppink;
+export const TextboxWrapper = styled.div`
+    display: flex;
+    border: 1px solid firebrick;
 `;
