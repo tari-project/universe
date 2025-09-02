@@ -1,3 +1,18 @@
+🚀 TARI UNIVERSE v1.5.14: The Season of Light — Part 8
+
+_September 2, 2025_
+
+✨ WHAT'S NEW
+
+- 🔧 **Even Smarter Setup Process** – Completely redesigned setup with No Intro Screen and better error recovery. When things go wrong, you'll get clear options to restart individual components or send logs. The app can run with limited features if some modules fail (this was partially implemented in the previous release).
+- ⚡ **New "Turbo" Mining Mode** – We've added a new 🌪️ Turbo mode between Eco and Ludicrous! Your old Eco setting (10%) is now Turbo, and the new Eco mode uses just 1% CPU for ultra-light mining by default. This eliminates an initial source of pain for users where Eco mode was too intense for lower-end machines.
+- 🖥️ **Windows GPU Mining Fixes** – Enhanced support for tricky GPU setups with automatic driver detection, OpenCL package checking, and Windows Defender exclusions for mining files.
+- 🌐 **Performance Boost** – Massive reduction in network calls to remote nodes (up to 99% fewer requests) for snappier performance and less server load.
+- 🎨 **Polish & Fixes** – Better dark mode support, improved user avatars, fixed node switching issues. Note: We are aware of a UI issue with Remote + Local mode (falling back to Local when you are sync'd), which is that your sync progress is not displayed in the UI.
+- 👉 **Base Node Update** – 5.0.0 fixes the recent spike in frag and prepares the network for Cuckaroo (C29), Along with many other under-the-hood improvements.
+
+---
+
 🚀 TARI UNIVERSE v1.5.12: The Season of Light — Part 7
 
 _August 25, 2025_
