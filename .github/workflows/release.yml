@@ -514,7 +514,7 @@ jobs:
               basename=$(basename "$artifact")
               aws --endpoint-url "$S3_ENDPOINT_URL" s3 cp "$artifact" "s3://${S3_BUCKET}/${TARI_NETWORK}/$basename" --acl private
               presigned_url=$(aws --endpoint-url "$S3_ENDPOINT_URL" s3 presign "s3://${S3_BUCKET}/${TARI_NETWORK}/$basename" --expires-in 69420)
-              safe_name=$(echo "$basename" | tr -c '[:alnum:]' '_')
+              safe_name=$(echo "$basename" | tr -cd '[:alnum:]')
               echo "S3_URL_${safe_name}=$presigned_url" >> "$GITHUB_ENV"
             fi
           done < <(echo "$artifactPaths" | jq -r '.[]')
@@ -526,7 +526,7 @@ jobs:
                 aws --endpoint-url "$S3_ENDPOINT_URL" s3 cp "$bundler" "s3://${S3_BUCKET}/${TARI_NETWORK}/$basename" --acl private
                 presigned_url=$(aws --endpoint-url "$S3_ENDPOINT_URL" s3 presign "s3://${S3_BUCKET}/${TARI_NETWORK}/$basename" --expires-in 69420)
                 public_url="${PUBLIC_BASE_URL}/${TARI_NETWORK}/${basename}"
-                safe_name=$(echo "$basename" | tr -c '[:alnum:]' '_')
+                safe_name=$(echo "$basename" | tr -cd '[:alnum:]')
                 echo "S3_URL_${safe_name}=$presigned_url" >> "$GITHUB_ENV"
                 echo "S3_PUBLIC_URL_${safe_name}=$public_url" >> "$GITHUB_ENV"
                 echo "S3_URL_BUNDLER=$presigned_url" >> "$GITHUB_ENV"
