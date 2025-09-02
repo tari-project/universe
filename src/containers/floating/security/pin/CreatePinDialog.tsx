@@ -39,7 +39,7 @@ export default function CreatePinDialog() {
 
     return (
         <Dialog open={isOpen} onOpenChange={handleClose}>
-            <DialogContent $transparentBg $unPadded $zIndex={105}>
+            <DialogContent variant="transparent">
                 <Wrapper>
                     <Header>
                         <div /> <CloseButton onClick={handleClose} />

@@ -5,7 +5,8 @@ import { Trans, useTranslation } from 'react-i18next';
 import { Stack } from '@app/components/elements/Stack';
 import { Typography } from '@app/components/elements/Typography';
 import { IoCheckmarkOutline, IoCopyOutline } from 'react-icons/io5';
-import { CircularProgress } from '@app/components/elements/CircularProgress';
+
+import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 
 export const useErrorDialogsButtonsLogic = () => {
     const { t } = useTranslation(['setup-progresses', 'common'], { useSuspense: false });
@@ -64,11 +65,11 @@ export const useErrorDialogsButtonsLogic = () => {
                 </Stack>
             );
         }
-        return isSubmittingLogs ? <CircularProgress /> : <Trans t={t}>send-logs</Trans>;
+        return isSubmittingLogs ? <LoadingDots /> : <Trans t={t}>send-logs</Trans>;
     }, [logsSubmissionId, isSubmittingLogs, isCopied, t]);
 
     const handleSeperateLogsButtonText = useMemo(() => {
-        return isSubmittingLogs ? <CircularProgress /> : <Trans t={t}>send-logs</Trans>;
+        return isSubmittingLogs ? <LoadingDots /> : <Trans t={t}>send-logs</Trans>;
     }, [isSubmittingLogs, t]);
 
     const handleLogsSubbmissionIdButtonText = useMemo(() => {

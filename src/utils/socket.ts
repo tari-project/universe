@@ -47,6 +47,7 @@ function removeSocket() {
         unlistenWsStatusChange = null;
         console.info('WebSocket status listener unlistened.');
     }
+    socketInitialised = false;
 }
 
 function restartSocket() {
