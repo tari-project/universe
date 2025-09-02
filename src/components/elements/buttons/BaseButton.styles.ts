@@ -34,17 +34,21 @@ export const StyledButton = styled.button<ButtonStyleProps>`
 
     ${({ $variant, $color, $disableColour, theme, $backgroundColor }) => {
         switch ($variant) {
-            case 'outlined':
-                return css`
-                    color: ${theme.palette.text.primary};
-                    background-color: ${$backgroundColor
-                        ? convertHexToRGBA(theme?.colors[$backgroundColor ?? 'grey']?.[500], 0.02)
-                        : theme.palette.action.background};
-                    border: 1px solid
-                        ${$backgroundColor
-                            ? theme?.colors[$backgroundColor ?? 'grey']?.[500]
-                            : theme.colorsAlpha.greyscaleAlpha[20]};
-                `;
+            case 'outlined': {
+                if ($backgroundColor && $backgroundColor.startsWith('#')) {
+                    return css`
+                        color: ${theme.palette.text.primary};
+                        background-color: ${convertHexToRGBA(theme?.colors[$backgroundColor ?? 'grey']?.[500], 0.02)};
+                        border: 1px solid ${theme?.colors[$backgroundColor ?? 'grey']?.[500]};
+                    `;
+                } else {
+                    return css`
+                        color: ${theme.palette.text.primary};
+                        background-color: ${theme.palette.action.background};
+                        border: 1px solid ${theme.colorsAlpha.greyscaleAlpha[20]};
+                    `;
+                }
+            }
             case 'gradient':
                 return css`
                     background-image: linear-gradient(86deg, #780eff -4.33%, #bf28ff 102.27%);
