@@ -1898,7 +1898,7 @@ pub async fn websocket_connect(
             if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
                 warn!(target: LOG_TARGET, "websocket_connect took too long: {:?}", timer.elapsed());
             }
-            info!(target: LOG_TARGET, "websocket_connect command finished after {} retries", retry_count);
+            info!(target: LOG_TARGET, "websocket_connect command finished after {retry_count} retries");
             return Ok(());
         }
 
@@ -1909,22 +1909,20 @@ pub async fn websocket_connect(
 
         // Check if we've exceeded max retries or total timeout
         if retry_count > MAX_RETRIES {
-            warn!(target: LOG_TARGET, "websocket_connect failed after {} retries - websocket manager not ready", MAX_RETRIES);
+            warn!(target: LOG_TARGET, "websocket_connect failed after {MAX_RETRIES} retries - websocket manager not ready");
             return Err(format!(
-                "websocket manager not ready after {} retries",
-                MAX_RETRIES
+                "websocket manager not ready after {MAX_RETRIES} retries"
             ));
         }
 
         if timer.elapsed().as_secs() >= MAX_TOTAL_TIMEOUT_SECS {
             warn!(target: LOG_TARGET, "websocket_connect timed out after {:?} - websocket manager not ready", timer.elapsed());
             return Err(format!(
-                "websocket manager not ready after {}s timeout",
-                MAX_TOTAL_TIMEOUT_SECS
+                "websocket manager not ready after {MAX_TOTAL_TIMEOUT_SECS}s timeout"
             ));
         }
 
-        info!(target: LOG_TARGET, "websocket_connect retry {} in {}ms - websocket manager not ready yet", retry_count, delay_ms);
+        info!(target: LOG_TARGET, "websocket_connect retry {retry_count} in {delay_ms}ms - websocket manager not ready yet");
 
         // Sleep with exponential backoff
         sleep(Duration::from_millis(delay_ms));
@@ -1938,7 +1936,7 @@ pub async fn websocket_get_status(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<String, String> {
     let status = state.websocket_manager_status_rx.borrow().clone();
-    Ok(format!("{:?}", status))
+    Ok(format!("{status:?}"))
 }
 
 #[tauri::command]
