@@ -513,7 +513,7 @@ jobs:
             if [ -f "$artifact" ]; then
               basename=$(basename "$artifact")
               aws --endpoint-url "$S3_ENDPOINT_URL" s3 cp "$artifact" "s3://${S3_BUCKET}/${TARI_NETWORK}/$basename" --acl private
-              presigned_url=$(aws --endpoint-url "$S3_ENDPOINT_URL" s3 presign "s3://${S3_BUCKET}/${TARI_NETWORK}/$basename" --expires-in 69420)
+              presigned_url=$(aws --endpoint-url "$S3_ENDPOINT_URL" s3 presign "s3://${S3_BUCKET}/${TARI_NETWORK}/$basename" --expires-in 604800)
               safe_name=$(echo "$basename" | tr -c '[:alnum:]' '_')
               echo "S3_URL_${safe_name}=$presigned_url" >> "$GITHUB_ENV"
             fi
@@ -524,7 +524,7 @@ jobs:
               if [ -f "$bundler" ]; then
                 basename=$(basename "$bundler")
                 aws --endpoint-url "$S3_ENDPOINT_URL" s3 cp "$bundler" "s3://${S3_BUCKET}/${TARI_NETWORK}/$basename" --acl private
-                presigned_url=$(aws --endpoint-url "$S3_ENDPOINT_URL" s3 presign "s3://${S3_BUCKET}/${TARI_NETWORK}/$basename" --expires-in 69420)
+                presigned_url=$(aws --endpoint-url "$S3_ENDPOINT_URL" s3 presign "s3://${S3_BUCKET}/${TARI_NETWORK}/$basename" --expires-in 604800)
                 public_url="${PUBLIC_BASE_URL}/${TARI_NETWORK}/${basename}"
                 safe_name=$(echo "$basename" | tr -c '[:alnum:]' '_')
                 echo "S3_URL${safe_name}=$presigned_url" >> "$GITHUB_ENV"
@@ -622,7 +622,7 @@ jobs:
             if [ -f "$EXE_FILE" ]; then
               ASSET_NAME=$(basename "$EXE_FILE")
               if [ "${{ github.event.inputs.asset_destination }}" = "s3" ]; then
-                ASSET_URL="${S3_PUBLIC_URL_BUNDLER}"  # Use public URL to avoid expiration
+                ASSET_URL="${S3_URL_BUNDLER}"
               else
                 ASSET_URL="$BUNDLER_URL"
               fi
