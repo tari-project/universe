@@ -25,7 +25,7 @@ async function fetchSurvey(slug: string): Promise<Survey> {
 }
 
 export function useFetchSurveyContent() {
-    const slug = 'survey-close';
+    const slug = 'survey-close'; // TODO: ask for for route for survey type
     return useQuery<Survey>({
         queryKey: [KEY_SURVEYS],
         queryFn: async () => await fetchSurvey(slug),

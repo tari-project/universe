@@ -1,3 +1,7 @@
+export enum SurveyType {
+    CLOSE = 'close',
+    LONG = 'long',
+}
 export enum SurveyQuestionType {
     RADIO = 'radio',
     CHECKBOX = 'checkbox',
@@ -24,6 +28,7 @@ export interface SurveyQuestion {
 export interface Survey {
     id: string;
     title: string;
+    type: SurveyType;
     description?: string;
     slug: string;
     isActive: boolean;

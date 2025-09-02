@@ -6,7 +6,6 @@ import SurveyForm from './SurveyForm.tsx';
 
 export default function UserSurvey() {
     const { data: survey } = useFetchSurveyContent();
-
     return survey ? (
         <Wrapper>
             <Chip>
