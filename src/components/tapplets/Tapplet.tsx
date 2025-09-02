@@ -18,10 +18,13 @@ export const Tapplet = forwardRef<HTMLIFrameElement, TappletProps>(({ tapplet, i
     const tappletRef = useRef<HTMLIFrameElement | null>(null);
     const tappSigner = useTappletSignerStore((s) => s.tappletSigner);
     const runTransaction = useTappletSignerStore((s) => s.runTransaction);
+    const runBridgeTransaction = useTappletSignerStore((s) => s.runBridgeTransaction);
     const language = useConfigUIStore((s) => s.application_language);
     const theme = useUIStore((s) => s.theme);
     const activeTapplet = useTappletsStore((s) => s.activeTapplet);
     const disabled = tapplet.tapplet_id !== activeTapplet?.tapplet_id;
+    const showTapplet = useUIStore((s) => s.showTapplet);
+    console.warn(`💸 SHOW TAPPLET :`, showTapplet, activeTapplet?.display_name, tapplet.display_name, disabled);
 
     const setRefs = useCallback(
         (node: HTMLIFrameElement | null) => {
@@ -66,6 +69,13 @@ export const Tapplet = forwardRef<HTMLIFrameElement, TappletProps>(({ tapplet, i
             await runTransaction(event);
         },
         [runTransaction]
+    );
+
+    const runBridgeTx = useCallback(
+        async (event: MessageEvent) => {
+            await runBridgeTransaction(event);
+        },
+        [runBridgeTransaction]
     );
 
     const sendAppLanguage = useCallback(() => {
@@ -147,6 +157,10 @@ export const Tapplet = forwardRef<HTMLIFrameElement, TappletProps>(({ tapplet, i
             case MessageType.SIGNER_CALL:
                 console.warn('[TAPPLET] handle iframe msg type signer call:', event.data.type);
                 runTappletTx(event);
+                break;
+            case MessageType.BRIDGE_CALL:
+                console.warn('[TAPPLET] handle iframe msg type bridge call:', event.data.type);
+                runBridgeTx(event);
                 break;
             case MessageType.OPEN_EXTERNAL_LINK: {
                 console.info('[TAPPLET] handle iframe msg type ext link:', event.data.type);

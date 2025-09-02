@@ -17,6 +17,7 @@ export default function Dashboard() {
         s.features?.includes(FEATURE_FLAGS.FF_UI_ORPHAN_CHAIN_DISABLED)
     );
     useMiningStatesSync();
+    console.warn(`💸 RUNNING TAPPLETS :`, runningTapplets);
 
     return (
         <DashboardContentContainer $tapplet={showTapplet}>

@@ -1,7 +1,7 @@
 import { TappletSigner } from '@app/types/tapplets/TappletSigner.ts';
 import { create } from './create.ts';
 import { setError } from './index.ts';
-import { TransactionEvent } from '@app/types/tapplets/transaction.ts';
+import { BridgeTransactionEvent, TransactionEvent } from '@app/types/tapplets/transaction.ts';
 import { TappletSignerParams } from '@app/types/tapplets/tapplet.types.ts';
 import { MessageType } from '@app/hooks/swap/useIframeMessage.ts';
 
@@ -14,6 +14,7 @@ interface Actions {
     initTappletSigner: () => Promise<void>;
     setTappletSigner: (id: string) => Promise<void>;
     runTransaction: (event: MessageEvent<TransactionEvent>) => Promise<void>;
+    runBridgeTransaction: (event: MessageEvent) => Promise<void>;
 }
 
 type TappletSignerStoreState = State & Actions;
@@ -60,12 +61,30 @@ export const useTappletSignerStore = create<TappletSignerStoreState>()((set, get
     runTransaction: async (event: MessageEvent<TransactionEvent>) => {
         console.warn(`🐼 Running L2 method :`, { event });
         const { methodName, args, id } = event.data.payload;
-
+        console.warn(`🐼 ENVS GET signer`);
         try {
             const signer = get().tappletSigner;
+            console.warn(`🐼ENVS GET signer found ${signer?.signerName}`);
             const result = await signer?.runOne(methodName, args);
             if (event.source) {
                 event.source.postMessage({ id, result, type: MessageType.SIGNER_CALL }, { targetOrigin: event.origin });
+            }
+        } catch (error) {
+            console.error(`Error running method "${String(methodName)}": ${error}`);
+            setError(`Error running method "${String(methodName)}": ${error}`);
+        }
+    },
+    // THIS NEEDS TO BE DONE TO BE COMPATIBLE WITH THE BRIDGE VERSION <= 0.2.0
+    runBridgeTransaction: async (event: MessageEvent<BridgeTransactionEvent>) => {
+        console.warn(`🔫  Running BRIDGE method :`, { event });
+        const { methodName, args, id } = event.data;
+        console.warn(`🔫  ENVS GET signer`);
+        try {
+            const signer = get().tappletSigner;
+            console.warn(`🔫 ENVS GET signer found ${signer?.signerName}`);
+            const result = await signer?.runOne(methodName, args);
+            if (event.source) {
+                event.source.postMessage({ id, result, type: MessageType.BRIDGE_CALL }, { targetOrigin: event.origin });
             }
         } catch (error) {
             console.error(`Error running method "${String(methodName)}": ${error}`);

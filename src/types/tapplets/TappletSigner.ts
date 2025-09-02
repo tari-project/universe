@@ -114,7 +114,9 @@ export class TappletSigner extends TappletSignerL2 {
 
     public async getBridgeEnvs(): Promise<BridgeEnvs | undefined> {
         try {
+            console.warn(`🔥ENVS GET"`);
             const envs = await invoke('get_bridge_envs');
+            console.warn(`🔥ENVS "${envs}"`);
             return envs;
         } catch (error) {
             setStoreError(`Error sending transaction: ${error}`);

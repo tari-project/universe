@@ -8,3 +8,10 @@ export interface TransactionEvent {
         id: number;
     };
 }
+
+export interface BridgeTransactionEvent {
+    methodName: Exclude<keyof TappletSigner, 'runOne'>;
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+    args: any[];
+    id: number;
+}

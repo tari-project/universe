@@ -13,6 +13,7 @@ export enum MessageType {
     SET_FULLSCREEN = 'SET_FULLSCREEN',
     GET_PARENT_SIZE = 'request-parent-size',
     SIGNER_CALL = 'SIGNER_CALL',
+    BRIDGE_CALL = 'signer-call',
     GET_INIT_CONFIG = 'GET_INIT_CONFIG',
     OPEN_EXTERNAL_LINK = 'OPEN_EXTERNAL_LINK',
     SET_THEME = 'SET_THEME',
@@ -116,6 +117,10 @@ interface SignerCallMessage {
     type: MessageType.SIGNER_CALL;
 }
 
+interface BridgeCallMessage {
+    type: MessageType.BRIDGE_CALL;
+}
+
 interface SetLanguageMessage {
     type: MessageType.SET_LANGUAGE;
     payload: {
@@ -163,7 +168,8 @@ export type IframeMessage =
     | SetThemeMessage
     | SetLanguageMessage
     | EmitNotificationMessage
-    | InterTappletMessage;
+    | InterTappletMessage
+    | BridgeCallMessage;
 
 // Hook to listen for messages from the parent window
 export function useIframeMessage(onMessage: (event: MessageEvent<IframeMessage>) => void) {
@@ -171,7 +177,7 @@ export function useIframeMessage(onMessage: (event: MessageEvent<IframeMessage>)
         function handleMessage(event: MessageEvent<IframeMessage>) {
             // Optionally, add origin checks here for security
             onMessage(event);
-            if (event?.data.type !== undefined) console.warn('EVENT LISTENER', event.data.type);
+            if (event?.data.type !== undefined) console.warn('EVENT LISTENER', event.data.type, event.data);
         }
         window.addEventListener('message', handleMessage);
         return () => {

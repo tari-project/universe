@@ -15,7 +15,7 @@ const BridgeButton = memo(function BridgeButton() {
 
     function handleToggleOpen() {
         if (isDisabled) return;
-        setActiveTappById(BRIDGE_TAPPLET_ID, true);
+        setActiveTappById(1000, true); //TODO fix tapp id
         setShowTapplet(true);
         setSidebarOpen(false);
     }
