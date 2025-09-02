@@ -32,12 +32,18 @@ export default function Peers() {
     const { t } = useTranslation('settings');
     const isConnectedToTariNetwork = useNodeStore((state) => state.isNodeConnected);
     const nodeIdentity = useNodeStore((state) => state.node_identity);
+    const baseNodeStatus = useNodeStore((state) => state.base_node_status);
+    const nodeType = useNodeStore((state) => state.node_type);
     const [connectedPeers, setConnectedPeers] = useState<string[]>([]);
     const listMarkup = connectedPeers.map((peer, i) => <li key={`peer-${peer}:${i}`}>{peer}</li>);
 
     useEffect(() => {
         invoke('list_connected_peers').then((peers) => setConnectedPeers(peers));
-    }, [nodeIdentity]);
+    }, [nodeIdentity?.public_key, baseNodeStatus?.num_connections]);
+
+    useEffect(() => {
+        setConnectedPeers([]);
+    }, [nodeType]);
 
     return (
         <SettingsGroupWrapper>
@@ -56,7 +62,7 @@ export default function Peers() {
                         {connectedPeers?.length ? (
                             <ol>{listMarkup}</ol>
                         ) : (
-                            <p>{isConnectedToTariNetwork ? 0 : t('not-connected-to-tari')}</p>
+                            <p>{isConnectedToTariNetwork ? '-' : t('not-connected-to-tari')}</p>
                         )}
                     </Stack>
                 </SettingsGroupContent>

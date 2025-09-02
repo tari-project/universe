@@ -16,7 +16,7 @@ interface NodeStoreState {
     backgroundNodeSyncLastUpdate?: BackgroundNodeSyncUpdatePayload;
     tor_entry_guards: string[];
     isNodeConnected: boolean;
-    base_node_status: BaseNodeStatus;
+    base_node_status?: BaseNodeStatus;
 }
 
 const initialState: NodeStoreState = {
@@ -28,17 +28,7 @@ const initialState: NodeStoreState = {
     node_connection_address: '',
     tor_entry_guards: [],
     isNodeConnected: false,
-    base_node_status: {
-        sha_network_hashrate: 0,
-        monero_randomx_network_hashrate: 0,
-        tari_randomx_network_hashrate: 0,
-        block_reward: 0,
-        block_height: 0,
-        block_time: 0,
-        is_synced: false,
-        num_connections: 0,
-        readiness_status: '',
-    },
+    base_node_status: undefined,
 };
 
 export const useNodeStore = create<NodeStoreState>()(() => ({
