@@ -275,7 +275,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
     async fn finalize_setup(&self) -> Result<(), Error> {
         let app_handle_clone: tauri::AppHandle = self.app_handle.clone();
         TasksTrackers::current()
-            .common.get_task_tracker().await
+            .node_phase.get_task_tracker().await
             .spawn(async move {
                 let app_state = app_handle_clone.state::<UniverseAppState>().clone();
                 let mut node_status_watch_rx = (*app_state.node_status_watch_rx).clone();
@@ -324,15 +324,6 @@ impl SetupPhaseImpl for NodeSetupPhase {
             if let Ok(tor_guards) = tor_guards {
                 EventsEmitter::emit_tor_entry_guards(tor_guards).await;
             }
-        }
-
-        let progress_stepper = self.progress_stepper.lock().await;
-        let setup_warnings = progress_stepper.get_setup_warnings();
-        if setup_warnings.is_empty() {
-            self.status_sender.send(PhaseStatus::Success)?;
-        } else {
-            self.status_sender
-                .send(PhaseStatus::SuccessWithWarnings(setup_warnings.clone()))?;
         }
 
         let mut shutdown_signal_clone = shutdown_signal.clone();
@@ -387,6 +378,15 @@ impl SetupPhaseImpl for NodeSetupPhase {
                     }
                 }
             });
+
+        let progress_stepper = self.progress_stepper.lock().await;
+        let setup_warnings = progress_stepper.get_setup_warnings();
+        if setup_warnings.is_empty() {
+            self.status_sender.send(PhaseStatus::Success)?;
+        } else {
+            self.status_sender
+                .send(PhaseStatus::SuccessWithWarnings(setup_warnings.clone()))?;
+        }
 
         Ok(())
     }
