@@ -2,7 +2,6 @@ import { CSSProperties, HTMLProps, ReactNode, Ref } from 'react';
 type DialogVariant = 'primary' | 'transparent' | 'wrapper';
 
 export interface DialogOptions {
-    customId?: string;
     open: boolean;
     onOpenChange?: (open: boolean) => void;
     disableClose?: boolean;

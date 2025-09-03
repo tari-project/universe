@@ -11,7 +11,6 @@ const MotionWrapper = motionCreate(ContentWrapper);
 
 export function Dialog({ children, ...options }: DialogProps) {
     const dialog = useDialog(options);
-
     return <DialogContext.Provider value={dialog}>{children}</DialogContext.Provider>;
 }
 

@@ -54,7 +54,7 @@ const SettingsModal = memo(function SettingsModal() {
     const title = activeSection === 'releaseNotes' ? sectionTitle : `${sectionTitle} ${t('settings')}`;
 
     return (
-        <Dialog open={isSettingsOpen} onOpenChange={onOpenChange} customId={'settings'}>
+        <Dialog open={isSettingsOpen} onOpenChange={onOpenChange}>
             <DialogContent $unPadded>
                 <Container>
                     <SettingsNavigation activeSection={activeSection} onChangeActiveSection={setActiveSection} />
