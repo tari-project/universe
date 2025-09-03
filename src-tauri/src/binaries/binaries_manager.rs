@@ -243,12 +243,12 @@ impl BinaryManager {
         };
 
         let mut version_folder = binary_folder.join(&self.selected_version);
-        let binary_file = version_folder.join(
-            Binaries::from_name(&self.binary_name).binary_file_name(self.selected_version.clone()),
-        );
         if let Some(subfolder) = self.binary_subfolder() {
             version_folder.push(subfolder);
         }
+        let binary_file = version_folder.join(
+            Binaries::from_name(&self.binary_name).binary_file_name(self.selected_version.clone()),
+        );
         let binary_file_with_exe = binary_file.with_extension("exe");
         let binary_file_with_html = version_folder.join("index.html");
 
