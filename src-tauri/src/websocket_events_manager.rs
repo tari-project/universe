@@ -84,7 +84,7 @@ impl WebsocketEventsManager {
         websocket_manager: Arc<RwLock<WebsocketManager>>,
     ) {
         self.app = Some(app);
-        let _ = self.websocket_connect(websocket_manager).await;
+        drop(self.websocket_connect(websocket_manager).await);
     }
 
     // If we ever close websocket manager connection we should stop emitting messages using this
@@ -249,12 +249,12 @@ impl WebsocketEventsManager {
             "token": jwt_token,
         });
 
-        return Some(WebsocketMessage {
+        Some(WebsocketMessage {
             event: "keep-alive".into(),
             data: Some(payload),
             signature: None,
             pub_key: None,
-        });
+        })
     }
 
     async fn websocket_connect(
