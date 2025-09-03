@@ -1,5 +1,6 @@
 import styled from 'styled-components';
 import { TextArea } from '@app/components/elements/inputs/TextArea.tsx';
+import { Typography } from '@app/components/elements/Typography.tsx';
 
 export const Form = styled.form`
     display: flex;
@@ -12,6 +13,14 @@ export const FormContent = styled.div`
     display: flex;
     flex-direction: column;
 `;
+
+export const Description = styled(Typography)`
+    color: ${({ theme }) => theme.palette.text.accent};
+    font-size: clamp(12px, 0.4rem + 0.5vh, 16px);
+    line-height: 1.02;
+    font-weight: 400;
+`;
+
 export const ItemWrapper = styled.div`
     display: flex;
     flex-direction: column;
@@ -54,3 +63,5 @@ export const CTAWrapper = styled.div`
     font-weight: 500;
     font-size: 18px;
 `;
+
+

@@ -20,9 +20,3 @@ export const Title = styled(Typography)`
     line-height: 1.6;
 `;
 
-export const Description = styled(Typography)`
-    color: ${({ theme }) => theme.palette.text.accent};
-    font-size: clamp(12px, 0.4rem + 0.5vh, 16px);
-    line-height: 1.02;
-    font-weight: 400;
-`;

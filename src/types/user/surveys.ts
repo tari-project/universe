@@ -24,6 +24,7 @@ export interface SurveyQuestion {
     questionType: SurveyQuestionType;
     order: number;
     options?: SurveyQuestionOption[];
+    value?: string;
 }
 
 export interface Survey {

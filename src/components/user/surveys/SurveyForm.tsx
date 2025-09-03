@@ -1,109 +1,55 @@
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
 
-import { SurveyAnswerInput, SurveyQuestion } from '@app/types/user/surveys.ts';
+import { Survey, SurveyQuestion, SurveyQuestionOption } from '@app/types/user/surveys.ts';
 import { Checkbox } from '@app/components/elements/inputs/Checkbox.tsx';
 import { TextButton } from '@app/components/elements/buttons/TextButton.tsx';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
-import { CTAWrapper, Form, FormContent, ItemWrapper, TextItem, TextItemLabel } from './surveyForm.styles.ts';
-import { useConfigCoreStore } from '@app/store';
-import { useSendFeedback } from '@app/hooks/user/surveys/useSendFeedback.ts';
+import {
+    CTAWrapper,
+    Description,
+    Form,
+    FormContent,
+    ItemWrapper,
+    TextItem,
+    TextItemLabel,
+} from './surveyForm.styles.ts';
 
 interface SurveyFormProps {
-    questions: SurveyQuestion[];
+    surveyContent: Survey;
 }
-
-type Question = Pick<SurveyQuestion, 'id' | 'questionText' | 'questionType'> & {
-    checked: boolean;
-    value?: string;
-};
+type CheckOpt = SurveyQuestionOption & { checked: boolean };
 interface QuestionFields {
-    questionField: Question[];
+    textQuestions: SurveyQuestion[];
+    checkOptions: CheckOpt[];
 }
-export default function SurveyForm({ questions }: SurveyFormProps) {
-    const anon_id = useConfigCoreStore((s) => s.anon_id);
-    const { mutate } = useSendFeedback();
-    const defaultValues = questions.map((q) => ({ ...q, checked: false, value: '' }));
-    const { control, setValue, watch, handleSubmit } = useForm<QuestionFields>({
-        defaultValues: { questionField: defaultValues },
-    });
-    const { fields } = useFieldArray({
-        control,
-        name: 'questionField',
-    });
 
-    const watchedField = watch('questionField');
+export default function SurveyForm({ surveyContent }: SurveyFormProps) {
+    const checkOptions = surveyContent.questions
+        ?.filter((q) => q.questionType === 'checkbox')
+        .flatMap((q) => q.options)
+        .map((o) => ({ ...o, checked: false }));
+
+    const textQuestions = surveyContent.questions
+        ?.filter((q) => q.questionType === 'text')
+        .map((q) => ({ ...q, value: '' }));
+
+    const { control, setValue, handleSubmit } = useForm<QuestionFields>({
+        defaultValues: { textQuestions, checkOptions },
+    });
+    const { fields: textFields } = useFieldArray({ control, name: 'textQuestions' });
+    const { fields: checkFields } = useFieldArray({ control, name: 'checkOptions' });
+
     function parseData(_data: QuestionFields) {
-        const answers = watchedField
-            .map((f) => {
-                if (f.questionType === 'text') {
-                    return {
-                        questionId: f.id,
-                        answerText: f.value,
-                    };
-                }
-                return null;
-                // if (f.questionType === 'checkbox') {
-                //     const selectedOptionIds = f.checked ? [f.id] : [];
-                //     return {
-                //         questionId: f.id,
-                //         selectedOptionIds,
-                //     };
-                // }
-            })
-            .filter((x) => !!x) as SurveyAnswerInput[];
-
-        const metadata = {
-            userId: anon_id,
-            appId: anon_id,
-            operatingSystem: 'string',
-            universeVersion: 'string',
-            network: 'string',
-            mode: 'string',
-            extraData: {},
-        };
-
-        mutate({
-            slug: 'survey-close',
-            feedbackBody: {
-                answers,
-                metadata,
-            },
-        });
+        console.debug(`_data= `, _data);
     }
 
-    const fieldMarkup = fields.map((q, i) => {
-        if (q.questionType === 'checkbox') {
-            return (
-                <Controller
-                    control={control}
-                    key={q.id}
-                    name={`questionField.${i}.checked`}
-                    render={({ field }) => {
-                        function handleChange(value: boolean) {
-                            setValue(field.name, value);
-                        }
-                        return (
-                            <ItemWrapper>
-                                <Checkbox
-                                    {...field}
-                                    id={field.name}
-                                    labelText={q.questionText}
-                                    checked={field.value}
-                                    handleChange={handleChange}
-                                />
-                            </ItemWrapper>
-                        );
-                    }}
-                />
-            );
-        }
-
+    const fieldMarkup = textFields.map((q, i) => {
         return (
             <Controller
                 control={control}
                 key={q.id}
-                name={`questionField.${i}.value`}
+                name={`textQuestions.${i}.value`}
                 render={({ field }) => {
                     return (
                         <>
@@ -123,9 +69,38 @@ export default function SurveyForm({ questions }: SurveyFormProps) {
         );
     });
 
+    const checks = checkFields.map((q, i) => {
+        return (
+            <Controller
+                control={control}
+                key={q.id}
+                name={`checkOptions.${i}.checked`}
+                render={({ field }) => {
+                    function handleChange(value: boolean) {
+                        setValue(field.name, value);
+                    }
+
+                    return (
+                        <ItemWrapper key={q.id}>
+                            <Checkbox
+                                id={field.name}
+                                labelText={q.optionText}
+                                checked={field.value}
+                                handleChange={handleChange}
+                            />
+                        </ItemWrapper>
+                    );
+                }}
+            />
+        );
+    });
+
     return (
         <Form onSubmit={handleSubmit(parseData)}>
-            <FormContent>{fieldMarkup}</FormContent>
+            <FormContent>
+                {checks}
+                {fieldMarkup}
+            </FormContent>
             <CTAWrapper>
                 <Button type="submit" fluid size="xlarge" variant="black">{`Send Feedback`}</Button>
                 <TextButton size="large" type="reset">
