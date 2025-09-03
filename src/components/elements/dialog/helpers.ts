@@ -2,8 +2,8 @@ import { createContext, useContext, useMemo } from 'react';
 import { useClick, useDismiss, useFloating, useFloatingNodeId, useInteractions, useRole } from '@floating-ui/react';
 import { DialogOptions } from './types.ts';
 
-export function useDialog({ open, onOpenChange, disableClose = false }: DialogOptions) {
-    const nodeId = useFloatingNodeId();
+export function useDialog({ open, onOpenChange, disableClose = false, customId }: DialogOptions) {
+    const nodeId = useFloatingNodeId(customId);
     const data = useFloating({ nodeId, open, onOpenChange });
     const role = useRole(data.context);
     const click = useClick(data.context, { enabled: open == null });
