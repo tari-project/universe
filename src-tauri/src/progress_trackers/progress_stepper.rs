@@ -252,6 +252,7 @@ impl ProgressStepper {
     /// ### Returns
     /// Result indicating success or failure of the step completion
     /// This method will remove the step from the list of steps and update the progress accumulator.
+    #[allow(dead_code)]
     pub async fn finish_tracked_step(
         &mut self,
         step: SetupStep,
@@ -274,6 +275,7 @@ impl ProgressStepper {
     /// Resolves step as completed successfully and emits the completion update.
     /// ### Arguments
     /// * `step` - the step to skip e.g. `SetupStep::BinariesWallet`
+    #[allow(dead_code)]
     pub async fn skip_step(&mut self, step: SetupStep) -> Result<(), anyhow::Error> {
         if let Some(index) = self.steps.iter().position(|s| s.get_step() == &step) {
             let removed_step = self.steps.remove(index);
