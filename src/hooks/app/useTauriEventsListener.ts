@@ -57,6 +57,7 @@ import {
     handleSeedBackedUp,
     handleSelectedTariAddressChange,
 } from '@app/store/actions/walletStoreActions';
+import { toggleCloseDialog } from '@app/store/stores/userFeedbackStore.ts';
 
 const LOG_EVENT_TYPES = ['WalletAddressUpdate', 'CriticalProblem', 'MissingApplications'];
 
@@ -80,6 +81,10 @@ const useTauriEventsListener = () => {
                 async ({ payload: event }: { payload: BackendStateUpdateEvent }) => {
                     handleLogUpdate(event);
                     switch (event.event_type) {
+                        case 'ShowFeedbackDialog': {
+                            toggleCloseDialog();
+                            break;
+                        }
                         case 'UpdateAppModuleStatus':
                             handleAppModulesUpdate(event.payload);
                             break;

@@ -195,4 +195,8 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'SeedBackedUp';
           payload: boolean;
+      }
+    | {
+          event_type: 'ShowFeedbackDialog';
+          payload: undefined;
       };

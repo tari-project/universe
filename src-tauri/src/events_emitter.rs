@@ -700,4 +700,18 @@ impl EventsEmitter {
             error!(target: LOG_TARGET, "Failed to emit SeedBackedUp event: {e:?}");
         }
     }
+
+    pub async fn emit_show_feedback_dialog() {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::ShowFeedbackDialog,
+            payload: (),
+        };
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
+            error!(target: LOG_TARGET, "Failed to emit ShowFeedbackDialog event: {e:?}");
+        }
+    }
 }

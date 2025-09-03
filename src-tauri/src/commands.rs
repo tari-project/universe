@@ -240,6 +240,8 @@ pub async fn download_and_start_installer(id: String) -> Result<(), String> {
 
 #[tauri::command]
 pub async fn exit_application(_window: tauri::Window, app: tauri::AppHandle) -> Result<(), String> {
+    EventsEmitter::emit_show_feedback_dialog().await;
+
     TasksTrackers::current().stop_all_processes().await;
 
     app.exit(0);

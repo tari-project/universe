@@ -275,7 +275,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
     async fn finalize_setup(&self) -> Result<(), Error> {
         let app_handle_clone: tauri::AppHandle = self.app_handle.clone();
         TasksTrackers::current()
-            .common.get_task_tracker().await
+            .node_phase.get_task_tracker().await
             .spawn(async move {
                 let app_state = app_handle_clone.state::<UniverseAppState>().clone();
                 let mut node_status_watch_rx = (*app_state.node_status_watch_rx).clone();

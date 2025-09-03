@@ -19,3 +19,5 @@ export const useUserFeedbackStore = create<UserFeedbackStoreState>()((set) => ({
             showCloseDialog: !c.showCloseDialog,
         })),
 }));
+
+export const toggleCloseDialog = useUserFeedbackStore.getState().toggleCloseDialog;
