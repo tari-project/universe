@@ -14,18 +14,15 @@ export const ActiveMinersWrapper = styled.div`
     gap: 10px;
 `;
 
-export const PhotoWrapper = styled.div`
+export const PhotosRow = styled.div`
     display: flex;
     align-items: center;
     position: relative;
 `;
 
-export const PhotoImage = styled.img<{ $image: string }>`
-    width: 32px;
-    height: 32px;
-    border-radius: 100px;
-    background: url(${({ $image }) => $image}) no-repeat center center;
-    background-size: cover;
+export const PhotoWrapper = styled.div`
+    border-radius: 100%;
+
     border: 2px solid #323333;
     position: relative;
 

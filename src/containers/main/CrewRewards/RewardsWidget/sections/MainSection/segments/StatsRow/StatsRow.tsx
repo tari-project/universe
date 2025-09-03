@@ -1,8 +1,9 @@
+import Avatar from '@app/components/elements/Avatar/Avatar';
 import {
     Wrapper,
     ActiveMinersWrapper,
+    PhotosRow,
     PhotoWrapper,
-    PhotoImage,
     TextWrapper,
     MainText,
     LabelText,
@@ -51,11 +52,13 @@ export default function StatsRow() {
         <Wrapper>
             {hasFriends ? (
                 <ActiveMinersWrapper>
-                    <PhotoWrapper>
-                        {crewData?.memberImages.map((image) => (
-                            <PhotoImage $image={image} key={image} />
-                        ))}
-                    </PhotoWrapper>
+                    <PhotosRow>
+                        <PhotoWrapper>
+                            {crewData?.memberImages.map((image) => (
+                                <Avatar image={image} username={''} key={image} size={28} />
+                            ))}
+                        </PhotoWrapper>
+                    </PhotosRow>
 
                     <TextWrapper>
                         <MainText>
