@@ -25,12 +25,14 @@ import { useFetchExchangeBranding } from '@app/hooks/exchanges/fetchExchangeCont
 import { useValidateTariAddress } from '@app/hooks/wallet/useValidate.ts';
 import { convertEthAddressToTariAddress } from '@app/store/actions/bridgeApiActions.ts';
 import { isAddress } from 'ethers';
+import { useTranslation } from 'react-i18next';
 
 interface ConnectFormFields {
     address: string;
 }
 
 export const Connect = () => {
+    const { t } = useTranslation(['airdrop'], { useSuspense: false });
     const { data, isPending } = useFetchExchangeBranding();
     const [address, setAddress] = useState('');
     const [isFocused, setIsFocused] = useState(false);
@@ -141,7 +143,7 @@ export const Connect = () => {
                     )}
                 </AddressInputWrapper>
                 <OptInWrapper>
-                    <Typography variant="p">{`Tari Universe would like to use analytics to improve your experience.`}</Typography>
+                    <Typography variant="p">{t('permissionNoGems.text')}</Typography>
                     <ToggleSwitch checked={allowTelemetry} onChange={handleToggle} />
                 </OptInWrapper>
                 <CTA
