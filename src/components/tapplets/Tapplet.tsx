@@ -1,13 +1,13 @@
+import React from 'react';
 import { forwardRef, useCallback, useEffect, useRef } from 'react';
 import { useTappletSignerStore } from '@app/store/useTappletSignerStore';
-import { TappletContainer } from '@app/containers/main/Dashboard/MiningView/MiningView.styles';
 import { open } from '@tauri-apps/plugin-shell';
 import { useConfigUIStore, useUIStore, setError as setStoreError } from '@app/store';
 import { IframeMessage, isInterTappletMessage, MessageType, useIframeMessage } from '@app/hooks/swap/useIframeMessage';
 import { invoke } from '@tauri-apps/api/core';
-import React from 'react';
 import { useTappletsStore } from '@app/store/useTappletsStore';
 import { RunningTapplet } from '@app/types/tapplets/tapplet.types';
+import { TappletContainer } from './Tapplet.styles';
 
 interface TappletProps {
     tapplet: RunningTapplet;
@@ -22,9 +22,7 @@ export const Tapplet = forwardRef<HTMLIFrameElement, TappletProps>(({ tapplet, i
     const language = useConfigUIStore((s) => s.application_language);
     const theme = useUIStore((s) => s.theme);
     const activeTapplet = useTappletsStore((s) => s.activeTapplet);
-    const disabled = tapplet.tapplet_id !== activeTapplet?.tapplet_id;
-    const showTapplet = useUIStore((s) => s.showTapplet);
-    console.warn(`💸 SHOW TAPPLET :`, showTapplet, activeTapplet?.display_name, tapplet.display_name, disabled);
+    const isActive = tapplet.tapplet_id === activeTapplet?.tapplet_id;
 
     const setRefs = useCallback(
         (node: HTMLIFrameElement | null) => {
@@ -227,7 +225,7 @@ export const Tapplet = forwardRef<HTMLIFrameElement, TappletProps>(({ tapplet, i
     }, []);
 
     return (
-        <TappletContainer>
+        <TappletContainer data-active={isActive}>
             <iframe
                 ref={setRefs}
                 title={tapplet.package_name}
@@ -239,7 +237,14 @@ export const Tapplet = forwardRef<HTMLIFrameElement, TappletProps>(({ tapplet, i
                         sendWindowSize();
                     }
                 }}
-                style={{ border: 'none', pointerEvents: 'all', display: disabled ? 'none' : 'block' }}
+                style={{
+                    border: 'none',
+                    position: 'absolute',
+                    width: '100%',
+                    height: '100%',
+                    opacity: isActive ? 1 : 0,
+                    pointerEvents: isActive ? 'all' : 'none',
+                }}
             />
         </TappletContainer>
     );
