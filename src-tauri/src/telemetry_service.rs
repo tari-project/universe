@@ -128,7 +128,7 @@ impl TelemetryService {
                     telemetry_data = rx.recv() => {
                         if let Some(telemetry_data) = telemetry_data {
 
-                        info!(target: LOG_TARGET, "Received telemetry event: {:?}", &telemetry_data);
+                        debug!(target: LOG_TARGET, "Received telemetry event: {:?}", &telemetry_data);
                         let telemetry_collection_enabled = *ConfigCore::content().await.allow_telemetry();
                         if !telemetry_collection_enabled {
                             debug!(target: LOG_TARGET, "TelemetryService::init telemetry collection is disabled. Dropping event.");
