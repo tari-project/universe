@@ -41,7 +41,7 @@ export const WidgetWrapper = styled('div')<{ $isOpen: boolean; $isLogin?: boolea
     padding: 20px;
     padding-bottom: 0px;
 
-    max-height: ${({ $isLogin }) => ($isLogin ? '274px' : '115px')};
+    max-height: 115px;
 
     transition: max-height 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 
@@ -55,5 +55,11 @@ export const WidgetWrapper = styled('div')<{ $isOpen: boolean; $isLogin?: boolea
         $isOpen &&
         css`
             max-height: 830px;
+        `}
+
+    ${({ $isLogin }) =>
+        $isLogin &&
+        css`
+            max-height: 274px;
         `}
 `;
