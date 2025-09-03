@@ -473,7 +473,7 @@ impl BinaryManager {
 
 fn check_binary_exists(path: &std::path::Path) -> bool {
     path.try_exists().unwrap_or_else(|e| {
-        error!(target: LOG_TARGET, "Error checking if binary file exists at path: {:?}. Error: {:?}", path, e);
+        warn!(target: LOG_TARGET, "Error checking if binary file exists at path: {:?}. Error: {:?}", path, e);
         false
     })
 }
