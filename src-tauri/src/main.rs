@@ -684,7 +684,7 @@ fn main() {
             tauri::RunEvent::ExitRequested { api: _, code, .. } => {
                 info!(
                     target: LOG_TARGET,
-                    "App shutdown request caught with code: {code:#?}"
+                    "App shutdown request [ExitRequested] caught with code: {code:#?}"
                 );
                 if let Some(exit_code) = code {
                     if exit_code == RESTART_EXIT_CODE {
@@ -696,7 +696,7 @@ fn main() {
                 info!(target: LOG_TARGET, "App shutdown complete");
             }
             tauri::RunEvent::Exit => {
-                info!(target: LOG_TARGET, "App shutdown caught");
+                info!(target: LOG_TARGET, "App shutdown [Exit] caught");
                 block_on(TasksTrackers::current().stop_all_processes());
                 if is_restart_requested_clone.load(Ordering::SeqCst) {
                     app_handle.cleanup_before_exit();

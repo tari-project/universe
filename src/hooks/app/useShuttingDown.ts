@@ -1,22 +1,32 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import { toggleCloseDialog } from '@app/store/stores/userFeedbackStore.ts';
 const appWindow = getCurrentWindow();
 
 export function useShuttingDown() {
     const [isShuttingDown, setIsShuttingDown] = useState(false);
+    const shutdownAttempts = useRef(0);
+    const isEarlyClose = true; //temp
 
     useEffect(() => {
         const ul = appWindow.onCloseRequested(async (event) => {
-            if (!isShuttingDown) {
-                setIsShuttingDown(true);
+            console.debug(`shutdownAttempts.current= `, shutdownAttempts.current);
+            if (shutdownAttempts.current === 0) {
                 event.preventDefault();
+                shutdownAttempts.current += 1;
+                if (isEarlyClose) {
+                    toggleCloseDialog();
+                    return;
+                } else if (!isShuttingDown) {
+                    setIsShuttingDown(true);
+                }
             }
         });
         return () => {
             ul.then((unlisten) => unlisten());
         };
-    }, [isShuttingDown]);
+    }, [isShuttingDown, isEarlyClose]);
 
     useEffect(() => {
         if (isShuttingDown) {

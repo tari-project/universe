@@ -78,7 +78,6 @@ pub enum EventType {
     SetupProgressUpdate,
     UpdateTorEntryGuards,
     UpdateAppModuleStatus,
-    ShowFeedbackDialog,
 }
 
 #[derive(Clone, Debug, Serialize)]
