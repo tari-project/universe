@@ -234,7 +234,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
                             if STOP_ON_ERROR_CODES.contains(&code) {
                                 warn!(target: LOG_TARGET, "Database for node is corrupt or needs a restart, deleting and trying again.");
                                 state.node_manager.clean_data_folder(&data_dir).await?;
-                                state.wallet_manager.clean_data_folder(&data_dir).await?;
+                                // state.wallet_manager.clean_data_folder(&data_dir).await?;
                             }
                             continue;
                         }
@@ -316,7 +316,9 @@ impl SetupPhaseImpl for NodeSetupPhase {
         }
 
         TasksTrackers::current()
-            .common.get_task_tracker().await
+            .common
+            .get_task_tracker()
+            .await
             .spawn(async move {
                 let app_state = app_handle_clone.state::<UniverseAppState>().clone();
 
@@ -329,25 +331,27 @@ impl SetupPhaseImpl for NodeSetupPhase {
                 let mut latest_updated_block_height = init_node_status.block_height;
                 loop {
                     tokio::select! {
-                _ = node_status_watch_rx.changed() => {
-                    let node_status = *node_status_watch_rx.borrow();
-                    let initial_sync_finished = app_state.wallet_manager.is_initial_scan_completed();
+                        _ = node_status_watch_rx.changed() => {
+                            let node_status = *node_status_watch_rx.borrow();
+                            // TODO: Is this needed?
 
-                    if node_status.block_height > latest_updated_block_height && initial_sync_finished {
-                        while latest_updated_block_height < node_status.block_height {
-                            latest_updated_block_height += 1;
-                            let _ = EventsManager::handle_new_block_height(&app_handle_clone, latest_updated_block_height).await;
-                        }
+                            // let initial_sync_finished = app_state.wallet_manager.is_initial_scan_completed();
+
+                            // if node_status.block_height > latest_updated_block_height && initial_sync_finished {
+                            //     while latest_updated_block_height < node_status.block_height {
+                            //         latest_updated_block_height += 1;
+                            //         let _ = EventsManager::handle_new_block_height(&app_handle_clone, latest_updated_block_height).await;
+                            //     }
+                            // }
+                            // if node_status.block_height > latest_updated_block_height && !initial_sync_finished {
+                            //     EventsEmitter::emit_base_node_update(node_status).await;
+                            //     latest_updated_block_height = node_status.block_height;
+                            // }
+                        },
+                        _ = shutdown_signal.wait() => {
+                            break;
+                        },
                     }
-                    if node_status.block_height > latest_updated_block_height && !initial_sync_finished {
-                        EventsEmitter::emit_base_node_update(node_status).await;
-                        latest_updated_block_height = node_status.block_height;
-                    }
-                },
-                _ = shutdown_signal.wait() => {
-                    break;
-                },
-            }
                 }
             });
 

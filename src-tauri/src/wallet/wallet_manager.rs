@@ -19,7 +19,6 @@
 // SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent};
 use crate::configs::trait_config::ConfigImpl;
 use crate::events_emitter::EventsEmitter;
@@ -30,15 +29,18 @@ use crate::process_watcher::ProcessWatcher;
 use crate::tasks_tracker::TasksTrackers;
 use crate::wallet::minotari_wallet_adapter::MinotariWalletAdapter;
 use crate::wallet::minotari_wallet_scanner::MinotariWalletScanner;
-use crate::wallet::ootle_wallet_scanner::{self, OotleWalletAdapter, OotleWalletScanner};
+use crate::wallet::ootle_wallet_scanner::{self, OotleWalletScanner};
 use crate::wallet::wallet_db::WalletDb;
 use crate::wallet::wallet_scanner::WalletScanner;
 use crate::wallet::wallet_status_monitor::WalletStatusMonitorError;
-use crate::wallet::wallet_types::{TransactionInfo, TransactionStatus, WalletBalance, WalletState};
+use crate::wallet::wallet_types::{
+    ChainId, TransactionInfo, TransactionStatus, WalletBalance, WalletState,
+};
 use crate::BaseNodeStatus;
 use futures_util::future::FusedFuture;
 use log::info;
 use sha2::digest::typenum::Min;
+use std::cmp;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
@@ -46,9 +48,11 @@ use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use std::time::Duration;
 use tari_common::configuration::Network;
+use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_crypto::ristretto::RistrettoSecretKey;
 use tari_shutdown::ShutdownSignal;
 use tari_transaction_components::tari_amount::{MicroMinotari, Minotari};
+use tari_utilities::hex::Hex;
 use tokio::fs;
 use tokio::sync::watch;
 use tokio::sync::RwLock;
@@ -78,10 +82,10 @@ pub struct WalletManager {
     minotari_scanner: Arc<RwLock<MinotariWalletScanner>>,
     ootle_scanner: Arc<RwLock<OotleWalletScanner>>,
     node_manager: NodeManager,
-    initial_scan_completed: Arc<AtomicBool>,
+    // initial_scan_completed: Arc<AtomicBool>,
     base_node_watch_rx: watch::Receiver<BaseNodeStatus>,
     wallet_db: Arc<RwLock<Option<WalletDb>>>,
-    view_keys: HashMap<String, (RistrettoSecretKey, RistrettoPublicKey)>,
+    view_keys: Arc<RwLock<HashMap<String, (RistrettoSecretKey, RistrettoPublicKey)>>>,
 }
 
 impl Clone for WalletManager {
@@ -90,7 +94,7 @@ impl Clone for WalletManager {
             minotari_scanner: self.minotari_scanner.clone(),
             ootle_scanner: self.ootle_scanner.clone(),
             node_manager: self.node_manager.clone(),
-            initial_scan_completed: self.initial_scan_completed.clone(),
+            // initial_scan_completed: self.initial_scan_completed.clone(),
             base_node_watch_rx: self.base_node_watch_rx.clone(),
             wallet_db: self.wallet_db.clone(),
             view_keys: self.view_keys.clone(),
@@ -112,10 +116,9 @@ impl WalletManager {
             minotari_scanner: Arc::new(RwLock::new(MinotariWalletScanner {})),
             ootle_scanner: Arc::new(RwLock::new(OotleWalletScanner {})),
             node_manager,
-            initial_scan_completed: Arc::new(AtomicBool::new(false)),
             base_node_watch_rx,
             wallet_db: Arc::new(RwLock::new(None)),
-            view_keys: HashMap::new(),
+            view_keys: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 
@@ -125,11 +128,11 @@ impl WalletManager {
         let ootle_wallet_scanner = self.ootle_scanner.clone();
         let scanners = HashMap::from([
             (
-                "minotari",
+                ChainId::minotari(),
                 minotari_scanner as Arc<RwLock<dyn WalletScanner + Send + Sync>>,
             ),
             (
-                "ootle",
+                ChainId::ootle(),
                 self.ootle_scanner.clone() as Arc<RwLock<dyn WalletScanner + Send + Sync>>,
             ),
         ]);
@@ -142,7 +145,7 @@ impl WalletManager {
             .ok_or(WalletManagerError::WalletNotStarted)?
             .clone();
         let wallets_to_scan = wallet_db.get_all_wallets().await?;
-        let viewkeys = self.view_keys.clone();
+        let view_keys = self.view_keys.clone();
 
         TasksTrackers::current()
             .wallet_phase
@@ -160,13 +163,14 @@ impl WalletManager {
                         }
                         _ = interval.tick() => {
 
-                            for wallet in wallets_to_scan {
-                                let scanner = scanners.get(wallet.chain_id.as_str());
+                            for wallet in &wallets_to_scan {
+                                let scanner = scanners.get(&wallet.chain_id);
                                 if let Some(scanner) = scanner {
                                 let lock = scanner.write().await;
-                                if let Some((view_key_secret, spend_key_public)) = viewkeys.get(wallet.view_key_reference.as_str()) {
+                                let view_keys_lock = view_keys.read().await;
+                                if let Some((view_key_secret, spend_key_public)) = view_keys_lock.get(wallet.view_key_reference.as_str()) {
                                     // Use the view keys as needed
-                                    let (events, last_sync_height, last_sync_block) = lock.sync_events(view_key_secret, spend_key_public, cmp::max(wallet.last_scanned_height, wallet.chain_birthday_height), wallet.last_scanned_hash).await;
+                                    let (events, last_sync_height, last_sync_block) = lock.sync_events(view_key_secret, spend_key_public, cmp::max(wallet.last_scanned_height.unwrap_or(0), wallet.chain_birthday_height), wallet.last_scanned_hash.as_ref()).await;
                                     if events.is_empty() {
                                         log::warn!(target: LOG_TARGET, "No events found for wallet {}", wallet.name);
                                     }
@@ -174,7 +178,7 @@ impl WalletManager {
                                         log::info!(target: LOG_TARGET, "Received wallet {}  event: {:?}", wallet.name, event);
                                         wallet_db.apply_event(wallet.id, event).await;
                                     }
-                                    wallet_db.update_last_sync_info(wallet.id, last_sync_height, last_sync_block).await;
+                                    wallet_db.update_last_sync_info(wallet.id, last_sync_height, Some(last_sync_block)).await;
 
                                 }else {
                                     log::warn!(target: LOG_TARGET, "No view key found for wallet {}", wallet.name);
@@ -283,48 +287,29 @@ impl WalletManager {
         view_private_key: String,
         spend_key: String,
     ) {
-        let mut process_watcher = self.minotari_watcher.write().await;
-        process_watcher.adapter.view_private_key = view_private_key;
-        process_watcher.adapter.spend_key = spend_key;
+        // TODO: Return errors
+        self.view_keys.write().await.insert(
+            "minotari".to_string(),
+            (
+                RistrettoSecretKey::from_hex(&view_private_key).unwrap(),
+                RistrettoPublicKey::from_hex(&spend_key).unwrap(),
+            ),
+        );
     }
 
     pub async fn get_view_private_key(&self) -> String {
-        self.minotari_watcher
+        self.view_keys
             .read()
             .await
-            .adapter
-            .view_private_key
-            .clone()
-    }
-
-    pub async fn get_port(&self) -> u16 {
-        self.minotari_watcher.read().await.adapter.grpc_port
-    }
-
-    pub fn is_initial_scan_completed(&self) -> bool {
-        self.initial_scan_completed
-            .load(std::sync::atomic::Ordering::Relaxed)
-    }
-
-    pub async fn clean_data_folder(&self, base_path: &Path) -> Result<(), anyhow::Error> {
-        self.initial_scan_completed
-            .store(false, std::sync::atomic::Ordering::Relaxed);
-
-        let path_to_network_wallet = base_path
-            .join("wallet")
-            .join(Network::get_current().to_string().to_lowercase());
-
-        if path_to_network_wallet.try_exists()? && path_to_network_wallet.is_dir() {
-            fs::remove_dir_all(path_to_network_wallet).await?;
-        }
-
-        log::info!(target: LOG_TARGET, "Cleaning wallet data folder");
-        Ok(())
+            .get("minotari")
+            .map(|(view_private_key, _)| view_private_key.to_hex())
+            .unwrap_or_default()
     }
 
     pub async fn get_balance(&self) -> Result<WalletBalance, anyhow::Error> {
-        let process_watcher = self.minotari_watcher.read().await;
-        process_watcher.adapter.get_balance().await
+        // let process_watcher = self.minotari_watcher.read().await;
+        // process_watcher.adapter.get_balance().await
+        todo!("get balance")
     }
 
     pub async fn get_transactions(
@@ -356,20 +341,27 @@ impl WalletManager {
         block_height: u64,
         timeout: Option<Duration>,
     ) -> Result<WalletState, WalletManagerError> {
-        let process_watcher = self.minotari_watcher.read().await;
+        // let process_watcher = self.minotari_watcher.read().await;
 
-        if !process_watcher.is_running() {
-            return Err(WalletManagerError::WalletNotStarted);
-        }
+        // if !process_watcher.is_running() {
+        //     return Err(WalletManagerError::WalletNotStarted);
+        // }
 
-        process_watcher
-            .adapter
-            .wait_for_scan_to_height(block_height, timeout)
-            .await
-            .map_err(|e| match e {
-                WalletStatusMonitorError::WalletNotStarted => WalletManagerError::WalletNotStarted,
-                _ => WalletManagerError::UnknownError(e.into()),
-            })
+        // process_watcher
+        //     .adapter
+        //     .wait_for_scan_to_height(block_height, timeout)
+        //     .await
+        //     .map_err(|e| match e {
+        //         WalletStatusMonitorError::WalletNotStarted => WalletManagerError::WalletNotStarted,
+        //         _ => WalletManagerError::UnknownError(e.into()),
+        //     })
+        todo!()
+    }
+
+    pub async fn reset_data(&self) -> Result<(), WalletManagerError> {
+        // self.view_keys.clear();
+        // self.wallet_db.write().await.take();
+        todo!()
     }
 
     pub async fn send_one_sided_to_stealth_address(
@@ -379,31 +371,32 @@ impl WalletManager {
         payment_id: Option<String>,
         app_handle: &tauri::AppHandle,
     ) -> Result<(), WalletManagerError> {
-        let process_watcher = self.minotari_watcher.read().await;
-        if !process_watcher.is_running() {
-            return Err(WalletManagerError::WalletNotStarted);
-        }
+        todo!()
+        // let process_watcher = self.minotari_watcher.read().await;
+        // if !process_watcher.is_running() {
+        //     return Err(WalletManagerError::WalletNotStarted);
+        // }
 
         // TODO: check if node is synced?
-        self.node_manager.wait_ready().await?;
+        // self.node_manager.wait_ready().await?;
 
-        let minotari_amount = Minotari::from_str(&amount_str)
-            .map_err(|e| WalletManagerError::UnknownError(e.into()))?;
-        let micro_minotari_amount = MicroMinotari::from(minotari_amount);
-        let amount = micro_minotari_amount.as_u64();
+        // let minotari_amount = Minotari::from_str(&amount_str)
+        //     .map_err(|e| WalletManagerError::UnknownError(e.into()))?;
+        // let micro_minotari_amount = MicroMinotari::from(minotari_amount);
+        // let amount = micro_minotari_amount.as_u64();
 
-        // Payment ID can't be an empty string
-        let payment_id = match payment_id {
-            Some(s) if s.is_empty() => None,
-            _ => payment_id,
-        };
+        // // Payment ID can't be an empty string
+        // let payment_id = match payment_id {
+        //     Some(s) if s.is_empty() => None,
+        //     _ => payment_id,
+        // };
 
-        let res = process_watcher
-            .adapter
-            .send_one_sided_to_stealth_address(amount, destination, payment_id, app_handle)
-            .await;
+        // let res = process_watcher
+        //     .adapter
+        //     .send_one_sided_to_stealth_address(amount, destination, payment_id, app_handle)
+        //     .await;
 
-        res.map_err(WalletManagerError::UnknownError)
+        // res.map_err(WalletManagerError::UnknownError)
     }
 
     pub async fn find_coinbase_transaction_for_block(
@@ -609,27 +602,4 @@ impl WalletManager {
 
     //     Ok(())
     // }
-
-    #[allow(dead_code)]
-    pub async fn stop(&self) -> Result<i32, WalletManagerError> {
-        // Reset the initial scan flag
-        self.initial_scan_completed
-            .store(false, std::sync::atomic::Ordering::Relaxed);
-
-        let mut process_watcher = self.minotari_watcher.write().await;
-        process_watcher
-            .stop()
-            .await
-            .map_err(WalletManagerError::UnknownError)
-    }
-    #[allow(dead_code)]
-    pub async fn is_running(&self) -> bool {
-        let process_watcher = self.minotari_watcher.read().await;
-        process_watcher.is_running()
-    }
-    #[allow(dead_code)]
-    pub async fn is_pid_file_exists(&self, base_path: PathBuf) -> bool {
-        let lock = self.minotari_watcher.read().await;
-        lock.is_pid_file_exists(base_path)
-    }
 }

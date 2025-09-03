@@ -180,9 +180,9 @@ impl SetupPhaseImpl for WalletSetupPhase {
             let latest_wallet_migration_nonce = *ConfigWallet::content().await.wallet_migration_nonce();
             if latest_wallet_migration_nonce < WALLET_MIGRATION_NONCE {
                 log::info!(target: LOG_TARGET, "Wallet migration required(Nonce {latest_wallet_migration_nonce} => {WALLET_MIGRATION_NONCE})");
-                if let Err(e) = app_state.wallet_manager.clean_data_folder(&data_dir).await {
-                    log::warn!(target: LOG_TARGET, "Failed to clean wallet data folder: {e}");
-                }
+                // if let Err(e) = app_state.wallet_manager.clean_data_folder(&data_dir).await {
+                //     log::warn!(target: LOG_TARGET, "Failed to clean wallet data folder: {e}");
+                // }
                 if
                     let Err(e) = ConfigWallet::update_field(
                         ConfigWalletContent::set_wallet_migration_nonce,

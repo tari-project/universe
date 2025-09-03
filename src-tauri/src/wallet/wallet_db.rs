@@ -1,6 +1,8 @@
 use std::path::{Path, PathBuf};
 
-use crate::wallet::wallet_types::{ChainId, Currency, TransactionInfo, TransactionStatus};
+use crate::wallet::wallet_types::{
+    ChainId, Currency, TransactionInfo, TransactionStatus, WalletEvent, WalletInfo,
+};
 use sqlx::{Connection, FromRow, SqliteConnection};
 
 #[derive(Clone)]
@@ -79,7 +81,7 @@ impl WalletDb {
             .collect())
     }
 
-    pub async fn get_all_wallets(&self) -> Result<Vec<WalletRow>, anyhow::Error> {
+    pub async fn get_all_wallets(&self) -> Result<Vec<WalletInfo>, anyhow::Error> {
         let mut conn = self.create_connection().await?;
         let rows = sqlx::query_as!(
             WalletRow,
@@ -99,7 +101,18 @@ impl WalletDb {
         )
         .fetch_all(&mut conn)
         .await?;
-        Ok(rows)
+        Ok(rows
+            .into_iter()
+            .map(|r| WalletInfo {
+                id: r.id,
+                name: r.name,
+                view_key_reference: r.view_key_reference,
+                chain_id: ChainId(r.chain_id),
+                chain_birthday_height: r.chain_birthday_height as u64,
+                last_scanned_height: r.last_scanned_height.map(|h| h as u64),
+                last_scanned_hash: r.last_scanned_hash,
+            })
+            .collect())
     }
 
     pub async fn apply_event(

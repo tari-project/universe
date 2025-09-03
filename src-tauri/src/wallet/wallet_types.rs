@@ -112,7 +112,7 @@ pub enum Currency {
     Usdx,
 }
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Serialize, Clone, PartialEq, Eq, Hash)]
 pub struct ChainId(pub String);
 
 impl FromStr for ChainId {
@@ -120,6 +120,16 @@ impl FromStr for ChainId {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(ChainId(s.to_string()))
+    }
+}
+
+impl ChainId {
+    pub fn minotari() -> Self {
+        ChainId("minotari".to_string())
+    }
+
+    pub fn ootle() -> Self {
+        ChainId("ootle".to_string())
     }
 }
 
@@ -216,4 +226,23 @@ impl From<i32> for TransactionStatus {
             _ => TransactionStatus::NotFound,
         }
     }
+}
+
+#[derive(Debug)]
+pub enum WalletEvent {
+    OutputRolledBack {},
+}
+
+pub struct WalletInfo {
+    pub id: i64,
+    pub name: String,
+    // currency_symbol: String,
+    // decimal_places: i64,
+    pub view_key_reference: String,
+    pub chain_id: ChainId,
+    // chain_resource_id: Option<String>,
+    pub chain_birthday_height: u64,
+    pub last_scanned_height: Option<u64>,
+    pub last_scanned_hash: Option<Vec<u8>>,
+    // created_at: chrono::NaiveDateTime,
 }
