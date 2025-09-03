@@ -1,11 +1,13 @@
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
 
-import { SurveyQuestion } from '@app/types/user/surveys.ts';
+import { SurveyAnswerInput, SurveyQuestion } from '@app/types/user/surveys.ts';
 import { Checkbox } from '@app/components/elements/inputs/Checkbox.tsx';
 import { TextButton } from '@app/components/elements/buttons/TextButton.tsx';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { CTAWrapper, Form, FormContent, ItemWrapper, TextItem, TextItemLabel } from './surveyForm.styles.ts';
+import { useConfigCoreStore } from '@app/store';
+import { useSendFeedback } from '@app/hooks/user/surveys/useSendFeedback.ts';
 
 interface SurveyFormProps {
     questions: SurveyQuestion[];
@@ -19,12 +21,54 @@ interface QuestionFields {
     questionField: Question[];
 }
 export default function SurveyForm({ questions }: SurveyFormProps) {
+    const anon_id = useConfigCoreStore((s) => s.anon_id);
+    const { mutate } = useSendFeedback();
     const defaultValues = questions.map((q) => ({ ...q, checked: false, value: '' }));
-    const { control, setValue } = useForm<QuestionFields>({ defaultValues: { questionField: defaultValues } });
+    const { control, setValue, watch, handleSubmit } = useForm<QuestionFields>({
+        defaultValues: { questionField: defaultValues },
+    });
     const { fields } = useFieldArray({
         control,
         name: 'questionField',
     });
+
+    const watchedField = watch('questionField');
+    function parseData(_data: QuestionFields) {
+        const answers = watchedField.map((f) => {
+            if (f.questionType === 'text') {
+                return {
+                    questionId: f.id,
+                    answerText: f.value,
+                };
+            }
+
+            if (f.questionType === 'checkbox') {
+                const selectedOptionIds = f.checked ? [f.id] : [];
+                return {
+                    questionId: f.id,
+                    selectedOptionIds,
+                };
+            }
+        }) as SurveyAnswerInput[];
+
+        const metadata = {
+            userId: anon_id,
+            appId: anon_id,
+            operatingSystem: 'string',
+            universeVersion: 'string',
+            network: 'string',
+            mode: 'string',
+            extraData: {},
+        };
+
+        mutate({
+            slug: 'survey-close',
+            feedbackBody: {
+                answers,
+                metadata,
+            },
+        });
+    }
 
     const fieldMarkup = fields.map((q, i) => {
         if (q.questionType === 'checkbox') {
@@ -33,9 +77,8 @@ export default function SurveyForm({ questions }: SurveyFormProps) {
                     control={control}
                     key={q.id}
                     name={`questionField.${i}.checked`}
-                    render={({ field, formState }) => {
+                    render={({ field }) => {
                         function handleChange(value: boolean) {
-                            console.debug(value, formState);
                             setValue(field.name, value);
                         }
                         return (
@@ -79,10 +122,10 @@ export default function SurveyForm({ questions }: SurveyFormProps) {
     });
 
     return (
-        <Form>
+        <Form onSubmit={handleSubmit(parseData)}>
             <FormContent>{fieldMarkup}</FormContent>
             <CTAWrapper>
-                <Button type="button" fluid size="xlarge" variant="black">{`Send Feedback`}</Button>
+                <Button type="submit" fluid size="xlarge" variant="black">{`Send Feedback`}</Button>
                 <TextButton size="large" type="reset">
                     <Typography>{`Skip for now`}</Typography>
                 </TextButton>

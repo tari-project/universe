@@ -5,7 +5,9 @@ import SurveyForm from './SurveyForm.tsx';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 
 export default function UserSurvey() {
-    const { data: survey, isLoading } = useFetchSurveyContent();
+    const slug = 'survey-close'; // TODO: ask for for route for survey type
+
+    const { data: survey, isLoading } = useFetchSurveyContent(slug);
 
     const loadingMarkup = isLoading && <LoadingDots />;
     const markup = !!survey && (

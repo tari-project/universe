@@ -42,3 +42,29 @@ export interface ApiError {
     error: string;
     message: string;
 }
+
+export interface SurveyAnswerInput {
+    questionId: string;
+    answerText?: string;
+    selectedOptionIds?: string[];
+}
+
+export interface SurveyMetadata {
+    userId?: string;
+    appId?: string;
+    operatingSystem?: string;
+    universeVersion?: string;
+    network?: string;
+    mode?: string;
+    extraData?: Record<string, unknown>;
+}
+
+export interface SubmitSurveyRequest {
+    answers: SurveyAnswerInput[];
+    metadata?: SurveyMetadata;
+}
+
+export interface SubmitSurveyResponse {
+    message: string;
+    responseId: string;
+}

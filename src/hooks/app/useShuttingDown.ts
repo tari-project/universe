@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { toggleCloseDialog } from '@app/store/stores/userFeedbackStore.ts';
+import { setShowCloseDialog } from '@app/store/stores/userFeedbackStore.ts';
 const appWindow = getCurrentWindow();
 
 export function useShuttingDown() {
@@ -16,7 +16,7 @@ export function useShuttingDown() {
                 event.preventDefault();
                 shutdownAttempts.current += 1;
                 if (isEarlyClose) {
-                    toggleCloseDialog();
+                    setShowCloseDialog(true);
                     return;
                 } else if (!isShuttingDown) {
                     setIsShuttingDown(true);
