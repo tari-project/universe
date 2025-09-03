@@ -222,7 +222,7 @@ impl SetupManager {
 
     #[allow(clippy::too_many_lines)]
     async fn pre_setup(&self, app_handle: AppHandle) {
-        info!(target: LOG_TARGET, "Pre Setup");
+        debug!(target: LOG_TARGET, "Pre Setup");
         let state = app_handle.state::<UniverseAppState>();
         let in_memory_config = state.in_memory_config.clone();
 
