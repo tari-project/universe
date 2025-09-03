@@ -34,7 +34,7 @@ use tokio::{
     time,
 };
 
-use crate::websocket_manager::{WebsocketManager, WebsocketManagerStatusMessage};
+use crate::websocket_manager::WebsocketManager;
 use crate::{
     airdrop::decode_jwt_claims_without_exp,
     commands::{sign_ws_data, CpuMinerStatus, SignWsDataResponse},
@@ -46,6 +46,7 @@ use crate::{
 };
 const LOG_TARGET: &str = "tari::universe::websocket_events_manager";
 static INTERVAL_DURATION: std::time::Duration = Duration::from_secs(15);
+static KEEP_ALIVE_INTERVAL_DURATION: std::time::Duration = Duration::from_secs(60);
 static MAX_ACCEPTABLE_COMMAND_TIME: std::time::Duration = Duration::from_secs(1);
 
 pub struct WebsocketEventsManager {
@@ -86,21 +87,26 @@ impl WebsocketEventsManager {
         let _ = self.websocket_connect(websocket_manager).await;
     }
 
-    pub async fn stop_emitting_message(&self) {
-        info!(target:LOG_TARGET,"stop websocket_events_manager");
-
-        match self.close_channel_tx.send(true) {
-            Ok(_) => {}
-            Err(_) => {
-                info!(target: LOG_TARGET,"websocket_events_manager has already been closed.");
-            }
-        };
-        info!(target: LOG_TARGET,"stopped emitting messages from websocket_events_manager");
-    }
+    // If we ever close websocket manager connection we should stop emitting messages using this
+    // pub async fn stop_emitting_message(&self) {
+    //     info!(target:LOG_TARGET,"stop websocket_events_manager");
+    //
+    //     match self.close_channel_tx.send(true) {
+    //         Ok(_) => {}
+    //         Err(_) => {
+    //             info!(target: LOG_TARGET,"websocket_events_manager has already been closed.");
+    //         }
+    //     };
+    //     info!(target: LOG_TARGET,"stopped emitting messages from websocket_events_manager");
+    // }
 
     pub async fn emit_interval_ws_events(&mut self) -> Result<(), anyhow::Error> {
         let mut interval = time::interval(INTERVAL_DURATION);
         interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+
+        let mut keep_alive_interval = time::interval(KEEP_ALIVE_INTERVAL_DURATION);
+        keep_alive_interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+
         let cpu_miner_status_watch_rx = self.cpu_miner_status_watch_rx.clone();
         let gpu_latest_miner_stats = self.gpu_latest_miner_stats.clone();
         let node_latest_status = self.node_latest_status.clone();
@@ -137,6 +143,13 @@ impl WebsocketEventsManager {
                                 }));
                             }
                       },
+                      _= keep_alive_interval.tick()=>{
+                            if let Some(message) = WebsocketEventsManager::assemble_keep_alive().await{
+                                drop(websocket_tx_channel_clone.send(message).await.inspect_err(|e|{
+                                  error!(target:LOG_TARGET, "could not send to websocket keep-alive channel due to {:?}", e);
+                                }));
+                            }
+                      },
                       _= shutdown_signal.wait()=>{
                         info!(target:LOG_TARGET, "websocket events manager closed");
 
@@ -154,6 +167,25 @@ impl WebsocketEventsManager {
         } else {
             Err(anyhow::anyhow!("could not start emitting"))
         }
+    }
+
+    async fn assemble_keep_alive() -> Option<WebsocketMessage> {
+        let jwt_token = ConfigCore::content()
+            .await
+            .airdrop_tokens()
+            .clone()
+            .map(|tokens| tokens.token);
+
+        let payload = serde_json::json!({
+            "jwt": jwt_token,
+        });
+
+        return Some(WebsocketMessage {
+            event: "keep-alive".into(),
+            data: Some(payload),
+            signature: None,
+            pub_key: None,
+        });
     }
 
     async fn assemble_mining_status(
