@@ -25,9 +25,9 @@ export default function AirdropPermissionSettings() {
             <SettingsGroup>
                 <SettingsGroupContent>
                     <SettingsGroupTitle>
-                        <Typography variant="h6">{t('permission.title')}</Typography>
+                        <Typography variant="h6">{`${t('permissionNoGems.title')}?`}</Typography>
                     </SettingsGroupTitle>
-                    <Typography>{t('permission.text')}</Typography>
+                    <Typography>{t('permissionNoGems.text')}</Typography>
                 </SettingsGroupContent>
                 <SettingsGroupAction>
                     <ToggleSwitch checked={allowTelemetry} onChange={handleChange} />
