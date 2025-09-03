@@ -546,7 +546,7 @@ jobs:
           MAIN_ARTIFACT_NAME="tari-universe-beta_${appVersion}_${platform}${extra}"
           artifacts=$(curl -s -H "Accept: application/vnd.github+json" \
             -H "Authorization: token ${{ github.token }}" \
-            "https://github.com/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts")
+            "https://api.github.com/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts")
           main_id=$(echo "$artifacts" | jq -r ".artifacts[] | select(.name == \"${MAIN_ARTIFACT_NAME}\") | .id")
           if [ -n "$main_id" ]; then
             main_url="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts/${main_id}"
