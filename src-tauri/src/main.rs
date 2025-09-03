@@ -446,15 +446,21 @@ fn main() {
                 .app_config_dir()
                 .expect("Could not get config dir");
 
-            // TODO move if needed to better place
+            // Initialize database with improved error handling
             let app_data_dir = app
                 .path()
                 .app_data_dir()
                 .expect("Could not get app data dir");
             let db_path = app_data_dir.join(DB_FILE_NAME);
-            app.manage(DatabaseConnection(Arc::new(std::sync::Mutex::new(
-                database::establish_connection(db_path.to_str().unwrap_or_default()),
-            ))));
+            let db_path_str = db_path.to_str().expect("Could not get db path");
+
+            // Use the improved initialization function with proper error handling
+            let pool = block_on(database::initialize_database(db_path_str)).map_err(|e| {
+                error!(target: LOG_TARGET, "Failed to initialize database: {}", e);
+                format!("Database initialization failed: {}", e)
+            })?;
+
+            app.manage(DatabaseConnection(Arc::new(pool)));
             app.manage(tapplet_manager);
 
             // Remove this after it's been rolled out for a few versions
@@ -686,7 +692,6 @@ fn main() {
             tapplet_commands::get_assets_server_addr,
             tapplet_commands::download_and_extract_tapp,
             tapplet_commands::read_installed_tapp_db,
-            tapplet_commands::update_installed_tapp_db,
             tapplet_commands::delete_installed_tapplet,
             tapplet_commands::add_dev_tapplet,
             tapplet_commands::read_dev_tapplets_db,

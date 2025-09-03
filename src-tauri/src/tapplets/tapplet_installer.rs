@@ -19,14 +19,49 @@ use std::{
 use tauri::Manager;
 pub const LOG_TARGET: &str = "tari::universe";
 pub const REGISTRY_URL: &str = env!("TAPP_REGISTRY_URL");
+pub const DOWNLOAD_ASSETS: bool = false; //TODO temporarly disable assets download
 
-pub fn delete_tapplet(tapplet_path: PathBuf) -> Result<(), Error> {
+pub fn delete_tapplet_folder(
+    package_name: String,
+    version: String,
+    app_handle: tauri::AppHandle,
+) -> Result<(), Error> {
+    let tapplet_path = get_tapp_download_path(package_name.clone(), version, app_handle)?;
+
     let path = tapplet_path
         .clone()
         .into_os_string()
         .into_string()
         .map_err(|_| IOError(FailedToGetFilePath))?;
-    fs::remove_dir_all(tapplet_path).map_err(|_| IOError(FailedToDeleteTapplet { path }))
+
+    fs::remove_dir_all(&tapplet_path).map_err(|_| IOError(FailedToDeleteTapplet { path }))?;
+
+    if let Some(package_dir) = tapplet_path.parent() {
+        // Check if the package directory is empty (no other versions remain)
+        match fs::read_dir(package_dir) {
+            Ok(mut entries) => {
+                if entries.next().is_none() {
+                    let package_path = package_dir
+                        .to_path_buf()
+                        .into_os_string()
+                        .into_string()
+                        .map_err(|_| IOError(FailedToGetFilePath))?;
+
+                    fs::remove_dir(package_dir)
+                        .map_err(|_| IOError(FailedToDeleteTapplet { path: package_path }))?;
+
+                    info!(target: LOG_TARGET, "Removed empty package directory: {}", package_name);
+                }
+            }
+            Err(_) => {
+                // If we can't read the directory, it might not exist or we don't have permissions
+                // This is not a critical error, so we'll just log a warning
+                warn!(target: LOG_TARGET, "Could not read package directory to check if empty: {}", package_name);
+            }
+        }
+    }
+
+    Ok(())
 }
 
 pub fn check_extracted_files(tapplet_path: PathBuf) -> Result<bool, Error> {
@@ -50,7 +85,7 @@ pub fn check_extracted_files(tapplet_path: PathBuf) -> Result<bool, Error> {
 }
 
 pub fn get_tapp_download_path(
-    registry_id: String,
+    package_name: String,
     version: String,
     app_handle: tauri::AppHandle,
 ) -> Result<PathBuf, Error> {
@@ -62,13 +97,13 @@ pub fn get_tapp_download_path(
 
     let tapplet_path = app_path
         .join(TAPPLETS_INSTALLED_DIR)
-        .join(registry_id)
+        .join(package_name)
         .join(version);
 
     Ok(tapplet_path)
 }
 
-async fn download_file(url: &str, dest: PathBuf) -> Result<(), Error> {
+async fn download_asset_file(url: &str, dest: PathBuf) -> Result<(), Error> {
     let client = reqwest::Client::new();
     let mut response = client.get(url).send().await.map_err(|_| {
         RequestError(FailedToDownload {
@@ -138,8 +173,10 @@ pub async fn download_asset(
     let background_dest = tapp_asset_dir.join("background.svg");
 
     // TODO fix downloading tapp assest
-    download_file(&assets.icon_url, icon_dest.clone()).await?;
-    download_file(&assets.background_url, background_dest.clone()).await?;
+    if DOWNLOAD_ASSETS && !assets.background_url.is_empty() && !assets.icon_url.is_empty() {
+        download_asset_file(&assets.icon_url, icon_dest.clone()).await?;
+        download_asset_file(&assets.background_url, background_dest.clone()).await?;
+    }
 
     Ok(TappletAssets {
         icon_url: icon_dest.into_os_string().into_string().unwrap(),

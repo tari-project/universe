@@ -26,7 +26,6 @@ const StyledForm = styled.form`
     min-height: 60px;
 `;
 
-// TODO ADD RULES TO THE CONTROLLER TO CHECK IF ENDPOINT (CAN'T END WITH `/` SIGN) OR PATH ARE CORRECT
 const TappletDevPathForm = () => {
     const { t } = useTranslation('settings', { useSuspense: false });
     const {
@@ -44,35 +43,31 @@ const TappletDevPathForm = () => {
     const [editing, setEditing] = useState(false);
     const { copyToClipboard, isCopied } = useCopyToClipboard();
     const address = watch('tappPath');
-    const [selectedDirPath, setSelectedDirPath] = useState<string>('');
-
     const addDevTapp = useTappletsStore((s) => s.addDevTapp);
-
-    // const handleDirSelect = useCallback(async () => {
-    //     console.info('handle directory select');
-    //     const dirPath = await open({
-    //         multiple: false,
-    //         directory: true,
-    //     });
-    //     if (dirPath) {
-    //         setSelectedDirPath(dirPath);
-    //     }
-    //     console.info('handle select dir path', dirPath);
-    // }, []);
 
     const handleDirSelect = useCallback(async () => {
         console.info('handle directory select');
+
         const dirPath = await open({
-            multiple: false,
+            title: 'Select Tapplet Directory',
             directory: true,
+            multiple: false,
         });
-        if (dirPath) {
-            setSelectedDirPath(dirPath);
-            setValue('tappPath', dirPath, { shouldDirty: true }); // <-- update the form value
-            // setEditing(true); // Optionally, set editing mode
-            addDevTapp(dirPath);
+        console.info('handle directory select', dirPath);
+
+        // The open function returns null if user cancelled the dialog
+        if (dirPath === null) {
+            console.info('Directory selection canceled');
+            return;
         }
-        console.info('handle select dir path', dirPath);
+
+        console.info('Selected directory path:', dirPath);
+
+        setValue('tappPath', dirPath, { shouldDirty: true });
+        addDevTapp(dirPath);
+
+        // Reset to default value after successful addition
+        setValue('tappPath', DEFAULT_DEV_TAPP_PATH);
     }, [addDevTapp, setValue]);
 
     function handleEditClick() {
@@ -130,6 +125,7 @@ const TappletDevPathForm = () => {
                                             placeholder="Path (eg. /home/user/tapplet/dist) OR endpoint (eg. http://localhost:18000)"
                                             hasError={!!errors.tappPath}
                                             onFocus={() => setEditing(true)}
+                                            onBlur={() => setEditing(false)}
                                         />
                                     );
                                 }}
@@ -149,7 +145,7 @@ const TappletDevPathForm = () => {
                                 </>
                             ) : (
                                 <>
-                                    <IconButton type="submit" size="small" onClick={handleDirSelect}>
+                                    <IconButton type="button" size="small" onClick={handleDirSelect}>
                                         <IoFolderOpen />
                                     </IconButton>
                                     <IconButton

@@ -1,10 +1,10 @@
-use crate::{database::schema::*, tapplets::interface::TappletRegistryManifest};
-use diesel::prelude::*;
+use crate::tapplets::interface::TappletRegistryManifest;
 use serde::{Deserialize, Serialize};
+use sqlx::FromRow;
 
-#[derive(Queryable, Selectable, Debug, Serialize)]
-#[diesel(table_name = installed_tapplet)]
-#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
+// ========== InstalledTapplet ==========
+
+#[derive(Debug, Serialize, FromRow)]
 pub struct InstalledTapplet {
     pub id: Option<i32>,
     pub tapplet_id: Option<i32>,
@@ -14,8 +14,7 @@ pub struct InstalledTapplet {
     pub tari_permissions: String,
 }
 
-#[derive(Insertable, Debug, Deserialize)]
-#[diesel(table_name = installed_tapplet)]
+#[derive(Debug, Deserialize)]
 pub struct CreateInstalledTapplet {
     pub tapplet_id: Option<i32>,
     pub tapplet_version_id: Option<i32>,
@@ -24,20 +23,7 @@ pub struct CreateInstalledTapplet {
     pub tari_permissions: String,
 }
 
-impl From<&CreateInstalledTapplet> for UpdateInstalledTapplet {
-    fn from(create_installed_tapplet: &CreateInstalledTapplet) -> Self {
-        UpdateInstalledTapplet {
-            tapplet_id: create_installed_tapplet.tapplet_id,
-            tapplet_version_id: create_installed_tapplet.tapplet_version_id,
-            source: create_installed_tapplet.source.clone(),
-            csp: create_installed_tapplet.csp.clone(),
-            tari_permissions: create_installed_tapplet.tari_permissions.clone(),
-        }
-    }
-}
-
-#[derive(Debug, AsChangeset, Deserialize)]
-#[diesel(table_name = installed_tapplet)]
+#[derive(Debug, Deserialize)]
 pub struct UpdateInstalledTapplet {
     pub tapplet_id: Option<i32>,
     pub tapplet_version_id: Option<i32>,
@@ -46,24 +32,36 @@ pub struct UpdateInstalledTapplet {
     pub tari_permissions: String,
 }
 
-impl From<&InstalledTapplet> for UpdateInstalledTapplet {
-    fn from(installed_tapplet: &InstalledTapplet) -> Self {
+impl From<&CreateInstalledTapplet> for UpdateInstalledTapplet {
+    fn from(create: &CreateInstalledTapplet) -> Self {
         UpdateInstalledTapplet {
-            tapplet_id: installed_tapplet.tapplet_id,
-            tapplet_version_id: installed_tapplet.tapplet_version_id,
-            source: installed_tapplet.source.clone(),
-            csp: installed_tapplet.csp.clone(),
-            tari_permissions: installed_tapplet.tari_permissions.clone(),
+            tapplet_id: create.tapplet_id,
+            tapplet_version_id: create.tapplet_version_id,
+            source: create.source.clone(),
+            csp: create.csp.clone(),
+            tari_permissions: create.tari_permissions.clone(),
         }
     }
 }
 
-#[derive(Queryable, Selectable, Debug, Serialize)]
-#[diesel(table_name = tapplet)]
-#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
+impl From<&InstalledTapplet> for UpdateInstalledTapplet {
+    fn from(inst: &InstalledTapplet) -> Self {
+        UpdateInstalledTapplet {
+            tapplet_id: inst.tapplet_id,
+            tapplet_version_id: inst.tapplet_version_id,
+            source: inst.source.clone(),
+            csp: inst.csp.clone(),
+            tari_permissions: inst.tari_permissions.clone(),
+        }
+    }
+}
+
+// ========== Tapplet ==========
+
+#[derive(Debug, Serialize, FromRow)]
 pub struct Tapplet {
     pub id: Option<i32>,
-    pub tapp_registry_id: String,
+    pub package_name: String,
     pub display_name: String,
     pub logo_url: String,
     pub background_url: String,
@@ -74,56 +72,38 @@ pub struct Tapplet {
     pub category: String,
 }
 
-#[derive(Insertable, Debug, Deserialize)]
-#[diesel(table_name = tapplet)]
-pub struct CreateTapplet<'a> {
-    pub tapp_registry_id: &'a str,
-    pub display_name: &'a str,
-    pub logo_url: &'a str,
-    pub background_url: &'a str,
-    pub author_name: &'a str,
-    pub author_website: &'a str,
-    pub about_summary: &'a str,
-    pub about_description: &'a str,
-    pub category: &'a str,
+#[derive(Debug, Deserialize)]
+pub struct CreateTapplet {
+    pub package_name: String,
+    pub display_name: String,
+    pub logo_url: String,
+    pub background_url: String,
+    pub author_name: String,
+    pub author_website: String,
+    pub about_summary: String,
+    pub about_description: String,
+    pub category: String,
 }
 
-impl<'a> From<&'a TappletRegistryManifest> for CreateTapplet<'a> {
-    fn from(tapplet_manifest: &'a TappletRegistryManifest) -> Self {
+impl From<&TappletRegistryManifest> for CreateTapplet {
+    fn from(manifest: &TappletRegistryManifest) -> Self {
         CreateTapplet {
-            tapp_registry_id: &tapplet_manifest.id,
-            display_name: &tapplet_manifest.metadata.display_name,
-            logo_url: &tapplet_manifest.metadata.logo_url,
-            background_url: &tapplet_manifest.metadata.background_url,
-            author_name: &tapplet_manifest.metadata.author.name,
-            author_website: &tapplet_manifest.metadata.author.website,
-            about_summary: &tapplet_manifest.metadata.about.summary,
-            about_description: &tapplet_manifest.metadata.about.description,
-            category: &tapplet_manifest.metadata.category,
+            package_name: manifest.id.clone(),
+            display_name: manifest.metadata.display_name.clone(),
+            logo_url: manifest.metadata.logo_url.clone(),
+            background_url: manifest.metadata.background_url.clone(),
+            author_name: manifest.metadata.author.name.clone(),
+            author_website: manifest.metadata.author.website.clone(),
+            about_summary: manifest.metadata.about.summary.clone(),
+            about_description: manifest.metadata.about.description.clone(),
+            category: manifest.metadata.category.clone(),
         }
     }
 }
 
-impl<'a> From<&CreateTapplet<'a>> for UpdateTapplet {
-    fn from(create_tapplet: &CreateTapplet) -> Self {
-        UpdateTapplet {
-            tapp_registry_id: create_tapplet.tapp_registry_id.to_string(),
-            display_name: create_tapplet.display_name.to_string(),
-            logo_url: create_tapplet.logo_url.to_string(),
-            background_url: create_tapplet.background_url.to_string(),
-            author_name: create_tapplet.author_name.to_string(),
-            author_website: create_tapplet.author_website.to_string(),
-            about_summary: create_tapplet.about_summary.to_string(),
-            about_description: create_tapplet.about_description.to_string(),
-            category: create_tapplet.category.to_string(),
-        }
-    }
-}
-
-#[derive(Debug, AsChangeset)]
-#[diesel(table_name = tapplet)]
+#[derive(Debug, Deserialize)]
 pub struct UpdateTapplet {
-    pub tapp_registry_id: String,
+    pub package_name: String,
     pub display_name: String,
     pub logo_url: String,
     pub background_url: String,
@@ -134,9 +114,25 @@ pub struct UpdateTapplet {
     pub category: String,
 }
 
-#[derive(Queryable, Selectable, Debug, Serialize, Clone)]
-#[diesel(table_name = tapplet_version)]
-#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
+impl From<&CreateTapplet> for UpdateTapplet {
+    fn from(create: &CreateTapplet) -> Self {
+        UpdateTapplet {
+            package_name: create.package_name.clone(),
+            display_name: create.display_name.clone(),
+            logo_url: create.logo_url.clone(),
+            background_url: create.background_url.clone(),
+            author_name: create.author_name.clone(),
+            author_website: create.author_website.clone(),
+            about_summary: create.about_summary.clone(),
+            about_description: create.about_description.clone(),
+            category: create.category.clone(),
+        }
+    }
+}
+
+// ========== TappletVersion ==========
+
+#[derive(Debug, Serialize, Clone, FromRow)]
 pub struct TappletVersion {
     pub id: Option<i32>,
     pub tapplet_id: Option<i32>,
@@ -145,28 +141,15 @@ pub struct TappletVersion {
     pub registry_url: String,
 }
 
-#[derive(Insertable, Debug)]
-#[diesel(table_name = tapplet_version)]
-pub struct CreateTappletVersion<'a> {
+#[derive(Debug)]
+pub struct CreateTappletVersion {
     pub tapplet_id: Option<i32>,
-    pub version: &'a str,
-    pub integrity: &'a str,
-    pub registry_url: &'a str,
+    pub version: String,
+    pub integrity: String,
+    pub registry_url: String,
 }
 
-impl<'a> From<&CreateTappletVersion<'a>> for UpdateTappletVersion {
-    fn from(create_tapplet_version: &CreateTappletVersion) -> Self {
-        UpdateTappletVersion {
-            tapplet_id: create_tapplet_version.tapplet_id,
-            version: create_tapplet_version.version.to_string(),
-            integrity: create_tapplet_version.integrity.to_string(),
-            registry_url: create_tapplet_version.registry_url.to_string(),
-        }
-    }
-}
-
-#[derive(Debug, AsChangeset)]
-#[diesel(table_name = tapplet_version)]
+#[derive(Debug)]
 pub struct UpdateTappletVersion {
     pub tapplet_id: Option<i32>,
     pub version: String,
@@ -174,9 +157,20 @@ pub struct UpdateTappletVersion {
     pub registry_url: String,
 }
 
-#[derive(Queryable, Selectable, Debug, Serialize)]
-#[diesel(table_name = dev_tapplet)]
-#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
+impl From<&CreateTappletVersion> for UpdateTappletVersion {
+    fn from(create: &CreateTappletVersion) -> Self {
+        UpdateTappletVersion {
+            tapplet_id: create.tapplet_id,
+            version: create.version.clone(),
+            integrity: create.integrity.clone(),
+            registry_url: create.registry_url.clone(),
+        }
+    }
+}
+
+// ========== DevTapplet ==========
+
+#[derive(Debug, Serialize, Clone, FromRow)]
 pub struct DevTapplet {
     pub id: Option<i32>,
     pub package_name: String,
@@ -186,30 +180,16 @@ pub struct DevTapplet {
     pub tari_permissions: String,
 }
 
-#[derive(Insertable, Debug)]
-#[diesel(table_name = dev_tapplet)]
-pub struct CreateDevTapplet<'a> {
-    pub source: &'a str,
-    pub package_name: &'a str,
-    pub display_name: &'a str,
-    pub csp: &'a str,
-    pub tari_permissions: &'a str,
+#[derive(Debug)]
+pub struct CreateDevTapplet {
+    pub source: String,
+    pub package_name: String,
+    pub display_name: String,
+    pub csp: String,
+    pub tari_permissions: String,
 }
 
-impl<'a> From<&CreateDevTapplet<'a>> for UpdateDevTapplet {
-    fn from(create_dev_tapplet: &CreateDevTapplet) -> Self {
-        UpdateDevTapplet {
-            source: create_dev_tapplet.source.to_string(),
-            package_name: create_dev_tapplet.package_name.to_string(),
-            display_name: create_dev_tapplet.display_name.to_string(),
-            csp: create_dev_tapplet.csp.to_string(),
-            tari_permissions: create_dev_tapplet.tari_permissions.to_string(),
-        }
-    }
-}
-
-#[derive(Debug, AsChangeset)]
-#[diesel(table_name = dev_tapplet)]
+#[derive(Debug)]
 pub struct UpdateDevTapplet {
     pub source: String,
     pub package_name: String,
@@ -218,21 +198,33 @@ pub struct UpdateDevTapplet {
     pub tari_permissions: String,
 }
 
-impl From<&DevTapplet> for UpdateDevTapplet {
-    fn from(dev_tapplet: &DevTapplet) -> Self {
+impl From<&CreateDevTapplet> for UpdateDevTapplet {
+    fn from(create: &CreateDevTapplet) -> Self {
         UpdateDevTapplet {
-            source: dev_tapplet.source.clone(),
-            package_name: dev_tapplet.package_name.clone(),
-            display_name: dev_tapplet.display_name.clone(),
-            csp: dev_tapplet.csp.clone(),
-            tari_permissions: dev_tapplet.tari_permissions.clone(),
+            source: create.source.clone(),
+            package_name: create.package_name.clone(),
+            display_name: create.display_name.clone(),
+            csp: create.csp.clone(),
+            tari_permissions: create.tari_permissions.clone(),
         }
     }
 }
 
-#[derive(Queryable, Selectable, Debug, Serialize)]
-#[diesel(table_name = tapplet_audit)]
-#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
+impl From<&DevTapplet> for UpdateDevTapplet {
+    fn from(dev: &DevTapplet) -> Self {
+        UpdateDevTapplet {
+            source: dev.source.clone(),
+            package_name: dev.package_name.clone(),
+            display_name: dev.display_name.clone(),
+            csp: dev.csp.clone(),
+            tari_permissions: dev.tari_permissions.clone(),
+        }
+    }
+}
+
+// ========== TappletAudit ==========
+
+#[derive(Debug, Serialize, FromRow)]
 pub struct TappletAudit {
     pub id: Option<i32>,
     pub tapplet_id: Option<i32>,
@@ -240,35 +232,33 @@ pub struct TappletAudit {
     pub report_url: String,
 }
 
-#[derive(Insertable, Debug)]
-#[diesel(table_name = tapplet_audit)]
-pub struct CreateTappletAudit<'a> {
+#[derive(Debug)]
+pub struct CreateTappletAudit {
     pub tapplet_id: Option<i32>,
-    pub auditor: &'a str,
-    pub report_url: &'a str,
+    pub auditor: String,
+    pub report_url: String,
 }
 
-impl<'a> From<&CreateTappletAudit<'a>> for UpdateTappletAudit {
-    fn from(create_tapplet_audit: &CreateTappletAudit) -> Self {
-        UpdateTappletAudit {
-            tapplet_id: create_tapplet_audit.tapplet_id,
-            auditor: create_tapplet_audit.auditor.to_string(),
-            report_url: create_tapplet_audit.report_url.to_string(),
-        }
-    }
-}
-
-#[derive(Debug, AsChangeset)]
-#[diesel(table_name = tapplet_audit)]
+#[derive(Debug)]
 pub struct UpdateTappletAudit {
     pub tapplet_id: Option<i32>,
     pub auditor: String,
     pub report_url: String,
 }
 
-#[derive(Queryable, Selectable, Debug, Serialize)]
-#[diesel(table_name = tapplet_asset)]
-#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
+impl From<&CreateTappletAudit> for UpdateTappletAudit {
+    fn from(create: &CreateTappletAudit) -> Self {
+        UpdateTappletAudit {
+            tapplet_id: create.tapplet_id,
+            auditor: create.auditor.clone(),
+            report_url: create.report_url.clone(),
+        }
+    }
+}
+
+// ========== TappletAsset ==========
+
+#[derive(Debug, Serialize, FromRow)]
 pub struct TappletAsset {
     pub id: Option<i32>,
     pub tapplet_id: Option<i32>,
@@ -276,28 +266,26 @@ pub struct TappletAsset {
     pub background_url: String,
 }
 
-#[derive(Insertable, Debug)]
-#[diesel(table_name = tapplet_asset)]
-pub struct CreateTappletAsset<'a> {
+#[derive(Debug)]
+pub struct CreateTappletAsset {
     pub tapplet_id: Option<i32>,
-    pub icon_url: &'a str,
-    pub background_url: &'a str,
+    pub icon_url: String,
+    pub background_url: String,
 }
 
-impl<'a> From<&CreateTappletAsset<'a>> for UpdateTappletAsset {
-    fn from(create_tapplet_asset: &CreateTappletAsset) -> Self {
-        UpdateTappletAsset {
-            tapplet_id: create_tapplet_asset.tapplet_id,
-            icon_url: create_tapplet_asset.icon_url.to_string(),
-            background_url: create_tapplet_asset.background_url.to_string(),
-        }
-    }
-}
-
-#[derive(Debug, AsChangeset)]
-#[diesel(table_name = tapplet_asset)]
+#[derive(Debug)]
 pub struct UpdateTappletAsset {
     pub tapplet_id: Option<i32>,
     pub icon_url: String,
     pub background_url: String,
+}
+
+impl From<&CreateTappletAsset> for UpdateTappletAsset {
+    fn from(create: &CreateTappletAsset) -> Self {
+        UpdateTappletAsset {
+            tapplet_id: create.tapplet_id,
+            icon_url: create.icon_url.clone(),
+            background_url: create.background_url.clone(),
+        }
+    }
 }

@@ -29,4 +29,4 @@ pub const DEFAULT_MONERO_ADDRESS: &str =
 // Tari Ootle & Tapplets
 pub const TAPPLETS_INSTALLED_DIR: &'static str = "tapplets_installed";
 pub const TAPPLETS_ASSETS_DIR: &'static str = "assets";
-pub const DB_FILE_NAME: &'static str = "tapplets.sqlite3";
+pub const DB_FILE_NAME: &'static str = "tapplets.sqlite";

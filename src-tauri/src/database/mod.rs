@@ -1,24 +1,47 @@
 pub mod models;
-pub mod schema;
 pub mod store;
 
-use diesel::prelude::*;
-use diesel::sqlite::Sqlite;
-use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
-use log::info;
+use log::{error, info};
+use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePoolOptions, SqlitePool};
+use std::{fs, path::PathBuf};
 
-pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./migrations");
-pub const LOG_TARGET: &str = "tari::universe::binary_manager";
+pub const LOG_TARGET: &str = "tari::universe::database";
 
-pub fn establish_connection(db_url: &str) -> SqliteConnection {
-    info!(target: LOG_TARGET,"Establishing db connection url: {:?}", db_url);
-    let mut db_connection = SqliteConnection::establish(db_url)
-        .unwrap_or_else(|_| panic!("Error connecting to {}", db_url));
-    run_migrations(&mut db_connection).unwrap(); // TODO handle migrations error while running setup https://github.com/orgs/tari-project/projects/18/views/1?pane=issue&itemId=63753279
-    db_connection
-}
-fn run_migrations(connection: &mut impl MigrationHarness<Sqlite>) -> Result<(), ()> {
-    connection.run_pending_migrations(MIGRATIONS).unwrap();
+pub async fn initialize_database(db_path: &str) -> Result<SqlitePool, sqlx::Error> {
+    let db_file = PathBuf::from(db_path);
 
-    Ok(())
+    if let Some(parent) = db_file.parent() {
+        if !parent.exists() {
+            fs::create_dir_all(parent).map_err(|e| {
+                error!(target: LOG_TARGET, "Failed to create database directory: {}", e);
+                sqlx::Error::Io(e)
+            })?;
+        }
+    }
+
+    if !sqlx::Sqlite::database_exists(db_path)
+        .await
+        .unwrap_or(false)
+    {
+        info!(target: LOG_TARGET, "Creating database at: {}", db_path);
+        sqlx::Sqlite::create_database(db_path).await?;
+    }
+
+    info!(target: LOG_TARGET, "Establishing database connection: {}", db_path);
+    let pool = SqlitePoolOptions::new()
+        .max_connections(5)
+        .connect(db_path)
+        .await?;
+
+    info!(target: LOG_TARGET, "Running database migrations");
+    sqlx::migrate!("./sqlite/migrations")
+        .run(&pool)
+        .await
+        .map_err(|e| {
+            error!(target: LOG_TARGET, "Failed to run migrations: {}", e);
+            e
+        })?;
+
+    info!(target: LOG_TARGET, "Database initialization completed successfully");
+    Ok(pool)
 }

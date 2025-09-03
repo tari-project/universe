@@ -1,8 +1,6 @@
--- Your SQL goes here
--- This file should undo anything in `up.sql`
 CREATE TABLE tapplet (
   id INTEGER PRIMARY KEY,
-  tapp_registry_id TEXT NOT NULL,
+  package_name TEXT NOT NULL,
   display_name TEXT NOT NULL,
   logo_url TEXT NOT NULL,
   background_url TEXT NOT NULL,
@@ -11,7 +9,7 @@ CREATE TABLE tapplet (
   about_summary TEXT NOT NULL,
   about_description TEXT NOT NULL,
   category TEXT NOT NULL,
-  UNIQUE(tapp_registry_id)
+  UNIQUE(package_name)
 );
 
 CREATE TABLE tapplet_version (
@@ -20,7 +18,7 @@ CREATE TABLE tapplet_version (
   version TEXT NOT NULL,
   integrity TEXT NOT NULL,
   registry_url TEXT NOT NULL,
-  UNIQUE(version, tapplet_id),
+  UNIQUE(tapplet_id, version),
   FOREIGN KEY (tapplet_id) REFERENCES tapplet(id)
 );
 

@@ -154,3 +154,31 @@ pub struct AssetServer {
     pub addr: String,
     pub cancel_token: CancellationToken,
 }
+
+#[derive(Debug, sqlx::FromRow)]
+pub struct InstalledTappletJoinRow {
+    // InstalledTapplet fields
+    pub it_id: Option<i32>,
+    pub it_tapplet_id: Option<i32>,
+    pub it_tapplet_version_id: Option<i32>,
+    pub it_source: String,
+    pub it_csp: String,
+    pub it_tari_permissions: String,
+    // Tapplet fields
+    pub t_id: Option<i32>,
+    pub t_package_name: String,
+    pub t_display_name: String,
+    pub t_logo_url: String,
+    pub t_background_url: String,
+    pub t_author_name: String,
+    pub t_author_website: String,
+    pub t_about_summary: String,
+    pub t_about_description: String,
+    pub t_category: String,
+    // TappletVersion fields
+    pub tv_id: Option<i32>,
+    pub tv_tapplet_id: Option<i32>,
+    pub tv_version: String,
+    pub tv_integrity: String,
+    pub tv_registry_url: String,
+}

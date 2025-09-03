@@ -3,7 +3,7 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 import { SettingsGroup, SettingsGroupContent, SettingsGroupTitle } from '../../components/SettingsGroup.styles.ts';
 import { TappletsGroup, TappletsGroupWrapper } from './TappletsSettings.styles.ts';
 import { useTappletsStore } from '@app/store/useTappletsStore.ts';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { Count } from './TappletsSettings.styles.ts';
 import { ListItemWrapper } from '@app/components/transactions/history/List.styles.ts';
 import { ListWrapper } from './styles/List.styles.ts';
@@ -16,8 +16,9 @@ export default function TappletsRegistered() {
     const fetchRegisteredTapplets = useTappletsStore((s) => s.fetchRegisteredTapps);
     const registeredTapplets = useTappletsStore((s) => s.registeredTapplets);
     const installRegisteredTapp = useTappletsStore((s) => s.installRegisteredTapp);
-    const registeredTappletsCount = registeredTapplets?.length || 0;
     const isInitialized = useTappletsStore((s) => s.isInitialized);
+    const hasFetchedRef = useRef(false);
+    const registeredTappletsCount = registeredTapplets?.length || 0;
 
     const handleInstall = useCallback(
         async (id: number) => {
@@ -31,8 +32,9 @@ export default function TappletsRegistered() {
     );
 
     useEffect(() => {
-        if (!isInitialized) {
+        if (!isInitialized && !hasFetchedRef.current) {
             fetchRegisteredTapplets();
+            hasFetchedRef.current = true;
         }
     }, [fetchRegisteredTapplets, isInitialized]);
 
