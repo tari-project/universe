@@ -169,25 +169,6 @@ impl WebsocketEventsManager {
         }
     }
 
-    async fn assemble_keep_alive() -> Option<WebsocketMessage> {
-        let jwt_token = ConfigCore::content()
-            .await
-            .airdrop_tokens()
-            .clone()
-            .map(|tokens| tokens.token);
-
-        let payload = serde_json::json!({
-            "jwt": jwt_token,
-        });
-
-        return Some(WebsocketMessage {
-            event: "keep-alive".into(),
-            data: Some(payload),
-            signature: None,
-            pub_key: None,
-        });
-    }
-
     async fn assemble_mining_status(
         cpu_miner_status_watch_rx: watch::Receiver<CpuMinerStatus>,
         gpu_latest_miner_stats: watch::Receiver<GpuMinerStatus>,
@@ -256,6 +237,26 @@ impl WebsocketEventsManager {
         }
         None
     }
+
+    async fn assemble_keep_alive() -> Option<WebsocketMessage> {
+        let jwt_token = ConfigCore::content()
+            .await
+            .airdrop_tokens()
+            .clone()
+            .map(|tokens| tokens.token);
+
+        let payload = serde_json::json!({
+            "token": jwt_token,
+        });
+
+        return Some(WebsocketMessage {
+            event: "keep-alive".into(),
+            data: Some(payload),
+            signature: None,
+            pub_key: None,
+        });
+    }
+
     async fn websocket_connect(
         &mut self,
         websocket_manager: Arc<RwLock<WebsocketManager>>,
