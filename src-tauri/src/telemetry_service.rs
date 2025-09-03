@@ -34,7 +34,6 @@ use crate::{
     app_in_memory_config::AppInMemoryConfig,
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
     hardware::hardware_status_monitor::HardwareStatusMonitor,
-    process_utils::retry_with_backoff,
     tasks_tracker::TasksTrackers,
     utils::platform_utils::{CurrentOperatingSystem, PlatformUtils},
 };
@@ -135,7 +134,6 @@ impl TelemetryService {
                             continue;
                         }
                         let anon_id = ConfigCore::content().await.anon_id().clone();
-        
                         let _unused = send_telemetry_data(
                             telemetry_data,
                             telemetry_api_url.clone(),
