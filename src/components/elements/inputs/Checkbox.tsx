@@ -3,11 +3,12 @@ import { InputHTMLAttributes } from 'react';
 import CheckIcon from '@app/assets/icons/CheckIcon.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 
-interface CheckboxInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'value'> {
+interface CheckboxInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange'> {
+    handleChange: (checked: boolean) => void;
     labelText?: string;
 }
 
-const Wrapper = styled.label`
+const Wrapper = styled.div`
     display: flex;
     gap: 10px;
     align-items: center;
@@ -17,9 +18,6 @@ const Wrapper = styled.label`
         font-weight: 600;
         line-height: 1.22;
     }
-`;
-const Input = styled.input.attrs({ type: 'checkbox' })`
-    display: flex;
 `;
 
 const Box = styled.div<{ $checked: boolean }>`
@@ -39,14 +37,38 @@ const Box = styled.div<{ $checked: boolean }>`
             background: #68cd4a;
             opacity: 1;
         `}
+
+    &:focus-visible {
+        outline: 2px solid ${({ theme }) => theme.palette.focusOutline};
+        outline-offset: 2px;
+        transition: none;
+    }
 `;
 
-export const Checkbox = (props: CheckboxInputProps) => {
+export const Checkbox = ({ labelText, handleChange, ...props }: CheckboxInputProps) => {
+    const checked = props.checked || false;
+    function toggleChecked() {
+        if (!props.id) return;
+        const checkboxEl = document.getElementById(props.id);
+        if (checkboxEl) {
+            handleChange(!checked);
+            checkboxEl.setAttribute('aria-checked', `${!checked}`);
+        }
+    }
     return (
-        <Wrapper>
-            <Box $checked={props.checked ?? false}>{props.checked && <CheckIcon />}</Box>
-            <Input {...props} />
-            <Typography>{props.labelText}</Typography>
+        <Wrapper {...props} role="checkbox" aria-checked={checked} onClick={toggleChecked}>
+            <Box
+                tabIndex={0}
+                $checked={checked}
+                onKeyDown={(e) => {
+                    if (e.key === ' ' || e.code === 'Space' || e.key === 'Enter') {
+                        toggleChecked();
+                    }
+                }}
+            >
+                {props.checked && <CheckIcon />}
+            </Box>
+            <Typography>{labelText}</Typography>
         </Wrapper>
     );
 };

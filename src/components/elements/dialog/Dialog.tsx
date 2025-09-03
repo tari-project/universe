@@ -14,7 +14,7 @@ export function Dialog({ children, ...options }: DialogProps) {
     return <DialogContext.Provider value={dialog}>{children}</DialogContext.Provider>;
 }
 
-export function DialogContent({ variant = 'primary', ...props }: DialogContentType) {
+export function DialogContent({ variant = 'primary', closeButton, ...props }: DialogContentType) {
     const context = useDialogContext();
     const ref = useMergeRefs([context.refs.setFloating, props.ref]);
 
@@ -48,8 +48,8 @@ export function DialogContent({ variant = 'primary', ...props }: DialogContentTy
                                             {...context.getFloatingProps(props)}
                                             $allowOverflow={props.$allowOverflow}
                                         >
-                                            {props.closeButton ? (
-                                                <CloseButtonContainer>{props.closeButton}</CloseButtonContainer>
+                                            {closeButton ? (
+                                                <CloseButtonContainer>{closeButton}</CloseButtonContainer>
                                             ) : null}
                                             {props.children}
                                         </Content>

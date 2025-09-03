@@ -45,7 +45,7 @@ export const ContentScrollContainer = styled.div<ContentWrapperStyleProps>`
 `;
 
 export const Content = styled.div<ContentWrapperStyleProps>`
-    padding: max(20px, 2vh);
+    padding: clamp(12px, 2.5vh, 20px);
     flex-direction: column;
     overflow-y: ${({ $allowOverflow }) => ($allowOverflow ? 'unset' : 'auto')};
     overflow-x: ${({ $allowOverflow }) => ($allowOverflow ? 'unset' : 'hidden')};

@@ -19,7 +19,7 @@ interface QuestionFields {
 }
 export default function SurveyForm({ questions }: SurveyFormProps) {
     const defaultValues = questions.map((q) => ({ ...q, checked: false, value: '' }));
-    const { control } = useForm<QuestionFields>({ defaultValues: { questionField: defaultValues } });
+    const { control, setValue } = useForm<QuestionFields>({ defaultValues: { questionField: defaultValues } });
     const { fields } = useFieldArray({
         control,
         name: 'questionField',
@@ -32,10 +32,20 @@ export default function SurveyForm({ questions }: SurveyFormProps) {
                     control={control}
                     key={q.id}
                     name={`questionField.${i}.checked`}
-                    render={({ field }) => {
+                    render={({ field, formState }) => {
+                        function handleChange(value: boolean) {
+                            console.debug(value, formState);
+                            setValue(field.name, value);
+                        }
                         return (
                             <ItemWrapper>
-                                <Checkbox {...field} labelText={q.questionText} checked={field.value} />
+                                <Checkbox
+                                    {...field}
+                                    id={field.name}
+                                    labelText={q.questionText}
+                                    checked={field.value}
+                                    handleChange={handleChange}
+                                />
                             </ItemWrapper>
                         );
                     }}

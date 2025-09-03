@@ -8,8 +8,8 @@ export interface DialogOptions {
 }
 export interface ContentWrapperProps {
     variant?: DialogVariant;
-    closeButton?: ReactNode;
     style?: CSSProperties;
+    closeButton?: ReactNode;
 }
 export interface ContentWrapperStyleProps {
     $variant?: DialogVariant;
