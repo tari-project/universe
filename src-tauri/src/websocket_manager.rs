@@ -208,7 +208,6 @@ impl WebsocketManager {
     //     info!(target: LOG_TARGET,"websocket connection closed");
     // }
 
-
     pub async fn connect(&mut self) -> Result<(), anyhow::Error> {
         if self.status_update_channel_rx.borrow().clone()
             == WebsocketManagerStatusMessage::Connected
