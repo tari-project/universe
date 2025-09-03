@@ -1,7 +1,8 @@
-export enum SurveyType {
-    CLOSE = 'close',
-    LONG = 'long',
-}
+const _SURVEYS = ['close', 'long'] as const;
+type SurveyTuple = typeof _SURVEYS;
+
+export type SurveyType = SurveyTuple[number];
+
 export enum SurveyQuestionType {
     RADIO = 'radio',
     CHECKBOX = 'checkbox',

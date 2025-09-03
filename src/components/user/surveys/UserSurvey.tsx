@@ -3,12 +3,13 @@ import { ChipText, Description, Title, Wrapper } from './styles.ts';
 import { useFetchSurveyContent } from '@app/hooks/user/surveys/useFetchSurveyContent.ts';
 import SurveyForm from './SurveyForm.tsx';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
+import { SurveyType } from '@app/types/user/surveys.ts';
 
-export default function UserSurvey() {
-    const slug = 'survey-close'; // TODO: ask for for route for survey type
-
-    const { data: survey, isLoading } = useFetchSurveyContent(slug);
-
+interface UserSurveyProps {
+    type: SurveyType;
+}
+export default function UserSurvey({ type }: UserSurveyProps) {
+    const { data: survey, isLoading } = useFetchSurveyContent(type);
     const loadingMarkup = isLoading && <LoadingDots />;
     const markup = !!survey && (
         <>

@@ -34,22 +34,24 @@ export default function SurveyForm({ questions }: SurveyFormProps) {
 
     const watchedField = watch('questionField');
     function parseData(_data: QuestionFields) {
-        const answers = watchedField.map((f) => {
-            if (f.questionType === 'text') {
-                return {
-                    questionId: f.id,
-                    answerText: f.value,
-                };
-            }
-
-            if (f.questionType === 'checkbox') {
-                const selectedOptionIds = f.checked ? [f.id] : [];
-                return {
-                    questionId: f.id,
-                    selectedOptionIds,
-                };
-            }
-        }) as SurveyAnswerInput[];
+        const answers = watchedField
+            .map((f) => {
+                if (f.questionType === 'text') {
+                    return {
+                        questionId: f.id,
+                        answerText: f.value,
+                    };
+                }
+                return null;
+                // if (f.questionType === 'checkbox') {
+                //     const selectedOptionIds = f.checked ? [f.id] : [];
+                //     return {
+                //         questionId: f.id,
+                //         selectedOptionIds,
+                //     };
+                // }
+            })
+            .filter((x) => !!x) as SurveyAnswerInput[];
 
         const metadata = {
             userId: anon_id,

@@ -11,7 +11,7 @@ import AutoUpdateDialog from './AutoUpdateDialog/AutoUpdateDialog.tsx';
 import CreatePinDialog from './security/pin/CreatePinDialog.tsx';
 import CriticalErrorDialog from './CriticalErrorDialog/CriticalErrorDialog.tsx';
 import CriticalProblemDialog from './CriticalProblemDialog/CriticalProblemDialog.tsx';
-import UserSurveyDialog from './user/surveys/UserSurveyDialog.tsx';
+import CloseUserFeedbackDialog from './user/surveys/CloseUserFeedbackDialog.tsx';
 import EXModal from './EXModal/EXModal.tsx';
 import EnterPinDialog from './security/pin/EnterPinDialog.tsx';
 import ExternalDependenciesDialog from './ExternalDependenciesDialog/ExternalDependenciesDialog.tsx';
@@ -59,7 +59,7 @@ const FloatingElements = () => {
             <CrewRewards />
             <SettingsModal />
             <FailedModuleInitializationDialog />
-            <UserSurveyDialog />
+            <CloseUserFeedbackDialog />
         </FloatingTree>
     );
 };
