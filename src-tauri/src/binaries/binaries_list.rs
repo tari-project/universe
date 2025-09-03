@@ -110,8 +110,11 @@ impl Binaries {
                 Self::append_exe_if_windows(&mut PathBuf::from(file_name))
             }
             Binaries::Tor => {
-                let file_name = "tor";
-                Self::append_exe_if_windows(&mut PathBuf::from(file_name))
+                let mut nested_file_name = PathBuf::new();
+                nested_file_name.push("tor"); // nested dir
+                nested_file_name.push("tor"); // file name
+
+                Self::append_exe_if_windows(&mut nested_file_name)
             }
             Binaries::BridgeTapplet => {
                 let file_name = format!("bridge-{version}");
