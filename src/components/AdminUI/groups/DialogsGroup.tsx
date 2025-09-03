@@ -12,6 +12,7 @@ export function DialogsGroup() {
     const criticalProblem = useAppStateStore((s) => s.criticalProblem);
     const showExternalDependenciesDialog = useUIStore((s) => s.showExternalDependenciesDialog);
     const toggleCloseDialog = useUserFeedbackStore((s) => s.toggleCloseDialog);
+    const showCloseDialog = useUserFeedbackStore((s) => s.showCloseDialog);
 
     function handleToggle(dialog: DialogType) {
         setDialogToShow(dialogToShow === dialog ? undefined : dialog);
@@ -21,7 +22,7 @@ export function DialogsGroup() {
         <>
             <CategoryLabel>Dialogs</CategoryLabel>
             <ButtonGroup>
-                <AdminButton onClick={toggleCloseDialog} $isActive>
+                <AdminButton onClick={toggleCloseDialog} $isActive={showCloseDialog}>
                     Close Survey
                 </AdminButton>
                 <AdminButton

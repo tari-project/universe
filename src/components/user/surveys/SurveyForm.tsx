@@ -1,10 +1,11 @@
-import { SurveyQuestion } from '@app/types/user/surveys.ts';
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
+
+import { SurveyQuestion } from '@app/types/user/surveys.ts';
 import { Checkbox } from '@app/components/elements/inputs/Checkbox.tsx';
-import { CTAWrapper, Form, FormContent, ItemWrapper, TextItem, TextItemLabel } from './styles.ts';
-import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { TextButton } from '@app/components/elements/buttons/TextButton.tsx';
+import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
+import { CTAWrapper, Form, FormContent, ItemWrapper, TextItem, TextItemLabel } from './surveyForm.styles.ts';
 
 interface SurveyFormProps {
     questions: SurveyQuestion[];
