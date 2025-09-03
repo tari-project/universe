@@ -378,7 +378,14 @@ impl WalletManager {
                     result = wallet_manager.wait_for_scan_to_height(current_target_height, None) => {
                         match result {
                             Ok(scanned_wallet_state) => {
-                                let latest_height = node_status_watch_rx_scan.borrow().block_height;
+                                let node_status = *node_status_watch_rx_scan.borrow();
+                                if !node_status.is_synced {
+                                    log::info!(target: LOG_TARGET,
+                                        "Node is not synced, continuing..");
+                                    continue;
+                                }
+
+                                let latest_height = node_status.block_height;
                                 if latest_height > current_target_height {
                                     log::info!(target: LOG_TARGET,
                                         "Node height increased from {current_target_height} to {latest_height} while initial scanning, continuing..");
