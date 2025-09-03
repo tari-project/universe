@@ -2,6 +2,7 @@ import styled, { css } from 'styled-components';
 import { InputHTMLAttributes } from 'react';
 import CheckIcon from '@app/assets/icons/CheckIcon.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
+import { convertHexToRGBA } from '@app/utils';
 
 interface CheckboxInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange'> {
     handleChange: (checked: boolean) => void;
@@ -24,8 +25,8 @@ const Box = styled.div<{ $checked: boolean }>`
     width: 25px;
     height: 25px;
     flex-shrink: 0;
-    border-radius: 20%;
-    border: 2px solid ${({ theme }) => theme.palette.divider};
+    border-radius: 6px;
+    border: 2px solid ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.1)};
     display: flex;
     justify-content: center;
     align-items: center;
@@ -35,11 +36,10 @@ const Box = styled.div<{ $checked: boolean }>`
         $checked &&
         css`
             background: #68cd4a;
-            opacity: 1;
         `}
 
     &:focus-visible {
-        outline: 2px solid ${({ theme }) => theme.palette.focusOutline};
+        outline: 2px solid ${({ theme }) => theme.palette.focusOutlineAlpha};
         outline-offset: 2px;
         transition: none;
     }
@@ -62,6 +62,7 @@ export const Checkbox = ({ labelText, handleChange, ...props }: CheckboxInputPro
                 $checked={checked}
                 onKeyDown={(e) => {
                     if (e.key === ' ' || e.code === 'Space' || e.key === 'Enter') {
+                        e.preventDefault();
                         toggleChecked();
                     }
                 }}

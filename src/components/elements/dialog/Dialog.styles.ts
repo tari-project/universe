@@ -12,7 +12,7 @@ export const Overlay = styled(FloatingOverlay)`
 
 export const ContentWrapper = styled.div<ContentWrapperStyleProps>`
     box-shadow: 0 4px 45px 0 rgba(0, 0, 0, 0.08);
-    border-radius: clamp(20px, 3.5vh, 35px);
+    border-radius: clamp(20px, 5vh, 35px);
     overflow: ${({ $allowOverflow }) => ($allowOverflow ? 'unset' : 'hidden')};
     max-height: 90%;
     display: flex;
@@ -45,7 +45,7 @@ export const ContentScrollContainer = styled.div<ContentWrapperStyleProps>`
 `;
 
 export const Content = styled.div<ContentWrapperStyleProps>`
-    padding: clamp(12px, 2.5vh, 20px);
+    padding: min(3vh, 20px);
     flex-direction: column;
     overflow-y: ${({ $allowOverflow }) => ($allowOverflow ? 'unset' : 'auto')};
     overflow-x: ${({ $allowOverflow }) => ($allowOverflow ? 'unset' : 'hidden')};

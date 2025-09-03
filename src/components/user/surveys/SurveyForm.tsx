@@ -82,8 +82,8 @@ export default function SurveyForm({ questions }: SurveyFormProps) {
         <Form>
             <FormContent>{fieldMarkup}</FormContent>
             <CTAWrapper>
-                <Button fluid size="xlarge" variant="black">{`Send Feedback`}</Button>
-                <TextButton size="large">
+                <Button type="button" fluid size="xlarge" variant="black">{`Send Feedback`}</Button>
+                <TextButton size="large" type="reset">
                     <Typography>{`Skip for now`}</Typography>
                 </TextButton>
             </CTAWrapper>

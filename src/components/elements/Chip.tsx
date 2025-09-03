@@ -47,7 +47,7 @@ const Wrapper = styled.div<StyleProps>`
             case 'large': {
                 return css`
                     height: 33px;
-                    padding: 0 10px;
+                    padding: 10px;
                 `;
             }
             case 'medium':

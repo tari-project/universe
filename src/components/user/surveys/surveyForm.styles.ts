@@ -4,24 +4,24 @@ import { TextArea } from '@app/components/elements/inputs/TextArea.tsx';
 export const Form = styled.form`
     display: flex;
     flex-direction: column;
-    padding: 12px 0 0;
+    padding-top: min(3vh, 15px);
     width: 100%;
 `;
 export const FormContent = styled.div`
-    display: flex;
     gap: 10px;
+    display: flex;
     flex-direction: column;
 `;
 export const ItemWrapper = styled.div`
     display: flex;
     flex-direction: column;
     width: 100%;
-    padding: 20px;
+    padding: min(2.2vh, 20px);
     border-radius: 10px;
     background-color: ${({ theme }) => theme.palette.background.accent};
 `;
 export const TextItemLabel = styled.label`
-    margin-top: 16px;
+    margin-top: min(1.6vh, 16px);
     font-size: 16px;
     font-weight: 600;
     line-height: 1.2;
@@ -33,10 +33,12 @@ export const TextItemLabel = styled.label`
 `;
 export const TextItem = styled(TextArea)`
     display: flex;
+    opacity: 0.9;
     font-size: 14px;
-    padding: 20px;
+    padding: min(2.2vh, 20px);
     background-color: ${({ theme }) => theme.palette.background.accent};
     color: ${({ theme }) => theme.palette.text.primary};
+    line-height: 2;
     &::placeholder {
         color: ${({ theme }) => theme.palette.text.accent};
     }
@@ -47,7 +49,7 @@ export const CTAWrapper = styled.div`
     justify-content: center;
     flex-direction: column;
     text-align: center;
-    padding: 20px 0;
+    padding: clamp(10px, 2.2vh, 20px) 0 0;
     gap: 10px;
     font-weight: 500;
     font-size: 18px;

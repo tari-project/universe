@@ -27,6 +27,11 @@ const StyledTextArea = styled.textarea<{ $variant?: 'primary' | 'secondary' }>`
         $variant === 'secondary' &&
         css`
             box-shadow: none;
+            &:focus-visible {
+                outline: 2px solid ${({ theme }) => theme.palette.focusOutlineAlpha};
+                outline-offset: 2px;
+                transition: none;
+            }
         `}
 `;
 
