@@ -8,7 +8,6 @@ interface Args {
 }
 
 async function postFeedback({ slug, feedbackBody }: Args) {
-    console.debug(feedbackBody);
     return await handleAirdropRequest<SubmitSurveyResponse, SubmitSurveyRequest>({
         path: `/survey/${slug}/response`,
         method: 'POST',

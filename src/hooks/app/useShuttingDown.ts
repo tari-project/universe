@@ -11,7 +11,6 @@ export function useShuttingDown() {
 
     useEffect(() => {
         const ul = appWindow.onCloseRequested(async (event) => {
-            console.debug(`shutdownAttempts.current= `, shutdownAttempts.current);
             if (shutdownAttempts.current === 0) {
                 event.preventDefault();
                 shutdownAttempts.current += 1;

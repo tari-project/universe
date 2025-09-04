@@ -15,6 +15,8 @@ import {
     TextItemLabel,
 } from './surveyForm.styles.ts';
 
+import { getFieldTypes } from './helpers.ts';
+
 interface SurveyFormProps {
     surveyContent: Survey;
 }
@@ -39,6 +41,8 @@ export default function SurveyForm({ surveyContent }: SurveyFormProps) {
     });
     const { fields: textFields } = useFieldArray({ control, name: 'textQuestions' });
     const { fields: checkFields } = useFieldArray({ control, name: 'checkOptions' });
+
+    getFieldTypes(surveyContent.questions || []);
 
     function parseData(_data: QuestionFields) {
         console.debug(`_data= `, _data);

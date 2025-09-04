@@ -26,7 +26,7 @@ async function fetchSurvey(slug: string): Promise<Survey> {
 
 export function useFetchSurveyContent(slug: string) {
     return useQuery<Survey>({
-        queryKey: [KEY_SURVEYS, slug],
+        queryKey: [KEY_SURVEYS, slug, { version: 1 }],
         queryFn: async () => await fetchSurvey(slug),
     });
 }
