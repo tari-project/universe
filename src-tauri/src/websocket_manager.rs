@@ -253,7 +253,7 @@ impl WebsocketManager {
                             if !is_first_connection {
                                 info!(target: LOG_TARGET, "WebSocket reconnected - restarting events manager");
                                 // Notify that we've reconnected - this could trigger events manager restart
-                                let _ = app_cloned.emit("websocket-reconnected", ());
+                                drop(app_cloned.emit("websocket-reconnected", ()));
                             }
                             is_first_connection = false;
 
