@@ -7,23 +7,33 @@ const appWindow = getCurrentWindow();
 export function useShuttingDown() {
     const earlyClosedDismissed = useUserFeedbackStore((s) => s.earlyClosedDismissed);
     const [isShuttingDown, setIsShuttingDown] = useState(false);
-    const isEarlyClose = true; //temp
 
     useEffect(() => {
+        async function checkMiningTime() {
+            return invoke('get_session_mining_time')
+                .then((miningTimeInSeconds) => {
+                    const hourInSeconds = 60 * 60;
+                    return miningTimeInSeconds < hourInSeconds;
+                })
+                .catch((_) => true);
+        }
+
         const ul = appWindow.onCloseRequested(async (event) => {
             if (!isShuttingDown) {
                 event.preventDefault();
-                if (isEarlyClose && !earlyClosedDismissed) {
-                    setShowCloseDialog(true);
-                } else {
+                if (earlyClosedDismissed) {
                     setIsShuttingDown(true);
+                }
+                const isEarlyClose = await checkMiningTime();
+                if (isEarlyClose) {
+                    setShowCloseDialog(true);
                 }
             }
         });
         return () => {
             ul.then((unlisten) => unlisten());
         };
-    }, [earlyClosedDismissed, isEarlyClose, isShuttingDown]);
+    }, [earlyClosedDismissed, isShuttingDown]);
 
     useEffect(() => {
         if (isShuttingDown || earlyClosedDismissed) {
