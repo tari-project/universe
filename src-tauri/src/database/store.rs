@@ -306,6 +306,34 @@ impl SqliteStore {
         })
     }
 
+    pub async fn create_installed_tapplet_with_id(
+        &self,
+        id: i32,
+        item: &CreateInstalledTapplet,
+    ) -> Result<InstalledTapplet, Error> {
+        sqlx::query_as::<_, InstalledTapplet>(
+            r#"
+            INSERT INTO installed_tapplet (id, tapplet_id, tapplet_version_id, source, csp, tari_permissions)
+            VALUES (?, ?, ?, ?, ?, ?)
+            RETURNING id, tapplet_id, tapplet_version_id, source, csp, tari_permissions
+            "#
+        )
+        .bind(id)
+        .bind(item.tapplet_id)
+        .bind(item.tapplet_version_id)
+        .bind(&item.source)
+        .bind(&item.csp)
+        .bind(&item.tari_permissions)
+        .fetch_one(self.get_pool())
+        .await
+        .map_err(|e| {
+            error!(target: LOG_TARGET, "DB error creating installed_tapplet with id: {:?}", e);
+            DatabaseError(FailedToCreate {
+                entity_name: "installed_tapplet".to_string(),
+            })
+        })
+    }
+
     pub async fn update_installed_tapplet(
         &self,
         id: i32,
