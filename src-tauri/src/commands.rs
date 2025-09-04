@@ -1452,6 +1452,15 @@ pub async fn start_cpu_mining(
     app: tauri::AppHandle,
 ) -> Result<(), String> {
     let timer = Instant::now();
+    let read_time = state.session_mining_time.read().await;
+    let read_time_clone = read_time.clone();
+    drop(read_time);
+    if read_time_clone.is_none() {
+        let mut write_time = state.session_mining_time.write().await;
+        *write_time = Some(SystemTime::now());
+        drop(write_time);
+    }
+
     let cpu_mining_enabled = *ConfigMining::content().await.cpu_mining_enabled();
     let cpu_usage_percentage = ConfigMining::content()
         .await
@@ -1507,15 +1516,6 @@ pub async fn start_cpu_mining(
             return Err(e.to_string());
         }
     }
-
-    let read_time = state.session_mining_time.read().await;
-    if read_time.is_none() {
-        let now = SystemTime::now();
-        let mut write_time = state.session_mining_time.write().await;
-        *write_time = Some(now);
-        drop(write_time);
-    }
-    drop(read_time);
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "start_cpu_mining took too long: {:?}", timer.elapsed());
@@ -2415,13 +2415,23 @@ pub async fn set_feedback_fields(feedback_type: String, was_sent: bool) -> Resul
 #[tauri::command]
 pub async fn get_session_mining_time(
     state: tauri::State<'_, UniverseAppState>,
-) -> Result<u64, String> {
+) -> Result<u64, InvokeError> {
+    info!("HELLO invoking [ get_session_mining_time ]");
     let read = state.session_mining_time.read().await;
-    let session_mining_time = read.unwrap().elapsed();
+    let read_clone = read.clone();
+    drop(read);
 
-    if let Ok(value) = session_mining_time {
-        Ok(value.as_secs())
+    info!("READ {read_clone:?}");
+
+    if let Some(mining_time) = read_clone {
+        let cloned = mining_time.clone();
+        info!("CLONE {cloned:?}");
+        let bla = cloned.elapsed();
+        info!("bla unwrap {bla:?}");
+        let session_mining_time = bla.unwrap().as_secs();
+        info!("TIME {session_mining_time:?}");
+        Ok(session_mining_time)
     } else {
-        Err("BLA".to_string())
+        Err(InvokeError::from("Nada".to_string()))
     }
 }
