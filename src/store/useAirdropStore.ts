@@ -180,6 +180,11 @@ export interface ReferrerProgressResponse {
     totals: CrewMembersTotals;
     memberImages: string[];
     minRequirements: MinRequirements;
+    members: {
+        name: string;
+        displayName: string;
+        image: string;
+    }[];
     membersToNudge: {
         id: string;
         name: string;
