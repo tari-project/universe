@@ -13,7 +13,7 @@ interface HeightProgress {
     header?: { local?: number; tip?: number };
     block?: { local?: number; tip?: number };
 }
-export function LocalNode() {
+export function LocalNodeSync() {
     const { t } = useTranslation('setup-progresses');
     const lastUpdate = useNodeStore((s) => s.backgroundNodeSyncLastUpdate);
     const [titleKey, setTitleKey] = useState('');
@@ -70,7 +70,8 @@ export function LocalNode() {
             <Typography variant="h6">{`${heightProgress?.block.local}/${heightProgress?.block.tip}`}</Typography>
         ) : null;
 
-    return (
+    const isSynced = lastUpdate?.step === 'Done';
+    return isSynced || !lastUpdate ? null : (
         <Wrapper>
             <TextWrapper>
                 <Title>{t('local-node-sync')}</Title>

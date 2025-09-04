@@ -285,6 +285,8 @@ impl ProcessAdapter for LocalNodeAdapter {
             //     "base_node.p2p.transport.tor.listener_address_override=/ip4/127.0.0.1/tcp/18189"
             //         .to_string(),
             // );
+            args.push("-p".to_string());
+            args.push("base_node.p2p.transport.type=tor".to_string());
             if !cfg!(target_os = "macos") {
                 args.push("-p".to_string());
                 args.push("use_libtor=false".to_string());

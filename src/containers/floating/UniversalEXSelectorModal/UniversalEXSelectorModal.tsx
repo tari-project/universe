@@ -47,7 +47,7 @@ export default function UniversalEXSelectorModal() {
 
     return (
         <Dialog open={!!showModal} onOpenChange={handleClose}>
-            <DialogContent $borderRadius="20px" $transparentBg $unPadded>
+            <DialogContent variant="transparent" $unPadded>
                 <Wrapper>
                     <CloseButton onClick={handleClose}>
                         <IoClose />

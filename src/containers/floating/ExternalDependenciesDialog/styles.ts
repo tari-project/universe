@@ -4,7 +4,7 @@ export const Wrapper = styled.div`
     display: flex;
     gap: 20px;
     flex-direction: column;
-    padding: 4px 10px;
+    padding: 20px 10px;
     color: ${({ theme }) => theme.palette.text.primary};
 `;
 

@@ -73,8 +73,8 @@ impl TorManager {
         log_path: PathBuf,
     ) -> Result<(), anyhow::Error> {
         {
-            let shutdown_signal = TasksTrackers::current().core_phase.get_signal().await;
-            let task_tracker = TasksTrackers::current().core_phase.get_task_tracker().await;
+            let shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
+            let task_tracker = TasksTrackers::current().node_phase.get_task_tracker().await;
 
             let mut process_watcher = self.watcher.write().await;
 

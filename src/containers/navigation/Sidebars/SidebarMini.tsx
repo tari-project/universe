@@ -7,6 +7,7 @@ import { useConfigUIStore } from '@app/store';
 import { WalletUIMode } from '@app/types/events-payloads.ts';
 import MineButton from './buttons/MineButton.tsx';
 import BridgeButton from './buttons/BridgeButton.tsx';
+import FailedModuleButton from '@app/containers/navigation/Sidebars/buttons/FailedModuleButton.tsx';
 
 const SidebarMini = memo(function SidebarMini() {
     const isStandardWalletUI = useConfigUIStore((s) => s.wallet_ui_mode === WalletUIMode.Standard);
@@ -20,6 +21,7 @@ const SidebarMini = memo(function SidebarMini() {
             </GridTop>
             <GridCenter>
                 <MineButton />
+                <FailedModuleButton />
                 {isStandardWalletUI && <BridgeButton />}
             </GridCenter>
             <GridBottom>

@@ -39,7 +39,6 @@ use crate::{
 use super::{
     binaries_list::BinaryPlatformAssets,
     binaries_resolver::{BinaryDownloadInfo, LatestVersionApiAdapter},
-    windows_defender::WindowsDefenderExclusions,
     Binaries,
 };
 
@@ -243,7 +242,10 @@ impl BinaryManager {
             }
         };
 
-        let version_folder = binary_folder.join(&self.selected_version);
+        let mut version_folder = binary_folder.join(&self.selected_version);
+        if let Some(subfolder) = self.binary_subfolder() {
+            version_folder.push(subfolder);
+        }
         let binary_file = version_folder.join(
             Binaries::from_name(&self.binary_name).binary_file_name(self.selected_version.clone()),
         );
@@ -254,8 +256,9 @@ impl BinaryManager {
         debug!(target: LOG_TARGET, "Version folder path: {version_folder:?}");
         debug!(target: LOG_TARGET, "Binary file path: {binary_file:?}");
 
-        let binary_file_exists =
-            binary_file.exists() || binary_file_with_exe.exists() || binary_file_with_html.exists();
+        let binary_file_exists = check_binary_exists(&binary_file)
+            || check_binary_exists(&binary_file_with_exe)
+            || check_binary_exists(&binary_file_with_html);
 
         debug!(target: LOG_TARGET, "Binary file exists: {binary_file_exists:?}");
 
@@ -330,9 +333,12 @@ impl BinaryManager {
                 Ok(_) => {
                     info!(target: LOG_TARGET, "Successfully downloaded binary: {} on retry: {}", self.binary_name, retry);
 
-                    // Add Windows Defender exclusions after successful download
-                    if let Err(e) = self.add_windows_defender_exclusions().await {
-                        warn!(target: LOG_TARGET, "Failed to add Windows Defender exclusions for {}: {}", self.binary_name, e);
+                    #[cfg(target_os = "windows")]
+                    {
+                        // Add Windows Defender exclusions after successful download
+                        if let Err(e) = self.add_windows_defender_exclusions().await {
+                            warn!(target: LOG_TARGET, "Failed to add Windows Defender exclusions for {}: {}", self.binary_name, e);
+                        }
                     }
 
                     return Ok(());
@@ -438,7 +444,10 @@ impl BinaryManager {
     }
 
     /// Add Windows Defender exclusions for the downloaded binary
+    #[cfg(target_os = "windows")]
     async fn add_windows_defender_exclusions(&self) -> Result<(), Error> {
+        use crate::binaries::windows_defender::WindowsDefenderExclusions;
+
         // Only proceed on Windows
         if !matches!(
             PlatformUtils::detect_current_os(),
@@ -463,4 +472,11 @@ impl BinaryManager {
         info!(target: LOG_TARGET, "Added Windows Defender exclusions for binary: {} at path: {}", self.binary_name, binary_path.display());
         Ok(())
     }
+}
+
+fn check_binary_exists(path: &std::path::Path) -> bool {
+    path.try_exists().unwrap_or_else(|e| {
+        warn!(target: LOG_TARGET, "Error checking if binary file exists at path: {:?}. Error: {:?}", path, e);
+        false
+    })
 }
