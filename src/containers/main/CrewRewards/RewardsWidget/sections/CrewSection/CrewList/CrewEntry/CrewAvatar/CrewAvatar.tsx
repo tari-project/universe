@@ -1,3 +1,4 @@
+import Avatar from '@app/components/elements/Avatar/Avatar';
 import { AvatarWrapper, StatusDot } from './styles';
 
 interface Props {
@@ -7,8 +8,9 @@ interface Props {
 
 export default function CrewAvatar({ image, isOnline }: Props) {
     return (
-        <AvatarWrapper $isOnline={isOnline} $image={image}>
+        <AvatarWrapper $isOnline={isOnline}>
             <StatusDot />
+            <Avatar image={image} username={''} key={image} size={40} />
         </AvatarWrapper>
     );
 }
