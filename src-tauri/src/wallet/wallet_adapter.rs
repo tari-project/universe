@@ -41,9 +41,9 @@ use std::path::{Path, PathBuf};
 use std::time::Duration;
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::{TariAddress, TariAddressError};
-use tari_core::transactions::tari_amount::MicroMinotari;
-use tari_core::transactions::transaction_components::memo_field::MemoField;
 use tari_shutdown::Shutdown;
+use tari_transaction_components::tari_amount::MicroMinotari;
+use tari_transaction_components::transaction_components::memo_field::MemoField;
 use tokio::sync::watch;
 
 #[cfg(target_os = "windows")]
@@ -206,7 +206,7 @@ impl WalletAdapter {
             Err(e) => {
                 let cancel_res = tx_service.cancel_transaction(tx_id).await;
                 if let Err(cancel_err) = cancel_res {
-                    log::error!(target: LOG_TARGET, "Failed to cancel transaction after failed to sign one sided tx: {}:{}", cancel_err, e);
+                    log::error!(target: LOG_TARGET, "Failed to cancel transaction after failed to sign one sided tx: {cancel_err}: {e}");
                 }
                 Err(e)
             }

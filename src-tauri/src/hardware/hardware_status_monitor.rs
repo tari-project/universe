@@ -47,7 +47,7 @@ const LOG_TARGET: &str = "tari::universe::auto_launcher";
 
 static INSTANCE: LazyLock<HardwareStatusMonitor> = LazyLock::new(HardwareStatusMonitor::new);
 
-#[derive(Debug, Serialize, Clone, Default)]
+#[derive(Debug, Serialize, Clone, Default, PartialEq)]
 pub enum HardwareVendor {
     Nvidia,
     Amd,
@@ -203,7 +203,7 @@ impl HardwareStatusMonitor {
         }
     }
 
-    async fn initialize_gpu_devices(&self) -> Result<Vec<GpuDeviceProperties>, Error> {
+    pub async fn initialize_gpu_devices(&self) -> Result<(), Error> {
         let config_dir = dirs::config_dir()
             .expect("Could not get config dir")
             .join(APPLICATION_FOLDER_ID);
@@ -239,7 +239,9 @@ impl HardwareStatusMonitor {
             platform_devices.push(platform_device);
         }
 
-        Ok(platform_devices)
+        *self.gpu_devices.write().await = platform_devices;
+
+        Ok(())
     }
 
     async fn select_reader_for_cpu_device(
@@ -257,7 +259,7 @@ impl HardwareStatusMonitor {
         }
     }
 
-    async fn initialize_cpu_devices(&self) -> Result<Vec<CpuDeviceProperties>, Error> {
+    pub async fn initialize_cpu_devices(&self) -> Result<(), Error> {
         let system =
             System::new_with_specifics(RefreshKind::new().with_cpu(CpuRefreshKind::everything()));
 
@@ -293,22 +295,9 @@ impl HardwareStatusMonitor {
             cpu_devices.push(platform_device);
         }
 
-        Ok(cpu_devices)
-    }
+        *self.cpu_devices.write().await = cpu_devices;
 
-    pub async fn initialize(
-        &self,
-    ) -> Result<(Vec<GpuDeviceProperties>, Vec<CpuDeviceProperties>), Error> {
-        let gpu_devices = self.initialize_gpu_devices().await?;
-        let cpu_devices = self.initialize_cpu_devices().await?;
-
-        let mut gpu_devices_lock = self.gpu_devices.write().await;
-        let mut cpu_devices_lock = self.cpu_devices.write().await;
-
-        *gpu_devices_lock = gpu_devices.clone();
-        *cpu_devices_lock = cpu_devices.clone();
-
-        Ok((gpu_devices, cpu_devices))
+        Ok(())
     }
 
     #[allow(dead_code)]

@@ -1,13 +1,13 @@
 import {
     BackgroundNodeSyncUpdatePayload,
     ConfigPoolsPayload,
-    ConnectedPeersUpdatePayload,
     ConnectionStatusPayload,
     CriticalProblemPayload,
     DetectedAvailableGpuEngines,
     DetectedDevicesPayload,
     NewBlockHeightPayload,
     NodeTypeUpdatePayload,
+    ProgressTrackerUpdatePayload,
     SetupPhase,
     ShowReleaseNotesPayload,
     TariAddressUpdatePayload,
@@ -16,17 +16,30 @@ import {
 import {
     BaseNodeStatus,
     CpuMinerStatus,
-    ExternalDependency,
     GpuMinerStatus,
     NetworkStatus,
     PoolStats,
+    SystemDependency,
     WalletBalance,
 } from './app-status.ts';
 import { ConfigCore, ConfigMining, ConfigUI, ConfigWallet, GpuDeviceSettings } from './configs.ts';
 import { DisabledPhasesPayload } from '@app/store/actions/setupStoreActions.ts';
+import { AppModuleState } from '@app/store/types/setup.ts';
 
 export const BACKEND_STATE_UPDATE = 'backend_state_update';
 export type BackendStateUpdateEvent =
+    | {
+          event_type: 'UpdateAppModuleStatus';
+          payload: AppModuleState;
+      }
+    | {
+          event_type: 'UpdateTorEntryGuards';
+          payload: string[];
+      }
+    | {
+          event_type: 'SetupProgressUpdate';
+          payload: ProgressTrackerUpdatePayload;
+      }
     | {
           event_type: 'BaseNodeUpdate';
           payload: BaseNodeStatus;
@@ -42,10 +55,6 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'GpuMiningUpdate';
           payload: GpuMinerStatus;
-      }
-    | {
-          event_type: 'ConnectedPeersUpdate';
-          payload: ConnectedPeersUpdatePayload;
       }
     | {
           event_type: 'NewBlockHeight';
@@ -68,8 +77,8 @@ export type BackendStateUpdateEvent =
           payload: CriticalProblemPayload;
       }
     | {
-          event_type: 'MissingApplications';
-          payload: ExternalDependency[];
+          event_type: 'SystemDependenciesLoaded';
+          payload: SystemDependency[];
       }
     | {
           event_type: 'StuckOnOrphanChain';
@@ -84,55 +93,7 @@ export type BackendStateUpdateEvent =
           payload: NetworkStatus;
       }
     | {
-          event_type: 'CorePhaseFinished';
-          payload: boolean;
-      }
-    | {
-          event_type: 'WalletPhaseFinished';
-          payload: boolean;
-      }
-    | {
-          event_type: 'HardwarePhaseFinished';
-          payload: boolean;
-      }
-    | {
-          event_type: 'NodePhaseFinished';
-          payload: boolean;
-      }
-    | {
-          event_type: 'MiningPhaseFinished';
-          payload: boolean;
-      }
-    | {
           event_type: 'InitialSetupFinished';
-          payload: undefined;
-      }
-    | {
-          event_type: 'UnlockApp';
-          payload: undefined;
-      }
-    | {
-          event_type: 'UnlockWallet';
-          payload: undefined;
-      }
-    | {
-          event_type: 'UnlockCpuMining';
-          payload: undefined;
-      }
-    | {
-          event_type: 'UnlockGpuMining';
-          payload: undefined;
-      }
-    | {
-          event_type: 'LockWallet';
-          payload: undefined;
-      }
-    | {
-          event_type: 'LockGpuMining';
-          payload: undefined;
-      }
-    | {
-          event_type: 'LockCpuMining';
           payload: undefined;
       }
     | {

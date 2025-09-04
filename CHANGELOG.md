@@ -1,3 +1,33 @@
+🚀 TARI UNIVERSE v1.5.14: The Season of Light — Part 8
+
+_September 2, 2025_
+
+✨ WHAT'S NEW
+
+- 🔧 **Even Smarter Setup Process** – Completely redesigned setup with No Intro Screen and better error recovery. When things go wrong, you'll get clear options to restart individual components or send logs. The app can run with limited features if some modules fail (this was partially implemented in the previous release).
+- ⚡ **New "Turbo" Mining Mode** – We've added a new 🌪️ Turbo mode between Eco and Ludicrous! Your old Eco setting (10%) is now Turbo, and the new Eco mode uses just 1% CPU for ultra-light mining by default. This eliminates an initial source of pain for users where Eco mode was too intense for lower-end machines.
+- 🖥️ **Windows GPU Mining Fixes** – Enhanced support for tricky GPU setups with automatic driver detection, OpenCL package checking, and Windows Defender exclusions for mining files.
+- 🌐 **Performance Boost** – Massive reduction in network calls to remote nodes (up to 99% fewer requests) for snappier performance and less server load.
+- 🎨 **Polish & Fixes** – Better dark mode support, improved user avatars, fixed node switching issues. Note: We are aware of a UI issue with Remote + Local mode (falling back to Local when you are sync'd), which is that your sync progress is not displayed in the UI.
+- 👉 **Base Node Update** – 5.0.0 fixes the recent spike in frag and prepares the network for Cuckaroo (C29), Along with many other under-the-hood improvements.
+
+---
+
+🚀 TARI UNIVERSE v1.5.12: The Season of Light — Part 7
+
+_August 25, 2025_
+
+✨ WHAT'S NEW
+
+- 🚀 **Auto-update Fix** – We've completely redesigned how auto-updates work to eliminate the race condition that was causing the app to freeze right before restarting.
+- ⚡ **Missing GPU crashes** – GPU miner files now only load when GPU detection is successful, preventing errors and improving startup reliability for all users. The app now gracefully handles systems without GPUs instead of crashing during startup.
+- 💳 **Failed tx signing fix** – Fixed an issue where failed transaction signing on spend wallets would lock funds on view wallets. Now if signing fails, the transaction gets properly cancelled to prevent locked UTXOs.
+- 🔧 **Wallet seed word fixes** – Seamless migration for wallet configurations when core address types change. Your existing wallet settings will automatically update to the new format without any action needed.
+- 🌐 **Tor crashes** – Prevented unnecessary Tor startup on remote nodes, improving connection speed and reliability for users on remote configurations.
+- ⬆️ **Core system upgrades** – Updated to Tari Core v5.0.0-pre.3 with improved stability and performance across all components.
+
+---
+
 🚀 TARI UNIVERSE v1.5.9: The Season of Light — Part 6½ Hotfix
 
 _August 14, 2025_

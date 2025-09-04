@@ -1,6 +1,6 @@
+import { create } from 'zustand';
 import { TappletSigner } from '@app/types/tapplets/TappletSigner.ts';
-import { create } from './create.ts';
-import { setError } from './index.ts';
+import { setError } from './actions/appStateStoreActions.ts';
 import { TransactionEvent } from '@app/types/tapplets/transaction.ts';
 import { TappletSignerParams } from '@app/types/tapplets/tapplet.types.ts';
 

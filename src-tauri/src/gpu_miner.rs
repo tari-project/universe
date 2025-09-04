@@ -28,8 +28,8 @@ use std::path::Path;
 use std::time::Duration;
 use std::{path::PathBuf, sync::Arc};
 use tari_common_types::tari_address::TariAddress;
-use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::ShutdownSignal;
+use tari_transaction_components::tari_amount::MicroMinotari;
 use tokio::select;
 use tokio::sync::{watch, RwLock};
 
@@ -121,9 +121,9 @@ impl GpuMiner {
         coinbase_extra: String,
         gpu_usage_percentage: u32,
     ) -> Result<(), anyhow::Error> {
-        let shutdown_signal = TasksTrackers::current().hardware_phase.get_signal().await;
+        let shutdown_signal = TasksTrackers::current().gpu_mining_phase.get_signal().await;
         let task_tracker = TasksTrackers::current()
-            .hardware_phase
+            .gpu_mining_phase
             .get_task_tracker()
             .await;
 
@@ -200,7 +200,7 @@ impl GpuMiner {
             self.curent_selected_engine.to_string(),
         ];
         let gpuminer_bin = BinaryResolver::current()
-            .resolve_path_to_binary_files(Binaries::GpuMiner)
+            .get_binary_path(Binaries::GpuMiner)
             .await?;
 
         info!(target: LOG_TARGET, "Gpu miner binary file path {:?}", gpuminer_bin.clone());

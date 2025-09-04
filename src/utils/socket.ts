@@ -25,6 +25,7 @@ const setupWsStatusListener = async () => {
 const initialiseSocket = async () => {
     if (!socketInitialised) {
         await setupWsStatusListener(); // Ensure listener is set up once
+        invoke('start_mining_status').catch(console.error);
         console.info(`connecting to websocket...`);
         invoke('websocket_connect').catch((e) => {
             console.error(e);
@@ -36,6 +37,7 @@ const initialiseSocket = async () => {
 function removeSocket() {
     if (socketInitialised) {
         console.info(`closing websocket connection...`);
+        invoke('stop_mining_status').catch(console.error);
         invoke('websocket_close').catch(console.error);
     }
 
@@ -45,6 +47,12 @@ function removeSocket() {
         unlistenWsStatusChange = null;
         console.info('WebSocket status listener unlistened.');
     }
+    socketInitialised = false;
 }
 
-export { socketInitialised, initialiseSocket, removeSocket };
+function restartSocket() {
+    removeSocket();
+    initialiseSocket();
+}
+
+export { socketInitialised, initialiseSocket, removeSocket, restartSocket };

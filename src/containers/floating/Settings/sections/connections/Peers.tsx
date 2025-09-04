@@ -9,7 +9,9 @@ import {
     SettingsGroupTitle,
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles.ts';
-import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
+import { useNodeStore } from '@app/store/useNodeStore.ts';
+import { useEffect, useState } from 'react';
+import { invoke } from '@tauri-apps/api/core';
 
 const Count = styled.div<{ $count: number }>`
     border-radius: 11px;
@@ -28,10 +30,20 @@ const Count = styled.div<{ $count: number }>`
 
 export default function Peers() {
     const { t } = useTranslation('settings');
-    const isConnectedToTariNetwork = useMiningMetricsStore((s) => s.isNodeConnected);
-    const connectedPeers = useMiningMetricsStore((state) => state?.connected_peers || []);
-    const connectedPeersCount = connectedPeers?.length || 0;
+    const isConnectedToTariNetwork = useNodeStore((state) => state.isNodeConnected);
+    const nodeIdentity = useNodeStore((state) => state.node_identity);
+    const baseNodeStatus = useNodeStore((state) => state.base_node_status);
+    const nodeType = useNodeStore((state) => state.node_type);
+    const [connectedPeers, setConnectedPeers] = useState<string[]>([]);
     const listMarkup = connectedPeers.map((peer, i) => <li key={`peer-${peer}:${i}`}>{peer}</li>);
+
+    useEffect(() => {
+        invoke('list_connected_peers').then((peers) => setConnectedPeers(peers));
+    }, [nodeIdentity?.public_key, baseNodeStatus?.num_connections]);
+
+    useEffect(() => {
+        setConnectedPeers([]);
+    }, [nodeType]);
 
     return (
         <SettingsGroupWrapper>
@@ -39,18 +51,18 @@ export default function Peers() {
                 <SettingsGroupContent>
                     <SettingsGroupTitle>
                         <Typography variant="h6">{t('connected-peers')}</Typography>
-                        {connectedPeersCount ? (
-                            <Count $count={connectedPeersCount}>
-                                <Typography>{connectedPeersCount}</Typography>
+                        {connectedPeers?.length ? (
+                            <Count $count={connectedPeers.length}>
+                                <Typography>{connectedPeers.length}</Typography>
                             </Count>
                         ) : null}
                     </SettingsGroupTitle>
 
                     <Stack style={{ fontSize: '12px' }}>
-                        {connectedPeersCount ? (
+                        {connectedPeers?.length ? (
                             <ol>{listMarkup}</ol>
                         ) : (
-                            <p>{isConnectedToTariNetwork ? 0 : t('not-connected-to-tari')}</p>
+                            <p>{isConnectedToTariNetwork ? '-' : t('not-connected-to-tari')}</p>
                         )}
                     </Stack>
                 </SettingsGroupContent>

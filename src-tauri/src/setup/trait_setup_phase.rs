@@ -28,7 +28,7 @@ use tauri::{AppHandle, Manager};
 use tokio::sync::watch::{Receiver, Sender};
 use tokio_util::task::TaskTracker;
 
-use crate::progress_trackers::ProgressStepper;
+use crate::progress_trackers::progress_stepper::ProgressStepper;
 
 use super::{
     listeners::SetupFeaturesList,
@@ -53,6 +53,7 @@ pub trait SetupPhaseImpl {
     ) -> Self;
     fn create_progress_stepper(
         app_handle: AppHandle,
+        status_sender: Sender<PhaseStatus>,
         timeout_watcher_sender: Sender<u64>,
     ) -> ProgressStepper;
     async fn load_app_configuration() -> Result<Self::AppConfiguration, Error>;
@@ -88,4 +89,5 @@ pub trait SetupPhaseImpl {
     fn get_phase_id(&self) -> SetupPhase;
     fn get_phase_dependencies(&self) -> Vec<Receiver<PhaseStatus>>;
     fn get_timeout_watcher(&self) -> &TimeoutWatcher;
+    fn get_status_sender(&self) -> &Sender<PhaseStatus>;
 }

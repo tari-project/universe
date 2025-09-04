@@ -1,18 +1,12 @@
 import { invoke } from '@tauri-apps/api/core';
 import { useAppStateStore } from '../appStateStore.ts';
-import { ExternalDependency, NetworkStatus } from '@app/types/app-status.ts';
+import { NetworkStatus, SystemDependency, SystemDependencyStatus } from '@app/types/app-status.ts';
 import { addToast } from '@app/components/ToastStack/useToastStore.tsx';
 import { CriticalProblemPayload, SetupPhase, ShowReleaseNotesPayload } from '@app/types/events-payloads.ts';
 import { setDialogToShow, useMiningStore, useUIStore } from '../index.ts';
-import {
-    updateCoreSetupPhaseInfo,
-    updateHardwareSetupPhaseInfo,
-    updateNodeSetupPhaseInfo,
-    updateMiningSetupPhaseInfo,
-    updateWalletSetupPhaseInfo,
-} from './setupStoreActions.ts';
-import { setIsReconnecting, setShowResumeAppModal } from './uiStoreActions.ts';
-import { useSetupStore } from '../useSetupStore.ts';
+
+import { setIsReconnecting, setShowExternalDependenciesDialog, setShowResumeAppModal } from './uiStoreActions.ts';
+import { clearSetupProgress } from './setupStoreActions.ts';
 
 export const fetchApplicationsVersions = async () => {
     try {
@@ -39,18 +33,21 @@ export const fetchApplicationsVersionsWithRetry = async () => {
         }
     }
 };
-export const fetchExternalDependencies = async () => {
-    try {
-        const externalDependencies = await invoke('get_external_dependencies');
-        useAppStateStore.setState({ externalDependencies });
-    } catch (error) {
-        console.error('Error loading missing external dependencies', error);
-    }
-};
+
 export const setIsStuckOnOrphanChain = (isStuckOnOrphanChain: boolean) =>
     useAppStateStore.setState({ isStuckOnOrphanChain });
-export const loadExternalDependencies = (externalDependencies: ExternalDependency[]) =>
-    useAppStateStore.setState({ externalDependencies });
+export const loadSystemDependencies = (externalDependencies: SystemDependency[]) => {
+    // Show always dialog right away when there is vcredist dependency missing
+    // as it's required for the app to work properly
+    if (
+        externalDependencies.some(
+            (dep) => dep.status !== SystemDependencyStatus.Installed && dep.ui_info.display_name.includes('Visual C++')
+        )
+    ) {
+        setShowExternalDependenciesDialog(true);
+    }
+    useAppStateStore.setState({ systemDependencies: externalDependencies });
+};
 
 export const setCriticalError = (payload?: CriticalProblemPayload) =>
     useAppStateStore.setState({ criticalError: payload });
@@ -92,31 +89,11 @@ export const handleRestartingPhases = async (phasesToRestart: SetupPhase[]) => {
         return;
     }
 
-    if (useSetupStore.getState().appUnlocked) {
-        setDialogToShow(undefined);
-        setShowResumeAppModal(true);
-        useMiningStore.setState({ wasMineOnAppStartExecuted: false });
-    }
+    setDialogToShow(undefined);
+    setShowResumeAppModal(true);
+    useMiningStore.setState({ wasMineOnAppStartExecuted: false });
 
     for (const phase of phasesToRestart) {
-        switch (phase) {
-            case SetupPhase.Core:
-                updateCoreSetupPhaseInfo(undefined);
-                break;
-            case SetupPhase.Node:
-                updateNodeSetupPhaseInfo(undefined);
-                break;
-            case SetupPhase.Hardware:
-                updateHardwareSetupPhaseInfo(undefined);
-                break;
-            case SetupPhase.Mining:
-                updateMiningSetupPhaseInfo(undefined);
-                break;
-            case SetupPhase.Wallet:
-                updateWalletSetupPhaseInfo(undefined);
-                break;
-            default:
-                break;
-        }
+        clearSetupProgress(phase);
     }
 };

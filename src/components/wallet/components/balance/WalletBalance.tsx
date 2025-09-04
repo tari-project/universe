@@ -2,7 +2,7 @@ import i18n from 'i18next';
 import NumberFlow, { type Format } from '@number-flow/react';
 import { Trans, useTranslation } from 'react-i18next';
 import { IoEyeOffOutline, IoEyeOutline } from 'react-icons/io5';
-import { useConfigWalletStore, useMiningMetricsStore, useUIStore, useWalletStore } from '@app/store';
+import { useConfigWalletStore, useNodeStore, useUIStore, useWalletStore } from '@app/store';
 
 import { roundToTwoDecimals, removeXTMCryptoDecimals, formatNumber, FormatPreset, formatValue } from '@app/utils';
 import { Typography } from '@app/components/elements/Typography.tsx';
@@ -23,6 +23,9 @@ import { ActionButton } from '@app/components/wallet/components/details/actions/
 import { AnimatePresence } from 'motion/react';
 import { Progress } from '@app/components/elements/loaders/CircularProgress/Progress.tsx';
 import SyncCountdown from '@app/components/wallet/components/loaders/SyncLoading/SyncCountdown.tsx';
+import { AppModuleStatus } from '@app/store/types/setup.ts';
+import { useSetupStore } from '@app/store/useSetupStore.ts';
+import { setupStoreSelectors } from '@app/store/selectors/setupStoreSelectors.ts';
 
 const formatOptions: Format = {
     maximumFractionDigits: 2,
@@ -36,22 +39,25 @@ export const WalletBalance = () => {
     const { t } = useTranslation('wallet');
     const [hovering, setHovering] = useState(false);
 
+    const walletModule = useSetupStore(setupStoreSelectors.selectWalletModule);
+    const walletModuleFailed = walletModule?.status === AppModuleStatus.Failed;
+
     const hideBalance = useUIStore((s) => s.hideWalletBalance);
-    const isConnected = useMiningMetricsStore((s) => s.isNodeConnected);
+    const isConnected = useNodeStore((s) => s.isNodeConnected);
     const cached = useConfigWalletStore((s) => s.last_known_balance);
     const available = useWalletStore((s) => s.balance?.available_balance);
     const total = useWalletStore((s) => s.calculated_balance);
     const scanData = useWalletStore((s) => s.wallet_scanning);
 
     const isScanning = scanData.is_scanning;
-    const scanProgress = Math.round(scanData.progress * 10) / 10;
+    const scanProgress = Math.floor(scanData.progress * 10) / 10;
 
     const balance = removeXTMCryptoDecimals(roundToTwoDecimals((isScanning ? cached : total) || 0));
     const balanceMismatch = removeXTMCryptoDecimals(roundToTwoDecimals(available || 0)) != balance;
 
     const displayText = hideBalance ? '*******' : formatNumber(available || 0, FormatPreset.XTM_LONG);
-
     const isLoading = !isConnected || isScanning;
+
     const balanceText = balanceMismatch
         ? `${t('history.available-balance')}: ${displayText} XTM`
         : t('history.my-balance');
@@ -85,9 +91,12 @@ export const WalletBalance = () => {
 
     const bottomMarkup = !isLoading ? <Typography>{balanceText}</Typography> : loadingMarkup;
 
-    const progressMarkup = isLoading && (
+    const progressMarkup = isLoading && !walletModuleFailed && (
         <ScanProgressWrapper>
-            <Progress percentage={scanProgress} isInfinite={!isConnected || scanProgress === 100} />
+            <Progress
+                percentage={scanProgress && scanProgress >= 95 ? scanProgress - 9 : scanProgress} // so you can actually still see the little gap
+                isInfinite={!isConnected || scanProgress === 100}
+            />
         </ScanProgressWrapper>
     );
 

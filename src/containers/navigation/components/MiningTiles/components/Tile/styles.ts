@@ -1,7 +1,7 @@
 import styled, { css, keyframes } from 'styled-components';
 import { convertHexToRGBA } from '@app/utils';
 
-export const Wrapper = styled.div`
+export const Wrapper = styled.div<{ $isModuleFailed?: boolean }>`
     width: 100%;
     height: 84px;
 
@@ -14,6 +14,7 @@ export const Wrapper = styled.div`
     background: ${({ theme }) => theme.palette.divider};
     overflow: hidden;
     z-index: 1;
+    cursor: ${({ $isModuleFailed }) => ($isModuleFailed ? 'pointer' : 'default')};
 `;
 
 export const Inside = styled.div<{ $isSyncing?: boolean }>`
@@ -84,9 +85,16 @@ export const LabelWrapper = styled.div`
     display: flex;
     align-items: center;
     gap: 5px;
+    img {
+        width: 14px;
+    }
 `;
 
-export const StatusDot = styled.div<{ $isMining: boolean; $isEnabled: boolean; $isSyncing?: boolean }>`
+export const StatusDot = styled.div<{
+    $isMining: boolean;
+    $isEnabled: boolean;
+    $isSyncing?: boolean;
+}>`
     width: 6px;
     height: 6px;
     border-radius: 50%;

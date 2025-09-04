@@ -1,4 +1,4 @@
-import { create } from './create.ts';
+import { create } from 'zustand';
 import { PoolStats } from '../types/app-status.ts';
 
 export type PoolType = 'CPU' | 'GPU';

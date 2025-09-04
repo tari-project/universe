@@ -88,16 +88,20 @@ const spin = keyframes`
   }
 `;
 
-export const AnimatedBG = styled.div<{ $col1: string; $col2: string }>`
-    background-image: ${({ $col1, $col2 }) => `linear-gradient(15deg, #000 -10%, ${$col1} 0%, ${$col2} 90%)`};
+export const AnimatedBG = styled.div<{ $col1: string; $col2: string; $isWalletFailed?: boolean }>`
+    background-image: ${({ $col1, $col2, $isWalletFailed, theme }) =>
+        $isWalletFailed
+            ? `linear-gradient(15deg, ${theme.palette.error.main || '#e03244'} 0%, ${theme.palette.error.main || '#e03244'} 100%)`
+            : `linear-gradient(15deg, #000 -10%, ${$col1} 0%, ${$col2} 90%)`};
     position: absolute;
     top: 50%;
     left: 50%;
     width: 400px;
     height: 400px;
     transform: translate(-50%, -50%);
-    animation: ${spin} 15s linear infinite;
+    animation: ${({ $isWalletFailed }) => ($isWalletFailed ? 'none' : spin)} 15s linear infinite;
     z-index: 0;
+    opacity: ${({ $isWalletFailed }) => ($isWalletFailed ? 0.1 : 1)};
 `;
 
 export const DetailsCardBottomContent = styled.div`
@@ -146,6 +150,12 @@ export const BuyTariButton = styled.button`
             transform: scale(1);
         }
     }
+`;
+
+export const WalletErrorWrapper = styled.div`
+    position: absolute;
+    right: 14px;
+    bottom: 14px;
 `;
 
 export const TabsWrapper = styled.div`

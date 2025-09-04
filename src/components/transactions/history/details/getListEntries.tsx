@@ -4,7 +4,7 @@ import { ReactNode } from 'react';
 import { formatNumber, FormatPreset } from '@app/utils';
 import { StatusListEntry } from '@app/components/transactions/components/StatusList/StatusList.tsx';
 import { getExplorerUrl, Network } from '@app/utils/network.ts';
-import { CombinedBridgeWalletTransaction, useMiningMetricsStore, useMiningStore } from '@app/store';
+import { CombinedBridgeWalletTransaction, useNodeStore, useMiningStore } from '@app/store';
 import { getTxStatusTitleKey, getTxTitle } from '@app/utils/getTxStatus.ts';
 import { EmojiAddressWrapper } from '@app/components/transactions/history/details/styles.ts';
 
@@ -42,7 +42,7 @@ function getPaymentReferenceValue(transaction: CombinedBridgeWalletTransaction):
     if (transaction.walletTransactionDetails.paymentReference) {
         return transaction.walletTransactionDetails.paymentReference;
     }
-    const currentBlockHeight = useMiningMetricsStore.getState().base_node_status.block_height;
+    const currentBlockHeight = useNodeStore.getState().base_node_status?.block_height;
     if (!transaction.mined_in_block_height || !currentBlockHeight) {
         return i18n.t('common:pending');
     }
@@ -222,9 +222,7 @@ const unifiedValueHandlers: Record<
 };
 
 function shouldShowField(key: string, showHidden: boolean): boolean {
-    if (!showHidden && HIDDEN_KEYS.includes(key)) return false;
-
-    return true;
+    return !(!showHidden && HIDDEN_KEYS.includes(key));
 }
 
 function parseUnifiedTransactionValue(
@@ -242,7 +240,7 @@ function parseUnifiedTransactionValue(
     }
 
     // Default fallback for unhandled keys - get from main transaction object
-    const value = (transaction as any)[key];
+    const value = transaction[key];
     if (value === undefined) return null;
 
     return { value: String(value) };
