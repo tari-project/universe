@@ -58,6 +58,7 @@ use log4rs::config::RawConfig;
 use std::fs;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::time::SystemTime;
 use tari_common::configuration::Network;
 use tauri::async_runtime::block_on;
 use tauri::{Manager, RunEvent};
@@ -196,6 +197,7 @@ struct UniverseAppState {
     websocket_manager_status_rx: Arc<watch::Receiver<WebsocketManagerStatusMessage>>,
     websocket_manager: Arc<RwLock<WebsocketManager>>,
     websocket_event_manager: Arc<RwLock<WebsocketEventsManager>>,
+    session_mining_time: Arc<RwLock<Option<SystemTime>>>,
 }
 
 #[derive(Clone, serde::Serialize, serde::Deserialize)]
@@ -384,6 +386,7 @@ fn main() {
         websocket_manager_status_rx: Arc::new(websocket_manager_status_rx.clone()),
         websocket_manager,
         websocket_event_manager: Arc::new(RwLock::new(websocket_events_manager)),
+        session_mining_time: Arc::new(RwLock::new(None)),
     };
     let app_state_clone = app_state.clone();
     #[allow(
@@ -639,7 +642,8 @@ fn main() {
             commands::reset_cpu_pool_config,
             commands::restart_phases,
             commands::list_connected_peers,
-            commands::set_feedback_fields
+            commands::set_feedback_fields,
+            commands::get_session_mining_time
         ])
         .build(tauri::generate_context!())
         .inspect_err(|e| {

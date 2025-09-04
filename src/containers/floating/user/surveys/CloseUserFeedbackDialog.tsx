@@ -9,13 +9,19 @@ export default function CloseUserFeedbackDialog() {
     const toggleCloseDialog = useUserFeedbackStore((s) => s.toggleCloseDialog);
 
     function handleSkipped() {
-        invoke('set_feedback_fields', {
-            feedbackType: 'early_close',
-            wasSent: false,
-        }).then(() => {
-            toggleCloseDialog();
-            setEarlyClosedDismissed(true);
-        });
+        console.debug('hiiii');
+        invoke('get_session_mining_time')
+            .then((r) => {
+                console.debug(`r= `, r);
+            })
+            .catch((e) => console.error(e));
+        // invoke('set_feedback_fields', {
+        //     feedbackType: 'early_close',
+        //     wasSent: false,
+        // }).then(() => {
+        //     toggleCloseDialog();
+        //     setEarlyClosedDismissed(true);
+        // });
     }
     return (
         <Dialog open={showCloseDialog} onOpenChange={toggleCloseDialog}>

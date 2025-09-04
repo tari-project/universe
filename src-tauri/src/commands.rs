@@ -64,7 +64,7 @@ use std::fs::{read_dir, remove_dir_all, remove_file, File};
 use std::str::FromStr;
 use std::sync::atomic::Ordering;
 use std::thread::sleep;
-use std::time::{Duration, Instant};
+use std::time::{Duration, Instant, SystemTime};
 use tari_common::configuration::Network;
 use tari_common_types::seeds::mnemonic::{Mnemonic, MnemonicLanguage};
 use tari_common_types::seeds::mnemonic_wordlists::MNEMONIC_ENGLISH_WORDS;
@@ -1507,6 +1507,16 @@ pub async fn start_cpu_mining(
             return Err(e.to_string());
         }
     }
+
+    let read_time = state.session_mining_time.read().await;
+    if read_time.is_none() {
+        let now = SystemTime::now();
+        let mut write_time = state.session_mining_time.write().await;
+        *write_time = Some(now);
+        drop(write_time);
+    }
+    drop(read_time);
+
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "start_cpu_mining took too long: {:?}", timer.elapsed());
     }
@@ -2400,4 +2410,18 @@ pub async fn set_feedback_fields(feedback_type: String, was_sent: bool) -> Resul
     }
 
     Ok(())
+}
+
+#[tauri::command]
+pub async fn get_session_mining_time(
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<u64, String> {
+    let read = state.session_mining_time.read().await;
+    let session_mining_time = read.unwrap().elapsed();
+
+    if let Ok(value) = session_mining_time {
+        Ok(value.as_secs())
+    } else {
+        Err("BLA".to_string())
+    }
 }
