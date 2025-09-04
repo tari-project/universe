@@ -20,7 +20,7 @@ export const Holder = styled('div')`
     pointer-events: none;
 `;
 
-export const WidgetWrapper = styled('div')<{ $isOpen: boolean; $isLogin?: boolean }>`
+export const WidgetWrapper = styled('div')<{ $isOpen: boolean; $isLogin?: boolean; $isHovering?: boolean }>`
     position: relative;
     z-index: 1;
 
@@ -51,9 +51,55 @@ export const WidgetWrapper = styled('div')<{ $isOpen: boolean; $isLogin?: boolea
         pointer-events: all;
     }
 
+    ${({ $isHovering }) =>
+        $isHovering &&
+        css`
+            max-height: 163px;
+        `}
+
     ${({ $isOpen }) =>
         $isOpen &&
         css`
             max-height: 830px;
+
+            &:hover {
+                max-height: 830px;
+            }
         `}
+`;
+
+export const ExpandButton = styled(m.button)`
+    width: 200px;
+    height: 33px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    padding: 0px 10px;
+
+    color: #fff;
+    font-family: Poppins, sans-serif;
+    font-size: 10px;
+    font-style: normal;
+    font-weight: 700;
+    line-height: 190%;
+
+    white-space: nowrap;
+
+    position: absolute;
+    top: 115px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+
+    cursor: pointer;
+    transition: background 0.2s ease-in-out;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    pointer-events: all;
+
+    &:hover {
+        background: #424343;
+    }
 `;
