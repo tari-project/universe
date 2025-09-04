@@ -175,9 +175,8 @@ impl WebsocketEventsManager {
                         }
                   },
                   _= keep_alive_interval.tick()=>{
-                        info!(target:LOG_TARGET, "✓ Keep-alive interval tick");
                         if let Some(message) = WebsocketEventsManager::assemble_keep_alive().await{
-                            info!(target:LOG_TARGET, "sending keep-alive message {:?}", message);
+                            info!(target:LOG_TARGET, "sending keep-alive message");
                             drop(websocket_tx_channel_clone.send(message).await.inspect_err(|e|{
                               error!(target:LOG_TARGET, "could not send to websocket keep-alive channel due to {:?}", e);
                             }));
