@@ -368,7 +368,12 @@ impl WalletManager {
                         log::warn!(target: LOG_TARGET, "Max retries(10) reached while waiting for node status update");
                         break 1;
                     }
-                    let _unused = node_status_watch_rx_scan.changed().await;
+                    tokio::select!{
+                        _ = node_status_watch_rx_scan.changed() => {},
+                        _ = shutdown_signal.wait() =>{
+                            break 1;
+                        }
+                    }
                 };
                 tokio::select! {
                     _ = shutdown_signal.wait() => {
