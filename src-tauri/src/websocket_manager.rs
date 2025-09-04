@@ -242,6 +242,7 @@ impl WebsocketManager {
         status_update_channel_rx.mark_unchanged();
 
         tauri::async_runtime::spawn(async move {
+            let mut is_first_connection = true;
             loop {
                 tokio::select! {
                     _ = async {
@@ -249,6 +250,13 @@ impl WebsocketManager {
                             error!(target:LOG_TARGET,"failed to connect to websocket due to {e}")});
 
                         if let Ok(connection) = connection_res {
+                            if !is_first_connection {
+                                info!(target: LOG_TARGET, "WebSocket reconnected - restarting events manager");
+                                // Notify that we've reconnected - this could trigger events manager restart
+                                let _ = app_cloned.emit("websocket-reconnected", ());
+                            }
+                            is_first_connection = false;
+
                             WebsocketManager::listen(connection,app_cloned.clone(),
                                 receiver_channel.clone(),
                                 status_update_channel_tx.clone(),
@@ -352,7 +360,27 @@ async fn sender_task(
     close_channel_tx: tokio::sync::broadcast::Sender<bool>,
 ) -> Result<(), WebsocketError> {
     let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
+    let mut ping_interval = tokio::time::interval(Duration::from_secs(30));
+    ping_interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+
     info!(target:LOG_TARGET,"websocket_manager: tx loop initialized...");
+
+    // Send initial handshake message to trigger server subscriptions
+    let initial_message = WebsocketMessage {
+        event: "handshake".to_string(),
+        data: Some(serde_json::json!({"message": "client ready"})),
+        signature: None,
+        pub_key: None,
+    };
+    let handshake_json = serde_json::to_string(&initial_message)?;
+    write_stream
+        .send(Message::Text(Utf8Bytes::from(handshake_json.clone())))
+        .await
+        .inspect_err(|e| {
+            error!(target:LOG_TARGET,"Failed to send initial handshake message: {e}");
+        })?;
+    info!(target:LOG_TARGET,"Initial handshake message sent: {handshake_json}");
+
     let mut receiver = receiver_channel.lock().await;
     loop {
         tokio::select! {
@@ -365,6 +393,15 @@ async fn sender_task(
                         error!(target:LOG_TARGET,"Failed to send websocket message: {e}");
                     })?;
                  // info!(target:LOG_TARGET,"websocket event sent to airdrop {:?}", message_as_json);
+            },
+            _ = ping_interval.tick() => {
+                trace!(target:LOG_TARGET, "Sending periodic ping to keep connection alive");
+                write_stream
+                    .send(Message::Ping(vec![].into()))
+                    .await
+                    .inspect_err(|e| {
+                        error!(target:LOG_TARGET,"Failed to send ping message: {e}");
+                    })?;
             },
             _=wait_for_close_signal(close_channel_tx.clone().subscribe())=>{
                 info!(target:LOG_TARGET, "exiting websocket_manager sender task");
@@ -414,12 +451,23 @@ async fn receiver_task(
                                             }));
                                 }
                             }
+                            Message::Ping(_) => {
+                                trace!(target:LOG_TARGET, "Received ping, sending pong");
+                                // Note: tungstenite automatically handles pong responses to ping frames
+                                // But we'll log it for debugging
+                            }
+                            Message::Pong(_) => {
+                                trace!(target:LOG_TARGET, "Received pong response");
+                            }
                             Message::Close(_) => {
                                 info!(target:LOG_TARGET, "webSocket connection got closed.");
                                 return;
                             }
-                            _ => {
-                                error!(target: LOG_TARGET,"Not supported message type.");
+                            Message::Binary(_) => {
+                                trace!(target: LOG_TARGET,"Received binary message (ignoring)");
+                            }
+                            Message::Frame(_) => {
+                                trace!(target: LOG_TARGET,"Received raw frame (ignoring)");
                             }
                         },
                         Result::Err(e) => {
