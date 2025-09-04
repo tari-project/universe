@@ -25,7 +25,7 @@ use serde::Serialize;
 use serde_json::Value;
 use std::{sync::Arc, time::SystemTime};
 use tokio::sync::{
-    mpsc::{self, Sender},
+    mpsc::{self, Receiver, Sender},
     RwLock,
 };
 use tokio_util::sync::CancellationToken;
@@ -34,7 +34,6 @@ use crate::{
     app_in_memory_config::AppInMemoryConfig,
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
     hardware::hardware_status_monitor::HardwareStatusMonitor,
-    process_utils::retry_with_backoff,
     tasks_tracker::TasksTrackers,
     utils::platform_utils::{CurrentOperatingSystem, PlatformUtils},
 };
@@ -68,11 +67,14 @@ pub enum TelemetryServiceError {
 
     #[error("Reqwest error: {0}")]
     ReqwestError(#[from] reqwest::Error),
+    #[error("TelemetryService has already been started")]
+    AlreadyStarted,
 }
 
 pub struct TelemetryService {
     version: String,
-    tx_channel: Option<Sender<TelemetryData>>,
+    tx_channel: Sender<TelemetryData>,
+    rx_channel: Option<Receiver<TelemetryData>>,
     cancellation_token: CancellationToken,
     in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
 }
@@ -80,9 +82,12 @@ pub struct TelemetryService {
 impl TelemetryService {
     pub fn new(in_memory_config: Arc<RwLock<AppInMemoryConfig>>) -> Self {
         let cancellation_token = CancellationToken::new();
+        let (tx, rx) = mpsc::channel(128);
+
         TelemetryService {
             version: "0.0.0".to_string(),
-            tx_channel: None,
+            tx_channel: tx,
+            rx_channel: Some(rx),
             cancellation_token,
             in_memory_config,
         }
@@ -102,8 +107,11 @@ impl TelemetryService {
         let telemetry_api_url = in_memory_config_guard.telemetry_api_url.clone();
         let in_memory_config_cloned_2 = self.in_memory_config.clone();
         let version = self.version.clone();
-        let (tx, mut rx) = mpsc::channel(128);
-        self.tx_channel = Some(tx);
+        let mut rx = self
+            .rx_channel
+            .take()
+            .ok_or_else(|| TelemetryServiceError::AlreadyStarted)?;
+
         TasksTrackers::current()
             .common
             .get_task_tracker()
@@ -114,41 +122,40 @@ impl TelemetryService {
                     user_id: user,
                     os,
                 };
+                loop {
                 tokio::select! {
-                    _ = async {
-                        debug!(target: LOG_TARGET, "TelemetryService::init has  been started");
-                        while let Some(telemetry_data) = rx.recv().await {
-                                let telemetry_collection_enabled = *ConfigCore::content().await.allow_telemetry();
-                                if !telemetry_collection_enabled {
-                                info!(target: LOG_TARGET, "TelemetryService::init telemetry collection is disabled");
-                            return;
+                    telemetry_data = rx.recv() => {
+                        if let Some(telemetry_data) = telemetry_data {
+
+                        debug!(target: LOG_TARGET, "Received telemetry event: {:?}", &telemetry_data);
+                        let telemetry_collection_enabled = *ConfigCore::content().await.allow_telemetry();
+                        if !telemetry_collection_enabled {
+                            debug!(target: LOG_TARGET, "TelemetryService::init telemetry collection is disabled. Dropping event.");
+                            continue;
                         }
                         let anon_id = ConfigCore::content().await.anon_id().clone();
-                            drop(retry_with_backoff(
-                                    || {
-                                        Box::pin(send_telemetry_data(
-                                            telemetry_data.clone(),
-                                            telemetry_api_url.clone(),
-                                            system_info.clone(),
-                                            anon_id.clone(),
-                                            in_memory_config_cloned_2 .clone()
-                                        ))
-                                    },
-                                    3,
-                                    2,
-                                    "send_telemetry_data",
-                                )
-                                .await);
-                            }
-                        } => {}
+                        let _unused = send_telemetry_data(
+                            telemetry_data,
+                            telemetry_api_url.clone(),
+                            system_info.clone(),
+                            anon_id.clone(),
+                            in_memory_config_cloned_2 .clone()).await.inspect_err(|e| warn!(target: LOG_TARGET,"Could not send telemetry data. Error: {:?}", e));
+                        } else {
+                            warn!(target: LOG_TARGET,"TelemetryService::init telemetry data is None");
+                            break;
+                        }
+                        },
                         _ = shutdown_signal.wait() => {
                             info!(target: LOG_TARGET,"TelemetryService::init has been cancelled");
+                            break;
                         }
                         _ = cancellation_token.cancelled() => {
                             info!(target: LOG_TARGET,"TelemetryService::init has been cancelled");
+                            break;
                         }
                 }
-            });
+            }
+        });
         Ok(())
     }
 
@@ -161,20 +168,13 @@ impl TelemetryService {
             event_name,
             event_value,
         };
-        if let Some(tx) = &self.tx_channel {
-            if (tx.send(data).await).is_err() {
-                warn!(target: LOG_TARGET,"TelemetryService::send_telemetry_data Telemetry data sending failed");
-                return Err(TelemetryServiceError::Other(anyhow::anyhow!(
-                    "Telemetry data sending failed"
-                )));
-            }
-            Ok(())
-        } else {
-            warn!(target: LOG_TARGET,"TelemetryService::send_telemetry_data Telemetry data sending failed - Service is not initialized");
-            Err(TelemetryServiceError::Other(anyhow::anyhow!(
-                "Telemetry data sending failed - Service is not initialized"
-            )))
+        if (self.tx_channel.send(data).await).is_err() {
+            warn!(target: LOG_TARGET,"TelemetryService::send_telemetry_data Telemetry data sending failed");
+            return Err(TelemetryServiceError::Other(anyhow::anyhow!(
+                "Telemetry data sending failed"
+            )));
         }
+        Ok(())
     }
 }
 
