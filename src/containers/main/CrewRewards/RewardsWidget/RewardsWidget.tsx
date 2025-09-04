@@ -1,8 +1,11 @@
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+
 import CrewSection from './sections/CrewSection/CrewSection';
 import MainSection from './sections/MainSection/MainSection';
 import StreakProgress from './sections/StreakProgress/StreakProgress';
 
-import { Holder, PositionWrapper, WidgetWrapper } from './styles';
+import { ExpandButton, Holder, PositionWrapper, WidgetWrapper } from './styles';
 import { useCrewRewardsStore } from '../../../../store/useCrewRewardsStore';
 import { AnimatePresence } from 'motion/react';
 import { useAirdropStore } from '@app/store';
@@ -15,10 +18,17 @@ const introAnimation = {
     exit: { opacity: 0, x: 100 },
 };
 
+const buttonAnimation = {
+    initial: { opacity: 0 },
+    animate: { opacity: 1 },
+    exit: { opacity: 0, transition: { duration: 0 } },
+};
+
 export default function RewardsWidget() {
-    const { isOpen } = useCrewRewardsStore();
+    const { t } = useTranslation();
+    const { isOpen, setIsOpen, isMinimized } = useCrewRewardsStore();
     const isLoggedIn = useAirdropStore((s) => !!s.airdropTokens);
-    const { isMinimized } = useCrewRewardsStore();
+    const [isHovering, setIsHovering] = useState(false);
 
     if (isMinimized) {
         return (
@@ -45,10 +55,23 @@ export default function RewardsWidget() {
     return (
         <PositionWrapper {...introAnimation}>
             <Holder>
-                <WidgetWrapper $isOpen={isOpen}>
+                <WidgetWrapper
+                    $isOpen={isOpen}
+                    $isHovering={isHovering}
+                    onMouseEnter={() => setIsHovering(true)}
+                    onMouseLeave={() => setIsHovering(false)}
+                >
                     <MainSection />
                     <AnimatePresence>{isOpen && <CrewSection />}</AnimatePresence>
+                    <AnimatePresence>
+                        {isHovering && !isOpen && (
+                            <ExpandButton onClick={() => setIsOpen(true)} {...buttonAnimation}>
+                                {t('airdrop:crewRewards.manageYourCrew')}
+                            </ExpandButton>
+                        )}
+                    </AnimatePresence>
                 </WidgetWrapper>
+
                 {!isOpen && <StreakProgress />}
             </Holder>
         </PositionWrapper>
