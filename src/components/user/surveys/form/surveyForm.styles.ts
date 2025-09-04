@@ -12,6 +12,7 @@ export const FormContent = styled.div`
     gap: 10px;
     display: flex;
     flex-direction: column;
+    padding-bottom: 5px;
 `;
 
 export const Description = styled(Typography)`

@@ -4,7 +4,8 @@ import { useUserFeedbackStore } from '@app/store/stores/userFeedbackStore.ts';
 import CloseButton from '@app/components/elements/buttons/CloseButton.tsx';
 
 export default function CloseUserFeedbackDialog() {
-    const showCloseDialog = true; //useUserFeedbackStore((s) => s.showCloseDialog);
+    // const showCloseDialog = true;
+    const showCloseDialog = useUserFeedbackStore((s) => s.showCloseDialog);
     const toggleCloseDialog = useUserFeedbackStore((s) => s.toggleCloseDialog);
     return (
         <Dialog open={showCloseDialog} onOpenChange={toggleCloseDialog}>

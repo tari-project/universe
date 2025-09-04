@@ -1,9 +1,9 @@
 import { SurveyQuestion, SurveyQuestionOption, SurveyQuestionType } from '@app/types/user/surveys.ts';
 
-type FieldMainQuestion = Pick<SurveyQuestion, 'questionText' | 'questionType'>;
+type FieldMainQuestion = Pick<SurveyQuestion, 'questionText' | 'questionType' | 'options'>;
 type FieldQuestionOption = Pick<SurveyQuestionOption, 'questionId'>;
 
-interface FieldQuestion extends FieldMainQuestion, FieldQuestionOption {
+export interface FieldQuestion extends FieldMainQuestion, FieldQuestionOption {
     value: string;
     questionId: string;
     optionText?: string;
@@ -18,7 +18,7 @@ export function getFieldTypes(questions: SurveyQuestion[]): FieldQuestions {
         const typeArr = a[c.questionType];
 
         if (typeArr) {
-            if (c.options?.length) {
+            if (c.questionType === 'checkbox' && c.options?.length) {
                 c.options.forEach((option) => {
                     const fieldOption: FieldQuestion = {
                         ...option,

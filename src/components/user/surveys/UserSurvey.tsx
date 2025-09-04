@@ -1,9 +1,10 @@
-import { Chip } from '@app/components/elements/Chip.tsx';
-import { ChipText, Title, Wrapper } from './styles.ts';
-import { useFetchSurveyContent } from '@app/hooks/user/surveys/useFetchSurveyContent.ts';
-import SurveyForm from './SurveyForm.tsx';
-import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 import { SurveyType } from '@app/types/user/surveys.ts';
+import { useFetchSurveyContent } from '@app/hooks/user/surveys/useFetchSurveyContent.ts';
+import { Chip } from '@app/components/elements/Chip.tsx';
+import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
+import SurveyForm from './form/SurveyForm.tsx';
+
+import { ChipText, Title, Wrapper } from './styles.ts';
 
 interface UserSurveyProps {
     type: SurveyType;

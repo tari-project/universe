@@ -13,6 +13,7 @@ export interface SurveyQuestionOption {
     optionText: string;
     value: string;
     order: number;
+    checked?: boolean;
 }
 
 export interface SurveyQuestion {
