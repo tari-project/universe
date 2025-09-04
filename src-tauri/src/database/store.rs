@@ -9,7 +9,7 @@ use crate::tapplets::error::{
 use crate::tapplets::interface::{
     InstalledTappletJoinRow, InstalledTappletWithName, TappletSemver,
 };
-use log::error;
+use log::{error, warn};
 const LOG_TARGET: &str = "tari::universe::database";
 #[derive(Clone)]
 pub struct DatabaseConnection(pub Arc<SqlitePool>);
@@ -284,9 +284,9 @@ impl SqliteStore {
         &self,
         item: &CreateInstalledTapplet,
     ) -> Result<InstalledTapplet, Error> {
-        sqlx::query_as::<_, InstalledTapplet>(
+        let result = sqlx::query_as::<_, InstalledTapplet>(
             r#"
-            INSERT INTO installed_tapplet (tapplet_id, tapplet_version_id, source, csp, tari_permissions)
+            INSERT OR IGNORE INTO installed_tapplet (tapplet_id, tapplet_version_id, source, csp, tari_permissions)
             VALUES (?, ?, ?, ?, ?)
             RETURNING id, tapplet_id, tapplet_version_id, source, csp, tari_permissions
             "#
@@ -296,14 +296,35 @@ impl SqliteStore {
         .bind(&item.source)
         .bind(&item.csp)
         .bind(&item.tari_permissions)
-        .fetch_one(self.get_pool())
-        .await
-        .map_err(|e| {
-            error!(target: LOG_TARGET, "DB error creating installed_tapplet: {:?}", e);
-            DatabaseError(FailedToCreate {
-                entity_name: "installed_tapplet".to_string(),
-            })
-        })
+        .fetch_optional(self.get_pool())
+        .await;
+
+        match result {
+            Ok(Some(installed_tapplet)) => Ok(installed_tapplet),
+            Ok(None) => {
+                // Already exists, fetch and return the existing row
+                sqlx::query_as::<_, InstalledTapplet>(
+                    "SELECT id, tapplet_id, tapplet_version_id, source, csp, tari_permissions FROM installed_tapplet WHERE tapplet_id = ? AND tapplet_version_id = ? AND source = ?"
+                )
+                .bind(item.tapplet_id)
+                .bind(item.tapplet_version_id)
+                .bind(&item.source)
+                .fetch_one(self.get_pool())
+                .await
+                .map_err(|e| {
+                    error!(target: LOG_TARGET, "DB error fetching existing installed_tapplet for tapplet_id {:?}, version_id {:?}, source {:?}: {:?}", item.tapplet_id, item.tapplet_version_id, item.source, e);
+                    DatabaseError(FailedToRetrieveData {
+                        entity_name: "installed_tapplet".to_string(),
+                    })
+                })
+            }
+            Err(e) => {
+                error!(target: LOG_TARGET, "DB error creating installed_tapplet: {:?}", e);
+                Err(DatabaseError(FailedToCreate {
+                    entity_name: "installed_tapplet".to_string(),
+                }))
+            }
+        }
     }
 
     pub async fn create_installed_tapplet_with_id(
@@ -889,15 +910,22 @@ impl SqliteStore {
                 registry_url: row.tv_registry_url,
             };
 
-            let (_registered_tapp, latest_version) = self
+            let latest_version_string = match self
                 .get_registered_tapplet_with_version(tapp.id.unwrap())
-                .await?;
+                .await
+            {
+                Ok((_, latest_version)) => latest_version.version,
+                Err(e) => {
+                    warn!(target: LOG_TARGET, "⚠️ Could not get latest version for tapplet {}: {:?}, using installed version", tapp.display_name, e);
+                    tapp_version.version.clone()
+                }
+            };
 
             result.push(InstalledTappletWithName {
                 installed_tapplet,
                 display_name: tapp.display_name,
                 installed_version: tapp_version.version,
-                latest_version: latest_version.version,
+                latest_version: latest_version_string,
             });
         }
 

@@ -22,7 +22,6 @@
 use crate::{
     binaries::{Binaries, BinaryResolver},
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
-    events_emitter::EventsEmitter,
     internal_wallet::InternalWallet,
     ootle::ootle_wallet_manager::OotleWalletStartupConfig,
     pin::PinManager,
@@ -37,7 +36,7 @@ use crate::{
 use anyhow::{Context, Error};
 use log::info;
 use reqwest::Url;
-use tari_key_manager::mnemonic::{Mnemonic, MnemonicLanguage};
+use tari_common_types::seeds::mnemonic::{Mnemonic, MnemonicLanguage};
 use tari_shutdown::ShutdownSignal;
 use tari_utilities::Hidden;
 use tauri::{AppHandle, Manager};
