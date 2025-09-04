@@ -42,8 +42,10 @@ use crate::tapplets::tapplet_manager::TappletManager;
 use crate::tapplets::tapplet_server::get_tapp_config;
 use log::{error, info, warn};
 use tauri::ipc::InvokeError;
+use tauri::Manager;
 
 const LOG_TARGET: &str = "tari::universe::tapplets";
+const BRIDGE_TAPPLET_ID: i32 = 1; // Fixed ID for bridge tapplet
 
 type CommandResult<T> = Result<T, InvokeError>;
 
@@ -617,4 +619,50 @@ pub async fn delete_dev_tapplet(
         warn!(target: LOG_TARGET, "❌ Error while deleting dev tapplet id {:?} from db: {:?}", dev_tapplet_id, e);
         InvokeError::from_error(e)
     })
+}
+
+/// Registers the Bridge Tapplet as an installed tapplet in the database
+pub async fn register_bridge_tapplet_in_database(
+    app_handle: tauri::AppHandle,
+) -> Result<(), anyhow::Error> {
+    let db_connection = app_handle.state::<DatabaseConnection>();
+    let store = SqliteStore::new(db_connection.0.clone());
+
+    // Check if bridge tapplet is already registered
+    if let Ok(_) = store.get_installed_tapplet_by_id(BRIDGE_TAPPLET_ID).await {
+        info!(target: LOG_TARGET, "Bridge tapplet already registered in database");
+        return Ok(());
+    }
+
+    let binary_resolver = BinaryResolver::current();
+    let tapp_path = binary_resolver
+        .resolve_path_to_binary_files(Binaries::BridgeTapplet)
+        .await?;
+
+    let _version = binary_resolver
+        .get_binary_version(Binaries::BridgeTapplet)
+        .await;
+    // let tapp_version_id = store.get_tapplet_version_by_id(id)
+
+    // Create the bridge tapplet entry
+    let bridge_tapplet = CreateInstalledTapplet {
+        tapplet_id: Some(BRIDGE_TAPPLET_ID), // No registry entry for bridge tapplet
+        tapplet_version_id: None, // No version entry for bridge tapplet
+        source: tapp_path.to_string_lossy().to_string(),
+        csp: "default-src 'self' https:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'".to_string(),
+        tari_permissions: "requiredPermissions:[], optionalPermissions:[]".to_string(),
+    };
+
+    // Insert with specific ID - you'll need to add this method to SqliteStore
+    store
+        // .create_installed_tapplet_with_id(BRIDGE_TAPPLET_ID, &bridge_tapplet) // TODO does tapp_id need to be fixed in this case?
+        .create_installed_tapplet(&bridge_tapplet)
+        .await
+        .map_err(|e| {
+            error!(target: LOG_TARGET, "Failed to register bridge tapplet: {}", e);
+            anyhow::anyhow!("Failed to register bridge tapplet: {}", e)
+        })?;
+
+    info!(target: LOG_TARGET, "Bridge tapplet registered successfully with ID: {}", BRIDGE_TAPPLET_ID);
+    Ok(())
 }

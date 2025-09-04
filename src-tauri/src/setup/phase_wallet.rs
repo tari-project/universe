@@ -34,6 +34,7 @@ use crate::{
         progress_stepper::{ProgressStepper, ProgressStepperBuilder},
     },
     setup::setup_manager::SetupPhase,
+    tapplets::commands::register_bridge_tapplet_in_database,
     tasks_tracker::TasksTrackers,
     wallet::wallet_manager::WalletStartupConfig,
     UniverseAppState,
@@ -215,7 +216,14 @@ impl SetupPhaseImpl for WalletSetupPhase {
             .complete_step(SetupStep::SetupBridge, || async {
                 binary_resolver
                     .initialize_binary(Binaries::BridgeTapplet, bridge_binary_progress_tracker)
-                    .await
+                    .await?;
+
+                // Register BridgeTapplet in the database so it can be managed like other tapplets
+                if let Err(e) = register_bridge_tapplet_in_database(self.get_app_handle().clone()).await {
+                    log::warn!(target: LOG_TARGET, "Failed to register BridgeTapplet in database: {e}");
+                }
+
+                Ok(())
             })
             .await?;
 
