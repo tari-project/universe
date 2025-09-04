@@ -7,7 +7,7 @@ export const Overlay = styled(FloatingOverlay)`
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 10;
+    z-index: 1;
 `;
 
 export const ContentWrapper = styled.div<ContentWrapperStyleProps>`
@@ -65,4 +65,9 @@ export const CloseButtonContainer = styled.div`
     display: flex;
     justify-content: flex-end;
     width: 100%;
+`;
+
+export const WrapperContent = styled.div`
+    display: flex;
+    position: relative;
 `;

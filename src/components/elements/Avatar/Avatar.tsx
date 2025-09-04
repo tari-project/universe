@@ -31,9 +31,10 @@ const firstLetter = (username: string): string => {
 interface Props {
     username?: string;
     image?: string;
+    size?: number;
 }
 
-export default function Avatar({ username, image }: Props) {
+export default function Avatar({ username, image, size }: Props) {
     const finalUsername = username ? `@${username}` : '';
     let finalImage = `url(${image})`;
     let finalLetter = '';
@@ -50,7 +51,7 @@ export default function Avatar({ username, image }: Props) {
     }
 
     return (
-        <AvatarWrapper $image={finalImage} aria-label={finalUsername} title={finalUsername}>
+        <AvatarWrapper $image={finalImage} aria-label={finalUsername} title={finalUsername} $size={size ?? 38}>
             {finalLetter}
         </AvatarWrapper>
     );
