@@ -6,7 +6,7 @@ import {
 } from '@app/types/user/surveys.ts';
 
 type FieldMainQuestion = Pick<SurveyQuestion, 'questionText' | 'questionType' | 'options'>;
-type FieldQuestionOption = Pick<SurveyQuestionOption, 'questionId'>;
+type FieldQuestionOption = Pick<SurveyQuestionOption, 'questionId' | 'id'>;
 
 export interface FieldQuestion extends FieldMainQuestion, FieldQuestionOption {
     value: string;
@@ -49,14 +49,14 @@ export function getFieldTypes(questions: SurveyQuestion[]): FieldQuestions {
     }, initial);
 }
 
-export function parseResponse(data: FieldQuestions) {
-    let answers: SurveyAnswerInput[] = [];
-
+export function parseAnswers(data: FieldQuestions): SurveyAnswerInput[] {
     const textAnswers =
-        data.text?.map((a) => ({
-            questionId: a.questionId,
-            answerText: a.value,
-        })) || [];
+        data.text
+            ?.filter((a) => !!a.value.length)
+            .map((a) => ({
+                questionId: a.questionId,
+                answerText: a.value,
+            })) || [];
     const radioAnswers =
         data.radio
             .filter((a) => a.options?.some((o) => o.checked))
@@ -68,19 +68,19 @@ export function parseResponse(data: FieldQuestions) {
                 };
             }) || [];
 
-    console.debug(JSON.stringify(data.checkbox));
+    const checkedItems = data.checkbox.filter((a) => a.checked);
+    const checkAnswers: SurveyAnswerInput[] = [];
 
-    const checkAnswers =
-        data.checkbox
-            .filter((a) => a.options?.some((o) => o.checked))
-            .map((a) => {
-                const selectedOptionIds = a.options?.filter((o) => o.checked).map((o) => o.id);
-                return {
-                    questionId: a.questionId,
-                    selectedOptionIds: selectedOptionIds?.length ? selectedOptionIds : undefined,
-                };
-            }) || [];
-
-    answers = [...textAnswers, ...radioAnswers, ...checkAnswers];
-    return answers;
+    checkedItems.forEach((a) => {
+        const existingEntry = checkAnswers.find((e) => a.questionId === e.questionId);
+        if (existingEntry) {
+            existingEntry.selectedOptionIds?.push(a.id);
+        } else {
+            checkAnswers.push({
+                questionId: a.questionId,
+                selectedOptionIds: [a.id],
+            });
+        }
+    });
+    return [...textAnswers, ...radioAnswers, ...checkAnswers];
 }

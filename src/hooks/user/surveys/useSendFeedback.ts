@@ -1,6 +1,7 @@
 import { handleAirdropRequest } from '@app/hooks/airdrop/utils/useHandleRequest.ts';
 import { SubmitSurveyRequest, SubmitSurveyResponse } from '@app/types/user/surveys.ts';
 import { useMutation } from '@tanstack/react-query';
+import { useConfigCoreStore } from '@app/store';
 
 interface Args {
     slug: string;
@@ -20,6 +21,7 @@ async function postFeedback({ slug, feedbackBody }: Args) {
 }
 
 export function useSendFeedback() {
+    const appId = useConfigCoreStore((s) => s.anon_id);
     return useMutation({ mutationFn: postFeedback, onSuccess: (data) => console.debug(data) });
 }
 
