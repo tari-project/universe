@@ -87,6 +87,9 @@ export const updateSetupProgress = (payload: ProgressTrackerUpdatePayload | unde
         case SetupPhase.Wallet:
             useSetupStore.setState((c) => ({ ...c, wallet_phase_setup_payload: payload }));
             break;
+        case SetupPhase.OotleWallet:
+            // TODO ootle wallet setup
+            break;
         default:
             console.warn(`Unknown setup phase: ${payload.title}`);
     }

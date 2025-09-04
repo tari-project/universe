@@ -8,6 +8,7 @@ const defultErrorMessages: Record<SetupPhase, string> = {
     [SetupPhase.GpuMining]: '',
     [SetupPhase.Node]: '',
     [SetupPhase.Wallet]: '',
+    [SetupPhase.OotleWallet]: '',
 };
 
 const initialState: SetupState = {

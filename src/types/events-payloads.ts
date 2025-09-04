@@ -7,6 +7,7 @@ export enum SetupPhase {
     GpuMining = 'GpuMining',
     Wallet = 'Wallet',
     Node = 'Node',
+    OotleWallet = 'OotleWallet',
 }
 
 export enum TariAddressType {
