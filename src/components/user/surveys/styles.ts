@@ -19,4 +19,3 @@ export const Title = styled(Typography)`
     font-size: clamp(24px, 3vh, 30px);
     line-height: 1.6;
 `;
-

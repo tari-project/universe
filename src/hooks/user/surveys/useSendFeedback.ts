@@ -1,7 +1,6 @@
 import { handleAirdropRequest } from '@app/hooks/airdrop/utils/useHandleRequest.ts';
 import { SubmitSurveyRequest, SubmitSurveyResponse } from '@app/types/user/surveys.ts';
 import { useMutation } from '@tanstack/react-query';
-import { useConfigCoreStore } from '@app/store';
 
 interface Args {
     slug: string;
@@ -21,43 +20,5 @@ async function postFeedback({ slug, feedbackBody }: Args) {
 }
 
 export function useSendFeedback() {
-    const appId = useConfigCoreStore((s) => s.anon_id);
     return useMutation({ mutationFn: postFeedback, onSuccess: (data) => console.debug(data) });
 }
-
-//        const answers = watchedField
-//             .map((f) => {
-//                 if (f.questionType === 'text') {
-//                     return {
-//                         questionId: f.id,
-//                         answerText: f.value,
-//                     };
-//                 }
-//                 return null;
-//                 // if (f.questionType === 'checkbox') {
-//                 //     const selectedOptionIds = f.checked ? [f.id] : [];
-//                 //     return {
-//                 //         questionId: f.id,
-//                 //         selectedOptionIds,
-//                 //     };
-//                 // }
-//             })
-//             .filter((x) => !!x) as SurveyAnswerInput[];
-//
-//         const metadata = {
-//             userId: anon_id,
-//             appId: anon_id,
-//             operatingSystem: 'string',
-//             universeVersion: 'string',
-//             network: 'string',
-//             mode: 'string',
-//             extraData: {},
-//         };
-//
-//         mutate({
-//             slug: 'survey-close',
-//             feedbackBody: {
-//                 answers,
-//                 metadata,
-//             },
-//         });

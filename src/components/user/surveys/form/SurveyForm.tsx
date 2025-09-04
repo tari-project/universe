@@ -10,17 +10,35 @@ import { CTAWrapper, Form, FormContent } from './surveyForm.styles.ts';
 import { CheckboxFields } from './CheckboxFields.tsx';
 import { RadioFields } from './RadioFields.tsx';
 import { TextFields } from './TextFields.tsx';
+import { useAirdropStore, useConfigCoreStore } from '@app/store';
+import { useSendFeedback } from '@app/hooks/user/surveys/useSendFeedback.ts';
 
 interface SurveyFormProps {
     surveyContent: Survey;
 }
 
 export default function SurveyForm({ surveyContent }: SurveyFormProps) {
+    const appId = useConfigCoreStore((s) => s.anon_id);
+    const userId = useAirdropStore((s) => s.userDetails?.user.id);
     const defaultValues = getFieldTypes(surveyContent.questions || []);
     const methods = useForm<FieldQuestions>({ defaultValues });
 
+    const { mutate } = useSendFeedback();
+
     function handleSubmit(data: FieldQuestions) {
         const answers = parseAnswers(data);
+        const metadata = {
+            appId,
+            userId,
+        };
+
+        mutate({
+            slug: surveyContent.slug,
+            feedbackBody: {
+                answers,
+                metadata,
+            },
+        });
     }
     return (
         <FormProvider {...methods}>
