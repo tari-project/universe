@@ -2,6 +2,7 @@ import { create } from 'zustand';
 
 interface State {
     showCloseDialog: boolean;
+    earlyClosedDismissed: boolean;
 }
 interface Actions {
     toggleCloseDialog: () => void;
@@ -9,6 +10,7 @@ interface Actions {
 
 const initialState: State = {
     showCloseDialog: false,
+    earlyClosedDismissed: false,
 };
 
 type UserFeedbackStoreState = State & Actions;
@@ -21,3 +23,5 @@ export const useUserFeedbackStore = create<UserFeedbackStoreState>()((set) => ({
 }));
 
 export const setShowCloseDialog = (showCloseDialog: boolean) => useUserFeedbackStore.setState({ showCloseDialog });
+export const setEarlyClosedDismissed = (earlyClosedDismissed: boolean) =>
+    useUserFeedbackStore.setState({ earlyClosedDismissed });

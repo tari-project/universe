@@ -37,6 +37,17 @@ use super::trait_config::{ConfigContentImpl, ConfigImpl};
 
 static INSTANCE: LazyLock<RwLock<ConfigUI>> = LazyLock::new(|| RwLock::new(ConfigUI::new()));
 
+#[derive(Serialize, Deserialize, Clone)]
+pub struct FeedbackPrompt {
+    feedback_sent: bool,
+    last_dismissed: SystemTime,
+}
+#[derive(Serialize, Deserialize, Clone)]
+pub struct FeedbackPrompts {
+    early_close: FeedbackPrompt,
+    long_time_miner: FeedbackPrompt,
+}
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub enum WalletUIMode {
     Standard = 0,
@@ -81,6 +92,7 @@ pub struct ConfigUIContent {
     show_experimental_settings: bool,
     was_staged_security_modal_shown: bool, // TODO: Migrated to ConfigWallet, remove after some time
     wallet_ui_mode: WalletUIMode,
+    feedback: FeedbackPrompts,
 }
 
 impl Default for ConfigUIContent {
@@ -97,6 +109,16 @@ impl Default for ConfigUIContent {
             show_experimental_settings: false,
             was_staged_security_modal_shown: false,
             wallet_ui_mode: WalletUIMode::Standard,
+            feedback: FeedbackPrompts {
+                early_close: FeedbackPrompt {
+                    feedback_sent: false,
+                    last_dismissed: SystemTime::now(),
+                },
+                long_time_miner: FeedbackPrompt {
+                    feedback_sent: false,
+                    last_dismissed: SystemTime::now(),
+                },
+            },
         }
     }
 }

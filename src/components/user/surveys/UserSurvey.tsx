@@ -8,14 +8,15 @@ import { ChipText, Title, Wrapper } from './styles.ts';
 
 interface UserSurveyProps {
     type: SurveyType;
+    onSkipped?: () => void;
 }
-export default function UserSurvey({ type }: UserSurveyProps) {
+export default function UserSurvey({ type, onSkipped }: UserSurveyProps) {
     const { data: survey, isLoading } = useFetchSurveyContent(type);
     const loadingMarkup = isLoading && <LoadingDots />;
     const markup = !!survey && (
         <>
             <Title variant="h1">{survey.description}</Title>
-            {survey.questions && <SurveyForm surveyContent={survey} />}
+            {survey.questions && <SurveyForm surveyContent={survey} onSkipped={onSkipped} />}
         </>
     );
 

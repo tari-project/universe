@@ -15,9 +15,10 @@ import { useSendFeedback } from '@app/hooks/user/surveys/useSendFeedback.ts';
 
 interface SurveyFormProps {
     surveyContent: Survey;
+    onSkipped?: () => void;
 }
 
-export default function SurveyForm({ surveyContent }: SurveyFormProps) {
+export default function SurveyForm({ surveyContent, onSkipped }: SurveyFormProps) {
     const appId = useConfigCoreStore((s) => s.anon_id);
     const userId = useAirdropStore((s) => s.userDetails?.user.id);
     const defaultValues = getFieldTypes(surveyContent.questions || []);
@@ -50,7 +51,7 @@ export default function SurveyForm({ surveyContent }: SurveyFormProps) {
                 </FormContent>
                 <CTAWrapper>
                     <Button type="submit" fluid size="xlarge" variant="black">{`Send Feedback`}</Button>
-                    <TextButton size="large" type="reset">
+                    <TextButton size="large" type="reset" onClick={onSkipped}>
                         <Typography>{`Skip for now`}</Typography>
                     </TextButton>
                 </CTAWrapper>
