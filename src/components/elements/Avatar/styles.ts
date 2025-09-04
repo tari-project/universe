@@ -1,8 +1,8 @@
 import styled from 'styled-components';
 
-export const AvatarWrapper = styled.div<{ $image: string }>`
-    width: 36px;
-    height: 36px;
+export const AvatarWrapper = styled.div<{ $image: string; $size: number }>`
+    width: ${({ $size }) => $size}px;
+    height: ${({ $size }) => $size}px;
     border-radius: 100%;
     flex-shrink: 0;
 
@@ -16,7 +16,7 @@ export const AvatarWrapper = styled.div<{ $image: string }>`
     align-items: center;
     justify-content: center;
 
-    font-size: 16px;
+    font-size: ${({ $size }) => $size / 2}px;
     font-weight: 600;
     color: #fff;
     cursor: default;

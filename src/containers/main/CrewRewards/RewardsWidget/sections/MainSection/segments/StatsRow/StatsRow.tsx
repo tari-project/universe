@@ -1,14 +1,15 @@
+import Avatar from '@app/components/elements/Avatar/Avatar';
 import {
     Wrapper,
     ActiveMinersWrapper,
-    PhotoWrapper,
-    PhotoImage,
+    PhotosRow,
     TextWrapper,
     MainText,
     LabelText,
     Divider,
     InviteFriendsMessage,
     LoadingPlaceholder,
+    PhotoWrapper,
 } from './styles';
 
 import { useReferrerProgress } from '@app/hooks/crew/useReferrerProgress';
@@ -51,11 +52,13 @@ export default function StatsRow() {
         <Wrapper>
             {hasFriends ? (
                 <ActiveMinersWrapper>
-                    <PhotoWrapper>
-                        {crewData?.memberImages.map((image) => (
-                            <PhotoImage $image={image} key={image} />
-                        ))}
-                    </PhotoWrapper>
+                    <PhotosRow>
+                        <PhotoWrapper>
+                            {crewData?.members.map(({ image, displayName }) => (
+                                <Avatar image={image} username={displayName} key={image} size={28} />
+                            ))}
+                        </PhotoWrapper>
+                    </PhotosRow>
 
                     <TextWrapper>
                         <MainText>
