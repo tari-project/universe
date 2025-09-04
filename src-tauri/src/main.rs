@@ -197,7 +197,8 @@ struct UniverseAppState {
     websocket_manager_status_rx: Arc<watch::Receiver<WebsocketManagerStatusMessage>>,
     websocket_manager: Arc<RwLock<WebsocketManager>>,
     websocket_event_manager: Arc<RwLock<WebsocketEventsManager>>,
-    session_mining_time: Arc<RwLock<Option<SystemTime>>>,
+    session_mining_start_time: Arc<RwLock<Option<SystemTime>>>,
+    session_mining_duration_sec: Arc<RwLock<u64>>,
 }
 
 #[derive(Clone, serde::Serialize, serde::Deserialize)]
@@ -386,7 +387,8 @@ fn main() {
         websocket_manager_status_rx: Arc::new(websocket_manager_status_rx.clone()),
         websocket_manager,
         websocket_event_manager: Arc::new(RwLock::new(websocket_events_manager)),
-        session_mining_time: Arc::new(RwLock::new(None)),
+        session_mining_start_time: Arc::new(RwLock::new(None)),
+        session_mining_duration_sec: Arc::new(RwLock::new(0)),
     };
     let app_state_clone = app_state.clone();
     #[allow(

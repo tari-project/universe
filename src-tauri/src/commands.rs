@@ -1452,11 +1452,11 @@ pub async fn start_cpu_mining(
     app: tauri::AppHandle,
 ) -> Result<(), String> {
     let timer = Instant::now();
-    let read_time = state.session_mining_time.read().await;
+    let read_time = state.session_mining_start_time.read().await;
     let read_time_clone = read_time.clone();
     drop(read_time);
     if read_time_clone.is_none() {
-        let mut write_time = state.session_mining_time.write().await;
+        let mut write_time = state.session_mining_start_time.write().await;
         *write_time = Some(SystemTime::now());
         drop(write_time);
     }
@@ -1536,6 +1536,14 @@ pub async fn start_gpu_mining(
     }
 
     let timer = Instant::now();
+    let read_time = state.session_mining_start_time.read().await;
+    let read_time_clone = read_time.clone();
+    drop(read_time);
+    if read_time_clone.is_none() {
+        let mut write_time = state.session_mining_start_time.write().await;
+        *write_time = Some(SystemTime::now());
+        drop(write_time);
+    }
 
     let mut telemetry_id = state
         .telemetry_manager
@@ -1641,6 +1649,30 @@ pub async fn start_gpu_mining(
 #[tauri::command]
 pub async fn stop_cpu_mining(state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
     let timer = Instant::now();
+
+    let read_time = state.session_mining_start_time.read().await;
+    let read_time_clone = read_time.clone();
+    drop(read_time);
+
+    let read_duration = state.session_mining_duration_sec.read().await;
+    let read_duration_clone = read_duration.clone();
+    drop(read_duration);
+
+    if let Some(mining_time) = read_time_clone {
+        let mining_time_clone = mining_time.clone();
+        let duration = mining_time_clone.elapsed();
+        let session_mining_duration_sec = duration.unwrap().as_secs();
+        let updated = read_duration_clone + session_mining_duration_sec;
+
+        let mut write_duration = state.session_mining_duration_sec.write().await;
+        *write_duration = updated;
+        drop(write_duration);
+
+        let mut write_time = state.session_mining_start_time.write().await;
+        *write_time = None;
+        drop(write_time);
+    }
+
     state
         .cpu_miner
         .write()
@@ -2417,21 +2449,28 @@ pub async fn get_session_mining_time(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<u64, InvokeError> {
     info!("HELLO invoking [ get_session_mining_time ]");
-    let read = state.session_mining_time.read().await;
+    let read = state.session_mining_duration_sec.read().await;
     let read_clone = read.clone();
     drop(read);
 
-    info!("READ {read_clone:?}");
+    info!("TIME {read_clone}");
 
-    if let Some(mining_time) = read_clone {
-        let cloned = mining_time.clone();
-        info!("CLONE {cloned:?}");
-        let bla = cloned.elapsed();
-        info!("bla unwrap {bla:?}");
-        let session_mining_time = bla.unwrap().as_secs();
-        info!("TIME {session_mining_time:?}");
-        Ok(session_mining_time)
+    if read_clone > 0 {
+        let mining_duration_cloned = read_clone.clone();
+        Ok(mining_duration_cloned)
     } else {
-        Err(InvokeError::from("Nada".to_string()))
+        let read = state.session_mining_start_time.read().await;
+        let read_clone = read.clone();
+        drop(read);
+
+        if let Some(mining_start_time) = read_clone {
+            let cloned = mining_start_time.clone();
+            let elapsed = cloned.elapsed();
+
+            let duration = elapsed.unwrap().as_secs();
+            Ok(duration)
+        } else {
+            Err(InvokeError::from("Nada".to_string()))
+        }
     }
 }
