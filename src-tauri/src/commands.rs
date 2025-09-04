@@ -2418,9 +2418,9 @@ pub async fn get_session_mining_time(
 
 async fn handle_mining_start_time(state: tauri::State<'_, UniverseAppState>) {
     let read_time = state.session_mining_start_time.read().await;
-    let read_time_clone = read_time.clone();
-    drop(read_time);
-    if read_time_clone.is_none() {
+    // let read_time_clone = read_time.clone();
+    // drop(read_time);
+    if read_time.is_none() {
         let mut write_time = state.session_mining_start_time.write().await;
         *write_time = Some(SystemTime::now());
         drop(write_time);
@@ -2428,45 +2428,48 @@ async fn handle_mining_start_time(state: tauri::State<'_, UniverseAppState>) {
 }
 async fn handle_mining_stop(state: tauri::State<'_, UniverseAppState>) {
     let read_time = state.session_mining_start_time.read().await;
-    let read_time_clone = read_time.clone();
-    drop(read_time);
+    // let read_time_clone = read_time.clone();
+    // drop(read_time);
 
     let read_duration = state.session_mining_duration_sec.read().await;
-    let read_duration_clone = read_duration.clone();
-    drop(read_duration);
+    // let read_duration_clone: u64 = read_duration.clone();
+    // drop(read_duration);
 
-    if let Some(mining_time) = read_time_clone {
+    if let Some(mining_time) = &*read_time {
         let mut write_time = state.session_mining_start_time.write().await;
         *write_time = None;
         drop(write_time);
 
-        let mining_time_clone = mining_time.clone();
-        let duration = mining_time_clone.elapsed();
-        let session_mining_duration_sec = duration.unwrap().as_secs();
-        let updated = read_duration_clone + session_mining_duration_sec;
+        if let Ok(duration) = mining_time.elapsed() {
+            let session_mining_duration_sec = duration.as_secs();
+            let updated = *read_duration + session_mining_duration_sec;
 
-        let mut write_duration = state.session_mining_duration_sec.write().await;
-        *write_duration = updated;
-        drop(write_duration);
+            let mut write_duration = state.session_mining_duration_sec.write().await;
+            *write_duration = updated;
+            drop(write_duration);
+        }
     }
 }
 
 async fn get_mining_duration(state: tauri::State<'_, UniverseAppState>) -> Result<u64, String> {
     let read_time = state.session_mining_start_time.read().await;
-    let read_time_clone = read_time.clone();
-    drop(read_time);
+    // let read_time_clone = read_time.clone();
+    // drop(read_time);
 
-    if let Some(mining_time) = read_time_clone {
-        let mining_time_clone = mining_time.clone();
-        let duration = mining_time_clone.elapsed();
-        let session_mining_duration_sec = duration.unwrap().as_secs();
-        Ok(session_mining_duration_sec)
+    if let Some(mining_time) = &*read_time {
+        // let duration = mining_time.elapsed();
+        if let Ok(duration) = mining_time.elapsed() {
+            let session_mining_duration_sec = duration.as_secs();
+            Ok(session_mining_duration_sec)
+        } else {
+            Err("Failed to get mining duration".to_string())
+        }
     } else {
         let read_duration = state.session_mining_duration_sec.read().await;
-        let read_duration_clone = read_duration.clone();
-        drop(read_duration);
-        if read_duration_clone != 0 {
-            Ok(read_duration_clone)
+        // let read_duration_clone = read_duration.clone();
+        // drop(read_duration);
+        if *read_duration != 0 {
+            Ok(*read_duration)
         } else {
             Err("Nada".to_string())
         }
