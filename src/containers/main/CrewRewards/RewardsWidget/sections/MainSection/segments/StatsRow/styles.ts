@@ -20,12 +20,11 @@ export const PhotosRow = styled.div`
     position: relative;
 `;
 
-export const PhotoImage = styled.div<{ $image: string }>`
+export const PhotoWrapper = styled.div`
     width: 32px;
     height: 32px;
     border-radius: 100%;
-    background: url(${({ $image }) => $image}) no-repeat center center;
-    background-size: cover;
+
     background-color: #d9d9d9;
     border: 2px solid #323333;
     position: relative;

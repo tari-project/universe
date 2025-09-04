@@ -3,13 +3,13 @@ import {
     Wrapper,
     ActiveMinersWrapper,
     PhotosRow,
-    PhotoWrapper,
     TextWrapper,
     MainText,
     LabelText,
     Divider,
     InviteFriendsMessage,
     LoadingPlaceholder,
+    PhotoWrapper,
 } from './styles';
 
 import { useReferrerProgress } from '@app/hooks/crew/useReferrerProgress';
