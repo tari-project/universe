@@ -96,7 +96,7 @@ export default function CrewEntry({ entry, isClaimed }: Props) {
                 showClaim={showClaim}
                 setShowClaim={setShowClaim}
             />
-            <CrewAvatar image={user.avatar} isOnline={user.isOnline} />
+            <CrewAvatar image={user.avatar} username={handle} isOnline={user.isOnline} />
             <ContentWrapper>
                 <TopRow>
                     <Username>{handle}</Username>
