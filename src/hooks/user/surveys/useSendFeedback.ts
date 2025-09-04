@@ -20,5 +20,5 @@ async function postFeedback({ slug, feedbackBody }: Args) {
 }
 
 export function useSendFeedback() {
-    return useMutation({ mutationFn: postFeedback, onSuccess: (data) => console.debug(data) });
+    return useMutation({ mutationFn: postFeedback });
 }

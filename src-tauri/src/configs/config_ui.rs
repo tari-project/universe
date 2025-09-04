@@ -40,7 +40,7 @@ static INSTANCE: LazyLock<RwLock<ConfigUI>> = LazyLock::new(|| RwLock::new(Confi
 #[derive(Serialize, Deserialize, Clone, Copy)]
 pub struct FeedbackPrompt {
     feedback_sent: bool,
-    last_dismissed: SystemTime,
+    last_dismissed: Option<SystemTime>,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
@@ -109,14 +109,14 @@ impl Default for ConfigUIContent {
                     "early_close".to_string(),
                     FeedbackPrompt {
                         feedback_sent: false,
-                        last_dismissed: SystemTime::now(),
+                        last_dismissed: None,
                     },
                 ),
                 (
                     "long_time_miner".to_string(),
                     FeedbackPrompt {
                         feedback_sent: false,
-                        last_dismissed: SystemTime::now(),
+                        last_dismissed: None,
                     },
                 ),
             ]),
@@ -144,7 +144,7 @@ impl ConfigUIContent {
 
     pub fn update_feedback_dismissed(&mut self, feedback_type: String) -> &mut Self {
         if let Some(feedback_item) = self.feedback.get_mut(&feedback_type) {
-            feedback_item.last_dismissed = SystemTime::now();
+            feedback_item.last_dismissed = Some(SystemTime::now());
         }
         self
     }

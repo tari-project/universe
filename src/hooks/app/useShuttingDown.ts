@@ -26,13 +26,13 @@ export function useShuttingDown() {
     }, [earlyClosedDismissed, isEarlyClose, isShuttingDown]);
 
     useEffect(() => {
-        if (isShuttingDown) {
+        if (isShuttingDown || earlyClosedDismissed) {
             const shutDownTimout = setTimeout(async () => {
                 await invoke('exit_application');
             }, 250);
             return () => clearTimeout(shutDownTimout);
         }
-    }, [isShuttingDown]);
+    }, [earlyClosedDismissed, isShuttingDown]);
 
     return isShuttingDown;
 }

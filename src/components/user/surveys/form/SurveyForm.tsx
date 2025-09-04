@@ -12,6 +12,8 @@ import { RadioFields } from './RadioFields.tsx';
 import { TextFields } from './TextFields.tsx';
 import { useAirdropStore, useConfigCoreStore } from '@app/store';
 import { useSendFeedback } from '@app/hooks/user/surveys/useSendFeedback.ts';
+import { invoke } from '@tauri-apps/api/core';
+import { setEarlyClosedDismissed, setShowCloseDialog } from '@app/store/stores/userFeedbackStore.ts';
 
 interface SurveyFormProps {
     surveyContent: Survey;
@@ -24,7 +26,7 @@ export default function SurveyForm({ surveyContent, onSkipped }: SurveyFormProps
     const defaultValues = getFieldTypes(surveyContent.questions || []);
     const methods = useForm<FieldQuestions>({ defaultValues });
 
-    const { mutate } = useSendFeedback();
+    const { mutateAsync } = useSendFeedback();
 
     function handleSubmit(data: FieldQuestions) {
         const answers = parseAnswers(data);
@@ -33,21 +35,33 @@ export default function SurveyForm({ surveyContent, onSkipped }: SurveyFormProps
             userId,
         };
 
-        mutate({
+        mutateAsync({
             slug: surveyContent.slug,
             feedbackBody: {
                 answers,
                 metadata,
             },
-        });
+        })
+            .then(async () => {
+                const feedbackType = surveyContent.type === 'close' ? 'early_close' : 'long_time_miner';
+                await invoke('set_feedback_fields', {
+                    feedbackType,
+                    wasSent: true,
+                });
+                setEarlyClosedDismissed(true);
+                setShowCloseDialog(false);
+            })
+            .catch((err) => {
+                console.error(err);
+            });
     }
     return (
         <FormProvider {...methods}>
             <Form onSubmit={methods.handleSubmit(handleSubmit)}>
                 <FormContent>
+                    <CheckboxFields />
                     <RadioFields />
                     <TextFields />
-                    <CheckboxFields />
                 </FormContent>
                 <CTAWrapper>
                     <Button type="submit" fluid size="xlarge" variant="black">{`Send Feedback`}</Button>
