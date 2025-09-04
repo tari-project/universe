@@ -18,7 +18,7 @@ export function getFieldTypes(questions: SurveyQuestion[]): FieldQuestions {
         const typeArr = a[c.questionType];
 
         if (typeArr) {
-            if (c.questionType === 'checkbox' && c.options) {
+            if (c.options?.length) {
                 c.options.forEach((option) => {
                     const fieldOption: FieldQuestion = {
                         ...option,

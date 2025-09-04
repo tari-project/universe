@@ -9,7 +9,7 @@ export default function CloseUserFeedbackDialog() {
     return (
         <Dialog open={showCloseDialog} onOpenChange={toggleCloseDialog}>
             <DialogContent variant="transparent" closeButton={<CloseButton onClick={toggleCloseDialog} />}>
-                <UserSurvey type="close" />
+                <UserSurvey type="test" />
             </DialogContent>
         </Dialog>
     );
