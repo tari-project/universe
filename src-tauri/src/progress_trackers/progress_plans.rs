@@ -33,9 +33,6 @@ pub enum SetupStep {
     StartTor,
     MigratingDatabase,
     StartingNode,
-    WaitingForInitialSync,
-    WaitingForHeaderSync,
-    WaitingForBlockSync,
 
     // Cpu Mining Phase
     BinariesCpuMiner,
@@ -72,9 +69,6 @@ impl SetupStep {
             Self::StartTor => "start-tor".to_string(),
             Self::MigratingDatabase => "migrating-database".to_string(),
             Self::StartingNode => "starting-node".to_string(),
-            Self::WaitingForInitialSync => "waiting-for-initial-sync".to_string(),
-            Self::WaitingForHeaderSync => "waiting-for-header-sync".to_string(),
-            Self::WaitingForBlockSync => "waiting-for-block-sync".to_string(),
 
             // Cpu Mining Phase
             Self::BinariesCpuMiner => "binaries-cpu-miner".to_string(),
@@ -112,10 +106,7 @@ impl SetupStep {
             Self::BinariesNode => 5,
             Self::StartTor => 5,
             Self::MigratingDatabase => 2,
-            Self::StartingNode => 3,
-            Self::WaitingForInitialSync => 4,
-            Self::WaitingForHeaderSync => 8,
-            Self::WaitingForBlockSync => 8,
+            Self::StartingNode => 23,
 
             // Cpu Mining Phase 20 -> 15
             Self::BinariesCpuMiner => 5,

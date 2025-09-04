@@ -1,5 +1,4 @@
-'use client';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState, useRef, useEffect, useMemo } from 'react';
 import ArrowDown from './icons/ArrowDown';
 import {
     Eyebrow,
@@ -16,48 +15,46 @@ import {
 } from './styles';
 import { AnimatePresence } from 'motion/react';
 import SelectedIcon from './icons/SelectedIcon';
-import ecoIcon from './images/eco.png';
-import ludicIcon from './images/ludicrous.png';
-import customIcon from '@app/assets/icons/emoji/custom.png';
-import { offset, useClick, useDismiss, useFloating, useInteractions, FloatingFocusManager } from '@floating-ui/react';
+
+import {
+    offset,
+    useClick,
+    useDismiss,
+    useFloating,
+    useInteractions,
+    FloatingFocusManager,
+    useListNavigation,
+    useTypeahead,
+    useRole,
+} from '@floating-ui/react';
 import { useTranslation } from 'react-i18next';
 import { useConfigMiningStore } from '@app/store';
 import { setDialogToShow } from '@app/store/actions/uiStoreActions';
 import { setCustomLevelsDialogOpen } from '@app/store/actions/miningStoreActions';
-import { MiningModeType } from '@app/types/configs';
+import { MiningModes, MiningModeType } from '@app/types/configs';
 import { selectMiningMode } from '@app/store/actions/appConfigStoreActions';
 
+import { getModeList } from './helpers.ts';
 interface Props {
     disabled?: boolean;
     loading?: boolean;
 }
 
 interface ModeDropdownMiningMode {
+    sortingIndex?: string;
     name: string;
     mode_type: MiningModeType;
     icon: string;
 }
 
-const getModeIcon = (mode: MiningModeType) => {
-    switch (mode) {
-        case MiningModeType.Eco:
-            return ecoIcon;
-        case MiningModeType.Ludicrous:
-            return ludicIcon;
-        case MiningModeType.Custom:
-            return customIcon;
-        case MiningModeType.User:
-            return customIcon;
-        default:
-            return customIcon;
-    }
-};
-
 export default function ModeDropdown({ disabled, loading }: Props) {
     const { t } = useTranslation('mining-view');
     const selectedMiningMode = useConfigMiningStore((s) => s.getSelectedMiningMode());
     const miningModes = useConfigMiningStore((s) => s.mining_modes);
+
     const [isOpen, setIsOpen] = useState(false);
+    const [activeIndex, setActiveIndex] = useState<number | null>(null);
+    const listRef = useRef<(HTMLElement | null)[]>([]);
 
     const { refs, floatingStyles, context } = useFloating({
         open: isOpen,
@@ -65,21 +62,54 @@ export default function ModeDropdown({ disabled, loading }: Props) {
         placement: 'bottom-end',
         middleware: [offset(8)],
     });
+
+    const modes: ModeDropdownMiningMode[] = useMemo(
+        () => (miningModes ? getModeList(miningModes as MiningModes) : []),
+        [miningModes]
+    );
+
     const click = useClick(context);
     const dismiss = useDismiss(context);
-    const { getReferenceProps, getFloatingProps } = useInteractions([click, dismiss]);
+    const role = useRole(context, { role: 'listbox' });
 
-    const modes: ModeDropdownMiningMode[] = useMemo(() => {
-        return Object.values(miningModes)
-            .map((mode) => {
-                return {
-                    name: mode.mode_name,
-                    mode_type: mode.mode_type,
-                    icon: getModeIcon(mode.mode_type),
-                };
-            })
-            .sort((a, b) => a.name.localeCompare(b.name));
-    }, [miningModes]);
+    const listNavigation = useListNavigation(context, {
+        listRef,
+        activeIndex,
+        onNavigate: setActiveIndex,
+        loop: true,
+    });
+
+    const typeahead = useTypeahead(context, {
+        listRef: {
+            current: modes.map((mode) => mode.name),
+        },
+        activeIndex,
+        onMatch: setActiveIndex,
+        onTypingChange(isTyping) {
+            if (isTyping) {
+                setActiveIndex(null);
+            }
+        },
+        resetMs: 1000,
+    });
+
+    const { getReferenceProps, getFloatingProps, getItemProps } = useInteractions([
+        click,
+        dismiss,
+        role,
+        listNavigation,
+        typeahead,
+    ]);
+
+    useEffect(() => {
+        if (isOpen) {
+            const selectedIndex = modes.findIndex((mode) => mode.name === selectedMiningMode?.mode_name);
+            const initialIndex = selectedIndex >= 0 ? selectedIndex : 0;
+            setActiveIndex(initialIndex);
+        } else {
+            setActiveIndex(null);
+        }
+    }, [isOpen, selectedMiningMode, modes]);
 
     const handleSelectMode = useCallback(
         async (mode: ModeDropdownMiningMode) => {
@@ -111,6 +141,10 @@ export default function ModeDropdown({ disabled, loading }: Props) {
                 $isOpen={isOpen}
                 disabled={disabled || loading}
                 aria-disabled={disabled || loading}
+                role="combobox"
+                aria-expanded={isOpen}
+                aria-haspopup="listbox"
+                tabIndex={disabled || loading ? -1 : 0}
             >
                 <TextGroup>
                     <Eyebrow>{t('mode')}</Eyebrow>
@@ -130,35 +164,52 @@ export default function ModeDropdown({ disabled, loading }: Props) {
             </Trigger>
             <AnimatePresence>
                 {isOpen && !disabled && !loading && (
-                    <FloatingFocusManager context={context} modal={true}>
+                    <FloatingFocusManager context={context} modal={true} initialFocus={activeIndex || 0}>
                         <FloatingWrapper ref={refs.setFloating} style={floatingStyles} {...getFloatingProps()}>
                             <Menu
                                 initial={{ opacity: 0, y: -5 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -5 }}
+                                role="listbox"
                             >
-                                {modes.map((mode) => (
-                                    <Option
-                                        key={mode.name}
-                                        onClick={() => handleSelectMode(mode)}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter' || e.key === ' ') {
-                                                e.preventDefault();
-                                                handleSelectMode(mode);
-                                            }
-                                        }}
-                                        tabIndex={0}
-                                        role="option"
-                                        aria-selected={mode.name === selectedMiningMode?.mode_name}
-                                        $isSelected={mode.name === selectedMiningMode?.mode_name}
-                                    >
-                                        <OptionIcon src={mode.icon} alt="" aria-hidden="true" className="option-icon" />
-                                        <OptionText>{mode.name}</OptionText>
-                                        {mode.name === selectedMiningMode?.mode_name && (
-                                            <SelectedIcon className="selected-icon" />
-                                        )}
-                                    </Option>
-                                ))}
+                                {modes.map((mode, index) => {
+                                    const isSelected = mode.name === selectedMiningMode?.mode_name;
+                                    const isActive = activeIndex === index;
+                                    return (
+                                        <Option
+                                            key={mode.name}
+                                            ref={(node) => {
+                                                listRef.current[index] = node;
+                                            }}
+                                            onClick={() => handleSelectMode(mode)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' || e.key === ' ') {
+                                                    e.preventDefault();
+                                                    handleSelectMode(mode);
+                                                }
+                                            }}
+                                            tabIndex={isActive ? 0 : -1}
+                                            role="option"
+                                            aria-selected={isSelected}
+                                            $isSelected={isSelected}
+                                            $isActive={isActive}
+                                            {...getItemProps({
+                                                onClick() {
+                                                    handleSelectMode(mode);
+                                                },
+                                            })}
+                                        >
+                                            <OptionIcon
+                                                src={mode.icon}
+                                                alt=""
+                                                aria-hidden="true"
+                                                className="option-icon"
+                                            />
+                                            <OptionText>{mode.name}</OptionText>
+                                            {isSelected && <SelectedIcon className="selected-icon" />}
+                                        </Option>
+                                    );
+                                })}
                             </Menu>
                         </FloatingWrapper>
                     </FloatingFocusManager>

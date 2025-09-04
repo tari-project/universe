@@ -53,8 +53,8 @@ export const handleConfigWalletLoaded = (walletConfig: ConfigWallet) => {
     }));
 };
 export const handleConfigUILoaded = async (uiConfig: ConfigUI) => {
-    useConfigUIStore.setState((c) => ({ ...c, ...uiConfig }));
     const configTheme = uiConfig.display_mode?.toLowerCase();
+    useConfigUIStore.setState((c) => ({ ...c, ...uiConfig, display_mode: configTheme }));
     if (configTheme) {
         setUITheme(configTheme as displayMode);
     }

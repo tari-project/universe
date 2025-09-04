@@ -20,7 +20,7 @@ import {
 } from '@app/store';
 import { handleCloseSplashscreen } from '@app/store/actions/uiStoreActions.ts';
 import type { XSpaceEvent } from '@app/types/ws.ts';
-import { initialiseSocket, removeSocket } from '@app/utils/socket.ts';
+import { restartSocket } from '@app/utils/socket.ts';
 import { invoke } from '@tauri-apps/api/core';
 
 interface TokenResponse {
@@ -167,8 +167,7 @@ export const setAirdropTokens = async (airdropTokens?: AirdropTokens) => {
             },
             () => {
                 if (airdropApiUrl && authToken) {
-                    initialiseSocket();
-                    invoke('start_mining_status').catch(console.error);
+                    restartSocket();
                 }
             }
         );
@@ -183,8 +182,7 @@ export const setAirdropTokens = async (airdropTokens?: AirdropTokens) => {
             syncedWithBackend: true,
             airdropTokens: undefined,
         }));
-        invoke('stop_mining_status').catch(console.error);
-        removeSocket();
+        restartSocket();
 
         try {
             setAirdropTokensInConfig(undefined);

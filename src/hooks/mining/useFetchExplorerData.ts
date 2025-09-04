@@ -1,58 +1,44 @@
 import { useQuery } from '@tanstack/react-query';
 import { defaultHeaders } from '@app/utils';
 import { getExplorerUrl } from '@app/utils/network.ts';
-import { BlockData, BlockDataExtended, BlocksStats } from '@app/types/mining/blocks.ts';
-import { processNewBlock, useBlockchainVisualisationStore } from '@app/store';
+import { BlockStats, BlockBubbleData } from '@app/types/mining/blocks.ts';
 
+const LIMIT = 10;
 export const KEY_EXPLORER = 'block_explorer';
+export const KEY_STATS = 'block_stats';
 
-async function fetchExplorerData(): Promise<BlocksStats> {
+async function fetchExplorerData({ limit }: { limit?: number }): Promise<BlockStats[]> {
     const explorerUrl = getExplorerUrl();
-    const response = await fetch(`${explorerUrl}/?json`, { headers: defaultHeaders });
+    const response = await fetch(`${explorerUrl}/blocks/stats?limit=${limit}`, { headers: defaultHeaders });
 
     if (!response.ok) {
-        throw new Error('Failed to fetch blocks');
+        throw new Error('Failed to fetch block stats');
     }
 
     return response.json();
 }
 
-interface ExplorerData {
-    currentBlock: BlockDataExtended;
-    blockBubblesData: BlockData[];
+function parseStats(block: BlockStats): BlockBubbleData {
+    return {
+        ...block,
+        id: block.height.toString(),
+        minersSolved: block.numCoinbases,
+        reward: parseInt(block.totalCoinbaseXtm?.split('.')?.[0]?.replace(/,/g, ''), 10),
+        blocks: block.numOutputsNoCoinbases,
+        isSolved: false,
+    };
 }
 
 export function useFetchExplorerData() {
-    const latestBlock = useBlockchainVisualisationStore((s) => s.latestBlockPayload);
-    return useQuery<ExplorerData>({
-        queryKey: [KEY_EXPLORER],
+    return useQuery<BlockBubbleData[]>({
+        queryKey: [KEY_EXPLORER, KEY_STATS, LIMIT],
         queryFn: async () => {
-            const data = await fetchExplorerData();
+            const data = await fetchExplorerData({ limit: LIMIT });
             if (!data) {
                 console.error('Explorer data is empty.');
-                return { blockBubblesData: [], currentBlock: {} as BlockDataExtended };
+                return [] as BlockBubbleData[];
             }
-            const currentBlock = {
-                ...data?.stats?.[0],
-                timestamp: data.headers?.[0]?.timestamp,
-                parsedTimestamp: data.stats?.[0]?.timestamp,
-            };
-
-            const blockBubblesData = data.stats?.slice(0, 10).map((block) => ({
-                ...block,
-                id: block.height,
-                minersSolved: block.numCoinbases,
-                reward: parseInt(block.totalCoinbaseXtm?.split('.')?.[0]?.replace(/,/g, ''), 10),
-                timeAgo: block.timestamp,
-                blocks: block.numOutputsNoCoinbases,
-                isSolved: false,
-            }));
-
-            if (latestBlock?.block_height && Number(currentBlock.height) !== latestBlock?.block_height) {
-                await processNewBlock(latestBlock);
-            }
-
-            return { blockBubblesData, currentBlock };
+            return data.map(parseStats);
         },
         refetchOnWindowFocus: true,
         refetchInterval: 20 * 1000,

@@ -105,7 +105,6 @@ mod download_utils;
 mod events;
 mod events_emitter;
 mod events_manager;
-mod external_dependencies;
 mod feedback;
 mod gpu_devices;
 mod gpu_miner;
@@ -138,6 +137,7 @@ mod progress_trackers;
 mod release_notes;
 mod requests;
 mod setup;
+mod system_dependencies;
 mod systemtray_manager;
 mod tapplets;
 mod tasks_tracker;
@@ -591,7 +591,6 @@ fn main() {
             commands::fetch_tor_bridges,
             commands::get_app_in_memory_config,
             commands::get_applications_versions,
-            commands::get_external_dependencies,
             commands::get_monero_seed_words,
             commands::get_network,
             commands::get_p2pool_stats,
@@ -650,6 +649,7 @@ fn main() {
             commands::start_mining_status,
             commands::stop_mining_status,
             commands::websocket_connect,
+            commands::websocket_get_status,
             commands::websocket_close,
             commands::reconnect,
             commands::send_one_sided_to_stealth_address,
@@ -677,6 +677,7 @@ fn main() {
             commands::reset_gpu_pool_config,
             commands::reset_cpu_pool_config,
             commands::restart_phases,
+            commands::list_connected_peers,
             commands::get_ootle_wallet_state,
             ootle_commands::ootle_list_accounts,
             ootle_commands::ootle_create_account,

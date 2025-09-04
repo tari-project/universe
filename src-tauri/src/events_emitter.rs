@@ -26,11 +26,11 @@ use crate::events::{
     EmitTappletNoficationPayload, GrantTappletPermissionsPayload,
     InitWalletScanningProgressPayload, UpdateAppModuleStatusPayload,
 };
-#[cfg(target_os = "windows")]
-use crate::external_dependencies::RequiredExternalDependency;
 use crate::gpu_devices::GpuDeviceInformation;
 use crate::internal_wallet::TariAddressType;
 use crate::pool_status_watcher::PoolStatus;
+#[cfg(target_os = "windows")]
+use crate::system_dependencies::UniversalSystemDependency;
 use crate::wallet::wallet_types::{TransactionInfo, WalletBalance};
 use crate::{
     commands::CpuMinerStatus,
@@ -129,13 +129,12 @@ impl EventsEmitter {
             error!(target: LOG_TARGET, "Failed to emit ShowReleaseNotesPayload event: {e:?}");
         }
     }
-
     #[cfg(target_os = "windows")]
-    pub async fn emit_missing_applications(external_dependencies: RequiredExternalDependency) {
+    pub async fn emit_system_dependencies_loaded(payload: Vec<UniversalSystemDependency>) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
-            event_type: EventType::MissingApplications,
-            payload: external_dependencies,
+            event_type: EventType::SystemDependenciesLoaded,
+            payload,
         };
         if let Err(e) = Self::get_app_handle()
             .await
@@ -439,20 +438,6 @@ impl EventsEmitter {
             .emit(BACKEND_STATE_UPDATE, event)
         {
             error!(target: LOG_TARGET, "Failed to emit GpuMiningUpdate event: {e:?}");
-        }
-    }
-
-    pub async fn emit_connected_peers_update(connected_peers: Vec<String>) {
-        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
-        let event = Event {
-            event_type: EventType::ConnectedPeersUpdate,
-            payload: connected_peers,
-        };
-        if let Err(e) = Self::get_app_handle()
-            .await
-            .emit(BACKEND_STATE_UPDATE, event)
-        {
-            error!(target: LOG_TARGET, "Failed to emit ConnectedPeersUpdate event: {e:?}");
         }
     }
 

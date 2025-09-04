@@ -3,14 +3,11 @@ import styled from 'styled-components';
 export const Container = styled.div`
     width: 75vw;
     height: 70vh;
-
     display: flex;
     position: relative;
     align-items: stretch;
     overflow: hidden;
-
     max-width: 1100px;
-
     @media (min-width: 1200px) {
         height: 80vh;
     }

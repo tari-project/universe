@@ -1,13 +1,13 @@
 import { useTranslation } from 'react-i18next';
 
 import useBlockTime from '@app/hooks/mining/useBlockTime.ts';
-import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
+import { useNodeStore } from '@app/store/useNodeStore.ts';
 import { BlockTimeContainer, SpacedNum, TimerTypography, TitleTypography } from './BlockTime.styles';
 
 function BlockTime() {
     const { currentTimeParts } = useBlockTime();
     const { t } = useTranslation('mining-view', { useSuspense: false });
-    const isConnectedToTari = useMiningMetricsStore((s) => s.isNodeConnected);
+    const isConnectedToTari = useNodeStore((s) => s.isNodeConnected);
     const { daysString, hoursString, minutes, seconds } = currentTimeParts || {};
 
     const renderHours = hoursString && parseInt(hoursString) > 0;

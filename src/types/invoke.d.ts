@@ -1,6 +1,5 @@
 import {
     ApplicationsVersions,
-    ExternalDependency,
     P2poolStatsResult,
     TorConfig,
     TransactionInfo,
@@ -40,11 +39,7 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'set_selected_engine', payload: { selectedEngine: string }): Promise<void>;
     function invoke(param: 'set_application_language', payload: { applicationLanguage: Language }): Promise<void>;
     function invoke(param: 'frontend_ready'): Promise<void>;
-    function invoke(
-        param: 'download_and_start_installer',
-        payload: { missingDependency: ExternalDependency }
-    ): Promise<void>;
-    function invoke(param: 'get_external_dependencies'): Promise<ExternalDependency[]>;
+    function invoke(param: 'download_and_start_installer', payload: { id: string }): Promise<void>;
     function invoke(param: 'get_paper_wallet_details', payload?: { authUuid?: string }): Promise<PaperWalletDetails>;
     function invoke(param: 'set_mine_on_app_start', payload: { mineOnAppStart: boolean }): Promise<void>;
     function invoke(param: 'open_log_dir'): Promise<void>;
@@ -170,6 +165,7 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'reset_gpu_pool_config', payload: { gpuPoolName: string }): Promise<void>;
     function invoke(param: 'reset_cpu_pool_config', payload: { cpuPoolName: string }): Promise<void>;
     function invoke(param: 'restart_phases', payload: { phases: SetupPhase[] }): Promise<void>;
+    function invoke(param: 'list_connected_peers'): Promise<string[]>;
     function invoke(param: 'read_installed_tapp_db'): Promise<InstalledTappletWithName[]>;
     function invoke(param: 'read_tapp_registry_db'): Promise<RegisteredTapplet[]>;
     function invoke(
