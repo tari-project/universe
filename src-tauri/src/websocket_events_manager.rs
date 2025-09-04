@@ -20,12 +20,12 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use futures::FutureExt;
+use std::panic::AssertUnwindSafe;
 use std::sync::Arc;
 use std::thread::sleep;
 use std::time::Duration;
 use std::time::Instant;
-use std::panic::AssertUnwindSafe;
-use futures::FutureExt;
 
 use futures::lock::Mutex;
 use log::{error, info, warn};
@@ -126,25 +126,25 @@ impl WebsocketEventsManager {
             info!(target: LOG_TARGET, "Websocket events manager already started");
             return Ok(());
         }
-        
+
         info!(target: LOG_TARGET, "Starting websocket events manager with intervals: {}s mining, {}s keep-alive", 
               INTERVAL_DURATION.as_secs(), KEEP_ALIVE_INTERVAL_DURATION.as_secs());
 
         let is_started_cloned = self.is_started.clone();
-        
+
         TasksTrackers::current().common.get_task_tracker().await.spawn(async move {
             info!(target: LOG_TARGET, "Websocket events manager task spawned successfully");
             let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
-            
+
             // Create intervals inside the spawned task
             let mut interval = time::interval(INTERVAL_DURATION);
             interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
 
             let mut keep_alive_interval = time::interval(KEEP_ALIVE_INTERVAL_DURATION);
             keep_alive_interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
-            
+
             info!(target: LOG_TARGET, "Intervals created - starting event loop");
-            
+
             loop {
                 let app_version_option = app_cloned.clone().map(|handle| handle.package_info().version.clone().to_string());
                 let app_version = app_version_option.map_or(String::from("unknown"), |version| version.to_string());
