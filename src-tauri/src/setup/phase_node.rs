@@ -326,15 +326,6 @@ impl SetupPhaseImpl for NodeSetupPhase {
             }
         }
 
-        let progress_stepper = self.progress_stepper.lock().await;
-        let setup_warnings = progress_stepper.get_setup_warnings();
-        if setup_warnings.is_empty() {
-            self.status_sender.send(PhaseStatus::Success)?;
-        } else {
-            self.status_sender
-                .send(PhaseStatus::SuccessWithWarnings(setup_warnings.clone()))?;
-        }
-
         let mut shutdown_signal_clone = shutdown_signal.clone();
         let app_handle_clone: tauri::AppHandle = self.app_handle.clone();
         if node_type.is_local() {
@@ -387,6 +378,15 @@ impl SetupPhaseImpl for NodeSetupPhase {
                     }
                 }
             });
+
+        let progress_stepper = self.progress_stepper.lock().await;
+        let setup_warnings = progress_stepper.get_setup_warnings();
+        if setup_warnings.is_empty() {
+            self.status_sender.send(PhaseStatus::Success)?;
+        } else {
+            self.status_sender
+                .send(PhaseStatus::SuccessWithWarnings(setup_warnings.clone()))?;
+        }
 
         Ok(())
     }
