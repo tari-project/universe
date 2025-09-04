@@ -26,7 +26,7 @@ use std::time::Duration;
 use futures::SinkExt;
 use futures::StreamExt;
 use log::trace;
-use log::{error, info};
+use log::{error, info, warn};
 use serde::Deserialize;
 use serde::Serialize;
 use serde_json::Value;
@@ -360,8 +360,6 @@ async fn sender_task(
     close_channel_tx: tokio::sync::broadcast::Sender<bool>,
 ) -> Result<(), WebsocketError> {
     let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
-    let mut ping_interval = tokio::time::interval(Duration::from_secs(30));
-    ping_interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
 
     info!(target:LOG_TARGET,"websocket_manager: tx loop initialized...");
 
@@ -393,15 +391,6 @@ async fn sender_task(
                         error!(target:LOG_TARGET,"Failed to send websocket message: {e}");
                     })?;
                  // info!(target:LOG_TARGET,"websocket event sent to airdrop {:?}", message_as_json);
-            },
-            _ = ping_interval.tick() => {
-                trace!(target:LOG_TARGET, "Sending periodic ping to keep connection alive");
-                write_stream
-                    .send(Message::Ping(vec![].into()))
-                    .await
-                    .inspect_err(|e| {
-                        error!(target:LOG_TARGET,"Failed to send ping message: {e}");
-                    })?;
             },
             _=wait_for_close_signal(close_channel_tx.clone().subscribe())=>{
                 info!(target:LOG_TARGET, "exiting websocket_manager sender task");
@@ -451,14 +440,6 @@ async fn receiver_task(
                                             }));
                                 }
                             }
-                            Message::Ping(_) => {
-                                trace!(target:LOG_TARGET, "Received ping, sending pong");
-                                // Note: tungstenite automatically handles pong responses to ping frames
-                                // But we'll log it for debugging
-                            }
-                            Message::Pong(_) => {
-                                trace!(target:LOG_TARGET, "Received pong response");
-                            }
                             Message::Close(_) => {
                                 info!(target:LOG_TARGET, "webSocket connection got closed.");
                                 return;
@@ -468,6 +449,9 @@ async fn receiver_task(
                             }
                             Message::Frame(_) => {
                                 trace!(target: LOG_TARGET,"Received raw frame (ignoring)");
+                            }
+                            _ => {
+                                warn!(target: LOG_TARGET,"Received unknown message type {:?}", msg);
                             }
                         },
                         Result::Err(e) => {
