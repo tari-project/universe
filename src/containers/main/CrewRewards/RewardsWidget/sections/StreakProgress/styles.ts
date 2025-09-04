@@ -37,6 +37,7 @@ const MessageBox = styled.div<{ $isInline: boolean }>`
         !$isInline &&
         css`
             padding: 30px 14px 11px 14px;
+            border-radius: 13px;
         `}
 `;
 
