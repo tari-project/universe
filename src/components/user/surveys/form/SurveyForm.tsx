@@ -5,7 +5,7 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { TextButton } from '@app/components/elements/buttons/TextButton.tsx';
 
-import { FieldQuestions, getFieldTypes } from './helpers.ts';
+import { FieldQuestions, getFieldTypes, parseResponse } from './helpers.ts';
 import { CTAWrapper, Form, FormContent } from './surveyForm.styles.ts';
 import { CheckboxFields } from './CheckboxFields.tsx';
 import { RadioFields } from './RadioFields.tsx';
@@ -20,7 +20,7 @@ export default function SurveyForm({ surveyContent }: SurveyFormProps) {
     const methods = useForm<FieldQuestions>({ defaultValues });
 
     function handleSubmit(data: FieldQuestions) {
-        console.debug(data.radio);
+        parseResponse(data);
     }
     return (
         <FormProvider {...methods}>

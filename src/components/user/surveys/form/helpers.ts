@@ -1,4 +1,9 @@
-import { SurveyQuestion, SurveyQuestionOption, SurveyQuestionType } from '@app/types/user/surveys.ts';
+import {
+    SurveyAnswerInput,
+    SurveyQuestion,
+    SurveyQuestionOption,
+    SurveyQuestionType,
+} from '@app/types/user/surveys.ts';
 
 type FieldMainQuestion = Pick<SurveyQuestion, 'questionText' | 'questionType' | 'options'>;
 type FieldQuestionOption = Pick<SurveyQuestionOption, 'questionId'>;
@@ -42,4 +47,40 @@ export function getFieldTypes(questions: SurveyQuestion[]): FieldQuestions {
         }
         return a;
     }, initial);
+}
+
+export function parseResponse(data: FieldQuestions) {
+    let answers: SurveyAnswerInput[] = [];
+
+    const textAnswers =
+        data.text?.map((a) => ({
+            questionId: a.questionId,
+            answerText: a.value,
+        })) || [];
+    const radioAnswers =
+        data.radio
+            .filter((a) => a.options?.some((o) => o.checked))
+            .map((a) => {
+                const selectedOptionId = a.options?.find((o) => o.checked)?.id;
+                return {
+                    questionId: a.questionId,
+                    selectedOptionIds: selectedOptionId ? [selectedOptionId] : undefined,
+                };
+            }) || [];
+
+    console.debug(JSON.stringify(data.checkbox));
+
+    const checkAnswers =
+        data.checkbox
+            .filter((a) => a.options?.some((o) => o.checked))
+            .map((a) => {
+                const selectedOptionIds = a.options?.filter((o) => o.checked).map((o) => o.id);
+                return {
+                    questionId: a.questionId,
+                    selectedOptionIds: selectedOptionIds?.length ? selectedOptionIds : undefined,
+                };
+            }) || [];
+
+    answers = [...textAnswers, ...radioAnswers, ...checkAnswers];
+    return answers;
 }

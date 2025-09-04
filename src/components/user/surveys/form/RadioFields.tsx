@@ -11,44 +11,42 @@ export function RadioFields() {
 
     return radioFields.map((q, i) => {
         return (
-            <>
-                <Description>{q.questionText}</Description>
-                <Controller
-                    key={q.id}
-                    control={control}
-                    name={`radio.${i}`}
-                    render={({ field }) => {
-                        const options = field.value.options || [];
-                        return (
-                            <>
-                                {options?.map((o) => {
-                                    function handleChange(e: ChangeEvent<HTMLInputElement>) {
-                                        const { id, checked: newChecked } = e.target;
-                                        if (newChecked) {
-                                            const updatedFieldValue: FieldQuestion = {
-                                                ...field.value,
-                                                options: options.map((opt) => ({ ...opt, checked: id === opt.id })),
-                                            };
-                                            setValue(field.name, updatedFieldValue);
-                                        }
+            <Controller
+                key={q.id}
+                control={control}
+                name={`radio.${i}`}
+                render={({ field }) => {
+                    const options = field.value.options || [];
+                    return (
+                        <>
+                            <Description>{q.questionText}</Description>
+                            {options?.map((o) => {
+                                function handleChange(e: ChangeEvent<HTMLInputElement>) {
+                                    const { id, checked: newChecked } = e.target;
+                                    if (newChecked) {
+                                        const updatedFieldValue: FieldQuestion = {
+                                            ...field.value,
+                                            options: options.map((opt) => ({ ...opt, checked: id === opt.id })),
+                                        };
+                                        setValue(field.name, updatedFieldValue);
                                     }
+                                }
 
-                                    return (
-                                        <RadioButton
-                                            id={o.id}
-                                            key={o.id}
-                                            label={o.optionText}
-                                            onChange={handleChange}
-                                            value={o.value}
-                                            checked={o.checked}
-                                        />
-                                    );
-                                })}
-                            </>
-                        );
-                    }}
-                />
-            </>
+                                return (
+                                    <RadioButton
+                                        id={o.id}
+                                        key={o.id}
+                                        label={o.optionText}
+                                        onChange={handleChange}
+                                        value={o.value || ''}
+                                        checked={!!o.checked}
+                                    />
+                                );
+                            })}
+                        </>
+                    );
+                }}
+            />
         );
     });
 }
