@@ -1,43 +1,45 @@
 import { SurveyQuestion, SurveyQuestionOption, SurveyQuestionType } from '@app/types/user/surveys.ts';
 
-type CheckOpt = SurveyQuestionOption & { checked: boolean };
-interface QuestionFields {
-    textQuestions: SurveyQuestion[];
-    checkOptions: CheckOpt[];
-}
-
 type FieldMainQuestion = Pick<SurveyQuestion, 'questionText' | 'questionType'>;
-type FieldQuestionOption = Pick<SurveyQuestionOption, 'id' | 'questionId'>;
+type FieldQuestionOption = Pick<SurveyQuestionOption, 'questionId'>;
 
 interface FieldQuestion extends FieldMainQuestion, FieldQuestionOption {
+    value: string;
+    questionId: string;
     optionText?: string;
     checked?: boolean;
-    value?: string;
 }
 
-type FieldQuestions = Partial<Record<SurveyQuestionType, FieldQuestion[]>>;
+export type FieldQuestions = Record<SurveyQuestionType, FieldQuestion[]>;
 
-export function getFieldTypes(questions: SurveyQuestion[]) {
-    const initial: FieldQuestions = {
-        checkbox: [],
-        radio: [],
-        text: [],
-    };
-    const parsed = questions.reduce((a, c) => {
+export function getFieldTypes(questions: SurveyQuestion[]): FieldQuestions {
+    const initial: FieldQuestions = { checkbox: [], radio: [], text: [] };
+    return questions.reduce((a, c) => {
         const typeArr = a[c.questionType];
-        const fieldQuestion: FieldQuestion = {
-            ...c,
-            questionId: c.id,
-            value: '',
-            checked: false,
-        };
 
         if (typeArr) {
-            typeArr.push(fieldQuestion);
-        }
+            if (c.questionType === 'checkbox' && c.options) {
+                c.options.forEach((option) => {
+                    const fieldOption: FieldQuestion = {
+                        ...option,
+                        questionId: c.id,
+                        questionType: c.questionType,
+                        questionText: c.questionText,
+                        checked: false,
+                        value: '',
+                    };
 
+                    typeArr.push(fieldOption);
+                });
+            } else {
+                const fieldQuestion: FieldQuestion = {
+                    ...c,
+                    questionId: c.id,
+                    value: '',
+                };
+                typeArr.push(fieldQuestion);
+            }
+        }
         return a;
     }, initial);
-
-    console.debug(JSON.stringify(parsed));
 }

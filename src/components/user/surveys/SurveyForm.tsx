@@ -15,45 +15,26 @@ import {
     TextItemLabel,
 } from './surveyForm.styles.ts';
 
-import { getFieldTypes } from './helpers.ts';
+import { FieldQuestions, getFieldTypes } from './helpers.ts';
 
 interface SurveyFormProps {
     surveyContent: Survey;
 }
-type CheckOpt = SurveyQuestionOption & { checked: boolean };
-interface QuestionFields {
-    textQuestions: SurveyQuestion[];
-    checkOptions: CheckOpt[];
-}
 
 export default function SurveyForm({ surveyContent }: SurveyFormProps) {
-    const checkOptions = surveyContent.questions
-        ?.filter((q) => q.questionType === 'checkbox')
-        .flatMap((q) => q.options)
-        .map((o) => ({ ...o, checked: false }));
-
-    const textQuestions = surveyContent.questions
-        ?.filter((q) => q.questionType === 'text')
-        .map((q) => ({ ...q, value: '' }));
-
-    const { control, setValue, handleSubmit } = useForm<QuestionFields>({
-        defaultValues: { textQuestions, checkOptions },
+    const formFields = getFieldTypes(surveyContent.questions || []);
+    const { control, setValue } = useForm<FieldQuestions>({
+        defaultValues: { ...formFields },
     });
-    const { fields: textFields } = useFieldArray({ control, name: 'textQuestions' });
-    const { fields: checkFields } = useFieldArray({ control, name: 'checkOptions' });
+    const { fields: textFields } = useFieldArray({ control, name: 'text' });
+    const { fields: checkFields } = useFieldArray({ control, name: 'checkbox' });
 
-    getFieldTypes(surveyContent.questions || []);
-
-    function parseData(_data: QuestionFields) {
-        console.debug(`_data= `, _data);
-    }
-
-    const fieldMarkup = textFields.map((q, i) => {
+    const textfieldMarkup = textFields.map((q, i) => {
         return (
             <Controller
-                control={control}
                 key={q.id}
-                name={`textQuestions.${i}.value`}
+                control={control}
+                name={`text.${i}.value`}
                 render={({ field }) => {
                     return (
                         <>
@@ -73,17 +54,19 @@ export default function SurveyForm({ surveyContent }: SurveyFormProps) {
         );
     });
 
-    const checks = checkFields.map((q, i) => {
-        return (
+    const checkFieldMarkup = checkFields.map((q, i) => {
+        const shouldRenderQuestionText = q.questionId !== checkFields[i - 1]?.questionId;
+        console.debug(`RENDER?`, q.optionText, shouldRenderQuestionText);
+
+        const fieldMarkup = (
             <Controller
                 control={control}
                 key={q.id}
-                name={`checkOptions.${i}.checked`}
+                name={`checkbox.${i}.checked`}
                 render={({ field }) => {
                     function handleChange(value: boolean) {
                         setValue(field.name, value);
                     }
-
                     return (
                         <ItemWrapper key={q.id}>
                             <Checkbox
@@ -97,13 +80,24 @@ export default function SurveyForm({ surveyContent }: SurveyFormProps) {
                 }}
             />
         );
+
+        if (shouldRenderQuestionText) {
+            return (
+                <>
+                    <Description>{q.questionText}</Description>
+                    {fieldMarkup}
+                </>
+            );
+        }
+
+        return fieldMarkup;
     });
 
     return (
-        <Form onSubmit={handleSubmit(parseData)}>
+        <Form>
             <FormContent>
-                {checks}
-                {fieldMarkup}
+                {checkFieldMarkup}
+                {textfieldMarkup}
             </FormContent>
             <CTAWrapper>
                 <Button type="submit" fluid size="xlarge" variant="black">{`Send Feedback`}</Button>

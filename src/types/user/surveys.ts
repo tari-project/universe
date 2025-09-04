@@ -1,13 +1,11 @@
 const _SURVEYS = ['close', 'long'] as const;
+const _QUESTION_TYPE = ['checkbox', 'radio', 'text'] as const;
+
 type SurveyTuple = typeof _SURVEYS;
+type QuestionTuple = typeof _QUESTION_TYPE;
 
 export type SurveyType = SurveyTuple[number];
-
-export enum SurveyQuestionType {
-    RADIO = 'radio',
-    CHECKBOX = 'checkbox',
-    TEXT = 'text',
-}
+export type SurveyQuestionType = QuestionTuple[number];
 
 export interface SurveyQuestionOption {
     id: string;
