@@ -19,14 +19,3 @@
 // SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-pub mod cpu_pools;
-pub mod gpu_pools;
-
-pub trait PoolConfig: Default + Clone {
-    fn name(&self) -> String;
-    fn default_from_name(name: &str) -> Result<Self, anyhow::Error>
-    where
-        Self: Sized;
-    fn get_raw_stats_url(&self) -> String;
-}

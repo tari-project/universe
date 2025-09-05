@@ -145,12 +145,12 @@ export type BackendStateUpdateEvent =
           payload: ConnectionStatusPayload;
       }
     | {
-          event_type: 'CpuPoolStatsUpdate';
-          payload: PoolStats;
+          event_type: 'CpuPoolsStatsUpdate';
+          payload: Record<string, PoolStats>;
       }
     | {
-          event_type: 'GpuPoolStatsUpdate';
-          payload: PoolStats;
+          event_type: 'GpuPoolsStatsUpdate';
+          payload: Record<string, PoolStats>;
       }
     | {
           event_type: 'ExchangeIdChanged';

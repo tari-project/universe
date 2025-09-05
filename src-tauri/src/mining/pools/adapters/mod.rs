@@ -20,13 +20,44 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod cpu_pools;
-pub mod gpu_pools;
+use crate::mining::pools::{
+    adapters::{lucky_pool::LuckyPoolAdapter, support_xmr_pool::SupportXmrPoolAdapter},
+    PoolStatus,
+};
 
-pub trait PoolConfig: Default + Clone {
-    fn name(&self) -> String;
-    fn default_from_name(name: &str) -> Result<Self, anyhow::Error>
-    where
-        Self: Sized;
-    fn get_raw_stats_url(&self) -> String;
+pub mod lucky_pool;
+pub mod support_xmr_pool;
+
+pub(crate) trait PoolApiAdapter: Clone {
+    fn name(&self) -> &str;
+    fn convert_api_data(&self, data: &str) -> Result<PoolStatus, anyhow::Error>;
+    async fn request_pool_status(&self, address: String) -> Result<PoolStatus, anyhow::Error>;
+}
+
+#[derive(Clone, Debug)]
+pub enum PoolApiAdapters {
+    LuckyPool(LuckyPoolAdapter),
+    SupportXmrPool(SupportXmrPoolAdapter),
+}
+
+impl PoolApiAdapter for PoolApiAdapters {
+    fn name(&self) -> &str {
+        match self {
+            PoolApiAdapters::LuckyPool(adapter) => adapter.name(),
+            PoolApiAdapters::SupportXmrPool(adapter) => adapter.name(),
+        }
+    }
+
+    fn convert_api_data(&self, data: &str) -> Result<PoolStatus, anyhow::Error> {
+        match self {
+            PoolApiAdapters::LuckyPool(adapter) => adapter.convert_api_data(data),
+            PoolApiAdapters::SupportXmrPool(adapter) => adapter.convert_api_data(data),
+        }
+    }
+    async fn request_pool_status(&self, address: String) -> Result<PoolStatus, anyhow::Error> {
+        match self {
+            PoolApiAdapters::LuckyPool(adapter) => adapter.request_pool_status(address).await,
+            PoolApiAdapters::SupportXmrPool(adapter) => adapter.request_pool_status(address).await,
+        }
+    }
 }

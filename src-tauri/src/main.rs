@@ -35,7 +35,6 @@ use node::local_node_adapter::LocalNodeAdapter;
 use node::node_adapter::BaseNodeStatus;
 use node::node_manager::NodeType;
 use p2pool::models::Connections;
-use pool_status_watcher::{PoolStatus, PoolStatusWatcher};
 use process_stats_collector::ProcessStatsCollectorBuilder;
 
 use node::remote_node_adapter::RemoteNodeAdapter;
@@ -72,9 +71,9 @@ use telemetry_manager::TelemetryManager;
 
 use crate::cpu_miner::CpuMiner;
 
-use crate::commands::CpuMinerConnection;
 use crate::feedback::Feedback;
 use crate::gpu_miner::GpuMiner;
+use crate::mining::cpu::CpuMinerConnection;
 use crate::mm_proxy_manager::MmProxyManager;
 use crate::node::node_manager::NodeManager;
 use crate::p2pool::models::P2poolStats;
@@ -107,6 +106,7 @@ mod gpu_miner_sha_websocket;
 mod gpu_status_file;
 mod hardware;
 mod internal_wallet;
+mod mining;
 mod mining_status_manager;
 mod mm_proxy_adapter;
 mod mm_proxy_manager;
@@ -116,7 +116,6 @@ mod p2pool;
 mod p2pool_adapter;
 mod p2pool_manager;
 mod pin;
-mod pool_status_watcher;
 mod port_allocator;
 mod process_adapter;
 mod process_adapter_utils;
@@ -287,7 +286,7 @@ fn main() {
     let p2pool_manager = P2poolManager::new(p2pool_stats_tx, &mut stats_collector);
 
     let cpu_config = Arc::new(RwLock::new(CpuMinerConfig {
-        node_connection: CpuMinerConnection::BuiltInProxy,
+        node_connection: CpuMinerConnection::Local,
         pool_host_name: None,
         pool_port: None,
         monero_address: "".to_string(),

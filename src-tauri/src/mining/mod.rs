@@ -20,13 +20,13 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod cpu_pools;
-pub mod gpu_pools;
+pub mod cpu;
+pub mod gpu;
+pub mod pools;
 
-pub trait PoolConfig: Default + Clone {
-    fn name(&self) -> String;
-    fn default_from_name(name: &str) -> Result<Self, anyhow::Error>
-    where
-        Self: Sized;
-    fn get_raw_stats_url(&self) -> String;
+#[allow(dead_code)]
+pub enum MiningAlgorithm {
+    RandomX,
+    Sha256,
+    C29,
 }

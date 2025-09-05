@@ -29,6 +29,7 @@ use crate::configs::config_mining::{ConfigMining, ConfigMiningContent};
 use crate::configs::config_pools::{ConfigPools, ConfigPoolsContent};
 use crate::configs::config_ui::{ConfigUI, ConfigUIContent, DisplayMode};
 use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent, WalletId};
+use crate::configs::pools::PoolConfig;
 use crate::configs::pools::{cpu_pools::CpuPool, gpu_pools::GpuPool};
 use crate::configs::trait_config::ConfigImpl;
 use crate::events::ConnectionStatusPayload;
@@ -37,6 +38,9 @@ use crate::events_manager::EventsManager;
 use crate::gpu_miner::EngineType;
 use crate::gpu_miner_adapter::GpuNodeSource;
 use crate::internal_wallet::{mnemonic_to_tari_cipher_seed, InternalWallet, PaperWalletConfig};
+use crate::mining::pools::cpu_pool_manager::CpuPoolManager;
+use crate::mining::pools::gpu_pool_manager::GpuPoolManager;
+use crate::mining::pools::PoolManagerInterfaceTrait;
 use crate::node::node_adapter::BaseNodeStatus;
 use crate::node::node_manager::NodeType;
 use crate::p2pool::models::{Connections, P2poolStats};
@@ -52,7 +56,7 @@ use crate::utils::address_utils::verify_send;
 use crate::utils::app_flow_utils::FrontendReadyChannel;
 use crate::wallet::wallet_manager::WalletManagerError;
 use crate::wallet::wallet_types::{TariAddressVariants, TransactionInfo};
-use crate::{airdrop, PoolStatus, UniverseAppState};
+use crate::{airdrop, UniverseAppState};
 
 use base64::prelude::*;
 use log::{debug, error, info, warn};
@@ -82,13 +86,6 @@ const MAX_ACCEPTABLE_COMMAND_TIME: Duration = Duration::from_secs(1);
 const LOG_TARGET: &str = "tari::universe::commands";
 const LOG_TARGET_WEB: &str = "tari::universe::web";
 
-pub enum CpuMinerConnection {
-    BuiltInProxy,
-    Pool,
-    #[allow(dead_code)]
-    MergeMinedPool,
-}
-
 #[derive(Debug, Serialize)]
 pub struct ApplicationsInformation {
     version: String,
@@ -113,7 +110,6 @@ pub struct CpuMinerStatus {
     pub hash_rate: f64,
     pub estimated_earnings: u64,
     pub connection: CpuMinerConnectionStatus,
-    pub pool_status: Option<PoolStatus>,
 }
 
 impl Default for CpuMinerStatus {
@@ -125,7 +121,6 @@ impl Default for CpuMinerStatus {
             connection: CpuMinerConnectionStatus {
                 is_connected: false,
             },
-            pool_status: None,
         }
     }
 }
@@ -1903,7 +1898,7 @@ pub async fn websocket_connect(
             if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
                 warn!(target: LOG_TARGET, "websocket_connect took too long: {:?}", timer.elapsed());
             }
-            info!(target: LOG_TARGET, "websocket_connect command finished after {} retries", retry_count);
+            info!(target: LOG_TARGET, "websocket_connect command finished after {retry_count} retries");
             return Ok(());
         }
 
@@ -1914,22 +1909,20 @@ pub async fn websocket_connect(
 
         // Check if we've exceeded max retries or total timeout
         if retry_count > MAX_RETRIES {
-            warn!(target: LOG_TARGET, "websocket_connect failed after {} retries - websocket manager not ready", MAX_RETRIES);
+            warn!(target: LOG_TARGET, "websocket_connect failed after {MAX_RETRIES} retries - websocket manager not ready");
             return Err(format!(
-                "websocket manager not ready after {} retries",
-                MAX_RETRIES
+                "websocket manager not ready after {MAX_RETRIES} retries"
             ));
         }
 
         if timer.elapsed().as_secs() >= MAX_TOTAL_TIMEOUT_SECS {
             warn!(target: LOG_TARGET, "websocket_connect timed out after {:?} - websocket manager not ready", timer.elapsed());
             return Err(format!(
-                "websocket manager not ready after {}s timeout",
-                MAX_TOTAL_TIMEOUT_SECS
+                "websocket manager not ready after {MAX_TOTAL_TIMEOUT_SECS}s timeout"
             ));
         }
 
-        info!(target: LOG_TARGET, "websocket_connect retry {} in {}ms - websocket manager not ready yet", retry_count, delay_ms);
+        info!(target: LOG_TARGET, "websocket_connect retry {retry_count} in {delay_ms}ms - websocket manager not ready yet");
 
         // Sleep with exponential backoff
         sleep(Duration::from_millis(delay_ms));
@@ -1943,7 +1936,7 @@ pub async fn websocket_get_status(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<String, String> {
     let status = state.websocket_manager_status_rx.borrow().clone();
-    Ok(format!("{:?}", status))
+    Ok(format!("{status:?}"))
 }
 
 #[tauri::command]
@@ -2115,6 +2108,9 @@ pub async fn change_cpu_pool(cpu_pool: String) -> Result<(), InvokeError> {
         .await
         .map_err(InvokeError::from_anyhow)?;
 
+    CpuPoolManager::handle_new_selected_pool(ConfigPools::content().await.selected_cpu_pool())
+        .await;
+
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "change_cpu_pool took too long: {:?}", timer.elapsed());
     }
@@ -2129,6 +2125,9 @@ pub async fn change_gpu_pool(gpu_pool: String) -> Result<(), InvokeError> {
     ConfigPools::update_field(ConfigPoolsContent::set_selected_gpu_pool, gpu_pool)
         .await
         .map_err(InvokeError::from_anyhow)?;
+
+    GpuPoolManager::handle_new_selected_pool(ConfigPools::content().await.selected_gpu_pool())
+        .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "change_gpu_pool took too long: {:?}", timer.elapsed());
