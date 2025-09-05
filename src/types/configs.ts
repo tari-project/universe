@@ -48,7 +48,11 @@ export interface ConfigUI {
 
 export interface FeedbackPrompt {
     feedback_sent: boolean;
-    last_dismissed: string | null;
+    last_dismissed: {
+        secs_since_epoch?: number;
+        nanos_since_epoch?: number;
+        timestamp?: number;
+    } | null;
 }
 export interface FeedbackPrompts {
     early_close?: FeedbackPrompt;

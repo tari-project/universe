@@ -25,13 +25,17 @@ export default function UserSurvey({ type, onClose }: UserSurveyProps) {
             feedbackType,
             wasSent: !skipped,
         }).then(() => {
-            const updated = {
-                [feedbackType]: {
-                    feedback_sent: !skipped,
-                    last_dismissed: Date.now(),
-                },
-            } as FeedbackPrompts;
-            useConfigUIStore.setState((c) => ({ ...c, feedback: { ...c.feedback, ...updated } }));
+            useConfigUIStore.setState((c) => {
+                const updated = {
+                    [feedbackType]: {
+                        ...c?.feedback?.[feedbackType],
+                        feedback_sent: !skipped,
+                        last_dismissed: { timestamp: Date.now() },
+                    },
+                } as FeedbackPrompts;
+
+                return { ...c, feedback: { ...c.feedback, ...updated } };
+            });
             onClose();
 
             if (type === 'close') {

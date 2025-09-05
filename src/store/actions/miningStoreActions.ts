@@ -184,7 +184,6 @@ export const checkMiningTime = () => {
         stopTimestamp = now;
     }
     const diff = (stopTimestamp || 0) - (current.startTimestamp || 0);
-    console.debug(`diff= `, diff);
     useMiningStore.setState((c) => ({
         ...c,
         sessionMiningTime: { ...c.sessionMiningTime, durationMs: diff },
