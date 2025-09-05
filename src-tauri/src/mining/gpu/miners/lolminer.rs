@@ -116,7 +116,6 @@ impl GpuMinerInterfaceTrait for LolMinerGpuMiner {
 
         let output = result.wait_with_output().await?;
         let output_str = String::from_utf8_lossy(&output.stdout);
-        info!(target: LOG_TARGET, "LolMiner devices output: {}", output_str);
         if output_str.contains("Number of Cuda supported GPUs: 0")
             && output_str.contains("Number of OpenCL supported GPUs: 0")
         {
@@ -130,6 +129,7 @@ impl GpuMinerInterfaceTrait for LolMinerGpuMiner {
                 let parts: Vec<&str> = line.split(":").collect();
                 if parts.len() == 2 {
                     let name = parts[1].to_string();
+                    #[allow(clippy::cast_possible_truncation)]
                     let device_id = gpu_devices.len() as u32;
                     gpu_devices.push(GpuCommonInformation {
                         name: name.trim().to_string(),

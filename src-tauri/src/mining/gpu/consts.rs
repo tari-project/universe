@@ -172,6 +172,7 @@ pub enum GpuMinerFeature {
     /// Mining stats per GPU
     DeviceInformation,
     /// Gpu parameters like power limit, core clock, memory clock
+    #[allow(dead_code)]
     DeviceParameters,
     /// Exclude specific GPU devices from mining
     DeviceExclusion,

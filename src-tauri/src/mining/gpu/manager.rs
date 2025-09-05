@@ -152,8 +152,6 @@ impl GpuManager {
             if let Some(miner) = instance.available_miners.get(&config_gpu_miner_type) {
                 EventsEmitter::emit_update_selected_gpu_miner(miner.clone()).await;
             }
-
-            return;
         } else if let Some((first_miner_type, first_miner)) =
             instance.available_miners.iter().next()
         {
@@ -172,6 +170,8 @@ impl GpuManager {
             instance.selected_miner = first_miner_type_cloned.clone();
             instance.process_watcher.adapter = adapter;
             EventsEmitter::emit_update_selected_gpu_miner(first_miner_cloned).await;
+        } else {
+            error!(target: LOG_TARGET, "No available gpu miners to load");
         }
     }
 
