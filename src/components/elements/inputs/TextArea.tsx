@@ -15,6 +15,7 @@ const StyledTextArea = styled.textarea<{ $variant?: 'primary' | 'secondary' }>`
     line-height: 1.2;
     resize: none;
     transition: box-shadow 0.2s ease-in-out;
+    white-space: pre-wrap;
     box-shadow: 0 0 1px 3px ${({ theme }) => convertHexToRGBA(theme.palette.focusOutline, 0.1)};
     color: ${({ theme }) => theme.palette.text.accent};
 
@@ -26,6 +27,11 @@ const StyledTextArea = styled.textarea<{ $variant?: 'primary' | 'secondary' }>`
         $variant === 'secondary' &&
         css`
             box-shadow: none;
+            &:focus-visible {
+                outline: 2px solid ${({ theme }) => theme.palette.focusOutlineAlpha};
+                outline-offset: 2px;
+                transition: none;
+            }
         `}
 `;
 

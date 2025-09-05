@@ -45,7 +45,10 @@ const Wrapper = styled.div<StyleProps>`
                 `;
             }
             case 'large': {
-                return css``;
+                return css`
+                    height: 33px;
+                    padding: 10px;
+                `;
             }
             case 'medium':
             default: {

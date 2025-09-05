@@ -17,6 +17,7 @@ import { DialogsGroup } from './groups/DialogsGroup';
 import { GreenModalsGroup } from './groups/GreenModalsGroup';
 import { OtherUIGroup } from './groups/OtherUIGroup';
 import { AnimatePresence } from 'motion/react';
+import { FeedbackGroup } from './groups/FeedbackGroup.tsx';
 
 const AdminUI = memo(function AdminUI() {
     const [isOpen, setIsOpen] = useState(false);
@@ -49,6 +50,7 @@ const AdminUI = memo(function AdminUI() {
                                     exit={{ opacity: 0, y: 10 }}
                                 >
                                     <ThemeGroup />
+                                    <FeedbackGroup />
                                     <DialogsGroup />
                                     <GreenModalsGroup />
                                     <OtherUIGroup />

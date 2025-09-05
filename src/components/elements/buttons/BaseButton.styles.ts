@@ -114,7 +114,6 @@ export const StyledButton = styled.button<ButtonStyleProps>`
                         opacity: 0.9;
                     }
                 `;
-
             case 'purple':
                 return css`
                     background-color: ${theme.colors.blue[600]};
@@ -168,12 +167,12 @@ export const StyledButton = styled.button<ButtonStyleProps>`
                 `;
             case 'large':
                 return css`
-                    height: 50px;
+                    height: min(6vh, 50px);
                     width: ${$fluid ? '100%' : '190px'};
                 `;
             case 'xlarge':
                 return css`
-                    height: 60px;
+                    height: min(8.5vh, 60px);
                     width: ${$fluid ? '100%' : 'min-content'};
                 `;
             case 'medium':
