@@ -36,8 +36,9 @@ use crate::events::ConnectionStatusPayload;
 use crate::events_emitter::EventsEmitter;
 use crate::events_manager::EventsManager;
 use crate::gpu_miner::EngineType;
-use crate::gpu_miner_adapter::GpuNodeSource;
 use crate::internal_wallet::{mnemonic_to_tari_cipher_seed, InternalWallet, PaperWalletConfig};
+use crate::mining::gpu::consts::GpuMinerType;
+use crate::mining::gpu::manager::GpuManager;
 use crate::mining::pools::cpu_pool_manager::CpuPoolManager;
 use crate::mining::pools::gpu_pool_manager::GpuPoolManager;
 use crate::mining::pools::PoolManagerInterfaceTrait;
@@ -292,8 +293,8 @@ pub async fn get_applications_versions(
     let p2p_port = &state.p2pool_manager.get_grpc_port().await;
     let cpu_miner = &state.cpu_miner.read().await;
     let xmrig_port = &cpu_miner.get_port().await;
-    let gpu_miner = &state.gpu_miner.read().await;
-    let xtr_port = gpu_miner.get_port().await;
+    // let gpu_miner = &state.gpu_miner.read().await;
+    // let xtr_port = gpu_miner.get_port().await;
     let wallet_port = &state.wallet_manager.get_port().await;
     let node_manager = &state.node_manager;
     let node_port = node_manager
@@ -354,7 +355,7 @@ pub async fn get_applications_versions(
         },
         xtrgpuminer: ApplicationsInformation {
             version: xtrgpuminer_version,
-            port: Some(xtr_port),
+            port: Some(0),
         },
         bridge: ApplicationsInformation {
             version: bridge_version,
@@ -1540,81 +1541,39 @@ pub async fn start_gpu_mining(
 
     let tari_address = InternalWallet::tari_address().await;
 
-    info!(target: LOG_TARGET, "3. Starting gpu miner");
-
     let gpu_usage_percentage = ConfigMining::content()
         .await
         .get_selected_gpu_usage_percentage();
-    let is_gpu_pool_enabled = *ConfigPools::content().await.gpu_pool_enabled();
 
-    if is_gpu_pool_enabled {
-        let mut gpu_miner_sha = state.gpu_miner_sha.write().await;
-        let res = gpu_miner_sha
-            .start(
-                tari_address.clone(),
-                telemetry_id.clone(),
-                gpu_usage_percentage,
-                app.path()
-                    .app_local_data_dir()
-                    .expect("Could not get data dir"),
-                app.path()
-                    .app_config_dir()
-                    .expect("Could not get config dir"),
-                app.path().app_log_dir().expect("Could not get log dir"),
-            )
-            .await;
+    let grpc_address = state
+        .node_manager
+        .get_grpc_address()
+        .await
+        .map_err(|e| e.to_string())?;
 
-        info!(target: LOG_TARGET, "4. Starting gpu miner");
-        if let Err(e) = res {
-            let err_msg = format!("Could not start GPU mining: {e}");
-            error!(target: LOG_TARGET, "{err_msg}", );
-            sentry::capture_message(&err_msg, sentry::Level::Error);
+    info!(target: LOG_TARGET, "3. Starting gpu miner");
 
-            if let Err(stop_err) = gpu_miner_sha.stop().await {
-                error!(target: LOG_TARGET, "Could not stop GPU miner: {stop_err}");
-            }
+    let start_mining_result = GpuManager::start_mining(
+        tari_address,
+        telemetry_id,
+        gpu_usage_percentage,
+        app.path()
+            .app_local_data_dir()
+            .expect("Could not get data dir"),
+        app.path()
+            .app_config_dir()
+            .expect("Could not get config dir"),
+        app.path().app_log_dir().expect("Could not get log dir"),
+        grpc_address,
+    )
+    .await;
 
-            return Err(e.to_string());
-        }
-    } else {
-        let grpc_address = state
-            .node_manager
-            .get_grpc_address()
-            .await
-            .map_err(|e| e.to_string())?;
+    if let Err(e) = start_mining_result {
+        let err_msg = format!("Could not start GPU mining: {e}");
+        error!(target: LOG_TARGET, "{err_msg}", );
+        sentry::capture_message(&err_msg, sentry::Level::Error);
 
-        let source = GpuNodeSource::BaseNode { grpc_address };
-
-        let mut gpu_miner = state.gpu_miner.write().await;
-
-        let res = gpu_miner
-            .start(
-                tari_address.clone(),
-                source,
-                app.path()
-                    .app_local_data_dir()
-                    .expect("Could not get data dir"),
-                app.path()
-                    .app_config_dir()
-                    .expect("Could not get config dir"),
-                app.path().app_log_dir().expect("Could not get log dir"),
-                telemetry_id,
-                gpu_usage_percentage,
-            )
-            .await;
-
-        info!(target: LOG_TARGET, "4. Starting gpu miner");
-        if let Err(e) = res {
-            let err_msg = format!("Could not start GPU mining: {e}");
-            error!(target: LOG_TARGET, "{err_msg}");
-            sentry::capture_message(&err_msg, sentry::Level::Error);
-
-            if let Err(stop_err) = gpu_miner.stop().await {
-                error!(target: LOG_TARGET, "Could not stop GPU miner: {stop_err}");
-            }
-
-            return Err(e.to_string());
-        }
+        return Err(e.to_string());
     }
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
@@ -1643,34 +1602,29 @@ pub async fn stop_cpu_mining(state: tauri::State<'_, UniverseAppState>) -> Resul
     Ok(())
 }
 #[tauri::command]
-pub async fn stop_gpu_mining(state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
+pub async fn stop_gpu_mining() -> Result<(), String> {
     let timer = Instant::now();
 
-    let is_gpu_pool_enabled = *ConfigPools::content().await.gpu_pool_enabled();
-
-    if is_gpu_pool_enabled {
-        state
-            .gpu_miner_sha
-            .write()
-            .await
-            .stop()
-            .await
-            .map_err(|e| e.to_string())?;
-    } else {
-        state
-            .gpu_miner
-            .write()
-            .await
-            .stop()
-            .await
-            .map_err(|e| e.to_string())?;
-    }
-
-    info!(target:LOG_TARGET, "gpu miner stopped");
+    GpuManager::stop_mining().await.map_err(|e| e.to_string())?;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "stop_cpu_mining took too long: {:?}", timer.elapsed());
     }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn switch_gpu_miner(gpu_miner_type: GpuMinerType) -> Result<(), String> {
+    let timer = Instant::now();
+
+    ConfigMining::update_field(ConfigMiningContent::set_gpu_miner_type, gpu_miner_type)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "switch_gpu_miner took too long: {:?}", timer.elapsed());
+    }
+
     Ok(())
 }
 
@@ -1827,29 +1781,29 @@ pub async fn stop_mining_status(state: tauri::State<'_, UniverseAppState>) -> Re
     }
     Ok(())
 }
-
+#[allow(dead_code)]
 #[tauri::command]
 pub async fn set_selected_engine(
     selected_engine: &str,
-    state: tauri::State<'_, UniverseAppState>,
-    app: tauri::AppHandle,
+    _state: tauri::State<'_, UniverseAppState>,
+    _app: tauri::AppHandle,
 ) -> Result<(), InvokeError> {
     info!(target: LOG_TARGET, "set_selected_engine called with engine: {selected_engine:?}");
     let timer = Instant::now();
 
     let engine_type = EngineType::from_string(selected_engine).map_err(InvokeError::from_anyhow)?;
-    let config = app
-        .path()
-        .app_config_dir()
-        .expect("Could not get config dir");
+    // let config = app
+    //     .path()
+    //     .app_config_dir()
+    //     .expect("Could not get config dir");
 
-    state
-        .gpu_miner
-        .write()
-        .await
-        .set_selected_engine(engine_type.clone(), config)
-        .await
-        .map_err(|e| e.to_string())?;
+    // state
+    //     .gpu_miner
+    //     .write()
+    //     .await
+    //     .set_selected_engine(engine_type.clone(), config)
+    //     .await
+    //     .map_err(|e| e.to_string())?;
 
     ConfigMining::update_field(ConfigMiningContent::set_gpu_engine, engine_type)
         .await

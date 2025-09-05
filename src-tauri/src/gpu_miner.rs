@@ -35,7 +35,6 @@ use tokio::sync::{watch, RwLock};
 
 use crate::binaries::{Binaries, BinaryResolver};
 use crate::events_emitter::EventsEmitter;
-use crate::gpu_miner_adapter::GpuNodeSource;
 use crate::gpu_status_file::{GpuDevice, GpuStatusFile};
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::tasks_tracker::TasksTrackers;
@@ -46,6 +45,7 @@ use crate::{
 };
 use crate::{process_utils, BaseNodeStatus};
 
+#[allow(dead_code)]
 const LOG_TARGET: &str = "tari::universe::gpu_miner";
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize, Default)]
@@ -77,6 +77,7 @@ impl EngineType {
     }
 }
 
+#[allow(dead_code)]
 pub(crate) struct GpuMiner {
     watcher: Arc<RwLock<ProcessWatcher<GpuMinerAdapter>>>,
     gpu_devices: Vec<GpuDevice>,
@@ -88,6 +89,7 @@ pub(crate) struct GpuMiner {
     status_broadcast: watch::Sender<GpuMinerStatus>,
 }
 
+#[allow(dead_code)]
 impl GpuMiner {
     pub fn new(
         status_broadcast: watch::Sender<GpuMinerStatus>,
@@ -114,7 +116,6 @@ impl GpuMiner {
     pub async fn start(
         &mut self,
         tari_address: TariAddress,
-        node_source: GpuNodeSource,
         base_path: PathBuf,
         config_path: PathBuf,
         log_path: PathBuf,
@@ -133,7 +134,6 @@ impl GpuMiner {
         > = self.watcher.write().await;
         process_watcher.adapter.tari_address = tari_address;
         process_watcher.adapter.gpu_devices = self.gpu_devices.clone();
-        process_watcher.adapter.node_source = Some(node_source);
         process_watcher.adapter.coinbase_extra = coinbase_extra;
         process_watcher.adapter.gpu_usage_percentage = gpu_usage_percentage;
         info!(target: LOG_TARGET, "Starting xtrgpuminer");

@@ -28,7 +28,6 @@ use commands::CpuMinerStatus;
 use cpu_miner::CpuMinerConfig;
 use events_emitter::EventsEmitter;
 use gpu_miner_adapter::GpuMinerStatus;
-use gpu_miner_sha::GpuMinerSha;
 use log::{error, info, warn};
 use mining_status_manager::MiningStatusManager;
 use node::local_node_adapter::LocalNodeAdapter;
@@ -72,8 +71,8 @@ use telemetry_manager::TelemetryManager;
 use crate::cpu_miner::CpuMiner;
 
 use crate::feedback::Feedback;
-use crate::gpu_miner::GpuMiner;
 use crate::mining::cpu::CpuMinerConnection;
+use crate::mining::gpu::manager::GpuManager;
 use crate::mm_proxy_manager::MmProxyManager;
 use crate::node::node_manager::NodeManager;
 use crate::p2pool::models::P2poolStats;
@@ -176,8 +175,6 @@ struct UniverseAppState {
     is_getting_p2pool_connections: Arc<AtomicBool>,
     in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
     cpu_miner: Arc<RwLock<CpuMiner>>,
-    gpu_miner: Arc<RwLock<GpuMiner>>,
-    gpu_miner_sha: Arc<RwLock<GpuMinerSha>>,
     cpu_miner_config: Arc<RwLock<CpuMinerConfig>>,
     mm_proxy_manager: MmProxyManager,
     node_manager: NodeManager,
@@ -302,17 +299,12 @@ fn main() {
         )
         .into(),
     );
-    let gpu_miner: Arc<RwLock<GpuMiner>> = Arc::new(
-        GpuMiner::new(
-            gpu_status_tx.clone(),
-            base_node_watch_rx.clone(),
-            &mut stats_collector,
-        )
-        .into(),
-    );
 
-    let gpu_miner_sha: Arc<RwLock<GpuMinerSha>> =
-        Arc::new(GpuMinerSha::new(&mut stats_collector, gpu_status_tx.clone()).into());
+    block_on(GpuManager::initialize(
+        stats_collector.take_gpu_miner(),
+        gpu_status_tx.clone(),
+        Some(base_node_watch_rx.clone()),
+    ));
 
     let (tor_watch_tx, tor_watch_rx) = watch::channel(TorStatus::default());
     let tor_manager = TorManager::new(tor_watch_tx, &mut stats_collector);
@@ -364,8 +356,6 @@ fn main() {
         p2pool_latest_status: Arc::new(p2pool_stats_rx),
         in_memory_config: app_in_memory_config.clone(),
         cpu_miner: cpu_miner.clone(),
-        gpu_miner: gpu_miner.clone(),
-        gpu_miner_sha: gpu_miner_sha.clone(),
         cpu_miner_config: cpu_config.clone(),
         mm_proxy_manager: mm_proxy_manager.clone(),
         node_manager,

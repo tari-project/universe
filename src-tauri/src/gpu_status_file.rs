@@ -64,6 +64,7 @@ pub struct GpuStatusFile {
     pub gpu_devices: Vec<GpuDevice>,
 }
 
+#[allow(dead_code)]
 impl GpuStatusFile {
     pub fn load(path: &PathBuf) -> Result<Self, anyhow::Error> {
         let file = File::open(path)?;

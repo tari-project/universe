@@ -29,4 +29,5 @@ pub trait PoolConfig: Default + Clone {
     where
         Self: Sized;
     fn get_raw_stats_url(&self) -> String;
+    fn get_pool_url(&self) -> String;
 }

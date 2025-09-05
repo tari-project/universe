@@ -1,0 +1,155 @@
+// Copyright 2024. The Tari Project
+//
+// Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
+// following conditions are met:
+//
+// 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+// disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
+// following disclaimer in the documentation and/or other materials provided with the distribution.
+//
+// 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
+// products derived from this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+// INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+// USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+use serde::{Deserialize, Serialize};
+
+use crate::utils::platform_utils::{CurrentOperatingSystem, PlatformUtils};
+
+pub enum GpuConnectionType {
+    Node { node_grpc_address: String },
+    Pool { pool_url: String },
+}
+
+#[derive(Eq, Hash, PartialEq, Clone, Deserialize, Serialize, Debug)]
+pub enum GpuMinerType {
+    Glytex,
+    Graxil,
+    LolMiner,
+}
+
+impl GpuMinerType {
+    pub fn get_expected_features(&self) -> Vec<GpuMinerFeature> {
+        match self {
+            GpuMinerType::Glytex => vec![
+                GpuMinerFeature::SoloMining,
+                GpuMinerFeature::DeviceInformation,
+                GpuMinerFeature::DeviceExclusion,
+                GpuMinerFeature::MiningIntensity,
+                GpuMinerFeature::EngineSelection,
+            ],
+            GpuMinerType::Graxil => vec![
+                GpuMinerFeature::PoolMining,
+                GpuMinerFeature::DeviceInformation,
+                GpuMinerFeature::DeviceExclusion,
+                GpuMinerFeature::MiningIntensity,
+            ],
+            GpuMinerType::LolMiner => vec![
+                GpuMinerFeature::PoolMining,
+                GpuMinerFeature::DeviceInformation,
+                GpuMinerFeature::DeviceExclusion,
+                GpuMinerFeature::MiningIntensity,
+            ],
+        }
+    }
+
+    pub fn supported_algorithms(&self) -> Vec<GpuMiningAlgorithm> {
+        match self {
+            GpuMinerType::Glytex => vec![GpuMiningAlgorithm::SHA3X],
+            GpuMinerType::Graxil => vec![GpuMiningAlgorithm::SHA3X],
+            GpuMinerType::LolMiner => vec![GpuMiningAlgorithm::SHA3X, GpuMiningAlgorithm::C29],
+        }
+    }
+
+    #[allow(dead_code)]
+    pub fn supported_platforms(&self) -> Vec<CurrentOperatingSystem> {
+        match self {
+            GpuMinerType::Glytex => vec![
+                CurrentOperatingSystem::Windows,
+                CurrentOperatingSystem::Linux,
+                CurrentOperatingSystem::MacOS,
+            ],
+            GpuMinerType::Graxil => vec![
+                CurrentOperatingSystem::Windows,
+                CurrentOperatingSystem::Linux,
+                CurrentOperatingSystem::MacOS,
+            ],
+            GpuMinerType::LolMiner => vec![
+                CurrentOperatingSystem::Windows,
+                CurrentOperatingSystem::Linux,
+            ],
+        }
+    }
+
+    #[allow(dead_code)]
+    pub fn is_supported_on_current_platform(&self) -> bool {
+        let current_os = PlatformUtils::detect_current_os();
+        self.supported_platforms().contains(&current_os)
+    }
+    pub fn is_pool_mining_supported(&self) -> bool {
+        self.get_expected_features()
+            .contains(&GpuMinerFeature::PoolMining)
+    }
+}
+
+impl std::fmt::Display for GpuMinerType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            GpuMinerType::Glytex => "Glytex",
+            GpuMinerType::Graxil => "Graxil",
+            GpuMinerType::LolMiner => "LolMiner",
+        };
+        write!(f, "{s}")
+    }
+}
+
+#[derive(Eq, Hash, PartialEq, Clone)]
+pub enum GpuMiningAlgorithm {
+    SHA3X,
+    C29,
+}
+
+#[derive(Eq, Hash, PartialEq, Clone)]
+#[allow(dead_code)]
+pub enum GpuMinerFeature {
+    /// Support for solo mining
+    SoloMining,
+    /// Support for mining in a pool
+    PoolMining,
+    /// Mining stats per GPU
+    DeviceInformation,
+    /// Gpu parameters like power limit, core clock, memory clock
+    DeviceParameters,
+    /// Exclude specific GPU devices from mining
+    DeviceExclusion,
+    /// Control mining intensity
+    MiningIntensity,
+    /// Select mining engine ( OPENCL, CUDA, etc )
+    EngineSelection,
+}
+
+#[derive(Clone)]
+#[allow(dead_code)]
+pub struct GpuMiner {
+    pub miner_type: GpuMinerType,
+    pub features: Vec<GpuMinerFeature>,
+    pub supported_algorithms: Vec<GpuMiningAlgorithm>,
+}
+
+impl GpuMiner {
+    pub fn new(miner_type: GpuMinerType) -> Self {
+        Self {
+            miner_type: miner_type.clone(),
+            features: miner_type.get_expected_features(),
+            supported_algorithms: miner_type.supported_algorithms(),
+        }
+    }
+}

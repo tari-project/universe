@@ -124,10 +124,19 @@ impl BinaryManager {
         let selected_version = self.selected_version.clone();
         let selected_hash = self.selected_hash.clone();
         let binary = Binaries::from_name(&self.binary_name);
-        let main_url = self.adapter.get_base_main_download_url(&selected_version);
-        let fallback_url = self
+        let mut main_url = self.adapter.get_base_main_download_url(&selected_version);
+        let mut fallback_url = self
             .adapter
             .get_base_fallback_download_url(&selected_version);
+
+        if self.binary_name.eq(Binaries::LolMiner.name()) {
+            // urls produces will be like:
+            // https://github.com/Lolliedieb/lolMiner-releases/releases/download/v1.97/lolMiner_v1.97_Lin64.tar.gz
+            // But real format for that specific binary is:
+            // https://github.com/Lolliedieb/lolMiner-releases/releases/download/1.97/lolMiner_v1.97_Lin64.tar.gz
+            main_url = main_url.replace("/v", "/");
+            fallback_url = fallback_url.replace("/v", "/");
+        }
 
         let mut network = match Network::get_current_or_user_setting_or_default() {
             Network::NextNet => "nextnet",
@@ -277,6 +286,7 @@ impl BinaryManager {
                 Binaries::ShaP2pool => &TasksTrackers::current().common,
                 Binaries::BridgeTapplet => &TasksTrackers::current().wallet_phase,
                 Binaries::GpuMinerSHA3X => &TasksTrackers::current().gpu_mining_phase,
+                Binaries::LolMiner => &TasksTrackers::current().gpu_mining_phase,
             };
             let binary_name = self.binary_name.clone();
             let shutdown_signal = task_tacker.get_signal().await;

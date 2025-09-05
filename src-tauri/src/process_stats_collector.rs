@@ -29,7 +29,9 @@ pub(crate) struct ProcessStatsCollectorBuilder {
     cpu_miner_rx: Receiver<ProcessWatcherStats>,
     gpu_miner_tx: Option<Sender<ProcessWatcherStats>>,
     gpu_miner_rx: Receiver<ProcessWatcherStats>,
+    #[allow(dead_code)]
     gpu_miner_sha_tx: Option<Sender<ProcessWatcherStats>>,
+    #[allow(dead_code)]
     gpu_miner_sha_rx: Receiver<ProcessWatcherStats>,
     mm_proxy_tx: Option<Sender<ProcessWatcherStats>>,
     mm_proxy_rx: Receiver<ProcessWatcherStats>,
@@ -88,12 +90,6 @@ impl ProcessStatsCollectorBuilder {
         self.gpu_miner_tx
             .take()
             .expect("Cannot take gpu_miner more than once")
-    }
-
-    pub fn take_gpu_miner_sha(&mut self) -> Sender<ProcessWatcherStats> {
-        self.gpu_miner_sha_tx
-            .take()
-            .expect("Cannot take gpu_miner_sha more than once")
     }
 
     pub fn take_mm_proxy(&mut self) -> Sender<ProcessWatcherStats> {

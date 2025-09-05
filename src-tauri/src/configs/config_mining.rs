@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::gpu_miner::EngineType;
+use crate::{gpu_miner::EngineType, mining::gpu::consts::GpuMinerType};
 use getset::{Getters, Setters};
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
@@ -64,6 +64,7 @@ impl GpuDevicesSettings {
         Self(HashMap::new())
     }
 
+    #[allow(dead_code)]
     pub fn add(&mut self, device_id: u32) {
         self.0.entry(device_id).or_default();
     }
@@ -91,6 +92,7 @@ pub struct ConfigMiningContent {
     gpu_engine: EngineType,
     gpu_devices_settings: GpuDevicesSettings,
     squad_override: Option<String>,
+    gpu_miner_type: GpuMinerType,
     version: i32,
 }
 
@@ -102,6 +104,7 @@ impl Default for ConfigMiningContent {
             created_at: SystemTime::now(),
             selected_mining_mode: "Eco".to_string(),
             mine_on_app_start: true,
+            gpu_miner_type: GpuMinerType::Graxil,
             mining_modes: HashMap::from([
                 (
                     "Eco".to_string(),
@@ -166,6 +169,7 @@ impl ConfigMiningContent {
 
     /// Populate the GPU devices settings with the given device IDs.
     /// If a device ID already exists, it will not be added again.
+    #[allow(dead_code)]
     pub fn populate_gpu_devices_settings(&mut self, device_ids: Vec<u32>) -> &mut Self {
         for device_id in device_ids {
             self.gpu_devices_settings.add(device_id);

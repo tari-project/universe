@@ -112,4 +112,10 @@ impl PoolConfig for GpuPool {
             GpuPool::SupportXTMPool(config) => config.get_raw_stats_url(),
         }
     }
+    fn get_pool_url(&self) -> String {
+        match self {
+            GpuPool::LuckyPool(config) => config.get_pool_url(),
+            GpuPool::SupportXTMPool(config) => config.get_pool_url(),
+        }
+    }
 }

@@ -24,10 +24,10 @@ use crate::{
     binaries::{Binaries, BinaryResolver},
     configs::{config_mining::ConfigMining, trait_config::ConfigImpl},
     events_emitter::EventsEmitter,
-    gpu_devices::GpuDevices,
     gpu_miner::EngineType,
     gpu_miner_adapter::GpuMinerStatus,
     hardware::hardware_status_monitor::HardwareStatusMonitor,
+    mining::gpu::{consts::GpuMinerType, manager::GpuManager},
     progress_trackers::{
         progress_plans::SetupStep,
         progress_stepper::{ProgressStepper, ProgressStepperBuilder},
@@ -60,6 +60,7 @@ use super::{
 
 static LOG_TARGET: &str = "tari::universe::phase_gpu_mining";
 
+#[allow(dead_code)]
 #[derive(Clone, Default)]
 pub struct GpuMiningSetupPhaseAppConfiguration {
     gpu_engine: EngineType,
@@ -68,6 +69,7 @@ pub struct GpuMiningSetupPhaseAppConfiguration {
 pub struct GpuMiningSetupPhase {
     app_handle: AppHandle,
     progress_stepper: Mutex<ProgressStepper>,
+    #[allow(dead_code)]
     app_configuration: GpuMiningSetupPhaseAppConfiguration,
     setup_configuration: SetupConfiguration,
     status_sender: Sender<PhaseStatus>,
@@ -171,13 +173,32 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
             let glytex_initialization_result = binary_resolver
                 .initialize_binary(Binaries::GpuMiner, None)
                 .await;
+            let lolminer_initialization_result = binary_resolver
+                .initialize_binary(Binaries::LolMiner, None)
+                .await;
 
-            if let (Err(graxil_err), Err(glytex_err)) =
-                (graxil_initialization_result, glytex_initialization_result)
+            let graxil_is_err = graxil_initialization_result.as_ref().err();
+            let glytex_is_err = glytex_initialization_result.as_ref().err();
+            let lolminer_is_err = lolminer_initialization_result.as_ref().err();
+
+            if let (Some(graxil_err), Some(glytex_err), Some(lolminer_err)) =
+                (graxil_is_err, glytex_is_err, lolminer_is_err)
             {
                 return Err(anyhow::anyhow!(
-                    "Failed to initialize GPU miner binaries: Graxil: {graxil_err}, Glytex: {glytex_err}"
+                    "Failed to initialize GPU miner binaries: Graxil: {graxil_err}, Glytex: {glytex_err}, LolMiner: {lolminer_err}"
                 ));
+            }
+
+            if graxil_initialization_result.is_ok() {
+                GpuManager::load_miner(GpuMinerType::Graxil).await;
+            }
+
+            if glytex_initialization_result.is_ok() {
+                GpuManager::load_miner(GpuMinerType::Glytex).await;
+            }
+
+            if lolminer_initialization_result.is_ok() {
+                GpuManager::load_miner(GpuMinerType::LolMiner).await;
             }
 
             Ok(())
@@ -307,33 +328,35 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
 }
 
 impl GpuMiningSetupPhase {
+    #[allow(dead_code)]
     async fn resolve_detect_gpu_step(&self) -> Result<(), Error> {
-        let state = self.app_handle.state::<UniverseAppState>();
-        let (data_dir, config_dir, _log_dir) = self.get_app_dirs()?;
-        let glytex_detection_result = state
-            .gpu_miner
-            .write()
-            .await
-            .detect(
-                config_dir.clone(),
-                self.app_configuration.gpu_engine.clone(),
-            )
-            .await;
-
-        let graxil_detection_result = GpuDevices::current()
-            .write()
-            .await
-            .detect(data_dir.clone())
-            .await;
-
-        if let (Err(graxil_err), Err(glytex_err)) =
-            (graxil_detection_result, glytex_detection_result)
-        {
-            return Err(anyhow::anyhow!(
-                "Failed to detect GPU devices: Graxil: {graxil_err}, Glytex: {glytex_err}"
-            ));
-        }
-
         Ok(())
+        // let state = self.app_handle.state::<UniverseAppState>();
+        // let (data_dir, config_dir, _log_dir) = self.get_app_dirs()?;
+        // let glytex_detection_result = state
+        //     .gpu_miner
+        //     .write()
+        //     .await
+        //     .detect(
+        //         config_dir.clone(),
+        //         self.app_configuration.gpu_engine.clone(),
+        //     )
+        //     .await;
+
+        // let graxil_detection_result = GpuDevices::current()
+        //     .write()
+        //     .await
+        //     .detect(data_dir.clone())
+        //     .await;
+
+        // if let (Err(graxil_err), Err(glytex_err)) =
+        //     (graxil_detection_result, glytex_detection_result)
+        // {
+        //     return Err(anyhow::anyhow!(
+        //         "Failed to detect GPU devices: Graxil: {graxil_err}, Glytex: {glytex_err}"
+        //     ));
+        // }
+
+        // Ok(())
     }
 }

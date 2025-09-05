@@ -43,8 +43,10 @@ use crate::{
 
 use log::info;
 
+#[allow(dead_code)]
 const LOG_TARGET: &str = "tari::universe::gpu_devices";
 
+#[allow(dead_code)]
 static INSTANCE: LazyLock<RwLock<GpuDevices>> = LazyLock::new(|| RwLock::new(GpuDevices::new()));
 
 #[allow(clippy::upper_case_acronyms)]
@@ -75,11 +77,13 @@ pub struct GpuDeviceInformation {
     pub device_type: GpuDeviceType,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GpuInformationFile {
     pub devices: Vec<GpuDeviceInformation>,
 }
 
+#[allow(dead_code)]
 impl GpuInformationFile {
     pub async fn load(path: &PathBuf) -> Result<Self, anyhow::Error> {
         let file = OpenOptions::new().read(true).open(path).await?;
@@ -93,6 +97,7 @@ impl GpuInformationFile {
     }
 }
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct GpuDevices {
     pub devices: Vec<GpuDeviceInformation>,
 }
@@ -121,11 +126,12 @@ impl GpuDevices {
 
         Ok(gpu_information_file_path)
     }
-
+    #[allow(dead_code)]
     pub fn current() -> &'static RwLock<GpuDevices> {
         &INSTANCE
     }
 
+    #[allow(dead_code)]
     pub async fn detect(&mut self, config_dir: PathBuf) -> Result<(), anyhow::Error> {
         let gpu_information_file_directory =
             self._gpu_information_file_parent_directory(&config_dir);

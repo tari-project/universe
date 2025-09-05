@@ -1,4 +1,13 @@
-// Copyright 2025. The Tari Project
+use std::time::Duration;
+
+use axum::async_trait;
+use log::{info, warn};
+use serde::Deserialize;
+use tari_common::configuration::Network;
+use tari_shutdown::Shutdown;
+use tokio::sync::watch::Sender;
+
+// Copyright 2024. The Tari Project
 //
 // Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
 // following conditions are met:
@@ -19,125 +28,130 @@
 // SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+use crate::{
+    gpu_miner::EngineType,
+    gpu_miner_adapter::GpuMinerStatus,
+    mining::gpu::{
+        consts::GpuConnectionType,
+        interface::{GpuMinerInterfaceTrait, GpuMinerStatusInterface},
+    },
+    process_adapter::{
+        HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
+    },
+};
 
-use crate::gpu_miner::EngineType;
-use crate::gpu_status_file::GpuDevice;
-use crate::port_allocator::PortAllocator;
-use crate::process_adapter::HealthStatus;
-use crate::process_adapter::ProcessStartupSpec;
-use anyhow::anyhow;
-use anyhow::Error;
-use async_trait::async_trait;
-use log::{info, warn};
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::ops::Div;
-use std::path::PathBuf;
-use std::time::Duration;
-use tari_common::configuration::Network;
-use tari_common_types::tari_address::TariAddress;
-use tari_shutdown::Shutdown;
-use tokio::sync::watch;
-
-#[cfg(target_os = "windows")]
-use crate::utils::windows_setup_utils::add_firewall_rule;
-
-use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
-
-const LOG_TARGET: &str = "tari::universe::gpu_miner_adapter";
+const LOG_TARGET: &str = "tari::universe::mining::gpu::miners::glytex";
 const DEFAULT_GPU_THREADS: u32 = 8196;
-pub enum GpuNodeSource {
-    BaseNode { grpc_address: String },
+pub struct GlytexGpuMiner {
+    pub tari_address: Option<String>,
+    pub intensity_percentage: Option<u32>,
+    pub worker_name: Option<String>,
+    pub connection_type: Option<GpuConnectionType>,
+    pub api_port: u16,
+    pub selected_engine: Option<EngineType>,
+    pub gpu_status_sender: Sender<GpuMinerStatus>,
 }
 
-pub(crate) struct GpuMinerAdapter {
-    pub(crate) tari_address: TariAddress,
-    pub(crate) node_source: Option<GpuNodeSource>,
-    pub(crate) coinbase_extra: String,
-    pub(crate) gpu_devices: Vec<GpuDevice>,
-    pub(crate) gpu_usage_percentage: u32,
-    pub(crate) gpu_raw_status_broadcast: watch::Sender<Option<GpuMinerStatus>>,
-    pub(crate) curent_selected_engine: EngineType,
-    pub http_api_port: u16,
-}
-
-impl GpuMinerAdapter {
-    pub fn new(
-        gpu_devices: Vec<GpuDevice>,
-        gpu_raw_status_broadcast: watch::Sender<Option<GpuMinerStatus>>,
-    ) -> Self {
+impl GlytexGpuMiner {
+    #[allow(dead_code)]
+    pub fn new(gpu_status_sender: Sender<GpuMinerStatus>, api_port: u16) -> Self {
         Self {
-            tari_address: TariAddress::default(),
-            node_source: None,
-            coinbase_extra: "tari-universe".to_string(),
-            gpu_devices,
-            gpu_raw_status_broadcast,
-            gpu_usage_percentage: 0,
-            curent_selected_engine: EngineType::OpenCL,
-            http_api_port: PortAllocator::new().assign_port_with_fallback(),
+            tari_address: None,
+            intensity_percentage: None,
+            worker_name: None,
+            connection_type: None,
+            api_port,
+            selected_engine: None,
+            gpu_status_sender,
         }
     }
 }
 
-impl ProcessAdapter for GpuMinerAdapter {
-    type StatusMonitor = GpuMinerStatusMonitor;
+impl GpuMinerInterfaceTrait for GlytexGpuMiner {
+    async fn load_tari_address(&mut self, tari_address: &str) -> Result<(), anyhow::Error> {
+        self.tari_address = Some(tari_address.to_string());
+        Ok(())
+    }
+    async fn load_worker_name(&mut self, worker_name: &str) -> Result<(), anyhow::Error> {
+        self.worker_name = Some(worker_name.to_string());
+        Ok(())
+    }
+    async fn load_intensity_percentage(
+        &mut self,
+        intensity_percentage: u32,
+    ) -> Result<(), anyhow::Error> {
+        self.intensity_percentage = Some(intensity_percentage);
+        Ok(())
+    }
+    async fn load_connection_type(
+        &mut self,
+        connection_type: GpuConnectionType,
+    ) -> Result<(), anyhow::Error> {
+        self.connection_type = Some(connection_type);
+        Ok(())
+    }
+}
+
+impl ProcessAdapter for GlytexGpuMiner {
     type ProcessInstance = ProcessInstance;
+    type StatusMonitor = GpuMinerStatusInterface;
 
     #[allow(clippy::too_many_lines)]
     fn spawn_inner(
         &self,
-        data_dir: PathBuf,
-        config_dir: PathBuf,
-        log_dir: PathBuf,
-        binary_version_path: PathBuf,
+        base_folder: std::path::PathBuf,
+        config_folder: std::path::PathBuf,
+        log_folder: std::path::PathBuf,
+        binary_version_path: std::path::PathBuf,
         _is_first_start: bool,
-    ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
+    ) -> Result<(Self::ProcessInstance, Self::StatusMonitor), anyhow::Error> {
         info!(target: LOG_TARGET, "Gpu miner spawn inner");
         let inner_shutdown = Shutdown::new();
 
-        let http_api_port = self.http_api_port;
-        let working_dir = data_dir.join("gpuminer");
+        let http_api_port = self.api_port;
+        let working_dir = base_folder.join("gpuminer");
         std::fs::create_dir_all(&working_dir)?;
-        std::fs::create_dir_all(config_dir.join("gpuminer"))?;
+        std::fs::create_dir_all(config_folder.join("gpuminer"))?;
 
-        if self.node_source.is_none() {
-            return Err(anyhow!("GpuMinerAdapter node_source is not set"));
-        }
-
-        let tari_node_address = match self.node_source.as_ref() {
-            Some(GpuNodeSource::BaseNode { grpc_address }) => grpc_address.clone(),
+        let tari_node_address = match &self.connection_type {
+            Some(GpuConnectionType::Node { node_grpc_address }) => node_grpc_address,
+            Some(GpuConnectionType::Pool { pool_url: _ }) => {
+                return Err(anyhow::anyhow!("Glytex does not support pool mining"));
+            }
             None => {
-                return Err(anyhow!("GpuMinerAdapter node_source is not set"));
+                return Err(anyhow::anyhow!(
+                    "Connection type must be set before starting the miner"
+                ));
             }
         };
 
-        let gpu_engine_statuses = config_dir
+        let tari_address = match &self.tari_address {
+            Some(addr) => addr.clone(),
+            None => {
+                return Err(anyhow::anyhow!(
+                    "Tari address must be set before starting the GpuMinerShaAdapter"
+                ));
+            }
+        };
+
+        let gpu_engine_statuses = config_folder
             .join("gpuminer")
             .join("engine_statuses")
             .clone()
             .to_string_lossy()
             .to_string();
 
-        let grid_size = self
-            .gpu_devices
-            .clone()
-            .iter()
-            .map(|_| {
-                DEFAULT_GPU_THREADS
-                    .saturating_mul(self.gpu_usage_percentage)
-                    .div(100)
-                    .to_string()
-            })
-            .collect::<Vec<String>>()
-            .join(",");
+        let grid_size = format!("{DEFAULT_GPU_THREADS}");
+
+        let selected_engine = self.selected_engine.clone().unwrap_or_default();
 
         let mut args: Vec<String> = vec![
             "--tari-address".to_string(),
-            self.tari_address.to_base58(),
+            tari_address,
             "--tari-node-url".to_string(),
-            tari_node_address,
+            tari_node_address.to_string(),
             "--config".to_string(),
-            config_dir
+            config_folder
                 .join("gpuminer")
                 .join("config.json")
                 .to_string_lossy()
@@ -147,7 +161,7 @@ impl ProcessAdapter for GpuMinerAdapter {
             "--grid-size".to_string(),
             grid_size.clone(),
             "--log-config-file".to_string(),
-            config_dir
+            config_folder
                 .join("gpuminer")
                 .join("log4rs_config.yml")
                 .to_string_lossy()
@@ -155,23 +169,18 @@ impl ProcessAdapter for GpuMinerAdapter {
             "--gpu-status-file".to_string(),
             gpu_engine_statuses.clone(),
             "--log-dir".to_string(),
-            log_dir.to_string_lossy().to_string(),
+            log_folder.to_string_lossy().to_string(),
             "--template-timeout-secs".to_string(),
             "5".to_string(),
             "--engine".to_string(),
-            self.curent_selected_engine.to_string(),
+            selected_engine.to_string(),
         ];
 
-        // Only available after 0.1.8-pre.2
-        args.push("--coinbase-extra".to_string());
-        args.push(self.coinbase_extra.clone());
-
-        // if matches!(
-        //     self.node_source.as_ref(),
-        //     Some(GpuNodeSource::P2Pool { .. })
-        // ) {
-        //     args.push("--p2pool-enabled".to_string());
-        // }
+        if let Some(worker_name) = &self.worker_name {
+            // Only available after 0.1.8-pre.2
+            args.push("--coinbase-extra".to_string());
+            args.push(worker_name.clone());
+        }
 
         info!(target: LOG_TARGET, "Run Gpu miner with args: {:?}", args.join(" "));
         let mut envs = std::collections::HashMap::new();
@@ -206,16 +215,16 @@ impl ProcessAdapter for GpuMinerAdapter {
                     file_path: binary_version_path,
                     envs: Some(envs),
                     args,
-                    data_dir,
+                    data_dir: base_folder,
                     pid_file_name: self.pid_file_name().to_string(),
                     name: self.name().to_string(),
                 },
                 handle: None,
             },
-            GpuMinerStatusMonitor {
+            GpuMinerStatusInterface::Glytex(GlytexGpuMinerStatusMonitor {
                 http_api_port,
-                gpu_raw_status_broadcast: self.gpu_raw_status_broadcast.clone(),
-            },
+                gpu_status_sender: self.gpu_status_sender.clone(),
+            }),
         ))
     }
 
@@ -229,26 +238,26 @@ impl ProcessAdapter for GpuMinerAdapter {
 }
 
 #[derive(Clone)]
-pub struct GpuMinerStatusMonitor {
+pub struct GlytexGpuMinerStatusMonitor {
     http_api_port: u16,
-    gpu_raw_status_broadcast: watch::Sender<Option<GpuMinerStatus>>,
+    gpu_status_sender: Sender<GpuMinerStatus>,
 }
 
 #[async_trait]
-impl StatusMonitor for GpuMinerStatusMonitor {
+impl StatusMonitor for GlytexGpuMinerStatusMonitor {
     async fn check_health(&self, uptime: Duration, timeout_duration: Duration) -> HealthStatus {
         let status = match tokio::time::timeout(timeout_duration, self.status()).await {
             Ok(inner) => inner,
             Err(_) => {
                 warn!(target: LOG_TARGET, "Timeout error in GpuMinerAdapter check_health");
-                let _ = self.gpu_raw_status_broadcast.send(None);
+                let _ = self.gpu_status_sender.send(GpuMinerStatus::default());
                 return HealthStatus::Warning;
             }
         };
 
         match status {
             Ok(status) => {
-                let _ = self.gpu_raw_status_broadcast.send(Some(status.clone()));
+                let _ = self.gpu_status_sender.send(status.clone());
                 // GPU returns 0 for first 10 seconds until it has an average
                 if status.hash_rate > 0.0 || uptime.as_secs() < 11 {
                     HealthStatus::Healthy
@@ -257,14 +266,14 @@ impl StatusMonitor for GpuMinerStatusMonitor {
                 }
             }
             Err(_) => {
-                let _ = self.gpu_raw_status_broadcast.send(None);
+                let _ = self.gpu_status_sender.send(GpuMinerStatus::default());
                 HealthStatus::Unhealthy
             }
         }
     }
 }
 
-impl GpuMinerStatusMonitor {
+impl GlytexGpuMinerStatusMonitor {
     #[allow(clippy::cast_possible_truncation)]
     pub async fn status(&self) -> Result<GpuMinerStatus, anyhow::Error> {
         let client = reqwest::Client::new();
@@ -312,23 +321,12 @@ impl GpuMinerStatusMonitor {
 }
 
 #[derive(Debug, Deserialize)]
-#[allow(dead_code)]
+
 struct XtrGpuminerHttpApiStatus {
-    #[allow(dead_code)]
-    hashrate_per_device: HashMap<u32, AverageHashrate>,
     total_hashrate: AverageHashrate,
 }
 
 #[derive(Debug, Clone, Deserialize)]
-#[allow(dead_code)]
 pub(crate) struct AverageHashrate {
     ten_seconds: Option<f64>,
-    one_minute: Option<f64>,
-}
-
-#[derive(Debug, Serialize, Clone, Default)]
-pub(crate) struct GpuMinerStatus {
-    pub is_mining: bool,
-    pub hash_rate: f64,
-    pub estimated_earnings: u64,
 }

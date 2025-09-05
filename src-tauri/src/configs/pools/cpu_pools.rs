@@ -139,4 +139,10 @@ impl PoolConfig for CpuPool {
             CpuPool::LuckyPool(config) => config.get_raw_stats_url(),
         }
     }
+    fn get_pool_url(&self) -> String {
+        match self {
+            CpuPool::SupportXTMPool(config) => config.get_pool_url(),
+            CpuPool::LuckyPool(config) => config.get_pool_url(),
+        }
+    }
 }
