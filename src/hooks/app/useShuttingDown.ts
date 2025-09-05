@@ -10,9 +10,10 @@ function useShutdownHandler(shutdownTriggered = false) {
     const wasFeedbackSent = useConfigUIStore((s) => s.feedback?.early_close?.feedback_sent);
     const long_time_miner = useConfigUIStore((s) => s.feedback?.long_time_miner);
     const wasLongTimeMiner = Boolean(long_time_miner?.feedback_sent || long_time_miner?.last_dismissed !== null);
+    const closeMiningTimeMs = useUserFeedbackStore((s) => s.closeMiningTimeMs);
     const earlyClosedDismissed = useUserFeedbackStore((s) => s.earlyClosedDismissed);
     const miningTimeMs = useMiningStore((s) => s.sessionMiningTime.durationMs);
-    const isEarlyClose = !miningTimeMs || miningTimeMs < 60 * 60 * 1000;
+    const isEarlyClose = !miningTimeMs || miningTimeMs < closeMiningTimeMs;
     const [shouldShutDown, setShouldShutDown] = useState(false);
 
     useEffect(

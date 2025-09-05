@@ -1,12 +1,14 @@
-import { setShowLongTimeDialog } from '@app/store/stores/userFeedbackStore.ts';
+import { setShowLongTimeDialog, useUserFeedbackStore } from '@app/store/stores/userFeedbackStore.ts';
 import { useConfigUIStore } from '@app/store';
 import { useCallback, useEffect } from 'react';
 import { checkMiningTime } from '@app/store/actions/miningStoreActions.ts';
 
 const HOUR = 1000 * 60 * 60 * 60;
-const INTERVAL = HOUR * 2.9; // safe check for just under 3 hours
+
 export function useCheckMiningTime() {
     const feedback = useConfigUIStore((s) => s.feedback);
+    const longMiningTimeMs = useUserFeedbackStore((s) => s.longMiningTimeMs);
+
     const anyFeedbackSubmitted = feedback?.long_time_miner?.feedback_sent || feedback?.early_close?.feedback_sent;
 
     const checkDismissedTime = useCallback(() => {
@@ -24,24 +26,28 @@ export function useCheckMiningTime() {
             return false;
         }
     }, [feedback?.long_time_miner?.last_dismissed]);
+    const handleModalCheck = useCallback(() => {
+        const currentMiningTimeMs = checkMiningTime();
+        if (currentMiningTimeMs < 1) return;
+        const buffer = 1000 * 60 * 60 * 10; // 10 min
+        const shouldShow = currentMiningTimeMs + buffer >= longMiningTimeMs;
+        if (shouldShow) {
+            setShowLongTimeDialog(true);
+        }
+    }, [longMiningTimeMs]);
 
     useEffect(() => {
         const dismissedWithinADay = checkDismissedTime();
         if (anyFeedbackSubmitted || dismissedWithinADay) return;
 
+        handleModalCheck();
+
         const interval = setInterval(() => {
-            const currentMiningTimeMs = checkMiningTime();
-            if (currentMiningTimeMs < 1) return;
-            const seconds = currentMiningTimeMs / 1000;
-            const buffer = 1000 * 60 * 60 * 15; // 10 min
-            const shouldShow = seconds + buffer >= HOUR * 3;
-            if (shouldShow) {
-                setShowLongTimeDialog(true);
-            }
-        }, INTERVAL);
+            handleModalCheck();
+        }, longMiningTimeMs);
 
         return () => {
             clearInterval(interval);
         };
-    }, [anyFeedbackSubmitted, checkDismissedTime]);
+    }, [anyFeedbackSubmitted, checkDismissedTime, handleModalCheck, longMiningTimeMs]);
 }
