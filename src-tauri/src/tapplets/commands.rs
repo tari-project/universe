@@ -45,7 +45,6 @@ use tauri::ipc::InvokeError;
 use tauri::Manager;
 
 const LOG_TARGET: &str = "tari::universe::tapplets";
-const BRIDGE_TAPPLET_ID: i32 = 1000; // Fixed ID for bridge tapplet
 
 type CommandResult<T> = Result<T, InvokeError>;
 
@@ -96,6 +95,173 @@ async fn start_tapplet_server(
     info!(target: LOG_TARGET, "🎉🎉🎉 TAPP IS RUNNING: {:?} at address {:?}", is_running, addr);
 
     Ok(addr)
+}
+
+enum TappletType {
+    Dev { dev_tapplet_id: i32 },
+    Installed { tapplet_id: i32 },
+}
+
+// Common tapplet data structure for unified processing
+struct TappletData {
+    id: i32,
+    is_pre_installed: bool,
+    source: String,
+    csp: String,
+    tari_permissions: String,
+    package_name: String,
+    display_name: String,
+    version: String,
+}
+
+impl TappletData {
+    async fn from_dev_tapplet(dev_tapplet_id: i32, store: &SqliteStore) -> CommandResult<Self> {
+        let dev_tapplet = store
+            .get_dev_tapplet_by_id(dev_tapplet_id)
+            .await
+            .map_err(|e| InvokeError::from_error(e))?;
+
+        Ok(TappletData {
+            id: dev_tapplet_id,
+            is_pre_installed: false,
+            source: dev_tapplet.source,
+            csp: dev_tapplet.csp,
+            tari_permissions: dev_tapplet.tari_permissions,
+            package_name: dev_tapplet.package_name,
+            display_name: dev_tapplet.display_name,
+            version: "0.1.0".to_string(), // TODO: get actual version for dev tapplets
+        })
+    }
+
+    async fn from_installed_tapplet(tapplet_id: i32, store: &SqliteStore) -> CommandResult<Self> {
+        let installed_tapp = store
+            .get_installed_tapplet_by_id(tapplet_id)
+            .await
+            .map_err(|e| InvokeError::from_error(e))?;
+
+        let registered_tapplet_id = installed_tapp.tapplet_id.ok_or_else(|| {
+            InvokeError::from_error(Error::DatabaseError(
+                crate::tapplets::error::DatabaseError::FailedToRetrieveData {
+                    entity_name: "installed_tapplet.tapplet_id is None".to_string(),
+                },
+            ))
+        })?;
+
+        let (tapp, tapp_version) = store
+            .get_registered_tapplet_with_version(registered_tapplet_id)
+            .await
+            .map_err(|e| InvokeError::from_error(e))?;
+
+        Ok(TappletData {
+            id: tapplet_id,
+            is_pre_installed: &tapp.package_name == "wxtm-bridge", //TODO temp
+            source: installed_tapp.source,
+            csp: installed_tapp.csp,
+            tari_permissions: installed_tapp.tari_permissions,
+            package_name: tapp.package_name,
+            display_name: tapp.display_name,
+            version: tapp_version.version,
+        })
+    }
+
+    async fn update_permissions(
+        &mut self,
+        app_handle: tauri::AppHandle,
+        store: &SqliteStore,
+        tapplet_type: &TappletType,
+    ) -> CommandResult<()> {
+        let permission_result = check_and_update_permissions(
+            &self.source,
+            &self.csp,
+            &self.tari_permissions,
+            app_handle,
+        )
+        .await?;
+
+        if permission_result.should_update {
+            self.csp = permission_result.updated_csp;
+            self.tari_permissions = permission_result.updated_permissions;
+
+            match tapplet_type {
+                TappletType::Dev { dev_tapplet_id } => {
+                    let updated_tapp = UpdateDevTapplet {
+                        source: self.source.clone(),
+                        package_name: self.package_name.clone(),
+                        display_name: self.display_name.clone(),
+                        csp: self.csp.clone(),
+                        tari_permissions: self.tari_permissions.clone(),
+                    };
+
+                    store
+                        .update_dev_tapplet(*dev_tapplet_id, &updated_tapp)
+                        .await
+                        .map_err(|e| InvokeError::from_error(e))?;
+                }
+                TappletType::Installed { tapplet_id } => {
+                    let updated_tapp = UpdateInstalledTapplet {
+                        tapplet_id: None, // This field is for the registry tapplet ID, not the installed one
+                        tapplet_version_id: None, // This field is for the version ID, not needed for updates
+                        source: self.source.clone(),
+                        csp: self.csp.clone(),
+                        tari_permissions: self.tari_permissions.clone(),
+                    };
+
+                    store
+                        .update_installed_tapplet(*tapplet_id, &updated_tapp)
+                        .await
+                        .map_err(|e| InvokeError::from_error(e))?;
+                }
+            }
+        }
+
+        Ok(())
+    }
+}
+
+async fn start_tapplet_common(
+    tapplet_type: TappletType,
+    app_handle: tauri::AppHandle,
+    db_connection: tauri::State<'_, DatabaseConnection>,
+    tapplet_manager: &TappletManager,
+) -> CommandResult<ActiveTapplet> {
+    let store = SqliteStore::new(db_connection.0.clone());
+
+    // Get tapplet data based on type
+    let mut tapplet_data = match tapplet_type {
+        TappletType::Dev { dev_tapplet_id } => {
+            TappletData::from_dev_tapplet(dev_tapplet_id, &store).await?
+        }
+        TappletType::Installed { tapplet_id } => {
+            TappletData::from_installed_tapplet(tapplet_id, &store).await?
+        }
+    };
+
+    // Update permissions if needed
+    info!(target: LOG_TARGET, "IS PRE INSTALLED {:?}", tapplet_data.is_pre_installed);
+
+    if tapplet_data.is_pre_installed {
+        tapplet_data
+            .update_permissions(app_handle, &store, &tapplet_type)
+            .await?;
+    };
+
+    // Start the tapplet server
+    let tapplet_path = PathBuf::from(&tapplet_data.source);
+    let addr = start_tapplet_server(
+        tapplet_data.id,
+        tapplet_path,
+        &tapplet_data.csp,
+        tapplet_manager,
+    )
+    .await?;
+
+    Ok(ActiveTapplet {
+        tapplet_id: tapplet_data.id,
+        package_name: tapplet_data.package_name,
+        display_name: tapplet_data.display_name,
+        source: format!("http://{addr}"),
+        version: tapplet_data.version,
+    })
 }
 
 async fn create_tapplet_assets(
@@ -206,126 +372,22 @@ pub async fn start_tari_tapplet_binary(
 }
 
 #[tauri::command]
-pub async fn start_dev_tapplet(
-    dev_tapplet_id: i32,
-    app_handle: tauri::AppHandle,
-    db_connection: tauri::State<'_, DatabaseConnection>,
-    tapplet_manager: tauri::State<'_, TappletManager>,
-) -> CommandResult<ActiveTapplet> {
-    let store = SqliteStore::new(db_connection.0.clone());
-    let mut dev_tapplet = store
-        .get_dev_tapplet_by_id(dev_tapplet_id)
-        .await
-        .map_err(|e| InvokeError::from_error(e))?;
-
-    // Check and update permissions if needed
-    let permission_result = check_and_update_permissions(
-        &dev_tapplet.source,
-        &dev_tapplet.csp,
-        &dev_tapplet.tari_permissions,
-        app_handle,
-    )
-    .await?;
-
-    if permission_result.should_update {
-        dev_tapplet.csp = permission_result.updated_csp;
-        dev_tapplet.tari_permissions = permission_result.updated_permissions;
-        let updated_tapp = UpdateDevTapplet::from(&dev_tapplet);
-
-        store
-            .update_dev_tapplet(dev_tapplet_id, &updated_tapp)
-            .await
-            .map_err(|e| InvokeError::from_error(e))?;
-        dev_tapplet = store
-            .get_dev_tapplet_by_id(dev_tapplet_id)
-            .await
-            .map_err(|e| InvokeError::from_error(e))?;
-    }
-
-    let tapplet_path = PathBuf::from(&dev_tapplet.source);
-    let addr = start_tapplet_server(
-        dev_tapplet_id,
-        tapplet_path,
-        &dev_tapplet.csp,
-        &tapplet_manager,
-    )
-    .await?;
-
-    Ok(ActiveTapplet {
-        tapplet_id: dev_tapplet_id,
-        package_name: dev_tapplet.package_name,
-        display_name: dev_tapplet.display_name,
-        source: format!("http://{addr}"),
-        version: "0.1.0".to_string(), // TODO: get actual version
-    })
-}
-
-#[tauri::command]
 pub async fn start_tapplet(
     tapplet_id: i32,
+    is_dev_tapplet: bool,
     app_handle: tauri::AppHandle,
     db_connection: tauri::State<'_, DatabaseConnection>,
     tapplet_manager: tauri::State<'_, TappletManager>,
 ) -> CommandResult<ActiveTapplet> {
-    let store = SqliteStore::new(db_connection.0.clone());
-    let mut installed_tapp = store
-        .get_installed_tapplet_by_id(tapplet_id)
-        .await
-        .map_err(|e| InvokeError::from_error(e))?;
+    let tapplet_type = if is_dev_tapplet {
+        TappletType::Dev {
+            dev_tapplet_id: tapplet_id,
+        }
+    } else {
+        TappletType::Installed { tapplet_id }
+    };
 
-    let registered_tapplet_id = installed_tapp.tapplet_id.ok_or_else(|| {
-        InvokeError::from_error(Error::DatabaseError(
-            crate::tapplets::error::DatabaseError::FailedToRetrieveData {
-                entity_name: "installed_tapplet.tapplet_id is None".to_string(),
-            },
-        ))
-    })?;
-
-    let (tapp, tapp_version) = store
-        .get_registered_tapplet_with_version(registered_tapplet_id)
-        .await
-        .map_err(|e| InvokeError::from_error(e))?;
-
-    // Check and update permissions if needed
-    let permission_result = check_and_update_permissions(
-        &installed_tapp.source,
-        &installed_tapp.csp,
-        &installed_tapp.tari_permissions,
-        app_handle,
-    )
-    .await?;
-
-    if permission_result.should_update {
-        installed_tapp.csp = permission_result.updated_csp;
-        installed_tapp.tari_permissions = permission_result.updated_permissions;
-        let updated_tapp = UpdateInstalledTapplet::from(&installed_tapp);
-
-        store
-            .update_installed_tapplet(tapplet_id, &updated_tapp)
-            .await
-            .map_err(|e| InvokeError::from_error(e))?;
-        installed_tapp = store
-            .get_installed_tapplet_by_id(tapplet_id)
-            .await
-            .map_err(|e| InvokeError::from_error(e))?;
-    }
-
-    let tapplet_path = PathBuf::from(&installed_tapp.source);
-    let addr = start_tapplet_server(
-        tapplet_id,
-        tapplet_path,
-        &installed_tapp.csp,
-        &tapplet_manager,
-    )
-    .await?;
-
-    Ok(ActiveTapplet {
-        tapplet_id,
-        package_name: tapp.package_name,
-        display_name: tapp.display_name,
-        source: format!("http://{addr}"),
-        version: tapp_version.version,
-    })
+    start_tapplet_common(tapplet_type, app_handle, db_connection, &tapplet_manager).await
 }
 
 #[tauri::command]
@@ -630,7 +692,7 @@ pub async fn register_bridge_tapplet_in_database(
     let store = SqliteStore::new(db_connection.0.clone());
 
     // Check if bridge tapplet is already registered
-    if let Ok(_) = store.get_tapplet_by_name("wxtm-bridge".to_string()).await {
+    if let Ok(Some(_)) = store.get_tapplet_by_name("wxtm-bridge".to_string()).await {
         info!(target: LOG_TARGET, "💎💎 Bridge tapplet already registered in database");
         return Ok(());
     }

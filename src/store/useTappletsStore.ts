@@ -76,23 +76,24 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
         let stateUpdateNeeded = false;
 
         // built-in tapplet
-        if (isBuiltIn) {
-            const name = 'bridge'; //TODO add names for more options
-            try {
-                console.info('🚗 RUN BUILDIN');
-                activeTapplet = await invoke('start_tari_tapplet_binary', { binaryName: name });
-                runningTapplet = {
-                    ...activeTapplet,
-                    allowReceiveFrom: [],
-                    allowSendTo: [],
-                };
-                stateUpdateNeeded = true;
-            } catch (error) {
-                console.error(`Tapplet (id: ${tappletId} name: ${name}) startup error: ${error}`);
-                setError(`Tapplet (id: ${tappletId} name: ${name}) startup error: ${error}`);
-            }
-            if (!stateUpdateNeeded) return;
-        } else if (isDev) {
+        // if (isBuiltIn) {
+        //     const name = 'bridge'; //TODO add names for more options
+        //     try {
+        //         console.info('🚗 RUN BUILDIN');
+        //         activeTapplet = await invoke('start_tari_tapplet_binary', { binaryName: name });
+        //         runningTapplet = {
+        //             ...activeTapplet,
+        //             allowReceiveFrom: [],
+        //             allowSendTo: [],
+        //         };
+        //         stateUpdateNeeded = true;
+        //     } catch (error) {
+        //         console.error(`Tapplet (id: ${tappletId} name: ${name}) startup error: ${error}`);
+        //         setError(`Tapplet (id: ${tappletId} name: ${name}) startup error: ${error}`);
+        //     }
+        //     if (!stateUpdateNeeded) return;
+        // } else
+        if (isDev) {
             const tapplet = get().devTapplets.find((tapp) => tapp.id === tappletId);
             if (!tapplet) {
                 setError(`Tapplet with id: ${tappletId} not found`);
@@ -120,8 +121,9 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
             } else {
                 console.info('🚗 RUN DEV', tappletId);
                 try {
-                    activeTapplet = await invoke('start_dev_tapplet', {
-                        devTappletId: tappletId,
+                    activeTapplet = await invoke('start_tapplet', {
+                        tappletId: tappletId,
+                        isDevTapplet: true,
                     });
                     runningTapplet = {
                         ...activeTapplet,
@@ -139,6 +141,7 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
             try {
                 activeTapplet = await invoke('start_tapplet', {
                     tappletId: tappletId,
+                    isDevTapplet: false,
                 });
                 runningTapplet = {
                     ...activeTapplet,
@@ -153,7 +156,6 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
             if (!stateUpdateNeeded) return;
         }
 
-        // Single state update at the end
         if (stateUpdateNeeded && activeTapplet && runningTapplet) {
             set((state) => ({
                 activeTapplet,
