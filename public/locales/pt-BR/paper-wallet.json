@@ -1,0 +1,18 @@
+{
+  "connect": {
+    "blackButton": "Eu tenho o aplicativo",
+    "scan": "Escanear Código QR",
+    "text": "Baixe o Tari Universe Mobile e acompanhe seu saldo XTM em tempo real em qualquer lugar. Obtenha agora para iOS ou Android.",
+    "textButton": "Saiba mais sobre o Tari Universe Mobile",
+    "title": "Acompanhe seu saldo XTM no seu telefone"
+  },
+  "qrcode": {
+    "blackButton": "Feito",
+    "copied": "Copiado!",
+    "inputLabel": "Código de Identificação",
+    "text": "Escaneie o código QR para sincronizar sua carteira Universe com o Tari Universe Mobile no seu telefone. Quando solicitado, digite o código de segurança abaixo no Tari Universe Mobile e siga os passos no aplicativo.",
+    "textButton": "Preciso de ajuda",
+    "title": "Sincronize o Universe com o Tari Universe Mobile",
+    "warning": "Não compartilhe este código QR"
+  }
+}
