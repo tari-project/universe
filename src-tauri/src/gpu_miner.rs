@@ -112,66 +112,6 @@ impl GpuMiner {
         }
     }
 
-    #[allow(clippy::too_many_arguments)]
-    pub async fn start(
-        &mut self,
-        tari_address: TariAddress,
-        base_path: PathBuf,
-        config_path: PathBuf,
-        log_path: PathBuf,
-        coinbase_extra: String,
-        gpu_usage_percentage: u32,
-    ) -> Result<(), anyhow::Error> {
-        let shutdown_signal = TasksTrackers::current().gpu_mining_phase.get_signal().await;
-        let task_tracker = TasksTrackers::current()
-            .gpu_mining_phase
-            .get_task_tracker()
-            .await;
-
-        let mut process_watcher: tokio::sync::RwLockWriteGuard<
-            '_,
-            ProcessWatcher<GpuMinerAdapter>,
-        > = self.watcher.write().await;
-        process_watcher.adapter.tari_address = tari_address;
-        process_watcher.adapter.gpu_devices = self.gpu_devices.clone();
-        process_watcher.adapter.coinbase_extra = coinbase_extra;
-        process_watcher.adapter.gpu_usage_percentage = gpu_usage_percentage;
-        info!(target: LOG_TARGET, "Starting xtrgpuminer");
-        process_watcher
-            .start(
-                base_path,
-                config_path,
-                log_path,
-                Binaries::GpuMiner,
-                shutdown_signal.clone(),
-                task_tracker,
-            )
-            .await?;
-        info!(target: LOG_TARGET, "xtrgpuminer started");
-
-        self.initialize_status_updates(shutdown_signal).await;
-
-        Ok(())
-    }
-
-    pub async fn stop(&self) -> Result<(), anyhow::Error> {
-        info!(target: LOG_TARGET, "Stopping xtrgpuminer");
-        {
-            let mut process_watcher = self.watcher.write().await;
-            process_watcher.status_monitor = None;
-            process_watcher.stop().await?;
-        }
-        let _res = self.status_broadcast.send(GpuMinerStatus::default());
-        info!(target: LOG_TARGET, "xtrgpuminer stopped");
-        Ok(())
-    }
-
-    #[allow(dead_code)]
-    pub async fn is_pid_file_exists(&self, base_path: PathBuf) -> bool {
-        let lock = self.watcher.read().await;
-        lock.is_pid_file_exists(base_path)
-    }
-
     pub async fn detect(
         &mut self,
         config_dir: PathBuf,
@@ -277,47 +217,6 @@ impl GpuMiner {
         }
 
         Ok(available_engines)
-    }
-
-    async fn initialize_status_updates(&self, mut app_shutdown: ShutdownSignal) {
-        let mut gpu_raw_status_rx = self.gpu_raw_status_rx.clone();
-        let node_status_watch_rx = self.node_status_watch_rx.clone();
-        let status_broadcast = self.status_broadcast.clone();
-
-        tauri::async_runtime::spawn(async move {
-            loop {
-                select! {
-                    _ = gpu_raw_status_rx.changed() => {
-                        let node_status = *node_status_watch_rx.borrow();
-                        let gpu_raw_status = gpu_raw_status_rx.borrow().clone();
-
-                        let gpu_status = match gpu_raw_status {
-                            Some(gpu_raw_status) => {
-                                let estimated_earnings = estimate_earning(
-                                    node_status.sha_network_hashrate,
-                                    gpu_raw_status.hash_rate,
-                                    node_status.block_reward,
-                                );
-
-                                GpuMinerStatus {
-                                    estimated_earnings: MicroMinotari(estimated_earnings).as_u64(),
-                                    ..gpu_raw_status
-                                }
-                            }
-                            None => {
-                                warn!(target: LOG_TARGET, "Failed to get gpu miner status");
-                                GpuMinerStatus::default()
-                            }
-                        };
-
-                        let _result = status_broadcast.send(gpu_status);
-                    },
-                    _ = app_shutdown.wait() => {
-                        break;
-                    },
-                }
-            }
-        });
     }
 
     pub async fn set_selected_engine(
