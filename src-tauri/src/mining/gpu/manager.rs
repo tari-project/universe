@@ -40,7 +40,7 @@ use tokio::{
 use crate::{
     binaries::Binaries,
     configs::{
-        config_mining::ConfigMining,
+        config_mining::{ConfigMining, ConfigMiningContent},
         config_pools::ConfigPools,
         pools::{gpu_pools::GpuPool, PoolConfig},
         trait_config::ConfigImpl,
@@ -125,15 +125,40 @@ impl GpuManager {
         node_status_channel: Option<Receiver<BaseNodeStatus>>,
         systray_manager: Option<Arc<RwLock<SystemTrayManager>>>,
     ) {
-        let config_gpu_miner_type = ConfigMining::content().await.gpu_miner_type().clone();
         let selected_engine = ConfigMining::content().await.gpu_engine().clone();
         let mut instance = INSTANCE.write().await;
-        instance.selected_miner = config_gpu_miner_type;
+
         instance.process_stats_collector = process_stats_collector;
         instance.gpu_external_status_channel = status_channel;
         instance.node_status_channel = node_status_channel;
         instance.systray_manager = systray_manager;
         instance.selected_engine = Some(selected_engine);
+    }
+
+    // Loads the saved miner from config or the first available one
+    pub async fn load_saved_miner() {
+        let config_gpu_miner_type = ConfigMining::content().await.gpu_miner_type().clone();
+        let mut instance = INSTANCE.write().await;
+
+        if instance
+            .available_miners
+            .contains_key(&config_gpu_miner_type)
+        {
+            info!(target: LOG_TARGET, "Loaded saved gpu miner: {config_gpu_miner_type}");
+            let adapter = instance.resolve_miner_interface(&config_gpu_miner_type);
+            instance.process_watcher.adapter = adapter;
+            instance.selected_miner = config_gpu_miner_type;
+        } else if let Some((first_miner_type, _)) = instance.available_miners.iter().next() {
+            info!(target: LOG_TARGET, "Saved gpu miner {config_gpu_miner_type} is not available, loaded first available miner: {first_miner_type}");
+            let _unused = ConfigMining::update_field(
+                ConfigMiningContent::set_gpu_miner_type,
+                first_miner_type.clone(),
+            )
+            .await;
+            let adapter = instance.resolve_miner_interface(first_miner_type);
+            instance.selected_miner = first_miner_type.clone();
+            instance.process_watcher.adapter = adapter;
+        }
     }
 
     pub async fn load_miner(miner: GpuMinerType) {
@@ -265,6 +290,41 @@ impl GpuManager {
         Ok(())
     }
 
+    // Should iterate over available miners and detect devices for each of them
+    // If at least one miner detects devices, we consider the detection successful
+    // If detection fails for some of the miners we need to remove them from available miners
+    // If no miners are left, we return an error
+    pub async fn detect_devices() -> Result<(), anyhow::Error> {
+        let mut instance = INSTANCE.write().await;
+        let mut successful_detection = false;
+        let mut miners_to_remove = vec![];
+
+        for miner_type in instance.available_miners.keys() {
+            let mut adapter = instance.resolve_miner_interface(miner_type);
+            let detection_result = adapter.detect_devices().await;
+            match detection_result {
+                Ok(_) => {
+                    successful_detection = true;
+                    info!(target: LOG_TARGET, "Devices detected with miner: {miner_type}");
+                }
+                Err(e) => {
+                    error!(target: LOG_TARGET, "Device detection failed for miner {miner_type}: {e}");
+                    miners_to_remove.push(miner_type.clone());
+                }
+            }
+        }
+
+        for miner_type in miners_to_remove {
+            instance.available_miners.remove(&miner_type);
+            info!(target: LOG_TARGET, "Removed miner {miner_type} from available miners due to detection failure");
+        }
+
+        if !successful_detection {
+            return Err(anyhow::anyhow!("No miners detected any devices"));
+        }
+        Ok(())
+    }
+
     fn resolve_miner_interface(&self, miner_type: &GpuMinerType) -> GpuMinerInterface {
         match miner_type {
             GpuMinerType::Graxil => GpuMinerInterface::Graxil(GraxilGpuMiner::new(
@@ -299,6 +359,7 @@ impl GpuManager {
                 select! {
                     _ = internal_shutdown_signal.wait() => {
                         info!(target: LOG_TARGET, "Shutting down gpu miner status updates");
+                        EventsEmitter::emit_gpu_mining_update(GpuMinerStatus::default()).await;
                         break;
                     },
                     _ = global_shutdown_signal.wait() => {
@@ -341,11 +402,6 @@ impl GpuManager {
         });
     }
 
-    async fn handle_pool_connection_type_status_change(
-        gpu_status: GpuMinerStatus,
-    ) -> GpuMinerStatus {
-        gpu_status
-    }
     async fn handle_node_connection_type_status_change(
         gpu_status: GpuMinerStatus,
         node_status_reciever: Option<Receiver<BaseNodeStatus>>,
@@ -365,6 +421,12 @@ impl GpuManager {
         } else {
             gpu_status
         }
+    }
+
+    async fn handle_pool_connection_type_status_change(
+        gpu_status: GpuMinerStatus,
+    ) -> GpuMinerStatus {
+        gpu_status
     }
 
     #[allow(dead_code)]

@@ -30,6 +30,7 @@ use tokio::sync::watch::Sender;
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 use crate::{
     binaries::{Binaries, BinaryResolver},
+    configs::{config_mining::ConfigMining, trait_config::ConfigImpl},
     events_emitter::EventsEmitter,
     mining::gpu::{
         consts::{EngineType, GpuConnectionType, GpuMinerStatus},
@@ -178,6 +179,11 @@ impl GpuMinerInterfaceTrait for GlytexGpuMiner {
 
                 self.gpu_devices = common_gpu_devices.clone();
                 EventsEmitter::emit_detected_devices(common_gpu_devices).await;
+
+                EventsEmitter::emit_update_gpu_devices_settings(
+                    ConfigMining::content().await.gpu_devices_settings().clone(),
+                )
+                .await;
 
                 let mut available_engines: Vec<String> = vec![];
 

@@ -28,6 +28,7 @@ use tari_shutdown::Shutdown;
 use tokio::sync::watch::Sender;
 
 use crate::{
+    binaries::{Binaries, BinaryResolver},
     mining::gpu::{
         consts::{GpuConnectionType, GpuMinerStatus},
         interface::{GpuMinerInterfaceTrait, GpuMinerStatusInterface},
@@ -35,6 +36,8 @@ use crate::{
     process_adapter::{
         HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
     },
+    process_utils::{self, launch_child_process},
+    APPLICATION_FOLDER_ID,
 };
 
 const LOG_TARGET: &str = "tari::universe::mining::gpu::miners::lolminer";
@@ -84,8 +87,30 @@ impl GpuMinerInterfaceTrait for LolMinerGpuMiner {
         self.connection_type = Some(connection_type);
         Ok(())
     }
+
     async fn detect_devices(&mut self) -> Result<(), anyhow::Error> {
-        // lolMiner does not have a device detection feature
+        let config_path =
+            dirs::config_dir().ok_or_else(|| anyhow::anyhow!("Failed to get config directory"))?;
+
+        let config_dir = config_path.join(APPLICATION_FOLDER_ID);
+
+        let gpu_miner_binary = BinaryResolver::current()
+            .get_binary_path(Binaries::LolMiner)
+            .await?;
+
+        let args = vec!["--list-devices".to_string()];
+
+        crate::download_utils::set_permissions(&gpu_miner_binary).await?;
+        let result = launch_child_process(&gpu_miner_binary, &config_dir, None, &args, true)?;
+
+        let output = result.wait_with_output().await?;
+        let output_str = String::from_utf8_lossy(&output.stdout);
+        info!(target: LOG_TARGET, "LolMiner devices output: {}", output_str);
+        if output_str.contains("Number of Cuda supported GPUs: 0")
+            && output_str.contains("Number of OpenCL supported GPUs: 0")
+        {
+            return Err(anyhow::anyhow!("No supported GPU devices found"));
+        }
         Ok(())
     }
 }
@@ -106,7 +131,6 @@ impl ProcessAdapter for LolMinerGpuMiner {
         let api_port = 8080;
 
         let mut args: Vec<String> = vec![
-            // format!("--algo {}", "SHA3X"),
             "--algo".to_string(),
             "SHA3X".to_string(),
             format!("--apiport={}", api_port),
@@ -262,9 +286,8 @@ impl LolMinerGpuMinerStatusMonitor {
                 .iter()
                 .map(|a| a.total_performance)
                 .sum::<f64>()
-                * 100.0)
-                .round()
-                / 100.0,
+                // lolminer parsed already returns in MH/s and we did it also on frontend so to keep it consistent we multiply by 1_000_000
+                * 1000000.0),
         })
     }
 }

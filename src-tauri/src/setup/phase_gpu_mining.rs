@@ -183,15 +183,18 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
                 ));
             }
 
-            if graxil_initialization_result.is_ok() {
+            // Graxil is supported on Windows | Linux | MacOS
+            if graxil_initialization_result.is_ok() && GpuMinerType::Graxil.is_supported_on_current_platform() {
                 GpuManager::load_miner(GpuMinerType::Graxil).await;
             }
 
-            if glytex_initialization_result.is_ok() {
+            // Glytex is supported on Windows | Linux | MacOS
+            if glytex_initialization_result.is_ok() && GpuMinerType::Glytex.is_supported_on_current_platform() {
                 GpuManager::load_miner(GpuMinerType::Glytex).await;
             }
 
-            if lolminer_initialization_result.is_ok() {
+            // LolMiner is supported on Windows | Linux
+            if lolminer_initialization_result.is_ok() && GpuMinerType::LolMiner.is_supported_on_current_platform() {
                 GpuManager::load_miner(GpuMinerType::LolMiner).await;
             }
 
@@ -200,7 +203,7 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
 
         progress_stepper
             .complete_step(SetupStep::DetectGpu, || async {
-                if let Err(original_error) = self.resolve_detect_gpu_step().await {
+                if let Err(original_error) = GpuManager::detect_devices().await {
                     #[cfg(target_os = "windows")]
                     {
                         use crate::system_dependencies::system_dependencies_manager::SystemDependenciesManager;
@@ -224,7 +227,7 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
                         }
 
                         // Retry GPU detection after adding GPU drivers
-                        if let Err(first_retry_error) = self.resolve_detect_gpu_step().await {
+                        if let Err(first_retry_error) = GpuManager::detect_devices().await {
                             // Try adding Khronos OpenCL as a fallback
                             if let Err(e) = SystemDependenciesManager::get_instance()
                                 .get_windows_dependencies_resolver()
@@ -244,7 +247,7 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
                             }
 
                             // Final retry after adding all dependencies
-                            self.resolve_detect_gpu_step().await?;
+                            GpuManager::detect_devices().await?;
                         }
                     }
                     #[cfg(not(target_os = "windows"))]
@@ -265,6 +268,8 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
             })
             .await?;
 
+        GpuManager::load_saved_miner().await;
+
         Ok(())
     }
 
@@ -279,39 +284,5 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
         }
 
         Ok(())
-    }
-}
-
-impl GpuMiningSetupPhase {
-    #[allow(dead_code)]
-    async fn resolve_detect_gpu_step(&self) -> Result<(), Error> {
-        Ok(())
-        // let state = self.app_handle.state::<UniverseAppState>();
-        // let (data_dir, config_dir, _log_dir) = self.get_app_dirs()?;
-        // let glytex_detection_result = state
-        //     .gpu_miner
-        //     .write()
-        //     .await
-        //     .detect(
-        //         config_dir.clone(),
-        //         self.app_configuration.gpu_engine.clone(),
-        //     )
-        //     .await;
-
-        // let graxil_detection_result = GpuDevices::current()
-        //     .write()
-        //     .await
-        //     .detect(data_dir.clone())
-        //     .await;
-
-        // if let (Err(graxil_err), Err(glytex_err)) =
-        //     (graxil_detection_result, glytex_detection_result)
-        // {
-        //     return Err(anyhow::anyhow!(
-        //         "Failed to detect GPU devices: Graxil: {graxil_err}, Glytex: {glytex_err}"
-        //     ));
-        // }
-
-        // Ok(())
     }
 }

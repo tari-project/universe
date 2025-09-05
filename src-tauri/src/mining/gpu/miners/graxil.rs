@@ -70,7 +70,7 @@ pub struct GraxilGpuDeviceInformation {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GraxilGpuDeviceInformationFile {
-    pub gpu_devices: Vec<GraxilGpuDeviceInformation>,
+    pub devices: Vec<GraxilGpuDeviceInformation>,
 }
 
 #[derive(Default)]
@@ -160,7 +160,7 @@ impl GpuMinerInterfaceTrait for GraxilGpuMiner {
                     load_file_content::<GraxilGpuDeviceInformationFile>(&gpu_information_file_path)
                         .await?;
                 let common_gpu_devices = gpu_status_file
-                    .gpu_devices
+                    .devices
                     .iter()
                     .map(|device| GpuCommonInformation::from_graxil_devices(device.clone()))
                     .collect::<Vec<GpuCommonInformation>>();

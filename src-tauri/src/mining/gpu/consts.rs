@@ -136,7 +136,6 @@ impl GpuMinerType {
         }
     }
 
-    #[allow(dead_code)]
     pub fn is_supported_on_current_platform(&self) -> bool {
         let current_os = PlatformUtils::detect_current_os();
         self.supported_platforms().contains(&current_os)
