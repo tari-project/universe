@@ -29,10 +29,6 @@ pub(crate) struct ProcessStatsCollectorBuilder {
     cpu_miner_rx: Receiver<ProcessWatcherStats>,
     gpu_miner_tx: Option<Sender<ProcessWatcherStats>>,
     gpu_miner_rx: Receiver<ProcessWatcherStats>,
-    #[allow(dead_code)]
-    gpu_miner_sha_tx: Option<Sender<ProcessWatcherStats>>,
-    #[allow(dead_code)]
-    gpu_miner_sha_rx: Receiver<ProcessWatcherStats>,
     mm_proxy_tx: Option<Sender<ProcessWatcherStats>>,
     mm_proxy_rx: Receiver<ProcessWatcherStats>,
     node_tx: Option<Sender<ProcessWatcherStats>>,
@@ -57,8 +53,6 @@ impl ProcessStatsCollectorBuilder {
         let (p2pool_tx, p2pool_rx) = tokio::sync::watch::channel(ProcessWatcherStats::default());
         let (tor_tx, tor_rx) = tokio::sync::watch::channel(ProcessWatcherStats::default());
         let (wallet_tx, wallet_rx) = tokio::sync::watch::channel(ProcessWatcherStats::default());
-        let (gpu_miner_sha_tx, gpu_miner_sha_rx) =
-            tokio::sync::watch::channel(ProcessWatcherStats::default());
 
         Self {
             cpu_miner_tx: Some(cpu_miner_tx),
@@ -75,8 +69,6 @@ impl ProcessStatsCollectorBuilder {
             tor_rx,
             wallet_tx: Some(wallet_tx),
             wallet_rx,
-            gpu_miner_sha_tx: Some(gpu_miner_sha_tx),
-            gpu_miner_sha_rx,
         }
     }
 
@@ -124,7 +116,6 @@ impl ProcessStatsCollectorBuilder {
         ProcessStatsCollector {
             cpu_miner_rx: self.cpu_miner_rx,
             gpu_miner_rx: self.gpu_miner_rx,
-            gpu_miner_sha_rx: self.gpu_miner_sha_rx,
             mm_proxy_rx: self.mm_proxy_rx,
             node_rx: self.node_rx,
             p2pool_rx: self.p2pool_rx,
@@ -138,7 +129,6 @@ impl ProcessStatsCollectorBuilder {
 pub(crate) struct ProcessStatsCollector {
     cpu_miner_rx: Receiver<ProcessWatcherStats>,
     gpu_miner_rx: Receiver<ProcessWatcherStats>,
-    gpu_miner_sha_rx: Receiver<ProcessWatcherStats>,
     mm_proxy_rx: Receiver<ProcessWatcherStats>,
     node_rx: Receiver<ProcessWatcherStats>,
     p2pool_rx: Receiver<ProcessWatcherStats>,
@@ -157,10 +147,6 @@ impl ProcessStatsCollector {
 
     pub fn get_gpu_miner_stats(&self) -> ProcessWatcherStats {
         self.gpu_miner_rx.borrow().clone()
-    }
-
-    pub fn get_gpu_miner_sha_stats(&self) -> ProcessWatcherStats {
-        self.gpu_miner_sha_rx.borrow().clone()
     }
 
     pub fn get_mm_proxy_stats(&self) -> ProcessWatcherStats {

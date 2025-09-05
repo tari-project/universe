@@ -687,7 +687,6 @@ impl EventsEmitter {
             error!(target: LOG_TARGET, "Failed to emit EnterPin event: {e:?}");
         }
     }
-    #[allow(dead_code)]
     pub async fn emit_update_gpu_devices_settings(payload: GpuDevicesSettings) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {

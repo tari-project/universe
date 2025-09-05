@@ -45,9 +45,7 @@ pub enum EventType {
     GpuMiningUpdate,
     NewBlockHeight,
     CloseSplashscreen,
-    #[allow(dead_code)]
     DetectedDevices,
-    #[allow(dead_code)]
     DetectedAvailableGpuEngines,
     RestartingPhases,
     AskForRestart,
@@ -74,7 +72,6 @@ pub enum EventType {
     ShowKeyringDialog,
     CreatePin,
     EnterPin,
-    #[allow(dead_code)]
     UpdateGpuDevicesSettings,
     PinLocked,
     SeedBackedUp,

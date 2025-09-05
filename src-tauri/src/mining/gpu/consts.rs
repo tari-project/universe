@@ -115,8 +115,6 @@ impl GpuMinerType {
             GpuMinerType::LolMiner => vec![GpuMiningAlgorithm::SHA3X, GpuMiningAlgorithm::C29],
         }
     }
-
-    #[allow(dead_code)]
     pub fn supported_platforms(&self) -> Vec<CurrentOperatingSystem> {
         match self {
             GpuMinerType::Glytex => vec![

@@ -90,7 +90,6 @@ pub struct GlytexGpuMiner {
 }
 
 impl GlytexGpuMiner {
-    #[allow(dead_code)]
     pub fn new(gpu_status_sender: Sender<GpuMinerStatus>) -> Self {
         Self {
             tari_address: None,

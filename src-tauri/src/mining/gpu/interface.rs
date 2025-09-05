@@ -55,7 +55,6 @@ pub trait GpuMinerInterfaceTrait: Send + Sync {
     }
 }
 
-#[allow(dead_code)]
 pub enum GpuMinerInterface {
     LolMiner(LolMinerGpuMiner),
     Graxil(GraxilGpuMiner),

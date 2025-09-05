@@ -1789,7 +1789,6 @@ pub async fn stop_mining_status(state: tauri::State<'_, UniverseAppState>) -> Re
     }
     Ok(())
 }
-#[allow(dead_code)]
 #[tauri::command]
 pub async fn set_selected_engine(
     selected_engine: &str,
