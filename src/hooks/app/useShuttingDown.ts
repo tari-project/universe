@@ -12,17 +12,17 @@ function useShutdownHandler(shutdownTriggered = false) {
     const wasLongTimeMiner = Boolean(long_time_miner?.feedback_sent || long_time_miner?.last_dismissed !== null);
     const closeMiningTimeMs = useUserFeedbackStore((s) => s.closeMiningTimeMs);
     const earlyClosedDismissed = useUserFeedbackStore((s) => s.earlyClosedDismissed);
-    const miningTimeMs = useMiningStore((s) => s.sessionMiningTime.durationMs);
-    const isEarlyClose = !miningTimeMs || miningTimeMs < closeMiningTimeMs;
+    const storedMiningTimeMs = useMiningStore((s) => s.sessionMiningTime.durationMs);
     const [shouldShutDown, setShouldShutDown] = useState(false);
 
-    useEffect(
-        () =>
-            setShouldShutDown(
-                wasLongTimeMiner || wasFeedbackSent || !isEarlyClose || (isEarlyClose && earlyClosedDismissed)
-            ),
-        [earlyClosedDismissed, isEarlyClose, wasFeedbackSent, wasLongTimeMiner]
-    );
+    useEffect(() => {
+        const currentMiningTimeMs = checkMiningTime();
+        const miningTimeMs = storedMiningTimeMs || currentMiningTimeMs;
+        const isEarlyClose = !miningTimeMs || miningTimeMs < closeMiningTimeMs;
+        setShouldShutDown(
+            wasLongTimeMiner || wasFeedbackSent || !isEarlyClose || (isEarlyClose && earlyClosedDismissed)
+        );
+    }, [closeMiningTimeMs, earlyClosedDismissed, storedMiningTimeMs, wasFeedbackSent, wasLongTimeMiner]);
 
     return shutdownTriggered ? shouldShutDown : false;
 }
