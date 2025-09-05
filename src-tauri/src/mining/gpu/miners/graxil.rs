@@ -27,25 +27,51 @@ use std::{
 
 use axum::async_trait;
 use log::{info, warn};
+use serde::{Deserialize, Serialize};
 use tari_shutdown::Shutdown;
 use tokio::sync::watch::Sender;
 
 use crate::{
-    gpu_miner_adapter::GpuMinerStatus,
-    gpu_miner_sha_websocket::GpuMinerShaWebSocket,
+    binaries::{Binaries, BinaryResolver},
+    configs::{
+        config_mining::{ConfigMining, ConfigMiningContent},
+        trait_config::ConfigImpl,
+    },
+    events_emitter::EventsEmitter,
     mining::gpu::{
-        consts::GpuConnectionType,
+        consts::{GpuConnectionType, GpuMinerStatus},
         interface::{GpuMinerInterfaceTrait, GpuMinerStatusInterface},
+        miners::{load_file_content, GpuCommonInformation, GpuDeviceType, GpuVendor},
+        utils::gpu_miner_sha_websocket::GpuMinerShaWebSocket,
     },
     port_allocator::PortAllocator,
     process_adapter::{
         HandleUnhealthyResult, HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec,
         StatusMonitor,
     },
+    process_utils,
     setup::setup_manager::SetupManager,
+    APPLICATION_FOLDER_ID,
 };
 
 const LOG_TARGET: &str = "tari::universe::mining::gpu::miners::graxil";
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GraxilGpuDeviceInformation {
+    pub name: String,
+    pub device_id: u32,
+    pub platform_name: String,
+    pub vendor: GpuVendor,
+    pub max_work_group_size: usize,
+    pub max_compute_units: u32,
+    pub global_mem_size: u64,
+    pub device_type: GpuDeviceType,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GraxilGpuDeviceInformationFile {
+    pub gpu_devices: Vec<GraxilGpuDeviceInformation>,
+}
 
 #[derive(Default)]
 pub struct GraxilGpuMiner {
@@ -54,6 +80,7 @@ pub struct GraxilGpuMiner {
     pub worker_name: Option<String>,
     pub connection_type: Option<GpuConnectionType>,
     pub gpu_status_sender: Sender<GpuMinerStatus>,
+    pub gpu_devices: Vec<GpuCommonInformation>,
 }
 
 impl GraxilGpuMiner {
@@ -65,6 +92,7 @@ impl GraxilGpuMiner {
             worker_name: None,
             connection_type: None,
             gpu_status_sender,
+            gpu_devices: vec![],
         }
     }
 }
@@ -91,6 +119,75 @@ impl GpuMinerInterfaceTrait for GraxilGpuMiner {
     ) -> Result<(), anyhow::Error> {
         self.connection_type = Some(connection_type);
         Ok(())
+    }
+    async fn detect_devices(&mut self) -> Result<(), anyhow::Error> {
+        let config_path =
+            dirs::config_dir().ok_or_else(|| anyhow::anyhow!("Failed to get config directory"))?;
+
+        let config_dir = config_path.join(APPLICATION_FOLDER_ID);
+        let gpu_information_file_directory = config_dir.join("gpuminer");
+        let gpu_information_file_path =
+            gpu_information_file_directory.join("gpu_information_opencl.json");
+        gpu_information_file_path
+            .try_exists()
+            .map_err(|e| anyhow::anyhow!("Failed to check if gpu status file exists: {}", e))?;
+
+        let args = vec![
+            "--detect".to_string(),
+            "--information-file-dir".to_string(),
+            gpu_information_file_directory.to_string_lossy().to_string(),
+        ];
+
+        let gpu_miner_binary = BinaryResolver::current()
+            .get_binary_path(Binaries::GpuMinerSHA3X)
+            .await?;
+
+        info!(target: LOG_TARGET, "Gpu miner binary file path {:?}", gpu_miner_binary.clone());
+        crate::download_utils::set_permissions(&gpu_miner_binary).await?;
+        let child = process_utils::launch_child_process(
+            &gpu_miner_binary,
+            &config_dir,
+            None,
+            &args,
+            false,
+        )?;
+        let output = child.wait_with_output().await?;
+        info!(target: LOG_TARGET, "Gpu detect exit code: {:?}", output.status.code().unwrap_or_default());
+
+        match output.status.code() {
+            Some(0) => {
+                let gpu_status_file =
+                    load_file_content::<GraxilGpuDeviceInformationFile>(&gpu_information_file_path)
+                        .await?;
+                let common_gpu_devices = gpu_status_file
+                    .gpu_devices
+                    .iter()
+                    .map(|device| GpuCommonInformation::from_graxil_devices(device.clone()))
+                    .collect::<Vec<GpuCommonInformation>>();
+
+                self.gpu_devices = common_gpu_devices.clone();
+                EventsEmitter::emit_detected_devices(common_gpu_devices).await;
+
+                let devices_indexes: Vec<u32> =
+                    self.gpu_devices.iter().map(|d| d.device_id).collect();
+                ConfigMining::update_field(
+                    ConfigMiningContent::populate_gpu_devices_settings,
+                    devices_indexes,
+                )
+                .await?;
+
+                EventsEmitter::emit_update_gpu_devices_settings(
+                    ConfigMining::content().await.gpu_devices_settings().clone(),
+                )
+                .await;
+
+                Ok(())
+            }
+            _ => Err(anyhow::anyhow!(
+                "Non-zero exit code: {:?}",
+                output.status.code()
+            )),
+        }
     }
 }
 

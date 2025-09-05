@@ -26,7 +26,7 @@ use axum::async_trait;
 
 use crate::{
     mining::gpu::{
-        consts::GpuConnectionType,
+        consts::{EngineType, GpuConnectionType},
         miners::{
             glytex::{GlytexGpuMiner, GlytexGpuMinerStatusMonitor},
             graxil::{GraxilGpuMiner, GraxilGpuMinerStatusMonitor},
@@ -49,12 +49,10 @@ pub trait GpuMinerInterfaceTrait: Send + Sync {
         &mut self,
         connection_type: GpuConnectionType,
     ) -> Result<(), anyhow::Error>;
-    // async fn load_selected_engine(&mut self, engine: &str) -> Result<(), anyhow::Error> {
-    //     Ok(())
-    // }
-    // async fn detect_devices(&self) -> Result<(), anyhow::Error> {
-    //     Ok(())
-    // }
+    async fn detect_devices(&mut self) -> Result<(), anyhow::Error>;
+    async fn load_gpu_engine(&mut self, _engine: EngineType) -> Result<(), anyhow::Error> {
+        Ok(())
+    }
 }
 
 #[allow(dead_code)]
@@ -103,6 +101,22 @@ impl GpuMinerInterfaceTrait for GpuMinerInterface {
             GpuMinerInterface::LolMiner(miner) => miner.load_connection_type(connection_type).await,
             GpuMinerInterface::Graxil(miner) => miner.load_connection_type(connection_type).await,
             GpuMinerInterface::Glytex(miner) => miner.load_connection_type(connection_type).await,
+        }
+    }
+
+    async fn load_gpu_engine(&mut self, engine: EngineType) -> Result<(), anyhow::Error> {
+        match self {
+            GpuMinerInterface::LolMiner(miner) => miner.load_gpu_engine(engine).await,
+            GpuMinerInterface::Graxil(miner) => miner.load_gpu_engine(engine).await,
+            GpuMinerInterface::Glytex(miner) => miner.load_gpu_engine(engine).await,
+        }
+    }
+
+    async fn detect_devices(&mut self) -> Result<(), anyhow::Error> {
+        match self {
+            GpuMinerInterface::LolMiner(miner) => miner.detect_devices().await,
+            GpuMinerInterface::Graxil(miner) => miner.detect_devices().await,
+            GpuMinerInterface::Glytex(miner) => miner.detect_devices().await,
         }
     }
 }

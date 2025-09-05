@@ -35,9 +35,8 @@ use crate::configs::trait_config::ConfigImpl;
 use crate::events::ConnectionStatusPayload;
 use crate::events_emitter::EventsEmitter;
 use crate::events_manager::EventsManager;
-use crate::gpu_miner::EngineType;
 use crate::internal_wallet::{mnemonic_to_tari_cipher_seed, InternalWallet, PaperWalletConfig};
-use crate::mining::gpu::consts::GpuMinerType;
+use crate::mining::gpu::consts::{EngineType, GpuMinerType};
 use crate::mining::gpu::manager::GpuManager;
 use crate::mining::pools::cpu_pool_manager::CpuPoolManager;
 use crate::mining::pools::gpu_pool_manager::GpuPoolManager;
@@ -1550,6 +1549,7 @@ pub async fn start_gpu_mining(
         .get_grpc_address()
         .await
         .map_err(|e| e.to_string())?;
+    let selected_engine = ConfigMining::content().await.gpu_engine().clone();
 
     info!(target: LOG_TARGET, "3. Starting gpu miner");
 
@@ -1557,6 +1557,7 @@ pub async fn start_gpu_mining(
         tari_address,
         telemetry_id,
         gpu_usage_percentage,
+        selected_engine,
         app.path()
             .app_local_data_dir()
             .expect("Could not get data dir"),
@@ -1792,18 +1793,6 @@ pub async fn set_selected_engine(
     let timer = Instant::now();
 
     let engine_type = EngineType::from_string(selected_engine).map_err(InvokeError::from_anyhow)?;
-    // let config = app
-    //     .path()
-    //     .app_config_dir()
-    //     .expect("Could not get config dir");
-
-    // state
-    //     .gpu_miner
-    //     .write()
-    //     .await
-    //     .set_selected_engine(engine_type.clone(), config)
-    //     .await
-    //     .map_err(|e| e.to_string())?;
 
     ConfigMining::update_field(ConfigMiningContent::set_gpu_engine, engine_type)
         .await

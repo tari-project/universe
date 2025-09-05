@@ -96,10 +96,6 @@ mod events;
 mod events_emitter;
 mod events_manager;
 mod feedback;
-mod gpu_devices;
-mod gpu_miner;
-mod gpu_miner_sha_websocket;
-mod gpu_status_file;
 mod hardware;
 mod internal_wallet;
 mod mining;
@@ -167,6 +163,7 @@ struct UniverseAppState {
     #[allow(dead_code)]
     wallet_state_watch_rx: Arc<watch::Receiver<Option<WalletState>>>,
     cpu_miner_status_watch_rx: Arc<watch::Receiver<CpuMinerStatus>>,
+    p2pool_latest_status: Arc<watch::Receiver<Option<P2poolStats>>>,
     is_getting_p2pool_connections: Arc<AtomicBool>,
     in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
     cpu_miner: Arc<RwLock<CpuMiner>>,
@@ -301,7 +298,7 @@ fn main() {
         stats_collector.take_gpu_miner(),
         gpu_status_tx.clone(),
         Some(base_node_watch_rx.clone()),
-        systray_manager.clone(),
+        Some(systray_manager.clone()),
     ));
 
     let (tor_watch_tx, tor_watch_rx) = watch::channel(TorStatus::default());
@@ -350,6 +347,7 @@ fn main() {
         node_status_watch_rx: Arc::new(base_node_watch_rx),
         wallet_state_watch_rx: Arc::new(wallet_state_watch_rx.clone()),
         cpu_miner_status_watch_rx: Arc::new(cpu_miner_status_watch_rx),
+        p2pool_latest_status: Arc::new(p2pool_stats_rx),
         in_memory_config: app_in_memory_config.clone(),
         cpu_miner: cpu_miner.clone(),
         cpu_miner_config: cpu_config.clone(),

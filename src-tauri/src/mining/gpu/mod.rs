@@ -24,3 +24,4 @@ pub mod consts;
 pub mod interface;
 pub mod manager;
 pub mod miners;
+pub mod utils;

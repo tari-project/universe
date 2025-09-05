@@ -25,7 +25,6 @@ use crate::events::{
     ConnectionStatusPayload, CriticalProblemPayload, DisabledPhasesPayload,
     InitWalletScanningProgressPayload, UpdateAppModuleStatusPayload,
 };
-use crate::gpu_devices::GpuDeviceInformation;
 use crate::internal_wallet::TariAddressType;
 use crate::mining::gpu::consts::GpuMinerStatus;
 use crate::mining::pools::PoolStatus;

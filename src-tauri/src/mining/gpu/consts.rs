@@ -20,9 +20,40 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::fmt::Display;
+
 use serde::{Deserialize, Serialize};
 
 use crate::utils::platform_utils::{CurrentOperatingSystem, PlatformUtils};
+
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize, Default)]
+pub enum EngineType {
+    #[default]
+    OpenCL,
+    Cuda,
+    Metal,
+}
+
+impl Display for EngineType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            EngineType::Cuda => write!(f, "CUDA"),
+            EngineType::OpenCL => write!(f, "OpenCL"),
+            EngineType::Metal => write!(f, "Metal"),
+        }
+    }
+}
+
+impl EngineType {
+    pub fn from_string(engine_type: &str) -> Result<EngineType, anyhow::Error> {
+        match engine_type {
+            "CUDA" => Ok(EngineType::Cuda),
+            "OpenCL" => Ok(EngineType::OpenCL),
+            "Metal" => Ok(EngineType::Metal),
+            _ => Err(anyhow::anyhow!("Invalid engine type")),
+        }
+    }
+}
 
 #[derive(Debug, Serialize, Clone, Default)]
 pub(crate) struct GpuMinerStatus {

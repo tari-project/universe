@@ -28,12 +28,10 @@ use tari_shutdown::Shutdown;
 use tokio::sync::watch::Sender;
 
 use crate::{
-    gpu_miner_adapter::GpuMinerStatus,
     mining::gpu::{
-        consts::GpuConnectionType,
+        consts::{GpuConnectionType, GpuMinerStatus},
         interface::{GpuMinerInterfaceTrait, GpuMinerStatusInterface},
     },
-    port_allocator::PortAllocator,
     process_adapter::{
         HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
     },
@@ -84,6 +82,10 @@ impl GpuMinerInterfaceTrait for LolMinerGpuMiner {
         connection_type: GpuConnectionType,
     ) -> Result<(), anyhow::Error> {
         self.connection_type = Some(connection_type);
+        Ok(())
+    }
+    async fn detect_devices(&mut self) -> Result<(), anyhow::Error> {
+        // lolMiner does not have a device detection feature
         Ok(())
     }
 }

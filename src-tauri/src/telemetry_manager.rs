@@ -28,7 +28,6 @@ use crate::commands::CpuMinerStatus;
 use crate::configs::config_core::ConfigCore;
 use crate::configs::config_mining::ConfigMining;
 use crate::configs::trait_config::ConfigImpl;
-use crate::gpu_miner_adapter::GpuMinerStatus;
 use crate::hardware::hardware_status_monitor::HardwareStatusMonitor;
 use crate::internal_wallet::InternalWallet;
 use crate::node::node_adapter::BaseNodeStatus;

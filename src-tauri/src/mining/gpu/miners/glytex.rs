@@ -1,6 +1,7 @@
-use std::time::Duration;
+use std::{fs::read_dir, time::Duration};
 
 use axum::async_trait;
+use dirs::config_dir;
 use log::{info, warn};
 use serde::Deserialize;
 use tari_common::configuration::Network;
@@ -29,19 +30,55 @@ use tokio::sync::watch::Sender;
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 use crate::{
-    gpu_miner::EngineType,
-    gpu_miner_adapter::GpuMinerStatus,
+    binaries::{Binaries, BinaryResolver},
+    events_emitter::EventsEmitter,
     mining::gpu::{
-        consts::GpuConnectionType,
+        consts::{EngineType, GpuConnectionType, GpuMiner, GpuMinerStatus},
         interface::{GpuMinerInterfaceTrait, GpuMinerStatusInterface},
+        miners::{load_file_content, GpuCommonInformation},
     },
     process_adapter::{
         HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
     },
+    process_utils, APPLICATION_FOLDER_ID,
 };
 
 const LOG_TARGET: &str = "tari::universe::mining::gpu::miners::glytex";
 const DEFAULT_GPU_THREADS: u32 = 8196;
+#[derive(serde::Deserialize, serde::Serialize, Debug, Clone)]
+pub struct GlytexGpuStatus {
+    pub recommended_grid_size: u32,
+    pub recommended_block_size: u32,
+    pub max_grid_size: u32,
+}
+
+#[derive(serde::Deserialize, serde::Serialize, Debug, Clone)]
+pub struct GlytexGpuSettings {
+    pub is_excluded: bool,
+    pub is_available: bool,
+}
+
+impl Default for GlytexGpuSettings {
+    fn default() -> Self {
+        Self {
+            is_excluded: false,
+            is_available: true,
+        }
+    }
+}
+
+#[derive(serde::Deserialize, serde::Serialize, Debug, Clone)]
+pub struct GlytexGpuDevice {
+    pub device_name: String,
+    pub device_index: u32,
+    pub status: GlytexGpuStatus,
+    pub settings: GlytexGpuSettings,
+}
+#[derive(serde::Deserialize, serde::Serialize, Debug, Clone)]
+pub struct GlytexGpuDevices {
+    pub gpu_devices: Vec<GlytexGpuDevice>,
+}
+
 pub struct GlytexGpuMiner {
     pub tari_address: Option<String>,
     pub intensity_percentage: Option<u32>,
@@ -50,6 +87,7 @@ pub struct GlytexGpuMiner {
     pub api_port: u16,
     pub selected_engine: Option<EngineType>,
     pub gpu_status_sender: Sender<GpuMinerStatus>,
+    pub gpu_devices: Vec<GpuCommonInformation>,
 }
 
 impl GlytexGpuMiner {
@@ -63,6 +101,7 @@ impl GlytexGpuMiner {
             api_port,
             selected_engine: None,
             gpu_status_sender,
+            gpu_devices: vec![],
         }
     }
 }
@@ -88,6 +127,98 @@ impl GpuMinerInterfaceTrait for GlytexGpuMiner {
         connection_type: GpuConnectionType,
     ) -> Result<(), anyhow::Error> {
         self.connection_type = Some(connection_type);
+        Ok(())
+    }
+    async fn detect_devices(&mut self) -> Result<(), anyhow::Error> {
+        let selected_engine = self.selected_engine.clone().unwrap_or(EngineType::OpenCL);
+        let config_path =
+            dirs::config_dir().ok_or_else(|| anyhow::anyhow!("Failed to get config directory"))?;
+
+        let config_dir = config_path.join(APPLICATION_FOLDER_ID);
+
+        let gpu_engine_statuses_path = config_dir.join("gpuminer").join("engine_statuses");
+
+        let config_file = config_dir
+            .join("gpuminer")
+            .join("config.json")
+            .to_string_lossy()
+            .to_string();
+
+        let args = vec![
+            "--detect".to_string(),
+            "true".to_string(),
+            "--config".to_string(),
+            config_file.clone(),
+            "--gpu-status-file".to_string(),
+            gpu_engine_statuses_path.to_string_lossy().to_string(),
+            "--engine".to_string(),
+            selected_engine.to_string(),
+        ];
+
+        let gpuminer_bin = BinaryResolver::current()
+            .get_binary_path(Binaries::GpuMiner)
+            .await?;
+
+        crate::download_utils::set_permissions(&gpuminer_bin).await?;
+        let child =
+            process_utils::launch_child_process(&gpuminer_bin, &config_dir, None, &args, false)?;
+        let output = child.wait_with_output().await?;
+
+        match output.status.code() {
+            Some(0) => {
+                info!(target: LOG_TARGET, "Glytex GPU miner detection completed successfully");
+                let gpu_status_file_name = format!("{}_gpu_status.json", selected_engine);
+                let gpu_status_file_path = gpu_engine_statuses_path.join(gpu_status_file_name);
+                let gpu_status_file =
+                    load_file_content::<GlytexGpuDevices>(&gpu_status_file_path).await?;
+                let common_gpu_devices = gpu_status_file
+                    .gpu_devices
+                    .iter()
+                    .map(|device| GpuCommonInformation::from_glytex_devices(device.clone()))
+                    .collect::<Vec<GpuCommonInformation>>();
+
+                self.gpu_devices = common_gpu_devices.clone();
+                EventsEmitter::emit_detected_devices(common_gpu_devices).await;
+
+                let mut available_engines: Vec<String> = vec![];
+
+                for entry in read_dir(gpu_engine_statuses_path)? {
+                    info!(target: LOG_TARGET, "Reading engine status file");
+                    info!(target: LOG_TARGET, "Engine status file: {entry:?}");
+                    let entry = entry?;
+                    let path = entry.path();
+                    let file_name = path
+                        .file_name()
+                        .ok_or_else(|| anyhow::anyhow!("Failed to get file name"))?
+                        .to_str()
+                        .ok_or_else(|| anyhow::anyhow!("Failed conversion to string"))?;
+
+                    let sanitized_file_name = file_name.split("_").collect::<Vec<&str>>()[0];
+                    let engine_type = EngineType::from_string(sanitized_file_name);
+
+                    info!(target: LOG_TARGET, "File name: {file_name:?}");
+                    info!(target: LOG_TARGET, "Sanitized file name: {sanitized_file_name:?}");
+
+                    match engine_type {
+                        Ok(engine) => {
+                            available_engines.push(engine.to_string());
+                        }
+                        Err(_) => {
+                            info!(target: LOG_TARGET, "Invalid engine type: {sanitized_file_name:?}");
+                        }
+                    }
+                }
+
+                EventsEmitter::emit_detected_available_gpu_engines(
+                    available_engines,
+                    selected_engine.to_string(),
+                )
+                .await;
+            }
+            _ => {
+                info!(target: LOG_TARGET, "Glytex GPU miner detection failed");
+            }
+        };
         Ok(())
     }
 }
