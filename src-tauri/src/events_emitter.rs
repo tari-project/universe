@@ -27,6 +27,7 @@ use crate::events::{
 };
 use crate::internal_wallet::TariAddressType;
 use crate::mining::gpu::consts::GpuMinerStatus;
+use crate::mining::gpu::miners::GpuCommonInformation;
 use crate::mining::pools::PoolStatus;
 #[cfg(target_os = "windows")]
 use crate::system_dependencies::UniversalSystemDependency;
@@ -186,7 +187,7 @@ impl EventsEmitter {
     }
 
     #[allow(dead_code)]
-    pub async fn emit_detected_devices(devices: Vec<GpuDeviceInformation>) {
+    pub async fn emit_detected_devices(devices: Vec<GpuCommonInformation>) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::DetectedDevices,

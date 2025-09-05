@@ -621,7 +621,8 @@ fn main() {
             commands::reset_gpu_pool_config,
             commands::reset_cpu_pool_config,
             commands::restart_phases,
-            commands::list_connected_peers
+            commands::list_connected_peers,
+            commands::switch_gpu_miner
         ])
         .build(tauri::generate_context!())
         .inspect_err(|e| {

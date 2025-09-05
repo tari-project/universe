@@ -23,7 +23,6 @@
 use crate::{
     binaries::{Binaries, BinaryResolver},
     configs::{config_mining::ConfigMining, trait_config::ConfigImpl},
-    events_emitter::EventsEmitter,
     hardware::hardware_status_monitor::HardwareStatusMonitor,
     mining::gpu::{
         consts::{EngineType, GpuMinerType},
@@ -35,19 +34,14 @@ use crate::{
     },
     setup::setup_manager::SetupPhase,
     tasks_tracker::TasksTrackers,
-    utils::locks_utils::try_write_with_retry,
-    UniverseAppState,
 };
 use anyhow::Error;
 use log::error;
 use tari_shutdown::ShutdownSignal;
-use tauri::{AppHandle, Manager};
-use tokio::{
-    select,
-    sync::{
-        watch::{Receiver, Sender},
-        Mutex,
-    },
+use tauri::AppHandle;
+use tokio::sync::{
+    watch::{Receiver, Sender},
+    Mutex,
 };
 use tokio_util::task::TaskTracker;
 

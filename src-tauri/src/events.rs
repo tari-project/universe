@@ -27,8 +27,8 @@ use std::{
 };
 
 use crate::{
-    gpu_devices::GpuDeviceInformation,
     internal_wallet::TariAddressType,
+    mining::gpu::miners::GpuCommonInformation,
     node::{node_adapter::NodeIdentity, node_manager::NodeType},
     setup::{listeners::AppModule, setup_manager::SetupPhase},
     wallet::wallet_types::{TransactionInfo, WalletBalance},
@@ -126,7 +126,7 @@ pub struct DetectedAvailableGpuEnginesPayload {
 
 #[derive(Clone, Debug, Serialize)]
 pub struct DetectedDevicesPayload {
-    pub devices: Vec<GpuDeviceInformation>,
+    pub devices: Vec<GpuCommonInformation>,
 }
 
 #[derive(Clone, Debug, Serialize)]

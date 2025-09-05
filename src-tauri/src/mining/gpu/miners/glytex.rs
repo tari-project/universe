@@ -1,7 +1,6 @@
 use std::{fs::read_dir, time::Duration};
 
 use axum::async_trait;
-use dirs::config_dir;
 use log::{info, warn};
 use serde::Deserialize;
 use tari_common::configuration::Network;
@@ -33,7 +32,7 @@ use crate::{
     binaries::{Binaries, BinaryResolver},
     events_emitter::EventsEmitter,
     mining::gpu::{
-        consts::{EngineType, GpuConnectionType, GpuMiner, GpuMinerStatus},
+        consts::{EngineType, GpuConnectionType, GpuMinerStatus},
         interface::{GpuMinerInterfaceTrait, GpuMinerStatusInterface},
         miners::{load_file_content, GpuCommonInformation},
     },
@@ -167,7 +166,7 @@ impl GpuMinerInterfaceTrait for GlytexGpuMiner {
         match output.status.code() {
             Some(0) => {
                 info!(target: LOG_TARGET, "Glytex GPU miner detection completed successfully");
-                let gpu_status_file_name = format!("{}_gpu_status.json", selected_engine);
+                let gpu_status_file_name = format!("{selected_engine}_gpu_status.json");
                 let gpu_status_file_path = gpu_engine_statuses_path.join(gpu_status_file_name);
                 let gpu_status_file =
                     load_file_content::<GlytexGpuDevices>(&gpu_status_file_path).await?;

@@ -264,7 +264,7 @@ impl Binaries {
                 BinaryPlatformAssets::WindowsX64 => {
                     format!("lolMiner_v{version}_Win64.zip")
                 }
-                _ => format!("Not available for this platform").to_string(),
+                _ => "Not available for this platform".to_string(),
             },
         }
     }

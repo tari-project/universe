@@ -1618,7 +1618,14 @@ pub async fn stop_gpu_mining() -> Result<(), String> {
 pub async fn switch_gpu_miner(gpu_miner_type: GpuMinerType) -> Result<(), String> {
     let timer = Instant::now();
 
-    ConfigMining::update_field(ConfigMiningContent::set_gpu_miner_type, gpu_miner_type)
+    ConfigMining::update_field(
+        ConfigMiningContent::set_gpu_miner_type,
+        gpu_miner_type.clone(),
+    )
+    .await
+    .map_err(|e| e.to_string())?;
+
+    GpuManager::switch_miner(gpu_miner_type)
         .await
         .map_err(|e| e.to_string())?;
 

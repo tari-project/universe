@@ -30,6 +30,7 @@ use crate::configs::config_mining::ConfigMining;
 use crate::configs::trait_config::ConfigImpl;
 use crate::hardware::hardware_status_monitor::HardwareStatusMonitor;
 use crate::internal_wallet::InternalWallet;
+use crate::mining::gpu::consts::GpuMinerStatus;
 use crate::node::node_adapter::BaseNodeStatus;
 use crate::node::node_manager::NodeManager;
 use crate::p2pool::models::P2poolStats;
