@@ -205,7 +205,6 @@ struct UniverseAppState {
     websocket_manager_status_rx: Arc<watch::Receiver<WebsocketManagerStatusMessage>>,
     websocket_manager: Arc<RwLock<WebsocketManager>>,
     websocket_event_manager: Arc<RwLock<WebsocketEventsManager>>,
-    tapplet_manager: TappletManager,
     ootle_wallet_state_watch_rx: Arc<watch::Receiver<Option<OotleWalletState>>>,
     ootle_wallet_manager: OotleWalletManager,
 }
@@ -396,7 +395,6 @@ fn main() {
         feedback: Arc::new(RwLock::new(feedback)),
         tor_manager,
         updates_manager,
-        tapplet_manager: tapplet_manager.clone(),
         cached_p2pool_connections: Arc::new(RwLock::new(None)),
         systemtray_manager: Arc::new(RwLock::new(SystemTrayManager::new())),
         mining_status_manager: Arc::new(RwLock::new(mining_status_manager)),
