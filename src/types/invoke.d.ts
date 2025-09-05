@@ -152,5 +152,4 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'restart_phases', payload: { phases: SetupPhase[] }): Promise<void>;
     function invoke(param: 'list_connected_peers'): Promise<string[]>;
     function invoke(param: 'set_feedback_fields', payload: { feedbackType: string; wasSent: boolean }): Promise<void>;
-    function invoke(param: 'get_session_mining_time'): Promise<number>;
 }

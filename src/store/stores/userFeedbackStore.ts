@@ -3,6 +3,7 @@ import { create } from 'zustand';
 interface State {
     showCloseDialog: boolean;
     earlyClosedDismissed: boolean;
+    miningTimeInSec: number;
 }
 interface Actions {
     toggleCloseDialog: () => void;
@@ -11,6 +12,7 @@ interface Actions {
 const initialState: State = {
     showCloseDialog: false,
     earlyClosedDismissed: false,
+    miningTimeInSec: 60 * 30,
 };
 
 type UserFeedbackStoreState = State & Actions;

@@ -55,7 +55,6 @@ use crate::wallet::wallet_types::{TariAddressVariants, TransactionInfo};
 use crate::{airdrop, PoolStatus, UniverseAppState};
 
 use base64::prelude::*;
-
 use log::{debug, error, info, warn};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -65,7 +64,7 @@ use std::fs::{read_dir, remove_dir_all, remove_file, File};
 use std::str::FromStr;
 use std::sync::atomic::Ordering;
 use std::thread::sleep;
-use std::time::{Duration, Instant, SystemTime};
+use std::time::{Duration, Instant};
 use tari_common::configuration::Network;
 use tari_common_types::seeds::mnemonic::{Mnemonic, MnemonicLanguage};
 use tari_common_types::seeds::mnemonic_wordlists::MNEMONIC_ENGLISH_WORDS;
@@ -242,6 +241,7 @@ pub async fn download_and_start_installer(id: String) -> Result<(), String> {
 #[tauri::command]
 pub async fn exit_application(_window: tauri::Window, app: tauri::AppHandle) -> Result<(), String> {
     TasksTrackers::current().stop_all_processes().await;
+
     app.exit(0);
     Ok(())
 }
@@ -1453,7 +1453,6 @@ pub async fn start_cpu_mining(
     app: tauri::AppHandle,
 ) -> Result<(), String> {
     let timer = Instant::now();
-    handle_mining_start_time(state.clone()).await;
     let cpu_mining_enabled = *ConfigMining::content().await.cpu_mining_enabled();
     let cpu_usage_percentage = ConfigMining::content()
         .await
@@ -1509,7 +1508,6 @@ pub async fn start_cpu_mining(
             return Err(e.to_string());
         }
     }
-
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "start_cpu_mining took too long: {:?}", timer.elapsed());
     }
@@ -1529,7 +1527,6 @@ pub async fn start_gpu_mining(
     }
 
     let timer = Instant::now();
-    handle_mining_start_time(state.clone()).await;
 
     let mut telemetry_id = state
         .telemetry_manager
@@ -1635,8 +1632,6 @@ pub async fn start_gpu_mining(
 #[tauri::command]
 pub async fn stop_cpu_mining(state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
     let timer = Instant::now();
-    handle_mining_stop(state.clone()).await;
-
     state
         .cpu_miner
         .write()
@@ -1655,7 +1650,7 @@ pub async fn stop_cpu_mining(state: tauri::State<'_, UniverseAppState>) -> Resul
 #[tauri::command]
 pub async fn stop_gpu_mining(state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
     let timer = Instant::now();
-    handle_mining_stop(state.clone()).await;
+
     let is_gpu_pool_enabled = *ConfigPools::content().await.gpu_pool_enabled();
 
     if is_gpu_pool_enabled {
@@ -2406,72 +2401,4 @@ pub async fn set_feedback_fields(feedback_type: String, was_sent: bool) -> Resul
     }
 
     Ok(())
-}
-
-#[tauri::command]
-pub async fn get_session_mining_time(
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<u64, String> {
-    let res = get_mining_duration(state.clone()).await;
-    res
-}
-
-async fn handle_mining_start_time(state: tauri::State<'_, UniverseAppState>) {
-    let read_time = state.session_mining_start_time.read().await;
-    // let read_time_clone = read_time.clone();
-    // drop(read_time);
-    if read_time.is_none() {
-        let mut write_time = state.session_mining_start_time.write().await;
-        *write_time = Some(SystemTime::now());
-        drop(write_time);
-    }
-}
-async fn handle_mining_stop(state: tauri::State<'_, UniverseAppState>) {
-    let read_time = state.session_mining_start_time.read().await;
-    // let read_time_clone = read_time.clone();
-    // drop(read_time);
-
-    let read_duration = state.session_mining_duration_sec.read().await;
-    // let read_duration_clone: u64 = read_duration.clone();
-    // drop(read_duration);
-
-    if let Some(mining_time) = &*read_time {
-        let mut write_time = state.session_mining_start_time.write().await;
-        *write_time = None;
-        drop(write_time);
-
-        if let Ok(duration) = mining_time.elapsed() {
-            let session_mining_duration_sec = duration.as_secs();
-            let updated = *read_duration + session_mining_duration_sec;
-
-            let mut write_duration = state.session_mining_duration_sec.write().await;
-            *write_duration = updated;
-            drop(write_duration);
-        }
-    }
-}
-
-async fn get_mining_duration(state: tauri::State<'_, UniverseAppState>) -> Result<u64, String> {
-    let read_time = state.session_mining_start_time.read().await;
-    // let read_time_clone = read_time.clone();
-    // drop(read_time);
-
-    if let Some(mining_time) = &*read_time {
-        // let duration = mining_time.elapsed();
-        if let Ok(duration) = mining_time.elapsed() {
-            let session_mining_duration_sec = duration.as_secs();
-            Ok(session_mining_duration_sec)
-        } else {
-            Err("Failed to get mining duration".to_string())
-        }
-    } else {
-        let read_duration = state.session_mining_duration_sec.read().await;
-        // let read_duration_clone = read_duration.clone();
-        // drop(read_duration);
-        if *read_duration != 0 {
-            Ok(*read_duration)
-        } else {
-            Err("Nada".to_string())
-        }
-    }
 }
