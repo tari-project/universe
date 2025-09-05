@@ -1,11 +1,10 @@
 import { useAirdropStore } from '@app/store';
 import { listen } from '@tauri-apps/api/event';
-import { useCallback, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useHandleWsUserIdEvent } from './useHandleWsUserIdEvent';
 import { GLOBAL_EVENT_NAME, WebsocketGlobalEvent, WebsocketUserEvent } from '@app/types/ws';
 import { useHandleWsGlobalEvent } from './useHandleWsGlobalEvent';
 import './useSendWsMessage'; // dummy import to bypass knip
-import { restartSocket } from '@app/utils/socket';
 
 export interface WebsocketEventType {
     event: string;
@@ -14,26 +13,10 @@ export interface WebsocketEventType {
     pubKey?: string;
 }
 
-function useSetupWebsocket() {
-    const airdropTokens = useAirdropStore((s) => s.airdropTokens);
-    const airdropApiUrl = useAirdropStore((s) => s.backendInMemoryConfig?.airdrop_api_url);
-
-    return useCallback(() => {
-        if (airdropApiUrl && airdropTokens) {
-            restartSocket();
-        }
-    }, [airdropApiUrl, airdropTokens]);
-}
-
 export default function useAirdropWebsocket() {
     const userId = useAirdropStore((s) => s.userDetails?.user?.id);
     const userEventHandler = useHandleWsUserIdEvent();
     const globalEventHandler = useHandleWsGlobalEvent();
-    const startWebsocket = useSetupWebsocket();
-
-    useEffect(() => {
-        startWebsocket();
-    }, [startWebsocket]);
 
     useEffect(() => {
         const unlistenPromise = listen('ws-status-change', (event) => {
