@@ -3,16 +3,16 @@ import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { setShowCloseDialog, useUserFeedbackStore } from '@app/store/stores/userFeedbackStore.ts';
 import { useConfigUIStore, useMiningStore } from '@app/store';
-import { handleSessionMiningTimeOnClose } from '@app/store/actions/miningStoreActions.ts';
+import { checkMiningTime } from '@app/store/actions/miningStoreActions.ts';
 const appWindow = getCurrentWindow();
 
 function useShutdownHandler(shutdownTriggered = false) {
-    const wasFeedbackSent = useConfigUIStore((s) => s.feedback?.early_close.feedback_sent);
+    const wasFeedbackSent = useConfigUIStore((s) => s.feedback?.early_close?.feedback_sent);
     const earlyClosedDismissed = useUserFeedbackStore((s) => s.earlyClosedDismissed);
     const miningTimeMs = useMiningStore((s) => s.sessionMiningTime.durationMs);
     const isEarlyClose = !miningTimeMs || miningTimeMs < 60 * 60 * 1000;
-
     const [shouldShutDown, setShouldShutDown] = useState(false);
+
     useEffect(
         () => setShouldShutDown(wasFeedbackSent || !isEarlyClose || (isEarlyClose && earlyClosedDismissed)),
         [earlyClosedDismissed, isEarlyClose, wasFeedbackSent]
@@ -31,7 +31,7 @@ export function useShuttingDown() {
         const ul = appWindow.onCloseRequested(async (event) => {
             if (!isShuttingDown) {
                 event.preventDefault();
-                handleSessionMiningTimeOnClose();
+                checkMiningTime();
                 setShutdownTriggered(true);
                 if (shouldShutDown) {
                     setIsShuttingDown(true);

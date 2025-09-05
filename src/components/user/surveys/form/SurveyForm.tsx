@@ -44,7 +44,14 @@ export default function SurveyForm({ surveyContent, onSkipped, onSuccess }: Surv
                 </FormContent>
                 <CTAWrapper>
                     <Button type="submit" fluid size="xlarge" variant="black">{`Send Feedback`}</Button>
-                    <TextButton size="large" type="reset" onClick={onSkipped}>
+                    <TextButton
+                        size="large"
+                        type="reset"
+                        onClick={() => {
+                            console.debug('clicked skip');
+                            onSkipped?.();
+                        }}
+                    >
                         <Typography>{`Skip for now`}</Typography>
                     </TextButton>
                 </CTAWrapper>

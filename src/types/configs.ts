@@ -46,13 +46,13 @@ export interface ConfigUI {
     feedback: FeedbackPrompts;
 }
 
-interface FeedbackPrompt {
+export interface FeedbackPrompt {
     feedback_sent: boolean;
-    last_dismissed: string;
+    last_dismissed: string | null;
 }
-interface FeedbackPrompts {
-    early_close: FeedbackPrompt;
-    long_time_miner: FeedbackPrompt;
+export interface FeedbackPrompts {
+    early_close?: FeedbackPrompt;
+    long_time_miner?: FeedbackPrompt;
 }
 
 export type MiningModes = Record<MiningModeType, MiningMode>;

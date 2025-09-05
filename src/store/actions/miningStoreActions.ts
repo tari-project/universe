@@ -171,12 +171,24 @@ export const handleSessionMiningTime = ({ startTimestamp, stopTimestamp }: Sessi
     }
 };
 
-export const handleSessionMiningTimeOnClose = () => {
+export const checkMiningTime = () => {
+    const current = useMiningStore.getState().sessionMiningTime;
     const cpuMining = useMiningMetricsStore.getState().cpu_mining_status.is_mining;
     const gpuMining = useMiningMetricsStore.getState().gpu_mining_status.is_mining;
     const isStillMining = cpuMining || gpuMining;
+    let stopTimestamp = current.stopTimestamp;
 
     if (isStillMining) {
-        handleSessionMiningTime({ stopTimestamp: Date.now() });
+        const now = Date.now();
+        handleSessionMiningTime({ stopTimestamp: now });
+        stopTimestamp = now;
     }
+    const diff = (stopTimestamp || 0) - (current.startTimestamp || 0);
+    console.debug(`diff= `, diff);
+    useMiningStore.setState((c) => ({
+        ...c,
+        sessionMiningTime: { ...c.sessionMiningTime, durationMs: diff },
+    }));
+
+    return diff;
 };
