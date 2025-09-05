@@ -84,7 +84,6 @@ pub struct GlytexGpuMiner {
     pub intensity_percentage: Option<u32>,
     pub worker_name: Option<String>,
     pub connection_type: Option<GpuConnectionType>,
-    pub api_port: u16,
     pub selected_engine: Option<EngineType>,
     pub gpu_status_sender: Sender<GpuMinerStatus>,
     pub gpu_devices: Vec<GpuCommonInformation>,
@@ -92,13 +91,12 @@ pub struct GlytexGpuMiner {
 
 impl GlytexGpuMiner {
     #[allow(dead_code)]
-    pub fn new(gpu_status_sender: Sender<GpuMinerStatus>, api_port: u16) -> Self {
+    pub fn new(gpu_status_sender: Sender<GpuMinerStatus>) -> Self {
         Self {
             tari_address: None,
             intensity_percentage: None,
             worker_name: None,
             connection_type: None,
-            api_port,
             selected_engine: None,
             gpu_status_sender,
             gpu_devices: vec![],
@@ -244,7 +242,7 @@ impl ProcessAdapter for GlytexGpuMiner {
         info!(target: LOG_TARGET, "Gpu miner spawn inner");
         let inner_shutdown = Shutdown::new();
 
-        let http_api_port = self.api_port;
+        let http_api_port = 8080;
         let working_dir = base_folder.join("gpuminer");
         std::fs::create_dir_all(&working_dir)?;
         std::fs::create_dir_all(config_folder.join("gpuminer"))?;

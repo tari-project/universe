@@ -43,6 +43,8 @@
   "gpu-device-enabled-description": "Belirli bir GPU cihazını etkinleştir veya devre dışı bırak.",
   "gpu-device-no-found": "⚠️ GPU cihazı bulunamadı",
   "gpu-engine": "Gpu Motoru",
+  "gpu-miners": "GPU Miners",
+  "gpu-miners-not-found": "No GPU Miners found",
   "gpu-mining-enabled": "GPU Madenciliği",
   "gpu-unavailable": "⚠️ Donanımınız desteklemediği için GPU devre dışı bırakıldı",
   "hardware-status": "Donanım durumu",

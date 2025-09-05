@@ -81,6 +81,8 @@ pub enum EventType {
     SetupProgressUpdate,
     UpdateTorEntryGuards,
     UpdateAppModuleStatus,
+    UpdateSelectedMiner,
+    AvailableMiners,
 }
 
 #[derive(Clone, Debug, Serialize)]

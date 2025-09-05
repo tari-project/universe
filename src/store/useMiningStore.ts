@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { Network } from '@app/utils/network';
+import { GpuMiner, GpuMinerType } from '@app/types/events-payloads';
 
 interface MiningStoreState {
     hashrateReady?: boolean;
@@ -16,6 +17,8 @@ interface MiningStoreState {
     network?: Network;
     engine?: string;
     availableEngines: string[];
+    availableMiners?: GpuMinerType[];
+    selectedMiner?: GpuMiner;
 }
 
 const initialState: MiningStoreState = {
@@ -34,6 +37,8 @@ const initialState: MiningStoreState = {
     availableEngines: [],
     engine: undefined,
     network: undefined,
+    availableMiners: undefined,
+    selectedMiner: undefined,
 };
 
 export const useMiningStore = create<MiningStoreState>()(() => ({

@@ -50,11 +50,12 @@ use crate::{
         gpu::{
             consts::{EngineType, GpuConnectionType, GpuMiner, GpuMinerStatus, GpuMinerType},
             interface::{GpuMinerInterface, GpuMinerInterfaceTrait},
-            miners::{graxil::GraxilGpuMiner, lolminer::LolMinerGpuMiner},
+            miners::{glytex::GlytexGpuMiner, graxil::GraxilGpuMiner, lolminer::LolMinerGpuMiner},
         },
         pools::{gpu_pool_manager::GpuPoolManager, PoolManagerInterfaceTrait},
     },
     node::node_adapter::BaseNodeStatus,
+    process_adapter::ProcessAdapter,
     process_watcher::{ProcessWatcher, ProcessWatcherStats},
     systemtray_manager::{SystemTrayGpuData, SystemTrayManager},
     tasks_tracker::TasksTrackers,
@@ -147,17 +148,30 @@ impl GpuManager {
             info!(target: LOG_TARGET, "Loaded saved gpu miner: {config_gpu_miner_type}");
             let adapter = instance.resolve_miner_interface(&config_gpu_miner_type);
             instance.process_watcher.adapter = adapter;
-            instance.selected_miner = config_gpu_miner_type;
-        } else if let Some((first_miner_type, _)) = instance.available_miners.iter().next() {
+            instance.selected_miner = config_gpu_miner_type.clone();
+            if let Some(miner) = instance.available_miners.get(&config_gpu_miner_type) {
+                EventsEmitter::emit_update_selected_gpu_miner(miner.clone()).await;
+            }
+
+            return;
+        } else if let Some((first_miner_type, first_miner)) =
+            instance.available_miners.iter().next()
+        {
+            // Clone values before mutable borrow
+            let first_miner_type_cloned = first_miner_type.clone();
+            let first_miner_cloned = first_miner.clone();
+            let adapter = instance.resolve_miner_interface(&first_miner_type_cloned);
+
             info!(target: LOG_TARGET, "Saved gpu miner {config_gpu_miner_type} is not available, loaded first available miner: {first_miner_type}");
             let _unused = ConfigMining::update_field(
                 ConfigMiningContent::set_gpu_miner_type,
-                first_miner_type.clone(),
+                first_miner_type_cloned.clone(),
             )
             .await;
-            let adapter = instance.resolve_miner_interface(first_miner_type);
-            instance.selected_miner = first_miner_type.clone();
+
+            instance.selected_miner = first_miner_type_cloned.clone();
             instance.process_watcher.adapter = adapter;
+            EventsEmitter::emit_update_selected_gpu_miner(first_miner_cloned).await;
         }
     }
 
@@ -182,6 +196,7 @@ impl GpuManager {
     ) -> Result<(), anyhow::Error> {
         let mut instance = INSTANCE.write().await;
         info!(target: LOG_TARGET, "Starting gpu miner: {}", instance.selected_miner);
+        info!(target: LOG_TARGET, "Adapter miner type: {}", instance.process_watcher.adapter.name());
         let global_shutdown_signal = TasksTrackers::current().gpu_mining_phase.get_signal().await;
         instance.status_thread_shutdown = Shutdown::new();
         let task_tracker = TasksTrackers::current()
@@ -270,23 +285,27 @@ impl GpuManager {
         // Mark mining as stopped in pool manager
         // It will handle stopping the stats watcher after 1 hour of grace period
         GpuPoolManager::handle_mining_status_change(false).await;
+        info!(target: LOG_TARGET, "Stopped gpu miner");
         Ok(())
     }
 
     pub async fn switch_miner(new_miner: GpuMinerType) -> Result<(), anyhow::Error> {
+        let mut instance = INSTANCE.write().await;
         info!(target: LOG_TARGET, "Switching gpu miner to: {new_miner}");
-        if let Some(miner) = INSTANCE.read().await.available_miners.get(&new_miner) {
+        if let Some(miner) = instance.available_miners.get(&new_miner) {
+            info!(target: LOG_TARGET, "Found selected gpu miner in available miners");
             let miner_type = miner.miner_type.clone();
-            let adapter = {
-                let instance = INSTANCE.read().await;
-                instance.resolve_miner_interface(&miner_type)
-            };
-            let mut instance = INSTANCE.write().await;
+            let adapter = instance.resolve_miner_interface(&miner_type);
+            let miner_cloned = miner.clone();
+            info!(target: LOG_TARGET, "Resolved selected gpu miner interface");
             instance.selected_miner = miner_type;
             instance.process_watcher.adapter = adapter;
+            info!(target: LOG_TARGET, "Set selected gpu miner interface in process watcher");
+            EventsEmitter::emit_update_selected_gpu_miner(miner_cloned).await;
         } else {
             return Err(anyhow::anyhow!("Selected gpu miner is not available"));
         }
+        info!(target: LOG_TARGET, "Switched gpu miner to: {new_miner}");
         Ok(())
     }
 
@@ -322,6 +341,15 @@ impl GpuManager {
         if !successful_detection {
             return Err(anyhow::anyhow!("No miners detected any devices"));
         }
+        EventsEmitter::emit_available_gpu_miners(
+            instance
+                .available_miners
+                .keys()
+                .cloned()
+                .collect::<Vec<GpuMinerType>>(),
+        )
+        .await;
+
         Ok(())
     }
 
@@ -333,7 +361,7 @@ impl GpuManager {
             GpuMinerType::LolMiner => GpuMinerInterface::LolMiner(LolMinerGpuMiner::new(
                 self.gpu_internal_status_channel.clone(),
             )),
-            GpuMinerType::Glytex => GpuMinerInterface::LolMiner(LolMinerGpuMiner::new(
+            GpuMinerType::Glytex => GpuMinerInterface::Glytex(GlytexGpuMiner::new(
                 self.gpu_internal_status_channel.clone(),
             )),
         }

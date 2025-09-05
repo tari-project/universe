@@ -157,14 +157,13 @@ impl std::fmt::Display for GpuMinerType {
     }
 }
 
-#[derive(Eq, Hash, PartialEq, Clone)]
+#[derive(Eq, Hash, PartialEq, Clone, Serialize)]
 pub enum GpuMiningAlgorithm {
     SHA3X,
     C29,
 }
 
-#[derive(Eq, Hash, PartialEq, Clone)]
-#[allow(dead_code)]
+#[derive(Eq, Hash, PartialEq, Clone, Serialize)]
 pub enum GpuMinerFeature {
     /// Support for solo mining
     SoloMining,
@@ -182,8 +181,7 @@ pub enum GpuMinerFeature {
     EngineSelection,
 }
 
-#[derive(Clone)]
-#[allow(dead_code)]
+#[derive(Clone, Serialize)]
 pub struct GpuMiner {
     pub miner_type: GpuMinerType,
     pub features: Vec<GpuMinerFeature>,

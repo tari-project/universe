@@ -134,12 +134,6 @@ export enum GpuDeviceType {
 export interface GpuDevice {
     name: string;
     device_id: number;
-    platform_name: string;
-    vendor: GpuVendor;
-    max_work_group_size: number;
-    max_compute_units: number;
-    global_mem_size: number;
-    device_type: GpuDeviceType;
 }
 
 export interface CpuMinerStatus {

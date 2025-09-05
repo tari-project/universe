@@ -29,14 +29,20 @@ use tokio::sync::watch::Sender;
 
 use crate::{
     binaries::{Binaries, BinaryResolver},
+    configs::{
+        config_mining::{ConfigMining, ConfigMiningContent},
+        trait_config::ConfigImpl,
+    },
+    events_emitter::EventsEmitter,
     mining::gpu::{
         consts::{GpuConnectionType, GpuMinerStatus},
         interface::{GpuMinerInterfaceTrait, GpuMinerStatusInterface},
+        miners::GpuCommonInformation,
     },
     process_adapter::{
         HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
     },
-    process_utils::{self, launch_child_process},
+    process_utils::launch_child_process,
     APPLICATION_FOLDER_ID,
 };
 
@@ -49,6 +55,7 @@ pub struct LolMinerGpuMiner {
     pub worker_name: Option<String>,
     pub connection_type: Option<GpuConnectionType>,
     pub gpu_status_sender: Sender<GpuMinerStatus>,
+    pub gpu_devices: Vec<GpuCommonInformation>,
 }
 
 impl LolMinerGpuMiner {
@@ -60,6 +67,7 @@ impl LolMinerGpuMiner {
             worker_name: None,
             connection_type: None,
             gpu_status_sender,
+            gpu_devices: vec![],
         }
     }
 }
@@ -88,6 +96,7 @@ impl GpuMinerInterfaceTrait for LolMinerGpuMiner {
         Ok(())
     }
 
+    //TODO: fix devices parsing for lolminer
     async fn detect_devices(&mut self) -> Result<(), anyhow::Error> {
         let config_path =
             dirs::config_dir().ok_or_else(|| anyhow::anyhow!("Failed to get config directory"))?;
@@ -103,6 +112,8 @@ impl GpuMinerInterfaceTrait for LolMinerGpuMiner {
         crate::download_utils::set_permissions(&gpu_miner_binary).await?;
         let result = launch_child_process(&gpu_miner_binary, &config_dir, None, &args, true)?;
 
+        let mut gpu_devices: Vec<GpuCommonInformation> = vec![];
+
         let output = result.wait_with_output().await?;
         let output_str = String::from_utf8_lossy(&output.stdout);
         info!(target: LOG_TARGET, "LolMiner devices output: {}", output_str);
@@ -111,6 +122,37 @@ impl GpuMinerInterfaceTrait for LolMinerGpuMiner {
         {
             return Err(anyhow::anyhow!("No supported GPU devices found"));
         }
+
+        let lines: Vec<&str> = output_str.lines().collect();
+
+        for line in lines {
+            if line.contains("Name") {
+                let parts: Vec<&str> = line.split(":").collect();
+                if parts.len() == 2 {
+                    let name = parts[1].to_string();
+                    let device_id = gpu_devices.len() as u32;
+                    gpu_devices.push(GpuCommonInformation {
+                        name: name.trim().to_string(),
+                        device_id,
+                    });
+                }
+            }
+        }
+
+        self.gpu_devices = gpu_devices;
+        let devices_indexes: Vec<u32> = self.gpu_devices.iter().map(|d| d.device_id).collect();
+        EventsEmitter::emit_detected_devices(self.gpu_devices.clone()).await;
+        ConfigMining::update_field(
+            ConfigMiningContent::populate_gpu_devices_settings,
+            devices_indexes,
+        )
+        .await?;
+
+        EventsEmitter::emit_update_gpu_devices_settings(
+            ConfigMining::content().await.gpu_devices_settings().clone(),
+        )
+        .await;
+
         Ok(())
     }
 }
@@ -142,7 +184,7 @@ impl ProcessAdapter for LolMinerGpuMiner {
                 GpuConnectionType::Node {
                     node_grpc_address: _,
                 } => {
-                    return Err(anyhow::anyhow!("Graxil does not support node mining"));
+                    return Err(anyhow::anyhow!("Lolminer does not support node mining"));
                 }
                 GpuConnectionType::Pool { pool_url } => {
                     args.push("--pool".to_string());
@@ -151,7 +193,7 @@ impl ProcessAdapter for LolMinerGpuMiner {
             }
         } else {
             return Err(anyhow::anyhow!(
-                "Connection type must be set before starting the GpuMinerShaAdapter"
+                "Connection type must be set before starting the LolminerGpuMiner"
             ));
         }
 
@@ -160,7 +202,7 @@ impl ProcessAdapter for LolMinerGpuMiner {
             args.push(tari_address.clone());
         } else {
             return Err(anyhow::anyhow!(
-                "Tari address must be set before starting the GpuMinerShaAdapter"
+                "Tari address must be set before starting the LolminerGpuMiner"
             ));
         }
 

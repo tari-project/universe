@@ -5,6 +5,8 @@ import {
     CriticalProblemPayload,
     DetectedAvailableGpuEngines,
     DetectedDevicesPayload,
+    GpuMiner,
+    GpuMinerType,
     NewBlockHeightPayload,
     NodeTypeUpdatePayload,
     ProgressTrackerUpdatePayload,
@@ -195,4 +197,12 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'SeedBackedUp';
           payload: boolean;
+      }
+    | {
+          event_type: 'UpdateSelectedMiner';
+          payload: GpuMiner;
+      }
+    | {
+          event_type: 'AvailableMiners';
+          payload: GpuMinerType[];
       };

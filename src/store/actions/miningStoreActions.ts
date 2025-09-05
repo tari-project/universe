@@ -8,6 +8,7 @@ import { useSetupStore } from '@app/store/useSetupStore.ts';
 import { useConfigMiningStore } from '../useAppConfigStore.ts';
 import { Network } from '@app/utils/network.ts';
 import { setupStoreSelectors } from '../selectors/setupStoreSelectors.ts';
+import { GpuMiner, GpuMinerType } from '@app/types/events-payloads.ts';
 
 export const restartMining = async () => {
     const isMining =
@@ -150,6 +151,42 @@ export const stopMining = async () => {
         console.info('Mining stopped.');
     } catch (e) {
         console.error('Failed to stop mining: ', e);
+        setError(e as string);
+    }
+};
+export const handleSelectedMinerChanged = (miner: GpuMiner) => {
+    useMiningStore.setState({ selectedMiner: miner });
+};
+
+export const handleAvailableMinersChanged = (miners: GpuMinerType[]) => {
+    useMiningStore.setState({ availableMiners: miners });
+};
+
+export const switchSelectedMiner = async (gpuMinerType: GpuMinerType) => {
+    const currentMiner = useMiningStore.getState().selectedMiner?.miner_type;
+    useMiningStore.setState((state) => ({
+        selectedMiner: { ...state.selectedMiner, miner_type: gpuMinerType } as GpuMiner,
+    }));
+
+    const anyMiningInitiated =
+        useMiningStore.getState().isCpuMiningInitiated || useMiningStore.getState().isGpuMiningInitiated;
+    const isGpuMiningInitiated = useMiningStore.getState().isGpuMiningInitiated;
+    const gpuMining = useMiningMetricsStore.getState().gpu_mining_status.is_mining;
+
+    if (gpuMining || isGpuMiningInitiated) {
+        await stopGpuMining();
+    }
+    try {
+        await invoke('switch_gpu_miner', { gpuMinerType });
+
+        if (anyMiningInitiated) {
+            await startGpuMining();
+        }
+    } catch (e) {
+        useMiningStore.setState((state) => ({
+            selectedMiner: { ...state.selectedMiner, miner_type: currentMiner } as GpuMiner,
+        }));
+        console.error('Could not switch selected miner: ', e);
         setError(e as string);
     }
 };

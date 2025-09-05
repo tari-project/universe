@@ -52,7 +52,7 @@ pub(crate) struct ProcessWatcherStats {
 }
 
 pub struct ProcessWatcher<TAdapter: ProcessAdapter> {
-    pub(crate) adapter: TAdapter,
+    pub adapter: TAdapter,
     watcher_task: Option<JoinHandle<Result<i32, anyhow::Error>>>,
     internal_shutdown: Shutdown,
     pub poll_time: tokio::time::Duration,

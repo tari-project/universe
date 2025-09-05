@@ -229,7 +229,7 @@ impl ProcessAdapter for GraxilGpuMiner {
             }
         } else {
             return Err(anyhow::anyhow!(
-                "Connection type must be set before starting the GpuMinerShaAdapter"
+                "Connection type must be set before starting the GraxilMiner"
             ));
         }
 
@@ -238,7 +238,7 @@ impl ProcessAdapter for GraxilGpuMiner {
             args.push(tari_address.clone());
         } else {
             return Err(anyhow::anyhow!(
-                "Tari address must be set before starting the GpuMinerShaAdapter"
+                "Tari address must be set before starting the GraxilMiner"
             ));
         }
 

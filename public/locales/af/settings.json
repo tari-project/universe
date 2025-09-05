@@ -43,6 +43,8 @@
   "gpu-device-enabled-description": "Aktiveer of deaktiveer spesifieke GPU toestel.",
   "gpu-device-no-found": "⚠️ Geen GPU toestelle gevind nie",
   "gpu-engine": "Gpu Enjin",
+  "gpu-miners": "GPU Miners",
+  "gpu-miners-not-found": "No GPU Miners found",
   "gpu-mining-enabled": "GPU Mynbou",
   "gpu-unavailable": "⚠️ GPU gedeaktiveer omdat jou hardeware dit nie ondersteun nie",
   "hardware-status": "Hardeware status",

@@ -14,7 +14,11 @@ import {
     setShouldShowExchangeSpecificModal,
     setSidebarOpen,
 } from '@app/store/actions/uiStoreActions';
-import { setAvailableEngines } from '@app/store/actions/miningStoreActions';
+import {
+    handleAvailableMinersChanged,
+    handleSelectedMinerChanged,
+    setAvailableEngines,
+} from '@app/store/actions/miningStoreActions';
 import {
     handleRestartingPhases,
     handleShowRelesaeNotes,
@@ -141,6 +145,12 @@ const useTauriEventsListener = () => {
                             break;
                         case 'DetectedDevices':
                             setGpuDevices(event.payload.devices);
+                            break;
+                        case 'UpdateSelectedMiner':
+                            handleSelectedMinerChanged(event.payload);
+                            break;
+                        case 'AvailableMiners':
+                            handleAvailableMinersChanged(event.payload);
                             break;
                         case 'DetectedAvailableGpuEngines':
                             setAvailableEngines(event.payload.engines, event.payload.selected_engine);
