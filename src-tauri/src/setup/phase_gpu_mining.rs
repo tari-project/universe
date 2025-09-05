@@ -25,7 +25,6 @@ use crate::{
     configs::{config_mining::ConfigMining, trait_config::ConfigImpl},
     events_emitter::EventsEmitter,
     gpu_miner::EngineType,
-    gpu_miner_adapter::GpuMinerStatus,
     hardware::hardware_status_monitor::HardwareStatusMonitor,
     mining::gpu::{consts::GpuMinerType, manager::GpuManager},
     progress_trackers::{
@@ -283,45 +282,6 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
             self.status_sender
                 .send(PhaseStatus::SuccessWithWarnings(setup_warnings.clone()))?;
         }
-
-        let app_handle_clone = self.app_handle.clone();
-        TasksTrackers::current()
-            .gpu_mining_phase
-            .get_task_tracker()
-            .await
-            .spawn(async move {
-                let app_state = app_handle_clone.state::<UniverseAppState>().clone();
-                let mut gpu_status_watch_rx = (*app_state.gpu_latest_status).clone();
-                let mut shutdown_signal =
-                    TasksTrackers::current().gpu_mining_phase.get_signal().await;
-
-                loop {
-                    select! {
-                        _ = gpu_status_watch_rx.changed() => {
-                            let gpu_status: GpuMinerStatus = gpu_status_watch_rx.borrow().clone();
-                            EventsEmitter::emit_gpu_mining_update(gpu_status.clone()).await;
-                            let gpu_systemtray_data = SystemTrayGpuData {
-                                gpu_hashrate: gpu_status.hash_rate,
-                                estimated_earning: gpu_status.estimated_earnings
-                            };
-
-                            match try_write_with_retry(&app_state.systemtray_manager, 6).await {
-                                Ok(mut sm) => {
-                                    sm.update_tray_with_gpu_data(gpu_systemtray_data);
-                                },
-                                Err(e) => {
-                                    let err_msg = format!("Failed to acquire systemtray_manager write lock: {e}");
-                                    error!(target: LOG_TARGET, "{err_msg}");
-                                }
-                            }
-
-                        },
-                        _ = shutdown_signal.wait() => {
-                            break;
-                        },
-                    }
-                }
-            });
 
         Ok(())
     }

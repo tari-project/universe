@@ -27,7 +27,6 @@ use app_in_memory_config::AppInMemoryConfig;
 use commands::CpuMinerStatus;
 use cpu_miner::CpuMinerConfig;
 use events_emitter::EventsEmitter;
-use gpu_miner_adapter::GpuMinerStatus;
 use log::{error, info, warn};
 use mining_status_manager::MiningStatusManager;
 use node::local_node_adapter::LocalNodeAdapter;
@@ -72,6 +71,7 @@ use crate::cpu_miner::CpuMiner;
 
 use crate::feedback::Feedback;
 use crate::mining::cpu::CpuMinerConnection;
+use crate::mining::gpu::consts::GpuMinerStatus;
 use crate::mining::gpu::manager::GpuManager;
 use crate::mm_proxy_manager::MmProxyManager;
 use crate::node::node_manager::NodeManager;
@@ -98,9 +98,6 @@ mod events_manager;
 mod feedback;
 mod gpu_devices;
 mod gpu_miner;
-mod gpu_miner_adapter;
-mod gpu_miner_sha;
-mod gpu_miner_sha_adapter;
 mod gpu_miner_sha_websocket;
 mod gpu_status_file;
 mod hardware;
@@ -170,8 +167,6 @@ struct UniverseAppState {
     #[allow(dead_code)]
     wallet_state_watch_rx: Arc<watch::Receiver<Option<WalletState>>>,
     cpu_miner_status_watch_rx: Arc<watch::Receiver<CpuMinerStatus>>,
-    gpu_latest_status: Arc<watch::Receiver<GpuMinerStatus>>,
-    p2pool_latest_status: Arc<watch::Receiver<Option<P2poolStats>>>,
     is_getting_p2pool_connections: Arc<AtomicBool>,
     in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
     cpu_miner: Arc<RwLock<CpuMiner>>,
@@ -300,10 +295,13 @@ fn main() {
         .into(),
     );
 
+    let systray_manager = Arc::new(RwLock::new(SystemTrayManager::new()));
+
     block_on(GpuManager::initialize(
         stats_collector.take_gpu_miner(),
         gpu_status_tx.clone(),
         Some(base_node_watch_rx.clone()),
+        systray_manager.clone(),
     ));
 
     let (tor_watch_tx, tor_watch_rx) = watch::channel(TorStatus::default());
@@ -352,8 +350,6 @@ fn main() {
         node_status_watch_rx: Arc::new(base_node_watch_rx),
         wallet_state_watch_rx: Arc::new(wallet_state_watch_rx.clone()),
         cpu_miner_status_watch_rx: Arc::new(cpu_miner_status_watch_rx),
-        gpu_latest_status: Arc::new(gpu_status_rx),
-        p2pool_latest_status: Arc::new(p2pool_stats_rx),
         in_memory_config: app_in_memory_config.clone(),
         cpu_miner: cpu_miner.clone(),
         cpu_miner_config: cpu_config.clone(),
@@ -367,7 +363,7 @@ fn main() {
         tor_manager,
         updates_manager,
         cached_p2pool_connections: Arc::new(RwLock::new(None)),
-        systemtray_manager: Arc::new(RwLock::new(SystemTrayManager::new())),
+        systemtray_manager: systray_manager.clone(),
         mining_status_manager: Arc::new(RwLock::new(mining_status_manager)),
         websocket_message_tx: Arc::new(websocket_message_tx),
         websocket_manager_status_rx: Arc::new(websocket_manager_status_rx.clone()),

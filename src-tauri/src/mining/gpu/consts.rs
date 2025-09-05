@@ -24,9 +24,25 @@ use serde::{Deserialize, Serialize};
 
 use crate::utils::platform_utils::{CurrentOperatingSystem, PlatformUtils};
 
+#[derive(Debug, Serialize, Clone, Default)]
+pub(crate) struct GpuMinerStatus {
+    pub is_mining: bool,
+    pub hash_rate: f64,
+    pub estimated_earnings: u64,
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub enum GpuConnectionType {
     Node { node_grpc_address: String },
     Pool { pool_url: String },
+}
+
+impl Default for GpuConnectionType {
+    fn default() -> Self {
+        GpuConnectionType::Pool {
+            pool_url: String::new(),
+        }
+    }
 }
 
 #[derive(Eq, Hash, PartialEq, Clone, Deserialize, Serialize, Debug)]

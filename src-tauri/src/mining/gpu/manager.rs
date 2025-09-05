@@ -20,13 +20,20 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use log::info;
-use std::{collections::HashMap, path::PathBuf, sync::LazyLock};
+use log::{info,error};
+use semver::Op;
+use tari_shutdown::{Shutdown, ShutdownSignal};
+use std::{
+    collections::HashMap, ops::{Deref, DerefMut}, path::PathBuf, sync::{Arc, LazyLock}
+};
 
 use tari_common_types::tari_address::TariAddress;
-use tokio::sync::{
-    watch::{Receiver, Sender},
-    RwLock,
+use tokio::{
+    select,
+    sync::{
+        watch::{Receiver, Sender},
+        RwLock,
+    },
 };
 
 use crate::{
@@ -37,10 +44,10 @@ use crate::{
         pools::{gpu_pools::GpuPool, PoolConfig},
         trait_config::ConfigImpl,
     },
-    gpu_miner_adapter::GpuMinerStatus,
+    events_emitter::EventsEmitter,
     mining::{
         gpu::{
-            consts::{GpuConnectionType, GpuMiner, GpuMinerType},
+            consts::{GpuConnectionType, GpuMiner, GpuMinerStatus, GpuMinerType},
             interface::{GpuMinerInterface, GpuMinerInterfaceTrait},
             miners::{graxil::GraxilGpuMiner, lolminer::LolMinerGpuMiner},
         },
@@ -48,23 +55,28 @@ use crate::{
     },
     node::node_adapter::BaseNodeStatus,
     process_watcher::{ProcessWatcher, ProcessWatcherStats},
-    tasks_tracker::TasksTrackers,
+    systemtray_manager::{SystemTrayGpuData, SystemTrayManager},
+    tasks_tracker::TasksTrackers, utils::{locks_utils::try_write_with_retry, math_utils::estimate_earning},
 };
 
 static LOG_TARGET: &str = "tari::mining::gpu::manager";
 static INSTANCE: LazyLock<RwLock<GpuManager>> = LazyLock::new(|| RwLock::new(GpuManager::new()));
 
 pub struct GpuManager {
+    systray_manager: Arc<RwLock<Option<SystemTrayManager>>>,
     // ======= Miner config =======
     selected_miner: GpuMinerType,
     available_miners: HashMap<GpuMinerType, GpuMiner>,
     // ======= Process watcher =======
     process_watcher: ProcessWatcher<GpuMinerInterface>,
     // ======= Parameters tracking =======
+    status_thread_shutdown: Shutdown,
     process_stats_collector: Sender<ProcessWatcherStats>,
-    status_channel: Sender<GpuMinerStatus>,
-    node_status_channel: Option<Receiver<BaseNodeStatus>>,
+    gpu_internal_status_channel: Sender<GpuMinerStatus>,
+    gpu_external_status_channel: Sender<GpuMinerStatus>,
+    node_status_channel: Option<Receiver<BaseNodeStatus>>, // Optional, only if connected to a node
     // ======= Cached config =======
+    connection_type: GpuConnectionType,
     #[allow(dead_code)]
     tari_address: Option<String>,
     #[allow(dead_code)]
@@ -78,6 +90,7 @@ pub struct GpuManager {
 impl GpuManager {
     pub fn new() -> Self {
         Self {
+            systray_manager: Arc::new(RwLock::new(None)),
             // ======= Miner config =======
             selected_miner: GpuMinerType::LolMiner,
             available_miners: HashMap::new(),
@@ -87,10 +100,13 @@ impl GpuManager {
                 Sender::new(ProcessWatcherStats::default()),
             ),
             // ======= Parameters tracking =======
+            status_thread_shutdown: Shutdown::new(),
             process_stats_collector: Sender::new(ProcessWatcherStats::default()),
-            status_channel: Sender::new(GpuMinerStatus::default()),
+            gpu_external_status_channel: Sender::new(GpuMinerStatus::default()),
+            gpu_internal_status_channel: Sender::new(GpuMinerStatus::default()),
             node_status_channel: None,
             // ======= Cached config =======
+            connection_type: GpuConnectionType::default(),
             tari_address: None,
             pool: None,
             intensity_percentage: None,
@@ -102,13 +118,15 @@ impl GpuManager {
         process_stats_collector: Sender<ProcessWatcherStats>,
         status_channel: Sender<GpuMinerStatus>,
         node_status_channel: Option<Receiver<BaseNodeStatus>>,
+        systray_manager: Arc<RwLock<Option<SystemTrayManager>>>,
     ) {
         let config_gpu_miner_type = ConfigMining::content().await.gpu_miner_type().clone();
         let mut instance = INSTANCE.write().await;
         instance.selected_miner = config_gpu_miner_type;
         instance.process_stats_collector = process_stats_collector;
-        instance.status_channel = status_channel;
+        instance.gpu_external_status_channel = status_channel;
         instance.node_status_channel = node_status_channel;
+        instance.systray_manager = systray_manager;
     }
 
     pub async fn load_miner(miner: GpuMinerType) {
@@ -131,7 +149,8 @@ impl GpuManager {
     ) -> Result<(), anyhow::Error> {
         let mut instance = INSTANCE.write().await;
         info!(target: LOG_TARGET, "Starting gpu miner: {}", instance.selected_miner);
-        let shutdown_signal = TasksTrackers::current().gpu_mining_phase.get_signal().await;
+        let global_shutdown_signal = TasksTrackers::current().gpu_mining_phase.get_signal().await;
+        instance.status_thread_shutdown = Shutdown::new();
         let task_tracker = TasksTrackers::current()
             .gpu_mining_phase
             .get_task_tracker()
@@ -189,7 +208,7 @@ impl GpuManager {
                 config_path,
                 log_path,
                 binary,
-                shutdown_signal,
+                global_shutdown_signal,
                 task_tracker,
             )
             .await
@@ -201,7 +220,10 @@ impl GpuManager {
             let mut instance = INSTANCE.write().await;
             instance.process_watcher.status_monitor = None;
             instance.process_watcher.stop().await?;
-            let _res = instance.status_channel.send(GpuMinerStatus::default());
+            instance.status_thread_shutdown.trigger();
+            let _res = instance
+                .gpu_external_status_channel
+                .send(GpuMinerStatus::default());
         }
         // Mark mining as stopped in pool manager
         // It will handle stopping the stats watcher after 1 hour of grace period
@@ -228,15 +250,104 @@ impl GpuManager {
 
     fn resolve_miner_interface(&self, miner_type: &GpuMinerType) -> GpuMinerInterface {
         match miner_type {
-            GpuMinerType::Graxil => {
-                GpuMinerInterface::Graxil(GraxilGpuMiner::new(self.status_channel.clone()))
+            GpuMinerType::Graxil => GpuMinerInterface::Graxil(GraxilGpuMiner::new(
+                self.gpu_internal_status_channel.clone(),
+            )),
+            GpuMinerType::LolMiner => GpuMinerInterface::LolMiner(LolMinerGpuMiner::new(
+                self.gpu_internal_status_channel.clone(),
+            )),
+            GpuMinerType::Glytex => GpuMinerInterface::LolMiner(LolMinerGpuMiner::new(
+                self.gpu_internal_status_channel.clone(),
+            )),
+        }
+    }
+
+    async fn initialize_status_updates() {
+        let instance = INSTANCE.read().await;
+        let mut gpu_internal_status_reciever = instance.gpu_internal_status_channel.subscribe();
+        let gpu_external_status_channel = instance.gpu_external_status_channel.clone();
+        let node_status_channel = instance.node_status_channel.clone();
+        let connection_type = instance.connection_type.clone();
+        let systray_manager = instance.systray_manager.clone();
+
+        let mut internal_shutdown_signal = instance.status_thread_shutdown.to_signal();
+        let mut global_shutdown_signal = TasksTrackers::current().gpu_mining_phase.get_signal().await;
+        let task_tracker = TasksTrackers::current()
+            .gpu_mining_phase
+            .get_task_tracker()
+            .await;
+
+        task_tracker.spawn(async move {
+            loop {
+                select! {
+                    _ = internal_shutdown_signal.wait() => {
+                        info!(target: LOG_TARGET, "Shutting down gpu miner status updates");
+                        break;
+                    },
+                    _ = global_shutdown_signal.wait() => {
+                        info!(target: LOG_TARGET, "Shutting down gpu miner status updates");
+                        break;
+                    },
+                    updated_status = gpu_internal_status_reciever.changed() => {
+                        if updated_status.is_ok() {
+                            let status = gpu_internal_status_reciever.borrow().clone();
+                            let paresd_status = match connection_type {
+                                GpuConnectionType::Node { .. } => Self::handle_node_connection_type_status_change(status.clone(), node_status_channel.clone()).await,
+                                GpuConnectionType::Pool { .. } => Self::handle_pool_connection_type_status_change(status.clone()).await,
+                            };
+                            let _res = gpu_external_status_channel.send(paresd_status.clone());
+                            EventsEmitter::emit_gpu_mining_update(paresd_status.clone()).await;
+
+                            
+                            let gpu_systemtray_data = SystemTrayGpuData {
+                                gpu_hashrate: paresd_status.hash_rate,
+                                estimated_earning: paresd_status.estimated_earnings
+                            };
+
+                            match try_write_with_retry(&systray_manager, 6).await {
+                                Ok(mut systemtray_manager) => {
+                                    if let Some(systemtray_manager) = systemtray_manager.deref_mut() {
+                                        systemtray_manager.update_tray_with_gpu_data(gpu_systemtray_data);
+                                    }
+
+                                },
+                                Err(e) => {
+                                    let err_msg = format!("Failed to acquire systemtray_manager write lock: {e}");
+                                    error!(target: LOG_TARGET, "{err_msg}");
+                                }
+                            }
+
+                        } else {
+                            break;
+                        }
+                    }
+                }
             }
-            GpuMinerType::LolMiner => {
-                GpuMinerInterface::LolMiner(LolMinerGpuMiner::new(self.status_channel.clone()))
-            }
-            GpuMinerType::Glytex => {
-                GpuMinerInterface::LolMiner(LolMinerGpuMiner::new(self.status_channel.clone()))
-            }
+        });
+    }
+
+    async fn handle_pool_connection_type_status_change(
+        gpu_status: GpuMinerStatus,
+    ) -> GpuMinerStatus {
+        gpu_status
+    }
+    async fn handle_node_connection_type_status_change(
+        gpu_status: GpuMinerStatus,
+        node_status_reciever: Option<Receiver<BaseNodeStatus>>,
+    ) -> GpuMinerStatus {
+        if let Some(node_status_reciever) = node_status_reciever {
+            let node_status = node_status_reciever.borrow().clone();
+            let estimated_earnings = estimate_earning(
+                node_status.sha_network_hashrate,
+                gpu_status.hash_rate,
+                node_status.block_reward);
+
+                GpuMinerStatus {
+                    estimated_earnings,
+                    ..gpu_status
+                }
+        }else {
+            gpu_status
         }
     }
 

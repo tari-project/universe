@@ -27,6 +27,7 @@ use crate::events::{
 };
 use crate::gpu_devices::GpuDeviceInformation;
 use crate::internal_wallet::TariAddressType;
+use crate::mining::gpu::consts::GpuMinerStatus;
 use crate::mining::pools::PoolStatus;
 #[cfg(target_os = "windows")]
 use crate::system_dependencies::UniversalSystemDependency;
@@ -45,7 +46,7 @@ use crate::{
     hardware::hardware_status_monitor::PublicDeviceGpuProperties,
     setup::setup_manager::SetupPhase,
     utils::app_flow_utils::FrontendReadyChannel,
-    BaseNodeStatus, GpuMinerStatus,
+    BaseNodeStatus,
 };
 use log::error;
 use std::collections::HashMap;
