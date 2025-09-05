@@ -2,7 +2,7 @@ import { invoke } from '@tauri-apps/api/core';
 
 import { useMiningMetricsStore } from '../useMiningMetricsStore.ts';
 
-import { useMiningStore } from '../useMiningStore.ts';
+import { SessionMiningTime, useMiningStore } from '../useMiningStore.ts';
 import { setError } from './appStateStoreActions.ts';
 import { useSetupStore } from '@app/store/useSetupStore.ts';
 import { useConfigMiningStore } from '../useAppConfigStore.ts';
@@ -137,6 +137,7 @@ export const startMining = async () => {
         await startCpuMining();
         await startGpuMining();
         console.info('Mining started.');
+        handleSessionMiningTime({ startTimestamp: Date.now() });
     } catch (e) {
         console.error('Failed to start mining: ', e);
         setError(e as string);
@@ -147,9 +148,25 @@ export const stopMining = async () => {
     try {
         await stopCpuMining();
         await stopGpuMining();
+        handleSessionMiningTime({ stopTimestamp: Date.now() });
         console.info('Mining stopped.');
     } catch (e) {
         console.error('Failed to stop mining: ', e);
         setError(e as string);
+    }
+};
+
+const handleSessionMiningTime = ({ startTimestamp, stopTimestamp }: SessionMiningTime) => {
+    const current = useMiningStore.getState().sessionMiningTime;
+    if (stopTimestamp) {
+        const diff = (stopTimestamp || 0) - (current.startTimestamp || 0);
+        useMiningStore.setState((c) => ({
+            ...c,
+            sessionMiningTime: { startTimestamp, stopTimestamp, durationMs: diff },
+        }));
+    }
+
+    if (startTimestamp) {
+        useMiningStore.setState((c) => ({ ...c, sessionMiningTime: { ...c.sessionMiningTime, startTimestamp } }));
     }
 };

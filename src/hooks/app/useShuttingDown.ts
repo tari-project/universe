@@ -1,31 +1,37 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { setShowCloseDialog, useUserFeedbackStore } from '@app/store/stores/userFeedbackStore.ts';
-import { useConfigUIStore } from '@app/store';
+import { useConfigUIStore, useMiningStore } from '@app/store';
 const appWindow = getCurrentWindow();
 
-function useShutdownHandler() {
+function useShutdownHandler(shutdownTriggered = false) {
     const wasFeedbackSent = useConfigUIStore((s) => s.feedback?.early_close.feedback_sent);
     const earlyClosedDismissed = useUserFeedbackStore((s) => s.earlyClosedDismissed);
-    const miningTimeInSec = useUserFeedbackStore((s) => s.miningTimeInSec);
-    const isEarlyClose = miningTimeInSec < 60 * 60;
+    const miningTimeMs = useMiningStore((s) => s.sessionMiningTime.durationMs);
+    const isEarlyClose = !miningTimeMs || miningTimeMs < 60 * 60 * 1000;
 
-    return useCallback(
-        () => wasFeedbackSent || !isEarlyClose || (isEarlyClose && earlyClosedDismissed),
+    const [shouldShutDown, setShouldShutDown] = useState(false);
+
+    useEffect(
+        () => setShouldShutDown(wasFeedbackSent || !isEarlyClose || (isEarlyClose && earlyClosedDismissed)),
         [earlyClosedDismissed, isEarlyClose, wasFeedbackSent]
     );
+
+    return shutdownTriggered ? shouldShutDown : false;
 }
 
 export function useShuttingDown() {
-    const checkShouldShutDown = useShutdownHandler();
+    const [shutdownTriggered, setShutdownTriggered] = useState(false);
     const [isShuttingDown, setIsShuttingDown] = useState(false);
+
+    const shouldShutDown = useShutdownHandler(shutdownTriggered);
 
     useEffect(() => {
         const ul = appWindow.onCloseRequested(async (event) => {
             if (!isShuttingDown) {
                 event.preventDefault();
-                const shouldShutDown = checkShouldShutDown();
+                setShutdownTriggered(true);
                 if (shouldShutDown) {
                     setIsShuttingDown(true);
                 } else {
@@ -36,16 +42,16 @@ export function useShuttingDown() {
         return () => {
             ul.then((unlisten) => unlisten());
         };
-    }, [checkShouldShutDown, isShuttingDown]);
+    }, [isShuttingDown, shouldShutDown]);
 
     useEffect(() => {
-        if (isShuttingDown) {
+        if (isShuttingDown || shouldShutDown) {
             const shutDownTimout = setTimeout(async () => {
                 await invoke('exit_application');
             }, 250);
             return () => clearTimeout(shutDownTimout);
         }
-    }, [isShuttingDown]);
+    }, [isShuttingDown, shouldShutDown]);
 
     return isShuttingDown;
 }
