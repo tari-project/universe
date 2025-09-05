@@ -1,5 +1,5 @@
 import { CSSProperties, HTMLProps, ReactNode, Ref } from 'react';
-type DialogVariant = 'primary' | 'transparent';
+type DialogVariant = 'primary' | 'transparent' | 'wrapper';
 
 export interface DialogOptions {
     open: boolean;
