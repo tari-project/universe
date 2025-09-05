@@ -12,6 +12,8 @@ import CreatePinDialog from './security/pin/CreatePinDialog.tsx';
 import CriticalErrorDialog from './CriticalErrorDialog/CriticalErrorDialog.tsx';
 import CriticalProblemDialog from './CriticalProblemDialog/CriticalProblemDialog.tsx';
 import CloseUserFeedbackDialog from './user/surveys/CloseUserFeedbackDialog.tsx';
+import LongTimeUserFeedbackDialog from './user/surveys/LongTimeUserFeedbackDialog.tsx';
+
 import EXModal from './EXModal/EXModal.tsx';
 import EnterPinDialog from './security/pin/EnterPinDialog.tsx';
 import ExternalDependenciesDialog from './ExternalDependenciesDialog/ExternalDependenciesDialog.tsx';
@@ -60,6 +62,7 @@ const FloatingElements = () => {
             <SettingsModal />
             <FailedModuleInitializationDialog />
             <CloseUserFeedbackDialog />
+            <LongTimeUserFeedbackDialog />
         </FloatingTree>
     );
 };

@@ -10,12 +10,9 @@ function useShutdownHandler(shutdownTriggered = false) {
     const wasFeedbackSent = useConfigUIStore((s) => s.feedback?.early_close.feedback_sent);
     const earlyClosedDismissed = useUserFeedbackStore((s) => s.earlyClosedDismissed);
     const miningTimeMs = useMiningStore((s) => s.sessionMiningTime.durationMs);
-    const isEarlyClose = !miningTimeMs || miningTimeMs < 60 * 1000; // 1 min for testing
-    // const isEarlyClose = !miningTimeMs || miningTimeMs < 60 * 60 * 1000;
+    const isEarlyClose = !miningTimeMs || miningTimeMs < 60 * 60 * 1000;
 
     const [shouldShutDown, setShouldShutDown] = useState(false);
-    console.debug(`miningTimeMs= `, miningTimeMs);
-    console.debug(`isEarlyClose= `, isEarlyClose);
     useEffect(
         () => setShouldShutDown(wasFeedbackSent || !isEarlyClose || (isEarlyClose && earlyClosedDismissed)),
         [earlyClosedDismissed, isEarlyClose, wasFeedbackSent]

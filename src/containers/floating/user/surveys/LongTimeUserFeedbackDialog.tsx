@@ -1,28 +1,30 @@
+import { invoke } from '@tauri-apps/api/core';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
-import UserSurvey from '@app/components/user/surveys/UserSurvey.tsx';
 import {
     setEarlyClosedDismissed,
-    setShowCloseDialog,
+    setShowLongTimeDialog,
     useUserFeedbackStore,
 } from '@app/store/stores/userFeedbackStore.ts';
 import CloseButton from '@app/components/elements/buttons/CloseButton.tsx';
-import { invoke } from '@tauri-apps/api/core';
+import UserSurvey from '@app/components/user/surveys/UserSurvey.tsx';
 
-export default function CloseUserFeedbackDialog() {
-    const showCloseDialog = useUserFeedbackStore((s) => s.showCloseDialog);
-    function handleSkipped() {
+export default function LongTimeUserFeedbackDialog() {
+    const showLongTimeDialog = useUserFeedbackStore((s) => s.showLongTimeDialog);
+
+    function handleSubmit(skipped = false) {
         invoke('set_feedback_fields', {
-            feedbackType: 'early_close',
-            wasSent: false,
+            feedbackType: 'long_time_miner',
+            wasSent: !skipped,
         }).then(() => {
             setEarlyClosedDismissed(true);
-            setShowCloseDialog(false);
+            setShowLongTimeDialog(false);
         });
     }
+
     return (
-        <Dialog open={showCloseDialog} onOpenChange={handleSkipped}>
-            <DialogContent variant="transparent" closeButton={<CloseButton onClick={handleSkipped} />}>
-                <UserSurvey type="close" onSkipped={handleSkipped} />
+        <Dialog open={showLongTimeDialog} onOpenChange={() => handleSubmit(true)}>
+            <DialogContent variant="transparent" closeButton={<CloseButton onClick={() => handleSubmit(true)} />}>
+                <UserSurvey type="long" onSkipped={() => handleSubmit(true)} onSuccess={handleSubmit} />
             </DialogContent>
         </Dialog>
     );

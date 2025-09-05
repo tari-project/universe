@@ -5,14 +5,18 @@ import { useAppStateStore } from '@app/store/appStateStore';
 import { setCriticalProblem, setDialogToShow, setShowExternalDependenciesDialog } from '@app/store/actions';
 import { useUIStore } from '@app/store/useUIStore.ts';
 import { DialogType } from '@app/store/types/ui.ts';
-import { useUserFeedbackStore } from '@app/store/stores/userFeedbackStore.ts';
+import {
+    setShowCloseDialog,
+    setShowLongTimeDialog,
+    useUserFeedbackStore,
+} from '@app/store/stores/userFeedbackStore.ts';
 
 export function DialogsGroup() {
     const dialogToShow = useUIStore((s) => s.dialogToShow);
     const criticalProblem = useAppStateStore((s) => s.criticalProblem);
     const showExternalDependenciesDialog = useUIStore((s) => s.showExternalDependenciesDialog);
-    const toggleCloseDialog = useUserFeedbackStore((s) => s.toggleCloseDialog);
     const showCloseDialog = useUserFeedbackStore((s) => s.showCloseDialog);
+    const showLongTimeDialog = useUserFeedbackStore((s) => s.showLongTimeDialog);
 
     function handleToggle(dialog: DialogType) {
         setDialogToShow(dialogToShow === dialog ? undefined : dialog);
@@ -22,8 +26,12 @@ export function DialogsGroup() {
         <>
             <CategoryLabel>Dialogs</CategoryLabel>
             <ButtonGroup>
-                <AdminButton onClick={toggleCloseDialog} $isActive={showCloseDialog}>
+                <AdminButton onClick={() => setShowCloseDialog(!showCloseDialog)} $isActive={showCloseDialog}>
                     Close Survey
+                </AdminButton>
+
+                <AdminButton onClick={() => setShowLongTimeDialog(!showLongTimeDialog)} $isActive={showLongTimeDialog}>
+                    Long time Miner Survey
                 </AdminButton>
                 <AdminButton
                     onClick={() =>

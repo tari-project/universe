@@ -12,15 +12,14 @@ import { RadioFields } from './RadioFields.tsx';
 import { TextFields } from './TextFields.tsx';
 import { useAirdropStore, useConfigCoreStore } from '@app/store';
 import { useSendFeedback } from '@app/hooks/user/surveys/useSendFeedback.ts';
-import { invoke } from '@tauri-apps/api/core';
-import { setEarlyClosedDismissed, setShowCloseDialog } from '@app/store/stores/userFeedbackStore.ts';
 
 interface SurveyFormProps {
     surveyContent: Survey;
     onSkipped?: () => void;
+    onSuccess?: () => void;
 }
 
-export default function SurveyForm({ surveyContent, onSkipped }: SurveyFormProps) {
+export default function SurveyForm({ surveyContent, onSkipped, onSuccess }: SurveyFormProps) {
     const appId = useConfigCoreStore((s) => s.anon_id);
     const userId = useAirdropStore((s) => s.userDetails?.user.id);
     const defaultValues = getFieldTypes(surveyContent.questions || []);
@@ -30,30 +29,10 @@ export default function SurveyForm({ surveyContent, onSkipped }: SurveyFormProps
 
     function handleSubmit(data: FieldQuestions) {
         const answers = parseAnswers(data);
-        const metadata = {
-            appId,
-            userId,
-        };
-
-        mutateAsync({
-            slug: surveyContent.slug,
-            feedbackBody: {
-                answers,
-                metadata,
-            },
-        })
-            .then(async () => {
-                const feedbackType = surveyContent.type === 'close' ? 'early_close' : 'long_time_miner';
-                await invoke('set_feedback_fields', {
-                    feedbackType,
-                    wasSent: true,
-                });
-                setEarlyClosedDismissed(true);
-                setShowCloseDialog(false);
-            })
-            .catch((err) => {
-                console.error(err);
-            });
+        const metadata = { appId, userId }; // TODO - add other metadata
+        mutateAsync({ slug: surveyContent.slug, feedbackBody: { answers, metadata } })
+            .then(() => onSuccess?.())
+            .catch((err) => console.error(err));
     }
     return (
         <FormProvider {...methods}>

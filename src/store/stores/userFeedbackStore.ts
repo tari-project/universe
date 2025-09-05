@@ -1,29 +1,21 @@
 import { create } from 'zustand';
 
-interface State {
+interface UserFeedbackStoreState {
     showCloseDialog: boolean;
     earlyClosedDismissed: boolean;
-    miningTimeInSec: number;
-}
-interface Actions {
-    toggleCloseDialog: () => void;
+    showLongTimeDialog: boolean;
 }
 
-const initialState: State = {
+const initialState: UserFeedbackStoreState = {
     showCloseDialog: false,
     earlyClosedDismissed: false,
-    miningTimeInSec: 60 * 30,
+    showLongTimeDialog: false,
 };
 
-type UserFeedbackStoreState = State & Actions;
-export const useUserFeedbackStore = create<UserFeedbackStoreState>()((set) => ({
+export const useUserFeedbackStore = create<UserFeedbackStoreState>()(() => ({
     ...initialState,
-    toggleCloseDialog: () =>
-        set((c) => ({
-            showCloseDialog: !c.showCloseDialog,
-        })),
 }));
-
+export const setShowLongTimeDialog = (showCloseDialog: boolean) => useUserFeedbackStore.setState({ showCloseDialog });
 export const setShowCloseDialog = (showCloseDialog: boolean) => useUserFeedbackStore.setState({ showCloseDialog });
 export const setEarlyClosedDismissed = (earlyClosedDismissed: boolean) =>
     useUserFeedbackStore.setState({ earlyClosedDismissed });
