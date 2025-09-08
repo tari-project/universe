@@ -630,7 +630,7 @@ pub async fn register_bridge_tapplet_in_database(
     let store = SqliteStore::new(db_connection.0.clone());
 
     // Check if bridge tapplet is already registered
-    if let Ok(_) = store.get_tapplet_by_name("wxtm-bridge".to_string()).await {
+    if let Ok(Some(_)) = store.get_tapplet_by_name("wxtm-bridge".to_string()).await {
         info!(target: LOG_TARGET, "💎💎 Bridge tapplet already registered in database");
         return Ok(());
     }
