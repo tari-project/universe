@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { FeedbackPrompts } from '@app/types/configs.ts';
 
 interface UserFeedbackStoreState {
     showCloseDialog: boolean;
@@ -6,6 +7,8 @@ interface UserFeedbackStoreState {
     showLongTimeDialog: boolean;
     closeMiningTimeMs: number;
     longMiningTimeMs: number;
+    wasFeedbackSent: boolean;
+    wasLongTimeMiner: boolean;
 }
 
 const MINIMUM_MINING_TIME_MS = 1000 * 60 * 60 * 60; // one hour
@@ -16,6 +19,8 @@ const initialState: UserFeedbackStoreState = {
     showLongTimeDialog: false,
     closeMiningTimeMs: MINIMUM_MINING_TIME_MS,
     longMiningTimeMs: MINIMUM_MINING_TIME_MS * 3,
+    wasFeedbackSent: false,
+    wasLongTimeMiner: false,
 };
 
 export const useUserFeedbackStore = create<UserFeedbackStoreState>()(() => ({
@@ -26,6 +31,18 @@ export const setShowLongTimeDialog = (showLongTimeDialog: boolean) =>
 export const setShowCloseDialog = (showCloseDialog: boolean) => useUserFeedbackStore.setState({ showCloseDialog });
 export const setEarlyClosedDismissed = (earlyClosedDismissed: boolean) =>
     useUserFeedbackStore.setState({ earlyClosedDismissed });
+
+export const setFeedbackConfigItems = (feedbackConfig?: FeedbackPrompts) => {
+    if (!feedbackConfig) return;
+    const longTimeMinerSent = feedbackConfig.long_time_miner?.feedback_sent || false;
+    const longTimeMinerDimissed = feedbackConfig.long_time_miner?.last_dismissed;
+    const earlyCloseSent = feedbackConfig.early_close?.feedback_sent || false;
+
+    const wasLongTimeMiner = longTimeMinerSent || longTimeMinerDimissed !== null;
+    const wasFeedbackSent = longTimeMinerSent || earlyCloseSent;
+
+    useUserFeedbackStore.setState({ wasFeedbackSent, wasLongTimeMiner });
+};
 
 //admin
 export const setMininimumMiningTimeMs = (type: 'closeMiningTimeMs' | 'longMiningTimeMs', timeInMs: number) => {

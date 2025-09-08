@@ -25,7 +25,7 @@ export default function AppEffects() {
             await getMiningNetwork();
             await airdropSetup();
             await fetchBridgeColdWalletAddress();
-            await queryClient.prefetchQuery({ queryKey: ['surveys', 'close'] });
+            await queryClient.prefetchQuery({ queryKey: ['surveys', 'close'] }); // need this preloaded
         }
         void initialize();
     }, []);

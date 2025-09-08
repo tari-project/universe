@@ -43,7 +43,7 @@ export interface ConfigUI {
     show_experimental_settings: boolean;
     wallet_ui_mode: WalletUIMode;
     was_staged_security_modal_shown: boolean;
-    feedback: FeedbackPrompts;
+    feedback?: FeedbackPrompts;
 }
 
 export interface FeedbackPrompt {
