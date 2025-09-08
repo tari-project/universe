@@ -51,7 +51,6 @@ impl EventsManager {
             .is_feature_enabled(SetupFeature::SeedlessWallet)
         {
             info!(target: LOG_TARGET, "Firing new block height event but skipping wallet scan for seedless wallet feature");
-
             EventsEmitter::emit_new_block_mined(block_height, None, None).await;
 
             return;
@@ -61,8 +60,8 @@ impl EventsManager {
         let wallet_manager = state.wallet_manager.clone();
 
         TasksTrackers::current().wallet_phase.get_task_tracker().await.spawn(async move {
-            // Use a short timeout for processing new blocks
-            match wallet_manager.wait_for_scan_to_height(block_height, Some(Duration::from_secs(5))).await {
+            // Event does not need to be fired immediately since frontend uses block height from explorer
+            match wallet_manager.wait_for_scan_to_height(block_height, Some(Duration::from_secs(20))).await {
                 Ok(scanned_wallet_state) => {
                     if let Some(balance) = scanned_wallet_state.balance {
                         // Check for coinbase transaction if there's pending balance
@@ -91,7 +90,6 @@ impl EventsManager {
                     } else {
                         error!(target: LOG_TARGET, "Wallet balance is None after new block height #{block_height}");
                         EventsEmitter::emit_new_block_mined(
-
                             block_height,
                             None,
                             None,

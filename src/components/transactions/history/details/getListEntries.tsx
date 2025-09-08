@@ -42,7 +42,7 @@ function getPaymentReferenceValue(transaction: CombinedBridgeWalletTransaction):
     if (transaction.walletTransactionDetails.paymentReference) {
         return transaction.walletTransactionDetails.paymentReference;
     }
-    const currentBlockHeight = useNodeStore.getState().base_node_status.block_height;
+    const currentBlockHeight = useNodeStore.getState().base_node_status?.block_height;
     if (!transaction.mined_in_block_height || !currentBlockHeight) {
         return i18n.t('common:pending');
     }

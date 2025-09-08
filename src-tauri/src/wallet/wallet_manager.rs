@@ -368,7 +368,12 @@ impl WalletManager {
                         log::warn!(target: LOG_TARGET, "Max retries(10) reached while waiting for node status update");
                         break 1;
                     }
-                    let _unused = node_status_watch_rx_scan.changed().await;
+                    tokio::select!{
+                        _ = node_status_watch_rx_scan.changed() => {},
+                        _ = shutdown_signal.wait() =>{
+                            break 1;
+                        }
+                    }
                 };
                 tokio::select! {
                     _ = shutdown_signal.wait() => {
@@ -378,7 +383,14 @@ impl WalletManager {
                     result = wallet_manager.wait_for_scan_to_height(current_target_height, None) => {
                         match result {
                             Ok(scanned_wallet_state) => {
-                                let latest_height = node_status_watch_rx_scan.borrow().block_height;
+                                let node_status = *node_status_watch_rx_scan.borrow();
+                                if !node_status.is_synced {
+                                    log::info!(target: LOG_TARGET,
+                                        "Node is not synced, continuing..");
+                                    continue;
+                                }
+
+                                let latest_height = node_status.block_height;
                                 if latest_height > current_target_height {
                                     log::info!(target: LOG_TARGET,
                                         "Node height increased from {current_target_height} to {latest_height} while initial scanning, continuing..");
