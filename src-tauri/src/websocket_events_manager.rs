@@ -20,8 +20,6 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use futures::FutureExt;
-use std::panic::AssertUnwindSafe;
 use std::sync::Arc;
 use std::thread::sleep;
 use std::time::Duration;
@@ -152,26 +150,19 @@ impl WebsocketEventsManager {
                 tokio::select! {
                   _= interval.tick() => {
                         info!(target:LOG_TARGET, "✓ Mining status interval tick - assembling status");
-                        match AssertUnwindSafe(WebsocketEventsManager::assemble_mining_status(
+                        if let Some(message) = WebsocketEventsManager::assemble_mining_status(
                           cpu_miner_status_watch_rx.clone(),
                           gpu_latest_miner_stats.clone(),
                           node_latest_status.clone(),
                           app_id.clone(),
                           app_version.clone(),
-                        )).catch_unwind().await {
-                            Ok(Some(message)) => {
-                                info!(target:LOG_TARGET, "sending mining status message {:?}", message);
-                                drop(websocket_tx_channel_clone.send(message).await.inspect_err(|e|{
-                                  error!(target:LOG_TARGET, "could not send to websocket channel due to {e}");
-                                }));
-                            },
-                            Ok(None) => {
-                                info!(target:LOG_TARGET, "No mining status message to send (mining not active)");
-                            },
-                            Err(e) => {
-                                error!(target:LOG_TARGET, "Mining status assembly panicked: {:?}", e);
-                                info!(target:LOG_TARGET, "Continuing with websocket events despite mining status error");
-                            }
+                        ).await {
+                            info!(target:LOG_TARGET, "sending mining status message {:?}", message);
+                            drop(websocket_tx_channel_clone.send(message).await.inspect_err(|e|{
+                              error!(target:LOG_TARGET, "could not send to websocket channel due to {e}");
+                            }));
+                        } else {
+                            info!(target:LOG_TARGET, "No mining status message to send");
                         }
                   },
                   _= keep_alive_interval.tick()=>{
@@ -220,15 +211,21 @@ impl WebsocketEventsManager {
         let gpu_status = gpu_latest_miner_stats.borrow().clone();
         let network = Network::get_current_or_user_setting_or_default().as_key_str();
         let is_mining_active = cpu_miner_status.hash_rate > 0.0 || gpu_status.hash_rate > 0.0;
-        let tari_address = InternalWallet::tari_address().await;
-        let pools_config = ConfigPools::content().await;
-        let gpu_pool_name = pools_config.selected_gpu_pool().name();
-        let cpu_pool_name = pools_config.selected_cpu_pool().name();
-
         // If the miner is not active, we don't need to send any messages
         if !is_mining_active {
             return None;
         }
+
+        // Check if wallet is initialized before trying to get address
+        if !InternalWallet::is_initialized() {
+            warn!(target: LOG_TARGET, "Wallet has not been initialized");
+            return None;
+        }
+        let tari_address = InternalWallet::tari_address().await;
+
+        let pools_config = ConfigPools::content().await;
+        let gpu_pool_name = pools_config.selected_gpu_pool().name();
+        let cpu_pool_name = pools_config.selected_cpu_pool().name();
 
         let signable_message = format!(
             "{},{},{},{},{},{},{},{},{}",
