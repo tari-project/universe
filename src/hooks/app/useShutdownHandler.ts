@@ -11,16 +11,18 @@ export function useShutdownHandler() {
     const promptDismissed = useUserFeedbackStore((s) => s.earlyClosedDismissed);
 
     const handleShutdown = useCallback(async () => {
-        const shutdownTimeout = setTimeout(async () => {
-            await invoke('exit_application');
-        }, 250);
-        return clearTimeout(shutdownTimeout);
+        setIsShuttingDown(true);
+        await invoke('exit_application');
     }, []);
 
     const onShutdownCaught = useCallback(async () => {
-        if (wasFeedbackSent || wasLongTimeMiner) return;
+        if (wasFeedbackSent || wasLongTimeMiner) {
+            await handleShutdown();
+        }
         const currentMiningTimeMs = checkMiningTime();
+
         const isEarlyClose = !currentMiningTimeMs || currentMiningTimeMs < minimumMiningTimeForClose;
+
         if (isEarlyClose && !promptDismissed) {
             setShowCloseDialog(true);
         } else {

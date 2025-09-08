@@ -3,12 +3,12 @@ import { useConfigUIStore } from '@app/store';
 import { useCallback, useEffect } from 'react';
 import { checkMiningTime } from '@app/store/actions/miningStoreActions.ts';
 
-const HOUR = 1000 * 60 * 60 * 60;
+const HOUR = 1000 * 60 * 60;
 
 export function useCheckMiningTime() {
     const feedback = useConfigUIStore((s) => s.feedback);
     const longMiningTimeMs = useUserFeedbackStore((s) => s.longMiningTimeMs);
-
+    console.debug(`longMiningTimeMs= `, longMiningTimeMs);
     const anyFeedbackSubmitted = feedback?.long_time_miner?.feedback_sent || feedback?.early_close?.feedback_sent;
 
     const checkDismissedTime = useCallback(() => {
@@ -29,7 +29,7 @@ export function useCheckMiningTime() {
     const handleModalCheck = useCallback(() => {
         const currentMiningTimeMs = checkMiningTime();
         if (currentMiningTimeMs < 1) return;
-        const buffer = 1000 * 60 * 60 * 10; // 10 min
+        const buffer = 1000 * 60 * 10; // 10 min
         const shouldShow = currentMiningTimeMs + buffer >= longMiningTimeMs;
         if (shouldShow) {
             setShowLongTimeDialog(true);

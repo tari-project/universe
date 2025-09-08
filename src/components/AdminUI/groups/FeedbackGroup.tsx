@@ -8,19 +8,29 @@ import {
     useUserFeedbackStore,
 } from '@app/store/stores/userFeedbackStore.ts';
 import { useState } from 'react';
+import { checkMiningTime } from '@app/store/actions/miningStoreActions.ts';
 
+function convertToMinutes(ms: number) {
+    return ms / 1000 / 60;
+}
+
+function convertToMs(minutes: number) {
+    return minutes * 60 * 1000;
+}
 export function FeedbackGroup() {
     const longMiningTimeMs = useUserFeedbackStore((s) => s.longMiningTimeMs);
     const closeMiningTimeMs = useUserFeedbackStore((s) => s.closeMiningTimeMs);
     const showCloseDialog = useUserFeedbackStore((s) => s.showCloseDialog);
     const showLongTimeDialog = useUserFeedbackStore((s) => s.showLongTimeDialog);
-    const [closeMin, setCloseMin] = useState(closeMiningTimeMs / 1000 / 60 / 60);
-    const [longMin, setLongMin] = useState(longMiningTimeMs / 1000 / 60 / 60);
+
+    const [closeMin, setCloseMin] = useState(convertToMinutes(closeMiningTimeMs));
+    const [longMin, setLongMin] = useState(convertToMinutes(longMiningTimeMs));
 
     return (
         <>
             <CategoryLabel>Feedback</CategoryLabel>
             <ButtonGroup>
+                <AdminButton onClick={checkMiningTime}>Log current time</AdminButton>
                 <AdminButton onClick={() => setShowCloseDialog(!showCloseDialog)} $isActive={showCloseDialog}>
                     Close Survey
                 </AdminButton>
@@ -47,7 +57,7 @@ export function FeedbackGroup() {
                     <button
                         type="button"
                         onClick={() => {
-                            setMininimumMiningTimeMs('closeMiningTimeMs', closeMin * 1000 * 60 * 60);
+                            setMininimumMiningTimeMs('closeMiningTimeMs', convertToMs(closeMin));
                         }}
                     >
                         save
@@ -72,7 +82,7 @@ export function FeedbackGroup() {
                     <button
                         type="button"
                         onClick={() => {
-                            setMininimumMiningTimeMs('longMiningTimeMs', longMin * 1000 * 60 * 60);
+                            setMininimumMiningTimeMs('longMiningTimeMs', convertToMs(longMin));
                         }}
                     >
                         save

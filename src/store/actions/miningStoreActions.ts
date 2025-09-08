@@ -176,7 +176,10 @@ export const checkMiningTime = () => {
     const cpuMining = useMiningMetricsStore.getState().cpu_mining_status.is_mining;
     const gpuMining = useMiningMetricsStore.getState().gpu_mining_status.is_mining;
     const isStillMining = cpuMining || gpuMining;
+    console.debug(`isStillMining= `, isStillMining);
+
     let stopTimestamp = current.stopTimestamp;
+    console.debug(`stopTimestamp= `, stopTimestamp);
 
     if (isStillMining) {
         const now = Date.now();
@@ -184,6 +187,7 @@ export const checkMiningTime = () => {
         stopTimestamp = now;
     }
     const diff = (stopTimestamp || 0) - (current.startTimestamp || 0);
+    console.debug(`diff= `, diff);
     useMiningStore.setState((c) => ({
         ...c,
         sessionMiningTime: { ...c.sessionMiningTime, durationMs: diff },
