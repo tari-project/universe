@@ -54,11 +54,48 @@ async fn add_csp_header(req: Request<Body>, next: Next, csp_header: HeaderValue)
     response
 }
 
+/// Middleware that fixes MIME types for common file extensions
+async fn fix_mime_types(req: Request<Body>, next: Next) -> Response<Body> {
+    // Get the request path to determine file extension before moving the request
+    let path = req.uri().path().to_string();
+
+    let mut response = next.run(req).await;
+
+    // Set correct Content-Type based on file extension
+    if let Some(extension) = path.split('.').last() {
+        let mime_type = match extension {
+            "js" => Some("application/javascript"),
+            "mjs" => Some("application/javascript"),
+            "css" => Some("text/css"),
+            "html" => Some("text/html"),
+            "json" => Some("application/json"),
+            "png" => Some("image/png"),
+            "jpg" | "jpeg" => Some("image/jpeg"),
+            "gif" => Some("image/gif"),
+            "svg" => Some("image/svg+xml"),
+            "woff" => Some("font/woff"),
+            "woff2" => Some("font/woff2"),
+            "ttf" => Some("font/ttf"),
+            "eot" => Some("application/vnd.ms-fontobject"),
+            _ => None,
+        };
+
+        if let Some(mime) = mime_type {
+            if let Ok(header_value) = HeaderValue::from_str(mime) {
+                response.headers_mut().insert("Content-Type", header_value);
+            }
+        }
+    }
+
+    response
+}
+
 pub fn using_serve_dir(tapplet_path: PathBuf, csp_header: HeaderValue) -> Router {
     let serve_dir = ServeDir::new(tapplet_path);
 
     Router::new()
         .nest_service("/", serve_dir)
+        .layer(middleware::from_fn(fix_mime_types))
         .layer(middleware::from_fn(move |req, next| {
             let csp = csp_header.clone();
             async move { add_csp_header(req, next, csp).await }
