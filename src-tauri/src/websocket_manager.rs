@@ -160,7 +160,6 @@ impl WebsocketManager {
         let app_id = ConfigCore::content().await.anon_id().clone();
         adjusted_ws_url.push_str(&format!("/v2/ws?app_id={}", encode(&app_id)));
 
-        // adjusted_ws_url.push_str(&format!("/new-wss"))
         let (ws_stream, _) = connect_async(adjusted_ws_url).await?;
         info!(target:LOG_TARGET,"websocket connection established...");
 
