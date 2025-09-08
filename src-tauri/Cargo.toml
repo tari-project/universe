@@ -116,6 +116,8 @@ xz2 = { version = "0.1.7", features = ["static"] } # static bind lzma
 zip = "2.2.0"
 tari_transaction_key_manager = { git = "https://github.com/stringhandler/tari", branch = "st-update-libsqlite" }
 
+tari_ootle_wallet_sdk = { git = "https://github.com/tari-project/tari-ootle", branch = "development", optional = true }
+
 [target.'cfg(windows)'.dependencies]
 planif = "1.0.0"
 whoami = "1.5.2"
@@ -131,12 +133,16 @@ rand = "0.8.5"
 sys-locale = "0.3.1"
 
 [features]
+# Change this when not debugging ootle
+# default = []
+default = ["ootle"]
 custom-protocol = [
   "tauri/custom-protocol",
 ] # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!
 release-ci = ["tauri/custom-protocol"]
 release-ci-beta = ["tauri/custom-protocol"]
 exchange-ci = ["tauri/custom-protocol"]
+ootle = ["tari_ootle_wallet_sdk"]
 
 [package.metadata.cargo-machete]
 ignored = [

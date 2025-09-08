@@ -54,7 +54,7 @@ use crate::{
     websocket_manager::WebsocketMessage,
     UniverseAppState,
 };
-use log::{error, info};
+use log::{debug, error, info};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::{

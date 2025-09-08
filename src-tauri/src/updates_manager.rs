@@ -27,7 +27,7 @@ use tokio::{
 };
 
 use anyhow::anyhow;
-use log::{error, info, warn};
+use log::{debug, error, info, warn};
 
 use serde::{Deserialize, Serialize};
 use tauri::{Emitter, Url};
