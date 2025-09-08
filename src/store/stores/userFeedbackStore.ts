@@ -13,7 +13,6 @@ interface UserFeedbackStoreState {
 
 const MINIMUM_MINING_TIME_MS = 1000 * 60 * 60; // one hour
 
-console.debug(`MINIMUM_MINING_TIME_MS= `, MINIMUM_MINING_TIME_MS);
 const initialState: UserFeedbackStoreState = {
     showCloseDialog: false,
     earlyClosedDismissed: false,

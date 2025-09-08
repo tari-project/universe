@@ -1,4 +1,4 @@
-const _SURVEYS = ['close', 'long', 'test'] as const;
+const _SURVEYS = ['close', 'long'] as const;
 const _QUESTION_TYPE = ['checkbox', 'radio', 'text'] as const;
 
 type SurveyTuple = typeof _SURVEYS;

@@ -160,38 +160,31 @@ export const handleSessionMiningTime = ({ startTimestamp, stopTimestamp }: Sessi
     const current = useMiningStore.getState().sessionMiningTime;
     if (stopTimestamp) {
         const diff = (stopTimestamp || 0) - (current.startTimestamp || 0);
-        useMiningStore.setState((c) => ({
-            ...c,
-            sessionMiningTime: { startTimestamp, stopTimestamp, durationMs: diff },
-        }));
+        useMiningStore.setState({
+            sessionMiningTime: { ...current, startTimestamp, stopTimestamp, durationMs: diff },
+        });
     }
 
     if (startTimestamp) {
-        useMiningStore.setState((c) => ({ ...c, sessionMiningTime: { ...c.sessionMiningTime, startTimestamp } }));
+        useMiningStore.setState({ sessionMiningTime: { ...current, startTimestamp } });
     }
 };
 
 export const checkMiningTime = () => {
     const current = useMiningStore.getState().sessionMiningTime;
+    let stopTimestamp = current.stopTimestamp;
+
     const cpuMining = useMiningMetricsStore.getState().cpu_mining_status.is_mining;
     const gpuMining = useMiningMetricsStore.getState().gpu_mining_status.is_mining;
     const isStillMining = cpuMining || gpuMining;
-    console.debug(`isStillMining= `, isStillMining);
-
-    let stopTimestamp = current.stopTimestamp;
-    console.debug(`stopTimestamp= `, stopTimestamp);
 
     if (isStillMining) {
         const now = Date.now();
         handleSessionMiningTime({ stopTimestamp: now });
         stopTimestamp = now;
     }
-    const diff = (stopTimestamp || 0) - (current.startTimestamp || 0);
-    console.debug(`diff= `, diff);
-    useMiningStore.setState((c) => ({
-        ...c,
-        sessionMiningTime: { ...c.sessionMiningTime, durationMs: diff },
-    }));
 
+    const diff = (stopTimestamp || 0) - (current.startTimestamp || 0);
+    useMiningStore.setState({ sessionMiningTime: { ...current, durationMs: diff } });
     return diff;
 };

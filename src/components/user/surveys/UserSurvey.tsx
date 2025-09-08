@@ -19,8 +19,8 @@ export default function UserSurvey({ type, onClose }: UserSurveyProps) {
     const loadingMarkup = isLoading && <LoadingDots />;
 
     const handleFeedback = (skipped: boolean) => {
-        if (type === 'test') return;
         const feedbackType = type === 'long' ? 'long_time_miner' : 'early_close';
+
         invoke('set_feedback_fields', {
             feedbackType,
             wasSent: !skipped,
@@ -36,8 +36,8 @@ export default function UserSurvey({ type, onClose }: UserSurveyProps) {
 
                 return { ...c, feedback: { ...c.feedback, ...updated } };
             });
-            onClose();
 
+            onClose();
             if (type === 'close') {
                 setEarlyClosedDismissed(true);
             }

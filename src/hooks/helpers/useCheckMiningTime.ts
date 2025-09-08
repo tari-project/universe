@@ -7,9 +7,8 @@ const HOUR = 1000 * 60 * 60;
 
 export function useCheckMiningTime() {
     const feedback = useConfigUIStore((s) => s.feedback);
+    const wasFeedbackSent = useUserFeedbackStore((s) => s.wasFeedbackSent);
     const longMiningTimeMs = useUserFeedbackStore((s) => s.longMiningTimeMs);
-    console.debug(`longMiningTimeMs= `, longMiningTimeMs);
-    const anyFeedbackSubmitted = feedback?.long_time_miner?.feedback_sent || feedback?.early_close?.feedback_sent;
 
     const checkDismissedTime = useCallback(() => {
         //TODO add helper/neaten nested vals ?
@@ -38,7 +37,7 @@ export function useCheckMiningTime() {
 
     useEffect(() => {
         const dismissedWithinADay = checkDismissedTime();
-        if (anyFeedbackSubmitted || dismissedWithinADay) return;
+        if (wasFeedbackSent || dismissedWithinADay) return;
 
         handleModalCheck();
 
@@ -49,5 +48,5 @@ export function useCheckMiningTime() {
         return () => {
             clearInterval(interval);
         };
-    }, [anyFeedbackSubmitted, checkDismissedTime, handleModalCheck, longMiningTimeMs]);
+    }, [wasFeedbackSent, checkDismissedTime, handleModalCheck, longMiningTimeMs]);
 }
