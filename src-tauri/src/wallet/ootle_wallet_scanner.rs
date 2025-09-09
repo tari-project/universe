@@ -1,23 +1,41 @@
+use std::{path::Path, sync::OnceLock};
+
 use crate::wallet::{wallet_scanner::WalletScanner, wallet_types::WalletEvent};
 use async_trait::async_trait;
+use std::str::FromStr;
+use tari_common::configuration::Network;
 use tari_crypto::ristretto::{RistrettoPublicKey, RistrettoSecretKey};
-use tari_ootle_wallet_sdk::apis::stealth_scanner::StealthScannerApi;
-
+use tari_ootle_common_types::Network as OotleNetwork;
+use tari_ootle_wallet_sdk::{apis::stealth_scanner::StealthScannerApi, WalletSdk, WalletSdkConfig};
+use tari_ootle_wallet_sdk_services::indexer_jrpc_impl::IndexerJsonRpcNetworkInterface;
+use tari_ootle_wallet_storage_sqlite::SqliteWalletStore;
 pub struct OotleWalletScanner {
-    indexer_url: String,
-    stealth_scanner: StealthScannerApi<SqliteWalletStore, IndexerJrpcImpl>
+    wallet_sdk: OnceLock<WalletSdk<SqliteWalletStore, IndexerJsonRpcNetworkInterface>>,
 }
 
 impl OotleWalletScanner {
-    pub fn new(indexer_url: String, sqlite_store_address: String) -> Self {
-        let indexer_jrpc = IndexerJrpcImpl::new(indexer_url.clone());
-        let wallet_store = SqliteWalletStore::new(sqlite_store_address);
-        let stealth_scanner = StealthScannerApi::new(wallet_store, indexer_jrpc);
-        let key_manager_api = KeyManagerApi::new(wallet_store.clone());
-        
-
-        Self { indexer_url, stealth_scanner }
+    pub fn new() -> Self {
+        Self {
+            wallet_sdk: OnceLock::new(),
+        }
     }
+    pub fn init(&self, indexer_url: String, base_path: &Path) -> Result<(), anyhow::Error> {
+        let indexer = IndexerJsonRpcNetworkInterface::new(indexer_url);
+        let store = SqliteWalletStore::try_open(base_path.join("data/wallet.sqlite"))?;
+        store.run_migrations()?;
+        let network =
+            OotleNetwork::from_str(&Network::get_current().to_string()).expect("Invalid network");
+        let sdk_config = WalletSdkConfig {
+            network,
+            override_keyring_password: None,
+        };
+        let wallet_sdk = WalletSdk::initialize(store, indexer, sdk_config)?;
+        self.wallet_sdk
+            .set(wallet_sdk)
+            .map_err(|_| anyhow::anyhow!("Wallet SDK already initialized"))?;
+        Ok(())
+    }
+}
 
 #[async_trait]
 impl WalletScanner for OotleWalletScanner {

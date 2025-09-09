@@ -117,6 +117,9 @@ zip = "2.2.0"
 tari_transaction_key_manager = { git = "https://github.com/stringhandler/tari", branch = "st-update-libsqlite" }
 
 tari_ootle_wallet_sdk = { git = "https://github.com/tari-project/tari-ootle", branch = "development", optional = true }
+tari_ootle_wallet_sdk_services = { git = "https://github.com/tari-project/tari-ootle", branch = "development", optional = true }
+tari_ootle_wallet_storage_sqlite = { git = "https://github.com/tari-project/tari-ootle", branch = "development", optional = true }
+tari_ootle_common_types = { git = "https://github.com/tari-project/tari-ootle", branch = "development", optional = true }
 
 [target.'cfg(windows)'.dependencies]
 planif = "1.0.0"
@@ -142,7 +145,12 @@ custom-protocol = [
 release-ci = ["tauri/custom-protocol"]
 release-ci-beta = ["tauri/custom-protocol"]
 exchange-ci = ["tauri/custom-protocol"]
-ootle = ["tari_ootle_wallet_sdk"]
+ootle = [
+  "tari_ootle_wallet_sdk",
+  "tari_ootle_wallet_sdk_services",
+  "tari_ootle_wallet_storage_sqlite",
+  "tari_ootle_common_types",
+]
 
 [package.metadata.cargo-machete]
 ignored = [

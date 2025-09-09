@@ -76,6 +76,8 @@ pub enum WalletManagerError {
     NodeManagerError(#[from] NodeManagerError),
     #[error("Unknown error: {0}")]
     UnknownError(#[from] anyhow::Error),
+    #[error("Ootle Wallet initialization failed: {0}")]
+    OotleWalletError(String),
 }
 
 pub struct WalletManager {
@@ -114,7 +116,7 @@ impl WalletManager {
 
         Self {
             minotari_scanner: Arc::new(RwLock::new(MinotariWalletScanner {})),
-            ootle_scanner: Arc::new(RwLock::new(OotleWalletScanner {})),
+            ootle_scanner: Arc::new(RwLock::new(OotleWalletScanner::new())),
             node_manager,
             base_node_watch_rx,
             wallet_db: Arc::new(RwLock::new(None)),
@@ -240,7 +242,17 @@ impl WalletManager {
             return Ok(());
         }
 
-        let db = WalletDb::new(&config.base_path.join("wallet.sqlite"));
+        let db = WalletDb::new(&config.base_path.join("minotari").join("wallet.sqlite"));
+        let ootle_wallet_db_path = config.base_path.join("ootle");
+
+        self.ootle_scanner
+            .read()
+            .await
+            .init("http://localhost:13000".to_string(), &ootle_wallet_db_path)
+            .map_err(|e| {
+                log::error!(target: LOG_TARGET, "Failed to initialize Ootle scanner: {}", e);
+                WalletManagerError::OotleWalletError(e.to_string())
+            })?;
         drop(lock);
         let mut lock = self.wallet_db.write().await;
         *lock = Some(db);
