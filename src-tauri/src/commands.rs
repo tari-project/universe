@@ -31,6 +31,14 @@ use crate::configs::config_ui::{ConfigUI, ConfigUIContent, DisplayMode};
 use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent, WalletId};
 use crate::configs::pools::{cpu_pools::CpuPool, gpu_pools::GpuPool};
 use crate::configs::trait_config::ConfigImpl;
+use crate::consts::TAPPLET_ARCHIVE;
+use crate::database::models::{
+    CreateDevTapplet, CreateInstalledTapplet, CreateTapplet, CreateTappletAsset,
+    CreateTappletVersion, DevTapplet, InstalledTapplet, Tapplet, UpdateDevTapplet,
+    UpdateInstalledTapplet,
+};
+
+use crate::database::store::{DatabaseConnection, SqliteStore, Store};
 use crate::events::ConnectionStatusPayload;
 use crate::events_emitter::EventsEmitter;
 use crate::events_manager::EventsManager;
@@ -44,8 +52,19 @@ use crate::pin::PinManager;
 use crate::release_notes::ReleaseNotes;
 use crate::setup::setup_manager::{SetupManager, SetupPhase};
 use crate::system_dependencies::system_dependencies_manager::SystemDependenciesManager;
-use crate::tapplets::interface::ActiveTapplet;
-use crate::tapplets::tapplet_server::start_tapplet;
+use crate::tapplets::error::Error::RequestError;
+use crate::tapplets::error::Error::{self};
+use crate::tapplets::error::RequestError::FetchConfigError;
+use crate::tapplets::error::RequestError::ManifestResponseError;
+use crate::tapplets::interface::{
+    ActiveTapplet, AssetServer, InstalledTappletWithName, TappletConfig,
+};
+use crate::tapplets::tapplet_installer::{
+    check_files_and_validate_checksum, delete_tapplet, download_asset,
+    fetch_tapp_registry_manifest, get_tapp_download_path,
+};
+use crate::tapplets::tapplet_manager::TappletManager;
+use crate::tapplets::tapplet_server::{get_tapplet_config, start_tapplet_server};
 use crate::tasks_tracker::TasksTrackers;
 use crate::tor_adapter::TorConfig;
 use crate::utils::address_utils::verify_send;
@@ -61,6 +80,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::fmt::Debug;
 use std::fs::{read_dir, remove_dir_all, remove_file, File};
+use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::atomic::Ordering;
 use std::thread::sleep;
@@ -74,7 +94,7 @@ use tari_transaction_components::tari_amount::{MicroMinotari, Minotari};
 use tari_utilities::encoding::MBase58;
 use tari_utilities::SafePassword;
 use tauri::ipc::InvokeError;
-use tauri::Manager;
+use tauri::{Manager, Url};
 use tauri_plugin_sentry::sentry;
 use urlencoding::encode;
 
@@ -2134,21 +2154,35 @@ pub async fn set_seed_backed_up() -> Result<(), String> {
     Ok(())
 }
 
-/*
- ********** TAPPLETS SECTION **********
-*/
-
 #[tauri::command]
-pub async fn launch_builtin_tapplet() -> Result<ActiveTapplet, String> {
+pub async fn is_seed_backed_up() -> Result<bool, String> {
+    let seed_backed_up = *ConfigWallet::content().await.seed_backed_up();
+    Ok(seed_backed_up)
+}
+
+// the tapplet is not a binary, it's a compressed dir, but the process of downloading
+// the appropriate version and checking the checksum is the same as for the binary
+#[tauri::command]
+pub async fn start_tari_tapplet_binary(binary_name: &str) -> Result<ActiveTapplet, String> {
     let binaries_resolver = BinaryResolver::current();
 
+    let binary = Binaries::from_name(binary_name);
     let tapp_dest_dir = binaries_resolver
-        .get_binary_path(Binaries::BridgeTapplet)
+        .get_binary_path(binary)
         .await
         .map_err(|e| e.to_string())?;
 
-    let handle_start =
-        tauri::async_runtime::spawn(async move { start_tapplet(tapp_dest_dir).await });
+    // TODO csp should be taken from the tapplet config, the bridge tapplet is exception because is 'built-in' by us
+    let config = get_tapplet_config(&tapp_dest_dir).unwrap_or_default();
+
+    // TODO only our tapplet should get by default 'insafe-inline'
+    // see: https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Security-Policy#unsafe-inline
+    const DEFAULT_TARI_BINARY_TAPPLET_CSP: &str =
+        "default-src 'self' https:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'";
+
+    let handle_start = tauri::async_runtime::spawn(async move {
+        start_tapplet_server(tapp_dest_dir, &DEFAULT_TARI_BINARY_TAPPLET_CSP.to_string()).await
+    });
 
     let (addr, _cancel_token) = match handle_start.await {
         Ok(result) => result.map_err(|e| e.to_string())?,
@@ -2158,12 +2192,101 @@ pub async fn launch_builtin_tapplet() -> Result<ActiveTapplet, String> {
         }
     };
 
+    // TODO
     Ok(ActiveTapplet {
-        tapplet_id: 0,
-        display_name: "Bridge-wXTM".to_string(),
+        tapplet_id: 1000,
+        display_name: config.display_name,
         source: format!("http://{addr}"),
-        version: "1.0.0".to_string(),
+        version: config.version,
     })
+}
+
+#[tauri::command]
+pub async fn start_dev_tapplet(
+    dev_tapplet_id: i32,
+    app_handle: tauri::AppHandle,
+    db_connection: tauri::State<'_, DatabaseConnection>,
+    tapplet_manager: tauri::State<'_, TappletManager>,
+) -> Result<ActiveTapplet, String> {
+    let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
+
+    let mut dev_tapplet: DevTapplet = tapplet_store
+        .get_by_id(dev_tapplet_id)
+        .map_err(|e| e.to_string())?;
+
+    let (should_update, updated_tapp) =
+        match TappletManager::check_permissions_config(&dev_tapplet, app_handle).await {
+            Ok(updated) => updated,
+            Err(e) => {
+                return Err(e.to_string());
+            }
+        };
+
+    if should_update {
+        dev_tapplet = update_dev_tapp_db(dev_tapplet_id, updated_tapp, db_connection)
+            .map_err(|e| e.to_string())?;
+    }
+
+    let tapplet_path = PathBuf::from(&dev_tapplet.source);
+
+    let addr = tapplet_manager
+        .start_server(dev_tapplet_id, tapplet_path, &dev_tapplet.csp)
+        .await
+        .map_err(|e| {
+            error!(target: LOG_TARGET, "Failed to start tapplet with id {}: {}", dev_tapplet_id, &e);
+            e.to_string()
+        })?;
+
+    let _is_running = tapplet_manager.is_server_running(dev_tapplet_id).await;
+    Ok(ActiveTapplet {
+        tapplet_id: dev_tapplet_id,
+        display_name: dev_tapplet.display_name,
+        source: format!("http://{addr}"),
+        version: "0.1.0".to_string(), //TODO
+    })
+}
+
+#[tauri::command]
+pub async fn stop_tapplet(
+    tapplet_id: i32,
+    tapplet_manager: tauri::State<'_, TappletManager>,
+) -> Result<String, String> {
+    let address = tapplet_manager.stop_server(tapplet_id).await.map_err(|e| {
+        error!(target: LOG_TARGET, "Failed to stop tapplet with id {}: {}", tapplet_id, &e);
+        e
+    })?;
+    Ok(address)
+}
+
+#[tauri::command]
+pub async fn restart_tapplet(
+    tapplet_id: i32,
+    db_connection: tauri::State<'_, DatabaseConnection>,
+    tapplet_manager: tauri::State<'_, TappletManager>,
+) -> Result<String, String> {
+    let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
+    let dev_tapplet: DevTapplet = tapplet_store
+        .get_by_id(tapplet_id)
+        .map_err(|e| e.to_string())?;
+    let tapplet_path = PathBuf::from(&dev_tapplet.source);
+
+    let address = tapplet_manager
+        .restart_server(tapplet_id, tapplet_path, &dev_tapplet.csp)
+        .await
+        .map_err(|e| {
+            error!(target: LOG_TARGET, "Failed to restart tapplet with id {}: {}", tapplet_id, &e);
+            e
+        })?;
+    Ok(address)
+}
+
+#[tauri::command]
+pub async fn is_tapplet_server_running(
+    tapplet_id: i32,
+    tapplet_manager: tauri::State<'_, TappletManager>,
+) -> Result<bool, String> {
+    let is_running: bool = tapplet_manager.is_server_running(tapplet_id).await;
+    Ok(is_running)
 }
 
 #[tauri::command]
@@ -2302,4 +2425,354 @@ pub async fn set_feedback_fields(feedback_type: String, was_sent: bool) -> Resul
     }
 
     Ok(())
+}
+
+#[tauri::command]
+pub async fn fetch_registered_tapplets(
+    app_handle: tauri::AppHandle,
+    db_connection: tauri::State<'_, DatabaseConnection>,
+) -> Result<(), String> {
+    let tapplets = match fetch_tapp_registry_manifest().await {
+        Ok(tapp) => tapp,
+        Err(e) => {
+            return Err(e.to_string());
+        }
+    };
+    info!("❌ FETCHED MANFIEST");
+    let mut store = SqliteStore::new(db_connection.0.clone());
+
+    for tapplet_manifest in tapplets.registered_tapplets.values() {
+        let inserted_tapplet = store
+            .create(&CreateTapplet::from(tapplet_manifest))
+            .map_err(|e| e.to_string())?;
+
+        // TODO uncomment if audit data in manifest
+        // for audit_data in tapplet_manifest.metadata.audits.iter() {
+        //   store.create(
+        //     &(CreateTappletAudit {
+        //       tapplet_id: inserted_tapplet.id,
+        //       auditor: &audit_data.auditor,
+        //       report_url: &audit_data.report_url,
+        //     })
+        //   )?;
+        // }
+
+        for (version, version_data) in tapplet_manifest.versions.iter() {
+            let _ = store
+                .create(
+                    &(CreateTappletVersion {
+                        tapplet_id: inserted_tapplet.id,
+                        version: &version,
+                        integrity: &version_data.integrity,
+                        registry_url: &version_data.registry_url,
+                    }),
+                )
+                .map_err(|e| e.to_string());
+        }
+        match store.get_tapplet_assets_by_tapplet_id(inserted_tapplet.id.unwrap()) {
+            Ok(Some(_)) => {}
+            Ok(None) => {
+                match download_asset(app_handle.clone(), inserted_tapplet.tapp_registry_id).await {
+                    Ok(tapplet_assets) => {
+                        let _ = store
+                            .create(
+                                &(CreateTappletAsset {
+                                    tapplet_id: inserted_tapplet.id,
+                                    icon_url: &tapplet_assets.icon_url,
+                                    background_url: &tapplet_assets.background_url,
+                                }),
+                            )
+                            .map_err(|e| e.to_string());
+                    }
+                    Err(e) => {
+                        error!(target: LOG_TARGET, "Could not download tapplet assets: {}", e);
+                    }
+                }
+            }
+            Err(e) => {
+                return Err(e.to_string());
+            }
+        }
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub fn insert_tapp_registry_db(
+    tapplet: CreateTapplet,
+    db_connection: tauri::State<'_, DatabaseConnection>,
+) -> Result<Tapplet, String> {
+    let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
+    tapplet_store.create(&tapplet).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn read_tapp_registry_db(
+    db_connection: tauri::State<'_, DatabaseConnection>,
+) -> Result<Vec<Tapplet>, String> {
+    let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
+    tapplet_store.get_all().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn get_assets_server_addr(state: tauri::State<'_, AssetServer>) -> Result<String, String> {
+    Ok(format!("http://{}", state.addr))
+}
+
+#[tauri::command]
+pub async fn download_and_extract_tapp(
+    tapplet_id: i32,
+    db_connection: tauri::State<'_, DatabaseConnection>,
+    app: tauri::AppHandle,
+) -> Result<Tapplet, String> {
+    let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
+    // let (tapp, tapp_version) = tapplet_store.get_registered_tapplet_with_version(tapplet_id);
+    let (tapp, tapp_version) = match tapplet_store.get_registered_tapplet_with_version(tapplet_id) {
+        Ok(tapp) => tapp,
+        Err(e) => {
+            return Err(e.to_string());
+        }
+    };
+
+    // get download path
+    let tapplet_path = get_tapp_download_path(
+        tapp.tapp_registry_id.clone(),
+        tapp_version.version.clone(),
+        app.clone(),
+    )
+    .unwrap_or_default();
+    // download tarball
+    let _url = tapp_version.registry_url.clone();
+    let file_path = tapplet_path.join(TAPPLET_ARCHIVE);
+    let _destination_dir = file_path.clone();
+    //TODO handle download
+    // let handle_download = tauri::async_runtime::spawn(async move {
+    //     download_file_with_retries(&url, &destination_dir, progress_tracker).await
+    // });
+    // let _ = handle_download
+    //     .await
+    //     .inspect_err(|e| error!(target: LOG_TARGET, "❌ Error downloading file: {:?}", e))
+    //     .map_err(|_| {
+    //         Error::RequestError(FailedToDownload {
+    //             url: tapp_version.registry_url.clone(),
+    //         })
+    //     });
+
+    // let _ = extract(&file_path, &tapplet_path.clone())
+    //     .await
+    //     .inspect_err(|e| error!(target: LOG_TARGET, "❌ Error extracting file: {:?}", e));
+    //TODO should compare integrity field with the one stored in db or from github manifest?
+    match check_files_and_validate_checksum(tapp_version, tapplet_path.clone()) {
+        Ok(is_valid) => {
+            info!(target: LOG_TARGET,"✅ Checksum validation successfully with test result: {:?}", is_valid);
+        }
+        Err(e) => {
+            error!(target: LOG_TARGET,"🚨 Error validating checksum: {:?}", e);
+            return Err(e.to_string());
+        }
+    }
+    Ok(tapp)
+}
+
+#[tauri::command]
+pub fn insert_installed_tapp_db(
+    tapplet_id: i32,
+    db_connection: tauri::State<'_, DatabaseConnection>,
+) -> Result<InstalledTapplet, Error> {
+    let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
+    let (tapp, version_data) = tapplet_store.get_registered_tapplet_with_version(tapplet_id)?;
+
+    let installed_tapplet = CreateInstalledTapplet {
+        tapplet_id: tapp.id,
+        tapplet_version_id: version_data.id,
+    };
+    tapplet_store.create(&installed_tapplet)
+}
+
+#[tauri::command]
+pub fn read_installed_tapp_db(
+    db_connection: tauri::State<'_, DatabaseConnection>,
+) -> Result<Vec<InstalledTappletWithName>, Error> {
+    let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
+    tapplet_store.get_installed_tapplets_with_display_name()
+}
+
+#[tauri::command]
+pub fn update_installed_tapp_db(
+    tapplet: UpdateInstalledTapplet,
+    db_connection: tauri::State<'_, DatabaseConnection>,
+) -> Result<usize, Error> {
+    let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
+    let tapplets: Vec<InstalledTapplet> = tapplet_store.get_all()?;
+    let first: InstalledTapplet = tapplets.into_iter().next().unwrap();
+    tapplet_store.update(first, &tapplet)
+}
+
+#[tauri::command]
+pub fn delete_installed_tapplet(
+    tapplet_id: i32,
+    db_connection: tauri::State<'_, DatabaseConnection>,
+    app_handle: tauri::AppHandle,
+) -> Result<usize, Error> {
+    let mut store = SqliteStore::new(db_connection.0.clone());
+    let (_installed_tapp, registered_tapp, tapp_version) =
+        store.get_installed_tapplet_full_by_id(tapplet_id)?;
+    let tapplet_path = get_tapp_download_path(
+        registered_tapp.tapp_registry_id,
+        tapp_version.version,
+        app_handle,
+    )
+    .unwrap();
+    delete_tapplet(tapplet_path)?;
+
+    let installed_tapplet: InstalledTapplet = store.get_by_id(tapplet_id)?;
+    store.delete(installed_tapplet)
+}
+
+#[tauri::command]
+pub async fn update_installed_tapplet(
+    _tapplet_id: i32,
+    installed_tapplet_id: i32,
+    db_connection: tauri::State<'_, DatabaseConnection>,
+    app_handle: tauri::AppHandle,
+) -> Result<Vec<InstalledTappletWithName>, Error> {
+    let _ = delete_installed_tapplet(
+        installed_tapplet_id,
+        db_connection.clone(),
+        app_handle.clone(),
+    )
+    .inspect_err(|e| error!("❌ Delete installed tapplet from db error: {:?}", e));
+
+    // TODO
+    // let _ = download_and_extract_tapp(tapplet_id, db_connection.clone(), app_handle.clone())
+    //     .await
+    //     .inspect_err(|e| error!("❌ Download and extract tapplet process error: {:?}", e));
+
+    // let _ = insert_installed_tapp_db(tapplet_id, db_connection.clone())
+    //     .inspect_err(|e| error!("❌ Insert installed tapplet to db error: {:?}", e));
+
+    let mut store = SqliteStore::new(db_connection.0.clone());
+    let installed_tapplets = store.get_installed_tapplets_with_display_name().unwrap();
+
+    return Ok(installed_tapplets);
+}
+
+fn is_http_or_localhost(s: &str) -> bool {
+    if let Ok(url) = Url::parse(s) {
+        let scheme = url.scheme();
+        if scheme == "http" || scheme == "https" {
+            return true;
+        }
+    }
+    // Also check if string contains "localhost", "http", or "https" (case insensitive)
+    let s_lower = s.to_lowercase();
+    s_lower.contains("localhost") || s_lower.contains("http") || s_lower.contains("https")
+}
+
+#[tauri::command]
+pub async fn add_dev_tapplet(
+    source: String,
+    db_connection: tauri::State<'_, DatabaseConnection>,
+) -> Result<DevTapplet, Error> {
+    // let manifest_source = format!("{}/tapplet.manifest.json", source);
+    let tapp_config: TappletConfig;
+
+    if is_http_or_localhost(&source) {
+        // IF source is the type of localhost or http address
+        let config_source = format!("{}/tapplet.config.json", source);
+        info!("❌ LOCALHOST source {:?}", &config_source);
+        tapp_config = reqwest::get(&config_source)
+            .await
+            .inspect_err(|err| {
+                error!(
+                    "❌ Fetching tapplet manifest source {:?} error: {:?}",
+                    config_source, err
+                )
+            })
+            .map_err(|_| {
+                RequestError(FetchConfigError {
+                    endpoint: source.clone(),
+                })
+            })?
+            .json::<TappletConfig>()
+            .await
+            .map_err(|err| {
+                RequestError(ManifestResponseError {
+                    endpoint: source.clone(),
+                    e: err.to_string(),
+                })
+            })?;
+    } else {
+        // IF source is type of path like /home/user/path-to-app
+        let tapp_dest_dir = PathBuf::from(&source);
+        tapp_config = get_tapplet_config(&tapp_dest_dir).unwrap();
+    }
+
+    info!("🌟 Add dev tapplet config: {:?}", &tapp_config);
+    info!(
+        "🌟 Add dev tapp permissions: {:?}",
+        &tapp_config.permissions.all_permissions_to_string()
+    );
+    let mut store = SqliteStore::new(db_connection.0.clone());
+    let new_dev_tapplet = CreateDevTapplet {
+        source: &source,
+        package_name: &tapp_config.package_name,
+        display_name: &tapp_config.display_name,
+        csp: "default-src 'self';", //set default csp and then ask to allow from config
+        tari_permissions: "requiredPermissions:[], optionalPermissions:[]", //set default permissions and then ask to allow from config
+    };
+    match store.create(&new_dev_tapplet) {
+        Ok(dev_tapplet) => {
+            info!(target: LOG_TARGET,"✅ Dev tapplet added to db successfully: {:?}", new_dev_tapplet);
+            Ok(dev_tapplet)
+        }
+        Err(e) => {
+            warn!(target: LOG_TARGET, "❌ Error while adding dev tapplet (source {:?}) to db: {:?}", source, e);
+            return Err(e);
+        }
+    }
+}
+
+#[tauri::command]
+pub fn read_dev_tapplets_db(
+    db_connection: tauri::State<'_, DatabaseConnection>,
+) -> Result<Vec<DevTapplet>, String> {
+    let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
+    match tapplet_store.get_all_dev_tapplets() {
+        Ok(dev_tapplets) => Ok(dev_tapplets),
+        Err(e) => Err(e.to_string()),
+    }
+}
+
+#[tauri::command]
+pub fn delete_dev_tapplet(
+    dev_tapplet_id: i32,
+    db_connection: tauri::State<'_, DatabaseConnection>,
+) -> Result<usize, Error> {
+    let mut store = SqliteStore::new(db_connection.0.clone());
+    let dev_tapplet: DevTapplet = store.get_by_id(dev_tapplet_id)?;
+    // store.delete(dev_tapplet)
+    match store.delete(dev_tapplet) {
+        Ok(dev_tapplet) => {
+            info!(target: LOG_TARGET,"✅ Dev tapplet with id {:?} deleted from db successfully", dev_tapplet_id);
+            Ok(dev_tapplet)
+        }
+        Err(e) => {
+            warn!(target: LOG_TARGET, "❌ Error while deleting dev tapplet id {:?} from db: {:?}", dev_tapplet_id, e);
+            return Err(e);
+        }
+    }
+}
+
+#[tauri::command]
+pub fn update_dev_tapp_db(
+    id: i32,
+    tapplet: UpdateDevTapplet,
+    db_connection: tauri::State<'_, DatabaseConnection>,
+) -> Result<DevTapplet, Error> {
+    let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
+    let dev_tapplet: DevTapplet = tapplet_store.get_by_id(id)?;
+    let _size = tapplet_store.update(dev_tapplet, &tapplet)?;
+    let dev_updated: DevTapplet = tapplet_store.get_by_id(id)?;
+    return Ok(dev_updated);
 }

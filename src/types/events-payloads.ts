@@ -101,3 +101,11 @@ export interface ProgressTrackerUpdatePayload {
     setup_phase: SetupPhase;
     is_completed: boolean;
 }
+
+export interface AllowTappletCspPayload {
+    csp: string;
+}
+
+export interface GrantTappletPermissionsPayload {
+    permissions: string;
+}

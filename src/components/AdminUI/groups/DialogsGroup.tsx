@@ -53,6 +53,22 @@ export function DialogsGroup() {
                 >
                     Failed modules
                 </AdminButton>
+                <AdminButton
+                    onClick={() => setDialogToShow(dialogToShow === 'allowTappletCsp' ? undefined : 'allowTappletCsp')}
+                    $isActive={dialogToShow === 'allowTappletCsp'}
+                >
+                    Allow Tapplet CSP
+                </AdminButton>
+                <AdminButton
+                    onClick={() =>
+                        setDialogToShow(
+                            dialogToShow === 'grantTappletPermissions' ? undefined : 'grantTappletPermissions'
+                        )
+                    }
+                    $isActive={dialogToShow === 'grantTappletPermissions'}
+                >
+                    Grant Tapplet Permissions
+                </AdminButton>
             </ButtonGroup>
         </>
     );

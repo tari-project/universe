@@ -78,6 +78,8 @@ pub enum EventType {
     SetupProgressUpdate,
     UpdateTorEntryGuards,
     UpdateAppModuleStatus,
+    AllowTappletCsp,
+    GrantTappletPermissions,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -187,4 +189,14 @@ pub struct TariAddressUpdatePayload {
     pub tari_address_base58: String,
     pub tari_address_emoji: String,
     pub tari_address_type: TariAddressType,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct AllowTappletCspPayload {
+    pub csp: String,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct GrantTappletPermissionsPayload {
+    pub permissions: String,
 }

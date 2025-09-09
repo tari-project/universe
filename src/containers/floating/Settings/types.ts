@@ -8,6 +8,7 @@ export const SETTINGS_TYPES = [
     'connections',
     'experimental',
     'releaseNotes',
+    'ootle',
 ] as const;
 type SettingsTuple = typeof SETTINGS_TYPES;
 export type SettingsType = SettingsTuple[number];
