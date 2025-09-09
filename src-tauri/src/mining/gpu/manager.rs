@@ -90,6 +90,7 @@ pub struct GpuManager {
     worker_name: Option<String>,
     #[allow(dead_code)]
     selected_engine: Option<EngineType>,
+    pub fallback_mode: bool,
 }
 
 impl GpuManager {
@@ -117,6 +118,7 @@ impl GpuManager {
             intensity_percentage: None,
             worker_name: None,
             selected_engine: None,
+            fallback_mode: false,
         }
     }
 
@@ -138,18 +140,34 @@ impl GpuManager {
 
     // Loads the saved miner from config or the first available one
     pub async fn load_saved_miner() {
-        let config_gpu_miner_type = ConfigMining::content().await.gpu_miner_type().clone();
         let mut instance = INSTANCE.write().await;
+        // if instance.fallback_mode {
+        //     info!(target: LOG_TARGET, "Gpu Miner Fallback mode enabled, skipping loading saved gpu miner");
+        //     let fallback_gpu_miner_type = GpuMinerType::Glytex;
+        //     let adapter = instance.resolve_miner_interface(&fallback_gpu_miner_type);
+        //     instance.selected_miner = fallback_gpu_miner_type.clone();
+        //     instance.process_watcher.adapter = adapter;
+        //     EventsEmitter::emit_update_selected_gpu_miner(fallback_gpu_miner_type).await;
+        //     return;
+        // }
+
+        let selected_gpu_miner_type = if instance.fallback_mode {
+            info!(target: LOG_TARGET, "Gpu Miner uses fallback mode, forcing Glytex gpu miner");
+            instance.fallback_mode = false;
+            GpuMinerType::Glytex // Force glytex in fallback mode
+        } else {
+            ConfigMining::content().await.gpu_miner_type().clone()
+        };
 
         if instance
             .available_miners
-            .contains_key(&config_gpu_miner_type)
+            .contains_key(&selected_gpu_miner_type)
         {
-            info!(target: LOG_TARGET, "Loaded saved gpu miner: {config_gpu_miner_type}");
-            let adapter = instance.resolve_miner_interface(&config_gpu_miner_type);
+            info!(target: LOG_TARGET, "Loaded saved gpu miner: {selected_gpu_miner_type}");
+            let adapter = instance.resolve_miner_interface(&selected_gpu_miner_type);
             instance.process_watcher.adapter = adapter;
-            instance.selected_miner = config_gpu_miner_type.clone();
-            if let Some(miner) = instance.available_miners.get(&config_gpu_miner_type) {
+            instance.selected_miner = selected_gpu_miner_type.clone();
+            if let Some(miner) = instance.available_miners.get(&selected_gpu_miner_type) {
                 EventsEmitter::emit_update_selected_gpu_miner(miner.clone()).await;
             }
         } else if let Some((first_miner_type, first_miner)) =
@@ -160,7 +178,7 @@ impl GpuManager {
             let first_miner_cloned = first_miner.clone();
             let adapter = instance.resolve_miner_interface(&first_miner_type_cloned);
 
-            info!(target: LOG_TARGET, "Saved gpu miner {config_gpu_miner_type} is not available, loaded first available miner: {first_miner_type}");
+            info!(target: LOG_TARGET, "Saved gpu miner {selected_gpu_miner_type} is not available, loaded first available miner: {first_miner_type}");
             let _unused = ConfigMining::update_field(
                 ConfigMiningContent::set_gpu_miner_type,
                 first_miner_type_cloned.clone(),
@@ -182,6 +200,12 @@ impl GpuManager {
             .await
             .available_miners
             .insert(miner.miner_type.clone(), miner);
+    }
+
+    pub async fn set_fallback_mode(fallback: bool) -> Result<(), anyhow::Error> {
+        let mut instance = INSTANCE.write().await;
+        instance.fallback_mode = fallback;
+        Ok(())
     }
 
     pub async fn start_mining(

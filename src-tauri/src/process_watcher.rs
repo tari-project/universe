@@ -194,9 +194,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                         return child.stop().await;
                     }
                 }
-                if let Err(_unused) = stats_broadcast.send(stats.clone()) {
-                    warn!(target: LOG_TARGET, "Failed to broadcast process watcher stats for {name}");
-                }
+                stats_broadcast.send_replace(stats.clone());
             }
         }));
         Ok(())

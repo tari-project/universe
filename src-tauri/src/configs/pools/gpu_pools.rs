@@ -22,7 +22,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::configs::pools::PoolConfig;
+use crate::{configs::pools::PoolConfig, mining::gpu::consts::GpuMinerType};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SupportXTMGpuPoolConfig {
@@ -71,6 +71,17 @@ impl Default for LuckyPoolGpuConfig {
 }
 
 impl LuckyPoolGpuConfig {
+    pub fn new(miner_type: GpuMinerType) -> Self {
+        let pool_url = match miner_type {
+            GpuMinerType::LolMiner => "taric29.luckypool.io:3111".to_string(),
+            _ => LuckyPoolGpuConfig::default().get_pool_url(),
+        };
+        Self {
+            pool_url,
+            ..LuckyPoolGpuConfig::default()
+        }
+    }
+
     pub fn get_raw_stats_url(&self) -> String {
         self.stats_url.clone()
     }
@@ -98,6 +109,7 @@ impl PoolConfig for GpuPool {
             GpuPool::SupportXTMPool(config) => config.pool_name.clone(),
         }
     }
+
     fn default_from_name(name: &str) -> Result<Self, anyhow::Error> {
         match name {
             "LuckyPool" => Ok(GpuPool::LuckyPool(LuckyPoolGpuConfig::default())),
@@ -116,6 +128,17 @@ impl PoolConfig for GpuPool {
         match self {
             GpuPool::LuckyPool(config) => config.get_pool_url(),
             GpuPool::SupportXTMPool(config) => config.get_pool_url(),
+        }
+    }
+}
+
+impl GpuPool {
+    pub fn default_for_miner_type(miner_type: GpuMinerType) -> Option<Self> {
+        match miner_type {
+            GpuMinerType::Glytex => None, // solo mining only
+            GpuMinerType::LolMiner | GpuMinerType::Graxil => {
+                Some(GpuPool::LuckyPool(LuckyPoolGpuConfig::new(miner_type)))
+            }
         }
     }
 }

@@ -38,6 +38,7 @@ use crate::events_manager::EventsManager;
 use crate::internal_wallet::{mnemonic_to_tari_cipher_seed, InternalWallet, PaperWalletConfig};
 use crate::mining::gpu::consts::{EngineType, GpuMinerType};
 use crate::mining::gpu::manager::GpuManager;
+use crate::mining::gpu::utils::fallback_gpu_miner::fallback_gpu_miner;
 use crate::mining::pools::cpu_pool_manager::CpuPoolManager;
 use crate::mining::pools::gpu_pool_manager::GpuPoolManager;
 use crate::mining::pools::PoolManagerInterfaceTrait;
@@ -1577,6 +1578,10 @@ pub async fn start_gpu_mining(
         return Err(e.to_string());
     }
 
+    fallback_gpu_miner(app.clone())
+        .await
+        .map_err(|e| e.to_string())?;
+
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "start_gpu_mining took too long: {:?}", timer.elapsed());
     }
@@ -1625,9 +1630,28 @@ pub async fn switch_gpu_miner(gpu_miner_type: GpuMinerType) -> Result<(), String
     .await
     .map_err(|e| e.to_string())?;
 
-    GpuManager::switch_miner(gpu_miner_type)
+    GpuManager::switch_miner(gpu_miner_type.clone())
         .await
         .map_err(|e| e.to_string())?;
+
+    // Adjust GpuPool config to the new miner type
+    match GpuPool::default_for_miner_type(gpu_miner_type) {
+        Some(pool) => {
+            ConfigPools::update_field(ConfigPoolsContent::set_gpu_pool_enabled, true)
+                .await
+                .map_err(|e| e.to_string())?;
+            ConfigPools::update_field(ConfigPoolsContent::update_selected_gpu_config, pool)
+                .await
+                .map_err(|e| e.to_string())?;
+            EventsEmitter::emit_pools_config_loaded(&ConfigPools::content().await).await;
+        }
+        None => {
+            ConfigPools::update_field(ConfigPoolsContent::set_gpu_pool_enabled, false)
+                .await
+                .map_err(|e| e.to_string())?;
+            EventsEmitter::emit_pools_config_loaded(&ConfigPools::content().await).await;
+        }
+    }
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "switch_gpu_miner took too long: {:?}", timer.elapsed());
