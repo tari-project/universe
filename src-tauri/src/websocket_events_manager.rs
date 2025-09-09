@@ -172,6 +172,9 @@ impl WebsocketEventsManager {
         let gpu_status = gpu_latest_miner_stats.borrow().clone();
         let network = Network::get_current_or_user_setting_or_default().as_key_str();
         let is_mining_active = cpu_miner_status.hash_rate > 0.0 || gpu_status.hash_rate > 0.0;
+        if !InternalWallet::is_initialized() {
+            return None;
+        }
         let tari_address = InternalWallet::tari_address().await;
         let pools_config = ConfigPools::content().await;
         let gpu_pool_name = pools_config.selected_gpu_pool().name();
