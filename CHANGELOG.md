@@ -1,3 +1,15 @@
+🚀 TARI UNIVERSE v1.5.15: Hotfix — Tor Process Fix
+
+_September 4, 2025_
+
+🔄 Rolling out via auto-update
+
+✨ WHAT'S FIXED
+
+- 🔧 **Tor Process Cleanup** – Enhanced our cleanup routines to properly terminate Tor processes that were preventing local node updates and causing lingering version incompatibilities.
+
+---
+
 🚀 TARI UNIVERSE v1.5.14: The Season of Light — Part 8
 
 _September 2, 2025_

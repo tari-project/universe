@@ -3,8 +3,6 @@ import { useTranslation } from 'react-i18next';
 import { LazyMotion, domMax, AnimatePresence } from 'motion/react';
 import { QueryClientProvider } from '@tanstack/react-query';
 
-import { useShuttingDown } from '../hooks/app/useShuttingDown.ts';
-
 import { setError, setIsWebglNotSupported } from '../store/actions';
 import { GlobalReset, GlobalStyle } from '../theme/GlobalStyle.ts';
 import ThemeProvider from '../theme/ThemeProvider.tsx';
@@ -59,9 +57,11 @@ function CurrentAppSection({ showSplashscreen, isShuttingDown }: CurrentAppSecti
 }
 
 export default function App() {
-    const { t } = useTranslation('common');
+    const isShuttingDown = useUIStore((s) => s.isShuttingDown);
     const showSplashscreen = useUIStore((s) => s.showSplashscreen);
-    const isShuttingDown = useShuttingDown();
+
+    const { t } = useTranslation('common');
+
     if (!window.WebGL2RenderingContext && !window.WebGLRenderingContext) {
         console.error(`WebGL not supported by the browser - userAgent: ${navigator.userAgent}`);
         setIsWebglNotSupported(true);
