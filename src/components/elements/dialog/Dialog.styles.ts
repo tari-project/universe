@@ -3,11 +3,12 @@ import { FloatingOverlay } from '@floating-ui/react';
 import { convertHexToRGBA } from '@app/utils';
 import { ContentWrapperStyleProps } from './types.ts';
 
+export const DIALOG_Z_INDEX = 99;
 export const Overlay = styled(FloatingOverlay)`
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 99;
+    z-index: ${DIALOG_Z_INDEX};
 `;
 
 export const ContentWrapper = styled.div<ContentWrapperStyleProps>`
