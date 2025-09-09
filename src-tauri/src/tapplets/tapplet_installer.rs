@@ -158,7 +158,6 @@ pub fn get_asset_urls(tapplet_name: String) -> Result<TappletAssets, Error> {
 
 pub async fn fetch_tapp_registry_manifest() -> Result<RegisteredTapplets, Error> {
     let manifest_endpoint = format!("{}/dist/tapplets-registry.manifest.json", REGISTRY_URL);
-    info!(target: LOG_TARGET, "📋 fetch_tapp_registry_manifest: {:?}", &manifest_endpoint);
 
     let manifest_res = reqwest::get(&manifest_endpoint)
         .await
