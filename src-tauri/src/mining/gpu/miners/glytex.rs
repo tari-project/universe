@@ -1,15 +1,3 @@
-use std::{fs::read_dir, time::Duration};
-
-use axum::async_trait;
-use log::{info, warn};
-use serde::Deserialize;
-use tari_common::configuration::Network;
-use tari_shutdown::Shutdown;
-use tokio::sync::watch::Sender;
-
-#[cfg(target_os = "windows")]
-use crate::utils::windows_setup_utils::add_firewall_rule;
-
 // Copyright 2024. The Tari Project
 //
 // Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -31,6 +19,19 @@ use crate::utils::windows_setup_utils::add_firewall_rule;
 // SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+use std::{fs::read_dir, time::Duration};
+
+use axum::async_trait;
+use log::{info, warn};
+use serde::Deserialize;
+use tari_common::configuration::Network;
+use tari_shutdown::Shutdown;
+use tokio::sync::watch::Sender;
+
+#[cfg(target_os = "windows")]
+use crate::utils::windows_setup_utils::add_firewall_rule;
+
 use crate::{
     binaries::{Binaries, BinaryResolver},
     configs::{config_mining::ConfigMining, trait_config::ConfigImpl},

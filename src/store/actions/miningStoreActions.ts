@@ -191,6 +191,7 @@ export const switchSelectedMiner = async (gpuMinerType: GpuMinerType) => {
         console.error('Could not switch selected miner: ', e);
         setError(e as string);
     }
+};
 
 export const handleSessionMiningTime = ({ startTimestamp, stopTimestamp }: SessionMiningTime) => {
     const current = useMiningStore.getState().sessionMiningTime;
