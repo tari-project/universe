@@ -29,8 +29,12 @@ export const useUserFeedbackStore = create<UserFeedbackStoreState>()(() => ({
 export const setShowLongTimeDialog = (showLongTimeDialog: boolean) =>
     useUserFeedbackStore.setState({ showLongTimeDialog });
 export const setShowCloseDialog = (showCloseDialog: boolean) => useUserFeedbackStore.setState({ showCloseDialog });
-export const setEarlyClosedDismissed = (earlyClosedDismissed: boolean) =>
+export const setEarlyClosedDismissed = (earlyClosedDismissed: boolean) => {
+    if (earlyClosedDismissed) {
+        console.info(`[early-close] feedback dismissed.`);
+    }
     useUserFeedbackStore.setState({ earlyClosedDismissed });
+};
 
 export const setFeedbackConfigItems = (feedbackConfig?: FeedbackPrompts) => {
     if (!feedbackConfig) return;

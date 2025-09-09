@@ -19,6 +19,9 @@ export function useShutdownHandler() {
     const validateMiningTime = useCallback(() => {
         const currentMiningTimeMs = checkMiningTime();
         const minimumNotMet = !currentMiningTimeMs || currentMiningTimeMs < minimumMiningTimeForClose;
+        if (minimumNotMet) {
+            console.info(`[early-close] Shutdown caught. Mining time: ${currentMiningTimeMs} (ms)`);
+        }
         setIsEarlyClose(minimumNotMet);
         return minimumNotMet;
     }, [minimumMiningTimeForClose]);
