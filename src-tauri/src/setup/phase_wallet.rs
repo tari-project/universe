@@ -180,7 +180,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
 
         progress_stepper
             .complete_step(SetupStep::StartWallet, || async {
-                for _i in 0..1 {
+
                     let latest_wallet_migration_nonce = *ConfigWallet::content().await.wallet_migration_nonce();
                     if latest_wallet_migration_nonce < WALLET_MIGRATION_NONCE {
                         log::info!(target: LOG_TARGET, "Wallet migration required(Nonce {latest_wallet_migration_nonce} => {WALLET_MIGRATION_NONCE})");
@@ -208,26 +208,23 @@ impl SetupPhaseImpl for WalletSetupPhase {
                         TasksTrackers::current().wallet_phase.get_signal().await,
                         wallet_config.clone()
                     ).await {
-                        Ok(_) => { break; }
+                        Ok(_) => Ok::<(), WalletManagerError>(()),
                         Err(e)=> {
                             if let WalletManagerError::ExitCode(code) = e {
                                 if STOP_ON_ERROR_CODES.contains(&code) {
                                     warn!(target: LOG_TARGET, "Wallet config is corrupt or needs a restart, deleting and trying again.");
                                     app_state.wallet_manager.clean_data_folder(&data_dir).await?;
                                 }
-                                continue;
                             }
-                            if let WalletManagerError::UnknownError(e) = e {
+                            if let WalletManagerError::UnknownError(ref e) = e {
                                 warn!(target: LOG_TARGET, "WalletManagerError::UnknownError({e:?}) needs a restart.");
-                                continue;
                             }
                             error!(target: LOG_TARGET, "Could not start wallet manager after restart: {e:?} | Exiting the app");
                             self.app_handle.exit(-1);
-                            return Err(e.into());
+                            Err(e)
                         }
-                    }
+                    }?;
 
-                }
                 Ok(())
             })
             .await?;
