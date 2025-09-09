@@ -16,6 +16,7 @@ import { useReferrerProgress } from '@app/hooks/crew/useReferrerProgress';
 import { formatNumber, FormatPreset } from '@app/utils';
 import { useTranslation, Trans } from 'react-i18next';
 import AvatarInviteButton from './AvatarInviteButton/AvatarInviteButton';
+import { useCrewRewardsStore } from '@app/store/useCrewRewardsStore';
 
 export default function StatsRow() {
     const { t } = useTranslation();
@@ -30,6 +31,12 @@ export default function StatsRow() {
     const isLoading = crewLoading || crewLoading;
     const hasError = !!crewError;
     const hasFriends = totalFriends > 0;
+
+    const { setIsOpen } = useCrewRewardsStore();
+
+    const handleCrewToggle = () => {
+        setIsOpen(true);
+    };
 
     if (isLoading) {
         return (
@@ -54,8 +61,14 @@ export default function StatsRow() {
             {hasFriends ? (
                 <ActiveMinersWrapper>
                     <PhotosRow>
-                        {crewData?.members.map(({ image, displayName }) => (
-                            <PhotoWrapper>
+                        <PhotoWrapper $isInviteButton={true}>
+                            <AvatarInviteButton />
+                        </PhotoWrapper>
+                        <PhotoWrapper $isInviteButton={true}>
+                            <AvatarInviteButton />
+                        </PhotoWrapper>
+                        {crewData?.members.map(({ image, displayName }, index) => (
+                            <PhotoWrapper key={`${index}-crewminiavatar`} onClick={handleCrewToggle}>
                                 <Avatar image={image} username={displayName} key={image} size={28} />
                             </PhotoWrapper>
                         ))}

@@ -1,4 +1,4 @@
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 
 export const Wrapper = styled.div`
     display: flex;
@@ -20,21 +20,23 @@ export const PhotosRow = styled.div`
     position: relative;
 `;
 
-export const PhotoWrapper = styled.div`
+export const PhotoWrapper = styled.button<{ $isInviteButton?: boolean }>`
     width: 32px;
     height: 32px;
     border-radius: 100%;
 
-    background-color: #d9d9d9;
+    background-color: #404141;
     border: 2px solid #323333;
     position: relative;
+
+    cursor: pointer;
 
     &:not(:first-child) {
         margin-left: -17px;
     }
 
     &:nth-child(1) {
-        z-index: 3;
+        z-index: 1;
     }
 
     &:nth-child(2) {
@@ -42,8 +44,24 @@ export const PhotoWrapper = styled.div`
     }
 
     &:nth-child(3) {
-        z-index: 1;
+        z-index: 3;
     }
+
+    ${({ $isInviteButton }) =>
+        $isInviteButton &&
+        css`
+            color: #404141;
+
+            transition:
+                color 0.2s ease-in-out,
+                background-color 0.2s ease-in-out;
+
+            &:hover {
+                z-index: 4;
+                color: #fff;
+                background-color: #656666;
+            }
+        `}
 `;
 
 export const TextWrapper = styled.div`
