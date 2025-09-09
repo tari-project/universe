@@ -76,8 +76,15 @@ impl LuckyPoolGpuConfig {
             GpuMinerType::LolMiner => "taric29.luckypool.io:3111".to_string(),
             _ => LuckyPoolGpuConfig::default().get_pool_url(),
         };
+        let stats_url = match miner_type {
+            GpuMinerType::LolMiner => {
+                "https://taric29.luckypool.io/api/stats_address?address=%TARI_ADDRESS%".to_string()
+            }
+            _ => LuckyPoolGpuConfig::default().get_pool_url(),
+        };
         Self {
             pool_url,
+            stats_url,
             ..LuckyPoolGpuConfig::default()
         }
     }
