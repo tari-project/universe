@@ -674,7 +674,7 @@ fn main() {
             commands::reset_cpu_pool_config,
             commands::restart_phases,
             commands::list_connected_peers,
-            commands::set_feedback_fields,,
+            commands::set_feedback_fields,
             commands::get_ootle_wallet_state,
             ootle_commands::ootle_list_accounts,
             ootle_commands::ootle_create_account,
