@@ -2284,3 +2284,22 @@ pub async fn set_security_warning_dismissed() -> Result<(), String> {
 
     Ok(())
 }
+
+#[tauri::command]
+pub async fn set_feedback_fields(feedback_type: String, was_sent: bool) -> Result<(), InvokeError> {
+    let timer = Instant::now();
+    if was_sent {
+        ConfigUI::update_field(ConfigUIContent::update_feedback_sent, feedback_type)
+            .await
+            .map_err(InvokeError::from_anyhow)?;
+    } else {
+        ConfigUI::update_field(ConfigUIContent::update_feedback_dismissed, feedback_type)
+            .await
+            .map_err(InvokeError::from_anyhow)?;
+    }
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "set_feedback_fields took too long: {:?}", timer.elapsed());
+    }
+
+    Ok(())
+}
