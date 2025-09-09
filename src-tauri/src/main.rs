@@ -657,7 +657,6 @@ fn main() {
             commands::restart_phases,
             commands::list_connected_peers,
             commands::set_feedback_fields,
-            commands::update_csp_policy,
             commands::fetch_registered_tapplets,
             commands::insert_tapp_registry_db,
             commands::read_tapp_registry_db,

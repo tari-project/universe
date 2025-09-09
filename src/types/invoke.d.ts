@@ -156,7 +156,6 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'restart_phases', payload: { phases: SetupPhase[] }): Promise<void>;
     function invoke(param: 'list_connected_peers'): Promise<string[]>;
     function invoke(param: 'set_feedback_fields', payload: { feedbackType: string; wasSent: boolean }): Promise<void>;
-    function invoke(param: 'update_csp_policy', payload: { csp: string }): Promise<void>;
     function invoke(param: 'read_installed_tapp_db'): Promise<InstalledTappletWithAssets[]>;
     function invoke(param: 'read_tapp_registry_db'): Promise<RegisteredTapplet[]>;
     function invoke(param: 'insert_installed_tapp_db', payload: { tappletId: string }): Promise<InstalledTapplet>;
