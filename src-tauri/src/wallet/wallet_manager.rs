@@ -248,7 +248,10 @@ impl WalletManager {
         self.ootle_scanner
             .read()
             .await
-            .init("http://localhost:13000".to_string(), &ootle_wallet_db_path)
+            .init(
+                "http://localhost:12008/json_rpc".to_string(),
+                &ootle_wallet_db_path,
+            )
             .map_err(|e| {
                 log::error!(target: LOG_TARGET, "Failed to initialize Ootle scanner: {}", e);
                 WalletManagerError::OotleWalletError(e.to_string())
