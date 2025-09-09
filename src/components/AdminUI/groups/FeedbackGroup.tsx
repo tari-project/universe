@@ -8,12 +8,10 @@ import {
     useUserFeedbackStore,
 } from '@app/store/stores/userFeedbackStore.ts';
 import { useState } from 'react';
-import { checkMiningTime } from '@app/store/actions/miningStoreActions.ts';
 
 function convertToMinutes(ms: number) {
     return ms / 1000 / 60;
 }
-
 function convertToMs(minutes: number) {
     return minutes * 60 * 1000;
 }
@@ -30,12 +28,11 @@ export function FeedbackGroup() {
         <>
             <CategoryLabel>Feedback</CategoryLabel>
             <ButtonGroup>
-                <AdminButton onClick={checkMiningTime}>Log current time</AdminButton>
                 <AdminButton onClick={() => setShowCloseDialog(!showCloseDialog)} $isActive={showCloseDialog}>
-                    Close Survey
+                    Early Close
                 </AdminButton>
                 <AdminButton onClick={() => setShowLongTimeDialog(!showLongTimeDialog)} $isActive={showLongTimeDialog}>
-                    Long time Miner Survey
+                    Long-time Miner
                 </AdminButton>
             </ButtonGroup>
             <ExtraContent>

@@ -84,3 +84,11 @@ export function parseAnswers(data: FieldQuestions): SurveyAnswerInput[] {
     });
     return [...textAnswers, ...radioAnswers, ...checkAnswers];
 }
+
+export function checkValidity(fields: FieldQuestions): boolean {
+    const radioValid = fields?.radio?.some((o) => o.checked);
+    const checkboxValid = fields?.checkbox?.some((o) => o.checked);
+    const textValid = fields?.text?.some((o) => o.value?.length);
+
+    return radioValid || checkboxValid || textValid || false;
+}

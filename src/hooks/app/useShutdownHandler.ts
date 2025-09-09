@@ -5,41 +5,52 @@ import { checkMiningTime } from '@app/store/actions/miningStoreActions.ts';
 import { setIsShuttingDown } from '@app/store/actions/uiStoreActions.ts';
 
 export function useShutdownHandler() {
-    const [proceedWithShutdown, setProceedWithShutdown] = useState(false);
-
-    const earlyClosedDismissed = useUserFeedbackStore((s) => s.earlyClosedDismissed);
+    const [canProceedWithShutdown, setCanProceedWithShutdown] = useState(false);
+    const [promptDismissed, setPromptDismissed] = useState(false);
+    const [isEarlyClose, setIsEarlyClose] = useState(false);
 
     const wasFeedbackSent = useUserFeedbackStore((s) => s.wasFeedbackSent);
     const wasLongTimeMiner = useUserFeedbackStore((s) => s.wasLongTimeMiner);
     const minimumMiningTimeForClose = useUserFeedbackStore((s) => s.closeMiningTimeMs);
-    const promptDismissed = useUserFeedbackStore((s) => s.earlyClosedDismissed);
+    const earlyClosedDismissed = useUserFeedbackStore((s) => s.earlyClosedDismissed);
 
     const handleShutdown = useCallback(async () => await invoke('exit_application'), []);
 
+    const validateMiningTime = useCallback(() => {
+        const currentMiningTimeMs = checkMiningTime();
+        const minimumNotMet = !currentMiningTimeMs || currentMiningTimeMs < minimumMiningTimeForClose;
+        setIsEarlyClose(minimumNotMet);
+        return minimumNotMet;
+    }, [minimumMiningTimeForClose]);
+
     const onShutdownCaught = useCallback(async () => {
         if (wasFeedbackSent || wasLongTimeMiner) {
-            setProceedWithShutdown(true);
+            setCanProceedWithShutdown(true);
             return;
         }
-        const currentMiningTimeMs = checkMiningTime();
-        const isEarlyClose = !currentMiningTimeMs || currentMiningTimeMs < minimumMiningTimeForClose;
-
-        if (isEarlyClose && !promptDismissed) {
+        const isEarlyClose = validateMiningTime();
+        if (isEarlyClose && !earlyClosedDismissed) {
             setShowCloseDialog(true);
         } else {
-            setProceedWithShutdown(true);
+            setCanProceedWithShutdown(true);
         }
-    }, [minimumMiningTimeForClose, promptDismissed, wasFeedbackSent, wasLongTimeMiner]);
+    }, [earlyClosedDismissed, validateMiningTime, wasFeedbackSent, wasLongTimeMiner]);
 
     useEffect(() => {
-        if (earlyClosedDismissed || proceedWithShutdown) {
+        if (isEarlyClose) {
+            setPromptDismissed(earlyClosedDismissed);
+        }
+    }, [earlyClosedDismissed, isEarlyClose]);
+
+    useEffect(() => {
+        if (canProceedWithShutdown || promptDismissed) {
             setIsShuttingDown(true);
             const shutdownTimeout = setTimeout(() => handleShutdown(), 250);
             return () => {
                 clearTimeout(shutdownTimeout);
             };
         }
-    }, [earlyClosedDismissed, handleShutdown, proceedWithShutdown]);
+    }, [promptDismissed, handleShutdown, canProceedWithShutdown]);
 
     return { onShutdownCaught };
 }

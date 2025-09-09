@@ -5,7 +5,7 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { TextButton } from '@app/components/elements/buttons/TextButton.tsx';
 
-import { FieldQuestions, getFieldTypes, parseAnswers } from './helpers.ts';
+import { checkValidity, FieldQuestions, getFieldTypes, parseAnswers } from './helpers.ts';
 import { CTAWrapper, Form, FormContent } from './surveyForm.styles.ts';
 import { CheckboxFields } from './CheckboxFields.tsx';
 import { RadioFields } from './RadioFields.tsx';
@@ -25,6 +25,10 @@ export default function SurveyForm({ surveyContent, onSkipped, onSuccess }: Surv
     const defaultValues = getFieldTypes(surveyContent.questions || []);
     const methods = useForm<FieldQuestions>({ defaultValues });
 
+    const watched = methods.watch();
+
+    const valid = checkValidity(watched);
+
     const { mutateAsync } = useSendFeedback();
 
     function handleSubmit(data: FieldQuestions) {
@@ -34,6 +38,9 @@ export default function SurveyForm({ surveyContent, onSkipped, onSuccess }: Surv
             .then(() => onSuccess?.())
             .catch((err) => console.error(err));
     }
+
+    const buttonDisabled = !valid;
+
     return (
         <FormProvider {...methods}>
             <Form onSubmit={methods.handleSubmit(handleSubmit)}>
@@ -43,7 +50,13 @@ export default function SurveyForm({ surveyContent, onSkipped, onSuccess }: Surv
                     <TextFields />
                 </FormContent>
                 <CTAWrapper>
-                    <Button type="submit" fluid size="xlarge" variant="black">{`Send Feedback`}</Button>
+                    <Button
+                        type="submit"
+                        fluid
+                        size="xlarge"
+                        variant="black"
+                        disabled={buttonDisabled}
+                    >{`Send Feedback`}</Button>
                     <TextButton size="large" type="reset" onClick={onSkipped}>
                         <Typography>{`Skip for now`}</Typography>
                     </TextButton>
