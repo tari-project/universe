@@ -73,7 +73,6 @@ use crate::wallet::wallet_manager::WalletManagerError;
 use crate::wallet::wallet_types::{TariAddressVariants, TransactionInfo};
 use crate::{airdrop, PoolStatus, UniverseAppState};
 
-use axum::http::HeaderValue;
 use base64::prelude::*;
 use log::{debug, error, info, warn};
 use regex::Regex;

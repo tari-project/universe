@@ -136,10 +136,9 @@ pub fn get_tapplet_config(tapp_path: &PathBuf) -> Result<TappletConfig, Error> {
     Ok(tapplet_config)
 }
 
-pub fn get_tapplet_manifest(tapp_path: PathBuf) -> Result<TappletManifest, Error> {
+pub fn _get_tapplet_manifest(tapp_path: PathBuf) -> Result<TappletManifest, Error> {
     // for a dev tapplet the tapplet.manifest.json file is in root dir
     let tapp_manifest = tapp_path.join("tapplet.manifest.json");
-    info!(target: LOG_TARGET, "💥 get_config {:?}", &tapp_manifest);
 
     if !tapp_manifest.exists() {
         warn!(target: LOG_TARGET, "❌ Failed to get Tapplet permissions. Config file not found.");
@@ -147,9 +146,7 @@ pub fn get_tapplet_manifest(tapp_path: PathBuf) -> Result<TappletManifest, Error
     }
 
     let config = fs::read_to_string(tapp_manifest.clone()).unwrap_or_default();
-    info!(target: LOG_TARGET, "💥 Dev tapplet config: {:?}", &config);
     let manifest: TappletManifest =
         serde_json::from_str(&config).map_err(|e| JsonParsingError(e))?;
-    info!(target: LOG_TARGET, "💥 Dev tapplet full config: {:?}", &manifest);
     Ok(manifest)
 }

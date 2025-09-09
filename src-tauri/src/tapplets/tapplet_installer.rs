@@ -202,7 +202,7 @@ pub fn check_files_and_validate_checksum(
     Ok(is_checksum_valid)
 }
 
-pub fn get_tapp_permissions(tapp_path: PathBuf) -> Result<TappletPermissions, Error> {
+pub fn _get_tapp_permissions(tapp_path: PathBuf) -> Result<TappletPermissions, Error> {
     // tapp_dir = universe.tari/tapplets_installed/<tapplet_name>/<version>/package
     let tapp_dir: PathBuf = tapp_path.join("package");
     let tapp_config = tapp_dir.join("dist").join("tapplet.config.json");

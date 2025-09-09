@@ -21,6 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 use serde::{Deserialize, Serialize};
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize)]
 pub struct Tapplet {
     pub id: Option<i32>,
@@ -35,6 +36,7 @@ pub struct Tapplet {
     pub category: String,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize)]
 pub struct TappletVersion {
     pub id: Option<i32>,
@@ -44,6 +46,7 @@ pub struct TappletVersion {
     pub registry_url: String,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize)]
 pub struct ActiveTapplet {
     pub tapplet_id: i32,
@@ -52,6 +55,7 @@ pub struct ActiveTapplet {
     pub version: String,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, serde::Deserialize)]
 pub struct TappletPermissions {
     #[serde(rename = "requiredPermissions")]
@@ -126,6 +130,7 @@ impl TappletPermissions {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Debug, serde::Deserialize)]
 pub struct TappletConfig {
     #[serde(rename = "packageName")]
@@ -166,6 +171,7 @@ pub enum TariPermission {
     TariPermissionTemplatesRead,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, serde::Deserialize)]
 pub struct TappletManifest {
     #[serde(rename = "packageName")]
@@ -177,6 +183,7 @@ pub struct TappletManifest {
     pub csp: String,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct Package {
     #[serde(rename = "packageName")]
@@ -199,18 +206,21 @@ pub struct Package {
     pub manifest_version: String,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct Author {
     pub name: String,
     pub website: String,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct About {
     pub summary: String,
     pub description: String,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct Audit {
     pub auditor: String,
@@ -218,6 +228,7 @@ pub struct Audit {
     pub report_url: String,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct Design {
     #[serde(rename = "logoPath")]
@@ -226,6 +237,7 @@ pub struct Design {
     pub background_path: String,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct Repository {
     #[serde(rename = "type")]
@@ -234,11 +246,13 @@ pub struct Repository {
     pub codeowners: Vec<String>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct Source {
     pub location: String,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct Permissions {
     #[serde(rename = "requiredPermissions")]

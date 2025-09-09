@@ -44,18 +44,10 @@ pub enum Error {
     VersionParseError,
     #[error("failed-to-find-tapplet-version")]
     VersionNotFound,
-    #[error("failed-to-obtain-permission-token-lock")]
-    FailedToObtainPermissionTokenLock,
-    #[error("failed-to-obtain-auth-token-lock")]
-    FailedToObtainAuthTokenLock,
-    #[error("failed-to-call-provider | method-{method} & params-{params}")]
-    ProviderError { method: String, params: String },
     #[error("tapplet-invalid-checksum | version-{version}")]
     InvalidChecksum { version: String },
     #[error("tapplet-package-incomplete | version-{version}")]
     TappletIncomplete { version: String },
-    #[error("failed-to-request | message-{message}")]
-    RequestFailed { message: String },
 }
 
 impl serde::Serialize for Error {
@@ -73,10 +65,6 @@ pub enum TappletServerError {
     FailedToObtainLocalAddress,
     #[error("failed-to-start-tapplet-server")]
     FailedToStart,
-    #[error("tapplet-server-already-running")]
-    AlreadyRunning,
-    #[error("token-for-tapplet-server-is-invalid")]
-    TokenInvalid,
     #[error("failed-to-bind-port | port-{port}")]
     BindPortError { port: String },
 }
@@ -100,8 +88,6 @@ pub enum DatabaseError {
 
 #[derive(Debug, Error)]
 pub enum IOError {
-    #[error("failed-to-copy-file | from-{from} & to-{to}")]
-    FailedToCopyFile { from: String, to: String },
     #[error("failed-to-read-dir | path-{path}")]
     FailedToReadDir { path: String },
     #[error("failed-to-read-file | path-{path}")]
@@ -114,8 +100,6 @@ pub enum IOError {
     FailedToWriteFile { path: String },
     #[error("failed-to-parse-int")]
     ParseIntError(#[from] ParseIntError),
-    #[error("failed-to-unpack-file | path-{path}")]
-    FailedToUnpackFile { path: String },
     #[error("missing-package-json-or-tapplet-manifest-json | path-{path}")]
     InvalidUnpackedFiles { path: String },
     #[error("failed-to-delete-tapplet | path-{path}")]

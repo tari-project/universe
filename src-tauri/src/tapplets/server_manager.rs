@@ -26,7 +26,6 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use tokio_util::sync::CancellationToken;
 
-const LOG_TARGET: &str = "tari::tapplet";
 #[derive(Clone)]
 pub struct ServerHandle {
     pub address: String,
@@ -68,7 +67,6 @@ impl ServerManager {
                 cancel_token,
             },
         );
-        info!(target: LOG_TARGET, "👉👉👉 add_server {:?} - {:?}", &tapplet_id, address.clone());
         id_map.insert(tapplet_id, address);
     }
 
@@ -79,7 +77,6 @@ impl ServerManager {
 
     pub async fn stop_server_by_id(&self, tapplet_id: i32) -> Result<String, String> {
         let address_opt = self.get_address(tapplet_id).await;
-        info!(target: LOG_TARGET, "👉👉👉 stop_server_by_id: {:?}", &tapplet_id);
 
         match address_opt {
             Some(address) => {
@@ -104,7 +101,7 @@ impl ServerManager {
     }
 
     /// Optionally, get the cancel token or server handle for given tapplet_id
-    pub async fn get_server_handle_by_id(&self, tapplet_id: i32) -> Option<ServerHandle> {
+    pub async fn _get_server_handle_by_id(&self, tapplet_id: i32) -> Option<ServerHandle> {
         let id_map = self.tapplet_id_map.lock().await;
         let servers = self.servers.lock().await;
         id_map

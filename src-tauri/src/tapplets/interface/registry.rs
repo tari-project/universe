@@ -11,7 +11,7 @@ use crate::{
 #[derive(Debug, serde::Deserialize)]
 pub struct RegisteredTapplets {
     #[serde(rename = "manifestVersion")]
-    pub manifest_version: String,
+    pub _manifest_version: String,
     #[serde(rename = "registeredTapplets")]
     pub registered_tapplets: HashMap<String, TappletRegistryManifest>,
 }
@@ -56,6 +56,7 @@ pub struct About {
     pub description: String,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, serde::Deserialize, Clone)]
 pub struct Audit {
     pub auditor: String,
@@ -97,13 +98,5 @@ impl TryFrom<TappletVersion> for TappletSemver {
 
 pub struct AssetServer {
     pub addr: String,
-    pub cancel_token: CancellationToken,
-}
-
-// TODO use it?
-#[derive(Debug, serde::Deserialize, Clone)]
-pub struct Security {
-    pub csp: String,
-    #[serde(rename = "tariPermissions")]
-    pub tari_permissions: String,
+    pub _cancel_token: CancellationToken,
 }

@@ -200,7 +200,6 @@ struct UniverseAppState {
     websocket_manager_status_rx: Arc<watch::Receiver<WebsocketManagerStatusMessage>>,
     websocket_manager: Arc<RwLock<WebsocketManager>>,
     websocket_event_manager: Arc<RwLock<WebsocketEventsManager>>,
-    tapplet_manager: TappletManager,
 }
 
 #[derive(Clone, serde::Serialize, serde::Deserialize)]
@@ -383,7 +382,6 @@ fn main() {
         feedback: Arc::new(RwLock::new(feedback)),
         tor_manager,
         updates_manager,
-        tapplet_manager: tapplet_manager.clone(),
         cached_p2pool_connections: Arc::new(RwLock::new(None)),
         systemtray_manager: Arc::new(RwLock::new(SystemTrayManager::new())),
         mining_status_manager: Arc::new(RwLock::new(mining_status_manager)),
