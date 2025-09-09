@@ -2,7 +2,7 @@ import { invoke } from '@tauri-apps/api/core';
 
 import { useMiningMetricsStore } from '../useMiningMetricsStore.ts';
 
-import { useMiningStore } from '../useMiningStore.ts';
+import { SessionMiningTime, useMiningStore } from '../useMiningStore.ts';
 import { setError } from './appStateStoreActions.ts';
 import { useSetupStore } from '@app/store/useSetupStore.ts';
 import { useConfigMiningStore } from '../useAppConfigStore.ts';
@@ -138,6 +138,7 @@ export const startMining = async () => {
         await startCpuMining();
         await startGpuMining();
         console.info('Mining started.');
+        handleSessionMiningTime({ startTimestamp: Date.now() });
     } catch (e) {
         console.error('Failed to start mining: ', e);
         setError(e as string);
@@ -148,6 +149,7 @@ export const stopMining = async () => {
     try {
         await stopCpuMining();
         await stopGpuMining();
+        handleSessionMiningTime({ stopTimestamp: Date.now() });
         console.info('Mining stopped.');
     } catch (e) {
         console.error('Failed to stop mining: ', e);
@@ -189,4 +191,36 @@ export const switchSelectedMiner = async (gpuMinerType: GpuMinerType) => {
         console.error('Could not switch selected miner: ', e);
         setError(e as string);
     }
+
+export const handleSessionMiningTime = ({ startTimestamp, stopTimestamp }: SessionMiningTime) => {
+    const current = useMiningStore.getState().sessionMiningTime;
+    if (stopTimestamp) {
+        const diff = (stopTimestamp || 0) - (current.startTimestamp || 0);
+        useMiningStore.setState({
+            sessionMiningTime: { ...current, startTimestamp, stopTimestamp, durationMs: diff },
+        });
+    }
+
+    if (startTimestamp) {
+        useMiningStore.setState({ sessionMiningTime: { ...current, startTimestamp } });
+    }
+};
+
+export const checkMiningTime = () => {
+    const current = useMiningStore.getState().sessionMiningTime;
+    let stopTimestamp = current.stopTimestamp;
+
+    const cpuMining = useMiningMetricsStore.getState().cpu_mining_status.is_mining;
+    const gpuMining = useMiningMetricsStore.getState().gpu_mining_status.is_mining;
+    const isStillMining = cpuMining || gpuMining;
+
+    if (isStillMining) {
+        const now = Date.now();
+        handleSessionMiningTime({ stopTimestamp: now });
+        stopTimestamp = now;
+    }
+
+    const diff = (stopTimestamp || 0) - (current.startTimestamp || 0);
+    useMiningStore.setState({ sessionMiningTime: { ...current, durationMs: diff } });
+    return diff;
 };

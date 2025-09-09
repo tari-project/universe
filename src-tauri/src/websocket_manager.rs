@@ -26,7 +26,7 @@ use std::time::Duration;
 use futures::SinkExt;
 use futures::StreamExt;
 use log::trace;
-use log::{error, info};
+use log::{error, info, warn};
 use serde::Deserialize;
 use serde::Serialize;
 use serde_json::Value;
@@ -160,62 +160,52 @@ impl WebsocketManager {
         let app_id = ConfigCore::content().await.anon_id().clone();
         adjusted_ws_url.push_str(&format!("/v2/ws?app_id={}", encode(&app_id)));
 
-        let token = ConfigCore::content()
-            .await
-            .airdrop_tokens()
-            .clone()
-            .map(|tokens| tokens.token);
-
-        if let Some(jwt) = token {
-            adjusted_ws_url.push_str(&format!("&token={}", encode(&jwt)));
-        }
-
-        // adjusted_ws_url.push_str(&format!("/new-wss"))
         let (ws_stream, _) = connect_async(adjusted_ws_url).await?;
         info!(target:LOG_TARGET,"websocket connection established...");
 
         Ok(ws_stream)
     }
 
-    pub async fn close_connection(&self) {
-        if self.status_update_channel_rx.borrow().clone() == WebsocketManagerStatusMessage::Stopped
-        {
-            info!(target:LOG_TARGET,"websocket already stopped");
-            return;
-        }
-
-        info!(target:LOG_TARGET,"websocket start to close...");
-        let status_update_channel_tx = self.status_update_channel_tx.clone();
-
-        if let Err(e) = status_update_channel_tx.send(WebsocketManagerStatusMessage::Stopping) {
-            info!(target: LOG_TARGET, "Could not send stopping channel message: {e}");
-        }
-
-        match self.close_channel_tx.send(true) {
-            Ok(_) => loop {
-                if self
-                    .status_update_channel_rx
-                    .clone()
-                    .changed()
-                    .await
-                    .is_ok()
-                {
-                    let actual_state = self.status_update_channel_rx.borrow();
-                    if actual_state.clone() == WebsocketManagerStatusMessage::Stopped {
-                        info!(target:LOG_TARGET,"websocket stopped");
-
-                        return;
-                    }
-                } else {
-                    return;
-                }
-            },
-            Err(_) => {
-                info!(target: LOG_TARGET,"websocket connection has already been closed.");
-            }
-        };
-        info!(target: LOG_TARGET,"websocket connection closed");
-    }
+    // Keeping in case we need to close the connection for some reason
+    // pub async fn close_connection(&self) {
+    //     if self.status_update_channel_rx.borrow().clone() == WebsocketManagerStatusMessage::Stopped
+    //     {
+    //         info!(target:LOG_TARGET,"websocket already stopped");
+    //         return;
+    //     }
+    //
+    //     info!(target:LOG_TARGET,"websocket start to close...");
+    //     let status_update_channel_tx = self.status_update_channel_tx.clone();
+    //
+    //     if let Err(e) = status_update_channel_tx.send(WebsocketManagerStatusMessage::Stopping) {
+    //         info!(target: LOG_TARGET, "Could not send stopping channel message: {e}");
+    //     }
+    //
+    //     match self.close_channel_tx.send(true) {
+    //         Ok(_) => loop {
+    //             if self
+    //                 .status_update_channel_rx
+    //                 .clone()
+    //                 .changed()
+    //                 .await
+    //                 .is_ok()
+    //             {
+    //                 let actual_state = self.status_update_channel_rx.borrow();
+    //                 if actual_state.clone() == WebsocketManagerStatusMessage::Stopped {
+    //                     info!(target:LOG_TARGET,"websocket stopped");
+    //
+    //                     return;
+    //                 }
+    //             } else {
+    //                 return;
+    //             }
+    //         },
+    //         Err(_) => {
+    //             info!(target: LOG_TARGET,"websocket connection has already been closed.");
+    //         }
+    //     };
+    //     info!(target: LOG_TARGET,"websocket connection closed");
+    // }
 
     pub async fn connect(&mut self) -> Result<(), anyhow::Error> {
         if self.status_update_channel_rx.borrow().clone()
@@ -251,6 +241,7 @@ impl WebsocketManager {
         status_update_channel_rx.mark_unchanged();
 
         tauri::async_runtime::spawn(async move {
+            let mut is_first_connection = true;
             loop {
                 tokio::select! {
                     _ = async {
@@ -258,6 +249,13 @@ impl WebsocketManager {
                             error!(target:LOG_TARGET,"failed to connect to websocket due to {e}")});
 
                         if let Ok(connection) = connection_res {
+                            if !is_first_connection {
+                                info!(target: LOG_TARGET, "WebSocket reconnected - restarting events manager");
+                                // Notify that we've reconnected - this could trigger events manager restart
+                                drop(app_cloned.emit("websocket-reconnected", ()));
+                            }
+                            is_first_connection = false;
+
                             WebsocketManager::listen(connection,app_cloned.clone(),
                                 receiver_channel.clone(),
                                 status_update_channel_tx.clone(),
@@ -361,7 +359,25 @@ async fn sender_task(
     close_channel_tx: tokio::sync::broadcast::Sender<bool>,
 ) -> Result<(), WebsocketError> {
     let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
+
     info!(target:LOG_TARGET,"websocket_manager: tx loop initialized...");
+
+    // Send initial handshake message to trigger server subscriptions
+    let initial_message = WebsocketMessage {
+        event: "handshake".to_string(),
+        data: Some(serde_json::json!({"message": "client ready"})),
+        signature: None,
+        pub_key: None,
+    };
+    let handshake_json = serde_json::to_string(&initial_message)?;
+    write_stream
+        .send(Message::Text(Utf8Bytes::from(handshake_json.clone())))
+        .await
+        .inspect_err(|e| {
+            error!(target:LOG_TARGET,"Failed to send initial handshake message: {e}");
+        })?;
+    info!(target:LOG_TARGET,"Initial handshake message sent: {handshake_json}");
+
     let mut receiver = receiver_channel.lock().await;
     loop {
         tokio::select! {
@@ -427,8 +443,14 @@ async fn receiver_task(
                                 info!(target:LOG_TARGET, "webSocket connection got closed.");
                                 return;
                             }
+                            Message::Binary(_) => {
+                                trace!(target: LOG_TARGET,"Received binary message (ignoring)");
+                            }
+                            Message::Frame(_) => {
+                                trace!(target: LOG_TARGET,"Received raw frame (ignoring)");
+                            }
                             _ => {
-                                error!(target: LOG_TARGET,"Not supported message type.");
+                                warn!(target: LOG_TARGET,"Received unknown message type {:?}", msg);
                             }
                         },
                         Result::Err(e) => {

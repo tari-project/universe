@@ -2,30 +2,34 @@ import { create } from 'zustand';
 import { Network } from '@app/utils/network';
 import { GpuMiner, GpuMinerType } from '@app/types/events-payloads';
 
+export interface SessionMiningTime {
+    startTimestamp?: number;
+    stopTimestamp?: number;
+    durationMs?: number;
+}
+
 interface MiningStoreState {
     hashrateReady?: boolean;
     miningControlsEnabled: boolean;
     isChangingMode: boolean;
     isExcludingGpuDevices: boolean;
     counter: number;
-    miningTime: number;
     isCpuMiningInitiated: boolean;
     isGpuMiningInitiated: boolean;
     wasMineOnAppStartExecuted?: boolean;
-    sessionMiningTime: number;
     customLevelsDialogOpen: boolean;
     network?: Network;
     engine?: string;
     availableEngines: string[];
     availableMiners?: GpuMinerType[];
     selectedMiner?: GpuMiner;
+    sessionMiningTime: SessionMiningTime;
 }
 
 const initialState: MiningStoreState = {
     customLevelsDialogOpen: false,
     counter: 0,
-    miningTime: 0,
-    sessionMiningTime: 0,
+    sessionMiningTime: {},
     hashrateReady: false,
     isCpuMiningInitiated: false,
     isGpuMiningInitiated: false,
