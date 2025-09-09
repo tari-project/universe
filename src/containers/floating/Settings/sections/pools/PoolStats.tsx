@@ -4,12 +4,11 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 import { convertHexToRGBA, formatNumber, FormatPreset } from '@app/utils';
 import { PoolStats as IPoolStats } from '@app/types/app-status.ts';
-import { BasePoolData } from '@app/types/configs.ts';
 import styled from 'styled-components';
 
 interface PoolStatsProps {
     poolStatus?: IPoolStats;
-    poolData?: BasePoolData;
+    isMining?: boolean;
 }
 
 const Wrapper = styled.div`
@@ -42,48 +41,46 @@ const ContentCol = styled.div`
     gap: 4px;
 `;
 
-export function PoolStats({ poolStatus, poolData }: PoolStatsProps) {
+export function PoolStats({ poolStatus, isMining = false }: PoolStatsProps) {
     const { t } = useTranslation(['mining-view', 'settings'], { useSuspense: false });
-
     const unpaidFMT = formatNumber(poolStatus?.unpaid || 0, FormatPreset.XTM_LONG_DEC);
     const balanceFMT = formatNumber(poolStatus?.balance || 0, FormatPreset.XTM_LONG_DEC);
 
+    const loadingMarkup = isMining && !poolStatus ? <LoadingDots /> : null;
+    const markup = poolStatus ? (
+        <Wrapper>
+            <ContentWrapper>
+                <ContentCol>
+                    <Typography>
+                        {t('pool.accepted_shares')}: <strong>{poolStatus?.accepted_shares ?? `-`}</strong>
+                    </Typography>
+                </ContentCol>
+                <ContentCol>
+                    <Typography>
+                        {t('pool.unpaid')}:{' '}
+                        <strong>
+                            {unpaidFMT}
+                            {` XTM`}
+                        </strong>
+                    </Typography>
+                </ContentCol>
+                <ContentCol>
+                    <Typography>
+                        {t('pool.balance')}:{' '}
+                        <strong>
+                            {balanceFMT}
+                            {` XTM`}
+                        </strong>
+                    </Typography>
+                </ContentCol>
+            </ContentWrapper>
+        </Wrapper>
+    ) : null;
+
     return (
         <SettingsGroup>
-            {poolStatus ? (
-                <Wrapper>
-                    <Typography variant="h6">{poolData?.pool_name}</Typography>
-                    <ContentWrapper>
-                        <ContentCol>
-                            <Typography>
-                                {'Pool url'}: <strong> {poolData?.pool_url}</strong>
-                            </Typography>
-
-                            <Typography>
-                                {t('pool.accepted_shares')}: <strong>{poolStatus?.accepted_shares ?? `-`}</strong>
-                            </Typography>
-                        </ContentCol>
-                        <ContentCol>
-                            <Typography>
-                                {t('pool.unpaid')}:{' '}
-                                <strong>
-                                    {unpaidFMT}
-                                    {` XTM`}
-                                </strong>
-                            </Typography>
-                            <Typography>
-                                {t('pool.balance')}:{' '}
-                                <strong>
-                                    {balanceFMT}
-                                    {` XTM`}
-                                </strong>
-                            </Typography>
-                        </ContentCol>
-                    </ContentWrapper>
-                </Wrapper>
-            ) : (
-                <LoadingDots />
-            )}
+            {loadingMarkup}
+            {markup}
         </SettingsGroup>
     );
 }

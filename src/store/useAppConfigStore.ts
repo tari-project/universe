@@ -5,7 +5,6 @@ import {
     ConfigMining,
     ConfigMiningSelectors,
     ConfigPools,
-    ConfigPoolsSelectors,
     ConfigUI,
     ConfigWallet,
 } from '@app/types/configs';
@@ -57,7 +56,7 @@ const configUIInitialState: UIConfigStoreState = {
     visualModeToggleLoading: false,
     created_at: '',
     application_language: 'en',
-    display_mode: 'Eco',
+    display_mode: 'system',
     has_system_language_been_proposed: false,
     sharing_enabled: true,
     show_experimental_settings: false,
@@ -73,14 +72,18 @@ const configPoolsInitialState: ConfigPools = {
     created_at: '',
     cpu_pool_enabled: false,
     gpu_pool_enabled: false,
+    available_cpu_pools: undefined,
+    available_gpu_pools: undefined,
+    selected_cpu_pool: undefined,
+    selected_gpu_pool: undefined,
 };
 
 const configBEInMemoryInitialState: ConfigBackendInMemory = {
-    airdropUrl: '',
-    airdropApiUrl: '',
-    airdropTwitterAuthUrl: '',
-    exchangeId: '',
-    bridgeBackendApiUrl: '',
+    airdrop_url: '',
+    airdrop_api_url: '',
+    airdrop_twitter_auth_url: '',
+    exchange_id: '',
+    bridge_backend_api_url: '',
 };
 
 export const useConfigCoreStore = create<ConfigCore>()(() => ({
@@ -100,22 +103,8 @@ export const useConfigUIStore = create<UIConfigStoreState>()(() => ({
     ...configUIInitialState,
 }));
 
-export const useConfigPoolsStore = create<ConfigPools & ConfigPoolsSelectors>()((_, get) => ({
+export const useConfigPoolsStore = create<ConfigPools>()(() => ({
     ...configPoolsInitialState,
-    getCpuPool: () => {
-        const cpuPool = get().cpu_pool;
-        if (cpuPool) {
-            return Object.values(cpuPool)[0];
-        }
-        return undefined;
-    },
-    getGpuPool: () => {
-        const gpuPool = get().gpu_pool;
-        if (gpuPool) {
-            return Object.values(gpuPool)[0];
-        }
-        return undefined;
-    },
 }));
 
 export const useConfigBEInMemoryStore = create<ConfigBackendInMemory>()(() => ({

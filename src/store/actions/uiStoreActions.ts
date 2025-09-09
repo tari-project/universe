@@ -11,7 +11,6 @@ import { Theme } from '@app/theme/types.ts';
 import { ConnectionStatusPayload } from '@app/types/events-payloads.ts';
 import { SB_WIDTH } from '@app/theme/styles.ts';
 import { useConfigUIStore } from '../useAppConfigStore.ts';
-import { useSetupStore } from '../useSetupStore.ts';
 import { CONNECTION_STATUS, DialogType, sidebarTowerOffset, TOWER_CANVAS_ID } from '../types/ui.ts';
 
 export const setShowExternalDependenciesDialog = (showExternalDependenciesDialog: boolean) =>
@@ -29,16 +28,11 @@ export const setIsWebglNotSupported = (isWebglNotSupported: boolean) => {
 
 async function loadAnimation() {
     const towerSidebarOffset = useUIStore.getState().towerSidebarOffset;
-    const isInitialSetupFinished = useSetupStore.getState().isInitialSetupFinished;
-    const appUnlocked = useSetupStore.getState().appUnlocked;
-    const setupComplete = isInitialSetupFinished && appUnlocked;
 
     try {
         await loadTowerAnimation({ canvasId: TOWER_CANVAS_ID, offset: towerSidebarOffset });
         useUIStore.setState((c) => ({ ...c, towerInitalized: true }));
-        if (setupComplete) {
-            setAnimationState('showVisual');
-        }
+        setAnimationState('showVisual');
     } catch (e) {
         console.error('Could not enable visual mode. Error at loadTowerAnimation:', e);
         useUIStore.setState((c) => ({ ...c, towerInitalized: false }));
@@ -100,6 +94,7 @@ export const setSeedlessUI = (seedlessUI: boolean) => useUIStore.setState((c) =>
 export const setShouldShowExchangeSpecificModal = (shouldShowExchangeSpecificModal: boolean) =>
     useUIStore.setState({ shouldShowExchangeSpecificModal });
 export const handleCloseSplashscreen = () => useUIStore.setState({ showSplashscreen: false });
+export const setIsShuttingDown = (isShuttingDown: boolean) => useUIStore.setState({ isShuttingDown });
 export const handleAskForRestart = () => {
     setDialogToShow('restart');
 };

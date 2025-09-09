@@ -39,7 +39,6 @@ use tokio_util::task::TaskTracker;
 
 use crate::configs::config_core::ConfigCore;
 use crate::configs::trait_config::ConfigImpl;
-use crate::events_emitter::EventsEmitter;
 use crate::node::node_adapter::{
     NodeAdapter, NodeAdapterService, NodeIdentity, NodeStatusMonitorError, ReadinessStatus,
 };
@@ -47,7 +46,7 @@ use crate::process_adapter::ProcessAdapter;
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
 use crate::process_watcher::ProcessWatcherStats;
-use crate::progress_trackers::progress_stepper::ChanneledStepUpdate;
+use crate::progress_trackers::progress_stepper::IncrementalProgressTracker;
 use crate::setup::setup_manager::SetupManager;
 use crate::tasks_tracker::TasksTrackers;
 use crate::{BaseNodeStatus, LocalNodeAdapter, RemoteNodeAdapter};
@@ -95,6 +94,7 @@ pub struct NodeManager {
     local_node_watch_rx: watch::Receiver<BaseNodeStatus>,
     remote_node_watch_rx: watch::Receiver<BaseNodeStatus>,
     local_node_db_cleared: Arc<AtomicBool>,
+    orphan_chain_detected: Arc<AtomicBool>,
 }
 
 impl NodeManager {
@@ -135,6 +135,7 @@ impl NodeManager {
             local_node_watch_rx,
             remote_node_watch_rx,
             local_node_db_cleared: Arc::new(AtomicBool::new(false)),
+            orphan_chain_detected: Arc::new(AtomicBool::new(false)),
         }
     }
 
@@ -147,7 +148,6 @@ impl NodeManager {
         use_tor: bool,
         tor_control_port: Option<u16>,
         remote_grpc_address: Option<String>,
-        migration_tracker: Option<ChanneledStepUpdate>,
     ) -> Result<(), NodeManagerError> {
         let shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
         let task_tracker = TasksTrackers::current().node_phase.get_task_tracker().await;
@@ -170,7 +170,6 @@ impl NodeManager {
                 task_tracker.clone(),
             )
             .await?;
-            self.wait_migration(migration_tracker).await?;
         }
         if self.is_remote().await {
             self.configure_adapter(
@@ -257,17 +256,8 @@ impl NodeManager {
             .get_task_tracker()
             .await
             .spawn(async move {
-                let (progress_params_tx, progress_params_rx) =
-                    watch::channel(HashMap::<String, String>::new());
-                let (progress_percentage_tx, progress_percentage_rx) = watch::channel(0f64);
-
-                let shutdown_signal_clone = shutdown_signal.clone();
-                spawn_syncing_updater(
-                    progress_params_rx,
-                    progress_percentage_rx,
-                    shutdown_signal_clone,
-                )
-                .await;
+                let (progress_params_tx, _) = watch::channel(HashMap::<String, String>::new());
+                let (progress_percentage_tx, _) = watch::channel(0f64);
 
                 monitor_local_node_sync_and_switch(
                     node_manager,
@@ -311,7 +301,7 @@ impl NodeManager {
 
     pub async fn wait_migration(
         &self,
-        migration_tracker: Option<ChanneledStepUpdate>,
+        migration_tracker: Option<IncrementalProgressTracker>,
     ) -> Result<(), NodeManagerError> {
         if self.is_local().await {
             let current_service = self.get_current_service().await;
@@ -410,9 +400,7 @@ impl NodeManager {
 
     pub async fn get_identity(&self) -> Result<NodeIdentity, anyhow::Error> {
         let current_service = self.get_current_service().await?;
-        current_service.get_identity().await.inspect_err(|e| {
-            error!(target: LOG_TARGET, "Error getting node identity: {e}");
-        })
+        current_service.get_identity().await
     }
 
     pub async fn get_connection_details(
@@ -452,8 +440,23 @@ impl NodeManager {
     }
 
     pub async fn check_if_is_orphan_chain(&self) -> Result<bool, anyhow::Error> {
+        let base_node_status_rx = self.base_node_watch_tx.subscribe();
+        let base_node_status = *base_node_status_rx.borrow();
+        if !base_node_status.is_synced {
+            info!(target: LOG_TARGET, "Node is not synced, skipping orphan chain check");
+            return Ok(false);
+        }
+
         let current_service = self.get_current_service().await?;
-        current_service.check_if_is_orphan_chain().await
+        let orphan_chain_detected = current_service.check_if_is_orphan_chain().await?;
+        self.orphan_chain_detected
+            .store(orphan_chain_detected, std::sync::atomic::Ordering::SeqCst);
+        Ok(orphan_chain_detected)
+    }
+
+    pub fn is_on_orphan_chain(&self) -> bool {
+        self.orphan_chain_detected
+            .load(std::sync::atomic::Ordering::SeqCst)
     }
 
     pub async fn list_connected_peers(&self) -> Result<Vec<String>, anyhow::Error> {
@@ -493,8 +496,8 @@ fn construct_process_watcher<T: NodeAdapter + ProcessAdapter + Send + Sync + 'st
         process_watcher.poll_time = Duration::from_secs(5);
         process_watcher.health_timeout = Duration::from_secs(4);
     } else {
-        process_watcher.poll_time = Duration::from_secs(10);
-        process_watcher.health_timeout = Duration::from_secs(9);
+        process_watcher.poll_time = Duration::from_secs(45);
+        process_watcher.health_timeout = Duration::from_secs(44);
     }
     // NODE: Temporary solution to process payrefs in TU v1.2.9
     process_watcher.expected_startup_time = Duration::from_secs(540); // 9mins
@@ -692,37 +695,6 @@ where
     Ok(())
 }
 
-async fn spawn_syncing_updater(
-    mut progress_params_rx: watch::Receiver<HashMap<String, String>>,
-    progress_percentage_rx: watch::Receiver<f64>,
-    mut shutdown_signal: ShutdownSignal,
-) {
-    TasksTrackers::current()
-        .node_phase
-        .get_task_tracker()
-        .await
-        .spawn(async move {
-            loop {
-                tokio::select! {
-                    _ = progress_params_rx.changed() => {
-                        let progress_params = progress_params_rx.borrow().clone();
-                        let percentage = *progress_percentage_rx.borrow();
-                        if let Some(step) = progress_params.get("step").cloned() {
-                            EventsEmitter::emit_background_node_sync_update(progress_params.clone()).await;
-                            if step == "Block" && percentage == 1.0 {
-                                break;
-                            }
-                        }
-                        tokio::time::sleep(Duration::from_secs(1)).await;
-                    },
-                    _ = shutdown_signal.wait() => {
-                        break;
-                    }
-                }
-            }
-        });
-}
-
 async fn monitor_local_node_sync_and_switch(
     node_manager: NodeManager,
     node_type: Arc<RwLock<NodeType>>,
@@ -752,7 +724,7 @@ async fn monitor_local_node_sync_and_switch(
                                 sleep(Duration::from_secs(3)).await; // Wait for 3 seconds before retrying to ensure the node has time to enter syncing state again
                                 continue;
                             }
-                            sleep(Duration::from_secs(30)).await;
+                            sleep(Duration::from_secs(30)).await; // Wait 30 secs to not interfere with the setup when node already synced
                             info!(target: LOG_TARGET, "Local node synced, switching node type...");
                             switch_to_local(node_manager.clone(), node_type.clone()).await;
                             break;

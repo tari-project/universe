@@ -187,6 +187,7 @@ pub struct TelemetryData {
     pub latency: f64,
     pub wallet_view_key_hashed: String,
     pub exchange_id: String,
+    pub tari_address: String,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -492,10 +493,7 @@ async fn get_telemetry_data_inner(
 
     let p2pool_enabled = *config.is_p2pool_enabled() && p2pool_stats.is_some();
     let mut extra_data = HashMap::new();
-    let is_orphan = node_manager
-        .check_if_is_orphan_chain()
-        .await
-        .unwrap_or(false);
+    let is_orphan = node_manager.is_on_orphan_chain();
     extra_data.insert("is_orphan".to_string(), is_orphan.to_string());
     extra_data.insert(
         "config_cpu_enabled".to_string(),
@@ -629,6 +627,11 @@ async fn get_telemetry_data_inner(
     );
     add_process_stats(
         &mut extra_data,
+        stats_collector.get_gpu_miner_sha_stats(),
+        "gpu_miner_sha",
+    );
+    add_process_stats(
+        &mut extra_data,
         stats_collector.get_minotari_node_stats(),
         "node",
     );
@@ -685,6 +688,8 @@ async fn get_telemetry_data_inner(
         );
     }
 
+    let tari_address = InternalWallet::tari_address().await.to_base58();
+
     let data = TelemetryData {
         app_id: config.anon_id().to_string(),
         block_height,
@@ -714,7 +719,9 @@ async fn get_telemetry_data_inner(
         latency,
         wallet_view_key_hashed,
         exchange_id,
+        tari_address,
     };
+
     Ok(data)
 }
 

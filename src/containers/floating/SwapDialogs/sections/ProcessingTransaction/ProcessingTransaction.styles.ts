@@ -3,11 +3,10 @@ import styled from 'styled-components';
 import { m } from 'motion/react';
 
 export const StatusValue = styled.div<{ $status?: SwapStatus }>`
-    font-family: Poppins;
-    font-weight: bold;
+    font-weight: 500;
     font-size: 14px;
-    line-height: 117%;
-    letter-spacing: -3%;
+    line-height: 1.3;
+    letter-spacing: -0.015rem;
     color: ${({ $status: status, theme }) => {
         switch (status) {
             case 'processingapproval':

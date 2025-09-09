@@ -30,7 +30,7 @@ use crate::{
     gpu_devices::GpuDeviceInformation,
     internal_wallet::TariAddressType,
     node::{node_adapter::NodeIdentity, node_manager::NodeType},
-    setup::setup_manager::SetupPhase,
+    setup::{listeners::AppModule, setup_manager::SetupPhase},
     wallet::wallet_types::{TransactionInfo, WalletBalance},
 };
 
@@ -43,7 +43,6 @@ pub enum EventType {
     GpuPoolStatsUpdate,
     CpuMiningUpdate,
     GpuMiningUpdate,
-    ConnectedPeersUpdate,
     NewBlockHeight,
     CloseSplashscreen,
     DetectedDevices,
@@ -53,22 +52,9 @@ pub enum EventType {
     ShowReleaseNotes,
     CriticalProblem,
     #[cfg(target_os = "windows")]
-    MissingApplications,
+    SystemDependenciesLoaded,
     StuckOnOrphanChain,
     NetworkStatus,
-    CorePhaseFinished,
-    WalletPhaseFinished,
-    HardwarePhaseFinished,
-    NodePhaseFinished,
-    MiningPhaseFinished,
-    InitialSetupFinished,
-    UnlockApp,
-    UnlockWallet,
-    UnlockCpuMining,
-    UnlockGpuMining,
-    LockWallet,
-    LockCpuMining,
-    LockGpuMining,
     NodeTypeUpdate,
     ConfigCoreLoaded,
     ConfigUILoaded,
@@ -78,7 +64,6 @@ pub enum EventType {
     BackgroundNodeSyncUpdate,
     InitWalletScanningProgress,
     ConnectionStatus,
-    ShowStageSecurityModal,
     ExchangeIdChanged,
     DisabledPhases,
     ShouldShowExchangeMinerModal,
@@ -88,36 +73,39 @@ pub enum EventType {
     CreatePin,
     EnterPin,
     UpdateGpuDevicesSettings,
+    PinLocked,
+    SeedBackedUp,
+    SetupProgressUpdate,
+    UpdateTorEntryGuards,
+    UpdateAppModuleStatus,
     AllowTappletCsp,
     GrantTappletPermissions,
 }
 
 #[derive(Clone, Debug, Serialize)]
-pub enum ProgressEvents {
-    Core,
-    Wallet,
-    Hardware,
-    Node,
-    Mining,
+pub struct UpdateAppModuleStatusPayload {
+    pub module: AppModule,
+    pub status: String,
+    pub error_messages: HashMap<SetupPhase, String>,
 }
+
 #[derive(Clone, Debug, Serialize)]
 pub struct ProgressTrackerUpdatePayload {
     pub phase_title: String,
     pub title: String,
     pub progress: f64,
     pub title_params: Option<HashMap<String, String>>,
-    pub is_complete: bool,
+    pub setup_phase: SetupPhase,
+    pub is_completed: bool,
 }
 
 impl Hash for ProgressTrackerUpdatePayload {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.phase_title.hash(state);
         self.title.hash(state);
         self.progress.to_bits().hash(state);
         if let Some(params) = &self.title_params {
             params.hasher();
         }
-        self.is_complete.hash(state);
     }
 }
 
@@ -181,6 +169,8 @@ pub struct InitWalletScanningProgressPayload {
     pub progress: f64,
 }
 
+// TODO: Bring back connection status callback, was removed with removing setup screen and related logic
+#[allow(dead_code)]
 #[derive(Serialize, Clone, Debug)]
 pub enum ConnectionStatusPayload {
     InProgress,
@@ -200,9 +190,6 @@ pub struct TariAddressUpdatePayload {
     pub tari_address_emoji: String,
     pub tari_address_type: TariAddressType,
 }
-
-#[derive(Clone, Debug, Serialize)]
-pub struct ConfigPoolsContentLoadedPayload {}
 
 #[derive(Debug, Serialize, Clone)]
 pub struct AllowTappletCspPayload {

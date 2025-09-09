@@ -20,10 +20,8 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::app_in_memory_config::{
-    get_der_encode_pub_key, get_websocket_key, AirdropInMemoryConfig, ExchangeMiner,
-    DEFAULT_EXCHANGE_ID,
-};
+use crate::airdrop::{get_der_encode_pub_key, get_websocket_key};
+use crate::app_in_memory_config::{AppInMemoryConfig, ExchangeMiner, DEFAULT_EXCHANGE_ID};
 use crate::auto_launcher::AutoLauncher;
 use crate::binaries::{Binaries, BinaryResolver};
 use crate::configs::config_core::{AirdropTokens, ConfigCore, ConfigCoreContent};
@@ -31,6 +29,7 @@ use crate::configs::config_mining::{ConfigMining, ConfigMiningContent};
 use crate::configs::config_pools::{ConfigPools, ConfigPoolsContent};
 use crate::configs::config_ui::{ConfigUI, ConfigUIContent, DisplayMode};
 use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent, WalletId};
+use crate::configs::pools::{cpu_pools::CpuPool, gpu_pools::GpuPool};
 use crate::configs::trait_config::ConfigImpl;
 use crate::consts::TAPPLET_ARCHIVE;
 use crate::database::models::{
@@ -43,18 +42,16 @@ use crate::database::store::{DatabaseConnection, SqliteStore, Store};
 use crate::events::ConnectionStatusPayload;
 use crate::events_emitter::EventsEmitter;
 use crate::events_manager::EventsManager;
-use crate::external_dependencies::{
-    ExternalDependencies, ExternalDependency, RequiredExternalDependency,
-};
 use crate::gpu_miner::EngineType;
-use crate::gpu_miner_adapter::{GpuMinerStatus, GpuNodeSource};
-use crate::gpu_status_file::GpuStatus;
+use crate::gpu_miner_adapter::GpuNodeSource;
 use crate::internal_wallet::{mnemonic_to_tari_cipher_seed, InternalWallet, PaperWalletConfig};
 use crate::node::node_adapter::BaseNodeStatus;
 use crate::node::node_manager::NodeType;
 use crate::p2pool::models::{Connections, P2poolStats};
 use crate::pin::PinManager;
+use crate::release_notes::ReleaseNotes;
 use crate::setup::setup_manager::{SetupManager, SetupPhase};
+use crate::system_dependencies::system_dependencies_manager::SystemDependenciesManager;
 use crate::tapplets::error::Error::RequestError;
 use crate::tapplets::error::Error::{self};
 use crate::tapplets::error::RequestError::FetchConfigError;
@@ -74,7 +71,6 @@ use crate::utils::address_utils::verify_send;
 use crate::utils::app_flow_utils::FrontendReadyChannel;
 use crate::wallet::wallet_manager::WalletManagerError;
 use crate::wallet::wallet_types::{TariAddressVariants, TransactionInfo};
-use crate::websocket_manager::WebsocketManagerStatusMessage;
 use crate::{airdrop, PoolStatus, UniverseAppState};
 
 use axum::http::HeaderValue;
@@ -91,11 +87,11 @@ use std::sync::atomic::Ordering;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 use tari_common::configuration::Network;
+use tari_common_types::seeds::mnemonic::{Mnemonic, MnemonicLanguage};
+use tari_common_types::seeds::mnemonic_wordlists::MNEMONIC_ENGLISH_WORDS;
 use tari_common_types::tari_address::dual_address::DualAddress;
 use tari_common_types::tari_address::{TariAddress, TariAddressFeatures};
-use tari_core::transactions::tari_amount::{MicroMinotari, Minotari};
-use tari_key_manager::mnemonic::{Mnemonic, MnemonicLanguage};
-use tari_key_manager::mnemonic_wordlists::MNEMONIC_ENGLISH_WORDS;
+use tari_transaction_components::tari_amount::{MicroMinotari, Minotari};
 use tari_utilities::encoding::MBase58;
 use tari_utilities::SafePassword;
 use tauri::ipc::InvokeError;
@@ -130,12 +126,6 @@ pub struct ApplicationsVersions {
     sha_p2pool: ApplicationsInformation,
     xtrgpuminer: ApplicationsInformation,
     bridge: ApplicationsInformation,
-}
-
-#[derive(Debug, Serialize, Clone)]
-pub struct GpuMinerMetrics {
-    hardware: Vec<GpuStatus>,
-    mining: GpuMinerStatus,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -174,52 +164,6 @@ pub struct SignWsDataResponse {
 }
 
 #[tauri::command]
-pub async fn close_splashscreen(app: tauri::AppHandle) {
-    let close_max_retries: u32 = 10; // Maximum number of retries
-    let retry_delay_ms: u64 = 100; // Delay between retries in milliseconds
-
-    let mut retries = 0;
-
-    let (splashscreen_window, main_window) = loop {
-        let splashscreen_window = app.get_webview_window("splashscreen");
-        let main_window = app.get_webview_window("main");
-
-        if let (Some(splashscreen), Some(main)) = (splashscreen_window, main_window) {
-            break (splashscreen, main);
-        }
-
-        retries += 1;
-        if retries >= close_max_retries {
-            error!(target: "LOG_TARGET", "Failed to fetch both 'splashscreen' and 'main' windows after {close_max_retries} retries");
-            return;
-        }
-
-        info!(target: "LOG_TARGET", "Failed to fetch both 'splashscreen' and 'main' windows. Retrying in {retry_delay_ms}ms");
-        tokio::time::sleep(Duration::from_millis(retry_delay_ms)).await;
-    };
-
-    if let (Ok(window_position), Ok(window_size)) = (
-        splashscreen_window.outer_position(),
-        splashscreen_window.inner_size(),
-    ) {
-        splashscreen_window.close().expect("could not close");
-        main_window.show().expect("could not show");
-        if let Err(e) = main_window
-            .set_position(PhysicalPosition::new(window_position.x, window_position.y))
-            .and_then(|_| {
-                main_window.set_size(PhysicalSize::new(window_size.width, window_size.height))
-            })
-        {
-            error!(target: LOG_TARGET, "Could not set window position or size: {e:?}");
-        }
-    } else {
-        error!(target: LOG_TARGET, "Could not get window position or size");
-        splashscreen_window.close().expect("could not close");
-        main_window.show().expect("could not show");
-    }
-}
-
-#[tauri::command]
 pub async fn select_exchange_miner(
     app_handle: tauri::AppHandle,
     exchange_miner: ExchangeMiner,
@@ -253,23 +197,29 @@ pub async fn select_exchange_miner(
     EventsEmitter::emit_exchange_id_changed(exchange_miner.id.clone()).await;
 
     SetupManager::get_instance()
-        .restart_phases(app_handle, vec![SetupPhase::Wallet, SetupPhase::Mining])
+        .restart_phases(vec![SetupPhase::Wallet, SetupPhase::CpuMining])
         .await;
 
     Ok(())
 }
 
 #[tauri::command]
-pub async fn frontend_ready(app: tauri::AppHandle) {
+pub async fn frontend_ready(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
     static FRONTEND_READY_CALLED: std::sync::atomic::AtomicBool =
         std::sync::atomic::AtomicBool::new(false);
     if FRONTEND_READY_CALLED.load(Ordering::SeqCst) {
-        return;
+        return Ok(());
     }
     FRONTEND_READY_CALLED.store(true, Ordering::SeqCst);
 
     EventsEmitter::load_app_handle(app.clone()).await;
     FrontendReadyChannel::current().set_ready();
+
+    let state_inner = state.inner().clone();
+
     TasksTrackers::current()
         .common
         .get_task_tracker()
@@ -278,25 +228,27 @@ pub async fn frontend_ready(app: tauri::AppHandle) {
             // Give the splash screen a few seconds to show before closing it
             sleep(Duration::from_secs(3));
             EventsEmitter::emit_close_splashscreen().await;
+            let _unused = ReleaseNotes::current()
+                .handle_release_notes_event_emit(state_inner, app)
+                .await;
         });
+
+    Ok(())
 }
 
 #[tauri::command]
-pub async fn download_and_start_installer(
-    _missing_dependency: ExternalDependency,
-) -> Result<(), String> {
+pub async fn download_and_start_installer(id: String) -> Result<(), String> {
     let timer = Instant::now();
 
-    #[cfg(target_os = "windows")]
-    if cfg!(target_os = "windows") {
-        ExternalDependencies::current()
-            .install_missing_dependencies(_missing_dependency)
-            .await
-            .map_err(|e| {
-                error!(target: LOG_TARGET, "Could not install missing dependency: {:?}", e);
-                e.to_string()
-            })?;
-    }
+    SystemDependenciesManager::get_instance()
+        .download_and_install_missing_dependencies(id)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    SystemDependenciesManager::get_instance()
+        .validate_dependencies()
+        .await
+        .map_err(|e| e.to_string())?;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET,
@@ -342,9 +294,9 @@ pub async fn get_app_in_memory_config(
     _window: tauri::Window,
     state: tauri::State<'_, UniverseAppState>,
     _app: tauri::AppHandle,
-) -> Result<AirdropInMemoryConfig, ()> {
+) -> Result<AppInMemoryConfig, ()> {
     let timer = Instant::now();
-    let res = state.in_memory_config.read().await.clone().into();
+    let res = state.in_memory_config.read().await.clone();
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET,
             "get_app_in_memory_config took too long: {:?}",
@@ -438,21 +390,6 @@ pub async fn get_applications_versions(
 }
 
 #[tauri::command]
-pub async fn get_external_dependencies() -> Result<RequiredExternalDependency, String> {
-    let timer = Instant::now();
-    let external_dependencies = ExternalDependencies::current()
-        .get_external_dependencies()
-        .await;
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET,
-            "get_external_dependencies took too long: {:?}",
-            timer.elapsed()
-        );
-    }
-    Ok(external_dependencies)
-}
-
-#[tauri::command]
 pub async fn get_network(
     _window: tauri::Window,
     _state: tauri::State<'_, UniverseAppState>,
@@ -534,27 +471,18 @@ pub async fn get_p2pool_connections(
 }
 
 #[tauri::command]
-pub async fn set_p2pool_stats_server_port(
-    port: Option<u16>,
-    app_handle: tauri::AppHandle,
-) -> Result<(), InvokeError> {
+pub async fn set_p2pool_stats_server_port(port: Option<u16>) -> Result<(), InvokeError> {
     if let Some(port) = port {
         if port.le(&1024) || port.gt(&65535) {
             return Err(InvokeError::from("Port must be between 1024 and 65535"));
         }
     };
 
-    ConfigCore::update_field_requires_restart(
-        ConfigCoreContent::set_p2pool_stats_server_port,
-        port,
-        vec![SetupPhase::Mining],
-    )
-    .await
-    .map_err(InvokeError::from_anyhow)?;
+    // We are not restarting any phase here as p2pool is not used
+    ConfigCore::update_field(ConfigCoreContent::set_p2pool_stats_server_port, port)
+        .await
+        .map_err(InvokeError::from_anyhow)?;
 
-    SetupManager::get_instance()
-        .restart_phases_from_queue(app_handle)
-        .await;
     Ok(())
 }
 
@@ -667,7 +595,7 @@ pub async fn set_external_tari_address(
     let timer = Instant::now();
 
     SetupManager::get_instance()
-        .shutdown_phases(vec![SetupPhase::Wallet, SetupPhase::Mining])
+        .shutdown_phases(vec![SetupPhase::Wallet, SetupPhase::CpuMining])
         .await;
 
     // Validate PIN if pin locked
@@ -818,7 +746,7 @@ pub async fn import_seed_words(
     let timer = Instant::now();
 
     SetupManager::get_instance()
-        .shutdown_phases(vec![SetupPhase::Wallet, SetupPhase::Mining])
+        .shutdown_phases(vec![SetupPhase::Wallet, SetupPhase::CpuMining])
         .await;
 
     match InternalWallet::import_tari_seed_words(seed_words, &app_handle).await {
@@ -849,7 +777,7 @@ pub async fn import_seed_words(
         .map_err(|e| e.to_string())?;
 
     SetupManager::get_instance()
-        .resume_phases(app_handle, vec![SetupPhase::Wallet, SetupPhase::Mining])
+        .resume_phases(vec![SetupPhase::Wallet, SetupPhase::CpuMining])
         .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
@@ -866,7 +794,7 @@ pub async fn revert_to_internal_wallet(
     let timer = Instant::now();
 
     SetupManager::get_instance()
-        .shutdown_phases(vec![SetupPhase::Wallet, SetupPhase::Mining])
+        .shutdown_phases(vec![SetupPhase::Wallet, SetupPhase::CpuMining])
         .await;
 
     InternalWallet::initialize_with_seed(&app_handle)
@@ -881,7 +809,7 @@ pub async fn revert_to_internal_wallet(
     EventsEmitter::emit_exchange_id_changed(DEFAULT_EXCHANGE_ID.to_string()).await;
 
     SetupManager::get_instance()
-        .resume_phases(app_handle, vec![SetupPhase::Wallet, SetupPhase::Mining])
+        .resume_phases(vec![SetupPhase::Wallet, SetupPhase::CpuMining])
         .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
@@ -1318,13 +1246,10 @@ pub async fn update_custom_mining_mode(
 }
 
 #[tauri::command]
-pub async fn set_monero_address(
-    monero_address: String,
-    app_handle: tauri::AppHandle,
-) -> Result<(), InvokeError> {
+pub async fn set_monero_address(monero_address: String) -> Result<(), InvokeError> {
     let timer = Instant::now();
     SetupManager::get_instance()
-        .add_phases_to_restart_queue(vec![SetupPhase::Mining])
+        .add_phases_to_restart_queue(vec![SetupPhase::CpuMining])
         .await;
 
     InternalWallet::set_external_monero_address(monero_address)
@@ -1332,7 +1257,7 @@ pub async fn set_monero_address(
         .map_err(InvokeError::from_anyhow)?;
 
     SetupManager::get_instance()
-        .restart_phases_from_queue(app_handle)
+        .restart_phases_from_queue()
         .await;
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "set_monero_address took too long: {:?}", timer.elapsed());
@@ -1344,14 +1269,13 @@ pub async fn set_monero_address(
 pub async fn set_monerod_config(
     use_monero_fail: bool,
     monero_nodes: Vec<String>,
-    app_handle: tauri::AppHandle,
 ) -> Result<(), InvokeError> {
     let timer = Instant::now();
     info!(target: LOG_TARGET, "[set_monerod_config] called with use_monero_fail: {use_monero_fail:?}, monero_nodes: {monero_nodes:?}");
     ConfigCore::update_field_requires_restart(
         ConfigCoreContent::set_mmproxy_monero_nodes,
         monero_nodes.clone(),
-        vec![SetupPhase::Mining],
+        vec![SetupPhase::CpuMining],
     )
     .await
     .map_err(InvokeError::from_anyhow)?;
@@ -1359,13 +1283,13 @@ pub async fn set_monerod_config(
     ConfigCore::update_field_requires_restart(
         ConfigCoreContent::set_mmproxy_use_monero_failover,
         use_monero_fail,
-        vec![SetupPhase::Mining],
+        vec![SetupPhase::CpuMining],
     )
     .await
     .map_err(InvokeError::from_anyhow)?;
 
     SetupManager::get_instance()
-        .restart_phases_from_queue(app_handle)
+        .restart_phases_from_queue()
         .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
@@ -1376,21 +1300,18 @@ pub async fn set_monerod_config(
 }
 
 #[tauri::command]
-pub async fn set_p2pool_enabled(
-    p2pool_enabled: bool,
-    app_handle: tauri::AppHandle,
-) -> Result<(), InvokeError> {
+pub async fn set_p2pool_enabled(p2pool_enabled: bool) -> Result<(), InvokeError> {
     let timer = Instant::now();
     ConfigCore::update_field_requires_restart(
         ConfigCoreContent::set_is_p2pool_enabled,
         p2pool_enabled,
-        vec![SetupPhase::Mining],
+        vec![SetupPhase::CpuMining],
     )
     .await
     .map_err(InvokeError::from_anyhow)?;
 
     SetupManager::get_instance()
-        .restart_phases_from_queue(app_handle)
+        .restart_phases_from_queue()
         .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
@@ -1449,7 +1370,6 @@ pub async fn set_tor_config(
     config: TorConfig,
     _window: tauri::Window,
     state: tauri::State<'_, UniverseAppState>,
-    app_handle: tauri::AppHandle,
 ) -> Result<TorConfig, String> {
     let timer = Instant::now();
     info!(target: LOG_TARGET, "[set_tor_config] called with config: {config:?}");
@@ -1460,10 +1380,7 @@ pub async fn set_tor_config(
         .map_err(|e| e.to_string())?;
 
     SetupManager::get_instance()
-        .restart_phases(
-            app_handle,
-            vec![SetupPhase::Node, SetupPhase::Wallet, SetupPhase::Mining],
-        )
+        .restart_phases(vec![SetupPhase::Node, SetupPhase::Wallet])
         .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
@@ -1478,13 +1395,13 @@ pub async fn set_use_tor(use_tor: bool, app_handle: tauri::AppHandle) -> Result<
     ConfigCore::update_field_requires_restart(
         ConfigCoreContent::set_use_tor,
         use_tor,
-        vec![SetupPhase::Node, SetupPhase::Wallet, SetupPhase::Mining],
+        vec![SetupPhase::Node, SetupPhase::Wallet],
     )
     .await
     .map_err(InvokeError::from_anyhow)?;
 
     SetupManager::get_instance()
-        .restart_phases_from_queue(app_handle.clone())
+        .restart_phases_from_queue()
         .await;
 
     let config_dir = app_handle
@@ -1523,10 +1440,7 @@ pub async fn set_visual_mode(enabled: bool) -> Result<(), InvokeError> {
 
 #[allow(clippy::too_many_lines)]
 #[tauri::command]
-pub async fn set_airdrop_tokens(
-    airdrop_tokens: Option<AirdropTokens>,
-    app_handle: tauri::AppHandle,
-) -> Result<(), InvokeError> {
+pub async fn set_airdrop_tokens(airdrop_tokens: Option<AirdropTokens>) -> Result<(), InvokeError> {
     let old_id = ConfigCore::content()
         .await
         .airdrop_tokens()
@@ -1546,9 +1460,9 @@ pub async fn set_airdrop_tokens(
 
     info!(target: LOG_TARGET, "New Airdrop tokens saved, user id changed:{user_id_changed:?}");
     if user_id_changed {
-        // If the user id changed, we need to restart the mining phases to ensure that the new telemetry_id ( unique_string value )is used
+        // If the user id changed, we need to restart the cpu mining phases to ensure that the new telemetry_id ( unique_string value )is used
         SetupManager::get_instance()
-            .restart_phases(app_handle.clone(), vec![SetupPhase::Mining])
+            .restart_phases(vec![SetupPhase::CpuMining])
             .await;
     }
     Ok(())
@@ -1584,7 +1498,7 @@ pub async fn start_cpu_mining(
         let mut cpu_miner = state.cpu_miner.write().await;
         let res = cpu_miner
             .start(
-                TasksTrackers::current().hardware_phase.get_signal().await,
+                TasksTrackers::current().cpu_mining_phase.get_signal().await,
                 &cpu_miner_config,
                 mmproxy_manager,
                 app.path()
@@ -1787,7 +1701,7 @@ pub async fn stop_gpu_mining(state: tauri::State<'_, UniverseAppState>) -> Resul
 }
 
 #[tauri::command]
-pub async fn toggle_cpu_pool_mining(enabled: bool, app: tauri::AppHandle) -> Result<(), String> {
+pub async fn toggle_cpu_pool_mining(enabled: bool) -> Result<(), String> {
     let timer = Instant::now();
 
     ConfigPools::update_field(ConfigPoolsContent::set_cpu_pool_enabled, enabled)
@@ -1795,7 +1709,7 @@ pub async fn toggle_cpu_pool_mining(enabled: bool, app: tauri::AppHandle) -> Res
         .map_err(|e| e.to_string())?;
 
     SetupManager::get_instance()
-        .restart_phases(app.clone(), vec![SetupPhase::Mining])
+        .restart_phases(vec![SetupPhase::CpuMining])
         .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
@@ -1833,7 +1747,7 @@ pub async fn set_pre_release(
 
     state
         .updates_manager
-        .try_update(app.clone(), true, !pre_release)
+        .try_update(app.clone(), true, !pre_release, Duration::from_secs(30))
         .await
         .map_err(|e| e.to_string())?;
 
@@ -1874,7 +1788,12 @@ pub async fn try_update(
 
     state
         .updates_manager
-        .try_update(app.clone(), force.unwrap_or(false), false)
+        .try_update(
+            app.clone(),
+            force.unwrap_or(false),
+            false,
+            Duration::from_secs(30),
+        )
         .await
         .map_err(|e| e.to_string())?;
 
@@ -1970,55 +1889,19 @@ pub async fn set_selected_engine(
 }
 
 #[tauri::command]
-pub async fn websocket_connect(
+pub async fn websocket_get_status(
     _: tauri::AppHandle,
     state: tauri::State<'_, UniverseAppState>,
-) -> Result<(), String> {
-    let timer = Instant::now();
-    let last_state = state.websocket_manager_status_rx.borrow().clone();
-    info!(target: LOG_TARGET, "websocket_connect command accepted");
-
-    if matches!(
-        last_state,
-        WebsocketManagerStatusMessage::Connected | WebsocketManagerStatusMessage::Reconnecting
-    ) {
-        return Ok(());
-    }
-
-    let mut websocket_manger_guard = state.websocket_manager.write().await;
-
-    if !websocket_manger_guard.is_websocket_manager_ready() {
-        warn!(target: LOG_TARGET, "websocket_connect cannot be done as websocket_manager is not ready yet");
-        return Err("websocket manager is not ready".into());
-    }
-
-    websocket_manger_guard
-        .connect()
-        .await
-        .map_err(|e| e.to_string())?;
-
-    state
-        .websocket_event_manager
-        .write()
-        .await
-        .emit_interval_ws_events()
-        .await
-        .map_err(|e| e.to_string())?;
-
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "websocket_connect took too long: {:?}", timer.elapsed());
-    }
-    info!(target: LOG_TARGET, "websocket_connect command finished");
-    Ok(())
+) -> Result<String, String> {
+    let status = state.websocket_manager_status_rx.borrow().clone();
+    Ok(format!("{:?}", status))
 }
 
 #[tauri::command]
-pub async fn reconnect(app_handle: tauri::AppHandle) -> Result<(), String> {
+pub async fn reconnect() -> Result<(), String> {
     EventsEmitter::emit_connection_status_changed(ConnectionStatusPayload::InProgress).await;
     let setup_manager = SetupManager::get_instance();
-    setup_manager
-        .restart_phases(app_handle, SetupPhase::all())
-        .await;
+    setup_manager.restart_phases(SetupPhase::all()).await;
     Ok(())
 }
 
@@ -2046,41 +1929,6 @@ pub async fn send_one_sided_to_stealth_address(
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "send_one_sided_to_stealth_address took too long: {:?}", timer.elapsed());
     }
-    Ok(())
-}
-
-#[tauri::command]
-pub async fn websocket_close(
-    _: tauri::AppHandle,
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<(), String> {
-    let timer = Instant::now();
-    info!(target: LOG_TARGET, "websocket_close command started");
-
-    let last_state = state.websocket_manager_status_rx.borrow().clone();
-
-    if matches!(last_state, WebsocketManagerStatusMessage::Stopped) {
-        return Ok(());
-    }
-
-    state
-        .websocket_event_manager
-        .write()
-        .await
-        .stop_emitting_message()
-        .await;
-
-    state
-        .websocket_manager
-        .write()
-        .await
-        .close_connection()
-        .await;
-
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "websocket_close took too long: {:?}", timer.elapsed());
-    }
-    info!(target: LOG_TARGET, "websocket_close command finished");
     Ok(())
 }
 
@@ -2116,10 +1964,17 @@ pub fn validate_minotari_amount(
 }
 
 #[tauri::command]
-pub async fn trigger_phases_restart(app_handle: tauri::AppHandle) -> Result<(), InvokeError> {
+pub async fn trigger_phases_restart() -> Result<(), InvokeError> {
     SetupManager::get_instance()
-        .restart_phases_from_queue(app_handle)
+        .restart_phases_from_queue()
         .await;
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn restart_phases(phases: Vec<SetupPhase>) -> Result<(), InvokeError> {
+    SetupManager::get_instance().restart_phases(phases).await;
 
     Ok(())
 }
@@ -2127,8 +1982,8 @@ pub async fn trigger_phases_restart(app_handle: tauri::AppHandle) -> Result<(), 
 #[tauri::command]
 pub async fn set_node_type(
     mut node_type: NodeType,
-    app_handle: tauri::AppHandle,
     state: tauri::State<'_, UniverseAppState>,
+    app_handle: tauri::AppHandle,
 ) -> Result<(), InvokeError> {
     // map LocalAfterRemote or unknown value to Local
     if node_type != NodeType::Local
@@ -2157,7 +2012,7 @@ pub async fn set_node_type(
         ConfigCore::update_field_requires_restart(
             ConfigCoreContent::set_node_type,
             node_type.clone(),
-            vec![SetupPhase::Node, SetupPhase::Wallet, SetupPhase::Mining],
+            vec![SetupPhase::Node, SetupPhase::Wallet, SetupPhase::CpuMining],
         )
         .await
         .map_err(InvokeError::from_anyhow)?;
@@ -2167,9 +2022,113 @@ pub async fn set_node_type(
     EventsManager::handle_node_type_update(&app_handle).await;
 
     SetupManager::get_instance()
-        .restart_phases_from_queue(app_handle)
+        .restart_phases_from_queue()
         .await;
 
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn change_cpu_pool(cpu_pool: String) -> Result<(), InvokeError> {
+    let timer = Instant::now();
+    info!(target: LOG_TARGET, "[change_cpu_pool] called with cpu_pool: {cpu_pool:?}");
+
+    ConfigPools::update_field(ConfigPoolsContent::set_selected_cpu_pool, cpu_pool)
+        .await
+        .map_err(InvokeError::from_anyhow)?;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "change_cpu_pool took too long: {:?}", timer.elapsed());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn change_gpu_pool(gpu_pool: String) -> Result<(), InvokeError> {
+    let timer = Instant::now();
+    info!(target: LOG_TARGET, "[change_gpu_pool] called with gpu_pool: {gpu_pool:?}");
+
+    ConfigPools::update_field(ConfigPoolsContent::set_selected_gpu_pool, gpu_pool)
+        .await
+        .map_err(InvokeError::from_anyhow)?;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "change_gpu_pool took too long: {:?}", timer.elapsed());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn update_selected_gpu_pool_config(updated_config: GpuPool) -> Result<(), InvokeError> {
+    let timer = Instant::now();
+    info!(target: LOG_TARGET, "[update_selected_gpu_pool_config] called with updated_config: {updated_config:?}");
+
+    ConfigPools::update_field(
+        ConfigPoolsContent::update_selected_gpu_config,
+        updated_config,
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "update_selected_gpu_pool_config took too long: {:?}", timer.elapsed());
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn update_selected_cpu_pool_config(updated_config: CpuPool) -> Result<(), InvokeError> {
+    let timer = Instant::now();
+    info!(target: LOG_TARGET, "[update_selected_cpu_pool_config] called with updated_config: {updated_config:?}");
+
+    ConfigPools::update_field(
+        ConfigPoolsContent::update_selected_cpu_config,
+        updated_config,
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "update_selected_cpu_pool_config took too long: {:?}", timer.elapsed());
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn reset_gpu_pool_config(gpu_pool_name: String) -> Result<(), InvokeError> {
+    let timer = Instant::now();
+    info!(target: LOG_TARGET, "[reset_pool_gpu_pool_config] called with gpu_pool_name: {gpu_pool_name:?}");
+
+    let gpu_pool = GpuPool::default_from_name(&gpu_pool_name).map_err(InvokeError::from_anyhow)?;
+
+    ConfigPools::update_field(ConfigPoolsContent::update_selected_gpu_config, gpu_pool)
+        .await
+        .map_err(InvokeError::from_anyhow)?;
+    EventsEmitter::emit_pools_config_loaded(&ConfigPools::content().await.clone()).await;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "reset_pool_gpu_pool_config took too long: {:?}", timer.elapsed());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn reset_cpu_pool_config(cpu_pool_name: String) -> Result<(), InvokeError> {
+    let timer = Instant::now();
+    info!(target: LOG_TARGET, "[reset_pool_cpu_pool_config] called with cpu_pool_name: {cpu_pool_name:?}");
+
+    let cpu_pool = CpuPool::default_from_name(&cpu_pool_name).map_err(InvokeError::from_anyhow)?;
+
+    ConfigPools::update_field(ConfigPoolsContent::update_selected_cpu_config, cpu_pool)
+        .await
+        .map_err(InvokeError::from_anyhow)?;
+    EventsEmitter::emit_pools_config_loaded(&ConfigPools::content().await.clone()).await;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "reset_pool_cpu_pool_config took too long: {:?}", timer.elapsed());
+    }
     Ok(())
 }
 
@@ -2180,6 +2139,8 @@ pub async fn create_pin(app_handle: tauri::AppHandle) -> Result<(), String> {
         .map_err(|e| e.to_string())?;
     info!(target: LOG_TARGET, "PIN created successfully");
 
+    EventsEmitter::emit_pin_locked(true).await;
+
     Ok(())
 }
 
@@ -2188,6 +2149,8 @@ pub async fn set_seed_backed_up() -> Result<(), String> {
     ConfigWallet::update_field(ConfigWalletContent::set_seed_backed_up, true)
         .await
         .map_err(|e| e.to_string())?;
+
+    EventsEmitter::emit_seed_backed_up(true).await;
 
     Ok(())
 }
@@ -2224,7 +2187,7 @@ pub async fn start_tari_tapplet_binary(binary_name: &str) -> Result<ActiveTapple
 
     let binary = Binaries::from_name(binary_name);
     let tapp_dest_dir = binaries_resolver
-        .resolve_path_to_binary_files(binary)
+        .get_binary_path(binary)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -2379,6 +2342,17 @@ pub async fn parse_tari_address(address: String) -> Result<TariAddressVariants, 
 }
 
 #[tauri::command]
+pub async fn list_connected_peers(
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<Vec<String>, String> {
+    state
+        .node_manager
+        .list_connected_peers()
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 pub async fn refresh_wallet_history(
     state: tauri::State<'_, UniverseAppState>,
     app_handle: tauri::AppHandle,
@@ -2403,7 +2377,7 @@ pub async fn refresh_wallet_history(
     EventsEmitter::emit_init_wallet_scanning_progress(0, node_status.block_height, 0.0).await;
 
     SetupManager::get_instance()
-        .resume_phases(app_handle, vec![SetupPhase::Wallet])
+        .resume_phases(vec![SetupPhase::Wallet])
         .await;
 
     Ok(())
@@ -2424,7 +2398,7 @@ pub async fn encode_payment_id_to_address(
             e.to_string()
         })?;
     address_with_memo_field
-        .add_payment_id_user_data(payment_id.as_bytes().to_vec())
+        .add_memo_field_payment_id(payment_id.as_bytes().to_vec())
         .map_err(|e| {
             error!(target: LOG_TARGET, "Failed to add payment ID to Tari address: {e}");
             e.to_string()
@@ -2455,9 +2429,31 @@ pub async fn get_base_node_status(
 }
 
 #[tauri::command]
-pub async fn is_pin_locked() -> Result<bool, String> {
-    let is_pin_locked = PinManager::pin_locked().await;
-    Ok(is_pin_locked)
+pub async fn set_security_warning_dismissed() -> Result<(), String> {
+    ConfigWallet::update_field(ConfigWalletContent::set_security_warning_dismissed, true)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn set_feedback_fields(feedback_type: String, was_sent: bool) -> Result<(), InvokeError> {
+    let timer = Instant::now();
+    if was_sent {
+        ConfigUI::update_field(ConfigUIContent::update_feedback_sent, feedback_type)
+            .await
+            .map_err(InvokeError::from_anyhow)?;
+    } else {
+        ConfigUI::update_field(ConfigUIContent::update_feedback_dismissed, feedback_type)
+            .await
+            .map_err(InvokeError::from_anyhow)?;
+    }
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "set_feedback_fields took too long: {:?}", timer.elapsed());
+    }
+
+    Ok(())
 }
 
 #[tauri::command]
@@ -2607,6 +2603,360 @@ pub async fn download_and_extract_tapp(
     Ok(tapp)
 }
 
+#[tauri::command]
+pub fn insert_installed_tapp_db(
+    tapplet_id: i32,
+    db_connection: tauri::State<'_, DatabaseConnection>,
+) -> Result<InstalledTapplet, Error> {
+    let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
+    let (tapp, version_data) = tapplet_store.get_registered_tapplet_with_version(tapplet_id)?;
+
+    let installed_tapplet = CreateInstalledTapplet {
+        tapplet_id: tapp.id,
+        tapplet_version_id: version_data.id,
+    };
+    tapplet_store.create(&installed_tapplet)
+}
+
+#[tauri::command]
+pub fn read_installed_tapp_db(
+    db_connection: tauri::State<'_, DatabaseConnection>,
+) -> Result<Vec<InstalledTappletWithName>, Error> {
+    let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
+    tapplet_store.get_installed_tapplets_with_display_name()
+}
+
+#[tauri::command]
+pub fn update_installed_tapp_db(
+    tapplet: UpdateInstalledTapplet,
+    db_connection: tauri::State<'_, DatabaseConnection>,
+) -> Result<usize, Error> {
+    let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
+    let tapplets: Vec<InstalledTapplet> = tapplet_store.get_all()?;
+    let first: InstalledTapplet = tapplets.into_iter().next().unwrap();
+    tapplet_store.update(first, &tapplet)
+}
+
+#[tauri::command]
+pub fn delete_installed_tapplet(
+    tapplet_id: i32,
+    db_connection: tauri::State<'_, DatabaseConnection>,
+    app_handle: tauri::AppHandle,
+) -> Result<usize, Error> {
+    let mut store = SqliteStore::new(db_connection.0.clone());
+    let (_installed_tapp, registered_tapp, tapp_version) =
+        store.get_installed_tapplet_full_by_id(tapplet_id)?;
+    let tapplet_path = get_tapp_download_path(
+        registered_tapp.tapp_registry_id,
+        tapp_version.version,
+        app_handle,
+    )
+    .unwrap();
+    delete_tapplet(tapplet_path)?;
+
+    let installed_tapplet: InstalledTapplet = store.get_by_id(tapplet_id)?;
+    store.delete(installed_tapplet)
+}
+
+#[tauri::command]
+pub async fn update_installed_tapplet(
+    tapplet_id: i32,
+    installed_tapplet_id: i32,
+    db_connection: tauri::State<'_, DatabaseConnection>,
+    app_handle: tauri::AppHandle,
+) -> Result<Vec<InstalledTappletWithName>, Error> {
+    let _ = delete_installed_tapplet(
+        installed_tapplet_id,
+        db_connection.clone(),
+        app_handle.clone(),
+    )
+    .inspect_err(|e| error!("❌ Delete installed tapplet from db error: {:?}", e));
+
+    // TODO
+    // let _ = download_and_extract_tapp(tapplet_id, db_connection.clone(), app_handle.clone())
+    //     .await
+    //     .inspect_err(|e| error!("❌ Download and extract tapplet process error: {:?}", e));
+
+    // let _ = insert_installed_tapp_db(tapplet_id, db_connection.clone())
+    //     .inspect_err(|e| error!("❌ Insert installed tapplet to db error: {:?}", e));
+
+    let mut store = SqliteStore::new(db_connection.0.clone());
+    let installed_tapplets = store.get_installed_tapplets_with_display_name().unwrap();
+
+    return Ok(installed_tapplets);
+}
+
+fn is_http_or_localhost(s: &str) -> bool {
+    if let Ok(url) = Url::parse(s) {
+        let scheme = url.scheme();
+        if scheme == "http" || scheme == "https" {
+            return true;
+        }
+    }
+    // Also check if string contains "localhost", "http", or "https" (case insensitive)
+    let s_lower = s.to_lowercase();
+    s_lower.contains("localhost") || s_lower.contains("http") || s_lower.contains("https")
+}
+
+#[tauri::command]
+pub async fn add_dev_tapplet(
+    source: String,
+    db_connection: tauri::State<'_, DatabaseConnection>,
+) -> Result<DevTapplet, Error> {
+    // let manifest_source = format!("{}/tapplet.manifest.json", source);
+    let tapp_config: TappletConfig;
+
+    if is_http_or_localhost(&source) {
+        // IF source is the type of localhost or http address
+        let config_source = format!("{}/tapplet.config.json", source);
+        info!("❌ LOCALHOST source {:?}", &config_source);
+        tapp_config = reqwest::get(&config_source)
+            .await
+            .inspect_err(|err| {
+                error!(
+                    "❌ Fetching tapplet manifest source {:?} error: {:?}",
+                    config_source, err
+                )
+            })
+            .map_err(|_| {
+                RequestError(FetchConfigError {
+                    endpoint: source.clone(),
+                })
+            })?
+            .json::<TappletConfig>()
+            .await
+            .map_err(|err| {
+                RequestError(ManifestResponseError {
+                    endpoint: source.clone(),
+                    e: err.to_string(),
+                })
+            })?;
+    } else {
+        // IF source is type of path like /home/user/path-to-app
+        let tapp_dest_dir = PathBuf::from(&source);
+        tapp_config = get_tapplet_config(&tapp_dest_dir).unwrap();
+    }
+
+    info!("🌟 Add dev tapplet config: {:?}", &tapp_config);
+    info!(
+        "🌟 Add dev tapp permissions: {:?}",
+        &tapp_config.permissions.all_permissions_to_string()
+    );
+    let mut store = SqliteStore::new(db_connection.0.clone());
+    let new_dev_tapplet = CreateDevTapplet {
+        source: &source,
+        package_name: &tapp_config.package_name,
+        display_name: &tapp_config.display_name,
+        csp: "default-src 'self';", //set default csp and then ask to allow from config
+        tari_permissions: "requiredPermissions:[], optionalPermissions:[]", //set default permissions and then ask to allow from config
+    };
+    match store.create(&new_dev_tapplet) {
+        Ok(dev_tapplet) => {
+            info!(target: LOG_TARGET,"✅ Dev tapplet added to db successfully: {:?}", new_dev_tapplet);
+            Ok(dev_tapplet)
+        }
+        Err(e) => {
+            warn!(target: LOG_TARGET, "❌ Error while adding dev tapplet (source {:?}) to db: {:?}", source, e);
+            return Err(e);
+        }
+    }
+}
+
+#[tauri::command]
+pub fn read_dev_tapplets_db(
+    db_connection: tauri::State<'_, DatabaseConnection>,
+) -> Result<Vec<DevTapplet>, String> {
+    let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
+    match tapplet_store.get_all_dev_tapplets() {
+        Ok(dev_tapplets) => Ok(dev_tapplets),
+        Err(e) => Err(e.to_string()),
+    }
+}
+
+#[tauri::command]
+pub fn delete_dev_tapplet(
+    dev_tapplet_id: i32,
+    db_connection: tauri::State<'_, DatabaseConnection>,
+) -> Result<usize, Error> {
+    let mut store = SqliteStore::new(db_connection.0.clone());
+    let dev_tapplet: DevTapplet = store.get_by_id(dev_tapplet_id)?;
+    // store.delete(dev_tapplet)
+    match store.delete(dev_tapplet) {
+        Ok(dev_tapplet) => {
+            info!(target: LOG_TARGET,"✅ Dev tapplet with id {:?} deleted from db successfully", dev_tapplet_id);
+            Ok(dev_tapplet)
+        }
+        Err(e) => {
+            warn!(target: LOG_TARGET, "❌ Error while deleting dev tapplet id {:?} from db: {:?}", dev_tapplet_id, e);
+            return Err(e);
+        }
+    }
+}
+
+#[tauri::command]
+pub fn update_dev_tapp_db(
+    id: i32,
+    tapplet: UpdateDevTapplet,
+    db_connection: tauri::State<'_, DatabaseConnection>,
+) -> Result<DevTapplet, Error> {
+    let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
+    info!(target: LOG_TARGET, "🛠️ UPDATE DEV TAPPLET DB {:?}", &tapplet.csp);
+
+    let dev_tapplet: DevTapplet = tapplet_store.get_by_id(id)?;
+    info!(target: LOG_TARGET, "🛠️ BEFORE {:?}", dev_tapplet.csp);
+
+    let _size = tapplet_store.update(dev_tapplet, &tapplet)?;
+    let dev_updated: DevTapplet = tapplet_store.get_by_id(id)?;
+    info!(target: LOG_TARGET, "🛠️ after {:?}", dev_updated.csp);
+    return Ok(dev_updated);
+}
+
+#[tauri::command]
+pub async fn fetch_registered_tapplets(
+    app_handle: tauri::AppHandle,
+    db_connection: tauri::State<'_, DatabaseConnection>,
+) -> Result<(), String> {
+    let tapplets = match fetch_tapp_registry_manifest().await {
+        Ok(tapp) => tapp,
+        Err(e) => {
+            return Err(e.to_string());
+        }
+    };
+    info!("❌ FETCHED MANFIEST");
+    let mut store = SqliteStore::new(db_connection.0.clone());
+
+    for tapplet_manifest in tapplets.registered_tapplets.values() {
+        let inserted_tapplet = store
+            .create(&CreateTapplet::from(tapplet_manifest))
+            .map_err(|e| e.to_string())?;
+
+        // TODO uncomment if audit data in manifest
+        // for audit_data in tapplet_manifest.metadata.audits.iter() {
+        //   store.create(
+        //     &(CreateTappletAudit {
+        //       tapplet_id: inserted_tapplet.id,
+        //       auditor: &audit_data.auditor,
+        //       report_url: &audit_data.report_url,
+        //     })
+        //   )?;
+        // }
+
+        for (version, version_data) in tapplet_manifest.versions.iter() {
+            let _ = store
+                .create(
+                    &(CreateTappletVersion {
+                        tapplet_id: inserted_tapplet.id,
+                        version: &version,
+                        integrity: &version_data.integrity,
+                        registry_url: &version_data.registry_url,
+                    }),
+                )
+                .map_err(|e| e.to_string());
+        }
+        match store.get_tapplet_assets_by_tapplet_id(inserted_tapplet.id.unwrap()) {
+            Ok(Some(_)) => {}
+            Ok(None) => {
+                match download_asset(app_handle.clone(), inserted_tapplet.tapp_registry_id).await {
+                    Ok(tapplet_assets) => {
+                        let _ = store
+                            .create(
+                                &(CreateTappletAsset {
+                                    tapplet_id: inserted_tapplet.id,
+                                    icon_url: &tapplet_assets.icon_url,
+                                    background_url: &tapplet_assets.background_url,
+                                }),
+                            )
+                            .map_err(|e| e.to_string());
+                    }
+                    Err(e) => {
+                        error!(target: LOG_TARGET, "Could not download tapplet assets: {}", e);
+                    }
+                }
+            }
+            Err(e) => {
+                return Err(e.to_string());
+            }
+        }
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub fn insert_tapp_registry_db(
+    tapplet: CreateTapplet,
+    db_connection: tauri::State<'_, DatabaseConnection>,
+) -> Result<Tapplet, String> {
+    let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
+    tapplet_store.create(&tapplet).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn read_tapp_registry_db(
+    db_connection: tauri::State<'_, DatabaseConnection>,
+) -> Result<Vec<Tapplet>, String> {
+    let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
+    tapplet_store.get_all().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn get_assets_server_addr(state: tauri::State<'_, AssetServer>) -> Result<String, String> {
+    Ok(format!("http://{}", state.addr))
+}
+
+#[tauri::command]
+pub async fn download_and_extract_tapp(
+    tapplet_id: i32,
+    db_connection: tauri::State<'_, DatabaseConnection>,
+    app: tauri::AppHandle,
+) -> Result<Tapplet, String> {
+    let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
+    // let (tapp, tapp_version) = tapplet_store.get_registered_tapplet_with_version(tapplet_id);
+    let (tapp, tapp_version) = match tapplet_store.get_registered_tapplet_with_version(tapplet_id) {
+        Ok(tapp) => tapp,
+        Err(e) => {
+            return Err(e.to_string());
+        }
+    };
+
+    // get download path
+    let tapplet_path = get_tapp_download_path(
+        tapp.tapp_registry_id.clone(),
+        tapp_version.version.clone(),
+        app.clone(),
+    )
+    .unwrap_or_default();
+    // download tarball
+    let url = tapp_version.registry_url.clone();
+    let file_path = tapplet_path.join(TAPPLET_ARCHIVE);
+    let destination_dir = file_path.clone();
+    //TODO handle download
+    // let handle_download = tauri::async_runtime::spawn(async move {
+    //     download_file_with_retries(&url, &destination_dir, progress_tracker).await
+    // });
+    // let _ = handle_download
+    //     .await
+    //     .inspect_err(|e| error!(target: LOG_TARGET, "❌ Error downloading file: {:?}", e))
+    //     .map_err(|_| {
+    //         Error::RequestError(FailedToDownload {
+    //             url: tapp_version.registry_url.clone(),
+    //         })
+    //     });
+
+    // let _ = extract(&file_path, &tapplet_path.clone())
+    //     .await
+    //     .inspect_err(|e| error!(target: LOG_TARGET, "❌ Error extracting file: {:?}", e));
+    //TODO should compare integrity field with the one stored in db or from github manifest?
+    match check_files_and_validate_checksum(tapp_version, tapplet_path.clone()) {
+        Ok(is_valid) => {
+            info!(target: LOG_TARGET,"✅ Checksum validation successfully with test result: {:?}", is_valid);
+        }
+        Err(e) => {
+            error!(target: LOG_TARGET,"🚨 Error validating checksum: {:?}", e);
+            return Err(e.to_string());
+        }
+    }
+    Ok(tapp)
+}
 
 #[tauri::command]
 pub fn insert_installed_tapp_db(

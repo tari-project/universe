@@ -1,61 +1,73 @@
 import styled, { css } from 'styled-components';
 import { FloatingOverlay } from '@floating-ui/react';
-import { colorsAll } from '@app/theme/palettes/colors.ts';
 import { convertHexToRGBA } from '@app/utils';
+import { ContentWrapperStyleProps } from './types.ts';
 
-export interface ContentWrapperProps {
-    $unPadded?: boolean;
-    $disableOverflow?: boolean;
-    $borderRadius?: string;
-    $transparentBg?: boolean;
-    $zIndex?: number;
-}
-export const ContentWrapper = styled.div<ContentWrapperProps>`
-    border-radius: ${({ theme, $borderRadius }) => $borderRadius || theme.shape.borderRadius.dialog};
-    box-shadow: 0 4px 45px 0 rgba(0, 0, 0, 0.08);
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    max-height: 90%;
-    padding: ${({ $unPadded }) => ($unPadded ? '0' : '20px')};
-    position: relative;
-
-    ${({ theme, $transparentBg }) =>
-        $transparentBg
-            ? css`
-                  background-color: ${convertHexToRGBA(
-                      theme.palette.background.paper,
-                      theme.mode == 'dark' ? 0.75 : 0.65
-                  )};
-                  &::before {
-                      content: '';
-                      position: absolute;
-                      width: 100%;
-                      height: 100%;
-                      -webkit-backdrop-filter: blur(20px);
-                      backdrop-filter: blur(20px);
-                      z-index: -1;
-                  }
-              `
-            : css`
-                  background-color: ${theme.palette.background.paper};
-              `}
-
-    ${({ $disableOverflow }) =>
-        !$disableOverflow &&
-        css`
-            overflow-y: auto;
-        `}
-`;
-
-interface OverlayProps {
-    $zIndex?: number;
-}
-
-export const Overlay = styled(FloatingOverlay)<OverlayProps>`
+export const Overlay = styled(FloatingOverlay)`
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: ${colorsAll.darkAlpha[50]};
-    z-index: ${({ $zIndex }) => $zIndex || 100};
+    z-index: 99;
+`;
+
+export const ContentWrapper = styled.div<ContentWrapperStyleProps>`
+    box-shadow: 0 4px 45px 0 rgba(0, 0, 0, 0.08);
+    border-radius: clamp(20px, 5vh, 35px);
+    overflow: ${({ $allowOverflow }) => ($allowOverflow ? 'unset' : 'hidden')};
+    max-height: 90%;
+    display: flex;
+
+    ${({ theme, $variant }) => {
+        switch ($variant) {
+            case 'transparent': {
+                return css`
+                    background-color: ${convertHexToRGBA(
+                        theme.palette.background.paper,
+                        theme.mode == 'dark' ? 0.75 : 0.8
+                    )};
+                    -webkit-backdrop-filter: blur(20px);
+                    backdrop-filter: blur(20px);
+                `;
+            }
+            case 'primary':
+            default:
+                return css`
+                    background-color: ${theme.palette.background.paper};
+                `;
+        }
+    }};
+`;
+export const ContentScrollContainer = styled.div<ContentWrapperStyleProps>`
+    overflow: ${({ $allowOverflow }) => ($allowOverflow ? 'unset' : 'hidden')};
+    position: relative;
+    display: flex;
+    width: 100%;
+`;
+
+export const Content = styled.div<ContentWrapperStyleProps>`
+    padding: min(3vh, 20px);
+    flex-direction: column;
+    overflow-y: ${({ $allowOverflow }) => ($allowOverflow ? 'unset' : 'auto')};
+    overflow-x: ${({ $allowOverflow }) => ($allowOverflow ? 'unset' : 'hidden')};
+    display: flex;
+    width: 100%;
+    height: 100%;
+    position: relative;
+
+    ${({ $unPadded }) =>
+        $unPadded &&
+        css`
+            padding: 0;
+        `};
+`;
+
+export const CloseButtonContainer = styled.div`
+    display: flex;
+    justify-content: flex-end;
+    width: 100%;
+`;
+
+export const WrapperContent = styled.div`
+    display: flex;
+    position: relative;
 `;

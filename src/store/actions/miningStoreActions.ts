@@ -2,11 +2,12 @@ import { invoke } from '@tauri-apps/api/core';
 
 import { useMiningMetricsStore } from '../useMiningMetricsStore.ts';
 
-import { useMiningStore } from '../useMiningStore.ts';
+import { SessionMiningTime, useMiningStore } from '../useMiningStore.ts';
 import { setError } from './appStateStoreActions.ts';
 import { useSetupStore } from '@app/store/useSetupStore.ts';
 import { useConfigMiningStore } from '../useAppConfigStore.ts';
 import { Network } from '@app/utils/network.ts';
+import { setupStoreSelectors } from '../selectors/setupStoreSelectors.ts';
 
 export const restartMining = async () => {
     const isMining =
@@ -67,11 +68,11 @@ export const getMiningNetwork = async () => {
 };
 
 export const startCpuMining = async () => {
-    const unlocked = useSetupStore.getState().cpuMiningUnlocked;
+    const cpuMiningModuleInitialized = setupStoreSelectors.isCpuMiningModuleInitialized(useSetupStore.getState());
     const enabled = useConfigMiningStore.getState().cpu_mining_enabled;
     const initiated = useMiningStore.getState().isCpuMiningInitiated;
 
-    if (!enabled || !unlocked || initiated) return;
+    if (!enabled || !cpuMiningModuleInitialized || initiated) return;
 
     useMiningStore.setState({ isCpuMiningInitiated: true });
     console.info('CPU Mining starting....');
@@ -85,7 +86,7 @@ export const startCpuMining = async () => {
     }
 };
 export const startGpuMining = async () => {
-    if (!useSetupStore.getState().gpuMiningUnlocked) return;
+    if (!setupStoreSelectors.isGpuMiningModuleInitialized(useSetupStore.getState())) return;
     if (!useConfigMiningStore.getState().gpu_mining_enabled) return;
     if (useMiningStore.getState().isGpuMiningInitiated) return;
 
@@ -136,6 +137,7 @@ export const startMining = async () => {
         await startCpuMining();
         await startGpuMining();
         console.info('Mining started.');
+        handleSessionMiningTime({ startTimestamp: Date.now() });
     } catch (e) {
         console.error('Failed to start mining: ', e);
         setError(e as string);
@@ -146,9 +148,43 @@ export const stopMining = async () => {
     try {
         await stopCpuMining();
         await stopGpuMining();
+        handleSessionMiningTime({ stopTimestamp: Date.now() });
         console.info('Mining stopped.');
     } catch (e) {
         console.error('Failed to stop mining: ', e);
         setError(e as string);
     }
+};
+
+export const handleSessionMiningTime = ({ startTimestamp, stopTimestamp }: SessionMiningTime) => {
+    const current = useMiningStore.getState().sessionMiningTime;
+    if (stopTimestamp) {
+        const diff = (stopTimestamp || 0) - (current.startTimestamp || 0);
+        useMiningStore.setState({
+            sessionMiningTime: { ...current, startTimestamp, stopTimestamp, durationMs: diff },
+        });
+    }
+
+    if (startTimestamp) {
+        useMiningStore.setState({ sessionMiningTime: { ...current, startTimestamp } });
+    }
+};
+
+export const checkMiningTime = () => {
+    const current = useMiningStore.getState().sessionMiningTime;
+    let stopTimestamp = current.stopTimestamp;
+
+    const cpuMining = useMiningMetricsStore.getState().cpu_mining_status.is_mining;
+    const gpuMining = useMiningMetricsStore.getState().gpu_mining_status.is_mining;
+    const isStillMining = cpuMining || gpuMining;
+
+    if (isStillMining) {
+        const now = Date.now();
+        handleSessionMiningTime({ stopTimestamp: now });
+        stopTimestamp = now;
+    }
+
+    const diff = (stopTimestamp || 0) - (current.startTimestamp || 0);
+    useMiningStore.setState({ sessionMiningTime: { ...current, durationMs: diff } });
+    return diff;
 };

@@ -9,7 +9,7 @@ import useFetchAirdropToken from '../stateHelpers/useFetchAirdropToken.ts';
 export function useAirdropAuth() {
     const { isCopied, copyToClipboard } = useCopyToClipboard();
     const allowTelemetry = useConfigCoreStore((s) => s.allow_telemetry);
-    const airdropUrl = useAirdropStore((s) => s.backendInMemoryConfig?.airdropUrl);
+    const airdropUrl = useAirdropStore((s) => s.backendInMemoryConfig?.airdrop_url);
 
     const [linkOpened, setLinkOpened] = useState(false);
 

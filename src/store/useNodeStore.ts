@@ -1,6 +1,7 @@
+import { create } from 'zustand';
 import { BackgroundNodeSyncUpdatePayload } from '@app/types/events-payloads';
-import { create } from './create';
 import { deepEqual } from '@app/utils/objectDeepEqual.ts';
+import { BaseNodeStatus } from '@app/types/app-status';
 
 export type NodeType = 'Local' | 'Remote' | 'RemoteUntilLocal' | 'LocalAfterRemote';
 export interface NodeIdentity {
@@ -13,6 +14,9 @@ interface NodeStoreState {
     node_identity?: NodeIdentity;
     node_connection_address?: string;
     backgroundNodeSyncLastUpdate?: BackgroundNodeSyncUpdatePayload;
+    tor_entry_guards: string[];
+    isNodeConnected: boolean;
+    base_node_status?: BaseNodeStatus;
 }
 
 const initialState: NodeStoreState = {
@@ -22,6 +26,9 @@ const initialState: NodeStoreState = {
         public_addresses: [],
     },
     node_connection_address: '',
+    tor_entry_guards: [],
+    isNodeConnected: false,
+    base_node_status: undefined,
 };
 
 export const useNodeStore = create<NodeStoreState>()(() => ({
@@ -34,6 +41,12 @@ export const setNodeStoreState = (newState: Partial<NodeStoreState>) => {
 
 export const updateNodeType = (node_type: NodeType) => {
     setNodeStoreState({ ...initialState, node_type });
+};
+
+export const setTorEntryGuards = (tor_entry_guards: string[]) => {
+    setNodeStoreState({
+        tor_entry_guards: tor_entry_guards.filter((e) => e.split(' ')[1] === 'up').map((e) => e.split(' ')[0]),
+    });
 };
 
 export const setBackgroundNodeState = (backgroundNodeSyncLastUpdate: BackgroundNodeSyncUpdatePayload) => {

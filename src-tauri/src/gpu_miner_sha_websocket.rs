@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use log::{info, warn};
+use log::{debug, info, warn};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -123,13 +123,15 @@ pub struct WebSocketGpuMinerResponse {
 pub struct GpuMinerShaWebSocket {
     socket_listener_thread: Arc<Mutex<Option<tokio::task::JoinHandle<()>>>>,
     last_message: Arc<Mutex<Option<WebSocketGpuMinerResponse>>>,
+    port: u16,
 }
 
 impl GpuMinerShaWebSocket {
-    pub fn new() -> Self {
+    pub fn new(port: u16) -> Self {
         Self {
             socket_listener_thread: Arc::new(Mutex::new(None)),
             last_message: Arc::new(Mutex::new(None)),
+            port,
         }
     }
 
@@ -139,17 +141,20 @@ impl GpuMinerShaWebSocket {
 
     pub async fn connect(self) {
         if self.socket_listener_thread.lock().await.is_some() {
-            warn!(target: LOG_TARGET, "WebSocket listener is already running");
+            debug!(target: LOG_TARGET, "WebSocket listener is already running");
             return;
         }
 
-        if let Ok((mut socket, response)) = connect("ws://localhost:8080/ws") {
+        if let Ok((mut socket, response)) = connect(format!("ws://localhost:{}/ws", self.port)) {
             info!(target: LOG_TARGET, "Connected to WebSocket server: {response:?}" );
 
-            let shutdown_signal = TasksTrackers::current().hardware_phase.get_signal().await;
+            let shutdown_signal = TasksTrackers::current().gpu_mining_phase.get_signal().await;
+
+            let last_message = Arc::clone(&self.last_message);
+            let socket_listener_thread = Arc::clone(&self.socket_listener_thread);
 
             let thread = TasksTrackers::current()
-                .hardware_phase
+                .gpu_mining_phase
                 .get_task_tracker()
                 .await
                 .spawn(async move {
@@ -170,21 +175,21 @@ impl GpuMinerShaWebSocket {
 
                                         match parsed_message {
                                             Ok(response) => {
-                                                *self.last_message.lock().await = Some(response.clone());
+                                                *last_message.lock().await = Some(response.clone());
 
                                             }
                                             Err(e) => {
-                                            if !self.last_message.lock().await.is_none() {
+                                            if !last_message.lock().await.is_none() {
                                                 info!(target: LOG_TARGET, "Received message: {text}");
                                             }
                                                 warn!(target: LOG_TARGET, "Failed to parse message: {e}");
-                                                *self.last_message.lock().await = None;
+                                                *last_message.lock().await = None;
                                             }
                                         }
                                     }
                                     Message::Close(_) => {
                                         println!("Connection closed by the server");
-                                        *self.last_message.lock().await = None;
+                                        *last_message.lock().await = None;
                                         break;
                                     }
                                     _ => {}
@@ -192,16 +197,18 @@ impl GpuMinerShaWebSocket {
                             }
                             Err(e) => {
                                 warn!(target: LOG_TARGET, "Error reading message: {e}");
-                                *self.last_message.lock().await = None;
+                                *last_message.lock().await = None;
                                 break;
                             }
                         }
                     }
+
+                    *socket_listener_thread.lock().await = None;
                 });
 
             *self.socket_listener_thread.lock().await = Some(thread);
         } else {
-            warn!(target: LOG_TARGET, "Failed to connect to WebSocket server at ws://localhost:8080/ws");
+            warn!(target: LOG_TARGET, "Failed to connect to WebSocket server at ws://localhost:{}/ws", self.port);
         }
     }
 }

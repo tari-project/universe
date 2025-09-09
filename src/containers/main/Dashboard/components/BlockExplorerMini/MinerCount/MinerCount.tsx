@@ -12,18 +12,22 @@ export default function MinerCount() {
     const { data: totalMiners } = useMinerStats();
     const contentRef = useRef<HTMLDivElement>(null);
     const contentWidth = contentRef.current?.clientWidth;
+
+    const value = totalMiners || 0;
+    const rounded = value >= 50_000 ? Math.floor(value / 1000) * 1000 : value;
+    const notation = value >= 50_000 ? 'compact' : 'standard';
+
     return (
         <Wrapper $contentWidth={contentWidth}>
             <Content ref={contentRef}>
                 <Dot />
                 <CountText>
                     <NumberFlow
-                        value={totalMiners || 0}
+                        value={rounded}
                         locales={i18n.language}
                         format={{
-                            minimumSignificantDigits: 2,
                             maximumFractionDigits: 2,
-                            notation: 'compact',
+                            notation,
                         }}
                     />
                     {` ${t('bubbles.active-miners')}`}

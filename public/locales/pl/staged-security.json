@@ -41,5 +41,9 @@
     "placeholder": "Kliknij poniższe słowa w odpowiedniej kolejności",
     "text": "Aby upewnić się, że poprawnie zapisałeś swoją frazę seed, wybierz słowa w odpowiedniej kolejności.",
     "title": "Zweryfikuj swoją frazę seed"
+  },
+  "warning": {
+    "title": "Secure your wallet",
+    "steps": "Steps"
   }
 }

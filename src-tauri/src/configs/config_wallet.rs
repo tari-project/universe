@@ -20,12 +20,12 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::{collections::HashMap, sync::LazyLock, time::SystemTime};
+use std::{collections::HashMap, fs, sync::LazyLock, time::SystemTime};
 
 use getset::{Getters, Setters};
 use serde::{Deserialize, Serialize};
 use tari_common_types::tari_address::TariAddress;
-use tari_core::transactions::tari_amount::MicroMinotari;
+use tari_transaction_components::tari_amount::MicroMinotari;
 use tauri::AppHandle;
 use tokio::sync::RwLock;
 
@@ -67,6 +67,7 @@ impl WalletId {
 #[serde(rename_all = "snake_case")]
 #[serde(default)]
 #[derive(Getters, Setters)]
+#[allow(clippy::struct_excessive_bools)]
 pub struct ConfigWalletContent {
     #[getset(get = "pub", set = "pub")]
     version: i32,
@@ -95,6 +96,8 @@ pub struct ConfigWalletContent {
     seed_backed_up: bool,
     #[getset(get = "pub", set = "pub")]
     last_known_balance: MicroMinotari,
+    #[getset(get = "pub", set = "pub")]
+    security_warning_dismissed: bool,
 }
 
 impl Default for ConfigWalletContent {
@@ -114,6 +117,7 @@ impl Default for ConfigWalletContent {
             pin_locker_state: PinLockerState::default(),
             seed_backed_up: false,
             last_known_balance: MicroMinotari(0),
+            security_warning_dismissed: false,
         }
     }
 }
@@ -189,8 +193,6 @@ impl ConfigWallet {
             ConfigWallet::update_field(ConfigWalletContent::set_version, WALLET_VERSION).await?;
 
             return Ok(());
-        } else {
-            log::info!("Skipped migration for wallet config version {current_version:?}");
         }
 
         if *ConfigUI::content().await.was_staged_security_modal_shown() {
@@ -221,19 +223,38 @@ impl ConfigImpl for ConfigWallet {
     }
 
     fn _load_or_create() -> Self::Config {
-        match Self::_load_config() {
-            Ok(config_content) => {
-                log::info!(target: LOG_TARGET, "[{}] [load_config] loaded config content", Self::_get_name());
-                config_content
+        let config_path = <Self as ConfigImpl>::_get_config_path();
+        if config_path.exists() {
+            let config_content_serialized = fs::read_to_string(&config_path)
+                .expect("[ConfigWallet::_load_or_create] Failed to read config file");
+            // create backup before writing new content
+            fs::copy(&config_path, format!("{}.backup", config_path.display()))
+                .expect("Failed to create backup Config Wallet");
+            // TariAddress type change in the core repo
+            let config_content_migrated =
+                config_content_serialized.replace("payment_id_user_data", "memo_field_payment_id");
+            fs::write(&config_path, config_content_migrated)
+                .expect("[ConfigWallet::_load_or_create] Failed to write config file");
+
+            match Self::_load_config() {
+                Ok(config_content) => {
+                    log::info!(target: LOG_TARGET, "[{}] [load_config] loaded config content", Self::_get_name());
+                    config_content
+                }
+                Err(e) => {
+                    log::error!(target: LOG_TARGET, "[{}] [load_config] error occured when loading config content: {e:?}", Self::_get_name());
+                    log::info!(target: LOG_TARGET, "* Wallet Config: {config_content_serialized}");
+                    // Panic instead of creating default config
+                    panic!("Failed to load wallet config: {e:?}");
+                }
             }
-            Err(_) => {
-                log::debug!(target: LOG_TARGET, "[{}] [load_config] creating new config content", Self::_get_name());
-                let config_content = Self::Config::default();
-                let _unused = Self::_save_config(config_content.clone()).inspect_err(|error| {
-                    log::warn!(target: LOG_TARGET, "[{}] [save_config] error: {:?}", Self::_get_name(), error);
-                });
-                config_content
-            }
+        } else {
+            log::debug!(target: LOG_TARGET, "[{}] [load_config] creating a new config content (file not found)", Self::_get_name());
+            let config_content = Self::Config::default();
+            let _unused = Self::_save_config(config_content.clone()).inspect_err(|error| {
+                log::warn!(target: LOG_TARGET, "[{}] [save_config] error: {:?}", Self::_get_name(), error);
+            });
+            config_content
         }
     }
 

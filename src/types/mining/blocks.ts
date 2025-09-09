@@ -1,34 +1,24 @@
-interface Block {
-    height: string;
-    timestamp: string;
-    outputs: number;
+export interface BlockStats {
+    height: number;
     totalCoinbaseXtm: string;
     numCoinbases: number;
     numOutputsNoCoinbases: number;
     numInputs: number;
     powAlgo: string;
+    timestamp: number;
 }
 
-interface Headers {
-    height: string;
-    timestamp: string;
-}
-
-export interface BlocksStats {
-    stats: Block[];
-    headers: Headers[];
-}
-
-export interface BlockData {
+export interface BlockBubbleData extends Partial<BlockStats> {
     id: string;
     minersSolved: number;
     reward?: number; // XTM reward amount
-    timeAgo: string;
+    timeAgo?: string;
     isSolved?: boolean;
     blocks?: number;
     isFirstEntry?: boolean;
 }
 
-export interface BlockDataExtended extends Block {
-    parsedTimestamp?: string;
+export interface BlockTip {
+    height: number;
+    timestamp: number;
 }

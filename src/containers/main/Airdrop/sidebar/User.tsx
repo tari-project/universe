@@ -1,19 +1,17 @@
 import { useAirdropStore } from '@app/store';
-import { useAvatarGradient } from '@app/hooks/airdrop/utils/useAvatarGradient.ts';
 import { SidebarItem } from './components/SidebarItem';
-import { Avatar, TooltipAction } from './items.style';
+import { TooltipAction } from './items.style';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { Trans, useTranslation } from 'react-i18next';
 import { handleAirdropLogout } from '@app/store';
+import Avatar from '@app/components/elements/Avatar/Avatar';
 
 export default function User() {
     const { t } = useTranslation('airdrop');
     const userDetails = useAirdropStore((s) => s.userDetails);
 
-    const profileimageurl = userDetails?.user?.profileimageurl;
+    const profileimageurl = userDetails?.user?.image_url;
     const name = userDetails?.user?.name;
-
-    const style = useAvatarGradient({ username: name || '', image: profileimageurl });
 
     const tooltipContent = (
         <>
@@ -21,7 +19,7 @@ export default function User() {
                 <Trans
                     i18nKey="logged-in-as"
                     ns="airdrop"
-                    values={{ twitter: userDetails?.user.name }}
+                    values={{ twitter: name }}
                     components={{ strong: <strong /> }}
                 />
             </Typography>
@@ -34,7 +32,7 @@ export default function User() {
     );
     return (
         <SidebarItem tooltipContent={tooltipContent}>
-            <Avatar style={style} />
+            <Avatar image={profileimageurl} username={name} size={38} />
         </SidebarItem>
     );
 }

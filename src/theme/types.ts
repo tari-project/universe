@@ -38,6 +38,8 @@ interface Palette {
     base: string;
     contrast: string;
     contrastAlpha: string;
+    focusOutline: string;
+    focusOutlineAlpha: string;
     primary: Omit<StandardColour, 'primary' | 'secondary' | 'default'>;
     secondary: Colour;
     success: Colour;
@@ -53,6 +55,7 @@ interface Palette {
         accent: string;
         main: string;
         secondary: string;
+        tooltip: string;
     };
     action: {
         hover: Colour;

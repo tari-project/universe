@@ -28,8 +28,8 @@ use std::path::Path;
 use std::time::Duration;
 use std::{path::PathBuf, sync::Arc};
 use tari_common_types::tari_address::TariAddress;
-use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::ShutdownSignal;
+use tari_transaction_components::tari_amount::MicroMinotari;
 use tokio::select;
 use tokio::sync::{watch, RwLock};
 
@@ -121,9 +121,9 @@ impl GpuMiner {
         coinbase_extra: String,
         gpu_usage_percentage: u32,
     ) -> Result<(), anyhow::Error> {
-        let shutdown_signal = TasksTrackers::current().hardware_phase.get_signal().await;
+        let shutdown_signal = TasksTrackers::current().gpu_mining_phase.get_signal().await;
         let task_tracker = TasksTrackers::current()
-            .hardware_phase
+            .gpu_mining_phase
             .get_task_tracker()
             .await;
 
@@ -200,7 +200,7 @@ impl GpuMiner {
             self.curent_selected_engine.to_string(),
         ];
         let gpuminer_bin = BinaryResolver::current()
-            .resolve_path_to_binary_files(Binaries::GpuMiner)
+            .get_binary_path(Binaries::GpuMiner)
             .await?;
 
         info!(target: LOG_TARGET, "Gpu miner binary file path {:?}", gpuminer_bin.clone());
@@ -210,14 +210,16 @@ impl GpuMiner {
         let output = child.wait_with_output().await?;
         info!(target: LOG_TARGET, "Gpu detect exit code: {:?}", output.status.code().unwrap_or_default());
 
-        let gpu_status_file_name = format!("{}_gpu_status.json", self.curent_selected_engine);
-        let gpu_status_file_path =
-            get_gpu_engines_statuses_path(&config_dir).join(gpu_status_file_name);
-        let gpu_status_file = GpuStatusFile::load(&gpu_status_file_path)?;
-
-        self.gpu_devices = gpu_status_file.gpu_devices;
         match output.status.code() {
             Some(0) => {
+                let gpu_status_file_name =
+                    format!("{}_gpu_status.json", self.curent_selected_engine);
+                let gpu_status_file_path =
+                    get_gpu_engines_statuses_path(&config_dir).join(gpu_status_file_name);
+                let gpu_status_file = GpuStatusFile::load(&gpu_status_file_path)?;
+
+                self.gpu_devices = gpu_status_file.gpu_devices;
+
                 EventsEmitter::emit_detected_available_gpu_engines(
                     self.get_available_gpu_engines(config_dir)
                         .await?

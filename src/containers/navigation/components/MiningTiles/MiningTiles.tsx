@@ -6,7 +6,7 @@ import { TopRow, Wrapper } from './styles';
 import { useConfigBEInMemoryStore } from '@app/store';
 
 export default function MiningTiles() {
-    const isExchangeSpecific = useConfigBEInMemoryStore((s) => s.exchangeId !== 'universal');
+    const isExchangeSpecific = useConfigBEInMemoryStore((s) => s.exchange_id !== 'universal');
     return (
         <Wrapper>
             <TopRow>

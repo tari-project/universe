@@ -77,7 +77,7 @@ use crate::commands::CpuMinerConnection;
 use crate::database::store::DatabaseConnection;
 use crate::feedback::Feedback;
 use crate::gpu_miner::GpuMiner;
-use crate::mm_proxy_manager::{MmProxyManager, StartConfig};
+use crate::mm_proxy_manager::MmProxyManager;
 use crate::node::node_manager::NodeManager;
 use crate::p2pool::models::P2poolStats;
 use crate::p2pool_manager::P2poolManager;
@@ -101,7 +101,6 @@ mod download_utils;
 mod events;
 mod events_emitter;
 mod events_manager;
-mod external_dependencies;
 mod feedback;
 mod gpu_devices;
 mod gpu_miner;
@@ -133,6 +132,7 @@ mod progress_trackers;
 mod release_notes;
 mod requests;
 mod setup;
+mod system_dependencies;
 mod systemtray_manager;
 mod tapplets;
 mod tasks_tracker;
@@ -299,7 +299,7 @@ fn main() {
         pool_status_url: None,
     }));
 
-    let app_in_memory_config = Arc::new(RwLock::new(AppInMemoryConfig::init()));
+    let app_in_memory_config = Arc::new(RwLock::new(AppInMemoryConfig::default()));
     let cpu_miner: Arc<RwLock<CpuMiner>> = Arc::new(
         CpuMiner::new(
             &mut stats_collector,
@@ -564,13 +564,11 @@ fn main() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            commands::close_splashscreen, // TODO: Unused
             commands::download_and_start_installer,
             commands::exit_application,
             commands::fetch_tor_bridges,
             commands::get_app_in_memory_config,
             commands::get_applications_versions,
-            commands::get_external_dependencies,
             commands::get_monero_seed_words,
             commands::get_network,
             commands::get_p2pool_stats,
@@ -628,8 +626,7 @@ fn main() {
             commands::frontend_ready,
             commands::start_mining_status,
             commands::stop_mining_status,
-            commands::websocket_connect,
-            commands::websocket_close,
+            commands::websocket_get_status,
             commands::reconnect,
             commands::send_one_sided_to_stealth_address,
             commands::verify_address_for_send,
@@ -645,13 +642,21 @@ fn main() {
             commands::get_base_node_status,
             commands::create_pin,
             commands::forgot_pin,
-            commands::is_pin_locked,
             commands::set_seed_backed_up,
-            commands::is_seed_backed_up,
             commands::select_mining_mode,
             commands::update_custom_mining_mode,
             commands::encode_payment_id_to_address,
             commands::save_wxtm_address,
+            commands::set_security_warning_dismissed,
+            commands::change_cpu_pool,
+            commands::change_gpu_pool,
+            commands::update_selected_gpu_pool_config,
+            commands::update_selected_cpu_pool_config,
+            commands::reset_gpu_pool_config,
+            commands::reset_cpu_pool_config,
+            commands::restart_phases,
+            commands::list_connected_peers,
+            commands::set_feedback_fields,
             commands::update_csp_policy,
             commands::fetch_registered_tapplets,
             commands::insert_tapp_registry_db,
@@ -700,17 +705,21 @@ fn main() {
             tauri::RunEvent::Ready => {
                 info!(target: LOG_TARGET, "RunEvent Ready");
                 let handle_clone = app_handle.clone();
+                let state = handle_clone.state::<UniverseAppState>();
+
+                block_on(state.updates_manager.initial_try_update(&handle_clone));
+
                 tauri::async_runtime::spawn(async move {
                     SetupManager::get_instance()
                         .start_setup(handle_clone.clone())
                         .await;
-                    SetupManager::spawn_sleep_mode_handler(handle_clone.clone()).await;
+                    SetupManager::spawn_sleep_mode_handler().await;
                 });
             }
             tauri::RunEvent::ExitRequested { api: _, code, .. } => {
                 info!(
                     target: LOG_TARGET,
-                    "App shutdown request caught with code: {code:#?}"
+                    "App shutdown request [ExitRequested] caught with code: {code:#?}"
                 );
                 if let Some(exit_code) = code {
                     if exit_code == RESTART_EXIT_CODE {
@@ -722,7 +731,7 @@ fn main() {
                 info!(target: LOG_TARGET, "App shutdown complete");
             }
             tauri::RunEvent::Exit => {
-                info!(target: LOG_TARGET, "App shutdown caught");
+                info!(target: LOG_TARGET, "App shutdown [Exit] caught");
                 block_on(TasksTrackers::current().stop_all_processes());
                 if is_restart_requested_clone.load(Ordering::SeqCst) {
                     app_handle.cleanup_before_exit();

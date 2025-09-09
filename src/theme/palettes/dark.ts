@@ -31,6 +31,8 @@ const darkPalette: ThemePalette = {
         base: '#000',
         contrast: '#fff',
         contrastAlpha: alpha.lightAlpha[5],
+        focusOutline: c.brightGreen[500],
+        focusOutlineAlpha: 'rgba(201,235,0,0.35)',
         primary: {
             main: c.tariPurple[900],
             dark: c.tariPurple[950],
@@ -61,11 +63,11 @@ const darkPalette: ThemePalette = {
         background: {
             default: c.grey[900],
             paper: c.grey[700],
-
             accent: 'rgba(255,255,255,0.06)',
             main: c.grey[600],
             splash: c.grey[700],
             secondary: c.greyscale[900],
+            tooltip: c.greyscale[600],
         },
         success: {
             main: c.green[600],

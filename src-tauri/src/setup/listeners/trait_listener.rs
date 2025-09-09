@@ -20,13 +20,27 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::collections::HashMap;
+use std::{collections::HashMap, future::Future, time::Duration};
 
-use crate::setup::setup_manager::{PhaseStatus, SetupPhase};
+use crate::{
+    events::UpdateAppModuleStatusPayload,
+    events_emitter::EventsEmitter,
+    setup::{
+        listeners::{AppModule, AppModuleStatus},
+        setup_manager::{PhaseStatus, SetupPhase},
+    },
+    tasks_tracker::TasksTrackers,
+};
 
 use super::SetupFeaturesList;
-use log::{debug, warn};
-use tokio::sync::watch::{error::RecvError, Receiver};
+use log::warn;
+use tokio::{
+    sync::{
+        watch::{error::RecvError, Receiver},
+        MutexGuard,
+    },
+    time::sleep,
+};
 
 static LOG_TARGET: &str = "tari::universe::unlock_conditions::listener_trait";
 
@@ -78,19 +92,104 @@ impl UnlockConditionsStatusChannels {
 }
 
 pub trait UnlockConditionsListenerTrait {
+    // Trait implemented methods
+    fn conditions_met_callback(&self) -> impl Future<Output = ()> + Send + Sync {
+        EventsEmitter::emit_update_app_module_status(UpdateAppModuleStatusPayload {
+            module: self.get_module_type(),
+            status: AppModuleStatus::Initialized.as_string(),
+            error_messages: HashMap::new(),
+        })
+    }
+    fn conditions_failed_callback(
+        &self,
+        failed_phases: HashMap<SetupPhase, String>,
+    ) -> impl Future<Output = ()> + Send + Sync {
+        EventsEmitter::emit_update_app_module_status(UpdateAppModuleStatusPayload {
+            module: self.get_module_type(),
+            status: AppModuleStatus::Failed(failed_phases.clone()).as_string(),
+            error_messages: failed_phases,
+        })
+    }
+
+    async fn stop_listener(&self) {
+        if let Some(listener_task) = self.get_listener().await.take() {
+            listener_task.abort();
+        }
+    }
+
+    async fn start_listener(&self)
+    where
+        Self: 'static,
+    {
+        self.stop_listener().await;
+        let shutdown_signal = TasksTrackers::current().common.get_signal().await;
+        let unlock_strategy = self.select_unlock_strategy().await;
+        let channels = self.get_status_channels().await.clone();
+
+        if !unlock_strategy.are_all_channels_loaded(&channels) {
+            return;
+        }
+        if !unlock_strategy.is_any_phase_restarting(channels.clone()) {
+            return;
+        }
+
+        EventsEmitter::emit_update_app_module_status(UpdateAppModuleStatusPayload {
+            module: self.get_module_type(),
+            status: AppModuleStatus::Initializing.as_string(),
+            error_messages: HashMap::new(),
+        })
+        .await;
+
+        let listener_task = TasksTrackers::current()
+            .common
+            .get_task_tracker()
+            .await
+            .spawn(async move {
+                loop {
+                    if shutdown_signal.is_triggered() {
+                        return;
+                    }
+                    if let Ok(status) = unlock_strategy.check_conditions(&channels) {
+                        match status {
+                            AppModuleStatus::Initialized => {
+                                Self::current().conditions_met_callback().await;
+                                break;
+                            }
+                            AppModuleStatus::Failed(failed_phases) => {
+                                Self::current()
+                                    .conditions_failed_callback(failed_phases)
+                                    .await;
+                                break;
+                            }
+                            _ => {}
+                        }
+                    } else {
+                        warn!(target: LOG_TARGET, "Failed to check unlock conditions");
+                    }
+                    sleep(Duration::from_secs(5)).await;
+                }
+            });
+
+        *self.get_listener().await = Some(listener_task);
+    }
+
+    // Methods added by the struct implementing this trait
     fn new() -> Self;
     fn current() -> &'static Self;
     async fn load_setup_features(&self, features: SetupFeaturesList);
-    async fn start_listener(&self);
-    async fn stop_listener(&self);
-    async fn select_unlock_strategy(&self) -> Box<dyn UnlockStrategyTrait + Send + Sync>;
-    async fn conditions_met_callback(&self);
-    async fn handle_restart(&self);
     async fn add_status_channel(&self, key: SetupPhase, value: Receiver<PhaseStatus>);
+    async fn select_unlock_strategy(&self) -> Box<dyn UnlockStrategyTrait + Send + Sync>;
+    async fn handle_restart(&self) {}
+
+    // Getters
+    async fn get_listener(&self) -> MutexGuard<'_, Option<tokio::task::JoinHandle<()>>>;
+    async fn get_status_channels(&self) -> MutexGuard<'_, UnlockConditionsStatusChannels>;
+    fn get_module_type(&self) -> AppModule;
 }
 
 pub trait UnlockStrategyTrait {
     fn required_channels(&self) -> Vec<SetupPhase>;
+    #[allow(dead_code)]
     fn is_disabled(&self) -> bool {
         self.required_channels().is_empty()
     }
@@ -106,17 +205,34 @@ pub trait UnlockStrategyTrait {
     fn check_conditions(
         &self,
         channels: &UnlockConditionsStatusChannels,
-    ) -> Result<bool, anyhow::Error> {
-        for phase in &self.required_channels() {
-            let channel = channels.get(phase)?;
-            let status = channel.borrow();
-            if !status.is_success() {
-                debug!(target: LOG_TARGET, "Phase {phase:?} is not ready");
-                return Ok(false);
+    ) -> Result<AppModuleStatus, anyhow::Error> {
+        let mut failed_phases: HashMap<SetupPhase, String> = HashMap::new();
+
+        // Check for Initializated status
+        if self.required_channels().iter().all(|phase| {
+            channels
+                .get(phase)
+                .is_ok_and(|channel| channel.borrow().is_success())
+        }) {
+            return Ok(AppModuleStatus::Initialized);
+        };
+
+        // Check for Failed status
+        if self.required_channels().iter().any(|phase| {
+            let channel = channels.get(phase);
+            if let Ok(channel) = channel {
+                let (is_failed, reason) = channel.borrow().is_failed();
+                if let Some(reason) = reason {
+                    failed_phases.insert(phase.clone(), reason);
+                }
+                return is_failed;
             }
+            false
+        }) {
+            return Ok(AppModuleStatus::Failed(failed_phases));
         }
 
-        Ok(true)
+        Ok(AppModuleStatus::Initializing)
     }
 
     fn is_any_phase_restarting(&self, channels: UnlockConditionsStatusChannels) -> bool {

@@ -22,16 +22,19 @@
 
 use anyhow::Error;
 use async_trait::async_trait;
-use log::warn;
+use log::{info, warn};
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 use tari_shutdown::Shutdown;
 use tokio::sync::watch;
 
 use crate::port_allocator::PortAllocator;
 use crate::process_adapter::{
-    HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
+    HandleUnhealthyResult, HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec,
+    StatusMonitor,
 };
+use crate::setup::setup_manager::SetupManager;
 use crate::xmrig;
 use crate::xmrig::http_api::models::Summary;
 use crate::xmrig::http_api::XmrigHttpApiClient;
@@ -221,6 +224,10 @@ impl ProcessAdapter for XmrigAdapter {
     }
 }
 
+// This is a flag to indicate if the fallback to solo mining has been triggered
+// We want to avoid triggering it multiple times per session
+static WAS_FALLBACK_TO_SOLO_MINING_TRIGGERED: AtomicBool = AtomicBool::new(false);
+
 #[derive(Clone)]
 pub struct XmrigStatusMonitor {
     client: XmrigHttpApiClient,
@@ -229,11 +236,45 @@ pub struct XmrigStatusMonitor {
 
 #[async_trait]
 impl StatusMonitor for XmrigStatusMonitor {
+    async fn handle_unhealthy(
+        &self,
+        duration_since_last_healthy_status: Duration,
+    ) -> Result<HandleUnhealthyResult, anyhow::Error> {
+        // Fallback to solo mining if the miner has been unhealthy for more than 30 minutes
+        info!(target: LOG_TARGET, "Handling unhealthy status for Xmrig | Duration since last healthy status: {:?}", duration_since_last_healthy_status.as_secs());
+        if duration_since_last_healthy_status.as_secs().gt(&(60 * 30))
+            && !WAS_FALLBACK_TO_SOLO_MINING_TRIGGERED.load(Ordering::SeqCst)
+        {
+            match SetupManager::get_instance()
+                .turn_off_cpu_pool_feature()
+                .await
+            {
+                Ok(_) => {
+                    info!(target: LOG_TARGET, "XmrigAdapter: CPU Pool feature turned off due to prolonged unhealthiness.");
+                    WAS_FALLBACK_TO_SOLO_MINING_TRIGGERED.store(true, Ordering::SeqCst);
+                    return Ok(HandleUnhealthyResult::Stop);
+                }
+                Err(error) => {
+                    warn!(target: LOG_TARGET, "XmrigAdapter: Failed to turn off CPU Pool feature: {error} | Continuing to monitor.");
+                    return Ok(HandleUnhealthyResult::Continue);
+                }
+            }
+        } else {
+            return Ok(HandleUnhealthyResult::Continue);
+        }
+    }
+
     async fn check_health(&self, _uptime: Duration, timeout_duration: Duration) -> HealthStatus {
         match tokio::time::timeout(timeout_duration, self.summary()).await {
             Ok(summary_result) => match summary_result {
-                Ok(s) => {
-                    let _result = self.summary_broadcast.send(Some(s));
+                Ok(summary) => {
+                    let _result = self.summary_broadcast.send(Some(summary.clone()));
+
+                    if summary.hashrate.total.iter().all(|x| x.eq(&Some(0.0))) {
+                        warn!(target: LOG_TARGET, "Xmrig has zero hashrate reported.");
+                        return HealthStatus::Unhealthy;
+                    }
+
                     HealthStatus::Healthy
                 }
                 Err(e) => {

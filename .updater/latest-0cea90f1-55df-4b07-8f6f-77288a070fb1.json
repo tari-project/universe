@@ -1,0 +1,19 @@
+{
+  "version": "1.5.15",
+  "notes": "Tari Universe - See the assets to download this version and install",
+  "pub_date": "2025-09-04T15:55:49Z",
+  "platforms": {
+    "darwin-aarch64": {
+      "url": "https://cdn-universe.tari.com/tari-project/universe/exchanges/0cea90f1-55df-4b07-8f6f-77288a070fb1/1.5.15/Tari Universe-Biconomy.app.tar.gz",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRbUtvKzlyYWhiOGZxVzZwelh2bDNVR0JmRTRiK3R4OE5DUzFLNTNRY3BQbndJY0tQc1oreEh3WFNUSHl6OXJmTkJYNk5LSGg0V1VFelFVN1FwRmtxd3lQaW1IREZOSkFRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzU3MDAwOTgzCWZpbGU6VGFyaSBVbml2ZXJzZS1CaWNvbm9teS5hcHAudGFyLmd6CmdnMUdXWm95dFp3dit2WUNRWTBoMytKSW9WVlRyT3loMFFCUmVDTmUvOTBZbDBYL0NFMXlsQmQ0NVl2WTluei9mb053ZDJiNnQwd1NDZVR2OGRiUkJ3PT0K"
+    },
+    "darwin-x86_64": {
+      "url": "https://cdn-universe.tari.com/tari-project/universe/exchanges/0cea90f1-55df-4b07-8f6f-77288a070fb1/1.5.15/Tari Universe-Biconomy.app.tar.gz",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRbUtvKzlyYWhiOGZxVzZwelh2bDNVR0JmRTRiK3R4OE5DUzFLNTNRY3BQbndJY0tQc1oreEh3WFNUSHl6OXJmTkJYNk5LSGg0V1VFelFVN1FwRmtxd3lQaW1IREZOSkFRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzU3MDAwOTgzCWZpbGU6VGFyaSBVbml2ZXJzZS1CaWNvbm9teS5hcHAudGFyLmd6CmdnMUdXWm95dFp3dit2WUNRWTBoMytKSW9WVlRyT3loMFFCUmVDTmUvOTBZbDBYL0NFMXlsQmQ0NVl2WTluei9mb053ZDJiNnQwd1NDZVR2OGRiUkJ3PT0K"
+    },
+    "windows-x86_64": {
+      "url": "https://cdn-universe.tari.com/tari-project/universe/exchanges/0cea90f1-55df-4b07-8f6f-77288a070fb1/1.5.15/Tari Universe-Biconomy_1.5.15_x64_en-US.msi",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRbUtvKzlyYWhiOGNTS0VWRlBnTkFJUUlBUjJONVZDWlF4RFhVRXFxbVA0SHh5RlVqTVcvQ0NpYVBMSEROSW1jTUp2UjMvcFE5VWJOOFlaOGVtQVROUy9QNktGa2VleUFBPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzU3MDAwMTYwCWZpbGU6VGFyaSBVbml2ZXJzZS1CaWNvbm9teV8xLjUuMTVfeDY0X2VuLVVTLm1zaQp5RzhMZm9Mdy9oTnB0V0VjTkxGZGJORU9pWGxya0RrazdtblVReWsvUU5rdlRpaG1rM2s4eVc4NTVzSytWUDlwSjB6WHdvcUh0bEJTZCsvUmV0cHdCQT09Cg=="
+    }
+  }
+}

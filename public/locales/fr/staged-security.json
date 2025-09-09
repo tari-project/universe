@@ -41,5 +41,9 @@
     "placeholder": "Cliquez sur les mots ci-dessous dans le bon ordre",
     "text": "Pour vous assurer que vous avez bien noté votre phrase de récupération, veuillez sélectionner les mots dans le bon ordre.",
     "title": "Vérifiez votre phrase de récupération"
+  },
+  "warning": {
+    "title": "Secure your wallet",
+    "steps": "Steps"
   }
 }

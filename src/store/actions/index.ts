@@ -29,8 +29,7 @@ export {
 export {
     fetchApplicationsVersions,
     fetchApplicationsVersionsWithRetry,
-    fetchExternalDependencies,
-    loadExternalDependencies,
+    loadSystemDependencies as loadExternalDependencies,
     setCriticalError,
     setCriticalProblem,
     setError,
@@ -40,31 +39,23 @@ export {
     setReleaseNotes,
 } from './appStateStoreActions.ts';
 
+export { setCpuMiningStatus, setGpuDevices, setGpuMiningStatus } from './miningMetricsStoreActions.ts';
+
 export {
+    getMiningNetwork,
     setCustomLevelsDialogOpen,
     setMiningControlsEnabled,
-    getMiningNetwork,
     startMining,
     stopMining,
 } from './miningStoreActions.ts';
-export {
-    setShowExternalDependenciesDialog,
-    setUITheme,
-    setDialogToShow,
-    setIsWebglNotSupported,
-} from './uiStoreActions.ts';
 
 export {
-    importSeedWords,
-    refreshTransactions,
-    fetchCoinbaseTransactions,
-    fetchTransactionsHistory,
-    setWalletBalance,
-} from './walletStoreActions';
-export {
-    setGpuDevices,
-    setGpuMiningStatus,
-    setCpuMiningStatus,
-    handleConnectedPeersUpdate,
-    handleBaseNodeStatusUpdate,
-} from './miningMetricsStoreActions.ts';
+    setDialogToShow,
+    setIsWebglNotSupported,
+    setShowExternalDependenciesDialog,
+    setUITheme,
+} from './uiStoreActions.ts';
+
+export { fetchTransactionsHistory, importSeedWords, setWalletBalance } from './walletStoreActions';
+
+export { handleBaseNodeStatusUpdate } from './nodeStoreActions.ts';

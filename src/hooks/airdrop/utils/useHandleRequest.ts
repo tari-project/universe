@@ -1,11 +1,12 @@
 import { useAirdropStore } from '@app/store/useAirdropStore';
 import { handleRefreshAirdropTokens } from '@app/hooks/airdrop/stateHelpers/useAirdropTokensRefresh.ts';
 import { useConfigBEInMemoryStore } from '@app/store';
+import { defaultHeaders } from '@app/utils';
 
-interface RequestProps {
+interface RequestProps<B> {
     path: string;
     method: 'GET' | 'POST';
-    body?: Record<string, unknown>;
+    body?: B;
     onError?: (e: unknown) => void;
     headers?: HeadersInit | undefined;
     publicRequest?: boolean;
@@ -22,9 +23,20 @@ async function retryHandler(errorMessage: string) {
     return await new Promise((resolve) => setTimeout(resolve, delay));
 }
 
-export async function handleAirdropRequest<T>({ body, method, path, onError, headers, publicRequest }: RequestProps) {
+//  TODO -
+//   'un-airdrop" - use RWA language & move request handler
+//   added by @shanimal08
+
+export async function handleAirdropRequest<T, B = Record<string, unknown>>({
+    body,
+    method,
+    path,
+    onError,
+    headers,
+    publicRequest,
+}: RequestProps<B>) {
     // use useConfigBEInMemoryStore now, not airdrop store for the URL
-    const baseUrl = useConfigBEInMemoryStore.getState().airdropApiUrl; // TODO rename url vars?
+    const baseUrl = useConfigBEInMemoryStore.getState().airdrop_api_url;
 
     const airdropToken = useAirdropStore.getState().airdropTokens?.token;
     const airdropTokenExpiration = useAirdropStore.getState().airdropTokens?.expiresAt;
@@ -60,6 +72,7 @@ export async function handleAirdropRequest<T>({ body, method, path, onError, hea
         const response = await fetch(fullUrl, {
             method: method,
             headers: {
+                ...defaultHeaders,
                 'Content-Type': 'application/json',
                 ...headersWithAuth,
                 ...headers,

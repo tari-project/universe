@@ -1,13 +1,16 @@
 import * as m from 'motion/react-m';
 import styled, { css } from 'styled-components';
 
-// don't need theming for this file as the colours are the same in dark/light mode (black and white)
-
-export const BannerContent = styled(m.div)`
+export const BannerContent = styled(m.div)<{
+    $crewRewardsActive: boolean;
+    $isLoggedIn: boolean;
+    $crewRewardsMinimized: boolean;
+}>`
     position: fixed;
     top: 16px;
     right: 20px;
-    z-index: 99999;
+
+    z-index: 99;
     display: flex;
     align-items: center;
     padding: 8px 10px;
@@ -18,10 +21,33 @@ export const BannerContent = styled(m.div)`
     color: #fff;
     cursor: pointer;
     pointer-events: all;
+
     &:hover {
         transform: scale(1.05);
     }
     transition: all 0.2s ease-in-out;
+
+    ${({ $crewRewardsActive }) =>
+        $crewRewardsActive &&
+        css`
+            top: 180px;
+            right: 12px;
+        `}
+
+    ${({ $isLoggedIn, $crewRewardsActive }) =>
+        !$isLoggedIn &&
+        $crewRewardsActive &&
+        css`
+            top: 296px;
+            right: 12px;
+        `}
+
+    ${({ $crewRewardsMinimized }) =>
+        $crewRewardsMinimized &&
+        css`
+            top: 64px;
+            right: 12px;
+        `}
 `;
 
 export const FlexWrapper = styled(m.div)`

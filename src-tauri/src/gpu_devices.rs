@@ -137,7 +137,7 @@ impl GpuDevices {
             gpu_information_file_directory.to_string_lossy().to_string(),
         ];
         let gpuminer_bin = BinaryResolver::current()
-            .resolve_path_to_binary_files(Binaries::GpuMinerSHA3X)
+            .get_binary_path(Binaries::GpuMinerSHA3X)
             .await?;
 
         info!(target: LOG_TARGET, "Gpu miner binary file path {:?}", gpuminer_bin.clone());
@@ -147,11 +147,12 @@ impl GpuDevices {
         let output = child.wait_with_output().await?;
         info!(target: LOG_TARGET, "Gpu detect exit code: {:?}", output.status.code().unwrap_or_default());
 
-        let gpu_information_file = GpuInformationFile::load(&gpu_information_file_path).await?;
-        self.devices = gpu_information_file.devices;
-
         match output.status.code() {
             Some(0) => {
+                let gpu_information_file =
+                    GpuInformationFile::load(&gpu_information_file_path).await?;
+                self.devices = gpu_information_file.devices;
+
                 EventsEmitter::emit_detected_devices(self.devices.clone()).await;
                 let devices_indexes: Vec<u32> = self.devices.iter().map(|d| d.device_id).collect();
                 ConfigMining::update_field(

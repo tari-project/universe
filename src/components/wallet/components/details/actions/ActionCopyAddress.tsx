@@ -24,8 +24,9 @@ export default function ActionCopyAddress() {
         middleware: [offset({ mainAxis: 10 })],
     });
 
-    function handleCopyClick() {
+    function handleCopyClick(event: React.MouseEvent) {
         copyToClipboard(tariWalletAddress);
+        event.stopPropagation();
     }
 
     const hover = useHover(context, {
@@ -35,7 +36,7 @@ export default function ActionCopyAddress() {
 
     const { getFloatingProps } = useInteractions([hover]);
 
-    return (
+    return tariWalletAddress ? (
         <>
             <AnimatePresence>
                 {showAdress && (
@@ -54,5 +55,5 @@ export default function ActionCopyAddress() {
                 <CopySVG />
             </ActionButton>
         </>
-    );
+    ) : null;
 }

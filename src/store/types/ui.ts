@@ -14,6 +14,7 @@ const _DIALOG_TYPES = [
     'createPin',
     'enterPin',
     'forgotPin',
+    'failedModuleInitialization',
     'allowTappletCsp',
     'grantTappletPermissions',
 ] as const;

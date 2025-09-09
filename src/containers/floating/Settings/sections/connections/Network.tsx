@@ -12,11 +12,11 @@ import {
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles.ts';
 import { formatHashrate } from '@app/utils/formatters.ts';
-import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
+import { useNodeStore } from '@app/store/useNodeStore.ts';
 
 export default function Network() {
     const { t } = useTranslation('settings');
-    const baseNodeStatus = useMiningMetricsStore((state) => state?.base_node_status);
+    const baseNodeStatus = useNodeStore((state) => state?.base_node_status);
 
     const sha_network_hashrate = baseNodeStatus?.sha_network_hashrate || 0;
     const tari_randomx_network_hashrate = baseNodeStatus?.tari_randomx_network_hashrate || 0;
@@ -47,47 +47,44 @@ export default function Network() {
                             <Stack direction="row">
                                 <Typography>{t('sha-network-hash-rate')}</Typography>
                                 <Typography>
-                                    <b>{`${fmtSHA.value}${fmtSHA.unit}`}</b>
+                                    <b>{baseNodeStatus ? `${fmtSHA.value}${fmtSHA.unit}` : 'N/A'}</b>
                                 </Typography>
                             </Stack>
                             <Stack direction="row">
                                 <Typography>{t('randomx-network-hash-rate')}</Typography>
                                 <Typography>
-                                    <b>{`${fmtTariRX.value}${fmtTariRX.unit}`}</b>
+                                    <b>{baseNodeStatus ? `${fmtTariRX.value}${fmtTariRX.unit}` : 'N/A'}</b>
                                 </Typography>
                             </Stack>
                             <Stack direction="row">
                                 <Typography>{t('block-reward')}</Typography>
                                 <Typography>
-                                    <b>
-                                        {formattedBlockReward.value}
-                                        {'k XTM'}
-                                    </b>
+                                    <b>{baseNodeStatus ? `${formattedBlockReward.value}k XTM` : 'N/A'}</b>
                                 </Typography>
                             </Stack>
                             <Stack direction="row">
                                 <Typography>{t('block-height')}</Typography>
                                 <Typography>
-                                    <b>{block_height.toLocaleString()}</b>
+                                    <b>{baseNodeStatus ? block_height.toLocaleString() : 'N/A'}</b>
                                 </Typography>
                             </Stack>
                             <Stack direction="row">
                                 <Typography>{t('last-block-time')}</Typography>
                                 <Typography>
-                                    <b>{blockDate}</b>
+                                    <b>{baseNodeStatus ? blockDate : 'N/A'}</b>
                                 </Typography>
                             </Stack>
 
                             <Stack direction="row">
                                 <Typography>{t('sync-status')}</Typography>
                                 <Typography>
-                                    <b>{is_synced ? 'Synced' : 'Syncing...'}</b>
+                                    <b>{baseNodeStatus ? (is_synced ? 'Synced' : 'Syncing...') : 'N/A'}</b>
                                 </Typography>
                             </Stack>
                             <Stack direction="row">
                                 <Typography>{t('readiness-status')}</Typography>
                                 <Typography>
-                                    <b>{readiness_status}%</b>
+                                    <b>{baseNodeStatus ? readiness_status : 'N/A'}%</b>
                                 </Typography>
                             </Stack>
                         </Stack>

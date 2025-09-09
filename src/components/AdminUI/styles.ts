@@ -54,7 +54,7 @@ export const MenuContent = styled(m.div)`
 
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 10px;
 
     min-width: 260px;
     max-height: calc(100vh - 100px);
@@ -92,9 +92,29 @@ export const ButtonGroup = styled('div')`
     grid-auto-flow: row;
     grid-template-columns: repeat(auto-fit, minmax(30%, 1fr));
     gap: 4px;
-    padding-bottom: 4px;
+`;
 
-    &:last-child {
-        padding-bottom: 0;
+export const ExtraContent = styled.div`
+    display: flex;
+    flex-direction: column;
+    font-size: 14px;
+    gap: 4px;
+    label {
+        gap: 4px;
+        justify-content: space-between;
+        display: flex;
+        input {
+            display: flex;
+            border: 1px solid #666;
+            border-radius: 4px;
+            padding: 2px;
+
+            width: 80px;
+        }
+        button {
+            border: 1px solid #ddd;
+            padding: 2px;
+            border-radius: 4px;
+        }
     }
 `;

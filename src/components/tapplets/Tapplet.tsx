@@ -10,7 +10,7 @@ interface TappletProps {
     source: string;
 }
 
-export const Tapplet: React.FC<TappletProps> = ({ source }) => {
+export const Tapplet = ({ source }: TappletProps) => {
     const tappletRef = useRef<HTMLIFrameElement | null>(null);
     const tappSigner = useTappletSignerStore((s) => s.tappletSigner);
     const runTransaction = useTappletSignerStore((s) => s.runTransaction);

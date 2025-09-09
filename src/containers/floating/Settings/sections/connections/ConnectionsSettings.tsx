@@ -2,22 +2,18 @@ import Node from './Node.tsx';
 import Network from './Network.tsx';
 import Peers from './Peers.tsx';
 import NodeTypeConfiguration from './NodeTypeConfiguration.tsx';
-import { useSetupStore } from '@app/store/useSetupStore.ts';
-import { Sync } from '@app/components/sync/Sync.tsx';
+import { LocalNodeSync } from '@app/components/sync/LocalNodeSync.tsx';
+import { useNodeStore } from '@app/store/useNodeStore.ts';
 
 export const ConnectionsSettings = () => {
-    const isAppSettingUp = useSetupStore((s) => !s.appUnlocked);
+    const nodeType = useNodeStore((s) => s.node_type);
     return (
         <>
-            <Sync />
+            {nodeType != 'Remote' && <LocalNodeSync />}
             <NodeTypeConfiguration />
             <Node />
-            {!isAppSettingUp && (
-                <>
-                    <Network />
-                    <Peers />
-                </>
-            )}
+            <Network />
+            <Peers />
         </>
     );
 };

@@ -30,7 +30,7 @@ use tokio::sync::watch::{channel, Sender};
 
 use crate::{
     download_utils::validate_checksum,
-    progress_trackers::progress_stepper::ChanneledStepUpdate,
+    progress_trackers::progress_stepper::IncrementalProgressTracker,
     requests::clients::http_file_client::HttpFileClient,
     tasks_tracker::TasksTrackers,
     utils::platform_utils::{CurrentOperatingSystem, PlatformUtils},
@@ -242,7 +242,10 @@ impl BinaryManager {
             }
         };
 
-        let version_folder = binary_folder.join(&self.selected_version);
+        let mut version_folder = binary_folder.join(&self.selected_version);
+        if let Some(subfolder) = self.binary_subfolder() {
+            version_folder.push(subfolder);
+        }
         let binary_file = version_folder.join(
             Binaries::from_name(&self.binary_name).binary_file_name(self.selected_version.clone()),
         );
@@ -253,8 +256,9 @@ impl BinaryManager {
         debug!(target: LOG_TARGET, "Version folder path: {version_folder:?}");
         debug!(target: LOG_TARGET, "Binary file path: {binary_file:?}");
 
-        let binary_file_exists =
-            binary_file.exists() || binary_file_with_exe.exists() || binary_file_with_html.exists();
+        let binary_file_exists = check_binary_exists(&binary_file)
+            || check_binary_exists(&binary_file_with_exe)
+            || check_binary_exists(&binary_file_with_html);
 
         debug!(target: LOG_TARGET, "Binary file exists: {binary_file_exists:?}");
 
@@ -263,20 +267,20 @@ impl BinaryManager {
 
     async fn resolve_progress_channel(
         &self,
-        progress_channel: Option<ChanneledStepUpdate>,
+        progress_channel: Option<IncrementalProgressTracker>,
     ) -> Result<(Option<Sender<f64>>, Option<Shutdown>), Error> {
         if let Some(step_update_channel) = progress_channel {
             let (sender, mut receiver) = channel::<f64>(0.0);
             let task_tacker = match Binaries::from_name(&self.binary_name) {
-                Binaries::GpuMiner => &TasksTrackers::current().hardware_phase,
-                Binaries::Xmrig => &TasksTrackers::current().hardware_phase,
+                Binaries::GpuMiner => &TasksTrackers::current().gpu_mining_phase,
+                Binaries::Xmrig => &TasksTrackers::current().cpu_mining_phase,
                 Binaries::Wallet => &TasksTrackers::current().wallet_phase,
                 Binaries::MinotariNode => &TasksTrackers::current().node_phase,
-                Binaries::Tor => &TasksTrackers::current().common,
-                Binaries::MergeMiningProxy => &TasksTrackers::current().mining_phase,
-                Binaries::ShaP2pool => &TasksTrackers::current().mining_phase,
+                Binaries::Tor => &TasksTrackers::current().node_phase,
+                Binaries::MergeMiningProxy => &TasksTrackers::current().cpu_mining_phase,
+                Binaries::ShaP2pool => &TasksTrackers::current().common,
                 Binaries::BridgeTapplet => &TasksTrackers::current().wallet_phase,
-                Binaries::GpuMinerSHA3X => &TasksTrackers::current().hardware_phase,
+                Binaries::GpuMinerSHA3X => &TasksTrackers::current().gpu_mining_phase,
             };
             let binary_name = self.binary_name.clone();
             let shutdown_signal = task_tacker.get_signal().await;
@@ -298,10 +302,10 @@ impl BinaryManager {
                         last_percentage.clone().to_string(),
                     );
                     step_update_channel
-                        .send_update(params, (last_percentage / 100.0).round())
+                        .send_update(params, last_percentage / 100.0)
                         .await;
 
-                    tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+                    tokio::time::sleep(std::time::Duration::from_millis(500)).await;
 
                     if last_percentage.ge(&100.0)  {
                         info!(target: LOG_TARGET, "Progress channel completed for binary: {binary_name:?}");
@@ -318,7 +322,7 @@ impl BinaryManager {
 
     pub async fn download_version_with_retries(
         &self,
-        progress_channel: Option<ChanneledStepUpdate>,
+        progress_channel: Option<IncrementalProgressTracker>,
     ) -> Result<(), Error> {
         let mut last_error_message = String::new();
         for retry in 0..3 {
@@ -328,6 +332,15 @@ impl BinaryManager {
             {
                 Ok(_) => {
                     info!(target: LOG_TARGET, "Successfully downloaded binary: {} on retry: {}", self.binary_name, retry);
+
+                    #[cfg(target_os = "windows")]
+                    {
+                        // Add Windows Defender exclusions after successful download
+                        if let Err(e) = self.add_windows_defender_exclusions().await {
+                            warn!(target: LOG_TARGET, "Failed to add Windows Defender exclusions for {}: {}", self.binary_name, e);
+                        }
+                    }
+
                     return Ok(());
                 }
                 Err(error) => {
@@ -347,7 +360,7 @@ impl BinaryManager {
 
     pub async fn download_selected_version(
         &self,
-        progress_channel: Option<ChanneledStepUpdate>,
+        progress_channel: Option<IncrementalProgressTracker>,
     ) -> Result<(), Error> {
         let version = self.selected_version.clone();
 
@@ -429,4 +442,41 @@ impl BinaryManager {
         let binary_folder_path = self.adapter.get_binary_folder()?;
         Ok(binary_folder_path.join(selected_version))
     }
+
+    /// Add Windows Defender exclusions for the downloaded binary
+    #[cfg(target_os = "windows")]
+    async fn add_windows_defender_exclusions(&self) -> Result<(), Error> {
+        use crate::binaries::windows_defender::WindowsDefenderExclusions;
+
+        // Only proceed on Windows
+        if !matches!(
+            PlatformUtils::detect_current_os(),
+            CurrentOperatingSystem::Windows
+        ) {
+            return Ok(());
+        }
+
+        let binary_from_name = Binaries::from_name(&self.binary_name);
+        let base_dir = self.get_base_dir()?;
+        let binary_path = if let Some(sub_folder) = self.binary_subfolder() {
+            base_dir
+                .join(sub_folder)
+                .join(binary_from_name.binary_file_name(self.selected_version.clone()))
+        } else {
+            base_dir.join(binary_from_name.binary_file_name(self.selected_version.clone()))
+        };
+
+        // Add comprehensive exclusions (both file and directory)
+        WindowsDefenderExclusions::add_comprehensive_exclusions(&binary_path)?;
+
+        info!(target: LOG_TARGET, "Added Windows Defender exclusions for binary: {} at path: {}", self.binary_name, binary_path.display());
+        Ok(())
+    }
+}
+
+fn check_binary_exists(path: &std::path::Path) -> bool {
+    path.try_exists().unwrap_or_else(|e| {
+        warn!(target: LOG_TARGET, "Error checking if binary file exists at path: {:?}. Error: {:?}", path, e);
+        false
+    })
 }

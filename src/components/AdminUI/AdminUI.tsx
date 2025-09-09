@@ -1,4 +1,3 @@
-/* eslint-disable i18next/no-literal-string */
 import { MenuWrapper, MenuContent, ToggleButton } from './styles';
 import {
     useFloating,
@@ -18,6 +17,7 @@ import { DialogsGroup } from './groups/DialogsGroup';
 import { GreenModalsGroup } from './groups/GreenModalsGroup';
 import { OtherUIGroup } from './groups/OtherUIGroup';
 import { AnimatePresence } from 'motion/react';
+import { FeedbackGroup } from './groups/FeedbackGroup.tsx';
 
 const AdminUI = memo(function AdminUI() {
     const [isOpen, setIsOpen] = useState(false);
@@ -37,12 +37,12 @@ const AdminUI = memo(function AdminUI() {
     return (
         <>
             <ToggleButton ref={refs.setReference} {...getReferenceProps()} $isOpen={isOpen}>
-                Admin UI
+                {`Admin UI`}
             </ToggleButton>
-            <AnimatePresence>
-                <FloatingNode id={nodeId}>
-                    <FloatingPortal>
-                        {isOpen && (
+            <FloatingNode id={nodeId}>
+                <AnimatePresence>
+                    {isOpen ? (
+                        <FloatingPortal>
                             <MenuWrapper ref={refs.setFloating} style={floatingStyles} {...getFloatingProps()}>
                                 <MenuContent
                                     initial={{ opacity: 0, y: 10 }}
@@ -50,15 +50,16 @@ const AdminUI = memo(function AdminUI() {
                                     exit={{ opacity: 0, y: 10 }}
                                 >
                                     <ThemeGroup />
+                                    <FeedbackGroup />
                                     <DialogsGroup />
                                     <GreenModalsGroup />
                                     <OtherUIGroup />
                                 </MenuContent>
                             </MenuWrapper>
-                        )}
-                    </FloatingPortal>
-                </FloatingNode>
-            </AnimatePresence>
+                        </FloatingPortal>
+                    ) : null}
+                </AnimatePresence>
+            </FloatingNode>
         </>
     );
 });

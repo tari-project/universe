@@ -1,8 +1,76 @@
+🚀 TARI UNIVERSE v1.5.15: Hotfix — Tor Process Fix
+
+_September 4, 2025_
+
+🔄 Rolling out via auto-update
+
+✨ WHAT'S FIXED
+
+- 🔧 **Tor Process Cleanup** – Enhanced our cleanup routines to properly terminate Tor processes that were preventing local node updates and causing lingering version incompatibilities.
+
+---
+
+🚀 TARI UNIVERSE v1.5.14: The Season of Light — Part 8
+
+_September 2, 2025_
+
+✨ WHAT'S NEW
+
+- 🔧 **Even Smarter Setup Process** – Completely redesigned setup with No Intro Screen and better error recovery. When things go wrong, you'll get clear options to restart individual components or send logs. The app can run with limited features if some modules fail (this was partially implemented in the previous release).
+- ⚡ **New "Turbo" Mining Mode** – We've added a new 🌪️ Turbo mode between Eco and Ludicrous! Your old Eco setting (10%) is now Turbo, and the new Eco mode uses just 1% CPU for ultra-light mining by default. This eliminates an initial source of pain for users where Eco mode was too intense for lower-end machines.
+- 🖥️ **Windows GPU Mining Fixes** – Enhanced support for tricky GPU setups with automatic driver detection, OpenCL package checking, and Windows Defender exclusions for mining files.
+- 🌐 **Performance Boost** – Massive reduction in network calls to remote nodes (up to 99% fewer requests) for snappier performance and less server load.
+- 🎨 **Polish & Fixes** – Better dark mode support, improved user avatars, fixed node switching issues. Note: We are aware of a UI issue with Remote + Local mode (falling back to Local when you are sync'd), which is that your sync progress is not displayed in the UI.
+- 👉 **Base Node Update** – 5.0.0 fixes the recent spike in frag and prepares the network for Cuckaroo (C29), Along with many other under-the-hood improvements.
+
+---
+
+🚀 TARI UNIVERSE v1.5.12: The Season of Light — Part 7
+
+_August 25, 2025_
+
+✨ WHAT'S NEW
+
+- 🚀 **Auto-update Fix** – We've completely redesigned how auto-updates work to eliminate the race condition that was causing the app to freeze right before restarting.
+- ⚡ **Missing GPU crashes** – GPU miner files now only load when GPU detection is successful, preventing errors and improving startup reliability for all users. The app now gracefully handles systems without GPUs instead of crashing during startup.
+- 💳 **Failed tx signing fix** – Fixed an issue where failed transaction signing on spend wallets would lock funds on view wallets. Now if signing fails, the transaction gets properly cancelled to prevent locked UTXOs.
+- 🔧 **Wallet seed word fixes** – Seamless migration for wallet configurations when core address types change. Your existing wallet settings will automatically update to the new format without any action needed.
+- 🌐 **Tor crashes** – Prevented unnecessary Tor startup on remote nodes, improving connection speed and reliability for users on remote configurations.
+- ⬆️ **Core system upgrades** – Updated to Tari Core v5.0.0-pre.3 with improved stability and performance across all components.
+
+---
+
+🚀 TARI UNIVERSE v1.5.9: The Season of Light — Part 6½ Hotfix
+
+_August 14, 2025_
+
+Hey Tari OGs,
+
+Quick hotfix coming your way! We've identified and fixed a GPU miner disconnection issue that was interrupting mining. Your GPUs should now stay connected and keep earning consistently.
+
+---
+
+🚀 TARI UNIVERSE v1.5.7: The Season of Light — Part 6
+
+_August 12, 2025_
+
+Hey everyone,
+
+Introducing "Season of Light" Part 6 (we are getting to the end of this series.. we promise!). The goal for the Season of Light series is to make Tari Universe "just work" for as many users as possible. We've made a lot of progress with this release, thanks to all of the help and support of the Tari community. There's still more to do (we think Season of Light is Harry Potter film series in length…).
+
+✨ WHAT'S NEW
+
+- 🔄 **Improved pool mining** – RXT and SHA-3 mining now run on LuckyPool by default, with built-in support for multiple pools. You can choose your preferred pool via a new dropdown selector (all stratum pools are compatible; stats endpoints currently available for SupportXTM and LuckyPool).
+   - Note: Your previous Hatchling rewards above 1 XTM will be paid out this week. 
+- 💪 **Smarter error handling** – If a mining component runs into issues, the app will now automatically disable that component (local/GPU/CPU mining) and keep everything else running smoothly. Additional fallback systems are on the way.
+- 🔔 **Streamlined security prompts** – Security notifications now appear in a less intrusive way without all the popups, so your mining flow stays uninterrupted.
+- 🎬 **Animation improvements** – Win animations now handle block height changes without getting stuck.
+
+---
+
 🚀 TARI UNIVERSE v1.5.4: The Season of Light: Part 5
 
 _August 1, 2025_
-
-🔄 Rolling out via auto-update
 
 Hey everyone,
 

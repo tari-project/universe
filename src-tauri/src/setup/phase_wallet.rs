@@ -30,9 +30,8 @@ use crate::{
     internal_wallet::InternalWallet,
     pin::PinManager,
     progress_trackers::{
-        progress_plans::{ProgressPlans, ProgressSetupWalletPlan},
-        progress_stepper::ProgressStepperBuilder,
-        ProgressStepper,
+        progress_plans::SetupStep,
+        progress_stepper::{ProgressStepper, ProgressStepperBuilder},
     },
     setup::setup_manager::SetupPhase,
     tasks_tracker::TasksTrackers,
@@ -40,7 +39,6 @@ use crate::{
     UniverseAppState,
 };
 use anyhow::Error;
-use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::ShutdownSignal;
 use tauri::{AppHandle, Manager};
 use tokio::sync::{
@@ -60,9 +58,6 @@ static LOG_TARGET: &str = "tari::universe::phase_wallet";
 
 // Bump to force wallet full scan
 const WALLET_MIGRATION_NONCE: u64 = 1;
-
-#[derive(Clone, Default)]
-pub struct WalletSetupPhaseOutput {}
 
 #[derive(Clone, Default)]
 pub struct WalletSetupPhaseAppConfiguration {
@@ -95,6 +90,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
             app_handle: app_handle.clone(),
             progress_stepper: Mutex::new(Self::create_progress_stepper(
                 app_handle.clone(),
+                status_sender.clone(),
                 timeout_watcher.get_sender(),
             )),
             app_configuration: Self::load_app_configuration().await.unwrap_or_default(),
@@ -107,6 +103,10 @@ impl SetupPhaseImpl for WalletSetupPhase {
 
     fn get_app_handle(&self) -> &AppHandle {
         &self.app_handle
+    }
+
+    fn get_status_sender(&self) -> &Sender<PhaseStatus> {
+        &self.status_sender
     }
 
     async fn get_shutdown_signal(&self) -> ShutdownSignal {
@@ -132,13 +132,19 @@ impl SetupPhaseImpl for WalletSetupPhase {
 
     fn create_progress_stepper(
         app_handle: AppHandle,
+        status_sender: Sender<PhaseStatus>,
         timeout_watcher_sender: Sender<u64>,
     ) -> ProgressStepper {
         ProgressStepperBuilder::new()
-            .add_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::StartWallet))
-            .add_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::SetupBridge))
-            .add_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::Done))
-            .build(app_handle, timeout_watcher_sender)
+            .add_incremental_step(SetupStep::BinariesWallet, true)
+            .add_step(SetupStep::StartWallet, true)
+            .add_incremental_step(SetupStep::SetupBridge, true)
+            .build(
+                app_handle,
+                timeout_watcher_sender,
+                status_sender,
+                SetupPhase::Wallet,
+            )
     }
 
     async fn load_app_configuration() -> Result<Self::AppConfiguration, Error> {
@@ -147,66 +153,85 @@ impl SetupPhaseImpl for WalletSetupPhase {
     }
 
     async fn setup(self) {
-        let _unused = SetupDefaultAdapter::setup(self).await;
+        SetupDefaultAdapter::setup(self).await;
     }
 
     async fn setup_inner(&self) -> Result<(), Error> {
+        let app_state = self.get_app_handle().state::<UniverseAppState>().clone();
         let mut progress_stepper = self.progress_stepper.lock().await;
         let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
-        let state = self.app_handle.state::<UniverseAppState>();
+        let is_local_node = app_state.node_manager.is_local_current().await;
+        let use_tor = self.app_configuration.use_tor && is_local_node && !cfg!(target_os = "macos");
 
         let binary_resolver = BinaryResolver::current();
 
+        let wallet_binary_progress_tracker =
+            progress_stepper.track_step_incrementally(SetupStep::BinariesWallet);
+
         progress_stepper
-            .resolve_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::StartWallet))
-            .await;
-
-        let latest_wallet_migration_nonce = *ConfigWallet::content().await.wallet_migration_nonce();
-        if latest_wallet_migration_nonce < WALLET_MIGRATION_NONCE {
-            log::info!(target: LOG_TARGET, "Wallet migration required(Nonce {latest_wallet_migration_nonce} => {WALLET_MIGRATION_NONCE})");
-            if let Err(e) = state.wallet_manager.clean_data_folder(&data_dir).await {
-                log::warn!(target: LOG_TARGET, "Failed to clean wallet data folder: {e}");
-            }
-            if let Err(e) = ConfigWallet::update_field(
-                ConfigWalletContent::set_wallet_migration_nonce,
-                WALLET_MIGRATION_NONCE,
-            )
-            .await
-            {
-                log::warn!(target: LOG_TARGET, "Failed to update wallet migration nonce: {e}");
-            }
-        }
-
-        let app_state = self.get_app_handle().state::<UniverseAppState>().clone();
-        let is_local_node = app_state.node_manager.is_local_current().await;
-        let wallet_config = WalletStartupConfig {
-            base_path: data_dir.clone(),
-            config_path: config_dir.clone(),
-            log_path: log_dir.clone(),
-            use_tor: self.app_configuration.use_tor,
-            connect_with_local_node: is_local_node,
-        };
-        state
-            .wallet_manager
-            .ensure_started(
-                TasksTrackers::current().wallet_phase.get_signal().await,
-                wallet_config,
-            )
+            .complete_step(SetupStep::BinariesWallet, || async {
+                binary_resolver
+                    .initialize_binary(Binaries::Wallet, wallet_binary_progress_tracker)
+                    .await
+            })
             .await?;
 
-        let bridge_binary_progress_tracker = progress_stepper.channel_step_range_updates(
-            ProgressPlans::Wallet(ProgressSetupWalletPlan::SetupBridge),
-            Some(ProgressPlans::Wallet(ProgressSetupWalletPlan::Done)),
-        );
+        progress_stepper.complete_step(SetupStep::StartWallet,  || async  {
+            let latest_wallet_migration_nonce = *ConfigWallet::content().await.wallet_migration_nonce();
+            if latest_wallet_migration_nonce < WALLET_MIGRATION_NONCE {
+                log::info!(target: LOG_TARGET, "Wallet migration required(Nonce {latest_wallet_migration_nonce} => {WALLET_MIGRATION_NONCE})");
+                if let Err(e) = app_state.wallet_manager.clean_data_folder(&data_dir).await {
+                    log::warn!(target: LOG_TARGET, "Failed to clean wallet data folder: {e}");
+                }
+                if
+                    let Err(e) = ConfigWallet::update_field(
+                        ConfigWalletContent::set_wallet_migration_nonce,
+                        WALLET_MIGRATION_NONCE
+                    ).await
+                {
+                    log::warn!(target: LOG_TARGET, "Failed to update wallet migration nonce: {e}");
+                }
+            }
 
-        binary_resolver
-            .initialize_binary(Binaries::BridgeTapplet, bridge_binary_progress_tracker)
+            let wallet_config = WalletStartupConfig {
+                base_path: data_dir.clone(),
+                config_path: config_dir.clone(),
+                log_path: log_dir.clone(),
+                use_tor,
+                connect_with_local_node: is_local_node,
+            };
+            app_state.wallet_manager.ensure_started(
+                TasksTrackers::current().wallet_phase.get_signal().await,
+                wallet_config
+            ).await?;
+
+            Ok(())
+        }).await?;
+
+        let bridge_binary_progress_tracker =
+            progress_stepper.track_step_incrementally(SetupStep::SetupBridge);
+
+        progress_stepper
+            .complete_step(SetupStep::SetupBridge, || async {
+                binary_resolver
+                    .initialize_binary(Binaries::BridgeTapplet, bridge_binary_progress_tracker)
+                    .await
+            })
             .await?;
 
         Ok(())
     }
 
     async fn finalize_setup(&self) -> Result<(), Error> {
+        let progress_stepper = self.progress_stepper.lock().await;
+        let setup_warnings = progress_stepper.get_setup_warnings();
+        if setup_warnings.is_empty() {
+            self.status_sender.send(PhaseStatus::Success)?;
+        } else {
+            self.status_sender
+                .send(PhaseStatus::SuccessWithWarnings(setup_warnings.clone()))?;
+        }
+
         let app_state = self.get_app_handle().state::<UniverseAppState>().clone();
         let node_status_watch_rx = (*app_state.node_status_watch_rx).clone();
         if InternalWallet::is_internal().await {
@@ -216,71 +241,11 @@ impl SetupPhaseImpl for WalletSetupPhase {
                 .await?;
         }
 
-        self.status_sender.send(PhaseStatus::Success).ok();
-        self.progress_stepper
-            .lock()
-            .await
-            .resolve_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::Done))
-            .await;
-
-        if InternalWallet::is_internal().await {
-            let app_handle = self.get_app_handle().clone();
-            let pin_locked = PinManager::pin_locked().await;
-            let seed_backed_up = *ConfigWallet::content().await.seed_backed_up();
-            if !seed_backed_up || !pin_locked {
-                let wallet_manager = app_handle
-                    .state::<UniverseAppState>()
-                    .wallet_manager
-                    .clone();
-                let shutdown_signal = TasksTrackers::current()
-                    .wallet_phase
-                    .get_signal()
-                    .await
-                    .clone();
-
-                TasksTrackers::current()
-                    .wallet_phase
-                    .get_task_tracker()
-                    .await
-                    .spawn(async move {
-                        let wallet_state_watcher = app_handle
-                            .state::<UniverseAppState>()
-                            .wallet_state_watch_rx
-                            .clone();
-
-                        loop {
-                            if shutdown_signal.is_triggered() {
-                                break;
-                            }
-
-                            let wallet_state = wallet_state_watcher.borrow().clone();
-                            if let Some(wallet_state) = wallet_state {
-                                if let Some(balance) = wallet_state.balance {
-                                    let balance_sum = balance.available_balance
-                                        + balance.pending_incoming_balance
-                                        + balance.timelocked_balance;
-                                    if balance_sum.gt(&MicroMinotari::zero())
-                                        && wallet_manager.is_initial_scan_completed()
-                                    {
-                                        let pin_locked = PinManager::pin_locked().await;
-                                        let seed_backed_up =
-                                            *ConfigWallet::content().await.seed_backed_up();
-
-                                        if !pin_locked || !seed_backed_up {
-                                            EventsEmitter::show_staged_security_modal().await;
-                                        }
-                                        break;
-                                    }
-                                }
-                            }
-
-                            tokio::time::sleep(std::time::Duration::from_secs(5)).await;
-                        }
-                    });
-            }
-        }
-
-        EventsEmitter::emit_wallet_phase_finished(true).await;
+        let config_wallet = ConfigWallet::content().await;
+        let is_pin_locked = PinManager::pin_locked().await;
+        EventsEmitter::emit_pin_locked(is_pin_locked).await;
+        let is_seed_backed_up = *config_wallet.seed_backed_up();
+        EventsEmitter::emit_seed_backed_up(is_seed_backed_up).await;
 
         Ok(())
     }
