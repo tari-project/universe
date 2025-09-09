@@ -51,12 +51,10 @@ export function getFieldTypes(questions: SurveyQuestion[]): FieldQuestions {
 
 export function parseAnswers(data: FieldQuestions): SurveyAnswerInput[] {
     const textAnswers =
-        data.text
-            ?.filter((a) => !!a.value.length)
-            .map((a) => ({
-                questionId: a.questionId,
-                answerText: a.value,
-            })) || [];
+        data.text?.map((a) => ({
+            questionId: a.questionId,
+            answerText: a.value?.length ? `${a.value}` : `[No additional feedback submitted]`,
+        })) || [];
     const radioAnswers =
         data.radio
             .filter((a) => a.options?.some((o) => o.checked))
@@ -82,13 +80,13 @@ export function parseAnswers(data: FieldQuestions): SurveyAnswerInput[] {
             });
         }
     });
+
     return [...textAnswers, ...radioAnswers, ...checkAnswers];
 }
 
 export function checkValidity(fields: FieldQuestions): boolean {
     const radioValid = fields?.radio?.some((o) => o.checked);
     const checkboxValid = fields?.checkbox?.some((o) => o.checked);
-    const textValid = fields?.text?.some((o) => o.value?.length);
 
-    return radioValid || checkboxValid || textValid || false;
+    return radioValid || checkboxValid || false;
 }

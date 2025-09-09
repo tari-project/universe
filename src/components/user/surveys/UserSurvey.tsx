@@ -39,6 +39,9 @@ export default function UserSurvey({ type, onClose }: UserSurveyProps) {
 
             onClose();
             if (type === 'close') {
+                if (skipped) {
+                    console.info(`[early-close] feedback dismissed.`);
+                }
                 setEarlyClosedDismissed(true);
             }
         });
