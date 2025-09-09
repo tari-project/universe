@@ -17,8 +17,8 @@ const initialState: UserFeedbackStoreState = {
     showCloseDialog: false,
     earlyClosedDismissed: false,
     showLongTimeDialog: false,
-    closeMiningTimeMs: MINIMUM_MINING_TIME_MS,
-    longMiningTimeMs: MINIMUM_MINING_TIME_MS * 3,
+    closeMiningTimeMs: MINIMUM_MINING_TIME_MS * 24,
+    longMiningTimeMs: MINIMUM_MINING_TIME_MS * 48,
     wasFeedbackSent: false,
     wasLongTimeMiner: false,
 };
