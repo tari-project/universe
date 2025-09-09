@@ -25,6 +25,9 @@ use std::{
     time::Duration,
 };
 
+#[cfg(target_os = "windows")]
+use crate::utils::windows_setup_utils::add_firewall_rule;
+
 use axum::async_trait;
 use log::{info, warn};
 use serde::{Deserialize, Serialize};

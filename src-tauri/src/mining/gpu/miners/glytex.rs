@@ -7,6 +7,9 @@ use tari_common::configuration::Network;
 use tari_shutdown::Shutdown;
 use tokio::sync::watch::Sender;
 
+#[cfg(target_os = "windows")]
+use crate::utils::windows_setup_utils::add_firewall_rule;
+
 // Copyright 2024. The Tari Project
 //
 // Redistribution and use in source and binary forms, with or without modification, are permitted provided that the

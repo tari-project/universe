@@ -27,6 +27,9 @@ use serde::Deserialize;
 use tari_shutdown::Shutdown;
 use tokio::sync::watch::Sender;
 
+#[cfg(target_os = "windows")]
+use crate::utils::windows_setup_utils::add_firewall_rule;
+
 use crate::{
     binaries::{Binaries, BinaryResolver},
     configs::{
