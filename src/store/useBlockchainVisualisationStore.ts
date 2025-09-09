@@ -1,6 +1,6 @@
+import { create } from 'zustand';
 import { setWalletBalance } from '@app/store/actions';
 
-import { create } from './create';
 import { useMiningStore } from './useMiningStore.ts';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 
@@ -76,6 +76,7 @@ const handleWin = async (coinbase_transaction: TransactionInfo, balance: WalletB
         useBlockchainVisualisationStore.setState((c) => ({ ...c, earnings: undefined, latestBlockPayload: undefined }));
     } else {
         await refreshTransactions();
+
         useBlockchainVisualisationStore.setState((curr) => ({
             recapIds: [...curr.recapIds, coinbase_transaction.tx_id],
             displayBlockHeight: blockHeight,
@@ -142,6 +143,7 @@ export async function processNewBlock(payload: {
 
 export const handleNewBlockPayload = async (payload: LatestBlockPayload) => {
     useBlockchainVisualisationStore.setState((c) => ({ ...c, latestBlockPayload: payload }));
+    await refreshTransactions();
     const isWalletScanned = !useWalletStore.getState().wallet_scanning?.is_scanning;
     if (!isWalletScanned) {
         updateWalletScanningProgress({

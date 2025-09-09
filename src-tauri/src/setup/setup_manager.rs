@@ -41,6 +41,7 @@ use crate::setup::{
     phase_gpu_mining::GpuMiningSetupPhase, phase_node::NodeSetupPhase,
     phase_wallet::WalletSetupPhase,
 };
+use crate::utils::platform_utils::PlatformUtils;
 use crate::{
     configs::{
         config_core::ConfigCore, config_mining::ConfigMining, config_ui::ConfigUI,
@@ -225,10 +226,6 @@ impl SetupManager {
         let state = app_handle.state::<UniverseAppState>();
         let in_memory_config = state.in_memory_config.clone();
 
-        let mut websocket_events_manager_guard = state.websocket_event_manager.write().await;
-        websocket_events_manager_guard.set_app_handle(app_handle.clone());
-        drop(websocket_events_manager_guard);
-
         let mut websocket_manager_write = state.websocket_manager.write().await;
         websocket_manager_write.set_app_handle(app_handle.clone());
         drop(websocket_manager_write);
@@ -236,6 +233,39 @@ impl SetupManager {
         let webview = app_handle
             .get_webview_window("main")
             .expect("main window must exist");
+
+        let mut websocket_events_manager_guard = state.websocket_event_manager.write().await;
+        if let Err(e) = websocket_events_manager_guard
+            .set_app_handle(app_handle.clone(), state.websocket_manager.clone())
+            .await
+        {
+            error!(target: LOG_TARGET, "Failed to start websocket events manager: {e}");
+        }
+
+        drop(websocket_events_manager_guard);
+
+        // Listen for websocket reconnection events to restart events manager
+        let websocket_event_manager_clone = state.websocket_event_manager.clone();
+        let websocket_manager_clone = state.websocket_manager.clone();
+        let app_handle_clone = app_handle.clone();
+        webview.listen("websocket-reconnected", move |_event| {
+            let websocket_event_manager_clone = websocket_event_manager_clone.clone();
+            let websocket_manager_clone = websocket_manager_clone.clone();
+            let app_handle_clone = app_handle_clone.clone();
+
+            tauri::async_runtime::spawn(async move {
+                info!(target: LOG_TARGET, "Restarting websocket events manager after reconnection");
+                let mut events_manager_guard = websocket_event_manager_clone.write().await;
+                if let Err(e) = events_manager_guard
+                    .set_app_handle(app_handle_clone, websocket_manager_clone)
+                    .await
+                {
+                    error!(target: LOG_TARGET, "Failed to restart websocket events manager: {e}");
+                } else {
+                    info!(target: LOG_TARGET, "Websocket events manager restarted successfully");
+                }
+            });
+        });
         let websocket_tx = state.websocket_message_tx.clone();
         webview.listen("ws-tx", move |event: tauri::Event| {
             let event_cloned = event.clone();
@@ -403,6 +433,8 @@ impl SetupManager {
                 .init(app_version.to_string(), telemetry_id.clone())
                 .await;
         }
+
+        let _unused = PlatformUtils::initialize_preqesities().await;
 
         // If we open different specific exchange miner build then previous one we always want to prompt user to provide tari address
         if is_on_exchange_miner_build && built_in_exchange_id.ne(&last_config_exchange_id) {

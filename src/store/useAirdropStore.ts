@@ -1,6 +1,6 @@
+import { create } from 'zustand';
 import type { ConfigBackendInMemory } from '@app/types/configs.ts';
 import type { XSpaceEvent } from '@app/types/ws';
-import { create } from './create';
 
 export const GIFT_GEMS = 5000;
 
@@ -180,6 +180,11 @@ export interface ReferrerProgressResponse {
     totals: CrewMembersTotals;
     memberImages: string[];
     minRequirements: MinRequirements;
+    members: {
+        name: string;
+        displayName: string;
+        image: string;
+    }[];
     membersToNudge: {
         id: string;
         name: string;

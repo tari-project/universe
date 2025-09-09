@@ -94,7 +94,6 @@ mod download_utils;
 mod events;
 mod events_emitter;
 mod events_manager;
-mod external_dependencies;
 mod feedback;
 mod gpu_devices;
 mod gpu_miner;
@@ -123,6 +122,7 @@ mod progress_trackers;
 mod release_notes;
 mod requests;
 mod setup;
+mod system_dependencies;
 mod systemtray_manager;
 mod tapplets;
 mod tasks_tracker;
@@ -534,7 +534,6 @@ fn main() {
             commands::fetch_tor_bridges,
             commands::get_app_in_memory_config,
             commands::get_applications_versions,
-            commands::get_external_dependencies,
             commands::get_monero_seed_words,
             commands::get_network,
             commands::get_paper_wallet_details,
@@ -581,8 +580,7 @@ fn main() {
             commands::frontend_ready,
             commands::start_mining_status,
             commands::stop_mining_status,
-            commands::websocket_connect,
-            commands::websocket_close,
+            commands::websocket_get_status,
             commands::reconnect,
             commands::send_one_sided_to_stealth_address,
             commands::verify_address_for_send,
@@ -609,7 +607,9 @@ fn main() {
             commands::update_selected_cpu_pool_config,
             commands::reset_gpu_pool_config,
             commands::reset_cpu_pool_config,
-            commands::restart_phases
+            commands::restart_phases,
+            commands::list_connected_peers,
+            commands::set_feedback_fields,
         ])
         .build(tauri::generate_context!())
         .inspect_err(|e| {
@@ -655,7 +655,7 @@ fn main() {
             tauri::RunEvent::ExitRequested { api: _, code, .. } => {
                 info!(
                     target: LOG_TARGET,
-                    "App shutdown request caught with code: {code:#?}"
+                    "App shutdown request [ExitRequested] caught with code: {code:#?}"
                 );
                 if let Some(exit_code) = code {
                     if exit_code == RESTART_EXIT_CODE {
@@ -667,7 +667,7 @@ fn main() {
                 info!(target: LOG_TARGET, "App shutdown complete");
             }
             tauri::RunEvent::Exit => {
-                info!(target: LOG_TARGET, "App shutdown caught");
+                info!(target: LOG_TARGET, "App shutdown [Exit] caught");
                 block_on(TasksTrackers::current().stop_all_processes());
                 if is_restart_requested_clone.load(Ordering::SeqCst) {
                     app_handle.cleanup_before_exit();

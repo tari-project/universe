@@ -36,7 +36,7 @@ export default function ActionCopyAddress() {
 
     const { getFloatingProps } = useInteractions([hover]);
 
-    return (
+    return tariWalletAddress ? (
         <>
             <AnimatePresence>
                 {showAdress && (
@@ -55,5 +55,5 @@ export default function ActionCopyAddress() {
                 <CopySVG />
             </ActionButton>
         </>
-    );
+    ) : null;
 }

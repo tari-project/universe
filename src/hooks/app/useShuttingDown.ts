@@ -1,33 +1,22 @@
-import { useEffect, useState } from 'react';
-import { resetAllStores } from '@app/store/create.ts';
-import { invoke } from '@tauri-apps/api/core';
+import { useEffect } from 'react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import { useShutdownHandler } from '@app/hooks/app/useShutdownHandler.ts';
+import { useUIStore } from '@app/store';
 const appWindow = getCurrentWindow();
 
 export function useShuttingDown() {
-    const [isShuttingDown, setIsShuttingDown] = useState(false);
+    const isShuttingDown = useUIStore((s) => s.isShuttingDown);
+    const { onShutdownCaught } = useShutdownHandler();
 
     useEffect(() => {
         const ul = appWindow.onCloseRequested(async (event) => {
             if (!isShuttingDown) {
-                setIsShuttingDown(true);
                 event.preventDefault();
+                await onShutdownCaught();
             }
         });
         return () => {
             ul.then((unlisten) => unlisten());
         };
-    }, [isShuttingDown]);
-
-    useEffect(() => {
-        if (isShuttingDown) {
-            const shutDownTimout = setTimeout(async () => {
-                resetAllStores();
-                await invoke('exit_application');
-            }, 250);
-            return () => clearTimeout(shutDownTimout);
-        }
-    }, [isShuttingDown]);
-
-    return isShuttingDown;
+    }, [isShuttingDown, onShutdownCaught]);
 }

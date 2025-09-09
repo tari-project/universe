@@ -94,6 +94,7 @@ export const setSeedlessUI = (seedlessUI: boolean) => useUIStore.setState((c) =>
 export const setShouldShowExchangeSpecificModal = (shouldShowExchangeSpecificModal: boolean) =>
     useUIStore.setState({ shouldShowExchangeSpecificModal });
 export const handleCloseSplashscreen = () => useUIStore.setState({ showSplashscreen: false });
+export const setIsShuttingDown = (isShuttingDown: boolean) => useUIStore.setState({ isShuttingDown });
 export const handleAskForRestart = () => {
     setDialogToShow('restart');
 };

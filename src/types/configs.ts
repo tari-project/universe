@@ -41,6 +41,20 @@ export interface ConfigUI {
     show_experimental_settings: boolean;
     wallet_ui_mode: WalletUIMode;
     was_staged_security_modal_shown: boolean;
+    feedback?: FeedbackPrompts;
+}
+
+export interface FeedbackPrompt {
+    feedback_sent: boolean;
+    last_dismissed: {
+        secs_since_epoch?: number;
+        nanos_since_epoch?: number;
+        timestamp?: number;
+    } | null;
+}
+export interface FeedbackPrompts {
+    early_close?: FeedbackPrompt;
+    long_time_miner?: FeedbackPrompt;
 }
 
 export type MiningModes = Record<MiningModeType, MiningMode>;

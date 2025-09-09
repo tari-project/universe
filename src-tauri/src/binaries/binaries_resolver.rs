@@ -22,6 +22,7 @@
 use crate::progress_trackers::progress_stepper::IncrementalProgressTracker;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
+use log::debug;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::LazyLock;
@@ -39,6 +40,37 @@ static INSTANCE: LazyLock<BinaryResolver> = LazyLock::new(BinaryResolver::new);
 // Lock to prevent concurrent downloads of tari suite binaries (MergeMiningProxy, MinotariNode, Wallet)
 // that all come from the same zip file and would conflict when downloading in parallel
 static TARI_SUITE_DOWNLOAD_LOCK: LazyLock<AsyncMutex<()>> = LazyLock::new(|| AsyncMutex::new(()));
+
+static LOG_TARGET: &str = "tari::universe::binary_resolver";
+
+#[derive(Debug)]
+pub enum BinaryResolveError {
+    /// Binary files missing, likely due to antivirus quarantine
+    AntivirusIssue {
+        expected_path: PathBuf,
+        error: String,
+    },
+    /// Other error occurred
+    Other(Error),
+}
+
+impl From<BinaryResolveError> for Error {
+    fn from(error: BinaryResolveError) -> Self {
+        match error {
+            BinaryResolveError::AntivirusIssue {
+                expected_path,
+                error,
+            } => {
+                anyhow!(
+                    "Binary missing due to antivirus: {} at {}",
+                    error,
+                    expected_path.display()
+                )
+            }
+            BinaryResolveError::Other(error) => error,
+        }
+    }
+}
 
 #[derive(Clone, Debug)]
 pub struct BinaryDownloadInfo {
@@ -180,32 +212,56 @@ impl BinaryResolver {
         &INSTANCE
     }
 
-    pub async fn resolve_path_to_binary_files(&self, binary: Binaries) -> Result<PathBuf, Error> {
-        let manager = self
-            .managers
-            .get(&binary)
-            .ok_or_else(|| anyhow!("No latest version manager for this binary"))?;
+    async fn resolve_path_to_binary_files(
+        &self,
+        binary: Binaries,
+    ) -> Result<PathBuf, BinaryResolveError> {
+        let manager = self.managers.get(&binary).ok_or_else(|| {
+            BinaryResolveError::Other(anyhow!("No latest version manager for this binary"))
+        })?;
 
         let version = manager.get_selected_version();
 
-        let base_dir = manager.get_base_dir().map_err(|error| {
-            anyhow!(
+        let base_dir: PathBuf = manager.get_base_dir().map_err(|error| {
+            BinaryResolveError::Other(anyhow!(
                 "No base directory for binary {}, Error: {}",
                 binary.name(),
                 error
-            )
+            ))
         })?;
 
-        if let Some(sub_folder) = manager.binary_subfolder() {
-            return Ok(base_dir
-                .join(sub_folder)
-                .join(binary.binary_file_name(version)));
-        }
+        // For bridge tapplet, we return the base dir as it's a folder, not a binary file
+        // Skip the rest of the checks
         if binary.eq(&Binaries::BridgeTapplet) {
             return Ok(base_dir);
         }
 
-        Ok(base_dir.join(binary.binary_file_name(version)))
+        let binary_path = if let Some(sub_folder) = manager.binary_subfolder() {
+            base_dir
+                .join(sub_folder)
+                .join(binary.binary_file_name(version.clone()))
+        } else {
+            base_dir.join(binary.binary_file_name(version.clone()))
+        };
+
+        if binary_path.exists() {
+            debug!(target: LOG_TARGET, "Binary found at: {}", binary_path.display());
+            return Ok(binary_path);
+        }
+
+        Err(BinaryResolveError::AntivirusIssue {
+            expected_path: binary_path,
+            error: format!(
+                "Binary files for {} are missing from expected location. This is typically caused by antivirus software quarantining the files.",
+                binary.name()
+            ),
+        })
+    }
+
+    pub async fn get_binary_path(&self, binary: Binaries) -> Result<PathBuf, Error> {
+        self.resolve_path_to_binary_files(binary)
+            .await
+            .map_err(|e| e.into())
     }
 
     pub async fn initialize_binary(

@@ -12,6 +12,59 @@
   "copied": "Copié !",
   "copyFailed": "Échec de la copie",
   "copying": "Copie...",
+  "crewRewards": {
+    "actions": {
+      "claim": "Claim {{amount}} XTM",
+      "claimed": "Claimed",
+      "nudge": "Nudge"
+    },
+    "activeMinersStat": "Active Miners",
+    "bonusXTMEarned": "Bonus XTM Earned",
+    "copied": "Copied!",
+    "crewStatus": {
+      "completed": "Completed",
+      "inProgress": "In Progress",
+      "needsNudge": "Needs Nudge"
+    },
+    "earnDescription": "Earn <strong>{{userReward}} XTM</strong> for every <strong>{{daysRequired}} days</strong> your friend mines. Your friend will also earn <strong>{{friendReward}} XTM</strong>.",
+    "errorLoadingData": "Error loading crew data. Please try again.",
+    "feedback": {
+      "nudgeSent": "Nudge sent!",
+      "rewardClaimed": "Reward claimed!"
+    },
+    "filters": {
+      "active": "Active",
+      "all": "All",
+      "complete": "Complete",
+      "inactive": "Inactive"
+    },
+    "inviteFriends": "Invite Friends",
+    "inviteFriendsMessage": "Invite friends and start earning <strong>bonus XTM!</strong>",
+    "login": {
+      "bonusText": "Earn bonus rewards up to {{maxWeeks}} weeks per invite",
+      "description": "You earn <strong>{{userReward}} bonus XTM/week</strong> AND your friend earns <strong>{{friendReward}} bonus XTM/week</strong> when you and your friend both mine",
+      "loginButton": "Log in & Start Earning!",
+      "title": "Mine with friends. <strong>Earn together.</strong>"
+    },
+    "myCrew": "My Crew",
+    "of": "of",
+    "streak": {
+      "day": "Day",
+      "dayStreak": "{{days}} Day Streak",
+      "daysToMinimum": "{{days}} more days to meet minimum requirements!",
+      "keepStreak": "Keep your streak to keep earning rewards!",
+      "loadingStreak": "Loading streak...",
+      "mineConsecutiveDays": "Mine for at least <strong>{{streakDaysRequired}} consecutive days</strong> each week to earn your bonus XTM.",
+      "minimumRequirementsMet": "You've met the minimum requirements. Keep going!",
+      "multiDayStreak": "{{days}} Day Streak",
+      "oneDayStreak": "1 Day Streak",
+      "startMiningMessage": "Start mining to begin your streak and earn rewards!",
+      "startYourStreak": "Start Your Streak!",
+      "unlockBonusRewards": "Unlock your bonus rewards"
+    },
+    "title": "Rewards",
+    "manageYourCrew": "Manage your crew"
+  },
   "doLater": "Je ferai ça plus tard",
   "gems": "Gemmes",
   "giftReferralCode": "Gagne {{gems}} gemmes pour chaque ami que tu invites à rejoindre le Tari Universe. Une fois qu'ils auront connecté leur compte, tu recevras tes gemmes.",
@@ -32,11 +85,6 @@
   "loginButton": "Connecte-toi pour réclamer des gemmes",
   "logout": "Déconnexion",
   "nextTierBonus": "Invitez <strong>{{count}} ami(s)</strong> et gagnez {{bonusGems}} gemme(s) bonu(s)",
-  "permission": {
-    "setup": "Tari Universe souhaite utiliser des analyses pour <strong>améliorer votre expérience.</strong>",
-    "text": "Tari Universe souhaite utiliser des analyses pour améliorer votre expérience et vous récompenser avec des gemmes pour inviter des amis.",
-    "title": "Gagne des gemmes et améliore le Tari Universe"
-  },
   "permissionNoGems": {
     "text": "Tari Universe souhaite utiliser des outils d'analyse pour améliorer ton expérience.",
     "title": "Améliore le Tari Universe"
@@ -55,57 +103,5 @@
   "username-error": "Le nom d\"utilisateur doit comporter entre 3 et 20 caractères et ne contenir que des lettres, des chiffres, des underscores ou des tirets",
   "username-update-success": "Nom d\"utilisateur mis à jour avec succès",
   "you-reached-your-giftinh-goal": "Vous avez atteint votre objectif de cadeau !",
-  "your-friend-accepted-gift": "Un de vos amis a accepté votre cadeau !",
-  "crewRewards": {
-    "title": "Rewards",
-    "myCrew": "My Crew",
-    "earnDescription": "Earn <strong>{{userReward}} XTM</strong> for every <strong>{{daysRequired}} days</strong> your friend mines. Your friend will also earn <strong>{{friendReward}} XTM</strong>.",
-    "inviteFriends": "Invite Friends",
-    "copied": "Copied!",
-    "activeMinersStat": "Active Miners",
-    "bonusXTMEarned": "Bonus XTM Earned",
-    "of": "of",
-    "inviteFriendsMessage": "Invite friends and start earning <strong>bonus XTM!</strong>",
-    "errorLoadingData": "Error loading crew data. Please try again.",
-    "filters": {
-      "all": "All",
-      "complete": "Complete",
-      "active": "Active",
-      "inactive": "Inactive"
-    },
-    "crewStatus": {
-      "completed": "Completed",
-      "inProgress": "In Progress",
-      "needsNudge": "Needs Nudge"
-    },
-    "actions": {
-      "claimed": "Claimed",
-      "claim": "Claim {{amount}} XTM",
-      "nudge": "Nudge"
-    },
-    "streak": {
-      "unlockBonusRewards": "Unlock your bonus rewards",
-      "mineConsecutiveDays": "Mine for at least <strong>{{streakDaysRequired}} consecutive days</strong> each week to earn your bonus XTM.",
-      "keepStreak": "Keep your streak to keep earning rewards!",
-      "dayStreak": "{{days}} Day Streak",
-      "day": "Day",
-      "loadingStreak": "Loading streak...",
-      "startYourStreak": "Start Your Streak!",
-      "oneDayStreak": "1 Day Streak",
-      "multiDayStreak": "{{days}} Day Streak",
-      "startMiningMessage": "Start mining to begin your streak and earn rewards!",
-      "minimumRequirementsMet": "You've met the minimum requirements. Keep going!",
-      "daysToMinimum": "{{days}} more days to meet minimum requirements!"
-    },
-    "login": {
-      "title": "Mine with friends. <strong>Earn together.</strong>",
-      "description": "You earn <strong>{{userReward}} bonus XTM/week</strong> AND your friend earns <strong>{{friendReward}} bonus XTM/week</strong> when you and your friend both mine",
-      "bonusText": "Earn bonus rewards up to {{maxWeeks}} weeks per invite",
-      "loginButton": "Log in & Start Earning!"
-    },
-    "feedback": {
-      "nudgeSent": "Nudge sent!",
-      "rewardClaimed": "Reward claimed!"
-    }
-  }
+  "your-friend-accepted-gift": "Un de vos amis a accepté votre cadeau !"
 }

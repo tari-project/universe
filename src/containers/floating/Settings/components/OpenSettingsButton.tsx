@@ -4,12 +4,8 @@ import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 import { ButtonSize } from '@app/components/elements/buttons/button.types.ts';
 
 export default function OpenSettingsButton({ size, iconSize = 16 }: { iconSize?: number; size?: ButtonSize }) {
-    function handleClick(e) {
-        e.stopPropagation();
-        setIsSettingsOpen(true);
-    }
     return (
-        <IconButton onClick={handleClick} size={size}>
+        <IconButton onClick={() => setIsSettingsOpen(true)} size={size}>
             <IoSettingsOutline size={iconSize} />
         </IconButton>
     );

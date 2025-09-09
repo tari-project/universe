@@ -32,6 +32,7 @@ import { fetchExchangeContent, refreshXCContent } from '@app/hooks/exchanges/fet
 import { fetchExchangeList } from '@app/hooks/exchanges/fetchExchanges.ts';
 import { ConfigPoolsPayload, WalletUIMode } from '@app/types/events-payloads.ts';
 import { getSelectedCpuPool, getSelectedGpuPool } from '../selectors/appConfigStoreSelectors.ts';
+import { setFeedbackConfigItems } from '@app/store/stores/userFeedbackStore.ts';
 
 export const handleConfigCoreLoaded = async (coreConfig: ConfigCore) => {
     useConfigCoreStore.setState((c) => ({ ...c, ...coreConfig }));
@@ -53,8 +54,9 @@ export const handleConfigWalletLoaded = (walletConfig: ConfigWallet) => {
     }));
 };
 export const handleConfigUILoaded = async (uiConfig: ConfigUI) => {
-    useConfigUIStore.setState((c) => ({ ...c, ...uiConfig }));
+    setFeedbackConfigItems(uiConfig.feedback);
     const configTheme = uiConfig.display_mode?.toLowerCase();
+    useConfigUIStore.setState((c) => ({ ...c, ...uiConfig, display_mode: configTheme }));
     if (configTheme) {
         setUITheme(configTheme as displayMode);
     }

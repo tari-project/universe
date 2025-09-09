@@ -83,9 +83,25 @@ export const Button = styled.button<{ $isActive: boolean; $isToggle?: boolean }>
         `}
 `;
 
-export const ConnectionWrapper = styled.div`
-    position: absolute;
-    top: -5px;
-    left: -5px;
+export const DecorationWrapper = styled.div<{ $offset?: number; $side?: 'left' | 'right' }>`
     z-index: 2;
+    position: absolute;
+    top: ${({ $offset = 5 }) => `-${$offset}px`};
+
+    ${({ $side = 'left', $offset = 5 }) =>
+        $side === 'left'
+            ? css`
+                  left: ${`-${$offset}px`};
+              `
+            : css`
+                  right: ${`-${$offset}px`};
+              `}
+`;
+
+export const Alert = styled.div`
+    border: 2px solid #fff;
+    background-color: #ff1f1f;
+    width: 17px;
+    height: 17px;
+    border-radius: 50%;
 `;

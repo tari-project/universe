@@ -37,8 +37,11 @@ export const QRSizer = styled.div`
         border-radius: 20px;
     }
 
-    @media (max-height: 761px) {
+    @media (max-height: 790px) {
         height: 350px;
+    }
+    @media (max-height: 632px) {
+        height: 315px;
     }
 `;
 
@@ -86,7 +89,7 @@ export const AddressWrapper = styled.div`
     font-style: normal;
     font-weight: 500;
     line-height: normal;
-    letter-spacing: -1.76px;
+    letter-spacing: -1px;
 `;
 
 export const ToggleWrapper = styled.div`
@@ -142,23 +145,23 @@ export const CopyAddressButton = styled.button<{ $isCopied: boolean }>`
         `}
 `;
 
+export const TooltipWrapper = styled.div`
+    z-index: 10; // same as dialog
+`;
+
 export const Tooltip = styled(m.div)`
     border-radius: 10px;
     background: #fff;
-    box-shadow: 0px 4px 34px 0px rgba(0, 0, 0, 0.15);
-
-    position: absolute;
-    right: 100%;
-    top: 50%;
-    transform: translateY(-50%);
-
+    box-shadow: 0 4px 34px 0 rgba(0, 0, 0, 0.15);
     padding: 15px;
     width: 270px;
-    margin-right: 12px;
+    position: relative;
 
     &::after {
         content: '';
         position: absolute;
+        z-index: 11;
+
         right: -8px;
         top: 50%;
         transform: translateY(-50%);
