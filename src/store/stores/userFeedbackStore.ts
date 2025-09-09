@@ -11,14 +11,16 @@ interface UserFeedbackStoreState {
     wasLongTimeMiner: boolean;
 }
 
-const MINIMUM_MINING_TIME_MS = 1000 * 60 * 60; // one hour
+const ONE_HOUR_IN_MS = 1000 * 60 * 60; // one hour
+const CLOSE_MINIMUM_MINING_TIME = ONE_HOUR_IN_MS * 24;
+const LONG_MINIMUM_MINING_TIME = ONE_HOUR_IN_MS * 48;
 
 const initialState: UserFeedbackStoreState = {
     showCloseDialog: false,
     earlyClosedDismissed: false,
     showLongTimeDialog: false,
-    closeMiningTimeMs: MINIMUM_MINING_TIME_MS * 24,
-    longMiningTimeMs: MINIMUM_MINING_TIME_MS * 48,
+    closeMiningTimeMs: CLOSE_MINIMUM_MINING_TIME,
+    longMiningTimeMs: LONG_MINIMUM_MINING_TIME,
     wasFeedbackSent: false,
     wasLongTimeMiner: false,
 };
