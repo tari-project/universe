@@ -54,8 +54,8 @@ export default function StatsRow() {
                 <ActiveMinersWrapper>
                     <PhotosRow>
                         {crewData?.members.map(({ image, displayName }) => (
-                            <PhotoWrapper>
-                                <Avatar image={image} username={displayName} key={image} size={28} />
+                            <PhotoWrapper key={image}>
+                                <Avatar image={image} username={displayName} size={28} />
                             </PhotoWrapper>
                         ))}
                     </PhotosRow>
