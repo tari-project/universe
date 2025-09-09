@@ -1,3 +1,13 @@
+🚀 TARI UNIVERSE v1.5.17: Soon's Question
+
+_September 9, 2025_
+
+✨ WHAT'S NEW
+
+- 📝 **Quick Exit Survey** – If you close the app, we'll ask a couple of quick questions to help us prioritize what to fix next.
+
+---
+
 🚀 TARI UNIVERSE v1.5.15: Hotfix — Tor Process Fix
 
 _September 4, 2025_
