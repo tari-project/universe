@@ -260,7 +260,7 @@ impl HttpFileClient {
             info!(target: LOG_TARGET, "Current file size: {file_size}");
 
             // Check if file is already complete
-            if file_size.eq(&expected_size) {
+            if file_size.eq(&expected_size) && file_size.ne(&0) {
                 info!(target: LOG_TARGET, "File downloaded to {}, size: {}", destination_file.display(), file_size);
                 break;
             }
@@ -339,7 +339,7 @@ impl HttpFileClient {
             let current_size = file.metadata().await?.len();
 
             // If file is already complete, no need to download
-            if current_size >= expected_size {
+            if current_size >= expected_size && current_size > 0 {
                 info!(target: LOG_TARGET, "File already complete, skipping download");
                 return Ok(());
             }

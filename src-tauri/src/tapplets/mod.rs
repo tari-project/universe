@@ -20,6 +20,11 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+pub mod commands;
 pub mod error;
+pub mod hash_calculator;
 pub mod interface;
+pub mod server_manager;
+pub mod tapplet_installer;
+pub mod tapplet_manager;
 pub mod tapplet_server;

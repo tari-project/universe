@@ -115,7 +115,7 @@ impl BinaryResolver {
                     repo: "wxtm-bridge-frontend".to_string(),
                     owner: "tari-project".to_string(),
                 }),
-                false,
+                true,
             ),
         );
 
@@ -212,6 +212,19 @@ impl BinaryResolver {
                 Binaries::Tor.name().to_string(),
                 Some("tor".to_string()),
                 Box::new(TorReleaseAdapter {}),
+                true,
+            ),
+        );
+
+        binary_manager.insert(
+            Binaries::OotleWallet,
+            BinaryManager::new(
+                Binaries::OotleWallet.name().to_string(),
+                None,
+                Box::new(GithubReleasesAdapter {
+                    repo: "tari-ootle".to_string(),
+                    owner: "tari-project".to_string(),
+                }),
                 true,
             ),
         );

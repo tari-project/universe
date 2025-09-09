@@ -29,4 +29,5 @@ mod phase_core;
 mod phase_cpu_mining;
 mod phase_gpu_mining;
 mod phase_node;
+mod phase_ootle_wallet;
 mod phase_wallet;

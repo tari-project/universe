@@ -70,15 +70,22 @@ use app_in_memory_config::EXCHANGE_ID;
 
 use telemetry_manager::TelemetryManager;
 
+use crate::consts::DB_FILE_NAME;
 use crate::cpu_miner::CpuMiner;
 
 use crate::commands::CpuMinerConnection;
+use crate::database::store::DatabaseConnection;
 use crate::feedback::Feedback;
 use crate::gpu_miner::GpuMiner;
 use crate::mm_proxy_manager::MmProxyManager;
 use crate::node::node_manager::NodeManager;
+use crate::ootle::commands as ootle_commands;
+use crate::ootle::ootle_wallet_adapter::OotleWalletState;
+use crate::ootle::ootle_wallet_manager::OotleWalletManager;
 use crate::p2pool::models::P2poolStats;
 use crate::p2pool_manager::P2poolManager;
+use crate::tapplets::commands as tapplet_commands;
+use crate::tapplets::tapplet_manager::TappletManager;
 use crate::tor_manager::TorManager;
 use crate::wallet::wallet_manager::WalletManager;
 use crate::wallet::wallet_types::WalletState;
@@ -93,6 +100,7 @@ mod configs;
 mod consts;
 mod cpu_miner;
 mod credential_manager;
+mod database;
 mod download_utils;
 mod events;
 mod events_emitter;
@@ -112,6 +120,7 @@ mod mm_proxy_adapter;
 mod mm_proxy_manager;
 mod network_utils;
 mod node;
+mod ootle;
 mod p2pool;
 mod p2pool_adapter;
 mod p2pool_manager;
@@ -196,6 +205,8 @@ struct UniverseAppState {
     websocket_manager_status_rx: Arc<watch::Receiver<WebsocketManagerStatusMessage>>,
     websocket_manager: Arc<RwLock<WebsocketManager>>,
     websocket_event_manager: Arc<RwLock<WebsocketEventsManager>>,
+    ootle_wallet_state_watch_rx: Arc<watch::Receiver<Option<OotleWalletState>>>,
+    ootle_wallet_manager: OotleWalletManager,
 }
 
 #[derive(Clone, serde::Serialize, serde::Deserialize)]
@@ -319,6 +330,11 @@ fn main() {
     let tor_manager = TorManager::new(tor_watch_tx, &mut stats_collector);
     let mm_proxy_manager = MmProxyManager::new(&mut stats_collector);
 
+    let (ootle_wallet_state_watch_tx, ootle_wallet_state_watch_rx) =
+        watch::channel::<Option<OotleWalletState>>(None);
+    let ootle_wallet_manager =
+        OotleWalletManager::new(ootle_wallet_state_watch_tx, &mut stats_collector);
+
     let telemetry_manager: TelemetryManager = TelemetryManager::new(
         cpu_miner_status_watch_rx.clone(),
         app_in_memory_config.clone(),
@@ -356,6 +372,8 @@ fn main() {
         base_node_watch_rx.clone(),
         app_in_memory_config.clone(),
     );
+    let tapplet_manager = TappletManager::new();
+
     let app_state = UniverseAppState {
         is_getting_p2pool_connections: Arc::new(AtomicBool::new(false)),
         node_status_watch_rx: Arc::new(base_node_watch_rx),
@@ -384,6 +402,8 @@ fn main() {
         websocket_manager_status_rx: Arc::new(websocket_manager_status_rx.clone()),
         websocket_manager,
         websocket_event_manager: Arc::new(RwLock::new(websocket_events_manager)),
+        ootle_wallet_state_watch_rx: Arc::new(ootle_wallet_state_watch_rx.clone()),
+        ootle_wallet_manager,
     };
     let app_state_clone = app_state.clone();
     #[allow(
@@ -417,11 +437,29 @@ fn main() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_cli::init())
         .plugin(tauri_plugin_http::init())
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             let config_path = app
                 .path()
                 .app_config_dir()
                 .expect("Could not get config dir");
+
+            // Initialize database with improved error handling
+            let app_data_dir = app
+                .path()
+                .app_data_dir()
+                .expect("Could not get app data dir");
+            let db_path = app_data_dir.join(DB_FILE_NAME);
+            let db_path_str = db_path.to_str().expect("Could not get db path");
+
+            // Use the improved initialization function with proper error handling
+            let pool = block_on(database::initialize_database(db_path_str)).map_err(|e| {
+                error!(target: LOG_TARGET, "Failed to initialize database: {}", e);
+                format!("Database initialization failed: {}", e)
+            })?;
+
+            app.manage(DatabaseConnection(Arc::new(pool)));
+            app.manage(tapplet_manager);
 
             // Remove this after it's been rolled out for a few versions
             let log_path = app.path().app_log_dir().map_err(|e| e.to_string())?;
@@ -616,7 +654,6 @@ fn main() {
             commands::trigger_phases_restart,
             commands::set_node_type,
             commands::set_allow_notifications,
-            commands::launch_builtin_tapplet,
             commands::get_bridge_envs,
             commands::parse_tari_address,
             commands::refresh_wallet_history,
@@ -638,6 +675,29 @@ fn main() {
             commands::restart_phases,
             commands::list_connected_peers,
             commands::set_feedback_fields,
+            commands::get_ootle_wallet_state,
+            ootle_commands::ootle_list_accounts,
+            ootle_commands::ootle_create_account,
+            ootle_commands::ootle_get_balances,
+            ootle_commands::ootle_create_free_test_coins,
+            ootle_commands::ootle_make_json_rpc_request,
+            tapplet_commands::start_tari_tapplet_binary,
+            tapplet_commands::start_tapplet,
+            tapplet_commands::fetch_registered_tapplets,
+            tapplet_commands::insert_tapp_registry_db,
+            tapplet_commands::read_tapp_registry_db,
+            tapplet_commands::get_assets_server_addr,
+            tapplet_commands::download_and_extract_tapp,
+            tapplet_commands::read_installed_tapp_db,
+            tapplet_commands::delete_installed_tapplet,
+            tapplet_commands::add_dev_tapplet,
+            tapplet_commands::read_dev_tapplets_db,
+            tapplet_commands::delete_dev_tapplet,
+            tapplet_commands::update_installed_tapplet,
+            tapplet_commands::stop_tapplet,
+            tapplet_commands::restart_tapplet,
+            tapplet_commands::is_tapplet_server_running,
+            tapplet_commands::emit_tapplet_notification,
         ])
         .build(tauri::generate_context!())
         .inspect_err(|e| {

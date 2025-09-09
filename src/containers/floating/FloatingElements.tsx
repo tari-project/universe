@@ -29,6 +29,9 @@ import SettingsModal from './Settings/SettingsModal.tsx';
 import ShareRewardModal from './ShareRewardModal/ShareRewardModal';
 import UniversalEXSelectorModal from './UniversalEXSelectorModal/UniversalEXSelectorModal.tsx';
 import XSpaceEventBanner from './XSpaceBanner/XSpaceBanner.tsx';
+import TappletCspDialog from './security/tapplet/TappletCspDialog.tsx';
+import TappletPermissionsDialog from './security/tapplet/TappletPermissionsDialog.tsx';
+import TappletNotificationDialog from './security/tapplet/TappletNotificationDialog.tsx';
 
 const environment = import.meta.env.MODE;
 
@@ -63,6 +66,9 @@ const FloatingElements = () => {
             <FailedModuleInitializationDialog />
             <CloseUserFeedbackDialog />
             <LongTimeUserFeedbackDialog />
+            <TappletCspDialog />
+            <TappletPermissionsDialog />
+            <TappletNotificationDialog />
         </FloatingTree>
     );
 };

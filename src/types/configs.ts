@@ -57,6 +57,7 @@ export interface FeedbackPrompt {
 export interface FeedbackPrompts {
     early_close?: FeedbackPrompt;
     long_time_miner?: FeedbackPrompt;
+    show_tapplets_settings: boolean;
 }
 
 export type MiningModes = Record<MiningModeType, MiningMode>;

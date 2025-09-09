@@ -2,7 +2,6 @@ import { memo } from 'react';
 import { Button } from './styles.ts';
 import { useUIStore } from '@app/store/useUIStore.ts';
 import { setSidebarOpen, setShowTapplet } from '@app/store/actions/uiStoreActions';
-import { BRIDGE_TAPPLET_ID } from '@app/store/consts.ts';
 import { useTappletsStore } from '@app/store/useTappletsStore.ts';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
 
@@ -13,7 +12,7 @@ const BridgeButton = memo(function BridgeButton() {
 
     function handleToggleOpen() {
         if (isWalletScanning) return;
-        setActiveTappById(BRIDGE_TAPPLET_ID, true);
+        setActiveTappById(1000, true); //TODO fix tapp id
         setShowTapplet(true);
         setSidebarOpen(false);
     }

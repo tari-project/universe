@@ -7,6 +7,7 @@ export enum SetupPhase {
     GpuMining = 'GpuMining',
     Wallet = 'Wallet',
     Node = 'Node',
+    OotleWallet = 'OotleWallet',
 }
 
 export enum TariAddressType {
@@ -100,4 +101,16 @@ export interface ProgressTrackerUpdatePayload {
     title_params: Record<string, string>;
     setup_phase: SetupPhase;
     is_completed: boolean;
+}
+
+export interface AllowTappletCspPayload {
+    csp: string;
+}
+
+export interface GrantTappletPermissionsPayload {
+    permissions: string;
+}
+
+export interface EmitTappletNoficationPayload {
+    notification: string;
 }
