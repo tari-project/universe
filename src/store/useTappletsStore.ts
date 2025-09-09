@@ -76,24 +76,29 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
         let stateUpdateNeeded = false;
 
         // built-in tapplet
-        // if (isBuiltIn) {
-        //     const name = 'bridge'; //TODO add names for more options
-        //     try {
-        //         console.info('🚗 RUN BUILDIN');
-        //         activeTapplet = await invoke('start_tari_tapplet_binary', { binaryName: name });
-        //         runningTapplet = {
-        //             ...activeTapplet,
-        //             allowReceiveFrom: [],
-        //             allowSendTo: [],
-        //         };
-        //         stateUpdateNeeded = true;
-        //     } catch (error) {
-        //         console.error(`Tapplet (id: ${tappletId} name: ${name}) startup error: ${error}`);
-        //         setError(`Tapplet (id: ${tappletId} name: ${name}) startup error: ${error}`);
-        //     }
-        //     if (!stateUpdateNeeded) return;
-        // } else
-        if (isDev) {
+        if (isBuiltIn) {
+            const name = 'WXTM Bridge'; //TODO add names for more options
+            const installedTapplets = await invoke('read_installed_tapp_db');
+            const tapp = installedTapplets.find((t) => t.display_name === name);
+            try {
+                console.info('🚗 RUN BUILDIN', tapp);
+                activeTapplet = await invoke('start_tapplet', {
+                    tappletId: tapp.installed_tapplet.id,
+                    isDevTapplet: false,
+                });
+                if (!activeTapplet) return;
+                runningTapplet = {
+                    ...activeTapplet,
+                    allowReceiveFrom: [],
+                    allowSendTo: [],
+                };
+                stateUpdateNeeded = true;
+            } catch (error) {
+                console.error(`Tapplet (id: ${tappletId} name: ${name}) startup error: ${error}`);
+                setError(`Tapplet (id: ${tappletId} name: ${name}) startup error: ${error}`);
+            }
+            if (!stateUpdateNeeded) return;
+        } else if (isDev) {
             const tapplet = get().devTapplets.find((tapp) => tapp.id === tappletId);
             if (!tapplet) {
                 setError(`Tapplet with id: ${tappletId} not found`);
