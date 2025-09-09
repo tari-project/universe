@@ -47,7 +47,7 @@ use tokio::sync::watch;
 use tokio::sync::RwLock;
 
 static LOG_TARGET: &str = "tari::universe::wallet_manager";
-pub const STOP_ON_ERROR_CODES: [i32; 1] = [101];
+
 #[derive(Debug, Clone)]
 pub struct WalletStartupConfig {
     pub base_path: PathBuf,
@@ -63,9 +63,12 @@ pub enum WalletManagerError {
     WalletNotStarted,
     #[error("Node manager error: {0}")]
     NodeManagerError(#[from] NodeManagerError),
+    #[error("Wallet failed to start and was stopped with exit code: {}", .0)]
+    ExitCode(i32),
     #[error("Unknown error: {0}")]
     UnknownError(#[from] anyhow::Error),
 }
+pub const STOP_ON_ERROR_CODES: [i32; 1] = [101];
 
 pub struct WalletManager {
     watcher: Arc<RwLock<ProcessWatcher<WalletAdapter>>>,
@@ -147,7 +150,18 @@ impl WalletManager {
             )
             .await?;
         info!(target: LOG_TARGET, "Wallet process started successfully");
-        process_watcher.wait_ready().await?;
+
+        match process_watcher.wait_ready().await {
+            Ok(_) => Ok::<(), anyhow::Error>(()),
+            Err(e) => {
+                let exit_code = process_watcher.stop().await?;
+                if exit_code != 0 {
+                    return Err(WalletManagerError::ExitCode(exit_code));
+                }
+                return Err(WalletManagerError::UnknownError(e));
+            }
+        }?;
+
         Ok(())
     }
 
