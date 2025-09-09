@@ -15,6 +15,7 @@ import {
 import { useReferrerProgress } from '@app/hooks/crew/useReferrerProgress';
 import { formatNumber, FormatPreset } from '@app/utils';
 import { useTranslation, Trans } from 'react-i18next';
+import AvatarInviteButton from './AvatarInviteButton/AvatarInviteButton';
 
 export default function StatsRow() {
     const { t } = useTranslation();
@@ -53,11 +54,11 @@ export default function StatsRow() {
             {hasFriends ? (
                 <ActiveMinersWrapper>
                     <PhotosRow>
-                        <PhotoWrapper>
-                            {crewData?.members.map(({ image, displayName }) => (
+                        {crewData?.members.map(({ image, displayName }) => (
+                            <PhotoWrapper>
                                 <Avatar image={image} username={displayName} key={image} size={28} />
-                            ))}
-                        </PhotoWrapper>
+                            </PhotoWrapper>
+                        ))}
                     </PhotosRow>
 
                     <TextWrapper>
