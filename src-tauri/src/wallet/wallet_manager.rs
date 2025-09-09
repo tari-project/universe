@@ -47,7 +47,7 @@ use tokio::sync::watch;
 use tokio::sync::RwLock;
 
 static LOG_TARGET: &str = "tari::universe::wallet_manager";
-
+pub const STOP_ON_ERROR_CODES: [i32; 1] = [101];
 #[derive(Debug, Clone)]
 pub struct WalletStartupConfig {
     pub base_path: PathBuf,
@@ -134,6 +134,7 @@ impl WalletManager {
 
         let tari_wallet_details = InternalWallet::tari_wallet_details().await;
         process_watcher.adapter.wallet_birthday = tari_wallet_details.map(|d| d.wallet_birthday);
+        process_watcher.stop_on_exit_codes = STOP_ON_ERROR_CODES.to_vec();
 
         process_watcher
             .start(
