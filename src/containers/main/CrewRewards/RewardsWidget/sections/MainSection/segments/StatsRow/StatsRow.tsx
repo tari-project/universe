@@ -61,12 +61,12 @@ export default function StatsRow() {
             {hasFriends ? (
                 <ActiveMinersWrapper>
                     <PhotosRow>
-                        <PhotoWrapper $isInviteButton={true}>
-                            <AvatarInviteButton />
-                        </PhotoWrapper>
-                        <PhotoWrapper $isInviteButton={true}>
-                            <AvatarInviteButton />
-                        </PhotoWrapper>
+                        {totalFriends < 3 &&
+                            Array.from({ length: 3 - totalFriends }).map((_, index) => (
+                                <PhotoWrapper key={`${index}-invitebutton`} $isInviteButton={true}>
+                                    <AvatarInviteButton />
+                                </PhotoWrapper>
+                            ))}
                         {crewData?.members.map(({ image, displayName }, index) => (
                             <PhotoWrapper key={`${index}-crewminiavatar`} onClick={handleCrewToggle}>
                                 <Avatar image={image} username={displayName} key={image} size={28} />
