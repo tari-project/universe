@@ -17,7 +17,7 @@ type ParseArgs = ErrorArgs | InfoArgs | WarnArgs;
 
 const parseArgument = (a?: ParseArgs): string => {
     try {
-        const argument = a || 'FE Log Item';
+        const argument = a?.toString()?.length ? a : 'FE Log Item';
         return JSON.stringify(argument, null, 2);
     } catch (e) {
         return String(`Logger Parse Error from ${a} - ${e}`);
@@ -25,17 +25,18 @@ const parseArgument = (a?: ParseArgs): string => {
 };
 
 const getOptions = (args, level) => {
+    const mapped = args.map(parseArgument);
     void invoke('log_web_message', {
         level,
-        message: [universeVersion, ...args.map(parseArgument)],
+        message: [universeVersion, ...mapped],
     });
     return originalConsole[level](...args);
 };
 
 const setupLogger = () => {
     // Override
-    console.info = (...args) => getOptions(args, 'info');
     console.warn = (...args) => getOptions(args, 'warn');
+    console.info = (...args) => getOptions(args, 'info');
     console.error = (...args) => getOptions(args, 'error');
 };
 

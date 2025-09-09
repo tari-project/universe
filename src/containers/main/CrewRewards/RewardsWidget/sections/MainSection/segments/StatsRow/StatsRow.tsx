@@ -53,11 +53,11 @@ export default function StatsRow() {
             {hasFriends ? (
                 <ActiveMinersWrapper>
                     <PhotosRow>
-                        <PhotoWrapper>
-                            {crewData?.members.map(({ image, displayName }) => (
-                                <Avatar image={image} username={displayName} key={image} size={28} />
-                            ))}
-                        </PhotoWrapper>
+                        {crewData?.members.map(({ image, displayName }, index) => (
+                            <PhotoWrapper key={`${index}-crewminiavatar`}>
+                                <Avatar image={image} username={displayName} size={28} />
+                            </PhotoWrapper>
+                        ))}
                     </PhotosRow>
 
                     <TextWrapper>

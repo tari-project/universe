@@ -2,7 +2,14 @@ import { AnimatePresence } from 'motion/react';
 import { FloatingFocusManager, FloatingNode, FloatingPortal, useMergeRefs } from '@floating-ui/react';
 import { DialogContext, useDialog, useDialogContext } from './helpers.ts';
 import { DialogContentType, DialogProps } from './types.ts';
-import { Content, ContentScrollContainer, ContentWrapper, Overlay, WrapperContent } from './Dialog.styles.ts';
+import {
+    CloseButtonContainer,
+    Content,
+    ContentScrollContainer,
+    ContentWrapper,
+    Overlay,
+    WrapperContent,
+} from './Dialog.styles.ts';
 
 import { create as motionCreate } from 'motion/react-m';
 
@@ -14,7 +21,7 @@ export function Dialog({ children, ...options }: DialogProps) {
     return <DialogContext.Provider value={dialog}>{children}</DialogContext.Provider>;
 }
 
-export function DialogContent({ variant = 'primary', ...props }: DialogContentType) {
+export function DialogContent({ variant = 'primary', closeButton, ...props }: DialogContentType) {
     const context = useDialogContext();
     const ref = useMergeRefs([context.refs.setFloating, props.ref]);
 
@@ -37,6 +44,7 @@ export function DialogContent({ variant = 'primary', ...props }: DialogContentTy
                         {...context.getFloatingProps(props)}
                         $allowOverflow={props.$allowOverflow}
                     >
+                        {closeButton ? <CloseButtonContainer>{closeButton}</CloseButtonContainer> : null}
                         {props.children}
                     </Content>
                 </ContentScrollContainer>

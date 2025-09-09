@@ -1875,76 +1875,6 @@ pub async fn set_selected_engine(
 }
 
 #[tauri::command]
-pub async fn websocket_connect(
-    _: tauri::AppHandle,
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<(), String> {
-    info!(target: LOG_TARGET, "websocket_connect command started");
-    let timer = Instant::now();
-
-    const MAX_RETRIES: u32 = 5;
-    const INITIAL_DELAY_MS: u64 = 100;
-    const MAX_TOTAL_TIMEOUT_SECS: u64 = 30;
-
-    let mut retry_count = 0;
-    let mut delay_ms = INITIAL_DELAY_MS;
-
-    loop {
-        let mut websocket_manger_guard = state.websocket_manager.write().await;
-
-        if websocket_manger_guard.is_websocket_manager_ready() {
-            // WebSocket manager is ready, proceed with connection
-            websocket_manger_guard
-                .connect()
-                .await
-                .map_err(|e| e.to_string())?;
-
-            state
-                .websocket_event_manager
-                .write()
-                .await
-                .emit_interval_ws_events()
-                .await
-                .map_err(|e| e.to_string())?;
-
-            if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-                warn!(target: LOG_TARGET, "websocket_connect took too long: {:?}", timer.elapsed());
-            }
-            info!(target: LOG_TARGET, "websocket_connect command finished after {} retries", retry_count);
-            return Ok(());
-        }
-
-        // Release the guard before sleeping
-        drop(websocket_manger_guard);
-
-        retry_count += 1;
-
-        // Check if we've exceeded max retries or total timeout
-        if retry_count > MAX_RETRIES {
-            warn!(target: LOG_TARGET, "websocket_connect failed after {} retries - websocket manager not ready", MAX_RETRIES);
-            return Err(format!(
-                "websocket manager not ready after {} retries",
-                MAX_RETRIES
-            ));
-        }
-
-        if timer.elapsed().as_secs() >= MAX_TOTAL_TIMEOUT_SECS {
-            warn!(target: LOG_TARGET, "websocket_connect timed out after {:?} - websocket manager not ready", timer.elapsed());
-            return Err(format!(
-                "websocket manager not ready after {}s timeout",
-                MAX_TOTAL_TIMEOUT_SECS
-            ));
-        }
-
-        info!(target: LOG_TARGET, "websocket_connect retry {} in {}ms - websocket manager not ready yet", retry_count, delay_ms);
-
-        // Sleep with exponential backoff
-        sleep(Duration::from_millis(delay_ms));
-        delay_ms = (delay_ms * 2).min(2000); // Cap at 2 seconds
-    }
-}
-
-#[tauri::command]
 pub async fn websocket_get_status(
     _: tauri::AppHandle,
     state: tauri::State<'_, UniverseAppState>,
@@ -1985,35 +1915,6 @@ pub async fn send_one_sided_to_stealth_address(
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "send_one_sided_to_stealth_address took too long: {:?}", timer.elapsed());
     }
-    Ok(())
-}
-
-#[tauri::command]
-pub async fn websocket_close(
-    _: tauri::AppHandle,
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<(), String> {
-    let timer = Instant::now();
-    info!(target: LOG_TARGET, "websocket_close command started");
-
-    state
-        .websocket_event_manager
-        .write()
-        .await
-        .stop_emitting_message()
-        .await;
-
-    state
-        .websocket_manager
-        .write()
-        .await
-        .close_connection()
-        .await;
-
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "websocket_close took too long: {:?}", timer.elapsed());
-    }
-    info!(target: LOG_TARGET, "websocket_close command finished");
     Ok(())
 }
 
@@ -2355,6 +2256,25 @@ pub async fn set_security_warning_dismissed() -> Result<(), String> {
     ConfigWallet::update_field(ConfigWalletContent::set_security_warning_dismissed, true)
         .await
         .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn set_feedback_fields(feedback_type: String, was_sent: bool) -> Result<(), InvokeError> {
+    let timer = Instant::now();
+    if was_sent {
+        ConfigUI::update_field(ConfigUIContent::update_feedback_sent, feedback_type)
+            .await
+            .map_err(InvokeError::from_anyhow)?;
+    } else {
+        ConfigUI::update_field(ConfigUIContent::update_feedback_dismissed, feedback_type)
+            .await
+            .map_err(InvokeError::from_anyhow)?;
+    }
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "set_feedback_fields took too long: {:?}", timer.elapsed());
+    }
 
     Ok(())
 }

@@ -166,6 +166,7 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'reset_cpu_pool_config', payload: { cpuPoolName: string }): Promise<void>;
     function invoke(param: 'restart_phases', payload: { phases: SetupPhase[] }): Promise<void>;
     function invoke(param: 'list_connected_peers'): Promise<string[]>;
+    function invoke(param: 'set_feedback_fields', payload: { feedbackType: string; wasSent: boolean }): Promise<void>;
     function invoke(param: 'read_installed_tapp_db'): Promise<InstalledTappletWithName[]>;
     function invoke(param: 'read_tapp_registry_db'): Promise<RegisteredTapplet[]>;
     function invoke(

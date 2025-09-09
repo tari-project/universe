@@ -20,7 +20,6 @@ import {
 } from '@app/store';
 import { handleCloseSplashscreen } from '@app/store/actions/uiStoreActions.ts';
 import type { XSpaceEvent } from '@app/types/ws.ts';
-import { restartSocket } from '@app/utils/socket.ts';
 import { invoke } from '@tauri-apps/api/core';
 
 interface TokenResponse {
@@ -160,20 +159,10 @@ export const setAirdropTokens = async (airdropTokens?: AirdropTokens) => {
             },
         });
 
-        setAirdropTokensInConfig(
-            {
-                token: airdropTokens.token,
-                refreshToken: airdropTokens.refreshToken,
-            },
-            () => {
-                if (airdropApiUrl && authToken) {
-                    restartSocket();
-                }
-            }
-        );
-
-        const airdropApiUrl = useAirdropStore.getState().backendInMemoryConfig?.airdrop_api_url;
-        const authToken = airdropTokens?.token;
+        setAirdropTokensInConfig({
+            token: airdropTokens.token,
+            refreshToken: airdropTokens.refreshToken,
+        });
     } else {
         // User not connected
         useAirdropStore.setState((currentState) => ({
@@ -182,7 +171,6 @@ export const setAirdropTokens = async (airdropTokens?: AirdropTokens) => {
             syncedWithBackend: true,
             airdropTokens: undefined,
         }));
-        restartSocket();
 
         try {
             setAirdropTokensInConfig(undefined);
