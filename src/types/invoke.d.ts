@@ -1,6 +1,5 @@
 import {
     ApplicationsVersions,
-    ExternalDependency,
     TorConfig,
     TransactionInfo,
     BridgeEnvs,
