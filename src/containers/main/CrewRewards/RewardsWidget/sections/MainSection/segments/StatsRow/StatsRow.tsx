@@ -69,7 +69,7 @@ export default function StatsRow() {
                             ))}
                         {crewData?.members.map(({ image, displayName }, index) => (
                             <PhotoWrapper key={`${index}-crewminiavatar`} onClick={handleCrewToggle}>
-                                <Avatar image={image} username={displayName} key={image} size={28} />
+                                <Avatar image={image} username={displayName} size={28} />
                             </PhotoWrapper>
                         ))}
                     </PhotosRow>
