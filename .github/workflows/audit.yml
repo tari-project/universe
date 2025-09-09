@@ -8,16 +8,18 @@ name: Security audit - daily
       - "audit-*"
     paths:
       # Run if workflow changes
-      - '.github/workflows/audit.yml'
+      - ".github/workflows/audit.yml"
       # Run on changed dependencies
-      - '**/Cargo.toml'
-      - '**/Cargo.lock'
+      - "**/Cargo.toml"
+      - "**/Cargo.lock"
+      - "**/package.json"
+      - "**/package-lock.json"
   pull_request:
     branches:
       - "main"
   # Rerun periodicly to pick up new advisories
   schedule:
-    - cron: '43 05 * * *'
+    - cron: "43 05 * * *"
   # Run manually
   workflow_dispatch:
 
@@ -34,7 +36,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "lts"
+          node-version: "lts/*"
+          cache: "npm"
 
       - name: Install dependencies (CI clean)
         run: npm ci
