@@ -77,10 +77,16 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
 
         // built-in tapplet
         if (isBuiltIn) {
-            const name = 'bridge'; //TODO add names for more options
+            const name = 'WXTM Bridge'; //TODO add names for more options
+            const installedTapplets = await invoke('read_installed_tapp_db');
+            const tapp = installedTapplets.find((t) => t.display_name === name);
             try {
-                console.info('🚗 RUN BUILDIN');
-                activeTapplet = await invoke('start_tari_tapplet_binary', { binaryName: name });
+                console.info('🚗 RUN BUILDIN', tapp);
+                activeTapplet = await invoke('start_tapplet', {
+                    tappletId: tapp.installed_tapplet.id,
+                    isDevTapplet: false,
+                });
+                if (!activeTapplet) return;
                 runningTapplet = {
                     ...activeTapplet,
                     allowReceiveFrom: [],
@@ -120,8 +126,9 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
             } else {
                 console.info('🚗 RUN DEV', tappletId);
                 try {
-                    activeTapplet = await invoke('start_dev_tapplet', {
-                        devTappletId: tappletId,
+                    activeTapplet = await invoke('start_tapplet', {
+                        tappletId: tappletId,
+                        isDevTapplet: true,
                     });
                     runningTapplet = {
                         ...activeTapplet,
@@ -139,6 +146,7 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
             try {
                 activeTapplet = await invoke('start_tapplet', {
                     tappletId: tappletId,
+                    isDevTapplet: false,
                 });
                 runningTapplet = {
                     ...activeTapplet,
@@ -153,7 +161,6 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
             if (!stateUpdateNeeded) return;
         }
 
-        // Single state update at the end
         if (stateUpdateNeeded && activeTapplet && runningTapplet) {
             set((state) => ({
                 activeTapplet,

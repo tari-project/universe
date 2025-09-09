@@ -2,7 +2,6 @@ import { memo } from 'react';
 import { Button } from './styles.ts';
 import { useUIStore } from '@app/store/useUIStore.ts';
 import { setSidebarOpen, setShowTapplet } from '@app/store/actions/uiStoreActions';
-import { BRIDGE_TAPPLET_ID } from '@app/store/consts.ts';
 import { useTappletsStore } from '@app/store/useTappletsStore.ts';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
 

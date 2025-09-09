@@ -682,7 +682,6 @@ fn main() {
             ootle_commands::ootle_create_free_test_coins,
             ootle_commands::ootle_make_json_rpc_request,
             tapplet_commands::start_tari_tapplet_binary,
-            tapplet_commands::start_dev_tapplet,
             tapplet_commands::start_tapplet,
             tapplet_commands::fetch_registered_tapplets,
             tapplet_commands::insert_tapp_registry_db,
