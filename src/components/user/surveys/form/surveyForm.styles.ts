@@ -5,7 +5,7 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 export const Form = styled.form`
     display: flex;
     flex-direction: column;
-    padding-top: min(3vh, 15px);
+    padding-top: min(1vh, 10px);
     width: 100%;
 `;
 export const FormContent = styled.div`
@@ -17,9 +17,10 @@ export const FormContent = styled.div`
 
 export const Description = styled(Typography)`
     color: ${({ theme }) => theme.palette.text.accent};
-    font-size: clamp(12px, 0.4rem + 0.5vh, 16px);
-    line-height: 1.02;
+    font-size: clamp(14px, 0.4rem + 0.5vh, 16px);
+    line-height: 1.2;
     font-weight: 400;
+    margin: 0 0 10px;
 `;
 
 export const ItemWrapper = styled.div`
@@ -55,12 +56,11 @@ export const TextItem = styled(TextArea)`
 `;
 export const CTAWrapper = styled.div`
     width: 100%;
-    align-items: center;
-    justify-content: center;
+    display: flex;
     flex-direction: column;
-    text-align: center;
+    align-items: center;
+    gap: min(1vh, 10px);
     padding: clamp(10px, 2.2vh, 20px) 0 0;
-    gap: 10px;
     font-weight: 500;
     font-size: 18px;
 `;
