@@ -5,8 +5,17 @@ export const Wrapper = styled.div`
     display: flex;
     flex-direction: column;
     width: 570px;
-    gap: min(0.75vh, 20px);
-    padding: min(10px, 2vh) 20px;
+    padding: 0 20px;
+    gap: 10px;
+
+    @media (max-height: 750px) {
+        gap: 0;
+    }
+`;
+
+export const ChipWrapper = styled.div`
+    display: flex;
+    margin-bottom: min(0.8vh, 10px);
 `;
 export const ChipText = styled(Typography).attrs({
     variant: 'h5',
@@ -17,5 +26,5 @@ export const ChipText = styled(Typography).attrs({
 
 export const Title = styled(Typography)`
     font-size: clamp(24px, 3vh, 30px);
-    line-height: 1.6;
+    line-height: 1.2;
 `;

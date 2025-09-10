@@ -1,7 +1,7 @@
 {
   "actions": {
-    "earn-gems": "보석 획득",
-    "earn-gems-copy": "친구를 초대하여 보석을 얻으려면 소셜 계정을 연결하세요",
+    "earn-gems": "보너스 XTM 획득",
+    "earn-gems-copy": "친구를 초대하여 보너스 XTM을 얻으려면 소셜 계정을 연결하세요",
     "earn-gems-cta": "X 계정 연결",
     "mode": "모드 사용자 정의",
     "mode-copy": "기계의 채굴 강도를 사용자 정의할 수 있다는 것을 알고 계셨나요?"

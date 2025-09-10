@@ -77,7 +77,8 @@ export const StyledButton = styled.button<ButtonStyleProps>`
                     }
 
                     &:disabled {
-                        opacity: 1;
+                        opacity: 0.8;
+                        color: ${theme.palette.text.disabled};
                         background-color: ${theme.palette.contrastAlpha};
                     }
                 `;
