@@ -9,22 +9,22 @@ import { invoke } from '@tauri-apps/api/core';
 import { setEarlyClosedDismissed } from '@app/store/stores/userFeedbackStore.ts';
 import { useConfigUIStore } from '@app/store';
 import { FeedbackPrompts } from '@app/types/configs.ts';
+import { useTranslation } from 'react-i18next';
 
 interface UserSurveyProps {
     type: SurveyType;
     onClose: () => void;
 }
 export default function UserSurvey({ type, onClose }: UserSurveyProps) {
+    const { t } = useTranslation('user');
     const { data: survey, isLoading } = useFetchSurveyContent(type);
     const loadingMarkup = isLoading && <LoadingDots />;
 
     const handleFeedback = (skipped: boolean) => {
         const feedbackType = type === 'long' ? 'long_time_miner' : 'early_close';
+        const payload = { feedbackType, wasSent: !skipped };
 
-        invoke('set_feedback_fields', {
-            feedbackType,
-            wasSent: !skipped,
-        }).then(() => {
+        invoke('set_feedback_fields', payload).then(() => {
             useConfigUIStore.setState((c) => {
                 const updated = {
                     [feedbackType]: {
@@ -61,7 +61,7 @@ export default function UserSurvey({ type, onClose }: UserSurveyProps) {
         <Wrapper>
             <ChipWrapper>
                 <Chip size="large">
-                    <ChipText>{`Feedback`}</ChipText>
+                    <ChipText>{t('feedback.chip_text')}</ChipText>
                 </Chip>
             </ChipWrapper>
             {loadingMarkup}

@@ -12,6 +12,7 @@ import { RadioFields } from './RadioFields.tsx';
 import { TextFields } from './TextFields.tsx';
 
 import { useSendFeedback } from '@app/hooks/user/surveys/useSendFeedback.ts';
+import { useTranslation } from 'react-i18next';
 
 interface SurveyFormProps {
     surveyContent: Survey;
@@ -20,6 +21,7 @@ interface SurveyFormProps {
 }
 
 export default function SurveyForm({ surveyContent, onSkipped, onSuccess }: SurveyFormProps) {
+    const { t } = useTranslation(['user', 'common']);
     const { mutateAsync } = useSendFeedback();
     const defaultValues = getFieldTypes(surveyContent.questions || []);
     const methods = useForm<FieldQuestions>({ defaultValues });
@@ -42,16 +44,12 @@ export default function SurveyForm({ surveyContent, onSkipped, onSuccess }: Surv
                 </FormContent>
 
                 <CTAWrapper>
-                    <Button
-                        type="submit"
-                        fluid
-                        size="xlarge"
-                        variant="black"
-                        disabled={!isValid}
-                    >{`Send Feedback`}</Button>
+                    <Button type="submit" fluid size="xlarge" variant="black" disabled={!isValid}>
+                        {t('feedback.submit_cta')}
+                    </Button>
 
                     <TextButton size="large" type="reset" onClick={onSkipped}>
-                        <Typography variant="h5">{`Skip for now`}</Typography>
+                        <Typography variant="h5">{t('common:skip-for-now')}</Typography>
                     </TextButton>
                 </CTAWrapper>
             </Form>
