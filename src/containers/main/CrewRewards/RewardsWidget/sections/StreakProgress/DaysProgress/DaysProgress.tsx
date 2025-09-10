@@ -16,9 +16,7 @@ export default function DaysProgress({ current, total }: Props) {
 
     return (
         <Wrapper>
-            <Pills>
-                {pills}
-            </Pills>
+            <Pills>{pills}</Pills>
             <Text>
                 {t('airdrop:crewRewards.streak.day')} {`${current}/${total}`}
             </Text>
