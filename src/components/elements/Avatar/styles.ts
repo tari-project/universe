@@ -19,5 +19,4 @@ export const AvatarWrapper = styled.div<{ $image: string; $size: number }>`
     font-size: ${({ $size }) => $size / 2}px;
     font-weight: 600;
     color: #fff;
-    cursor: default;
 `;

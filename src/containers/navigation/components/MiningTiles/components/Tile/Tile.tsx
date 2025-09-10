@@ -6,7 +6,6 @@ import { useConfigUIStore, useNodeStore, useUIStore } from '@app/store';
 import SuccessAnimation from '../SuccessAnimation/SuccessAnimation';
 import SyncData from '@app/containers/navigation/components/MiningTiles/components/SyncData/SyncData.tsx';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
-
 import {
     AnimatedGlow,
     AnimatedGlowPosition,
@@ -172,7 +171,7 @@ export default function Tile({
             </Inside>
 
             <AnimatePresence>
-                {isMining && !isLoading && (
+                {isMining && !isLoading && !syncing && (
                     <AnimatedGlowPosition>
                         <AnimatedGlow />
                     </AnimatedGlowPosition>

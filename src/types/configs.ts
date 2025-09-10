@@ -3,7 +3,6 @@ import { WalletUIMode } from './events-payloads';
 
 export interface ConfigCore {
     created_at: string;
-    is_p2pool_enabled: boolean;
     use_tor: boolean;
     allow_telemetry: boolean;
     allow_notifications: boolean;
@@ -13,7 +12,6 @@ export interface ConfigCore {
     mmproxy_use_monero_failover: boolean;
     mmproxy_monero_nodes: string[];
     auto_update: boolean;
-    p2pool_stats_server_port?: number;
     pre_release: boolean;
     last_changelog_version: string;
     airdrop_tokens?: {

@@ -1,9 +1,7 @@
 import {
     ApplicationsVersions,
-    P2poolStatsResult,
     TorConfig,
     TransactionInfo,
-    P2poolConnections,
     BridgeEnvs,
     TariAddressVariants,
     BaseNodeStatus,
@@ -11,7 +9,6 @@ import {
 import { Language } from '@app/i18initializer';
 import { PaperWalletDetails } from '@app/types/app-status.ts';
 import { displayMode } from '@app/store/types.ts';
-import { SignData } from '@app/types/ws.ts';
 import { BasePoolData, ConfigBackendInMemory } from '@app/types/configs.ts';
 import { ExchangeMiner } from './exchange';
 import { ActiveTapplet } from '@app/types/tapplets/tapplet.types';
@@ -38,8 +35,6 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'stop_cpu_mining'): Promise<void>;
     function invoke(param: 'stop_gpu_mining'): Promise<void>;
     function invoke(param: 'set_allow_telemetry', payload: { allow_telemetry: boolean }): Promise<void>;
-    function invoke(param: 'send_data_telemetry_service', payload: { eventName: string; data: object }): Promise<void>;
-    function invoke(param: 'set_user_inactivity_timeout', payload: { timeout: number }): Promise<void>;
     function invoke(param: 'select_mining_mode', payload: { mode: string }): Promise<void>;
     function invoke(
         param: 'update_custom_mining_mode',
@@ -56,10 +51,6 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'set_monero_address', payload: { moneroAddress: string }): Promise<void>;
     function invoke(param: 'send_feedback', payload: { feedback: string; includeLogs: boolean }): Promise<string>;
     function invoke(param: 'reset_settings', payload: { resetWallet: boolean }): Promise<string>;
-    function invoke(param: 'set_p2pool_enabled', payload: { p2pool_enabled: boolean }): Promise<void>;
-    function invoke(param: 'get_p2pool_stats'): Promise<P2poolStatsResult>;
-    function invoke(param: 'get_p2pool_connections'): Promise<P2poolConnections>;
-    function invoke(param: 'get_used_p2pool_stats_server_port'): Promise<number>;
     function invoke(param: 'set_gpu_mining_enabled', payload: { enabled: boolean }): Promise<void>;
     function invoke(param: 'set_cpu_mining_enabled', payload: { enabled: boolean }): Promise<void>;
     function invoke(param: 'exit_application'): Promise<string>;
@@ -73,19 +64,16 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'get_tor_config'): Promise<TorConfig>;
     function invoke(param: 'set_tor_config', payload: { config: TorConfig }): Promise<TorConfig>;
     function invoke(param: 'fetch_tor_bridges'): Promise<string[]>;
-    function invoke(param: 'get_tor_entry_guards'): Promise<string[]>;
     function invoke(param: 'start_mining_status'): Promise<string[]>;
     function invoke(param: 'stop_mining_status'): Promise<string[]>;
     function invoke(param: 'set_visual_mode', payload: { enabled: boolean }): Promise<void>;
     function invoke(param: 'set_pre_release', payload: { preRelease: boolean }): Promise<void>;
     function invoke(param: 'proceed_with_update'): Promise<void>;
-    function invoke(param: 'check_for_updates'): Promise<string | undefined>;
     function invoke(
         param: 'set_airdrop_tokens',
         airdropTokens: { token: string; refresh_token: string }
     ): Promise<void>;
     function invoke(param: 'get_airdrop_tokens'): Promise<{ refresh_token: string; token: string }>;
-    function invoke(param: 'try_update', payload?: { force?: boolean }): Promise<void>;
     function invoke(
         param: 'toggle_device_exclusion',
         payload: { device_index: number; excluded: boolean }
@@ -107,7 +95,6 @@ declare module '@tauri-apps/api/core' {
         param: 'log_web_message',
         payload: { level: 'log' | 'error' | 'warn' | 'info'; message: string }
     ): Promise<ApplicationsVersions>;
-    function invoke(param: 'sign_ws_data', payload: { data: string }): Promise<SignData>;
     function invoke(param: 'reconnect'): Promise<void>;
     function invoke(
         param: 'verify_address_for_send',
