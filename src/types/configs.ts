@@ -51,7 +51,6 @@ export interface FeedbackPrompt {
     last_dismissed: {
         secs_since_epoch?: number;
         nanos_since_epoch?: number;
-        timestamp?: number;
     } | null;
 }
 
