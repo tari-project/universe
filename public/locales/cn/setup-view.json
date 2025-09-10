@@ -1,7 +1,7 @@
 {
   "actions": {
-    "earn-gems": "赚取宝石",
-    "earn-gems-copy": "连接您的社交账户以通过邀请朋友赚取宝石",
+    "earn-gems": "赚取奖励XTM",
+    "earn-gems-copy": "连接您的社交账户，通过邀请朋友赚取奖励XTM",
     "earn-gems-cta": "连接X账户",
     "mode": "自定义模式",
     "mode-copy": "您知道您可以自定义您的机器挖矿的强度吗？"

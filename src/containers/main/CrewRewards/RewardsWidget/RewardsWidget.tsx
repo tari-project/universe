@@ -5,7 +5,7 @@ import CrewSection from './sections/CrewSection/CrewSection';
 import MainSection from './sections/MainSection/MainSection';
 import StreakProgress from './sections/StreakProgress/StreakProgress';
 
-import { ExpandButton, Holder, PositionWrapper, WidgetWrapper } from './styles';
+import { ExpandButton, ExpandButtonWrapper, Holder, PositionWrapper, WidgetWrapper } from './styles';
 import { useCrewRewardsStore } from '../../../../store/useCrewRewardsStore';
 import { AnimatePresence } from 'motion/react';
 import { useAirdropStore } from '@app/store';
@@ -65,9 +65,11 @@ export default function RewardsWidget() {
                     <AnimatePresence>{isOpen && <CrewSection />}</AnimatePresence>
                     <AnimatePresence>
                         {isHovering && !isOpen && (
-                            <ExpandButton onClick={() => setIsOpen(true)} {...buttonAnimation}>
-                                {t('airdrop:crewRewards.manageYourCrew')}
-                            </ExpandButton>
+                            <ExpandButtonWrapper {...buttonAnimation}>
+                                <ExpandButton onClick={() => setIsOpen(true)}>
+                                    {t('airdrop:crewRewards.manageYourCrew')}
+                                </ExpandButton>
+                            </ExpandButtonWrapper>
                         )}
                     </AnimatePresence>
                 </WidgetWrapper>

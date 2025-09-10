@@ -8,6 +8,7 @@ export function useShutdownHandler() {
     const [canProceedWithShutdown, setCanProceedWithShutdown] = useState(false);
     const [promptDismissed, setPromptDismissed] = useState(false);
     const [isEarlyClose, setIsEarlyClose] = useState(false);
+    const [shutdownInitiated, setShutdownInitiated] = useState(false);
 
     const wasFeedbackSent = useUserFeedbackStore((s) => s.wasFeedbackSent);
     const wasLongTimeMiner = useUserFeedbackStore((s) => s.wasLongTimeMiner);
@@ -27,6 +28,7 @@ export function useShutdownHandler() {
     }, [minimumMiningTimeForClose]);
 
     const onShutdownCaught = useCallback(async () => {
+        setShutdownInitiated(true);
         if (wasFeedbackSent || wasLongTimeMiner) {
             setCanProceedWithShutdown(true);
             return;
@@ -55,5 +57,5 @@ export function useShutdownHandler() {
         }
     }, [promptDismissed, handleShutdown, canProceedWithShutdown]);
 
-    return { onShutdownCaught };
+    return { onShutdownCaught, shutdownInitiated };
 }

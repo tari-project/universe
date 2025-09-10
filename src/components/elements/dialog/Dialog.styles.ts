@@ -2,6 +2,7 @@ import styled, { css } from 'styled-components';
 import { FloatingOverlay } from '@floating-ui/react';
 import { convertHexToRGBA } from '@app/utils';
 import { ContentWrapperStyleProps } from './types.ts';
+import { m } from 'motion/react';
 
 export const Overlay = styled(FloatingOverlay)`
     display: flex;
@@ -11,7 +12,7 @@ export const Overlay = styled(FloatingOverlay)`
 `;
 
 export const ContentWrapper = styled.div<ContentWrapperStyleProps>`
-    box-shadow: 0 4px 45px 0 rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 45px 0 rgba(0, 0, 0, 0.35);
     border-radius: clamp(20px, 5vh, 35px);
     overflow: ${({ $allowOverflow }) => ($allowOverflow ? 'unset' : 'hidden')};
     max-height: 90%;
@@ -37,6 +38,15 @@ export const ContentWrapper = styled.div<ContentWrapperStyleProps>`
         }
     }};
 `;
+
+export const Vignette = styled(m.div)`
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    background: radial-gradient(50% 50% at 50% 50%, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.6) 100%);
+    pointer-events: none;
+`;
+
 export const ContentScrollContainer = styled.div<ContentWrapperStyleProps>`
     overflow: ${({ $allowOverflow }) => ($allowOverflow ? 'unset' : 'hidden')};
     position: relative;
