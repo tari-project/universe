@@ -28,5 +28,7 @@ export function useFetchSurveyContent(slug: string) {
     return useQuery<Survey>({
         queryKey: [KEY_SURVEYS, slug],
         queryFn: async () => await fetchSurvey(slug),
+        refetchOnWindowFocus: true,
+        staleTime: 1000 * 60 * 30,
     });
 }

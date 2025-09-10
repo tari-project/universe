@@ -12,6 +12,7 @@ export function TextFields() {
                 key={q.id}
                 control={control}
                 name={`text.${i}.value`}
+                rules={{ required: q.isRequired }}
                 render={({ field }) => {
                     return (
                         <>
