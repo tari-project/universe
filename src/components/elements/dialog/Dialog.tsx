@@ -7,6 +7,7 @@ import {
     Content,
     ContentScrollContainer,
     ContentWrapper,
+    Vignette,
     Overlay,
     WrapperContent,
 } from './Dialog.styles.ts';
@@ -75,6 +76,7 @@ export function DialogContent({ variant = 'primary', closeButton, ...props }: Di
                                 {markup}
                             </MotionOverlay>
                         </FloatingFocusManager>
+                        <Vignette initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} />
                     </FloatingPortal>
                 ) : null}
             </AnimatePresence>
