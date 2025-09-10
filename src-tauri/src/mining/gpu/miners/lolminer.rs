@@ -213,8 +213,11 @@ impl ProcessAdapter for LolMinerGpuMiner {
             "Lol miner logs destination: {}",
             log_folder.to_string_lossy().to_string()
         );
+        args.push("--log".to_string());
+        args.push("on".to_string());
         args.push("--logfile".to_string());
-        args.push(log_folder.to_string_lossy().to_string());
+        let log_file_path = log_folder.join("lolminer.txt");
+        args.push(log_file_path.to_string_lossy().to_string());
 
         #[cfg(target_os = "windows")]
         add_firewall_rule("lolMiner.exe".to_string(), binary_version_path.clone())?;
