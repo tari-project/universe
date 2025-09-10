@@ -204,7 +204,7 @@ impl ProcessAdapter for LolMinerGpuMiner {
         info!(
             target: LOG_TARGET,
             "Lol miner logs destination: {}",
-            log_folder.to_string_lossy().to_string()
+            log_folder.to_string_lossy()
         );
         args.push("--log".to_string());
         args.push("on".to_string());
@@ -362,12 +362,13 @@ fn extract_device_names(output_str: &str) -> Vec<String> {
             continue;
         }
         if found_device && trimmed.starts_with("Name:") {
+            // Regex to match ANSI escape codes
+            let re = Regex::new(r"\x1b\[[0-9;]*m")
+                .expect("Failed to create regex for lolminer devices names");
             // Extract the name after "Name:    "
             let parts: Vec<&str> = trimmed.splitn(2, ':').collect();
             if parts.len() == 2 {
                 let name = parts[1].trim().to_string();
-                // Regex to match ANSI escape codes
-                let re = Regex::new(r"\x1b\[[0-9;]*m").unwrap();
                 let plain_name = re.replace_all(&name, "").to_string();
                 device_names.push(plain_name);
             }

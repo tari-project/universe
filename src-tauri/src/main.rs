@@ -157,7 +157,6 @@ struct UniverseAppState {
     #[allow(dead_code)]
     wallet_state_watch_rx: Arc<watch::Receiver<Option<WalletState>>>,
     cpu_miner_status_watch_rx: Arc<watch::Receiver<CpuMinerStatus>>,
-    gpu_latest_status: Arc<watch::Receiver<GpuMinerStatus>>,
     in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
     cpu_miner: Arc<RwLock<CpuMiner>>,
     cpu_miner_config: Arc<RwLock<CpuMinerConfig>>,
@@ -334,7 +333,6 @@ fn main() {
         node_status_watch_rx: Arc::new(base_node_watch_rx),
         wallet_state_watch_rx: Arc::new(wallet_state_watch_rx.clone()),
         cpu_miner_status_watch_rx: Arc::new(cpu_miner_status_watch_rx),
-        gpu_latest_status: Arc::new(gpu_status_rx),
         in_memory_config: app_in_memory_config.clone(),
         cpu_miner: cpu_miner.clone(),
         cpu_miner_config: cpu_config.clone(),

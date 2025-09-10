@@ -56,7 +56,7 @@ pub async fn fallback_gpu_miner(app_handle: tauri::AppHandle) -> Result<(), anyh
                     tokio::select! {
                         _ = gpu_latest_miner_stats.changed() => {
                             let gpu_stats = gpu_latest_miner_stats.borrow().clone();
-                            if gpu_stats.is_mining == false && zero_hash_rate_counter > 2 {
+                            if !gpu_stats.is_mining && zero_hash_rate_counter > 2 {
                                 break;
                             }
 
