@@ -17,7 +17,7 @@ export function TextFields() {
                     return (
                         <>
                             <TextItemLabel htmlFor={field.name}>
-                                {q.questionText} <span>{`(optional)`}</span>
+                                {q.questionText} {!q.isRequired && <span>{`(optional)`}</span>}
                             </TextItemLabel>
                             <TextItem
                                 {...field}

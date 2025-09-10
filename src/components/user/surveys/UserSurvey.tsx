@@ -4,7 +4,7 @@ import { Chip } from '@app/components/elements/Chip.tsx';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 import SurveyForm from './form/SurveyForm.tsx';
 
-import { ChipText, Title, Wrapper } from './styles.ts';
+import { ChipText, ChipWrapper, Title, Wrapper } from './styles.ts';
 import { invoke } from '@tauri-apps/api/core';
 import { setEarlyClosedDismissed } from '@app/store/stores/userFeedbackStore.ts';
 import { useConfigUIStore } from '@app/store';
@@ -59,9 +59,11 @@ export default function UserSurvey({ type, onClose }: UserSurveyProps) {
 
     return (
         <Wrapper>
-            <Chip size="large">
-                <ChipText>{`Feedback`}</ChipText>
-            </Chip>
+            <ChipWrapper>
+                <Chip size="large">
+                    <ChipText>{`Feedback`}</ChipText>
+                </Chip>
+            </ChipWrapper>
             {loadingMarkup}
             {markup}
         </Wrapper>

@@ -40,6 +40,7 @@ export default function SurveyForm({ surveyContent, onSkipped, onSuccess }: Surv
                     <RadioFields />
                     <TextFields />
                 </FormContent>
+
                 <CTAWrapper>
                     <Button
                         type="submit"
@@ -48,8 +49,9 @@ export default function SurveyForm({ surveyContent, onSkipped, onSuccess }: Surv
                         variant="black"
                         disabled={!isValid}
                     >{`Send Feedback`}</Button>
+
                     <TextButton size="large" type="reset" onClick={onSkipped}>
-                        <Typography>{`Skip for now`}</Typography>
+                        <Typography variant="h5">{`Skip for now`}</Typography>
                     </TextButton>
                 </CTAWrapper>
             </Form>
