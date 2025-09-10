@@ -7,9 +7,9 @@ import SurveyForm from './form/SurveyForm.tsx';
 import { ChipText, ChipWrapper, Title, Wrapper } from './styles.ts';
 import { invoke } from '@tauri-apps/api/core';
 import { setEarlyClosedDismissed } from '@app/store/stores/userFeedbackStore.ts';
-import { useConfigUIStore } from '@app/store';
-import { FeedbackPrompts } from '@app/types/configs.ts';
+
 import { useTranslation } from 'react-i18next';
+import { handleFeedbackFields } from '@app/store/actions/appConfigStoreActions.ts';
 
 interface UserSurveyProps {
     type: SurveyType;
@@ -25,18 +25,7 @@ export default function UserSurvey({ type, onClose }: UserSurveyProps) {
         const payload = { feedbackType, wasSent: !skipped };
 
         invoke('set_feedback_fields', payload).then(() => {
-            useConfigUIStore.setState((c) => {
-                const updated = {
-                    [feedbackType]: {
-                        ...c?.feedback?.[feedbackType],
-                        feedback_sent: !skipped,
-                        last_dismissed: { timestamp: Date.now() },
-                    },
-                } as FeedbackPrompts;
-
-                return { ...c, feedback: { ...c.feedback, ...updated } };
-            });
-
+            handleFeedbackFields(feedbackType, !skipped);
             onClose();
             if (type === 'close') {
                 if (skipped) {

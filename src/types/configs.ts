@@ -54,10 +54,9 @@ export interface FeedbackPrompt {
         timestamp?: number;
     } | null;
 }
-export interface FeedbackPrompts {
-    early_close?: FeedbackPrompt;
-    long_time_miner?: FeedbackPrompt;
-}
+
+export type PromptType = 'long_time_miner' | 'early_close';
+export type FeedbackPrompts = Partial<Record<PromptType, FeedbackPrompt>>;
 
 export type MiningModes = Record<MiningModeType, MiningMode>;
 
