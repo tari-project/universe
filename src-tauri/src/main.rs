@@ -32,7 +32,6 @@ use mining_status_manager::MiningStatusManager;
 use node::local_node_adapter::LocalNodeAdapter;
 use node::node_adapter::BaseNodeStatus;
 use node::node_manager::NodeType;
-use pool_status_watcher::{PoolStatus, PoolStatusWatcher};
 use process_stats_collector::ProcessStatsCollectorBuilder;
 
 use node::remote_node_adapter::RemoteNodeAdapter;
