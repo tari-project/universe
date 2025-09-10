@@ -1,0 +1,26 @@
+{
+  "connected-since": "接続開始",
+  "connections": "接続",
+  "established": "確立済み",
+  "listener-addresses": "リスナーアドレス",
+  "miners": "マイナー",
+  "network-info": "ネットワーク情報",
+  "p2pool-chain-tip": "P2Poolチェーンの先端",
+  "p2pool-connected": "P2Poolに接続されました",
+  "p2pool-connection-info": "接続",
+  "p2pool-connection-info-more": "接続の詳細",
+  "p2pool-peers": "P2Pool ピア",
+  "p2pool-stats": "P2pool統計",
+  "pending": "保留中",
+  "randomx-stats": "RandomX 統計",
+  "sha3-stats": "SHA3 統計",
+  "stats": {
+    "earned": "You earned",
+    "tile-heading": "進行中の報酬",
+    "tile-heading-zero": "Rewards start in ~30 mins",
+    "tile-loading": "プールが準備中です",
+    "tooltip-copy": "“In Progress” until you earn a minimum of <strong>{{amount}}</strong>. There may be a delay between sending your payout and it displaying in your wallet txs and balance.",
+    "tooltip-tile-heading": "報酬のしきい値"
+  },
+  "tribe": "トライブ"
+}
