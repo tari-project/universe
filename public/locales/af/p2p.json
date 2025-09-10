@@ -1,0 +1,26 @@
+{
+  "connected-since": "Gekoppel sedert",
+  "connections": "verbindings",
+  "established": "Gevestig",
+  "listener-addresses": "Luisteraaradresse",
+  "miners": "Myners",
+  "network-info": "Netwerkinligting",
+  "p2pool-chain-tip": "P2Pool Kettingwenk",
+  "p2pool-connected": "P2Pool Verbind",
+  "p2pool-connection-info": "Verbinding",
+  "p2pool-connection-info-more": "Verbindingsbesonderhede",
+  "p2pool-peers": "P2pool eweknieë",
+  "p2pool-stats": "P2pool statistieke",
+  "pending": "Hangende",
+  "randomx-stats": "RandomX Statistieke",
+  "sha3-stats": "SHA3 Statistieke",
+  "stats": {
+    "earned": "You earned",
+    "tile-heading": "Belonings in Proses",
+    "tile-heading-zero": "Rewards start in ~30 mins",
+    "tile-loading": "Swembad is besig om op te warm",
+    "tooltip-copy": "“In Progress” until you earn a minimum of <strong>{{amount}}</strong>. There may be a delay between sending your payout and it displaying in your wallet txs and balance.",
+    "tooltip-tile-heading": "Beloningsdrempel"
+  },
+  "tribe": "Stam"
+}

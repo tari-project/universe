@@ -1,0 +1,26 @@
+{
+  "connected-since": "Połączony od",
+  "connections": "połączenia",
+  "established": "Ustanowione",
+  "listener-addresses": "Adresy nasłuchujące",
+  "miners": "Górnicy",
+  "network-info": "Informacje o sieci",
+  "p2pool-chain-tip": "Wskazówka łańcucha P2Pool",
+  "p2pool-connected": "Połączono z P2Pool",
+  "p2pool-connection-info": "Połączenie",
+  "p2pool-connection-info-more": "Szczegóły połączenia",
+  "p2pool-peers": "Rówieśnicy P2pool",
+  "p2pool-stats": "Statystyki P2pool",
+  "pending": "Oczekujące",
+  "randomx-stats": "Statystyki RandomX",
+  "sha3-stats": "Statystyki SHA3",
+  "stats": {
+    "earned": "You earned",
+    "tile-heading": "Nagrody w toku",
+    "tile-heading-zero": "Rewards start in ~30 mins",
+    "tile-loading": "Pula się rozgrzewa",
+    "tooltip-copy": "“In Progress” until you earn a minimum of <strong>{{amount}}</strong>. There may be a delay between sending your payout and it displaying in your wallet txs and balance.",
+    "tooltip-tile-heading": "Próg nagród"
+  },
+  "tribe": "Plemie"
+}

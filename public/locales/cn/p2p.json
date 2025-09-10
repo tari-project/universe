@@ -1,0 +1,26 @@
+{
+  "connected-since": "连接自",
+  "connections": "连接",
+  "established": "已建立",
+  "listener-addresses": "监听地址",
+  "miners": "矿工",
+  "network-info": "网络信息",
+  "p2pool-chain-tip": "P2Pool链顶",
+  "p2pool-connected": "P2Pool已连接",
+  "p2pool-connection-info": "连接",
+  "p2pool-connection-info-more": "连接详情",
+  "p2pool-peers": "P2pool 节点",
+  "p2pool-stats": "P2pool统计",
+  "pending": "待处理",
+  "randomx-stats": "RandomX 统计",
+  "sha3-stats": "SHA3 统计",
+  "stats": {
+    "earned": "You earned",
+    "tile-heading": "奖励进行中",
+    "tile-heading-zero": "Rewards start in ~30 mins",
+    "tile-loading": "矿池正在热身",
+    "tooltip-copy": "“In Progress” until you earn a minimum of <strong>{{amount}}</strong>. There may be a delay between sending your payout and it displaying in your wallet txs and balance.",
+    "tooltip-tile-heading": "奖励门槛"
+  },
+  "tribe": "部落"
+}

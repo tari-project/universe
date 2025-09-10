@@ -1,0 +1,26 @@
+{
+  "connected-since": "Подключен с",
+  "connections": "подключения",
+  "established": "Установлено",
+  "listener-addresses": "Адрес слушателя",
+  "miners": "Майнеры",
+  "network-info": "Информация о сети",
+  "p2pool-chain-tip": "Вершина цепи P2Pool",
+  "p2pool-connected": "P2Pool подключен",
+  "p2pool-connection-info": "Подключение",
+  "p2pool-connection-info-more": "Детали подключения",
+  "p2pool-peers": "P2pool пиры",
+  "p2pool-stats": "P2pool статистика",
+  "pending": "В ожидании",
+  "randomx-stats": "RandomX Статистика",
+  "sha3-stats": "SHA3 Статистика",
+  "stats": {
+    "earned": "You earned",
+    "tile-heading": "Вознаграждение в процессе",
+    "tile-heading-zero": "Rewards start in ~30 mins",
+    "tile-loading": "Пул разогревается",
+    "tooltip-copy": "“In Progress” until you earn a minimum of <strong>{{amount}}</strong>. There may be a delay between sending your payout and it displaying in your wallet txs and balance.",
+    "tooltip-tile-heading": "Порог вознаграждения"
+  },
+  "tribe": "Команда"
+}

@@ -1,0 +1,26 @@
+{
+  "connected-since": "연결된 시점",
+  "connections": "연결",
+  "established": "설립됨",
+  "listener-addresses": "리스너 주소",
+  "miners": "채굴자",
+  "network-info": "네트워크 정보",
+  "p2pool-chain-tip": "P2Pool 체인 팁",
+  "p2pool-connected": "P2Pool 연결됨",
+  "p2pool-connection-info": "연결",
+  "p2pool-connection-info-more": "연결 세부 정보",
+  "p2pool-peers": "P2pool 피어",
+  "p2pool-stats": "P2pool 통계",
+  "pending": "대기 중",
+  "randomx-stats": "RandomX 통계",
+  "sha3-stats": "SHA3 통계",
+  "stats": {
+    "earned": "You earned",
+    "tile-heading": "진행 중인 보상",
+    "tile-heading-zero": "Rewards start in ~30 mins",
+    "tile-loading": "풀 준비 중",
+    "tooltip-copy": "“In Progress” until you earn a minimum of <strong>{{amount}}</strong>. There may be a delay between sending your payout and it displaying in your wallet txs and balance.",
+    "tooltip-tile-heading": "보상 기준"
+  },
+  "tribe": "부족"
+}
