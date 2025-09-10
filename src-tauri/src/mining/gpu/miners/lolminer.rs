@@ -179,9 +179,6 @@ impl ProcessAdapter for LolMinerGpuMiner {
             "SHA3X".to_string(),
             format!("--apiport={}", api_port),
             format!("--apihost={}", "127.0.0.1"),
-            "--log=on".to_string(),
-            "--log-file".to_string(),
-            log_folder.join("lolminer").to_string_lossy().to_string(),
         ];
 
         if let Some(connection_type) = &self.connection_type {
@@ -211,6 +208,11 @@ impl ProcessAdapter for LolMinerGpuMiner {
             ));
         }
 
+        info!(
+            target: LOG_TARGET,
+            "Lol miner logs destination: {}",
+            log_folder.to_string_lossy().to_string()
+        );
         args.push("--logfile".to_string());
         args.push(log_folder.to_string_lossy().to_string());
 
@@ -328,11 +330,14 @@ impl LolMinerGpuMinerStatusMonitor {
             is_mining: true,
             estimated_earnings: 0,
             // round to 2 decimal places
-            hash_rate: (body
+            hash_rate: ((body
                 .algorithms
                 .iter()
                 .map(|a| a.total_performance)
-                .sum::<f64>()),
+                .sum::<f64>()
+                * 100.0)
+                .round()
+                / 100.0),
         })
     }
 }
