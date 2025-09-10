@@ -5,7 +5,7 @@ import {
     SurveyQuestionType,
 } from '@app/types/user/surveys.ts';
 
-type FieldMainQuestion = Pick<SurveyQuestion, 'questionText' | 'questionType' | 'options'>;
+type FieldMainQuestion = Pick<SurveyQuestion, 'questionText' | 'questionType' | 'options' | 'isRequired'>;
 type FieldQuestionOption = Pick<SurveyQuestionOption, 'questionId' | 'id'>;
 
 export interface FieldQuestion extends FieldMainQuestion, FieldQuestionOption {
@@ -30,6 +30,7 @@ export function getFieldTypes(questions: SurveyQuestion[]): FieldQuestions {
                         questionId: c.id,
                         questionType: c.questionType,
                         questionText: c.questionText,
+                        isRequired: c.isRequired,
                         checked: false,
                         value: '',
                     };
@@ -40,6 +41,7 @@ export function getFieldTypes(questions: SurveyQuestion[]): FieldQuestions {
                 const fieldQuestion: FieldQuestion = {
                     ...c,
                     questionId: c.id,
+                    options: c.options?.map((o) => ({ ...o, checked: false })),
                     value: '',
                 };
                 typeArr.push(fieldQuestion);
@@ -82,11 +84,4 @@ export function parseAnswers(data: FieldQuestions): SurveyAnswerInput[] {
     });
 
     return [...textAnswers, ...radioAnswers, ...checkAnswers];
-}
-
-export function checkValidity(fields: FieldQuestions): boolean {
-    const radioValid = fields?.radio?.some((o) => o.checked);
-    const checkboxValid = fields?.checkbox?.some((o) => o.checked);
-
-    return radioValid || checkboxValid || false;
 }
