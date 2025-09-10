@@ -89,11 +89,6 @@
   "node-type": "Type",
   "not-connected-to-tari": "Not connected to the Tari Network",
   "open-logs-directory": "Open logs directory",
-  "p2pool-chain-tip": "Tip of chains",
-  "p2pool-hash-rate": "Squad hash rates",
-  "p2pool-stats": "Squad Stats",
-  "p2pool-total-earnings": "Squad total earnings",
-  "p2pool-user-total-earnings": "Total earnings",
   "paper-wallet": {
     "connect-wallet-to-phone": "Track your XTM balance on your phone",
     "do-not-share-this-code": "Don&apos;t share this code with anyone",
@@ -176,7 +171,6 @@
     "title": "Update Tari Universe automatically"
   },
   "use-dynamic-fail-data": "Use dynamic fail data",
-  "use-p2p": "Use P2pool",
   "use-random-control-port": "Use random control port",
   "use-random-port": "Use random port",
   "use-tor": "Use Tor",

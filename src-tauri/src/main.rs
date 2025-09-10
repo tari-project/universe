@@ -34,7 +34,6 @@ use mining_status_manager::MiningStatusManager;
 use node::local_node_adapter::LocalNodeAdapter;
 use node::node_adapter::BaseNodeStatus;
 use node::node_manager::NodeType;
-use p2pool::models::Connections;
 use pool_status_watcher::{PoolStatus, PoolStatusWatcher};
 use process_stats_collector::ProcessStatsCollectorBuilder;
 
@@ -77,8 +76,6 @@ use crate::feedback::Feedback;
 use crate::gpu_miner::GpuMiner;
 use crate::mm_proxy_manager::MmProxyManager;
 use crate::node::node_manager::NodeManager;
-use crate::p2pool::models::P2poolStats;
-use crate::p2pool_manager::P2poolManager;
 use crate::tor_manager::TorManager;
 use crate::wallet::wallet_manager::WalletManager;
 use crate::wallet::wallet_types::WalletState;
@@ -112,9 +109,6 @@ mod mm_proxy_adapter;
 mod mm_proxy_manager;
 mod network_utils;
 mod node;
-mod p2pool;
-mod p2pool_adapter;
-mod p2pool_manager;
 mod pin;
 mod pool_status_watcher;
 mod port_allocator;
@@ -173,8 +167,6 @@ struct UniverseAppState {
     wallet_state_watch_rx: Arc<watch::Receiver<Option<WalletState>>>,
     cpu_miner_status_watch_rx: Arc<watch::Receiver<CpuMinerStatus>>,
     gpu_latest_status: Arc<watch::Receiver<GpuMinerStatus>>,
-    p2pool_latest_status: Arc<watch::Receiver<Option<P2poolStats>>>,
-    is_getting_p2pool_connections: Arc<AtomicBool>,
     in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
     cpu_miner: Arc<RwLock<CpuMiner>>,
     gpu_miner: Arc<RwLock<GpuMiner>>,
@@ -186,10 +178,8 @@ struct UniverseAppState {
     telemetry_manager: Arc<RwLock<TelemetryManager>>,
     telemetry_service: Arc<RwLock<TelemetryService>>,
     feedback: Arc<RwLock<Feedback>>,
-    p2pool_manager: P2poolManager,
     tor_manager: TorManager,
     updates_manager: UpdatesManager,
-    cached_p2pool_connections: Arc<RwLock<Option<Option<Connections>>>>,
     systemtray_manager: Arc<RwLock<SystemTrayManager>>,
     mining_status_manager: Arc<RwLock<MiningStatusManager>>,
     websocket_message_tx: Arc<tokio::sync::mpsc::Sender<WebsocketMessage>>,
@@ -283,8 +273,6 @@ fn main() {
         &mut stats_collector,
         base_node_watch_rx.clone(),
     );
-    let (p2pool_stats_tx, p2pool_stats_rx) = watch::channel(None);
-    let p2pool_manager = P2poolManager::new(p2pool_stats_tx, &mut stats_collector);
 
     let cpu_config = Arc::new(RwLock::new(CpuMinerConfig {
         node_connection: CpuMinerConnection::BuiltInProxy,
@@ -325,7 +313,6 @@ fn main() {
         Some(Network::default()),
         gpu_status_rx.clone(),
         base_node_watch_rx.clone(),
-        p2pool_stats_rx.clone(),
         tor_watch_rx.clone(),
         stats_collector.build(),
         node_manager.clone(),
@@ -357,12 +344,10 @@ fn main() {
         app_in_memory_config.clone(),
     );
     let app_state = UniverseAppState {
-        is_getting_p2pool_connections: Arc::new(AtomicBool::new(false)),
         node_status_watch_rx: Arc::new(base_node_watch_rx),
         wallet_state_watch_rx: Arc::new(wallet_state_watch_rx.clone()),
         cpu_miner_status_watch_rx: Arc::new(cpu_miner_status_watch_rx),
         gpu_latest_status: Arc::new(gpu_status_rx),
-        p2pool_latest_status: Arc::new(p2pool_stats_rx),
         in_memory_config: app_in_memory_config.clone(),
         cpu_miner: cpu_miner.clone(),
         gpu_miner: gpu_miner.clone(),
@@ -371,13 +356,11 @@ fn main() {
         mm_proxy_manager: mm_proxy_manager.clone(),
         node_manager,
         wallet_manager,
-        p2pool_manager,
         telemetry_manager: Arc::new(RwLock::new(telemetry_manager)),
         telemetry_service: Arc::new(RwLock::new(telemetry_service)),
         feedback: Arc::new(RwLock::new(feedback)),
         tor_manager,
         updates_manager,
-        cached_p2pool_connections: Arc::new(RwLock::new(None)),
         systemtray_manager: Arc::new(RwLock::new(SystemTrayManager::new())),
         mining_status_manager: Arc::new(RwLock::new(mining_status_manager)),
         websocket_message_tx: Arc::new(websocket_message_tx),
@@ -553,11 +536,9 @@ fn main() {
             commands::get_applications_versions,
             commands::get_monero_seed_words,
             commands::get_network,
-            commands::get_p2pool_stats,
             commands::get_paper_wallet_details,
             commands::get_seed_words,
             commands::get_tor_config,
-            commands::get_tor_entry_guards,
             commands::get_transactions,
             commands::import_seed_words,
             commands::revert_to_internal_wallet,
@@ -567,7 +548,6 @@ fn main() {
             commands::restart_application,
             commands::send_feedback,
             commands::set_allow_telemetry,
-            commands::send_data_telemetry_service, // TODO: Unused
             commands::set_application_language,
             commands::set_auto_update,
             commands::set_cpu_mining_enabled,
@@ -579,7 +559,6 @@ fn main() {
             commands::set_external_tari_address,
             commands::confirm_exchange_address,
             commands::select_exchange_miner,
-            commands::set_p2pool_enabled,
             commands::set_show_experimental_settings,
             commands::set_should_always_use_system_language,
             commands::set_should_auto_launch,
@@ -592,16 +571,9 @@ fn main() {
             commands::stop_gpu_mining,
             commands::toggle_cpu_pool_mining,
             commands::toggle_gpu_pool_mining,
-            commands::get_p2pool_connections,
-            commands::set_p2pool_stats_server_port,
-            commands::get_used_p2pool_stats_server_port,
             commands::proceed_with_update,
             commands::set_pre_release,
-            commands::check_for_updates,
-            commands::try_update,
             commands::toggle_device_exclusion,
-            commands::get_network,
-            commands::sign_ws_data, // TODO: Unused
             commands::set_airdrop_tokens,
             commands::get_airdrop_tokens,
             commands::set_selected_engine,

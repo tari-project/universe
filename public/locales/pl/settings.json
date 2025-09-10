@@ -91,11 +91,6 @@
   "not-connected-to-tari": "Nie połączono z siecią Tari",
   "not-connected-to-tari-network": null,
   "open-logs-directory": "Otwórz katalog logów",
-  "p2pool-chain-tip": "Wierzchołek łańcuchów",
-  "p2pool-hash-rate": "Wskaźniki hashowania zespołu",
-  "p2pool-stats": "Statystyki zespołu",
-  "p2pool-total-earnings": "Całkowite zarobki zespołu",
-  "p2pool-user-total-earnings": "Całkowite zarobki",
   "paper-wallet": {
     "connect-wallet-to-phone": "Połącz swój portfel Tari Universe z telefonem",
     "do-not-share-this-code": "Nie udostępniaj tego kodu nikomu",
@@ -178,7 +173,6 @@
     "title": "Automatyczna aktualizacja Tari Universe"
   },
   "use-dynamic-fail-data": "Użyj dynamicznych danych o błędach",
-  "use-p2p": "Użyj P2pool",
   "use-random-control-port": "Użyj losowego portu kontrolnego",
   "use-random-port": "Użyj losowego portu",
   "use-tor": "Używaj Tor",

@@ -39,7 +39,6 @@ use crate::gpu_miner_adapter::GpuNodeSource;
 use crate::internal_wallet::{mnemonic_to_tari_cipher_seed, InternalWallet, PaperWalletConfig};
 use crate::node::node_adapter::BaseNodeStatus;
 use crate::node::node_manager::NodeType;
-use crate::p2pool::models::{Connections, P2poolStats};
 use crate::pin::PinManager;
 use crate::release_notes::ReleaseNotes;
 use crate::setup::setup_manager::{SetupManager, SetupPhase};
@@ -58,7 +57,6 @@ use base64::prelude::*;
 use log::{debug, error, info, warn};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use std::fmt::Debug;
 use std::fs::{read_dir, remove_dir_all, remove_file, File};
 use std::str::FromStr;
@@ -102,7 +100,6 @@ pub struct ApplicationsVersions {
     minotari_node: ApplicationsInformation,
     mm_proxy: ApplicationsInformation,
     wallet: ApplicationsInformation,
-    sha_p2pool: ApplicationsInformation,
     xtrgpuminer: ApplicationsInformation,
     bridge: ApplicationsInformation,
 }
@@ -294,7 +291,6 @@ pub async fn get_applications_versions(
     let binary_resolver = BinaryResolver::current();
 
     let mmp_port = &state.mm_proxy_manager.get_port().await;
-    let p2p_port = &state.p2pool_manager.get_grpc_port().await;
     let cpu_miner = &state.cpu_miner.read().await;
     let xmrig_port = &cpu_miner.get_port().await;
     let gpu_miner = &state.gpu_miner.read().await;
@@ -317,9 +313,6 @@ pub async fn get_applications_versions(
         .get_binary_version(Binaries::MergeMiningProxy)
         .await;
     let wallet_version = binary_resolver.get_binary_version(Binaries::Wallet).await;
-    let sha_p2pool_version = binary_resolver
-        .get_binary_version(Binaries::ShaP2pool)
-        .await;
     let xtrgpuminer_version = binary_resolver.get_binary_version(Binaries::GpuMiner).await;
     let bridge_version = binary_resolver
         .get_binary_version(Binaries::BridgeTapplet)
@@ -352,10 +345,6 @@ pub async fn get_applications_versions(
         wallet: ApplicationsInformation {
             version: wallet_version,
             port: Some(*wallet_port),
-        },
-        sha_p2pool: ApplicationsInformation {
-            version: sha_p2pool_version,
-            port: Some(*p2p_port),
         },
         xtrgpuminer: ApplicationsInformation {
             version: xtrgpuminer_version,
@@ -397,79 +386,6 @@ pub async fn get_monero_seed_words(app_handle: tauri::AppHandle) -> Result<Vec<S
         warn!(target: LOG_TARGET, "get_monero_seed_words took too long: {:?}", timer.elapsed());
     }
     result
-}
-
-#[tauri::command]
-pub async fn get_p2pool_stats(
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<Option<P2poolStats>, String> {
-    let timer = Instant::now();
-    let p2pool_stats = state.p2pool_latest_status.borrow().clone();
-
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "get_p2pool_stats took too long: {:?}", timer.elapsed());
-    }
-    Ok(p2pool_stats)
-}
-
-#[tauri::command]
-pub async fn get_p2pool_connections(
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<Option<Connections>, String> {
-    let timer = Instant::now();
-    if state.is_getting_p2pool_connections.load(Ordering::SeqCst) {
-        let read = state.cached_p2pool_connections.read().await;
-        if let Some(connections) = &*read {
-            warn!(target: LOG_TARGET, "Already getting p2pool connections, returning cached value");
-            return Ok(connections.clone());
-        }
-        warn!(target: LOG_TARGET, "Already getting p2pool connections");
-        return Err("Already getting p2pool connections".to_string());
-    }
-    state
-        .is_getting_p2pool_connections
-        .store(true, Ordering::SeqCst);
-    let p2pool_connections = state
-        .p2pool_manager
-        .get_connections()
-        .await
-        .unwrap_or_else(|e| {
-            warn!(target: LOG_TARGET, "Error getting p2pool connections: {e}");
-            None
-        });
-
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "get_p2pool_connections took too long: {:?}", timer.elapsed());
-    }
-    let mut lock = state.cached_p2pool_connections.write().await;
-    *lock = Some(p2pool_connections.clone());
-    state
-        .is_getting_p2pool_connections
-        .store(false, Ordering::SeqCst);
-    Ok(p2pool_connections)
-}
-
-#[tauri::command]
-pub async fn set_p2pool_stats_server_port(port: Option<u16>) -> Result<(), InvokeError> {
-    if let Some(port) = port {
-        if port.le(&1024) || port.gt(&65535) {
-            return Err(InvokeError::from("Port must be between 1024 and 65535"));
-        }
-    };
-
-    // We are not restarting any phase here as p2pool is not used
-    ConfigCore::update_field(ConfigCoreContent::set_p2pool_stats_server_port, port)
-        .await
-        .map_err(InvokeError::from_anyhow)?;
-
-    Ok(())
-}
-
-#[tauri::command]
-pub async fn get_used_p2pool_stats_server_port(
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<u16, String> {
-    Ok(state.p2pool_manager.stats_server_port().await)
 }
 
 #[tauri::command]
@@ -629,23 +545,6 @@ pub async fn get_tor_config(
         warn!(target: LOG_TARGET, "get_tor_config took too long: {:?}", timer.elapsed());
     }
     Ok(tor_config)
-}
-
-#[allow(clippy::too_many_lines)]
-#[tauri::command]
-pub async fn get_tor_entry_guards(
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<Vec<String>, String> {
-    let timer = Instant::now();
-    let res = state
-        .tor_manager
-        .get_entry_guards()
-        .await
-        .map_err(|e| e.to_string())?;
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "get_tor_entry_guards took too long: {:?}", timer.elapsed());
-    }
-    Ok(res)
 }
 
 #[tauri::command]
@@ -1023,23 +922,6 @@ pub async fn set_allow_notifications(allow_notifications: bool) -> Result<(), In
 }
 
 #[tauri::command]
-pub async fn send_data_telemetry_service(
-    state: tauri::State<'_, UniverseAppState>,
-    event_name: String,
-    data: Value,
-) -> Result<(), String> {
-    state
-        .telemetry_service
-        .read()
-        .await
-        .send(event_name, data)
-        .await
-        .inspect_err(|e| error!(target: LOG_TARGET, "error at send_data_telemetry_service {e:?}"))
-        .map_err(|e| e.to_string())?;
-    Ok(())
-}
-
-#[tauri::command]
 pub async fn set_application_language(application_language: String) -> Result<(), String> {
     ConfigUI::update_field(
         ConfigUIContent::set_application_language,
@@ -1275,27 +1157,6 @@ pub async fn set_monerod_config(
         warn!(target: LOG_TARGET, "set_monerod_config took too long: {:?}", timer.elapsed());
     }
 
-    Ok(())
-}
-
-#[tauri::command]
-pub async fn set_p2pool_enabled(p2pool_enabled: bool) -> Result<(), InvokeError> {
-    let timer = Instant::now();
-    ConfigCore::update_field_requires_restart(
-        ConfigCoreContent::set_is_p2pool_enabled,
-        p2pool_enabled,
-        vec![SetupPhase::CpuMining],
-    )
-    .await
-    .map_err(InvokeError::from_anyhow)?;
-
-    SetupManager::get_instance()
-        .restart_phases_from_queue()
-        .await;
-
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "set_p2pool_enabled took too long: {:?}", timer.elapsed());
-    }
     Ok(())
 }
 
@@ -1732,52 +1593,6 @@ pub async fn set_pre_release(
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "set_pre_release took too long: {:?}", timer.elapsed());
-    }
-
-    Ok(())
-}
-
-#[tauri::command]
-pub async fn check_for_updates(
-    app: tauri::AppHandle,
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<Option<String>, String> {
-    let timer = Instant::now();
-
-    let update = state
-        .updates_manager
-        .check_for_update(app.clone(), false)
-        .await
-        .map_err(|e| e.to_string())?;
-
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "check_for_updates took too long: {:?}", timer.elapsed());
-    }
-
-    Ok(update.map(|u| u.version))
-}
-
-#[tauri::command]
-pub async fn try_update(
-    force: Option<bool>,
-    app: tauri::AppHandle,
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<(), String> {
-    let timer = Instant::now();
-
-    state
-        .updates_manager
-        .try_update(
-            app.clone(),
-            force.unwrap_or(false),
-            false,
-            Duration::from_secs(30),
-        )
-        .await
-        .map_err(|e| e.to_string())?;
-
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "check_for_updates took too long: {:?}", timer.elapsed());
     }
 
     Ok(())

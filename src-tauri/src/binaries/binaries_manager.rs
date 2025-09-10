@@ -278,7 +278,6 @@ impl BinaryManager {
                 Binaries::MinotariNode => &TasksTrackers::current().node_phase,
                 Binaries::Tor => &TasksTrackers::current().node_phase,
                 Binaries::MergeMiningProxy => &TasksTrackers::current().cpu_mining_phase,
-                Binaries::ShaP2pool => &TasksTrackers::current().common,
                 Binaries::BridgeTapplet => &TasksTrackers::current().wallet_phase,
                 Binaries::GpuMinerSHA3X => &TasksTrackers::current().gpu_mining_phase,
             };

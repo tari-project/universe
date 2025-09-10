@@ -29,7 +29,6 @@
     "resuming-all-processes": "모든 프로세스 재개 중...",
     "resuming-mm-proxy": "MM 프록시 재개 중...",
     "resuming-node": "노드 재개 중...",
-    "resuming-p2pool": "P2Pool 재개 중...",
     "resuming-tor": "Tor 재개 중...",
     "resuming-wallet": "지갑 재개 중...",
     "syncing-node": "노드 동기화 중...",
