@@ -179,6 +179,9 @@ impl ProcessAdapter for LolMinerGpuMiner {
             "SHA3X".to_string(),
             format!("--apiport={}", api_port),
             format!("--apihost={}", "127.0.0.1"),
+            "--log=on".to_string(),
+            "--log-file".to_string(),
+            log_folder.join("lolminer").to_string_lossy().to_string(),
         ];
 
         if let Some(connection_type) = &self.connection_type {
@@ -329,9 +332,7 @@ impl LolMinerGpuMinerStatusMonitor {
                 .algorithms
                 .iter()
                 .map(|a| a.total_performance)
-                .sum::<f64>()
-                // lolminer parsed already returns in MH/s and we did it also on frontend so to keep it consistent we multiply by 1_000_000
-                * 1000000.0),
+                .sum::<f64>()),
         })
     }
 }
