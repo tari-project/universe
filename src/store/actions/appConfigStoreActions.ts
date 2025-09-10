@@ -24,7 +24,9 @@ import {
     ConfigPools,
     ConfigUI,
     ConfigWallet,
+    FeedbackPrompts,
     GpuDeviceSettings,
+    PromptType,
 } from '@app/types/configs.ts';
 import { NodeType, updateNodeType as updateNodeTypeForNodeStore } from '../useNodeStore.ts';
 import { setCurrentExchangeMinerId } from '../useExchangeStore.ts';
@@ -711,4 +713,21 @@ export const toggleDeviceExclusion = async (deviceIndex: number, excluded: boole
         console.error('Could not set excluded gpu device: ', e);
         setError(e as string);
     }
+};
+
+export const handleFeedbackFields = (feedbackType: PromptType, feedback_sent: boolean) => {
+    const current = useConfigUIStore.getState().feedback;
+    const now = Date.now();
+    const updated: FeedbackPrompts = {
+        [feedbackType]: {
+            ...current?.[feedbackType],
+            feedback_sent,
+            last_dismissed: {
+                secs_since_epoch: now / 1000,
+            },
+        },
+    };
+    const feedback = { ...current, ...updated };
+    setFeedbackConfigItems(feedback);
+    useConfigUIStore.setState({ feedback });
 };
