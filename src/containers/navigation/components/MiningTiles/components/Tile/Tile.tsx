@@ -172,7 +172,7 @@ export default function Tile({
             </Inside>
 
             <AnimatePresence>
-                {isMining && !isLoading && (
+                {isMining && !isLoading && !syncing && (
                     <AnimatedGlowPosition>
                         <AnimatedGlow />
                     </AnimatedGlowPosition>

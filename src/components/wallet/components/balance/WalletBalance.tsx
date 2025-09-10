@@ -83,7 +83,7 @@ export const WalletBalance = () => {
                         onCompleted={() => setIsComplete(true)}
                         isCompact={true}
                     />
-                    {isStarted && !isComplete && t('sync-message.line2')}
+                    {isStarted && !isComplete && isScanning && t('sync-message.line2')}
                 </>
             )}
         </LoadingText>
