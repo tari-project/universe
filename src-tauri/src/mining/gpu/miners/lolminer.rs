@@ -23,6 +23,7 @@ use std::time::Duration;
 
 use axum::async_trait;
 use log::{info, warn};
+use regex::Regex;
 use serde::Deserialize;
 use tari_shutdown::Shutdown;
 use tokio::sync::watch::Sender;
@@ -168,7 +169,7 @@ impl ProcessAdapter for LolMinerGpuMiner {
 
         let mut args: Vec<String> = vec![
             "--algo".to_string(),
-            "SHA3X".to_string(),
+            "C29AE".to_string(),
             format!("--apiport={}", api_port),
             format!("--apihost={}", "127.0.0.1"),
         ];
@@ -365,7 +366,10 @@ fn extract_device_names(output_str: &str) -> Vec<String> {
             let parts: Vec<&str> = trimmed.splitn(2, ':').collect();
             if parts.len() == 2 {
                 let name = parts[1].trim().to_string();
-                device_names.push(name);
+                // Regex to match ANSI escape codes
+                let re = Regex::new(r"\x1b\[[0-9;]*m").unwrap();
+                let plain_name = re.replace_all(&name, "").to_string();
+                device_names.push(plain_name);
             }
             found_device = false; // Reset for next device
         }
