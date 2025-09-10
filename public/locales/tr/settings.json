@@ -91,11 +91,6 @@
   "node-type": "Tür",
   "not-connected-to-tari": "Tari Ağına Bağlı Değil",
   "open-logs-directory": "Günlükler dizinini açın",
-  "p2pool-chain-tip": "Zincir ucu",
-  "p2pool-hash-rate": "Havuz hash oranları",
-  "p2pool-stats": "P2Pool İstatistikleri",
-  "p2pool-total-earnings": "Toplam havuz kazançları",
-  "p2pool-user-total-earnings": "Toplam kazançlar",
   "paper-wallet": {
     "connect-wallet-to-phone": "Tari Universe cüzdanınızı telefonunuza bağlayın",
     "do-not-share-this-code": "Bu kodu kimseyle paylaşmayın",
@@ -178,7 +173,6 @@
     "title": "Tari Universe\"i otomatik olarak güncelle"
   },
   "use-dynamic-fail-data": "Dinamik hata verilerini kullan",
-  "use-p2p": "P2pool Kullan",
   "use-random-control-port": "Rastgele kontrol portu kullan",
   "use-random-port": "Rastgele port kullan",
   "use-tor": "Tor Kullan",

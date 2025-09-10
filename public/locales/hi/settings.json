@@ -91,11 +91,6 @@
   "node-type": "प्रकार",
   "not-connected-to-tari": "Tari नेटवर्क से जुड़ा नहीं",
   "open-logs-directory": "लॉग्स निर्देशिका खोलें",
-  "p2pool-chain-tip": "श्रृंखलाओं की नोक",
-  "p2pool-hash-rate": "स्क्वाड हैश दरें",
-  "p2pool-stats": "स्क्वाड आँकड़े",
-  "p2pool-total-earnings": "स्क्वाड कुल कमाई",
-  "p2pool-user-total-earnings": "कुल कमाई",
   "paper-wallet": {
     "connect-wallet-to-phone": "अपने तारी यूनिवर्स वॉलेट को अपने फोन से कनेक्ट करें",
     "do-not-share-this-code": "इस कोड को किसी के साथ साझा न करें",
@@ -178,7 +173,6 @@
     "title": "तारी यूनिवर्स को स्वचालित रूप से अपडेट करें"
   },
   "use-dynamic-fail-data": "डायनामिक फेल डेटा का उपयोग करें",
-  "use-p2p": "P2pool का उपयोग करें",
   "use-random-control-port": "रैंडम कंट्रोल पोर्ट का उपयोग करें",
   "use-random-port": "रैंडम पोर्ट का उपयोग करें",
   "use-tor": "टोर का उपयोग करें",

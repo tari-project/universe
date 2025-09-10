@@ -91,11 +91,6 @@
   "node-type": "유형",
   "not-connected-to-tari": "Tari 네트워크에 연결되지 않음",
   "open-logs-directory": "로그 디렉토리 열기",
-  "p2pool-chain-tip": "체인의 끝",
-  "p2pool-hash-rate": "스쿼드 해시레이트",
-  "p2pool-stats": "스쿼드 통계",
-  "p2pool-total-earnings": "스쿼드 총 수익",
-  "p2pool-user-total-earnings": "총 수익",
   "paper-wallet": {
     "connect-wallet-to-phone": "Tari Universe 지갑을 휴대폰에 연결하세요",
     "do-not-share-this-code": "이 코드를 누구와도 공유하지 마세요",
@@ -178,7 +173,6 @@
     "title": "Tari Universe 자동 업데이트"
   },
   "use-dynamic-fail-data": "동적 실패 데이터 사용",
-  "use-p2p": "P2pool 사용",
   "use-random-control-port": "랜덤 제어 포트 사용",
   "use-random-port": "임의의 포트 사용",
   "use-tor": "Tor 사용하기",

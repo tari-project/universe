@@ -91,11 +91,6 @@
   "node-type": "Type",
   "not-connected-to-tari": "Non connecté au réseau Tari",
   "open-logs-directory": "Ouvrir le répertoire des journaux",
-  "p2pool-chain-tip": "Pointe des chaînes",
-  "p2pool-hash-rate": "Taux de hachage de l\"équipe",
-  "p2pool-stats": "Statistiques de l\"équipe",
-  "p2pool-total-earnings": "Gains totaux de l\"équipe",
-  "p2pool-user-total-earnings": "Gains totaux",
   "paper-wallet": {
     "connect-wallet-to-phone": "Connectez votre portefeuille Tari Universe à votre téléphone",
     "do-not-share-this-code": "Ne partagez ce code avec personne",
@@ -178,7 +173,6 @@
     "title": "Mettre à jour Tari Universe automatiquement"
   },
   "use-dynamic-fail-data": "Utiliser des données d\"échec dynamiques",
-  "use-p2p": "Utiliser P2pool",
   "use-random-control-port": "Utiliser un port de contrôle aléatoire",
   "use-random-port": "Utiliser un port aléatoire",
   "use-tor": "Utiliser Tor",

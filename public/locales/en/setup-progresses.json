@@ -41,8 +41,6 @@
     "binaries-merge-mining-proxy-download": "Preparing Merge Mining Proxy Binary | Downloading: {{ progress }}%",
     "binaries-node": "Preparing Node Binary",
     "binaries-node-download": "Preparing Node Binary | Downloading: {{ progress }}%",
-    "binaries-p2pool": "Preparing P2Pool Binary",
-    "binaries-p2pool-download": "Preparing P2Pool Binary | Downloading: {{ progress }}%",
     "binaries-tor": "Preparing Tor Binary",
     "binaries-tor-download": "Preparing Tor Binary | Downloading: {{ progress }}%",
     "binaries-wallet": "Preparing Wallet Binary",

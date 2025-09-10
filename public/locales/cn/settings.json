@@ -91,11 +91,6 @@
   "node-type": "类型",
   "not-connected-to-tari": "未连接到Tari网络",
   "open-logs-directory": "打开日志目录",
-  "p2pool-chain-tip": "链尖端",
-  "p2pool-hash-rate": "矿池哈希率",
-  "p2pool-stats": "P2Pool 状态",
-  "p2pool-total-earnings": "矿池总收益",
-  "p2pool-user-total-earnings": "总收入",
   "paper-wallet": {
     "connect-wallet-to-phone": "将您的 Tari 宇宙钱包连接到手机",
     "do-not-share-this-code": "不要与任何人分享此代码",
@@ -178,7 +173,6 @@
     "title": "自动更新 Tari 宇宙"
   },
   "use-dynamic-fail-data": "使用动态失败数据",
-  "use-p2p": "使用P2pool",
   "use-random-control-port": "使用随机控制端口",
   "use-random-port": "使用随机端口",
   "use-tor": "使用Tor",

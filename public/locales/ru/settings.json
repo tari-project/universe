@@ -91,11 +91,6 @@
   "node-type": "Тип",
   "not-connected-to-tari": "Не подключено к сети Tari",
   "open-logs-directory": "Открыть папку с логами",
-  "p2pool-chain-tip": "Вершины цепей",
-  "p2pool-hash-rate": "Хэшрейт команды",
-  "p2pool-stats": "Статистика команды",
-  "p2pool-total-earnings": "Общий доход команды",
-  "p2pool-user-total-earnings": "Общий доход",
   "paper-wallet": {
     "connect-wallet-to-phone": "Подключите Ваш кошелек Tari Universe к телефону",
     "do-not-share-this-code": "Не делитесь этим кодом ни с кем",
@@ -178,7 +173,6 @@
     "title": "Автоматическое обновление Tari Universe"
   },
   "use-dynamic-fail-data": "Использовать динамические данные отказа",
-  "use-p2p": "Использовать P2pool",
   "use-random-control-port": "Использовать случайный управляющий порт",
   "use-random-port": "Использовать случайный порт",
   "use-tor": "Использовать Tor",
