@@ -98,7 +98,6 @@ impl GpuMinerInterfaceTrait for LolMinerGpuMiner {
         Ok(())
     }
 
-    //TODO: fix devices parsing for lolminer
     async fn detect_devices(&mut self) -> Result<(), anyhow::Error> {
         let config_path =
             dirs::config_dir().ok_or_else(|| anyhow::anyhow!("Failed to get config directory"))?;
@@ -124,21 +123,14 @@ impl GpuMinerInterfaceTrait for LolMinerGpuMiner {
             return Err(anyhow::anyhow!("No supported GPU devices found"));
         }
 
-        let lines: Vec<&str> = output_str.lines().collect();
-
-        for line in lines {
-            if line.contains("Name") {
-                let parts: Vec<&str> = line.split(":").collect();
-                if parts.len() == 2 {
-                    let name = parts[1].to_string();
-                    #[allow(clippy::cast_possible_truncation)]
-                    let device_id = gpu_devices.len() as u32;
-                    gpu_devices.push(GpuCommonInformation {
-                        name: name.trim().to_string(),
-                        device_id,
-                    });
-                }
-            }
+        for device_name in extract_device_names(&output_str) {
+            info!("Lolminer detected device name: {device_name}");
+            #[allow(clippy::cast_possible_truncation)]
+            let device_id = gpu_devices.len() as u32;
+            gpu_devices.push(GpuCommonInformation {
+                name: device_name.trim().to_string(),
+                device_id,
+            });
         }
 
         self.gpu_devices = gpu_devices;
@@ -332,7 +324,6 @@ impl LolMinerGpuMinerStatusMonitor {
         Ok(GpuMinerStatus {
             is_mining: true,
             estimated_earnings: 0,
-            // round to 2 decimal places
             hash_rate: ((body
                 .algorithms
                 .iter()
@@ -355,4 +346,29 @@ struct LolMinerHttpApiStatus {
 struct Algorithm {
     #[serde(rename = "Total_Performance")]
     total_performance: f64,
+}
+
+fn extract_device_names(output_str: &str) -> Vec<String> {
+    let lines: Vec<&str> = output_str.lines().collect();
+    let mut device_names = Vec::new();
+    let mut found_device = false;
+
+    for line in lines {
+        let trimmed = line.trim();
+        // Check for any device marker (Device 0:, Device 1:, etc.)
+        if trimmed.starts_with("Device ") && trimmed.ends_with(':') {
+            found_device = true;
+            continue;
+        }
+        if found_device && trimmed.starts_with("Name:") {
+            // Extract the name after "Name:    "
+            let parts: Vec<&str> = trimmed.splitn(2, ':').collect();
+            if parts.len() == 2 {
+                let name = parts[1].trim().to_string();
+                device_names.push(name);
+            }
+            found_device = false; // Reset for next device
+        }
+    }
+    device_names
 }

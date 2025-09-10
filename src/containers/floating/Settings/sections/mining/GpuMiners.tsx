@@ -15,6 +15,12 @@ const Wrapper = styled(m.div)`
     position: relative;
 `;
 
+const minerLabel = {
+    [GpuMinerType.LolMiner]: 'LolMiner(C29)',
+    [GpuMinerType.Glytex]: 'Glytex(SHA3x)',
+    [GpuMinerType.Graxil]: 'LolMiner(SHA3x)',
+};
+
 export default function GpuMiners() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
     const availableMiners = useMiningStore((state) => state.availableMiners);
@@ -23,7 +29,7 @@ export default function GpuMiners() {
     const minerOptions = useMemo(() => {
         return (
             availableMiners?.map((minerType) => ({
-                label: minerType,
+                label: minerLabel[minerType],
                 value: minerType,
             })) || []
         );
