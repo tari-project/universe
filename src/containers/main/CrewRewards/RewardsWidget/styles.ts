@@ -74,8 +74,22 @@ export const WidgetWrapper = styled('div')<{ $isOpen: boolean; $isLogin?: boolea
         `}
 `;
 
-export const ExpandButton = styled(m.button)`
-    width: 200px;
+export const ExpandButtonWrapper = styled(m.div)`
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 20px;
+
+    position: absolute;
+    top: 115px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+`;
+
+export const ExpandButton = styled.button`
+    width: 100%;
     height: 33px;
     background: rgba(255, 255, 255, 0.05);
     border-radius: 10px;
@@ -89,12 +103,6 @@ export const ExpandButton = styled(m.button)`
     line-height: 190%;
 
     white-space: nowrap;
-
-    position: absolute;
-    top: 115px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 2;
 
     cursor: pointer;
     transition: background 0.2s ease-in-out;
