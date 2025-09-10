@@ -6,11 +6,11 @@ const appWindow = getCurrentWindow();
 
 export function useShuttingDown() {
     const isShuttingDown = useUIStore((s) => s.isShuttingDown);
-    const { onShutdownCaught } = useShutdownHandler();
+    const { onShutdownCaught, shutdownInitiated } = useShutdownHandler();
 
     useEffect(() => {
         const ul = appWindow.onCloseRequested(async (event) => {
-            if (!isShuttingDown) {
+            if (!isShuttingDown && !shutdownInitiated) {
                 event.preventDefault();
                 await onShutdownCaught();
             }
@@ -18,5 +18,5 @@ export function useShuttingDown() {
         return () => {
             ul.then((unlisten) => unlisten());
         };
-    }, [isShuttingDown, onShutdownCaught]);
+    }, [isShuttingDown, onShutdownCaught, shutdownInitiated]);
 }

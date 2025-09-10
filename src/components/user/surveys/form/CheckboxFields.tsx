@@ -4,8 +4,10 @@ import { FieldQuestions } from './helpers.ts';
 import { Description, ItemWrapper } from './surveyForm.styles.ts';
 
 export function CheckboxFields() {
-    const { control, setValue } = useFormContext<FieldQuestions>();
+    const { control, setValue, watch } = useFormContext<FieldQuestions>();
     const { fields: checkFields } = useFieldArray({ control, name: 'checkbox' });
+    const watched = watch('checkbox');
+    const noneChecked = watched.every((c) => !c.checked);
 
     return checkFields.map((q, i) => {
         const shouldRenderQuestionText = q.questionId !== checkFields[i - 1]?.questionId;
@@ -13,11 +15,9 @@ export function CheckboxFields() {
             <Controller
                 control={control}
                 key={q.id}
+                rules={{ required: q.isRequired ? noneChecked : false }}
                 name={`checkbox.${i}.checked`}
                 render={({ field }) => {
-                    function handleChange(value: boolean) {
-                        setValue(field.name, value);
-                    }
                     return (
                         <>
                             {shouldRenderQuestionText && <Description>{q.questionText}</Description>}
@@ -26,7 +26,7 @@ export function CheckboxFields() {
                                     id={field.name}
                                     labelText={q.optionText}
                                     checked={field.value}
-                                    handleChange={handleChange}
+                                    handleChange={(value) => setValue(field.name, value, { shouldValidate: true })}
                                 />
                             </ItemWrapper>
                         </>

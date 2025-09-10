@@ -6,15 +6,11 @@ import { checkMiningTime } from '@app/store/actions/miningStoreActions.ts';
 const HOUR = 1000 * 60 * 60;
 
 export function useCheckMiningTime() {
-    const feedback = useConfigUIStore((s) => s.feedback);
+    const longTimeDismissed = useConfigUIStore((s) => s.feedback?.long_time_miner?.last_dismissed?.secs_since_epoch);
     const wasFeedbackSent = useUserFeedbackStore((s) => s.wasFeedbackSent);
     const longMiningTimeMs = useUserFeedbackStore((s) => s.longMiningTimeMs);
 
     const checkDismissedTime = useCallback(() => {
-        //TODO add helper/neaten nested vals ?
-        const longTimeDismissed =
-            feedback?.long_time_miner?.last_dismissed?.secs_since_epoch ||
-            feedback?.long_time_miner?.last_dismissed?.timestamp;
         if (longTimeDismissed) {
             const now = new Date();
             const dismissedDate = new Date(longTimeDismissed * 1000);
@@ -24,7 +20,7 @@ export function useCheckMiningTime() {
         } else {
             return false;
         }
-    }, [feedback?.long_time_miner?.last_dismissed]);
+    }, [longTimeDismissed]);
     const handleModalCheck = useCallback(() => {
         const currentMiningTimeMs = checkMiningTime();
         if (currentMiningTimeMs < 1) return;

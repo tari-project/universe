@@ -23,6 +23,7 @@ export interface SurveyQuestion {
     questionType: SurveyQuestionType;
     order: number;
     options?: SurveyQuestionOption[];
+    isRequired: boolean;
     value?: string;
 }
 
