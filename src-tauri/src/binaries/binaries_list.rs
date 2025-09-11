@@ -41,6 +41,7 @@ pub enum Binaries {
     Tor,
     BridgeTapplet,
     GpuMinerSHA3X,
+    LolMiner,
 }
 impl Binaries {
     pub fn name(&self) -> &str {
@@ -53,6 +54,7 @@ impl Binaries {
             Binaries::Tor => "tor",
             Binaries::BridgeTapplet => "bridge",
             Binaries::GpuMinerSHA3X => "graxil",
+            Binaries::LolMiner => "lolminer",
         }
     }
 
@@ -66,6 +68,7 @@ impl Binaries {
             "tor" => Binaries::Tor,
             "bridge" => Binaries::BridgeTapplet,
             "graxil" => Binaries::GpuMinerSHA3X,
+            "lolminer" => Binaries::LolMiner,
             _ => panic!("Unknown binary name: {name}"),
         }
     }
@@ -113,6 +116,10 @@ impl Binaries {
             Binaries::GpuMinerSHA3X => {
                 let file_name = "graxil";
                 Self::append_exe_if_windows(&mut PathBuf::from(file_name))
+            }
+            Binaries::LolMiner => {
+                let file_name = "lolMiner";
+                Self::append_exe_if_windows(&mut PathBuf::from(version).join(file_name))
             }
         };
 
@@ -228,6 +235,15 @@ impl Binaries {
                 BinaryPlatformAssets::MacOSArm64 => {
                     format!("graxil-macos-arm64-{version}-{hash}.zip")
                 }
+            },
+            Binaries::LolMiner => match platform {
+                BinaryPlatformAssets::LinuxX64 => {
+                    format!("lolMiner_v{version}_Lin64.tar.gz")
+                }
+                BinaryPlatformAssets::WindowsX64 => {
+                    format!("lolMiner_v{version}_Win64.zip")
+                }
+                _ => "Not available for this platform".to_string(),
             },
         }
     }

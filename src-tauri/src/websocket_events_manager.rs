@@ -38,7 +38,10 @@ use crate::websocket_manager::WebsocketManager;
 use crate::{
     airdrop::decode_jwt_claims_without_exp,
     commands::{sign_ws_data, CpuMinerStatus, SignWsDataResponse},
-    configs::{config_core::ConfigCore, config_pools::ConfigPools, trait_config::ConfigImpl},
+    configs::{
+        config_core::ConfigCore, config_pools::ConfigPools, pools::PoolConfig,
+        trait_config::ConfigImpl,
+    },
     internal_wallet::InternalWallet,
     tasks_tracker::TasksTrackers,
     websocket_manager::WebsocketMessage,

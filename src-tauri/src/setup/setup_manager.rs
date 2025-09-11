@@ -35,6 +35,9 @@ use crate::configs::config_ui::WalletUIMode;
 use crate::configs::config_wallet::ConfigWalletContent;
 use crate::events::CriticalProblemPayload;
 use crate::internal_wallet::InternalWallet;
+use crate::mining::pools::cpu_pool_manager::CpuPoolManager;
+use crate::mining::pools::gpu_pool_manager::GpuPoolManager;
+use crate::mining::pools::PoolManagerInterfaceTrait;
 use crate::progress_trackers::progress_plans::SetupStep;
 use crate::setup::{
     phase_core::CoreSetupPhase, phase_cpu_mining::CpuMiningSetupPhase,
@@ -456,6 +459,19 @@ impl SetupManager {
             EventsEmitter::emit_should_show_exchange_miner_modal().await;
         }
 
+        // Check if we are on pool mining and we do not have mine on start selected
+        // In that case we want to send pool update so we won't display 0 balance
+        if !*ConfigMining::content().await.mine_on_app_start() {
+            if *ConfigPools::content().await.cpu_pool_enabled() {
+                info!(target: LOG_TARGET, "Requesting initial CPU pool status update");
+                CpuPoolManager::update_current_pool_status().await;
+            }
+            if *ConfigPools::content().await.gpu_pool_enabled() {
+                info!(target: LOG_TARGET, "Requesting initial GPU pool status update");
+                GpuPoolManager::update_current_pool_status().await;
+            }
+        }
+
         info!(target: LOG_TARGET, "Pre Setup Finished");
     }
 
@@ -776,16 +792,9 @@ impl SetupManager {
         let app_handle = self.app_handle().await;
         let app_state = app_handle.state::<UniverseAppState>().clone();
 
-        // At the point of calling this method gpu miner will be stopped by do_health_check method
-        // It handles stopping the process of miner but is not stopping the status updates
-        // So we need to stop the status updates here as its more complicated to do it in stop method called by do_health_check
-
-        app_state
-            .gpu_miner_sha
-            .write()
-            .await
-            .stop_status_updates()
-            .await?;
+        // We want to stop the stats watcher as its not needed when solo mining
+        // Normal flow would monitor the status for extra hour but in case of disabling pool mining we want to stop it right away
+        GpuPoolManager::stop_stats_watcher().await;
 
         // Updates the config to disable GPU Pool feature in next resolve_setup_features call
         ConfigPools::update_field(ConfigPoolsContent::set_gpu_pool_enabled, false).await?;
@@ -808,16 +817,9 @@ impl SetupManager {
         let app_handle = self.app_handle().await;
         let app_state = app_handle.state::<UniverseAppState>().clone();
 
-        // At the point of calling this method cpu miner will be stopped by do_health_check method
-        // It handles stopping the process of miner but is not stopping the status updates
-        // So we need to stop the status updates here as its more complicated to do it in stop method called by do_health_check
-
-        app_state
-            .cpu_miner
-            .write()
-            .await
-            .stop_status_updates()
-            .await?;
+        // We want to stop the stats watcher as its not needed when solo mining
+        // Normal flow would monitor the status for extra hour but in case of disabling pool mining we want to stop it right away
+        CpuPoolManager::stop_stats_watcher().await;
 
         // Updates the config to disable CPU Pool feature in next resolve_setup_features call
         ConfigPools::update_field(ConfigPoolsContent::set_cpu_pool_enabled, false).await?;

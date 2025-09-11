@@ -27,14 +27,11 @@ use app_in_memory_config::AppInMemoryConfig;
 use commands::CpuMinerStatus;
 use cpu_miner::CpuMinerConfig;
 use events_emitter::EventsEmitter;
-use gpu_miner_adapter::GpuMinerStatus;
-use gpu_miner_sha::GpuMinerSha;
 use log::{error, info, warn};
 use mining_status_manager::MiningStatusManager;
 use node::local_node_adapter::LocalNodeAdapter;
 use node::node_adapter::BaseNodeStatus;
 use node::node_manager::NodeType;
-use pool_status_watcher::{PoolStatus, PoolStatusWatcher};
 use process_stats_collector::ProcessStatsCollectorBuilder;
 
 use node::remote_node_adapter::RemoteNodeAdapter;
@@ -71,9 +68,10 @@ use telemetry_manager::TelemetryManager;
 
 use crate::cpu_miner::CpuMiner;
 
-use crate::commands::CpuMinerConnection;
 use crate::feedback::Feedback;
-use crate::gpu_miner::GpuMiner;
+use crate::mining::cpu::CpuMinerConnection;
+use crate::mining::gpu::consts::GpuMinerStatus;
+use crate::mining::gpu::manager::GpuManager;
 use crate::mm_proxy_manager::MmProxyManager;
 use crate::node::node_manager::NodeManager;
 use crate::tor_manager::TorManager;
@@ -95,22 +93,15 @@ mod events;
 mod events_emitter;
 mod events_manager;
 mod feedback;
-mod gpu_devices;
-mod gpu_miner;
-mod gpu_miner_adapter;
-mod gpu_miner_sha;
-mod gpu_miner_sha_adapter;
-mod gpu_miner_sha_websocket;
-mod gpu_status_file;
 mod hardware;
 mod internal_wallet;
+mod mining;
 mod mining_status_manager;
 mod mm_proxy_adapter;
 mod mm_proxy_manager;
 mod network_utils;
 mod node;
 mod pin;
-mod pool_status_watcher;
 mod port_allocator;
 mod process_adapter;
 mod process_adapter_utils;
@@ -166,11 +157,8 @@ struct UniverseAppState {
     #[allow(dead_code)]
     wallet_state_watch_rx: Arc<watch::Receiver<Option<WalletState>>>,
     cpu_miner_status_watch_rx: Arc<watch::Receiver<CpuMinerStatus>>,
-    gpu_latest_status: Arc<watch::Receiver<GpuMinerStatus>>,
     in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
     cpu_miner: Arc<RwLock<CpuMiner>>,
-    gpu_miner: Arc<RwLock<GpuMiner>>,
-    gpu_miner_sha: Arc<RwLock<GpuMinerSha>>,
     cpu_miner_config: Arc<RwLock<CpuMinerConfig>>,
     mm_proxy_manager: MmProxyManager,
     node_manager: NodeManager,
@@ -275,7 +263,7 @@ fn main() {
     );
 
     let cpu_config = Arc::new(RwLock::new(CpuMinerConfig {
-        node_connection: CpuMinerConnection::BuiltInProxy,
+        node_connection: CpuMinerConnection::Local,
         pool_host_name: None,
         pool_port: None,
         monero_address: "".to_string(),
@@ -291,17 +279,15 @@ fn main() {
         )
         .into(),
     );
-    let gpu_miner: Arc<RwLock<GpuMiner>> = Arc::new(
-        GpuMiner::new(
-            gpu_status_tx.clone(),
-            base_node_watch_rx.clone(),
-            &mut stats_collector,
-        )
-        .into(),
-    );
 
-    let gpu_miner_sha: Arc<RwLock<GpuMinerSha>> =
-        Arc::new(GpuMinerSha::new(&mut stats_collector, gpu_status_tx.clone()).into());
+    let systray_manager = Arc::new(RwLock::new(SystemTrayManager::new()));
+
+    block_on(GpuManager::initialize(
+        stats_collector.take_gpu_miner(),
+        gpu_status_tx.clone(),
+        Some(base_node_watch_rx.clone()),
+        Some(systray_manager.clone()),
+    ));
 
     let (tor_watch_tx, tor_watch_rx) = watch::channel(TorStatus::default());
     let tor_manager = TorManager::new(tor_watch_tx, &mut stats_collector);
@@ -347,11 +333,8 @@ fn main() {
         node_status_watch_rx: Arc::new(base_node_watch_rx),
         wallet_state_watch_rx: Arc::new(wallet_state_watch_rx.clone()),
         cpu_miner_status_watch_rx: Arc::new(cpu_miner_status_watch_rx),
-        gpu_latest_status: Arc::new(gpu_status_rx),
         in_memory_config: app_in_memory_config.clone(),
         cpu_miner: cpu_miner.clone(),
-        gpu_miner: gpu_miner.clone(),
-        gpu_miner_sha: gpu_miner_sha.clone(),
         cpu_miner_config: cpu_config.clone(),
         mm_proxy_manager: mm_proxy_manager.clone(),
         node_manager,
@@ -609,6 +592,7 @@ fn main() {
             commands::reset_cpu_pool_config,
             commands::restart_phases,
             commands::list_connected_peers,
+            commands::switch_gpu_miner,
             commands::set_feedback_fields,
         ])
         .build(tauri::generate_context!())

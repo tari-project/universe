@@ -43,6 +43,8 @@
   "gpu-device-enabled-description": "विशिष्ट GPU डिवाइस को सक्षम या अक्षम करें।",
   "gpu-device-no-found": "⚠️ कोई GPU डिवाइस नहीं मिला",
   "gpu-engine": "जीपीयू इंजन",
+  "gpu-miners": "GPU Miners",
+  "gpu-miners-not-found": "No GPU Miners found",
   "gpu-mining-enabled": "जीपीयू माइनिंग",
   "gpu-unavailable": "⚠️ जीपीयू अक्षम है क्योंकि आपका हार्डवेयर इसे समर्थन नहीं करता",
   "hardware-status": "हार्डवेयर स्थिति",

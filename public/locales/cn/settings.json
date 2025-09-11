@@ -43,6 +43,8 @@
   "gpu-device-enabled-description": "启用或禁用特定的 GPU 设备。",
   "gpu-device-no-found": "⚠️ 未找到 GPU 设备",
   "gpu-engine": "Gpu 引擎",
+  "gpu-miners": "GPU Miners",
+  "gpu-miners-not-found": "No GPU Miners found",
   "gpu-mining-enabled": "GPU 挖矿",
   "gpu-unavailable": "⚠️ GPU已禁用，因为您的硬件不支持",
   "hardware-status": "硬件状态",

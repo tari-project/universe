@@ -26,7 +26,7 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use tungstenite::{connect, Message};
 
-use crate::{gpu_devices::GpuVendor, tasks_tracker::TasksTrackers};
+use crate::{mining::gpu::miners::GpuVendor, tasks_tracker::TasksTrackers};
 
 const LOG_TARGET: &str = "tari::universe::gpu_miner_sha_adapter";
 
