@@ -138,5 +138,6 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'reset_cpu_pool_config', payload: { cpuPoolName: string }): Promise<void>;
     function invoke(param: 'restart_phases', payload: { phases: SetupPhase[] }): Promise<void>;
     function invoke(param: 'list_connected_peers'): Promise<string[]>;
+    function invoke(param: 'switch_gpu_miner', payload: { gpuMinerType: GpuMinerType }): Promise<void>;
     function invoke(param: 'set_feedback_fields', payload: { feedbackType: string; wasSent: boolean }): Promise<void>;
 }

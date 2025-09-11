@@ -52,7 +52,7 @@ pub(crate) struct ProcessWatcherStats {
 }
 
 pub struct ProcessWatcher<TAdapter: ProcessAdapter> {
-    pub(crate) adapter: TAdapter,
+    pub adapter: TAdapter,
     watcher_task: Option<JoinHandle<Result<i32, anyhow::Error>>>,
     internal_shutdown: Shutdown,
     pub poll_time: tokio::time::Duration,
@@ -194,9 +194,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                         return child.stop().await;
                     }
                 }
-                if let Err(_unused) = stats_broadcast.send(stats.clone()) {
-                    warn!(target: LOG_TARGET, "Failed to broadcast process watcher stats for {name}");
-                }
+                stats_broadcast.send_replace(stats.clone());
             }
         }));
         Ok(())

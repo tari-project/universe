@@ -43,6 +43,8 @@
   "gpu-device-enabled-description": "Включить или отключить конкретное устройство GPU.",
   "gpu-device-no-found": "⚠️ Устройства GPU не найдены",
   "gpu-engine": "Движок GPU",
+  "gpu-miners": "GPU Miners",
+  "gpu-miners-not-found": "No GPU Miners found",
   "gpu-mining-enabled": "Майнинг на GPU",
   "gpu-unavailable": "⚠️ GPU отключен, так как ваше оборудование не поддерживает его",
   "hardware-status": "Состояние оборудования",

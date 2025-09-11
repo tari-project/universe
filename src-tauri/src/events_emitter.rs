@@ -25,9 +25,10 @@ use crate::events::{
     ConnectionStatusPayload, CriticalProblemPayload, DisabledPhasesPayload,
     InitWalletScanningProgressPayload, UpdateAppModuleStatusPayload,
 };
-use crate::gpu_devices::GpuDeviceInformation;
 use crate::internal_wallet::TariAddressType;
-use crate::pool_status_watcher::PoolStatus;
+use crate::mining::gpu::consts::{GpuMiner, GpuMinerStatus, GpuMinerType};
+use crate::mining::gpu::miners::GpuCommonInformation;
+use crate::mining::pools::PoolStatus;
 #[cfg(target_os = "windows")]
 use crate::system_dependencies::UniversalSystemDependency;
 use crate::wallet::wallet_types::{TransactionInfo, WalletBalance};
@@ -45,7 +46,7 @@ use crate::{
     hardware::hardware_status_monitor::PublicDeviceGpuProperties,
     setup::setup_manager::SetupPhase,
     utils::app_flow_utils::FrontendReadyChannel,
-    BaseNodeStatus, GpuMinerStatus,
+    BaseNodeStatus,
 };
 use log::error;
 use std::collections::HashMap;
@@ -185,7 +186,7 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_detected_devices(devices: Vec<GpuDeviceInformation>) {
+    pub async fn emit_detected_devices(devices: Vec<GpuCommonInformation>) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::DetectedDevices,
@@ -196,6 +197,34 @@ impl EventsEmitter {
             .emit(BACKEND_STATE_UPDATE, event)
         {
             error!(target: LOG_TARGET, "Failed to emit DetectedDevices event: {e:?}");
+        }
+    }
+
+    pub async fn emit_update_selected_gpu_miner(payload: GpuMiner) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::UpdateSelectedMiner,
+            payload,
+        };
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
+            error!(target: LOG_TARGET, "Failed to emit UpdateSelectedMiner event: {e:?}");
+        }
+    }
+
+    pub async fn emit_available_gpu_miners(payload: Vec<GpuMinerType>) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::AvailableMiners,
+            payload,
+        };
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
+            error!(target: LOG_TARGET, "Failed to emit AvailableMiners event: {e:?}");
         }
     }
 
@@ -384,10 +413,10 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_cpu_pool_status_update(pool_status: Option<PoolStatus>) {
+    pub async fn emit_cpu_pools_status_update(pool_status: HashMap<String, PoolStatus>) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
-            event_type: EventType::CpuPoolStatsUpdate,
+            event_type: EventType::CpuPoolsStatsUpdate,
             payload: pool_status,
         };
         if let Err(e) = Self::get_app_handle()
@@ -398,10 +427,10 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_gpu_pool_status_update(pool_status: Option<PoolStatus>) {
+    pub async fn emit_gpu_pools_status_update(pool_status: HashMap<String, PoolStatus>) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
-            event_type: EventType::GpuPoolStatsUpdate,
+            event_type: EventType::GpuPoolsStatsUpdate,
             payload: pool_status,
         };
         if let Err(e) = Self::get_app_handle()
@@ -658,7 +687,6 @@ impl EventsEmitter {
             error!(target: LOG_TARGET, "Failed to emit EnterPin event: {e:?}");
         }
     }
-
     pub async fn emit_update_gpu_devices_settings(payload: GpuDevicesSettings) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {

@@ -28,9 +28,9 @@ use crate::commands::CpuMinerStatus;
 use crate::configs::config_core::ConfigCore;
 use crate::configs::config_mining::ConfigMining;
 use crate::configs::trait_config::ConfigImpl;
-use crate::gpu_miner_adapter::GpuMinerStatus;
 use crate::hardware::hardware_status_monitor::HardwareStatusMonitor;
 use crate::internal_wallet::InternalWallet;
+use crate::mining::gpu::consts::GpuMinerStatus;
 use crate::node::node_adapter::BaseNodeStatus;
 use crate::node::node_manager::NodeManager;
 use crate::process_stats_collector::ProcessStatsCollector;
@@ -584,11 +584,6 @@ async fn get_telemetry_data_inner(
         &mut extra_data,
         stats_collector.get_gpu_miner_stats(),
         "gpu_miner",
-    );
-    add_process_stats(
-        &mut extra_data,
-        stats_collector.get_gpu_miner_sha_stats(),
-        "gpu_miner_sha",
     );
     add_process_stats(
         &mut extra_data,

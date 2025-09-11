@@ -43,6 +43,8 @@
   "gpu-device-enabled-description": "特定のGPUデバイスを有効または無効にします。",
   "gpu-device-no-found": "⚠️ GPUデバイスが見つかりません",
   "gpu-engine": "GPUエンジン",
+  "gpu-miners": "GPU Miners",
+  "gpu-miners-not-found": "No GPU Miners found",
   "gpu-mining-enabled": "GPUマイニング",
   "gpu-unavailable": "⚠️ ハードウェアがサポートしていないため、GPUが無効です",
   "hardware-status": "ハードウェアの状態",

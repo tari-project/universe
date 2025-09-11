@@ -1,3 +1,4 @@
+import { GpuMiningAlgorithm } from '@app/types/events-payloads';
 import i18n from 'i18next';
 
 export enum FormatPreset {
@@ -124,40 +125,41 @@ interface Hashrate {
     unit: string;
 }
 
-export function formatHashrate(hashrate: number, joinUnit = true): Hashrate {
+export function formatHashrate(hashrate: number, joinUnit = true, algo = GpuMiningAlgorithm.SHA3X): Hashrate {
+    const unit = algo === GpuMiningAlgorithm.SHA3X ? 'H' : 'G';
     if (hashrate < 1000) {
         return {
             value: hashrate,
-            unit: 'H/s',
+            unit: `${unit}/s`,
         };
     }
     if (hashrate < 1000000) {
         return {
             value: Number((hashrate / 1000).toFixed(2)),
-            unit: joinUnit ? ' kH/s' : 'k',
+            unit: joinUnit ? ` k${unit}/s` : 'k',
         };
     }
     if (hashrate < 1000000000) {
         return {
             value: Number((hashrate / 1000000).toFixed(2)),
-            unit: joinUnit ? ' MH/s' : 'M',
+            unit: joinUnit ? ` M${unit}/s` : 'M',
         };
     }
     if (hashrate < 1000000000000) {
         return {
             value: Number((hashrate / 1000000000).toFixed(2)),
-            unit: joinUnit ? ' GH/s' : 'G',
+            unit: joinUnit ? ` G${unit}/s` : 'G',
         };
     }
     if (hashrate < 1000000000000000) {
         return {
             value: Number((hashrate / 1000000000000).toFixed(2)),
-            unit: joinUnit ? ' TH/s' : 'T',
+            unit: joinUnit ? ` T${unit}/s` : 'T',
         };
     } else {
         return {
             value: Number((hashrate / 1000000000000000).toFixed(2)),
-            unit: joinUnit ? ' PH/s' : 'P',
+            unit: joinUnit ? ` P${unit}/s` : 'P',
         };
     }
 }
