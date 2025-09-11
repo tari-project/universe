@@ -17,6 +17,7 @@ export default function MiningButtonCombined() {
     const gpuMiningModuleInitialized = useSetupStore(setupStoreSelectors.isGpuMiningModuleInitialized);
     const cpuMiningModuleInitialized = useSetupStore(setupStoreSelectors.isCpuMiningModuleInitialized);
     const isMiningControlsEnabled = useMiningStore((s) => s.miningControlsEnabled);
+    const changingModes = useMiningStore((s) => s.isChangingMode);
     const isMiningInitiated = useMiningStore((s) => s.isCpuMiningInitiated || s.isGpuMiningInitiated);
     const isCPUMining = useMiningMetricsStore((s) => s.cpu_mining_status.is_mining);
     const isGPUMining = useMiningMetricsStore((s) => s.gpu_mining_status.is_mining);
@@ -26,7 +27,8 @@ export default function MiningButtonCombined() {
     const isMiningEnabled = isCpuMiningEnabled || isGpuMiningEnabled;
     const isMiningLoading = (isMining && !isMiningInitiated) || (isMiningInitiated && !isMining);
     const isMiningUnlocked = gpuMiningModuleInitialized || cpuMiningModuleInitialized;
-    const isMiningButtonDisabled = isMiningLoading || !isMiningControlsEnabled || !isMiningEnabled || !isMiningUnlocked;
+    const isMiningButtonDisabled =
+        isMiningLoading || !isMiningControlsEnabled || !isMiningEnabled || !isMiningUnlocked || changingModes;
     const isAppLoading = isMiningLoading;
 
     const handleStartMining = useCallback(async () => {

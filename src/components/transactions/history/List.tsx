@@ -27,7 +27,7 @@ export function List({ setIsScrolled, targetRef }: ListProps) {
     const walletImporting = useWalletStore((s) => s.is_wallet_importing);
     const { data, fetchNextPage, isFetchingNextPage, isFetching, hasNextPage } = useFetchTxHistory();
 
-    const walletLoading = walletImporting || walletScanning?.is_scanning;
+    const walletLoading = walletImporting || walletScanning?.is_scanning || isFetching;
 
     useEffect(() => {
         const el = targetRef?.current;
@@ -106,14 +106,13 @@ export function List({ setIsScrolled, targetRef }: ListProps) {
     ) : (
         listMarkup
     );
-
     const isEmpty = !walletLoading && !transactions?.length;
     const emptyMarkup = isEmpty ? <LoadingText>{t('empty-tx')}</LoadingText> : null;
     return (
         <>
             <ListWrapper>
-                {emptyMarkup}
                 {baseMarkup}
+                {emptyMarkup}
                 {/*added placeholder so the scroll can trigger fetch*/}
                 {!walletScanning?.is_scanning ? <PlaceholderItem ref={ref} $isLast /> : null}
             </ListWrapper>
