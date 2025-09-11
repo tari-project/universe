@@ -43,6 +43,7 @@ use crate::{
         interface::{GpuMinerInterfaceTrait, GpuMinerStatusInterface},
         miners::GpuCommonInformation,
     },
+    port_allocator::PortAllocator,
     process_adapter::{
         HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
     },
@@ -165,7 +166,7 @@ impl ProcessAdapter for LolMinerGpuMiner {
         _is_first_start: bool,
     ) -> Result<(Self::ProcessInstance, Self::StatusMonitor), anyhow::Error> {
         let inner_shutdown = Shutdown::new();
-        let api_port = 8080;
+        let api_port = PortAllocator::new().assign_port_with_fallback();
 
         let mut args: Vec<String> = vec![
             "--algo".to_string(),
