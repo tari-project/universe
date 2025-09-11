@@ -1,5 +1,6 @@
 {
   "bonus-gems-earned": "Bonus gems earned",
+  "earnBonusXTM": "Bonus XTM",
   "claimGems": "Claim Gems",
   "claimModalFieldLabel": "Optional",
   "claimModalFieldPlaceholder": "Enter invite code",
@@ -80,7 +81,7 @@
   "live": "live",
   "logged-in-as": "Logged in as <strong>@{{twitter}}</strong>",
   "loggedInTitle": "Airdrop Rewards",
-  "loggedOutTitle": "Invite Friends to Earn Gems",
+  "loggedOutTitle": "Invite Friends",
   "loginButton": "Log in to claim gems",
   "logout": "Logout",
   "nextTierBonus": "Invite <strong>{{count}} friends</strong> & earn {{bonusGems}} bonus gems",
